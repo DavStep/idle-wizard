@@ -1,0 +1,39 @@
+{
+  "name": "idle-wizard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "mobile:sync": "npm run build && npx cap sync android",
+    "android:add": "npx cap add android",
+    "android:open": "npx cap open android",
+    "android:run": "npm run build && npx cap run android",
+    "android:assembleDebug": "npm run mobile:sync && cd android && ./gradlew assembleDebug",
+    "android:clean": "cd android && ./gradlew clean",
+    "stdb:start": "PATH=\"$HOME/.local/bin:$PATH\" spacetime start",
+    "stdb:build": "PATH=\"$HOME/.local/bin:$PATH\" spacetime build --module-path ./spacetimedb",
+    "stdb:publish": "PATH=\"$HOME/.local/bin:$PATH\" spacetime publish idle-wizard --server local --module-path ./spacetimedb",
+    "stdb:generate": "PATH=\"$HOME/.local/bin:$PATH\" spacetime generate --lang typescript --out-dir ./src/backend/spacetimedb/module_bindings --module-path ./spacetimedb",
+    "stdb:dev": "PATH=\"$HOME/.local/bin:$PATH\" spacetime dev idle-wizard --server local --yes --module-path ./spacetimedb --module-bindings-path ./src/backend/spacetimedb/module_bindings --run \"npm run dev\""
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "bitecs": "^0.4.0",
+    "spacetimedb": "^2.4.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.0.15"
+  }
+}

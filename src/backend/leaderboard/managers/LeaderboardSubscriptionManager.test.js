@@ -1,0 +1,109 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import { LeaderboardSubscriptionManager } from './LeaderboardSubscriptionManager.js';
+
+function createLeaderboardTable(rows) {
+  const callbacks = {
+    insert: null,
+    update: null,
+    delete: null,
+  };
+
+  return {
+    iter: () => rows.values(),
+    onInsert: (callback) => {
+      callbacks.insert = callback;
+    },
+    onUpdate: (callback) => {
+      callbacks.update = callback;
+    },
+    onDelete: (callback) => {
+      callbacks.delete = callback;
+    },
+    removeOnInsert: (callback) => {
+      if (callbacks.insert === callback) {
+        callbacks.insert = null;
+      }
+    },
+    removeOnUpdate: (callback) => {
+      if (callbacks.update === callback) {
+        callbacks.update = null;
+      }
+    },
+    removeOnDelete: (callback) => {
+      if (callbacks.delete === callback) {
+        callbacks.delete = null;
+      }
+    },
+    callbacks,
+  };
+}
+
+function createConnection(table) {
+  const subscription = {
+    isEnded: () => false,
+    unsubscribe: vi.fn(),
+  };
+
+  return {
+    db: {
+      leaderboard: table,
+    },
+    subscription,
+    subscriptionBuilder: () => ({
+      onApplied(callback) {
+        this.applied = callback;
+        return this;
+      },
+      onError(callback) {
+        this.error = callback;
+        return this;
+      },
+      subscribe(query) {
+        this.query = query;
+        this.applied();
+        return subscription;
+      },
+    }),
+  };
+}
+
+describe('LeaderboardSubscriptionManager', () => {
+  it('publishes top users sorted by total income', () => {
+    const snapshots = [];
+    const rows = [
+      { username: 'Low', totalIncome: 3n },
+      { username: 'High', totalIncome: 12n },
+    ];
+    const table = createLeaderboardTable(rows);
+    const connection = createConnection(table);
+    const manager = new LeaderboardSubscriptionManager({
+      onSnapshot: (snapshot) => snapshots.push(snapshot),
+    });
+
+    manager.connect(connection);
+
+    expect(manager.getSnapshot()).toEqual({
+      topUsers: [
+        { name: 'High', totalIncome: 12 },
+        { name: 'Low', totalIncome: 3 },
+      ],
+    });
+    expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
+  });
+
+  it('unsubscribes and clears snapshot on disconnect', () => {
+    const table = createLeaderboardTable([{ username: 'Mage', totalIncome: 1n }]);
+    const connection = createConnection(table);
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(connection);
+    manager.disconnect();
+
+    expect(connection.subscription.unsubscribe).toHaveBeenCalledTimes(1);
+    expect(table.callbacks.insert).toBeNull();
+    expect(table.callbacks.update).toBeNull();
+    expect(table.callbacks.delete).toBeNull();
+    expect(manager.getSnapshot()).toEqual({ topUsers: [] });
+  });
+});

@@ -1,0 +1,13 @@
+{
+  "database": "idle-wizard",
+  "module-path": "./spacetimedb",
+  "dev": {
+    "run": "npm run dev"
+  },
+  "generate": [
+    {
+      "language": "typescript",
+      "out-dir": "./src/backend/spacetimedb/module_bindings"
+    }
+  ]
+}

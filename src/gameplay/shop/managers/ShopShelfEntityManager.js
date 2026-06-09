@@ -1,0 +1,118 @@
+import { ShopShelf, ShopShelfSlot } from '../components/ShopComponents.js';
+
+export class ShopShelfEntityManager {
+  constructor({ initialUnlockedSlots = 0, maxSlots }) {
+    this.initialUnlockedSlots = initialUnlockedSlots;
+    this.maxSlots = maxSlots;
+    this.entityId = null;
+    this.slotEntityIds = [];
+  }
+
+  initialize(ecsManagers) {
+    if (this.entityId !== null) {
+      return;
+    }
+
+    this.entityId = ecsManagers.entities.createEntity();
+    ecsManagers.components.add(this.entityId, ShopShelf);
+    ShopShelf.selectedSlotNumber[this.entityId] = this.initialUnlockedSlots > 0 ? 1 : 0;
+
+    for (let slotNumber = 1; slotNumber <= this.maxSlots; slotNumber += 1) {
+      const slotEntityId = ecsManagers.entities.createEntity();
+      ecsManagers.components.add(slotEntityId, ShopShelfSlot);
+      ShopShelfSlot.slotNumber[slotEntityId] = slotNumber;
+      ShopShelfSlot.isUnlocked[slotEntityId] = slotNumber <= this.initialUnlockedSlots ? 1 : 0;
+      ShopShelfSlot.sellItemTypeId[slotEntityId] = 0;
+      ShopShelfSlot.sellProgressSeconds[slotEntityId] = 0;
+      this.slotEntityIds.push(slotEntityId);
+    }
+  }
+
+  getEntityId() {
+    if (this.entityId === null) {
+      throw new Error('Shop shelf entity has not been initialized.');
+    }
+
+    return this.entityId;
+  }
+
+  getUnlockedSlots() {
+    return this.slotEntityIds.filter((slotEntityId) => ShopShelfSlot.isUnlocked[slotEntityId] === 1)
+      .length;
+  }
+
+  getSelectedSlotNumber() {
+    return ShopShelf.selectedSlotNumber[this.getEntityId()] || null;
+  }
+
+  unlockNextSlot() {
+    const nextSlotEntityId = this.slotEntityIds.find(
+      (slotEntityId) => ShopShelfSlot.isUnlocked[slotEntityId] !== 1,
+    );
+
+    if (nextSlotEntityId === undefined) {
+      return false;
+    }
+
+    ShopShelfSlot.isUnlocked[nextSlotEntityId] = 1;
+
+    if (!this.getSelectedSlotNumber()) {
+      ShopShelf.selectedSlotNumber[this.getEntityId()] = ShopShelfSlot.slotNumber[nextSlotEntityId];
+    }
+
+    return true;
+  }
+
+  selectSlot(slotNumber) {
+    if (!this.isSlotUnlocked(slotNumber)) {
+      return false;
+    }
+
+    ShopShelf.selectedSlotNumber[this.getEntityId()] = slotNumber;
+    return true;
+  }
+
+  assignSlotSellItem(slotNumber, itemTypeId) {
+    if (!this.isSlotUnlocked(slotNumber)) {
+      return false;
+    }
+
+    const slotEntityId = this.getSlotEntityId(slotNumber);
+    ShopShelfSlot.sellItemTypeId[slotEntityId] = itemTypeId;
+    ShopShelfSlot.sellProgressSeconds[slotEntityId] = 0;
+    return true;
+  }
+
+  isSlotUnlocked(slotNumber) {
+    return ShopShelfSlot.isUnlocked[this.getSlotEntityId(slotNumber)] === 1;
+  }
+
+  getSellProgressSeconds(slotNumber) {
+    return ShopShelfSlot.sellProgressSeconds[this.getSlotEntityId(slotNumber)] ?? 0;
+  }
+
+  setSellProgressSeconds(slotNumber, seconds) {
+    ShopShelfSlot.sellProgressSeconds[this.getSlotEntityId(slotNumber)] = Math.max(0, seconds);
+  }
+
+  getSlotEntityId(slotNumber) {
+    const slotEntityId = this.slotEntityIds.find(
+      (entityId) => ShopShelfSlot.slotNumber[entityId] === slotNumber,
+    );
+
+    if (slotEntityId === undefined) {
+      throw new Error(`Unknown shop shelf slot: ${slotNumber}`);
+    }
+
+    return slotEntityId;
+  }
+
+  getSlotSnapshots() {
+    return this.slotEntityIds.map((slotEntityId) => ({
+      slotNumber: ShopShelfSlot.slotNumber[slotEntityId],
+      unlocked: ShopShelfSlot.isUnlocked[slotEntityId] === 1,
+      sellItemTypeId: ShopShelfSlot.sellItemTypeId[slotEntityId] || null,
+      sellProgressSeconds: ShopShelfSlot.sellProgressSeconds[slotEntityId] ?? 0,
+    }));
+  }
+}

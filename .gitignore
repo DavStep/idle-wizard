@@ -1,0 +1,12 @@
+node_modules/
+dist/
+spacetimedb/dist/
+.env
+.DS_Store
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+*.iml
+.idea/

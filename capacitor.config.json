@@ -1,0 +1,9 @@
+{
+  "appId": "com.idlewizard.game",
+  "appName": "Idle Wizard",
+  "webDir": "dist",
+  "backgroundColor": "#0e1116",
+  "android": {
+    "path": "android"
+  }
+}
