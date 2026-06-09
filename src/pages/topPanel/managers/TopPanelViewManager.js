@@ -46,17 +46,27 @@ export class TopPanelViewManager {
     this.refs.usernameButton.textContent = 'wizard';
     this.refs.usernameButton.setAttribute('aria-label', 'change username');
 
+    const identityRow = document.createElement('div');
+    identityRow.className = 'room-top-panel__identity-row';
+    identityRow.append(this.refs.usernameButton);
+
     const resources = document.createElement('div');
     resources.className = 'room-top-panel__resources';
-    resources.append(this.createResource('mana', '0 / 0'), this.createResource('gold', '0'));
+    resources.setAttribute('aria-label', 'resources');
+    resources.append(
+      this.createResource('mana', '0 / 0'),
+      this.createResource('gold', '0'),
+      this.createResource('crystal', '0'),
+    );
 
-    panel.append(this.refs.usernameButton, resources);
+    panel.append(identityRow, resources);
     return panel;
   }
 
   createResource(label, value) {
     const resource = document.createElement('span');
     resource.className = 'room-top-panel__resource';
+    resource.setAttribute('aria-label', label);
 
     const key = document.createElement('span');
     key.className = 'room-top-panel__resource-key';
@@ -72,6 +82,10 @@ export class TopPanelViewManager {
 
     if (label === 'gold') {
       this.refs.goldValue = val;
+    }
+
+    if (label === 'crystal') {
+      this.refs.crystalValue = val;
     }
 
     resource.append(key, val);
@@ -100,6 +114,7 @@ export class TopPanelViewManager {
     this.refs.usernameInput.type = 'text';
     this.refs.usernameInput.maxLength = 24;
     this.refs.usernameInput.autocomplete = 'off';
+    this.refs.usernameInput.setAttribute('enterkeyhint', 'done');
     this.refs.usernameInput.setAttribute('aria-label', 'username');
 
     const actions = document.createElement('div');

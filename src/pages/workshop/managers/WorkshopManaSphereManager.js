@@ -1,7 +1,6 @@
 export class WorkshopManaSphereManager {
-  constructor({ gameplayFacade, onSeedsClick } = {}) {
+  constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
-    this.onSeedsClick = onSeedsClick;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -23,18 +22,8 @@ export class WorkshopManaSphereManager {
     this.refs.title = this.createTitle();
     this.refs.mana = this.createRow('mana', '0 / 0');
     this.refs.generation = this.createRow('generation', '0 / second');
-    this.refs.seeds = this.createRow('seeds', '0', {
-      ariaLabel: 'show seed inventory',
-      interactive: true,
-      onClick: () => this.onSeedsClick?.(),
-    });
 
-    this.root.append(
-      this.refs.title,
-      this.refs.mana.row,
-      this.refs.generation.row,
-      this.refs.seeds.row,
-    );
+    this.root.append(this.refs.title, this.refs.mana.row, this.refs.generation.row);
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -58,27 +47,9 @@ export class WorkshopManaSphereManager {
     this.refs = {};
   }
 
-  createRow(label, value, { ariaLabel = null, interactive = false, onClick = null } = {}) {
+  createRow(label, value) {
     const row = document.createElement('div');
     row.className = 'workshop-page__row';
-
-    if (interactive) {
-      row.classList.add('workshop-page__row--interactive');
-      row.setAttribute('role', 'button');
-      row.tabIndex = 0;
-      if (ariaLabel) {
-        row.setAttribute('aria-label', ariaLabel);
-      }
-      row.addEventListener('click', () => onClick?.());
-      row.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') {
-          return;
-        }
-
-        event.preventDefault();
-        onClick?.();
-      });
-    }
 
     const key = document.createElement('span');
     key.className = 'row_key';
@@ -93,12 +64,7 @@ export class WorkshopManaSphereManager {
   }
 
   render(snapshot) {
-    const seedCount = snapshot.inventory
-      .filter((item) => item.kind === 'seed')
-      .reduce((total, item) => total + item.quantity, 0);
-
     this.refs.mana.val.textContent = `${Math.floor(snapshot.mana.current)} / ${snapshot.mana.cap}`;
     this.refs.generation.val.textContent = `${snapshot.mana.perSecond} / second`;
-    this.refs.seeds.val.textContent = String(seedCount);
   }
 }

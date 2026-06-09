@@ -8,3 +8,15 @@ export const ShopShelfSlot = {
   sellItemTypeId: [],
   sellProgressSeconds: [],
 };
+
+export const PlayerShopShelf = {
+  selectedSlotNumber: [],
+};
+
+export const PlayerShopShelfSlot = {
+  slotNumber: [],
+  isUnlocked: [],
+  itemTypeId: [],
+  quantity: [],
+  priceGold: [],
+};

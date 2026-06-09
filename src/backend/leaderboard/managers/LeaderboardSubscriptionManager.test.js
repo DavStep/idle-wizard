@@ -69,11 +69,11 @@ function createConnection(table) {
 }
 
 describe('LeaderboardSubscriptionManager', () => {
-  it('publishes top users sorted by total income', () => {
+  it('publishes top users sorted by leaderboard metric', () => {
     const snapshots = [];
     const rows = [
-      { username: 'Low', totalIncome: 3n },
-      { username: 'High', totalIncome: 12n },
+      { username: 'Low', income: 20n, totalIncome: 3n },
+      { username: 'High', income: 1n, totalIncome: 12n },
     ];
     const table = createLeaderboardTable(rows);
     const connection = createConnection(table);
@@ -85,8 +85,16 @@ describe('LeaderboardSubscriptionManager', () => {
 
     expect(manager.getSnapshot()).toEqual({
       topUsers: [
-        { name: 'High', totalIncome: 12 },
-        { name: 'Low', totalIncome: 3 },
+        { name: 'High', income: 1, totalGeneratedGold: 12, totalIncome: 12 },
+        { name: 'Low', income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+      ],
+      topGeneratedGoldUsers: [
+        { name: 'High', income: 1, totalGeneratedGold: 12, totalIncome: 12 },
+        { name: 'Low', income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+      ],
+      topIncomeUsers: [
+        { name: 'Low', income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+        { name: 'High', income: 1, totalGeneratedGold: 12, totalIncome: 12 },
       ],
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
@@ -104,6 +112,10 @@ describe('LeaderboardSubscriptionManager', () => {
     expect(table.callbacks.insert).toBeNull();
     expect(table.callbacks.update).toBeNull();
     expect(table.callbacks.delete).toBeNull();
-    expect(manager.getSnapshot()).toEqual({ topUsers: [] });
+    expect(manager.getSnapshot()).toEqual({
+      topUsers: [],
+      topGeneratedGoldUsers: [],
+      topIncomeUsers: [],
+    });
   });
 });

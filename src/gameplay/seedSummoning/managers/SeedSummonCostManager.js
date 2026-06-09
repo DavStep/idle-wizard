@@ -1,13 +1,18 @@
 export class SeedSummonCostManager {
-  constructor({ itemsFacade }) {
+  constructor({ itemsFacade, seedSummonMultiplierManager }) {
     this.itemsFacade = itemsFacade;
+    this.seedSummonMultiplierManager = seedSummonMultiplierManager;
   }
 
   getVisibleSummonCost() {
+    return this.getBaseSummonCost() * this.getSummonQuantity();
+  }
+
+  getBaseSummonCost() {
     return this.itemsFacade.getVisibleSummonCost();
   }
 
-  getSeedSummonCost(seedDefinition) {
-    return seedDefinition.summonManaCost;
+  getSummonQuantity() {
+    return this.seedSummonMultiplierManager?.getSummonQuantity() ?? 1;
   }
 }

@@ -31,4 +31,23 @@ export class GoldFacade {
   getSnapshot() {
     return this.goldEntityManager.getSnapshot();
   }
+
+  applyPersistenceSnapshot(snapshot = {}) {
+    if (Number.isFinite(snapshot.current)) {
+      this.goldEntityManager.setCurrent(snapshot.current);
+    }
+
+    if (Number.isFinite(snapshot.totalGenerated)) {
+      this.goldEntityManager.setTotalGenerated(
+        Math.max(snapshot.totalGenerated, this.goldEntityManager.getCurrent()),
+      );
+      return;
+    }
+
+    if (Number.isFinite(snapshot.current)) {
+      this.goldEntityManager.setTotalGenerated(
+        Math.max(this.goldEntityManager.getTotalGenerated(), snapshot.current),
+      );
+    }
+  }
 }

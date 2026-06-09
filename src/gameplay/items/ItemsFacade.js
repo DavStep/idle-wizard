@@ -48,18 +48,38 @@ export class ItemsFacade {
     return this.itemDefinitionManager.getDefinition(itemTypeId);
   }
 
+  getItemDefinitionByKey(itemKey) {
+    return this.itemDefinitionManager.getDefinitionByKey(itemKey);
+  }
+
+  getItemQuantity(itemTypeId) {
+    return this.inventoryStackManager.getQuantity(itemTypeId);
+  }
+
   getSellableItemSnapshots() {
     return [
       ...this.itemDefinitionManager.getSeedDefinitions(),
       ...this.itemDefinitionManager.getHerbDefinitions(),
       ...this.itemDefinitionManager.getPotionDefinitions(),
-    ].map((definition) => ({
-      itemTypeId: definition.id,
-      key: definition.key,
-      label: definition.label,
-      kind: definition.kind,
-      quantity: this.inventoryStackManager.getQuantity(definition.id),
-    }));
+    ].map((definition) => {
+      const snapshot = {
+        itemTypeId: definition.id,
+        key: definition.key,
+        label: definition.label,
+        kind: definition.kind,
+        quantity: this.inventoryStackManager.getQuantity(definition.id),
+      };
+
+      if (definition.hasRecipe === false) {
+        snapshot.hasRecipe = false;
+      }
+
+      if (definition.baseSellPrice !== undefined) {
+        snapshot.baseSellPrice = definition.baseSellPrice;
+      }
+
+      return snapshot;
+    });
   }
 
   getSeedDefinitions() {
@@ -78,12 +98,22 @@ export class ItemsFacade {
     return this.itemDefinitionManager.getPotionDefinitions();
   }
 
+  getRecipePotionDefinitions() {
+    return this.itemDefinitionManager.getRecipePotionDefinitions();
+  }
+
   getPotionRecipes() {
     return this.potionRecipeManager.getPotionRecipes();
   }
 
   getPotionRecipe(potionKey) {
     return this.potionRecipeManager.getPotionRecipe(potionKey);
+  }
+
+  getPotionRecipeByIngredientSequence(ingredientItemTypeIds) {
+    return this.potionRecipeManager.getPotionRecipeByIngredientSequence(
+      ingredientItemTypeIds,
+    );
   }
 
   getVisibleSummonCost() {
@@ -102,5 +132,42 @@ export class ItemsFacade {
       kind: definition.kind,
       quantity: this.inventoryStackManager.getQuantity(definition.id),
     }));
+  }
+
+  getPersistenceSnapshot() {
+    return this.getInventorySnapshot().map((item) => ({
+      itemKey: item.key,
+      quantity: item.quantity,
+    }));
+  }
+
+  applyPersistenceSnapshot(items = []) {
+    if (!Array.isArray(items)) {
+      return;
+    }
+
+    this.inventoryStackManager.clear();
+
+    for (const item of items) {
+      if (!item || typeof item.itemKey !== 'string' || !Number.isFinite(item.quantity)) {
+        continue;
+      }
+
+      const definition = this.safeGetDefinitionByKey(item.itemKey);
+
+      if (!definition) {
+        continue;
+      }
+
+      this.inventoryStackManager.setItemQuantity(definition.id, Math.floor(item.quantity));
+    }
+  }
+
+  safeGetDefinitionByKey(itemKey) {
+    try {
+      return this.itemDefinitionManager.getDefinitionByKey(itemKey);
+    } catch {
+      return null;
+    }
   }
 }

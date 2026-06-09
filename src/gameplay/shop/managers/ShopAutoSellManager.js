@@ -4,11 +4,13 @@ export class ShopAutoSellManager {
     itemsFacade,
     shopBalanceManager,
     shopShelfEntityManager,
+    onItemSold,
   }) {
     this.goldFacade = goldFacade;
     this.itemsFacade = itemsFacade;
     this.shopBalanceManager = shopBalanceManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
+    this.onItemSold = onItemSold;
     this.registered = false;
   }
 
@@ -44,7 +46,13 @@ export class ShopAutoSellManager {
           break;
         }
 
-        this.goldFacade.add(this.shopBalanceManager.getSellGold(item.kind));
+        const gold = this.shopBalanceManager.getSellGold(item.kind, item);
+        this.goldFacade.add(gold);
+        this.onItemSold?.({
+          item,
+          gold,
+          slotNumber: slot.slotNumber,
+        });
         progressSeconds -= autoSellSeconds;
       }
 

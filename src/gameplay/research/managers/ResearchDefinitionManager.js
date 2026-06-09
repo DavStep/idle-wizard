@@ -1,42 +1,39 @@
-const manaSphereResearches = [
-  {
-    id: 'manaProductionRate',
-    label: 'mana production rate',
-    value: 'increase',
-  },
-  {
-    id: 'manaSphereCap',
-    label: 'mana sphere cap',
-    value: 'increase',
-  },
-];
+const manaUpgradeLabelsBySeriesId = {
+  manaProductionRate: 'mana production rate',
+  manaSphereCap: 'mana sphere cap',
+};
 
 const summonSeedResearches = [
   {
     id: 'summonSeedsX2',
     label: 'x2 summon',
     value: '20 mana',
+    description: 'summons 2 researched seeds for 20 mana.',
   },
   {
     id: 'summonSeedsX3',
     label: 'x3 summon',
     value: '30 mana',
+    description: 'summons 3 researched seeds for 30 mana.',
   },
   {
     id: 'summonSeedsX4',
     label: 'x4 summon',
     value: '40 mana',
+    description: 'summons 4 researched seeds for 40 mana.',
   },
   {
     id: 'summonSeedsX5',
     label: 'x5 summon',
     value: '50 mana',
+    description: 'summons 5 researched seeds for 50 mana.',
   },
 ];
 
 export class ResearchDefinitionManager {
-  constructor({ itemsFacade }) {
+  constructor({ itemsFacade, researchBalanceManager }) {
     this.itemsFacade = itemsFacade;
+    this.researchBalanceManager = researchBalanceManager;
   }
 
   getResearchBoxes() {
@@ -44,7 +41,7 @@ export class ResearchDefinitionManager {
       {
         id: 'manaSphere',
         label: 'mana sphere researches',
-        researches: manaSphereResearches,
+        researches: this.getManaSphereResearches(),
       },
       {
         id: 'seedUnlocks',
@@ -64,19 +61,126 @@ export class ResearchDefinitionManager {
     ];
   }
 
-  getSeedUnlockResearches() {
-    return this.itemsFacade.getSeedDefinitions().map((seed) => ({
-      id: `unlockSeed:${seed.key}`,
-      label: seed.label,
-      value: 'drop',
+  getVisibleResearchBoxes(completedResearchIds = []) {
+    const completedIds = new Set(
+      completedResearchIds.map((researchId) => this.normalizeResearchId(researchId)),
+    );
+
+    return this.getResearchBoxes().map((box) => ({
+      ...box,
+      researches: box.researches.filter((research) =>
+        this.isVisibleResearch(research, completedIds),
+      ),
     }));
   }
 
+  getManaSphereResearches() {
+    return this.researchBalanceManager.getManaUpgradeResearches().map((research) => {
+      const previousLevel = research.level - 1;
+
+      return {
+        id: research.id,
+        seriesId: research.seriesId,
+        level: research.level,
+        label: `${manaUpgradeLabelsBySeriesId[research.seriesId]} ${research.level}`,
+        value: this.formatManaUpgradeEffect(research.effect),
+        showEffect: true,
+        requiredResearchIds:
+          previousLevel > 0 ? [`${research.seriesId}:${previousLevel}`] : [],
+        description: this.describeManaUpgrade(research),
+      };
+    });
+  }
+
+  getSeedUnlockResearches() {
+    return this.itemsFacade.getSeedDefinitions().map((seed, index, seeds) => {
+      const previousSeed = seeds[index - 1];
+
+      return {
+        id: `unlockSeed:${seed.key}`,
+        label: seed.label,
+        value: 'drop',
+        ...(previousSeed
+          ? { requiredResearchIds: [`unlockSeed:${previousSeed.key}`] }
+          : {}),
+        description: `allows ${seed.label} to drop from summon seed.`,
+      };
+    });
+  }
+
   getRecipeUnlockResearches() {
-    return this.itemsFacade.getPotionDefinitions().map((potion) => ({
-      id: `unlockRecipe:${potion.key}`,
-      label: potion.label,
-      value: 'brew',
-    }));
+    return this.itemsFacade.getRecipePotionDefinitions().map((potion, index, potions) => {
+      const previousPotion = potions[index - 1];
+
+      return {
+        id: `unlockRecipe:${potion.key}`,
+        label: potion.label,
+        value: 'brew',
+        ...(previousPotion
+          ? { requiredResearchIds: [`unlockRecipe:${previousPotion.key}`] }
+          : {}),
+        description: `allows valid cauldron ingredients to brew ${potion.label}.`,
+      };
+    });
+  }
+
+  getResearches() {
+    return this.getResearchBoxes().flatMap((box) => box.researches);
+  }
+
+  hasResearch(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    return this.getResearches().some((research) => research.id === normalizedResearchId);
+  }
+
+  getResearch(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    return this.getResearches().find((research) => research.id === normalizedResearchId) ?? null;
+  }
+
+  getRequiredResearchIds(researchId) {
+    return this.getResearch(researchId)?.requiredResearchIds ?? [];
+  }
+
+  normalizeResearchId(researchId) {
+    return this.researchBalanceManager.normalizeResearchId(researchId);
+  }
+
+  isVisibleResearch(research, completedIds) {
+    if (!research.seriesId) {
+      return true;
+    }
+
+    if (completedIds.has(research.id)) {
+      return false;
+    }
+
+    return research.requiredResearchIds.every((requiredResearchId) =>
+      completedIds.has(requiredResearchId),
+    );
+  }
+
+  formatManaUpgradeEffect(effect) {
+    if (effect.type === 'manaPerSecond') {
+      return `+${effect.amount}/sec`;
+    }
+
+    if (effect.type === 'manaCap') {
+      return `+${effect.amount} cap`;
+    }
+
+    return `+${effect.amount}`;
+  }
+
+  describeManaUpgrade(research) {
+    if (research.effect.type === 'manaPerSecond') {
+      return `increases mana gained each second by ${research.effect.amount}.`;
+    }
+
+    if (research.effect.type === 'manaCap') {
+      return `increases mana sphere capacity by ${research.effect.amount}.`;
+    }
+
+    return `increases mana by ${research.effect.amount}.`;
   }
 }

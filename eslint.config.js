@@ -4,6 +4,9 @@ export default [
   js.configs.recommended,
   {
     ignores: [
+      '.agents/**',
+      '.claude/**',
+      '.cursor/**',
       'android/**',
       'dist/**',
       'node_modules/**',

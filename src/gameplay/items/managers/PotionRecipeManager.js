@@ -186,6 +186,32 @@ export class PotionRecipeManager {
     return this.resolveRecipe(recipe);
   }
 
+  getPotionRecipeByIngredientSequence(ingredientItemTypeIds) {
+    const recipe = recipeCatalog.find((candidate) =>
+      this.hasIngredientSequence(candidate, ingredientItemTypeIds),
+    );
+
+    return recipe ? this.resolveRecipe(recipe) : null;
+  }
+
+  hasIngredientSequence(recipe, ingredientItemTypeIds) {
+    const recipeItemTypeIds = this.getRecipeIngredientItemTypeIds(recipe);
+
+    return (
+      recipeItemTypeIds.length === ingredientItemTypeIds.length &&
+      recipeItemTypeIds.every(
+        (itemTypeId, index) => itemTypeId === ingredientItemTypeIds[index],
+      )
+    );
+  }
+
+  getRecipeIngredientItemTypeIds(recipe) {
+    return recipe.ingredients.flatMap((ingredient) => {
+      const item = this.itemDefinitionManager.getDefinitionByKey(ingredient.itemKey);
+      return Array.from({ length: ingredient.quantity }, () => item.id);
+    });
+  }
+
   resolveRecipe(recipe) {
     const potion = this.itemDefinitionManager.getDefinitionByKey(recipe.potionKey);
 

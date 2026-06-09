@@ -1,4 +1,5 @@
 import { LeaderboardStateObserverManager } from './managers/LeaderboardStateObserverManager.js';
+import { LeaderboardGeneratedGoldSyncManager } from './managers/LeaderboardGeneratedGoldSyncManager.js';
 import { LeaderboardSubscriptionManager } from './managers/LeaderboardSubscriptionManager.js';
 
 export class LeaderboardBackendFacade {
@@ -7,17 +8,24 @@ export class LeaderboardBackendFacade {
 
   constructor() {
     this.stateObserverManager = new LeaderboardStateObserverManager();
+    this.generatedGoldSyncManager = new LeaderboardGeneratedGoldSyncManager();
     this.subscriptionManager = new LeaderboardSubscriptionManager({
       onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
     });
   }
 
+  setGameplayFacade(gameplayFacade) {
+    this.generatedGoldSyncManager.setGameplayFacade(gameplayFacade);
+  }
+
   connect(connection) {
     this.subscriptionManager.connect(connection);
+    this.generatedGoldSyncManager.connect(connection);
   }
 
   disconnect() {
     this.subscriptionManager.disconnect();
+    this.generatedGoldSyncManager.disconnect();
   }
 
   getSnapshot() {

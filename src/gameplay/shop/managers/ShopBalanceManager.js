@@ -31,8 +31,8 @@ export class ShopBalanceManager {
     return this.autoSellSeconds;
   }
 
-  getSellGold(kind) {
-    return this.sellGoldByKind[kind] ?? 0;
+  getSellGold(kind, item = null) {
+    return item?.baseSellPrice ?? this.sellGoldByKind[kind] ?? 0;
   }
 
   readSlotCostsGold() {

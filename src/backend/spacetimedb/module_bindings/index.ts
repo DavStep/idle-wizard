@@ -34,6 +34,12 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import BuyPlayerShopListingReducer from "./buy_player_shop_listing_reducer";
+import ClaimPlayerShopProceedsReducer from "./claim_player_shop_proceeds_reducer";
+import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
+import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
+import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
+import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetUsernameReducer from "./set_username_reducer";
 
 // Import all procedure arg schemas
@@ -41,6 +47,9 @@ import SetUsernameReducer from "./set_username_reducer";
 // Import all table schema definitions
 import LeaderboardRow from "./leaderboard_table";
 import PlayerRow from "./player_table";
+import PlayerShopListingRow from "./player_shop_listing_table";
+import PlayerShopProceedsRow from "./player_shop_proceeds_table";
+import WorldChatRow from "./world_chat_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -71,10 +80,58 @@ const tablesSchema = __schema({
       { name: 'player_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, PlayerRow),
+  playerShopListing: __table({
+    name: 'player_shop_listing',
+    indexes: [
+      { accessor: 'listingKey', name: 'player_shop_listing_listing_key_idx_btree', algorithm: 'btree', columns: [
+        'listingKey',
+      ] },
+      { accessor: 'bySellerIdentity', name: 'player_shop_listing_seller_identity_idx_btree', algorithm: 'btree', columns: [
+        'sellerIdentity',
+      ] },
+      { accessor: 'byUpdatedAt', name: 'player_shop_listing_updated_at_idx_btree', algorithm: 'btree', columns: [
+        'updatedAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_shop_listing_listing_key_key', constraint: 'unique', columns: ['listingKey'] },
+    ],
+  }, PlayerShopListingRow),
+  playerShopProceeds: __table({
+    name: 'player_shop_proceeds',
+    indexes: [
+      { accessor: 'sellerIdentity', name: 'player_shop_proceeds_seller_identity_idx_btree', algorithm: 'btree', columns: [
+        'sellerIdentity',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_shop_proceeds_seller_identity_key', constraint: 'unique', columns: ['sellerIdentity'] },
+    ],
+  }, PlayerShopProceedsRow),
+  worldChat: __table({
+    name: 'world_chat',
+    indexes: [
+      { accessor: 'messageId', name: 'world_chat_message_id_idx_btree', algorithm: 'btree', columns: [
+        'messageId',
+      ] },
+      { accessor: 'bySentAt', name: 'world_chat_sent_at_idx_btree', algorithm: 'btree', columns: [
+        'sentAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'world_chat_message_id_key', constraint: 'unique', columns: ['messageId'] },
+    ],
+  }, WorldChatRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("buy_player_shop_listing", BuyPlayerShopListingReducer),
+  __reducerSchema("claim_player_shop_proceeds", ClaimPlayerShopProceedsReducer),
+  __reducerSchema("clear_player_shop_slot", ClearPlayerShopSlotReducer),
+  __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),
+  __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),
+  __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_username", SetUsernameReducer),
 );
 

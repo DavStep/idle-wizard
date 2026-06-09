@@ -16,6 +16,24 @@ export class TopPanelUsernameEditManager {
       event.preventDefault();
       this.save();
     };
+    this.handleInputKeydown = (event) => {
+      if (!this.visible || event.key !== 'Enter' || event.isComposing) {
+        return;
+      }
+
+      event.preventDefault();
+      this.save();
+    };
+    this.handleSavePressStart = (event) => {
+      if (!this.visible) {
+        return;
+      }
+
+      event.preventDefault();
+      this.save();
+    };
+    this.handleSavePointerDown = (event) => this.handleSavePressStart(event);
+    this.handleSaveTouchStart = (event) => this.handleSavePressStart(event);
     this.handleKeydown = (event) => {
       if (!this.visible || event.key !== 'Escape') {
         return;
@@ -32,6 +50,11 @@ export class TopPanelUsernameEditManager {
     this.refs.usernameCancelButton.addEventListener('click', this.handleCancelClick);
     this.refs.usernameEditor.addEventListener('click', this.handleOverlayClick);
     this.refs.usernameForm.addEventListener('submit', this.handleSubmit);
+    this.refs.usernameInput.addEventListener('keydown', this.handleInputKeydown);
+    this.refs.usernameSaveButton.addEventListener('pointerdown', this.handleSavePointerDown);
+    this.refs.usernameSaveButton.addEventListener('touchstart', this.handleSaveTouchStart, {
+      passive: false,
+    });
     document.addEventListener('keydown', this.handleKeydown);
 
     if (this.playerFacade) {
@@ -51,6 +74,15 @@ export class TopPanelUsernameEditManager {
       this.refs.usernameCancelButton.removeEventListener('click', this.handleCancelClick);
       this.refs.usernameEditor.removeEventListener('click', this.handleOverlayClick);
       this.refs.usernameForm.removeEventListener('submit', this.handleSubmit);
+      this.refs.usernameInput.removeEventListener('keydown', this.handleInputKeydown);
+      this.refs.usernameSaveButton.removeEventListener(
+        'pointerdown',
+        this.handleSavePointerDown,
+      );
+      this.refs.usernameSaveButton.removeEventListener(
+        'touchstart',
+        this.handleSaveTouchStart,
+      );
     }
 
     document.removeEventListener('keydown', this.handleKeydown);
@@ -68,7 +100,7 @@ export class TopPanelUsernameEditManager {
     this.visible = true;
     this.refs.usernameInput.value = this.refs.usernameButton.textContent;
     this.applyVisibility();
-    this.refs.usernameInput.focus();
+    this.focusWithoutScroll(this.refs.usernameInput);
     this.refs.usernameInput.select();
   }
 
@@ -78,7 +110,7 @@ export class TopPanelUsernameEditManager {
     this.applyVisibility();
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
-      this.previousFocus.focus();
+      this.focusWithoutScroll(this.previousFocus);
     }
 
     this.previousFocus = null;
@@ -105,5 +137,13 @@ export class TopPanelUsernameEditManager {
 
     this.refs.usernameEditor.hidden = !this.visible;
     this.refs.usernameEditor.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  focusWithoutScroll(element) {
+    try {
+      element.focus({ preventScroll: true });
+    } catch {
+      element.focus();
+    }
   }
 }

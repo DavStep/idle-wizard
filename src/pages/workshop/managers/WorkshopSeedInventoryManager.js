@@ -107,9 +107,13 @@ export class WorkshopSeedInventoryManager {
       return;
     }
 
-    const rows = this.getSeedRows(snapshot).map((seed) =>
-      this.createRow(seed.label, String(seed.quantity)),
-    );
+    const { researched, unresearched } = this.getGroupedSeedRows(snapshot);
+    const rows = [
+      ...researched.map((seed) => this.createRow(seed)),
+      ...(researched.length > 0 && unresearched.length > 0 ? [this.createDivider()] : []),
+      ...unresearched.map((seed) => this.createRow(seed)),
+    ];
+
     this.refs.rows.replaceChildren(...rows);
   }
 
@@ -121,17 +125,57 @@ export class WorkshopSeedInventoryManager {
     return snapshot.inventory.filter((item) => item.kind === 'seed');
   }
 
-  createRow(label, value) {
+  getGroupedSeedRows(snapshot) {
+    const researchedSeedIds = this.getResearchedSeedIds(snapshot);
+    const rows = this.getSeedRows(snapshot).map((seed) => ({
+      ...seed,
+      researched: researchedSeedIds.has(this.getSeedResearchId(seed)),
+    }));
+
+    return {
+      researched: rows.filter((seed) => seed.researched),
+      unresearched: rows.filter((seed) => !seed.researched),
+    };
+  }
+
+  getResearchedSeedIds(snapshot) {
+    const ids = new Set(snapshot.research?.completedResearchIds ?? []);
+
+    for (const box of snapshot.research?.boxes ?? []) {
+      for (const research of box.researches ?? []) {
+        if (research.completed) {
+          ids.add(research.id);
+        }
+      }
+    }
+
+    return ids;
+  }
+
+  getSeedResearchId(seed) {
+    return `unlockSeed:${seed.key}`;
+  }
+
+  createDivider() {
+    const divider = document.createElement('div');
+    divider.className = 'workshop-page__seed-inventory-divider';
+    divider.setAttribute('role', 'separator');
+    return divider;
+  }
+
+  createRow(seed) {
     const row = document.createElement('div');
-    row.className = 'workshop-page__row';
+    row.className = 'workshop-page__row workshop-page__seed-inventory-row';
+    row.classList.toggle('is-empty', seed.quantity <= 0);
+    row.classList.toggle('is-unresearched', !seed.researched);
 
     const key = document.createElement('span');
     key.className = 'row_key';
-    key.textContent = label;
+    key.textContent = seed.label;
 
     const val = document.createElement('span');
     val.className = 'row_val';
-    val.textContent = value;
+    val.textContent = String(seed.quantity);
 
     row.append(key, val);
     return row;

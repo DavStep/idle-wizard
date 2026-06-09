@@ -33,11 +33,14 @@ export class AppLifecycleManager {
     this.pagesFacade.mount(stage);
     this.renderFacade.mount(stage);
     this.backendFacade.prepare();
-    void this.backendFacade.start({ playerFacade: this.playerFacade });
+    void this.backendFacade.start({
+      gameplayFacade: this.gameplayFacade,
+      playerFacade: this.playerFacade,
+    });
 
     this.renderFacade.startFrameLoop((frame) => {
       this.ecsFacade.update(frame);
-      this.gameplayFacade.afterUpdate();
+      this.gameplayFacade.afterUpdate(frame);
     });
 
     this.started = true;

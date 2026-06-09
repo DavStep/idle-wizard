@@ -1,7 +1,13 @@
+const EMPTY_SNAPSHOT = {
+  topUsers: [],
+  topGeneratedGoldUsers: [],
+  topIncomeUsers: [],
+};
+
 export class LeaderboardStateObserverManager {
   constructor() {
     this.listeners = new Set();
-    this.lastSnapshot = { topUsers: [] };
+    this.lastSnapshot = { ...EMPTY_SNAPSHOT };
   }
 
   subscribe(listener) {
@@ -20,6 +26,6 @@ export class LeaderboardStateObserverManager {
 
   clear() {
     this.listeners.clear();
-    this.lastSnapshot = { topUsers: [] };
+    this.lastSnapshot = { ...EMPTY_SNAPSHOT };
   }
 }

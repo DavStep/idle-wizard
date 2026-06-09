@@ -18,6 +18,28 @@ export class InventoryStackManager {
     InventoryStack.quantity[entityId] = (InventoryStack.quantity[entityId] ?? 0) + quantity;
   }
 
+  setItemQuantity(itemTypeId, quantity) {
+    const safeQuantity = Math.max(0, quantity);
+    const existingEntityId = this.findStackEntity(itemTypeId);
+
+    if (safeQuantity <= 0) {
+      if (existingEntityId !== null) {
+        this.ecsManagers.entities.removeEntity(existingEntityId);
+      }
+
+      return;
+    }
+
+    const entityId = existingEntityId ?? this.createStackEntity(itemTypeId);
+    InventoryStack.quantity[entityId] = safeQuantity;
+  }
+
+  clear() {
+    for (const entityId of this.getStackEntities()) {
+      this.ecsManagers.entities.removeEntity(entityId);
+    }
+  }
+
   removeItem(itemTypeId, quantity) {
     const entityId = this.findStackEntity(itemTypeId);
 

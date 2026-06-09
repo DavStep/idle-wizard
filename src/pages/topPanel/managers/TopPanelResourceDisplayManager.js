@@ -28,8 +28,16 @@ export class TopPanelResourceDisplayManager {
 
     const mana = snapshot.mana ?? {};
     const gold = snapshot.gold?.current ?? 0;
+    const crystal = snapshot.crystal?.current ?? 0;
 
-    this.refs.manaValue.textContent = `${Math.floor(mana.current ?? 0)} / ${mana.cap ?? 0}`;
-    this.refs.goldValue.textContent = String(Math.floor(gold));
+    this.setText(this.refs.manaValue, `${Math.floor(mana.current ?? 0)} / ${mana.cap ?? 0}`);
+    this.setText(this.refs.goldValue, String(Math.floor(gold)));
+    this.setText(this.refs.crystalValue, String(Math.floor(crystal)));
+  }
+
+  setText(element, text) {
+    if (element.textContent !== text) {
+      element.textContent = text;
+    }
   }
 }

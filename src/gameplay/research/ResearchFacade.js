@@ -1,18 +1,77 @@
 import { ResearchDefinitionManager } from './managers/ResearchDefinitionManager.js';
+import { ResearchBalanceManager } from './managers/ResearchBalanceManager.js';
+import { ResearchManaEffectManager } from './managers/ResearchManaEffectManager.js';
+import { ResearchPurchaseManager } from './managers/ResearchPurchaseManager.js';
+import { ResearchSnapshotManager } from './managers/ResearchSnapshotManager.js';
+import { ResearchStateEntityManager } from './managers/ResearchStateEntityManager.js';
 
 export class ResearchFacade {
   static explain =
-    'Research lists studies the wizard can learn later: upgrades, seed drops, summon counts, and potion recipes.';
+    'Research lets the wizard spend gold on studies that unlock seeds, recipes, and mana upgrades.';
 
-  constructor({ itemsFacade }) {
-    this.researchDefinitionManager = new ResearchDefinitionManager({ itemsFacade });
+  constructor({ goldFacade, itemsFacade, manaFacade }) {
+    this.researchBalanceManager = new ResearchBalanceManager();
+    this.researchDefinitionManager = new ResearchDefinitionManager({
+      itemsFacade,
+      researchBalanceManager: this.researchBalanceManager,
+    });
+    this.researchStateEntityManager = new ResearchStateEntityManager({
+      researchDefinitionManager: this.researchDefinitionManager,
+    });
+    this.researchManaEffectManager = new ResearchManaEffectManager({
+      manaFacade,
+      researchBalanceManager: this.researchBalanceManager,
+      researchStateEntityManager: this.researchStateEntityManager,
+    });
+    this.researchPurchaseManager = new ResearchPurchaseManager({
+      goldFacade,
+      researchBalanceManager: this.researchBalanceManager,
+      researchDefinitionManager: this.researchDefinitionManager,
+      researchManaEffectManager: this.researchManaEffectManager,
+      researchStateEntityManager: this.researchStateEntityManager,
+    });
+    this.researchSnapshotManager = new ResearchSnapshotManager({
+      goldFacade,
+      researchBalanceManager: this.researchBalanceManager,
+      researchDefinitionManager: this.researchDefinitionManager,
+      researchStateEntityManager: this.researchStateEntityManager,
+    });
   }
 
-  initialize() {}
+  initialize(ecsManagers) {
+    this.researchStateEntityManager.initialize(ecsManagers);
+  }
+
+  buyResearch(researchId) {
+    return this.researchPurchaseManager.buyResearch(researchId);
+  }
+
+  hasCompletedResearch(researchId) {
+    return this.researchStateEntityManager.isCompleted(researchId);
+  }
+
+  getResearchLabel(researchId) {
+    return this.researchDefinitionManager.getResearch(researchId)?.label ?? researchId;
+  }
 
   getSnapshot() {
+    return this.researchSnapshotManager.getSnapshot();
+  }
+
+  getPersistenceSnapshot() {
     return {
-      boxes: this.researchDefinitionManager.getResearchBoxes(),
+      completedIds: this.researchStateEntityManager.getCompletedResearchIds(),
     };
+  }
+
+  applyPersistenceSnapshot(snapshot = {}) {
+    if (!Array.isArray(snapshot.completedIds)) {
+      return;
+    }
+
+    this.researchStateEntityManager.setCompletedResearchIds(
+      snapshot.completedIds.filter((researchId) => typeof researchId === 'string'),
+    );
+    this.researchManaEffectManager.syncCompletedEffects();
   }
 }

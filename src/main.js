@@ -1,3 +1,5 @@
+import '@fontsource/source-serif-4/latin-400.css';
+import '@fontsource/source-serif-4/latin-700.css';
 import './styles/base.css';
 
 import { AppFacade } from './app/AppFacade.js';

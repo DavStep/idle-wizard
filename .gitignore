@@ -2,6 +2,8 @@ node_modules/
 dist/
 spacetimedb/dist/
 .env
+.env.local
+.env.*.local
 .DS_Store
 android/local.properties
 android/.gradle/

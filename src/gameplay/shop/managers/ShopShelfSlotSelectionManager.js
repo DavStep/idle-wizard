@@ -53,4 +53,22 @@ export class ShopShelfSlotSelectionManager {
       },
     };
   }
+
+  clearSelectedSlotSellItem() {
+    const selectedSlotNumber = this.shopShelfEntityManager.getSelectedSlotNumber();
+
+    if (!selectedSlotNumber) {
+      return {
+        ok: false,
+        reason: 'no_selected_slot',
+      };
+    }
+
+    this.shopShelfEntityManager.clearSlotSellItem(selectedSlotNumber);
+
+    return {
+      ok: true,
+      slotNumber: selectedSlotNumber,
+    };
+  }
 }

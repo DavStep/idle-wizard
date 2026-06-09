@@ -1,0 +1,64 @@
+{
+  "manaUpgradeSeries": {
+    "manaProductionRate": {
+      "levels": 20,
+      "costGold": {
+        "base": 5,
+        "perLevel": 5
+      },
+      "increase": {
+        "base": 1,
+        "perLevel": 0
+      }
+    },
+    "manaSphereCap": {
+      "levels": 20,
+      "costGold": {
+        "base": 5,
+        "perLevel": 5
+      },
+      "increase": {
+        "base": 50,
+        "perLevel": 0
+      }
+    }
+  },
+  "researchCostsGold": {
+    "unlockSeed:sageSeed": 0,
+    "unlockSeed:mintSeed": 2,
+    "unlockSeed:nettleSeed": 3,
+    "unlockSeed:lavenderSeed": 4,
+    "unlockSeed:briarSeed": 5,
+    "unlockSeed:glowcapSeed": 6,
+    "unlockSeed:mandrakeSeed": 7,
+    "unlockSeed:sunrootSeed": 8,
+    "unlockSeed:moonflowerSeed": 9,
+    "unlockSeed:frostmossSeed": 10,
+    "unlockSeed:dreambellSeed": 11,
+    "unlockSeed:starAniseSeed": 12,
+    "unlockSeed:bloodroseSeed": 13,
+    "unlockSeed:dragonpepperSeed": 14,
+    "summonSeedsX2": 20,
+    "summonSeedsX3": 30,
+    "summonSeedsX4": 40,
+    "summonSeedsX5": 50,
+    "unlockRecipe:manaTonic": 3,
+    "unlockRecipe:minorHealingPotion": 4,
+    "unlockRecipe:nettleVigor": 5,
+    "unlockRecipe:calmingDraught": 6,
+    "unlockRecipe:simpleAntidote": 7,
+    "unlockRecipe:venomDraught": 8,
+    "unlockRecipe:briarWard": 9,
+    "unlockRecipe:lanternTonic": 10,
+    "unlockRecipe:healingPotion": 11,
+    "unlockRecipe:moonlitFocus": 12,
+    "unlockRecipe:sunrootStamina": 13,
+    "unlockRecipe:frostmossCleanse": 14,
+    "unlockRecipe:sleepDraught": 15,
+    "unlockRecipe:elixirOfLife": 16,
+    "unlockRecipe:starLuckPhiltre": 17,
+    "unlockRecipe:dragonCourage": 18,
+    "unlockRecipe:deepDreamVision": 19,
+    "unlockRecipe:pactWard": 20
+  }
+}

@@ -32,6 +32,9 @@ describe('ViewportScaleManager', () => {
     expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBeCloseTo(
       expectedViewportScale * 3,
     );
+    expect(
+      document.documentElement.style.getPropertyValue('--app-viewport-height'),
+    ).toBe('720px');
   });
 
   it('keeps the source UI at full mobile scale for the authored viewport', () => {
@@ -44,6 +47,82 @@ describe('ViewportScaleManager', () => {
 
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
     expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+  });
+
+  it('keeps the layout scale stable when the mobile keyboard shrinks the viewport', () => {
+    const stage = document.createElement('section');
+    const input = document.createElement('input');
+    const manager = new ViewportScaleManager({ viewport: gameViewport });
+    manager.stage = stage;
+    document.body.append(input);
+    setWindowSize({ width: 1080, height: 2170 });
+    manager.updateScale();
+
+    input.focus();
+    setWindowSize({ width: 1080, height: 1450 });
+    manager.updateScale();
+
+    expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(
+      document.documentElement.style.getPropertyValue('--app-viewport-height'),
+    ).toBe('2170px');
+
+    input.remove();
+  });
+
+  it('keeps scale stable after text entry ends while the keyboard viewport is still smaller', () => {
+    const stage = document.createElement('section');
+    const input = document.createElement('input');
+    const manager = new ViewportScaleManager({ viewport: gameViewport });
+    manager.stage = stage;
+    document.body.append(input);
+    setWindowSize({ width: 1080, height: 2170 });
+    manager.updateScale();
+    input.focus();
+    setWindowSize({ width: 1080, height: 1450 });
+    manager.updateScale();
+
+    input.blur();
+    manager.updateScale();
+
+    expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(
+      document.documentElement.style.getPropertyValue('--app-viewport-height'),
+    ).toBe('2170px');
+
+    setWindowSize({ width: 1080, height: 2170 });
+    manager.updateScale();
+
+    expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+
+    input.remove();
+  });
+
+  it('keeps scale stable when keyboard shrink arrives just after text entry focus leaves', () => {
+    const stage = document.createElement('section');
+    const input = document.createElement('input');
+    const manager = new ViewportScaleManager({ viewport: gameViewport });
+    manager.stage = stage;
+    document.body.append(input);
+    setWindowSize({ width: 1080, height: 2170 });
+    manager.updateScale();
+
+    input.focus();
+    input.blur();
+    manager.handleTextEntryFocusOut({ target: input });
+    setWindowSize({ width: 1080, height: 1450 });
+    manager.updateScale();
+
+    expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(
+      document.documentElement.style.getPropertyValue('--app-viewport-height'),
+    ).toBe('2170px');
+
+    input.remove();
   });
 
   it('does not scale beyond the authored viewport', () => {

@@ -40,6 +40,7 @@ const potionCatalog = [
   { key: 'dragonCourage', label: 'Dragon Courage' },
   { key: 'deepDreamVision', label: 'Deep Dream Vision' },
   { key: 'pactWard', label: 'Pact Ward' },
+  { key: 'wastedPotion', label: 'Wasted Potion', hasRecipe: false, baseSellPrice: 1 },
 ];
 
 const herbDefinitions = herbCatalog.map((herb, index) => ({
@@ -55,6 +56,8 @@ const potionDefinitions = potionCatalog.map((potion, index) => ({
   key: potion.key,
   label: potion.label,
   kind: itemKinds.potion,
+  ...(potion.hasRecipe === false ? { hasRecipe: false } : {}),
+  ...(potion.baseSellPrice === undefined ? {} : { baseSellPrice: potion.baseSellPrice }),
 }));
 
 const seedDefinitions = herbCatalog.map((herb, index) => ({
@@ -89,6 +92,10 @@ export class ItemDefinitionManager {
 
   getPotionDefinitions() {
     return potionDefinitions;
+  }
+
+  getRecipePotionDefinitions() {
+    return potionDefinitions.filter((potion) => potion.hasRecipe !== false);
   }
 
   getSeedDefinition(seedTypeId) {

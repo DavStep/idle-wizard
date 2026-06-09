@@ -12,6 +12,8 @@ export class ManaFacade {
     initialCap = 50,
     initialPerSecond = 1,
   } = {}) {
+    this.initialCap = initialCap;
+    this.initialPerSecond = initialPerSecond;
     this.manaEntityManager = new ManaEntityManager({
       initialCurrent,
       initialCap,
@@ -46,5 +48,24 @@ export class ManaFacade {
       ...this.manaEntityManager.getSnapshot(),
       cap: this.manaCapManager.getCap(),
     };
+  }
+
+  setResearchUpgradeEffects({ capIncrease = 0, perSecondIncrease = 0 } = {}) {
+    this.manaEntityManager.setCap(this.initialCap + capIncrease);
+    this.manaEntityManager.setPerSecond(this.initialPerSecond + perSecondIncrease);
+  }
+
+  applyPersistenceSnapshot(snapshot = {}) {
+    if (Number.isFinite(snapshot.cap)) {
+      this.manaEntityManager.setCap(snapshot.cap);
+    }
+
+    if (Number.isFinite(snapshot.perSecond)) {
+      this.manaEntityManager.setPerSecond(snapshot.perSecond);
+    }
+
+    if (Number.isFinite(snapshot.current)) {
+      this.manaEntityManager.setCurrent(snapshot.current);
+    }
   }
 }

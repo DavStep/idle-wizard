@@ -1,3 +1,16 @@
+const LEADERBOARD_TABS = [
+  {
+    id: 'totalGeneratedGold',
+    label: 'total generated gold',
+    valueKey: 'totalGeneratedGold',
+  },
+  {
+    id: 'income',
+    label: 'income',
+    valueKey: 'income',
+  },
+];
+
 export class WorkshopLeaderboardManager {
   constructor({ gameplayFacade, leaderboardFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -6,6 +19,8 @@ export class WorkshopLeaderboardManager {
     this.unsubscribe = null;
     this.refs = {};
     this.visible = false;
+    this.selectedTabId = LEADERBOARD_TABS[0].id;
+    this.lastSnapshot = {};
     this.previousFocus = null;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
@@ -66,19 +81,24 @@ export class WorkshopLeaderboardManager {
     popup.className = 'workshop-page__leaderboard-popup';
     popup.addEventListener('click', this.handleRootClick);
 
+    const panel = document.createElement('section');
+    panel.className = 'workshop-page__leaderboard-panel';
+    panel.setAttribute('aria-label', 'Leaderboard');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('role', 'dialog');
+    panel.tabIndex = -1;
+
     const dialog = document.createElement('section');
     dialog.className = 'workshop-page__leaderboard-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Leaderboard');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('role', 'dialog');
-    dialog.tabIndex = -1;
 
-    this.refs.dialog = dialog;
+    this.refs.dialog = panel;
     this.refs.title = this.createTitle();
+    this.refs.tabs = this.createTabs();
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__leaderboard-rows';
     dialog.append(this.refs.title, this.refs.rows);
-    popup.append(dialog);
+    panel.append(dialog, this.refs.tabs);
+    popup.append(panel);
 
     return popup;
   }
@@ -88,6 +108,37 @@ export class WorkshopLeaderboardManager {
     title.className = 'style-box__title';
     title.textContent = 'leaderboard';
     return title;
+  }
+
+  createTabs() {
+    const tabs = document.createElement('div');
+    tabs.className = 'workshop-page__leaderboard-tabs';
+    tabs.setAttribute('aria-label', 'Leaderboard type');
+    tabs.setAttribute('role', 'tablist');
+
+    this.refs.tabButtons = new Map();
+
+    for (const tab of LEADERBOARD_TABS) {
+      const button = document.createElement('button');
+      button.className = 'style-button workshop-page__leaderboard-tab-button';
+      button.type = 'button';
+      button.textContent = tab.label;
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => this.onSelectTab(tab.id));
+      this.refs.tabButtons.set(tab.id, button);
+      tabs.append(button);
+    }
+
+    return tabs;
+  }
+
+  onSelectTab(tabId) {
+    if (this.selectedTabId === tabId) {
+      return;
+    }
+
+    this.selectedTabId = tabId;
+    this.render(this.lastSnapshot);
   }
 
   show() {
@@ -117,6 +168,8 @@ export class WorkshopLeaderboardManager {
     this.root = null;
     this.refs = {};
     this.visible = false;
+    this.selectedTabId = LEADERBOARD_TABS[0].id;
+    this.lastSnapshot = {};
     this.previousFocus = null;
   }
 
@@ -125,7 +178,11 @@ export class WorkshopLeaderboardManager {
       return;
     }
 
-    const users = this.getTopUsers(snapshot);
+    this.lastSnapshot = snapshot ?? {};
+    this.updateTabs();
+
+    const activeTab = this.getActiveTab();
+    const users = this.getTopUsers(this.lastSnapshot, activeTab);
 
     if (!users.length) {
       const empty = document.createElement('div');
@@ -135,13 +192,33 @@ export class WorkshopLeaderboardManager {
       return;
     }
 
-    const header = this.createRow('user', 'total income', { header: true });
-    const rows = users.map((user) => this.createRow(user.name, this.formatIncome(user.totalIncome)));
+    const header = this.createRow('user', activeTab.label, { header: true });
+    const rows = users.map((user) =>
+      this.createRow(user.name, this.formatValue(user[activeTab.valueKey])),
+    );
     this.refs.rows.replaceChildren(header, ...rows);
   }
 
-  getTopUsers(snapshot) {
-    const users = snapshot?.topUsers ?? snapshot?.leaderboard?.topUsers;
+  updateTabs() {
+    for (const tab of LEADERBOARD_TABS) {
+      const selected = this.selectedTabId === tab.id;
+      const button = this.refs.tabButtons?.get(tab.id);
+      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button?.setAttribute('tabindex', selected ? '0' : '-1');
+    }
+  }
+
+  getActiveTab() {
+    return LEADERBOARD_TABS.find((tab) => tab.id === this.selectedTabId) ?? LEADERBOARD_TABS[0];
+  }
+
+  getTopUsers(snapshot, tab) {
+    const leaderboard = snapshot?.leaderboard ?? snapshot ?? {};
+    const users =
+      tab.id === 'income'
+        ? leaderboard.topIncomeUsers ?? leaderboard.topUsers
+        : leaderboard.topGeneratedGoldUsers ?? leaderboard.topUsers;
+
     if (!Array.isArray(users)) {
       return [];
     }
@@ -150,12 +227,19 @@ export class WorkshopLeaderboardManager {
       .filter((user) => user && typeof user.name === 'string')
       .map((user) => ({
         name: user.name,
+        income: Number.isFinite(user.income) ? user.income : 0,
+        totalGeneratedGold: Number.isFinite(user.totalGeneratedGold)
+          ? user.totalGeneratedGold
+          : Number.isFinite(user.totalIncome)
+            ? user.totalIncome
+            : 0,
         totalIncome: Number.isFinite(user.totalIncome) ? user.totalIncome : 0,
-      }));
+      }))
+      .sort((left, right) => right[tab.valueKey] - left[tab.valueKey]);
   }
 
-  formatIncome(totalIncome) {
-    return String(Math.floor(totalIncome));
+  formatValue(value) {
+    return String(Math.floor(value));
   }
 
   createRow(label, value, { header = false } = {}) {

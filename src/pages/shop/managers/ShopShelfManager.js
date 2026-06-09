@@ -4,7 +4,6 @@ export class ShopShelfManager {
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
-    this.message = '';
     this.selectedSellTab = 'seed';
     this.visible = false;
     this.previousFocus = null;
@@ -37,13 +36,10 @@ export class ShopShelfManager {
     this.root.setAttribute('aria-label', 'Shop shelf');
 
     this.refs.title = this.createTitle();
-    this.refs.gold = this.createGoldRow();
     this.refs.rows = [];
-    this.refs.message = document.createElement('div');
-    this.refs.message.className = 'shop-page__shelf-message';
     this.refs.popup = this.createSellPopup();
 
-    this.root.append(this.refs.title, this.refs.gold.row, this.refs.message);
+    this.root.append(this.refs.title);
     parent.append(this.root, this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
 
@@ -63,7 +59,6 @@ export class ShopShelfManager {
     this.refs.popup?.remove();
     this.root = null;
     this.refs = {};
-    this.message = '';
     this.selectedSellTab = 'seed';
     this.visible = false;
     this.previousFocus = null;
@@ -74,22 +69,6 @@ export class ShopShelfManager {
     title.className = 'style-box__title';
     title.textContent = 'shop shelf';
     return title;
-  }
-
-  createGoldRow() {
-    const row = document.createElement('div');
-    row.className = 'shop-page__slot-row';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = 'gold';
-
-    const value = document.createElement('span');
-    value.className = 'row_val';
-    value.textContent = '0';
-
-    row.append(label, value);
-    return { row, value };
   }
 
   createSlotRow(slotNumber) {
@@ -129,18 +108,24 @@ export class ShopShelfManager {
     root.className = 'shop-page__sell-controls';
     root.setAttribute('aria-label', 'Select item to sell');
 
-    const tabRow = document.createElement('div');
-    tabRow.className = 'shop-page__sell-tab-row';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = 'type';
-
-    const value = document.createElement('span');
-    value.className = 'row_val shop-page__sell-tab-buttons';
-
     const itemList = document.createElement('div');
     itemList.className = 'shop-page__sell-item-list';
+
+    const emptyRow = document.createElement('div');
+    emptyRow.className = 'shop-page__sell-item-row';
+
+    const emptyButton = document.createElement('button');
+    emptyButton.className = 'shop-page__sell-item-button';
+    emptyButton.type = 'button';
+    emptyButton.addEventListener('click', () => this.onClearSellItem());
+
+    const emptyLabel = document.createElement('span');
+    emptyLabel.className = 'row_key';
+    emptyLabel.textContent = 'empty';
+
+    emptyButton.append(emptyLabel);
+    emptyRow.append(emptyButton);
+    itemList.append(emptyRow);
 
     const tabButtons = new Map();
     const itemRows = new Map();
@@ -148,11 +133,10 @@ export class ShopShelfManager {
     const itemLabels = new Map();
     const itemQuantities = new Map();
 
-    tabRow.append(label, value);
-    root.append(tabRow, itemList);
+    root.append(itemList);
     return {
       root,
-      tabValue: value,
+      emptyButton,
       itemList,
       tabButtons,
       itemRows,
@@ -162,26 +146,39 @@ export class ShopShelfManager {
     };
   }
 
+  createSellTabs() {
+    const tabs = document.createElement('div');
+    tabs.className = 'shop-page__sell-tabs';
+    tabs.setAttribute('aria-label', 'Sell item type');
+    tabs.setAttribute('role', 'tablist');
+    return tabs;
+  }
+
   createSellPopup() {
     const popup = document.createElement('section');
     popup.className = 'shop-page__sell-popup';
     popup.addEventListener('click', this.handlePopupClick);
 
+    const panel = document.createElement('section');
+    panel.className = 'shop-page__sell-panel';
+    panel.setAttribute('aria-label', 'Select item to sell');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('role', 'dialog');
+    panel.tabIndex = -1;
+
     const dialog = document.createElement('section');
     dialog.className = 'shop-page__sell-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Select item to sell');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('role', 'dialog');
-    dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
     title.textContent = 'sell';
 
     this.refs.sellControls = this.createSellControls();
+    this.refs.sellTabs = this.createSellTabs();
     dialog.append(title, this.refs.sellControls.root);
-    popup.append(dialog);
-    this.refs.dialog = dialog;
+    panel.append(dialog, this.refs.sellTabs);
+    popup.append(panel);
+    this.refs.dialog = panel;
 
     return popup;
   }
@@ -192,9 +189,9 @@ export class ShopShelfManager {
     }
 
     const result = this.gameplayFacade.selectShopShelfSlot(slotNumber);
-
-    if (result.ok) {
-      this.message = `selected slot ${result.slotNumber}`;
+    if (!result.ok) {
+      this.render(this.gameplayFacade.getSnapshot());
+      return;
     }
 
     const snapshot = this.gameplayFacade.getSnapshot();
@@ -211,18 +208,7 @@ export class ShopShelfManager {
   }
 
   onBuySlot() {
-    const result = this.gameplayFacade.buyShopShelfSlot();
-
-    if (result.ok) {
-      this.message = `bought slot ${result.slotNumber}`;
-    } else if (result.reason === 'max_slots') {
-      this.message = 'shelf full';
-    } else if (result.reason === 'not_enough_gold') {
-      this.message = 'not enough gold';
-    } else {
-      this.message = 'cannot buy slot';
-    }
-
+    this.gameplayFacade.buyShopShelfSlot();
     this.render(this.gameplayFacade.getSnapshot());
   }
 
@@ -235,8 +221,17 @@ export class ShopShelfManager {
     const result = this.gameplayFacade.setSelectedShopShelfSlotSellItem(itemTypeId);
 
     if (result.ok) {
-      this.message = `slot ${result.slotNumber} sells ${result.item.label}`;
       this.selectedSellTab = result.item.kind;
+      this.hideSellPopup();
+    }
+
+    this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  onClearSellItem() {
+    const result = this.gameplayFacade.clearSelectedShopShelfSlotSellItem();
+
+    if (result.ok) {
       this.hideSellPopup();
     }
 
@@ -268,8 +263,6 @@ export class ShopShelfManager {
     this.ensureSellTabButtons(shelf.sellKinds);
     this.ensureSellItemButtons(shelf.sellItems);
 
-    this.refs.gold.value.textContent = String(snapshot.gold.current);
-    this.refs.message.textContent = this.message;
     this.renderSellControls(shelf);
 
     this.refs.rows.forEach(({ row, value, button }, index) => {
@@ -278,6 +271,7 @@ export class ShopShelfManager {
       const slot = shelf.slots[index];
 
       row.classList.toggle('is-selected', slotNumber === shelf.selectedSlotNumber);
+      row.classList.toggle('is-locked', !slot.unlocked);
 
       if (slot.unlocked) {
         row.classList.add('shop-page__slot-row--interactive');
@@ -308,7 +302,7 @@ export class ShopShelfManager {
       row.removeAttribute('role');
       row.removeAttribute('aria-label');
       row.removeAttribute('tabindex');
-      value.textContent = `${cost} gold`;
+      value.textContent = 'locked';
     });
   }
 
@@ -325,12 +319,23 @@ export class ShopShelfManager {
 
     for (const sellKind of shelf.sellKinds) {
       const button = this.refs.sellControls.tabButtons.get(sellKind.kind);
-      button.setAttribute('aria-pressed', this.selectedSellTab === sellKind.kind ? 'true' : 'false');
+      const selected = this.selectedSellTab === sellKind.kind;
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button.setAttribute('tabindex', selected ? '0' : '-1');
     }
 
-    const itemsForSelectedTab = shelf.sellItems.filter(
-      (item) => item.kind === this.selectedSellTab,
+    this.refs.sellControls.emptyButton.setAttribute(
+      'aria-pressed',
+      selectedSlot.sellItemTypeId ? 'false' : 'true',
     );
+
+    const visibleItemTypeIds = new Set(shelf.sellItems.map((item) => item.itemTypeId));
+
+    for (const [itemTypeId, row] of this.refs.sellControls.itemRows) {
+      if (!visibleItemTypeIds.has(itemTypeId)) {
+        row.hidden = true;
+      }
+    }
 
     for (const item of shelf.sellItems) {
       const row = this.refs.sellControls.itemRows.get(item.itemTypeId);
@@ -346,7 +351,7 @@ export class ShopShelfManager {
       );
     }
 
-    this.refs.sellControls.itemList.hidden = itemsForSelectedTab.length === 0;
+    this.refs.sellControls.itemList.hidden = false;
   }
 
   ensureSellTabButtons(sellKinds) {
@@ -359,9 +364,10 @@ export class ShopShelfManager {
       button.className = 'style-button shop-page__sell-tab-button';
       button.type = 'button';
       button.textContent = sellKind.label;
+      button.setAttribute('role', 'tab');
       button.addEventListener('click', () => this.onSelectSellTab(sellKind.kind));
       this.refs.sellControls.tabButtons.set(sellKind.kind, button);
-      this.refs.sellControls.tabValue.append(button);
+      this.refs.sellTabs.append(button);
     }
   }
 
@@ -369,7 +375,7 @@ export class ShopShelfManager {
     while (this.refs.rows.length < rowCount) {
       const row = this.createSlotRow(this.refs.rows.length + 1);
       this.refs.rows.push(row);
-      this.root.insertBefore(row.row, this.refs.message);
+      this.root.append(row.row);
     }
   }
 
@@ -408,17 +414,23 @@ export class ShopShelfManager {
       return 'empty';
     }
 
-    const sellGold = slot.sellGold ?? this.getSellItemGold(shelf, slot.sellItemTypeId);
+    const sellItem = this.getSellItem(shelf, slot.sellItemTypeId);
+    const quantity = Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
+    const sellGold = slot.sellGold ?? sellItem?.sellGold;
 
     if (!Number.isFinite(sellGold)) {
-      return slot.sellLabel;
+      return Number.isFinite(quantity) ? `${slot.sellLabel} (${quantity})` : slot.sellLabel;
     }
 
-    return `${slot.sellLabel} (${this.formatSellGold(sellGold)})`;
+    if (!Number.isFinite(quantity)) {
+      return `${slot.sellLabel} ${this.formatSellGold(sellGold)}`;
+    }
+
+    return `${slot.sellLabel} (${quantity}) ${this.formatSellGold(sellGold)}`;
   }
 
-  getSellItemGold(shelf, itemTypeId) {
-    return shelf.sellItems.find((item) => item.itemTypeId === itemTypeId)?.sellGold ?? null;
+  getSellItem(shelf, itemTypeId) {
+    return shelf.sellItems.find((item) => item.itemTypeId === itemTypeId) ?? null;
   }
 
   formatSellGold(sellGold) {

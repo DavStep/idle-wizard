@@ -40,6 +40,16 @@ export class ManaEntityManager {
     PlayerMana.current[entityId] = Math.max(0, Math.min(value, this.getCap()));
   }
 
+  setCap(value) {
+    const entityId = this.getEntityId();
+    PlayerMana.cap[entityId] = Math.max(0, value);
+    this.setCurrent(this.getCurrent());
+  }
+
+  setPerSecond(value) {
+    PlayerMana.perSecond[this.getEntityId()] = Math.max(0, value);
+  }
+
   addCurrent(amount) {
     this.setCurrent(this.getCurrent() + amount);
   }

@@ -24,6 +24,8 @@ export class AppFacade {
       gameplayFacade: this.gameplayFacade,
       playerFacade: this.playerFacade,
       leaderboardFacade: this.backendFacade.getLeaderboardFacade(),
+      worldChatFacade: this.backendFacade.getWorldChatFacade(),
+      playerShopFacade: this.backendFacade.getPlayerShopFacade(),
     });
 
     this.lifecycleManager = new AppLifecycleManager({

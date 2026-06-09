@@ -1,4 +1,9 @@
 const TOP_USER_LIMIT = 10;
+const EMPTY_SNAPSHOT = {
+  topUsers: [],
+  topGeneratedGoldUsers: [],
+  topIncomeUsers: [],
+};
 
 export class LeaderboardSubscriptionManager {
   constructor({ onSnapshot } = {}) {
@@ -6,7 +11,7 @@ export class LeaderboardSubscriptionManager {
     this.connection = null;
     this.table = null;
     this.subscription = null;
-    this.snapshot = { topUsers: [] };
+    this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTable();
   }
 
@@ -16,7 +21,7 @@ export class LeaderboardSubscriptionManager {
     this.table = connection?.db?.leaderboard ?? null;
 
     if (!this.table) {
-      this.publish({ topUsers: [] });
+      this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
@@ -27,7 +32,7 @@ export class LeaderboardSubscriptionManager {
     this.subscription = connection
       .subscriptionBuilder()
       .onApplied(() => this.publishFromTable())
-      .onError(() => this.publish({ topUsers: [] }))
+      .onError(() => this.publish({ ...EMPTY_SNAPSHOT }))
       .subscribe('SELECT * FROM leaderboard');
     this.publishFromTable();
   }
@@ -46,7 +51,7 @@ export class LeaderboardSubscriptionManager {
     this.connection = null;
     this.table = null;
     this.subscription = null;
-    this.publish({ topUsers: [] });
+    this.publish({ ...EMPTY_SNAPSHOT });
   }
 
   getSnapshot() {
@@ -55,19 +60,29 @@ export class LeaderboardSubscriptionManager {
 
   publishFromTable() {
     if (!this.table) {
-      this.publish({ topUsers: [] });
+      this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
-    const topUsers = Array.from(this.table.iter())
+    const users = Array.from(this.table.iter())
       .map((row) => ({
         name: row.username,
-        totalIncome: this.toNumber(row.totalIncome),
-      }))
-      .sort((left, right) => right.totalIncome - left.totalIncome)
-      .slice(0, TOP_USER_LIMIT);
+        income: this.toNumber(row.income),
+        totalGeneratedGold: this.toNumber(row.totalGeneratedGold ?? row.totalIncome),
+        totalIncome: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
+      }));
+    const topGeneratedGoldUsers = this.getTopUsersBy(users, 'totalGeneratedGold');
+    const topIncomeUsers = this.getTopUsersBy(users, 'income');
 
-    this.publish({ topUsers });
+    this.publish({
+      topUsers: topGeneratedGoldUsers,
+      topGeneratedGoldUsers,
+      topIncomeUsers,
+    });
+  }
+
+  getTopUsersBy(users, key) {
+    return [...users].sort((left, right) => right[key] - left[key]).slice(0, TOP_USER_LIMIT);
   }
 
   publish(snapshot) {

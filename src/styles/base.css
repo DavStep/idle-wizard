@@ -5,26 +5,54 @@
   --style-muted: #666;
   --style-disabled: #b2b2b2;
   --style-border: 1px solid var(--style-text);
+  --style-tab-border: var(--style-border-strong);
   --style-border-strong: 2px solid var(--style-text);
-  --style-font-size: 16px;
+  --style-font-size: 15px;
+  --style-dialog-title-font-size: 16px;
   --style-panel-padding: 5px 10px;
   --style-dialog-padding: 20px;
+  --style-dialog-tab-gap: 8px;
+  --style-tabbed-dialog-width: calc(
+    260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
   --style-box-title-left: 8px;
   --style-box-title-top: -13px;
+  --style-progress-height: 3px;
+  --style-progress-timer-height: var(--style-progress-height);
   --style-row-min-height: 20px;
+  --style-research-row-height: calc(var(--style-row-min-height) + 2px);
   --style-button-width: 100px;
+  --style-room-edge: 27px;
+  --style-room-chrome-edge: 16px;
+  --style-room-content-edge: 16px;
+  --style-room-content-top: 88px;
+  --style-main-box-width: 280px;
+  --style-room-nav-button-width: 100px;
+  --garden-page-box-gap: 24px;
+  --garden-page-plot-rows-height: 220px;
+  --garden-page-herb-rows-height: 210px;
+  --garden-page-seed-rows-height: 360px;
+  --garden-page-plot-box-height: calc(var(--garden-page-plot-rows-height) + 16px);
+  --style-motion-fast: 140ms;
+  --style-motion-normal: 190ms;
+  --style-motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --style-block-shadow: 5px 5px 5px var(--style-muted);
   --style-overlay-shadow: 5px 5px 5px var(--style-muted);
   --style-tooltip-shadow: -1px 3px 2px var(--style-muted);
   --style-ui-scale: 3;
+  --app-viewport-width: 100vw;
+  --app-viewport-height: 100vh;
   --style-font:
-    Georgia, "Palatino Linotype", "Book Antiqua", "Noto Serif", serif;
+    "Source Serif 4", Charter, "Iowan Old Style", "Noto Serif", Georgia, serif;
   color-scheme: light;
   background: var(--style-bg);
   color: var(--style-text);
   font-family: var(--style-font);
   font-size: var(--style-font-size);
   font-weight: normal;
+  font-kerning: normal;
+  font-optical-sizing: auto;
+  font-variant-numeric: tabular-nums lining-nums;
   letter-spacing: normal;
   line-height: normal;
   text-rendering: optimizeLegibility;
@@ -37,8 +65,8 @@
 html,
 body,
 #app {
-  width: 100%;
-  height: 100%;
+  width: var(--app-viewport-width);
+  height: var(--app-viewport-height);
   margin: 0;
   overflow: hidden;
 }
@@ -50,8 +78,8 @@ body {
 
 .app-shell {
   display: grid;
-  width: 100%;
-  height: 100%;
+  width: var(--app-viewport-width);
+  height: var(--app-viewport-height);
   place-items: center;
   background: var(--style-bg);
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
@@ -60,13 +88,40 @@ body {
 
 .game-stage {
   position: relative;
-  width: min(100vw, calc(100vh * var(--design-width) / var(--design-height)));
-  height: min(100vh, calc(100vw * var(--design-height) / var(--design-width)));
+  width: min(
+    var(--app-viewport-width),
+    calc(var(--app-viewport-height) * var(--design-width) / var(--design-height))
+  );
+  height: min(
+    var(--app-viewport-height),
+    calc(var(--app-viewport-width) * var(--design-height) / var(--design-width))
+  );
   max-width: calc(var(--design-width) * 1px);
   max-height: calc(var(--design-height) * 1px);
   overflow: hidden;
   border: var(--style-border);
   background: var(--style-surface);
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.game-stage *,
+.game-stage *::before,
+.game-stage *::after {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.game-stage :where(input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]),
+.game-stage :where(input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]) * {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .game-canvas {
@@ -85,6 +140,25 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
+  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.brewing-page {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--style-surface);
+  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.garden-page {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--style-surface);
+  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
 .shop-page {
@@ -93,6 +167,7 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
+  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
 .research-page {
@@ -101,9 +176,22 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
+  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
 .workshop-page__wall {
+  position: absolute;
+  inset: 0 0 38%;
+  background: var(--style-surface);
+}
+
+.brewing-page__wall {
+  position: absolute;
+  inset: 0 0 38%;
+  background: var(--style-surface);
+}
+
+.garden-page__wall {
   position: absolute;
   inset: 0 0 38%;
   background: var(--style-surface);
@@ -138,7 +226,26 @@ body {
   height: 39%;
   overflow: hidden;
   background: var(--style-surface);
-  border-top: var(--style-border);
+}
+
+.brewing-page__floor {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 39%;
+  overflow: hidden;
+  background: var(--style-surface);
+}
+
+.garden-page__floor {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 39%;
+  overflow: hidden;
+  background: var(--style-surface);
 }
 
 .shop-page__floor {
@@ -149,7 +256,6 @@ body {
   height: 39%;
   overflow: hidden;
   background: var(--style-surface);
-  border-top: var(--style-border);
 }
 
 .research-page__floor {
@@ -160,7 +266,6 @@ body {
   height: 39%;
   overflow: hidden;
   background: var(--style-surface);
-  border-top: var(--style-border);
 }
 
 .workshop-page__floor::before {
@@ -172,6 +277,26 @@ body {
 }
 
 .workshop-page__ui-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
+}
+
+.brewing-page__ui-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
+}
+
+.garden-page__ui-layer {
   position: absolute;
   inset: 0;
   z-index: 3;
@@ -216,6 +341,14 @@ body {
 .workshop-page__ui-layer *,
 .workshop-page__ui-layer *::before,
 .workshop-page__ui-layer *::after,
+.brewing-page__ui-layer,
+.brewing-page__ui-layer *,
+.brewing-page__ui-layer *::before,
+.brewing-page__ui-layer *::after,
+.garden-page__ui-layer,
+.garden-page__ui-layer *,
+.garden-page__ui-layer *::before,
+.garden-page__ui-layer *::after,
 .shop-page__ui-layer,
 .shop-page__ui-layer *,
 .shop-page__ui-layer *::before,
@@ -233,9 +366,16 @@ body {
 
 .workshop-page__mana-sphere {
   position: absolute;
-  top: 72px;
-  left: 27px;
-  width: 220px;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.workshop-page__seed-block {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 68px);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
 }
 
 .workshop-page__seed-inventory {
@@ -248,7 +388,52 @@ body {
   display: none;
 }
 
+.workshop-page__flyouts {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 156px);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  z-index: 20;
+  pointer-events: none;
+  text-align: center;
+}
+
+.workshop-page__flyout {
+  position: absolute;
+  right: 0;
+  left: 0;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  animation: style-flyout-enter 1200ms var(--style-motion-ease) both;
+}
+
 .workshop-page__name {
+  position: absolute;
+  bottom: 27px;
+  left: 50%;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.brewing-page__name {
+  position: absolute;
+  bottom: 27px;
+  left: 50%;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.garden-page__name {
   position: absolute;
   bottom: 27px;
   left: 50%;
@@ -290,8 +475,18 @@ body {
 }
 
 .research-page__row {
-  min-height: var(--style-row-min-height);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px;
+  align-items: start;
+  min-height: var(--style-research-row-height);
   clear: both;
+  column-gap: 0;
+  overflow: visible;
+  line-height: normal;
+}
+
+.research-page__row.is-unavailable {
+  color: var(--style-disabled);
 }
 
 .shop-page__slot-row {
@@ -299,9 +494,16 @@ body {
   clear: both;
 }
 
+.shop-page__slot-row.is-locked {
+  color: var(--style-disabled);
+}
+
+.garden-page__seed-row,
 .shop-page__sell-controls,
-.shop-page__sell-tab-row,
-.shop-page__sell-item-row {
+.shop-page__sell-item-row,
+.shop-page__player-listing-item-row,
+.shop-page__market-row,
+.shop-page__player-proceeds-row {
   min-height: var(--style-row-min-height);
   clear: both;
 }
@@ -309,12 +511,19 @@ body {
 .workshop-page__row::after,
 .research-page__row::after,
 .shop-page__slot-row::after,
+.garden-page__seed-row::after,
 .shop-page__sell-controls::after,
-.shop-page__sell-tab-row::after,
-.shop-page__sell-item-row::after {
+.shop-page__sell-item-row::after,
+.shop-page__player-listing-item-row::after,
+.shop-page__market-row::after,
+.shop-page__player-proceeds-row::after {
   display: block;
   clear: both;
   content: "";
+}
+
+.research-page__row::after {
+  display: none;
 }
 
 .row_key {
@@ -324,6 +533,7 @@ body {
 
 .row_val {
   float: right;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .workshop-page__row--interactive {
@@ -353,23 +563,318 @@ body {
   outline: none;
 }
 
-.workshop-page__summon-controls {
-  position: absolute;
-  top: 157px;
-  left: 27px;
-  width: 220px;
+.workshop-page__seed-inventory-row.is-empty {
+  color: var(--style-disabled);
 }
 
-.workshop-page__summon-message {
+.workshop-page__seed-inventory-divider {
+  height: 1px;
+  margin: 5px 0;
+  clear: both;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.workshop-page__seed-action-row {
   min-height: var(--style-row-min-height);
-  margin-top: 10px;
+  margin-top: 4px;
+}
+
+.brewing-page__workbench {
+  position: absolute;
+  inset: 0;
+}
+
+.brewing-page__herbs {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.brewing-page__herb-rows {
+  max-height: 132px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.brewing-page__herb-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.brewing-page__herb-row,
+.brewing-page__cauldron-status,
+.brewing-page__cauldron-empty,
+.brewing-page__active-brew,
+.brewing-page__message {
+  min-height: var(--style-row-min-height);
+}
+
+.brewing-page__herb-row {
+  clear: both;
+}
+
+.brewing-page__herb-row::after,
+.brewing-page__herb-button::after,
+.brewing-page__ingredient-row::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.brewing-page__herb-button,
+.brewing-page__ingredient-row {
+  display: block;
+  width: 100%;
+  min-height: var(--style-row-min-height);
+  padding: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.brewing-page__herb-button {
+  touch-action: none;
+}
+
+.brewing-page__ingredient-row {
+  cursor: pointer;
+}
+
+.brewing-page__herb-button:hover .row_key,
+.brewing-page__herb-button:focus .row_key,
+.brewing-page__ingredient-row:hover .row_key,
+.brewing-page__ingredient-row:focus .row_key {
+  text-decoration: underline;
+}
+
+.brewing-page__herb-button:focus,
+.brewing-page__ingredient-row:focus {
+  outline: none;
+}
+
+.brewing-page__herb-button:disabled {
+  color: var(--style-disabled);
+  cursor: default;
+}
+
+.brewing-page__herb-button:disabled:hover .row_key {
+  text-decoration: none;
+}
+
+.brewing-page__cauldron {
+  position: absolute;
+  top: 246px;
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  min-height: 138px;
+}
+
+.brewing-page__cauldron.is-drag-over {
+  background: #f7f7f7;
+}
+
+.brewing-page__cauldron-count {
+  position: absolute;
+  top: var(--style-box-title-top);
+  right: var(--style-box-title-left);
+  display: inline-block;
+  font-size: var(--style-font-size);
+  font-weight: normal;
+  background: var(--style-surface);
+}
+
+.brewing-page__cauldron-items {
+  min-height: 76px;
+}
+
+.brewing-page__cauldron-items.is-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.brewing-page__active-brew {
+  margin-top: 6px;
+  color: var(--style-muted);
+}
+
+.brewing-page__active-brew[hidden] {
+  display: none;
+}
+
+.brewing-page__active-progress {
+  margin-top: 3px;
+}
+
+.brewing-page__active-progress-fill {
+  transition: width var(--style-motion-fast) linear;
+}
+
+.brewing-page__active-progress-text {
+  text-align: center;
+}
+
+.brewing-page__actions {
+  position: absolute;
+  top: 426px;
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  text-align: center;
+}
+
+.style-button.brewing-page__brew-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  padding: 3px 8px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.brewing-page__brew-button-label {
+  line-height: 15px;
+}
+
+.brewing-page__brew-button-cost {
+  margin-top: 1px;
+  color: var(--style-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 10px;
+}
+
+.style-button.brewing-page__clear-button {
+  width: 70px;
+  vertical-align: middle;
+}
+
+.style-button.brewing-page__bottle-button,
+.style-button.brewing-page__collect-button {
+  width: 70px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.style-button.brewing-page__bottle-button[hidden],
+.style-button.brewing-page__collect-button[hidden] {
+  display: none;
+}
+
+.brewing-page__message {
+  margin-top: 5px;
+}
+
+.brewing-page__guide {
+  position: absolute;
+  top: 574px;
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.brewing-page__guide-row,
+.brewing-page__guide-step,
+.brewing-page__guide-empty {
+  min-height: var(--style-row-min-height);
+}
+
+.brewing-page__guide-row,
+.brewing-page__guide-step {
+  clear: both;
+}
+
+.brewing-page__guide-row::after,
+.brewing-page__guide-step::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.brewing-page__guide-sequence {
+  max-height: 60px;
+  margin-top: 3px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.brewing-page__guide-sequence::-webkit-scrollbar {
+  display: none;
+}
+
+.brewing-page__guide-step {
+  color: var(--style-muted);
+}
+
+.brewing-page__guide-step.is-next,
+.brewing-page__guide-step.is-mismatch {
+  color: var(--style-text);
+}
+
+.brewing-page__guide-step.is-placed .row_key {
+  text-decoration: underline;
+}
+
+.style-button.brewing-page__recipes-button,
+.style-button.brewing-page__potions-button {
+  position: absolute;
+  top: 502px;
+  width: 132px;
+  margin-bottom: 0;
+}
+
+.style-button.brewing-page__recipes-button {
+  left: var(--style-room-content-edge);
+}
+
+.style-button.brewing-page__potions-button {
+  right: var(--style-room-content-edge);
+}
+
+.brewing-page__drag-ghost {
+  position: fixed;
+  z-index: 40;
+  width: 96px;
+  padding: 2px 5px;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  pointer-events: none;
+  background: var(--style-surface);
+  border: var(--style-border);
 }
 
 .style-button.workshop-page__leaderboard-button {
   position: absolute;
-  top: 225px;
-  left: 27px;
-  width: 120px;
+  top: calc(var(--style-room-content-top) + 196px);
+  left: var(--style-room-content-edge);
+  width: 132px;
+}
+
+.style-button.workshop-page__world-chat-button {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 238px);
+  left: var(--style-room-content-edge);
+  width: 132px;
+}
+
+.style-button.workshop-page__logs-button {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 280px);
+  left: var(--style-room-content-edge);
+  width: 132px;
 }
 
 .workshop-page__leaderboard-popup {
@@ -378,7 +883,21 @@ body {
   z-index: 30;
 }
 
-.workshop-page__leaderboard-popup[hidden] {
+.workshop-page__world-chat-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.workshop-page__logs-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.workshop-page__leaderboard-popup[hidden],
+.workshop-page__world-chat-popup[hidden],
+.workshop-page__logs-popup[hidden] {
   display: none;
 }
 
@@ -386,45 +905,750 @@ body {
   font-weight: bold;
 }
 
+.workshop-page__leaderboard-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
 .workshop-page__leaderboard-empty {
   min-height: var(--style-row-min-height);
 }
 
+.workshop-page__world-chat-messages {
+  min-height: 180px;
+  max-height: 180px;
+  margin-bottom: 5px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.workshop-page__world-chat-messages::-webkit-scrollbar {
+  display: none;
+}
+
+.workshop-page__logs-frame {
+  position: relative;
+}
+
+.workshop-page__logs-frame::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 64px;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.86)
+  );
+  opacity: 0;
+  transition: opacity var(--style-motion-fast) var(--style-motion-ease);
+}
+
+.workshop-page__logs-frame.has-bottom-overflow::after {
+  opacity: 1;
+}
+
+.workshop-page__logs-rows {
+  min-height: 220px;
+  max-height: 320px;
+  padding-right: 8px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.workshop-page__logs-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.workshop-page__world-chat-message,
+.workshop-page__world-chat-empty,
+.workshop-page__world-chat-status,
+.workshop-page__log-entry,
+.workshop-page__logs-empty {
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__world-chat-message {
+  overflow-wrap: anywhere;
+}
+
+.workshop-page__log-entry {
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+
+.workshop-page__log-entry + .workshop-page__log-entry {
+  border-top: var(--style-border);
+}
+
+.workshop-page__logs-progress {
+  margin-top: 6px;
+}
+
+.workshop-page__logs-progress-fill {
+  width: 100%;
+}
+
+.workshop-page__world-chat-name {
+  font-weight: bold;
+}
+
+.workshop-page__world-chat-status {
+  color: var(--style-muted);
+}
+
+.workshop-page__world-chat-form {
+  margin: 0;
+}
+
+.style-input.workshop-page__world-chat-input {
+  display: block;
+  width: calc(100% - 22px);
+  margin-bottom: 5px;
+}
+
+.style-button.workshop-page__world-chat-send {
+  width: 80px;
+  margin-bottom: 0;
+}
+
 .shop-page__shelf {
   position: absolute;
-  top: 72px;
-  left: 27px;
-  width: 260px;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
 }
 
-.research-page__content {
+.shop-page__player-shelf {
   position: absolute;
-  top: 72px;
-  right: 27px;
-  bottom: 64px;
-  left: 27px;
-  padding-top: 8px;
+  top: calc(var(--style-room-content-top) + 150px);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.garden-page__plot {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.garden-page__herbs {
+  position: absolute;
+  top: calc(
+    var(--style-room-content-top) + var(--garden-page-plot-box-height) +
+      var(--garden-page-box-gap)
+  );
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.garden-page__herb-rows {
+  min-height: var(--garden-page-herb-rows-height);
+  max-height: var(--garden-page-herb-rows-height);
   overflow: hidden auto;
+  scrollbar-width: none;
 }
 
-.research-page__box {
-  margin-bottom: 18px;
+.garden-page__herb-rows::-webkit-scrollbar {
+  display: none;
 }
 
-.research-page__research-label {
-  max-width: 200px;
+.garden-page__herb-row {
+  min-height: var(--style-row-min-height);
+  clear: both;
+}
+
+.garden-page__herb-row.is-empty {
+  color: var(--style-disabled);
+}
+
+.garden-page__herb-divider {
+  height: 1px;
+  margin: 5px 0;
+  clear: both;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.garden-page__herb-row::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.garden-page__plot-rows {
+  min-height: var(--garden-page-plot-rows-height);
+  max-height: var(--garden-page-plot-rows-height);
+  padding-top: 4px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.garden-page__plot-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.garden-page__plot-rows.has-overflow::after,
+.garden-page__herb-rows.has-overflow::after,
+.garden-page__seed-rows.has-overflow::after {
+  position: sticky;
+  bottom: 0;
+  display: block;
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
+  text-align: right;
+  content: "more";
+  background: var(--style-surface);
+}
+
+.garden-page__plot-row {
+  display: grid;
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(112px, max-content);
+  column-gap: 6px;
+  row-gap: 2px;
+  align-items: center;
+  width: 100%;
+  min-height: 22px;
+}
+
+.garden-page__plot-row {
+  padding: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.garden-page__plot-row[hidden] {
+  display: none;
+}
+
+.garden-page__plot-row:hover,
+.garden-page__plot-row:focus-visible {
+  outline: none;
+}
+
+.garden-page__plot-row:hover .garden-page__plot-action,
+.garden-page__plot-row:focus-visible .garden-page__plot-action {
+  text-decoration: underline;
+}
+
+.garden-page__plot-row:hover .garden-page__plot-label,
+.garden-page__plot-row:focus-visible .garden-page__plot-label {
+  text-decoration: underline;
+}
+
+.garden-page__plot-row:disabled {
+  color: var(--style-disabled);
+  cursor: default;
+}
+
+.garden-page__plot-row.is-processing:disabled {
+  color: var(--style-text);
+}
+
+.garden-page__plot-row.is-processing .garden-page__plot-action {
+  color: var(--style-muted);
+  font-size: 13px;
+  line-height: normal;
+  font-weight: normal;
+  transform: translateY(2px);
+}
+
+.garden-page__plot-row.is-processing .garden-page__plot-action-timer {
+  color: var(--style-text);
+  font-size: 12px;
+}
+
+.garden-page__plot-row.is-plantable .garden-page__plot-action,
+.garden-page__plot-row.is-ready .garden-page__plot-action {
+  color: var(--style-text);
+  font-size: 13px;
+  line-height: normal;
+  font-weight: bold;
+}
+
+.garden-page__plot-row.is-ready .garden-page__plot-action {
+  min-height: 16px;
+}
+
+.garden-page__plot-row:disabled:hover .garden-page__plot-action {
+  text-decoration: none;
+}
+
+.garden-page__plot-row:disabled:hover .garden-page__plot-label {
+  text-decoration: none;
+}
+
+.garden-page__plot-number,
+.garden-page__plot-state,
+.garden-page__plot-action,
+.garden-page__plot-progress-text {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.garden-page__plot-number {
+  text-align: right;
+}
+
+.garden-page__plot-label,
+.garden-page__plot-action {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.garden-page__plot-action {
+  justify-self: end;
+  min-width: 112px;
+  font-size: 13px;
+  line-height: normal;
+  text-align: right;
+}
+
+.garden-page__plot-action-label,
+.garden-page__plot-action-timer {
+  display: inline;
+}
+
+.garden-page__plot-state {
+  display: none;
+}
+
+.garden-page__plot-action {
+  min-height: var(--style-row-min-height);
+}
+
+.garden-page__plot-progress {
+  grid-column: 2 / -1;
+}
+
+.garden-page__plot-progress[hidden] {
+  display: none;
+}
+
+.garden-page__plot-progress-fill {
+  transition: width var(--style-motion-fast) linear;
+}
+
+.garden-page__plot-progress-text {
+  text-align: center;
+}
+
+.garden-page__seed-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.garden-page__seed-popup[hidden] {
+  display: none;
+}
+
+.style-dialog.garden-page__seed-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  transform: translate(-50%, -50%);
+}
+
+.garden-page__seed-rows {
+  max-height: var(--garden-page-seed-rows-height);
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.garden-page__seed-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.garden-page__seed-button {
+  display: block;
+  width: 100%;
+  min-height: var(--style-row-min-height);
+  padding: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.garden-page__seed-button::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.garden-page__seed-divider {
+  height: 1px;
+  margin: 5px 0;
+  clear: both;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.garden-page__seed-button:hover .row_key,
+.garden-page__seed-button:focus .row_key {
+  text-decoration: underline;
+}
+
+.garden-page__seed-button:focus {
+  outline: none;
+}
+
+.garden-page__seed-button:disabled {
+  color: var(--style-disabled);
+  cursor: default;
+}
+
+.garden-page__seed-button:disabled:hover .row_key {
+  text-decoration: none;
+}
+
+.research-page__content {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: 16px;
+  bottom: 64px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 6px;
+  padding-bottom: 32px;
+  overflow: hidden auto;
+  scroll-padding-bottom: 32px;
+  scrollbar-width: none;
+}
+
+.research-page__content::-webkit-scrollbar {
+  display: none;
+}
+
+.research-page__box {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.research-page__research-label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: var(--style-research-row-height);
+  max-width: none;
+  align-items: start;
+  column-gap: 6px;
+  overflow: visible;
+  line-height: var(--style-research-row-height);
+  white-space: normal;
+}
+
+.research-page__row .row_key,
+.research-page__row .row_val {
+  float: none;
+  clear: none;
+}
+
+.research-page__research-name {
+  min-width: 0;
+  overflow: visible;
+  overflow-wrap: break-word;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.research-page__research-effect {
+  color: var(--style-muted);
+  white-space: nowrap;
+}
+
+.research-page__research-label-button {
+  padding: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  min-height: var(--style-research-row-height);
+  line-height: var(--style-research-row-height);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.research-page__row.is-unavailable .research-page__research-label-button,
+.research-page__row.is-unavailable .research-page__research-effect,
+.research-page__row.is-unavailable .research-page__research-value {
+  color: inherit;
+}
+
+.research-page__research-label-button:hover,
+.research-page__research-label-button:focus {
+  text-decoration: underline;
+}
+
+.research-page__research-label-button:focus {
+  outline: none;
+}
+
 .research-page__research-value {
+  display: block;
+  width: 84px;
+  height: var(--style-research-row-height);
+  min-height: var(--style-research-row-height);
+  color: var(--style-muted);
+  line-height: var(--style-research-row-height);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.style-button.research-page__research-button {
+  justify-self: end;
+  float: none;
+  width: 84px;
+  height: var(--style-research-row-height);
+  min-height: var(--style-research-row-height);
+  padding: 0;
+  margin-bottom: 0;
+  line-height: var(--style-research-row-height);
+  text-align: right;
+  background: transparent;
+  border: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.style-button.research-page__research-button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: transparent;
+}
+
+.research-page__info-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.research-page__info-popup[hidden] {
+  display: none;
+}
+
+.style-dialog.research-page__info-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
+  transform: translate(-50%, -50%);
+}
+
+.research-page__info-copy {
+  max-width: 260px;
+  margin: 0;
+}
+
+.brewing-page__recipes-popup,
+.brewing-page__potions-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.brewing-page__recipes-popup[hidden],
+.brewing-page__potions-popup[hidden] {
+  display: none;
+}
+
+.style-dialog.brewing-page__recipes-dialog,
+.style-dialog.brewing-page__potions-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 286px;
+  transform: translate(-50%, -50%);
+}
+
+.style-button.brewing-page__recipes-close,
+.style-button.brewing-page__potions-close {
+  position: absolute;
+  top: var(--style-box-title-top);
+  right: var(--style-box-title-left);
+  width: auto;
+  padding: 0 2px;
+  margin-bottom: 0;
+  font-weight: normal;
+  background: var(--style-surface);
+  border: 0;
+}
+
+.style-button.brewing-page__recipes-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.brewing-page__potions-close:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--style-surface);
+}
+
+.brewing-page__recipe-list,
+.brewing-page__potion-list {
+  padding-top: 19px;
+  max-height: 430px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.brewing-page__recipe-list::-webkit-scrollbar,
+.brewing-page__potion-list::-webkit-scrollbar {
+  display: none;
+}
+
+.brewing-page__potion-row,
+.brewing-page__potion-empty {
+  min-height: var(--style-row-min-height);
+}
+
+.brewing-page__potion-row {
+  clear: both;
+}
+
+.brewing-page__potion-row::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.brewing-page__recipe-group + .brewing-page__recipe-group {
+  padding-top: 8px;
+  margin-top: 10px;
+  border-top: var(--style-border);
+}
+
+.brewing-page__recipe-group-title,
+.brewing-page__recipe-empty,
+.brewing-page__recipe-row {
+  min-height: var(--style-row-min-height);
+}
+
+.brewing-page__recipe-group-title {
+  padding-bottom: 2px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--style-text);
+  font-weight: bold;
+}
+
+.brewing-page__recipe-row {
+  clear: both;
+  padding-bottom: 7px;
+  margin-top: 6px;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.brewing-page__recipe-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.brewing-page__recipe-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: var(--style-row-min-height);
+  column-gap: 8px;
+}
+
+.brewing-page__recipe-main .row_key,
+.brewing-page__recipe-main .row_val {
+  float: none;
+  clear: none;
+}
+
+.brewing-page__recipe-main .row_key {
+  overflow-wrap: anywhere;
+}
+
+.brewing-page__recipe-mark-button {
+  justify-self: end;
+  min-width: 0;
+  padding: 0;
+  appearance: none;
+  color: inherit;
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.brewing-page__recipe-mark-button:hover,
+.brewing-page__recipe-mark-button:focus,
+.brewing-page__recipe-row.is-selected .brewing-page__recipe-mark-button,
+.brewing-page__recipe-row.is-selected .brewing-page__recipe-name {
+  text-decoration: underline;
+}
+
+.brewing-page__recipe-mark-button:focus {
+  outline: none;
+}
+
+.brewing-page__recipe-ingredients {
+  clear: both;
+  padding-left: 8px;
   color: var(--style-muted);
 }
 
-.shop-page__shelf-message {
-  min-height: var(--style-row-min-height);
-  margin-top: 10px;
+.brewing-page__recipe-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  padding-left: 8px;
+  color: var(--style-muted);
+}
+
+.brewing-page__recipe-cost,
+.brewing-page__recipe-duration {
+  white-space: nowrap;
+}
+
+.brewing-page__recipe-duration {
+  text-align: right;
+}
+
+.brewing-page__recipe-ingredients-title {
+  margin-top: 1px;
+  color: var(--style-text);
+}
+
+.brewing-page__recipe-name {
+  font-weight: bold;
+}
+
+.brewing-page__recipe-ingredient-row {
+  padding-left: 0;
+}
+
+.brewing-page__recipe-row.is-locked {
+  color: var(--style-muted);
+}
+
+.brewing-page__recipe-row.is-locked .brewing-page__recipe-ingredients,
+.brewing-page__recipe-row.is-locked .brewing-page__recipe-ingredients-title {
+  color: var(--style-muted);
 }
 
 .shop-page__sell-popup {
@@ -433,37 +1657,115 @@ body {
   z-index: 30;
 }
 
-.shop-page__sell-popup[hidden] {
+.shop-page__market-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.shop-page__sell-popup[hidden],
+.shop-page__market-popup[hidden] {
   display: none;
 }
 
-.style-dialog.shop-page__sell-dialog {
+.workshop-page__leaderboard-panel,
+.shop-page__sell-panel {
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 20;
+  width: var(--style-tabbed-dialog-width);
+  outline: none;
+  transform: translate(-50%, -50%);
+}
+
+.shop-page__sell-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
+.style-dialog.shop-page__sell-dialog {
+  position: relative;
   width: 260px;
   overflow: visible;
+}
+
+.style-dialog.shop-page__market-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  overflow: visible;
   transform: translate(-50%, -50%);
+}
+
+.shop-page__market-rows {
+  max-height: 360px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.shop-page__market-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-page__player-listing-fields {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.shop-page__player-listing-field {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shop-page__player-listing-field-label {
+  color: var(--style-ink);
+}
+
+.style-input.shop-page__player-listing-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 2px 5px;
+  margin: 0;
+}
+
+.shop-page__player-shop-status {
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
 }
 
 .shop-page__sell-item-list {
   max-height: 320px;
   overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.shop-page__sell-item-list::-webkit-scrollbar {
+  display: none;
 }
 
 .room-page__nav {
   position: absolute;
   bottom: 17px;
-  width: 80px;
+  width: var(--style-room-nav-button-width);
   margin-bottom: 0;
 }
 
 .room-page__nav--left {
-  left: 27px;
+  left: var(--style-room-chrome-edge);
 }
 
 .room-page__nav--right {
-  right: 27px;
+  right: var(--style-room-chrome-edge);
 }
 
 .style-panel,
@@ -488,11 +1790,23 @@ body {
 }
 
 .workshop-page__mana-sphere,
+.workshop-page__seed-block,
 .workshop-page__seed-inventory-dialog,
 .workshop-page__leaderboard-dialog,
+.workshop-page__world-chat-dialog,
+.workshop-page__logs-dialog,
+.brewing-page__herbs,
+.brewing-page__cauldron,
+.brewing-page__guide,
+.garden-page__plot,
+.garden-page__herbs,
+.garden-page__seed-dialog,
 .research-page__box,
+.research-page__info-dialog,
 .shop-page__sell-dialog,
-.shop-page__shelf {
+.shop-page__market-dialog,
+.shop-page__shelf,
+.shop-page__player-shelf {
   position: absolute;
 }
 
@@ -505,28 +1819,40 @@ body {
   top: var(--style-box-title-top);
   left: var(--style-box-title-left);
   display: inline-block;
-  font-weight: normal;
+  font-size: var(--style-font-size);
+  font-weight: bold;
   background: var(--style-surface);
 }
 
 .style-dialog > .style-box__title {
+  font-size: var(--style-dialog-title-font-size);
   font-weight: bold;
 }
 
 .style-panel.room-top-panel {
   position: absolute;
   top: 10px;
-  right: 27px;
-  left: 27px;
+  right: var(--style-room-chrome-edge);
+  left: var(--style-room-chrome-edge);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px;
   min-height: var(--style-row-min-height);
   pointer-events: auto;
 }
 
+.room-top-panel__identity-row {
+  display: flex;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+}
+
 .room-top-panel__username {
-  max-width: 110px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   padding: 0;
   overflow: hidden;
   appearance: none;
@@ -553,14 +1879,29 @@ body {
 }
 
 .room-top-panel__resources {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(104px, 1.35fr) minmax(66px, 1fr) minmax(80px, 1fr);
+  column-gap: 10px;
+  row-gap: 2px;
   white-space: nowrap;
 }
 
+.room-top-panel__resource {
+  display: flex;
+  min-width: 0;
+  gap: 4px;
+}
+
+.room-top-panel__resource-key {
+  flex: 0 0 auto;
+}
+
 .room-top-panel__resource-val {
+  min-width: 0;
+  overflow: hidden;
   font-weight: bold;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-overflow: ellipsis;
 }
 
 .room-top-panel__username-editor {
@@ -576,10 +1917,10 @@ body {
 
 .style-dialog.room-top-panel__username-dialog {
   position: absolute;
-  top: 50%;
+  top: 72px;
   left: 50%;
   width: 220px;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
 .room-top-panel__username-form {
@@ -602,6 +1943,21 @@ body {
 
 .style-input:focus {
   outline: none;
+}
+
+.style-input::placeholder {
+  color: var(--style-muted);
+  opacity: 1;
+}
+
+.style-input:disabled {
+  color: var(--style-disabled);
+  background: var(--style-surface);
+  border-color: var(--style-disabled);
+}
+
+.style-input:disabled::placeholder {
+  color: var(--style-disabled);
 }
 
 .room-top-panel__username-actions {
@@ -655,10 +2011,23 @@ body {
 }
 
 .style-dialog.workshop-page__leaderboard-dialog {
+  position: relative;
+  width: 260px;
+}
+
+.style-dialog.workshop-page__world-chat-dialog {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 260px;
+  width: 286px;
+  transform: translate(-50%, -50%);
+}
+
+.style-dialog.workshop-page__logs-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 286px;
   transform: translate(-50%, -50%);
 }
 
@@ -677,26 +2046,74 @@ body {
   background: var(--style-surface);
   border: var(--style-border);
   border-radius: 0;
+  transition:
+    color var(--style-motion-fast) linear,
+    border-color var(--style-motion-fast) linear,
+    background-color var(--style-motion-fast) linear;
   user-select: none;
 }
 
 .style-button.workshop-page__summon-button {
-  width: 170px;
-  margin-top: 20px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  background: transparent;
+  border-color: transparent;
+  gap: 10px;
+  text-align: left;
+  white-space: normal;
+}
+
+.workshop-page__summon-button-cost {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+}
+
+.style-button.workshop-page__summon-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
+  background: transparent;
 }
 
 .style-button.shop-page__buy-slot-button {
   width: 100px;
-  padding: 1px 5px;
+  padding: 1px 0 1px 5px;
   margin-bottom: 0;
+  text-align: right;
+  border-color: transparent;
+}
+
+.style-button.shop-page__other-shops-button {
+  display: block;
+  width: 100px;
+  padding: 1px 5px;
+  margin: 5px 0 0 auto;
 }
 
 .style-button.shop-page__sell-tab-button {
+  flex: 1 1 0;
   width: auto;
-  min-width: 50px;
+  min-width: 0;
   padding: 1px 5px;
-  margin-right: 3px;
   margin-bottom: 0;
+  border: var(--style-tab-border);
+}
+
+.style-button.workshop-page__leaderboard-tab-button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  min-height: calc(var(--style-row-min-height) * 2);
+  padding: 1px 4px;
+  margin-bottom: 0;
+  line-height: normal;
+  white-space: normal;
+  border: var(--style-tab-border);
 }
 
 .shop-page__sell-item-button {
@@ -732,13 +2149,17 @@ body {
   outline: none;
 }
 
-.style-button.shop-page__sell-tab-button[aria-pressed="true"] {
+.style-button.shop-page__sell-tab-button[aria-selected="true"] {
+  text-decoration: underline;
+}
+
+.style-button.workshop-page__leaderboard-tab-button[aria-selected="true"] {
   text-decoration: underline;
 }
 
 .style-button.room-page__nav {
   position: absolute;
-  width: 80px;
+  width: var(--style-room-nav-button-width);
   margin-bottom: 0;
 }
 
@@ -746,16 +2167,71 @@ body {
   text-decoration: underline;
 }
 
+.style-button:focus-visible {
+  outline: none;
+  text-decoration: underline;
+}
+
+.style-button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: #f7f7f7;
+}
+
 .style-button[aria-disabled="true"],
+.style-button:disabled,
 .style-button.is-disabled {
   color: var(--style-disabled);
   cursor: default;
   border-color: var(--style-disabled);
 }
 
+.style-button.shop-page__buy-slot-button[aria-disabled="true"],
+.style-button.shop-page__buy-slot-button:disabled {
+  border-color: transparent;
+}
+
+.style-button.workshop-page__summon-button[aria-disabled="true"],
+.style-button.workshop-page__summon-button:disabled {
+  border-color: transparent;
+}
+
 .style-button[aria-disabled="true"]:hover,
+.style-button:disabled:hover,
 .style-button.is-disabled:hover {
   text-decoration: none;
+}
+
+.style-progress {
+  position: relative;
+  display: block;
+  height: var(--style-progress-height);
+  overflow: hidden;
+  background: var(--style-surface);
+  border: var(--style-border);
+}
+
+.style-progress__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--style-text);
+}
+
+.style-progress__fill.workshop-page__logs-progress-fill {
+  width: 100%;
+}
+
+.style-progress--timer {
+  height: var(--style-progress-timer-height);
+}
+
+.style-progress__text {
+  display: none;
+}
+
+.style-box :where(button, input, textarea, select) {
+  font-size: inherit;
 }
 
 .style-tooltip {
@@ -789,4 +2265,153 @@ body {
 
 ::selection {
   background-color: transparent;
+}
+
+.workshop-page__seed-inventory:not([hidden]),
+.workshop-page__leaderboard-popup:not([hidden]),
+.workshop-page__world-chat-popup:not([hidden]),
+.workshop-page__logs-popup:not([hidden]),
+.brewing-page__recipes-popup:not([hidden]),
+.brewing-page__potions-popup:not([hidden]),
+.garden-page__seed-popup:not([hidden]),
+.research-page__info-popup:not([hidden]),
+.shop-page__sell-popup:not([hidden]),
+.shop-page__market-popup:not([hidden]),
+.room-top-panel__username-editor:not([hidden]) {
+  background: rgb(255 255 255 / 68%);
+  animation: style-overlay-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.game-stage:has(.workshop-page__seed-inventory:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__leaderboard-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
+.game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
+.game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
+.game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
+.game-stage:has(.research-page__info-popup:not([hidden])) .research-page,
+.game-stage:has(.shop-page__sell-popup:not([hidden])) .shop-page,
+.game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page {
+  z-index: 5;
+}
+
+.workshop-page__seed-inventory:not([hidden]) .style-dialog,
+.workshop-page__world-chat-popup:not([hidden]) .style-dialog,
+.workshop-page__logs-popup:not([hidden]) .style-dialog,
+.brewing-page__recipes-popup:not([hidden]) .style-dialog,
+.brewing-page__potions-popup:not([hidden]) .style-dialog,
+.garden-page__seed-popup:not([hidden]) .style-dialog,
+.research-page__info-popup:not([hidden]) .style-dialog {
+  animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.room-top-panel__username-editor:not([hidden]) .style-dialog {
+  animation: style-dialog-top-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.workshop-page__leaderboard-popup:not([hidden]) .workshop-page__leaderboard-panel,
+.shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
+.shop-page__market-popup:not([hidden]) .shop-page__market-dialog {
+  animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.brewing-page__message.is-updated {
+  animation: style-feedback-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+@keyframes room-page-enter {
+  from {
+    transform: translateY(5px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes style-overlay-enter {
+  from {
+    background: rgb(255 255 255 / 0%);
+  }
+
+  to {
+    background: rgb(255 255 255 / 68%);
+  }
+}
+
+@keyframes style-dialog-enter {
+  from {
+    opacity: 0.01;
+    transform: translate(-50%, calc(-50% + 7px));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes style-dialog-top-enter {
+  from {
+    opacity: 0.01;
+    transform: translateX(-50%) translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes style-feedback-enter {
+  from {
+    opacity: 0.45;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes style-flyout-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  38% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+
+  .workshop-page,
+  .brewing-page,
+  .garden-page,
+  .shop-page,
+  .research-page {
+    animation: none;
+  }
 }

@@ -6,7 +6,19 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import BuyPlayerShopListingReducer from "../buy_player_shop_listing_reducer";
+import ClaimPlayerShopProceedsReducer from "../claim_player_shop_proceeds_reducer";
+import ClearPlayerShopSlotReducer from "../clear_player_shop_slot_reducer";
+import SendWorldChatMessageReducer from "../send_world_chat_message_reducer";
+import SetPlayerShopSlotReducer from "../set_player_shop_slot_reducer";
+import SetTotalGeneratedGoldReducer from "../set_total_generated_gold_reducer";
 import SetUsernameReducer from "../set_username_reducer";
 
+export type BuyPlayerShopListingParams = __Infer<typeof BuyPlayerShopListingReducer>;
+export type ClaimPlayerShopProceedsParams = __Infer<typeof ClaimPlayerShopProceedsReducer>;
+export type ClearPlayerShopSlotParams = __Infer<typeof ClearPlayerShopSlotReducer>;
+export type SendWorldChatMessageParams = __Infer<typeof SendWorldChatMessageReducer>;
+export type SetPlayerShopSlotParams = __Infer<typeof SetPlayerShopSlotReducer>;
+export type SetTotalGeneratedGoldParams = __Infer<typeof SetTotalGeneratedGoldReducer>;
 export type SetUsernameParams = __Infer<typeof SetUsernameReducer>;
 

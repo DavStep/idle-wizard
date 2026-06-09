@@ -83,6 +83,10 @@ export class ShopShelfEntityManager {
     return true;
   }
 
+  clearSlotSellItem(slotNumber) {
+    return this.assignSlotSellItem(slotNumber, 0);
+  }
+
   isSlotUnlocked(slotNumber) {
     return ShopShelfSlot.isUnlocked[this.getSlotEntityId(slotNumber)] === 1;
   }
@@ -93,6 +97,35 @@ export class ShopShelfEntityManager {
 
   setSellProgressSeconds(slotNumber, seconds) {
     ShopShelfSlot.sellProgressSeconds[this.getSlotEntityId(slotNumber)] = Math.max(0, seconds);
+  }
+
+  applySnapshot({ unlockedSlots, selectedSlotNumber, slots = [] } = {}) {
+    const safeUnlockedSlots = Number.isInteger(unlockedSlots)
+      ? Math.max(this.initialUnlockedSlots, Math.min(unlockedSlots, this.maxSlots))
+      : this.initialUnlockedSlots;
+
+    for (const slotEntityId of this.slotEntityIds) {
+      const slotNumber = ShopShelfSlot.slotNumber[slotEntityId];
+      const slot = slots.find((candidate) => candidate?.slotNumber === slotNumber);
+      const isUnlocked = slotNumber <= safeUnlockedSlots;
+
+      ShopShelfSlot.isUnlocked[slotEntityId] = isUnlocked ? 1 : 0;
+      ShopShelfSlot.sellItemTypeId[slotEntityId] = isUnlocked ? slot?.sellItemTypeId || 0 : 0;
+      ShopShelfSlot.sellProgressSeconds[slotEntityId] =
+        isUnlocked && Number.isFinite(slot?.sellProgressSeconds)
+          ? Math.max(0, slot.sellProgressSeconds)
+          : 0;
+    }
+
+    const selectedIsValid =
+      Number.isInteger(selectedSlotNumber) &&
+      selectedSlotNumber >= 1 &&
+      selectedSlotNumber <= safeUnlockedSlots;
+    ShopShelf.selectedSlotNumber[this.getEntityId()] = selectedIsValid
+      ? selectedSlotNumber
+      : safeUnlockedSlots > 0
+        ? 1
+        : 0;
   }
 
   getSlotEntityId(slotNumber) {

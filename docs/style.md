@@ -13,11 +13,13 @@ This project should use the same kind of minimal text-game language, without cop
 
 ## Typography
 
-- Font family: `Georgia, "Palatino Linotype", "Book Antiqua", "Noto Serif", serif`.
-- Source UI font size: `16px`.
+- Font family: `"Source Serif 4", Charter, "Iowan Old Style", "Noto Serif", Georgia, serif`.
+- Source UI font size: `15px`.
+- Popup/dialog title font size stays `16px`.
 - Mobile readability comes from the room UI scale layer, not from changing the source font size.
 - Normal font weight by default.
 - Normal line height and normal letter spacing.
+- Use tabular lining numerals for resource values, costs, counts, timers, and leaderboard numbers.
 - Use bold only for totals, section names, or strong resource values.
 - Use underline for selected or hover states.
 

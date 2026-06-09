@@ -27,3 +27,33 @@ export const Player = __t.object("Player", {
 });
 export type Player = __Infer<typeof Player>;
 
+export const PlayerShopListing = __t.object("PlayerShopListing", {
+  listingKey: __t.string(),
+  sellerIdentity: __t.identity(),
+  username: __t.string(),
+  slotNumber: __t.u8(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  quantity: __t.u32(),
+  priceGold: __t.u64(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerShopListing = __Infer<typeof PlayerShopListing>;
+
+export const PlayerShopProceeds = __t.object("PlayerShopProceeds", {
+  sellerIdentity: __t.identity(),
+  gold: __t.u64(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerShopProceeds = __Infer<typeof PlayerShopProceeds>;
+
+export const WorldChat = __t.object("WorldChat", {
+  messageId: __t.uuid(),
+  senderIdentity: __t.identity(),
+  username: __t.string(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type WorldChat = __Infer<typeof WorldChat>;
+

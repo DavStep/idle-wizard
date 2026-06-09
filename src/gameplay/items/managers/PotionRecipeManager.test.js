@@ -60,4 +60,14 @@ describe('PotionRecipeManager', () => {
       ],
     });
   });
+
+  it('matches recipes by exact ingredient order', () => {
+    const manager = createManager();
+
+    expect(manager.getPotionRecipeByIngredientSequence([1001, 1001, 1002])).toMatchObject({
+      key: 'minorHealingPotion',
+      label: 'Minor Healing Potion',
+    });
+    expect(manager.getPotionRecipeByIngredientSequence([1002, 1001, 1001])).toBeNull();
+  });
 });

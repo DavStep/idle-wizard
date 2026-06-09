@@ -14,6 +14,7 @@ export class GoldEntityManager {
     this.entityId = ecsManagers.entities.createEntity();
     ecsManagers.components.add(this.entityId, PlayerGold);
     this.setCurrent(this.initialCurrent);
+    this.setTotalGenerated(0);
   }
 
   getEntityId() {
@@ -33,12 +34,29 @@ export class GoldEntityManager {
   }
 
   addCurrent(amount) {
+    if (amount > 0) {
+      this.addTotalGenerated(amount);
+    }
+
     this.setCurrent(this.getCurrent() + amount);
+  }
+
+  getTotalGenerated() {
+    return PlayerGold.totalGenerated[this.getEntityId()] ?? 0;
+  }
+
+  setTotalGenerated(value) {
+    PlayerGold.totalGenerated[this.getEntityId()] = Math.max(0, value);
+  }
+
+  addTotalGenerated(amount) {
+    this.setTotalGenerated(this.getTotalGenerated() + amount);
   }
 
   getSnapshot() {
     return {
       current: this.getCurrent(),
+      totalGenerated: this.getTotalGenerated(),
     };
   }
 }

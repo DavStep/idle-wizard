@@ -23,7 +23,7 @@ describe('ItemDefinitionManager', () => {
     });
     expect(manager.getSeedDefinition(1).producesHerbTypeId).toBe(1001);
     expect(manager.getSeedDefinition(14).producesHerbTypeId).toBe(1014);
-    expect(manager.getPotionDefinitions()).toHaveLength(18);
+    expect(manager.getPotionDefinitions()).toHaveLength(19);
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2001,
       key: 'manaTonic',
@@ -36,6 +36,15 @@ describe('ItemDefinitionManager', () => {
       label: 'Pact Ward',
       kind: 'potion',
     });
+    expect(manager.getPotionDefinitions()).toContainEqual({
+      id: 2019,
+      key: 'wastedPotion',
+      label: 'Wasted Potion',
+      kind: 'potion',
+      hasRecipe: false,
+      baseSellPrice: 1,
+    });
+    expect(manager.getRecipePotionDefinitions()).toHaveLength(18);
     expect(manager.getDefinition(2001).kind).toBe('potion');
   });
 });

@@ -1,11 +1,9 @@
 export class SeedDropWeightManager {
-  constructor({ itemsFacade, random = Math.random }) {
-    this.itemsFacade = itemsFacade;
+  constructor({ random = Math.random } = {}) {
     this.random = random;
   }
 
-  pickSeed() {
-    const seeds = this.itemsFacade.getSeedDefinitions();
+  pickSeed(seeds) {
     const totalWeight = seeds.reduce((sum, seed) => sum + seed.dropWeight, 0);
     let roll = this.random() * totalWeight;
 

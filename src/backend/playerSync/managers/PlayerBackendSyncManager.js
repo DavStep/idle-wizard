@@ -4,12 +4,19 @@ export class PlayerBackendSyncManager {
     this.playerFacade = null;
     this.unsubscribe = null;
     this.lastUsername = null;
+    this.serverProfileLoaded = false;
+    this.applyingServerProfile = false;
+    this.canSyncBeforeServerProfile = false;
+    this.initialUsername = null;
+    this.pendingUsername = null;
   }
 
   setPlayerFacade(playerFacade) {
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.playerFacade = playerFacade;
+    this.initialUsername = playerFacade?.getSnapshot?.().username ?? null;
+    this.pendingUsername = null;
 
     if (!playerFacade) {
       return;
@@ -21,16 +28,44 @@ export class PlayerBackendSyncManager {
 
   connect(connection) {
     this.connection = connection;
-    this.sync(this.playerFacade?.getSnapshot());
+    this.canSyncBeforeServerProfile = !connection?.db?.player;
+
+    if (this.canSyncBeforeServerProfile) {
+      this.sync(this.playerFacade?.getSnapshot());
+    }
   }
 
   disconnect() {
     this.connection = null;
+    this.serverProfileLoaded = false;
+    this.applyingServerProfile = false;
+    this.canSyncBeforeServerProfile = false;
+    this.pendingUsername = null;
   }
 
   sync(snapshot) {
     const username = snapshot?.username;
-    if (!this.connection || !username || username === this.lastUsername) {
+    if (
+      !this.applyingServerProfile &&
+      this.connection &&
+      username &&
+      !this.serverProfileLoaded &&
+      !this.canSyncBeforeServerProfile
+    ) {
+      if (username !== this.initialUsername) {
+        this.pendingUsername = username;
+      }
+
+      return;
+    }
+
+    if (
+      this.applyingServerProfile ||
+      !this.connection ||
+      !username ||
+      username === this.lastUsername ||
+      (!this.serverProfileLoaded && !this.canSyncBeforeServerProfile)
+    ) {
       return;
     }
 
@@ -43,6 +78,41 @@ export class PlayerBackendSyncManager {
     setUsername({ username }).catch(() => {
       this.lastUsername = null;
     });
+  }
+
+  applyServerProfile(profile) {
+    this.serverProfileLoaded = true;
+    const pendingUsername = this.pendingUsername;
+    this.pendingUsername = null;
+
+    const username = profile?.username;
+    if (!username) {
+      this.sync(this.playerFacade?.getSnapshot());
+      return;
+    }
+
+    this.lastUsername = username;
+
+    if (pendingUsername) {
+      if (this.playerFacade?.getSnapshot?.().username !== pendingUsername) {
+        this.playerFacade?.setUsername?.(pendingUsername);
+      } else {
+        this.sync({ username: pendingUsername });
+      }
+
+      return;
+    }
+
+    if (this.playerFacade?.getSnapshot?.().username === username) {
+      return;
+    }
+
+    try {
+      this.applyingServerProfile = true;
+      this.playerFacade?.setUsername?.(username);
+    } finally {
+      this.applyingServerProfile = false;
+    }
   }
 
   findSetUsernameReducer() {
