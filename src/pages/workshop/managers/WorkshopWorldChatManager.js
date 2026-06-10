@@ -220,18 +220,19 @@ export class WorkshopWorldChatManager {
 
     this.lastSnapshot = snapshot ?? { ...EMPTY_SNAPSHOT };
     const messages = Array.isArray(this.lastSnapshot.messages) ? this.lastSnapshot.messages : [];
-    const visibleMessages = this.getVisibleMessages(messages);
+    const chatMessages = this.getMessagesWithBody(messages);
+    const previewMessages = this.getPreviewMessages(chatMessages);
 
-    this.renderButtonPreview(visibleMessages);
+    this.renderButtonPreview(previewMessages);
 
-    if (!visibleMessages.length) {
+    if (!chatMessages.length) {
       const empty = document.createElement('div');
       empty.className = 'workshop-page__world-chat-empty';
       empty.textContent = this.lastSnapshot.connected ? 'no messages yet' : 'offline';
       this.refs.messages.replaceChildren(empty);
     } else {
       this.refs.messages.replaceChildren(
-        ...visibleMessages.map((message) => this.createMessage(message)),
+        ...chatMessages.map((message) => this.createMessage(message)),
       );
     }
 
@@ -246,6 +247,9 @@ export class WorkshopWorldChatManager {
   createMessage(message) {
     const row = document.createElement('div');
     row.className = 'workshop-page__world-chat-message';
+    if (this.isSystemMessage(message)) {
+      row.classList.add('workshop-page__world-chat-message--system');
+    }
 
     const name = document.createElement('span');
     name.className = 'workshop-page__world-chat-name';
@@ -259,8 +263,12 @@ export class WorkshopWorldChatManager {
     return row;
   }
 
-  getVisibleMessages(messages) {
-    return messages.filter((message) => message?.body).slice(-2);
+  getMessagesWithBody(messages) {
+    return messages.filter((message) => message?.body);
+  }
+
+  getPreviewMessages(messages) {
+    return messages.slice(-2);
   }
 
   renderButtonPreview(messages) {
@@ -290,7 +298,7 @@ export class WorkshopWorldChatManager {
 
   formatSender(message) {
     const username = message?.username || 'wizard';
-    const fallbackLevel = username === 'system' ? null : 1;
+    const fallbackLevel = this.isSystemMessage(message) ? null : 1;
     const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
 
     if (!playerLevel) {
@@ -298,6 +306,10 @@ export class WorkshopWorldChatManager {
     }
 
     return `${username} Lv.${playerLevel}`;
+  }
+
+  isSystemMessage(message) {
+    return message?.username === 'system';
   }
 
   normalizePlayerLevel(playerLevel, fallbackLevel = 1) {

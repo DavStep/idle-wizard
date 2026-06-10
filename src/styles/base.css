@@ -26,6 +26,7 @@
   --style-progress-height: 3px;
   --style-progress-timer-height: var(--style-progress-height);
   --style-row-min-height: 20px;
+  --style-world-chat-row-height: 16px;
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
   --style-button-width: 100px;
   --style-room-edge: 27px;
@@ -33,7 +34,7 @@
   --style-room-content-edge: 16px;
   --style-room-content-top: 88px;
   --style-room-chat-bottom: 50px;
-  --style-room-chat-source-height: calc((var(--style-row-min-height) * 2) + 12px);
+  --style-room-chat-source-height: calc((var(--style-world-chat-row-height) * 2) + 12px);
   --style-room-chat-title-overhang: 13px;
   --style-room-chat-gap: 8px;
   --style-room-chat-clearance: calc(
@@ -1188,7 +1189,7 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__world-chat-messages {
-  min-height: calc(var(--style-row-min-height) * 2);
+  min-height: calc(var(--style-world-chat-row-height) * 2);
   max-height: 120px;
   margin-bottom: 5px;
   overflow: hidden auto;
@@ -1245,16 +1246,23 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__world-chat-message {
+  min-height: var(--style-world-chat-row-height);
+  line-height: var(--style-world-chat-row-height);
   overflow-wrap: anywhere;
 }
 
+.workshop-page__world-chat-message--system {
+  color: var(--style-muted);
+}
+
 .workshop-page__world-chat-preview {
-  min-height: calc(var(--style-row-min-height) * 2);
+  min-height: calc(var(--style-world-chat-row-height) * 2);
 }
 
 .workshop-page__world-chat-box .workshop-page__world-chat-message,
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
-  min-height: var(--style-row-min-height);
+  min-height: var(--style-world-chat-row-height);
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1262,7 +1270,7 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
   display: grid;
-  min-height: calc(var(--style-row-min-height) * 2);
+  min-height: calc(var(--style-world-chat-row-height) * 2);
   text-align: center;
   place-items: center;
 }

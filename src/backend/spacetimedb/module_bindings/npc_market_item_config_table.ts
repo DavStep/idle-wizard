@@ -17,4 +17,7 @@ export default __t.row({
   defaultBasePriceGold: __t.u64().name("default_base_price_gold"),
   basePriceGold: __t.u64().name("base_price_gold"),
   updatedAt: __t.timestamp().name("updated_at"),
+  targetStock: __t.u64().name("target_stock"),
+  volatilityBps: __t.u64().name("volatility_bps"),
+  enabled: __t.bool(),
 });

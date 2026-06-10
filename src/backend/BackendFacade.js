@@ -1,4 +1,5 @@
 import { AuthFacade } from './auth/AuthFacade.js';
+import { GameConfigBackendFacade } from './gameConfig/GameConfigBackendFacade.js';
 import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade.js';
 import { NpcMarketBackendFacade } from './npcMarket/NpcMarketBackendFacade.js';
 import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js';
@@ -16,6 +17,7 @@ export class BackendFacade {
     databaseName = import.meta.env.VITE_SPACETIME_DATABASE ?? 'idle-wizard',
   } = {}) {
     this.authFacade = new AuthFacade();
+    this.gameConfigFacade = new GameConfigBackendFacade();
     this.leaderboardFacade = new LeaderboardBackendFacade();
     this.worldChatFacade = new WorldChatBackendFacade();
     this.npcMarketFacade = new NpcMarketBackendFacade();
@@ -43,6 +45,7 @@ export class BackendFacade {
 
     return this.spacetimeDbFacade.connectGeneratedBindings({
       onConnect: (connection, identity) => {
+        this.gameConfigFacade.connect(connection);
         this.leaderboardFacade.connect(connection);
         this.worldChatFacade.connect(connection);
         this.npcMarketFacade.connect(connection);
@@ -55,6 +58,7 @@ export class BackendFacade {
         onOnline?.({ connection, identity });
       },
       onConnectError: (error) => {
+        this.gameConfigFacade.disconnect();
         this.leaderboardFacade.disconnect();
         this.worldChatFacade.disconnect();
         this.npcMarketFacade.disconnect();
@@ -64,6 +68,7 @@ export class BackendFacade {
         onOffline?.({ reason: 'connect_error', error });
       },
       onDisconnect: () => {
+        this.gameConfigFacade.disconnect();
         this.leaderboardFacade.disconnect();
         this.worldChatFacade.disconnect();
         this.npcMarketFacade.disconnect();
@@ -76,6 +81,7 @@ export class BackendFacade {
   }
 
   stop() {
+    this.gameConfigFacade.disconnect();
     this.leaderboardFacade.disconnect();
     this.leaderboardFacade.setGameplayFacade(null);
     this.worldChatFacade.disconnect();
@@ -89,6 +95,10 @@ export class BackendFacade {
 
   getAuthFacade() {
     return this.authFacade;
+  }
+
+  getGameConfigFacade() {
+    return this.gameConfigFacade;
   }
 
   getSpacetimeDbFacade() {

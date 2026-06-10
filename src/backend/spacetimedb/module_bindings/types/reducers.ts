@@ -6,12 +6,15 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AnnounceResearchReducer from "../announce_research_reducer";
 import BuyFromNpcReducer from "../buy_from_npc_reducer";
 import BuyPlayerShopListingReducer from "../buy_player_shop_listing_reducer";
 import ClaimNpcMarketAdminReducer from "../claim_npc_market_admin_reducer";
 import ClaimPlayerShopProceedsReducer from "../claim_player_shop_proceeds_reducer";
 import ClearPlayerShopSlotReducer from "../clear_player_shop_slot_reducer";
 import DiscoverPotionRecipeReducer from "../discover_potion_recipe_reducer";
+import RemoveNpcMarketItemConfigReducer from "../remove_npc_market_item_config_reducer";
+import RemoveResearchConfigReducer from "../remove_research_config_reducer";
 import SellToNpcReducer from "../sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "../send_world_chat_message_reducer";
 import SetNpcMarketItemBasePriceReducer from "../set_npc_market_item_base_price_reducer";
@@ -20,13 +23,18 @@ import SetPlayerShopSlotReducer from "../set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "../set_total_generated_gold_reducer";
 import SetUsernameReducer from "../set_username_reducer";
 import TickNpcMarketReducer from "../tick_npc_market_reducer";
+import UpsertNpcMarketItemConfigReducer from "../upsert_npc_market_item_config_reducer";
+import UpsertResearchConfigReducer from "../upsert_research_config_reducer";
 
+export type AnnounceResearchParams = __Infer<typeof AnnounceResearchReducer>;
 export type BuyFromNpcParams = __Infer<typeof BuyFromNpcReducer>;
 export type BuyPlayerShopListingParams = __Infer<typeof BuyPlayerShopListingReducer>;
 export type ClaimNpcMarketAdminParams = __Infer<typeof ClaimNpcMarketAdminReducer>;
 export type ClaimPlayerShopProceedsParams = __Infer<typeof ClaimPlayerShopProceedsReducer>;
 export type ClearPlayerShopSlotParams = __Infer<typeof ClearPlayerShopSlotReducer>;
 export type DiscoverPotionRecipeParams = __Infer<typeof DiscoverPotionRecipeReducer>;
+export type RemoveNpcMarketItemConfigParams = __Infer<typeof RemoveNpcMarketItemConfigReducer>;
+export type RemoveResearchConfigParams = __Infer<typeof RemoveResearchConfigReducer>;
 export type SellToNpcParams = __Infer<typeof SellToNpcReducer>;
 export type SendWorldChatMessageParams = __Infer<typeof SendWorldChatMessageReducer>;
 export type SetNpcMarketItemBasePriceParams = __Infer<typeof SetNpcMarketItemBasePriceReducer>;
@@ -35,4 +43,6 @@ export type SetPlayerShopSlotParams = __Infer<typeof SetPlayerShopSlotReducer>;
 export type SetTotalGeneratedGoldParams = __Infer<typeof SetTotalGeneratedGoldReducer>;
 export type SetUsernameParams = __Infer<typeof SetUsernameReducer>;
 export type TickNpcMarketParams = __Infer<typeof TickNpcMarketReducer>;
+export type UpsertNpcMarketItemConfigParams = __Infer<typeof UpsertNpcMarketItemConfigReducer>;
+export type UpsertResearchConfigParams = __Infer<typeof UpsertResearchConfigReducer>;
 

@@ -74,7 +74,23 @@ export class GameplayFacade {
       now: persistenceNow,
     });
     this.potionDiscoveryFacade = null;
+    this.worldChatFacade = null;
+    this.gameConfigFacade = null;
+    this.gameConfigUnsubscribe = null;
     this.initialized = false;
+  }
+
+  setGameConfigFacade(gameConfigFacade) {
+    this.gameConfigUnsubscribe?.();
+    this.gameConfigFacade = gameConfigFacade;
+    this.gameConfigUnsubscribe = gameConfigFacade?.subscribe?.((snapshot) => {
+      this.researchFacade.applyRuntimeConfig(snapshot);
+
+      if (this.initialized) {
+        this.publishSnapshot();
+      }
+    }) ?? null;
+    this.researchFacade.applyRuntimeConfig(gameConfigFacade?.getSnapshot?.());
   }
 
   setNpcMarketFacade(npcMarketFacade) {
@@ -89,6 +105,14 @@ export class GameplayFacade {
     this.potionDiscoveryFacade = potionDiscoveryFacade;
     this.brewingFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
     this.shopFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
+
+    if (this.initialized) {
+      this.publishSnapshot();
+    }
+  }
+
+  setWorldChatFacade(worldChatFacade) {
+    this.worldChatFacade = worldChatFacade;
 
     if (this.initialized) {
       this.publishSnapshot();
@@ -123,6 +147,8 @@ export class GameplayFacade {
 
   shutdown() {
     this.persistenceFacade.stop();
+    this.gameConfigUnsubscribe?.();
+    this.gameConfigUnsubscribe = null;
     this.stateObserverManager.clear();
     this.initialized = false;
   }
@@ -192,9 +218,11 @@ export class GameplayFacade {
   buyResearch(researchId) {
     const result = this.researchFacade.buyResearch(researchId);
     if (result.ok) {
+      const label = this.researchFacade.getResearchLabel(result.researchId);
       this.gameplayLogFacade.logResearchBought({
-        label: this.researchFacade.getResearchLabel(result.researchId),
+        label,
       });
+      void this.worldChatFacade?.announceResearch(label);
     }
     this.publishAndSaveSnapshot();
     return result;

@@ -24,10 +24,12 @@ export class AppFacade {
     this.backendFacade = new BackendFacade();
     this.onlineGateManager = new AppOnlineGateManager();
     this.appThemeManager = new AppThemeManager();
+    this.gameplayFacade.setGameConfigFacade(this.backendFacade.getGameConfigFacade());
     this.gameplayFacade.setNpcMarketFacade(this.backendFacade.getNpcMarketFacade());
     this.gameplayFacade.setPotionDiscoveryFacade(
       this.backendFacade.getPotionDiscoveryFacade(),
     );
+    this.gameplayFacade.setWorldChatFacade(this.backendFacade.getWorldChatFacade());
     this.pagesFacade = new PagesFacade({
       gameplayFacade: this.gameplayFacade,
       playerFacade: this.playerFacade,

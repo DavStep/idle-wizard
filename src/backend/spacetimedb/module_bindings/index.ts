@@ -34,12 +34,15 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AnnounceResearchReducer from "./announce_research_reducer";
 import BuyFromNpcReducer from "./buy_from_npc_reducer";
 import BuyPlayerShopListingReducer from "./buy_player_shop_listing_reducer";
 import ClaimNpcMarketAdminReducer from "./claim_npc_market_admin_reducer";
 import ClaimPlayerShopProceedsReducer from "./claim_player_shop_proceeds_reducer";
 import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
 import DiscoverPotionRecipeReducer from "./discover_potion_recipe_reducer";
+import RemoveNpcMarketItemConfigReducer from "./remove_npc_market_item_config_reducer";
+import RemoveResearchConfigReducer from "./remove_research_config_reducer";
 import SellToNpcReducer from "./sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
 import SetNpcMarketItemBasePriceReducer from "./set_npc_market_item_base_price_reducer";
@@ -48,6 +51,8 @@ import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetUsernameReducer from "./set_username_reducer";
 import TickNpcMarketReducer from "./tick_npc_market_reducer";
+import UpsertNpcMarketItemConfigReducer from "./upsert_npc_market_item_config_reducer";
+import UpsertResearchConfigReducer from "./upsert_research_config_reducer";
 
 // Import all procedure arg schemas
 
@@ -61,6 +66,7 @@ import PlayerShopListingRow from "./player_shop_listing_table";
 import PlayerShopProceedsRow from "./player_shop_proceeds_table";
 import PlayerShopTradeRow from "./player_shop_trade_table";
 import PotionRecipeDiscoveryRow from "./potion_recipe_discovery_table";
+import ResearchConfigRow from "./research_config_table";
 import WorldChatRow from "./world_chat_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -196,6 +202,23 @@ const tablesSchema = __schema({
       { name: 'potion_recipe_discovery_potion_key_key', constraint: 'unique', columns: ['potionKey'] },
     ],
   }, PotionRecipeDiscoveryRow),
+  researchConfig: __table({
+    name: 'research_config',
+    indexes: [
+      { accessor: 'byGroupId', name: 'research_config_group_id_idx_btree', algorithm: 'btree', columns: [
+        'groupId',
+      ] },
+      { accessor: 'researchId', name: 'research_config_research_id_idx_btree', algorithm: 'btree', columns: [
+        'researchId',
+      ] },
+      { accessor: 'byUpdatedAt', name: 'research_config_updated_at_idx_btree', algorithm: 'btree', columns: [
+        'updatedAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'research_config_research_id_key', constraint: 'unique', columns: ['researchId'] },
+    ],
+  }, ResearchConfigRow),
   worldChat: __table({
     name: 'world_chat',
     indexes: [
@@ -214,12 +237,15 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("announce_research", AnnounceResearchReducer),
   __reducerSchema("buy_from_npc", BuyFromNpcReducer),
   __reducerSchema("buy_player_shop_listing", BuyPlayerShopListingReducer),
   __reducerSchema("claim_npc_market_admin", ClaimNpcMarketAdminReducer),
   __reducerSchema("claim_player_shop_proceeds", ClaimPlayerShopProceedsReducer),
   __reducerSchema("clear_player_shop_slot", ClearPlayerShopSlotReducer),
   __reducerSchema("discover_potion_recipe", DiscoverPotionRecipeReducer),
+  __reducerSchema("remove_npc_market_item_config", RemoveNpcMarketItemConfigReducer),
+  __reducerSchema("remove_research_config", RemoveResearchConfigReducer),
   __reducerSchema("sell_to_npc", SellToNpcReducer),
   __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),
   __reducerSchema("set_npc_market_item_base_price", SetNpcMarketItemBasePriceReducer),
@@ -228,6 +254,8 @@ const reducersSchema = __reducers(
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_username", SetUsernameReducer),
   __reducerSchema("tick_npc_market", TickNpcMarketReducer),
+  __reducerSchema("upsert_npc_market_item_config", UpsertNpcMarketItemConfigReducer),
+  __reducerSchema("upsert_research_config", UpsertResearchConfigReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

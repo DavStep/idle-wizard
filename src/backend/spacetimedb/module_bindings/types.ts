@@ -33,6 +33,9 @@ export const NpcMarketItemConfig = __t.object("NpcMarketItemConfig", {
   defaultBasePriceGold: __t.u64(),
   basePriceGold: __t.u64(),
   updatedAt: __t.timestamp(),
+  targetStock: __t.u64(),
+  volatilityBps: __t.u64(),
+  enabled: __t.bool(),
 });
 export type NpcMarketItemConfig = __Infer<typeof NpcMarketItemConfig>;
 
@@ -108,6 +111,17 @@ export const PotionRecipeDiscovery = __t.object("PotionRecipeDiscovery", {
   discoveredAt: __t.timestamp(),
 });
 export type PotionRecipeDiscovery = __Infer<typeof PotionRecipeDiscovery>;
+
+export const ResearchConfig = __t.object("ResearchConfig", {
+  researchId: __t.string(),
+  label: __t.string(),
+  groupId: __t.string(),
+  defaultCostGold: __t.u64(),
+  costGold: __t.u64(),
+  enabled: __t.bool(),
+  updatedAt: __t.timestamp(),
+});
+export type ResearchConfig = __Infer<typeof ResearchConfig>;
 
 export const WorldChat = __t.object("WorldChat", {
   messageId: __t.uuid(),

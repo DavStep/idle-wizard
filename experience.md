@@ -55,7 +55,7 @@
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - Wasted Potion is not researchable and sells for 1 gold by item-level sell price override.
 - Research prices come from `src/gameplay/research/research-balance.json`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
-- Mana production and cap research levels come from `manaUpgradeSeries` in `research-balance.json`; UI shows only the next incomplete level in each series.
+- Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
@@ -151,6 +151,7 @@
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
+- World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup overlays should lift room pages only above the canvas (`z-index: 3`), not above shared top/chat/bottom chrome.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
@@ -183,6 +184,7 @@
 
 - Backend target is SpacetimeDB.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
+- Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
@@ -191,10 +193,11 @@
 - Server tables currently own shared `player` identity rows and `leaderboard` rows; client syncs username and player level only.
 - Shared player level displays use server `playerLevel`; sync `tasks.currentLevel` through `set_player_level` and do not infer other players locally.
 - Local player level milestones come from `player-level-balance.json`; they unlock permission to buy higher caps, never grant the tile/stand for free.
-- Player level sets baseline mana cap and mana regen from `player-level-balance.json`; mana research bonuses stack on top.
+- Player level sets mana cap and mana regen from `player-level-balance.json`; there are no separate mana research bonuses.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.
 - Leaderboard total generated gold uses local gold lifetime total synced through `set_total_generated_gold`; current gold alone is not enough because spending lowers it.
+- Global progress resets should bump the local gameplay save version and migrate old saves to keep only `gold.totalGenerated`; username and leaderboard identity live outside gameplay save.
 - Hydrate username from the server `player` row before pushing local values; otherwise local `wizard` can overwrite saved DB profile data.
 - Queue explicit username edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's save.
 - SpacetimeDB table callbacks pass inserted/updated rows; use those callback rows for player profile sync because immediate table scans can still read stale usernames.

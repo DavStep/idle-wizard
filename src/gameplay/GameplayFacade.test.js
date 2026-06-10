@@ -217,15 +217,14 @@ describe('GameplayFacade', () => {
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().mana.cap).toBe(60);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(1.1);
+    expect(gameplayFacade.getSnapshot().mana.cap).toBe(100);
+    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(2);
 
-    gameplayFacade.goldFacade.add(125);
-    gameplayFacade.buyResearch('manaProductionRate:1');
-    gameplayFacade.buyResearch('manaSphereCap:1');
+    finishCurrentTaskLevel(gameplayFacade);
 
-    expect(gameplayFacade.getSnapshot().mana.cap).toBe(110);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(2.1);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().mana.cap).toBe(150);
+    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(3);
   });
 
   it('logs completed gameplay events', () => {
@@ -417,25 +416,41 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('persists mana research effects across a new app instance', () => {
+  it('drops removed mana research effects from legacy saves', () => {
     const persistenceStorage = createMemoryStorage();
-    const first = createGameplay({ persistenceStorage });
-
-    first.gameplayFacade.goldFacade.add(125);
-    first.gameplayFacade.buyResearch('manaProductionRate:1');
-    first.gameplayFacade.buyResearch('manaSphereCap:1');
-    first.gameplayFacade.shutdown();
-    first.ecsFacade.destroyWorld();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 2,
+        mana: {
+          current: 20,
+          cap: 100,
+          perSecond: 2,
+        },
+        gold: {},
+        crystal: {},
+        logs: {},
+        inventory: [],
+        research: {
+          completedIds: ['manaProductionRate:1', 'manaSphereCap:1'],
+        },
+        shop: {},
+        brewing: {},
+        garden: {},
+        tasks: {
+          currentLevel: 1,
+          tasks: [],
+        },
+      }),
+    );
 
     const second = createGameplay({ persistenceStorage });
 
-    expect(second.gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([
-      'manaProductionRate:1',
-      'manaSphereCap:1',
-    ]);
+    expect(second.gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([]);
     expect(second.gameplayFacade.getSnapshot().mana).toMatchObject({
-      cap: 100,
-      perSecond: 2,
+      current: 20,
+      cap: 50,
+      perSecond: 1,
     });
   });
 
@@ -597,48 +612,17 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('exposes research boxes for mana, seeds, summon counts, and recipes', () => {
+  it('exposes research boxes for seeds, summon counts, and recipes', () => {
     const { gameplayFacade } = createGameplay();
     const research = gameplayFacade.getSnapshot().research;
 
     expect(research.boxes.map((box) => box.id)).toEqual([
-      'manaSphere',
       'seedUnlocks',
       'summonSeeds',
       'recipeUnlocks',
     ]);
-    expect(research.boxes[0].researches).toEqual([
-      {
-        id: 'manaProductionRate:1',
-        seriesId: 'manaProductionRate',
-        level: 1,
-        label: 'mana production rate 1',
-        value: '75 gold',
-        effect: '+1/sec',
-        showEffect: true,
-        requiredResearchIds: [],
-        description: 'increases mana gained each second by 1.',
-        costGold: 75,
-        completed: false,
-        canResearch: false,
-      },
-      {
-        id: 'manaSphereCap:1',
-        seriesId: 'manaSphereCap',
-        level: 1,
-        label: 'mana sphere cap 1',
-        value: '50 gold',
-        effect: '+50 cap',
-        showEffect: true,
-        requiredResearchIds: [],
-        description: 'increases mana sphere capacity by 50.',
-        costGold: 50,
-        completed: false,
-        canResearch: false,
-      },
-    ]);
-    expect(research.boxes[1].researches).toHaveLength(14);
-    expect(research.boxes[1].researches[0]).toEqual({
+    expect(research.boxes[0].researches).toHaveLength(14);
+    expect(research.boxes[0].researches[0]).toEqual({
       id: 'unlockSeed:sageSeed',
       label: 'Sage Seed',
       value: 'free',
@@ -648,7 +632,7 @@ describe('GameplayFacade', () => {
       completed: false,
       canResearch: true,
     });
-    expect(research.boxes[2].researches).toEqual([
+    expect(research.boxes[1].researches).toEqual([
       {
         id: 'summonSeedsX2',
         label: 'x2 summon',
@@ -696,8 +680,8 @@ describe('GameplayFacade', () => {
         canResearch: false,
       },
     ]);
-    expect(research.boxes[3].researches).toHaveLength(18);
-    expect(research.boxes[3].researches[0]).toEqual({
+    expect(research.boxes[2].researches).toHaveLength(18);
+    expect(research.boxes[2].researches[0]).toEqual({
       id: 'unlockRecipe:manaTonic',
       label: 'Mana Tonic',
       value: '80 gold',
@@ -712,76 +696,98 @@ describe('GameplayFacade', () => {
   it('buys research with gold from research balance', () => {
     const { gameplayFacade } = createGameplay();
 
-    gameplayFacade.goldFacade.add(75);
+    expect(gameplayFacade.buyResearch('unlockSeed:sageSeed')).toEqual({
+      ok: true,
+      researchId: 'unlockSeed:sageSeed',
+      cost: 0,
+    });
 
-    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[0]).toMatchObject({
-      id: 'manaProductionRate:1',
-      value: '75 gold',
-      costGold: 75,
+    gameplayFacade.goldFacade.add(25);
+
+    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[1]).toMatchObject({
+      id: 'unlockSeed:mintSeed',
+      value: '25 gold',
+      costGold: 25,
       completed: false,
       canResearch: true,
     });
 
-    expect(gameplayFacade.buyResearch('manaProductionRate:1')).toEqual({
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: true,
-      researchId: 'manaProductionRate:1',
-      cost: 75,
+      researchId: 'unlockSeed:mintSeed',
+      cost: 25,
     });
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
-    expect(gameplayFacade.getSnapshot().gold.totalGenerated).toBe(75);
-    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[0]).toMatchObject({
-      id: 'manaProductionRate:2',
-      value: '150 gold',
-      effect: '+1/sec',
-      costGold: 150,
-      completed: false,
-      canResearch: false,
-    });
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBe(2);
+    expect(gameplayFacade.getSnapshot().gold.totalGenerated).toBe(25);
     expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([
-      'manaProductionRate:1',
+      'unlockSeed:sageSeed',
+      'unlockSeed:mintSeed',
     ]);
-    expect(gameplayFacade.buyResearch('manaProductionRate:1')).toEqual({
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: false,
       reason: 'already_researched',
-      researchId: 'manaProductionRate:1',
-      cost: 75,
+      researchId: 'unlockSeed:mintSeed',
+      cost: 25,
     });
   });
 
-  it('shows the next mana cap research after buying the current one', () => {
+  it('announces successful research purchases to world chat', () => {
+    const { gameplayFacade } = createGameplay();
+    const researchAnnouncements = [];
+
+    gameplayFacade.setWorldChatFacade({
+      announceResearch: (researchName) => {
+        researchAnnouncements.push(researchName);
+        return Promise.resolve({ ok: true, researchName });
+      },
+    });
+
+    expect(gameplayFacade.buyResearch('unlockSeed:sageSeed')).toEqual({
+      ok: true,
+      researchId: 'unlockSeed:sageSeed',
+      cost: 0,
+    });
+    expect(researchAnnouncements).toEqual(['Sage Seed']);
+
+    expect(gameplayFacade.buyResearch('unlockSeed:sageSeed')).toEqual({
+      ok: false,
+      reason: 'already_researched',
+      researchId: 'unlockSeed:sageSeed',
+      cost: 0,
+    });
+    expect(researchAnnouncements).toEqual(['Sage Seed']);
+  });
+
+  it('rejects removed mana research ids', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.goldFacade.add(150);
 
     expect(gameplayFacade.buyResearch('manaSphereCap:1')).toEqual({
-      ok: true,
+      ok: false,
+      reason: 'unknown_research',
       researchId: 'manaSphereCap:1',
-      cost: 50,
     });
-    expect(gameplayFacade.getSnapshot().mana.cap).toBe(100);
-    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[1]).toMatchObject({
-      id: 'manaSphereCap:2',
-      label: 'mana sphere cap 2',
-      value: '100 gold',
-      effect: '+50 cap',
-      costGold: 100,
-      completed: false,
-      canResearch: true,
+    expect(gameplayFacade.buyResearch('manaProductionRate:1')).toEqual({
+      ok: false,
+      reason: 'unknown_research',
+      researchId: 'manaProductionRate:1',
+    });
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({
+      cap: 50,
+      perSecond: 1,
     });
   });
 
-  it('rejects buying mana research levels out of order', () => {
+  it('rejects removed mana research levels out of order as unknown', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.goldFacade.add(20);
 
     expect(gameplayFacade.buyResearch('manaProductionRate:2')).toEqual({
       ok: false,
-      reason: 'missing_required_research',
+      reason: 'unknown_research',
       researchId: 'manaProductionRate:2',
-      requiredResearchId: 'manaProductionRate:1',
-      cost: 150,
     });
     expect(gameplayFacade.getSnapshot().mana.perSecond).toBe(1);
   });
@@ -882,31 +888,38 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('maps legacy mana research ids to first-level upgrades', () => {
+  it('rejects legacy mana research ids', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.goldFacade.add(75);
 
     expect(gameplayFacade.buyResearch('manaProductionRate')).toEqual({
-      ok: true,
-      researchId: 'manaProductionRate:1',
-      cost: 75,
+      ok: false,
+      reason: 'unknown_research',
+      researchId: 'manaProductionRate',
     });
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBe(2);
+    expect(gameplayFacade.getSnapshot().mana.perSecond).toBe(1);
   });
 
   it('rejects research purchase without enough gold', () => {
     const { gameplayFacade } = createGameplay();
 
-    expect(gameplayFacade.buyResearch('manaSphereCap')).toEqual({
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
+      ok: false,
+      reason: 'missing_required_research',
+      researchId: 'unlockSeed:mintSeed',
+      requiredResearchId: 'unlockSeed:sageSeed',
+      cost: 25,
+    });
+
+    expect(gameplayFacade.buyResearch('unlockSeed:sageSeed')).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: false,
       reason: 'not_enough_gold',
-      researchId: 'manaSphereCap:1',
-      cost: 50,
-    });
-    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[1]).toMatchObject({
-      completed: false,
-      value: '50 gold',
+      researchId: 'unlockSeed:mintSeed',
+      cost: 25,
     });
   });
 

@@ -123,10 +123,10 @@ function createGameplayFacadeFake() {
             maxCauldrons: 1,
             maxNpcMarketStands: 1,
             maxPlayerMarketStands: 1,
-            maxManaCap: 60,
-            manaPerSecond: 1.1,
+            maxManaCap: 100,
+            manaPerSecond: 2,
           },
-          effects: ['max mana cap 60', 'mana regen 1.1/sec'],
+          effects: ['max mana cap 100', 'mana regen 2/sec'],
         },
         {
           level: 3,
@@ -137,10 +137,10 @@ function createGameplayFacadeFake() {
             maxCauldrons: 1,
             maxNpcMarketStands: 1,
             maxPlayerMarketStands: 1,
-            maxManaCap: 70,
-            manaPerSecond: 1.2,
+            maxManaCap: 150,
+            manaPerSecond: 3,
           },
-          effects: ['max garden tiles 3', 'max mana cap 70', 'mana regen 1.2/sec'],
+          effects: ['max garden tiles 3', 'max mana cap 150', 'mana regen 3/sec'],
         },
       ],
     },
@@ -327,34 +327,6 @@ function createGameplayFacadeFake() {
     },
     research: {
       boxes: [
-        {
-          id: 'manaSphere',
-          label: 'mana sphere researches',
-          researches: [
-            {
-              id: 'manaProductionRate:1',
-              label: 'mana production rate 1',
-              value: '5 gold',
-              effect: '+1/sec',
-              showEffect: true,
-              description: 'increases mana gained each second by 1.',
-              costGold: 5,
-              completed: false,
-              canResearch: false,
-            },
-            {
-              id: 'manaSphereCap:1',
-              label: 'mana sphere cap 1',
-              value: '5 gold',
-              effect: '+50 cap',
-              showEffect: true,
-              description: 'increases mana sphere capacity by 50.',
-              costGold: 5,
-              completed: false,
-              canResearch: false,
-            },
-          ],
-        },
         {
           id: 'seedUnlocks',
           label: 'seed unlock researches',
@@ -1910,19 +1882,19 @@ describe('PagesFacade', () => {
     expect(levelPopup.querySelector('.room-top-panel__level-divider')?.hidden).toBe(false);
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana cap+10');
+    ).toContain('mana cap+50');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana regen+0.1/sec');
+    ).toContain('mana regen+1/sec');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
     ).toContain('garden plots1');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana cap60');
+    ).toContain('mana cap100');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana regen1.1/sec');
+    ).toContain('mana regen2/sec');
 
     levelPopup
       .querySelector('.room-top-panel__level-pager-button:last-child')
@@ -2751,13 +2723,15 @@ describe('PagesFacade', () => {
     expect(box.textContent).not.toContain('old hello');
     expect(box.textContent).toContain('Lin Lv.4: second hello');
     expect(box.textContent).toContain('Mo Lv.5: third hello');
+    expect(box.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(2);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(popup.querySelector('.style-dialog')).not.toBeNull();
-    expect(popup.textContent).not.toContain('old hello');
+    expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(3);
+    expect(popup.textContent).toContain('old hello');
     expect(popup.textContent).toContain('Lin Lv.4: second hello');
     expect(popup.textContent).toContain('Mo Lv.5: third hello');
 
@@ -2772,7 +2746,13 @@ describe('PagesFacade', () => {
 
     expect(worldChatFacade.getSentMessages()).toEqual(['hello room']);
     expect(input.value).toBe('');
-    expect(popup.textContent).not.toContain('second hello');
+    expect(box.textContent).not.toContain('old hello');
+    expect(box.textContent).not.toContain('second hello');
+    expect(box.textContent).toContain('Mo Lv.5: third hello');
+    expect(box.textContent).toContain('wizard Lv.1: hello room');
+    expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(4);
+    expect(popup.textContent).toContain('old hello');
+    expect(popup.textContent).toContain('Lin Lv.4: second hello');
     expect(popup.textContent).toContain('Mo Lv.5: third hello');
     expect(popup.textContent).toContain('wizard Lv.1: hello room');
 
@@ -2814,6 +2794,34 @@ describe('PagesFacade', () => {
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
+  });
+
+  it('marks system world chat messages as gray rows', () => {
+    const stage = document.createElement('section');
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [
+        {
+          id: '1',
+          senderIdentity: 'sender-a',
+          username: 'system',
+          playerLevel: 0,
+          body: 'Ada researched Mana Tonic',
+          sentAtMs: 1_000,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    const row = stage.querySelector('.workshop-page__world-chat-message');
+
+    expect(row?.classList.contains('workshop-page__world-chat-message--system')).toBe(true);
+    expect(row?.textContent).toBe('system: Ada researched Mana Tonic');
   });
 
   it('orders rooms as Brewing, Garden, Workshop, Research, Shop with Workshop default', () => {
@@ -2883,12 +2891,11 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.research-page')).not.toBeNull();
     expect(stage.querySelector('.research-page__content')).not.toBeNull();
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'mana sphere researches',
+      'seed unlock researches',
     );
-    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+    expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
       'mana production rate',
     );
-    expect(stage.querySelector('.research-page__content')?.textContent).toContain('+1/sec');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       'Sage Seed',
     );
@@ -3844,19 +3851,21 @@ describe('PagesFacade', () => {
       playerFacade: createPlayerFacadeFake(),
     });
 
-    gameplayFacade.setGold(5);
+    gameplayFacade.setGold(25);
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'research');
 
-    const researchButton = stage.querySelector('.research-page__research-button');
+    const researchButton = [...stage.querySelectorAll('.research-page__research-button')].find(
+      (button) => button.textContent === '20 gold',
+    );
 
-    expect(researchButton.textContent).toBe('5 gold');
+    expect(researchButton.textContent).toBe('20 gold');
     expect(researchButton.disabled).toBe(false);
 
     researchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
-    expect(stage.querySelector('.room-top-panel')?.textContent).toContain('gold 0');
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(5);
+    expect(stage.querySelector('.room-top-panel')?.textContent).toContain('gold 5');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('researched');
   });
 
@@ -3891,15 +3900,15 @@ describe('PagesFacade', () => {
         .find((name) => name.textContent === label)
         ?.closest('.research-page__row');
 
-    expect(findResearchRow('mana production rate 1')?.classList.contains('is-unavailable')).toBe(
+    expect(findResearchRow('x2 summon')?.classList.contains('is-unavailable')).toBe(
       true,
     );
     expect(findResearchRow('Mint Seed')?.classList.contains('is-unavailable')).toBe(true);
     expect(findResearchRow('Mint Seed')?.classList.contains('is-locked')).toBe(true);
 
-    gameplayFacade.setGold(5);
+    gameplayFacade.setGold(25);
 
-    expect(findResearchRow('mana production rate 1')?.classList.contains('is-unavailable')).toBe(
+    expect(findResearchRow('x2 summon')?.classList.contains('is-unavailable')).toBe(
       false,
     );
   });
@@ -3992,18 +4001,16 @@ describe('PagesFacade', () => {
     expect(popup).not.toBeNull();
     expect(popup.hidden).toBe(true);
     expect(labelButton.querySelector('.research-page__research-name')?.textContent).toBe(
-      'mana production rate 1',
+      'Sage Seed',
     );
-    expect(labelButton.querySelector('.research-page__research-effect')?.textContent).toBe(
-      '+1/sec',
-    );
+    expect(labelButton.querySelector('.research-page__research-effect')).toBeNull();
 
     labelButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(popup.textContent).toContain('mana production rate');
-    expect(popup.textContent).toContain('increases mana gained each second by 1');
+    expect(popup.textContent).toContain('Sage Seed');
+    expect(popup.textContent).toContain('allows Sage Seed to drop from summon seed');
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
 

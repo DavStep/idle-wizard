@@ -1,28 +1,4 @@
 {
-  "manaUpgradeSeries": {
-    "manaProductionRate": {
-      "levels": 20,
-      "costGold": {
-        "base": 75,
-        "perLevel": 75
-      },
-      "increase": {
-        "base": 1,
-        "perLevel": 0
-      }
-    },
-    "manaSphereCap": {
-      "levels": 20,
-      "costGold": {
-        "base": 50,
-        "perLevel": 50
-      },
-      "increase": {
-        "base": 50,
-        "perLevel": 0
-      }
-    }
-  },
   "researchCostsGold": {
     "unlockSeed:sageSeed": 0,
     "unlockSeed:mintSeed": 25,

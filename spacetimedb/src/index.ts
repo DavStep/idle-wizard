@@ -5,6 +5,10 @@ const DEFAULT_PLAYER_LEVEL = 1;
 const MAX_PLAYER_LEVEL = 100_000;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
+const MAX_RESEARCH_NAME_LENGTH = 80;
+const MAX_RESEARCH_ID_LENGTH = 96;
+const MAX_RESEARCH_LABEL_LENGTH = 80;
+const MAX_RESEARCH_GROUP_ID_LENGTH = 32;
 const WORLD_CHAT_HISTORY_LIMIT = 40;
 const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
 const MAX_PLAYER_SHOP_SLOTS = 5;
@@ -20,6 +24,11 @@ const NPC_MARKET_BUY_BPS = 8_000n;
 const NPC_MARKET_SELL_BPS = 12_000n;
 const NPC_MARKET_MAX_TRADE_QUANTITY = 10_000;
 const NPC_MARKET_MAX_BASE_PRICE_GOLD = 1_000_000_000n;
+const NPC_MARKET_MAX_TARGET_STOCK = 10_000_000n;
+const NPC_MARKET_MAX_VOLATILITY_BPS = 10_000n;
+const NPC_MARKET_DEFAULT_CUSTOM_TARGET_STOCK = 100n;
+const NPC_MARKET_DEFAULT_CUSTOM_VOLATILITY_BPS = 800n;
+const MAX_RESEARCH_COST_GOLD = 1_000_000_000n;
 
 const herbCatalog = [
   { key: 'sage', label: 'Sage' },
@@ -120,6 +129,45 @@ const potionMarketBasePriceGoldByKey: Record<string, bigint> = {
   bloodlightWard: 313n,
 };
 
+const researchDefaultCostGoldById: Record<string, bigint> = {
+  'unlockSeed:sageSeed': 0n,
+  'unlockSeed:mintSeed': 25n,
+  'unlockSeed:nettleSeed': 50n,
+  'unlockSeed:lavenderSeed': 90n,
+  'unlockSeed:briarSeed': 150n,
+  'unlockSeed:glowcapSeed': 240n,
+  'unlockSeed:mandrakeSeed': 360n,
+  'unlockSeed:sunrootSeed': 520n,
+  'unlockSeed:moonflowerSeed': 720n,
+  'unlockSeed:frostmossSeed': 980n,
+  'unlockSeed:dreambellSeed': 1_300n,
+  'unlockSeed:starAniseSeed': 1_700n,
+  'unlockSeed:bloodroseSeed': 2_200n,
+  'unlockSeed:dragonpepperSeed': 2_800n,
+  summonSeedsX2: 300n,
+  summonSeedsX3: 900n,
+  summonSeedsX4: 2_200n,
+  summonSeedsX5: 5_000n,
+  'unlockRecipe:manaTonic': 80n,
+  'unlockRecipe:minorHealingPotion': 120n,
+  'unlockRecipe:nettleVigor': 170n,
+  'unlockRecipe:calmingDraught': 240n,
+  'unlockRecipe:simpleAntidote': 330n,
+  'unlockRecipe:venomDraught': 450n,
+  'unlockRecipe:briarWard': 600n,
+  'unlockRecipe:lanternTonic': 780n,
+  'unlockRecipe:healingPotion': 1_000n,
+  'unlockRecipe:moonlitFocus': 1_260n,
+  'unlockRecipe:sunrootStamina': 1_580n,
+  'unlockRecipe:frostmossCleanse': 1_950n,
+  'unlockRecipe:sleepDraught': 2_380n,
+  'unlockRecipe:elixirOfLife': 2_880n,
+  'unlockRecipe:starLuckPhiltre': 3_450n,
+  'unlockRecipe:dragonCourage': 4_100n,
+  'unlockRecipe:deepDreamVision': 4_850n,
+  'unlockRecipe:pactWard': 5_700n,
+};
+
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
@@ -162,6 +210,44 @@ const npcMarketCatalog = [
 
 const npcMarketCatalogByItemKey = new Map(
   npcMarketCatalog.map((item) => [item.itemKey, item]),
+);
+
+const summonSeedResearchCatalog = [
+  { id: 'summonSeedsX2', label: 'x2 summon' },
+  { id: 'summonSeedsX3', label: 'x3 summon' },
+  { id: 'summonSeedsX4', label: 'x4 summon' },
+  { id: 'summonSeedsX5', label: 'x5 summon' },
+];
+
+const researchCatalog = [
+  ...herbCatalog.map((herb) => {
+    const id = `unlockSeed:${herb.key}Seed`;
+    return {
+      researchId: id,
+      label: `${herb.label} Seed`,
+      groupId: 'seedUnlocks',
+      defaultCostGold: researchDefaultCostGoldById[id] ?? 0n,
+    };
+  }),
+  ...summonSeedResearchCatalog.map((research) => ({
+    researchId: research.id,
+    label: research.label,
+    groupId: 'summonSeeds',
+    defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
+  })),
+  ...knownPotionCatalog.map((potion) => {
+    const id = `unlockRecipe:${potion.key}`;
+    return {
+      researchId: id,
+      label: potion.label,
+      groupId: 'recipeUnlocks',
+      defaultCostGold: researchDefaultCostGoldById[id] ?? 0n,
+    };
+  }),
+];
+
+const researchCatalogById = new Map(
+  researchCatalog.map((research) => [research.researchId, research]),
 );
 
 const spacetimedb = schema({
@@ -314,6 +400,9 @@ const spacetimedb = schema({
       defaultBasePriceGold: t.u64(),
       basePriceGold: t.u64(),
       updatedAt: t.timestamp(),
+      targetStock: t.u64().default(0n),
+      volatilityBps: t.u64().default(0n),
+      enabled: t.bool().default(true),
     },
   ),
   npcMarketAdmin: table(
@@ -322,6 +411,25 @@ const spacetimedb = schema({
       identity: t.identity().primaryKey(),
       username: t.string(),
       addedAt: t.timestamp(),
+    },
+  ),
+  researchConfig: table(
+    {
+      name: 'research_config',
+      public: true,
+      indexes: [
+        { accessor: 'byGroupId', algorithm: 'btree', columns: ['groupId'] },
+        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+      ],
+    },
+    {
+      researchId: t.string().primaryKey(),
+      label: t.string(),
+      groupId: t.string(),
+      defaultCostGold: t.u64(),
+      costGold: t.u64(),
+      enabled: t.bool().default(true),
+      updatedAt: t.timestamp(),
     },
   ),
 });
@@ -352,6 +460,32 @@ function normalizeWorldChatMessage(body: string): string {
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, MAX_WORLD_CHAT_MESSAGE_LENGTH);
+}
+
+function normalizeResearchName(researchName: string): string {
+  return String(researchName ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, MAX_RESEARCH_NAME_LENGTH);
+}
+
+function normalizeResearchId(researchId: string): string {
+  return String(researchId ?? '')
+    .trim()
+    .slice(0, MAX_RESEARCH_ID_LENGTH);
+}
+
+function normalizeResearchLabel(label: string): string {
+  return String(label ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, MAX_RESEARCH_LABEL_LENGTH);
+}
+
+function normalizeResearchGroupId(groupId: string): string {
+  return String(groupId ?? '')
+    .trim()
+    .slice(0, MAX_RESEARCH_GROUP_ID_LENGTH);
 }
 
 function normalizePlayerShopText(value: string, maxLength: number): string {
@@ -470,6 +604,66 @@ function validateNpcMarketBasePriceGold(basePriceGold: bigint | number): bigint 
   return safeBasePriceGold;
 }
 
+function normalizeNpcMarketTargetStock(value: bigint | number, fallback: bigint): bigint {
+  const safeValue = toBigInt(value);
+
+  if (safeValue < 1n || safeValue > NPC_MARKET_MAX_TARGET_STOCK) {
+    return fallback;
+  }
+
+  return safeValue;
+}
+
+function validateNpcMarketTargetStock(targetStock: bigint | number): bigint {
+  const safeTargetStock = toBigInt(targetStock);
+
+  if (safeTargetStock < 1n || safeTargetStock > NPC_MARKET_MAX_TARGET_STOCK) {
+    throw new Error('Invalid NPC market target stock.');
+  }
+
+  return safeTargetStock;
+}
+
+function normalizeNpcMarketVolatilityBps(value: bigint | number, fallback: bigint): bigint {
+  const safeValue = toBigInt(value);
+
+  if (safeValue > NPC_MARKET_MAX_VOLATILITY_BPS) {
+    return fallback;
+  }
+
+  return safeValue;
+}
+
+function validateNpcMarketVolatilityBps(volatilityBps: bigint | number): bigint {
+  const safeVolatilityBps = toBigInt(volatilityBps);
+
+  if (safeVolatilityBps > NPC_MARKET_MAX_VOLATILITY_BPS) {
+    throw new Error('Invalid NPC market volatility.');
+  }
+
+  return safeVolatilityBps;
+}
+
+function normalizeResearchCostGold(value: bigint | number, fallback: bigint): bigint {
+  const safeValue = toBigInt(value);
+
+  if (safeValue > MAX_RESEARCH_COST_GOLD) {
+    return fallback;
+  }
+
+  return safeValue;
+}
+
+function validateResearchCostGold(costGold: bigint | number): bigint {
+  const safeCostGold = toBigInt(costGold);
+
+  if (safeCostGold > MAX_RESEARCH_COST_GOLD) {
+    throw new Error('Invalid research cost.');
+  }
+
+  return safeCostGold;
+}
+
 function clampSignedBps(value: bigint): bigint {
   return clampBigInt(
     value,
@@ -557,26 +751,47 @@ function ensureNpcMarketItemConfig(
   const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(catalogItem.itemKey);
 
   if (existingConfig) {
+    const itemLabel =
+      normalizePlayerShopText(existingConfig.itemLabel, MAX_ITEM_LABEL_LENGTH) ||
+      catalogItem.itemLabel;
+    const itemKind =
+      normalizePlayerShopText(existingConfig.itemKind, MAX_ITEM_KIND_LENGTH) ||
+      catalogItem.itemKind;
     const basePriceGold = normalizeNpcMarketBasePriceGold(
       existingConfig.basePriceGold,
       catalogItem.basePriceGold,
     );
+    const targetStock = normalizeNpcMarketTargetStock(
+      existingConfig.targetStock,
+      catalogItem.targetStock,
+    );
+    const volatilityBps = normalizeNpcMarketVolatilityBps(
+      existingConfig.volatilityBps,
+      catalogItem.volatilityBps,
+    );
+    const enabled = existingConfig.enabled !== false;
 
     if (
-      existingConfig.itemLabel === catalogItem.itemLabel &&
-      existingConfig.itemKind === catalogItem.itemKind &&
+      existingConfig.itemLabel === itemLabel &&
+      existingConfig.itemKind === itemKind &&
       existingConfig.defaultBasePriceGold === catalogItem.basePriceGold &&
-      existingConfig.basePriceGold === basePriceGold
+      existingConfig.basePriceGold === basePriceGold &&
+      existingConfig.targetStock === targetStock &&
+      existingConfig.volatilityBps === volatilityBps &&
+      existingConfig.enabled === enabled
     ) {
       return existingConfig;
     }
 
     return ctx.db.npcMarketItemConfig.itemKey.update({
       ...existingConfig,
-      itemLabel: catalogItem.itemLabel,
-      itemKind: catalogItem.itemKind,
+      itemLabel,
+      itemKind,
       defaultBasePriceGold: catalogItem.basePriceGold,
       basePriceGold,
+      targetStock,
+      volatilityBps,
+      enabled,
       updatedAt: ctx.timestamp,
     });
   }
@@ -587,18 +802,72 @@ function ensureNpcMarketItemConfig(
     itemKind: catalogItem.itemKind,
     defaultBasePriceGold: catalogItem.basePriceGold,
     basePriceGold: catalogItem.basePriceGold,
+    targetStock: catalogItem.targetStock,
+    volatilityBps: catalogItem.volatilityBps,
+    enabled: true,
     updatedAt: ctx.timestamp,
   });
 }
 
-function getNpcMarketRuntimeConfig(ctx: IdleWizardReducerCtx, itemKey: string) {
-  const catalogItem = getNpcMarketCatalogItem(itemKey);
-  const itemConfig = ensureNpcMarketItemConfig(ctx, catalogItem);
+function normalizeNpcMarketRuntimeConfig(row: any, catalogItem?: (typeof npcMarketCatalog)[number]) {
+  const defaultBasePriceGold = normalizeNpcMarketBasePriceGold(
+    row.defaultBasePriceGold,
+    catalogItem?.basePriceGold ?? 1n,
+  );
 
   return {
-    ...catalogItem,
-    basePriceGold: toBigInt(itemConfig.basePriceGold),
+    itemKey: normalizeNpcMarketItemKey(row.itemKey),
+    itemLabel:
+      normalizePlayerShopText(row.itemLabel, MAX_ITEM_LABEL_LENGTH) ||
+      catalogItem?.itemLabel ||
+      normalizeNpcMarketItemKey(row.itemKey),
+    itemKind:
+      normalizePlayerShopText(row.itemKind, MAX_ITEM_KIND_LENGTH) ||
+      catalogItem?.itemKind ||
+      'custom',
+    defaultBasePriceGold,
+    basePriceGold: normalizeNpcMarketBasePriceGold(
+      row.basePriceGold,
+      defaultBasePriceGold,
+    ),
+    targetStock: normalizeNpcMarketTargetStock(
+      row.targetStock,
+      catalogItem?.targetStock ?? NPC_MARKET_DEFAULT_CUSTOM_TARGET_STOCK,
+    ),
+    volatilityBps: normalizeNpcMarketVolatilityBps(
+      row.volatilityBps,
+      catalogItem?.volatilityBps ?? NPC_MARKET_DEFAULT_CUSTOM_VOLATILITY_BPS,
+    ),
+    enabled: row.enabled !== false,
   };
+}
+
+function getNpcMarketRuntimeConfig(ctx: IdleWizardReducerCtx, itemKey: string) {
+  const safeItemKey = normalizeNpcMarketItemKey(itemKey);
+  const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
+  const itemConfig = catalogItem
+    ? ensureNpcMarketItemConfig(ctx, catalogItem)
+    : ctx.db.npcMarketItemConfig.itemKey.find(safeItemKey);
+
+  if (!itemConfig) {
+    throw new Error('Unknown NPC market item.');
+  }
+
+  const runtimeConfig = normalizeNpcMarketRuntimeConfig(itemConfig, catalogItem);
+
+  if (!runtimeConfig.enabled) {
+    throw new Error('NPC market item is disabled.');
+  }
+
+  return runtimeConfig;
+}
+
+function deleteNpcMarketPriceIfPresent(ctx: IdleWizardReducerCtx, itemKey: string) {
+  const existingRow = ctx.db.npcMarketPrice.itemKey.find(itemKey);
+
+  if (existingRow) {
+    ctx.db.npcMarketPrice.delete(existingRow);
+  }
 }
 
 function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
@@ -658,7 +927,71 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
 
 function ensureNpcMarketCatalog(ctx: IdleWizardReducerCtx) {
   for (const catalogItem of npcMarketCatalog) {
-    ensureNpcMarketItem(ctx, catalogItem.itemKey);
+    const config = normalizeNpcMarketRuntimeConfig(
+      ensureNpcMarketItemConfig(ctx, catalogItem),
+      catalogItem,
+    );
+
+    if (config.enabled) {
+      ensureNpcMarketItem(ctx, catalogItem.itemKey);
+    } else {
+      deleteNpcMarketPriceIfPresent(ctx, catalogItem.itemKey);
+    }
+  }
+}
+
+function ensureResearchConfig(
+  ctx: IdleWizardReducerCtx,
+  catalogResearch: (typeof researchCatalog)[number],
+) {
+  const existingConfig = ctx.db.researchConfig.researchId.find(catalogResearch.researchId);
+
+  if (existingConfig) {
+    const label =
+      normalizeResearchLabel(existingConfig.label) || catalogResearch.label;
+    const groupId =
+      normalizeResearchGroupId(existingConfig.groupId) || catalogResearch.groupId;
+    const costGold = normalizeResearchCostGold(
+      existingConfig.costGold,
+      catalogResearch.defaultCostGold,
+    );
+    const enabled = existingConfig.enabled !== false;
+
+    if (
+      existingConfig.label === label &&
+      existingConfig.groupId === groupId &&
+      existingConfig.defaultCostGold === catalogResearch.defaultCostGold &&
+      existingConfig.costGold === costGold &&
+      existingConfig.enabled === enabled
+    ) {
+      return existingConfig;
+    }
+
+    return ctx.db.researchConfig.researchId.update({
+      ...existingConfig,
+      label,
+      groupId,
+      defaultCostGold: catalogResearch.defaultCostGold,
+      costGold,
+      enabled,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  return ctx.db.researchConfig.insert({
+    researchId: catalogResearch.researchId,
+    label: catalogResearch.label,
+    groupId: catalogResearch.groupId,
+    defaultCostGold: catalogResearch.defaultCostGold,
+    costGold: catalogResearch.defaultCostGold,
+    enabled: true,
+    updatedAt: ctx.timestamp,
+  });
+}
+
+function ensureResearchConfigCatalog(ctx: IdleWizardReducerCtx) {
+  for (const catalogResearch of researchCatalog) {
+    ensureResearchConfig(ctx, catalogResearch);
   }
 }
 
@@ -844,15 +1177,20 @@ function hasNpcMarketAdmin(ctx: IdleWizardReducerCtx): boolean {
   return Array.from(ctx.db.npcMarketAdmin.iter()).length > 0;
 }
 
-function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
+function assertGameConfigAdmin(ctx: IdleWizardReducerCtx) {
   if (!ctx.db.npcMarketAdmin.identity.find(ctx.sender)) {
-    throw new Error('NPC market config requires admin.');
+    throw new Error('Game config requires admin.');
   }
+}
+
+function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
+  assertGameConfigAdmin(ctx);
 }
 
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   const player = ensurePlayer(ctx);
   ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+  ensureResearchConfigCatalog(ctx);
   applyDueNpcMarketTicks(ctx);
 });
 
@@ -951,6 +1289,30 @@ export const send_world_chat_message = spacetimedb.reducer(
       username: player.username,
       playerLevel: player.playerLevel,
       body: message,
+      sentAt: ctx.timestamp,
+    });
+    pruneWorldChat(ctx);
+  },
+);
+
+export const announce_research = spacetimedb.reducer(
+  { researchName: t.string() },
+  (ctx, { researchName }) => {
+    const safeResearchName = normalizeResearchName(researchName);
+
+    if (!safeResearchName) {
+      return;
+    }
+
+    const player = ensurePlayer(ctx);
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+
+    ctx.db.worldChat.insert({
+      messageId: ctx.newUuidV7(),
+      senderIdentity: ctx.sender,
+      username: 'system',
+      playerLevel: 0,
+      body: `${player.username} researched ${safeResearchName}`,
       sentAt: ctx.timestamp,
     });
     pruneWorldChat(ctx);
@@ -1198,10 +1560,114 @@ export const claim_npc_market_admin = spacetimedb.reducer({}, (ctx) => {
   });
 });
 
+export const upsert_npc_market_item_config = spacetimedb.reducer(
+  {
+    itemKey: t.string(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    basePriceGold: t.u64(),
+    targetStock: t.u64(),
+    volatilityBps: t.u64(),
+    enabled: t.bool(),
+  },
+  (
+    ctx,
+    {
+      itemKey,
+      itemLabel,
+      itemKind,
+      basePriceGold,
+      targetStock,
+      volatilityBps,
+      enabled,
+    },
+  ) => {
+    assertGameConfigAdmin(ctx);
+
+    const safeItemKey = normalizeNpcMarketItemKey(itemKey);
+    const safeItemLabel = normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH);
+    const safeItemKind = normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH);
+
+    if (!safeItemKey || !safeItemLabel || !safeItemKind) {
+      throw new Error('NPC market item config requires key, label, and kind.');
+    }
+
+    const safeBasePriceGold = validateNpcMarketBasePriceGold(basePriceGold);
+    const safeTargetStock = validateNpcMarketTargetStock(targetStock);
+    const safeVolatilityBps = validateNpcMarketVolatilityBps(volatilityBps);
+    const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(safeItemKey);
+    const nextConfig = {
+      itemKey: safeItemKey,
+      itemLabel: safeItemLabel,
+      itemKind: safeItemKind,
+      defaultBasePriceGold:
+        existingConfig?.defaultBasePriceGold ??
+        catalogItem?.basePriceGold ??
+        safeBasePriceGold,
+      basePriceGold: safeBasePriceGold,
+      targetStock: safeTargetStock,
+      volatilityBps: safeVolatilityBps,
+      enabled,
+      updatedAt: ctx.timestamp,
+    };
+
+    if (existingConfig) {
+      ctx.db.npcMarketItemConfig.itemKey.update({
+        ...existingConfig,
+        ...nextConfig,
+      });
+    } else {
+      ctx.db.npcMarketItemConfig.insert(nextConfig);
+    }
+
+    if (!enabled) {
+      deleteNpcMarketPriceIfPresent(ctx, safeItemKey);
+      return;
+    }
+
+    const existingRow = ctx.db.npcMarketPrice.itemKey.find(safeItemKey);
+
+    if (existingRow) {
+      ctx.db.npcMarketPrice.itemKey.update({
+        ...getNpcMarketRowWithQuotes(existingRow, safeBasePriceGold),
+        itemLabel: safeItemLabel,
+        itemKind: safeItemKind,
+        basePriceGold: safeBasePriceGold,
+        targetStock: safeTargetStock,
+        updatedAt: ctx.timestamp,
+      });
+      return;
+    }
+
+    ensureNpcMarketItem(ctx, safeItemKey);
+  },
+);
+
+export const remove_npc_market_item_config = spacetimedb.reducer(
+  { itemKey: t.string() },
+  (ctx, { itemKey }) => {
+    assertGameConfigAdmin(ctx);
+
+    const safeItemKey = normalizeNpcMarketItemKey(itemKey);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(safeItemKey);
+
+    if (existingConfig) {
+      ctx.db.npcMarketItemConfig.itemKey.update({
+        ...existingConfig,
+        enabled: false,
+        updatedAt: ctx.timestamp,
+      });
+    }
+
+    deleteNpcMarketPriceIfPresent(ctx, safeItemKey);
+  },
+);
+
 export const set_npc_market_item_base_price = spacetimedb.reducer(
   { itemKey: t.string(), basePriceGold: t.u64() },
   (ctx, { itemKey, basePriceGold }) => {
-    assertNpcMarketAdmin(ctx);
+    assertGameConfigAdmin(ctx);
 
     const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
     const safeBasePriceGold = validateNpcMarketBasePriceGold(basePriceGold);
@@ -1232,6 +1698,73 @@ export const set_npc_market_item_base_price = spacetimedb.reducer(
       itemKind: marketConfig.itemKind,
       basePriceGold: safeBasePriceGold,
       targetStock: marketConfig.targetStock,
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const upsert_research_config = spacetimedb.reducer(
+  {
+    researchId: t.string(),
+    label: t.string(),
+    groupId: t.string(),
+    costGold: t.u64(),
+    enabled: t.bool(),
+  },
+  (ctx, { researchId, label, groupId, costGold, enabled }) => {
+    assertGameConfigAdmin(ctx);
+
+    const safeResearchId = normalizeResearchId(researchId);
+    const safeLabel = normalizeResearchLabel(label);
+    const safeGroupId = normalizeResearchGroupId(groupId);
+
+    if (!safeResearchId || !safeLabel || !safeGroupId) {
+      throw new Error('Research config requires id, label, and group.');
+    }
+
+    const safeCostGold = validateResearchCostGold(costGold);
+    const catalogResearch = researchCatalogById.get(safeResearchId);
+    const existingConfig = ctx.db.researchConfig.researchId.find(safeResearchId);
+    const nextConfig = {
+      researchId: safeResearchId,
+      label: safeLabel,
+      groupId: safeGroupId,
+      defaultCostGold:
+        existingConfig?.defaultCostGold ??
+        catalogResearch?.defaultCostGold ??
+        safeCostGold,
+      costGold: safeCostGold,
+      enabled,
+      updatedAt: ctx.timestamp,
+    };
+
+    if (existingConfig) {
+      ctx.db.researchConfig.researchId.update({
+        ...existingConfig,
+        ...nextConfig,
+      });
+      return;
+    }
+
+    ctx.db.researchConfig.insert(nextConfig);
+  },
+);
+
+export const remove_research_config = spacetimedb.reducer(
+  { researchId: t.string() },
+  (ctx, { researchId }) => {
+    assertGameConfigAdmin(ctx);
+
+    const safeResearchId = normalizeResearchId(researchId);
+    const existingConfig = ctx.db.researchConfig.researchId.find(safeResearchId);
+
+    if (!existingConfig) {
+      return;
+    }
+
+    ctx.db.researchConfig.researchId.update({
+      ...existingConfig,
+      enabled: false,
       updatedAt: ctx.timestamp,
     });
   },

@@ -36,10 +36,20 @@ export class ResearchFacade {
       researchDefinitionManager: this.researchDefinitionManager,
       researchStateEntityManager: this.researchStateEntityManager,
     });
+    this.initialized = false;
   }
 
   initialize(ecsManagers) {
     this.researchStateEntityManager.initialize(ecsManagers);
+    this.initialized = true;
+  }
+
+  applyRuntimeConfig(snapshot = {}) {
+    this.researchBalanceManager.setRuntimeConfigs(snapshot?.researchConfigs);
+
+    if (this.initialized) {
+      this.researchManaEffectManager.syncCompletedEffects();
+    }
   }
 
   buyResearch(researchId) {

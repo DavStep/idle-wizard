@@ -1,8 +1,3 @@
-const manaUpgradeLabelsBySeriesId = {
-  manaProductionRate: 'mana production rate',
-  manaSphereCap: 'mana sphere cap',
-};
-
 const summonSeedResearches = [
   {
     id: 'summonSeedsX2',
@@ -42,11 +37,6 @@ export class ResearchDefinitionManager {
   getResearchBoxes() {
     return [
       {
-        id: 'manaSphere',
-        label: 'mana sphere researches',
-        researches: this.getManaSphereResearches(),
-      },
-      {
         id: 'seedUnlocks',
         label: 'seed unlock researches',
         researches: this.getSeedUnlockResearches(),
@@ -75,24 +65,6 @@ export class ResearchDefinitionManager {
         this.isVisibleResearch(research, completedIds),
       ),
     }));
-  }
-
-  getManaSphereResearches() {
-    return this.researchBalanceManager.getManaUpgradeResearches().map((research) => {
-      const previousLevel = research.level - 1;
-
-      return {
-        id: research.id,
-        seriesId: research.seriesId,
-        level: research.level,
-        label: `${manaUpgradeLabelsBySeriesId[research.seriesId]} ${research.level}`,
-        value: this.formatManaUpgradeEffect(research.effect),
-        showEffect: true,
-        requiredResearchIds:
-          previousLevel > 0 ? [`${research.seriesId}:${previousLevel}`] : [],
-        description: this.describeManaUpgrade(research),
-      };
-    });
   }
 
   getSeedUnlockResearches() {
@@ -133,11 +105,19 @@ export class ResearchDefinitionManager {
 
   hasResearch(researchId) {
     const normalizedResearchId = this.normalizeResearchId(researchId);
-    return this.getResearches().some((research) => research.id === normalizedResearchId);
+    return (
+      this.researchBalanceManager.isResearchEnabled(normalizedResearchId) &&
+      this.getResearches().some((research) => research.id === normalizedResearchId)
+    );
   }
 
   getResearch(researchId) {
     const normalizedResearchId = this.normalizeResearchId(researchId);
+
+    if (!this.researchBalanceManager.isResearchEnabled(normalizedResearchId)) {
+      return null;
+    }
+
     return this.getResearches().find((research) => research.id === normalizedResearchId) ?? null;
   }
 
@@ -150,6 +130,10 @@ export class ResearchDefinitionManager {
   }
 
   isVisibleResearch(research, completedIds) {
+    if (!this.researchBalanceManager.isResearchEnabled(research.id)) {
+      return false;
+    }
+
     if (!research.seriesId) {
       return true;
     }
@@ -161,29 +145,5 @@ export class ResearchDefinitionManager {
     return research.requiredResearchIds.every((requiredResearchId) =>
       completedIds.has(requiredResearchId),
     );
-  }
-
-  formatManaUpgradeEffect(effect) {
-    if (effect.type === 'manaPerSecond') {
-      return `+${effect.amount}/sec`;
-    }
-
-    if (effect.type === 'manaCap') {
-      return `+${effect.amount} cap`;
-    }
-
-    return `+${effect.amount}`;
-  }
-
-  describeManaUpgrade(research) {
-    if (research.effect.type === 'manaPerSecond') {
-      return `increases mana gained each second by ${research.effect.amount}.`;
-    }
-
-    if (research.effect.type === 'manaCap') {
-      return `increases mana sphere capacity by ${research.effect.amount}.`;
-    }
-
-    return `increases mana by ${research.effect.amount}.`;
   }
 }
