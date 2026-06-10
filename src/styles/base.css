@@ -5,9 +5,12 @@
   --style-muted: #666;
   --style-disabled: #b2b2b2;
   --style-active-surface: #f7f7f7;
+  --style-system-text: oklch(44% 0.12 25);
   --style-resource-mana: var(--style-text);
   --style-resource-gold: var(--style-text);
   --style-resource-crystal: var(--style-text);
+  --style-resource-seed: var(--style-text);
+  --style-resource-herb: var(--style-text);
   --style-backdrop-rgb: 255 255 255;
   --style-log-fade-rgb: 255 255 255;
   --style-border: 1px solid var(--style-text);
@@ -93,6 +96,7 @@
   --style-muted: #aaa;
   --style-disabled: #707070;
   --style-active-surface: #151515;
+  --style-system-text: oklch(74% 0.11 25);
   --style-backdrop-rgb: 0 0 0;
   --style-log-fade-rgb: 5 5 5;
   --style-block-shadow: 5px 5px 5px #222;
@@ -103,14 +107,18 @@
 
 :root[data-style-color="resources"] {
   --style-resource-mana: oklch(43% 0.14 250);
-  --style-resource-gold: oklch(45% 0.11 82);
+  --style-resource-gold: oklch(45% 0.13 96);
   --style-resource-crystal: oklch(44% 0.1 305);
+  --style-resource-seed: oklch(45% 0.08 58);
+  --style-resource-herb: oklch(42% 0.12 145);
 }
 
 :root[data-style-theme="black"][data-style-color="resources"] {
   --style-resource-mana: oklch(75% 0.12 250);
-  --style-resource-gold: oklch(80% 0.12 82);
+  --style-resource-gold: oklch(83% 0.14 96);
   --style-resource-crystal: oklch(78% 0.1 305);
+  --style-resource-seed: oklch(78% 0.08 58);
+  --style-resource-herb: oklch(75% 0.11 145);
 }
 
 :where([data-resource-color="mana"]) {
@@ -123,6 +131,14 @@
 
 :where([data-resource-color="crystal"]) {
   color: var(--style-resource-crystal);
+}
+
+:where([data-resource-color="seed"]) {
+  color: var(--style-resource-seed);
+}
+
+:where([data-resource-color="herb"]) {
+  color: var(--style-resource-herb);
 }
 
 :where(
@@ -1358,6 +1374,10 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-message--system {
   color: var(--style-muted);
+}
+
+.workshop-page__world-chat-message--system .workshop-page__world-chat-name {
+  color: var(--style-system-text);
 }
 
 .workshop-page__world-chat-preview {

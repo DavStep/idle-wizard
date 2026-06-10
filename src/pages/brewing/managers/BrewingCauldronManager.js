@@ -226,6 +226,7 @@ export class BrewingCauldronManager {
 
       const row = document.createElement('div');
       row.className = 'brewing-page__herb-row';
+      setResourceColor(row, 'herb');
 
       const button = document.createElement('button');
       button.className = 'brewing-page__herb-button';
@@ -320,6 +321,7 @@ export class BrewingCauldronManager {
       this.setHidden(refs.row, false);
       this.setAttribute(refs.row, 'data-slot-index', String(ingredient.slotIndex));
       this.setAttribute(refs.row, 'aria-label', `remove one ${ingredient.label} from cauldron`);
+      setResourceColor(refs.row, 'herb');
       this.setText(refs.label, `- ${ingredient.quantity} ${ingredient.label}`);
       this.setText(refs.action, 'remove');
     }
@@ -329,6 +331,7 @@ export class BrewingCauldronManager {
       this.setHidden(refs.row, true);
       this.removeAttribute(refs.row, 'aria-label');
       this.removeAttribute(refs.row, 'data-slot-index');
+      setResourceColor(refs.row, null);
       this.setText(refs.label, '');
       this.setText(refs.action, '');
     }

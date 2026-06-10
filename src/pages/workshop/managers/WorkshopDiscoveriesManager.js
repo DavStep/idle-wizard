@@ -280,6 +280,8 @@ export class WorkshopDiscoveriesManager {
 
     if (masked) {
       row.classList.add('is-unknown');
+    } else {
+      setResourceColor(row, 'herb');
     }
 
     const quantity = Number.isFinite(ingredient.quantity) ? ingredient.quantity : 1;

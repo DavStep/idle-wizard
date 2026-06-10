@@ -2,7 +2,10 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
-import { setResourceColorFromText } from '../../shared/resourceColor.js';
+import {
+  setResourceColor,
+  setResourceColorFromText,
+} from '../../shared/resourceColor.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 
 export class GardenPlotManager {
@@ -144,6 +147,7 @@ export class GardenPlotManager {
 
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';
+    setResourceColor(label, 'seed');
 
     const state = document.createElement('span');
     state.className = 'garden-page__plot-state';
@@ -190,6 +194,7 @@ export class GardenPlotManager {
   createSeedRow(seed) {
     const row = document.createElement('div');
     row.className = 'garden-page__seed-row';
+    setResourceColor(row, 'seed');
 
     const button = document.createElement('button');
     button.className = 'garden-page__seed-button';

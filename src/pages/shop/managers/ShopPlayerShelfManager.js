@@ -2,7 +2,10 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
-import { setResourceColorFromText } from '../../shared/resourceColor.js';
+import {
+  setResourceColor,
+  setResourceColorFromText,
+} from '../../shared/resourceColor.js';
 
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
@@ -731,6 +734,7 @@ export class ShopPlayerShelfManager {
     this.refs.listingControls.selectedItem.textContent = draftItem
       ? getItemDisplay(snapshot, draftItem, draftItem.quantity).label
       : 'none';
+    setResourceColor(this.refs.listingControls.selectedItem, draftItem?.kind);
 
     const canPlace = Boolean(draftItem) && this.lastPlayerShopSnapshot.connected;
     this.refs.listingControls.placeButton.disabled = !canPlace;
@@ -757,6 +761,7 @@ export class ShopPlayerShelfManager {
       row.classList.toggle('is-unknown', display.unknown);
       row.classList.toggle('is-empty', display.empty);
       label.textContent = `${display.label} `;
+      setResourceColor(label, item.kind);
       quantity.textContent = `(${display.quantity})`;
       button.disabled = !actionVisible;
       button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
@@ -940,6 +945,7 @@ export class ShopPlayerShelfManager {
     if (row.label.textContent !== label) {
       row.label.textContent = label;
     }
+    setResourceColor(row.label, listing.itemKind);
 
     row.row._marketListing = listing;
     row.quantityInput.max = String(Math.max(1, quantity));

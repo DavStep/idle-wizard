@@ -2,7 +2,10 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
-import { setResourceColorFromText } from '../../shared/resourceColor.js';
+import {
+  setResourceColor,
+  setResourceColorFromText,
+} from '../../shared/resourceColor.js';
 
 export class ShopShelfManager {
   constructor({ gameplayFacade } = {}) {
@@ -367,6 +370,7 @@ export class ShopShelfManager {
       row.classList.toggle('is-unknown', display.unknown);
       row.classList.toggle('is-empty', display.empty);
       label.textContent = `${display.label} `;
+      setResourceColor(label, item.kind);
       quantity.textContent = `(${display.quantity}) ${this.formatSellGold(item.sellGold)}`;
       setResourceColorFromText(quantity, quantity.textContent);
       button.disabled = !actionVisible;

@@ -29,6 +29,7 @@ export class WorkshopSeedBlockManager {
       interactive: true,
       onClick: () => this.onSeedsClick?.(),
     });
+    setResourceColor(this.refs.seeds.row, 'seed');
     this.refs.actionRow = document.createElement('div');
     this.refs.actionRow.className = 'workshop-page__seed-action-row';
     this.refs.button = this.createButton();

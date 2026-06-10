@@ -3,6 +3,7 @@ import {
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
 import { applyMysteryText } from '../../shared/mysteryText.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class GardenHerbInventoryManager {
   constructor({ gameplayFacade } = {}) {
@@ -90,6 +91,7 @@ export class GardenHerbInventoryManager {
 
       const row = document.createElement('div');
       row.className = 'garden-page__herb-row';
+      setResourceColor(row, 'herb');
 
       const label = document.createElement('span');
       label.className = 'row_key';

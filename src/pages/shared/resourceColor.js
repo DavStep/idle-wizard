@@ -1,4 +1,4 @@
-const RESOURCE_COLORS = new Set(['mana', 'gold', 'crystal']);
+const RESOURCE_COLORS = new Set(['mana', 'gold', 'crystal', 'seed', 'herb']);
 
 export function setResourceColor(element, resource) {
   if (!element) {
@@ -23,6 +23,16 @@ export function setResourceColorFromText(element, text) {
 
   if (/\bcrystal\b/.test(normalizedText)) {
     setResourceColor(element, 'crystal');
+    return;
+  }
+
+  if (/\bseeds?\b/.test(normalizedText)) {
+    setResourceColor(element, 'seed');
+    return;
+  }
+
+  if (/\bherbs?\b/.test(normalizedText)) {
+    setResourceColor(element, 'herb');
     return;
   }
 

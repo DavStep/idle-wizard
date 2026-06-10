@@ -1,5 +1,6 @@
 import { getItemDisplay } from '../../shared/itemResearchStatus.js';
 import { applyMysteryText } from '../../shared/mysteryText.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class WorkshopSeedInventoryManager {
   constructor({ gameplayFacade } = {}) {
@@ -151,6 +152,7 @@ export class WorkshopSeedInventoryManager {
     const display = getItemDisplay(snapshot, seed, seed.quantity);
     const row = document.createElement('div');
     row.className = 'workshop-page__row workshop-page__seed-inventory-row';
+    setResourceColor(row, 'seed');
     row.classList.toggle('is-empty', seed.quantity <= 0);
     row.classList.toggle('is-unresearched', display.locked);
     row.classList.toggle('is-unknown', display.unknown);

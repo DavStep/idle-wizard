@@ -237,6 +237,7 @@ export class BrewingRecipeBookManager {
       ...ingredients.map((ingredient) => {
         const row = document.createElement('div');
         row.className = 'brewing-page__recipe-ingredient-row';
+        setResourceColor(row, 'herb');
         const quantity = Number.isFinite(ingredient.quantity) ? ingredient.quantity : 1;
         row.textContent = `- ${Math.max(1, quantity)} ${ingredient.label}`;
         return row;

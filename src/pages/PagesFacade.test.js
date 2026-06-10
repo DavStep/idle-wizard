@@ -3162,7 +3162,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(false);
   });
 
-  it('marks system world chat messages as gray rows', () => {
+  it('marks system world chat messages and sender label', () => {
     const stage = document.createElement('section');
     const worldChatFacade = createWorldChatFacadeFake({
       messages: [
@@ -3187,6 +3187,9 @@ describe('PagesFacade', () => {
     const row = stage.querySelector('.workshop-page__world-chat-message');
 
     expect(row?.classList.contains('workshop-page__world-chat-message--system')).toBe(true);
+    expect(row?.querySelector('.workshop-page__world-chat-name')?.textContent).toBe(
+      'system: ',
+    );
     expect(row?.textContent).toBe('system: Ada researched Mana Tonic');
   });
 
