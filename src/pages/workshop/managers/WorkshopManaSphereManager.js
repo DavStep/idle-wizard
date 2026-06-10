@@ -1,3 +1,5 @@
+import { setResourceColor } from '../../shared/resourceColor.js';
+
 export class WorkshopManaSphereManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -50,6 +52,7 @@ export class WorkshopManaSphereManager {
   createRow(label, value) {
     const row = document.createElement('div');
     row.className = 'workshop-page__row';
+    setResourceColor(row, label === 'generation' ? 'mana' : label);
 
     const key = document.createElement('span');
     key.className = 'row_key';

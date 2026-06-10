@@ -5,6 +5,9 @@
   --style-muted: #666;
   --style-disabled: #b2b2b2;
   --style-active-surface: #f7f7f7;
+  --style-resource-mana: var(--style-text);
+  --style-resource-gold: var(--style-text);
+  --style-resource-crystal: var(--style-text);
   --style-backdrop-rgb: 255 255 255;
   --style-log-fade-rgb: 255 255 255;
   --style-border: 1px solid var(--style-text);
@@ -96,6 +99,52 @@
   --style-overlay-shadow: 5px 5px 5px #222;
   --style-tooltip-shadow: -1px 3px 2px #222;
   color-scheme: dark;
+}
+
+:root[data-style-color="resources"] {
+  --style-resource-mana: oklch(43% 0.14 250);
+  --style-resource-gold: oklch(45% 0.11 82);
+  --style-resource-crystal: oklch(44% 0.1 305);
+}
+
+:root[data-style-theme="black"][data-style-color="resources"] {
+  --style-resource-mana: oklch(75% 0.12 250);
+  --style-resource-gold: oklch(80% 0.12 82);
+  --style-resource-crystal: oklch(78% 0.1 305);
+}
+
+:where([data-resource-color="mana"]) {
+  color: var(--style-resource-mana);
+}
+
+:where([data-resource-color="gold"]) {
+  color: var(--style-resource-gold);
+}
+
+:where([data-resource-color="crystal"]) {
+  color: var(--style-resource-crystal);
+}
+
+:where(
+    [aria-disabled="true"],
+    :disabled,
+    .is-disabled,
+    .is-locked,
+    .is-unavailable,
+    .is-empty,
+    .is-unknown
+  )
+  :where([data-resource-color]),
+:where([data-resource-color]):where(
+    [aria-disabled="true"],
+    :disabled,
+    .is-disabled,
+    .is-locked,
+    .is-unavailable,
+    .is-empty,
+    .is-unknown
+  ) {
+  color: inherit;
 }
 
 * {
@@ -2817,18 +2866,21 @@ div.workshop-page__discovery-row {
   gap: 10px;
 }
 
-.room-top-panel__theme-buttons {
+.room-top-panel__theme-buttons,
+.room-top-panel__color-buttons {
   display: grid;
   gap: 5px;
 }
 
-.style-button.room-top-panel__theme-button {
+.style-button.room-top-panel__theme-button,
+.style-button.room-top-panel__color-button {
   width: 218px;
   margin-bottom: 0;
   text-align: center;
 }
 
-.style-button.room-top-panel__theme-button[aria-checked="true"] {
+.style-button.room-top-panel__theme-button[aria-checked="true"],
+.style-button.room-top-panel__color-button[aria-checked="true"] {
   text-decoration: underline;
 }
 
@@ -2847,6 +2899,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__settings.is-username-prompt .room-top-panel__theme-section,
+.room-top-panel__settings.is-username-prompt .room-top-panel__color-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__auth-section {
   display: none;
 }

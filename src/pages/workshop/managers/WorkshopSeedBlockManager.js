@@ -1,3 +1,5 @@
+import { setResourceColor } from '../../shared/resourceColor.js';
+
 export class WorkshopSeedBlockManager {
   constructor({ gameplayFacade, onSeedsClick, onSummonNotice } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -105,6 +107,7 @@ export class WorkshopSeedBlockManager {
 
     this.refs.summonButtonCost = document.createElement('span');
     this.refs.summonButtonCost.className = 'workshop-page__summon-button-cost';
+    setResourceColor(this.refs.summonButtonCost, 'mana');
 
     button.append(this.refs.summonButtonLabel, this.refs.summonButtonCost);
     button.addEventListener('click', () => this.onSummonSeed());

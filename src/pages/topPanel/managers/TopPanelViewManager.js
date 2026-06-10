@@ -1,4 +1,6 @@
+import { PLAYER_COLOR_MODE_OPTIONS } from '../../../player/playerColorModes.js';
 import { PLAYER_THEME_OPTIONS } from '../../../player/playerThemes.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class TopPanelViewManager {
   constructor() {
@@ -76,6 +78,7 @@ export class TopPanelViewManager {
     const resource = document.createElement('span');
     resource.className = 'room-top-panel__resource';
     resource.setAttribute('aria-label', label);
+    setResourceColor(resource, label);
 
     const key = document.createElement('span');
     key.className = 'room-top-panel__resource-key';
@@ -186,6 +189,34 @@ export class TopPanelViewManager {
 
     themeSection.append(themeLabel, themeButtons);
 
+    const colorSection = document.createElement('div');
+    colorSection.className =
+      'room-top-panel__settings-section room-top-panel__color-section';
+
+    const colorLabel = document.createElement('div');
+    colorLabel.className = 'room-top-panel__settings-label';
+    colorLabel.textContent = 'color';
+
+    const colorButtons = document.createElement('div');
+    colorButtons.className = 'room-top-panel__color-buttons';
+    colorButtons.setAttribute('role', 'radiogroup');
+    colorButtons.setAttribute('aria-label', 'color');
+    this.refs.colorModeButtons = [];
+
+    for (const colorMode of PLAYER_COLOR_MODE_OPTIONS) {
+      const button = document.createElement('button');
+      button.className = 'style-button room-top-panel__color-button';
+      button.type = 'button';
+      button.textContent = colorMode.label;
+      button.dataset.colorMode = colorMode.key;
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-checked', 'false');
+      colorButtons.append(button);
+      this.refs.colorModeButtons.push(button);
+    }
+
+    colorSection.append(colorLabel, colorButtons);
+
     this.refs.authSection = document.createElement('div');
     this.refs.authSection.className =
       'room-top-panel__settings-section room-top-panel__auth-section';
@@ -210,6 +241,7 @@ export class TopPanelViewManager {
       this.refs.settingsTitle,
       usernameSection,
       themeSection,
+      colorSection,
       this.refs.authSection,
     );
     this.refs.settings.append(this.refs.settingsDialog);

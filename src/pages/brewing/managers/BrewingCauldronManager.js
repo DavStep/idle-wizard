@@ -5,6 +5,8 @@ import {
 
 const TOUCH_DRAG_DISTANCE = 8;
 
+import { setResourceColor } from '../../shared/resourceColor.js';
+
 export class BrewingCauldronManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -154,6 +156,7 @@ export class BrewingCauldronManager {
 
     const actionButtonCost = document.createElement('span');
     actionButtonCost.className = 'brewing-page__action-button-cost';
+    setResourceColor(actionButtonCost, 'mana');
 
     actionButton.append(actionButtonLabel, actionButtonCost);
 

@@ -2,6 +2,7 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setResourceColorFromText } from '../../shared/resourceColor.js';
 
 export class ShopShelfManager {
   constructor({ gameplayFacade } = {}) {
@@ -285,6 +286,7 @@ export class ShopShelfManager {
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
         value.textContent = this.formatSlotSellValue(slot, shelf, snapshot);
+        setResourceColorFromText(value, value.textContent);
         return;
       }
 
@@ -294,6 +296,7 @@ export class ShopShelfManager {
         row.removeAttribute('aria-label');
         row.removeAttribute('tabindex');
         button.textContent = this.formatLockedSlotAction(shelf, cost);
+        setResourceColorFromText(button, button.textContent);
         button.disabled = shelf.nextSlotLockedByLevel || snapshot.gold.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
 
@@ -309,6 +312,7 @@ export class ShopShelfManager {
       row.removeAttribute('aria-label');
       row.removeAttribute('tabindex');
       value.textContent = 'locked';
+      setResourceColorFromText(value, value.textContent);
     });
   }
 
@@ -364,6 +368,7 @@ export class ShopShelfManager {
       row.classList.toggle('is-empty', display.empty);
       label.textContent = `${display.label} `;
       quantity.textContent = `(${display.quantity}) ${this.formatSellGold(item.sellGold)}`;
+      setResourceColorFromText(quantity, quantity.textContent);
       button.disabled = !actionVisible;
       button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
       button.setAttribute(

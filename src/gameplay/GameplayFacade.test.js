@@ -1243,7 +1243,7 @@ describe('GameplayFacade', () => {
       nextSlotNumber: 2,
       nextSlotCost: 50,
       nextSlotLockedByLevel: true,
-      nextSlotRequiresLevel: 5,
+      nextSlotRequiresLevel: 3,
       selectedSlotNumber: 1,
     });
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
@@ -1269,11 +1269,11 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: false,
       reason: 'level_locked',
-      requiredLevel: 5,
+      requiredLevel: 3,
       slotNumber: 2,
     });
 
-    for (let levelCount = 1; levelCount < 5; levelCount += 1) {
+    for (let levelCount = 1; levelCount < 3; levelCount += 1) {
       finishCurrentTaskLevel(gameplayFacade);
     }
 
@@ -1753,11 +1753,11 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: false,
       reason: 'level_locked',
-      requiredLevel: 5,
+      requiredLevel: 3,
       slotNumber: 2,
     });
 
-    for (let levelCount = 1; levelCount < 5; levelCount += 1) {
+    for (let levelCount = 1; levelCount < 3; levelCount += 1) {
       finishCurrentTaskLevel(gameplayFacade);
     }
 

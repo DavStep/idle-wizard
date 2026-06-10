@@ -1,4 +1,8 @@
 import {
+  DEFAULT_PLAYER_COLOR_MODE,
+  normalizePlayerColorMode,
+} from '../../../player/playerColorModes.js';
+import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
@@ -43,6 +47,9 @@ export class TopPanelSettingsManager {
     this.handleThemeClick = (event) => {
       this.playerFacade?.setTheme?.(event.currentTarget.dataset.theme);
     };
+    this.handleColorModeClick = (event) => {
+      this.playerFacade?.setColorMode?.(event.currentTarget.dataset.colorMode);
+    };
     this.handleKeydown = (event) => {
       if (!this.visible || event.key !== 'Escape') {
         return;
@@ -69,13 +76,21 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleThemeClick);
     }
 
+    for (const button of this.refs.colorModeButtons) {
+      button.addEventListener('click', this.handleColorModeClick);
+    }
+
     document.addEventListener('keydown', this.handleKeydown);
 
     if (this.playerFacade) {
       this.unsubscribe = this.playerFacade.subscribe((snapshot) => this.render(snapshot));
       this.render(this.playerFacade.getSnapshot());
     } else {
-      this.render({ username: 'wizard', theme: DEFAULT_PLAYER_THEME });
+      this.render({
+        username: 'wizard',
+        theme: DEFAULT_PLAYER_THEME,
+        colorMode: DEFAULT_PLAYER_COLOR_MODE,
+      });
     }
 
     this.applyVisibility();
@@ -102,6 +117,10 @@ export class TopPanelSettingsManager {
 
       for (const button of this.refs.themeButtons) {
         button.removeEventListener('click', this.handleThemeClick);
+      }
+
+      for (const button of this.refs.colorModeButtons) {
+        button.removeEventListener('click', this.handleColorModeClick);
       }
     }
 
@@ -182,6 +201,7 @@ export class TopPanelSettingsManager {
     }
 
     this.applyThemeSelection(snapshot.theme);
+    this.applyColorModeSelection(snapshot.colorMode);
 
     if (
       this.usernamePromptMode &&
@@ -197,6 +217,16 @@ export class TopPanelSettingsManager {
 
     for (const button of this.refs.themeButtons) {
       const selected = button.dataset.theme === selectedTheme;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-checked', selected ? 'true' : 'false');
+    }
+  }
+
+  applyColorModeSelection(colorMode) {
+    const selectedColorMode = normalizePlayerColorMode(colorMode);
+
+    for (const button of this.refs.colorModeButtons) {
+      const selected = button.dataset.colorMode === selectedColorMode;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
     }

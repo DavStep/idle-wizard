@@ -1,3 +1,5 @@
+import { setResourceColorFromText } from '../../shared/resourceColor.js';
+
 const maxLockedResearchesPerBox = 3;
 
 export class ResearchBoxListManager {
@@ -224,6 +226,7 @@ export class ResearchBoxListManager {
     const effect = document.createElement('span');
     effect.className = 'research-page__research-effect';
     effect.textContent = research.effect;
+    setResourceColorFromText(effect, research.effect);
     return [name, effect];
   }
 
@@ -231,6 +234,7 @@ export class ResearchBoxListManager {
     const val = document.createElement('span');
     val.className = 'row_val research-page__research-value';
     val.textContent = research.value;
+    setResourceColorFromText(val, research.value);
     return val;
   }
 
@@ -239,6 +243,7 @@ export class ResearchBoxListManager {
     button.className = 'style-button research-page__research-button';
     button.type = 'button';
     button.textContent = research.value;
+    setResourceColorFromText(button, research.value);
     button.disabled = !research.canResearch;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
     button.setAttribute('aria-label', this.formatResearchButtonLabel(research));

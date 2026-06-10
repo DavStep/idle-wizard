@@ -23,6 +23,7 @@ describe('PlayerFacade', () => {
       username: 'Arch Mage',
       shouldPromptForUsername: false,
       theme: 'white',
+      colorMode: 'monochrome',
     });
   });
 
@@ -37,6 +38,7 @@ describe('PlayerFacade', () => {
       username: 'wizard',
       shouldPromptForUsername: false,
       theme: 'white',
+      colorMode: 'monochrome',
     });
   });
 
@@ -87,6 +89,21 @@ describe('PlayerFacade', () => {
 
     restoredPlayerFacade.setTheme('unknown');
     expect(restoredPlayerFacade.getSnapshot().theme).toBe('white');
+  });
+
+  it('stores and normalizes color mode', () => {
+    const storage = createMemoryStorage();
+    const playerFacade = new PlayerFacade({ storage });
+
+    playerFacade.setColorMode('resources');
+
+    expect(playerFacade.getSnapshot().colorMode).toBe('resources');
+
+    const restoredPlayerFacade = new PlayerFacade({ storage });
+    expect(restoredPlayerFacade.getSnapshot().colorMode).toBe('resources');
+
+    restoredPlayerFacade.setColorMode('unknown');
+    expect(restoredPlayerFacade.getSnapshot().colorMode).toBe('monochrome');
   });
 
   it('maps old dark theme names to black', () => {

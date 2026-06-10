@@ -1,3 +1,5 @@
+import { PlayerColorModeManager } from './managers/PlayerColorModeManager.js';
+import { PlayerColorModeStorageManager } from './managers/PlayerColorModeStorageManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
 import { PlayerNameStorageManager } from './managers/PlayerNameStorageManager.js';
 import { PlayerStateObserverManager } from './managers/PlayerStateObserverManager.js';
@@ -16,6 +18,10 @@ export class PlayerFacade {
     this.themeStorageManager = new PlayerThemeStorageManager({ storage });
     this.themeManager = new PlayerThemeManager({
       storageManager: this.themeStorageManager,
+    });
+    this.colorModeStorageManager = new PlayerColorModeStorageManager({ storage });
+    this.colorModeManager = new PlayerColorModeManager({
+      storageManager: this.colorModeStorageManager,
     });
     this.stateObserverManager = new PlayerStateObserverManager();
   }
@@ -54,11 +60,22 @@ export class PlayerFacade {
     return this.themeManager.getThemeOptions();
   }
 
+  setColorMode(colorMode) {
+    this.colorModeManager.setColorMode(colorMode);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  getColorModeOptions() {
+    return this.colorModeManager.getColorModeOptions();
+  }
+
   getSnapshot() {
     return {
       username: this.nameManager.getUsername(),
       shouldPromptForUsername: this.nameManager.shouldPromptForUsername(),
       theme: this.themeManager.getTheme(),
+      colorMode: this.colorModeManager.getColorMode(),
     };
   }
 

@@ -1,5 +1,6 @@
 # Player
 
-The player feature owns local player identity shown in room UI.
+The player feature owns local player identity and visual preferences shown in room UI.
 
-For now it stores only `username`. It does not own resources, economy, or gameplay rules.
+It stores `username`, white/black theme, and color mode. It does not own resources,
+economy, or gameplay rules.

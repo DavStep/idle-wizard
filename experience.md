@@ -63,6 +63,7 @@
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, and currently has no earning or spending rule.
 - NPC market stand 1 starts unlocked for free; later stands cost gold from `shop-balance.json`.
+- NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
 - NPC market price UI should read `sellGold` from the shop snapshot; do not duplicate price balance in page code.
@@ -152,6 +153,7 @@
 - Level milestone dialog content uses fixed height with internal scrolling so changing levels does not resize the popup.
 - Level milestone dialogs show a centered top-border `current` label only when the selected level is the player current level.
 - Player visual theme is stored on `PlayerFacade` snapshot and applied globally by `AppThemeManager` through `html[data-style-theme]`.
+- Player resource color mode is separate from white/black theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
@@ -180,6 +182,7 @@
 
 - Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
+- If local shows `server unavailable`, check both Vite `55173` and SpacetimeDB `3000`; this workspace may target `.env.local` database `idle-wizard-codex-run`, so publish that DB directly when `npm run stdb:publish` is unauthorized for `idle-wizard`.
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
@@ -203,6 +206,7 @@
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
 - Shared player level displays use server `playerLevel`; sync `tasks.currentLevel` through `set_player_level` and do not infer other players locally.
 - Local player level milestones come from `player-level-balance.json`; they unlock permission to buy higher caps, never grant the tile/stand for free.
+- Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror local `player-level-balance.json`; hosted `game_config` can override local milestones.
 - Player level sets mana cap and mana regen from `player-level-balance.json`; there are no separate mana research bonuses.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.

@@ -2,6 +2,7 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setResourceColorFromText } from '../../shared/resourceColor.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 
 export class GardenPlotManager {
@@ -643,6 +644,7 @@ export class GardenPlotManager {
     this.setText(refs.actionLabel, label);
     this.setText(refs.actionGap, timer ? ' ' : '');
     this.setText(refs.actionTimer, timer);
+    setResourceColorFromText(refs.actionLabel, label);
   }
 
   formatTileAction(tile) {

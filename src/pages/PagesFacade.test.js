@@ -135,12 +135,17 @@ function createGameplayFacadeFake() {
           totals: {
             maxGardenTiles: 3,
             maxCauldrons: 1,
-            maxNpcMarketStands: 1,
-            maxPlayerMarketStands: 1,
+            maxNpcMarketStands: 2,
+            maxPlayerMarketStands: 2,
             maxManaCap: 150,
             manaPerSecond: 3,
           },
-          effects: ['max mana cap 150', 'mana regen 3/sec'],
+          effects: [
+            'max npc market stands 2',
+            'max player market stands 2',
+            'max mana cap 150',
+            'mana regen 3/sec',
+          ],
         },
       ],
     },
@@ -1587,11 +1592,12 @@ function clickRoomTab(stage, pageId) {
 function createPlayerFacadeFake(
   initialUsername = 'wizard',
   initialTheme = 'white',
-  { shouldPromptForUsername = false } = {},
+  { shouldPromptForUsername = false, initialColorMode = 'monochrome' } = {},
 ) {
   let snapshot = {
     username: initialUsername,
     theme: initialTheme,
+    colorMode: initialColorMode,
     shouldPromptForUsername,
   };
   const listeners = new Set();
@@ -1627,6 +1633,18 @@ function createPlayerFacadeFake(
         theme: ['white', 'black', 'dark-gray', 'night-black'].includes(theme)
           ? theme.replace('dark-gray', 'black').replace('night-black', 'black')
           : 'white',
+      };
+
+      publish();
+      return snapshot;
+    },
+    setColorMode: (colorMode) => {
+      const normalizedColorMode = ['resources', 'color', 'colored'].includes(colorMode)
+        ? 'resources'
+        : 'monochrome';
+      snapshot = {
+        ...snapshot,
+        colorMode: normalizedColorMode,
       };
 
       publish();
@@ -2068,18 +2086,14 @@ describe('PagesFacade', () => {
     expect(levelPopup.querySelector('.room-top-panel__level-title')?.textContent).toBe(
       'level 3',
     );
-    const [level3AddedRow] = levelPopup.querySelectorAll(
-      '.room-top-panel__level-added-rows .room-top-panel__level-effect-row',
-    );
+    const level3AddedText =
+      levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent ?? '';
     const [level3TotalRow] = levelPopup.querySelectorAll(
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
-    expect(level3AddedRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
-      'mana cap',
-    );
-    expect(level3AddedRow.querySelector('.room-top-panel__level-effect-value')?.textContent).toBe(
-      '+50',
-    );
+    expect(level3AddedText).toContain('npc stands+1');
+    expect(level3AddedText).toContain('player stands+1');
+    expect(level3AddedText).toContain('mana cap+50');
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
       'garden plots',
     );
@@ -2259,6 +2273,11 @@ describe('PagesFacade', () => {
         (button) => button.textContent,
       ),
     ).toEqual(['white', 'black']);
+    expect(
+      [...settings.querySelectorAll('.room-top-panel__color-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['monochrome', 'resources']);
     expect(focusOptions).toEqual([{ preventScroll: true }]);
 
     input.value = 'Mira';
@@ -2335,6 +2354,36 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().theme).toBe('black');
     expect(blackButton.getAttribute('aria-checked')).toBe('true');
     expect(whiteButton.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('changes resource color mode from settings', () => {
+    const stage = document.createElement('section');
+    const playerFacade = createPlayerFacadeFake('Merlin');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const monoButton = stage.querySelector(
+      '.room-top-panel__color-button[data-color-mode="monochrome"]',
+    );
+    const resourcesButton = stage.querySelector(
+      '.room-top-panel__color-button[data-color-mode="resources"]',
+    );
+
+    expect(monoButton.getAttribute('aria-checked')).toBe('true');
+
+    resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().colorMode).toBe('resources');
+    expect(resourcesButton.getAttribute('aria-checked')).toBe('true');
+    expect(monoButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('shows optional google login in settings when auth is configured', async () => {

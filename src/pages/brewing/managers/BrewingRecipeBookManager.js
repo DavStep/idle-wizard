@@ -1,3 +1,5 @@
+import { setResourceColor } from '../../shared/resourceColor.js';
+
 export class BrewingRecipeBookManager {
   constructor({ gameplayFacade, getSelectedRecipeKey, onSelectRecipe } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -194,6 +196,7 @@ export class BrewingRecipeBookManager {
 
     const cost = document.createElement('span');
     cost.className = 'brewing-page__recipe-cost';
+    setResourceColor(cost, 'mana');
     cost.textContent = `cost ${recipe.manaCost} mana`;
 
     const duration = document.createElement('span');

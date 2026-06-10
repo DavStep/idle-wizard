@@ -2,6 +2,7 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setResourceColorFromText } from '../../shared/resourceColor.js';
 
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
@@ -664,6 +665,7 @@ export class ShopPlayerShelfManager {
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select player market stand ${slotNumber}`);
         value.textContent = this.formatPlayerSlotValue(slot, shelf, this.lastGameplaySnapshot);
+        setResourceColorFromText(value, value.textContent);
         return;
       }
 
@@ -673,6 +675,7 @@ export class ShopPlayerShelfManager {
         row.removeAttribute('aria-label');
         row.removeAttribute('tabindex');
         button.textContent = this.formatLockedSlotAction(shelf, cost);
+        setResourceColorFromText(button, button.textContent);
         button.disabled = shelf.nextSlotLockedByLevel || this.lastGameplaySnapshot.gold.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
 
@@ -688,6 +691,7 @@ export class ShopPlayerShelfManager {
       row.removeAttribute('aria-label');
       row.removeAttribute('tabindex');
       value.textContent = 'locked';
+      setResourceColorFromText(value, value.textContent);
     });
   }
 
@@ -770,11 +774,16 @@ export class ShopPlayerShelfManager {
       this.refs.proceedsRow.value.textContent = this.lastPlayerShopSnapshot.connected
         ? 'none'
         : 'offline';
+      setResourceColorFromText(
+        this.refs.proceedsRow.value,
+        this.refs.proceedsRow.value.textContent,
+      );
       return;
     }
 
     const button = this.refs.proceedsRow.button;
     button.textContent = `claim (${proceedsGold} gold)`;
+    setResourceColorFromText(button, button.textContent);
     button.disabled = !this.lastPlayerShopSnapshot.connected;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
 
@@ -955,6 +964,7 @@ export class ShopPlayerShelfManager {
 
     if (row.button.textContent !== label) {
       row.button.textContent = label;
+      setResourceColorFromText(row.button, label);
     }
 
     row.button.disabled = disabled;

@@ -1,4 +1,5 @@
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
 
 const DISCOVERY_TABS = [
   { id: 'seeds', label: 'seeds' },
@@ -294,6 +295,7 @@ export class WorkshopDiscoveriesManager {
 
     const cost = document.createElement('span');
     cost.className = 'brewing-page__recipe-cost';
+    setResourceColor(cost, 'mana');
     cost.textContent =
       potion.discovered && Number.isFinite(potion.manaCost)
         ? `cost ${potion.manaCost} mana`

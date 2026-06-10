@@ -2,6 +2,10 @@ import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../player/playerThemes.js';
+import {
+  DEFAULT_PLAYER_COLOR_MODE,
+  normalizePlayerColorMode,
+} from '../../player/playerColorModes.js';
 
 export class AppThemeManager {
   constructor({ rootElement = globalThis.document?.documentElement } = {}) {
@@ -12,11 +16,11 @@ export class AppThemeManager {
 
   mount(playerFacade) {
     this.playerFacade = playerFacade ?? null;
-    this.applyTheme(this.playerFacade?.getSnapshot?.().theme);
+    this.applySettings(this.playerFacade?.getSnapshot?.());
 
     if (this.playerFacade?.subscribe) {
       this.unsubscribe = this.playerFacade.subscribe((snapshot) => {
-        this.applyTheme(snapshot?.theme);
+        this.applySettings(snapshot);
       });
     }
   }
@@ -26,6 +30,12 @@ export class AppThemeManager {
     this.unsubscribe = null;
     this.playerFacade = null;
     this.applyTheme(DEFAULT_PLAYER_THEME);
+    this.applyColorMode(DEFAULT_PLAYER_COLOR_MODE);
+  }
+
+  applySettings(snapshot) {
+    this.applyTheme(snapshot?.theme);
+    this.applyColorMode(snapshot?.colorMode);
   }
 
   applyTheme(theme) {
@@ -34,5 +44,13 @@ export class AppThemeManager {
     }
 
     this.rootElement.dataset.styleTheme = normalizePlayerTheme(theme);
+  }
+
+  applyColorMode(colorMode) {
+    if (!this.rootElement) {
+      return;
+    }
+
+    this.rootElement.dataset.styleColor = normalizePlayerColorMode(colorMode);
   }
 }
