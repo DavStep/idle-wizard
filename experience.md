@@ -173,7 +173,7 @@
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
-- `DavStep/idle-wizard` is private; current GitHub plan rejected Pages enablement until the repo is public or the plan supports private Pages.
+- `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - Optional Google login is controlled by `VITE_SPACETIME_AUTH_CLIENT_ID`; GitHub Pages reads it from the `SPACETIME_AUTH_CLIENT_ID` Actions variable.
