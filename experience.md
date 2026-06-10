@@ -73,6 +73,7 @@
 - NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
 - NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
+- Market sellable quantities must subtract Brewing cauldron-staged herbs; NPC and player market sales should use available quantities, not raw item stacks.
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
 - Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
@@ -113,6 +114,7 @@
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
+- Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`), not global per action type.
 - Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
 - Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
 - Research price controls are unboxed right-aligned text buttons; preserve click behavior without visible price boxes.
@@ -159,6 +161,7 @@
 - Main room page content panels should also use the Research-width `16px` source side inset.
 - Workshop tasks sit below the top panel and stay collapsed until the summary row is pressed.
 - Workshop tasks should expand in normal flow above mana sphere/seeds; do not overlay action panels.
+- Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
 - Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.

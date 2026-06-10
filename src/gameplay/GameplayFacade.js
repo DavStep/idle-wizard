@@ -52,6 +52,8 @@ export class GameplayFacade {
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
+      getReservedItemQuantity: (itemTypeId) =>
+        this.brewingFacade.getStagedIngredientQuantity(itemTypeId),
       onItemSold: (event) => this.gameplayLogFacade.logItemSold(event),
     });
     this.gardenFacade = new GardenFacade({

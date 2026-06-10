@@ -618,70 +618,39 @@ describe('GameplayFacade', () => {
     const research = gameplayFacade.getSnapshot().research;
 
     expect(research.tabs.map((tab) => tab.id)).toEqual(['regular', 'advanced']);
-    expect(research.tabs[1].boxes).toEqual([
-      {
-        id: 'automation',
-        label: 'automation research',
-        researches: [
-          {
-            id: automationResearchIds.autoPlantTile,
-            label: 'auto plant',
-            value: '50000 gold',
-            effect: 'tile',
-            showEffect: true,
-            description: 'empty garden tiles plant their selected seed when one is available.',
-            costGold: 50000,
-            completed: false,
-            canResearch: false,
-          },
-          {
-            id: automationResearchIds.autoHarvestPlant,
-            label: 'auto harvest',
-            value: '75000 gold',
-            effect: 'plant',
-            showEffect: true,
-            description: 'ready garden plants start harvesting without a tap.',
-            costGold: 75000,
-            completed: false,
-            canResearch: false,
-          },
-          {
-            id: automationResearchIds.autoBrewCauldron,
-            label: 'auto brew',
-            value: '100000 gold',
-            effect: 'cauldron',
-            showEffect: true,
-            description:
-              'the cauldron starts brewing when staged ingredients and mana are ready.',
-            costGold: 100000,
-            completed: false,
-            canResearch: false,
-          },
-          {
-            id: automationResearchIds.autoBottleCauldron,
-            label: 'auto bottle',
-            value: '125000 gold',
-            effect: 'cauldron',
-            showEffect: true,
-            description: 'finished brews start bottling without a tap.',
-            costGold: 125000,
-            completed: false,
-            canResearch: false,
-          },
-          {
-            id: automationResearchIds.autoCollectCauldron,
-            label: 'auto collect',
-            value: '150000 gold',
-            effect: 'cauldron',
-            showEffect: true,
-            description: 'bottled potions move into inventory without a tap.',
-            costGold: 150000,
-            completed: false,
-            canResearch: false,
-          },
-        ],
-      },
+    expect(research.tabs[1].boxes.map((box) => box.id)).toEqual([
+      'autoPlantTiles',
+      'autoHarvestTiles',
+      'autoBrewCauldrons',
+      'autoBottleCauldrons',
+      'autoCollectCauldrons',
     ]);
+    expect(research.tabs[1].boxes[0].researches[0]).toEqual({
+      id: automationResearchIds.autoPlantTile(1),
+      label: 'auto plant tile 1',
+      value: '50000 gold',
+      effect: 'auto',
+      description: 'garden tile 1 plants its selected seed when one is available.',
+      costGold: 50000,
+      completed: false,
+      canResearch: false,
+    });
+    expect(research.tabs[1].boxes[0].researches[1]).toMatchObject({
+      id: automationResearchIds.autoPlantTile(2),
+      label: 'auto plant tile 2',
+      value: 'locked',
+      requiredResearchIds: [automationResearchIds.autoPlantTile(1)],
+      costGold: 75000,
+      locked: true,
+    });
+    expect(research.tabs[1].boxes[2].researches[0]).toMatchObject({
+      id: automationResearchIds.autoBrewCauldron(1),
+      label: 'auto brew cauldron 1',
+      value: '100000 gold',
+      description:
+        'cauldron 1 starts brewing when staged ingredients and mana are ready.',
+      costGold: 100000,
+    });
     expect(research.boxes.map((box) => box.id)).toEqual([
       'seedUnlocks',
       'summonSeeds',
@@ -1101,15 +1070,15 @@ describe('GameplayFacade', () => {
 
     gameplayFacade.goldFacade.add(375080);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron)).toMatchObject({
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1))).toMatchObject({
       ok: true,
       cost: 100000,
     });
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoBottleCauldron)).toMatchObject({
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoBottleCauldron(1))).toMatchObject({
       ok: true,
       cost: 125000,
     });
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoCollectCauldron)).toMatchObject({
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoCollectCauldron(1))).toMatchObject({
       ok: true,
       cost: 150000,
     });
@@ -1534,17 +1503,24 @@ describe('GameplayFacade', () => {
   it('auto harvests ready plants and auto replants selected tiles after research', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
-    gameplayFacade.goldFacade.add(125000);
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoPlantTile)).toMatchObject({
+    finishCurrentTaskLevel(gameplayFacade);
+    finishCurrentTaskLevel(gameplayFacade);
+    gameplayFacade.goldFacade.add(125025);
+    expect(gameplayFacade.buyGardenTile()).toMatchObject({
+      ok: true,
+      tileNumber: 2,
+    });
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoPlantTile(1))).toMatchObject({
       ok: true,
       cost: 50000,
     });
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoHarvestPlant)).toMatchObject({
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoHarvestPlant(1))).toMatchObject({
       ok: true,
       cost: 75000,
     });
-    gameplayFacade.itemsFacade.addItem(1, 2);
+    gameplayFacade.itemsFacade.addItem(1, 4);
     gameplayFacade.plantGardenSeed(1, 1);
+    gameplayFacade.plantGardenSeed(2, 1);
 
     ecsFacade.update({ deltaSeconds: 20 });
 
@@ -1553,6 +1529,11 @@ describe('GameplayFacade', () => {
       selectedSeedKey: 'sageSeed',
       herbKey: 'sageHerb',
       remainingMs: 10_000,
+    });
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[1]).toMatchObject({
+      phase: 'ready',
+      selectedSeedKey: 'sageSeed',
+      herbKey: 'sageHerb',
     });
 
     ecsFacade.update({ deltaSeconds: 10 });
@@ -1563,6 +1544,11 @@ describe('GameplayFacade', () => {
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
       remainingMs: 20_000,
+    });
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[1]).toMatchObject({
+      phase: 'ready',
+      selectedSeedKey: 'sageSeed',
+      herbKey: 'sageHerb',
     });
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
       itemTypeId: 1001,
@@ -1576,11 +1562,13 @@ describe('GameplayFacade', () => {
       key: 'sageSeed',
       label: 'Sage Seed',
       kind: 'seed',
-      quantity: 0,
+      quantity: 1,
     });
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
-      'researched auto plant',
-      'researched auto harvest',
+      'opened garden plot 2',
+      'researched auto plant tile 1',
+      'researched auto harvest tile 1',
+      'planted Sage Seed',
       'planted Sage Seed',
       'harvested Sage',
       'planted Sage Seed',
@@ -1885,6 +1873,58 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('excludes cauldron-staged herbs from NPC market sales', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.addBrewingIngredient(1001);
+    gameplayFacade.addBrewingIngredient(1001);
+    gameplayFacade.setSelectedShopShelfSlotSellItem(1001);
+
+    expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find((item) => item.key === 'sageHerb'))
+      .toMatchObject({
+        quantity: 1,
+        sellGold: 6,
+      });
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
+      sellItemTypeId: 1001,
+      sellQuantity: 1,
+    });
+
+    ecsFacade.update({ deltaSeconds: 5 });
+
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(6);
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([
+      {
+        itemTypeId: 1001,
+        key: 'sageHerb',
+        label: 'Sage',
+        kind: 'herb',
+        quantity: 2,
+      },
+    ]);
+    expect(gameplayFacade.getSnapshot().brewing.herbs.find((herb) => herb.key === 'sageHerb'))
+      .toMatchObject({
+        quantity: 2,
+        stagedQuantity: 2,
+        availableQuantity: 0,
+      });
+
+    ecsFacade.update({ deltaSeconds: 5 });
+
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(6);
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([
+      {
+        itemTypeId: 1001,
+        key: 'sageHerb',
+        label: 'Sage',
+        kind: 'herb',
+        quantity: 2,
+      },
+    ]);
+    expect(gameplayFacade.getSnapshot().brewing.hasEnoughIngredients).toBe(true);
+  });
+
   it('clears selected NPC market item', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
@@ -1975,6 +2015,50 @@ describe('GameplayFacade', () => {
         quantity: 3,
       },
     ]);
+  });
+
+  it('excludes cauldron-staged herbs from player market listings', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.addBrewingIngredient(1001);
+    gameplayFacade.addBrewingIngredient(1001);
+
+    expect(
+      gameplayFacade.setSelectedPlayerShopShelfSlotListing({
+        itemTypeId: 1001,
+        quantity: 2,
+        priceGold: 4,
+      }),
+    ).toEqual({
+      ok: false,
+      reason: 'not_enough_item',
+      itemTypeId: 1001,
+      availableQuantity: 1,
+      quantity: 2,
+    });
+
+    expect(
+      gameplayFacade.setSelectedPlayerShopShelfSlotListing({
+        itemTypeId: 1001,
+        quantity: 1,
+        priceGold: 4,
+      }),
+    ).toMatchObject({
+      ok: true,
+      quantity: 1,
+      priceGold: 4,
+    });
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([
+      {
+        itemTypeId: 1001,
+        key: 'sageHerb',
+        label: 'Sage',
+        kind: 'herb',
+        quantity: 2,
+      },
+    ]);
+    expect(gameplayFacade.getSnapshot().brewing.hasEnoughIngredients).toBe(true);
   });
 
   it('buys player shop listings and claims sale proceeds through gameplay helpers', () => {

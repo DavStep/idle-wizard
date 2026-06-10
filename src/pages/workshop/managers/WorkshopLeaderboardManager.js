@@ -244,7 +244,7 @@ export class WorkshopLeaderboardManager {
   }
 
   formatUserLabel(user, index) {
-    return `${index + 1}. ${user.name} Lv.${this.normalizePlayerLevel(user.playerLevel)}`;
+    return `${index + 1}. ${user.name}(${this.normalizePlayerLevel(user.playerLevel)})`;
   }
 
   normalizePlayerLevel(playerLevel) {

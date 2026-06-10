@@ -622,55 +622,84 @@ function createGameplayFacadeFake() {
   };
   const advancedResearchBoxes = [
     {
-      id: 'automation',
-      label: 'automation research',
+      id: 'autoPlantTiles',
+      label: 'auto plant tile research',
       researches: [
         {
-          id: 'automation:autoPlantTile',
-          label: 'auto plant',
+          id: 'automation:autoPlantTile:1',
+          label: 'auto plant tile 1',
           value: '50000 gold',
-          effect: 'tile',
-          showEffect: true,
+          effect: 'auto',
           costGold: 50000,
           completed: false,
           canResearch: false,
         },
         {
-          id: 'automation:autoHarvestPlant',
-          label: 'auto harvest',
+          id: 'automation:autoPlantTile:2',
+          label: 'auto plant tile 2',
+          value: 'locked',
+          effect: 'auto',
+          costGold: 75000,
+          completed: false,
+          locked: true,
+          canResearch: false,
+        },
+      ],
+    },
+    {
+      id: 'autoHarvestTiles',
+      label: 'auto harvest tile research',
+      researches: [
+        {
+          id: 'automation:autoHarvestPlant:1',
+          label: 'auto harvest tile 1',
           value: '75000 gold',
-          effect: 'plant',
-          showEffect: true,
+          effect: 'auto',
           costGold: 75000,
           completed: false,
           canResearch: false,
         },
+      ],
+    },
+    {
+      id: 'autoBrewCauldrons',
+      label: 'auto brew cauldron research',
+      researches: [
         {
-          id: 'automation:autoBrewCauldron',
-          label: 'auto brew',
+          id: 'automation:autoBrewCauldron:1',
+          label: 'auto brew cauldron 1',
           value: '100000 gold',
-          effect: 'cauldron',
-          showEffect: true,
+          effect: 'auto',
           costGold: 100000,
           completed: false,
           canResearch: false,
         },
+      ],
+    },
+    {
+      id: 'autoBottleCauldrons',
+      label: 'auto bottle cauldron research',
+      researches: [
         {
-          id: 'automation:autoBottleCauldron',
-          label: 'auto bottle',
+          id: 'automation:autoBottleCauldron:1',
+          label: 'auto bottle cauldron 1',
           value: '125000 gold',
-          effect: 'cauldron',
-          showEffect: true,
+          effect: 'auto',
           costGold: 125000,
           completed: false,
           canResearch: false,
         },
+      ],
+    },
+    {
+      id: 'autoCollectCauldrons',
+      label: 'auto collect cauldron research',
+      researches: [
         {
-          id: 'automation:autoCollectCauldron',
-          label: 'auto collect',
+          id: 'automation:autoCollectCauldron:1',
+          label: 'auto collect cauldron 1',
           value: '150000 gold',
-          effect: 'cauldron',
-          showEffect: true,
+          effect: 'auto',
           costGold: 150000,
           completed: false,
           canResearch: false,
@@ -2035,6 +2064,31 @@ describe('PagesFacade', () => {
     expect(tasks.classList.contains('is-collapsed')).toBe(true);
   });
 
+  it('keeps Workshop tasks expanded across page swaps', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__tasks-summary')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    pagesFacade.show('brewing');
+    pagesFacade.show('workshop');
+
+    const tasks = stage.querySelector('.workshop-page__tasks');
+    const summary = stage.querySelector('.workshop-page__tasks-summary');
+    const list = stage.querySelector('.workshop-page__task-list');
+
+    expect(summary?.getAttribute('aria-expanded')).toBe('true');
+    expect(list?.hidden).toBe(false);
+    expect(tasks?.classList.contains('is-expanded')).toBe(true);
+  });
+
   it('shows seed summon feedback as a flyout', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -2504,9 +2558,9 @@ describe('PagesFacade', () => {
     expect(popup.querySelector('.workshop-page__leaderboard-tab-button')?.textContent).toBe(
       'total generated gold',
     );
-    expect(popup.textContent).toContain('1. Ada Lv.2');
+    expect(popup.textContent).toContain('1. Ada(2)');
     expect(popup.textContent).toContain('120');
-    expect(popup.textContent).toContain('2. Merlin Lv.10');
+    expect(popup.textContent).toContain('2. Merlin(10)');
     expect(popup.textContent).toContain('75');
 
     const incomeButton = [...popup.querySelectorAll('.workshop-page__leaderboard-tab-button')].find(
@@ -2522,7 +2576,7 @@ describe('PagesFacade', () => {
     const rowValues = [
       ...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val'),
     ].map((row) => row.textContent);
-    expect(rowLabels).toEqual(['user', '1. Merlin Lv.10', '2. Ada Lv.2']);
+    expect(rowLabels).toEqual(['user', '1. Merlin(10)', '2. Ada(2)']);
     expect(rowValues).toEqual(['income', '9', '3']);
   });
 
@@ -2795,8 +2849,8 @@ describe('PagesFacade', () => {
 
     expect(popup.hidden).toBe(true);
     expect(box.textContent).not.toContain('old hello');
-    expect(box.textContent).toContain('Lin Lv.4: second hello');
-    expect(box.textContent).toContain('Mo Lv.5: third hello');
+    expect(box.textContent).toContain('Lin(4): second hello');
+    expect(box.textContent).toContain('Mo(5): third hello');
     expect(box.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(2);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -2806,8 +2860,8 @@ describe('PagesFacade', () => {
     expect(popup.querySelector('.style-dialog')).not.toBeNull();
     expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(3);
     expect(popup.textContent).toContain('old hello');
-    expect(popup.textContent).toContain('Lin Lv.4: second hello');
-    expect(popup.textContent).toContain('Mo Lv.5: third hello');
+    expect(popup.textContent).toContain('Lin(4): second hello');
+    expect(popup.textContent).toContain('Mo(5): third hello');
 
     const input = popup.querySelector('.workshop-page__world-chat-input');
     const form = popup.querySelector('.workshop-page__world-chat-form');
@@ -2822,13 +2876,13 @@ describe('PagesFacade', () => {
     expect(input.value).toBe('');
     expect(box.textContent).not.toContain('old hello');
     expect(box.textContent).not.toContain('second hello');
-    expect(box.textContent).toContain('Mo Lv.5: third hello');
-    expect(box.textContent).toContain('wizard Lv.1: hello room');
+    expect(box.textContent).toContain('Mo(5): third hello');
+    expect(box.textContent).toContain('wizard(1): hello room');
     expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(4);
     expect(popup.textContent).toContain('old hello');
-    expect(popup.textContent).toContain('Lin Lv.4: second hello');
-    expect(popup.textContent).toContain('Mo Lv.5: third hello');
-    expect(popup.textContent).toContain('wizard Lv.1: hello room');
+    expect(popup.textContent).toContain('Lin(4): second hello');
+    expect(popup.textContent).toContain('Mo(5): third hello');
+    expect(popup.textContent).toContain('wizard(1): hello room');
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
@@ -3054,10 +3108,10 @@ describe('PagesFacade', () => {
 
     expect(advancedTab.getAttribute('aria-selected')).toBe('true');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'automation research',
+      'auto plant tile research',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'auto plant',
+      'auto plant tile 1',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       '50000 gold',

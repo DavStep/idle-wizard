@@ -8,13 +8,14 @@ export class BrewingAutomationManager {
   }
 
   update() {
-    this.autoCollectReadyPotion();
-    this.autoBottleBrewedPotion();
-    this.autoBrewCauldron();
+    const cauldronNumber = this.getCauldronNumber();
+    this.autoCollectReadyPotion(cauldronNumber);
+    this.autoBottleBrewedPotion(cauldronNumber);
+    this.autoBrewCauldron(cauldronNumber);
   }
 
-  autoCollectReadyPotion() {
-    if (!this.hasResearch(automationResearchIds.autoCollectCauldron)) {
+  autoCollectReadyPotion(cauldronNumber) {
+    if (!this.hasResearch(automationResearchIds.autoCollectCauldron(cauldronNumber))) {
       return;
     }
 
@@ -25,8 +26,8 @@ export class BrewingAutomationManager {
     this.brewingFacade.collect();
   }
 
-  autoBottleBrewedPotion() {
-    if (!this.hasResearch(automationResearchIds.autoBottleCauldron)) {
+  autoBottleBrewedPotion(cauldronNumber) {
+    if (!this.hasResearch(automationResearchIds.autoBottleCauldron(cauldronNumber))) {
       return;
     }
 
@@ -37,8 +38,8 @@ export class BrewingAutomationManager {
     this.brewingFacade.startBottling();
   }
 
-  autoBrewCauldron() {
-    if (!this.hasResearch(automationResearchIds.autoBrewCauldron)) {
+  autoBrewCauldron(cauldronNumber) {
+    if (!this.hasResearch(automationResearchIds.autoBrewCauldron(cauldronNumber))) {
       return;
     }
 
@@ -55,5 +56,9 @@ export class BrewingAutomationManager {
 
   hasResearch(researchId) {
     return this.researchFacade?.hasCompletedResearch(researchId) === true;
+  }
+
+  getCauldronNumber() {
+    return this.brewingFacade.getSnapshot().cauldronNumber ?? 1;
   }
 }

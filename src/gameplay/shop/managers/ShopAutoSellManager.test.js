@@ -68,4 +68,56 @@ describe('ShopAutoSellManager', () => {
       1,
     );
   });
+
+  it('does not sell reserved cauldron quantities', () => {
+    let quantity = 3;
+    const addGold = vi.fn();
+    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
+      if (quantity < removeQuantity) {
+        return null;
+      }
+
+      quantity -= removeQuantity;
+      return {
+        itemTypeId: 1001,
+        key: 'sageHerb',
+        label: 'Sage',
+        kind: 'herb',
+        quantity: removeQuantity,
+      };
+    });
+    const manager = new ShopAutoSellManager({
+      goldFacade: {
+        add: addGold,
+      },
+      itemsFacade: {
+        getItemDefinition: () => ({
+          id: 1001,
+          key: 'sageHerb',
+          label: 'Sage',
+          kind: 'herb',
+        }),
+        removeItem,
+      },
+      shopBalanceManager: {
+        getAutoSellSeconds: () => 5,
+      },
+      shopNpcPriceManager: {
+        getNpcBuyPriceGold: () => 6,
+        recordSellToNpc: vi.fn(),
+      },
+      shopSellAvailabilityManager: {
+        canRemoveItem: (_itemTypeId, removeQuantity) => quantity - 2 >= removeQuantity,
+      },
+      shopShelfEntityManager: createSlotManager(),
+    });
+
+    manager.update(5);
+    manager.update(5);
+
+    expect(quantity).toBe(2);
+    expect(removeItem).toHaveBeenCalledTimes(1);
+    expect(addGold).toHaveBeenCalledTimes(1);
+    expect(addGold).toHaveBeenCalledWith(6);
+  });
 });

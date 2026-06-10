@@ -13,14 +13,14 @@ export class GardenAutomationManager {
   }
 
   autoHarvestReadyPlants() {
-    if (!this.hasResearch(automationResearchIds.autoHarvestPlant)) {
-      return;
-    }
-
     const tiles = this.gardenFacade.getSnapshot().plot?.tiles ?? [];
 
     for (const tile of tiles) {
       if (!tile.unlocked || tile.phase !== 'ready') {
+        continue;
+      }
+
+      if (!this.hasResearch(automationResearchIds.autoHarvestPlant(tile.tileNumber))) {
         continue;
       }
 
@@ -29,14 +29,14 @@ export class GardenAutomationManager {
   }
 
   autoPlantEmptyTiles() {
-    if (!this.hasResearch(automationResearchIds.autoPlantTile)) {
-      return;
-    }
-
     const tiles = this.gardenFacade.getSnapshot().plot?.tiles ?? [];
 
     for (const tile of tiles) {
       if (!tile.unlocked || tile.phase !== 'empty' || !tile.selectedSeedItemTypeId) {
+        continue;
+      }
+
+      if (!this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))) {
         continue;
       }
 

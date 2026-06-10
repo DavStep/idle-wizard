@@ -76,6 +76,10 @@ export class BrewingFacade {
     return this.brewingStartManager.clearCauldron();
   }
 
+  getStagedIngredientQuantity(itemTypeId) {
+    return this.brewingCauldronEntityManager.getIngredientCountByItemTypeId(itemTypeId);
+  }
+
   brew() {
     return this.brewingStartManager.brew();
   }

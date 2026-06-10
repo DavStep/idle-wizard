@@ -305,7 +305,7 @@ export class WorkshopWorldChatManager {
       return username;
     }
 
-    return `${username} Lv.${playerLevel}`;
+    return `${username}(${playerLevel})`;
   }
 
   isSystemMessage(message) {

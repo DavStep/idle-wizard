@@ -166,11 +166,41 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockRecipe:dragonCourage': 4_100n,
   'unlockRecipe:deepDreamVision': 4_850n,
   'unlockRecipe:pactWard': 5_700n,
-  'automation:autoPlantTile': 50_000n,
-  'automation:autoHarvestPlant': 75_000n,
-  'automation:autoBrewCauldron': 100_000n,
-  'automation:autoBottleCauldron': 125_000n,
-  'automation:autoCollectCauldron': 150_000n,
+  'automation:autoPlantTile:1': 50_000n,
+  'automation:autoPlantTile:2': 75_000n,
+  'automation:autoPlantTile:3': 100_000n,
+  'automation:autoPlantTile:4': 125_000n,
+  'automation:autoPlantTile:5': 150_000n,
+  'automation:autoPlantTile:6': 175_000n,
+  'automation:autoPlantTile:7': 200_000n,
+  'automation:autoPlantTile:8': 225_000n,
+  'automation:autoPlantTile:9': 250_000n,
+  'automation:autoPlantTile:10': 275_000n,
+  'automation:autoHarvestPlant:1': 75_000n,
+  'automation:autoHarvestPlant:2': 100_000n,
+  'automation:autoHarvestPlant:3': 125_000n,
+  'automation:autoHarvestPlant:4': 150_000n,
+  'automation:autoHarvestPlant:5': 175_000n,
+  'automation:autoHarvestPlant:6': 200_000n,
+  'automation:autoHarvestPlant:7': 225_000n,
+  'automation:autoHarvestPlant:8': 250_000n,
+  'automation:autoHarvestPlant:9': 275_000n,
+  'automation:autoHarvestPlant:10': 300_000n,
+  'automation:autoBrewCauldron:1': 100_000n,
+  'automation:autoBrewCauldron:2': 150_000n,
+  'automation:autoBrewCauldron:3': 200_000n,
+  'automation:autoBrewCauldron:4': 250_000n,
+  'automation:autoBrewCauldron:5': 300_000n,
+  'automation:autoBottleCauldron:1': 125_000n,
+  'automation:autoBottleCauldron:2': 175_000n,
+  'automation:autoBottleCauldron:3': 225_000n,
+  'automation:autoBottleCauldron:4': 275_000n,
+  'automation:autoBottleCauldron:5': 325_000n,
+  'automation:autoCollectCauldron:1': 150_000n,
+  'automation:autoCollectCauldron:2': 200_000n,
+  'automation:autoCollectCauldron:3': 250_000n,
+  'automation:autoCollectCauldron:4': 300_000n,
+  'automation:autoCollectCauldron:5': 350_000n,
 };
 
 const potionCatalog = [
@@ -224,12 +254,34 @@ const summonSeedResearchCatalog = [
   { id: 'summonSeedsX5', label: 'x5 summon' },
 ];
 
+const automationGardenTileNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const automationCauldronNumbers = [1, 2, 3, 4, 5];
 const automationResearchCatalog = [
-  { id: 'automation:autoPlantTile', label: 'auto plant' },
-  { id: 'automation:autoHarvestPlant', label: 'auto harvest' },
-  { id: 'automation:autoBrewCauldron', label: 'auto brew' },
-  { id: 'automation:autoBottleCauldron', label: 'auto bottle' },
-  { id: 'automation:autoCollectCauldron', label: 'auto collect' },
+  ...automationGardenTileNumbers.map((tileNumber) => ({
+    id: `automation:autoPlantTile:${tileNumber}`,
+    label: `auto plant tile ${tileNumber}`,
+    groupId: 'autoPlantTiles',
+  })),
+  ...automationGardenTileNumbers.map((tileNumber) => ({
+    id: `automation:autoHarvestPlant:${tileNumber}`,
+    label: `auto harvest tile ${tileNumber}`,
+    groupId: 'autoHarvestTiles',
+  })),
+  ...automationCauldronNumbers.map((cauldronNumber) => ({
+    id: `automation:autoBrewCauldron:${cauldronNumber}`,
+    label: `auto brew cauldron ${cauldronNumber}`,
+    groupId: 'autoBrewCauldrons',
+  })),
+  ...automationCauldronNumbers.map((cauldronNumber) => ({
+    id: `automation:autoBottleCauldron:${cauldronNumber}`,
+    label: `auto bottle cauldron ${cauldronNumber}`,
+    groupId: 'autoBottleCauldrons',
+  })),
+  ...automationCauldronNumbers.map((cauldronNumber) => ({
+    id: `automation:autoCollectCauldron:${cauldronNumber}`,
+    label: `auto collect cauldron ${cauldronNumber}`,
+    groupId: 'autoCollectCauldrons',
+  })),
 ];
 
 const researchCatalog = [
@@ -260,7 +312,7 @@ const researchCatalog = [
   ...automationResearchCatalog.map((research) => ({
     researchId: research.id,
     label: research.label,
-    groupId: 'automation',
+    groupId: research.groupId,
     defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
   })),
 ];

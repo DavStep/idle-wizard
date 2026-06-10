@@ -4,6 +4,7 @@ export class ShopAutoSellManager {
     itemsFacade,
     shopBalanceManager,
     shopNpcPriceManager,
+    shopSellAvailabilityManager,
     shopShelfEntityManager,
     onItemSold,
   }) {
@@ -11,6 +12,7 @@ export class ShopAutoSellManager {
     this.itemsFacade = itemsFacade;
     this.shopBalanceManager = shopBalanceManager;
     this.shopNpcPriceManager = shopNpcPriceManager;
+    this.shopSellAvailabilityManager = shopSellAvailabilityManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
     this.onItemSold = onItemSold;
     this.registered = false;
@@ -41,6 +43,11 @@ export class ShopAutoSellManager {
         this.shopShelfEntityManager.getSellProgressSeconds(slot.slotNumber) + deltaSeconds;
 
       while (progressSeconds >= autoSellSeconds) {
+        if (!this.canSellItem(slot.sellItemTypeId, 1)) {
+          progressSeconds = autoSellSeconds;
+          break;
+        }
+
         const soldItem = this.itemsFacade.removeItem(slot.sellItemTypeId, 1);
 
         if (!soldItem) {
@@ -67,5 +74,9 @@ export class ShopAutoSellManager {
     return Number.isFinite(frame.timerDeltaSeconds)
       ? frame.timerDeltaSeconds
       : frame.deltaSeconds;
+  }
+
+  canSellItem(itemTypeId, quantity) {
+    return this.shopSellAvailabilityManager?.canRemoveItem(itemTypeId, quantity) ?? true;
   }
 }

@@ -1,8 +1,15 @@
 export class ShopPlayerShelfListingManager {
-  constructor({ goldFacade, itemsFacade, shopSellKindManager, shopPlayerShelfEntityManager }) {
+  constructor({
+    goldFacade,
+    itemsFacade,
+    shopSellKindManager,
+    shopSellAvailabilityManager,
+    shopPlayerShelfEntityManager,
+  }) {
     this.goldFacade = goldFacade;
     this.itemsFacade = itemsFacade;
     this.shopSellKindManager = shopSellKindManager;
+    this.shopSellAvailabilityManager = shopSellAvailabilityManager;
     this.shopPlayerShelfEntityManager = shopPlayerShelfEntityManager;
   }
 
@@ -62,7 +69,7 @@ export class ShopPlayerShelfListingManager {
       .getSlotSnapshots()
       .find((slot) => slot.slotNumber === selectedSlotNumber);
     const existingSameItemQuantity = existingSlot?.itemTypeId === itemTypeId ? existingSlot.quantity : 0;
-    const availableQuantity = this.itemsFacade.getItemQuantity(itemTypeId) + existingSameItemQuantity;
+    const availableQuantity = this.getAvailableQuantity(itemTypeId, existingSameItemQuantity);
 
     if (safeQuantity > availableQuantity) {
       return {
@@ -244,5 +251,12 @@ export class ShopPlayerShelfListingManager {
       label: item.label,
       kind: item.kind,
     };
+  }
+
+  getAvailableQuantity(itemTypeId, extraQuantity = 0) {
+    return (
+      this.shopSellAvailabilityManager?.getAvailableQuantity(itemTypeId, extraQuantity) ??
+      this.itemsFacade.getItemQuantity(itemTypeId) + extraQuantity
+    );
   }
 }

@@ -50,6 +50,7 @@ export class WorkshopTaskManager {
 
     this.root.append(this.refs.title, this.refs.summary, this.refs.list);
     parent.append(this.root);
+    this.setExpanded(this.expanded);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
     this.render(this.gameplayFacade.getSnapshot());
@@ -65,7 +66,6 @@ export class WorkshopTaskManager {
     this.refs = {};
     this.rowsByTaskId.clear();
     this.currentTasksById.clear();
-    this.expanded = false;
   }
 
   toggleExpanded() {

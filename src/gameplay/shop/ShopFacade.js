@@ -8,6 +8,7 @@ import { ShopSlotPurchaseManager } from './managers/ShopSlotPurchaseManager.js';
 import { ShopPlayerShelfEntityManager } from './managers/ShopPlayerShelfEntityManager.js';
 import { ShopPlayerShelfListingManager } from './managers/ShopPlayerShelfListingManager.js';
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
+import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
 
 export class ShopFacade {
   static explain =
@@ -20,6 +21,7 @@ export class ShopFacade {
     researchFacade,
     npcMarketFacade,
     onItemSold,
+    getReservedItemQuantity,
   } = {}) {
     this.shopBalanceManager = new ShopBalanceManager();
     this.shopNpcPriceManager = new ShopNpcPriceManager({
@@ -29,6 +31,10 @@ export class ShopFacade {
     this.shopSellKindManager = new ShopSellKindManager();
     this.shopSellItemVisibilityManager = new ShopSellItemVisibilityManager({
       researchFacade,
+    });
+    this.shopSellAvailabilityManager = new ShopSellAvailabilityManager({
+      itemsFacade,
+      getReservedItemQuantity,
     });
     this.shopShelfEntityManager = new ShopShelfEntityManager({
       initialUnlockedSlots: this.shopBalanceManager.getInitialUnlockedSlots(),
@@ -65,6 +71,7 @@ export class ShopFacade {
       goldFacade,
       itemsFacade,
       shopSellKindManager: this.shopSellKindManager,
+      shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopPlayerShelfEntityManager: this.shopPlayerShelfEntityManager,
     });
     this.shopAutoSellManager = new ShopAutoSellManager({
@@ -72,6 +79,7 @@ export class ShopFacade {
       itemsFacade,
       shopBalanceManager: this.shopBalanceManager,
       shopNpcPriceManager: this.shopNpcPriceManager,
+      shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
       onItemSold,
     });
@@ -154,7 +162,7 @@ export class ShopFacade {
       nextSlotCost !== null && nextSlotNumber > maxUnlockedSlotsByLevel;
     const nextPlayerSlotLockedByLevel =
       nextPlayerSlotCost !== null && nextPlayerSlotNumber > maxPlayerUnlockedSlotsByLevel;
-    const sellableItems = this.itemsFacade.getSellableItemSnapshots();
+    const sellableItems = this.getAvailableSellableItemSnapshots();
     const visibleSellItems = this.getVisibleSellItemSnapshots(sellableItems);
     const sellKinds = this.shopSellKindManager.getSellKinds().map((sellKind) => ({
       ...sellKind,
@@ -215,7 +223,13 @@ export class ShopFacade {
     );
   }
 
-  getVisibleSellItemSnapshots(sellableItems = this.itemsFacade.getSellableItemSnapshots()) {
+  getAvailableSellableItemSnapshots() {
+    return this.shopSellAvailabilityManager.getAvailableSellableItems(
+      this.itemsFacade.getSellableItemSnapshots(),
+    );
+  }
+
+  getVisibleSellItemSnapshots(sellableItems = this.getAvailableSellableItemSnapshots()) {
     return this.shopSellItemVisibilityManager
       .getVisibleSellItems(sellableItems)
       .map((item) => ({
@@ -227,7 +241,7 @@ export class ShopFacade {
       }));
   }
 
-  getSlotSnapshots(sellableItems = this.itemsFacade.getSellableItemSnapshots()) {
+  getSlotSnapshots(sellableItems = this.getAvailableSellableItemSnapshots()) {
     const sellableItemsById = new Map(sellableItems.map((item) => [item.itemTypeId, item]));
 
     return this.shopShelfEntityManager.getSlotSnapshots().map((slot) => {

@@ -30,43 +30,8 @@ const summonSeedResearches = [
   },
 ];
 
-const automationResearches = [
-  {
-    id: automationResearchIds.autoPlantTile,
-    label: 'auto plant',
-    value: 'tile',
-    showEffect: true,
-    description: 'empty garden tiles plant their selected seed when one is available.',
-  },
-  {
-    id: automationResearchIds.autoHarvestPlant,
-    label: 'auto harvest',
-    value: 'plant',
-    showEffect: true,
-    description: 'ready garden plants start harvesting without a tap.',
-  },
-  {
-    id: automationResearchIds.autoBrewCauldron,
-    label: 'auto brew',
-    value: 'cauldron',
-    showEffect: true,
-    description: 'the cauldron starts brewing when staged ingredients and mana are ready.',
-  },
-  {
-    id: automationResearchIds.autoBottleCauldron,
-    label: 'auto bottle',
-    value: 'cauldron',
-    showEffect: true,
-    description: 'finished brews start bottling without a tap.',
-  },
-  {
-    id: automationResearchIds.autoCollectCauldron,
-    label: 'auto collect',
-    value: 'cauldron',
-    showEffect: true,
-    description: 'bottled potions move into inventory without a tap.',
-  },
-];
+const maxAutomationGardenTiles = 10;
+const maxAutomationCauldrons = 5;
 
 export class ResearchDefinitionManager {
   constructor({ itemsFacade, researchBalanceManager }) {
@@ -84,13 +49,7 @@ export class ResearchDefinitionManager {
       {
         id: 'advanced',
         label: 'advanced research',
-        boxes: [
-          {
-            id: 'automation',
-            label: 'automation research',
-            researches: automationResearches,
-          },
-        ],
+        boxes: this.getAutomationResearchBoxes(),
       },
     ];
   }
@@ -168,6 +127,84 @@ export class ResearchDefinitionManager {
           : {}),
         description: `allows valid cauldron ingredients to brew ${potion.label}.`,
       };
+    });
+  }
+
+  getAutomationResearchBoxes() {
+    return [
+      {
+        id: 'autoPlantTiles',
+        label: 'auto plant tile research',
+        researches: this.getNumberedResearches({
+          count: maxAutomationGardenTiles,
+          getId: automationResearchIds.autoPlantTile,
+          label: (tileNumber) => `auto plant tile ${tileNumber}`,
+          description: (tileNumber) =>
+            `garden tile ${tileNumber} plants its selected seed when one is available.`,
+        }),
+      },
+      {
+        id: 'autoHarvestTiles',
+        label: 'auto harvest tile research',
+        researches: this.getNumberedResearches({
+          count: maxAutomationGardenTiles,
+          getId: automationResearchIds.autoHarvestPlant,
+          label: (tileNumber) => `auto harvest tile ${tileNumber}`,
+          description: (tileNumber) =>
+            `garden tile ${tileNumber} starts harvesting ready plants without a tap.`,
+        }),
+      },
+      {
+        id: 'autoBrewCauldrons',
+        label: 'auto brew cauldron research',
+        researches: this.getNumberedResearches({
+          count: maxAutomationCauldrons,
+          getId: automationResearchIds.autoBrewCauldron,
+          label: (cauldronNumber) => `auto brew cauldron ${cauldronNumber}`,
+          description: (cauldronNumber) =>
+            `cauldron ${cauldronNumber} starts brewing when staged ingredients and mana are ready.`,
+        }),
+      },
+      {
+        id: 'autoBottleCauldrons',
+        label: 'auto bottle cauldron research',
+        researches: this.getNumberedResearches({
+          count: maxAutomationCauldrons,
+          getId: automationResearchIds.autoBottleCauldron,
+          label: (cauldronNumber) => `auto bottle cauldron ${cauldronNumber}`,
+          description: (cauldronNumber) =>
+            `cauldron ${cauldronNumber} starts bottling finished brews without a tap.`,
+        }),
+      },
+      {
+        id: 'autoCollectCauldrons',
+        label: 'auto collect cauldron research',
+        researches: this.getNumberedResearches({
+          count: maxAutomationCauldrons,
+          getId: automationResearchIds.autoCollectCauldron,
+          label: (cauldronNumber) => `auto collect cauldron ${cauldronNumber}`,
+          description: (cauldronNumber) =>
+            `cauldron ${cauldronNumber} moves bottled potions into inventory without a tap.`,
+        }),
+      },
+    ];
+  }
+
+  getNumberedResearches({ count, getId, label, description }) {
+    return Array.from({ length: count }, (_value, index) => {
+      const targetNumber = index + 1;
+      const research = {
+        id: getId(targetNumber),
+        label: label(targetNumber),
+        value: 'auto',
+        description: description(targetNumber),
+      };
+
+      if (targetNumber > 1) {
+        research.requiredResearchIds = [getId(targetNumber - 1)];
+      }
+
+      return research;
     });
   }
 
