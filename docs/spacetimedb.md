@@ -28,6 +28,23 @@ VITE_SPACETIME_URI=ws://localhost:3000
 VITE_SPACETIME_DATABASE=idle-wizard
 ```
 
+## Public Flow
+
+For GitHub Pages or any hosted web build, publish the database to Maincloud:
+
+```sh
+npm run stdb:publish:maincloud
+```
+
+Build hosted web assets with:
+
+```txt
+VITE_SPACETIME_URI=https://maincloud.spacetimedb.com
+VITE_SPACETIME_DATABASE=idle-wizard
+```
+
+The GitHub Pages workflow already sets those values before `npm run build -- --base=/idle-wizard/`.
+
 ## Auth Flow
 
 The client auth boundary is already split:
@@ -46,12 +63,15 @@ The server module defines:
 - `leaderboard`: one row per identity, with `username` and `totalIncome`.
 - `player_shop_listing`: one row per published player shop slot, keyed by seller identity and slot number.
 - `player_shop_proceeds`: one row per seller with unclaimed gold from player shop sales.
+- `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC stock, and rolling demand/supply scores.
 
 `clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`.
 
 `set_total_generated_gold` accepts the client's persisted lifetime generated gold total and keeps the server `totalIncome` at the highest reported value. Current spendable gold is not used for this value because spending lowers it.
 
 `set_player_shop_slot` publishes a player shelf slot after the client reserves local inventory. `buy_player_shop_listing` decrements server listing quantity and adds server-side seller proceeds. `claim_player_shop_proceeds` clears the proceeds row after the client claims the gold locally.
+
+`sell_to_npc` and `buy_from_npc` record player/NPC trade pressure and stock movement. `tick_npc_market` applies bounded price movement from stock plus rolling demand/supply scores. Player shop trades do not affect `npc_market_price`.
 
 ## Client Wiring
 
@@ -62,6 +82,7 @@ SELECT * FROM player
 SELECT * FROM leaderboard
 SELECT * FROM player_shop_listing
 SELECT * FROM player_shop_proceeds
+SELECT * FROM npc_market_price
 ```
 
 The `player` row is treated as the source of truth on reconnect, then later local username edits are sent through `set_username`. Local generated gold totals are sent through `set_total_generated_gold`. The subscribed leaderboard rows are exposed as `leaderboardFacade.getSnapshot().topUsers` for the Workshop leaderboard popup.

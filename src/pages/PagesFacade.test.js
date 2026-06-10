@@ -799,6 +799,10 @@ function createGameplayFacadeFake() {
       snapshot.gold.current -= research.costGold;
       research.completed = true;
       research.value = 'researched';
+      snapshot.research.completedResearchIds ??= [];
+      if (!snapshot.research.completedResearchIds.includes(researchId)) {
+        snapshot.research.completedResearchIds.push(researchId);
+      }
       updateResearchAffordability();
       updateBrewing();
       publish();
@@ -1021,6 +1025,7 @@ function createGameplayFacadeFake() {
       );
       slot.sellItemTypeId = item.itemTypeId;
       slot.sellKind = item.kind;
+      slot.sellKey = item.key;
       slot.sellLabel = item.label;
       slot.sellQuantity = item.quantity;
       slot.sellGold = item.sellGold;
@@ -1037,6 +1042,7 @@ function createGameplayFacadeFake() {
       );
       slot.sellItemTypeId = null;
       slot.sellKind = null;
+      slot.sellKey = null;
       slot.sellLabel = null;
       slot.sellQuantity = null;
       slot.sellGold = null;
@@ -1240,6 +1246,17 @@ function createGameplayFacadeFake() {
   };
 
   return gameplayFacade;
+}
+
+function markSeedResearchComplete(gameplayFacade, ...seedKeys) {
+  const research = gameplayFacade.getSnapshot().research;
+  const completedResearchIds = new Set(research.completedResearchIds ?? []);
+
+  for (const seedKey of seedKeys) {
+    completedResearchIds.add(`unlockSeed:${seedKey}`);
+  }
+
+  research.completedResearchIds = [...completedResearchIds];
 }
 
 function createPlayerFacadeFake(initialUsername = 'wizard') {
@@ -1764,8 +1781,10 @@ describe('PagesFacade', () => {
 
   it('shows seed inventory when the seeds row is clicked', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
 
@@ -1825,6 +1844,14 @@ describe('PagesFacade', () => {
         kind: 'seed',
         quantity: 4,
       },
+      {
+        itemTypeId: 5,
+        key: 'briarSeed',
+        label: 'Briar Seed',
+        kind: 'seed',
+        quantity: 0,
+        known: false,
+      },
     ];
     const seedUnlockBox = snapshot.research.boxes.find((box) => box.id === 'seedUnlocks');
     seedUnlockBox.researches = [
@@ -1856,6 +1883,13 @@ describe('PagesFacade', () => {
         completed: false,
         canResearch: false,
       },
+      {
+        id: 'unlockSeed:briarSeed',
+        label: 'Briar Seed',
+        value: '5 gold',
+        completed: false,
+        canResearch: false,
+      },
     ];
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -1870,19 +1904,32 @@ describe('PagesFacade', () => {
 
     const seedInventory = stage.querySelector('.workshop-page__seed-inventory');
     const divider = seedInventory.querySelector('.workshop-page__seed-inventory-divider');
-    const labels = [...seedInventory.querySelectorAll('.workshop-page__seed-inventory-row')].map(
-      (row) => row.querySelector('.row_key')?.textContent,
-    );
-
-    expect(labels).toEqual(['Sage Seed', 'Mint Seed', 'Nettle Seed', 'Lavender Seed']);
+    const rows = [...seedInventory.querySelectorAll('.workshop-page__seed-inventory-row')];
+    const labels = rows.map((row) => row.querySelector('.row_key')?.textContent);
+    const values = rows.map((row) => row.querySelector('.row_val')?.textContent);
+    const mysteryLabel = labels[4];
+    expect(labels.slice(0, 3)).toEqual(['Sage Seed', 'Mint Seed', 'Lavender Seed']);
+    expect(labels[3]).toBe('Nettle Seed');
+    expect(mysteryLabel).not.toBe('Briar Seed');
+    expect(mysteryLabel).toHaveLength(6);
+    expect(values).toEqual(['0', '2', '4', 'locked', 'locked']);
     expect(divider).not.toBeNull();
-    expect(divider.previousElementSibling.querySelector('.row_key')?.textContent).toBe('Mint Seed');
-    expect(divider.nextElementSibling.querySelector('.row_key')?.textContent).toBe('Nettle Seed');
+    expect(divider.previousElementSibling.querySelector('.row_key')?.textContent).toBe(
+      'Lavender Seed',
+    );
+    expect(divider.nextElementSibling.querySelector('.row_key')?.textContent).toBe(
+      'Nettle Seed',
+    );
+    expect(
+      rows
+        .find((row) => row.querySelector('.row_key')?.textContent === 'Lavender Seed')
+        ?.classList.contains('is-unresearched'),
+    ).toBe(false);
     expect(
       [...seedInventory.querySelectorAll('.workshop-page__seed-inventory-row.is-empty')].map(
         (row) => row.querySelector('.row_key')?.textContent,
       ),
-    ).toEqual(['Sage Seed', 'Nettle Seed']);
+    ).toEqual(['Sage Seed', 'Nettle Seed', mysteryLabel]);
   });
 
   it('hides seed inventory popup with Escape or outside click', () => {
@@ -2160,8 +2207,10 @@ describe('PagesFacade', () => {
 
   it('orders rooms as Brewing, Garden, Workshop, Research, Shop with Workshop default', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed', 'mintSeed');
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
 
@@ -2423,6 +2472,8 @@ describe('PagesFacade', () => {
     expect(potionsPopup.querySelector('.brewing-page__potions-close')?.textContent).toBe('close');
     expect(potionsPopup.textContent).toContain('potions');
     expect(potionsPopup.textContent).toContain('Mana Tonic2');
+    expect(potionsPopup.textContent).not.toContain('Minor Healing Potion');
+    expect(potionsPopup.textContent).not.toContain('locked');
 
     dispatchPointerSwipe(stage);
 
@@ -2436,6 +2487,7 @@ describe('PagesFacade', () => {
   it('keeps Brewing guide step DOM stable across snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -2508,6 +2560,7 @@ describe('PagesFacade', () => {
   it('keeps Brewing text DOM stable across unchanged snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -2571,10 +2624,11 @@ describe('PagesFacade', () => {
 
     gameplayFacade.publishSnapshot();
 
+    expect(emptyRow).not.toBeNull();
     expect(stage.querySelector('.brewing-page__potion-empty')).toBe(emptyRow);
   });
 
-  it('separates unlocked garden herb rows from locked rows and marks empty counts', () => {
+  it('hides locked garden herb rows and keeps researched or owned herbs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -2607,6 +2661,14 @@ describe('PagesFacade', () => {
         kind: 'herb',
         quantity: 4,
       },
+      {
+        itemTypeId: 1005,
+        key: 'briarHerb',
+        label: 'Briar',
+        kind: 'herb',
+        quantity: 0,
+        known: false,
+      },
     ];
     const seedUnlockBox = snapshot.research.boxes.find((box) => box.id === 'seedUnlocks');
     seedUnlockBox.researches = [
@@ -2638,6 +2700,13 @@ describe('PagesFacade', () => {
         completed: false,
         canResearch: false,
       },
+      {
+        id: 'unlockSeed:briarSeed',
+        label: 'Briar Seed',
+        value: '5 gold',
+        completed: false,
+        canResearch: false,
+      },
     ];
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -2654,21 +2723,27 @@ describe('PagesFacade', () => {
     const labels = [...herbs.querySelectorAll('.garden-page__herb-row')].map(
       (row) => row.querySelector('.row_key')?.textContent,
     );
-
-    expect(labels).toEqual(['Sage', 'Mint', 'Nettle', 'Lavender']);
-    expect(divider).not.toBeNull();
-    expect(divider.previousElementSibling.querySelector('.row_key')?.textContent).toBe('Mint');
-    expect(divider.nextElementSibling.querySelector('.row_key')?.textContent).toBe('Nettle');
+    expect(labels).toEqual(['Sage', 'Mint', 'Lavender']);
+    expect(divider).toBeNull();
+    expect(labels).not.toContain('Nettle');
+    expect(labels).not.toContain('Briar');
     expect(
       [...herbs.querySelectorAll('.garden-page__herb-row.is-empty')].map(
         (row) => row.querySelector('.row_key')?.textContent,
       ),
-    ).toEqual(['Sage', 'Nettle']);
+    ).toEqual(['Sage']);
+    expect(herbs.textContent).not.toContain('locked');
+    expect(herbs.querySelector('.garden-page__herb-row.is-locked')).toBeNull();
   });
 
   it('shows garden plots as text rows and keeps planting as a popup choice', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    const seedUnlockBox = gameplayFacade
+      .getSnapshot()
+      .research.boxes.find((box) => box.id === 'seedUnlocks');
+    seedUnlockBox.researches[0].completed = true;
+    gameplayFacade.getSnapshot().research.completedResearchIds = ['unlockSeed:sageSeed'];
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -2730,14 +2805,16 @@ describe('PagesFacade', () => {
     expect(
       seedPopup.querySelector('.garden-page__seed-dialog')?.getAttribute('aria-labelledby'),
     ).toBe('garden-seed-dialog-title');
+    expect(seedPopup.querySelector('#garden-seed-dialog-title')?.textContent).toBe(
+      'choose seed',
+    );
     expect(seedButtons.map((button) => button.textContent)).toEqual([
       'empty',
       'Sage Seed1',
-      'Mint Seed0',
     ]);
-    expect(seedPopup.querySelector('.garden-page__seed-divider')).not.toBeNull();
+    expect(seedPopup.textContent).not.toContain('Mint Seed');
+    expect(seedPopup.querySelector('.garden-page__seed-divider')).toBeNull();
     expect(seedButtons[0].disabled).toBe(false);
-    expect(seedButtons[2].disabled).toBe(false);
 
     seedButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -2807,6 +2884,11 @@ describe('PagesFacade', () => {
   it('allows planting after swiping into the Garden', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    const seedUnlockBox = gameplayFacade
+      .getSnapshot()
+      .research.boxes.find((box) => box.id === 'seedUnlocks');
+    seedUnlockBox.researches[0].completed = true;
+    gameplayFacade.getSnapshot().research.completedResearchIds = ['unlockSeed:sageSeed'];
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -2898,6 +2980,7 @@ describe('PagesFacade', () => {
   it('adds herbs to the Brewing cauldron and names unlocked matching recipes', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -3055,6 +3138,7 @@ describe('PagesFacade', () => {
   it('keeps Brewing cauldron remove rows stable through snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -3103,6 +3187,7 @@ describe('PagesFacade', () => {
       stagedQuantity: 0,
       availableQuantity: 2,
     });
+    markSeedResearchComplete(gameplayFacade, 'sageSeed', 'nettleSeed');
 
     pagesFacade.mount(stage);
     pagesFacade.show('brewing');
@@ -3315,8 +3400,10 @@ describe('PagesFacade', () => {
 
   it('sets selected shop shelf slot item', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
     });
 
     pagesFacade.mount(stage);
@@ -3390,8 +3477,10 @@ describe('PagesFacade', () => {
 
   it('clears selected shop shelf slot item from the sell picker', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
     });
 
     pagesFacade.mount(stage);
@@ -3434,6 +3523,7 @@ describe('PagesFacade', () => {
   it('updates visible shop sell prices and quantities from gameplay snapshots', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -3512,12 +3602,13 @@ describe('PagesFacade', () => {
     );
 
     expect(visibleRows).toEqual(['empty', 'Mint Seed (1) 1 gold']);
-    expect(sageRow.hidden).toBe(true);
+    expect(sageRow?.hidden ?? true).toBe(true);
   });
 
   it('keeps zero count visible on a selected shop shelf item missing from sell rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -3546,8 +3637,10 @@ describe('PagesFacade', () => {
 
   it('switches shop sell item tabs', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
     });
 
     pagesFacade.mount(stage);
@@ -3574,10 +3667,10 @@ describe('PagesFacade', () => {
 
     potionsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const manaTonicButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Mana Tonic (0) 5 gold',
-    );
-    expect(manaTonicButton.closest('.shop-page__sell-item-row').hidden).toBe(false);
+    const visiblePotionRows = [...stage.querySelectorAll('.shop-page__sell-item-row')]
+      .filter((row) => !row.hidden)
+      .map((row) => row.textContent);
+    expect(visiblePotionRows).not.toContain('Mana Tonic (locked) 5 gold');
   });
 
   it('hides shop sell picker with Escape or outside click', () => {

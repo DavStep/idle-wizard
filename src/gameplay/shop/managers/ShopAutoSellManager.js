@@ -3,12 +3,14 @@ export class ShopAutoSellManager {
     goldFacade,
     itemsFacade,
     shopBalanceManager,
+    shopNpcPriceManager,
     shopShelfEntityManager,
     onItemSold,
   }) {
     this.goldFacade = goldFacade;
     this.itemsFacade = itemsFacade;
     this.shopBalanceManager = shopBalanceManager;
+    this.shopNpcPriceManager = shopNpcPriceManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
     this.onItemSold = onItemSold;
     this.registered = false;
@@ -46,8 +48,9 @@ export class ShopAutoSellManager {
           break;
         }
 
-        const gold = this.shopBalanceManager.getSellGold(item.kind, item);
+        const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
         this.goldFacade.add(gold);
+        void this.shopNpcPriceManager.recordSellToNpc(item, 1);
         this.onItemSold?.({
           item,
           gold,

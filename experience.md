@@ -38,7 +38,7 @@
 - For now, all seed drops use equal weight; keep a weight field anyway so rarity can change later.
 - Seeds produce herbs, and herbs have growth duration.
 - Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
-- Garden herb inventory groups completed `unlockSeed:*` herbs above locked herbs, with zero-count rows in disabled gray.
+- Garden and Brewing herb/potion use panels show only researched/unlocked or owned items; hide locked zero-count rows completely.
 - Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make Wasted Potion.
 - Potion recipe ingredient order matters; expand grouped quantities in listed order for matching.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
@@ -70,6 +70,8 @@
 - Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
 - Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.
+- Inventory-style seed/herb/potion rows should display `locked` instead of `0` when the matching research is incomplete.
+- Garden seed picker title is `choose seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
 - Garden tiles keep selected seed separate from active crop; harvest completion preserves selection and auto-replants only when that seed is owned.
 - Garden seed selection is locked while a tile has an active crop; active crop saves should restore selected seed from the planted crop.
 - Garden growth/harvest timer text belongs next to the right action label, not inside the progress rail.
@@ -110,6 +112,7 @@
 - Brewing cauldron staged ingredients display as adjacent quantity groups like `- 2 Nettle`; do not show numbered slots.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
 - Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
+- Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.
 - Tabbed popups put tab buttons below and outside the bordered `.style-dialog`; keep modal role/focus on the wrapper.
 - Keep an `8px` source gap between tabbed popup dialogs and their bottom tab buttons.
 - Popup tab buttons use the same `2px` stroke as popup dialogs.
@@ -129,11 +132,20 @@
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
 
+## Development Operations
+
+- Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
+- Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
+- GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
+- `DavStep/idle-wizard` is private; current GitHub plan rejected Pages enablement until the repo is public or the plan supports private Pages.
+- Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
+
 ## Backend And Android
 
 - Backend target is SpacetimeDB.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
+- The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables currently own shared `player` identity rows and `leaderboard` rows; client syncs username only.
@@ -142,7 +154,10 @@
 - Queue explicit username edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's save.
 - SpacetimeDB table callbacks pass inserted/updated rows; use those callback rows for player profile sync because immediate table scans can still read stale usernames.
 - Local SpacetimeDB CLI target should be `local` (`http://127.0.0.1:3000`); anonymous publish cannot update an existing dev DB.
+- Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
+- Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
+- Current NPC market backend owns shared prices/stock/pressure, but shop inventory and gold settlement still happen locally until server-owned inventory/gold exists.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local gold.
 - Android packaging uses Capacitor.
 - Capacitor 8 Android builds require JDK 21 here.

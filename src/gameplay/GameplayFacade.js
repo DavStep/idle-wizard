@@ -64,6 +64,14 @@ export class GameplayFacade {
     this.initialized = false;
   }
 
+  setNpcMarketFacade(npcMarketFacade) {
+    this.shopFacade.setNpcMarketFacade(npcMarketFacade);
+
+    if (this.initialized) {
+      this.publishSnapshot();
+    }
+  }
+
   initialize(ecsFacade) {
     if (this.initialized) {
       return;

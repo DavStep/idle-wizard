@@ -1,5 +1,6 @@
 import { AuthFacade } from './auth/AuthFacade.js';
 import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade.js';
+import { NpcMarketBackendFacade } from './npcMarket/NpcMarketBackendFacade.js';
 import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js';
 import { PlayerShopBackendFacade } from './playerShop/PlayerShopBackendFacade.js';
 import { SpacetimeDbFacade } from './spacetime/SpacetimeDbFacade.js';
@@ -16,6 +17,7 @@ export class BackendFacade {
     this.authFacade = new AuthFacade();
     this.leaderboardFacade = new LeaderboardBackendFacade();
     this.worldChatFacade = new WorldChatBackendFacade();
+    this.npcMarketFacade = new NpcMarketBackendFacade();
     this.playerSyncFacade = new PlayerBackendSyncFacade();
     this.playerShopFacade = new PlayerShopBackendFacade();
     this.spacetimeDbFacade = new SpacetimeDbFacade({
@@ -32,7 +34,7 @@ export class BackendFacade {
     };
   }
 
-  async start({ gameplayFacade, playerFacade } = {}) {
+  async start({ gameplayFacade, playerFacade, onOnline, onOffline } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
     this.playerSyncFacade.setPlayerFacade(playerFacade);
 
@@ -40,14 +42,26 @@ export class BackendFacade {
       onConnect: (connection, identity) => {
         this.leaderboardFacade.connect(connection);
         this.worldChatFacade.connect(connection);
+        this.npcMarketFacade.connect(connection);
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
+        onOnline?.({ connection, identity });
+      },
+      onConnectError: (error) => {
+        this.leaderboardFacade.disconnect();
+        this.worldChatFacade.disconnect();
+        this.npcMarketFacade.disconnect();
+        this.playerSyncFacade.disconnect();
+        this.playerShopFacade.disconnect();
+        onOffline?.({ reason: 'connect_error', error });
       },
       onDisconnect: () => {
         this.leaderboardFacade.disconnect();
         this.worldChatFacade.disconnect();
+        this.npcMarketFacade.disconnect();
         this.playerSyncFacade.disconnect();
         this.playerShopFacade.disconnect();
+        onOffline?.({ reason: 'disconnect' });
       },
     });
   }
@@ -56,6 +70,7 @@ export class BackendFacade {
     this.leaderboardFacade.disconnect();
     this.leaderboardFacade.setGameplayFacade(null);
     this.worldChatFacade.disconnect();
+    this.npcMarketFacade.disconnect();
     this.playerSyncFacade.disconnect();
     this.playerShopFacade.disconnect();
     this.spacetimeDbFacade.disconnect();
@@ -75,6 +90,10 @@ export class BackendFacade {
 
   getWorldChatFacade() {
     return this.worldChatFacade;
+  }
+
+  getNpcMarketFacade() {
+    return this.npcMarketFacade;
   }
 
   getPlayerShopFacade() {

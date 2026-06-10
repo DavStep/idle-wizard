@@ -72,6 +72,15 @@ If the feature is large enough to be a top-level area, place its facade directly
 - Commit intentional native Android project files, but do not commit local SDK paths or build output.
 - Keep Android-specific changes inside `android/` or Capacitor config unless a web change is required.
 
+## Dev Server Rules
+
+- Use one shared Vite dev server on `http://127.0.0.1:55173/`.
+- Before starting `npm run dev`, check `npm run dev:status`; if port `55173` is already listening, reuse that server.
+- Do not pass alternate Vite ports or let Vite auto-increment to `55174+`.
+- If port `55173` is held by a stale Vite process, stop it with `npm run dev:kill`, then start `npm run dev` once.
+- Keep SpacetimeDB on `http://127.0.0.1:3000`; do not start duplicate backend processes.
+- When multiple agents work in parallel, only one should own the dev server.
+
 ## Ambiguity Rule
 
 If a requested feature has unclear gameplay behavior, ask before implementing it.

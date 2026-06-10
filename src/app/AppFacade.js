@@ -6,6 +6,7 @@ import { PlayerFacade } from '../player/PlayerFacade.js';
 import { RenderFacade } from '../rendering/RenderFacade.js';
 import { ViewportFacade } from '../viewport/ViewportFacade.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
+import { AppOnlineGateManager } from './managers/AppOnlineGateManager.js';
 import { AppShellManager } from './managers/AppShellManager.js';
 
 export class AppFacade {
@@ -20,6 +21,8 @@ export class AppFacade {
     this.gameplayFacade = new GameplayFacade();
     this.playerFacade = new PlayerFacade();
     this.backendFacade = new BackendFacade();
+    this.onlineGateManager = new AppOnlineGateManager();
+    this.gameplayFacade.setNpcMarketFacade(this.backendFacade.getNpcMarketFacade());
     this.pagesFacade = new PagesFacade({
       gameplayFacade: this.gameplayFacade,
       playerFacade: this.playerFacade,
@@ -37,6 +40,7 @@ export class AppFacade {
       gameplayFacade: this.gameplayFacade,
       backendFacade: this.backendFacade,
       playerFacade: this.playerFacade,
+      onlineGateManager: this.onlineGateManager,
     });
   }
 

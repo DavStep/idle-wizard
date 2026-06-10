@@ -1,3 +1,8 @@
+import {
+  getItemDisplay,
+  shouldShowItemInActionList,
+} from '../../shared/itemResearchStatus.js';
+
 export class ShopShelfManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -263,7 +268,7 @@ export class ShopShelfManager {
     this.ensureSellTabButtons(shelf.sellKinds);
     this.ensureSellItemButtons(shelf.sellItems);
 
-    this.renderSellControls(shelf);
+    this.renderSellControls(snapshot, shelf);
 
     this.refs.rows.forEach(({ row, value, button }, index) => {
       const slotNumber = index + 1;
@@ -278,7 +283,7 @@ export class ShopShelfManager {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select shelf slot ${slotNumber}`);
-        value.textContent = this.formatSlotSellValue(slot, shelf);
+        value.textContent = this.formatSlotSellValue(slot, shelf, snapshot);
         return;
       }
 
@@ -306,7 +311,7 @@ export class ShopShelfManager {
     });
   }
 
-  renderSellControls(shelf) {
+  renderSellControls(snapshot, shelf) {
     const selectedSlot = shelf.slots.find(
       (slot) => slot.slotNumber === shelf.selectedSlotNumber,
     );
@@ -342,9 +347,16 @@ export class ShopShelfManager {
       const button = this.refs.sellControls.itemButtons.get(item.itemTypeId);
       const label = this.refs.sellControls.itemLabels.get(item.itemTypeId);
       const quantity = this.refs.sellControls.itemQuantities.get(item.itemTypeId);
-      row.hidden = item.kind !== this.selectedSellTab;
-      label.textContent = `${item.label} `;
-      quantity.textContent = `(${item.quantity}) ${this.formatSellGold(item.sellGold)}`;
+      const display = getItemDisplay(snapshot, item, item.quantity);
+      const actionVisible = shouldShowItemInActionList(snapshot, item, item.quantity);
+      row.hidden = item.kind !== this.selectedSellTab || !actionVisible;
+      row.classList.toggle('is-locked', display.locked);
+      row.classList.toggle('is-unknown', display.unknown);
+      row.classList.toggle('is-empty', display.empty);
+      label.textContent = `${display.label} `;
+      quantity.textContent = `(${display.quantity}) ${this.formatSellGold(item.sellGold)}`;
+      button.disabled = !actionVisible;
+      button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
       button.setAttribute(
         'aria-pressed',
         selectedSlot.sellItemTypeId === item.itemTypeId ? 'true' : 'false',
@@ -409,7 +421,7 @@ export class ShopShelfManager {
     }
   }
 
-  formatSlotSellValue(slot, shelf) {
+  formatSlotSellValue(slot, shelf, snapshot) {
     if (!slot.sellLabel) {
       return 'empty';
     }
@@ -417,16 +429,27 @@ export class ShopShelfManager {
     const sellItem = this.getSellItem(shelf, slot.sellItemTypeId);
     const quantity = Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
     const sellGold = slot.sellGold ?? sellItem?.sellGold;
+    const displayItem = sellItem ?? {
+      itemTypeId: slot.sellItemTypeId,
+      key: slot.sellKey,
+      kind: slot.sellKind,
+      label: slot.sellLabel,
+    };
+    const display = displayItem.key
+      ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
+      : { label: slot.sellLabel, quantity: String(quantity) };
 
     if (!Number.isFinite(sellGold)) {
-      return Number.isFinite(quantity) ? `${slot.sellLabel} (${quantity})` : slot.sellLabel;
+      return Number.isFinite(quantity)
+        ? `${display.label} (${display.quantity})`
+        : display.label;
     }
 
     if (!Number.isFinite(quantity)) {
-      return `${slot.sellLabel} ${this.formatSellGold(sellGold)}`;
+      return `${display.label} ${this.formatSellGold(sellGold)}`;
     }
 
-    return `${slot.sellLabel} (${quantity}) ${this.formatSellGold(sellGold)}`;
+    return `${display.label} (${display.quantity}) ${this.formatSellGold(sellGold)}`;
   }
 
   getSellItem(shelf, itemTypeId) {

@@ -6,7 +6,7 @@ export class ShopSellItemVisibilityManager {
   }
 
   getVisibleSellItems(items) {
-    return items.filter((item) => this.isVisible(item));
+    return items;
   }
 
   isVisible(item) {
@@ -30,6 +30,11 @@ export class ShopSellItemVisibilityManager {
 
     if (item.kind === itemKinds.seed) {
       return `unlockSeed:${item.key}`;
+    }
+
+    if (item.kind === itemKinds.herb) {
+      const seedKey = item.key?.endsWith('Herb') ? `${item.key.slice(0, -4)}Seed` : item.key;
+      return `unlockSeed:${seedKey}`;
     }
 
     if (item.kind === itemKinds.potion) {

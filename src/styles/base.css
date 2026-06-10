@@ -124,6 +124,28 @@ body {
   user-select: text;
 }
 
+.app-online-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--style-surface);
+  pointer-events: auto;
+}
+
+.app-online-gate[hidden] {
+  display: none;
+}
+
+.app-online-gate__dialog {
+  width: 260px;
+}
+
+.app-online-gate__message {
+  margin: 0;
+}
+
 .game-canvas {
   position: absolute;
   inset: 0;
@@ -498,6 +520,15 @@ body {
   color: var(--style-disabled);
 }
 
+.shop-page__sell-item-row.is-empty .shop-page__sell-item-button,
+.shop-page__sell-item-row.is-locked .shop-page__sell-item-button,
+.shop-page__sell-item-row.is-unknown .shop-page__sell-item-button,
+.shop-page__player-listing-item-row.is-empty .shop-page__sell-item-button,
+.shop-page__player-listing-item-row.is-locked .shop-page__sell-item-button,
+.shop-page__player-listing-item-row.is-unknown .shop-page__sell-item-button {
+  color: var(--style-disabled);
+}
+
 .garden-page__seed-row,
 .shop-page__sell-controls,
 .shop-page__sell-item-row,
@@ -563,7 +594,9 @@ body {
   outline: none;
 }
 
-.workshop-page__seed-inventory-row.is-empty {
+.workshop-page__seed-inventory-row.is-empty,
+.workshop-page__seed-inventory-row.is-unresearched,
+.workshop-page__seed-inventory-row.is-unknown {
   color: var(--style-disabled);
 }
 
@@ -1065,7 +1098,9 @@ body {
   clear: both;
 }
 
-.garden-page__herb-row.is-empty {
+.garden-page__herb-row.is-empty,
+.garden-page__herb-row.is-locked,
+.garden-page__herb-row.is-unknown {
   color: var(--style-disabled);
 }
 
@@ -1315,6 +1350,11 @@ body {
   outline: none;
 }
 
+.garden-page__seed-row.is-empty .garden-page__seed-button,
+.garden-page__seed-row.is-unresearched .garden-page__seed-button {
+  color: var(--style-disabled);
+}
+
 .garden-page__seed-button:disabled {
   color: var(--style-disabled);
   cursor: default;
@@ -1523,6 +1563,14 @@ body {
 
 .brewing-page__potion-row {
   clear: both;
+}
+
+.brewing-page__herb-row.is-empty .brewing-page__herb-button,
+.brewing-page__herb-row.is-locked .brewing-page__herb-button,
+.brewing-page__potion-row.is-empty,
+.brewing-page__potion-row.is-locked,
+.brewing-page__potion-row.is-unknown {
+  color: var(--style-disabled);
 }
 
 .brewing-page__potion-row::after {

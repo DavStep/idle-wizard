@@ -7,13 +7,18 @@ import { ShopSellKindManager } from './managers/ShopSellKindManager.js';
 import { ShopSlotPurchaseManager } from './managers/ShopSlotPurchaseManager.js';
 import { ShopPlayerShelfEntityManager } from './managers/ShopPlayerShelfEntityManager.js';
 import { ShopPlayerShelfListingManager } from './managers/ShopPlayerShelfListingManager.js';
+import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 
 export class ShopFacade {
   static explain =
     'The shop has a trader shelf for automatic sales and a player shelf for listing items other players can buy.';
 
-  constructor({ goldFacade, itemsFacade, researchFacade, onItemSold } = {}) {
+  constructor({ goldFacade, itemsFacade, researchFacade, npcMarketFacade, onItemSold } = {}) {
     this.shopBalanceManager = new ShopBalanceManager();
+    this.shopNpcPriceManager = new ShopNpcPriceManager({
+      shopBalanceManager: this.shopBalanceManager,
+      npcMarketFacade,
+    });
     this.shopSellKindManager = new ShopSellKindManager();
     this.shopSellItemVisibilityManager = new ShopSellItemVisibilityManager({
       researchFacade,
@@ -51,10 +56,15 @@ export class ShopFacade {
       goldFacade,
       itemsFacade,
       shopBalanceManager: this.shopBalanceManager,
+      shopNpcPriceManager: this.shopNpcPriceManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
       onItemSold,
     });
     this.itemsFacade = itemsFacade;
+  }
+
+  setNpcMarketFacade(npcMarketFacade) {
+    this.shopNpcPriceManager.setNpcMarketFacade(npcMarketFacade);
   }
 
   initialize(ecsManagers) {
@@ -154,7 +164,7 @@ export class ShopFacade {
       .getVisibleSellItems(sellableItems)
       .map((item) => ({
         ...item,
-        sellGold: this.shopBalanceManager.getSellGold(item.kind, item),
+        sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
       }));
   }
 
@@ -166,6 +176,7 @@ export class ShopFacade {
         return {
           ...slot,
           sellKind: null,
+          sellKey: null,
           sellLabel: null,
           sellQuantity: null,
           sellGold: null,
@@ -178,9 +189,10 @@ export class ShopFacade {
       return {
         ...slot,
         sellKind: item.kind,
+        sellKey: item.key,
         sellLabel: item.label,
         sellQuantity: sellableItem?.quantity ?? 0,
-        sellGold: this.shopBalanceManager.getSellGold(item.kind, item),
+        sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
       };
     });
   }

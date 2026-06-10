@@ -18,6 +18,23 @@ export const Leaderboard = __t.object("Leaderboard", {
 });
 export type Leaderboard = __Infer<typeof Leaderboard>;
 
+export const NpcMarketPrice = __t.object("NpcMarketPrice", {
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  basePriceGold: __t.u64(),
+  marketPriceGold: __t.u64(),
+  npcBuyPriceGold: __t.u64(),
+  npcSellPriceGold: __t.u64(),
+  npcStock: __t.u64(),
+  targetStock: __t.u64(),
+  demandScore: __t.u64(),
+  supplyScore: __t.u64(),
+  updatedAt: __t.timestamp(),
+  lastTickAt: __t.timestamp(),
+});
+export type NpcMarketPrice = __Infer<typeof NpcMarketPrice>;
+
 export const Player = __t.object("Player", {
   identity: __t.identity(),
   username: __t.string(),

@@ -1,3 +1,8 @@
+import {
+  getItemDisplay,
+  shouldShowItemInActionList,
+} from '../../shared/itemResearchStatus.js';
+
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -564,7 +569,7 @@ export class ShopPlayerShelfManager {
     this.ensureSellTabButtons(shelf.sellKinds);
     this.ensureSellItemButtons(shelf.sellItems);
     this.renderRows(shelf);
-    this.renderListingControls(shelf);
+    this.renderListingControls(shelf, this.lastGameplaySnapshot);
     this.renderProceeds();
     this.renderMarketRows();
   }
@@ -583,7 +588,7 @@ export class ShopPlayerShelfManager {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select player shop shelf slot ${slotNumber}`);
-        value.textContent = this.formatPlayerSlotValue(slot);
+        value.textContent = this.formatPlayerSlotValue(slot, shelf, this.lastGameplaySnapshot);
         return;
       }
 
@@ -611,7 +616,7 @@ export class ShopPlayerShelfManager {
     });
   }
 
-  renderListingControls(shelf) {
+  renderListingControls(shelf, snapshot) {
     const selectedSlot = this.getSelectedSlot(shelf);
     this.refs.listingControls.root.hidden = !selectedSlot;
 
@@ -652,9 +657,16 @@ export class ShopPlayerShelfManager {
       const button = this.refs.listingControls.itemButtons.get(item.itemTypeId);
       const label = this.refs.listingControls.itemLabels.get(item.itemTypeId);
       const quantity = this.refs.listingControls.itemQuantities.get(item.itemTypeId);
-      row.hidden = item.kind !== this.selectedSellTab;
-      label.textContent = `${item.label} `;
-      quantity.textContent = `(${item.quantity})`;
+      const display = getItemDisplay(snapshot, item, item.quantity);
+      const actionVisible = shouldShowItemInActionList(snapshot, item, item.quantity);
+      row.hidden = item.kind !== this.selectedSellTab || !actionVisible;
+      row.classList.toggle('is-locked', display.locked);
+      row.classList.toggle('is-unknown', display.unknown);
+      row.classList.toggle('is-empty', display.empty);
+      label.textContent = `${display.label} `;
+      quantity.textContent = `(${display.quantity})`;
+      button.disabled = !actionVisible;
+      button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
       button.setAttribute(
         'aria-pressed',
         selectedSlot.itemTypeId === item.itemTypeId ? 'true' : 'false',
@@ -817,12 +829,22 @@ export class ShopPlayerShelfManager {
     return shelf?.slots.find((slot) => slot.slotNumber === shelf.selectedSlotNumber) ?? null;
   }
 
-  formatPlayerSlotValue(slot) {
+  formatPlayerSlotValue(slot, shelf, snapshot) {
     if (!slot.itemLabel) {
       return 'empty';
     }
 
-    return `${slot.itemLabel} (${slot.quantity}) ${slot.priceGold} gold`;
+    const listingItem =
+      shelf?.sellItems.find((item) => item.itemTypeId === slot.itemTypeId) ?? null;
+    const displayItem = listingItem ?? {
+      itemTypeId: slot.itemTypeId,
+      key: slot.itemKey,
+      kind: slot.itemKind,
+      label: slot.itemLabel,
+    };
+    const display = getItemDisplay(snapshot, displayItem, slot.quantity);
+
+    return `${display.label} (${display.quantity}) ${slot.priceGold} gold`;
   }
 
   readPositiveInteger(value) {

@@ -1,3 +1,8 @@
+import {
+  getItemDisplay,
+  shouldShowItemInActionList,
+} from '../../shared/itemResearchStatus.js';
+
 export class GardenHerbInventoryManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -5,6 +10,7 @@ export class GardenHerbInventoryManager {
     this.rows = null;
     this.unsubscribe = null;
     this.herbRefs = new Map();
+    this.divider = null;
     this.handleRowsScroll = () => this.updateOverflowCue();
   }
 
@@ -45,61 +51,33 @@ export class GardenHerbInventoryManager {
     this.root = null;
     this.rows = null;
     this.herbRefs.clear();
+    this.divider = null;
   }
 
   render(snapshot) {
-    const groupedHerbs = this.getGroupedHerbs(snapshot);
-    const herbs = [
-      ...groupedHerbs.unlocked,
-      ...groupedHerbs.locked,
-    ];
+    const herbs = this.getHerbRows(snapshot);
     this.ensureRows(herbs);
 
     for (const herb of herbs) {
       const refs = this.herbRefs.get(herb.itemTypeId);
-      refs.label.textContent = herb.label;
-      refs.quantity.textContent = String(herb.quantity);
+      refs.label.textContent = herb.display.label;
+      refs.quantity.textContent = herb.display.quantity;
       refs.row.classList.toggle('is-empty', herb.quantity <= 0);
-      refs.row.classList.toggle('is-locked', !herb.unlocked);
+      refs.row.classList.toggle('is-locked', herb.display.locked);
+      refs.row.classList.toggle('is-unknown', herb.display.unknown);
     }
 
-    this.applyRowOrder(groupedHerbs);
+    this.applyRowOrder(herbs);
     this.queueOverflowCue();
   }
 
-  getGroupedHerbs(snapshot) {
-    const unlockedSeedIds = this.getUnlockedSeedIds(snapshot);
-    const herbs = (snapshot.garden.herbs ?? []).map((herb) => ({
-      ...herb,
-      unlocked: unlockedSeedIds.has(this.getHerbSeedResearchId(herb)),
-    }));
-
-    return {
-      unlocked: herbs.filter((herb) => herb.unlocked),
-      locked: herbs.filter((herb) => !herb.unlocked),
-    };
-  }
-
-  getUnlockedSeedIds(snapshot) {
-    const ids = new Set(snapshot.research?.completedResearchIds ?? []);
-
-    for (const box of snapshot.research?.boxes ?? []) {
-      for (const research of box.researches ?? []) {
-        if (research.completed) {
-          ids.add(research.id);
-        }
-      }
-    }
-
-    return ids;
-  }
-
-  getHerbSeedResearchId(herb) {
-    const seedKey = herb.key?.endsWith('Herb')
-      ? `${herb.key.slice(0, -4)}Seed`
-      : herb.key;
-
-    return `unlockSeed:${seedKey}`;
+  getHerbRows(snapshot) {
+    return (snapshot.garden.herbs ?? [])
+      .map((herb) => ({
+        ...herb,
+        display: getItemDisplay(snapshot, herb, herb.quantity),
+      }))
+      .filter((herb) => shouldShowItemInActionList(snapshot, herb, herb.quantity));
   }
 
   ensureRows(herbs) {
@@ -123,21 +101,28 @@ export class GardenHerbInventoryManager {
     }
   }
 
-  applyRowOrder({ unlocked, locked }) {
+  applyRowOrder(herbs) {
+    const knownHerbs = herbs.filter((herb) => !herb.display.locked);
+    const unknownHerbs = herbs.filter((herb) => herb.display.locked);
     const orderedRows = [
-      ...unlocked.map((herb) => this.herbRefs.get(herb.itemTypeId)?.row),
-      ...(unlocked.length > 0 && locked.length > 0 ? [this.createDivider()] : []),
-      ...locked.map((herb) => this.herbRefs.get(herb.itemTypeId)?.row),
+      ...knownHerbs.map((herb) => this.herbRefs.get(herb.itemTypeId)?.row),
+      ...(knownHerbs.length > 0 && unknownHerbs.length > 0
+        ? [this.getDivider()]
+        : []),
+      ...unknownHerbs.map((herb) => this.herbRefs.get(herb.itemTypeId)?.row),
     ].filter(Boolean);
 
     this.rows.replaceChildren(...orderedRows);
   }
 
-  createDivider() {
-    const divider = document.createElement('div');
-    divider.className = 'garden-page__herb-divider';
-    divider.setAttribute('role', 'separator');
-    return divider;
+  getDivider() {
+    if (!this.divider) {
+      this.divider = document.createElement('div');
+      this.divider.className = 'garden-page__herb-divider';
+      this.divider.setAttribute('role', 'separator');
+    }
+
+    return this.divider;
   }
 
   queueOverflowCue() {

@@ -8,6 +8,7 @@ export class AppLifecycleManager {
     gameplayFacade,
     backendFacade,
     playerFacade,
+    onlineGateManager,
   }) {
     this.shellManager = shellManager;
     this.viewportFacade = viewportFacade;
@@ -17,7 +18,10 @@ export class AppLifecycleManager {
     this.gameplayFacade = gameplayFacade;
     this.backendFacade = backendFacade;
     this.playerFacade = playerFacade;
+    this.onlineGateManager = onlineGateManager;
     this.started = false;
+    this.frameLoopStarted = false;
+    this.stopping = false;
   }
 
   start() {
@@ -27,23 +31,73 @@ export class AppLifecycleManager {
 
     const shell = this.shellManager.mount();
     const stage = this.viewportFacade.mount(shell);
+    this.onlineGateManager.mount(stage);
+    this.onlineGateManager.showConnecting();
 
     this.ecsFacade.createWorld();
     this.gameplayFacade.initialize(this.ecsFacade);
     this.pagesFacade.mount(stage);
     this.renderFacade.mount(stage);
     this.backendFacade.prepare();
-    void this.backendFacade.start({
-      gameplayFacade: this.gameplayFacade,
-      playerFacade: this.playerFacade,
-    });
+    this.started = true;
+    this.stopping = false;
+    void this.connectBackend();
+  }
+
+  async connectBackend() {
+    try {
+      const result = await this.backendFacade.start({
+        gameplayFacade: this.gameplayFacade,
+        playerFacade: this.playerFacade,
+        onOnline: () => this.handleOnline(),
+        onOffline: ({ reason } = {}) => this.handleOffline(reason),
+      });
+
+      if (result?.ok === false) {
+        this.handleOffline(result.reason);
+      }
+    } catch {
+      this.handleOffline('connect_error');
+    }
+  }
+
+  handleOnline() {
+    if (!this.started || this.stopping) {
+      return;
+    }
+
+    this.onlineGateManager.hide();
+    this.startFrameLoop();
+  }
+
+  handleOffline(reason) {
+    if (!this.started || this.stopping) {
+      return;
+    }
+
+    this.stopFrameLoop();
+    this.onlineGateManager.showOffline(reason);
+  }
+
+  startFrameLoop() {
+    if (this.frameLoopStarted) {
+      return;
+    }
 
     this.renderFacade.startFrameLoop((frame) => {
       this.ecsFacade.update(frame);
       this.gameplayFacade.afterUpdate(frame);
     });
+    this.frameLoopStarted = true;
+  }
 
-    this.started = true;
+  stopFrameLoop() {
+    if (!this.frameLoopStarted) {
+      return;
+    }
+
+    this.renderFacade.stopFrameLoop();
+    this.frameLoopStarted = false;
   }
 
   stop() {
@@ -51,8 +105,10 @@ export class AppLifecycleManager {
       return;
     }
 
-    this.renderFacade.stopFrameLoop();
+    this.stopping = true;
+    this.stopFrameLoop();
     this.backendFacade.stop();
+    this.onlineGateManager.unmount();
     this.renderFacade.unmount();
     this.pagesFacade.unmount();
     this.gameplayFacade.shutdown();
@@ -60,5 +116,6 @@ export class AppLifecycleManager {
     this.ecsFacade.destroyWorld();
     this.shellManager.unmount();
     this.started = false;
+    this.stopping = false;
   }
 }

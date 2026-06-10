@@ -1226,10 +1226,20 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().shop.shelf.unlockedSlots).toBe(1);
   });
 
-  it('shows shop sell items when owned or researched', () => {
+  it('shows shop sell items for all catalog rows', () => {
     const { gameplayFacade } = createGameplay();
 
-    expect(gameplayFacade.getSnapshot().shop.shelf.sellItems).toEqual([]);
+    const initialSellItems = gameplayFacade.getSnapshot().shop.shelf.sellItems;
+
+    expect(initialSellItems).toHaveLength(47);
+    expect(initialSellItems.find((item) => item.key === 'sageSeed')).toMatchObject({
+      quantity: 0,
+      sellGold: 1,
+    });
+    expect(initialSellItems.find((item) => item.key === 'manaTonic')).toMatchObject({
+      quantity: 0,
+      sellGold: 5,
+    });
 
     gameplayFacade.buyResearch('unlockSeed:sageSeed');
     gameplayFacade.itemsFacade.addItem(2, 2);
@@ -1238,12 +1248,19 @@ describe('GameplayFacade', () => {
 
     const sellItems = gameplayFacade.getSnapshot().shop.shelf.sellItems;
 
-    expect(sellItems.map((item) => [item.key, item.quantity])).toEqual([
-      ['sageSeed', 0],
-      ['mintSeed', 2],
-      ['manaTonic', 0],
-    ]);
-    expect(sellItems.some((item) => item.key === 'nettleSeed')).toBe(false);
+    expect(sellItems).toHaveLength(47);
+    expect(sellItems.find((item) => item.key === 'mintSeed')).toMatchObject({
+      quantity: 2,
+      sellGold: 1,
+    });
+    expect(sellItems.find((item) => item.key === 'sageHerb')).toMatchObject({
+      quantity: 0,
+      sellGold: 2,
+    });
+    expect(sellItems.find((item) => item.key === 'nettleSeed')).toMatchObject({
+      quantity: 0,
+      sellGold: 1,
+    });
   });
 
   it('auto sells selected shop shelf item over time', () => {

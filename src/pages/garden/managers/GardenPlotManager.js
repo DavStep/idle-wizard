@@ -1,3 +1,8 @@
+import {
+  isItemResearched,
+  shouldShowItemInActionList,
+} from '../../shared/itemResearchStatus.js';
+
 export class GardenPlotManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -107,7 +112,7 @@ export class GardenPlotManager {
     const title = document.createElement('div');
     title.className = 'style-box__title';
     title.id = 'garden-seed-dialog-title';
-    title.textContent = 'seed';
+    title.textContent = 'choose seed';
     dialog.setAttribute('aria-labelledby', title.id);
 
     this.refs.seedRows = document.createElement('div');
@@ -219,12 +224,13 @@ export class GardenPlotManager {
 
   render(snapshot) {
     const garden = snapshot.garden;
+    const seeds = this.getSeedRows(snapshot);
     const seedQuantityById = new Map(
-      garden.seeds.map((seed) => [seed.itemTypeId, seed.quantity]),
+      seeds.map((seed) => [seed.itemTypeId, seed.quantity]),
     );
     this.ensureTiles(garden.plot.maxTiles);
     this.ensureEmptySeedRow();
-    this.ensureSeedRows(garden.seeds);
+    this.ensureSeedRows(seeds);
 
     for (const tile of garden.plot.tiles) {
       this.renderTile({
@@ -235,8 +241,17 @@ export class GardenPlotManager {
       });
     }
 
-    this.renderSeeds(garden.seeds);
+    this.renderSeeds(snapshot, seeds);
     this.updateOverflowCues();
+  }
+
+  getSeedRows(snapshot) {
+    return (snapshot.garden?.seeds ?? [])
+      .map((seed) => ({
+        ...seed,
+        researched: isItemResearched(snapshot, seed),
+      }))
+      .filter((seed) => shouldShowItemInActionList(snapshot, seed, seed.quantity));
   }
 
   renderTile({ tile, plot, gold, seedQuantityById }) {
@@ -323,7 +338,7 @@ export class GardenPlotManager {
     this.setText(refs.progressText, '');
   }
 
-  renderSeeds(seeds) {
+  renderSeeds(snapshot, seeds) {
     if (this.emptySeedRef) {
       this.emptySeedRef.button.disabled = false;
       this.emptySeedRef.button.setAttribute('aria-disabled', 'false');
@@ -332,6 +347,8 @@ export class GardenPlotManager {
 
     for (const seed of seeds) {
       const refs = this.seedRefs.get(seed.itemTypeId);
+      refs.row.classList.toggle('is-empty', seed.quantity <= 0);
+      refs.row.classList.toggle('is-unresearched', false);
       refs.label.textContent = seed.label;
       refs.quantity.textContent = String(seed.quantity);
       refs.button.disabled = false;
@@ -343,13 +360,12 @@ export class GardenPlotManager {
   }
 
   applySeedRowOrder(seeds) {
-    const availableSeeds = seeds.filter((seed) => seed.quantity > 0);
-    const emptySeeds = seeds.filter((seed) => seed.quantity <= 0);
+    const ownedSeeds = seeds.filter((seed) => seed.quantity > 0);
+    const researchedEmptySeeds = seeds.filter((seed) => seed.quantity <= 0 && seed.researched);
+    const selectableSeeds = [...ownedSeeds, ...researchedEmptySeeds];
     const orderedEntries = [
       'empty',
-      ...availableSeeds.map((seed) => `seed:${seed.itemTypeId}`),
-      ...(availableSeeds.length > 0 && emptySeeds.length > 0 ? ['divider'] : []),
-      ...emptySeeds.map((seed) => `seed:${seed.itemTypeId}`),
+      ...selectableSeeds.map((seed) => `seed:${seed.itemTypeId}`),
     ];
     const orderKey = orderedEntries.join('|');
 
@@ -380,7 +396,7 @@ export class GardenPlotManager {
     if (!this.refs.seedDivider) {
       this.refs.seedDivider = document.createElement('div');
       this.refs.seedDivider.className = 'garden-page__seed-divider';
-      this.refs.seedDivider.setAttribute('role', 'separator');
+      this.refs.seedDivider.setAttribute('aria-hidden', 'true');
     }
 
     return this.refs.seedDivider;
@@ -399,10 +415,17 @@ export class GardenPlotManager {
   }
 
   ensureSeedRows(seeds) {
+    let createdRow = false;
+
     for (const seed of seeds) {
       if (!this.seedRefs.has(seed.itemTypeId)) {
         this.createSeedRow(seed);
+        createdRow = true;
       }
+    }
+
+    if (createdRow) {
+      this.seedRowOrderKey = null;
     }
   }
 

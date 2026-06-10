@@ -1,3 +1,5 @@
+import { getItemDisplay } from '../../shared/itemResearchStatus.js';
+
 export class WorkshopSeedInventoryManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -107,11 +109,11 @@ export class WorkshopSeedInventoryManager {
       return;
     }
 
-    const { researched, unresearched } = this.getGroupedSeedRows(snapshot);
+    const { known, unknown } = this.getGroupedSeedRows(snapshot);
     const rows = [
-      ...researched.map((seed) => this.createRow(seed)),
-      ...(researched.length > 0 && unresearched.length > 0 ? [this.createDivider()] : []),
-      ...unresearched.map((seed) => this.createRow(seed)),
+      ...known.map((seed) => this.createRow(snapshot, seed)),
+      ...(known.length > 0 && unknown.length > 0 ? [this.createDivider()] : []),
+      ...unknown.map((seed) => this.createRow(snapshot, seed)),
     ];
 
     this.refs.rows.replaceChildren(...rows);
@@ -126,34 +128,15 @@ export class WorkshopSeedInventoryManager {
   }
 
   getGroupedSeedRows(snapshot) {
-    const researchedSeedIds = this.getResearchedSeedIds(snapshot);
     const rows = this.getSeedRows(snapshot).map((seed) => ({
       ...seed,
-      researched: researchedSeedIds.has(this.getSeedResearchId(seed)),
+      display: getItemDisplay(snapshot, seed, seed.quantity),
     }));
 
     return {
-      researched: rows.filter((seed) => seed.researched),
-      unresearched: rows.filter((seed) => !seed.researched),
+      known: rows.filter((seed) => !seed.display.locked),
+      unknown: rows.filter((seed) => seed.display.locked),
     };
-  }
-
-  getResearchedSeedIds(snapshot) {
-    const ids = new Set(snapshot.research?.completedResearchIds ?? []);
-
-    for (const box of snapshot.research?.boxes ?? []) {
-      for (const research of box.researches ?? []) {
-        if (research.completed) {
-          ids.add(research.id);
-        }
-      }
-    }
-
-    return ids;
-  }
-
-  getSeedResearchId(seed) {
-    return `unlockSeed:${seed.key}`;
   }
 
   createDivider() {
@@ -163,19 +146,21 @@ export class WorkshopSeedInventoryManager {
     return divider;
   }
 
-  createRow(seed) {
+  createRow(snapshot, seed) {
+    const display = getItemDisplay(snapshot, seed, seed.quantity);
     const row = document.createElement('div');
     row.className = 'workshop-page__row workshop-page__seed-inventory-row';
     row.classList.toggle('is-empty', seed.quantity <= 0);
-    row.classList.toggle('is-unresearched', !seed.researched);
+    row.classList.toggle('is-unresearched', display.locked);
+    row.classList.toggle('is-unknown', display.unknown);
 
     const key = document.createElement('span');
     key.className = 'row_key';
-    key.textContent = seed.label;
+    key.textContent = display.label;
 
     const val = document.createElement('span');
     val.className = 'row_val';
-    val.textContent = String(seed.quantity);
+    val.textContent = display.quantity;
 
     row.append(key, val);
     return row;

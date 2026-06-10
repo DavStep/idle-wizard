@@ -1,3 +1,8 @@
+import {
+  isItemResearched,
+  shouldShowItemInActionList,
+} from '../../shared/itemResearchStatus.js';
+
 const TOUCH_DRAG_DISTANCE = 8;
 
 export class BrewingCauldronManager {
@@ -7,6 +12,7 @@ export class BrewingCauldronManager {
     this.unsubscribe = null;
     this.refs = {};
     this.herbRows = new Map();
+    this.herbRowsSignature = '';
     this.ingredientRows = [];
     this.message = '';
     this.draggedItemTypeId = null;
@@ -51,6 +57,7 @@ export class BrewingCauldronManager {
     this.root = null;
     this.refs = {};
     this.herbRows.clear();
+    this.herbRowsSignature = '';
     this.ingredientRows = [];
     this.message = '';
     this.draggedItemTypeId = null;
@@ -185,11 +192,48 @@ export class BrewingCauldronManager {
   }
 
   render(snapshot) {
-    const brewing = snapshot.brewing;
-    this.ensureHerbRows(brewing.herbs);
-    this.renderHerbs(brewing);
+    const brewing = {
+      ...snapshot.brewing,
+      herbs: this.getHerbRows(snapshot),
+    };
+    this.syncHerbRows(brewing.herbs);
+    this.renderHerbs(snapshot, brewing);
     this.renderCauldron(brewing);
     this.renderActions(brewing);
+  }
+
+  getHerbRows(snapshot) {
+    return (snapshot.brewing?.herbs ?? [])
+      .map((herb) => ({
+        ...herb,
+        researched: isItemResearched(snapshot, herb),
+      }))
+      .filter((herb) => shouldShowItemInActionList(snapshot, herb, herb.quantity));
+  }
+
+  syncHerbRows(herbs) {
+    const signature = herbs.map((herb) => herb.itemTypeId).join('|');
+
+    if (signature === this.herbRowsSignature) {
+      return;
+    }
+
+    const visibleIds = new Set(herbs.map((herb) => herb.itemTypeId));
+
+    for (const [itemTypeId, refs] of this.herbRows.entries()) {
+      if (visibleIds.has(itemTypeId)) {
+        continue;
+      }
+
+      refs.row.remove();
+      this.herbRows.delete(itemTypeId);
+    }
+
+    this.ensureHerbRows(herbs);
+    this.refs.herbs.rows.replaceChildren(
+      ...herbs.map((herb) => this.herbRows.get(herb.itemTypeId)?.row).filter(Boolean),
+    );
+    this.herbRowsSignature = signature;
   }
 
   ensureHerbRows(herbs) {
@@ -227,12 +271,14 @@ export class BrewingCauldronManager {
     }
   }
 
-  renderHerbs(brewing) {
+  renderHerbs(snapshot, brewing) {
     for (const herb of brewing.herbs) {
       const refs = this.herbRows.get(herb.itemTypeId);
       const disabled =
         herb.availableQuantity <= 0 || !brewing.canAddIngredient || Boolean(brewing.activeBrew);
 
+      refs.row.classList.toggle('is-empty', herb.availableQuantity <= 0);
+      refs.row.classList.toggle('is-locked', false);
       this.setText(refs.label, herb.label);
       this.setText(refs.quantity, String(herb.availableQuantity));
       this.setDisabled(refs.button, disabled);

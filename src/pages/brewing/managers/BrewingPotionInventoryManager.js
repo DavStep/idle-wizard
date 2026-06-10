@@ -1,3 +1,8 @@
+import {
+  getItemDisplay,
+  isItemResearched,
+} from '../../shared/itemResearchStatus.js';
+
 export class BrewingPotionInventoryManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -123,9 +128,7 @@ export class BrewingPotionInventoryManager {
       return;
     }
 
-    const potions = (snapshot.inventory ?? [])
-      .filter((item) => item.kind === 'potion')
-      .sort((left, right) => left.label.localeCompare(right.label));
+    const potions = this.getPotionRows(snapshot);
     const signature = this.createRenderSignature(potions);
 
     if (signature === this.renderedSignature) {
@@ -139,7 +142,38 @@ export class BrewingPotionInventoryManager {
       return;
     }
 
-    this.refs.rows.replaceChildren(...potions.map((potion) => this.createPotionRow(potion)));
+    this.refs.rows.replaceChildren(
+      ...potions.map((potion) => this.createPotionRow(snapshot, potion)),
+    );
+  }
+
+  getPotionRows(snapshot) {
+    const ownedPotions = (snapshot.inventory ?? []).filter((item) => item.kind === 'potion');
+    const ownedByKey = new Map(ownedPotions.map((potion) => [potion.key, potion]));
+    const recipeRows = (snapshot.brewing?.recipes ?? [])
+      .map((recipe) => {
+        const owned = ownedByKey.get(recipe.key);
+
+        return {
+          itemTypeId: recipe.potionTypeId,
+          key: recipe.key,
+          label: recipe.label,
+          kind: 'potion',
+          quantity: owned?.quantity ?? 0,
+          researched: Boolean(recipe.unlocked),
+        };
+      })
+      .filter((potion) => potion.researched || potion.quantity > 0);
+    const recipeKeys = new Set(recipeRows.map((potion) => potion.key));
+    const extraOwnedRows = ownedPotions
+      .filter((potion) => !recipeKeys.has(potion.key))
+      .map((potion) => ({
+        ...potion,
+        researched: isItemResearched(snapshot, potion),
+      }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+
+    return [...recipeRows, ...extraOwnedRows];
   }
 
   createRenderSignature(potions) {
@@ -148,21 +182,28 @@ export class BrewingPotionInventoryManager {
     }
 
     return potions
-      .map((potion) => `${potion.itemTypeId}:${potion.key}:${potion.label}:${potion.quantity}`)
+      .map(
+        (potion) =>
+          `${potion.itemTypeId}:${potion.key}:${potion.label}:${potion.quantity}:${potion.researched}`,
+      )
       .join('|');
   }
 
-  createPotionRow(potion) {
+  createPotionRow(snapshot, potion) {
+    const display = getItemDisplay(snapshot, potion, potion.quantity);
     const row = document.createElement('div');
     row.className = 'brewing-page__potion-row';
+    row.classList.toggle('is-empty', potion.quantity <= 0);
+    row.classList.toggle('is-locked', display.locked);
+    row.classList.toggle('is-unknown', display.unknown);
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    label.textContent = potion.label;
+    label.textContent = display.label;
 
     const quantity = document.createElement('span');
     quantity.className = 'row_val';
-    quantity.textContent = String(potion.quantity);
+    quantity.textContent = display.quantity;
 
     row.append(label, quantity);
     return row;

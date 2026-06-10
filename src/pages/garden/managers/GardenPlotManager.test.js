@@ -194,6 +194,8 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    expect(parent.querySelector('#garden-seed-dialog-title')?.textContent).toBe('choose seed');
+
     const mintButton = parent.querySelector('[aria-label="select Mint Seed, owned 1"]');
 
     expect(mintButton).not.toBeNull();
@@ -208,6 +210,64 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('Mint Seed');
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 60s');
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('60s');
+  });
+
+  it('shows unresearched seed choices as locked and grays zero-count researched seeds', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    snapshot.research = {
+      completedResearchIds: ['unlockSeed:sageSeed', 'unlockSeed:mintSeed'],
+      boxes: [],
+    };
+    snapshot.garden.seeds = [
+      {
+        itemTypeId: 2,
+        key: 'mintSeed',
+        label: 'Mint Seed',
+        kind: 'seed',
+        quantity: 1,
+      },
+      {
+        itemTypeId: 3,
+        key: 'nettleSeed',
+        label: 'Nettle Seed',
+        kind: 'seed',
+        quantity: 0,
+      },
+      {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'Sage Seed',
+        kind: 'seed',
+        quantity: 0,
+      },
+    ];
+
+    manager.mount(parent);
+    parent
+      .querySelector('.garden-page__plot-row')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const buttons = [...parent.querySelectorAll('.garden-page__seed-button')];
+    const divider = parent.querySelector('.garden-page__seed-divider');
+    const findRow = (label) =>
+      [...parent.querySelectorAll('.garden-page__seed-row')].find(
+        (row) => row.querySelector('.row_key')?.textContent === label,
+      );
+
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      'empty',
+      'Mint Seed1',
+      'Sage Seed0',
+    ]);
+    expect(divider).toBeNull();
+    expect(findRow('Sage Seed')?.classList.contains('is-empty')).toBe(true);
+    expect(findRow('Sage Seed')?.classList.contains('is-unresearched')).toBe(false);
+    expect(findRow('Nettle Seed')).toBeUndefined();
+    expect(findRow('Sage Seed')?.querySelector('.garden-page__seed-button')?.disabled).toBe(false);
   });
 
   it('shows the harvest timer next to the harvesting label', () => {

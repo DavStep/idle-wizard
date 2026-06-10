@@ -12,6 +12,22 @@ npm run lint
 npm run android:assembleDebug
 ```
 
+## GitHub Pages
+
+This repository can publish the Vite build as a GitHub Pages project site once GitHub Pages is enabled. On a free GitHub account, this repo must be public for Pages:
+
+```txt
+https://davstep.github.io/idle-wizard/
+```
+
+The Pages workflow builds with `--base=/idle-wizard/` so Vite asset paths work under the project URL. Visitors still need a hosted `wss://` SpacetimeDB backend before the live game can run outside local development.
+
+To publish the backend to SpacetimeDB Maincloud:
+
+```sh
+npm run stdb:publish:maincloud
+```
+
 SpacetimeDB requires the `spacetime` CLI:
 
 ```sh

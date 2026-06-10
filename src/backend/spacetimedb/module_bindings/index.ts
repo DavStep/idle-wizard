@@ -34,18 +34,22 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import BuyFromNpcReducer from "./buy_from_npc_reducer";
 import BuyPlayerShopListingReducer from "./buy_player_shop_listing_reducer";
 import ClaimPlayerShopProceedsReducer from "./claim_player_shop_proceeds_reducer";
 import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
+import SellToNpcReducer from "./sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
 import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetUsernameReducer from "./set_username_reducer";
+import TickNpcMarketReducer from "./tick_npc_market_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
 import LeaderboardRow from "./leaderboard_table";
+import NpcMarketPriceRow from "./npc_market_price_table";
 import PlayerRow from "./player_table";
 import PlayerShopListingRow from "./player_shop_listing_table";
 import PlayerShopProceedsRow from "./player_shop_proceeds_table";
@@ -69,6 +73,23 @@ const tablesSchema = __schema({
       { name: 'leaderboard_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, LeaderboardRow),
+  npcMarketPrice: __table({
+    name: 'npc_market_price',
+    indexes: [
+      { accessor: 'itemKey', name: 'npc_market_price_item_key_idx_btree', algorithm: 'btree', columns: [
+        'itemKey',
+      ] },
+      { accessor: 'byItemKind', name: 'npc_market_price_item_kind_idx_btree', algorithm: 'btree', columns: [
+        'itemKind',
+      ] },
+      { accessor: 'byUpdatedAt', name: 'npc_market_price_updated_at_idx_btree', algorithm: 'btree', columns: [
+        'updatedAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'npc_market_price_item_key_key', constraint: 'unique', columns: ['itemKey'] },
+    ],
+  }, NpcMarketPriceRow),
   player: __table({
     name: 'player',
     indexes: [
@@ -126,13 +147,16 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("buy_from_npc", BuyFromNpcReducer),
   __reducerSchema("buy_player_shop_listing", BuyPlayerShopListingReducer),
   __reducerSchema("claim_player_shop_proceeds", ClaimPlayerShopProceedsReducer),
   __reducerSchema("clear_player_shop_slot", ClearPlayerShopSlotReducer),
+  __reducerSchema("sell_to_npc", SellToNpcReducer),
   __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),
   __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_username", SetUsernameReducer),
+  __reducerSchema("tick_npc_market", TickNpcMarketReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

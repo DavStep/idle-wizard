@@ -50,6 +50,18 @@ This project should use the same kind of minimal text-game language, without cop
 - Disabled state changes text and border to gray and removes underline.
 - Cooldown/progress fills, if added later, should be flat light gray.
 
+## Inventory Visibility
+
+- Dedicated info inventories for seeds, herbs, and potions show the category catalog.
+- Brewing potions, Brewing herbs, Garden herbs, choose-seed, sell, and other action/use panels are not catalog info views; hide locked zero-count items there.
+- Current balance catalog rows are known item types by default; do not scramble normal seed, herb, or potion names just because their research is incomplete.
+- Owned items always show real name and real count.
+- Unlocked/researched items with count `0` show real name, `0`, disabled gray text.
+- Known but locked/unresearched items with count `0` show real name, `locked`, disabled gray text.
+- Unknown item types must be explicitly marked unknown, and with count `0` show a same-length fixed scrambled ASCII name, `locked`, disabled gray text.
+- Owned unknown item types use real name and real count while count is above `0`; if count returns to `0`, they become unknown again.
+- Action and choice lists only show unlocked/researched or owned items. Hide locked unknown and locked known `0` count items from pickers and use boxes.
+
 ## Layout
 
 - Use fixed authored game dimensions, scaled by the viewport layer.
