@@ -216,18 +216,21 @@ export class TopPanelSettingsManager {
       return;
     }
 
+    const title = this.usernamePromptMode ? 'username' : 'settings';
+    const closeLabel = this.usernamePromptMode ? 'later' : 'close';
+
     this.refs.settings.classList.toggle('is-username-prompt', this.usernamePromptMode);
     this.refs.settingsDialog.setAttribute(
       'aria-label',
       this.usernamePromptMode ? 'Set username' : 'Settings',
     );
 
-    if (this.refs.settingsTitle.textContent !== (this.usernamePromptMode ? 'username' : 'settings')) {
-      this.refs.settingsTitle.textContent = this.usernamePromptMode ? 'username' : 'settings';
+    if (this.refs.settingsTitle.textContent !== title) {
+      this.refs.settingsTitle.textContent = title;
     }
 
-    if (this.refs.settingsCloseButton.textContent !== (this.usernamePromptMode ? 'later' : 'close')) {
-      this.refs.settingsCloseButton.textContent = this.usernamePromptMode ? 'later' : 'close';
+    if (this.refs.settingsCloseButton.textContent !== closeLabel) {
+      this.refs.settingsCloseButton.textContent = closeLabel;
     }
   }
 

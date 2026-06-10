@@ -2225,6 +2225,44 @@ describe('PagesFacade', () => {
     expect(settings.hidden).toBe(true);
   });
 
+  it('asks first landed players to set a username', () => {
+    const stage = document.createElement('section');
+    const playerFacade = createPlayerFacadeFake('wizard', 'white', {
+      shouldPromptForUsername: true,
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    const settings = stage.querySelector('.room-top-panel__settings');
+    const input = stage.querySelector('.room-top-panel__username-input');
+    const form = stage.querySelector('.room-top-panel__username-form');
+
+    expect(settings.hidden).toBe(false);
+    expect(settings.classList.contains('is-username-prompt')).toBe(true);
+    expect(settings.querySelector('.style-box__title')?.textContent).toBe('username');
+    expect(input.value).toBe('');
+    expect(stage.querySelector('.room-top-panel__theme-section')).not.toBeNull();
+    expect(playerFacade.getPromptSeenCount()).toBe(1);
+
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(settings.hidden).toBe(false);
+    expect(stage.querySelector('.room-top-panel__username-error')?.textContent).toBe(
+      'enter a name',
+    );
+
+    input.value = 'New Mage';
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(playerFacade.getSnapshot().username).toBe('New Mage');
+    expect(stage.querySelector('.room-top-panel__username')?.textContent).toBe('New Mage');
+    expect(settings.hidden).toBe(true);
+  });
+
   it('changes the theme from settings', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin');

@@ -209,6 +209,7 @@
 - Global progress resets should bump the local gameplay save version and migrate old saves to keep only `gold.totalGenerated`; username and leaderboard identity live outside gameplay save.
 - Hydrate username from the server `player` row before pushing local values; otherwise local `wizard` can overwrite saved DB profile data.
 - Queue explicit username edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's save.
+- First-run username prompts should wait until player profile hydration marks default `wizard` as server-confirmed; local `wizard` during startup is not enough.
 - SpacetimeDB table callbacks pass inserted/updated rows; use those callback rows for player profile sync because immediate table scans can still read stale usernames.
 - Local SpacetimeDB CLI target should be `local` (`http://127.0.0.1:3000`); anonymous publish cannot update an existing dev DB.
 - Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
