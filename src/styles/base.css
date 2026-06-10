@@ -1195,13 +1195,11 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__world-chat-messages {
-  display: flex;
-  flex-direction: column;
-  gap: var(--style-world-chat-row-gap);
+  display: block;
   min-height: calc(
     (var(--style-world-chat-row-height) * 2) + var(--style-world-chat-row-gap)
   );
-  max-height: 180px;
+  max-height: 260px;
   margin-bottom: 5px;
   overflow: hidden auto;
   scrollbar-width: none;
@@ -1258,8 +1256,14 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-message {
   min-height: var(--style-world-chat-row-height);
-  line-height: var(--style-world-chat-row-height);
+  line-height: var(--style-row-min-height);
   overflow-wrap: anywhere;
+}
+
+.workshop-page__world-chat-messages
+  .workshop-page__world-chat-message
+  + .workshop-page__world-chat-message {
+  margin-top: var(--style-world-chat-row-gap);
 }
 
 .workshop-page__world-chat-message--system {
@@ -1278,13 +1282,12 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-box .workshop-page__world-chat-message,
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
-  min-height: calc(
-    var(--style-world-chat-row-height) * var(--style-world-chat-preview-message-lines)
-  );
+  min-height: var(--style-world-chat-row-height);
   max-height: calc(
     var(--style-world-chat-row-height) * var(--style-world-chat-preview-message-lines)
   );
   font-size: 13px;
+  line-height: var(--style-world-chat-row-height);
   display: -webkit-box;
   overflow: hidden;
   text-overflow: ellipsis;
