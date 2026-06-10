@@ -30,6 +30,8 @@
   --style-world-chat-row-gap: 4px;
   --style-world-chat-preview-lines: 4;
   --style-world-chat-preview-message-lines: 2;
+  --style-world-chat-popup-font-size: 13px;
+  --style-world-chat-popup-line-height: 18px;
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
   --style-button-width: 100px;
   --style-room-edge: 27px;
@@ -1266,6 +1268,14 @@ div.workshop-page__discovery-row {
   margin-top: var(--style-world-chat-row-gap);
 }
 
+.workshop-page__world-chat-dialog .workshop-page__world-chat-message,
+.workshop-page__world-chat-dialog .workshop-page__world-chat-empty,
+.workshop-page__world-chat-dialog .workshop-page__world-chat-status {
+  min-height: var(--style-world-chat-popup-line-height);
+  font-size: var(--style-world-chat-popup-font-size);
+  line-height: var(--style-world-chat-popup-line-height);
+}
+
 .workshop-page__world-chat-message--system {
   color: var(--style-muted);
 }
@@ -1343,12 +1353,14 @@ div.workshop-page__discovery-row {
   flex: 1 1 auto;
   min-width: 0;
   width: auto;
+  font-size: var(--style-world-chat-popup-font-size);
   margin-bottom: 0;
 }
 
 .style-button.workshop-page__world-chat-send {
   flex: 0 0 auto;
   width: 80px;
+  font-size: var(--style-world-chat-popup-font-size);
   margin-bottom: 0;
 }
 
