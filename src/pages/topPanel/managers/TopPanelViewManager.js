@@ -113,9 +113,9 @@ export class TopPanelViewManager {
     this.refs.settingsDialog.setAttribute('role', 'dialog');
     this.refs.settingsDialog.tabIndex = -1;
 
-    const title = document.createElement('div');
-    title.className = 'style-box__title';
-    title.textContent = 'settings';
+    this.refs.settingsTitle = document.createElement('div');
+    this.refs.settingsTitle.className = 'style-box__title';
+    this.refs.settingsTitle.textContent = 'settings';
 
     const usernameSection = document.createElement('div');
     usernameSection.className = 'room-top-panel__settings-section';
@@ -137,6 +137,10 @@ export class TopPanelViewManager {
     this.refs.usernameInput.setAttribute('enterkeyhint', 'done');
     this.refs.usernameInput.setAttribute('aria-label', 'username');
 
+    this.refs.usernameError = document.createElement('div');
+    this.refs.usernameError.className = 'room-top-panel__username-error';
+    this.refs.usernameError.hidden = true;
+
     const actions = document.createElement('div');
     actions.className = 'room-top-panel__username-actions';
 
@@ -151,11 +155,12 @@ export class TopPanelViewManager {
     this.refs.settingsCloseButton.textContent = 'close';
 
     actions.append(this.refs.usernameSaveButton, this.refs.settingsCloseButton);
-    this.refs.usernameForm.append(this.refs.usernameInput, actions);
+    this.refs.usernameForm.append(this.refs.usernameInput, this.refs.usernameError, actions);
     usernameSection.append(usernameLabel, this.refs.usernameForm);
 
     const themeSection = document.createElement('div');
-    themeSection.className = 'room-top-panel__settings-section';
+    themeSection.className =
+      'room-top-panel__settings-section room-top-panel__theme-section';
 
     const themeLabel = document.createElement('div');
     themeLabel.className = 'room-top-panel__settings-label';
@@ -201,7 +206,12 @@ export class TopPanelViewManager {
 
     this.refs.authSection.append(authLabel, this.refs.authStatus, this.refs.authButton);
 
-    this.refs.settingsDialog.append(title, usernameSection, themeSection, this.refs.authSection);
+    this.refs.settingsDialog.append(
+      this.refs.settingsTitle,
+      usernameSection,
+      themeSection,
+      this.refs.authSection,
+    );
     this.refs.settings.append(this.refs.settingsDialog);
 
     return this.refs.settings;

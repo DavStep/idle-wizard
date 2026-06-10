@@ -9,8 +9,9 @@ export class TopPanelSettingsManager {
     this.refs = null;
     this.unsubscribe = null;
     this.visible = false;
+    this.usernamePromptMode = false;
     this.previousFocus = null;
-    this.handleUsernameClick = () => this.show();
+    this.handleUsernameClick = () => this.showSettings();
     this.handleCloseClick = () => this.hide();
     this.handleOverlayClick = (event) => {
       if (event.target === this.refs?.settings) {
@@ -111,13 +112,35 @@ export class TopPanelSettingsManager {
   }
 
   show() {
+    this.showSettings();
+  }
+
+  showSettings() {
+    this.open({ usernamePromptMode: false });
+  }
+
+  showUsernamePrompt() {
+    this.open({ usernamePromptMode: true });
+  }
+
+  isVisible() {
+    return this.visible;
+  }
+
+  open({ usernamePromptMode }) {
     if (!this.refs) {
       return;
     }
 
     this.previousFocus = document.activeElement;
     this.visible = true;
-    this.refs.usernameInput.value = this.refs.usernameButton.textContent;
+    this.usernamePromptMode = usernamePromptMode;
+    this.applyMode();
+    this.refs.usernameInput.value =
+      usernamePromptMode && this.refs.usernameButton.textContent === 'wizard'
+        ? ''
+        : this.refs.usernameButton.textContent;
+    this.clearUsernameError();
     this.applyVisibility();
     this.focusWithoutScroll(this.refs.settingsDialog);
   }
@@ -125,6 +148,8 @@ export class TopPanelSettingsManager {
   hide() {
     const wasVisible = this.visible;
     this.visible = false;
+    this.usernamePromptMode = false;
+    this.applyMode();
     this.applyVisibility();
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
@@ -136,6 +161,13 @@ export class TopPanelSettingsManager {
 
   saveUsername() {
     const username = this.refs.usernameInput.value;
+
+    if (this.usernamePromptMode && !username.trim()) {
+      this.showUsernameError('enter a name');
+      this.focusWithoutScroll(this.refs.usernameInput);
+      return;
+    }
+
     this.playerFacade?.setUsername(username);
     this.hide();
   }
@@ -150,6 +182,14 @@ export class TopPanelSettingsManager {
     }
 
     this.applyThemeSelection(snapshot.theme);
+
+    if (
+      this.usernamePromptMode &&
+      !snapshot.shouldPromptForUsername &&
+      snapshot.username !== 'wizard'
+    ) {
+      this.hide();
+    }
   }
 
   applyThemeSelection(theme) {
@@ -169,6 +209,50 @@ export class TopPanelSettingsManager {
 
     this.refs.settings.hidden = !this.visible;
     this.refs.settings.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  applyMode() {
+    if (!this.refs) {
+      return;
+    }
+
+    this.refs.settings.classList.toggle('is-username-prompt', this.usernamePromptMode);
+    this.refs.settingsDialog.setAttribute(
+      'aria-label',
+      this.usernamePromptMode ? 'Set username' : 'Settings',
+    );
+
+    if (this.refs.settingsTitle.textContent !== (this.usernamePromptMode ? 'username' : 'settings')) {
+      this.refs.settingsTitle.textContent = this.usernamePromptMode ? 'username' : 'settings';
+    }
+
+    if (this.refs.settingsCloseButton.textContent !== (this.usernamePromptMode ? 'later' : 'close')) {
+      this.refs.settingsCloseButton.textContent = this.usernamePromptMode ? 'later' : 'close';
+    }
+  }
+
+  showUsernameError(message) {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.refs.usernameError.textContent !== message) {
+      this.refs.usernameError.textContent = message;
+    }
+
+    this.refs.usernameError.hidden = false;
+  }
+
+  clearUsernameError() {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.refs.usernameError.textContent !== '') {
+      this.refs.usernameError.textContent = '';
+    }
+
+    this.refs.usernameError.hidden = true;
   }
 
   focusWithoutScroll(element) {

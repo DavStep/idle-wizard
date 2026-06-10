@@ -123,6 +123,6 @@ SELECT * FROM player_shop_proceeds
 SELECT * FROM npc_market_price
 ```
 
-The `player` row is treated as the source of truth on reconnect, then later local username edits are sent through `set_username`. Local generated gold totals are sent through `set_total_generated_gold`, and local task levels are sent through `set_player_level`. The subscribed leaderboard rows are exposed as `leaderboardFacade.getSnapshot().topUsers` for the Workshop leaderboard popup.
+The `player` row is treated as the source of truth on reconnect, then later local username edits are sent through `set_username`. Local generated gold totals are sent through `set_total_generated_gold`, and local task levels are sent through `set_player_level`. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.

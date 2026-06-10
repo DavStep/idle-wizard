@@ -2,6 +2,7 @@ import { TopPanelAuthManager } from './managers/TopPanelAuthManager.js';
 import { TopPanelLevelManager } from './managers/TopPanelLevelManager.js';
 import { TopPanelResourceDisplayManager } from './managers/TopPanelResourceDisplayManager.js';
 import { TopPanelSettingsManager } from './managers/TopPanelSettingsManager.js';
+import { TopPanelUsernamePromptManager } from './managers/TopPanelUsernamePromptManager.js';
 import { TopPanelViewManager } from './managers/TopPanelViewManager.js';
 
 export class TopPanelFacade {
@@ -14,6 +15,10 @@ export class TopPanelFacade {
     this.levelManager = new TopPanelLevelManager({ gameplayFacade });
     this.resourceDisplayManager = new TopPanelResourceDisplayManager({ gameplayFacade });
     this.settingsManager = new TopPanelSettingsManager({ playerFacade });
+    this.usernamePromptManager = new TopPanelUsernamePromptManager({
+      playerFacade,
+      settingsManager: this.settingsManager,
+    });
   }
 
   mount(stage) {
@@ -23,9 +28,11 @@ export class TopPanelFacade {
     this.levelManager.mount(refs);
     this.resourceDisplayManager.mount(refs);
     this.settingsManager.mount(refs);
+    this.usernamePromptManager.mount();
   }
 
   unmount() {
+    this.usernamePromptManager.unmount();
     this.settingsManager.unmount();
     this.resourceDisplayManager.unmount();
     this.levelManager.unmount();

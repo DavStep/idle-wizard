@@ -34,14 +34,15 @@ export class WorkshopPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
+    const popupLayer = this.roomViewManager.getPopupLayer();
     this.taskManager.mount(uiLayer);
     this.manaSphereManager.mount(uiLayer);
     this.seedBlockManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
-    this.leaderboardManager.mount(uiLayer);
-    this.logDialogManager.mount(uiLayer);
-    this.discoveriesManager.mount(uiLayer);
-    this.seedInventoryManager.mount(uiLayer);
+    this.leaderboardManager.mount(uiLayer, popupLayer);
+    this.logDialogManager.mount(uiLayer, popupLayer);
+    this.discoveriesManager.mount(uiLayer, popupLayer);
+    this.seedInventoryManager.mount(popupLayer);
   }
 
   unmount() {

@@ -84,7 +84,7 @@ function createGameplayFacadeFake() {
       currentLevel: 1,
       maxLevel: 20,
       effects: {
-        maxGardenTiles: 1,
+        maxGardenTiles: 2,
         maxCauldrons: 1,
         maxShopSlots: 1,
         maxNpcMarketStands: 1,
@@ -98,7 +98,7 @@ function createGameplayFacadeFake() {
           current: true,
           unlocked: true,
           totals: {
-            maxGardenTiles: 1,
+            maxGardenTiles: 2,
             maxCauldrons: 1,
             maxNpcMarketStands: 1,
             maxPlayerMarketStands: 1,
@@ -106,7 +106,7 @@ function createGameplayFacadeFake() {
             manaPerSecond: 1,
           },
           effects: [
-            'max garden tiles 1',
+            'max garden tiles 2',
             'max cauldrons 1',
             'max npc market stands 1',
             'max player market stands 1',
@@ -119,7 +119,7 @@ function createGameplayFacadeFake() {
           current: false,
           unlocked: false,
           totals: {
-            maxGardenTiles: 1,
+            maxGardenTiles: 2,
             maxCauldrons: 1,
             maxNpcMarketStands: 1,
             maxPlayerMarketStands: 1,
@@ -1543,12 +1543,18 @@ function clickRoomTab(stage, pageId) {
   button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 }
 
-function createPlayerFacadeFake(initialUsername = 'wizard', initialTheme = 'white') {
+function createPlayerFacadeFake(
+  initialUsername = 'wizard',
+  initialTheme = 'white',
+  { shouldPromptForUsername = false } = {},
+) {
   let snapshot = {
     username: initialUsername,
     theme: initialTheme,
+    shouldPromptForUsername,
   };
   const listeners = new Set();
+  let promptSeenCount = 0;
 
   const publish = () => {
     for (const listener of listeners) {
@@ -1567,6 +1573,7 @@ function createPlayerFacadeFake(initialUsername = 'wizard', initialTheme = 'whit
       snapshot = {
         ...snapshot,
         username: username.trim() || 'wizard',
+        shouldPromptForUsername: false,
       };
 
       publish();
@@ -1584,6 +1591,17 @@ function createPlayerFacadeFake(initialUsername = 'wizard', initialTheme = 'whit
       publish();
       return snapshot;
     },
+    markUsernamePromptSeen: () => {
+      promptSeenCount += 1;
+      snapshot = {
+        ...snapshot,
+        shouldPromptForUsername: false,
+      };
+
+      publish();
+      return snapshot;
+    },
+    getPromptSeenCount: () => promptSeenCount,
   };
 }
 
@@ -1968,8 +1986,8 @@ describe('PagesFacade', () => {
     const level1TotalRows = levelPopup.querySelectorAll(
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
-    expect(level1AddedRows[0].textContent).toBe('garden plots+1');
-    expect(level1TotalRows[0].textContent).toBe('garden plots1');
+    expect(level1AddedRows[0].textContent).toBe('garden plots+2');
+    expect(level1TotalRows[0].textContent).toBe('garden plots2');
     expect(levelPopup.textContent).toContain('mana cap');
     expect(levelPopup.textContent).toContain('mana regen');
 
@@ -1991,7 +2009,7 @@ describe('PagesFacade', () => {
     ).toContain('mana regen+1/sec');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('garden plots1');
+    ).toContain('garden plots2');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
     ).toContain('mana cap100');
@@ -2016,7 +2034,7 @@ describe('PagesFacade', () => {
       'garden plots',
     );
     expect(level3AddedRow.querySelector('.room-top-panel__level-effect-value')?.textContent).toBe(
-      '+2',
+      '+1',
     );
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
       'garden plots',
@@ -2578,6 +2596,93 @@ describe('PagesFacade', () => {
     ].map((row) => row.textContent);
     expect(rowLabels).toEqual(['user', '1. Merlin(10)', '2. Ada(2)']);
     expect(rowValues).toEqual(['income', '9', '3']);
+  });
+
+  it('shows the current player rank below the leaderboard when outside the top ten', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.getSnapshot().leaderboard = {
+      topGeneratedGoldUsers: Array.from({ length: 10 }, (_value, index) => ({
+        name: `Player ${index + 1}`,
+        playerLevel: index + 1,
+        income: 0,
+        totalGeneratedGold: 100 - index,
+        totalIncome: 100 - index,
+      })),
+      topIncomeUsers: [],
+      currentGeneratedGoldUser: {
+        name: 'Mine',
+        playerLevel: 4,
+        income: 0,
+        totalGeneratedGold: 1,
+        totalIncome: 1,
+        rank: 12,
+      },
+    };
+    const pagesFacade = new PagesFacade({ gameplayFacade });
+
+    pagesFacade.mount(stage);
+    stage
+      .querySelector('.workshop-page__leaderboard-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const rowLabels = [
+      ...stage.querySelectorAll('.workshop-page__leaderboard-rows .row_key'),
+    ].map((row) => row.textContent);
+    const rowValues = [
+      ...stage.querySelectorAll('.workshop-page__leaderboard-rows .row_val'),
+    ].map((row) => row.textContent);
+
+    expect(rowLabels).toEqual([
+      'user',
+      '1. Player 1(1)',
+      '2. Player 2(2)',
+      '3. Player 3(3)',
+      '4. Player 4(4)',
+      '5. Player 5(5)',
+      '6. Player 6(6)',
+      '7. Player 7(7)',
+      '8. Player 8(8)',
+      '9. Player 9(9)',
+      '10. Player 10(10)',
+      '12. Mine(4)',
+    ]);
+    expect(rowValues.at(-1)).toBe('1');
+  });
+
+  it('does not add a separate current rank when the player is already in the top ten', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.getSnapshot().leaderboard = {
+      topGeneratedGoldUsers: Array.from({ length: 10 }, (_value, index) => ({
+        name: index === 2 ? 'Mine' : `Player ${index + 1}`,
+        playerLevel: index + 1,
+        income: 0,
+        totalGeneratedGold: 100 - index,
+        totalIncome: 100 - index,
+      })),
+      topIncomeUsers: [],
+      currentGeneratedGoldUser: {
+        name: 'Mine',
+        playerLevel: 3,
+        income: 0,
+        totalGeneratedGold: 98,
+        totalIncome: 98,
+        rank: 3,
+      },
+    };
+    const pagesFacade = new PagesFacade({ gameplayFacade });
+
+    pagesFacade.mount(stage);
+    stage
+      .querySelector('.workshop-page__leaderboard-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const mineRows = [
+      ...stage.querySelectorAll('.workshop-page__leaderboard-rows .row_key'),
+    ].filter((row) => row.textContent === '3. Mine(3)');
+
+    expect(mineRows).toHaveLength(1);
   });
 
   it('hides leaderboard popup with Escape or outside click', () => {

@@ -23,9 +23,10 @@ export class BrewingPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
+    const popupLayer = this.roomViewManager.getPopupLayer();
     this.cauldronManager.mount(uiLayer);
-    this.recipeBookManager.mount(uiLayer);
-    this.potionInventoryManager.mount(uiLayer);
+    this.recipeBookManager.mount(uiLayer, popupLayer);
+    this.potionInventoryManager.mount(uiLayer, popupLayer);
     this.recipeGuideManager.mount(uiLayer);
   }
 

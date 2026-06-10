@@ -18,8 +18,8 @@ export class LeaderboardBackendFacade {
     this.generatedGoldSyncManager.setGameplayFacade(gameplayFacade);
   }
 
-  connect(connection) {
-    this.subscriptionManager.connect(connection);
+  connect(connection, identity) {
+    this.subscriptionManager.connect(connection, identity);
     this.generatedGoldSyncManager.connect(connection);
   }
 

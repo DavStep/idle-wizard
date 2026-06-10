@@ -184,6 +184,25 @@ function createGameplayFacadeFake() {
 }
 
 describe('GardenPlotManager', () => {
+  it('shows zero-cost plot buys as free', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    snapshot.garden.plot.unlockedTiles = 0;
+    snapshot.garden.plot.nextTileNumber = 1;
+    snapshot.garden.plot.nextTileCost = 0;
+    snapshot.garden.plot.tiles[0].unlocked = false;
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('buy free');
+    expect(plotRow.disabled).toBe(false);
+  });
+
   it('keeps plant seed buttons stable between renders and plants Mint Seed', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

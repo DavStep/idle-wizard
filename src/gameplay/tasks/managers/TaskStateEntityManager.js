@@ -22,13 +22,39 @@ export class TaskStateEntityManager {
     PlayerTaskLevel.currentLevel[this.levelEntityId] = this.taskBalanceManager.getInitialLevel();
 
     for (const task of this.taskBalanceManager.getTasks()) {
-      const taskEntityId = ecsManagers.entities.createEntity();
-      ecsManagers.components.add(taskEntityId, PlayerTaskProgress);
-      PlayerTaskProgress.taskIndex[taskEntityId] = task.index;
-      PlayerTaskProgress.progressQuantity[taskEntityId] = 0;
-      PlayerTaskProgress.isCompleted[taskEntityId] = 0;
-      this.entityIdsByTaskId.set(task.id, taskEntityId);
+      this.createTaskEntity(task);
     }
+  }
+
+  syncTaskEntities() {
+    if (!this.ecsManagers) {
+      return;
+    }
+
+    for (const task of this.taskBalanceManager.getTasks()) {
+      if (!this.entityIdsByTaskId.has(task.id)) {
+        this.createTaskEntity(task);
+        continue;
+      }
+
+      const entityId = this.getTaskEntityId(task.id);
+      const completed = PlayerTaskProgress.isCompleted[entityId] === 1;
+      PlayerTaskProgress.taskIndex[entityId] = task.index;
+      PlayerTaskProgress.progressQuantity[entityId] = completed
+        ? task.requiredQuantity
+        : Math.min(PlayerTaskProgress.progressQuantity[entityId] ?? 0, task.requiredQuantity);
+    }
+
+    this.setCurrentLevel(this.getCurrentLevel());
+  }
+
+  createTaskEntity(task) {
+    const taskEntityId = this.ecsManagers.entities.createEntity();
+    this.ecsManagers.components.add(taskEntityId, PlayerTaskProgress);
+    PlayerTaskProgress.taskIndex[taskEntityId] = task.index;
+    PlayerTaskProgress.progressQuantity[taskEntityId] = 0;
+    PlayerTaskProgress.isCompleted[taskEntityId] = 0;
+    this.entityIdsByTaskId.set(task.id, taskEntityId);
   }
 
   getCurrentLevel() {

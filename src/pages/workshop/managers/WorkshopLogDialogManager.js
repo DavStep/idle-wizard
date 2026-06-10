@@ -23,7 +23,7 @@ export class WorkshopLogDialogManager {
     };
   }
 
-  mount(parent) {
+  mount(parent, popupParent = parent) {
     if (!this.gameplayFacade) {
       return null;
     }
@@ -37,8 +37,9 @@ export class WorkshopLogDialogManager {
 
     this.refs.button = this.createButton();
     this.refs.popup = this.createPopup();
-    this.root.append(this.refs.button, this.refs.popup);
+    this.root.append(this.refs.button);
     parent.append(this.root);
+    popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));

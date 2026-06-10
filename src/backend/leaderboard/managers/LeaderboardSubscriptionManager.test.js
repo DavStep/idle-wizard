@@ -96,8 +96,48 @@ describe('LeaderboardSubscriptionManager', () => {
         { name: 'Low', playerLevel: 2, income: 20, totalGeneratedGold: 3, totalIncome: 3 },
         { name: 'High', playerLevel: 10, income: 1, totalGeneratedGold: 12, totalIncome: 12 },
       ],
+      currentGeneratedGoldUser: null,
+      currentIncomeUser: null,
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
+  });
+
+  it('publishes the connected player rank when they are outside a top list', () => {
+    const rows = Array.from({ length: 11 }, (_value, index) => ({
+      identity: `other-${index + 1}`,
+      username: `Other ${index + 1}`,
+      playerLevel: 1,
+      income: BigInt(index),
+      totalIncome: BigInt(100 - index),
+    }));
+    rows.push({
+      identity: { toHexString: () => 'mine' },
+      username: 'Mine',
+      playerLevel: 4,
+      income: 50n,
+      totalIncome: 1n,
+    });
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)), 'mine');
+
+    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(10);
+    expect(manager.getSnapshot().currentGeneratedGoldUser).toEqual({
+      name: 'Mine',
+      playerLevel: 4,
+      income: 50,
+      totalGeneratedGold: 1,
+      totalIncome: 1,
+      rank: 12,
+    });
+    expect(manager.getSnapshot().currentIncomeUser).toEqual({
+      name: 'Mine',
+      playerLevel: 4,
+      income: 50,
+      totalGeneratedGold: 1,
+      totalIncome: 1,
+      rank: 1,
+    });
   });
 
   it('falls back to level 1 when older rows do not have a player level', () => {
@@ -128,6 +168,8 @@ describe('LeaderboardSubscriptionManager', () => {
       topUsers: [],
       topGeneratedGoldUsers: [],
       topIncomeUsers: [],
+      currentGeneratedGoldUser: null,
+      currentIncomeUser: null,
     });
   });
 });

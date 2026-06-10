@@ -17,11 +17,12 @@ export class ShopPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
-    this.shelfManager.mount(uiLayer);
-    this.playerShelfManager.mount(uiLayer);
+    const popupLayer = this.roomViewManager.getPopupLayer();
+    this.shelfManager.mount(uiLayer, popupLayer);
+    this.playerShelfManager.mount(uiLayer, popupLayer);
     this.tradeHistoryManager.mount({
       buttonParent: this.playerShelfManager.getActionsRoot(),
-      popupParent: uiLayer,
+      popupParent: popupLayer,
     });
   }
 

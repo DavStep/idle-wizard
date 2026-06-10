@@ -27,7 +27,7 @@ export class ShopShelfManager {
     };
   }
 
-  mount(parent) {
+  mount(parent, popupParent = parent) {
     if (!this.gameplayFacade) {
       return null;
     }
@@ -45,7 +45,8 @@ export class ShopShelfManager {
     this.refs.popup = this.createSellPopup();
 
     this.root.append(this.refs.title);
-    parent.append(this.root, this.refs.popup);
+    parent.append(this.root);
+    popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -316,7 +317,7 @@ export class ShopShelfManager {
       return `level ${shelf.nextSlotRequiresLevel}`;
     }
 
-    return cost === 0 ? 'open (free)' : `buy (${cost} gold)`;
+    return cost === 0 ? 'buy (free)' : `buy (${cost} gold)`;
   }
 
   renderSellControls(snapshot, shelf) {

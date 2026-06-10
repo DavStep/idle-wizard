@@ -2,6 +2,7 @@ export class WorkshopRoomViewManager {
   constructor() {
     this.root = null;
     this.uiLayer = null;
+    this.popupLayer = null;
   }
 
   mount(stage) {
@@ -17,7 +18,7 @@ export class WorkshopRoomViewManager {
     this.root.className = 'workshop-page';
     this.root.setAttribute('aria-label', 'Workshop room');
     this.root.append(this.createWall(), this.createFloor(), this.createUiLayer());
-    stage.append(this.root);
+    stage.append(this.root, this.createPopupLayer());
 
     return this.root;
   }
@@ -30,10 +31,20 @@ export class WorkshopRoomViewManager {
     return this.uiLayer;
   }
 
+  getPopupLayer() {
+    if (!this.popupLayer) {
+      throw new Error('WorkshopRoomViewManager popup layer is not mounted.');
+    }
+
+    return this.popupLayer;
+  }
+
   unmount() {
     this.root?.remove();
+    this.popupLayer?.remove();
     this.root = null;
     this.uiLayer = null;
+    this.popupLayer = null;
   }
 
   createWall() {
@@ -66,5 +77,11 @@ export class WorkshopRoomViewManager {
     this.uiLayer = document.createElement('div');
     this.uiLayer.className = 'workshop-page__ui-layer';
     return this.uiLayer;
+  }
+
+  createPopupLayer() {
+    this.popupLayer = document.createElement('div');
+    this.popupLayer.className = 'room-page__popup-layer workshop-page__popup-layer';
+    return this.popupLayer;
   }
 }

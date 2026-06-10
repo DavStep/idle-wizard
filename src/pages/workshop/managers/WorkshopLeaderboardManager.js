@@ -10,6 +10,7 @@ const LEADERBOARD_TABS = [
     valueKey: 'income',
   },
 ];
+const LEADERBOARD_VISIBLE_USER_LIMIT = 10;
 
 export class WorkshopLeaderboardManager {
   constructor({ gameplayFacade, leaderboardFacade } = {}) {
@@ -37,7 +38,7 @@ export class WorkshopLeaderboardManager {
     };
   }
 
-  mount(parent) {
+  mount(parent, popupParent = parent) {
     if (this.root) {
       return this.root;
     }
@@ -48,8 +49,9 @@ export class WorkshopLeaderboardManager {
     this.refs.button = this.createButton();
     this.refs.popup = this.createPopup();
 
-    this.root.append(this.refs.button, this.refs.popup);
+    this.root.append(this.refs.button);
     parent.append(this.root);
+    popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
 
     if (this.leaderboardFacade) {
@@ -183,6 +185,7 @@ export class WorkshopLeaderboardManager {
 
     const activeTab = this.getActiveTab();
     const users = this.getTopUsers(this.lastSnapshot, activeTab);
+    const currentUser = this.getCurrentUser(this.lastSnapshot, activeTab);
 
     if (!users.length) {
       const empty = document.createElement('div');
@@ -196,7 +199,17 @@ export class WorkshopLeaderboardManager {
     const rows = users.map((user, index) =>
       this.createRow(this.formatUserLabel(user, index), this.formatValue(user[activeTab.valueKey])),
     );
-    this.refs.rows.replaceChildren(header, ...rows);
+    const currentRow = this.shouldShowCurrentUser(users, currentUser)
+      ? [
+          this.createRow(
+            this.formatUserLabel(currentUser),
+            this.formatValue(currentUser[activeTab.valueKey]),
+            { current: true },
+          ),
+        ]
+      : [];
+
+    this.refs.rows.replaceChildren(header, ...rows, ...currentRow);
   }
 
   updateTabs() {
@@ -224,19 +237,20 @@ export class WorkshopLeaderboardManager {
     }
 
     return users
-      .filter((user) => user && typeof user.name === 'string')
-      .map((user) => ({
-        name: user.name,
-        playerLevel: this.normalizePlayerLevel(user.playerLevel),
-        income: Number.isFinite(user.income) ? user.income : 0,
-        totalGeneratedGold: Number.isFinite(user.totalGeneratedGold)
-          ? user.totalGeneratedGold
-          : Number.isFinite(user.totalIncome)
-            ? user.totalIncome
-            : 0,
-        totalIncome: Number.isFinite(user.totalIncome) ? user.totalIncome : 0,
-      }))
-      .sort((left, right) => right[tab.valueKey] - left[tab.valueKey]);
+      .map((user) => this.normalizeUser(user))
+      .filter(Boolean)
+      .sort((left, right) => right[tab.valueKey] - left[tab.valueKey])
+      .slice(0, LEADERBOARD_VISIBLE_USER_LIMIT);
+  }
+
+  getCurrentUser(snapshot, tab) {
+    const leaderboard = snapshot?.leaderboard ?? snapshot ?? {};
+    const user =
+      tab.id === 'income'
+        ? leaderboard.currentIncomeUser ?? leaderboard.currentUser
+        : leaderboard.currentGeneratedGoldUser ?? leaderboard.currentUser;
+
+    return this.normalizeUser(user, { includeRank: true });
   }
 
   formatValue(value) {
@@ -244,7 +258,49 @@ export class WorkshopLeaderboardManager {
   }
 
   formatUserLabel(user, index) {
-    return `${index + 1}. ${user.name}(${this.normalizePlayerLevel(user.playerLevel)})`;
+    const rank = this.normalizeRank(user?.rank) ?? index + 1;
+
+    return `${rank}. ${user.name}(${this.normalizePlayerLevel(user.playerLevel)})`;
+  }
+
+  normalizeUser(user, { includeRank = false } = {}) {
+    if (!user || typeof user.name !== 'string') {
+      return null;
+    }
+
+    const normalizedUser = {
+      name: user.name,
+      playerLevel: this.normalizePlayerLevel(user.playerLevel),
+      income: Number.isFinite(user.income) ? user.income : 0,
+      totalGeneratedGold: Number.isFinite(user.totalGeneratedGold)
+        ? user.totalGeneratedGold
+        : Number.isFinite(user.totalIncome)
+          ? user.totalIncome
+          : 0,
+      totalIncome: Number.isFinite(user.totalIncome) ? user.totalIncome : 0,
+    };
+
+    if (includeRank) {
+      normalizedUser.rank = this.normalizeRank(user.rank);
+    }
+
+    return normalizedUser;
+  }
+
+  normalizeRank(rank) {
+    const safeRank = Math.floor(Number(rank));
+
+    if (!Number.isFinite(safeRank) || safeRank < 1) {
+      return null;
+    }
+
+    return safeRank;
+  }
+
+  shouldShowCurrentUser(users, currentUser) {
+    const rank = this.normalizeRank(currentUser?.rank);
+
+    return rank !== null && rank > users.length;
   }
 
   normalizePlayerLevel(playerLevel) {
@@ -257,12 +313,16 @@ export class WorkshopLeaderboardManager {
     return safePlayerLevel;
   }
 
-  createRow(label, value, { header = false } = {}) {
+  createRow(label, value, { header = false, current = false } = {}) {
     const row = document.createElement('div');
     row.className = 'workshop-page__row';
 
     if (header) {
       row.classList.add('workshop-page__leaderboard-header');
+    }
+
+    if (current) {
+      row.classList.add('workshop-page__leaderboard-current');
     }
 
     const key = document.createElement('span');

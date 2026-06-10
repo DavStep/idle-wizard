@@ -26,6 +26,24 @@ export class PlayerFacade {
     return this.getSnapshot();
   }
 
+  applyServerUsername(username) {
+    this.nameManager.applyServerUsername(username);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  markUsernameProfileLoaded() {
+    this.nameManager.markProfileLoaded();
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  markUsernamePromptSeen() {
+    this.nameManager.markUsernamePromptSeen();
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
   setTheme(theme) {
     this.themeManager.setTheme(theme);
     this.publishSnapshot();
@@ -39,6 +57,7 @@ export class PlayerFacade {
   getSnapshot() {
     return {
       username: this.nameManager.getUsername(),
+      shouldPromptForUsername: this.nameManager.shouldPromptForUsername(),
       theme: this.themeManager.getTheme(),
     };
   }

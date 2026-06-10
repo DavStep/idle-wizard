@@ -46,7 +46,7 @@ export class BackendFacade {
     return this.spacetimeDbFacade.connectGeneratedBindings({
       onConnect: (connection, identity) => {
         this.gameConfigFacade.connect(connection);
-        this.leaderboardFacade.connect(connection);
+        this.leaderboardFacade.connect(connection, identity);
         this.worldChatFacade.connect(connection);
         this.npcMarketFacade.connect(connection);
         this.playerSyncFacade.connect(connection, identity);

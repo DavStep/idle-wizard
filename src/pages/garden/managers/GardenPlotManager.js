@@ -40,7 +40,7 @@ export class GardenPlotManager {
     };
   }
 
-  mount(parent) {
+  mount(parent, popupParent = parent) {
     if (!this.gameplayFacade) {
       return null;
     }
@@ -61,7 +61,8 @@ export class GardenPlotManager {
     this.refs.seedRows.addEventListener('scroll', this.handleSeedRowsScroll);
 
     this.root.append(this.refs.title, this.refs.rows);
-    parent.append(this.root, this.refs.popup);
+    parent.append(this.root);
+    popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -599,6 +600,10 @@ export class GardenPlotManager {
   }
 
   formatGold(value) {
+    if (value === 0) {
+      return 'free';
+    }
+
     return Number.isFinite(value) ? `${value}g` : '?g';
   }
 

@@ -1,7 +1,9 @@
 const RESEARCH_CONFIG_QUERY = 'SELECT * FROM research_config';
+const GAME_CONFIG_QUERY = 'SELECT * FROM game_config';
 const EMPTY_SNAPSHOT = {
   connected: false,
   researchConfigs: [],
+  gameConfigs: [],
 };
 
 export class GameConfigSubscriptionManager {
@@ -9,6 +11,7 @@ export class GameConfigSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.researchConfigTable = null;
+    this.gameConfigTable = null;
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
@@ -19,19 +22,25 @@ export class GameConfigSubscriptionManager {
     this.connection = connection;
     this.researchConfigTable =
       connection?.db?.researchConfig ?? connection?.db?.research_config ?? null;
+    this.gameConfigTable = connection?.db?.gameConfig ?? connection?.db?.game_config ?? null;
 
-    if (!this.researchConfigTable) {
+    if (!this.researchConfigTable && !this.gameConfigTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
     this.bindTable(this.researchConfigTable);
-    this.subscriptions = [this.subscribeQuery(RESEARCH_CONFIG_QUERY)].filter(Boolean);
+    this.bindTable(this.gameConfigTable);
+    this.subscriptions = [
+      this.researchConfigTable ? this.subscribeQuery(RESEARCH_CONFIG_QUERY) : null,
+      this.gameConfigTable ? this.subscribeQuery(GAME_CONFIG_QUERY) : null,
+    ].filter(Boolean);
     this.publishFromTables();
   }
 
   disconnect() {
     this.unbindTable(this.researchConfigTable);
+    this.unbindTable(this.gameConfigTable);
 
     for (const subscription of this.subscriptions) {
       if (!subscription.isEnded?.()) {
@@ -41,6 +50,7 @@ export class GameConfigSubscriptionManager {
 
     this.connection = null;
     this.researchConfigTable = null;
+    this.gameConfigTable = null;
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
@@ -70,21 +80,25 @@ export class GameConfigSubscriptionManager {
   }
 
   publishFromTables() {
-    if (!this.researchConfigTable) {
+    if (!this.researchConfigTable && !this.gameConfigTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
-    const researchConfigs = Array.from(this.researchConfigTable.iter())
+    const researchConfigs = Array.from(this.researchConfigTable?.iter?.() ?? [])
       .map((row) => this.mapResearchConfig(row))
       .sort((left, right) => {
         const groupCompare = left.groupId.localeCompare(right.groupId);
         return groupCompare || left.label.localeCompare(right.label);
       });
+    const gameConfigs = Array.from(this.gameConfigTable?.iter?.() ?? [])
+      .map((row) => this.mapGameConfig(row))
+      .sort((left, right) => left.configKey.localeCompare(right.configKey));
 
     this.publish({
       connected: true,
       researchConfigs,
+      gameConfigs,
     });
   }
 
@@ -96,6 +110,14 @@ export class GameConfigSubscriptionManager {
       defaultCostGold: this.toNumber(row.defaultCostGold ?? row.default_cost_gold),
       costGold: this.toNumber(row.costGold ?? row.cost_gold),
       enabled: row.enabled !== false,
+      updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
+    };
+  }
+
+  mapGameConfig(row) {
+    return {
+      configKey: String(row.configKey ?? row.config_key ?? ''),
+      configJson: String(row.configJson ?? row.config_json ?? ''),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
   }

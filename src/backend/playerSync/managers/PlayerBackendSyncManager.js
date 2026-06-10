@@ -31,6 +31,7 @@ export class PlayerBackendSyncManager {
     this.canSyncBeforeServerProfile = !connection?.db?.player;
 
     if (this.canSyncBeforeServerProfile) {
+      this.markUsernameProfileLoaded();
       this.sync(this.playerFacade?.getSnapshot());
     }
   }
@@ -87,6 +88,7 @@ export class PlayerBackendSyncManager {
 
     const username = profile?.username;
     if (!username) {
+      this.markUsernameProfileLoaded();
       this.sync(this.playerFacade?.getSnapshot());
       return;
     }
@@ -104,12 +106,13 @@ export class PlayerBackendSyncManager {
     }
 
     if (this.playerFacade?.getSnapshot?.().username === username) {
+      this.markUsernameProfileLoaded();
       return;
     }
 
     try {
       this.applyingServerProfile = true;
-      this.playerFacade?.setUsername?.(username);
+      this.applyServerUsername(username);
     } finally {
       this.applyingServerProfile = false;
     }
@@ -118,5 +121,18 @@ export class PlayerBackendSyncManager {
   findSetUsernameReducer() {
     const reducers = this.connection?.reducers;
     return reducers?.setUsername ?? reducers?.set_username ?? null;
+  }
+
+  applyServerUsername(username) {
+    if (typeof this.playerFacade?.applyServerUsername === 'function') {
+      this.playerFacade.applyServerUsername(username);
+      return;
+    }
+
+    this.playerFacade?.setUsername?.(username);
+  }
+
+  markUsernameProfileLoaded() {
+    this.playerFacade?.markUsernameProfileLoaded?.();
   }
 }

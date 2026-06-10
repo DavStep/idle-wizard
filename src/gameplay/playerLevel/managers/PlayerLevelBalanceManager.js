@@ -3,9 +3,22 @@ import playerLevelBalance from '../player-level-balance.json';
 export class PlayerLevelBalanceManager {
   constructor({ balance = playerLevelBalance } = {}) {
     this.balance = balance;
-    this.maxLevel = this.readMaxLevel();
-    this.manaProgression = this.readManaProgression();
-    this.milestones = this.readMilestones();
+    this.setBalance(balance);
+  }
+
+  setRuntimeBalance(balance) {
+    this.setBalance(balance);
+  }
+
+  setBalance(balance) {
+    const maxLevel = this.readMaxLevel(balance);
+    const manaProgression = this.readManaProgression(balance);
+    const milestones = this.readMilestones(balance, maxLevel);
+
+    this.balance = balance;
+    this.maxLevel = maxLevel;
+    this.manaProgression = manaProgression;
+    this.milestones = milestones;
   }
 
   getLevels() {
@@ -193,8 +206,8 @@ export class PlayerLevelBalanceManager {
     return effects;
   }
 
-  readMaxLevel() {
-    const maxLevel = this.balance?.maxLevel ?? this.balance?.levels?.at(-1)?.level ?? 1;
+  readMaxLevel(balance = this.balance) {
+    const maxLevel = balance?.maxLevel ?? balance?.levels?.at(-1)?.level ?? 1;
 
     if (!Number.isInteger(maxLevel) || maxLevel <= 0) {
       throw new Error('player-level-balance.json requires positive maxLevel.');
@@ -203,8 +216,8 @@ export class PlayerLevelBalanceManager {
     return maxLevel;
   }
 
-  readMilestones() {
-    const milestones = this.balance?.milestones ?? this.balance?.levels;
+  readMilestones(balance = this.balance, maxLevel = this.maxLevel) {
+    const milestones = balance?.milestones ?? balance?.levels;
 
     if (!Array.isArray(milestones) || milestones.length <= 0) {
       throw new Error('player-level-balance.json requires milestones.');
@@ -220,7 +233,7 @@ export class PlayerLevelBalanceManager {
       if (
         !Number.isInteger(level?.level) ||
         level.level <= previousLevel ||
-        level.level > this.maxLevel
+        level.level > maxLevel
       ) {
         throw new Error(
           'player-level-balance.json milestones must use increasing levels within maxLevel.',
@@ -283,8 +296,8 @@ export class PlayerLevelBalanceManager {
     });
   }
 
-  readManaProgression() {
-    const mana = this.balance?.mana ?? this.balance?.manaProgression;
+  readManaProgression(balance = this.balance) {
+    const mana = balance?.mana ?? balance?.manaProgression;
 
     if (mana === undefined) {
       return null;

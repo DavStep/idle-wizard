@@ -95,13 +95,23 @@ export class GameplayFacade {
     this.gameConfigUnsubscribe?.();
     this.gameConfigFacade = gameConfigFacade;
     this.gameConfigUnsubscribe = gameConfigFacade?.subscribe?.((snapshot) => {
-      this.researchFacade.applyRuntimeConfig(snapshot);
+      this.applyRuntimeConfig(snapshot);
 
       if (this.initialized) {
         this.publishSnapshot();
       }
     }) ?? null;
-    this.researchFacade.applyRuntimeConfig(gameConfigFacade?.getSnapshot?.());
+    this.applyRuntimeConfig(gameConfigFacade?.getSnapshot?.());
+  }
+
+  applyRuntimeConfig(snapshot = {}) {
+    this.researchFacade.applyRuntimeConfig(snapshot);
+    this.tasksFacade.applyRuntimeConfig(snapshot);
+    this.playerLevelFacade.applyRuntimeConfig(snapshot);
+
+    if (this.initialized) {
+      this.syncPlayerLevelManaEffects();
+    }
   }
 
   setNpcMarketFacade(npcMarketFacade) {

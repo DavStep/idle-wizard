@@ -10,6 +10,13 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const GameConfig = __t.object("GameConfig", {
+  configKey: __t.string(),
+  configJson: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type GameConfig = __Infer<typeof GameConfig>;
+
 export const Leaderboard = __t.object("Leaderboard", {
   identity: __t.identity(),
   username: __t.string(),

@@ -51,12 +51,14 @@ import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetUsernameReducer from "./set_username_reducer";
 import TickNpcMarketReducer from "./tick_npc_market_reducer";
+import UpsertGameConfigReducer from "./upsert_game_config_reducer";
 import UpsertNpcMarketItemConfigReducer from "./upsert_npc_market_item_config_reducer";
 import UpsertResearchConfigReducer from "./upsert_research_config_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import GameConfigRow from "./game_config_table";
 import LeaderboardRow from "./leaderboard_table";
 import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketItemConfigRow from "./npc_market_item_config_table";
@@ -73,6 +75,20 @@ import WorldChatRow from "./world_chat_table";
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
+  gameConfig: __table({
+    name: 'game_config',
+    indexes: [
+      { accessor: 'configKey', name: 'game_config_config_key_idx_btree', algorithm: 'btree', columns: [
+        'configKey',
+      ] },
+      { accessor: 'byUpdatedAt', name: 'game_config_updated_at_idx_btree', algorithm: 'btree', columns: [
+        'updatedAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'game_config_config_key_key', constraint: 'unique', columns: ['configKey'] },
+    ],
+  }, GameConfigRow),
   leaderboard: __table({
     name: 'leaderboard',
     indexes: [
@@ -254,6 +270,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_username", SetUsernameReducer),
   __reducerSchema("tick_npc_market", TickNpcMarketReducer),
+  __reducerSchema("upsert_game_config", UpsertGameConfigReducer),
   __reducerSchema("upsert_npc_market_item_config", UpsertNpcMarketItemConfigReducer),
   __reducerSchema("upsert_research_config", UpsertResearchConfigReducer),
 );

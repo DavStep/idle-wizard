@@ -13,6 +13,20 @@ export class PlayerLevelFacade {
     });
   }
 
+  applyRuntimeConfig(snapshot = {}) {
+    const balance = parseGameConfig(snapshot, 'playerLevel');
+
+    if (!balance) {
+      return;
+    }
+
+    try {
+      this.playerLevelBalanceManager.setRuntimeBalance(balance);
+    } catch {
+      return;
+    }
+  }
+
   getEffects() {
     return this.playerLevelSnapshotManager.getSnapshot().effects;
   }
@@ -68,5 +82,19 @@ export class PlayerLevelFacade {
 
   getSnapshot() {
     return this.playerLevelSnapshotManager.getSnapshot();
+  }
+}
+
+function parseGameConfig(snapshot, configKey) {
+  const config = snapshot?.gameConfigs?.find?.((row) => row?.configKey === configKey);
+
+  if (!config?.configJson) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(config.configJson);
+  } catch {
+    return null;
   }
 }

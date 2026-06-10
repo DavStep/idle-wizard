@@ -124,7 +124,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
     const snapshot = gameplayFacade.getSnapshot();
 
-    expect(snapshot.garden.plot.unlockedTiles).toBe(1);
+    expect(snapshot.garden.plot.unlockedTiles).toBe(2);
     expect(snapshot.shop.shelf.unlockedSlots).toBe(1);
     expect(snapshot.shop.playerShelf.unlockedSlots).toBe(1);
   });
@@ -1297,13 +1297,13 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.plot).toMatchObject({
       unlockedTiles: 1,
       maxTiles: 10,
-      maxUnlockedTilesByLevel: 1,
+      maxUnlockedTilesByLevel: 2,
       tilesPerRow: 4,
       tileCosts: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
       nextTileNumber: 2,
       nextTileCost: 25,
-      nextTileLockedByLevel: true,
-      nextTileRequiresLevel: 3,
+      nextTileLockedByLevel: false,
+      nextTileRequiresLevel: null,
       harvestSeconds: 10,
     });
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
@@ -1313,16 +1313,6 @@ describe('GameplayFacade', () => {
       kind: 'herb',
       quantity: 0,
     });
-
-    expect(gameplayFacade.buyGardenTile()).toEqual({
-      ok: false,
-      reason: 'level_locked',
-      requiredLevel: 3,
-      tileNumber: 2,
-    });
-
-    finishCurrentTaskLevel(gameplayFacade);
-    finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.buyGardenTile()).toEqual({
       ok: false,

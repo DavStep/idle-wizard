@@ -28,7 +28,7 @@
   --style-row-min-height: 20px;
   --style-world-chat-row-height: 16px;
   --style-world-chat-row-gap: 4px;
-  --style-world-chat-preview-lines: 4;
+  --style-world-chat-preview-lines: 2;
   --style-world-chat-popup-font-size: 13px;
   --style-world-chat-popup-line-height: 18px;
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
@@ -386,6 +386,21 @@ body {
   transform-origin: top left;
 }
 
+.room-page__popup-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  pointer-events: none;
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
+}
+
+.room-page__popup-layer > * {
+  pointer-events: auto;
+}
+
 .room-top-panel-layer {
   position: absolute;
   inset: 0;
@@ -443,6 +458,10 @@ body {
 .research-page__ui-layer *,
 .research-page__ui-layer *::before,
 .research-page__ui-layer *::after,
+.room-page__popup-layer,
+.room-page__popup-layer *,
+.room-page__popup-layer *::before,
+.room-page__popup-layer *::after,
 .room-top-panel-layer,
 .room-top-panel-layer *,
 .room-top-panel-layer *::before,
@@ -1283,10 +1302,11 @@ div.workshop-page__discovery-row {
   display: flex;
   flex-direction: column;
   gap: var(--style-world-chat-row-gap);
-  min-height: calc(
+  height: calc(
     (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
       var(--style-world-chat-row-gap)
   );
+  overflow: hidden;
 }
 
 .workshop-page__world-chat-box .workshop-page__world-chat-message,
@@ -1303,7 +1323,7 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
   display: grid;
-  min-height: calc(
+  height: calc(
     (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
       var(--style-world-chat-row-gap)
   );
@@ -2692,6 +2712,16 @@ div.workshop-page__discovery-row {
   margin: 0;
 }
 
+.room-top-panel__username-error {
+  min-height: var(--style-row-min-height);
+  margin: -5px 0 10px;
+  color: var(--style-disabled);
+}
+
+.room-top-panel__username-error[hidden] {
+  display: none;
+}
+
 .style-input.room-top-panel__username-input {
   width: 218px;
 }
@@ -2761,6 +2791,11 @@ div.workshop-page__discovery-row {
   width: 218px;
   margin-bottom: 0;
   text-align: center;
+}
+
+.room-top-panel__settings.is-username-prompt .room-top-panel__theme-section,
+.room-top-panel__settings.is-username-prompt .room-top-panel__auth-section {
+  display: none;
 }
 
 .style-dialog {

@@ -143,6 +143,7 @@
 - Room UI layer uses `box-sizing: content-box`; wrappers that center fixed-width `.style-dialog` content must account for dialog padding and borders.
 - Padded inputs inside flex columns need `box-sizing: border-box` or explicit width math; content-box `width: 100%` overflows columns.
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
+- Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
 - Clicking the top-panel username opens settings; username editing and `white` / `black` visual theme choices live there.
 - Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
@@ -155,9 +156,9 @@
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
-- Page popup overlays should lift room pages only above the canvas (`z-index: 3`), not above shared top/chat/bottom chrome.
+- Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
-- Compact world chat preview height and room content clearance must use the same source-line variables; otherwise wrapped preview rows can overlap lower room content.
+- Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
 - World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
@@ -198,6 +199,7 @@
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables currently own shared `player` identity rows and `leaderboard` rows; client syncs username and player level only.
+- Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
 - Shared player level displays use server `playerLevel`; sync `tasks.currentLevel` through `set_player_level` and do not infer other players locally.
 - Local player level milestones come from `player-level-balance.json`; they unlock permission to buy higher caps, never grant the tile/stand for free.
 - Player level sets mana cap and mana regen from `player-level-balance.json`; there are no separate mana research bonuses.

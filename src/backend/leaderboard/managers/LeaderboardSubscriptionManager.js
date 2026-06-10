@@ -3,21 +3,27 @@ const EMPTY_SNAPSHOT = {
   topUsers: [],
   topGeneratedGoldUsers: [],
   topIncomeUsers: [],
+  currentGeneratedGoldUser: null,
+  currentIncomeUser: null,
 };
 
 export class LeaderboardSubscriptionManager {
   constructor({ onSnapshot } = {}) {
     this.onSnapshot = onSnapshot;
     this.connection = null;
+    this.identity = null;
+    this.identityKey = '';
     this.table = null;
     this.subscription = null;
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTable();
   }
 
-  connect(connection) {
+  connect(connection, identity) {
     this.disconnect();
     this.connection = connection;
+    this.identity = identity;
+    this.identityKey = this.toIdentityKey(identity);
     this.table = connection?.db?.leaderboard ?? null;
 
     if (!this.table) {
@@ -49,6 +55,8 @@ export class LeaderboardSubscriptionManager {
     }
 
     this.connection = null;
+    this.identity = null;
+    this.identityKey = '';
     this.table = null;
     this.subscription = null;
     this.publish({ ...EMPTY_SNAPSHOT });
@@ -66,24 +74,64 @@ export class LeaderboardSubscriptionManager {
 
     const users = Array.from(this.table.iter())
       .map((row) => ({
+        identity: this.toIdentityKey(row.identity),
         name: row.username,
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
         totalGeneratedGold: this.toNumber(row.totalGeneratedGold ?? row.totalIncome),
         totalIncome: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
       }));
-    const topGeneratedGoldUsers = this.getTopUsersBy(users, 'totalGeneratedGold');
-    const topIncomeUsers = this.getTopUsersBy(users, 'income');
+    const rankedGeneratedGoldUsers = this.getRankedUsersBy(users, 'totalGeneratedGold');
+    const rankedIncomeUsers = this.getRankedUsersBy(users, 'income');
+    const topGeneratedGoldUsers = rankedGeneratedGoldUsers
+      .slice(0, TOP_USER_LIMIT)
+      .map((user) => this.toSnapshotUser(user));
+    const topIncomeUsers = rankedIncomeUsers
+      .slice(0, TOP_USER_LIMIT)
+      .map((user) => this.toSnapshotUser(user));
 
     this.publish({
       topUsers: topGeneratedGoldUsers,
       topGeneratedGoldUsers,
       topIncomeUsers,
+      currentGeneratedGoldUser: this.getCurrentUser(rankedGeneratedGoldUsers),
+      currentIncomeUser: this.getCurrentUser(rankedIncomeUsers),
     });
   }
 
-  getTopUsersBy(users, key) {
-    return [...users].sort((left, right) => right[key] - left[key]).slice(0, TOP_USER_LIMIT);
+  getRankedUsersBy(users, key) {
+    return [...users]
+      .sort((left, right) => right[key] - left[key])
+      .map((user, index) => ({
+        ...user,
+        rank: index + 1,
+      }));
+  }
+
+  getCurrentUser(rankedUsers) {
+    if (!this.identityKey) {
+      return null;
+    }
+
+    const user = rankedUsers.find((candidate) => candidate.identity === this.identityKey);
+
+    return user ? this.toSnapshotUser(user, { includeRank: true }) : null;
+  }
+
+  toSnapshotUser(user, { includeRank = false } = {}) {
+    const snapshotUser = {
+      name: user.name,
+      playerLevel: user.playerLevel,
+      income: user.income,
+      totalGeneratedGold: user.totalGeneratedGold,
+      totalIncome: user.totalIncome,
+    };
+
+    if (includeRank) {
+      snapshotUser.rank = user.rank;
+    }
+
+    return snapshotUser;
   }
 
   publish(snapshot) {
@@ -111,5 +159,21 @@ export class LeaderboardSubscriptionManager {
     }
 
     return Math.floor(playerLevel);
+  }
+
+  toIdentityKey(identity) {
+    if (!identity) {
+      return '';
+    }
+
+    if (typeof identity === 'string') {
+      return identity;
+    }
+
+    if (typeof identity.toHexString === 'function') {
+      return identity.toHexString();
+    }
+
+    return String(identity);
   }
 }

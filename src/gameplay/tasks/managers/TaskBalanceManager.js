@@ -6,10 +6,22 @@ export class TaskBalanceManager {
   constructor({ balance = taskBalance, itemsFacade }) {
     this.balance = balance;
     this.itemsFacade = itemsFacade;
-    this.levels = this.readLevels();
-    this.tasks = this.levels.flatMap((level) => level.tasks);
-    this.tasksById = new Map(this.tasks.map((task) => [task.id, task]));
-    this.tasksByIndex = new Map(this.tasks.map((task) => [task.index, task]));
+    this.setBalance(balance);
+  }
+
+  setRuntimeBalance(balance) {
+    this.setBalance(balance);
+  }
+
+  setBalance(balance) {
+    const levels = this.readLevels(balance);
+    const tasks = levels.flatMap((level) => level.tasks);
+
+    this.balance = balance;
+    this.levels = levels;
+    this.tasks = tasks;
+    this.tasksById = new Map(tasks.map((task) => [task.id, task]));
+    this.tasksByIndex = new Map(tasks.map((task) => [task.index, task]));
   }
 
   getLevels() {
@@ -56,8 +68,8 @@ export class TaskBalanceManager {
     return this.levels.at(-1)?.level ?? this.getInitialLevel();
   }
 
-  readLevels() {
-    const levels = this.balance?.levels;
+  readLevels(balance = this.balance) {
+    const levels = balance?.levels;
 
     if (!Array.isArray(levels) || levels.length <= 0) {
       throw new Error('tasks.json requires levels.');

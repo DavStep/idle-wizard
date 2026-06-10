@@ -21,6 +21,7 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'Arch Mage',
+      shouldPromptForUsername: false,
       theme: 'white',
     });
   });
@@ -34,7 +35,42 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'wizard',
+      shouldPromptForUsername: false,
       theme: 'white',
+    });
+  });
+
+  it('asks for a username only after a default server profile is known', () => {
+    const playerFacade = new PlayerFacade({
+      storage: createMemoryStorage(),
+    });
+
+    expect(playerFacade.getSnapshot().shouldPromptForUsername).toBe(false);
+
+    playerFacade.applyServerUsername('wizard');
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'wizard',
+      shouldPromptForUsername: true,
+    });
+
+    playerFacade.markUsernamePromptSeen();
+
+    expect(playerFacade.getSnapshot().shouldPromptForUsername).toBe(false);
+  });
+
+  it('does not ask again after restoring a saved username', () => {
+    const storage = createMemoryStorage();
+    const playerFacade = new PlayerFacade({ storage });
+
+    playerFacade.setUsername('Mira');
+
+    const restoredPlayerFacade = new PlayerFacade({ storage });
+    restoredPlayerFacade.applyServerUsername('wizard');
+
+    expect(restoredPlayerFacade.getSnapshot()).toMatchObject({
+      username: 'wizard',
+      shouldPromptForUsername: false,
     });
   });
 

@@ -28,6 +28,21 @@ export class TasksFacade {
     this.taskStateEntityManager.initialize(ecsManagers);
   }
 
+  applyRuntimeConfig(snapshot = {}) {
+    const balance = parseGameConfig(snapshot, 'tasks');
+
+    if (!balance) {
+      return;
+    }
+
+    try {
+      this.taskBalanceManager.setRuntimeBalance(balance);
+      this.taskStateEntityManager.syncTaskEntities();
+    } catch {
+      return;
+    }
+  }
+
   fillTask(taskId) {
     return this.taskFillManager.fillTask(taskId);
   }
@@ -53,5 +68,19 @@ export class TasksFacade {
     }
 
     this.taskStateEntityManager.applySnapshot(snapshot);
+  }
+}
+
+function parseGameConfig(snapshot, configKey) {
+  const config = snapshot?.gameConfigs?.find?.((row) => row?.configKey === configKey);
+
+  if (!config?.configJson) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(config.configJson);
+  } catch {
+    return null;
   }
 }

@@ -9,7 +9,7 @@
   "milestones": [
     {
       "level": 1,
-      "maxGardenTiles": 1,
+      "maxGardenTiles": 2,
       "maxCauldrons": 1,
       "maxNpcMarketStands": 1,
       "maxPlayerMarketStands": 1

@@ -15,7 +15,8 @@ export class GardenPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
-    this.plotManager.mount(uiLayer);
+    const popupLayer = this.roomViewManager.getPopupLayer();
+    this.plotManager.mount(uiLayer, popupLayer);
     this.herbInventoryManager.mount(uiLayer);
   }
 

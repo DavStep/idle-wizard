@@ -18,8 +18,9 @@ export class ResearchPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
+    const popupLayer = this.roomViewManager.getPopupLayer();
     this.boxListManager.mount(uiLayer);
-    this.infoDialogManager.mount(uiLayer);
+    this.infoDialogManager.mount(popupLayer);
   }
 
   unmount() {

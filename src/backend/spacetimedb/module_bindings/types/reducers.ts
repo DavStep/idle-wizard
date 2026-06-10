@@ -23,6 +23,7 @@ import SetPlayerShopSlotReducer from "../set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "../set_total_generated_gold_reducer";
 import SetUsernameReducer from "../set_username_reducer";
 import TickNpcMarketReducer from "../tick_npc_market_reducer";
+import UpsertGameConfigReducer from "../upsert_game_config_reducer";
 import UpsertNpcMarketItemConfigReducer from "../upsert_npc_market_item_config_reducer";
 import UpsertResearchConfigReducer from "../upsert_research_config_reducer";
 
@@ -43,6 +44,7 @@ export type SetPlayerShopSlotParams = __Infer<typeof SetPlayerShopSlotReducer>;
 export type SetTotalGeneratedGoldParams = __Infer<typeof SetTotalGeneratedGoldReducer>;
 export type SetUsernameParams = __Infer<typeof SetUsernameReducer>;
 export type TickNpcMarketParams = __Infer<typeof TickNpcMarketReducer>;
+export type UpsertGameConfigParams = __Infer<typeof UpsertGameConfigReducer>;
 export type UpsertNpcMarketItemConfigParams = __Infer<typeof UpsertNpcMarketItemConfigReducer>;
 export type UpsertResearchConfigParams = __Infer<typeof UpsertResearchConfigReducer>;
 

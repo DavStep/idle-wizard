@@ -28,7 +28,7 @@ export class BrewingPotionInventoryManager {
     };
   }
 
-  mount(parent) {
+  mount(parent, popupParent = parent) {
     if (!this.gameplayFacade) {
       return null;
     }
@@ -39,7 +39,8 @@ export class BrewingPotionInventoryManager {
 
     this.root = this.createOpenButton();
     this.refs.popup = this.createPopup();
-    parent.append(this.root, this.refs.popup);
+    parent.append(this.root);
+    popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
