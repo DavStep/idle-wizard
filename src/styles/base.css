@@ -1281,12 +1281,14 @@ div.workshop-page__discovery-row {
 .shop-page__trade-history-row,
 .shop-page__trade-history-empty {
   min-height: var(--style-log-line-height);
+  color: var(--style-muted);
   font-size: var(--style-log-font-size);
   line-height: var(--style-log-line-height);
 }
 
 .workshop-page__world-chat-message {
   min-height: var(--style-world-chat-row-height);
+  color: var(--style-muted);
   line-height: var(--style-row-min-height);
   overflow-wrap: anywhere;
 }
@@ -1360,7 +1362,12 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__world-chat-name {
+  color: var(--style-text);
   font-weight: bold;
+}
+
+.shop-page__trade-history-username {
+  color: var(--style-text);
 }
 
 .workshop-page__world-chat-status {
