@@ -29,7 +29,6 @@
   --style-world-chat-row-height: 16px;
   --style-world-chat-row-gap: 4px;
   --style-world-chat-preview-lines: 4;
-  --style-world-chat-preview-message-lines: 2;
   --style-world-chat-popup-font-size: 13px;
   --style-world-chat-popup-line-height: 18px;
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
@@ -1293,17 +1292,13 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-box .workshop-page__world-chat-message,
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
   min-height: var(--style-world-chat-row-height);
-  max-height: calc(
-    var(--style-world-chat-row-height) * var(--style-world-chat-preview-message-lines)
-  );
+  max-height: var(--style-world-chat-row-height);
   font-size: 13px;
   line-height: var(--style-world-chat-row-height);
-  display: -webkit-box;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--style-world-chat-preview-message-lines);
+  white-space: nowrap;
 }
 
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
