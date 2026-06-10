@@ -627,15 +627,34 @@ function createGameplayFacadeFake() {
   };
   const advancedResearchBoxes = [
     {
+      id: 'autoSeedSpawn',
+      label: 'auto seed spawn research',
+      researches: [
+        {
+          id: 'automation:autoSeedSpawn',
+          label: 'auto seed spawn',
+          value: '10 crystal',
+          effect: 'auto',
+          costGold: 0,
+          costCrystal: 10,
+          costCurrency: 'crystal',
+          completed: false,
+          canResearch: false,
+        },
+      ],
+    },
+    {
       id: 'autoPlantTiles',
       label: 'auto plant tile research',
       researches: [
         {
           id: 'automation:autoPlantTile:1',
           label: 'auto plant tile 1',
-          value: '50000 gold',
+          value: '50000 crystal',
           effect: 'auto',
-          costGold: 50000,
+          costGold: 0,
+          costCrystal: 50000,
+          costCurrency: 'crystal',
           completed: false,
           canResearch: false,
         },
@@ -644,7 +663,9 @@ function createGameplayFacadeFake() {
           label: 'auto plant tile 2',
           value: 'locked',
           effect: 'auto',
-          costGold: 75000,
+          costGold: 0,
+          costCrystal: 75000,
+          costCurrency: 'crystal',
           completed: false,
           locked: true,
           canResearch: false,
@@ -658,9 +679,11 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoHarvestPlant:1',
           label: 'auto harvest tile 1',
-          value: '75000 gold',
+          value: '75000 crystal',
           effect: 'auto',
-          costGold: 75000,
+          costGold: 0,
+          costCrystal: 75000,
+          costCurrency: 'crystal',
           completed: false,
           canResearch: false,
         },
@@ -673,9 +696,11 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoBrewCauldron:1',
           label: 'auto brew cauldron 1',
-          value: '100000 gold',
+          value: '100000 crystal',
           effect: 'auto',
-          costGold: 100000,
+          costGold: 0,
+          costCrystal: 100000,
+          costCurrency: 'crystal',
           completed: false,
           canResearch: false,
         },
@@ -688,9 +713,11 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoBottleCauldron:1',
           label: 'auto bottle cauldron 1',
-          value: '125000 gold',
+          value: '125000 crystal',
           effect: 'auto',
-          costGold: 125000,
+          costGold: 0,
+          costCrystal: 125000,
+          costCurrency: 'crystal',
           completed: false,
           canResearch: false,
         },
@@ -703,9 +730,11 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoCollectCauldron:1',
           label: 'auto collect cauldron 1',
-          value: '150000 gold',
+          value: '150000 crystal',
           effect: 'auto',
-          costGold: 150000,
+          costGold: 0,
+          costCrystal: 150000,
+          costCurrency: 'crystal',
           completed: false,
           canResearch: false,
         },
@@ -740,8 +769,27 @@ function createGameplayFacadeFake() {
 
   const updateResearchAffordability = () => {
     for (const research of getResearches()) {
-      research.canResearch = !research.completed && snapshot.gold.current >= research.costGold;
+      const currency = research.costCurrency ?? 'gold';
+      const current = currency === 'crystal' ? snapshot.crystal.current : snapshot.gold.current;
+      const cost = currency === 'crystal' ? research.costCrystal : research.costGold;
+
+      research.canResearch = !research.completed && current >= cost;
     }
+  };
+
+  const getResearchCost = (research) =>
+    research.costCurrency === 'crystal' ? research.costCrystal : research.costGold;
+
+  const getResearchCurrent = (research) =>
+    research.costCurrency === 'crystal' ? snapshot.crystal.current : snapshot.gold.current;
+
+  const spendResearchCost = (research) => {
+    if (research.costCurrency === 'crystal') {
+      snapshot.crystal.current -= research.costCrystal;
+      return;
+    }
+
+    snapshot.gold.current -= research.costGold;
   };
 
   const isResearchComplete = (researchId) =>
@@ -1106,20 +1154,22 @@ function createGameplayFacadeFake() {
           ok: false,
           reason: 'already_researched',
           researchId,
-          cost: research.costGold,
+          cost: getResearchCost(research),
+          ...(research.costCurrency ? { costCurrency: research.costCurrency } : {}),
         };
       }
 
-      if (snapshot.gold.current < research.costGold) {
+      if (getResearchCurrent(research) < getResearchCost(research)) {
         return {
           ok: false,
-          reason: 'not_enough_gold',
+          reason: `not_enough_${research.costCurrency ?? 'gold'}`,
           researchId,
-          cost: research.costGold,
+          cost: getResearchCost(research),
+          ...(research.costCurrency ? { costCurrency: research.costCurrency } : {}),
         };
       }
 
-      snapshot.gold.current -= research.costGold;
+      spendResearchCost(research);
       research.completed = true;
       research.value = 'researched';
       snapshot.research.completedResearchIds ??= [];
@@ -1133,7 +1183,8 @@ function createGameplayFacadeFake() {
       return {
         ok: true,
         researchId,
-        cost: research.costGold,
+        cost: getResearchCost(research),
+        ...(research.costCurrency ? { costCurrency: research.costCurrency } : {}),
       };
     },
     selectShopShelfSlot: (slotNumber) => {
@@ -3355,7 +3406,7 @@ describe('PagesFacade', () => {
       'auto plant tile 1',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      '50000 gold',
+      '50000 crystal',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
       'seed unlock researches',

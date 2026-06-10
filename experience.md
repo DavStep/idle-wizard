@@ -62,6 +62,7 @@
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, and currently has no earning or spending rule.
+- Advanced automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide advanced research currency.
 - NPC market stand 1 starts unlocked for free; later stands cost gold from `shop-balance.json`.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.

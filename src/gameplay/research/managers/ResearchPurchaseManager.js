@@ -1,11 +1,13 @@
 export class ResearchPurchaseManager {
   constructor({
+    crystalFacade,
     goldFacade,
     researchBalanceManager,
     researchDefinitionManager,
     researchManaEffectManager,
     researchStateEntityManager,
   }) {
+    this.crystalFacade = crystalFacade;
     this.goldFacade = goldFacade;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
@@ -24,14 +26,14 @@ export class ResearchPurchaseManager {
       };
     }
 
-    const cost = this.researchBalanceManager.getCostGold(normalizedResearchId);
+    const cost = this.researchBalanceManager.getCost(normalizedResearchId);
 
     if (this.researchStateEntityManager.isCompleted(normalizedResearchId)) {
       return {
         ok: false,
         reason: 'already_researched',
         researchId: normalizedResearchId,
-        cost,
+        ...this.getCostResult(cost),
       };
     }
 
@@ -45,16 +47,16 @@ export class ResearchPurchaseManager {
         reason: 'missing_required_research',
         researchId: normalizedResearchId,
         requiredResearchId: missingRequiredResearchId,
-        cost,
+        ...this.getCostResult(cost),
       };
     }
 
-    if (!this.goldFacade.spend(cost)) {
+    if (!this.getCurrencyFacade(cost.currency)?.spend(cost.amount)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
+        reason: `not_enough_${cost.currency}`,
         researchId: normalizedResearchId,
-        cost,
+        ...this.getCostResult(cost),
       };
     }
 
@@ -64,7 +66,24 @@ export class ResearchPurchaseManager {
     return {
       ok: true,
       researchId: normalizedResearchId,
-      cost,
+      ...this.getCostResult(cost),
+    };
+  }
+
+  getCurrencyFacade(currency) {
+    return currency === 'crystal' ? this.crystalFacade : this.goldFacade;
+  }
+
+  getCostResult(cost) {
+    if (cost.currency === 'crystal') {
+      return {
+        cost: cost.amount,
+        costCurrency: cost.currency,
+      };
+    }
+
+    return {
+      cost: cost.amount,
     };
   }
 }

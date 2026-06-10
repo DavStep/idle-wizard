@@ -1,10 +1,12 @@
 export class ResearchSnapshotManager {
   constructor({
+    crystalFacade,
     goldFacade,
     researchBalanceManager,
     researchDefinitionManager,
     researchStateEntityManager,
   }) {
+    this.crystalFacade = crystalFacade;
     this.goldFacade = goldFacade;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
@@ -35,7 +37,7 @@ export class ResearchSnapshotManager {
   }
 
   getResearchSnapshot(research) {
-    const costGold = this.researchBalanceManager.getCostGold(research.id);
+    const cost = this.researchBalanceManager.getCost(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const hasRequiredResearch = this.researchDefinitionManager
       .getRequiredResearchIds(research.id)
@@ -44,15 +46,16 @@ export class ResearchSnapshotManager {
     return {
       ...research,
       effect: research.value,
-      value: this.formatResearchValue({ completed, hasRequiredResearch, costGold }),
-      costGold,
+      value: this.formatResearchValue({ completed, hasRequiredResearch, cost }),
+      ...this.getCostSnapshot(cost),
       completed,
       ...(!completed && !hasRequiredResearch ? { locked: true } : {}),
-      canResearch: !completed && hasRequiredResearch && this.goldFacade.canSpend(costGold),
+      canResearch:
+        !completed && hasRequiredResearch && this.getCurrencyFacade(cost.currency)?.canSpend(cost.amount),
     };
   }
 
-  formatResearchValue({ completed, hasRequiredResearch, costGold }) {
+  formatResearchValue({ completed, hasRequiredResearch, cost }) {
     if (completed) {
       return 'researched';
     }
@@ -61,10 +64,32 @@ export class ResearchSnapshotManager {
       return 'locked';
     }
 
-    return this.formatCost(costGold);
+    return this.formatCost(cost);
   }
 
-  formatCost(costGold) {
-    return costGold === 0 ? 'free' : `${costGold} gold`;
+  formatCost(cost) {
+    if (cost.amount === 0) {
+      return 'free';
+    }
+
+    return `${cost.amount} ${cost.currency}`;
+  }
+
+  getCurrencyFacade(currency) {
+    return currency === 'crystal' ? this.crystalFacade : this.goldFacade;
+  }
+
+  getCostSnapshot(cost) {
+    if (cost.currency === 'crystal') {
+      return {
+        costGold: 0,
+        costCrystal: cost.amount,
+        costCurrency: cost.currency,
+      };
+    }
+
+    return {
+      costGold: cost.amount,
+    };
   }
 }

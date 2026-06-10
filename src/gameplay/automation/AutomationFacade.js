@@ -1,9 +1,10 @@
 import { BrewingAutomationManager } from './managers/BrewingAutomationManager.js';
 import { GardenAutomationManager } from './managers/GardenAutomationManager.js';
+import { SeedSummoningAutomationManager } from './managers/SeedSummoningAutomationManager.js';
 
 export class AutomationFacade {
   static explain =
-    'Automation lets expensive research turn repeated garden and cauldron taps into rules that run each game tick.';
+    'Automation lets advanced research turn repeated seed, garden, and cauldron taps into rules that run each game tick.';
 
   constructor({
     brewingFacade,
@@ -11,7 +12,13 @@ export class AutomationFacade {
     gameplayLogFacade,
     onPotionRecipeDiscovery,
     researchFacade,
+    seedSummoningFacade,
   } = {}) {
+    this.seedSummoningAutomationManager = new SeedSummoningAutomationManager({
+      gameplayLogFacade,
+      researchFacade,
+      seedSummoningFacade,
+    });
     this.gardenAutomationManager = new GardenAutomationManager({
       gardenFacade,
       gameplayLogFacade,
@@ -37,6 +44,7 @@ export class AutomationFacade {
   }
 
   update() {
+    this.seedSummoningAutomationManager.update();
     this.gardenAutomationManager.update();
     this.brewingAutomationManager.update();
   }

@@ -133,6 +133,18 @@ export class ResearchDefinitionManager {
   getAutomationResearchBoxes() {
     return [
       {
+        id: 'autoSeedSpawn',
+        label: 'auto seed spawn research',
+        researches: [
+          {
+            id: automationResearchIds.autoSeedSpawn(),
+            label: 'auto seed spawn',
+            value: 'auto',
+            description: 'summons researched seeds when enough mana is available.',
+          },
+        ],
+      },
+      {
         id: 'autoPlantTiles',
         label: 'auto plant tile research',
         researches: this.getNumberedResearches({

@@ -4,20 +4,45 @@ export class ResearchBalanceManager {
   constructor({ balance = researchBalance } = {}) {
     this.balance = balance;
     this.costGoldByResearchId = this.readCostGoldByResearchId();
+    this.costCrystalByResearchId = this.readCostCrystalByResearchId();
     this.runtimeConfigByResearchId = new Map();
   }
 
-  getCostGold(researchId) {
+  getCost(researchId) {
     const normalizedResearchId = this.normalizeResearchId(researchId);
-    const cost =
+    const costCrystal = this.costCrystalByResearchId[normalizedResearchId];
+
+    if (Number.isFinite(costCrystal)) {
+      return {
+        amount: costCrystal,
+        currency: 'crystal',
+      };
+    }
+
+    const costGold =
       this.runtimeConfigByResearchId.get(normalizedResearchId)?.costGold ??
       this.costGoldByResearchId[normalizedResearchId];
 
-    if (!Number.isFinite(cost)) {
-      throw new Error(`research-balance.json missing gold cost for ${researchId}.`);
+    if (!Number.isFinite(costGold)) {
+      throw new Error(`research-balance.json missing cost for ${researchId}.`);
     }
 
-    return cost;
+    return {
+      amount: costGold,
+      currency: 'gold',
+    };
+  }
+
+  getCostGold(researchId) {
+    const cost = this.getCost(researchId);
+
+    return cost.currency === 'gold' ? cost.amount : 0;
+  }
+
+  getCostCrystal(researchId) {
+    const cost = this.getCost(researchId);
+
+    return cost.currency === 'crystal' ? cost.amount : 0;
   }
 
   getResearchEffect() {
@@ -74,6 +99,26 @@ export class ResearchBalanceManager {
     for (const cost of Object.values(costs)) {
       if (!Number.isFinite(cost) || cost < 0) {
         throw new Error('research-balance.json research costs must be zero or positive numbers.');
+      }
+    }
+
+    return { ...costs };
+  }
+
+  readCostCrystalByResearchId() {
+    const costs = this.balance?.researchCostsCrystal;
+
+    if (costs === undefined) {
+      return {};
+    }
+
+    if (!costs || typeof costs !== 'object' || Array.isArray(costs)) {
+      throw new Error('research-balance.json researchCostsCrystal must be an object.');
+    }
+
+    for (const cost of Object.values(costs)) {
+      if (!Number.isFinite(cost) || cost < 0) {
+        throw new Error('research-balance.json crystal costs must be zero or positive numbers.');
       }
     }
 

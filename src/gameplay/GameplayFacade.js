@@ -32,6 +32,7 @@ export class GameplayFacade {
       tasksFacade: this.tasksFacade,
     });
     this.researchFacade = new ResearchFacade({
+      crystalFacade: this.crystalFacade,
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
@@ -69,6 +70,7 @@ export class GameplayFacade {
       onPotionRecipeDiscovery: (potionKey) =>
         void this.potionDiscoveryFacade?.discoverPotionRecipe(potionKey),
       researchFacade: this.researchFacade,
+      seedSummoningFacade: this.seedSummoningFacade,
     });
     this.persistenceFacade = new GameplayPersistenceFacade({
       storage: persistenceStorage,

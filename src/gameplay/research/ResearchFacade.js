@@ -7,9 +7,9 @@ import { ResearchStateEntityManager } from './managers/ResearchStateEntityManage
 
 export class ResearchFacade {
   static explain =
-    'Research lets the wizard spend gold on studies that unlock seeds, recipes, and mana upgrades.';
+    'Research lets the wizard spend gold or crystal on studies that unlock seeds, recipes, and automation.';
 
-  constructor({ goldFacade, itemsFacade, manaFacade }) {
+  constructor({ crystalFacade, goldFacade, itemsFacade, manaFacade }) {
     this.researchBalanceManager = new ResearchBalanceManager();
     this.researchDefinitionManager = new ResearchDefinitionManager({
       itemsFacade,
@@ -24,6 +24,7 @@ export class ResearchFacade {
       researchStateEntityManager: this.researchStateEntityManager,
     });
     this.researchPurchaseManager = new ResearchPurchaseManager({
+      crystalFacade,
       goldFacade,
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
@@ -31,6 +32,7 @@ export class ResearchFacade {
       researchStateEntityManager: this.researchStateEntityManager,
     });
     this.researchSnapshotManager = new ResearchSnapshotManager({
+      crystalFacade,
       goldFacade,
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
