@@ -15,6 +15,7 @@ export const Leaderboard = __t.object("Leaderboard", {
   username: __t.string(),
   totalIncome: __t.u64(),
   updatedAt: __t.timestamp(),
+  playerLevel: __t.u32(),
 });
 export type Leaderboard = __Infer<typeof Leaderboard>;
 
@@ -41,6 +42,7 @@ export const Player = __t.object("Player", {
   connected: __t.bool(),
   createdAt: __t.timestamp(),
   lastSeenAt: __t.timestamp(),
+  playerLevel: __t.u32(),
 });
 export type Player = __Infer<typeof Player>;
 
@@ -96,6 +98,7 @@ export const WorldChat = __t.object("WorldChat", {
   username: __t.string(),
   body: __t.string(),
   sentAt: __t.timestamp(),
+  playerLevel: __t.u32(),
 });
 export type WorldChat = __Infer<typeof WorldChat>;
 

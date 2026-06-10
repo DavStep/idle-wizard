@@ -2,6 +2,7 @@ import {
   getItemDisplay,
   isItemResearched,
 } from '../../shared/itemResearchStatus.js';
+import { applyMysteryText } from '../../shared/mysteryText.js';
 
 export class BrewingPotionInventoryManager {
   constructor({ gameplayFacade } = {}) {
@@ -200,6 +201,7 @@ export class BrewingPotionInventoryManager {
     const label = document.createElement('span');
     label.className = 'row_key';
     label.textContent = display.label;
+    applyMysteryText(label, potion, display.unknown);
 
     const quantity = document.createElement('span');
     quantity.className = 'row_val';

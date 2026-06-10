@@ -53,7 +53,6 @@ export class BrewingRecipeGuideManager {
     this.refs = {};
     this.stepRows = [];
     this.emptyStep = null;
-    this.selectedRecipeKey = null;
     this.latestSnapshot = null;
   }
 
@@ -73,7 +72,7 @@ export class BrewingRecipeGuideManager {
   }
 
   selectRecipe(recipeKey) {
-    this.selectedRecipeKey = recipeKey;
+    this.selectedRecipeKey = this.selectedRecipeKey === recipeKey ? null : recipeKey;
     this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
   }
 

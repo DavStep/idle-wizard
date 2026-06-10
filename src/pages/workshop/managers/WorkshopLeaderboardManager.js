@@ -193,8 +193,8 @@ export class WorkshopLeaderboardManager {
     }
 
     const header = this.createRow('user', activeTab.label, { header: true });
-    const rows = users.map((user) =>
-      this.createRow(user.name, this.formatValue(user[activeTab.valueKey])),
+    const rows = users.map((user, index) =>
+      this.createRow(this.formatUserLabel(user, index), this.formatValue(user[activeTab.valueKey])),
     );
     this.refs.rows.replaceChildren(header, ...rows);
   }
@@ -227,6 +227,7 @@ export class WorkshopLeaderboardManager {
       .filter((user) => user && typeof user.name === 'string')
       .map((user) => ({
         name: user.name,
+        playerLevel: this.normalizePlayerLevel(user.playerLevel),
         income: Number.isFinite(user.income) ? user.income : 0,
         totalGeneratedGold: Number.isFinite(user.totalGeneratedGold)
           ? user.totalGeneratedGold
@@ -240,6 +241,20 @@ export class WorkshopLeaderboardManager {
 
   formatValue(value) {
     return String(Math.floor(value));
+  }
+
+  formatUserLabel(user, index) {
+    return `${index + 1}. ${user.name} Lv.${this.normalizePlayerLevel(user.playerLevel)}`;
+  }
+
+  normalizePlayerLevel(playerLevel) {
+    const safePlayerLevel = Math.floor(Number(playerLevel));
+
+    if (!Number.isFinite(safePlayerLevel) || safePlayerLevel < 1) {
+      return 1;
+    }
+
+    return safePlayerLevel;
   }
 
   createRow(label, value, { header = false } = {}) {

@@ -72,8 +72,8 @@ describe('LeaderboardSubscriptionManager', () => {
   it('publishes top users sorted by leaderboard metric', () => {
     const snapshots = [];
     const rows = [
-      { username: 'Low', income: 20n, totalIncome: 3n },
-      { username: 'High', income: 1n, totalIncome: 12n },
+      { username: 'Low', playerLevel: 2, income: 20n, totalIncome: 3n },
+      { username: 'High', playerLevel: 10, income: 1n, totalIncome: 12n },
     ];
     const table = createLeaderboardTable(rows);
     const connection = createConnection(table);
@@ -85,19 +85,31 @@ describe('LeaderboardSubscriptionManager', () => {
 
     expect(manager.getSnapshot()).toEqual({
       topUsers: [
-        { name: 'High', income: 1, totalGeneratedGold: 12, totalIncome: 12 },
-        { name: 'Low', income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+        { name: 'High', playerLevel: 10, income: 1, totalGeneratedGold: 12, totalIncome: 12 },
+        { name: 'Low', playerLevel: 2, income: 20, totalGeneratedGold: 3, totalIncome: 3 },
       ],
       topGeneratedGoldUsers: [
-        { name: 'High', income: 1, totalGeneratedGold: 12, totalIncome: 12 },
-        { name: 'Low', income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+        { name: 'High', playerLevel: 10, income: 1, totalGeneratedGold: 12, totalIncome: 12 },
+        { name: 'Low', playerLevel: 2, income: 20, totalGeneratedGold: 3, totalIncome: 3 },
       ],
       topIncomeUsers: [
-        { name: 'Low', income: 20, totalGeneratedGold: 3, totalIncome: 3 },
-        { name: 'High', income: 1, totalGeneratedGold: 12, totalIncome: 12 },
+        { name: 'Low', playerLevel: 2, income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+        { name: 'High', playerLevel: 10, income: 1, totalGeneratedGold: 12, totalIncome: 12 },
       ],
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
+  });
+
+  it('falls back to level 1 when older rows do not have a player level', () => {
+    const table = createLeaderboardTable([{ username: 'Mage', totalIncome: 1n }]);
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(table));
+
+    expect(manager.getSnapshot().topUsers[0]).toMatchObject({
+      name: 'Mage',
+      playerLevel: 1,
+    });
   });
 
   it('unsubscribes and clears snapshot on disconnect', () => {

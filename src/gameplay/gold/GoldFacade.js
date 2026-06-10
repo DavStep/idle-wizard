@@ -3,7 +3,7 @@ import { GoldSpendManager } from './managers/GoldSpendManager.js';
 
 export class GoldFacade {
   static explain =
-    'Gold is shop money: selling adds it, and shop shelf slots spend it.';
+    'Gold is market money: selling adds it, and market shelf slots spend it.';
 
   constructor({ initialCurrent = 0 } = {}) {
     this.goldEntityManager = new GoldEntityManager({ initialCurrent });

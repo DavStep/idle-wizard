@@ -102,4 +102,42 @@ describe('BrewingRecipeGuideManager', () => {
     manager.unmount();
     parent.remove();
   });
+
+  it('keeps the marked recipe across page unmount and remount', () => {
+    const snapshot = createSnapshot();
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeGuideManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+    manager.selectRecipe('minorHealingPotion');
+    manager.unmount();
+
+    const nextParent = document.createElement('div');
+    document.body.append(nextParent);
+    manager.mount(nextParent);
+
+    expect(manager.getSelectedRecipeKey()).toBe('minorHealingPotion');
+    expect(nextParent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe(
+      'Minor Healing Potion',
+    );
+
+    manager.unmount();
+    parent.remove();
+    nextParent.remove();
+  });
+
+  it('unmarks the selected recipe when it is selected again', () => {
+    const { manager, parent } = mountGuide(createSnapshot());
+
+    manager.selectRecipe('minorHealingPotion');
+
+    expect(manager.getSelectedRecipeKey()).toBe(null);
+    expect(parent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe('none');
+
+    manager.unmount();
+    parent.remove();
+  });
 });

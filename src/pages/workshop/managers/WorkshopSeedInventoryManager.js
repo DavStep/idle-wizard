@@ -1,4 +1,5 @@
 import { getItemDisplay } from '../../shared/itemResearchStatus.js';
+import { applyMysteryText } from '../../shared/mysteryText.js';
 
 export class WorkshopSeedInventoryManager {
   constructor({ gameplayFacade } = {}) {
@@ -157,6 +158,7 @@ export class WorkshopSeedInventoryManager {
     const key = document.createElement('span');
     key.className = 'row_key';
     key.textContent = display.label;
+    applyMysteryText(key, seed, display.unknown);
 
     const val = document.createElement('span');
     val.className = 'row_val';

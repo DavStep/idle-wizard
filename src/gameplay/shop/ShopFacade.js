@@ -11,7 +11,7 @@ import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 
 export class ShopFacade {
   static explain =
-    'The shop has a trader shelf for automatic sales and a player shelf for listing items other players can buy.';
+    'The market has a trader shelf for automatic sales and a player area for listing items other players can buy.';
 
   constructor({ goldFacade, itemsFacade, researchFacade, npcMarketFacade, onItemSold } = {}) {
     this.shopBalanceManager = new ShopBalanceManager();

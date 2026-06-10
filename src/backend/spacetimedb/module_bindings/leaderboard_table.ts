@@ -15,4 +15,5 @@ export default __t.row({
   username: __t.string(),
   totalIncome: __t.u64().name("total_income"),
   updatedAt: __t.timestamp().name("updated_at"),
+  playerLevel: __t.u32().name("player_level"),
 });

@@ -1,5 +1,4 @@
-const MYSTERY_ITEM_LABEL_LENGTH = 6;
-const MYSTERY_ITEM_LABEL_CHARS = '?#%$@!';
+import { getMysteryTextLabel } from './mysteryText.js';
 
 export function getCompletedResearchIds(snapshot) {
   if (!snapshot?.research) {
@@ -114,17 +113,7 @@ export function shouldShowItemInActionList(
 }
 
 export function getMysteryItemLabel(item = {}) {
-  const key = String(item.key ?? item.itemTypeId ?? '');
-  let seed = 0;
-
-  for (let index = 0; index < key.length; index += 1) {
-    seed = (seed + key.charCodeAt(index) * (index + 1)) % MYSTERY_ITEM_LABEL_CHARS.length;
-  }
-
-  return Array.from({ length: MYSTERY_ITEM_LABEL_LENGTH }, (_, index) => {
-    const charIndex = (seed + index * 2) % MYSTERY_ITEM_LABEL_CHARS.length;
-    return MYSTERY_ITEM_LABEL_CHARS[charIndex];
-  }).join('');
+  return getMysteryTextLabel(item);
 }
 
 export function getItemDisplay(snapshot, item, quantity = getItemQuantity(item)) {

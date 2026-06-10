@@ -2,6 +2,7 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { applyMysteryText } from '../../shared/mysteryText.js';
 
 export class GardenHerbInventoryManager {
   constructor({ gameplayFacade } = {}) {
@@ -61,6 +62,7 @@ export class GardenHerbInventoryManager {
     for (const herb of herbs) {
       const refs = this.herbRefs.get(herb.itemTypeId);
       refs.label.textContent = herb.display.label;
+      applyMysteryText(refs.label, herb, herb.display.unknown);
       refs.quantity.textContent = herb.display.quantity;
       refs.row.classList.toggle('is-empty', herb.quantity <= 0);
       refs.row.classList.toggle('is-locked', herb.display.locked);

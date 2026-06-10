@@ -15,7 +15,7 @@ export class ShopRoomViewManager {
 
     this.root = document.createElement('article');
     this.root.className = 'shop-page';
-    this.root.setAttribute('aria-label', 'Shop room');
+    this.root.setAttribute('aria-label', 'Market room');
     this.root.append(this.createWall(), this.createFloor(), this.createUiLayer());
     stage.append(this.root);
 

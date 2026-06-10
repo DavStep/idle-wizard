@@ -67,6 +67,7 @@ export class LeaderboardSubscriptionManager {
     const users = Array.from(this.table.iter())
       .map((row) => ({
         name: row.username,
+        playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
         totalGeneratedGold: this.toNumber(row.totalGeneratedGold ?? row.totalIncome),
         totalIncome: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
@@ -96,5 +97,19 @@ export class LeaderboardSubscriptionManager {
     }
 
     return Number.isFinite(value) ? value : 0;
+  }
+
+  toPlayerLevel(value, fallback = 1) {
+    if (value === null || value === undefined) {
+      return fallback;
+    }
+
+    const playerLevel = this.toNumber(value);
+
+    if (!Number.isFinite(playerLevel) || playerLevel < 1) {
+      return fallback;
+    }
+
+    return Math.floor(playerLevel);
   }
 }

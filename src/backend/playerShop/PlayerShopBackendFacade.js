@@ -4,7 +4,7 @@ import { PlayerShopSubscriptionManager } from './managers/PlayerShopSubscription
 
 export class PlayerShopBackendFacade {
   static explain =
-    'Shares player shop listings through the server so one player can buy another player\'s listed items.';
+    'Shares player market listings through the server so one player can buy another player\'s listed items.';
 
   constructor() {
     this.stateObserverManager = new PlayerShopStateObserverManager();

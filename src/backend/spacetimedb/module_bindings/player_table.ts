@@ -16,4 +16,5 @@ export default __t.row({
   connected: __t.bool(),
   createdAt: __t.timestamp().name("created_at"),
   lastSeenAt: __t.timestamp().name("last_seen_at"),
+  playerLevel: __t.u32().name("player_level"),
 });

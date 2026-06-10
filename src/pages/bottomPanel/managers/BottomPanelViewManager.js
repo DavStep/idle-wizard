@@ -3,7 +3,7 @@ export const BOTTOM_PANEL_TABS = [
   { id: 'garden', label: 'garden' },
   { id: 'workshop', label: 'workshop' },
   { id: 'research', label: 'research' },
-  { id: 'shop', label: 'shop' },
+  { id: 'shop', label: 'market' },
 ];
 
 export class BottomPanelViewManager {

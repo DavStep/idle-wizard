@@ -135,9 +135,7 @@ export class BrewingRecipeBookManager {
 
     this.renderedSignature = signature;
 
-    this.refs.rows.replaceChildren(
-      this.createGroup('unlocked recipes', unlockedRecipes, 'unlocked'),
-    );
+    this.refs.rows.replaceChildren(this.createGroup('recipes', unlockedRecipes, 'unlocked'));
   }
 
   createRenderSignature(recipes) {
@@ -193,11 +191,12 @@ export class BrewingRecipeBookManager {
     label.textContent = recipe.label;
 
     const markButton = document.createElement('button');
+    const markAction = selected ? 'unmark' : 'mark';
     markButton.className = 'row_val brewing-page__recipe-mark-button';
     markButton.type = 'button';
-    markButton.textContent = selected ? 'marked' : 'mark';
+    markButton.textContent = markAction;
     markButton.setAttribute('aria-pressed', selected ? 'true' : 'false');
-    markButton.setAttribute('aria-label', `${selected ? 'marked' : 'mark'} ${recipe.label} as guide`);
+    markButton.setAttribute('aria-label', `${markAction} ${recipe.label} as guide`);
     markButton.addEventListener('click', () => this.selectRecipe(recipe));
 
     const ingredients = this.createIngredientsList(recipe.ingredients);

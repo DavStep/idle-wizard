@@ -6,6 +6,7 @@ export class WorkshopTaskManager {
     this.refs = {};
     this.rowsByTaskId = new Map();
     this.currentTasksById = new Map();
+    this.expanded = false;
   }
 
   mount(parent) {
@@ -18,15 +19,19 @@ export class WorkshopTaskManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'workshop-page__tasks style-box';
+    this.root.className = 'workshop-page__tasks style-box is-collapsed';
     this.root.setAttribute('aria-label', 'Tasks');
 
     this.refs.title = document.createElement('div');
     this.refs.title.className = 'style-box__title';
     this.refs.title.textContent = 'tasks';
 
-    this.refs.summary = document.createElement('div');
+    this.refs.summary = document.createElement('button');
     this.refs.summary.className = 'workshop-page__tasks-summary';
+    this.refs.summary.type = 'button';
+    this.refs.summary.setAttribute('aria-expanded', 'false');
+    this.refs.summary.setAttribute('aria-controls', 'workshop-task-list');
+    this.refs.summary.addEventListener('click', () => this.toggleExpanded());
 
     this.refs.level = document.createElement('span');
     this.refs.level.className = 'workshop-page__tasks-level';
@@ -40,6 +45,8 @@ export class WorkshopTaskManager {
 
     this.refs.list = document.createElement('div');
     this.refs.list.className = 'workshop-page__task-list';
+    this.refs.list.id = 'workshop-task-list';
+    this.refs.list.hidden = true;
 
     this.root.append(this.refs.title, this.refs.summary, this.refs.list);
     parent.append(this.root);
@@ -58,6 +65,22 @@ export class WorkshopTaskManager {
     this.refs = {};
     this.rowsByTaskId.clear();
     this.currentTasksById.clear();
+    this.expanded = false;
+  }
+
+  toggleExpanded() {
+    this.setExpanded(!this.expanded);
+  }
+
+  setExpanded(expanded) {
+    this.expanded = expanded;
+    this.root?.classList.toggle('is-expanded', expanded);
+    this.root?.classList.toggle('is-collapsed', !expanded);
+    this.refs.summary?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+
+    if (this.refs.list) {
+      this.refs.list.hidden = !expanded;
+    }
   }
 
   render(snapshot) {

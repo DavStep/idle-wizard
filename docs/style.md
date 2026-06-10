@@ -69,5 +69,5 @@ This project should use the same kind of minimal text-game language, without cop
 - Scale source UI by `3 * viewport-scale`, clamped at the authored viewport, so both web and mobile views fit.
 - Do not copy A Dark Room's desktop `700px` layout dimensions.
 - Keep future page UI as sparse panels positioned inside the room view.
-- Show all five room page names in the bottom panel and frame the current page tab.
+- Show all five room page names in the bottom panel and underline the current page tab.
 - Avoid gradients, textures, illustrations, icons, rounded cards, and decorative shadows.

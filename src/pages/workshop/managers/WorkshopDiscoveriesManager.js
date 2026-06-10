@@ -1,4 +1,5 @@
 import { getItemDisplay } from '../../shared/itemResearchStatus.js';
+import { applyMysteryText } from '../../shared/mysteryText.js';
 
 const DISCOVERY_TABS = [
   { id: 'seeds', label: 'seeds' },
@@ -246,6 +247,7 @@ export class WorkshopDiscoveriesManager {
     const key = document.createElement('span');
     key.className = 'row_key';
     key.textContent = potion.discovered ? potion.label : display.label;
+    applyMysteryText(key, potion, !potion.discovered && display.unknown);
 
     const val = document.createElement('span');
     val.className = 'row_val';

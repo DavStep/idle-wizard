@@ -14,6 +14,8 @@ export class ShopPlayerShelfManager {
     this.selectedSellTab = 'seed';
     this.listingPopupVisible = false;
     this.marketPopupVisible = false;
+    this.draftListingItemTypeId = null;
+    this.draftListingSlotNumber = null;
     this.previousFocus = null;
     this.lastGameplaySnapshot = null;
     this.lastPlayerShopSnapshot = {
@@ -60,7 +62,7 @@ export class ShopPlayerShelfManager {
 
     this.root = document.createElement('section');
     this.root.className = 'shop-page__player-shelf style-box';
-    this.root.setAttribute('aria-label', 'Player shop shelf');
+    this.root.setAttribute('aria-label', 'Player market');
 
     this.refs.title = this.createTitle();
     this.refs.rows = [];
@@ -112,6 +114,8 @@ export class ShopPlayerShelfManager {
     this.selectedSellTab = 'seed';
     this.listingPopupVisible = false;
     this.marketPopupVisible = false;
+    this.draftListingItemTypeId = null;
+    this.draftListingSlotNumber = null;
     this.previousFocus = null;
     this.lastGameplaySnapshot = null;
   }
@@ -119,7 +123,7 @@ export class ShopPlayerShelfManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'player shop shelf';
+    title.textContent = 'player market';
     return title;
   }
 
@@ -189,7 +193,7 @@ export class ShopPlayerShelfManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__other-shops-button';
     button.type = 'button';
-    button.textContent = 'other shops';
+    button.textContent = 'browse market';
     button.addEventListener('click', () => this.showMarketPopup());
     return button;
   }
@@ -207,6 +211,18 @@ export class ShopPlayerShelfManager {
     this.refs.quantityInput = quantityField.input;
     this.refs.priceInput = priceField.input;
     fields.append(quantityField.field, priceField.field);
+
+    const choiceRow = document.createElement('div');
+    choiceRow.className = 'shop-page__player-listing-choice-row';
+
+    const choiceLabel = document.createElement('span');
+    choiceLabel.className = 'row_key';
+    choiceLabel.textContent = 'item';
+
+    const choiceValue = document.createElement('span');
+    choiceValue.className = 'row_val';
+
+    choiceRow.append(choiceLabel, choiceValue);
 
     const itemList = document.createElement('div');
     itemList.className = 'shop-page__sell-item-list';
@@ -227,14 +243,27 @@ export class ShopPlayerShelfManager {
     emptyRow.append(emptyButton);
     itemList.append(emptyRow);
 
+    const actionRow = document.createElement('div');
+    actionRow.className = 'shop-page__player-listing-action-row';
+
+    const placeButton = document.createElement('button');
+    placeButton.className = 'style-button shop-page__player-listing-place-button';
+    placeButton.type = 'button';
+    placeButton.textContent = 'place';
+    placeButton.addEventListener('click', () => this.onPlaceListing());
+
+    actionRow.append(placeButton);
+
     const status = document.createElement('div');
     status.className = 'shop-page__player-shop-status';
 
-    root.append(fields, itemList, status);
+    root.append(choiceRow, fields, itemList, actionRow, status);
     return {
       root,
       emptyButton,
+      choiceValue,
       itemList,
+      placeButton,
       status,
       tabButtons: new Map(),
       itemRows: new Map(),
@@ -310,17 +339,21 @@ export class ShopPlayerShelfManager {
 
     const dialog = document.createElement('section');
     dialog.className = 'shop-page__market-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Other player shops');
+    dialog.setAttribute('aria-label', 'Player market');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
     dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'other shops';
+    title.textContent = 'player market';
 
     const rows = document.createElement('div');
     rows.className = 'shop-page__market-rows';
+
+    const message = document.createElement('div');
+    message.className = 'shop-page__market-message';
+    rows.append(message);
 
     const status = document.createElement('div');
     status.className = 'shop-page__player-shop-status';
@@ -328,8 +361,10 @@ export class ShopPlayerShelfManager {
     dialog.append(title, rows, status);
     popup.append(dialog);
     this.refs.marketRows = rows;
+    this.refs.marketMessage = message;
     this.refs.marketStatus = status;
     this.refs.marketDialog = dialog;
+    this.refs.marketGroupBySellerKey = new Map();
     this.refs.marketRowByListingKey = new Map();
 
     return popup;
@@ -356,6 +391,7 @@ export class ShopPlayerShelfManager {
     }
 
     this.lastGameplaySnapshot = snapshot;
+    this.prepareListingDraft(selectedSlot);
     this.render();
     this.showListingPopup();
   }
@@ -371,14 +407,30 @@ export class ShopPlayerShelfManager {
     this.render();
   }
 
-  async onSetListing(itemTypeId) {
+  onSelectListingItem(itemTypeId) {
+    const item = this.lastGameplaySnapshot?.shop?.playerShelf?.sellItems.find(
+      (sellItem) => sellItem.itemTypeId === itemTypeId,
+    );
+
+    if (!item) {
+      return;
+    }
+
+    this.draftListingItemTypeId = itemTypeId;
+    this.setListingStatus('');
+    this.render();
+  }
+
+  async onPlaceListing() {
     const shelf = this.lastGameplaySnapshot?.shop?.playerShelf;
     const selectedSlot = this.getSelectedSlot(shelf);
+    const itemTypeId = this.draftListingItemTypeId;
     const item = shelf?.sellItems.find((sellItem) => sellItem.itemTypeId === itemTypeId);
     const quantity = this.readPositiveInteger(this.refs.quantityInput?.value);
     const priceGold = this.readPositiveInteger(this.refs.priceInput?.value);
 
     if (!selectedSlot || !item) {
+      this.setListingStatus('choose item');
       return;
     }
 
@@ -434,6 +486,8 @@ export class ShopPlayerShelfManager {
     }
 
     this.lastGameplaySnapshot = this.gameplayFacade.getSnapshot();
+    this.draftListingItemTypeId = result.item.itemTypeId;
+    this.draftListingSlotNumber = result.slotNumber;
     this.hideListingPopup();
     this.render();
   }
@@ -466,6 +520,7 @@ export class ShopPlayerShelfManager {
 
     if (result.ok) {
       this.lastGameplaySnapshot = this.gameplayFacade.getSnapshot();
+      this.draftListingItemTypeId = null;
       this.hideListingPopup();
     }
 
@@ -490,13 +545,22 @@ export class ShopPlayerShelfManager {
     this.render();
   }
 
-  async onBuyListing(listing) {
+  async onBuyListing(listing, quantity = 1) {
     if (!this.lastPlayerShopSnapshot.connected) {
       this.setMarketStatus('offline');
       return;
     }
 
-    if ((this.lastGameplaySnapshot?.gold?.current ?? 0) < listing.priceGold) {
+    const buyQuantity = this.clampListingQuantity(quantity, listing.quantity);
+
+    if (!buyQuantity) {
+      this.setMarketStatus('bad quantity');
+      return;
+    }
+
+    const totalPriceGold = buyQuantity * listing.priceGold;
+
+    if ((this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold) {
       this.setMarketStatus('not enough gold');
       return;
     }
@@ -504,7 +568,7 @@ export class ShopPlayerShelfManager {
     this.setMarketStatus('buying');
     const buyResult = await this.playerShopFacade?.buyListing({
       listingKey: listing.listingKey,
-      quantity: 1,
+      quantity: buyQuantity,
     });
 
     if (!buyResult?.ok) {
@@ -514,7 +578,7 @@ export class ShopPlayerShelfManager {
 
     const result = this.gameplayFacade.buyPlayerShopListingItem({
       itemKey: listing.itemKey,
-      quantity: 1,
+      quantity: buyQuantity,
       priceGold: listing.priceGold,
     });
 
@@ -599,7 +663,7 @@ export class ShopPlayerShelfManager {
         row.classList.add('shop-page__slot-row--interactive');
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
-        row.setAttribute('aria-label', `select player shop shelf slot ${slotNumber}`);
+        row.setAttribute('aria-label', `select player market slot ${slotNumber}`);
         value.textContent = this.formatPlayerSlotValue(slot, shelf, this.lastGameplaySnapshot);
         return;
       }
@@ -643,20 +707,26 @@ export class ShopPlayerShelfManager {
       button.setAttribute('tabindex', selected ? '0' : '-1');
     }
 
-    if (document.activeElement !== this.refs.quantityInput) {
-      this.refs.quantityInput.value = String(selectedSlot.quantity || 1);
-    }
-
-    if (document.activeElement !== this.refs.priceInput) {
-      this.refs.priceInput.value = String(selectedSlot.priceGold || 1);
-    }
-
     this.refs.listingControls.emptyButton.setAttribute(
       'aria-pressed',
-      selectedSlot.itemTypeId ? 'false' : 'true',
+      this.draftListingItemTypeId ? 'false' : 'true',
     );
 
     const visibleItemTypeIds = new Set(shelf.sellItems.map((item) => item.itemTypeId));
+    const draftItem = shelf.sellItems.find(
+      (item) => item.itemTypeId === this.draftListingItemTypeId,
+    );
+
+    this.refs.listingControls.choiceValue.textContent = draftItem
+      ? getItemDisplay(snapshot, draftItem, draftItem.quantity).label
+      : 'none';
+
+    const canPlace = Boolean(draftItem) && this.lastPlayerShopSnapshot.connected;
+    this.refs.listingControls.placeButton.disabled = !canPlace;
+    this.refs.listingControls.placeButton.setAttribute(
+      'aria-disabled',
+      canPlace ? 'false' : 'true',
+    );
 
     for (const [itemTypeId, row] of this.refs.listingControls.itemRows) {
       if (!visibleItemTypeIds.has(itemTypeId)) {
@@ -681,7 +751,7 @@ export class ShopPlayerShelfManager {
       button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
       button.setAttribute(
         'aria-pressed',
-        selectedSlot.itemTypeId === item.itemTypeId ? 'true' : 'false',
+        this.draftListingItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
     }
   }
@@ -709,45 +779,105 @@ export class ShopPlayerShelfManager {
   renderMarketRows() {
     const rows = this.lastPlayerShopSnapshot.listings ?? [];
     const rowKeys = new Set(rows.map((listing) => listing.listingKey));
+    const groupKeys = new Set(rows.map((listing) => this.getMarketSellerKey(listing)));
 
     for (const [listingKey, row] of this.refs.marketRowByListingKey) {
       if (!rowKeys.has(listingKey)) {
-        row.remove();
+        row.row.remove();
         this.refs.marketRowByListingKey.delete(listingKey);
       }
     }
 
+    for (const [sellerKey, group] of this.refs.marketGroupBySellerKey) {
+      if (!groupKeys.has(sellerKey)) {
+        group.root.remove();
+        this.refs.marketGroupBySellerKey.delete(sellerKey);
+      }
+    }
+
     if (!this.lastPlayerShopSnapshot.connected) {
-      this.refs.marketRows.textContent = 'offline';
+      this.setMarketMessage('offline');
       return;
     }
 
     if (rows.length === 0) {
-      this.refs.marketRows.textContent = 'empty';
+      this.setMarketMessage('empty');
       return;
     }
 
-    if (this.refs.marketRows.textContent === 'empty' || this.refs.marketRows.textContent === 'offline') {
-      this.refs.marketRows.textContent = '';
-    }
+    this.setMarketMessage('');
+    const groups = this.groupMarketListings(rows);
+    let previousGroupNode = this.refs.marketMessage;
 
-    for (const listing of rows) {
-      let row = this.refs.marketRowByListingKey.get(listing.listingKey);
+    for (const group of groups) {
+      const groupNode = this.ensureMarketGroup(group);
+      const desiredNext = previousGroupNode.nextSibling;
 
-      if (!row) {
-        row = this.createMarketRow();
-        this.refs.marketRowByListingKey.set(listing.listingKey, row);
-        this.refs.marketRows.append(row);
+      if (groupNode.root !== desiredNext) {
+        this.refs.marketRows.insertBefore(groupNode.root, desiredNext);
       }
 
-      row.querySelector('.row_key').textContent =
-        `${listing.username}: ${listing.itemLabel} (${listing.quantity})`;
-      const button = row.querySelector('button');
-      button.textContent = `buy (${listing.priceGold} gold)`;
-      button.disabled = (this.lastGameplaySnapshot?.gold?.current ?? 0) < listing.priceGold;
-      button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
-      button.onclick = () => this.onBuyListing(listing);
+      this.renderMarketGroupRows(groupNode, group.listings);
+      previousGroupNode = groupNode.root;
     }
+  }
+
+  renderMarketGroupRows(group, listings) {
+    let previousRowNode = null;
+
+    for (const listing of listings) {
+      const row = this.ensureMarketRow(listing);
+      const desiredNext = previousRowNode
+        ? previousRowNode.nextSibling
+        : group.list.firstChild;
+
+      if (row.row.parentElement !== group.list || row.row !== desiredNext) {
+        group.list.insertBefore(row.row, desiredNext);
+      }
+
+      this.renderMarketRow(row, listing);
+      previousRowNode = row.row;
+    }
+  }
+
+  ensureMarketGroup(group) {
+    let groupNode = this.refs.marketGroupBySellerKey.get(group.sellerKey);
+
+    if (!groupNode) {
+      groupNode = this.createMarketGroup();
+      this.refs.marketGroupBySellerKey.set(group.sellerKey, groupNode);
+    }
+
+    if (groupNode.name.textContent !== group.username) {
+      groupNode.name.textContent = group.username;
+    }
+
+    return groupNode;
+  }
+
+  createMarketGroup() {
+    const root = document.createElement('section');
+    root.className = 'shop-page__market-seller';
+
+    const name = document.createElement('div');
+    name.className = 'shop-page__market-seller-name';
+
+    const list = document.createElement('div');
+    list.className = 'shop-page__market-seller-list';
+
+    root.append(name, list);
+    return { root, name, list };
+  }
+
+  ensureMarketRow(listing) {
+    let row = this.refs.marketRowByListingKey.get(listing.listingKey);
+
+    if (!row) {
+      row = this.createMarketRow();
+      this.refs.marketRowByListingKey.set(listing.listingKey, row);
+    }
+
+    return row;
   }
 
   createMarketRow() {
@@ -757,16 +887,121 @@ export class ShopPlayerShelfManager {
     const label = document.createElement('span');
     label.className = 'row_key';
 
-    const value = document.createElement('span');
-    value.className = 'row_val';
+    const controls = document.createElement('span');
+    controls.className = 'row_val shop-page__market-row-controls';
+
+    const quantityInput = document.createElement('input');
+    quantityInput.className = 'style-input shop-page__market-quantity-input';
+    quantityInput.type = 'number';
+    quantityInput.inputMode = 'numeric';
+    quantityInput.min = '1';
+    quantityInput.step = '1';
+    quantityInput.value = '1';
+    quantityInput.autocomplete = 'off';
+    quantityInput.setAttribute('aria-label', 'Buy quantity');
+    quantityInput.addEventListener('input', () => {
+      if (row._marketListing) {
+        this.renderMarketRowBuyState(row._marketRow, row._marketListing);
+      }
+    });
 
     const button = document.createElement('button');
-    button.className = 'style-button shop-page__buy-slot-button';
+    button.className = 'style-button shop-page__market-buy-button';
     button.type = 'button';
 
-    value.append(button);
-    row.append(label, value);
-    return row;
+    controls.append(quantityInput, button);
+    row.append(label, controls);
+
+    const rowState = { row, label, quantityInput, button };
+    row._marketRow = rowState;
+    return rowState;
+  }
+
+  renderMarketRow(row, listing) {
+    const quantity = Math.max(0, Math.floor(Number(listing.quantity) || 0));
+    const label = `- ${listing.itemLabel} (${quantity})`;
+
+    if (row.label.textContent !== label) {
+      row.label.textContent = label;
+    }
+
+    row.row._marketListing = listing;
+    row.quantityInput.max = String(Math.max(1, quantity));
+
+    if (document.activeElement !== row.quantityInput) {
+      const currentQuantity = this.clampListingQuantity(row.quantityInput.value, quantity) || 1;
+      const inputValue = String(currentQuantity);
+
+      if (row.quantityInput.value !== inputValue) {
+        row.quantityInput.value = inputValue;
+      }
+    }
+
+    this.renderMarketRowBuyState(row, listing);
+  }
+
+  renderMarketRowBuyState(row, listing) {
+    const quantity = this.clampListingQuantity(row.quantityInput.value, listing.quantity);
+    const totalPriceGold = quantity ? quantity * listing.priceGold : listing.priceGold;
+    const label = `buy (${totalPriceGold} gold)`;
+    const disabled = !quantity || (this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold;
+
+    if (row.button.textContent !== label) {
+      row.button.textContent = label;
+    }
+
+    row.button.disabled = disabled;
+    row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    row.button.onclick = () => this.onBuyListing(listing, row.quantityInput.value);
+  }
+
+  groupMarketListings(rows) {
+    const groups = new Map();
+
+    for (const listing of rows) {
+      const sellerKey = this.getMarketSellerKey(listing);
+      let group = groups.get(sellerKey);
+
+      if (!group) {
+        group = {
+          sellerKey,
+          username: listing.username || 'wizard',
+          listings: [],
+        };
+        groups.set(sellerKey, group);
+      }
+
+      group.listings.push(listing);
+    }
+
+    return [...groups.values()];
+  }
+
+  getMarketSellerKey(listing) {
+    return listing.sellerIdentity || listing.username || 'unknown';
+  }
+
+  setMarketMessage(message) {
+    if (!this.refs.marketMessage) {
+      return;
+    }
+
+    this.refs.marketMessage.hidden = !message;
+
+    if (this.refs.marketMessage.textContent !== message) {
+      this.refs.marketMessage.textContent = message;
+    }
+  }
+
+  clampListingQuantity(value, maxQuantity) {
+    const parsed = this.readPositiveInteger(value);
+    const max = Math.max(0, Math.floor(Number(maxQuantity) || 0));
+
+    if (!parsed || max <= 0) {
+      return null;
+    }
+
+    return Math.min(parsed, max);
   }
 
   ensureRows(rowCount) {
@@ -806,7 +1041,7 @@ export class ShopPlayerShelfManager {
       const button = document.createElement('button');
       button.className = 'shop-page__sell-item-button';
       button.type = 'button';
-      button.addEventListener('click', () => this.onSetListing(item.itemTypeId));
+      button.addEventListener('click', () => this.onSelectListingItem(item.itemTypeId));
 
       const label = document.createElement('span');
       label.className = 'row_key';
@@ -839,6 +1074,21 @@ export class ShopPlayerShelfManager {
 
   getSelectedSlot(shelf) {
     return shelf?.slots.find((slot) => slot.slotNumber === shelf.selectedSlotNumber) ?? null;
+  }
+
+  prepareListingDraft(selectedSlot) {
+    this.draftListingSlotNumber = selectedSlot?.slotNumber ?? null;
+    this.draftListingItemTypeId = selectedSlot?.itemTypeId ?? null;
+
+    if (this.refs.quantityInput) {
+      this.refs.quantityInput.value = String(selectedSlot?.quantity || 1);
+    }
+
+    if (this.refs.priceInput) {
+      this.refs.priceInput.value = String(selectedSlot?.priceGold || 1);
+    }
+
+    this.setListingStatus('');
   }
 
   formatPlayerSlotValue(slot, shelf, snapshot) {

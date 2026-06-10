@@ -215,7 +215,7 @@ export class WorkshopWorldChatManager {
 
     const name = document.createElement('span');
     name.className = 'workshop-page__world-chat-name';
-    name.textContent = `${message.username || 'wizard'}: `;
+    name.textContent = `${this.formatSender(message)}: `;
 
     const body = document.createElement('span');
     body.className = 'workshop-page__world-chat-body';
@@ -223,6 +223,32 @@ export class WorkshopWorldChatManager {
 
     row.append(name, body);
     return row;
+  }
+
+  formatSender(message) {
+    const username = message?.username || 'wizard';
+    const fallbackLevel = username === 'system' ? null : 1;
+    const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
+
+    if (!playerLevel) {
+      return username;
+    }
+
+    return `${username} Lv.${playerLevel}`;
+  }
+
+  normalizePlayerLevel(playerLevel, fallbackLevel = 1) {
+    if (playerLevel === null || playerLevel === undefined) {
+      return fallbackLevel;
+    }
+
+    const safePlayerLevel = Math.floor(Number(playerLevel));
+
+    if (!Number.isFinite(safePlayerLevel) || safePlayerLevel < 1) {
+      return fallbackLevel;
+    }
+
+    return safePlayerLevel;
   }
 
   updateFormState() {

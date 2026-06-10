@@ -39,6 +39,7 @@ export class BackendFacade {
   async start({ gameplayFacade, playerFacade, onOnline, onOffline } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
     this.playerSyncFacade.setPlayerFacade(playerFacade);
+    this.playerSyncFacade.setGameplayFacade(gameplayFacade);
 
     return this.spacetimeDbFacade.connectGeneratedBindings({
       onConnect: (connection, identity) => {
@@ -77,6 +78,7 @@ export class BackendFacade {
     this.worldChatFacade.disconnect();
     this.npcMarketFacade.disconnect();
     this.playerSyncFacade.disconnect();
+    this.playerSyncFacade.setGameplayFacade(null);
     this.playerShopFacade.disconnect();
     this.potionDiscoveryFacade.disconnect();
     this.spacetimeDbFacade.disconnect();

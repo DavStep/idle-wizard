@@ -87,6 +87,10 @@ export class WorldChatSubscriptionManager {
       id: this.toId(row.messageId ?? row.message_id),
       senderIdentity: this.toId(row.senderIdentity ?? row.sender_identity),
       username: typeof row.username === 'string' ? row.username : 'wizard',
+      playerLevel: this.toPlayerLevel(
+        row.playerLevel ?? row.player_level,
+        row.username === 'system' ? null : 1,
+      ),
       body: typeof row.body === 'string' ? row.body : '',
       sentAtMs: this.toTimestampMs(row.sentAt ?? row.sent_at),
     };
@@ -127,5 +131,19 @@ export class WorldChatSubscriptionManager {
     }
 
     return Number.isFinite(value) ? value : 0;
+  }
+
+  toPlayerLevel(value, fallback = 1) {
+    if (value === null || value === undefined) {
+      return fallback;
+    }
+
+    const playerLevel = typeof value === 'bigint' ? Number(value) : value;
+
+    if (!Number.isFinite(playerLevel) || playerLevel < 1) {
+      return fallback;
+    }
+
+    return Math.floor(playerLevel);
   }
 }

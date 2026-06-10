@@ -1,6 +1,8 @@
 import { schema, table, t, type ReducerCtx, type InferSchema } from 'spacetimedb/server';
 
 const DEFAULT_USERNAME = 'wizard';
+const DEFAULT_PLAYER_LEVEL = 1;
+const MAX_PLAYER_LEVEL = 100_000;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
 const WORLD_CHAT_HISTORY_LIMIT = 40;
@@ -119,6 +121,7 @@ const spacetimedb = schema({
       connected: t.bool(),
       createdAt: t.timestamp(),
       lastSeenAt: t.timestamp(),
+      playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
     },
   ),
   leaderboard: table(
@@ -131,6 +134,7 @@ const spacetimedb = schema({
       username: t.string(),
       totalIncome: t.u64(),
       updatedAt: t.timestamp(),
+      playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
     },
   ),
   worldChat: table(
@@ -145,6 +149,7 @@ const spacetimedb = schema({
       username: t.string(),
       body: t.string(),
       sentAt: t.timestamp(),
+      playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
     },
   ),
   potionRecipeDiscovery: table(
@@ -255,6 +260,16 @@ function normalizeUsername(username: string): string {
     .replace(/\s+/g, ' ');
 
   return (value || DEFAULT_USERNAME).slice(0, MAX_USERNAME_LENGTH);
+}
+
+function normalizePlayerLevel(playerLevel: unknown): number {
+  const value = Math.floor(Number(playerLevel));
+
+  if (!Number.isFinite(value) || value < DEFAULT_PLAYER_LEVEL) {
+    return DEFAULT_PLAYER_LEVEL;
+  }
+
+  return Math.min(value, MAX_PLAYER_LEVEL);
 }
 
 function normalizeWorldChatMessage(body: string): string {
@@ -564,6 +579,7 @@ function ensurePlayer(ctx: IdleWizardReducerCtx) {
   if (existingPlayer) {
     return ctx.db.player.identity.update({
       ...existingPlayer,
+      playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
       connected: true,
       lastSeenAt: ctx.timestamp,
     });
@@ -572,19 +588,29 @@ function ensurePlayer(ctx: IdleWizardReducerCtx) {
   return ctx.db.player.insert({
     identity: ctx.sender,
     username,
+    playerLevel: DEFAULT_PLAYER_LEVEL,
     connected: true,
     createdAt: ctx.timestamp,
     lastSeenAt: ctx.timestamp,
   });
 }
 
-function ensureLeaderboardEntry(ctx: IdleWizardReducerCtx, username: string) {
+function ensureLeaderboardEntry(
+  ctx: IdleWizardReducerCtx,
+  username: string,
+  playerLevel = DEFAULT_PLAYER_LEVEL,
+) {
   const existingEntry = ctx.db.leaderboard.identity.find(ctx.sender);
+  const safePlayerLevel = normalizePlayerLevel(playerLevel);
 
   if (existingEntry) {
     return ctx.db.leaderboard.identity.update({
       ...existingEntry,
       username,
+      playerLevel: Math.max(
+        normalizePlayerLevel(existingEntry.playerLevel),
+        safePlayerLevel,
+      ),
       updatedAt: ctx.timestamp,
     });
   }
@@ -592,6 +618,7 @@ function ensureLeaderboardEntry(ctx: IdleWizardReducerCtx, username: string) {
   return ctx.db.leaderboard.insert({
     identity: ctx.sender,
     username,
+    playerLevel: safePlayerLevel,
     totalIncome: 0n,
     updatedAt: ctx.timestamp,
   });
@@ -649,7 +676,7 @@ function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
 
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   const player = ensurePlayer(ctx);
-  ensureLeaderboardEntry(ctx, player.username);
+  ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
   applyDueNpcMarketTicks(ctx);
 });
 
@@ -669,31 +696,56 @@ export const onDisconnect = spacetimedb.clientDisconnected((ctx) => {
 export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, { username }) => {
   const normalizedUsername = normalizeUsername(username);
   const existingPlayer = ctx.db.player.identity.find(ctx.sender);
+  let player;
 
   if (existingPlayer) {
-    ctx.db.player.identity.update({
+    player = ctx.db.player.identity.update({
       ...existingPlayer,
       username: normalizedUsername,
+      playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
       lastSeenAt: ctx.timestamp,
     });
   } else {
-    ctx.db.player.insert({
+    player = ctx.db.player.insert({
       identity: ctx.sender,
       username: normalizedUsername,
+      playerLevel: DEFAULT_PLAYER_LEVEL,
       connected: true,
       createdAt: ctx.timestamp,
       lastSeenAt: ctx.timestamp,
     });
   }
 
-  ensureLeaderboardEntry(ctx, normalizedUsername);
+  ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
 });
+
+export const set_player_level = spacetimedb.reducer(
+  { playerLevel: t.u32() },
+  (ctx, { playerLevel }) => {
+    const player = ensurePlayer(ctx);
+    const safePlayerLevel = normalizePlayerLevel(playerLevel);
+    const nextPlayerLevel = Math.max(
+      normalizePlayerLevel(player.playerLevel),
+      safePlayerLevel,
+    );
+    const nextPlayer =
+      nextPlayerLevel === player.playerLevel
+        ? player
+        : ctx.db.player.identity.update({
+            ...player,
+            playerLevel: nextPlayerLevel,
+            lastSeenAt: ctx.timestamp,
+          });
+
+    ensureLeaderboardEntry(ctx, nextPlayer.username, nextPlayer.playerLevel);
+  },
+);
 
 export const set_total_generated_gold = spacetimedb.reducer(
   { totalGeneratedGold: t.u64() },
   (ctx, { totalGeneratedGold }) => {
     const player = ensurePlayer(ctx);
-    const entry = ensureLeaderboardEntry(ctx, player.username);
+    const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
     const nextTotalIncome =
       totalGeneratedGold > entry.totalIncome ? totalGeneratedGold : entry.totalIncome;
 
@@ -719,12 +771,13 @@ export const send_world_chat_message = spacetimedb.reducer(
     }
 
     const player = ensurePlayer(ctx);
-    ensureLeaderboardEntry(ctx, player.username);
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
 
     ctx.db.worldChat.insert({
       messageId: ctx.newUuidV7(),
       senderIdentity: ctx.sender,
       username: player.username,
+      playerLevel: player.playerLevel,
       body: message,
       sentAt: ctx.timestamp,
     });
@@ -745,7 +798,7 @@ export const discover_potion_recipe = spacetimedb.reducer(
     }
 
     const player = ensurePlayer(ctx);
-    ensureLeaderboardEntry(ctx, player.username);
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
 
     ctx.db.potionRecipeDiscovery.insert({
       potionKey: catalogItem.key,
@@ -759,6 +812,7 @@ export const discover_potion_recipe = spacetimedb.reducer(
       messageId: ctx.newUuidV7(),
       senderIdentity: ctx.sender,
       username: 'system',
+      playerLevel: 0,
       body: `${player.username} discovered a new potion recipe!`,
       sentAt: ctx.timestamp,
     });

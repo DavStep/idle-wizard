@@ -41,6 +41,7 @@ import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
 import DiscoverPotionRecipeReducer from "./discover_potion_recipe_reducer";
 import SellToNpcReducer from "./sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
+import SetPlayerLevelReducer from "./set_player_level_reducer";
 import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetUsernameReducer from "./set_username_reducer";
@@ -191,6 +192,7 @@ const reducersSchema = __reducers(
   __reducerSchema("discover_potion_recipe", DiscoverPotionRecipeReducer),
   __reducerSchema("sell_to_npc", SellToNpcReducer),
   __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),
+  __reducerSchema("set_player_level", SetPlayerLevelReducer),
   __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_username", SetUsernameReducer),

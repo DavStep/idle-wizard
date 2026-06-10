@@ -32,6 +32,54 @@ function createGameplayFacadeFake() {
       quantity: 1,
       canSummon: false,
     },
+    tasks: {
+      currentLevel: 1,
+      maxLevel: 20,
+      completedAllLevels: false,
+      level: {
+        level: 1,
+        completedTasks: 1,
+        totalTasks: 2,
+        tasks: [
+          {
+            taskId: 'level1-sage-seeds',
+            level: 1,
+            action: 'drop',
+            itemTypeId: 1,
+            itemKey: 'sageSeed',
+            itemLabel: 'Sage Seed',
+            itemKind: 'seed',
+            requiredQuantity: 20,
+            progressQuantity: 20,
+            remainingQuantity: 0,
+            ownedQuantity: 0,
+            progress: 1,
+            maxed: true,
+            completed: true,
+            canFill: false,
+            canComplete: false,
+          },
+          {
+            taskId: 'level1-sage-herb',
+            level: 1,
+            action: 'drop',
+            itemTypeId: 1001,
+            itemKey: 'sageHerb',
+            itemLabel: 'Sage',
+            itemKind: 'herb',
+            requiredQuantity: 10,
+            progressQuantity: 3,
+            remainingQuantity: 7,
+            ownedQuantity: 3,
+            progress: 0.3,
+            maxed: false,
+            completed: false,
+            canFill: true,
+            canComplete: false,
+          },
+        ],
+      },
+    },
     brewing: {
       herbs: [
         {
@@ -501,11 +549,13 @@ function createGameplayFacadeFake() {
       topUsers: [
         {
           name: 'Ada',
+          playerLevel: 2,
           income: 3,
           totalIncome: 120,
         },
         {
           name: 'Merlin',
+          playerLevel: 10,
           income: 9,
           totalIncome: 75,
         },
@@ -1412,6 +1462,7 @@ function createWorldChatFacadeFake() {
         id: '1',
         senderIdentity: 'sender-a',
         username: 'Ada',
+        playerLevel: 3,
         body: 'hello',
         sentAtMs: 1_000,
       },
@@ -1441,6 +1492,7 @@ function createWorldChatFacadeFake() {
         id: String(snapshot.messages.length + 1),
         senderIdentity: 'sender-self',
         username: 'wizard',
+        playerLevel: 1,
         body: message,
         sentAtMs: 2_000,
       });
@@ -1684,7 +1736,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__summon-message')).toBeNull();
     expect(
       [...stage.querySelectorAll('.room-bottom-panel__tab')].map((button) => button.textContent),
-    ).toEqual(['brewing', 'garden', 'workshop', 'research', 'shop']);
+    ).toEqual(['brewing', 'garden', 'workshop', 'research', 'market']);
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'workshop',
     );
@@ -1708,6 +1760,38 @@ describe('PagesFacade', () => {
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain(
       'crystal 0',
     );
+  });
+
+  it('shows Workshop tasks collapsed and expands them from the summary row', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const tasks = stage.querySelector('.workshop-page__tasks');
+    const summary = stage.querySelector('.workshop-page__tasks-summary');
+    const list = stage.querySelector('.workshop-page__task-list');
+
+    expect(tasks).not.toBeNull();
+    expect(summary?.textContent).toBe('level 11/2');
+    expect(summary?.getAttribute('aria-expanded')).toBe('false');
+    expect(list?.hidden).toBe(true);
+
+    summary.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(summary.getAttribute('aria-expanded')).toBe('true');
+    expect(list.hidden).toBe(false);
+    expect(tasks.textContent).toContain('drop Sage');
+    expect(tasks.classList.contains('is-expanded')).toBe(true);
+
+    summary.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(summary.getAttribute('aria-expanded')).toBe('false');
+    expect(list.hidden).toBe(true);
+    expect(tasks.classList.contains('is-collapsed')).toBe(true);
   });
 
   it('shows seed summon feedback as a flyout', () => {
@@ -2102,10 +2186,13 @@ describe('PagesFacade', () => {
     const labels = rows.map((row) => row.querySelector('.row_key')?.textContent);
     const values = rows.map((row) => row.querySelector('.row_val')?.textContent);
     const mysteryLabel = labels[4];
+    const mysteryName = rows[4].querySelector('.row_key');
     expect(labels.slice(0, 3)).toEqual(['Sage Seed', 'Mint Seed', 'Lavender Seed']);
     expect(labels[3]).toBe('Nettle Seed');
     expect(mysteryLabel).not.toBe('Briar Seed');
-    expect(mysteryLabel).toHaveLength(6);
+    expect(mysteryLabel).toHaveLength(10);
+    expect(mysteryName?.classList.contains('mystery-text')).toBe(true);
+    expect(mysteryName?.getAttribute('aria-label')).toBe('unknown');
     expect(values).toEqual(['0', '2', '4', 'locked', 'locked']);
     expect(divider).not.toBeNull();
     expect(divider.previousElementSibling.querySelector('.row_key')?.textContent).toBe(
@@ -2176,9 +2263,9 @@ describe('PagesFacade', () => {
     expect(popup.querySelector('.workshop-page__leaderboard-tab-button')?.textContent).toBe(
       'total generated gold',
     );
-    expect(popup.textContent).toContain('Ada');
+    expect(popup.textContent).toContain('1. Ada Lv.2');
     expect(popup.textContent).toContain('120');
-    expect(popup.textContent).toContain('Merlin');
+    expect(popup.textContent).toContain('2. Merlin Lv.10');
     expect(popup.textContent).toContain('75');
 
     const incomeButton = [...popup.querySelectorAll('.workshop-page__leaderboard-tab-button')].find(
@@ -2187,11 +2274,15 @@ describe('PagesFacade', () => {
 
     incomeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const rowsText = popup.querySelector('.workshop-page__leaderboard-rows')?.textContent;
     expect(incomeButton.getAttribute('aria-selected')).toBe('true');
-    expect(rowsText).toContain('income');
-    expect(rowsText).toContain('Merlin9');
-    expect(rowsText).toContain('Ada3');
+    const rowLabels = [
+      ...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_key'),
+    ].map((row) => row.textContent);
+    const rowValues = [
+      ...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val'),
+    ].map((row) => row.textContent);
+    expect(rowLabels).toEqual(['user', '1. Merlin Lv.10', '2. Ada Lv.2']);
+    expect(rowValues).toEqual(['income', '9', '3']);
   });
 
   it('hides leaderboard popup with Escape or outside click', () => {
@@ -2432,7 +2523,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(popup.querySelector('.style-dialog')).not.toBeNull();
-    expect(popup.textContent).toContain('Ada: hello');
+    expect(popup.textContent).toContain('Ada Lv.3: hello');
 
     const input = popup.querySelector('.workshop-page__world-chat-input');
     const form = popup.querySelector('.workshop-page__world-chat-form');
@@ -2445,7 +2536,7 @@ describe('PagesFacade', () => {
 
     expect(worldChatFacade.getSentMessages()).toEqual(['hello room']);
     expect(input.value).toBe('');
-    expect(popup.textContent).toContain('wizard: hello room');
+    expect(popup.textContent).toContain('wizard Lv.1: hello room');
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
@@ -2539,7 +2630,7 @@ describe('PagesFacade', () => {
     expect(pagesFacade.getCurrentPageId()).toBe('shop');
     expect(stage.querySelector('.shop-page')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('shop shelf');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('market shelf');
     expect(
       [...stage.querySelectorAll('.shop-page__shelf .shop-page__slot-row')].some(
         (row) => row.querySelector('.row_key')?.textContent === 'gold',
@@ -2613,7 +2704,12 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(popup.querySelector('.brewing-page__recipes-close')?.textContent).toBe('close');
-    expect(popup.textContent).toContain('unlocked recipes');
+    expect(
+      [...popup.querySelectorAll('.brewing-page__recipe-group-title')].map(
+        (title) => title.textContent,
+      ),
+    ).toEqual(['recipes']);
+    expect(popup.textContent).not.toContain('unlocked recipes');
     expect(popup.textContent).toContain('Mana Tonic');
     expect(popup.textContent).toContain('cost 12 mana');
     expect(popup.textContent).toContain('ingredients:');
@@ -2621,11 +2717,7 @@ describe('PagesFacade', () => {
     expect(popup.textContent).not.toContain('needs:');
     expect(popup.textContent).not.toContain('1. Sage');
     expect(popup.textContent).toContain('time: 30s');
-    expect(
-      [...popup.querySelectorAll('.brewing-page__recipe-group-title')].map(
-        (title) => title.textContent,
-      ),
-    ).not.toContain('locked recipes');
+    expect(popup.textContent).not.toContain('locked recipes');
     expect(popup.textContent).not.toContain('Minor Healing Potion');
     expect(popup.textContent).not.toContain('- 2 Sage');
     expect(popup.textContent).not.toContain('- 1 Mint');
@@ -2673,7 +2765,7 @@ describe('PagesFacade', () => {
         .find((row) => row.textContent.includes('Mana Tonic'))
         ?.querySelector('.brewing-page__recipe-mark-button')
         ?.textContent,
-    ).toBe('marked');
+    ).toBe('unmark');
 
     dispatchPointerSwipe(stage);
 
@@ -2705,6 +2797,47 @@ describe('PagesFacade', () => {
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     expect(potionsPopup.hidden).toBe(true);
+  });
+
+  it('keeps the marked Brewing recipe after switching room tabs', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    gameplayFacade.setGold(3);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    stage
+      .querySelector('.brewing-page__recipes-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.brewing-page__recipe-mark-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain('recipeMana Tonic');
+
+    clickRoomTab(stage, 'garden');
+    expect(pagesFacade.getCurrentPageId()).toBe('garden');
+
+    clickRoomTab(stage, 'brewing');
+    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain('recipeMana Tonic');
+
+    stage
+      .querySelector('.brewing-page__recipes-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const markButton = stage.querySelector('.brewing-page__recipe-mark-button');
+
+    expect(markButton?.textContent).toBe('unmark');
+
+    markButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain('recipenone');
   });
 
   it('keeps Brewing guide step DOM stable across snapshot renders', () => {
@@ -3862,7 +3995,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
-  it('sets player shop shelf listings and buys from other player shops', async () => {
+  it('sets player market listings and buys selected quantities from player market', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const playerShopFacade = createPlayerShopFacadeFake();
@@ -3877,7 +4010,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'shop');
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      'player shop shelf',
+      'player market',
     );
 
     stage
@@ -3892,8 +4025,20 @@ describe('PagesFacade', () => {
     );
     quantityInput.value = '2';
     valueInput.value = '4';
-    [...listingPopup.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Sage Seed (4)')
+    const sageListingButton = [...listingPopup.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent === 'Sage Seed (4)');
+    sageListingButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(sageListingButton.getAttribute('aria-pressed')).toBe('true');
+    expect(quantityInput.value).toBe('2');
+    expect(valueInput.value).toBe('4');
+    expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
+      'slot 1empty',
+    );
+    expect(listingPopup.hidden).toBe(false);
+
+    listingPopup
+      .querySelector('.shop-page__player-listing-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 
@@ -3908,15 +4053,20 @@ describe('PagesFacade', () => {
 
     const marketPopup = stage.querySelector('.shop-page__market-popup');
     expect(marketPopup.hidden).toBe(false);
-    expect(marketPopup.textContent).toContain('Ada: Sage Seed (2)');
+    expect(marketPopup.textContent).toContain('Ada');
+    expect(marketPopup.textContent).toContain('- Sage Seed (2)');
+
+    const buyQuantityInput = marketPopup.querySelector('.shop-page__market-quantity-input');
+    buyQuantityInput.value = '2';
+    buyQuantityInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     marketPopup
       .querySelector('.shop-page__market-row button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(7);
-    expect(marketPopup.textContent).toContain('Ada: Sage Seed (1)');
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(4);
+    expect(marketPopup.textContent).toContain('empty');
 
     playerShopFacade.setProceedsGold(5);
     stage
@@ -3924,6 +4074,6 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(12);
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(9);
   });
 });
