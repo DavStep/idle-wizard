@@ -5,8 +5,12 @@ export class ResearchBoxListManager {
     this.gameplayFacade = gameplayFacade;
     this.onShowResearchInfo = onShowResearchInfo;
     this.root = null;
+    this.tabsRoot = null;
+    this.boxesRoot = null;
     this.unsubscribe = null;
     this.signature = '';
+    this.selectedTabId = 'regular';
+    this.tabButtons = new Map();
   }
 
   mount(parent) {
@@ -20,6 +24,13 @@ export class ResearchBoxListManager {
 
     this.root = document.createElement('div');
     this.root.className = 'research-page__content';
+    this.tabsRoot = document.createElement('div');
+    this.tabsRoot.className = 'research-page__tabs';
+    this.tabsRoot.setAttribute('aria-label', 'Research type');
+    this.tabsRoot.setAttribute('role', 'tablist');
+    this.boxesRoot = document.createElement('div');
+    this.boxesRoot.className = 'research-page__box-list';
+    this.root.append(this.tabsRoot, this.boxesRoot);
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -33,12 +44,20 @@ export class ResearchBoxListManager {
     this.unsubscribe = null;
     this.root?.remove();
     this.root = null;
+    this.tabsRoot = null;
+    this.boxesRoot = null;
     this.signature = '';
+    this.selectedTabId = 'regular';
+    this.tabButtons.clear();
   }
 
   render(snapshot) {
-    const boxes = snapshot.research?.boxes ?? [];
-    const signature = boxes
+    const tabs = this.getTabs(snapshot);
+    const selectedTab = this.getSelectedTab(tabs);
+    const boxes = selectedTab?.boxes ?? [];
+    const signature = `${selectedTab?.id ?? 'none'}|${tabs
+      .map((tab) => `${tab.id}:${tab.label}`)
+      .join(',')}|${boxes
       .map(
         (box) =>
           `${box.id}:${box.researches
@@ -48,14 +67,95 @@ export class ResearchBoxListManager {
             )
             .join(',')}`,
       )
-      .join('|');
+      .join('|')}`;
 
     if (signature === this.signature) {
+      this.syncTabState(tabs, selectedTab);
       return;
     }
 
     this.signature = signature;
-    this.root.replaceChildren(...boxes.map((box) => this.createBox(box)));
+    this.syncTabs(tabs);
+    this.syncTabState(tabs, selectedTab);
+    this.boxesRoot.replaceChildren(...boxes.map((box) => this.createBox(box)));
+  }
+
+  getTabs(snapshot) {
+    const tabs = snapshot.research?.tabs;
+
+    if (Array.isArray(tabs) && tabs.length > 0) {
+      return tabs;
+    }
+
+    return [
+      {
+        id: 'regular',
+        label: 'regular research',
+        boxes: snapshot.research?.boxes ?? [],
+      },
+    ];
+  }
+
+  getSelectedTab(tabs) {
+    const selectedTab = tabs.find((tab) => tab.id === this.selectedTabId) ?? tabs[0] ?? null;
+    this.selectedTabId = selectedTab?.id ?? 'regular';
+    return selectedTab;
+  }
+
+  syncTabs(tabs) {
+    const visibleIds = new Set(tabs.map((tab) => tab.id));
+
+    for (const [tabId, button] of this.tabButtons.entries()) {
+      if (visibleIds.has(tabId)) {
+        continue;
+      }
+
+      button.remove();
+      this.tabButtons.delete(tabId);
+    }
+
+    for (const tab of tabs) {
+      if (this.tabButtons.has(tab.id)) {
+        continue;
+      }
+
+      const button = document.createElement('button');
+      button.className = 'style-button research-page__tab-button';
+      button.type = 'button';
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => this.onSelectTab(tab.id));
+      this.tabButtons.set(tab.id, button);
+    }
+
+    this.tabsRoot.replaceChildren(
+      ...tabs.map((tab) => this.tabButtons.get(tab.id)).filter(Boolean),
+    );
+    this.tabsRoot.hidden = tabs.length <= 1;
+  }
+
+  syncTabState(tabs, selectedTab) {
+    for (const tab of tabs) {
+      const selected = tab.id === selectedTab?.id;
+      const button = this.tabButtons.get(tab.id);
+
+      if (!button) {
+        continue;
+      }
+
+      button.textContent = tab.label;
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button.setAttribute('tabindex', selected ? '0' : '-1');
+    }
+  }
+
+  onSelectTab(tabId) {
+    if (this.selectedTabId === tabId) {
+      return;
+    }
+
+    this.selectedTabId = tabId;
+    this.signature = '';
+    this.render(this.gameplayFacade.getSnapshot());
   }
 
   createBox(box) {

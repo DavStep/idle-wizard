@@ -144,10 +144,10 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockSeed:starAniseSeed': 1_700n,
   'unlockSeed:bloodroseSeed': 2_200n,
   'unlockSeed:dragonpepperSeed': 2_800n,
-  summonSeedsX2: 300n,
-  summonSeedsX3: 900n,
-  summonSeedsX4: 2_200n,
-  summonSeedsX5: 5_000n,
+  'summonSeedsX2': 300n,
+  'summonSeedsX3': 900n,
+  'summonSeedsX4': 2_200n,
+  'summonSeedsX5': 5_000n,
   'unlockRecipe:manaTonic': 80n,
   'unlockRecipe:minorHealingPotion': 120n,
   'unlockRecipe:nettleVigor': 170n,
@@ -166,6 +166,11 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockRecipe:dragonCourage': 4_100n,
   'unlockRecipe:deepDreamVision': 4_850n,
   'unlockRecipe:pactWard': 5_700n,
+  'automation:autoPlantTile': 50_000n,
+  'automation:autoHarvestPlant': 75_000n,
+  'automation:autoBrewCauldron': 100_000n,
+  'automation:autoBottleCauldron': 125_000n,
+  'automation:autoCollectCauldron': 150_000n,
 };
 
 const potionCatalog = [
@@ -219,6 +224,14 @@ const summonSeedResearchCatalog = [
   { id: 'summonSeedsX5', label: 'x5 summon' },
 ];
 
+const automationResearchCatalog = [
+  { id: 'automation:autoPlantTile', label: 'auto plant' },
+  { id: 'automation:autoHarvestPlant', label: 'auto harvest' },
+  { id: 'automation:autoBrewCauldron', label: 'auto brew' },
+  { id: 'automation:autoBottleCauldron', label: 'auto bottle' },
+  { id: 'automation:autoCollectCauldron', label: 'auto collect' },
+];
+
 const researchCatalog = [
   ...herbCatalog.map((herb) => {
     const id = `unlockSeed:${herb.key}Seed`;
@@ -244,6 +257,12 @@ const researchCatalog = [
       defaultCostGold: researchDefaultCostGoldById[id] ?? 0n,
     };
   }),
+  ...automationResearchCatalog.map((research) => ({
+    researchId: research.id,
+    label: research.label,
+    groupId: 'automation',
+    defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
+  })),
 ];
 
 const researchCatalogById = new Map(

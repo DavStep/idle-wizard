@@ -35,6 +35,11 @@
     "unlockRecipe:starLuckPhiltre": 3450,
     "unlockRecipe:dragonCourage": 4100,
     "unlockRecipe:deepDreamVision": 4850,
-    "unlockRecipe:pactWard": 5700
+    "unlockRecipe:pactWard": 5700,
+    "automation:autoPlantTile": 50000,
+    "automation:autoHarvestPlant": 75000,
+    "automation:autoBrewCauldron": 100000,
+    "automation:autoBottleCauldron": 125000,
+    "automation:autoCollectCauldron": 150000
   }
 }

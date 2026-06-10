@@ -1654,6 +1654,25 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
+.research-page__tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  background: var(--style-surface);
+}
+
+.research-page__tabs[hidden] {
+  display: none;
+}
+
+.research-page__box-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .research-page__box {
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1749,6 +1768,22 @@ div.workshop-page__discovery-row {
 
 .style-button.research-page__research-button:active:not(:disabled):not([aria-disabled="true"]) {
   background: transparent;
+}
+
+.style-button.research-page__tab-button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  min-height: var(--style-row-min-height);
+  padding: 1px 5px;
+  margin-bottom: 0;
+  line-height: normal;
+  white-space: normal;
+  border: var(--style-border);
+}
+
+.style-button.research-page__tab-button[aria-selected="true"] {
+  text-decoration: underline;
 }
 
 .research-page__info-popup {

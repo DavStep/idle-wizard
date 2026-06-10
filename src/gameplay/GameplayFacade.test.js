@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { EcsFacade } from '../ecs/EcsFacade.js';
+import { automationResearchIds } from './automation/automationResearchIds.js';
 import { GameplayFacade } from './GameplayFacade.js';
 
 function createMemoryStorage() {
@@ -616,6 +617,71 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay();
     const research = gameplayFacade.getSnapshot().research;
 
+    expect(research.tabs.map((tab) => tab.id)).toEqual(['regular', 'advanced']);
+    expect(research.tabs[1].boxes).toEqual([
+      {
+        id: 'automation',
+        label: 'automation research',
+        researches: [
+          {
+            id: automationResearchIds.autoPlantTile,
+            label: 'auto plant',
+            value: '50000 gold',
+            effect: 'tile',
+            showEffect: true,
+            description: 'empty garden tiles plant their selected seed when one is available.',
+            costGold: 50000,
+            completed: false,
+            canResearch: false,
+          },
+          {
+            id: automationResearchIds.autoHarvestPlant,
+            label: 'auto harvest',
+            value: '75000 gold',
+            effect: 'plant',
+            showEffect: true,
+            description: 'ready garden plants start harvesting without a tap.',
+            costGold: 75000,
+            completed: false,
+            canResearch: false,
+          },
+          {
+            id: automationResearchIds.autoBrewCauldron,
+            label: 'auto brew',
+            value: '100000 gold',
+            effect: 'cauldron',
+            showEffect: true,
+            description:
+              'the cauldron starts brewing when staged ingredients and mana are ready.',
+            costGold: 100000,
+            completed: false,
+            canResearch: false,
+          },
+          {
+            id: automationResearchIds.autoBottleCauldron,
+            label: 'auto bottle',
+            value: '125000 gold',
+            effect: 'cauldron',
+            showEffect: true,
+            description: 'finished brews start bottling without a tap.',
+            costGold: 125000,
+            completed: false,
+            canResearch: false,
+          },
+          {
+            id: automationResearchIds.autoCollectCauldron,
+            label: 'auto collect',
+            value: '150000 gold',
+            effect: 'cauldron',
+            showEffect: true,
+            description: 'bottled potions move into inventory without a tap.',
+            costGold: 150000,
+            completed: false,
+            canResearch: false,
+          },
+        ],
+      },
+    ]);
     expect(research.boxes.map((box) => box.id)).toEqual([
       'seedUnlocks',
       'summonSeeds',
@@ -1030,6 +1096,62 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('auto brews, bottles, and collects cauldron potions after research', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.goldFacade.add(375080);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron)).toMatchObject({
+      ok: true,
+      cost: 100000,
+    });
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoBottleCauldron)).toMatchObject({
+      ok: true,
+      cost: 125000,
+    });
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoCollectCauldron)).toMatchObject({
+      ok: true,
+      cost: 150000,
+    });
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    ecsFacade.update({ deltaSeconds: 12 });
+    gameplayFacade.addBrewingIngredient(1001);
+    gameplayFacade.addBrewingIngredient(1001);
+    gameplayFacade.addBrewingIngredient(1001);
+
+    ecsFacade.update({ deltaSeconds: 0 });
+
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      key: 'manaTonic',
+      phase: 'brewing',
+      remainingMs: 30_000,
+    });
+
+    ecsFacade.update({ deltaSeconds: 30 });
+
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      key: 'manaTonic',
+      phase: 'bottling',
+      remainingMs: 2_000,
+    });
+
+    ecsFacade.update({ deltaSeconds: 2 });
+
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
+    expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
+      itemTypeId: 2001,
+      key: 'manaTonic',
+      label: 'Mana Tonic',
+      kind: 'potion',
+      quantity: 1,
+    });
+    expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toContain(
+      'brewed Mana Tonic',
+    );
+  });
+
   it('keeps matching recipe ingredients when recipe research is locked', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
@@ -1407,6 +1529,62 @@ describe('GameplayFacade', () => {
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
     });
+  });
+
+  it('auto harvests ready plants and auto replants selected tiles after research', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.goldFacade.add(125000);
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoPlantTile)).toMatchObject({
+      ok: true,
+      cost: 50000,
+    });
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoHarvestPlant)).toMatchObject({
+      ok: true,
+      cost: 75000,
+    });
+    gameplayFacade.itemsFacade.addItem(1, 2);
+    gameplayFacade.plantGardenSeed(1, 1);
+
+    ecsFacade.update({ deltaSeconds: 20 });
+
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: 'harvesting',
+      selectedSeedKey: 'sageSeed',
+      herbKey: 'sageHerb',
+      remainingMs: 10_000,
+    });
+
+    ecsFacade.update({ deltaSeconds: 10 });
+
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: 'growing',
+      selectedSeedKey: 'sageSeed',
+      seedKey: 'sageSeed',
+      herbKey: 'sageHerb',
+      remainingMs: 20_000,
+    });
+    expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
+      itemTypeId: 1001,
+      key: 'sageHerb',
+      label: 'Sage',
+      kind: 'herb',
+      quantity: 1,
+    });
+    expect(gameplayFacade.getSnapshot().garden.seeds).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'Sage Seed',
+      kind: 'seed',
+      quantity: 0,
+    });
+    expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
+      'researched auto plant',
+      'researched auto harvest',
+      'planted Sage Seed',
+      'harvested Sage',
+      'planted Sage Seed',
+    ]);
   });
 
   it('rejects garden seed changes while a crop is active', () => {

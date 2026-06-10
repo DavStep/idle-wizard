@@ -1,3 +1,4 @@
+import { AutomationFacade } from './automation/AutomationFacade.js';
 import { BrewingFacade } from './brewing/BrewingFacade.js';
 import { CrystalFacade } from './crystal/CrystalFacade.js';
 import { GoldFacade } from './gold/GoldFacade.js';
@@ -58,6 +59,14 @@ export class GameplayFacade {
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       onHarvestComplete: (event) => this.gameplayLogFacade.logGardenHarvestCompleted(event),
+    });
+    this.automationFacade = new AutomationFacade({
+      brewingFacade: this.brewingFacade,
+      gardenFacade: this.gardenFacade,
+      gameplayLogFacade: this.gameplayLogFacade,
+      onPotionRecipeDiscovery: (potionKey) =>
+        void this.potionDiscoveryFacade?.discoverPotionRecipe(potionKey),
+      researchFacade: this.researchFacade,
     });
     this.persistenceFacade = new GameplayPersistenceFacade({
       storage: persistenceStorage,
@@ -135,6 +144,7 @@ export class GameplayFacade {
     this.seedSummoningFacade.initialize(ecsManagers);
     this.shopFacade.initialize(ecsManagers);
     this.gardenFacade.initialize(ecsManagers);
+    this.automationFacade.initialize(ecsManagers);
     const loaded = this.persistenceFacade.load();
     this.syncPlayerLevelManaEffects();
     if (loaded) {

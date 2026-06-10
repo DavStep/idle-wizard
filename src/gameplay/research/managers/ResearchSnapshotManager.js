@@ -13,13 +13,24 @@ export class ResearchSnapshotManager {
 
   getSnapshot() {
     const completedResearchIds = this.researchStateEntityManager.getCompletedResearchIds();
+    const tabs = this.researchDefinitionManager
+      .getVisibleResearchTabs(completedResearchIds)
+      .map((tab) => ({
+        ...tab,
+        boxes: tab.boxes.map((box) => this.getBoxSnapshot(box)),
+      }));
 
     return {
-      boxes: this.researchDefinitionManager.getVisibleResearchBoxes(completedResearchIds).map((box) => ({
-        ...box,
-        researches: box.researches.map((research) => this.getResearchSnapshot(research)),
-      })),
+      tabs,
+      boxes: tabs[0]?.boxes ?? [],
       completedResearchIds,
+    };
+  }
+
+  getBoxSnapshot(box) {
+    return {
+      ...box,
+      researches: box.researches.map((research) => this.getResearchSnapshot(research)),
     };
   }
 

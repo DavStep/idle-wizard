@@ -620,6 +620,77 @@ function createGameplayFacadeFake() {
       ],
     },
   };
+  const advancedResearchBoxes = [
+    {
+      id: 'automation',
+      label: 'automation research',
+      researches: [
+        {
+          id: 'automation:autoPlantTile',
+          label: 'auto plant',
+          value: '50000 gold',
+          effect: 'tile',
+          showEffect: true,
+          costGold: 50000,
+          completed: false,
+          canResearch: false,
+        },
+        {
+          id: 'automation:autoHarvestPlant',
+          label: 'auto harvest',
+          value: '75000 gold',
+          effect: 'plant',
+          showEffect: true,
+          costGold: 75000,
+          completed: false,
+          canResearch: false,
+        },
+        {
+          id: 'automation:autoBrewCauldron',
+          label: 'auto brew',
+          value: '100000 gold',
+          effect: 'cauldron',
+          showEffect: true,
+          costGold: 100000,
+          completed: false,
+          canResearch: false,
+        },
+        {
+          id: 'automation:autoBottleCauldron',
+          label: 'auto bottle',
+          value: '125000 gold',
+          effect: 'cauldron',
+          showEffect: true,
+          costGold: 125000,
+          completed: false,
+          canResearch: false,
+        },
+        {
+          id: 'automation:autoCollectCauldron',
+          label: 'auto collect',
+          value: '150000 gold',
+          effect: 'cauldron',
+          showEffect: true,
+          costGold: 150000,
+          completed: false,
+          canResearch: false,
+        },
+      ],
+    },
+  ];
+  snapshot.research.completedResearchIds = [];
+  snapshot.research.tabs = [
+    {
+      id: 'regular',
+      label: 'regular research',
+      boxes: snapshot.research.boxes,
+    },
+    {
+      id: 'advanced',
+      label: 'advanced research',
+      boxes: advancedResearchBoxes,
+    },
+  ];
   const listeners = new Set();
 
   const publish = () => {
@@ -628,7 +699,10 @@ function createGameplayFacadeFake() {
     }
   };
 
-  const getResearches = () => snapshot.research.boxes.flatMap((box) => box.researches);
+  const getResearches = () =>
+    (snapshot.research.tabs ?? [{ boxes: snapshot.research.boxes }])
+      .flatMap((tab) => tab.boxes)
+      .flatMap((box) => box.researches);
 
   const updateResearchAffordability = () => {
     for (const research of getResearches()) {
@@ -2902,6 +2976,14 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('x2 summon');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('20 gold');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('Mana Tonic');
+    expect(
+      [...stage.querySelectorAll('.research-page__tab-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['regular research', 'advanced research']);
+    expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
+      'auto plant',
+    );
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'research',
     );
@@ -2946,6 +3028,43 @@ describe('PagesFacade', () => {
 
     expect(pagesFacade.getCurrentPageId()).toBe('brewing');
     expect(stage.querySelector('.brewing-page')).not.toBeNull();
+  });
+
+  it('switches the research page between regular and advanced research', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'research');
+
+    const advancedTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
+      (button) => button.textContent === 'advanced research',
+    );
+
+    expect(advancedTab).not.toBeNull();
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+      'seed unlock researches',
+    );
+
+    advancedTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(advancedTab.getAttribute('aria-selected')).toBe('true');
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+      'automation research',
+    );
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+      'auto plant',
+    );
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+      '50000 gold',
+    );
+    expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
+      'seed unlock researches',
+    );
   });
 
   it('shows Brewing recipes popup with unlocked recipes only', () => {

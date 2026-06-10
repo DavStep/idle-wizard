@@ -112,6 +112,7 @@
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
+- Research page uses `snapshot.research.tabs` for full-page regular/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
 - Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
 - Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
 - Research price controls are unboxed right-aligned text buttons; preserve click behavior without visible price boxes.

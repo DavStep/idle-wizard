@@ -1,3 +1,5 @@
+import { automationResearchIds } from '../../automation/automationResearchIds.js';
+
 const summonSeedResearches = [
   {
     id: 'summonSeedsX2',
@@ -28,13 +30,72 @@ const summonSeedResearches = [
   },
 ];
 
+const automationResearches = [
+  {
+    id: automationResearchIds.autoPlantTile,
+    label: 'auto plant',
+    value: 'tile',
+    showEffect: true,
+    description: 'empty garden tiles plant their selected seed when one is available.',
+  },
+  {
+    id: automationResearchIds.autoHarvestPlant,
+    label: 'auto harvest',
+    value: 'plant',
+    showEffect: true,
+    description: 'ready garden plants start harvesting without a tap.',
+  },
+  {
+    id: automationResearchIds.autoBrewCauldron,
+    label: 'auto brew',
+    value: 'cauldron',
+    showEffect: true,
+    description: 'the cauldron starts brewing when staged ingredients and mana are ready.',
+  },
+  {
+    id: automationResearchIds.autoBottleCauldron,
+    label: 'auto bottle',
+    value: 'cauldron',
+    showEffect: true,
+    description: 'finished brews start bottling without a tap.',
+  },
+  {
+    id: automationResearchIds.autoCollectCauldron,
+    label: 'auto collect',
+    value: 'cauldron',
+    showEffect: true,
+    description: 'bottled potions move into inventory without a tap.',
+  },
+];
+
 export class ResearchDefinitionManager {
   constructor({ itemsFacade, researchBalanceManager }) {
     this.itemsFacade = itemsFacade;
     this.researchBalanceManager = researchBalanceManager;
   }
 
-  getResearchBoxes() {
+  getResearchTabs() {
+    return [
+      {
+        id: 'regular',
+        label: 'regular research',
+        boxes: this.getRegularResearchBoxes(),
+      },
+      {
+        id: 'advanced',
+        label: 'advanced research',
+        boxes: [
+          {
+            id: 'automation',
+            label: 'automation research',
+            researches: automationResearches,
+          },
+        ],
+      },
+    ];
+  }
+
+  getRegularResearchBoxes() {
     return [
       {
         id: 'seedUnlocks',
@@ -54,16 +115,27 @@ export class ResearchDefinitionManager {
     ];
   }
 
+  getResearchBoxes() {
+    return this.getResearchTabs().flatMap((tab) => tab.boxes);
+  }
+
   getVisibleResearchBoxes(completedResearchIds = []) {
+    return this.getVisibleResearchTabs(completedResearchIds)[0]?.boxes ?? [];
+  }
+
+  getVisibleResearchTabs(completedResearchIds = []) {
     const completedIds = new Set(
       completedResearchIds.map((researchId) => this.normalizeResearchId(researchId)),
     );
 
-    return this.getResearchBoxes().map((box) => ({
-      ...box,
-      researches: box.researches.filter((research) =>
-        this.isVisibleResearch(research, completedIds),
-      ),
+    return this.getResearchTabs().map((tab) => ({
+      ...tab,
+      boxes: tab.boxes.map((box) => ({
+        ...box,
+        researches: box.researches.filter((research) =>
+          this.isVisibleResearch(research, completedIds),
+        ),
+      })),
     }));
   }
 
