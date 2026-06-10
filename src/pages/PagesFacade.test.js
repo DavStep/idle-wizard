@@ -2356,8 +2356,10 @@ describe('PagesFacade', () => {
     const authButton = stage.querySelector('.room-top-panel__auth-button');
 
     expect(authSection.hidden).toBe(false);
-    expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe('guest');
-    expect(authButton.textContent).toBe('login with google');
+    expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
+      'not connected',
+    );
+    expect(authButton.textContent).toBe('connect account');
 
     authButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();

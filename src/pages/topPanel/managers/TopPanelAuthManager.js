@@ -52,10 +52,10 @@ export class TopPanelAuthManager {
     this.authenticated = Boolean(oidc.authenticated);
     section.hidden = !oidc.enabled;
     button.disabled = !oidc.enabled;
-    button.textContent = this.authenticated ? 'logout' : 'login with google';
+    button.textContent = this.authenticated ? 'disconnect account' : 'connect account';
     button.setAttribute(
       'aria-label',
-      this.authenticated ? 'logout from google' : 'login with google',
+      this.authenticated ? 'disconnect google account' : 'connect google account',
     );
 
     const statusText = this.getStatusText(oidc);
@@ -73,6 +73,6 @@ export class TopPanelAuthManager {
       return oidc.displayName || oidc.email || 'connected';
     }
 
-    return 'guest';
+    return 'not connected';
   }
 }

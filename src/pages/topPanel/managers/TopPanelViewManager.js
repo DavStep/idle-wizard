@@ -197,12 +197,12 @@ export class TopPanelViewManager {
 
     this.refs.authStatus = document.createElement('div');
     this.refs.authStatus.className = 'room-top-panel__auth-status';
-    this.refs.authStatus.textContent = 'guest';
+    this.refs.authStatus.textContent = 'not connected';
 
     this.refs.authButton = document.createElement('button');
     this.refs.authButton.className = 'style-button room-top-panel__auth-button';
     this.refs.authButton.type = 'button';
-    this.refs.authButton.textContent = 'login with google';
+    this.refs.authButton.textContent = 'connect account';
 
     this.refs.authSection.append(authLabel, this.refs.authStatus, this.refs.authButton);
 
