@@ -62,6 +62,54 @@ const unknownPotionCatalog = [
   researchable: false,
 }));
 
+const herbSellPricesByKey = {
+  sage: 6,
+  mint: 7,
+  nettle: 8,
+  lavender: 10,
+  briar: 12,
+  glowcap: 14,
+  mandrake: 17,
+  sunroot: 20,
+  moonflower: 24,
+  frostmoss: 28,
+  dreambell: 32,
+  starAnise: 36,
+  bloodrose: 44,
+  dragonpepper: 52,
+};
+
+const potionSellPricesByKey = {
+  manaTonic: 55,
+  minorHealingPotion: 60,
+  nettleVigor: 65,
+  calmingDraught: 75,
+  simpleAntidote: 100,
+  venomDraught: 125,
+  briarWard: 105,
+  lanternTonic: 100,
+  healingPotion: 90,
+  moonlitFocus: 125,
+  sunrootStamina: 155,
+  frostmossCleanse: 160,
+  sleepDraught: 200,
+  elixirOfLife: 250,
+  starLuckPhiltre: 255,
+  dragonCourage: 285,
+  deepDreamVision: 365,
+  pactWard: 270,
+  ashenMemory: 130,
+  silverleafQuiet: 130,
+  emberSight: 255,
+  thornSleep: 155,
+  glassMoonElixir: 285,
+  rootboundResolve: 175,
+  nightOrchardTonic: 245,
+  starlessCourage: 325,
+  frostveinDraught: 225,
+  bloodlightWard: 250,
+};
+
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
@@ -74,6 +122,7 @@ const herbDefinitions = herbCatalog.map((herb, index) => ({
   label: herb.label,
   kind: itemKinds.herb,
   growthDurationMs: herb.growthDurationMs,
+  baseSellPrice: herbSellPricesByKey[herb.key],
 }));
 
 const potionDefinitions = potionCatalog.map((potion, index) => ({
@@ -87,7 +136,7 @@ const potionDefinitions = potionCatalog.map((potion, index) => ({
   ...(potion.known === undefined ? {} : { known: potion.known }),
   ...(potion.researchable === undefined ? {} : { researchable: potion.researchable }),
   ...(potion.hasRecipe === false ? { hasRecipe: false } : {}),
-  ...(potion.baseSellPrice === undefined ? {} : { baseSellPrice: potion.baseSellPrice }),
+  baseSellPrice: potion.baseSellPrice ?? potionSellPricesByKey[potion.key],
 }));
 
 const seedDefinitions = herbCatalog.map((herb, index) => ({

@@ -3,7 +3,6 @@ import { WorkshopManaSphereManager } from './managers/WorkshopManaSphereManager.
 import { WorkshopSeedInventoryManager } from './managers/WorkshopSeedInventoryManager.js';
 import { WorkshopSeedBlockManager } from './managers/WorkshopSeedBlockManager.js';
 import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManager.js';
-import { WorkshopWorldChatManager } from './managers/WorkshopWorldChatManager.js';
 import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
 import { WorkshopLogDialogManager } from './managers/WorkshopLogDialogManager.js';
 import { WorkshopDiscoveriesManager } from './managers/WorkshopDiscoveriesManager.js';
@@ -16,7 +15,6 @@ export class WorkshopPageFacade {
   constructor({
     gameplayFacade,
     leaderboardFacade,
-    worldChatFacade,
   } = {}) {
     this.roomViewManager = new WorkshopRoomViewManager();
     this.flyoutManager = new WorkshopFlyoutManager();
@@ -27,7 +25,6 @@ export class WorkshopPageFacade {
       onSummonNotice: (message) => this.flyoutManager.show(message),
     });
     this.leaderboardManager = new WorkshopLeaderboardManager({ gameplayFacade, leaderboardFacade });
-    this.worldChatManager = new WorkshopWorldChatManager({ worldChatFacade });
     this.logDialogManager = new WorkshopLogDialogManager({ gameplayFacade });
     this.discoveriesManager = new WorkshopDiscoveriesManager({ gameplayFacade });
     this.manaSphereManager = new WorkshopManaSphereManager({ gameplayFacade });
@@ -37,12 +34,11 @@ export class WorkshopPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
-    this.flyoutManager.mount(uiLayer);
+    this.taskManager.mount(uiLayer);
     this.manaSphereManager.mount(uiLayer);
     this.seedBlockManager.mount(uiLayer);
-    this.taskManager.mount(uiLayer);
+    this.flyoutManager.mount(uiLayer);
     this.leaderboardManager.mount(uiLayer);
-    this.worldChatManager.mount(uiLayer);
     this.logDialogManager.mount(uiLayer);
     this.discoveriesManager.mount(uiLayer);
     this.seedInventoryManager.mount(uiLayer);
@@ -52,7 +48,6 @@ export class WorkshopPageFacade {
     this.seedInventoryManager.unmount();
     this.discoveriesManager.unmount();
     this.logDialogManager.unmount();
-    this.worldChatManager.unmount();
     this.leaderboardManager.unmount();
     this.taskManager.unmount();
     this.seedBlockManager.unmount();

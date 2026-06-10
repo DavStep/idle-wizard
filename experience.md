@@ -28,11 +28,13 @@
 - bitECS 0.4 component calls use entity-first order: `addComponent(world, eid, component)`.
 - Player-facing event logs belong in gameplay/logs; page code should only render snapshot logs.
 - Completion logs for timed systems should come from system-manager callbacks, not from page button clicks.
+- Timed gameplay should consume uncapped `frame.timerDeltaSeconds`; keep capped `frame.deltaSeconds` only for render/UI stability.
+- Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
 - Gameplay resources/inventory/research/market state is currently in-memory only; dev HMR or reload resets it until a persistence facade exists.
 
 ## Gameplay Economy
 
-- Mana has generation and a cap; both should be upgradeable later.
+- Mana has generation and a cap; both upgrade through player level baseline plus research bonuses.
 - Summoning seeds consumes mana.
 - Canonical seed names: Sage, Mint, Nettle, Lavender, Briar, Glowcap, Mandrake, Sunroot, Moonflower, Frostmoss, Dreambell, Star Anise, Bloodrose, Dragonpepper.
 - For now, all seed drops use equal weight; keep a weight field anyway so rarity can change later.
@@ -44,33 +46,37 @@
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
 - Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
 - Brewing herb controls are tap-first on mobile; drag should start only after movement crosses a small threshold.
-- Brewing keeps the action button generic (`brew (N mana)`); cauldron status/message carries matched potion, locked recipe, and wasted mix state.
+- Brewing keeps the action button generic (`brew (N mana)`); cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Marked Brewing recipes persist across room tab changes; only explicit unmarking or marking another recipe clears the guide.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 Sage`), not expanded numbered slots.
 - Brewing recipe popup rows use an explicit `mark` action to send a recipe to the guide; do not hide that action behind the recipe name.
 - Brewing shows `recipes` and `potions` as sibling buttons, not a bordered recipes block; potions popup reads owned potion stacks from `snapshot.inventory`.
+- Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - Wasted Potion is not researchable and sells for 1 gold by item-level sell price override.
 - Research prices come from `src/gameplay/research/research-balance.json`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
 - Mana production and cap research levels come from `manaUpgradeSeries` in `research-balance.json`; UI shows only the next incomplete level in each series.
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
+- Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, and currently has no earning or spending rule.
-- Market shelf slot 1 starts unlocked for free; later slots cost gold from `shop-balance.json`.
-- Market shelf slots auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
-- Selecting a market shelf slot should only open the sell picker; do not show a `selected slot N` shelf message.
-- Market shelf price UI should read `sellGold` from the shop snapshot; do not duplicate price balance in page code.
-- Market shelf auto-sell should pass the item definition to `getSellGold(kind, item)` so item-level price overrides apply.
-- Market shelf selected slots show owned item quantity plus sell price; do not render a separate shelf gold row.
-- Market shelf selected slots should get quantity from slot snapshots, because zero-count selected items may be hidden from picker rows.
-- Market shelf future locked slots display `locked`; only the next locked slot displays its buy action.
-- Market shelf sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-slot selection leaves the old selected slot in the snapshot.
+- NPC market stand 1 starts unlocked for free; later stands cost gold from `shop-balance.json`.
+- NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
+- Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
+- NPC market price UI should read `sellGold` from the shop snapshot; do not duplicate price balance in page code.
+- NPC market auto-sell should pass the item definition to `getSellGold(kind, item)` so item-level price overrides apply.
+- NPC market `basePriceGold` is not the visible sell payout; neutral `npcBuyPriceGold` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
+- NPC market selected stands show owned item quantity plus sell price; do not render a separate shelf gold row.
+- NPC market selected stands should get quantity from slot snapshots, because zero-count selected items may be hidden from picker rows.
+- NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
+- NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
+- Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
-- User-facing shop naming is `market`: use `market shelf` for the trader shelf and `player market` for player listings.
+- User-facing shop naming is `npc market` for automatic NPC sales and `player market` for player listings; visible rows are `stand N`, even if internal/backend fields still say `slot`.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
@@ -110,16 +116,22 @@
 - Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
 - Research price controls are unboxed right-aligned text buttons; preserve click behavior without visible price boxes.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
-- Brewing recipe popup hides locked recipes; recipe names are bold, while ordered ingredient rows and `time:` details stay muted.
-- Brewing recipe popup group title is `recipes`, not `unlocked recipes`, because locked recipes are already hidden.
+- Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
+- Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
 - Brewing cauldron count lives as a normal-weight border-corner label like `0/5`; empty cauldron status stays blank and `empty` is centered in the box.
+- Brewing cauldron should show `unknown mix` for any non-empty no-match contents; do not wait for a full cauldron.
+- Brewing cauldron box should stay compact at partial fill, but leave action-row clearance for status plus five distinct ingredient rows.
+- Brewing cauldron should not show a separate `empty` clear button; ingredient rows own correction through their remove action.
+- Brewing action message should stay hidden; do not render helper/warning/result text under the brew button.
+- Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
+- Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
 - Brewing cauldron staged ingredients display as adjacent quantity groups like `- 2 Nettle`; do not show numbered slots.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
 - Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
 - Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.
-- Unknown-name glitch effects use one shared slower JS ticker with per-character phase changes, fixed-width 10-character ASCII text, and `aria-label="unknown"`; avoid whole-label CSS frame swaps.
+- Unknown item/potion masks use static six-character `??????` labels with `aria-label="unknown"`; do not use animated matrix/glitch text.
 - Tabbed popups put tab buttons below and outside the bordered `.style-dialog`; keep modal role/focus on the wrapper.
 - Keep an `8px` source gap between tabbed popup dialogs and their bottom tab buttons.
 - Popup tab buttons use the same `2px` stroke as popup dialogs.
@@ -130,11 +142,21 @@
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
 - Clicking the top-panel username opens settings; username editing and `white` / `black` visual theme choices live there.
+- Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
+- Level milestone dialogs use the selected level as the title, omit current/open/max filler, show gained `+N` rows above a divider, then total limits with right-aligned numbers.
+- Level milestone previous/next navigation uses bottom tabs outside the bordered dialog, not inline pager text.
+- Level milestone dialog content uses fixed height with internal scrolling so changing levels does not resize the popup.
+- Level milestone dialogs show a centered top-border `current` label only when the selected level is the player current level.
 - Player visual theme is stored on `PlayerFacade` snapshot and applied globally by `AppThemeManager` through `html[data-style-theme]`.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
+- World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
+- Page popup overlays should lift room pages only above the canvas (`z-index: 3`), not above shared top/chat/bottom chrome.
+- World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
+- Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
 - Main room page content panels should also use the Research-width `16px` source side inset.
 - Workshop tasks sit below the top panel and stay collapsed until the summary row is pressed.
+- Workshop tasks should expand in normal flow above mana sphere/seeds; do not overlay action panels.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
 - Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.
@@ -149,11 +171,13 @@
 
 - Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
+- If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
 - `DavStep/idle-wizard` is private; current GitHub plan rejected Pages enablement until the repo is public or the plan supports private Pages.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - Optional Google login is controlled by `VITE_SPACETIME_AUTH_CLIENT_ID`; GitHub Pages reads it from the `SPACETIME_AUTH_CLIENT_ID` Actions variable.
+- The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 
 ## Backend And Android
 
@@ -166,6 +190,10 @@
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables currently own shared `player` identity rows and `leaderboard` rows; client syncs username and player level only.
 - Shared player level displays use server `playerLevel`; sync `tasks.currentLevel` through `set_player_level` and do not infer other players locally.
+- Local player level milestones come from `player-level-balance.json`; they unlock permission to buy higher caps, never grant the tile/stand for free.
+- Player level sets baseline mana cap and mana regen from `player-level-balance.json`; mana research bonuses stack on top.
+- Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
+- Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.
 - Leaderboard total generated gold uses local gold lifetime total synced through `set_total_generated_gold`; current gold alone is not enough because spending lowers it.
 - Hydrate username from the server `player` row before pushing local values; otherwise local `wizard` can overwrite saved DB profile data.
 - Queue explicit username edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's save.

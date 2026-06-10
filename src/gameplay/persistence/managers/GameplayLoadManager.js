@@ -34,10 +34,10 @@ export class GameplayLoadManager {
     this.gameplayLogFacade.applyPersistenceSnapshot(save.logs);
     this.itemsFacade.applyPersistenceSnapshot(save.inventory);
     this.researchFacade.applyPersistenceSnapshot(save.research);
+    this.tasksFacade.applyPersistenceSnapshot(save.tasks);
     this.shopFacade.applyPersistenceSnapshot(save.shop);
     this.brewingFacade.applyPersistenceSnapshot(save.brewing, this.itemsFacade);
     this.gardenFacade.applyPersistenceSnapshot(save.garden);
-    this.tasksFacade.applyPersistenceSnapshot(save.tasks);
     return true;
   }
 }

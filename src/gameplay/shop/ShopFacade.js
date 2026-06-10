@@ -11,9 +11,16 @@ import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 
 export class ShopFacade {
   static explain =
-    'The market has a trader shelf for automatic sales and a player area for listing items other players can buy.';
+    'The market has NPC stands for automatic sales and player stands for listings other players can buy.';
 
-  constructor({ goldFacade, itemsFacade, researchFacade, npcMarketFacade, onItemSold } = {}) {
+  constructor({
+    goldFacade,
+    itemsFacade,
+    playerLevelFacade,
+    researchFacade,
+    npcMarketFacade,
+    onItemSold,
+  } = {}) {
     this.shopBalanceManager = new ShopBalanceManager();
     this.shopNpcPriceManager = new ShopNpcPriceManager({
       shopBalanceManager: this.shopBalanceManager,
@@ -33,11 +40,19 @@ export class ShopFacade {
     });
     this.shopSlotPurchaseManager = new ShopSlotPurchaseManager({
       goldFacade,
+      playerLevelFacade,
+      getMaxSlotsByLevel: () => this.getMaxNpcMarketStandsByLevel(),
+      getRequiredLevelForSlot: (slotNumber) =>
+        this.playerLevelFacade?.getRequiredLevelForNpcMarketStand(slotNumber) ?? null,
       shopBalanceManager: this.shopBalanceManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
     });
     this.shopPlayerSlotPurchaseManager = new ShopSlotPurchaseManager({
       goldFacade,
+      playerLevelFacade,
+      getMaxSlotsByLevel: () => this.getMaxPlayerMarketStandsByLevel(),
+      getRequiredLevelForSlot: (slotNumber) =>
+        this.playerLevelFacade?.getRequiredLevelForPlayerMarketStand(slotNumber) ?? null,
       shopBalanceManager: this.shopBalanceManager,
       shopShelfEntityManager: this.shopPlayerShelfEntityManager,
     });
@@ -61,6 +76,7 @@ export class ShopFacade {
       onItemSold,
     });
     this.itemsFacade = itemsFacade;
+    this.playerLevelFacade = playerLevelFacade;
   }
 
   setNpcMarketFacade(npcMarketFacade) {
@@ -125,10 +141,19 @@ export class ShopFacade {
     const unlockedSlots = this.shopShelfEntityManager.getUnlockedSlots();
     const playerUnlockedSlots = this.shopPlayerShelfEntityManager.getUnlockedSlots();
     const maxSlots = this.shopBalanceManager.getMaxShelfSlots();
+    const maxUnlockedSlotsByLevel = Math.min(maxSlots, this.getMaxNpcMarketStandsByLevel());
+    const maxPlayerUnlockedSlotsByLevel = Math.min(
+      maxSlots,
+      this.getMaxPlayerMarketStandsByLevel(),
+    );
     const nextSlotNumber = unlockedSlots + 1;
     const nextSlotCost = this.shopBalanceManager.getSlotCost(nextSlotNumber);
     const nextPlayerSlotNumber = playerUnlockedSlots + 1;
     const nextPlayerSlotCost = this.shopBalanceManager.getSlotCost(nextPlayerSlotNumber);
+    const nextSlotLockedByLevel =
+      nextSlotCost !== null && nextSlotNumber > maxUnlockedSlotsByLevel;
+    const nextPlayerSlotLockedByLevel =
+      nextPlayerSlotCost !== null && nextPlayerSlotNumber > maxPlayerUnlockedSlotsByLevel;
     const sellableItems = this.itemsFacade.getSellableItemSnapshots();
     const visibleSellItems = this.getVisibleSellItemSnapshots(sellableItems);
     const sellKinds = this.shopSellKindManager.getSellKinds().map((sellKind) => ({
@@ -140,9 +165,14 @@ export class ShopFacade {
       shelf: {
         unlockedSlots,
         maxSlots,
+        maxUnlockedSlotsByLevel,
         slotCosts: this.shopBalanceManager.getSlotCosts(),
         nextSlotNumber: nextSlotCost === null ? null : nextSlotNumber,
         nextSlotCost,
+        nextSlotLockedByLevel,
+        nextSlotRequiresLevel: nextSlotLockedByLevel
+          ? this.playerLevelFacade?.getRequiredLevelForNpcMarketStand(nextSlotNumber) ?? null
+          : null,
         selectedSlotNumber: this.shopShelfEntityManager.getSelectedSlotNumber(),
         autoSellSeconds: this.shopBalanceManager.getAutoSellSeconds(),
         sellKinds,
@@ -152,15 +182,37 @@ export class ShopFacade {
       playerShelf: {
         unlockedSlots: playerUnlockedSlots,
         maxSlots,
+        maxUnlockedSlotsByLevel: maxPlayerUnlockedSlotsByLevel,
         slotCosts: this.shopBalanceManager.getSlotCosts(),
         nextSlotNumber: nextPlayerSlotCost === null ? null : nextPlayerSlotNumber,
         nextSlotCost: nextPlayerSlotCost,
+        nextSlotLockedByLevel: nextPlayerSlotLockedByLevel,
+        nextSlotRequiresLevel: nextPlayerSlotLockedByLevel
+          ? this.playerLevelFacade?.getRequiredLevelForPlayerMarketStand(nextPlayerSlotNumber) ?? null
+          : null,
         selectedSlotNumber: this.shopPlayerShelfEntityManager.getSelectedSlotNumber(),
         sellKinds,
         sellItems: visibleSellItems,
         slots: this.getPlayerSlotSnapshots(),
       },
     };
+  }
+
+  getMaxSlotsByLevel() {
+    return this.getMaxNpcMarketStandsByLevel();
+  }
+
+  getMaxNpcMarketStandsByLevel() {
+    return (
+      this.playerLevelFacade?.getMaxNpcMarketStands?.() ?? this.shopBalanceManager.getMaxShelfSlots()
+    );
+  }
+
+  getMaxPlayerMarketStandsByLevel() {
+    return (
+      this.playerLevelFacade?.getMaxPlayerMarketStands?.() ??
+      this.shopBalanceManager.getMaxShelfSlots()
+    );
   }
 
   getVisibleSellItemSnapshots(sellableItems = this.itemsFacade.getSellableItemSnapshots()) {
@@ -274,7 +326,7 @@ export class ShopFacade {
       : [];
 
     this.shopShelfEntityManager.applySnapshot({
-      unlockedSlots: shelfSnapshot.unlockedSlots,
+      unlockedSlots: this.clampUnlockedSlotsByLevel(shelfSnapshot.unlockedSlots),
       selectedSlotNumber: shelfSnapshot.selectedSlotNumber,
       slots,
     });
@@ -293,9 +345,25 @@ export class ShopFacade {
       : [];
 
     this.shopPlayerShelfEntityManager.applySnapshot({
-      unlockedSlots: playerShelfSnapshot?.unlockedSlots,
+      unlockedSlots: this.clampPlayerUnlockedSlotsByLevel(playerShelfSnapshot?.unlockedSlots),
       selectedSlotNumber: playerShelfSnapshot?.selectedSlotNumber,
       slots: playerSlots,
     });
+  }
+
+  clampUnlockedSlotsByLevel(unlockedSlots) {
+    if (!Number.isInteger(unlockedSlots)) {
+      return unlockedSlots;
+    }
+
+    return Math.min(unlockedSlots, this.getMaxNpcMarketStandsByLevel());
+  }
+
+  clampPlayerUnlockedSlotsByLevel(unlockedSlots) {
+    if (!Number.isInteger(unlockedSlots)) {
+      return unlockedSlots;
+    }
+
+    return Math.min(unlockedSlots, this.getMaxPlayerMarketStandsByLevel());
   }
 }

@@ -13,6 +13,7 @@ describe('ItemDefinitionManager', () => {
       label: 'Sage',
       kind: 'herb',
       growthDurationMs: 20_000,
+      baseSellPrice: 6,
     });
     expect(manager.getDefinitionByKey('dragonpepperHerb')).toEqual({
       id: 1014,
@@ -20,6 +21,7 @@ describe('ItemDefinitionManager', () => {
       label: 'Dragonpepper',
       kind: 'herb',
       growthDurationMs: 210_000,
+      baseSellPrice: 52,
     });
     expect(manager.getSeedDefinition(1).producesHerbTypeId).toBe(1001);
     expect(manager.getSeedDefinition(14).producesHerbTypeId).toBe(1014);
@@ -29,12 +31,14 @@ describe('ItemDefinitionManager', () => {
       key: 'manaTonic',
       label: 'Mana Tonic',
       kind: 'potion',
+      baseSellPrice: 55,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2018,
       key: 'pactWard',
       label: 'Pact Ward',
       kind: 'potion',
+      baseSellPrice: 270,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2019,
@@ -46,6 +50,7 @@ describe('ItemDefinitionManager', () => {
       unknown: true,
       known: false,
       researchable: false,
+      baseSellPrice: 130,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2029,

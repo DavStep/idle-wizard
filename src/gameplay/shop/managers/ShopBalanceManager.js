@@ -43,7 +43,7 @@ export class ShopBalanceManager {
     }
 
     if (slotCosts.length > MAX_SHELF_SLOTS) {
-      throw new Error('shop shelf can have at most 5 slots.');
+      throw new Error('NPC market can have at most 5 stands.');
     }
 
     if (slotCosts.some((cost) => !Number.isFinite(cost) || cost < 0)) {
@@ -61,7 +61,7 @@ export class ShopBalanceManager {
       initialUnlockedSlots < 0 ||
       initialUnlockedSlots > this.getMaxShelfSlots()
     ) {
-      throw new Error('shop-balance.json initial unlocked slots must fit shelf slots.');
+      throw new Error('shop-balance.json initial unlocked slots must fit market stands.');
     }
 
     return initialUnlockedSlots;

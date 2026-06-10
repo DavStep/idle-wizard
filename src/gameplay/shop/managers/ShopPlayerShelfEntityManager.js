@@ -31,7 +31,7 @@ export class ShopPlayerShelfEntityManager {
 
   getEntityId() {
     if (this.entityId === null) {
-      throw new Error('Player shop shelf entity has not been initialized.');
+      throw new Error('Player market stand entity has not been initialized.');
     }
 
     return this.entityId;
@@ -162,7 +162,7 @@ export class ShopPlayerShelfEntityManager {
     );
 
     if (slotEntityId === undefined) {
-      throw new Error(`Unknown player shop shelf slot: ${slotNumber}`);
+      throw new Error(`Unknown player market stand: ${slotNumber}`);
     }
 
     return slotEntityId;

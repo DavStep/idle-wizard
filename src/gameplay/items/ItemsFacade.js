@@ -142,7 +142,7 @@ export class ItemsFacade {
           known: discovered,
           discoveredByUsername: discovery?.username ?? null,
           discoveredAtMs: discovery?.discoveredAtMs ?? null,
-          ingredients: discovered ? recipe.ingredients : [],
+          ingredients: recipe.ingredients,
           manaCost: recipe.manaCost,
           brewDurationMs: recipe.brewDurationMs,
         };

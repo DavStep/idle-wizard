@@ -276,12 +276,15 @@ export class GardenPlotManager {
       refs.label.textContent = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
       refs.state.textContent = '';
       this.setTileAction(refs, {
-        label: isNextLockedTile ? `buy ${this.formatGold(plot.nextTileCost)}` : '',
+        label: isNextLockedTile ? this.formatLockedTileAction(plot) : '',
       });
-      refs.button.disabled = !isNextLockedTile || gold.current < plot.nextTileCost;
+      refs.button.disabled =
+        !isNextLockedTile || plot.nextTileLockedByLevel || gold.current < plot.nextTileCost;
       refs.button.setAttribute(
         'aria-label',
-        isNextLockedTile ? `buy garden tile ${tile.tileNumber}` : `locked tile ${tile.tileNumber}`,
+        isNextLockedTile
+          ? this.formatLockedTileAriaLabel(tile, plot)
+          : `locked tile ${tile.tileNumber}`,
       );
       refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
       this.hideProgress(refs);
@@ -324,6 +327,22 @@ export class GardenPlotManager {
     } else {
       this.hideProgress(refs);
     }
+  }
+
+  formatLockedTileAction(plot) {
+    if (plot.nextTileLockedByLevel) {
+      return `level ${plot.nextTileRequiresLevel}`;
+    }
+
+    return `buy ${this.formatGold(plot.nextTileCost)}`;
+  }
+
+  formatLockedTileAriaLabel(tile, plot) {
+    if (plot.nextTileLockedByLevel) {
+      return `garden tile ${tile.tileNumber} requires level ${plot.nextTileRequiresLevel}`;
+    }
+
+    return `buy garden tile ${tile.tileNumber}`;
   }
 
   renderProgress(refs, progress) {

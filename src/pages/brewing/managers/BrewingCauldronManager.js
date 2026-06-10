@@ -144,49 +144,28 @@ export class BrewingCauldronManager {
     const root = document.createElement('div');
     root.className = 'brewing-page__actions';
 
-    const brewButton = document.createElement('button');
-    brewButton.className = 'style-button brewing-page__brew-button';
-    brewButton.type = 'button';
-    brewButton.addEventListener('click', () => this.onBrew());
+    const actionButton = document.createElement('button');
+    actionButton.className = 'style-button brewing-page__action-button';
+    actionButton.type = 'button';
+    actionButton.addEventListener('click', () => this.onPrimaryAction());
 
-    const brewButtonLabel = document.createElement('span');
-    brewButtonLabel.className = 'brewing-page__brew-button-label';
+    const actionButtonLabel = document.createElement('span');
+    actionButtonLabel.className = 'brewing-page__action-button-label';
 
-    const brewButtonCost = document.createElement('span');
-    brewButtonCost.className = 'brewing-page__brew-button-cost';
+    const actionButtonCost = document.createElement('span');
+    actionButtonCost.className = 'brewing-page__action-button-cost';
 
-    brewButton.append(brewButtonLabel, brewButtonCost);
-
-    const clearButton = document.createElement('button');
-    clearButton.className = 'style-button brewing-page__clear-button';
-    clearButton.type = 'button';
-    clearButton.textContent = 'empty';
-    clearButton.addEventListener('click', () => this.onClear());
-
-    const bottleButton = document.createElement('button');
-    bottleButton.className = 'style-button brewing-page__bottle-button';
-    bottleButton.type = 'button';
-    bottleButton.textContent = 'bottle';
-    bottleButton.addEventListener('click', () => this.onBottle());
-
-    const collectButton = document.createElement('button');
-    collectButton.className = 'style-button brewing-page__collect-button';
-    collectButton.type = 'button';
-    collectButton.textContent = 'collect';
-    collectButton.addEventListener('click', () => this.onCollect());
+    actionButton.append(actionButtonLabel, actionButtonCost);
 
     const message = document.createElement('div');
     message.className = 'brewing-page__message';
 
-    root.append(brewButton, clearButton, bottleButton, collectButton, message);
+    root.append(actionButton, message);
     return {
       root,
-      brewButton,
-      brewButtonLabel,
-      brewButtonCost,
-      clearButton,
-      bottleButton,
-      collectButton,
+      actionButton,
+      actionButtonLabel,
+      actionButtonCost,
       message,
     };
   }
@@ -418,70 +397,78 @@ export class BrewingCauldronManager {
   }
 
   renderActions(brewing) {
-    const hasCost = Number.isFinite(brewing.manaCost);
+    const action = this.getPrimaryAction(brewing);
+
+    this.setText(
+      this.refs.actions.actionButtonLabel,
+      action.hasCost ? `${action.label} ` : action.label,
+    );
+    this.setHidden(this.refs.actions.actionButtonCost, !action.hasCost);
+    this.setText(
+      this.refs.actions.actionButtonCost,
+      action.hasCost ? `(${brewing.manaCost} mana)` : '',
+    );
+    this.setDisabled(this.refs.actions.actionButton, action.disabled);
+    this.setAttribute(this.refs.actions.actionButton, 'data-action', action.id);
+    this.setAttribute(
+      this.refs.actions.actionButton,
+      'aria-disabled',
+      action.disabled ? 'true' : 'false',
+    );
+    this.setAttribute(
+      this.refs.actions.actionButton,
+      'aria-label',
+      action.ariaLabel,
+    );
+    this.setHidden(this.refs.actions.message, true);
+    this.setText(this.refs.actions.message, '');
+  }
+
+  getPrimaryAction(brewing) {
+    if (brewing.activeBrew) {
+      if (brewing.activeBrew.canCollect || brewing.activeBrew.phase === 'ready') {
+        const canCollect = Boolean(brewing.activeBrew.canCollect);
+        return {
+          id: 'collect',
+          label: 'collect',
+          hasCost: false,
+          disabled: !canCollect,
+          ariaLabel: canCollect
+            ? `collect ${brewing.activeBrew.label}`
+            : 'collect potion',
+        };
+      }
+
+      if (
+        brewing.activeBrew.canStartBottling ||
+        brewing.activeBrew.phase === 'brewed' ||
+        brewing.activeBrew.phase === 'bottling'
+      ) {
+        const canStartBottling = Boolean(brewing.activeBrew.canStartBottling);
+        return {
+          id: 'bottle',
+          label: 'bottle',
+          hasCost: false,
+          disabled: !canStartBottling,
+          ariaLabel: canStartBottling
+            ? `start bottling ${brewing.activeBrew.label}`
+            : 'start bottling',
+        };
+      }
+    }
+
     const recipeLocked = Boolean(
       brewing.match && !brewing.match.unlocked && !brewing.match.discoverable,
     );
     const canBrew = brewing.canBrew && !recipeLocked;
 
-    this.setText(this.refs.actions.brewButtonLabel, hasCost ? 'brew ' : 'brew');
-    this.setHidden(this.refs.actions.brewButtonCost, !hasCost);
-    this.setText(
-      this.refs.actions.brewButtonCost,
-      hasCost ? `(${brewing.manaCost} mana)` : '',
-    );
-    this.setDisabled(this.refs.actions.brewButton, !canBrew);
-    this.setAttribute(
-      this.refs.actions.brewButton,
-      'aria-disabled',
-      canBrew ? 'false' : 'true',
-    );
-    this.setAttribute(
-      this.refs.actions.brewButton,
-      'aria-label',
-      this.formatBrewAriaLabel(brewing),
-    );
-    this.setDisabled(
-      this.refs.actions.clearButton,
-      brewing.ingredients.length === 0 || Boolean(brewing.activeBrew),
-    );
-    this.setAttribute(
-      this.refs.actions.clearButton,
-      'aria-disabled',
-      this.refs.actions.clearButton.disabled ? 'true' : 'false',
-    );
-    const canStartBottling = Boolean(brewing.activeBrew?.canStartBottling);
-    this.setHidden(this.refs.actions.bottleButton, !canStartBottling);
-    this.setDisabled(this.refs.actions.bottleButton, !canStartBottling);
-    this.setAttribute(
-      this.refs.actions.bottleButton,
-      'aria-disabled',
-      canStartBottling ? 'false' : 'true',
-    );
-    this.setAttribute(
-      this.refs.actions.bottleButton,
-      'aria-label',
-      canStartBottling ? `start bottling ${brewing.activeBrew.label}` : 'start bottling',
-    );
-    const canCollect = Boolean(brewing.activeBrew?.canCollect);
-    this.setHidden(this.refs.actions.collectButton, !canCollect);
-    this.setDisabled(this.refs.actions.collectButton, !canCollect);
-    this.setAttribute(
-      this.refs.actions.collectButton,
-      'aria-disabled',
-      canCollect ? 'false' : 'true',
-    );
-    this.setAttribute(
-      this.refs.actions.collectButton,
-      'aria-label',
-      canCollect ? `collect ${brewing.activeBrew.label}` : 'collect potion',
-    );
-    this.setText(
-      this.refs.actions.message,
-      brewing.activeBrew
-        ? this.formatActionHint(brewing)
-        : this.message || this.formatActionHint(brewing),
-    );
+    return {
+      id: 'brew',
+      label: 'brew',
+      hasCost: !brewing.activeBrew && Number.isFinite(brewing.manaCost),
+      disabled: !canBrew,
+      ariaLabel: this.formatBrewAriaLabel(brewing),
+    };
   }
 
   onHerbButtonClick(event, itemTypeId) {
@@ -522,24 +509,27 @@ export class BrewingCauldronManager {
     }
   }
 
-  onClear() {
-    const result = this.gameplayFacade.clearBrewingCauldron();
-
-    if (!result.ok) {
-      this.message = this.formatResultMessage(result);
-      this.render(this.gameplayFacade.getSnapshot());
-      this.flashMessage();
-    } else {
-      this.message = '';
-      this.render(this.gameplayFacade.getSnapshot());
-    }
-  }
-
-  onBrew() {
-    if (this.refs.actions.brewButton.disabled) {
+  onPrimaryAction() {
+    if (this.refs.actions.actionButton.disabled) {
       return;
     }
 
+    const action = this.refs.actions.actionButton.dataset.action;
+
+    if (action === 'collect') {
+      this.onCollect();
+      return;
+    }
+
+    if (action === 'bottle') {
+      this.onBottle();
+      return;
+    }
+
+    this.onBrew();
+  }
+
+  onBrew() {
     const result = this.gameplayFacade.brewCauldron();
 
     if (result.ok) {
@@ -553,10 +543,6 @@ export class BrewingCauldronManager {
   }
 
   onBottle() {
-    if (this.refs.actions.bottleButton.disabled) {
-      return;
-    }
-
     const result = this.gameplayFacade.startBrewingBottling();
 
     if (result.ok) {
@@ -570,10 +556,6 @@ export class BrewingCauldronManager {
   }
 
   onCollect() {
-    if (this.refs.actions.collectButton.disabled) {
-      return;
-    }
-
     const result = this.gameplayFacade.collectBrewingPotion();
 
     if (result.ok) {
@@ -771,15 +753,7 @@ export class BrewingCauldronManager {
   formatCauldronStatus(brewing) {
     const count = brewing.ingredients.length;
     if (brewing.activeBrew) {
-      if (brewing.activeBrew.canStartBottling) {
-        return 'brewing done';
-      }
-
-      if (brewing.activeBrew.phase === 'ready') {
-        return 'bottling done';
-      }
-
-      return `${this.getActivePhaseLabel(brewing.activeBrew)} ${brewing.activeBrew.label}`;
+      return '';
     }
 
     if (count === 0) {
@@ -796,21 +770,17 @@ export class BrewingCauldronManager {
         : `${brewing.match.label} locked`;
     }
 
-    if (count >= brewing.maxIngredients) {
-      return 'unknown mix';
-    }
-
-    return 'order matters';
+    return 'unknown mix';
   }
 
   formatActionHint(brewing) {
     if (brewing.activeBrew) {
       if (brewing.activeBrew.canCollect) {
-        return 'collect potion';
+        return '';
       }
 
       if (brewing.activeBrew.canStartBottling) {
-        return 'start bottling';
+        return '';
       }
 
       return brewing.activeBrew.phase === 'bottling'
@@ -834,12 +804,8 @@ export class BrewingCauldronManager {
       return `need ${brewing.manaCost} mana`;
     }
 
-    if (brewing.match?.unlocked) {
-      return `ready: ${brewing.match.label}`;
-    }
-
-    if (brewing.match?.discoverable) {
-      return 'ready: unknown recipe';
+    if (brewing.match?.unlocked || brewing.match?.discoverable) {
+      return '';
     }
 
     if (brewing.canBrew) {

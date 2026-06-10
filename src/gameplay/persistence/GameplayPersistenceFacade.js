@@ -21,6 +21,7 @@ export class GameplayPersistenceFacade {
     brewingFacade,
     gardenFacade,
     tasksFacade,
+    now = () => Date.now(),
   }) {
     this.storageManager = new GameplayStorageManager({ storage });
     this.migrationManager = new GameplayMigrationManager();
@@ -35,6 +36,7 @@ export class GameplayPersistenceFacade {
       brewingFacade,
       gardenFacade,
       tasksFacade,
+      now,
     });
     this.loadManager = new GameplayLoadManager({
       manaFacade,
@@ -48,6 +50,8 @@ export class GameplayPersistenceFacade {
       gardenFacade,
       tasksFacade,
     });
+    this.now = now;
+    this.offlineDeltaSeconds = 0;
     this.autosaveElapsedSeconds = 0;
     this.boundSave = () => this.save();
   }
@@ -56,10 +60,13 @@ export class GameplayPersistenceFacade {
     const save = this.migrationManager.migrate(this.storageManager.load());
 
     if (!save) {
+      this.offlineDeltaSeconds = 0;
       return false;
     }
 
-    return this.loadManager.applySave(save);
+    const loaded = this.loadManager.applySave(save);
+    this.offlineDeltaSeconds = loaded ? this.getOfflineDeltaSeconds(save) : 0;
+    return loaded;
   }
 
   save() {
@@ -67,7 +74,11 @@ export class GameplayPersistenceFacade {
   }
 
   afterUpdate(frame = {}) {
-    const deltaSeconds = Number.isFinite(frame.deltaSeconds) ? frame.deltaSeconds : 0;
+    const deltaSeconds = Number.isFinite(frame.timerDeltaSeconds)
+      ? frame.timerDeltaSeconds
+      : Number.isFinite(frame.deltaSeconds)
+        ? frame.deltaSeconds
+        : 0;
     this.autosaveElapsedSeconds += deltaSeconds;
 
     if (this.autosaveElapsedSeconds < AUTOSAVE_SECONDS) {
@@ -90,5 +101,19 @@ export class GameplayPersistenceFacade {
     if (typeof globalThis.removeEventListener === 'function') {
       globalThis.removeEventListener('pagehide', this.boundSave);
     }
+  }
+
+  consumeOfflineDeltaSeconds() {
+    const deltaSeconds = this.offlineDeltaSeconds;
+    this.offlineDeltaSeconds = 0;
+    return deltaSeconds;
+  }
+
+  getOfflineDeltaSeconds(save) {
+    if (!Number.isFinite(save?.savedAt)) {
+      return 0;
+    }
+
+    return Math.max(0, (this.now() - save.savedAt) / 1_000);
   }
 }

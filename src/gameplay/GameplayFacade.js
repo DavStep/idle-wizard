@@ -7,6 +7,7 @@ import { ManaFacade } from './mana/ManaFacade.js';
 import { GameplayStateObserverManager } from './managers/GameplayStateObserverManager.js';
 import { GameplayLogFacade } from './logs/GameplayLogFacade.js';
 import { GameplayPersistenceFacade } from './persistence/GameplayPersistenceFacade.js';
+import { PlayerLevelFacade } from './playerLevel/PlayerLevelFacade.js';
 import { ResearchFacade } from './research/ResearchFacade.js';
 import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
 import { ShopFacade } from './shop/ShopFacade.js';
@@ -16,7 +17,7 @@ export class GameplayFacade {
   static explain =
     'Runs the player resources and actions: mana fills up, actions spend it, and owned things change.';
 
-  constructor({ persistenceStorage } = {}) {
+  constructor({ persistenceStorage, persistenceNow } = {}) {
     this.stateObserverManager = new GameplayStateObserverManager();
     this.itemsFacade = new ItemsFacade();
     this.manaFacade = new ManaFacade();
@@ -25,6 +26,9 @@ export class GameplayFacade {
     this.gameplayLogFacade = new GameplayLogFacade();
     this.tasksFacade = new TasksFacade({
       itemsFacade: this.itemsFacade,
+    });
+    this.playerLevelFacade = new PlayerLevelFacade({
+      tasksFacade: this.tasksFacade,
     });
     this.researchFacade = new ResearchFacade({
       goldFacade: this.goldFacade,
@@ -45,12 +49,14 @@ export class GameplayFacade {
     this.shopFacade = new ShopFacade({
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
+      playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
       onItemSold: (event) => this.gameplayLogFacade.logItemSold(event),
     });
     this.gardenFacade = new GardenFacade({
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
+      playerLevelFacade: this.playerLevelFacade,
       onHarvestComplete: (event) => this.gameplayLogFacade.logGardenHarvestCompleted(event),
     });
     this.persistenceFacade = new GameplayPersistenceFacade({
@@ -65,6 +71,7 @@ export class GameplayFacade {
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
       tasksFacade: this.tasksFacade,
+      now: persistenceNow,
     });
     this.potionDiscoveryFacade = null;
     this.initialized = false;
@@ -104,7 +111,11 @@ export class GameplayFacade {
     this.seedSummoningFacade.initialize(ecsManagers);
     this.shopFacade.initialize(ecsManagers);
     this.gardenFacade.initialize(ecsManagers);
-    this.persistenceFacade.load();
+    const loaded = this.persistenceFacade.load();
+    this.syncPlayerLevelManaEffects();
+    if (loaded) {
+      this.applyOfflineTimerCatchup(ecsFacade);
+    }
     this.persistenceFacade.start();
     this.initialized = true;
     this.publishSnapshot();
@@ -133,7 +144,10 @@ export class GameplayFacade {
   buyShopShelfSlot() {
     const result = this.shopFacade.buyNextShelfSlot();
     if (result.ok) {
-      this.gameplayLogFacade.logShopSlotBought(result);
+      this.gameplayLogFacade.logShopStandBought({
+        ...result,
+        marketLabel: 'npc market',
+      });
     }
     this.publishAndSaveSnapshot();
     return result;
@@ -142,7 +156,10 @@ export class GameplayFacade {
   buyPlayerShopShelfSlot() {
     const result = this.shopFacade.buyNextPlayerShelfSlot();
     if (result.ok) {
-      this.gameplayLogFacade.logShopSlotBought(result);
+      this.gameplayLogFacade.logShopStandBought({
+        ...result,
+        marketLabel: 'player market',
+      });
     }
     this.publishAndSaveSnapshot();
     return result;
@@ -165,6 +182,9 @@ export class GameplayFacade {
 
   completeTask(taskId) {
     const result = this.tasksFacade.completeTask(taskId);
+    if (result.ok && result.advanced) {
+      this.syncPlayerLevelManaEffects();
+    }
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -326,6 +346,7 @@ export class GameplayFacade {
           this.potionDiscoveryFacade?.getDiscovery(potionKey) ?? null,
       }),
       logs: this.gameplayLogFacade.getSnapshot(),
+      playerLevel: this.playerLevelFacade.getSnapshot(),
       tasks: this.tasksFacade.getSnapshot(),
       research: this.researchFacade.getSnapshot(),
       shop: this.shopFacade.getSnapshot(),
@@ -339,6 +360,25 @@ export class GameplayFacade {
 
   publishAndSaveSnapshot() {
     this.publishSnapshot();
+    this.persistenceFacade.save();
+  }
+
+  syncPlayerLevelManaEffects() {
+    this.manaFacade.setLevelUpgradeEffects(this.playerLevelFacade.getManaEffects());
+  }
+
+  applyOfflineTimerCatchup(ecsFacade) {
+    const offlineDeltaSeconds = this.persistenceFacade.consumeOfflineDeltaSeconds();
+
+    if (!Number.isFinite(offlineDeltaSeconds) || offlineDeltaSeconds <= 0) {
+      return;
+    }
+
+    ecsFacade.update({
+      deltaSeconds: 0,
+      timerDeltaSeconds: offlineDeltaSeconds,
+      offline: true,
+    });
     this.persistenceFacade.save();
   }
 }

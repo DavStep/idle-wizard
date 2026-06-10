@@ -1,5 +1,4 @@
-import { getItemDisplay } from '../../shared/itemResearchStatus.js';
-import { applyMysteryText } from '../../shared/mysteryText.js';
+import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 
 const DISCOVERY_TABS = [
   { id: 'seeds', label: 'seeds' },
@@ -15,7 +14,6 @@ export class WorkshopDiscoveriesManager {
     this.refs = {};
     this.visible = false;
     this.selectedTabId = 'potions';
-    this.selectedPotionKey = null;
     this.lastSnapshot = {};
     this.renderedSignature = '';
     this.previousFocus = null;
@@ -133,13 +131,6 @@ export class WorkshopDiscoveriesManager {
     }
 
     this.selectedTabId = tabId;
-    this.selectedPotionKey = null;
-    this.renderedSignature = '';
-    this.render(this.lastSnapshot);
-  }
-
-  onSelectPotion(potionKey) {
-    this.selectedPotionKey = this.selectedPotionKey === potionKey ? null : potionKey;
     this.renderedSignature = '';
     this.render(this.lastSnapshot);
   }
@@ -173,7 +164,6 @@ export class WorkshopDiscoveriesManager {
     this.refs = {};
     this.visible = false;
     this.selectedTabId = 'potions';
-    this.selectedPotionKey = null;
     this.lastSnapshot = {};
     this.renderedSignature = '';
     this.previousFocus = null;
@@ -186,6 +176,7 @@ export class WorkshopDiscoveriesManager {
 
     this.lastSnapshot = snapshot ?? {};
     this.updateTabs();
+    this.refs.rows.classList.toggle('is-recipe-list', this.selectedTabId === 'potions');
 
     const signature = this.createRenderSignature(this.lastSnapshot);
     if (signature === this.renderedSignature) {
@@ -214,9 +205,6 @@ export class WorkshopDiscoveriesManager {
 
   renderPotionRows(snapshot) {
     const potions = snapshot.discoveries?.potions ?? [];
-    const selectedPotion = potions.find(
-      (potion) => potion.key === this.selectedPotionKey && potion.discovered,
-    );
 
     if (!potions.length) {
       this.refs.rows.replaceChildren(this.createEmptyRow());
@@ -224,86 +212,100 @@ export class WorkshopDiscoveriesManager {
       return;
     }
 
-    this.refs.rows.replaceChildren(...potions.map((potion) => this.createPotionRow(snapshot, potion)));
-    this.refs.detail.replaceChildren(
-      ...(selectedPotion ? [this.createPotionDetail(selectedPotion)] : []),
+    this.refs.rows.replaceChildren(
+      ...potions.map((potion) => this.createPotionRecipeRow(potion)),
     );
+    this.refs.detail.replaceChildren();
   }
 
-  createPotionRow(snapshot, potion) {
-    const display = getItemDisplay(snapshot, potion, potion.quantity);
-    const row = document.createElement(potion.discovered ? 'button' : 'div');
-    row.className = 'workshop-page__row workshop-page__discovery-row';
+  createPotionRecipeRow(potion) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__discovery-recipe-row brewing-page__recipe-row';
     row.classList.toggle('is-unknown', !potion.discovered);
-    row.classList.toggle('is-discovered', potion.discovered);
-    row.classList.toggle('is-selected', potion.key === this.selectedPotionKey);
+
+    const main = document.createElement('div');
+    main.className = 'brewing-page__recipe-main';
+
+    const key = document.createElement('span');
+    key.className = 'row_key brewing-page__recipe-name';
+    key.textContent = potion.discovered
+      ? `${potion.label}: discovered by ${potion.discoveredByUsername || 'wizard'}`
+      : 'unknown potion';
 
     if (potion.discovered) {
-      row.type = 'button';
-      row.addEventListener('click', () => this.onSelectPotion(potion.key));
-      row.setAttribute('aria-label', `show ${potion.label} recipe`);
+      main.append(key);
+    } else {
+      const val = document.createElement('span');
+      val.className = 'row_val workshop-page__discovery-byline';
+      val.textContent = 'unowned';
+      main.append(key, val);
     }
-
-    const key = document.createElement('span');
-    key.className = 'row_key';
-    key.textContent = potion.discovered ? potion.label : display.label;
-    applyMysteryText(key, potion, !potion.discovered && display.unknown);
-
-    const val = document.createElement('span');
-    val.className = 'row_val';
-    val.textContent = potion.discovered
-      ? `by ${potion.discoveredByUsername || 'wizard'}`
-      : 'unowned';
-
-    row.append(key, val);
+    row.append(
+      main,
+      this.createIngredientsList(potion.ingredients, { masked: !potion.discovered }),
+      this.createRecipeMeta(potion),
+    );
     return row;
   }
 
-  createPotionDetail(potion) {
-    const detail = document.createElement('section');
-    detail.className = 'workshop-page__discovery-recipe';
+  createIngredientsList(ingredients = [], { masked = false } = {}) {
+    const root = document.createElement('div');
+    root.className = 'brewing-page__recipe-ingredients';
 
-    detail.append(
-      this.createDetailRow('date', this.formatDate(potion.discoveredAtMs)),
-      this.createDetailRow('recipe', ''),
-      ...this.createIngredientRows(potion.ingredients),
+    const title = document.createElement('div');
+    title.className = 'brewing-page__recipe-ingredients-title';
+    title.textContent = 'ingredients:';
+    root.append(title);
+
+    if (!ingredients.length) {
+      const empty = document.createElement('div');
+      empty.className = 'brewing-page__recipe-ingredient-row';
+      empty.textContent = masked ? `- 0 ${MYSTERY_TEXT_LABEL}` : 'none';
+      root.append(empty);
+      return root;
+    }
+
+    root.append(
+      ...ingredients.map((ingredient) => this.createIngredientRow(ingredient, { masked })),
     );
 
-    return detail;
+    return root;
   }
 
-  createIngredientRows(ingredients = []) {
-    if (!ingredients.length) {
-      return [this.createDetailText('none')];
+  createIngredientRow(ingredient, { masked = false } = {}) {
+    const row = document.createElement('div');
+    row.className = 'brewing-page__recipe-ingredient-row';
+
+    if (masked) {
+      row.classList.add('is-unknown');
     }
 
-    return ingredients.map((ingredient) => {
-      const quantity = Number.isFinite(ingredient.quantity) ? ingredient.quantity : 1;
-      return this.createDetailText(`- ${Math.max(1, quantity)} ${ingredient.label}`);
-    });
-  }
-
-  createDetailRow(label, value) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__row workshop-page__discovery-detail-row';
-
-    const key = document.createElement('span');
-    key.className = 'row_key';
-    key.textContent = label;
-
-    const val = document.createElement('span');
-    val.className = 'row_val';
-    val.textContent = value;
-
-    row.append(key, val);
+    const quantity = Number.isFinite(ingredient.quantity) ? ingredient.quantity : 1;
+    row.textContent = `- ${Math.max(1, quantity)} ${
+      masked ? MYSTERY_TEXT_LABEL : ingredient.label
+    }`;
     return row;
   }
 
-  createDetailText(text) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__discovery-ingredient-row';
-    row.textContent = text;
-    return row;
+  createRecipeMeta(potion) {
+    const meta = document.createElement('div');
+    meta.className = 'brewing-page__recipe-meta';
+
+    const cost = document.createElement('span');
+    cost.className = 'brewing-page__recipe-cost';
+    cost.textContent =
+      potion.discovered && Number.isFinite(potion.manaCost)
+        ? `cost ${potion.manaCost} mana`
+        : 'cost ? mana';
+
+    const duration = document.createElement('span');
+    duration.className = 'brewing-page__recipe-duration';
+    duration.textContent = `time: ${
+      potion.discovered ? this.formatDuration(potion.brewDurationMs) : '?s'
+    }`;
+
+    meta.append(cost, duration);
+    return meta;
   }
 
   createEmptyRow() {
@@ -317,20 +319,34 @@ export class WorkshopDiscoveriesManager {
     const potions = snapshot.discoveries?.potions ?? [];
     const potionSignature = potions
       .map(
-        (potion) =>
-          `${potion.key}:${potion.discovered}:${potion.discoveredByUsername}:${potion.discoveredAtMs}`,
+        (potion) => {
+          const ingredientsSignature = (potion.ingredients ?? [])
+            .map(
+              (ingredient) =>
+                `${ingredient.key}:${ingredient.label}:${ingredient.quantity ?? 1}`,
+            )
+            .join(',');
+          return [
+            potion.key,
+            potion.discovered,
+            potion.discoveredByUsername,
+            potion.manaCost,
+            potion.brewDurationMs,
+            ingredientsSignature,
+          ].join(':');
+        },
       )
       .join('|');
 
-    return `${this.selectedTabId}:${this.selectedPotionKey ?? ''}:${potionSignature}`;
+    return `${this.selectedTabId}:${potionSignature}`;
   }
 
-  formatDate(timestampMs) {
-    if (!Number.isFinite(timestampMs) || timestampMs <= 0) {
-      return 'unknown';
+  formatDuration(durationMs) {
+    if (!Number.isFinite(durationMs)) {
+      return '?s';
     }
 
-    return new Date(timestampMs).toISOString().slice(0, 10);
+    return `${Math.ceil(durationMs / 1_000)}s`;
   }
 
   applyVisibility() {

@@ -135,7 +135,7 @@ export class BrewingRecipeBookManager {
 
     this.renderedSignature = signature;
 
-    this.refs.rows.replaceChildren(this.createGroup('recipes', unlockedRecipes, 'unlocked'));
+    this.refs.rows.replaceChildren(...this.createRecipeListRows(unlockedRecipes));
   }
 
   createRenderSignature(recipes) {
@@ -152,28 +152,15 @@ export class BrewingRecipeBookManager {
     return `${selectedRecipeKey}::${recipeSignature}`;
   }
 
-  createGroup(label, recipes, state = null) {
-    const group = document.createElement('section');
-    group.className = 'brewing-page__recipe-group';
-    if (state) {
-      group.classList.add(`brewing-page__recipe-group--${state}`);
-    }
-
-    const title = document.createElement('div');
-    title.className = 'brewing-page__recipe-group-title';
-    title.textContent = label;
-    group.append(title);
-
+  createRecipeListRows(recipes) {
     if (recipes.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'brewing-page__recipe-empty';
-      empty.textContent = `no ${label}`;
-      group.append(empty);
-      return group;
+      empty.textContent = 'no recipes';
+      return [empty];
     }
 
-    group.append(...recipes.map((recipe) => this.createRecipeRow(recipe)));
-    return group;
+    return recipes.map((recipe) => this.createRecipeRow(recipe));
   }
 
   createRecipeRow(recipe) {

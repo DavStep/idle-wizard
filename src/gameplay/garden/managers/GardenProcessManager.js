@@ -12,7 +12,7 @@ export class GardenProcessManager {
     }
 
     systemManager.register({
-      update: (_world, frame) => this.update(frame.deltaSeconds),
+      update: (_world, frame) => this.update(this.getTimerDeltaSeconds(frame)),
     });
     this.registered = true;
   }
@@ -29,5 +29,11 @@ export class GardenProcessManager {
         tileNumber: harvest.tileNumber,
       });
     }
+  }
+
+  getTimerDeltaSeconds(frame = {}) {
+    return Number.isFinite(frame.timerDeltaSeconds)
+      ? frame.timerDeltaSeconds
+      : frame.deltaSeconds;
   }
 }

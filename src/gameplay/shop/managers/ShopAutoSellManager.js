@@ -22,7 +22,7 @@ export class ShopAutoSellManager {
     }
 
     systemManager.register({
-      update: (_world, frame) => this.update(frame.deltaSeconds),
+      update: (_world, frame) => this.update(this.getTimerDeltaSeconds(frame)),
     });
     this.registered = true;
   }
@@ -61,5 +61,11 @@ export class ShopAutoSellManager {
 
       this.shopShelfEntityManager.setSellProgressSeconds(slot.slotNumber, progressSeconds);
     }
+  }
+
+  getTimerDeltaSeconds(frame = {}) {
+    return Number.isFinite(frame.timerDeltaSeconds)
+      ? frame.timerDeltaSeconds
+      : frame.deltaSeconds;
   }
 }

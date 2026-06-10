@@ -39,8 +39,12 @@ export class GameplayLogFacade {
     return this.logManager.add(`researched ${label}`);
   }
 
+  logShopStandBought({ marketLabel = 'market', slotNumber }) {
+    return this.logManager.add(`opened ${marketLabel} stand ${slotNumber}`);
+  }
+
   logShopSlotBought({ slotNumber }) {
-    return this.logManager.add(`opened shelf slot ${slotNumber}`);
+    return this.logShopStandBought({ slotNumber });
   }
 
   logGardenTileBought({ tileNumber }) {

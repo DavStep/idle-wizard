@@ -14,18 +14,21 @@ const summonSeedResearches = [
     id: 'summonSeedsX3',
     label: 'x3 summon',
     value: '30 mana',
+    requiredResearchIds: ['summonSeedsX2'],
     description: 'summons 3 researched seeds for 30 mana.',
   },
   {
     id: 'summonSeedsX4',
     label: 'x4 summon',
     value: '40 mana',
+    requiredResearchIds: ['summonSeedsX3'],
     description: 'summons 4 researched seeds for 40 mana.',
   },
   {
     id: 'summonSeedsX5',
     label: 'x5 summon',
     value: '50 mana',
+    requiredResearchIds: ['summonSeedsX4'],
     description: 'summons 5 researched seeds for 50 mana.',
   },
 ];

@@ -11,10 +11,16 @@ export class ManaGenerationManager {
 
     systemManager.register({
       update: (_world, frame) => {
-        const amount = this.manaEntityManager.getPerSecond() * frame.deltaSeconds;
+        const amount = this.manaEntityManager.getPerSecond() * this.getTimerDeltaSeconds(frame);
         this.manaEntityManager.addCurrent(amount);
       },
     });
     this.registered = true;
+  }
+
+  getTimerDeltaSeconds(frame = {}) {
+    return Number.isFinite(frame.timerDeltaSeconds)
+      ? frame.timerDeltaSeconds
+      : frame.deltaSeconds;
   }
 }

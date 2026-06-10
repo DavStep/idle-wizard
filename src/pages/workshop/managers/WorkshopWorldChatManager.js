@@ -34,12 +34,12 @@ export class WorkshopWorldChatManager {
     }
 
     this.root = document.createElement('div');
-    this.root.className = 'workshop-page__world-chat';
+    this.root.className = 'room-world-chat-layer workshop-page__world-chat';
 
-    this.refs.button = this.createButton();
+    this.refs.box = this.createBox();
     this.refs.popup = this.createPopup();
 
-    this.root.append(this.refs.button, this.refs.popup);
+    this.root.append(this.refs.box, this.refs.popup);
     parent.append(this.root);
     document.addEventListener('keydown', this.handleKeydown);
 
@@ -55,9 +55,22 @@ export class WorkshopWorldChatManager {
     return this.root;
   }
 
+  createBox() {
+    const box = document.createElement('section');
+    box.className = 'workshop-page__world-chat-box style-box';
+    box.setAttribute('aria-label', 'World chat preview');
+
+    this.refs.button = this.createButton();
+    this.refs.buttonPreview = document.createElement('div');
+    this.refs.buttonPreview.className = 'workshop-page__world-chat-preview';
+
+    box.append(this.refs.button, this.refs.buttonPreview);
+    return box;
+  }
+
   createButton() {
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__world-chat-button';
+    button.className = 'workshop-page__world-chat-button workshop-page__world-chat-title style-box__title';
     button.type = 'button';
     button.textContent = 'world chat';
     button.addEventListener('click', () => this.show());
@@ -78,12 +91,19 @@ export class WorkshopWorldChatManager {
 
     this.refs.dialog = dialog;
     this.refs.title = this.createTitle();
+    this.refs.closeButton = this.createCloseButton();
     this.refs.messages = document.createElement('div');
     this.refs.messages.className = 'workshop-page__world-chat-messages';
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'workshop-page__world-chat-status';
     this.refs.form = this.createForm();
-    dialog.append(this.refs.title, this.refs.messages, this.refs.status, this.refs.form);
+    dialog.append(
+      this.refs.title,
+      this.refs.closeButton,
+      this.refs.messages,
+      this.refs.status,
+      this.refs.form,
+    );
     popup.append(dialog);
 
     return popup;
@@ -94,6 +114,15 @@ export class WorkshopWorldChatManager {
     title.className = 'style-box__title';
     title.textContent = 'world chat';
     return title;
+  }
+
+  createCloseButton() {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__world-chat-close';
+    button.type = 'button';
+    button.textContent = 'close';
+    button.addEventListener('click', () => this.hide());
+    return button;
   }
 
   createForm() {
@@ -191,14 +220,19 @@ export class WorkshopWorldChatManager {
 
     this.lastSnapshot = snapshot ?? { ...EMPTY_SNAPSHOT };
     const messages = Array.isArray(this.lastSnapshot.messages) ? this.lastSnapshot.messages : [];
+    const visibleMessages = this.getVisibleMessages(messages);
 
-    if (!messages.length) {
+    this.renderButtonPreview(visibleMessages);
+
+    if (!visibleMessages.length) {
       const empty = document.createElement('div');
       empty.className = 'workshop-page__world-chat-empty';
       empty.textContent = this.lastSnapshot.connected ? 'no messages yet' : 'offline';
       this.refs.messages.replaceChildren(empty);
     } else {
-      this.refs.messages.replaceChildren(...messages.map((message) => this.createMessage(message)));
+      this.refs.messages.replaceChildren(
+        ...visibleMessages.map((message) => this.createMessage(message)),
+      );
     }
 
     if (!this.sending) {
@@ -223,6 +257,35 @@ export class WorkshopWorldChatManager {
 
     row.append(name, body);
     return row;
+  }
+
+  getVisibleMessages(messages) {
+    return messages.filter((message) => message?.body).slice(-2);
+  }
+
+  renderButtonPreview(messages) {
+    if (!this.refs.buttonPreview || !this.refs.button) {
+      return;
+    }
+
+    if (!messages.length) {
+      const empty = document.createElement('div');
+      empty.className = 'workshop-page__world-chat-empty';
+      empty.textContent = this.lastSnapshot.connected ? 'no messages yet' : 'offline';
+      this.refs.buttonPreview.replaceChildren(empty);
+      this.refs.button.setAttribute('aria-label', `world chat, ${empty.textContent}`);
+      return;
+    }
+
+    this.refs.buttonPreview.replaceChildren(
+      ...messages.map((message) => this.createMessage(message)),
+    );
+    this.refs.button.setAttribute(
+      'aria-label',
+      `world chat, latest messages: ${messages
+        .map((message) => `${this.formatSender(message)}: ${message.body}`)
+        .join('; ')}`,
+    );
   }
 
   formatSender(message) {

@@ -80,6 +80,70 @@ function createGameplayFacadeFake() {
         ],
       },
     },
+    playerLevel: {
+      currentLevel: 1,
+      maxLevel: 20,
+      effects: {
+        maxGardenTiles: 1,
+        maxCauldrons: 1,
+        maxShopSlots: 1,
+        maxNpcMarketStands: 1,
+        maxPlayerMarketStands: 1,
+        maxManaCap: 50,
+        manaPerSecond: 1,
+      },
+      levels: [
+        {
+          level: 1,
+          current: true,
+          unlocked: true,
+          totals: {
+            maxGardenTiles: 1,
+            maxCauldrons: 1,
+            maxNpcMarketStands: 1,
+            maxPlayerMarketStands: 1,
+            maxManaCap: 50,
+            manaPerSecond: 1,
+          },
+          effects: [
+            'max garden tiles 1',
+            'max cauldrons 1',
+            'max npc market stands 1',
+            'max player market stands 1',
+            'max mana cap 50',
+            'mana regen 1/sec',
+          ],
+        },
+        {
+          level: 2,
+          current: false,
+          unlocked: false,
+          totals: {
+            maxGardenTiles: 1,
+            maxCauldrons: 1,
+            maxNpcMarketStands: 1,
+            maxPlayerMarketStands: 1,
+            maxManaCap: 60,
+            manaPerSecond: 1.1,
+          },
+          effects: ['max mana cap 60', 'mana regen 1.1/sec'],
+        },
+        {
+          level: 3,
+          current: false,
+          unlocked: false,
+          totals: {
+            maxGardenTiles: 3,
+            maxCauldrons: 1,
+            maxNpcMarketStands: 1,
+            maxPlayerMarketStands: 1,
+            maxManaCap: 70,
+            manaPerSecond: 1.2,
+          },
+          effects: ['max garden tiles 3', 'max mana cap 70', 'mana regen 1.2/sec'],
+        },
+      ],
+    },
     brewing: {
       herbs: [
         {
@@ -177,7 +241,29 @@ function createGameplayFacadeFake() {
           unlocked: false,
           discoveredByUsername: null,
           discoveredAtMs: null,
-          ingredients: [],
+          ingredients: [
+            {
+              itemTypeId: 1001,
+              key: 'sageHerb',
+              label: 'Sage',
+              kind: 'herb',
+              quantity: 5,
+            },
+            {
+              itemTypeId: 1002,
+              key: 'mintHerb',
+              label: 'Mint',
+              kind: 'herb',
+              quantity: 3,
+            },
+            {
+              itemTypeId: 1003,
+              key: 'nettleHerb',
+              label: 'Nettle',
+              kind: 'herb',
+              quantity: 10,
+            },
+          ],
         },
         {
           itemTypeId: 2020,
@@ -1454,10 +1540,10 @@ function createAuthFacadeFake({ enabled = true, authenticated = false } = {}) {
   };
 }
 
-function createWorldChatFacadeFake() {
+function createWorldChatFacadeFake({ messages } = {}) {
   const snapshot = {
     connected: true,
-    messages: [
+    messages: messages ?? [
       {
         id: '1',
         senderIdentity: 'sender-a',
@@ -1724,6 +1810,11 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__world-chat-button')?.textContent).toBe(
       'world chat',
     );
+    expect(
+      stage.querySelector('.workshop-page__world-chat-box')?.parentElement?.classList.contains(
+        'room-world-chat-layer',
+      ),
+    ).toBe(true);
     expect(stage.querySelector('.workshop-page__logs-button')?.textContent).toBe('logs');
     expect(stage.querySelector('.workshop-page__discoveries-button')?.textContent).toBe(
       'discoveries',
@@ -1760,6 +1851,110 @@ describe('PagesFacade', () => {
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain(
       'crystal 0',
     );
+  });
+
+  it('opens level rewards from the top-panel level', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const levelButton = stage.querySelector('.room-top-panel__level');
+    const levelPopup = stage.querySelector('.room-top-panel__level-popup');
+
+    expect(levelButton?.textContent).toBe('level 1');
+    expect(levelPopup?.hidden).toBe(true);
+
+    levelButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(levelPopup.hidden).toBe(false);
+    expect(levelPopup.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(
+      levelPopup.querySelector('.room-top-panel__level-pager')?.parentElement?.className,
+    ).toBe('room-top-panel__level-panel');
+    expect(levelPopup.querySelector('.room-top-panel__level-title')?.textContent).toBe(
+      'level 1',
+    );
+    expect(levelPopup.querySelector('.room-top-panel__level-current')?.hidden).toBe(false);
+    expect(levelPopup.textContent).toContain('garden plots');
+    expect(levelPopup.textContent).toContain('cauldrons');
+    expect(levelPopup.textContent).toContain('npc stands');
+    expect(levelPopup.textContent).toContain('player stands');
+    expect(levelPopup.textContent).not.toContain('max');
+    expect(levelPopup.textContent).not.toContain('level 0');
+    expect(levelPopup.querySelector('.room-top-panel__level-pager-button')?.hidden).toBe(true);
+    expect(levelPopup.querySelector('.room-top-panel__level-divider')?.hidden).toBe(false);
+    const level1AddedRows = levelPopup.querySelectorAll(
+      '.room-top-panel__level-added-rows .room-top-panel__level-effect-row',
+    );
+    const level1TotalRows = levelPopup.querySelectorAll(
+      '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
+    );
+    expect(level1AddedRows[0].textContent).toBe('garden plots+1');
+    expect(level1TotalRows[0].textContent).toBe('garden plots1');
+    expect(levelPopup.textContent).toContain('mana cap');
+    expect(levelPopup.textContent).toContain('mana regen');
+
+    levelPopup
+      .querySelector('.room-top-panel__level-pager-button:last-child')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(levelPopup.querySelector('.room-top-panel__level-title')?.textContent).toBe(
+      'level 2',
+    );
+    expect(levelPopup.querySelector('.room-top-panel__level-current')?.hidden).toBe(true);
+    expect(levelPopup.querySelector('.room-top-panel__level-added-rows')?.hidden).toBe(false);
+    expect(levelPopup.querySelector('.room-top-panel__level-divider')?.hidden).toBe(false);
+    expect(
+      levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
+    ).toContain('mana cap+10');
+    expect(
+      levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
+    ).toContain('mana regen+0.1/sec');
+    expect(
+      levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
+    ).toContain('garden plots1');
+    expect(
+      levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
+    ).toContain('mana cap60');
+    expect(
+      levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
+    ).toContain('mana regen1.1/sec');
+
+    levelPopup
+      .querySelector('.room-top-panel__level-pager-button:last-child')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(levelPopup.querySelector('.room-top-panel__level-title')?.textContent).toBe(
+      'level 3',
+    );
+    const [level3AddedRow] = levelPopup.querySelectorAll(
+      '.room-top-panel__level-added-rows .room-top-panel__level-effect-row',
+    );
+    const [level3TotalRow] = levelPopup.querySelectorAll(
+      '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
+    );
+    expect(level3AddedRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
+      'garden plots',
+    );
+    expect(level3AddedRow.querySelector('.room-top-panel__level-effect-value')?.textContent).toBe(
+      '+2',
+    );
+    expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
+      'garden plots',
+    );
+    expect(level3TotalRow.querySelector('.room-top-panel__level-effect-value')?.textContent).toBe(
+      '3',
+    );
+
+    levelPopup
+      .querySelector('.room-top-panel__level-close')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(levelPopup.hidden).toBe(true);
   });
 
   it('shows Workshop tasks collapsed and expands them from the summary row', () => {
@@ -2190,7 +2385,7 @@ describe('PagesFacade', () => {
     expect(labels.slice(0, 3)).toEqual(['Sage Seed', 'Mint Seed', 'Lavender Seed']);
     expect(labels[3]).toBe('Nettle Seed');
     expect(mysteryLabel).not.toBe('Briar Seed');
-    expect(mysteryLabel).toHaveLength(10);
+    expect(mysteryLabel).toBe('??????');
     expect(mysteryName?.classList.contains('mystery-text')).toBe(true);
     expect(mysteryName?.getAttribute('aria-label')).toBe('unknown');
     expect(values).toEqual(['0', '2', '4', 'locked', 'locked']);
@@ -2334,21 +2529,29 @@ describe('PagesFacade', () => {
       ),
     ).toEqual(['seeds', 'herbs', 'potions']);
     expect(popup.textContent).toContain('unowned');
+    expect(popup.textContent).toContain('unknown potion');
     expect(popup.textContent).not.toContain('Ashen Memory');
+    expect(popup.textContent).toContain('ingredients:');
+    expect(popup.textContent).toContain('- 5 ??????');
+    expect(popup.textContent).toContain('- 3 ??????');
+    expect(popup.textContent).toContain('- 10 ??????');
+    expect(popup.textContent).toContain('cost ? mana');
+    expect(popup.textContent).toContain('time: ?s');
     expect(popup.textContent).toContain('Silverleaf Quiet');
-    expect(popup.textContent).toContain('by Ada');
+    expect(popup.textContent).toContain('Silverleaf Quiet: discovered by Ada');
 
-    const discoveredRow = [...popup.querySelectorAll('.workshop-page__discovery-row')].find(
+    const discoveredRow = [...popup.querySelectorAll('.workshop-page__discovery-recipe-row')].find(
       (row) => row.textContent.includes('Silverleaf Quiet'),
     );
 
-    discoveredRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(popup.textContent).toContain('date2026-01-02');
-    expect(popup.textContent).toContain('recipe');
+    expect(discoveredRow?.querySelector('.brewing-page__recipe-name')?.textContent).toBe(
+      'Silverleaf Quiet: discovered by Ada',
+    );
     expect(popup.textContent).toContain('- 1 Mint');
     expect(popup.textContent).toContain('- 1 Glowcap');
     expect(popup.textContent).toContain('- 1 Moonflower');
+    expect(popup.textContent).toContain('cost 34 mana');
+    expect(popup.textContent).toContain('time: 75s');
 
     const herbsTab = [...popup.querySelectorAll('.workshop-page__discoveries-tab-button')].find(
       (tab) => tab.textContent === 'herbs',
@@ -2504,7 +2707,34 @@ describe('PagesFacade', () => {
 
   it('shows world chat popup and sends messages', async () => {
     const stage = document.createElement('section');
-    const worldChatFacade = createWorldChatFacadeFake();
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [
+        {
+          id: '1',
+          senderIdentity: 'sender-a',
+          username: 'Ada',
+          playerLevel: 3,
+          body: 'old hello',
+          sentAtMs: 1_000,
+        },
+        {
+          id: '2',
+          senderIdentity: 'sender-b',
+          username: 'Lin',
+          playerLevel: 4,
+          body: 'second hello',
+          sentAtMs: 2_000,
+        },
+        {
+          id: '3',
+          senderIdentity: 'sender-c',
+          username: 'Mo',
+          playerLevel: 5,
+          body: 'third hello',
+          sentAtMs: 3_000,
+        },
+      ],
+    });
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
       playerFacade: createPlayerFacadeFake(),
@@ -2514,16 +2744,22 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const box = stage.querySelector('.workshop-page__world-chat-box');
     const button = stage.querySelector('.workshop-page__world-chat-button');
 
     expect(popup.hidden).toBe(true);
+    expect(box.textContent).not.toContain('old hello');
+    expect(box.textContent).toContain('Lin Lv.4: second hello');
+    expect(box.textContent).toContain('Mo Lv.5: third hello');
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(popup.querySelector('.style-dialog')).not.toBeNull();
-    expect(popup.textContent).toContain('Ada Lv.3: hello');
+    expect(popup.textContent).not.toContain('old hello');
+    expect(popup.textContent).toContain('Lin Lv.4: second hello');
+    expect(popup.textContent).toContain('Mo Lv.5: third hello');
 
     const input = popup.querySelector('.workshop-page__world-chat-input');
     const form = popup.querySelector('.workshop-page__world-chat-form');
@@ -2536,11 +2772,48 @@ describe('PagesFacade', () => {
 
     expect(worldChatFacade.getSentMessages()).toEqual(['hello room']);
     expect(input.value).toBe('');
+    expect(popup.textContent).not.toContain('second hello');
+    expect(popup.textContent).toContain('Mo Lv.5: third hello');
     expect(popup.textContent).toContain('wizard Lv.1: hello room');
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     expect(popup.hidden).toBe(true);
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(popup.hidden).toBe(false);
+
+    popup
+      .querySelector('.workshop-page__world-chat-close')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(true);
+  });
+
+  it('keeps empty world chat preview static', () => {
+    const stage = document.createElement('section');
+    const worldChatFacade = createWorldChatFacadeFake({ messages: [] });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const preview = stage.querySelector('.workshop-page__world-chat-preview');
+    const button = stage.querySelector('.workshop-page__world-chat-button');
+
+    expect(preview.textContent).toBe('no messages yet');
+
+    preview.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(true);
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
   });
 
   it('orders rooms as Brewing, Garden, Workshop, Research, Shop with Workshop default', () => {
@@ -2583,9 +2856,10 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.brewing-page__recipes-button')?.textContent).toBe('recipes');
     expect(stage.querySelector('.brewing-page__potions-button')?.textContent).toBe('potions');
-    expect(stage.querySelector('.brewing-page__brew-button')?.textContent).toBe(
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew (12 mana)',
     );
+    expect(stage.querySelector('.brewing-page__clear-button')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'brewing',
     );
@@ -2630,7 +2904,7 @@ describe('PagesFacade', () => {
     expect(pagesFacade.getCurrentPageId()).toBe('shop');
     expect(stage.querySelector('.shop-page')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('market shelf');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('npc market');
     expect(
       [...stage.querySelectorAll('.shop-page__shelf .shop-page__slot-row')].some(
         (row) => row.querySelector('.row_key')?.textContent === 'gold',
@@ -2638,7 +2912,7 @@ describe('PagesFacade', () => {
     ).toBe(false);
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('empty');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('buy (1 gold)');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('slot 3locked');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('stand 3locked');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('3 gold');
     expect(stage.querySelector('.shop-page__sell-popup')).not.toBeNull();
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
@@ -2704,11 +2978,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(popup.querySelector('.brewing-page__recipes-close')?.textContent).toBe('close');
-    expect(
-      [...popup.querySelectorAll('.brewing-page__recipe-group-title')].map(
-        (title) => title.textContent,
-      ),
-    ).toEqual(['recipes']);
+    expect(popup.querySelector('.brewing-page__recipe-group-title')).toBeNull();
     expect(popup.textContent).not.toContain('unlocked recipes');
     expect(popup.textContent).toContain('Mana Tonic');
     expect(popup.textContent).toContain('cost 12 mana');
@@ -3351,47 +3621,55 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('- 1 Sage');
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('Sage2');
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('no recipe found');
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
+      'unknown mix',
+    );
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('- 3 Sage');
-    expect(stage.querySelector('.brewing-page__brew-button')?.textContent).toBe(
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew (12 mana)',
     );
     expect(stage.querySelector('.brewing-page__cauldron-count')?.textContent).toBe('3/5');
     expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
       'Mana Tonic locked',
     );
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('recipe locked');
-    expect(stage.querySelector('.brewing-page__brew-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
 
     stage
-      .querySelector('.brewing-page__brew-button')
+      .querySelector('.brewing-page__action-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('recipe locked');
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
     gameplayFacade.setGold(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
 
-    expect(stage.querySelector('.brewing-page__brew-button')?.textContent).toBe(
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew (12 mana)',
     );
     expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
       'matches Mana Tonic',
     );
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('ready: Mana Tonic');
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
     stage
-      .querySelector('.brewing-page__brew-button')
+      .querySelector('.brewing-page__action-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__active-brew')?.hidden).toBe(false);
     expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
       'brewing Mana Tonic 30s',
     );
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
     const progressBar = stage.querySelector('.brewing-page__active-progress');
 
     expect(progressBar?.getAttribute('role')).toBe('progressbar');
@@ -3400,8 +3678,8 @@ describe('PagesFacade', () => {
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('0');
     expect(stage.querySelector('.brewing-page__active-progress-text')?.textContent).toBe('');
     expect(stage.querySelector('.brewing-page__active-progress-fill')?.style.width).toBe('0%');
-    expect(stage.querySelector('.brewing-page__bottle-button')?.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__collect-button')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('brew');
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
 
     const snapshot = gameplayFacade.getSnapshot();
     snapshot.brewing.activeBrew = {
@@ -3421,24 +3699,23 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
       'brewed Mana Tonic',
     );
-    expect(stage.querySelector('.brewing-page__bottle-button')?.hidden).toBe(false);
-    expect(stage.querySelector('.brewing-page__collect-button')?.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe(
-      'start bottling',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('bottle');
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
 
     stage
-      .querySelector('.brewing-page__bottle-button')
+      .querySelector('.brewing-page__action-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
       'bottling Mana Tonic 2s',
     );
-    expect(stage.querySelector('.brewing-page__bottle-button')?.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__collect-button')?.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe(
-      'wait for bottling',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('bottle');
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
     snapshot.brewing.activeBrew = {
       resultItemTypeId: 2001,
@@ -3458,16 +3735,17 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
       'bottled Mana Tonic',
     );
-    expect(stage.querySelector('.brewing-page__collect-button')?.hidden).toBe(false);
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('collect potion');
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('collect');
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
 
     stage
-      .querySelector('.brewing-page__collect-button')
+      .querySelector('.brewing-page__action-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe(
-      'collected Mana Tonic',
-    );
+    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',
@@ -3732,7 +4010,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
-  it('sets selected shop shelf slot item', () => {
+  it('sets selected NPC market stand item', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
@@ -3773,15 +4051,15 @@ describe('PagesFacade', () => {
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'slot 1Sage Seed (0) 1 gold',
+      'stand 1Sage Seed (0) 1 gold',
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
-      'slot 1 sells Sage Seed',
+      'stand 1 sells Sage Seed',
     );
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
-  it('does not open shop sell picker for locked shelf slots', () => {
+  it('does not open shop sell picker for locked NPC market stands', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -3799,7 +4077,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
-  it('clears selected shop shelf slot item from the sell picker', () => {
+  it('clears selected NPC market stand item from the sell picker', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
@@ -3818,7 +4096,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'slot 1Sage Seed (0) 1 gold',
+      'stand 1Sage Seed (0) 1 gold',
     );
 
     stage
@@ -3834,8 +4112,8 @@ describe('PagesFacade', () => {
     expect(visibleRows[0].classList.contains('shop-page__sell-empty-row')).toBe(false);
     emptyButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('slot 1empty');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('slot 1 empty');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('stand 1empty');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('stand 1 empty');
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
@@ -3861,13 +4139,13 @@ describe('PagesFacade', () => {
     gameplayFacade.setShopSellGold('seed', 7);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'slot 1Sage Seed (0) 7 gold',
+      'stand 1Sage Seed (0) 7 gold',
     );
 
     gameplayFacade.setShopSellItemQuantity(1, 4);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'slot 1Sage Seed (4) 7 gold',
+      'stand 1Sage Seed (4) 7 gold',
     );
 
     stage
@@ -3914,7 +4192,7 @@ describe('PagesFacade', () => {
     expect(sageRow?.hidden ?? true).toBe(true);
   });
 
-  it('keeps zero count visible on a selected shop shelf item missing from sell rows', () => {
+  it('keeps zero count visible on a selected NPC market item missing from sell rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
@@ -3935,7 +4213,7 @@ describe('PagesFacade', () => {
     gameplayFacade.setShopSellItems([]);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'slot 1Sage Seed (0) 1 gold',
+      'stand 1Sage Seed (0) 1 gold',
     );
   });
 
@@ -4020,6 +4298,13 @@ describe('PagesFacade', () => {
     const listingPopup = stage.querySelector('.shop-page__player-listing-popup');
     expect(listingPopup.textContent).toContain('quantity');
     expect(listingPopup.textContent).toContain('gold each');
+    const listingSpace = listingPopup.querySelector('.shop-page__player-listing-space');
+    expect(listingSpace).not.toBeNull();
+    expect(listingPopup.querySelector('.shop-page__player-listing-choice-row')).toBeNull();
+    expect(
+      listingSpace.querySelector('.shop-page__player-listing-place-button'),
+    ).not.toBeNull();
+    expect(listingPopup.querySelector('.shop-page__player-listing-choice-divider')).not.toBeNull();
     const [quantityInput, valueInput] = listingPopup.querySelectorAll(
       '.shop-page__player-listing-input',
     );
@@ -4033,7 +4318,7 @@ describe('PagesFacade', () => {
     expect(quantityInput.value).toBe('2');
     expect(valueInput.value).toBe('4');
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      'slot 1empty',
+      'stand 1empty',
     );
     expect(listingPopup.hidden).toBe(false);
 
@@ -4043,7 +4328,7 @@ describe('PagesFacade', () => {
     await Promise.resolve();
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      'slot 1Sage Seed (2) 4 gold',
+      'stand 1Sage Seed (2) 4 gold',
     );
     expect(listingPopup.hidden).toBe(true);
 

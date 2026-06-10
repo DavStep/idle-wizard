@@ -5,6 +5,7 @@ import { ResearchPageFacade } from './research/ResearchPageFacade.js';
 import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
 import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
+import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
 import { PageRegistryManager } from './managers/PageRegistryManager.js';
 import {
@@ -44,13 +45,13 @@ export class PagesFacade {
       playerFacade,
       authFacade,
     });
+    this.worldChatManager = new WorkshopWorldChatManager({ worldChatFacade });
 
     this.registryManager.register(
       'workshop',
       new WorkshopPageFacade({
         gameplayFacade,
         leaderboardFacade,
-        worldChatFacade,
       }),
     );
     this.registryManager.register(
@@ -84,11 +85,13 @@ export class PagesFacade {
     this.currentPageManager.mount(stage);
     this.swipeNavigationManager.mount(stage);
     this.bottomPanelFacade.mount(stage);
+    this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
   }
 
   unmount() {
     this.topPanelFacade.unmount();
+    this.worldChatManager.unmount();
     this.bottomPanelFacade.unmount();
     this.swipeNavigationManager.unmount();
     this.currentPageManager.unmount();

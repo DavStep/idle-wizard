@@ -5,7 +5,7 @@ import { ShopTradeHistoryManager } from './managers/ShopTradeHistoryManager.js';
 
 export class ShopPageFacade {
   static explain =
-    'Shows the market room, where shelf slots sell selected items and gold opens more slots.';
+    'Shows the market room, where NPC market stands sell selected items and gold opens more stands.';
 
   constructor({ gameplayFacade, playerShopFacade } = {}) {
     this.roomViewManager = new ShopRoomViewManager();

@@ -17,7 +17,7 @@ export class TopPanelViewManager {
 
     this.root = document.createElement('section');
     this.root.className = 'room-top-panel-layer';
-    this.root.append(this.createPanel(), this.createSettings());
+    this.root.append(this.createPanel(), this.createSettings(), this.createLevelPopup());
     stage.append(this.root);
 
     return this.root;
@@ -48,13 +48,16 @@ export class TopPanelViewManager {
     this.refs.usernameButton.textContent = 'wizard';
     this.refs.usernameButton.setAttribute('aria-label', 'open settings');
 
-    this.refs.levelValue = document.createElement('span');
-    this.refs.levelValue.className = 'room-top-panel__level';
-    this.refs.levelValue.textContent = 'level 1';
+    this.refs.levelButton = document.createElement('button');
+    this.refs.levelButton.className = 'room-top-panel__level';
+    this.refs.levelButton.type = 'button';
+    this.refs.levelButton.textContent = 'level 1';
+    this.refs.levelButton.setAttribute('aria-label', 'open level rewards');
+    this.refs.levelValue = this.refs.levelButton;
 
     const identityRow = document.createElement('div');
     identityRow.className = 'room-top-panel__identity-row';
-    identityRow.append(this.refs.usernameButton, this.refs.levelValue);
+    identityRow.append(this.refs.usernameButton, this.refs.levelButton);
 
     const resources = document.createElement('div');
     resources.className = 'room-top-panel__resources';
@@ -202,5 +205,85 @@ export class TopPanelViewManager {
     this.refs.settings.append(this.refs.settingsDialog);
 
     return this.refs.settings;
+  }
+
+  createLevelPopup() {
+    this.refs.levelPopup = document.createElement('section');
+    this.refs.levelPopup.className = 'room-top-panel__level-popup';
+    this.refs.levelPopup.hidden = true;
+
+    this.refs.levelPanel = document.createElement('section');
+    this.refs.levelPanel.className = 'room-top-panel__level-panel';
+    this.refs.levelPanel.setAttribute('aria-label', 'Level rewards');
+    this.refs.levelPanel.setAttribute('aria-modal', 'true');
+    this.refs.levelPanel.setAttribute('role', 'dialog');
+    this.refs.levelPanel.tabIndex = -1;
+
+    this.refs.levelDialog = document.createElement('section');
+    this.refs.levelDialog.className = 'room-top-panel__level-dialog style-dialog';
+
+    this.refs.levelTitle = document.createElement('div');
+    this.refs.levelTitle.className = 'style-box__title room-top-panel__level-title';
+    this.refs.levelTitle.textContent = 'level 1';
+
+    this.refs.levelCurrentLabel = document.createElement('div');
+    this.refs.levelCurrentLabel.className = 'room-top-panel__level-current';
+    this.refs.levelCurrentLabel.textContent = 'current';
+    this.refs.levelCurrentLabel.hidden = true;
+
+    this.refs.levelContent = document.createElement('div');
+    this.refs.levelContent.className = 'room-top-panel__level-content';
+
+    this.refs.levelAddedRows = document.createElement('div');
+    this.refs.levelAddedRows.className =
+      'room-top-panel__level-rows room-top-panel__level-added-rows';
+
+    this.refs.levelDivider = document.createElement('div');
+    this.refs.levelDivider.className = 'room-top-panel__level-divider';
+    this.refs.levelDivider.hidden = true;
+
+    this.refs.levelTotalRows = document.createElement('div');
+    this.refs.levelTotalRows.className =
+      'room-top-panel__level-rows room-top-panel__level-total-rows';
+
+    this.refs.levelContent.append(
+      this.refs.levelAddedRows,
+      this.refs.levelDivider,
+      this.refs.levelTotalRows,
+    );
+
+    const pager = document.createElement('div');
+    pager.className = 'room-top-panel__level-pager';
+
+    this.refs.levelPreviousButton = document.createElement('button');
+    this.refs.levelPreviousButton.className =
+      'style-button room-top-panel__level-pager-button';
+    this.refs.levelPreviousButton.type = 'button';
+    this.refs.levelPreviousButton.setAttribute('role', 'tab');
+
+    this.refs.levelNextButton = document.createElement('button');
+    this.refs.levelNextButton.className = 'style-button room-top-panel__level-pager-button';
+    this.refs.levelNextButton.type = 'button';
+    this.refs.levelNextButton.setAttribute('role', 'tab');
+
+    pager.append(this.refs.levelPreviousButton, this.refs.levelNextButton);
+    pager.setAttribute('aria-label', 'Level navigation');
+    pager.setAttribute('role', 'tablist');
+
+    this.refs.levelCloseButton = document.createElement('button');
+    this.refs.levelCloseButton.className = 'room-top-panel__level-close';
+    this.refs.levelCloseButton.type = 'button';
+    this.refs.levelCloseButton.textContent = 'close';
+
+    this.refs.levelDialog.append(
+      this.refs.levelTitle,
+      this.refs.levelCurrentLabel,
+      this.refs.levelCloseButton,
+      this.refs.levelContent,
+    );
+    this.refs.levelPanel.append(this.refs.levelDialog, pager);
+    this.refs.levelPopup.append(this.refs.levelPanel);
+
+    return this.refs.levelPopup;
   }
 }

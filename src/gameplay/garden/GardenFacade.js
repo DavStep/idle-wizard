@@ -10,8 +10,9 @@ export class GardenFacade {
   static explain =
     'The garden turns planted seeds into herbs: tiles are opened with gold, then each tile grows and harvests over time.';
 
-  constructor({ goldFacade, itemsFacade, onHarvestComplete }) {
+  constructor({ goldFacade, itemsFacade, playerLevelFacade, onHarvestComplete }) {
     this.itemsFacade = itemsFacade;
+    this.playerLevelFacade = playerLevelFacade;
     this.gardenBalanceManager = new GardenBalanceManager();
     this.gardenTileEntityManager = new GardenTileEntityManager({
       initialUnlockedTiles: this.gardenBalanceManager.getInitialUnlockedTiles(),
@@ -21,6 +22,7 @@ export class GardenFacade {
       goldFacade,
       gardenBalanceManager: this.gardenBalanceManager,
       gardenTileEntityManager: this.gardenTileEntityManager,
+      playerLevelFacade,
     });
     this.gardenPlantingManager = new GardenPlantingManager({
       gardenBalanceManager: this.gardenBalanceManager,
@@ -36,6 +38,7 @@ export class GardenFacade {
       gardenBalanceManager: this.gardenBalanceManager,
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
+      playerLevelFacade,
     });
   }
 
@@ -93,9 +96,17 @@ export class GardenFacade {
       : [];
 
     this.gardenTileEntityManager.applySnapshot({
-      unlockedTiles: snapshot.unlockedTiles,
+      unlockedTiles: this.clampUnlockedTilesByLevel(snapshot.unlockedTiles),
       tiles,
     });
+  }
+
+  clampUnlockedTilesByLevel(unlockedTiles) {
+    if (!Number.isInteger(unlockedTiles)) {
+      return unlockedTiles;
+    }
+
+    return Math.min(unlockedTiles, this.playerLevelFacade?.getMaxGardenTiles?.() ?? unlockedTiles);
   }
 
   restoreTile(tile) {

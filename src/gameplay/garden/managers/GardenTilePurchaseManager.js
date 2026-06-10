@@ -1,8 +1,9 @@
 export class GardenTilePurchaseManager {
-  constructor({ goldFacade, gardenBalanceManager, gardenTileEntityManager }) {
+  constructor({ goldFacade, gardenBalanceManager, gardenTileEntityManager, playerLevelFacade }) {
     this.goldFacade = goldFacade;
     this.gardenBalanceManager = gardenBalanceManager;
     this.gardenTileEntityManager = gardenTileEntityManager;
+    this.playerLevelFacade = playerLevelFacade;
   }
 
   buyNextTile() {
@@ -13,6 +14,15 @@ export class GardenTilePurchaseManager {
       return {
         ok: false,
         reason: 'max_tiles',
+      };
+    }
+
+    if (nextTileNumber > this.getMaxTilesByLevel()) {
+      return {
+        ok: false,
+        reason: 'level_locked',
+        requiredLevel: this.playerLevelFacade?.getRequiredLevelForGardenTile(nextTileNumber) ?? null,
+        tileNumber: nextTileNumber,
       };
     }
 
@@ -32,5 +42,9 @@ export class GardenTilePurchaseManager {
       cost,
       tileNumber: nextTileNumber,
     };
+  }
+
+  getMaxTilesByLevel() {
+    return this.playerLevelFacade?.getMaxGardenTiles?.() ?? this.gardenBalanceManager.getMaxTiles();
   }
 }

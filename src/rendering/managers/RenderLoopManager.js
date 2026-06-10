@@ -26,10 +26,11 @@ export class RenderLoopManager {
   }
 
   tick(time) {
-    const deltaSeconds = Math.min((time - this.lastTime) / 1000, 0.1);
+    const rawDeltaSeconds = Math.max(0, (time - this.lastTime) / 1000);
+    const deltaSeconds = Math.min(rawDeltaSeconds, 0.1);
     this.lastTime = time;
 
-    this.onFrame?.({ time, deltaSeconds });
+    this.onFrame?.({ time, deltaSeconds, timerDeltaSeconds: rawDeltaSeconds });
     this.frameId = requestAnimationFrame((nextTime) => this.tick(nextTime));
   }
 }

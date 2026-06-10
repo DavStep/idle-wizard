@@ -38,7 +38,7 @@ export class ShopShelfManager {
 
     this.root = document.createElement('section');
     this.root.className = 'shop-page__shelf style-box';
-    this.root.setAttribute('aria-label', 'Market shelf');
+    this.root.setAttribute('aria-label', 'NPC market');
 
     this.refs.title = this.createTitle();
     this.refs.rows = [];
@@ -72,7 +72,7 @@ export class ShopShelfManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'market shelf';
+    title.textContent = 'npc market';
     return title;
   }
 
@@ -91,7 +91,7 @@ export class ShopShelfManager {
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    label.textContent = `slot ${slotNumber}`;
+    label.textContent = `stand ${slotNumber}`;
 
     const value = document.createElement('span');
     value.className = 'row_val';
@@ -282,7 +282,7 @@ export class ShopShelfManager {
         row.classList.add('shop-page__slot-row--interactive');
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
-        row.setAttribute('aria-label', `select shelf slot ${slotNumber}`);
+        row.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
         value.textContent = this.formatSlotSellValue(slot, shelf, snapshot);
         return;
       }
@@ -292,8 +292,8 @@ export class ShopShelfManager {
         row.removeAttribute('role');
         row.removeAttribute('aria-label');
         row.removeAttribute('tabindex');
-        button.textContent = cost === 0 ? 'open (free)' : `buy (${cost} gold)`;
-        button.disabled = snapshot.gold.current < cost;
+        button.textContent = this.formatLockedSlotAction(shelf, cost);
+        button.disabled = shelf.nextSlotLockedByLevel || snapshot.gold.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
 
         if (button.parentElement !== value) {
@@ -309,6 +309,14 @@ export class ShopShelfManager {
       row.removeAttribute('tabindex');
       value.textContent = 'locked';
     });
+  }
+
+  formatLockedSlotAction(shelf, cost) {
+    if (shelf.nextSlotLockedByLevel) {
+      return `level ${shelf.nextSlotRequiresLevel}`;
+    }
+
+    return cost === 0 ? 'open (free)' : `buy (${cost} gold)`;
   }
 
   renderSellControls(snapshot, shelf) {

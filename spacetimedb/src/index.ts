@@ -72,6 +72,54 @@ const unknownPotionCatalog = [
   { key: 'bloodlightWard', label: 'Bloodlight Ward' },
 ];
 
+const herbMarketBasePriceGoldByKey: Record<string, bigint> = {
+  sage: 8n,
+  mint: 9n,
+  nettle: 10n,
+  lavender: 13n,
+  briar: 15n,
+  glowcap: 18n,
+  mandrake: 22n,
+  sunroot: 25n,
+  moonflower: 30n,
+  frostmoss: 35n,
+  dreambell: 40n,
+  starAnise: 45n,
+  bloodrose: 55n,
+  dragonpepper: 65n,
+};
+
+const potionMarketBasePriceGoldByKey: Record<string, bigint> = {
+  manaTonic: 69n,
+  minorHealingPotion: 75n,
+  nettleVigor: 82n,
+  calmingDraught: 94n,
+  simpleAntidote: 125n,
+  venomDraught: 157n,
+  briarWard: 132n,
+  lanternTonic: 125n,
+  healingPotion: 113n,
+  moonlitFocus: 157n,
+  sunrootStamina: 194n,
+  frostmossCleanse: 200n,
+  sleepDraught: 250n,
+  elixirOfLife: 313n,
+  starLuckPhiltre: 319n,
+  dragonCourage: 357n,
+  deepDreamVision: 457n,
+  pactWard: 338n,
+  ashenMemory: 163n,
+  silverleafQuiet: 163n,
+  emberSight: 319n,
+  thornSleep: 194n,
+  glassMoonElixir: 357n,
+  rootboundResolve: 219n,
+  nightOrchardTonic: 307n,
+  starlessCourage: 407n,
+  frostveinDraught: 282n,
+  bloodlightWard: 313n,
+};
+
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
@@ -95,7 +143,7 @@ const npcMarketCatalog = [
     itemKey: `${herb.key}Herb`,
     itemLabel: herb.label,
     itemKind: 'herb',
-    basePriceGold: 2n,
+    basePriceGold: herbMarketBasePriceGoldByKey[herb.key] ?? 2n,
     targetStock: 800n,
     volatilityBps: 1_000n,
   })),
@@ -103,7 +151,10 @@ const npcMarketCatalog = [
     itemKey: potion.key,
     itemLabel: potion.label,
     itemKind: 'potion',
-    basePriceGold: 'basePriceGold' in potion ? potion.basePriceGold : 5n,
+    basePriceGold:
+      'basePriceGold' in potion
+        ? potion.basePriceGold
+        : potionMarketBasePriceGoldByKey[potion.key] ?? 5n,
     targetStock: 300n,
     volatilityBps: 800n,
   })),

@@ -2,6 +2,7 @@ import { ManaCapManager } from './managers/ManaCapManager.js';
 import { ManaEntityManager } from './managers/ManaEntityManager.js';
 import { ManaGenerationManager } from './managers/ManaGenerationManager.js';
 import { ManaSpendManager } from './managers/ManaSpendManager.js';
+import { ManaUpgradeEffectManager } from './managers/ManaUpgradeEffectManager.js';
 
 export class ManaFacade {
   static explain =
@@ -12,8 +13,6 @@ export class ManaFacade {
     initialCap = 50,
     initialPerSecond = 1,
   } = {}) {
-    this.initialCap = initialCap;
-    this.initialPerSecond = initialPerSecond;
     this.manaEntityManager = new ManaEntityManager({
       initialCurrent,
       initialCap,
@@ -27,6 +26,11 @@ export class ManaFacade {
     });
     this.manaGenerationManager = new ManaGenerationManager({
       manaEntityManager: this.manaEntityManager,
+    });
+    this.manaUpgradeEffectManager = new ManaUpgradeEffectManager({
+      manaEntityManager: this.manaEntityManager,
+      initialCap,
+      initialPerSecond,
     });
   }
 
@@ -51,8 +55,17 @@ export class ManaFacade {
   }
 
   setResearchUpgradeEffects({ capIncrease = 0, perSecondIncrease = 0 } = {}) {
-    this.manaEntityManager.setCap(this.initialCap + capIncrease);
-    this.manaEntityManager.setPerSecond(this.initialPerSecond + perSecondIncrease);
+    this.manaUpgradeEffectManager.setResearchUpgradeEffects({
+      capIncrease,
+      perSecondIncrease,
+    });
+  }
+
+  setLevelUpgradeEffects({ maxManaCap, manaPerSecond } = {}) {
+    this.manaUpgradeEffectManager.setLevelUpgradeEffects({
+      maxManaCap,
+      manaPerSecond,
+    });
   }
 
   applyPersistenceSnapshot(snapshot = {}) {

@@ -1,30 +1,43 @@
 export class GardenSnapshotManager {
-  constructor({ gardenBalanceManager, gardenTileEntityManager, itemsFacade }) {
+  constructor({ gardenBalanceManager, gardenTileEntityManager, itemsFacade, playerLevelFacade }) {
     this.gardenBalanceManager = gardenBalanceManager;
     this.gardenTileEntityManager = gardenTileEntityManager;
     this.itemsFacade = itemsFacade;
+    this.playerLevelFacade = playerLevelFacade;
   }
 
   getSnapshot() {
     const unlockedTiles = this.gardenTileEntityManager.getUnlockedTiles();
     const maxTiles = this.gardenBalanceManager.getMaxTiles();
+    const maxUnlockedTilesByLevel = Math.min(maxTiles, this.getMaxTilesByLevel());
     const nextTileNumber = unlockedTiles + 1;
     const nextTileCost = this.gardenBalanceManager.getTileCost(nextTileNumber);
+    const nextTileLockedByLevel =
+      nextTileCost !== null && nextTileNumber > maxUnlockedTilesByLevel;
 
     return {
       plot: {
         unlockedTiles,
         maxTiles,
+        maxUnlockedTilesByLevel,
         tilesPerRow: this.gardenBalanceManager.getTilesPerRow(),
         tileCosts: this.gardenBalanceManager.getTileCosts(),
         nextTileNumber: nextTileCost === null ? null : nextTileNumber,
         nextTileCost,
+        nextTileLockedByLevel,
+        nextTileRequiresLevel: nextTileLockedByLevel
+          ? this.playerLevelFacade?.getRequiredLevelForGardenTile(nextTileNumber) ?? null
+          : null,
         harvestSeconds: this.gardenBalanceManager.getHarvestSeconds(),
         tiles: this.getTileSnapshots(),
       },
       seeds: this.getSeedSnapshots(),
       herbs: this.getHerbSnapshots(),
     };
+  }
+
+  getMaxTilesByLevel() {
+    return this.playerLevelFacade?.getMaxGardenTiles?.() ?? this.gardenBalanceManager.getMaxTiles();
   }
 
   getTileSnapshots() {

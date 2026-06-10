@@ -134,7 +134,7 @@ export class ShopShelfEntityManager {
     );
 
     if (slotEntityId === undefined) {
-      throw new Error(`Unknown shop shelf slot: ${slotNumber}`);
+      throw new Error(`Unknown NPC market stand: ${slotNumber}`);
     }
 
     return slotEntityId;

@@ -85,7 +85,7 @@ The server module defines:
 - `player`: one row per SpacetimeDB identity, with `username`, player level, connection state, and timestamps.
 - `leaderboard`: one row per identity, with `username`, player level, and `totalIncome`.
 - `world_chat`: one row per chat message, with sender identity, username, sender player level, body, and timestamp.
-- `player_shop_listing`: one row per published player shop slot, keyed by seller identity and slot number.
+- `player_shop_listing`: one row per published player market stand, keyed by seller identity and slot number.
 - `player_shop_proceeds`: one row per seller with unclaimed gold from player shop sales.
 - `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC stock, and rolling demand/supply scores.
 - `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
@@ -97,7 +97,7 @@ The server module defines:
 
 `set_player_level` accepts the client's current task level and keeps the server player level at the highest reported value. Leaderboard rows read that level, and new chat rows store the sender level at send time.
 
-`set_player_shop_slot` publishes a player shelf slot after the client reserves local inventory. `buy_player_shop_listing` decrements server listing quantity and adds server-side seller proceeds. `claim_player_shop_proceeds` clears the proceeds row after the client claims the gold locally.
+`set_player_shop_slot` publishes a player market stand after the client reserves local inventory. `buy_player_shop_listing` decrements server listing quantity and adds server-side seller proceeds. `claim_player_shop_proceeds` clears the proceeds row after the client claims the gold locally.
 
 `sell_to_npc` and `buy_from_npc` record player/NPC trade pressure and stock movement. `tick_npc_market` applies bounded price movement from stock plus rolling demand/supply scores. Player shop trades do not affect `npc_market_price`.
 

@@ -142,7 +142,7 @@ export class ShopPlayerShelfManager {
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    label.textContent = `slot ${slotNumber}`;
+    label.textContent = `stand ${slotNumber}`;
 
     const value = document.createElement('span');
     value.className = 'row_val';
@@ -203,6 +203,12 @@ export class ShopPlayerShelfManager {
     root.className = 'shop-page__sell-controls shop-page__player-listing-controls';
     root.setAttribute('aria-label', 'List item for sale');
 
+    const listingSpace = document.createElement('section');
+    listingSpace.className = 'shop-page__player-listing-space';
+
+    const selectedItem = document.createElement('div');
+    selectedItem.className = 'shop-page__player-listing-selected-item';
+
     const fields = document.createElement('div');
     fields.className = 'shop-page__player-listing-fields';
 
@@ -212,17 +218,20 @@ export class ShopPlayerShelfManager {
     this.refs.priceInput = priceField.input;
     fields.append(quantityField.field, priceField.field);
 
-    const choiceRow = document.createElement('div');
-    choiceRow.className = 'shop-page__player-listing-choice-row';
+    const actionRow = document.createElement('div');
+    actionRow.className = 'shop-page__player-listing-action-row';
 
-    const choiceLabel = document.createElement('span');
-    choiceLabel.className = 'row_key';
-    choiceLabel.textContent = 'item';
+    const placeButton = document.createElement('button');
+    placeButton.className = 'style-button shop-page__player-listing-place-button';
+    placeButton.type = 'button';
+    placeButton.textContent = 'place';
+    placeButton.addEventListener('click', () => this.onPlaceListing());
 
-    const choiceValue = document.createElement('span');
-    choiceValue.className = 'row_val';
+    actionRow.append(placeButton);
+    listingSpace.append(selectedItem, fields, actionRow);
 
-    choiceRow.append(choiceLabel, choiceValue);
+    const choiceDivider = document.createElement('div');
+    choiceDivider.className = 'shop-page__player-listing-choice-divider';
 
     const itemList = document.createElement('div');
     itemList.className = 'shop-page__sell-item-list';
@@ -243,25 +252,14 @@ export class ShopPlayerShelfManager {
     emptyRow.append(emptyButton);
     itemList.append(emptyRow);
 
-    const actionRow = document.createElement('div');
-    actionRow.className = 'shop-page__player-listing-action-row';
-
-    const placeButton = document.createElement('button');
-    placeButton.className = 'style-button shop-page__player-listing-place-button';
-    placeButton.type = 'button';
-    placeButton.textContent = 'place';
-    placeButton.addEventListener('click', () => this.onPlaceListing());
-
-    actionRow.append(placeButton);
-
     const status = document.createElement('div');
     status.className = 'shop-page__player-shop-status';
 
-    root.append(choiceRow, fields, itemList, actionRow, status);
+    root.append(listingSpace, choiceDivider, itemList, status);
     return {
       root,
       emptyButton,
-      choiceValue,
+      selectedItem,
       itemList,
       placeButton,
       status,
@@ -663,7 +661,7 @@ export class ShopPlayerShelfManager {
         row.classList.add('shop-page__slot-row--interactive');
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
-        row.setAttribute('aria-label', `select player market slot ${slotNumber}`);
+        row.setAttribute('aria-label', `select player market stand ${slotNumber}`);
         value.textContent = this.formatPlayerSlotValue(slot, shelf, this.lastGameplaySnapshot);
         return;
       }
@@ -673,8 +671,8 @@ export class ShopPlayerShelfManager {
         row.removeAttribute('role');
         row.removeAttribute('aria-label');
         row.removeAttribute('tabindex');
-        button.textContent = cost === 0 ? 'open (free)' : `buy (${cost} gold)`;
-        button.disabled = this.lastGameplaySnapshot.gold.current < cost;
+        button.textContent = this.formatLockedSlotAction(shelf, cost);
+        button.disabled = shelf.nextSlotLockedByLevel || this.lastGameplaySnapshot.gold.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
 
         if (button.parentElement !== value) {
@@ -690,6 +688,14 @@ export class ShopPlayerShelfManager {
       row.removeAttribute('tabindex');
       value.textContent = 'locked';
     });
+  }
+
+  formatLockedSlotAction(shelf, cost) {
+    if (shelf.nextSlotLockedByLevel) {
+      return `level ${shelf.nextSlotRequiresLevel}`;
+    }
+
+    return cost === 0 ? 'open (free)' : `buy (${cost} gold)`;
   }
 
   renderListingControls(shelf, snapshot) {
@@ -717,7 +723,7 @@ export class ShopPlayerShelfManager {
       (item) => item.itemTypeId === this.draftListingItemTypeId,
     );
 
-    this.refs.listingControls.choiceValue.textContent = draftItem
+    this.refs.listingControls.selectedItem.textContent = draftItem
       ? getItemDisplay(snapshot, draftItem, draftItem.quantity).label
       : 'none';
 
