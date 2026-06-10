@@ -157,6 +157,7 @@
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup overlays should lift room pages only above the canvas (`z-index: 3`), not above shared top/chat/bottom chrome.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
+- Compact world chat preview height and room content clearance must use the same source-line variables; otherwise wrapped preview rows can overlap lower room content.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
 - Main room page content panels should also use the Research-width `16px` source side inset.
 - Workshop tasks sit below the top panel and stay collapsed until the summary row is pressed.

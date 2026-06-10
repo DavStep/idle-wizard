@@ -28,6 +28,8 @@
   --style-row-min-height: 20px;
   --style-world-chat-row-height: 16px;
   --style-world-chat-row-gap: 4px;
+  --style-world-chat-preview-lines: 4;
+  --style-world-chat-preview-message-lines: 2;
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
   --style-button-width: 100px;
   --style-room-edge: 27px;
@@ -36,7 +38,8 @@
   --style-room-content-top: 88px;
   --style-room-chat-bottom: 50px;
   --style-room-chat-source-height: calc(
-    (var(--style-world-chat-row-height) * 2) + var(--style-world-chat-row-gap) + 12px
+    (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
+      var(--style-world-chat-row-gap) + 12px
   );
   --style-room-chat-title-overhang: 13px;
   --style-room-chat-gap: 8px;
@@ -1268,23 +1271,33 @@ div.workshop-page__discovery-row {
   flex-direction: column;
   gap: var(--style-world-chat-row-gap);
   min-height: calc(
-    (var(--style-world-chat-row-height) * 2) + var(--style-world-chat-row-gap)
+    (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
+      var(--style-world-chat-row-gap)
   );
 }
 
 .workshop-page__world-chat-box .workshop-page__world-chat-message,
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
-  min-height: var(--style-world-chat-row-height);
+  min-height: calc(
+    var(--style-world-chat-row-height) * var(--style-world-chat-preview-message-lines)
+  );
+  max-height: calc(
+    var(--style-world-chat-row-height) * var(--style-world-chat-preview-message-lines)
+  );
   font-size: 13px;
+  display: -webkit-box;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--style-world-chat-preview-message-lines);
 }
 
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
   display: grid;
   min-height: calc(
-    (var(--style-world-chat-row-height) * 2) + var(--style-world-chat-row-gap)
+    (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
+      var(--style-world-chat-row-gap)
   );
   text-align: center;
   place-items: center;
