@@ -10,6 +10,7 @@ import { GameplayPersistenceFacade } from './persistence/GameplayPersistenceFaca
 import { ResearchFacade } from './research/ResearchFacade.js';
 import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
 import { ShopFacade } from './shop/ShopFacade.js';
+import { TasksFacade } from './tasks/TasksFacade.js';
 
 export class GameplayFacade {
   static explain =
@@ -22,6 +23,9 @@ export class GameplayFacade {
     this.goldFacade = new GoldFacade();
     this.crystalFacade = new CrystalFacade();
     this.gameplayLogFacade = new GameplayLogFacade();
+    this.tasksFacade = new TasksFacade({
+      itemsFacade: this.itemsFacade,
+    });
     this.researchFacade = new ResearchFacade({
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
@@ -60,12 +64,24 @@ export class GameplayFacade {
       shopFacade: this.shopFacade,
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
+      tasksFacade: this.tasksFacade,
     });
+    this.potionDiscoveryFacade = null;
     this.initialized = false;
   }
 
   setNpcMarketFacade(npcMarketFacade) {
     this.shopFacade.setNpcMarketFacade(npcMarketFacade);
+
+    if (this.initialized) {
+      this.publishSnapshot();
+    }
+  }
+
+  setPotionDiscoveryFacade(potionDiscoveryFacade) {
+    this.potionDiscoveryFacade = potionDiscoveryFacade;
+    this.brewingFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
+    this.shopFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
 
     if (this.initialized) {
       this.publishSnapshot();
@@ -82,6 +98,7 @@ export class GameplayFacade {
     this.manaFacade.initialize(ecsManagers);
     this.goldFacade.initialize(ecsManagers);
     this.crystalFacade.initialize(ecsManagers);
+    this.tasksFacade.initialize(ecsManagers);
     this.researchFacade.initialize(ecsManagers);
     this.brewingFacade.initialize(ecsManagers);
     this.seedSummoningFacade.initialize(ecsManagers);
@@ -140,6 +157,18 @@ export class GameplayFacade {
     return result;
   }
 
+  fillTask(taskId) {
+    const result = this.tasksFacade.fillTask(taskId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  completeTask(taskId) {
+    const result = this.tasksFacade.completeTask(taskId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   buyResearch(researchId) {
     const result = this.researchFacade.buyResearch(researchId);
     if (result.ok) {
@@ -171,6 +200,9 @@ export class GameplayFacade {
 
   brewCauldron() {
     const result = this.brewingFacade.brew();
+    if (result.ok && result.discovery?.potionKey) {
+      void this.potionDiscoveryFacade?.discoverPotionRecipe(result.discovery.potionKey);
+    }
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -289,7 +321,12 @@ export class GameplayFacade {
       seedInventory: this.itemsFacade.getSeedInventorySnapshot(),
       seedSummoning,
       brewing: this.brewingFacade.getSnapshot(),
+      discoveries: this.itemsFacade.getDiscoverySnapshot({
+        getPotionDiscovery: (potionKey) =>
+          this.potionDiscoveryFacade?.getDiscovery(potionKey) ?? null,
+      }),
       logs: this.gameplayLogFacade.getSnapshot(),
+      tasks: this.tasksFacade.getSnapshot(),
       research: this.researchFacade.getSnapshot(),
       shop: this.shopFacade.getSnapshot(),
       garden: this.gardenFacade.getSnapshot(),

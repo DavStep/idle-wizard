@@ -14,7 +14,7 @@
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Shop`; Workshop stays the default page.
-- Show the current page name at the bottom center of the room view.
+- Show all five room pages in a shared bottom tab panel; frame the current page tab.
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard `income` tab should read server-provided `income`; `total generated gold` can use existing `totalIncome`.
@@ -42,6 +42,7 @@
 - Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make Wasted Potion.
 - Potion recipe ingredient order matters; expand grouped quantities in listed order for matching.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
+- Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
 - Brewing herb controls are tap-first on mobile; drag should start only after movement crosses a small threshold.
 - Brewing keeps the action button generic (`brew (N mana)`); cauldron status/message carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
@@ -54,7 +55,7 @@
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
-- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, herb growth `60s`.
+- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, and currently has no earning or spending rule.
 - Shop shelf slot 1 starts unlocked for free; later slots cost gold from `shop-balance.json`.
 - Shop slots auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
@@ -72,7 +73,7 @@
 - Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.
 - Inventory-style seed/herb/potion rows should display `locked` instead of `0` when the matching research is incomplete.
 - Garden seed picker title is `choose seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
-- Garden tiles keep selected seed separate from active crop; harvest completion preserves selection and auto-replants only when that seed is owned.
+- Garden tiles keep selected seed separate from active crop; harvest completion preserves selection but does not auto-replant. Player must press `plant`.
 - Garden seed selection is locked while a tile has an active crop; active crop saves should restore selected seed from the planted crop.
 - Garden growth/harvest timer text belongs next to the right action label, not inside the progress rail.
 - Garden plot right-side action labels (`choose`, `no seeds`, `buy`, `growing`, `harvest`) should share the smaller growing-label size.
@@ -121,7 +122,10 @@
 - Padded inputs inside flex columns need `box-sizing: border-box` or explicit width math; content-box `width: 100%` overflows columns.
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
+- Clicking the top-panel username opens settings; username editing and `white` / `black` visual theme choices live there.
+- Player visual theme is stored on `PlayerFacade` snapshot and applied globally by `AppThemeManager` through `html[data-style-theme]`.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
+- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab gets the only visible inner frame.
 - Main room page content panels should also use the Research-width `16px` source side inset.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
@@ -139,11 +143,13 @@
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
 - `DavStep/idle-wizard` is private; current GitHub plan rejected Pages enablement until the repo is public or the plan supports private Pages.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
+- Optional Google login is controlled by `VITE_SPACETIME_AUTH_CLIENT_ID`; GitHub Pages reads it from the `SPACETIME_AUTH_CLIENT_ID` Actions variable.
 
 ## Backend And Android
 
 - Backend target is SpacetimeDB.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
+- Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
@@ -159,6 +165,7 @@
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
 - Current NPC market backend owns shared prices/stock/pressure, but shop inventory and gold settlement still happen locally until server-owned inventory/gold exists.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local gold.
+- Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
 - Android packaging uses Capacitor.
 - Capacitor 8 Android builds require JDK 21 here.
 - Capacitor Android serves bundled assets as `https://localhost` by default; local `ws://` SpacetimeDB is blocked as mixed content unless `server.androidScheme` is `http` and cleartext is allowed, then the app is rebuilt/synced.

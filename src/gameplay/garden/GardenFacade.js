@@ -28,7 +28,6 @@ export class GardenFacade {
       itemsFacade,
     });
     this.gardenProcessManager = new GardenProcessManager({
-      gardenPlantingManager: this.gardenPlantingManager,
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
       onHarvestComplete,

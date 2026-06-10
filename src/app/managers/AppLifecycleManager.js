@@ -9,6 +9,7 @@ export class AppLifecycleManager {
     backendFacade,
     playerFacade,
     onlineGateManager,
+    appThemeManager,
   }) {
     this.shellManager = shellManager;
     this.viewportFacade = viewportFacade;
@@ -19,6 +20,7 @@ export class AppLifecycleManager {
     this.backendFacade = backendFacade;
     this.playerFacade = playerFacade;
     this.onlineGateManager = onlineGateManager;
+    this.appThemeManager = appThemeManager;
     this.started = false;
     this.frameLoopStarted = false;
     this.stopping = false;
@@ -30,6 +32,7 @@ export class AppLifecycleManager {
     }
 
     const shell = this.shellManager.mount();
+    this.appThemeManager?.mount(this.playerFacade);
     const stage = this.viewportFacade.mount(shell);
     this.onlineGateManager.mount(stage);
     this.onlineGateManager.showConnecting();
@@ -38,7 +41,6 @@ export class AppLifecycleManager {
     this.gameplayFacade.initialize(this.ecsFacade);
     this.pagesFacade.mount(stage);
     this.renderFacade.mount(stage);
-    this.backendFacade.prepare();
     this.started = true;
     this.stopping = false;
     void this.connectBackend();
@@ -46,6 +48,7 @@ export class AppLifecycleManager {
 
   async connectBackend() {
     try {
+      await this.backendFacade.prepare();
       const result = await this.backendFacade.start({
         gameplayFacade: this.gameplayFacade,
         playerFacade: this.playerFacade,
@@ -109,6 +112,7 @@ export class AppLifecycleManager {
     this.stopFrameLoop();
     this.backendFacade.stop();
     this.onlineGateManager.unmount();
+    this.appThemeManager?.unmount();
     this.renderFacade.unmount();
     this.pagesFacade.unmount();
     this.gameplayFacade.shutdown();

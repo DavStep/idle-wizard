@@ -67,6 +67,10 @@ export class ShopFacade {
     this.shopNpcPriceManager.setNpcMarketFacade(npcMarketFacade);
   }
 
+  setPotionDiscoveryFacade(potionDiscoveryFacade) {
+    this.shopSellItemVisibilityManager.setPotionDiscoveryFacade(potionDiscoveryFacade);
+  }
+
   initialize(ecsManagers) {
     this.shopShelfEntityManager.initialize(ecsManagers);
     this.shopPlayerShelfEntityManager.initialize(ecsManagers);
@@ -164,6 +168,9 @@ export class ShopFacade {
       .getVisibleSellItems(sellableItems)
       .map((item) => ({
         ...item,
+        ...(this.shopSellItemVisibilityManager.isResearched(item)
+          ? { discovered: item.discoveryType === 'unknown', researched: true, unlocked: true, known: true }
+          : {}),
         sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
       }));
   }

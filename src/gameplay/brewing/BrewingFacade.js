@@ -60,6 +60,10 @@ export class BrewingFacade {
     this.brewingProcessManager.register(ecsManagers.systems);
   }
 
+  setPotionDiscoveryFacade(potionDiscoveryFacade) {
+    this.brewingRecipeMatchManager.setPotionDiscoveryFacade(potionDiscoveryFacade);
+  }
+
   addIngredient(itemTypeId) {
     return this.brewingStartManager.addIngredient(itemTypeId);
   }

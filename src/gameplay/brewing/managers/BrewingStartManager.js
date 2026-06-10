@@ -128,8 +128,14 @@ export class BrewingStartManager {
     }
 
     const recipe = this.brewingRecipeMatchManager.getMatch(ingredientItemTypeIds);
+    const recipeUnlocked = recipe
+      ? this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)
+      : false;
+    const recipeDiscoverable = recipe
+      ? this.brewingRecipeMatchManager.isRecipeDiscoverable(recipe)
+      : false;
 
-    if (recipe && !this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)) {
+    if (recipe && !recipeUnlocked && !recipeDiscoverable) {
       return {
         ok: false,
         reason: 'research_not_unlocked',
@@ -173,6 +179,13 @@ export class BrewingStartManager {
       },
       recipe: recipe ?? null,
       wasted: !recipe,
+      discovery:
+        recipe && recipeDiscoverable
+          ? {
+              potionKey: recipe.key,
+              potionLabel: recipe.label,
+            }
+          : null,
       manaCost,
       durationMs,
     };

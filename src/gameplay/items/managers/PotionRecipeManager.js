@@ -1,14 +1,14 @@
 const recipeCatalog = [
   {
     potionKey: 'manaTonic',
-    manaCost: 5,
-    brewDurationMs: 4_000,
+    manaCost: 12,
+    brewDurationMs: 30_000,
     ingredients: [{ itemKey: 'sageHerb', quantity: 3 }],
   },
   {
     potionKey: 'minorHealingPotion',
-    manaCost: 5,
-    brewDurationMs: 5_000,
+    manaCost: 14,
+    brewDurationMs: 35_000,
     ingredients: [
       { itemKey: 'sageHerb', quantity: 2 },
       { itemKey: 'mintHerb', quantity: 1 },
@@ -16,8 +16,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'nettleVigor',
-    manaCost: 6,
-    brewDurationMs: 5_000,
+    manaCost: 16,
+    brewDurationMs: 40_000,
     ingredients: [
       { itemKey: 'nettleHerb', quantity: 2 },
       { itemKey: 'sageHerb', quantity: 1 },
@@ -25,8 +25,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'calmingDraught',
-    manaCost: 8,
-    brewDurationMs: 7_000,
+    manaCost: 18,
+    brewDurationMs: 45_000,
     ingredients: [
       { itemKey: 'mintHerb', quantity: 2 },
       { itemKey: 'lavenderHerb', quantity: 1 },
@@ -34,8 +34,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'simpleAntidote',
-    manaCost: 10,
-    brewDurationMs: 8_000,
+    manaCost: 22,
+    brewDurationMs: 50_000,
     ingredients: [
       { itemKey: 'nettleHerb', quantity: 2 },
       { itemKey: 'sageHerb', quantity: 1 },
@@ -44,8 +44,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'venomDraught',
-    manaCost: 12,
-    brewDurationMs: 9_000,
+    manaCost: 24,
+    brewDurationMs: 60_000,
     ingredients: [
       { itemKey: 'mandrakeHerb', quantity: 1 },
       { itemKey: 'nettleHerb', quantity: 2 },
@@ -54,8 +54,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'briarWard',
-    manaCost: 12,
-    brewDurationMs: 9_000,
+    manaCost: 24,
+    brewDurationMs: 60_000,
     ingredients: [
       { itemKey: 'briarHerb', quantity: 2 },
       { itemKey: 'sageHerb', quantity: 2 },
@@ -63,8 +63,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'lanternTonic',
-    manaCost: 10,
-    brewDurationMs: 8_000,
+    manaCost: 22,
+    brewDurationMs: 55_000,
     ingredients: [
       { itemKey: 'glowcapHerb', quantity: 2 },
       { itemKey: 'mintHerb', quantity: 1 },
@@ -72,8 +72,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'healingPotion',
-    manaCost: 5,
-    brewDurationMs: 6_000,
+    manaCost: 26,
+    brewDurationMs: 65_000,
     ingredients: [
       { itemKey: 'sageHerb', quantity: 2 },
       { itemKey: 'mandrakeHerb', quantity: 1 },
@@ -81,8 +81,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'moonlitFocus',
-    manaCost: 14,
-    brewDurationMs: 10_000,
+    manaCost: 30,
+    brewDurationMs: 70_000,
     ingredients: [
       { itemKey: 'moonflowerHerb', quantity: 1 },
       { itemKey: 'lavenderHerb', quantity: 2 },
@@ -90,8 +90,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'sunrootStamina',
-    manaCost: 16,
-    brewDurationMs: 10_000,
+    manaCost: 34,
+    brewDurationMs: 75_000,
     ingredients: [
       { itemKey: 'sunrootHerb', quantity: 2 },
       { itemKey: 'nettleHerb', quantity: 2 },
@@ -99,8 +99,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'frostmossCleanse',
-    manaCost: 18,
-    brewDurationMs: 12_000,
+    manaCost: 38,
+    brewDurationMs: 85_000,
     ingredients: [
       { itemKey: 'frostmossHerb', quantity: 1 },
       { itemKey: 'glowcapHerb', quantity: 2 },
@@ -108,8 +108,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'sleepDraught',
-    manaCost: 20,
-    brewDurationMs: 12_000,
+    manaCost: 42,
+    brewDurationMs: 95_000,
     ingredients: [
       { itemKey: 'dreambellHerb', quantity: 1 },
       { itemKey: 'lavenderHerb', quantity: 2 },
@@ -118,8 +118,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'elixirOfLife',
-    manaCost: 20,
-    brewDurationMs: 12_000,
+    manaCost: 44,
+    brewDurationMs: 100_000,
     ingredients: [
       { itemKey: 'mandrakeHerb', quantity: 3 },
       { itemKey: 'moonflowerHerb', quantity: 2 },
@@ -127,8 +127,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'starLuckPhiltre',
-    manaCost: 24,
-    brewDurationMs: 14_000,
+    manaCost: 50,
+    brewDurationMs: 110_000,
     ingredients: [
       { itemKey: 'starAniseHerb', quantity: 1 },
       { itemKey: 'moonflowerHerb', quantity: 2 },
@@ -137,8 +137,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'dragonCourage',
-    manaCost: 28,
-    brewDurationMs: 16_000,
+    manaCost: 58,
+    brewDurationMs: 125_000,
     ingredients: [
       { itemKey: 'dragonpepperHerb', quantity: 1 },
       { itemKey: 'sunrootHerb', quantity: 2 },
@@ -147,8 +147,8 @@ const recipeCatalog = [
   },
   {
     potionKey: 'deepDreamVision',
-    manaCost: 30,
-    brewDurationMs: 18_000,
+    manaCost: 62,
+    brewDurationMs: 135_000,
     ingredients: [
       { itemKey: 'dreambellHerb', quantity: 2 },
       { itemKey: 'starAniseHerb', quantity: 1 },
@@ -157,12 +157,114 @@ const recipeCatalog = [
   },
   {
     potionKey: 'pactWard',
-    manaCost: 30,
-    brewDurationMs: 18_000,
+    manaCost: 64,
+    brewDurationMs: 145_000,
     ingredients: [
       { itemKey: 'bloodroseHerb', quantity: 1 },
       { itemKey: 'briarHerb', quantity: 2 },
       { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'ashenMemory',
+    manaCost: 36,
+    brewDurationMs: 80_000,
+    ingredients: [
+      { itemKey: 'sageHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'silverleafQuiet',
+    manaCost: 34,
+    brewDurationMs: 75_000,
+    ingredients: [
+      { itemKey: 'mintHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 1 },
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'emberSight',
+    manaCost: 58,
+    brewDurationMs: 120_000,
+    ingredients: [
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'starAniseHerb', quantity: 1 },
+      { itemKey: 'sageHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'thornSleep',
+    manaCost: 44,
+    brewDurationMs: 90_000,
+    ingredients: [
+      { itemKey: 'briarHerb', quantity: 1 },
+      { itemKey: 'dreambellHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'glassMoonElixir',
+    manaCost: 52,
+    brewDurationMs: 110_000,
+    ingredients: [
+      { itemKey: 'moonflowerHerb', quantity: 2 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+      { itemKey: 'starAniseHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'rootboundResolve',
+    manaCost: 48,
+    brewDurationMs: 100_000,
+    ingredients: [
+      { itemKey: 'sunrootHerb', quantity: 1 },
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+      { itemKey: 'briarHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'nightOrchardTonic',
+    manaCost: 60,
+    brewDurationMs: 125_000,
+    ingredients: [
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+      { itemKey: 'mintHerb', quantity: 2 },
+      { itemKey: 'dreambellHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'starlessCourage',
+    manaCost: 68,
+    brewDurationMs: 140_000,
+    ingredients: [
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+      { itemKey: 'sunrootHerb', quantity: 1 },
+      { itemKey: 'nettleHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'frostveinDraught',
+    manaCost: 54,
+    brewDurationMs: 115_000,
+    ingredients: [
+      { itemKey: 'frostmossHerb', quantity: 2 },
+      { itemKey: 'nettleHerb', quantity: 1 },
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'bloodlightWard',
+    manaCost: 62,
+    brewDurationMs: 130_000,
+    ingredients: [
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 2 },
+      { itemKey: 'briarHerb', quantity: 1 },
+      { itemKey: 'sageHerb', quantity: 1 },
     ],
   },
 ];
@@ -221,6 +323,11 @@ export class PotionRecipeManager {
       label: potion.label,
       manaCost: recipe.manaCost,
       brewDurationMs: recipe.brewDurationMs,
+      discoveryType: potion.discoveryType ?? null,
+      type: potion.type ?? null,
+      unknown: potion.unknown === true,
+      known: potion.known !== false,
+      researchable: potion.researchable !== false,
       ingredients: recipe.ingredients.map((ingredient) =>
         this.resolveIngredient(ingredient),
       ),

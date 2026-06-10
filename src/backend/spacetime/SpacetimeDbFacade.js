@@ -18,7 +18,7 @@ export class SpacetimeDbFacade {
     return this.connectionManager.getConfigSnapshot();
   }
 
-  connect(DbConnection) {
+  async connect(DbConnection) {
     return this.connectionManager.connect(DbConnection);
   }
 
@@ -33,7 +33,7 @@ export class SpacetimeDbFacade {
 
     return {
       ok: true,
-      connection: this.connectionManager.connect(DbConnection, callbacks),
+      connection: await this.connectionManager.connect(DbConnection, callbacks),
     };
   }
 

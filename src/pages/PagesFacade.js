@@ -2,6 +2,7 @@ import { BrewingPageFacade } from './brewing/BrewingPageFacade.js';
 import { GardenPageFacade } from './garden/GardenPageFacade.js';
 import { ShopPageFacade } from './shop/ShopPageFacade.js';
 import { ResearchPageFacade } from './research/ResearchPageFacade.js';
+import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
 import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
@@ -21,6 +22,7 @@ export class PagesFacade {
     leaderboardFacade,
     worldChatFacade,
     playerShopFacade,
+    authFacade,
     defaultPageId = 'workshop',
   } = {}) {
     this.registryManager = new PageRegistryManager();
@@ -33,9 +35,14 @@ export class PagesFacade {
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
     });
+    this.bottomPanelFacade = new BottomPanelFacade({
+      getCurrentPageId: () => this.getCurrentPageId(),
+      onShowPage: (pageId) => this.show(pageId),
+    });
     this.topPanelFacade = new TopPanelFacade({
       gameplayFacade,
       playerFacade,
+      authFacade,
     });
 
     this.registryManager.register(
@@ -44,31 +51,24 @@ export class PagesFacade {
         gameplayFacade,
         leaderboardFacade,
         worldChatFacade,
-        onShowGarden: () => this.show('garden'),
-        onShowResearch: () => this.show('research'),
       }),
     );
     this.registryManager.register(
       'brewing',
       new BrewingPageFacade({
         gameplayFacade,
-        onShowGarden: () => this.show('garden'),
       }),
     );
     this.registryManager.register(
       'garden',
       new GardenPageFacade({
         gameplayFacade,
-        onShowBrewing: () => this.show('brewing'),
-        onShowWorkshop: () => this.show('workshop'),
       }),
     );
     this.registryManager.register(
       'research',
       new ResearchPageFacade({
         gameplayFacade,
-        onShowWorkshop: () => this.show('workshop'),
-        onShowShop: () => this.show('shop'),
       }),
     );
     this.registryManager.register(
@@ -76,7 +76,6 @@ export class PagesFacade {
       new ShopPageFacade({
         gameplayFacade,
         playerShopFacade,
-        onShowResearch: () => this.show('research'),
       }),
     );
   }
@@ -84,17 +83,20 @@ export class PagesFacade {
   mount(stage) {
     this.currentPageManager.mount(stage);
     this.swipeNavigationManager.mount(stage);
+    this.bottomPanelFacade.mount(stage);
     this.topPanelFacade.mount(stage);
   }
 
   unmount() {
     this.topPanelFacade.unmount();
+    this.bottomPanelFacade.unmount();
     this.swipeNavigationManager.unmount();
     this.currentPageManager.unmount();
   }
 
   show(pageId) {
     this.currentPageManager.show(pageId);
+    this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
   }
 
   getCurrentPageId() {

@@ -3,6 +3,7 @@ import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade
 import { NpcMarketBackendFacade } from './npcMarket/NpcMarketBackendFacade.js';
 import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js';
 import { PlayerShopBackendFacade } from './playerShop/PlayerShopBackendFacade.js';
+import { PotionDiscoveryBackendFacade } from './potionDiscoveries/PotionDiscoveryBackendFacade.js';
 import { SpacetimeDbFacade } from './spacetime/SpacetimeDbFacade.js';
 import { WorldChatBackendFacade } from './worldChat/WorldChatBackendFacade.js';
 
@@ -20,6 +21,7 @@ export class BackendFacade {
     this.npcMarketFacade = new NpcMarketBackendFacade();
     this.playerSyncFacade = new PlayerBackendSyncFacade();
     this.playerShopFacade = new PlayerShopBackendFacade();
+    this.potionDiscoveryFacade = new PotionDiscoveryBackendFacade();
     this.spacetimeDbFacade = new SpacetimeDbFacade({
       uri,
       databaseName,
@@ -28,10 +30,10 @@ export class BackendFacade {
   }
 
   prepare() {
-    return {
-      auth: this.authFacade.prepare(),
+    return Promise.resolve(this.authFacade.prepare()).then((auth) => ({
+      auth,
       spacetime: this.spacetimeDbFacade.prepare(),
-    };
+    }));
   }
 
   async start({ gameplayFacade, playerFacade, onOnline, onOffline } = {}) {
@@ -45,6 +47,7 @@ export class BackendFacade {
         this.npcMarketFacade.connect(connection);
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
+        this.potionDiscoveryFacade.connect(connection);
         onOnline?.({ connection, identity });
       },
       onConnectError: (error) => {
@@ -53,6 +56,7 @@ export class BackendFacade {
         this.npcMarketFacade.disconnect();
         this.playerSyncFacade.disconnect();
         this.playerShopFacade.disconnect();
+        this.potionDiscoveryFacade.disconnect();
         onOffline?.({ reason: 'connect_error', error });
       },
       onDisconnect: () => {
@@ -61,6 +65,7 @@ export class BackendFacade {
         this.npcMarketFacade.disconnect();
         this.playerSyncFacade.disconnect();
         this.playerShopFacade.disconnect();
+        this.potionDiscoveryFacade.disconnect();
         onOffline?.({ reason: 'disconnect' });
       },
     });
@@ -73,6 +78,7 @@ export class BackendFacade {
     this.npcMarketFacade.disconnect();
     this.playerSyncFacade.disconnect();
     this.playerShopFacade.disconnect();
+    this.potionDiscoveryFacade.disconnect();
     this.spacetimeDbFacade.disconnect();
   }
 
@@ -98,5 +104,9 @@ export class BackendFacade {
 
   getPlayerShopFacade() {
     return this.playerShopFacade;
+  }
+
+  getPotionDiscoveryFacade() {
+    return this.potionDiscoveryFacade;
   }
 }

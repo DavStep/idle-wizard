@@ -104,13 +104,13 @@ function createGameplayFacadeFake() {
       tile.herbKey = herb.key;
       tile.herbLabel = herb.label;
       tile.phase = 'growing';
-      tile.totalMs = 60_000;
-      tile.remainingMs = 60_000;
+      tile.totalMs = 20_000;
+      tile.remainingMs = 20_000;
       tile.progress = 0;
       tile.process = {
         phase: 'growing',
-        totalMs: 60_000,
-        remainingMs: 60_000,
+        totalMs: 20_000,
+        remainingMs: 20_000,
         progress: 0,
       };
       publish();
@@ -208,8 +208,8 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('Mint Seed');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 60s');
-    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('60s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
+    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('20s');
   });
 
   it('shows unresearched seed choices as locked and grays zero-count researched seeds', () => {

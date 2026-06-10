@@ -22,6 +22,9 @@ export class BrewingSnapshotManager {
     const recipeUnlocked = recipe
       ? this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)
       : false;
+    const recipeDiscoverable = recipe
+      ? this.brewingRecipeMatchManager.isRecipeDiscoverable(recipe)
+      : false;
     const manaCost = recipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
     const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
     const hasEnoughIngredients = this.hasEnoughIngredients(ingredientItemTypeIds);
@@ -35,10 +38,14 @@ export class BrewingSnapshotManager {
         ? {
             potionTypeId: recipe.potionTypeId,
             key: recipe.key,
-            label: recipe.label,
+            label: recipeDiscoverable ? 'unknown recipe' : recipe.label,
+            realLabel: recipe.label,
             manaCost: recipe.manaCost,
             brewDurationMs: recipe.brewDurationMs,
             unlocked: recipeUnlocked,
+            discoverable: recipeDiscoverable,
+            unknown: recipe.unknown === true,
+            discoveryType: recipe.discoveryType ?? null,
           }
         : null,
       buttonLabel: recipe && recipeUnlocked ? `brew ${recipe.label}` : 'brew',

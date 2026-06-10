@@ -12,18 +12,18 @@ describe('ItemDefinitionManager', () => {
       key: 'sageHerb',
       label: 'Sage',
       kind: 'herb',
-      growthDurationMs: 60_000,
+      growthDurationMs: 20_000,
     });
     expect(manager.getDefinitionByKey('dragonpepperHerb')).toEqual({
       id: 1014,
       key: 'dragonpepperHerb',
       label: 'Dragonpepper',
       kind: 'herb',
-      growthDurationMs: 60_000,
+      growthDurationMs: 210_000,
     });
     expect(manager.getSeedDefinition(1).producesHerbTypeId).toBe(1001);
     expect(manager.getSeedDefinition(14).producesHerbTypeId).toBe(1014);
-    expect(manager.getPotionDefinitions()).toHaveLength(19);
+    expect(manager.getPotionDefinitions()).toHaveLength(29);
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2001,
       key: 'manaTonic',
@@ -38,6 +38,17 @@ describe('ItemDefinitionManager', () => {
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2019,
+      key: 'ashenMemory',
+      label: 'Ashen Memory',
+      kind: 'potion',
+      discoveryType: 'unknown',
+      type: 'unknown',
+      unknown: true,
+      known: false,
+      researchable: false,
+    });
+    expect(manager.getPotionDefinitions()).toContainEqual({
+      id: 2029,
       key: 'wastedPotion',
       label: 'Wasted Potion',
       kind: 'potion',
@@ -45,6 +56,7 @@ describe('ItemDefinitionManager', () => {
       baseSellPrice: 1,
     });
     expect(manager.getRecipePotionDefinitions()).toHaveLength(18);
+    expect(manager.getUnknownPotionDefinitions()).toHaveLength(10);
     expect(manager.getDefinition(2001).kind).toBe('potion');
   });
 });

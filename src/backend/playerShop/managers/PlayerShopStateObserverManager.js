@@ -2,6 +2,8 @@ const EMPTY_SNAPSHOT = {
   connected: false,
   listings: [],
   ownListings: [],
+  tradeHistory: [],
+  ownTradeHistory: [],
   proceedsGold: 0,
 };
 

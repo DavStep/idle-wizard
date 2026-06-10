@@ -1,6 +1,5 @@
 export class GardenProcessManager {
-  constructor({ gardenPlantingManager, gardenTileEntityManager, itemsFacade, onHarvestComplete } = {}) {
-    this.gardenPlantingManager = gardenPlantingManager;
+  constructor({ gardenTileEntityManager, itemsFacade, onHarvestComplete } = {}) {
     this.gardenTileEntityManager = gardenTileEntityManager;
     this.itemsFacade = itemsFacade;
     this.onHarvestComplete = onHarvestComplete;
@@ -29,7 +28,6 @@ export class GardenProcessManager {
         quantity: 1,
         tileNumber: harvest.tileNumber,
       });
-      this.gardenPlantingManager?.plantSelectedSeed(harvest.tileNumber);
     }
   }
 }

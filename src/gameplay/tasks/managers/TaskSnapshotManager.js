@@ -1,0 +1,54 @@
+export class TaskSnapshotManager {
+  constructor({ itemsFacade, taskBalanceManager, taskStateEntityManager }) {
+    this.itemsFacade = itemsFacade;
+    this.taskBalanceManager = taskBalanceManager;
+    this.taskStateEntityManager = taskStateEntityManager;
+  }
+
+  getSnapshot() {
+    const currentLevel = this.taskStateEntityManager.getCurrentLevel();
+    const maxLevel = this.taskBalanceManager.getMaxLevel();
+    const tasks = this.taskBalanceManager
+      .getLevelTasks(currentLevel)
+      .map((task) => this.getTaskSnapshot(task));
+
+    return {
+      currentLevel,
+      maxLevel,
+      completedAllLevels: this.taskStateEntityManager.areAllLevelsCompleted(),
+      level: {
+        level: currentLevel,
+        completedTasks: tasks.filter((task) => task.completed).length,
+        totalTasks: tasks.length,
+        tasks,
+      },
+    };
+  }
+
+  getTaskSnapshot(task) {
+    const progressQuantity = this.taskStateEntityManager.getProgress(task.id);
+    const completed = this.taskStateEntityManager.isCompleted(task.id);
+    const ownedQuantity = this.itemsFacade.getItemQuantity(task.itemTypeId);
+    const remainingQuantity = Math.max(0, task.requiredQuantity - progressQuantity);
+    const maxed = progressQuantity >= task.requiredQuantity;
+
+    return {
+      taskId: task.id,
+      level: task.level,
+      action: task.action,
+      itemTypeId: task.itemTypeId,
+      itemKey: task.itemKey,
+      itemLabel: task.itemLabel,
+      itemKind: task.itemKind,
+      requiredQuantity: task.requiredQuantity,
+      progressQuantity,
+      remainingQuantity,
+      ownedQuantity,
+      progress: task.requiredQuantity <= 0 ? 1 : progressQuantity / task.requiredQuantity,
+      maxed,
+      completed,
+      canFill: !completed && !maxed && ownedQuantity > 0,
+      canComplete: !completed && maxed,
+    };
+  }
+}

@@ -65,11 +65,13 @@ export class ShopPlayerShelfManager {
     this.refs.title = this.createTitle();
     this.refs.rows = [];
     this.refs.proceedsRow = this.createProceedsRow();
+    this.refs.actions = this.createActions();
     this.refs.otherShopsButton = this.createOtherShopsButton();
     this.refs.listingPopup = this.createListingPopup();
     this.refs.marketPopup = this.createMarketPopup();
 
-    this.root.append(this.refs.title, this.refs.proceedsRow.row, this.refs.otherShopsButton);
+    this.refs.actions.append(this.refs.otherShopsButton);
+    this.root.append(this.refs.title, this.refs.proceedsRow.row, this.refs.actions);
     parent.append(this.root, this.refs.listingPopup, this.refs.marketPopup);
     document.addEventListener('keydown', this.handleKeydown);
 
@@ -171,6 +173,16 @@ export class ShopPlayerShelfManager {
 
     row.append(label, value);
     return { row, value, button };
+  }
+
+  createActions() {
+    const actions = document.createElement('div');
+    actions.className = 'shop-page__player-shop-actions';
+    return actions;
+  }
+
+  getActionsRoot() {
+    return this.refs.actions ?? null;
   }
 
   createOtherShopsButton() {

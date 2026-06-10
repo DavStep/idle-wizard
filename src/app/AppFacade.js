@@ -8,6 +8,7 @@ import { ViewportFacade } from '../viewport/ViewportFacade.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
 import { AppOnlineGateManager } from './managers/AppOnlineGateManager.js';
 import { AppShellManager } from './managers/AppShellManager.js';
+import { AppThemeManager } from './managers/AppThemeManager.js';
 
 export class AppFacade {
   static explain =
@@ -22,13 +23,18 @@ export class AppFacade {
     this.playerFacade = new PlayerFacade();
     this.backendFacade = new BackendFacade();
     this.onlineGateManager = new AppOnlineGateManager();
+    this.appThemeManager = new AppThemeManager();
     this.gameplayFacade.setNpcMarketFacade(this.backendFacade.getNpcMarketFacade());
+    this.gameplayFacade.setPotionDiscoveryFacade(
+      this.backendFacade.getPotionDiscoveryFacade(),
+    );
     this.pagesFacade = new PagesFacade({
       gameplayFacade: this.gameplayFacade,
       playerFacade: this.playerFacade,
       leaderboardFacade: this.backendFacade.getLeaderboardFacade(),
       worldChatFacade: this.backendFacade.getWorldChatFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
+      authFacade: this.backendFacade.getAuthFacade(),
     });
 
     this.lifecycleManager = new AppLifecycleManager({
@@ -41,6 +47,7 @@ export class AppFacade {
       backendFacade: this.backendFacade,
       playerFacade: this.playerFacade,
       onlineGateManager: this.onlineGateManager,
+      appThemeManager: this.appThemeManager,
     });
   }
 

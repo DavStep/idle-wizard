@@ -419,7 +419,9 @@ export class BrewingCauldronManager {
 
   renderActions(brewing) {
     const hasCost = Number.isFinite(brewing.manaCost);
-    const recipeLocked = Boolean(brewing.match && !brewing.match.unlocked);
+    const recipeLocked = Boolean(
+      brewing.match && !brewing.match.unlocked && !brewing.match.discoverable,
+    );
     const canBrew = brewing.canBrew && !recipeLocked;
 
     this.setText(this.refs.actions.brewButtonLabel, hasCost ? 'brew ' : 'brew');
@@ -785,8 +787,12 @@ export class BrewingCauldronManager {
     }
 
     if (brewing.match) {
-      return brewing.match.unlocked
-        ? `matches ${brewing.match.label}`
+      if (brewing.match.unlocked) {
+        return `matches ${brewing.match.label}`;
+      }
+
+      return brewing.match.discoverable
+        ? 'unknown recipe'
         : `${brewing.match.label} locked`;
     }
 
@@ -816,7 +822,7 @@ export class BrewingCauldronManager {
       return 'need herbs';
     }
 
-    if (brewing.match && !brewing.match.unlocked) {
+    if (brewing.match && !brewing.match.unlocked && !brewing.match.discoverable) {
       return 'recipe locked';
     }
 
@@ -830,6 +836,10 @@ export class BrewingCauldronManager {
 
     if (brewing.match?.unlocked) {
       return `ready: ${brewing.match.label}`;
+    }
+
+    if (brewing.match?.discoverable) {
+      return 'ready: unknown recipe';
     }
 
     if (brewing.canBrew) {
@@ -877,8 +887,12 @@ export class BrewingCauldronManager {
       return `brew ${brewing.match.label}${costLabel}`;
     }
 
+    if (brewing.match?.discoverable) {
+      return `brew unknown recipe${costLabel}`;
+    }
+
     if (brewing.match && !brewing.match.unlocked) {
-      return `${brewing.match.label} recipe locked${costLabel}`;
+      return `recipe locked${costLabel}`;
     }
 
     if (brewing.ingredients.length > 0) {

@@ -3,6 +3,11 @@ import { itemKinds } from '../../items/itemKinds.js';
 export class ShopSellItemVisibilityManager {
   constructor({ researchFacade } = {}) {
     this.researchFacade = researchFacade;
+    this.potionDiscoveryFacade = null;
+  }
+
+  setPotionDiscoveryFacade(potionDiscoveryFacade) {
+    this.potionDiscoveryFacade = potionDiscoveryFacade;
   }
 
   getVisibleSellItems(items) {
@@ -14,6 +19,10 @@ export class ShopSellItemVisibilityManager {
   }
 
   isResearched(item) {
+    if (item.discoveryType === 'unknown' || item.unknown === true) {
+      return this.potionDiscoveryFacade?.hasDiscoveredPotion(item.key) ?? false;
+    }
+
     const researchId = this.getResearchId(item);
 
     if (!researchId) {

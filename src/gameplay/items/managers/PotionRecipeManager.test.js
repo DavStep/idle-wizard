@@ -12,13 +12,13 @@ describe('PotionRecipeManager', () => {
   it('knows dormant potion recipes', () => {
     const manager = createManager();
 
-    expect(manager.getPotionRecipes()).toHaveLength(18);
-    expect(manager.getPotionRecipe('manaTonic')).toEqual({
+    expect(manager.getPotionRecipes()).toHaveLength(28);
+    expect(manager.getPotionRecipe('manaTonic')).toMatchObject({
       potionTypeId: 2001,
       key: 'manaTonic',
       label: 'Mana Tonic',
-      manaCost: 5,
-      brewDurationMs: 4_000,
+      manaCost: 12,
+      brewDurationMs: 30_000,
       ingredients: [
         {
           itemTypeId: 1001,
@@ -29,12 +29,12 @@ describe('PotionRecipeManager', () => {
         },
       ],
     });
-    expect(manager.getPotionRecipe('pactWard')).toEqual({
+    expect(manager.getPotionRecipe('pactWard')).toMatchObject({
       potionTypeId: 2018,
       key: 'pactWard',
       label: 'Pact Ward',
-      manaCost: 30,
-      brewDurationMs: 18_000,
+      manaCost: 64,
+      brewDurationMs: 145_000,
       ingredients: [
         {
           itemTypeId: 1013,
@@ -59,6 +59,41 @@ describe('PotionRecipeManager', () => {
         },
       ],
     });
+    expect(manager.getPotionRecipe('ashenMemory')).toMatchObject({
+      potionTypeId: 2019,
+      key: 'ashenMemory',
+      label: 'Ashen Memory',
+      discoveryType: 'unknown',
+      type: 'unknown',
+      unknown: true,
+      known: false,
+      researchable: false,
+      manaCost: 36,
+      brewDurationMs: 80_000,
+      ingredients: [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'Sage',
+          kind: 'herb',
+          quantity: 1,
+        },
+        {
+          itemTypeId: 1004,
+          key: 'lavenderHerb',
+          label: 'Lavender',
+          kind: 'herb',
+          quantity: 1,
+        },
+        {
+          itemTypeId: 1010,
+          key: 'frostmossHerb',
+          label: 'Frostmoss',
+          kind: 'herb',
+          quantity: 1,
+        },
+      ],
+    });
   });
 
   it('matches recipes by exact ingredient order', () => {
@@ -67,6 +102,11 @@ describe('PotionRecipeManager', () => {
     expect(manager.getPotionRecipeByIngredientSequence([1001, 1001, 1002])).toMatchObject({
       key: 'minorHealingPotion',
       label: 'Minor Healing Potion',
+    });
+    expect(manager.getPotionRecipeByIngredientSequence([1001, 1004, 1010])).toMatchObject({
+      key: 'ashenMemory',
+      label: 'Ashen Memory',
+      unknown: true,
     });
     expect(manager.getPotionRecipeByIngredientSequence([1002, 1001, 1001])).toBeNull();
   });

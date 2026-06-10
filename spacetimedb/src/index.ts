@@ -4,6 +4,7 @@ const DEFAULT_USERNAME = 'wizard';
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
 const WORLD_CHAT_HISTORY_LIMIT = 40;
+const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
 const MAX_PLAYER_SHOP_SLOTS = 5;
 const MAX_ITEM_KEY_LENGTH = 64;
 const MAX_ITEM_LABEL_LENGTH = 80;
@@ -34,7 +35,7 @@ const herbCatalog = [
   { key: 'dragonpepper', label: 'Dragonpepper' },
 ];
 
-const potionCatalog = [
+const knownPotionCatalog = [
   { key: 'manaTonic', label: 'Mana Tonic' },
   { key: 'minorHealingPotion', label: 'Minor Healing Potion' },
   { key: 'nettleVigor', label: 'Nettle Vigor' },
@@ -53,8 +54,30 @@ const potionCatalog = [
   { key: 'dragonCourage', label: 'Dragon Courage' },
   { key: 'deepDreamVision', label: 'Deep Dream Vision' },
   { key: 'pactWard', label: 'Pact Ward' },
+];
+
+const unknownPotionCatalog = [
+  { key: 'ashenMemory', label: 'Ashen Memory' },
+  { key: 'silverleafQuiet', label: 'Silverleaf Quiet' },
+  { key: 'emberSight', label: 'Ember Sight' },
+  { key: 'thornSleep', label: 'Thorn Sleep' },
+  { key: 'glassMoonElixir', label: 'Glass Moon Elixir' },
+  { key: 'rootboundResolve', label: 'Rootbound Resolve' },
+  { key: 'nightOrchardTonic', label: 'Night Orchard Tonic' },
+  { key: 'starlessCourage', label: 'Starless Courage' },
+  { key: 'frostveinDraught', label: 'Frostvein Draught' },
+  { key: 'bloodlightWard', label: 'Bloodlight Ward' },
+];
+
+const potionCatalog = [
+  ...knownPotionCatalog,
+  ...unknownPotionCatalog,
   { key: 'wastedPotion', label: 'Wasted Potion', basePriceGold: 1n },
 ];
+
+const unknownPotionCatalogByKey = new Map(
+  unknownPotionCatalog.map((potion) => [potion.key, potion]),
+);
 
 const npcMarketCatalog = [
   ...herbCatalog.map((herb) => ({
@@ -77,7 +100,7 @@ const npcMarketCatalog = [
     itemKey: potion.key,
     itemLabel: potion.label,
     itemKind: 'potion',
-    basePriceGold: potion.basePriceGold ?? 5n,
+    basePriceGold: 'basePriceGold' in potion ? potion.basePriceGold : 5n,
     targetStock: 300n,
     volatilityBps: 800n,
   })),
@@ -124,6 +147,20 @@ const spacetimedb = schema({
       sentAt: t.timestamp(),
     },
   ),
+  potionRecipeDiscovery: table(
+    {
+      name: 'potion_recipe_discovery',
+      public: true,
+      indexes: [{ accessor: 'byDiscoveredAt', algorithm: 'btree', columns: ['discoveredAt'] }],
+    },
+    {
+      potionKey: t.string().primaryKey(),
+      potionLabel: t.string(),
+      discoveredByIdentity: t.identity(),
+      username: t.string(),
+      discoveredAt: t.timestamp(),
+    },
+  ),
   playerShopListing: table(
     {
       name: 'player_shop_listing',
@@ -155,6 +192,31 @@ const spacetimedb = schema({
       sellerIdentity: t.identity().primaryKey(),
       gold: t.u64(),
       updatedAt: t.timestamp(),
+    },
+  ),
+  playerShopTrade: table(
+    {
+      name: 'player_shop_trade',
+      public: true,
+      indexes: [
+        { accessor: 'byBuyerIdentity', algorithm: 'btree', columns: ['buyerIdentity'] },
+        { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
+        { accessor: 'byTradedAt', algorithm: 'btree', columns: ['tradedAt'] },
+      ],
+    },
+    {
+      tradeId: t.uuid().primaryKey(),
+      buyerIdentity: t.identity(),
+      buyerUsername: t.string(),
+      sellerIdentity: t.identity(),
+      sellerUsername: t.string(),
+      itemKey: t.string(),
+      itemLabel: t.string(),
+      itemKind: t.string(),
+      quantity: t.u32(),
+      priceGold: t.u64(),
+      totalPriceGold: t.u64(),
+      tradedAt: t.timestamp(),
     },
   ),
   npcMarketPrice: table(
@@ -207,6 +269,23 @@ function normalizePlayerShopText(value: string, maxLength: number): string {
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, maxLength);
+}
+
+function normalizePotionKey(potionKey: string): string {
+  return String(potionKey ?? '')
+    .trim()
+    .slice(0, MAX_ITEM_KEY_LENGTH);
+}
+
+function getUnknownPotionCatalogItem(potionKey: string) {
+  const safePotionKey = normalizePotionKey(potionKey);
+  const catalogItem = unknownPotionCatalogByKey.get(safePotionKey);
+
+  if (!catalogItem) {
+    throw new Error('Unknown discoverable potion.');
+  }
+
+  return catalogItem;
 }
 
 function getPlayerShopListingKey(ctx: IdleWizardReducerCtx, slotNumber: number): string {
@@ -543,6 +622,31 @@ function pruneWorldChat(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
+  const rows = Array.from(ctx.db.playerShopTrade.iter()).sort((left, right) => {
+    const leftTradedAt = left.tradedAt.microsSinceUnixEpoch;
+    const rightTradedAt = right.tradedAt.microsSinceUnixEpoch;
+
+    if (leftTradedAt < rightTradedAt) {
+      return -1;
+    }
+
+    if (leftTradedAt > rightTradedAt) {
+      return 1;
+    }
+
+    return left.tradeId.compareTo(right.tradeId);
+  });
+
+  while (rows.length > PLAYER_SHOP_TRADE_HISTORY_LIMIT) {
+    const row = rows.shift();
+
+    if (row) {
+      ctx.db.playerShopTrade.delete(row);
+    }
+  }
+}
+
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   const player = ensurePlayer(ctx);
   ensureLeaderboardEntry(ctx, player.username);
@@ -622,6 +726,40 @@ export const send_world_chat_message = spacetimedb.reducer(
       senderIdentity: ctx.sender,
       username: player.username,
       body: message,
+      sentAt: ctx.timestamp,
+    });
+    pruneWorldChat(ctx);
+  },
+);
+
+export const discover_potion_recipe = spacetimedb.reducer(
+  { potionKey: t.string() },
+  (ctx, { potionKey }) => {
+    const catalogItem = getUnknownPotionCatalogItem(potionKey);
+    const existingDiscovery = ctx.db.potionRecipeDiscovery.potionKey.find(
+      catalogItem.key,
+    );
+
+    if (existingDiscovery) {
+      return;
+    }
+
+    const player = ensurePlayer(ctx);
+    ensureLeaderboardEntry(ctx, player.username);
+
+    ctx.db.potionRecipeDiscovery.insert({
+      potionKey: catalogItem.key,
+      potionLabel: catalogItem.label,
+      discoveredByIdentity: ctx.sender,
+      username: player.username,
+      discoveredAt: ctx.timestamp,
+    });
+
+    ctx.db.worldChat.insert({
+      messageId: ctx.newUuidV7(),
+      senderIdentity: ctx.sender,
+      username: 'system',
+      body: `${player.username} discovered a new potion recipe!`,
       sentAt: ctx.timestamp,
     });
     pruneWorldChat(ctx);
@@ -713,6 +851,7 @@ export const buy_player_shop_listing = spacetimedb.reducer(
       throw new Error('Player shop listing does not have enough quantity.');
     }
 
+    const buyer = ensurePlayer(ctx);
     const remainingQuantity = listing.quantity - quantity;
 
     ctx.db.playerShopListing.listingKey.update({
@@ -732,14 +871,29 @@ export const buy_player_shop_listing = spacetimedb.reducer(
         gold: existingProceeds.gold + proceedsGold,
         updatedAt: ctx.timestamp,
       });
-      return;
+    } else {
+      ctx.db.playerShopProceeds.insert({
+        sellerIdentity: listing.sellerIdentity,
+        gold: proceedsGold,
+        updatedAt: ctx.timestamp,
+      });
     }
 
-    ctx.db.playerShopProceeds.insert({
+    ctx.db.playerShopTrade.insert({
+      tradeId: ctx.newUuidV7(),
+      buyerIdentity: ctx.sender,
+      buyerUsername: buyer.username,
       sellerIdentity: listing.sellerIdentity,
-      gold: proceedsGold,
-      updatedAt: ctx.timestamp,
+      sellerUsername: listing.username,
+      itemKey: listing.itemKey,
+      itemLabel: listing.itemLabel,
+      itemKind: listing.itemKind,
+      quantity,
+      priceGold: listing.priceGold,
+      totalPriceGold: proceedsGold,
+      tradedAt: ctx.timestamp,
     });
+    prunePlayerShopTradeHistory(ctx);
   },
 );
 

@@ -38,6 +38,7 @@ import BuyFromNpcReducer from "./buy_from_npc_reducer";
 import BuyPlayerShopListingReducer from "./buy_player_shop_listing_reducer";
 import ClaimPlayerShopProceedsReducer from "./claim_player_shop_proceeds_reducer";
 import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
+import DiscoverPotionRecipeReducer from "./discover_potion_recipe_reducer";
 import SellToNpcReducer from "./sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
 import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
@@ -53,6 +54,8 @@ import NpcMarketPriceRow from "./npc_market_price_table";
 import PlayerRow from "./player_table";
 import PlayerShopListingRow from "./player_shop_listing_table";
 import PlayerShopProceedsRow from "./player_shop_proceeds_table";
+import PlayerShopTradeRow from "./player_shop_trade_table";
+import PotionRecipeDiscoveryRow from "./potion_recipe_discovery_table";
 import WorldChatRow from "./world_chat_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -129,6 +132,40 @@ const tablesSchema = __schema({
       { name: 'player_shop_proceeds_seller_identity_key', constraint: 'unique', columns: ['sellerIdentity'] },
     ],
   }, PlayerShopProceedsRow),
+  playerShopTrade: __table({
+    name: 'player_shop_trade',
+    indexes: [
+      { accessor: 'byBuyerIdentity', name: 'player_shop_trade_buyer_identity_idx_btree', algorithm: 'btree', columns: [
+        'buyerIdentity',
+      ] },
+      { accessor: 'bySellerIdentity', name: 'player_shop_trade_seller_identity_idx_btree', algorithm: 'btree', columns: [
+        'sellerIdentity',
+      ] },
+      { accessor: 'tradeId', name: 'player_shop_trade_trade_id_idx_btree', algorithm: 'btree', columns: [
+        'tradeId',
+      ] },
+      { accessor: 'byTradedAt', name: 'player_shop_trade_traded_at_idx_btree', algorithm: 'btree', columns: [
+        'tradedAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_shop_trade_trade_id_key', constraint: 'unique', columns: ['tradeId'] },
+    ],
+  }, PlayerShopTradeRow),
+  potionRecipeDiscovery: __table({
+    name: 'potion_recipe_discovery',
+    indexes: [
+      { accessor: 'byDiscoveredAt', name: 'potion_recipe_discovery_discovered_at_idx_btree', algorithm: 'btree', columns: [
+        'discoveredAt',
+      ] },
+      { accessor: 'potionKey', name: 'potion_recipe_discovery_potion_key_idx_btree', algorithm: 'btree', columns: [
+        'potionKey',
+      ] },
+    ],
+    constraints: [
+      { name: 'potion_recipe_discovery_potion_key_key', constraint: 'unique', columns: ['potionKey'] },
+    ],
+  }, PotionRecipeDiscoveryRow),
   worldChat: __table({
     name: 'world_chat',
     indexes: [
@@ -151,6 +188,7 @@ const reducersSchema = __reducers(
   __reducerSchema("buy_player_shop_listing", BuyPlayerShopListingReducer),
   __reducerSchema("claim_player_shop_proceeds", ClaimPlayerShopProceedsReducer),
   __reducerSchema("clear_player_shop_slot", ClearPlayerShopSlotReducer),
+  __reducerSchema("discover_potion_recipe", DiscoverPotionRecipeReducer),
   __reducerSchema("sell_to_npc", SellToNpcReducer),
   __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),
   __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),

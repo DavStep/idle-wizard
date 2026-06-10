@@ -24,6 +24,10 @@ export function getItemResearchId(item) {
     return null;
   }
 
+  if (item?.researchable === false || item?.discoveryType === 'unknown') {
+    return null;
+  }
+
   if (item?.kind === 'seed') {
     return `unlockSeed:${item.key}`;
   }
@@ -43,6 +47,14 @@ export function getItemResearchId(item) {
 export function isItemResearched(snapshot, item) {
   if (item?.researched === true || item?.unlocked === true) {
     return true;
+  }
+
+  if (
+    item?.discovered === true ||
+    item?.researchable === false ||
+    item?.discoveryType === 'unknown'
+  ) {
+    return item?.discovered === true;
   }
 
   const researchId = getItemResearchId(item);
@@ -67,6 +79,10 @@ export function getItemQuantity(item, fallbackQuantity = 0) {
 
 export function isItemKnown(_snapshot, item, quantity = getItemQuantity(item)) {
   if (quantity > 0) {
+    return true;
+  }
+
+  if (item?.discovered === true || item?.researched === true || item?.unlocked === true) {
     return true;
   }
 

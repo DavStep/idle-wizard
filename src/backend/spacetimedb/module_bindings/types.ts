@@ -65,6 +65,31 @@ export const PlayerShopProceeds = __t.object("PlayerShopProceeds", {
 });
 export type PlayerShopProceeds = __Infer<typeof PlayerShopProceeds>;
 
+export const PlayerShopTrade = __t.object("PlayerShopTrade", {
+  tradeId: __t.uuid(),
+  buyerIdentity: __t.identity(),
+  buyerUsername: __t.string(),
+  sellerIdentity: __t.identity(),
+  sellerUsername: __t.string(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  quantity: __t.u32(),
+  priceGold: __t.u64(),
+  totalPriceGold: __t.u64(),
+  tradedAt: __t.timestamp(),
+});
+export type PlayerShopTrade = __Infer<typeof PlayerShopTrade>;
+
+export const PotionRecipeDiscovery = __t.object("PotionRecipeDiscovery", {
+  potionKey: __t.string(),
+  potionLabel: __t.string(),
+  discoveredByIdentity: __t.identity(),
+  username: __t.string(),
+  discoveredAt: __t.timestamp(),
+});
+export type PotionRecipeDiscovery = __Infer<typeof PotionRecipeDiscovery>;
+
 export const WorldChat = __t.object("WorldChat", {
   messageId: __t.uuid(),
   senderIdentity: __t.identity(),

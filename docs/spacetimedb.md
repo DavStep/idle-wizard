@@ -45,6 +45,29 @@ VITE_SPACETIME_DATABASE=idle-wizard
 
 The GitHub Pages workflow already sets those values before `npm run build -- --base=/idle-wizard/`.
 
+## Google Login
+
+Google login uses SpacetimeAuth as the OIDC provider. Keep the Google client secret only in the SpacetimeAuth dashboard; never commit it.
+
+Configure the SpacetimeAuth client with these redirect URIs:
+
+```txt
+https://davstep.github.io/idle-wizard/
+http://127.0.0.1:55173/
+```
+
+Configure Google OAuth with this authorized redirect URI:
+
+```txt
+https://auth.spacetimedb.com/interactions/federated/callback/google
+```
+
+After SpacetimeAuth gives a client ID, set it for hosted builds as the GitHub Actions repository variable `SPACETIME_AUTH_CLIENT_ID`. Local builds can set:
+
+```txt
+VITE_SPACETIME_AUTH_CLIENT_ID=<spacetimeauth-client-id>
+```
+
 ## Auth Flow
 
 The client auth boundary is already split:

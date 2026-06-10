@@ -61,25 +61,9 @@ export class ItemsFacade {
       ...this.itemDefinitionManager.getSeedDefinitions(),
       ...this.itemDefinitionManager.getHerbDefinitions(),
       ...this.itemDefinitionManager.getPotionDefinitions(),
-    ].map((definition) => {
-      const snapshot = {
-        itemTypeId: definition.id,
-        key: definition.key,
-        label: definition.label,
-        kind: definition.kind,
-        quantity: this.inventoryStackManager.getQuantity(definition.id),
-      };
-
-      if (definition.hasRecipe === false) {
-        snapshot.hasRecipe = false;
-      }
-
-      if (definition.baseSellPrice !== undefined) {
-        snapshot.baseSellPrice = definition.baseSellPrice;
-      }
-
-      return snapshot;
-    });
+    ].map((definition) =>
+      this.createItemSnapshot(definition, this.inventoryStackManager.getQuantity(definition.id)),
+    );
   }
 
   getSeedDefinitions() {
@@ -100,6 +84,10 @@ export class ItemsFacade {
 
   getRecipePotionDefinitions() {
     return this.itemDefinitionManager.getRecipePotionDefinitions();
+  }
+
+  getUnknownPotionDefinitions() {
+    return this.itemDefinitionManager.getUnknownPotionDefinitions();
   }
 
   getPotionRecipes() {
@@ -132,6 +120,34 @@ export class ItemsFacade {
       kind: definition.kind,
       quantity: this.inventoryStackManager.getQuantity(definition.id),
     }));
+  }
+
+  getDiscoverySnapshot({ getPotionDiscovery } = {}) {
+    return {
+      seeds: [],
+      herbs: [],
+      potions: this.getUnknownPotionDefinitions().map((definition) => {
+        const discovery = getPotionDiscovery?.(definition.key) ?? null;
+        const discovered = Boolean(discovery);
+        const recipe = this.getPotionRecipe(definition.key);
+
+        return {
+          ...this.createItemSnapshot(
+            definition,
+            this.inventoryStackManager.getQuantity(definition.id),
+          ),
+          discovered,
+          researched: discovered,
+          unlocked: discovered,
+          known: discovered,
+          discoveredByUsername: discovery?.username ?? null,
+          discoveredAtMs: discovery?.discoveredAtMs ?? null,
+          ingredients: discovered ? recipe.ingredients : [],
+          manaCost: recipe.manaCost,
+          brewDurationMs: recipe.brewDurationMs,
+        };
+      }),
+    };
   }
 
   getPersistenceSnapshot() {
@@ -169,5 +185,45 @@ export class ItemsFacade {
     } catch {
       return null;
     }
+  }
+
+  createItemSnapshot(definition, quantity) {
+    const snapshot = {
+      itemTypeId: definition.id,
+      key: definition.key,
+      label: definition.label,
+      kind: definition.kind,
+      quantity,
+    };
+
+    if (definition.discoveryType) {
+      snapshot.discoveryType = definition.discoveryType;
+    }
+
+    if (definition.type) {
+      snapshot.type = definition.type;
+    }
+
+    if (definition.unknown !== undefined) {
+      snapshot.unknown = definition.unknown;
+    }
+
+    if (definition.known !== undefined) {
+      snapshot.known = definition.known;
+    }
+
+    if (definition.researchable !== undefined) {
+      snapshot.researchable = definition.researchable;
+    }
+
+    if (definition.hasRecipe === false) {
+      snapshot.hasRecipe = false;
+    }
+
+    if (definition.baseSellPrice !== undefined) {
+      snapshot.baseSellPrice = definition.baseSellPrice;
+    }
+
+    return snapshot;
   }
 }

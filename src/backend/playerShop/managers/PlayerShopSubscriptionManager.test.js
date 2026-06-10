@@ -39,13 +39,19 @@ function createTable(rows) {
   };
 }
 
-function createConnection({ listingsTable, proceedsTable }) {
+function createConnection({
+  listingsTable,
+  proceedsTable,
+  tradeHistoryTable = null,
+  failedQueries = [],
+}) {
   const subscriptions = [];
 
   return {
     db: {
       playerShopListing: listingsTable,
       playerShopProceeds: proceedsTable,
+      ...(tradeHistoryTable ? { playerShopTrade: tradeHistoryTable } : {}),
     },
     subscriptions,
     subscriptionBuilder: () => ({
@@ -64,7 +70,11 @@ function createConnection({ listingsTable, proceedsTable }) {
           unsubscribe: vi.fn(),
         };
         subscriptions.push(subscription);
-        this.applied();
+        if (failedQueries.includes(query)) {
+          this.error();
+        } else {
+          this.applied();
+        }
         return subscription;
       },
     }),
@@ -130,8 +140,108 @@ describe('PlayerShopSubscriptionManager', () => {
           priceGold: 3,
         },
       ],
+      tradeHistory: [],
+      ownTradeHistory: [],
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
+  });
+
+  it('publishes own and global trade history newest first', () => {
+    const listingsTable = createTable([]);
+    const proceedsTable = createTable([]);
+    const tradeHistoryTable = createTable([
+      {
+        tradeId: 'trade-1',
+        buyerIdentity: 'self',
+        buyerUsername: 'wizard',
+        sellerIdentity: 'seller',
+        sellerUsername: 'Ada',
+        itemKey: 'sageSeed',
+        itemLabel: 'Sage Seed',
+        itemKind: 'seed',
+        quantity: 1,
+        priceGold: 3n,
+        totalPriceGold: 3n,
+        tradedAt: 100,
+      },
+      {
+        tradeId: 'trade-2',
+        buyerIdentity: 'other',
+        buyerUsername: 'Merlin',
+        sellerIdentity: 'seller',
+        sellerUsername: 'Ada',
+        itemKey: 'mintSeed',
+        itemLabel: 'Mint Seed',
+        itemKind: 'seed',
+        quantity: 2,
+        priceGold: 4n,
+        totalPriceGold: 8n,
+        tradedAt: 200,
+      },
+    ]);
+    const connection = createConnection({ listingsTable, proceedsTable, tradeHistoryTable });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.connect(connection, 'self');
+
+    expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
+      'SELECT * FROM player_shop_listing',
+      'SELECT * FROM player_shop_proceeds',
+      'SELECT * FROM player_shop_trade',
+    ]);
+    expect(manager.getSnapshot().tradeHistory.map((trade) => trade.tradeId)).toEqual([
+      'trade-2',
+      'trade-1',
+    ]);
+    expect(manager.getSnapshot().ownTradeHistory).toMatchObject([
+      {
+        tradeId: 'trade-1',
+        buyerUsername: 'wizard',
+        sellerUsername: 'Ada',
+        itemLabel: 'Sage Seed',
+        totalPriceGold: 3,
+      },
+    ]);
+  });
+
+  it('keeps listings online when optional trade history query fails', () => {
+    const listingsTable = createTable([
+      {
+        listingKey: 'seller:1',
+        sellerIdentity: 'seller',
+        username: 'Ada',
+        slotNumber: 1,
+        itemKey: 'mintSeed',
+        itemLabel: 'Mint Seed',
+        itemKind: 'seed',
+        quantity: 2,
+        priceGold: 4n,
+      },
+    ]);
+    const proceedsTable = createTable([]);
+    const tradeHistoryTable = createTable([]);
+    const connection = createConnection({
+      listingsTable,
+      proceedsTable,
+      tradeHistoryTable,
+      failedQueries: ['SELECT * FROM player_shop_trade'],
+    });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.connect(connection, 'self');
+
+    expect(manager.getSnapshot()).toMatchObject({
+      connected: true,
+      listings: [
+        {
+          listingKey: 'seller:1',
+          username: 'Ada',
+        },
+      ],
+      tradeHistory: [],
+      ownTradeHistory: [],
+    });
+    expect(tradeHistoryTable.callbacks.insert).toBeNull();
   });
 
   it('unsubscribes and clears snapshot on disconnect', () => {
@@ -152,6 +262,8 @@ describe('PlayerShopSubscriptionManager', () => {
       connected: false,
       listings: [],
       ownListings: [],
+      tradeHistory: [],
+      ownTradeHistory: [],
       proceedsGold: 0,
     });
   });

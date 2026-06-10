@@ -1,9 +1,12 @@
 const LISTINGS_QUERY = 'SELECT * FROM player_shop_listing';
 const PROCEEDS_QUERY = 'SELECT * FROM player_shop_proceeds';
+const TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade';
 const EMPTY_SNAPSHOT = {
   connected: false,
   listings: [],
   ownListings: [],
+  tradeHistory: [],
+  ownTradeHistory: [],
   proceedsGold: 0,
 };
 
@@ -14,6 +17,7 @@ export class PlayerShopSubscriptionManager {
     this.identity = null;
     this.listingsTable = null;
     this.proceedsTable = null;
+    this.tradeHistoryTable = null;
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
@@ -27,6 +31,8 @@ export class PlayerShopSubscriptionManager {
       connection?.db?.playerShopListing ?? connection?.db?.player_shop_listing ?? null;
     this.proceedsTable =
       connection?.db?.playerShopProceeds ?? connection?.db?.player_shop_proceeds ?? null;
+    this.tradeHistoryTable =
+      connection?.db?.playerShopTrade ?? connection?.db?.player_shop_trade ?? null;
 
     if (!this.listingsTable || !this.proceedsTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
@@ -35,14 +41,19 @@ export class PlayerShopSubscriptionManager {
 
     this.bindTable(this.listingsTable);
     this.bindTable(this.proceedsTable);
-    this.subscriptions = [this.subscribeQuery(LISTINGS_QUERY), this.subscribeQuery(PROCEEDS_QUERY)]
-      .filter(Boolean);
+    this.bindTable(this.tradeHistoryTable);
+    this.subscriptions = [
+      this.subscribeQuery(LISTINGS_QUERY),
+      this.subscribeQuery(PROCEEDS_QUERY),
+      this.tradeHistoryTable ? this.subscribeTradeHistoryQuery() : null,
+    ].filter(Boolean);
     this.publishFromTables();
   }
 
   disconnect() {
     this.unbindTable(this.listingsTable);
     this.unbindTable(this.proceedsTable);
+    this.unbindTable(this.tradeHistoryTable);
 
     for (const subscription of this.subscriptions) {
       if (!subscription.isEnded?.()) {
@@ -54,6 +65,7 @@ export class PlayerShopSubscriptionManager {
     this.identity = null;
     this.listingsTable = null;
     this.proceedsTable = null;
+    this.tradeHistoryTable = null;
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
@@ -63,9 +75,9 @@ export class PlayerShopSubscriptionManager {
   }
 
   bindTable(table) {
-    table.onInsert?.(this.handleTableChange);
-    table.onUpdate?.(this.handleTableChange);
-    table.onDelete?.(this.handleTableChange);
+    table?.onInsert?.(this.handleTableChange);
+    table?.onUpdate?.(this.handleTableChange);
+    table?.onDelete?.(this.handleTableChange);
   }
 
   unbindTable(table) {
@@ -80,6 +92,18 @@ export class PlayerShopSubscriptionManager {
       .onApplied(() => this.publishFromTables())
       .onError(() => this.publish({ ...EMPTY_SNAPSHOT }))
       .subscribe(query);
+  }
+
+  subscribeTradeHistoryQuery() {
+    return this.connection
+      ?.subscriptionBuilder()
+      .onApplied(() => this.publishFromTables())
+      .onError(() => {
+        this.unbindTable(this.tradeHistoryTable);
+        this.tradeHistoryTable = null;
+        this.publishFromTables();
+      })
+      .subscribe(TRADE_HISTORY_QUERY);
   }
 
   publishFromTables() {
@@ -110,11 +134,17 @@ export class PlayerShopSubscriptionManager {
     const proceedsRow = Array.from(this.proceedsTable.iter()).find(
       (row) => this.toIdentityKey(row.sellerIdentity ?? row.seller_identity) === identityKey,
     );
+    const tradeHistory = this.getTradeHistoryRows();
+    const ownTradeHistory = tradeHistory.filter(
+      (trade) => trade.buyerIdentity === identityKey || trade.sellerIdentity === identityKey,
+    );
 
     this.publish({
       connected: true,
       listings,
       ownListings,
+      tradeHistory,
+      ownTradeHistory,
       proceedsGold: this.toNumber(proceedsRow?.gold),
     });
   }
@@ -138,6 +168,51 @@ export class PlayerShopSubscriptionManager {
     };
   }
 
+  getTradeHistoryRows() {
+    if (!this.tradeHistoryTable) {
+      return [];
+    }
+
+    try {
+      return Array.from(this.tradeHistoryTable.iter())
+        .map((row) => this.mapTrade(row))
+        .sort((left, right) => {
+          if (left.tradedAtMs !== right.tradedAtMs) {
+            return right.tradedAtMs - left.tradedAtMs;
+          }
+
+          return right.tradeId.localeCompare(left.tradeId);
+        });
+    } catch {
+      this.unbindTable(this.tradeHistoryTable);
+      this.tradeHistoryTable = null;
+      return [];
+    }
+  }
+
+  mapTrade(row) {
+    const quantity = this.toNumber(row.quantity);
+    const priceGold = this.toNumber(row.priceGold ?? row.price_gold);
+    const buyerUsername = row.buyerUsername ?? row.buyer_username;
+    const sellerUsername = row.sellerUsername ?? row.seller_username;
+    const totalPriceGold = this.toNumber(row.totalPriceGold ?? row.total_price_gold);
+
+    return {
+      tradeId: this.toId(row.tradeId ?? row.trade_id),
+      buyerIdentity: this.toIdentityKey(row.buyerIdentity ?? row.buyer_identity),
+      buyerUsername: typeof buyerUsername === 'string' ? buyerUsername : 'wizard',
+      sellerIdentity: this.toIdentityKey(row.sellerIdentity ?? row.seller_identity),
+      sellerUsername: typeof sellerUsername === 'string' ? sellerUsername : 'wizard',
+      itemKey: String(row.itemKey ?? row.item_key ?? ''),
+      itemLabel: String(row.itemLabel ?? row.item_label ?? ''),
+      itemKind: String(row.itemKind ?? row.item_kind ?? ''),
+      quantity,
+      priceGold,
+      totalPriceGold: totalPriceGold || priceGold * quantity,
+      tradedAtMs: this.toTimestampMs(row.tradedAt ?? row.traded_at),
+    };
+  }
+
   publish(snapshot) {
     this.snapshot = snapshot;
     this.onSnapshot?.(snapshot);
@@ -157,6 +232,18 @@ export class PlayerShopSubscriptionManager {
     }
 
     return String(identity);
+  }
+
+  toId(value) {
+    if (!value) {
+      return '';
+    }
+
+    if (typeof value.toHexString === 'function') {
+      return value.toHexString();
+    }
+
+    return String(value);
   }
 
   toTimestampMs(value) {

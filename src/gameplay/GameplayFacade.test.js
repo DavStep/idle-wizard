@@ -23,6 +23,16 @@ function unlockSageSeed(gameplayFacade) {
   return gameplayFacade.buyResearch('unlockSeed:sageSeed');
 }
 
+function finishCurrentTaskLevel(gameplayFacade) {
+  const tasks = gameplayFacade.getSnapshot().tasks.level.tasks;
+
+  for (const task of tasks) {
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+    gameplayFacade.fillTask(task.taskId);
+    gameplayFacade.completeTask(task.taskId);
+  }
+}
+
 describe('GameplayFacade', () => {
   it('persists gameplay progress across a new app instance', () => {
     const persistenceStorage = createMemoryStorage();
@@ -71,6 +81,84 @@ describe('GameplayFacade', () => {
       sellItemTypeId: 1,
       sellKind: 'seed',
       sellLabel: 'Sage Seed',
+    });
+  });
+
+  it('fills tasks from inventory and advances player level', () => {
+    const { gameplayFacade } = createGameplay();
+    const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
+
+    expect(gameplayFacade.getSnapshot().tasks.maxLevel).toBe(20);
+    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(5);
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, 12);
+
+    expect(gameplayFacade.fillTask(task.taskId)).toMatchObject({
+      ok: true,
+      quantity: 12,
+      progressQuantity: 12,
+      requiredQuantity: task.requiredQuantity,
+      maxed: false,
+    });
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
+    expect(gameplayFacade.completeTask(task.taskId)).toEqual({
+      ok: false,
+      reason: 'not_ready',
+      taskId: task.taskId,
+    });
+
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+
+    expect(gameplayFacade.fillTask(task.taskId)).toMatchObject({
+      ok: true,
+      quantity: task.requiredQuantity - 12,
+      progressQuantity: task.requiredQuantity,
+      maxed: true,
+    });
+    expect(gameplayFacade.completeTask(task.taskId)).toMatchObject({
+      ok: true,
+      currentLevel: 1,
+      advanced: false,
+    });
+
+    const remainingTasks = gameplayFacade.getSnapshot().tasks.level.tasks.filter(
+      (candidate) => !candidate.completed,
+    );
+
+    for (const remainingTask of remainingTasks) {
+      gameplayFacade.itemsFacade.addItem(
+        remainingTask.itemTypeId,
+        remainingTask.requiredQuantity,
+      );
+      expect(gameplayFacade.fillTask(remainingTask.taskId)).toMatchObject({
+        ok: true,
+        maxed: true,
+      });
+      gameplayFacade.completeTask(remainingTask.taskId);
+    }
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
+    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(5);
+  });
+
+  it('persists task progress and player level', () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    finishCurrentTaskLevel(first.gameplayFacade);
+    const [task] = first.gameplayFacade.getSnapshot().tasks.level.tasks;
+    first.gameplayFacade.itemsFacade.addItem(task.itemTypeId, 3);
+    first.gameplayFacade.fillTask(task.taskId);
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const second = createGameplay({ persistenceStorage });
+    const snapshot = second.gameplayFacade.getSnapshot();
+
+    expect(snapshot.tasks.currentLevel).toBe(2);
+    expect(snapshot.tasks.level.tasks[0]).toMatchObject({
+      taskId: task.taskId,
+      progressQuantity: 3,
+      completed: false,
     });
   });
 
@@ -125,6 +213,45 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('loads older version 1 saves that do not include newer fields', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 1,
+        gold: {
+          current: 12,
+          totalGenerated: 18,
+        },
+        inventory: [
+          {
+            itemKey: 'sageSeed',
+            quantity: 3,
+          },
+        ],
+        research: {
+          completedIds: ['unlockSeed:sageSeed'],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+    const snapshot = gameplayFacade.getSnapshot();
+
+    expect(snapshot.gold.current).toBe(12);
+    expect(snapshot.gold.totalGenerated).toBe(18);
+    expect(snapshot.inventory).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'Sage Seed',
+      kind: 'seed',
+      quantity: 3,
+    });
+    expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
+    expect(snapshot.tasks.currentLevel).toBe(1);
+    expect(snapshot.tasks.level.tasks).toHaveLength(5);
+  });
+
   it('persists active brew timers across a new app instance', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
@@ -132,7 +259,7 @@ describe('GameplayFacade', () => {
     first.gameplayFacade.itemsFacade.addItem(1001, 3);
     first.gameplayFacade.goldFacade.add(3);
     first.gameplayFacade.buyResearch('unlockRecipe:manaTonic');
-    first.ecsFacade.update({ deltaSeconds: 5 });
+    first.ecsFacade.update({ deltaSeconds: 12 });
     first.gameplayFacade.addBrewingIngredient(1001);
     first.gameplayFacade.addBrewingIngredient(1001);
     first.gameplayFacade.addBrewingIngredient(1001);
@@ -146,17 +273,17 @@ describe('GameplayFacade', () => {
     expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       resultItemTypeId: 2001,
       key: 'manaTonic',
-      remainingMs: 3_000,
-      totalMs: 4_000,
+      remainingMs: 29_000,
+      totalMs: 30_000,
     });
 
-    second.ecsFacade.update({ deltaSeconds: 3 });
+    second.ecsFacade.update({ deltaSeconds: 29 });
 
     expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       phase: 'brewed',
       canStartBottling: true,
       remainingMs: 0,
-      totalMs: 4_000,
+      totalMs: 30_000,
     });
     expect(second.gameplayFacade.getSnapshot().inventory).toEqual([]);
 
@@ -656,7 +783,7 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(1001, 3);
     gameplayFacade.goldFacade.add(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
-    ecsFacade.update({ deltaSeconds: 5 });
+    ecsFacade.update({ deltaSeconds: 12 });
 
     expect(gameplayFacade.getSnapshot().brewing.recipes[0]).toMatchObject({
       key: 'manaTonic',
@@ -680,7 +807,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.addBrewingIngredient(1001).ok).toBe(true);
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
       buttonLabel: 'brew Mana Tonic',
-      manaCost: 5,
+      manaCost: 12,
       canBrew: true,
       match: {
         key: 'manaTonic',
@@ -698,8 +825,8 @@ describe('GameplayFacade', () => {
         label: 'Mana Tonic',
         kind: 'potion',
       },
-      manaCost: 5,
-      durationMs: 4_000,
+      manaCost: 12,
+      durationMs: 30_000,
     });
     expect(gameplayFacade.getSnapshot().mana.current).toBe(0);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
@@ -710,13 +837,13 @@ describe('GameplayFacade', () => {
       label: 'Mana Tonic',
     });
 
-    ecsFacade.update({ deltaSeconds: 4 });
+    ecsFacade.update({ deltaSeconds: 30 });
 
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       phase: 'brewed',
       canStartBottling: true,
       remainingMs: 0,
-      totalMs: 4_000,
+      totalMs: 30_000,
     });
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
 
@@ -761,17 +888,18 @@ describe('GameplayFacade', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(1001, 3);
-    ecsFacade.update({ deltaSeconds: 5 });
+    ecsFacade.update({ deltaSeconds: 12 });
     gameplayFacade.addBrewingIngredient(1001);
     gameplayFacade.addBrewingIngredient(1001);
     gameplayFacade.addBrewingIngredient(1001);
 
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
       buttonLabel: 'brew',
-      manaCost: 5,
+      manaCost: 12,
       canBrew: true,
       match: {
         key: 'manaTonic',
+        label: 'Mana Tonic',
         unlocked: false,
       },
     });
@@ -782,7 +910,7 @@ describe('GameplayFacade', () => {
         key: 'manaTonic',
       },
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(5);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(12);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toHaveLength(3);
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 1001,
@@ -809,7 +937,7 @@ describe('GameplayFacade', () => {
       ok: true,
       wasted: true,
       potion: {
-        itemTypeId: 2019,
+        itemTypeId: 2029,
         key: 'wastedPotion',
         label: 'Wasted Potion',
         kind: 'potion',
@@ -838,7 +966,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.collectBrewingPotion()).toMatchObject({
       ok: true,
       potion: {
-        itemTypeId: 2019,
+        itemTypeId: 2029,
         key: 'wastedPotion',
         label: 'Wasted Potion',
         kind: 'potion',
@@ -848,7 +976,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
-        itemTypeId: 2019,
+        itemTypeId: 2029,
         key: 'wastedPotion',
         label: 'Wasted Potion',
         kind: 'potion',
@@ -856,7 +984,7 @@ describe('GameplayFacade', () => {
       },
     ]);
     expect(gameplayFacade.getSnapshot().shop.shelf.sellItems).toContainEqual({
-      itemTypeId: 2019,
+      itemTypeId: 2029,
       key: 'wastedPotion',
       label: 'Wasted Potion',
       kind: 'potion',
@@ -967,7 +1095,7 @@ describe('GameplayFacade', () => {
         label: 'Sage',
         kind: 'herb',
       },
-      durationMs: 60_000,
+      durationMs: 20_000,
     });
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
@@ -977,17 +1105,17 @@ describe('GameplayFacade', () => {
       selectedSeedKey: 'sageSeed',
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
-      remainingMs: 60_000,
-      totalMs: 60_000,
+      remainingMs: 20_000,
+      totalMs: 20_000,
       process: {
         phase: 'growing',
-        totalMs: 60_000,
-        remainingMs: 60_000,
+        totalMs: 20_000,
+        remainingMs: 20_000,
         progress: 0,
       },
     });
 
-    ecsFacade.update({ deltaSeconds: 59 });
+    ecsFacade.update({ deltaSeconds: 19 });
 
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: 'growing',
@@ -1054,7 +1182,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('auto replants the selected garden seed after harvest when one is owned', () => {
+  it('keeps the selected garden seed after harvest but waits for manual planting', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(1, 2);
@@ -1064,12 +1192,13 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ deltaSeconds: 10 });
 
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
-      phase: 'growing',
+      phase: 'empty',
+      selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
-      seedKey: 'sageSeed',
-      herbKey: 'sageHerb',
-      remainingMs: 60_000,
-      totalMs: 60_000,
+      selectedSeedLabel: 'Sage Seed',
+      seedItemTypeId: null,
+      herbItemTypeId: null,
+      process: null,
     });
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
       itemTypeId: 1001,
@@ -1083,7 +1212,24 @@ describe('GameplayFacade', () => {
       key: 'sageSeed',
       label: 'Sage Seed',
       kind: 'seed',
-      quantity: 0,
+      quantity: 1,
+    });
+
+    expect(gameplayFacade.plantSelectedGardenSeed(1)).toMatchObject({
+      ok: true,
+      tileNumber: 1,
+      seed: {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'Sage Seed',
+        kind: 'seed',
+      },
+    });
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: 'growing',
+      selectedSeedKey: 'sageSeed',
+      seedKey: 'sageSeed',
+      herbKey: 'sageHerb',
     });
   });
 
@@ -1116,11 +1262,11 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ deltaSeconds: 10 });
 
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
-      phase: 'growing',
+      phase: 'empty',
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
-      seedKey: 'sageSeed',
-      herbKey: 'sageHerb',
+      seedKey: null,
+      herbKey: null,
     });
   });
 
@@ -1152,11 +1298,11 @@ describe('GameplayFacade', () => {
     second.ecsFacade.update({ deltaSeconds: 10 });
 
     expect(second.gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
-      phase: 'growing',
+      phase: 'empty',
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
-      seedKey: 'sageSeed',
-      herbKey: 'sageHerb',
+      seedKey: null,
+      herbKey: null,
     });
   });
 
@@ -1191,7 +1337,7 @@ describe('GameplayFacade', () => {
 
     first.gameplayFacade.itemsFacade.addItem(1, 1);
     first.gameplayFacade.plantGardenSeed(1, 1);
-    first.ecsFacade.update({ deltaSeconds: 20 });
+    first.ecsFacade.update({ deltaSeconds: 5 });
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
 
@@ -1202,11 +1348,11 @@ describe('GameplayFacade', () => {
       phase: 'growing',
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
-      remainingMs: 40_000,
-      totalMs: 60_000,
+      remainingMs: 15_000,
+      totalMs: 20_000,
     });
 
-    second.ecsFacade.update({ deltaSeconds: 40 });
+    second.ecsFacade.update({ deltaSeconds: 15 });
 
     expect(second.gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: 'ready',
@@ -1226,12 +1372,96 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().shop.shelf.unlockedSlots).toBe(1);
   });
 
+  it('discovers an unknown potion recipe by brewing the hidden ingredient order', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    const discoveries = new Map();
+    const potionDiscoveryFacade = {
+      discoverPotionRecipe: (potionKey) => {
+        discoveries.set(potionKey, {
+          potionKey,
+          potionLabel: 'Ashen Memory',
+          username: 'Ada',
+          discoveredAtMs: Date.UTC(2026, 0, 2),
+        });
+
+        return Promise.resolve({ ok: true, potionKey });
+      },
+      getDiscovery: (potionKey) => discoveries.get(potionKey) ?? null,
+      hasDiscoveredPotion: (potionKey) => discoveries.has(potionKey),
+    };
+
+    gameplayFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
+    gameplayFacade.itemsFacade.addItem(1001, 1);
+    gameplayFacade.itemsFacade.addItem(1004, 1);
+    gameplayFacade.itemsFacade.addItem(1010, 1);
+    ecsFacade.update({ deltaSeconds: 36 });
+
+    expect(
+      gameplayFacade
+        .getSnapshot()
+        .discoveries.potions.find((potion) => potion.key === 'ashenMemory'),
+    ).toMatchObject({
+      discovered: false,
+      known: false,
+      quantity: 0,
+    });
+
+    gameplayFacade.addBrewingIngredient(1001);
+    gameplayFacade.addBrewingIngredient(1004);
+    gameplayFacade.addBrewingIngredient(1010);
+
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      canBrew: true,
+      match: {
+        key: 'ashenMemory',
+        label: 'unknown recipe',
+        realLabel: 'Ashen Memory',
+        unlocked: false,
+        discoverable: true,
+      },
+    });
+
+    expect(gameplayFacade.brewCauldron()).toMatchObject({
+      ok: true,
+      wasted: false,
+      potion: {
+        itemTypeId: 2019,
+        key: 'ashenMemory',
+        label: 'Ashen Memory',
+        kind: 'potion',
+      },
+      discovery: {
+        potionKey: 'ashenMemory',
+        potionLabel: 'Ashen Memory',
+      },
+      manaCost: 36,
+      durationMs: 80_000,
+    });
+
+    expect(discoveries.has('ashenMemory')).toBe(true);
+    expect(
+      gameplayFacade
+        .getSnapshot()
+        .discoveries.potions.find((potion) => potion.key === 'ashenMemory'),
+    ).toMatchObject({
+      discovered: true,
+      known: true,
+      discoveredByUsername: 'Ada',
+      discoveredAtMs: Date.UTC(2026, 0, 2),
+      ingredients: [
+        { key: 'sageHerb', quantity: 1 },
+        { key: 'lavenderHerb', quantity: 1 },
+        { key: 'frostmossHerb', quantity: 1 },
+      ],
+    });
+  });
+
   it('shows shop sell items for all catalog rows', () => {
     const { gameplayFacade } = createGameplay();
 
     const initialSellItems = gameplayFacade.getSnapshot().shop.shelf.sellItems;
 
-    expect(initialSellItems).toHaveLength(47);
+    expect(initialSellItems).toHaveLength(57);
     expect(initialSellItems.find((item) => item.key === 'sageSeed')).toMatchObject({
       quantity: 0,
       sellGold: 1,
@@ -1248,7 +1478,7 @@ describe('GameplayFacade', () => {
 
     const sellItems = gameplayFacade.getSnapshot().shop.shelf.sellItems;
 
-    expect(sellItems).toHaveLength(47);
+    expect(sellItems).toHaveLength(57);
     expect(sellItems.find((item) => item.key === 'mintSeed')).toMatchObject({
       quantity: 2,
       sellGold: 1,

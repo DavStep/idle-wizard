@@ -21,6 +21,7 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'Arch Mage',
+      theme: 'white',
     });
   });
 
@@ -33,6 +34,34 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'wizard',
+      theme: 'white',
     });
+  });
+
+  it('stores and normalizes theme', () => {
+    const storage = createMemoryStorage();
+    const playerFacade = new PlayerFacade({ storage });
+
+    playerFacade.setTheme('black');
+
+    expect(playerFacade.getSnapshot().theme).toBe('black');
+
+    const restoredPlayerFacade = new PlayerFacade({ storage });
+    expect(restoredPlayerFacade.getSnapshot().theme).toBe('black');
+
+    restoredPlayerFacade.setTheme('unknown');
+    expect(restoredPlayerFacade.getSnapshot().theme).toBe('white');
+  });
+
+  it('maps old dark theme names to black', () => {
+    const playerFacade = new PlayerFacade({
+      storage: createMemoryStorage(),
+    });
+
+    playerFacade.setTheme('night-black');
+    expect(playerFacade.getSnapshot().theme).toBe('black');
+
+    playerFacade.setTheme('dark-gray');
+    expect(playerFacade.getSnapshot().theme).toBe('black');
   });
 });

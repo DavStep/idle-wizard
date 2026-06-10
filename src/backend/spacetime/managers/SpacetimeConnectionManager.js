@@ -6,7 +6,7 @@ export class SpacetimeConnectionManager {
     this.connection = null;
   }
 
-  connect(DbConnection, { onConnect, onDisconnect, onConnectError } = {}) {
+  async connect(DbConnection, { onConnect, onDisconnect, onConnectError } = {}) {
     if (!DbConnection?.builder) {
       throw new Error('SpacetimeConnectionManager requires generated DbConnection bindings.');
     }
@@ -28,7 +28,7 @@ export class SpacetimeConnectionManager {
         onDisconnect?.(error);
       });
 
-    const token = this.authSessionManager.getConnectionToken();
+    const token = await this.authSessionManager.getConnectionToken();
     if (token) {
       builder = builder.withToken(token);
     }

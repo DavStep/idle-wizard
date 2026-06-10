@@ -20,6 +20,7 @@ export class GameplayPersistenceFacade {
     shopFacade,
     brewingFacade,
     gardenFacade,
+    tasksFacade,
   }) {
     this.storageManager = new GameplayStorageManager({ storage });
     this.migrationManager = new GameplayMigrationManager();
@@ -33,6 +34,7 @@ export class GameplayPersistenceFacade {
       shopFacade,
       brewingFacade,
       gardenFacade,
+      tasksFacade,
     });
     this.loadManager = new GameplayLoadManager({
       manaFacade,
@@ -44,6 +46,7 @@ export class GameplayPersistenceFacade {
       shopFacade,
       brewingFacade,
       gardenFacade,
+      tasksFacade,
     });
     this.autosaveElapsedSeconds = 0;
     this.boundSave = () => this.save();

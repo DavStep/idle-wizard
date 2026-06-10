@@ -27,6 +27,8 @@ export default [
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
         ResizeObserver: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
   },

@@ -29,10 +29,12 @@ export class TopPanelResourceDisplayManager {
     const mana = snapshot.mana ?? {};
     const gold = snapshot.gold?.current ?? 0;
     const crystal = snapshot.crystal?.current ?? 0;
+    const level = snapshot.tasks?.currentLevel ?? 1;
 
     this.setText(this.refs.manaValue, `${Math.floor(mana.current ?? 0)} / ${mana.cap ?? 0}`);
     this.setText(this.refs.goldValue, String(Math.floor(gold)));
     this.setText(this.refs.crystalValue, String(Math.floor(crystal)));
+    this.setText(this.refs.levelValue, `level ${level}`);
   }
 
   setText(element, text) {

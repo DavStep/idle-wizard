@@ -4,6 +4,9 @@
   --style-text: #000;
   --style-muted: #666;
   --style-disabled: #b2b2b2;
+  --style-active-surface: #f7f7f7;
+  --style-backdrop-rgb: 255 255 255;
+  --style-log-fade-rgb: 255 255 255;
   --style-border: 1px solid var(--style-text);
   --style-tab-border: var(--style-border-strong);
   --style-border-strong: 2px solid var(--style-text);
@@ -56,6 +59,21 @@
   letter-spacing: normal;
   line-height: normal;
   text-rendering: optimizeLegibility;
+}
+
+:root[data-style-theme="black"] {
+  --style-bg: #000;
+  --style-surface: #050505;
+  --style-text: #fff;
+  --style-muted: #aaa;
+  --style-disabled: #707070;
+  --style-active-surface: #151515;
+  --style-backdrop-rgb: 0 0 0;
+  --style-log-fade-rgb: 5 5 5;
+  --style-block-shadow: 5px 5px 5px #222;
+  --style-overlay-shadow: 5px 5px 5px #222;
+  --style-tooltip-shadow: -1px 3px 2px #222;
+  color-scheme: dark;
 }
 
 * {
@@ -359,6 +377,17 @@ body {
   transform-origin: top left;
 }
 
+.room-bottom-panel-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  pointer-events: none;
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
+}
+
 .workshop-page__ui-layer,
 .workshop-page__ui-layer *,
 .workshop-page__ui-layer *::before,
@@ -382,7 +411,11 @@ body {
 .room-top-panel-layer,
 .room-top-panel-layer *,
 .room-top-panel-layer *::before,
-.room-top-panel-layer *::after {
+.room-top-panel-layer *::after,
+.room-bottom-panel-layer,
+.room-bottom-panel-layer *,
+.room-bottom-panel-layer *::before,
+.room-bottom-panel-layer *::after {
   box-sizing: content-box;
 }
 
@@ -412,7 +445,7 @@ body {
 
 .workshop-page__flyouts {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 156px);
+  top: calc(var(--style-room-content-top) + 132px);
   right: var(--style-room-content-edge);
   left: var(--style-room-content-edge);
   z-index: 20;
@@ -429,66 +462,6 @@ body {
   font-size: var(--style-font-size);
   line-height: normal;
   animation: style-flyout-enter 1200ms var(--style-motion-ease) both;
-}
-
-.workshop-page__name {
-  position: absolute;
-  bottom: 27px;
-  left: 50%;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-font-size);
-  line-height: normal;
-  text-align: center;
-  transform: translateX(-50%);
-}
-
-.brewing-page__name {
-  position: absolute;
-  bottom: 27px;
-  left: 50%;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-font-size);
-  line-height: normal;
-  text-align: center;
-  transform: translateX(-50%);
-}
-
-.garden-page__name {
-  position: absolute;
-  bottom: 27px;
-  left: 50%;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-font-size);
-  line-height: normal;
-  text-align: center;
-  transform: translateX(-50%);
-}
-
-.shop-page__name {
-  position: absolute;
-  bottom: 27px;
-  left: 50%;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-font-size);
-  line-height: normal;
-  text-align: center;
-  transform: translateX(-50%);
-}
-
-.research-page__name {
-  position: absolute;
-  bottom: 27px;
-  left: 50%;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-font-size);
-  line-height: normal;
-  text-align: center;
-  transform: translateX(-50%);
 }
 
 .workshop-page__row {
@@ -534,6 +507,8 @@ body {
 .shop-page__sell-item-row,
 .shop-page__player-listing-item-row,
 .shop-page__market-row,
+.shop-page__trade-history-row,
+.shop-page__trade-history-empty,
 .shop-page__player-proceeds-row {
   min-height: var(--style-row-min-height);
   clear: both;
@@ -547,6 +522,7 @@ body {
 .shop-page__sell-item-row::after,
 .shop-page__player-listing-item-row::after,
 .shop-page__market-row::after,
+.shop-page__trade-history-row::after,
 .shop-page__player-proceeds-row::after {
   display: block;
   clear: both;
@@ -610,6 +586,66 @@ body {
 .workshop-page__seed-action-row {
   min-height: var(--style-row-min-height);
   margin-top: 4px;
+}
+
+.workshop-page__tasks {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 154px);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.workshop-page__tasks-summary {
+  display: flex;
+  justify-content: space-between;
+  min-height: var(--style-row-min-height);
+  gap: 10px;
+}
+
+.workshop-page__tasks-count {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__task-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.workshop-page__task-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 66px 68px;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+  gap: 5px;
+}
+
+.workshop-page__task-label,
+.workshop-page__task-quantity {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__task-quantity {
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+}
+
+.style-button.workshop-page__task-button {
+  width: 58px;
+  padding: 1px 4px;
+  margin-bottom: 0;
+}
+
+.workshop-page__task-progress {
+  margin-top: 2px;
+}
+
+.workshop-page__task.is-completed {
+  color: var(--style-muted);
 }
 
 .brewing-page__workbench {
@@ -710,7 +746,7 @@ body {
 }
 
 .brewing-page__cauldron.is-drag-over {
-  background: #f7f7f7;
+  background: var(--style-active-surface);
 }
 
 .brewing-page__cauldron-count {
@@ -891,22 +927,29 @@ body {
 
 .style-button.workshop-page__leaderboard-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 196px);
+  top: calc(var(--style-room-content-top) + 380px);
   left: var(--style-room-content-edge);
   width: 132px;
 }
 
 .style-button.workshop-page__world-chat-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 238px);
-  left: var(--style-room-content-edge);
+  top: calc(var(--style-room-content-top) + 380px);
+  right: var(--style-room-content-edge);
   width: 132px;
 }
 
 .style-button.workshop-page__logs-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 280px);
+  top: calc(var(--style-room-content-top) + 422px);
   left: var(--style-room-content-edge);
+  width: 132px;
+}
+
+.style-button.workshop-page__discoveries-button {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 422px);
+  right: var(--style-room-content-edge);
   width: 132px;
 }
 
@@ -928,9 +971,16 @@ body {
   z-index: 30;
 }
 
+.workshop-page__discoveries-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
 .workshop-page__leaderboard-popup[hidden],
 .workshop-page__world-chat-popup[hidden],
-.workshop-page__logs-popup[hidden] {
+.workshop-page__logs-popup[hidden],
+.workshop-page__discoveries-popup[hidden] {
   display: none;
 }
 
@@ -946,8 +996,85 @@ body {
   margin-top: var(--style-dialog-tab-gap);
 }
 
+.workshop-page__discoveries-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
 .workshop-page__leaderboard-empty {
   min-height: var(--style-row-min-height);
+}
+
+.workshop-page__discoveries-rows {
+  padding-top: 19px;
+  max-height: 260px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.workshop-page__discoveries-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.workshop-page__discoveries-empty,
+.workshop-page__discovery-row,
+.workshop-page__discovery-detail-row,
+.workshop-page__discovery-ingredient-row {
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__discovery-row {
+  display: block;
+  width: 100%;
+  padding: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+div.workshop-page__discovery-row {
+  cursor: default;
+}
+
+.workshop-page__discovery-row::after,
+.workshop-page__discovery-detail-row::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.workshop-page__discovery-row.is-unknown {
+  color: var(--style-disabled);
+}
+
+.workshop-page__discovery-row.is-discovered:hover .row_key,
+.workshop-page__discovery-row.is-discovered:focus .row_key,
+.workshop-page__discovery-row.is-selected .row_key {
+  text-decoration: underline;
+}
+
+.workshop-page__discovery-row:focus {
+  outline: none;
+}
+
+.workshop-page__discovery-recipe {
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: var(--style-border);
+}
+
+.workshop-page__discovery-ingredient-row {
+  color: var(--style-muted);
 }
 
 .workshop-page__world-chat-messages {
@@ -976,8 +1103,8 @@ body {
   content: "";
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.86)
+    rgb(var(--style-log-fade-rgb) / 0%),
+    rgb(var(--style-log-fade-rgb) / 86%)
   );
   opacity: 0;
   transition: opacity var(--style-motion-fast) var(--style-motion-ease);
@@ -1711,13 +1838,22 @@ body {
   z-index: 30;
 }
 
+.shop-page__trade-history-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
 .shop-page__sell-popup[hidden],
-.shop-page__market-popup[hidden] {
+.shop-page__market-popup[hidden],
+.shop-page__trade-history-popup[hidden] {
   display: none;
 }
 
 .workshop-page__leaderboard-panel,
-.shop-page__sell-panel {
+.workshop-page__discoveries-panel,
+.shop-page__sell-panel,
+.shop-page__trade-history-panel {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1725,6 +1861,10 @@ body {
   width: var(--style-tabbed-dialog-width);
   outline: none;
   transform: translate(-50%, -50%);
+}
+
+.shop-page__trade-history-panel {
+  width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
 }
 
 .shop-page__sell-tabs {
@@ -1735,9 +1875,23 @@ body {
   margin-top: var(--style-dialog-tab-gap);
 }
 
+.shop-page__trade-history-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
 .style-dialog.shop-page__sell-dialog {
   position: relative;
   width: 260px;
+  overflow: visible;
+}
+
+.style-dialog.shop-page__trade-history-dialog {
+  position: relative;
+  width: 300px;
   overflow: visible;
 }
 
@@ -1758,6 +1912,25 @@ body {
 
 .shop-page__market-rows::-webkit-scrollbar {
   display: none;
+}
+
+.shop-page__trade-history-rows {
+  max-height: 360px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.shop-page__trade-history-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-page__trade-history-row {
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+
+.shop-page__trade-history-row + .shop-page__trade-history-row {
+  border-top: var(--style-border);
 }
 
 .shop-page__player-listing-fields {
@@ -1791,6 +1964,13 @@ body {
   color: var(--style-muted);
 }
 
+.shop-page__player-shop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 5px;
+}
+
 .shop-page__sell-item-list {
   max-height: 320px;
   overflow: hidden auto;
@@ -1799,21 +1979,6 @@ body {
 
 .shop-page__sell-item-list::-webkit-scrollbar {
   display: none;
-}
-
-.room-page__nav {
-  position: absolute;
-  bottom: 17px;
-  width: var(--style-room-nav-button-width);
-  margin-bottom: 0;
-}
-
-.room-page__nav--left {
-  left: var(--style-room-chrome-edge);
-}
-
-.room-page__nav--right {
-  right: var(--style-room-chrome-edge);
 }
 
 .style-panel,
@@ -1839,8 +2004,10 @@ body {
 
 .workshop-page__mana-sphere,
 .workshop-page__seed-block,
+.workshop-page__tasks,
 .workshop-page__seed-inventory-dialog,
 .workshop-page__leaderboard-dialog,
+.workshop-page__discoveries-dialog,
 .workshop-page__world-chat-dialog,
 .workshop-page__logs-dialog,
 .brewing-page__herbs,
@@ -1853,6 +2020,7 @@ body {
 .research-page__info-dialog,
 .shop-page__sell-dialog,
 .shop-page__market-dialog,
+.shop-page__trade-history-dialog,
 .shop-page__shelf,
 .shop-page__player-shelf {
   position: absolute;
@@ -1891,6 +2059,62 @@ body {
   pointer-events: auto;
 }
 
+.style-panel.room-bottom-panel {
+  position: absolute;
+  right: var(--style-room-chrome-edge);
+  bottom: 10px;
+  left: var(--style-room-chrome-edge);
+  min-height: var(--style-row-min-height);
+  padding-right: 0;
+  padding-left: 0;
+  pointer-events: auto;
+}
+
+.room-bottom-panel__tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  align-items: center;
+}
+
+.room-bottom-panel__tab {
+  min-width: 0;
+  min-height: var(--style-row-min-height);
+  padding: 1px 0;
+  overflow: hidden;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: 13px;
+  line-height: normal;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+}
+
+.room-bottom-panel__tab:hover,
+.room-bottom-panel__tab:focus-visible {
+  text-decoration: underline;
+}
+
+.room-bottom-panel__tab:focus {
+  outline: none;
+}
+
+.room-bottom-panel__tab:active {
+  background: var(--style-active-surface);
+}
+
+.room-bottom-panel__tab.is-selected {
+  border-color: var(--style-text);
+  text-decoration: none;
+  cursor: default;
+}
+
 .room-top-panel__identity-row {
   display: flex;
   align-items: center;
@@ -1926,6 +2150,14 @@ body {
   outline: none;
 }
 
+.room-top-panel__level {
+  flex: 0 0 auto;
+  margin-left: 10px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
 .room-top-panel__resources {
   display: grid;
   grid-template-columns: minmax(104px, 1.35fr) minmax(66px, 1fr) minmax(80px, 1fr);
@@ -1952,27 +2184,40 @@ body {
   text-overflow: ellipsis;
 }
 
-.room-top-panel__username-editor {
+.room-top-panel__settings {
   position: absolute;
   inset: 0;
   z-index: 30;
   pointer-events: auto;
 }
 
-.room-top-panel__username-editor[hidden] {
+.room-top-panel__settings[hidden] {
   display: none;
 }
 
-.style-dialog.room-top-panel__username-dialog {
+.style-dialog.room-top-panel__settings-dialog {
   position: absolute;
   top: 72px;
   left: 50%;
-  width: 220px;
+  width: 240px;
   transform: translateX(-50%);
+}
+
+.room-top-panel__settings-section + .room-top-panel__settings-section {
+  margin-top: 12px;
+}
+
+.room-top-panel__settings-label {
+  display: block;
+  margin-bottom: 4px;
 }
 
 .room-top-panel__username-form {
   margin: 0;
+}
+
+.style-input.room-top-panel__username-input {
+  width: 218px;
 }
 
 .style-input {
@@ -2011,6 +2256,35 @@ body {
 .room-top-panel__username-actions {
   display: flex;
   gap: 10px;
+}
+
+.room-top-panel__theme-buttons {
+  display: grid;
+  gap: 5px;
+}
+
+.style-button.room-top-panel__theme-button {
+  width: 218px;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.style-button.room-top-panel__theme-button[aria-checked="true"] {
+  text-decoration: underline;
+}
+
+.room-top-panel__auth-status {
+  margin-bottom: 5px;
+  overflow: hidden;
+  color: var(--style-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-button.room-top-panel__auth-button {
+  width: 218px;
+  margin-bottom: 0;
+  text-align: center;
 }
 
 .style-dialog {
@@ -2061,6 +2335,11 @@ body {
 .style-dialog.workshop-page__leaderboard-dialog {
   position: relative;
   width: 260px;
+}
+
+.style-dialog.workshop-page__discoveries-dialog {
+  position: relative;
+  width: 286px;
 }
 
 .style-dialog.workshop-page__world-chat-dialog {
@@ -2137,13 +2416,19 @@ body {
 }
 
 .style-button.shop-page__other-shops-button {
-  display: block;
-  width: 100px;
+  width: 132px;
   padding: 1px 5px;
-  margin: 5px 0 0 auto;
+  margin: 0;
 }
 
-.style-button.shop-page__sell-tab-button {
+.style-button.shop-page__trade-history-button {
+  width: 132px;
+  padding: 1px 5px;
+  margin: 0;
+}
+
+.style-button.shop-page__sell-tab-button,
+.style-button.shop-page__trade-history-tab-button {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
@@ -2152,7 +2437,8 @@ body {
   border: var(--style-tab-border);
 }
 
-.style-button.workshop-page__leaderboard-tab-button {
+.style-button.workshop-page__leaderboard-tab-button,
+.style-button.workshop-page__discoveries-tab-button {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
@@ -2197,18 +2483,14 @@ body {
   outline: none;
 }
 
-.style-button.shop-page__sell-tab-button[aria-selected="true"] {
+.style-button.shop-page__sell-tab-button[aria-selected="true"],
+.style-button.shop-page__trade-history-tab-button[aria-selected="true"] {
   text-decoration: underline;
 }
 
-.style-button.workshop-page__leaderboard-tab-button[aria-selected="true"] {
+.style-button.workshop-page__leaderboard-tab-button[aria-selected="true"],
+.style-button.workshop-page__discoveries-tab-button[aria-selected="true"] {
   text-decoration: underline;
-}
-
-.style-button.room-page__nav {
-  position: absolute;
-  width: var(--style-room-nav-button-width);
-  margin-bottom: 0;
 }
 
 .style-button:hover {
@@ -2221,7 +2503,7 @@ body {
 }
 
 .style-button:active:not(:disabled):not([aria-disabled="true"]) {
-  background: #f7f7f7;
+  background: var(--style-active-surface);
 }
 
 .style-button[aria-disabled="true"],
@@ -2319,14 +2601,16 @@ body {
 .workshop-page__leaderboard-popup:not([hidden]),
 .workshop-page__world-chat-popup:not([hidden]),
 .workshop-page__logs-popup:not([hidden]),
+.workshop-page__discoveries-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
 .garden-page__seed-popup:not([hidden]),
 .research-page__info-popup:not([hidden]),
 .shop-page__sell-popup:not([hidden]),
 .shop-page__market-popup:not([hidden]),
-.room-top-panel__username-editor:not([hidden]) {
-  background: rgb(255 255 255 / 68%);
+.shop-page__trade-history-popup:not([hidden]),
+.room-top-panel__settings:not([hidden]) {
+  background: rgb(var(--style-backdrop-rgb) / 68%);
   animation: style-overlay-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
@@ -2334,18 +2618,21 @@ body {
 .game-stage:has(.workshop-page__leaderboard-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
 .game-stage:has(.research-page__info-popup:not([hidden])) .research-page,
 .game-stage:has(.shop-page__sell-popup:not([hidden])) .shop-page,
-.game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page {
+.game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page,
+.game-stage:has(.shop-page__trade-history-popup:not([hidden])) .shop-page {
   z-index: 5;
 }
 
 .workshop-page__seed-inventory:not([hidden]) .style-dialog,
 .workshop-page__world-chat-popup:not([hidden]) .style-dialog,
 .workshop-page__logs-popup:not([hidden]) .style-dialog,
+.workshop-page__discoveries-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,
@@ -2353,13 +2640,15 @@ body {
   animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
-.room-top-panel__username-editor:not([hidden]) .style-dialog {
+.room-top-panel__settings:not([hidden]) .style-dialog {
   animation: style-dialog-top-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
 .workshop-page__leaderboard-popup:not([hidden]) .workshop-page__leaderboard-panel,
+.workshop-page__discoveries-popup:not([hidden]) .workshop-page__discoveries-panel,
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
-.shop-page__market-popup:not([hidden]) .shop-page__market-dialog {
+.shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
+.shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel {
   animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
@@ -2379,11 +2668,11 @@ body {
 
 @keyframes style-overlay-enter {
   from {
-    background: rgb(255 255 255 / 0%);
+    background: rgb(var(--style-backdrop-rgb) / 0%);
   }
 
   to {
-    background: rgb(255 255 255 / 68%);
+    background: rgb(var(--style-backdrop-rgb) / 68%);
   }
 }
 
