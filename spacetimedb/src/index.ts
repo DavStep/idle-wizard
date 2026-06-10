@@ -19,6 +19,7 @@ const NPC_MARKET_PRESSURE_LIMIT_BPS = 10_000n;
 const NPC_MARKET_BUY_BPS = 8_000n;
 const NPC_MARKET_SELL_BPS = 12_000n;
 const NPC_MARKET_MAX_TRADE_QUANTITY = 10_000;
+const NPC_MARKET_MAX_BASE_PRICE_GOLD = 1_000_000_000n;
 
 const herbCatalog = [
   { key: 'sage', label: 'Sage' },
@@ -249,6 +250,29 @@ const spacetimedb = schema({
       lastTickAt: t.timestamp(),
     },
   ),
+  npcMarketItemConfig: table(
+    {
+      name: 'npc_market_item_config',
+      public: true,
+      indexes: [{ accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] }],
+    },
+    {
+      itemKey: t.string().primaryKey(),
+      itemLabel: t.string(),
+      itemKind: t.string(),
+      defaultBasePriceGold: t.u64(),
+      basePriceGold: t.u64(),
+      updatedAt: t.timestamp(),
+    },
+  ),
+  npcMarketAdmin: table(
+    { name: 'npc_market_admin', public: true },
+    {
+      identity: t.identity().primaryKey(),
+      username: t.string(),
+      addedAt: t.timestamp(),
+    },
+  ),
 });
 
 type IdleWizardSchema = InferSchema<typeof spacetimedb>;
@@ -372,6 +396,29 @@ function toBigInt(value: bigint | number): bigint {
   return BigInt(Math.max(0, Math.floor(Number(value) || 0)));
 }
 
+function normalizeNpcMarketBasePriceGold(
+  value: bigint | number,
+  fallback: bigint,
+): bigint {
+  const safeValue = toBigInt(value);
+
+  if (safeValue < 1n || safeValue > NPC_MARKET_MAX_BASE_PRICE_GOLD) {
+    return fallback;
+  }
+
+  return safeValue;
+}
+
+function validateNpcMarketBasePriceGold(basePriceGold: bigint | number): bigint {
+  const safeBasePriceGold = toBigInt(basePriceGold);
+
+  if (safeBasePriceGold < 1n || safeBasePriceGold > NPC_MARKET_MAX_BASE_PRICE_GOLD) {
+    throw new Error('Invalid NPC market base price.');
+  }
+
+  return safeBasePriceGold;
+}
+
 function clampSignedBps(value: bigint): bigint {
   return clampBigInt(
     value,
@@ -403,16 +450,16 @@ function getNpcMarketCeilingGold(basePriceGold: bigint): bigint {
   return basePriceGold * 4n;
 }
 
-function clampNpcMarketPrice(catalogItem: (typeof npcMarketCatalog)[number], priceGold: bigint) {
+function clampNpcMarketPrice(basePriceGold: bigint, priceGold: bigint) {
   return clampBigInt(
     priceGold,
-    getNpcMarketFloorGold(catalogItem.basePriceGold),
-    getNpcMarketCeilingGold(catalogItem.basePriceGold),
+    getNpcMarketFloorGold(basePriceGold),
+    getNpcMarketCeilingGold(basePriceGold),
   );
 }
 
 function applyNpcPriceMove(
-  catalogItem: (typeof npcMarketCatalog)[number],
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'>,
   marketPriceGold: bigint,
   moveBps: bigint,
 ): bigint {
@@ -426,7 +473,7 @@ function applyNpcPriceMove(
     nextPriceGold = marketPriceGold - 1n;
   }
 
-  return clampNpcMarketPrice(catalogItem, nextPriceGold);
+  return clampNpcMarketPrice(marketConfig.basePriceGold, nextPriceGold);
 }
 
 function moveBigIntToward(value: bigint, target: bigint, step: bigint): bigint {
@@ -452,45 +499,105 @@ function getNpcMarketRowWithQuotes(row: any, marketPriceGold: bigint) {
   };
 }
 
-function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
-  const catalogItem = getNpcMarketCatalogItem(itemKey);
-  const existingRow = ctx.db.npcMarketPrice.itemKey.find(catalogItem.itemKey);
+function ensureNpcMarketItemConfig(
+  ctx: IdleWizardReducerCtx,
+  catalogItem: (typeof npcMarketCatalog)[number],
+) {
+  const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(catalogItem.itemKey);
 
-  if (existingRow) {
-    const normalizedRow = getNpcMarketRowWithQuotes(
-      existingRow,
-      toBigInt(existingRow.marketPriceGold),
+  if (existingConfig) {
+    const basePriceGold = normalizeNpcMarketBasePriceGold(
+      existingConfig.basePriceGold,
+      catalogItem.basePriceGold,
     );
 
     if (
-      normalizedRow.itemLabel === catalogItem.itemLabel &&
-      normalizedRow.itemKind === catalogItem.itemKind &&
-      normalizedRow.basePriceGold === catalogItem.basePriceGold &&
-      normalizedRow.targetStock === catalogItem.targetStock
+      existingConfig.itemLabel === catalogItem.itemLabel &&
+      existingConfig.itemKind === catalogItem.itemKind &&
+      existingConfig.defaultBasePriceGold === catalogItem.basePriceGold &&
+      existingConfig.basePriceGold === basePriceGold
+    ) {
+      return existingConfig;
+    }
+
+    return ctx.db.npcMarketItemConfig.itemKey.update({
+      ...existingConfig,
+      itemLabel: catalogItem.itemLabel,
+      itemKind: catalogItem.itemKind,
+      defaultBasePriceGold: catalogItem.basePriceGold,
+      basePriceGold,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  return ctx.db.npcMarketItemConfig.insert({
+    itemKey: catalogItem.itemKey,
+    itemLabel: catalogItem.itemLabel,
+    itemKind: catalogItem.itemKind,
+    defaultBasePriceGold: catalogItem.basePriceGold,
+    basePriceGold: catalogItem.basePriceGold,
+    updatedAt: ctx.timestamp,
+  });
+}
+
+function getNpcMarketRuntimeConfig(ctx: IdleWizardReducerCtx, itemKey: string) {
+  const catalogItem = getNpcMarketCatalogItem(itemKey);
+  const itemConfig = ensureNpcMarketItemConfig(ctx, catalogItem);
+
+  return {
+    ...catalogItem,
+    basePriceGold: toBigInt(itemConfig.basePriceGold),
+  };
+}
+
+function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
+  const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
+  const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.itemKey);
+
+  if (existingRow) {
+    const existingBasePriceGold = toBigInt(existingRow.basePriceGold);
+    const marketPriceGold =
+      existingBasePriceGold === marketConfig.basePriceGold
+        ? clampNpcMarketPrice(
+            marketConfig.basePriceGold,
+            toBigInt(existingRow.marketPriceGold),
+          )
+        : marketConfig.basePriceGold;
+    const normalizedRow = getNpcMarketRowWithQuotes(
+      existingRow,
+      marketPriceGold,
+    );
+
+    if (
+      normalizedRow.itemLabel === marketConfig.itemLabel &&
+      normalizedRow.itemKind === marketConfig.itemKind &&
+      normalizedRow.basePriceGold === marketConfig.basePriceGold &&
+      normalizedRow.marketPriceGold === toBigInt(existingRow.marketPriceGold) &&
+      normalizedRow.targetStock === marketConfig.targetStock
     ) {
       return normalizedRow;
     }
 
     return ctx.db.npcMarketPrice.itemKey.update({
       ...normalizedRow,
-      itemLabel: catalogItem.itemLabel,
-      itemKind: catalogItem.itemKind,
-      basePriceGold: catalogItem.basePriceGold,
-      targetStock: catalogItem.targetStock,
+      itemLabel: marketConfig.itemLabel,
+      itemKind: marketConfig.itemKind,
+      basePriceGold: marketConfig.basePriceGold,
+      targetStock: marketConfig.targetStock,
       updatedAt: ctx.timestamp,
     });
   }
 
   return ctx.db.npcMarketPrice.insert({
-    itemKey: catalogItem.itemKey,
-    itemLabel: catalogItem.itemLabel,
-    itemKind: catalogItem.itemKind,
-    basePriceGold: catalogItem.basePriceGold,
-    marketPriceGold: catalogItem.basePriceGold,
-    npcBuyPriceGold: getNpcBuyPriceGold(catalogItem.basePriceGold),
-    npcSellPriceGold: getNpcSellPriceGold(catalogItem.basePriceGold),
-    npcStock: catalogItem.targetStock,
-    targetStock: catalogItem.targetStock,
+    itemKey: marketConfig.itemKey,
+    itemLabel: marketConfig.itemLabel,
+    itemKind: marketConfig.itemKind,
+    basePriceGold: marketConfig.basePriceGold,
+    marketPriceGold: marketConfig.basePriceGold,
+    npcBuyPriceGold: getNpcBuyPriceGold(marketConfig.basePriceGold),
+    npcSellPriceGold: getNpcSellPriceGold(marketConfig.basePriceGold),
+    npcStock: marketConfig.targetStock,
+    targetStock: marketConfig.targetStock,
     demandScore: 0n,
     supplyScore: 0n,
     updatedAt: ctx.timestamp,
@@ -516,10 +623,13 @@ function applyNpcMarketTick(ctx: IdleWizardReducerCtx, row: any) {
     return row;
   }
 
-  const catalogItem = getNpcMarketCatalogItem(row.itemKey);
+  const marketConfig = getNpcMarketRuntimeConfig(ctx, row.itemKey);
   const demandScore = toBigInt(row.demandScore);
   const supplyScore = toBigInt(row.supplyScore);
-  const marketPriceGold = toBigInt(row.marketPriceGold);
+  const marketPriceGold =
+    toBigInt(row.basePriceGold) === marketConfig.basePriceGold
+      ? toBigInt(row.marketPriceGold)
+      : marketConfig.basePriceGold;
   const npcStock = toBigInt(row.npcStock);
   const targetStock = toBigInt(row.targetStock);
   const totalVolume = demandScore + supplyScore;
@@ -533,16 +643,20 @@ function applyNpcMarketTick(ctx: IdleWizardReducerCtx, row: any) {
   );
   const rawPressureBps = (stockPressureBps * 70n + flowPressureBps * 30n) / 100n;
   const moveBps = clampBigInt(
-    (rawPressureBps * catalogItem.volatilityBps) / 10_000n,
+    (rawPressureBps * marketConfig.volatilityBps) / 10_000n,
     -NPC_MARKET_PRICE_MOVE_LIMIT_BPS,
     NPC_MARKET_PRICE_MOVE_LIMIT_BPS,
   );
-  let nextMarketPriceGold = applyNpcPriceMove(catalogItem, marketPriceGold, moveBps);
+  let nextMarketPriceGold = applyNpcPriceMove(
+    marketConfig,
+    marketPriceGold,
+    moveBps,
+  );
 
   if (totalVolume === 0n && nextMarketPriceGold === marketPriceGold) {
     nextMarketPriceGold = moveBigIntToward(
       marketPriceGold,
-      catalogItem.basePriceGold,
+      marketConfig.basePriceGold,
       1n,
     );
   }
@@ -556,6 +670,10 @@ function applyNpcMarketTick(ctx: IdleWizardReducerCtx, row: any) {
 
   return ctx.db.npcMarketPrice.itemKey.update({
     ...getNpcMarketRowWithQuotes(row, nextMarketPriceGold),
+    itemLabel: marketConfig.itemLabel,
+    itemKind: marketConfig.itemKind,
+    basePriceGold: marketConfig.basePriceGold,
+    targetStock: marketConfig.targetStock,
     npcStock: nextNpcStock,
     demandScore: nextDemandScore,
     supplyScore: nextSupplyScore,
@@ -671,6 +789,16 @@ function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
     if (row) {
       ctx.db.playerShopTrade.delete(row);
     }
+  }
+}
+
+function hasNpcMarketAdmin(ctx: IdleWizardReducerCtx): boolean {
+  return Array.from(ctx.db.npcMarketAdmin.iter()).length > 0;
+}
+
+function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
+  if (!ctx.db.npcMarketAdmin.identity.find(ctx.sender)) {
+    throw new Error('NPC market config requires admin.');
   }
 }
 
@@ -1011,5 +1139,58 @@ export const buy_from_npc = spacetimedb.reducer(
 export const tick_npc_market = spacetimedb.reducer({}, (ctx) => {
   applyDueNpcMarketTicks(ctx);
 });
+
+export const claim_npc_market_admin = spacetimedb.reducer({}, (ctx) => {
+  if (hasNpcMarketAdmin(ctx)) {
+    throw new Error('NPC market admin already claimed.');
+  }
+
+  const player = ctx.db.player.identity.find(ctx.sender);
+
+  ctx.db.npcMarketAdmin.insert({
+    identity: ctx.sender,
+    username: player?.username ?? 'admin',
+    addedAt: ctx.timestamp,
+  });
+});
+
+export const set_npc_market_item_base_price = spacetimedb.reducer(
+  { itemKey: t.string(), basePriceGold: t.u64() },
+  (ctx, { itemKey, basePriceGold }) => {
+    assertNpcMarketAdmin(ctx);
+
+    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
+    const safeBasePriceGold = validateNpcMarketBasePriceGold(basePriceGold);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(
+      marketConfig.itemKey,
+    );
+
+    if (!existingConfig) {
+      throw new Error('Missing NPC market item config.');
+    }
+
+    ctx.db.npcMarketItemConfig.itemKey.update({
+      ...existingConfig,
+      basePriceGold: safeBasePriceGold,
+      updatedAt: ctx.timestamp,
+    });
+
+    const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.itemKey);
+
+    if (!existingRow) {
+      ensureNpcMarketItem(ctx, marketConfig.itemKey);
+      return;
+    }
+
+    ctx.db.npcMarketPrice.itemKey.update({
+      ...getNpcMarketRowWithQuotes(existingRow, safeBasePriceGold),
+      itemLabel: marketConfig.itemLabel,
+      itemKind: marketConfig.itemKind,
+      basePriceGold: safeBasePriceGold,
+      targetStock: marketConfig.targetStock,
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
 
 export default spacetimedb;

@@ -8,11 +8,13 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import BuyFromNpcReducer from "../buy_from_npc_reducer";
 import BuyPlayerShopListingReducer from "../buy_player_shop_listing_reducer";
+import ClaimNpcMarketAdminReducer from "../claim_npc_market_admin_reducer";
 import ClaimPlayerShopProceedsReducer from "../claim_player_shop_proceeds_reducer";
 import ClearPlayerShopSlotReducer from "../clear_player_shop_slot_reducer";
 import DiscoverPotionRecipeReducer from "../discover_potion_recipe_reducer";
 import SellToNpcReducer from "../sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "../send_world_chat_message_reducer";
+import SetNpcMarketItemBasePriceReducer from "../set_npc_market_item_base_price_reducer";
 import SetPlayerLevelReducer from "../set_player_level_reducer";
 import SetPlayerShopSlotReducer from "../set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "../set_total_generated_gold_reducer";
@@ -21,11 +23,13 @@ import TickNpcMarketReducer from "../tick_npc_market_reducer";
 
 export type BuyFromNpcParams = __Infer<typeof BuyFromNpcReducer>;
 export type BuyPlayerShopListingParams = __Infer<typeof BuyPlayerShopListingReducer>;
+export type ClaimNpcMarketAdminParams = __Infer<typeof ClaimNpcMarketAdminReducer>;
 export type ClaimPlayerShopProceedsParams = __Infer<typeof ClaimPlayerShopProceedsReducer>;
 export type ClearPlayerShopSlotParams = __Infer<typeof ClearPlayerShopSlotReducer>;
 export type DiscoverPotionRecipeParams = __Infer<typeof DiscoverPotionRecipeReducer>;
 export type SellToNpcParams = __Infer<typeof SellToNpcReducer>;
 export type SendWorldChatMessageParams = __Infer<typeof SendWorldChatMessageReducer>;
+export type SetNpcMarketItemBasePriceParams = __Infer<typeof SetNpcMarketItemBasePriceReducer>;
 export type SetPlayerLevelParams = __Infer<typeof SetPlayerLevelReducer>;
 export type SetPlayerShopSlotParams = __Infer<typeof SetPlayerShopSlotReducer>;
 export type SetTotalGeneratedGoldParams = __Infer<typeof SetTotalGeneratedGoldReducer>;

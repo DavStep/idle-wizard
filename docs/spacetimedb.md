@@ -88,6 +88,8 @@ The server module defines:
 - `player_shop_listing`: one row per published player shop slot, keyed by seller identity and slot number.
 - `player_shop_proceeds`: one row per seller with unclaimed gold from player shop sales.
 - `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC stock, and rolling demand/supply scores.
+- `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
+- `npc_market_admin`: identities allowed to change NPC market config.
 
 `clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`.
 
@@ -98,6 +100,15 @@ The server module defines:
 `set_player_shop_slot` publishes a player shelf slot after the client reserves local inventory. `buy_player_shop_listing` decrements server listing quantity and adds server-side seller proceeds. `claim_player_shop_proceeds` clears the proceeds row after the client claims the gold locally.
 
 `sell_to_npc` and `buy_from_npc` record player/NPC trade pressure and stock movement. `tick_npc_market` applies bounded price movement from stock plus rolling demand/supply scores. Player shop trades do not affect `npc_market_price`.
+
+NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` lets the first caller claim market-admin rights, and `set_npc_market_item_base_price` changes a DB-owned base price after that. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are still computed from the market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
+
+Example local calls after publishing the updated module:
+
+```sh
+spacetime call -s local idle-wizard claim_npc_market_admin
+spacetime call -s local idle-wizard set_npc_market_item_base_price manaTonic 10
+```
 
 ## Client Wiring
 
@@ -113,3 +124,5 @@ SELECT * FROM npc_market_price
 ```
 
 The `player` row is treated as the source of truth on reconnect, then later local username edits are sent through `set_username`. Local generated gold totals are sent through `set_total_generated_gold`, and local task levels are sent through `set_player_level`. The subscribed leaderboard rows are exposed as `leaderboardFacade.getSnapshot().topUsers` for the Workshop leaderboard popup.
+
+The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.

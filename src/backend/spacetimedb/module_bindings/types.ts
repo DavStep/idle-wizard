@@ -19,6 +19,23 @@ export const Leaderboard = __t.object("Leaderboard", {
 });
 export type Leaderboard = __Infer<typeof Leaderboard>;
 
+export const NpcMarketAdmin = __t.object("NpcMarketAdmin", {
+  identity: __t.identity(),
+  username: __t.string(),
+  addedAt: __t.timestamp(),
+});
+export type NpcMarketAdmin = __Infer<typeof NpcMarketAdmin>;
+
+export const NpcMarketItemConfig = __t.object("NpcMarketItemConfig", {
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  defaultBasePriceGold: __t.u64(),
+  basePriceGold: __t.u64(),
+  updatedAt: __t.timestamp(),
+});
+export type NpcMarketItemConfig = __Infer<typeof NpcMarketItemConfig>;
+
 export const NpcMarketPrice = __t.object("NpcMarketPrice", {
   itemKey: __t.string(),
   itemLabel: __t.string(),
