@@ -776,10 +776,7 @@ function ensureLeaderboardEntry(
     return ctx.db.leaderboard.identity.update({
       ...existingEntry,
       username,
-      playerLevel: Math.max(
-        normalizePlayerLevel(existingEntry.playerLevel),
-        safePlayerLevel,
-      ),
+      playerLevel: safePlayerLevel,
       updatedAt: ctx.timestamp,
     });
   }
@@ -903,16 +900,12 @@ export const set_player_level = spacetimedb.reducer(
   (ctx, { playerLevel }) => {
     const player = ensurePlayer(ctx);
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
-    const nextPlayerLevel = Math.max(
-      normalizePlayerLevel(player.playerLevel),
-      safePlayerLevel,
-    );
     const nextPlayer =
-      nextPlayerLevel === player.playerLevel
+      safePlayerLevel === player.playerLevel
         ? player
         : ctx.db.player.identity.update({
             ...player,
-            playerLevel: nextPlayerLevel,
+            playerLevel: safePlayerLevel,
             lastSeenAt: ctx.timestamp,
           });
 

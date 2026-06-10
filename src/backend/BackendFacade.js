@@ -49,6 +49,9 @@ export class BackendFacade {
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
         this.potionDiscoveryFacade.connect(connection);
+        if (gameplayFacade?.consumeProgressResetPending?.()) {
+          void this.playerShopFacade.clearOwnProgress();
+        }
         onOnline?.({ connection, identity });
       },
       onConnectError: (error) => {

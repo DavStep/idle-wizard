@@ -1,3 +1,5 @@
+const MAX_PLAYER_SHOP_SLOTS = 5;
+
 export class PlayerShopListingManager {
   constructor() {
     this.connection = null;
@@ -121,6 +123,50 @@ export class PlayerShopListingManager {
         reason: 'claim_failed',
       };
     }
+  }
+
+  async clearOwnProgress() {
+    const clearPlayerShopSlot = this.findReducer('clearPlayerShopSlot', 'clear_player_shop_slot');
+    const claimPlayerShopProceeds = this.findReducer(
+      'claimPlayerShopProceeds',
+      'claim_player_shop_proceeds',
+    );
+
+    if (!clearPlayerShopSlot && !claimPlayerShopProceeds) {
+      return {
+        ok: false,
+        reason: 'offline',
+      };
+    }
+
+    let failed = false;
+
+    if (clearPlayerShopSlot) {
+      for (let slotNumber = 1; slotNumber <= MAX_PLAYER_SHOP_SLOTS; slotNumber += 1) {
+        try {
+          await clearPlayerShopSlot({ slotNumber });
+        } catch {
+          failed = true;
+        }
+      }
+    }
+
+    if (claimPlayerShopProceeds) {
+      try {
+        await claimPlayerShopProceeds({});
+      } catch {
+        failed = true;
+      }
+    }
+
+    return failed
+      ? {
+          ok: false,
+          reason: 'clear_failed',
+        }
+      : {
+          ok: true,
+        };
   }
 
   findReducer(camelName, snakeName) {

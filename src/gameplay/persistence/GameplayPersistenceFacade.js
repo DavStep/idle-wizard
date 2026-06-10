@@ -109,6 +109,10 @@ export class GameplayPersistenceFacade {
     return deltaSeconds;
   }
 
+  consumeProgressResetPending() {
+    return this.migrationManager.consumeProgressResetPending();
+  }
+
   getOfflineDeltaSeconds(save) {
     if (!Number.isFinite(save?.savedAt)) {
       return 0;

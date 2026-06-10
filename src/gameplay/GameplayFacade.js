@@ -363,6 +363,10 @@ export class GameplayFacade {
     this.persistenceFacade.save();
   }
 
+  consumeProgressResetPending() {
+    return this.persistenceFacade.consumeProgressResetPending();
+  }
+
   syncPlayerLevelManaEffects() {
     this.manaFacade.setLevelUpgradeEffects(this.playerLevelFacade.getManaEffects());
   }

@@ -54,7 +54,7 @@ export class PlayerLevelSyncManager {
   }
 
   queue(playerLevel) {
-    this.pendingPlayerLevel = Math.max(this.pendingPlayerLevel ?? 0, playerLevel);
+    this.pendingPlayerLevel = playerLevel;
     this.flush();
   }
 
@@ -90,7 +90,7 @@ export class PlayerLevelSyncManager {
   }
 
   restorePending(playerLevel) {
-    this.pendingPlayerLevel = Math.max(this.pendingPlayerLevel ?? 0, playerLevel);
+    this.pendingPlayerLevel = this.pendingPlayerLevel ?? playerLevel;
   }
 
   readPlayerLevel(snapshot) {

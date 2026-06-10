@@ -89,7 +89,7 @@ describe('GameplayFacade', () => {
     persistenceStorage.setItem(
       'idle-wizard.gameplay.save',
       JSON.stringify({
-        version: 1,
+        version: 2,
         mana: {},
         gold: {},
         crystal: {},
@@ -279,7 +279,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('loads older version 1 saves that do not include newer fields', () => {
+  it('resets version 1 gameplay saves but keeps lifetime generated gold', () => {
     const persistenceStorage = createMemoryStorage();
     persistenceStorage.setItem(
       'idle-wizard.gameplay.save',
@@ -304,18 +304,14 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
     const snapshot = gameplayFacade.getSnapshot();
 
-    expect(snapshot.gold.current).toBe(12);
+    expect(snapshot.gold.current).toBe(0);
     expect(snapshot.gold.totalGenerated).toBe(18);
-    expect(snapshot.inventory).toContainEqual({
-      itemTypeId: 1,
-      key: 'sageSeed',
-      label: 'Sage Seed',
-      kind: 'seed',
-      quantity: 3,
-    });
-    expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
+    expect(snapshot.inventory).toEqual([]);
+    expect(snapshot.research.completedResearchIds).toEqual([]);
     expect(snapshot.tasks.currentLevel).toBe(1);
     expect(snapshot.tasks.level.tasks).toHaveLength(5);
+    expect(gameplayFacade.consumeProgressResetPending()).toBe(true);
+    expect(gameplayFacade.consumeProgressResetPending()).toBe(false);
   });
 
   it('persists active brew timers across a new app instance', () => {

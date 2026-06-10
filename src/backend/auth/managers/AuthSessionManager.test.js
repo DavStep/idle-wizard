@@ -64,7 +64,7 @@ describe('AuthSessionManager', () => {
     const tokenStorageManager = new AuthTokenStorageManager({ storage });
     const sessionManager = new AuthSessionManager({ tokenStorageManager });
     const savedProgress = JSON.stringify({
-      version: 1,
+      version: 2,
       gold: { current: 12 },
       inventory: [{ itemKey: 'sageSeed', quantity: 3 }],
     });

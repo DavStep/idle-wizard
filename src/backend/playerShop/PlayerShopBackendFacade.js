@@ -47,4 +47,8 @@ export class PlayerShopBackendFacade {
   claimProceeds() {
     return this.listingManager.claimProceeds();
   }
+
+  clearOwnProgress() {
+    return this.listingManager.clearOwnProgress();
+  }
 }
