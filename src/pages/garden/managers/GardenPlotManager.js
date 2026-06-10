@@ -2,10 +2,14 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 
 export class GardenPlotManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.cancelDialogManager = new GardenCancelDialogManager({
+      onConfirm: (tileNumber) => this.onConfirmCancel(tileNumber),
+    });
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -63,6 +67,7 @@ export class GardenPlotManager {
     this.root.append(this.refs.title, this.refs.rows);
     parent.append(this.root);
     popupParent.append(this.refs.popup);
+    this.cancelDialogManager.mount(popupParent);
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -79,6 +84,7 @@ export class GardenPlotManager {
     this.refs.rows?.removeEventListener('scroll', this.handlePlotRowsScroll);
     this.refs.seedRows?.removeEventListener('scroll', this.handleSeedRowsScroll);
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
+    this.cancelDialogManager.unmount();
     this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
@@ -243,6 +249,7 @@ export class GardenPlotManager {
     }
 
     this.renderSeeds(snapshot, seeds);
+    this.cancelDialogManager.sync(snapshot);
     this.updateOverflowCues();
   }
 
@@ -314,11 +321,14 @@ export class GardenPlotManager {
     refs.label.textContent = tile.selectedSeedLabel ?? 'empty';
     refs.state.textContent = '';
     this.setTileAction(refs, this.formatTileAction(tile));
+    const activeSeedLabel = tile.seedLabel ?? tile.selectedSeedLabel ?? 'seed';
     refs.button.setAttribute(
       'aria-label',
-      tile.phase === 'ready'
-        ? `start harvesting ${tile.herbLabel}`
-        : `${tile.herbLabel} ${tile.phase}`,
+      tile.process
+        ? `cancel ${activeSeedLabel} on tile ${tile.tileNumber}`
+        : tile.phase === 'ready'
+          ? `start harvesting ${tile.herbLabel}`
+          : `${tile.herbLabel} ${tile.phase}`,
     );
 
     if (tile.process) {
@@ -487,10 +497,20 @@ export class GardenPlotManager {
       return;
     }
 
+    if (tile.process) {
+      this.cancelDialogManager.show(tile);
+      return;
+    }
+
     if (tile.phase === 'ready') {
       this.gameplayFacade.startGardenHarvest(tileNumber);
       this.render(this.gameplayFacade.getSnapshot());
     }
+  }
+
+  onConfirmCancel(tileNumber) {
+    this.gameplayFacade.cancelGardenPlanting(tileNumber);
+    this.render(this.gameplayFacade.getSnapshot());
   }
 
   onSelectSeed(seedTypeId) {

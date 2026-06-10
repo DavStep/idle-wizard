@@ -1,4 +1,5 @@
 import { GardenBalanceManager } from './managers/GardenBalanceManager.js';
+import { GardenCancellationManager } from './managers/GardenCancellationManager.js';
 import { GardenPlantingManager } from './managers/GardenPlantingManager.js';
 import { GardenProcessManager } from './managers/GardenProcessManager.js';
 import { GardenSnapshotManager } from './managers/GardenSnapshotManager.js';
@@ -26,6 +27,10 @@ export class GardenFacade {
     });
     this.gardenPlantingManager = new GardenPlantingManager({
       gardenBalanceManager: this.gardenBalanceManager,
+      gardenTileEntityManager: this.gardenTileEntityManager,
+      itemsFacade,
+    });
+    this.gardenCancellationManager = new GardenCancellationManager({
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
     });
@@ -65,6 +70,10 @@ export class GardenFacade {
 
   startHarvest(tileNumber) {
     return this.gardenPlantingManager.startHarvest(tileNumber);
+  }
+
+  cancelProgress(tileNumber) {
+    return this.gardenCancellationManager.cancelProgress(tileNumber);
   }
 
   getSnapshot() {

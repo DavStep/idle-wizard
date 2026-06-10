@@ -376,6 +376,12 @@ export class GameplayFacade {
     return result;
   }
 
+  cancelGardenPlanting(tileNumber) {
+    const result = this.gardenFacade.cancelProgress(tileNumber);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   subscribe(listener) {
     return this.stateObserverManager.subscribe(listener);
   }

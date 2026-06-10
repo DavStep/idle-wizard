@@ -196,12 +196,7 @@ export class ShopTradeHistoryManager {
     }
 
     this.refs.rows.replaceChildren(
-      ...rows.map((trade) => {
-        const row = document.createElement('div');
-        row.className = 'shop-page__trade-history-row';
-        row.textContent = this.formatTrade(trade);
-        return row;
-      }),
+      ...rows.map((trade) => this.createTradeRow(trade)),
     );
   }
 
@@ -213,22 +208,55 @@ export class ShopTradeHistoryManager {
   }
 
   formatTrade(trade) {
+    const { buyerUsername, sellerUsername, itemText, gold } = this.getTradeSummary(trade);
+
+    return [
+      buyerUsername,
+      ' bought ',
+      itemText,
+      ' from ',
+      sellerUsername,
+      ' for ',
+      String(gold),
+      ' gold',
+    ].join('');
+  }
+
+  createTradeRow(trade) {
+    const { buyerUsername, sellerUsername, itemText, gold } = this.getTradeSummary(trade);
+    const row = document.createElement('div');
+    row.className = 'shop-page__trade-history-row';
+
+    const buyer = document.createElement('span');
+    buyer.className = 'shop-page__trade-history-username';
+    buyer.textContent = buyerUsername;
+
+    const seller = document.createElement('span');
+    seller.className = 'shop-page__trade-history-username';
+    seller.textContent = sellerUsername;
+
+    row.append(
+      buyer,
+      ` bought ${itemText} from `,
+      seller,
+      ` for ${gold} gold`,
+    );
+    return row;
+  }
+
+  getTradeSummary(trade) {
     const quantity = Math.max(1, Math.floor(Number(trade.quantity) || 1));
     const itemText = quantity > 1 ? `${quantity} ${trade.itemLabel}` : trade.itemLabel;
     const gold =
       Math.floor(Number(trade.totalPriceGold) || 0) ||
       Math.floor(Number(trade.priceGold) || 0) * quantity;
 
-    return [
-      trade.buyerUsername,
-      ' bought ',
+    return {
+      buyerUsername: trade.buyerUsername || 'wizard',
+      sellerUsername: trade.sellerUsername || 'wizard',
       itemText,
-      ' from ',
-      trade.sellerUsername,
-      ' for ',
-      String(gold),
-      ' gold',
-    ].join('');
+      gold,
+    };
   }
 
   applyVisibility() {

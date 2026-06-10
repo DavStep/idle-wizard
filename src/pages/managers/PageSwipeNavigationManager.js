@@ -22,6 +22,7 @@ const OPEN_POPUP_SELECTOR = [
   '.brewing-page__recipes-popup:not([hidden])',
   '.brewing-page__potions-popup:not([hidden])',
   '.garden-page__seed-popup:not([hidden])',
+  '.garden-page__cancel-popup:not([hidden])',
   '.research-page__info-popup:not([hidden])',
   '.shop-page__sell-popup:not([hidden])',
   '.shop-page__market-popup:not([hidden])',

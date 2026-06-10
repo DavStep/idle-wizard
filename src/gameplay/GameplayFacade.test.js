@@ -1330,6 +1330,18 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.getSnapshot().garden.plot.unlockedTiles).toBe(2);
     expect(gameplayFacade.getSnapshot().garden.plot.nextTileCost).toBe(75);
+    expect(gameplayFacade.getSnapshot().garden.plot.nextTileLockedByLevel).toBe(true);
+    expect(gameplayFacade.getSnapshot().garden.plot.nextTileRequiresLevel).toBe(2);
+
+    finishCurrentTaskLevel(gameplayFacade);
+    gameplayFacade.goldFacade.add(75);
+
+    expect(gameplayFacade.buyGardenTile()).toEqual({
+      ok: true,
+      cost: 75,
+      tileNumber: 3,
+    });
+    expect(gameplayFacade.getSnapshot().garden.plot.unlockedTiles).toBe(3);
   });
 
   it('grows planted garden seeds and harvests herbs over time', () => {
@@ -1487,6 +1499,49 @@ describe('GameplayFacade', () => {
       selectedSeedKey: 'sageSeed',
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
+    });
+  });
+
+  it('cancels in-progress garden planting, returns the seed, and empties the plot', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1, 1);
+    gameplayFacade.plantGardenSeed(1, 1);
+
+    expect(gameplayFacade.cancelGardenPlanting(1)).toMatchObject({
+      ok: true,
+      tileNumber: 1,
+      seed: {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'Sage Seed',
+        kind: 'seed',
+      },
+    });
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: 'empty',
+      selectedSeedItemTypeId: null,
+      selectedSeedKey: null,
+      selectedSeedLabel: null,
+      seedItemTypeId: null,
+      seedKey: null,
+      seedLabel: null,
+      herbItemTypeId: null,
+      herbKey: null,
+      herbLabel: null,
+      process: null,
+    });
+    expect(gameplayFacade.getSnapshot().garden.seeds).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'Sage Seed',
+      kind: 'seed',
+      quantity: 1,
+    });
+    expect(gameplayFacade.cancelGardenPlanting(1)).toMatchObject({
+      ok: false,
+      reason: 'tile_empty',
+      tileNumber: 1,
     });
   });
 

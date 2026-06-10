@@ -31,6 +31,8 @@
   --style-world-chat-preview-lines: 2;
   --style-world-chat-popup-font-size: 13px;
   --style-world-chat-popup-line-height: 18px;
+  --style-log-font-size: var(--style-world-chat-popup-font-size);
+  --style-log-line-height: var(--style-world-chat-popup-line-height);
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
   --style-button-width: 100px;
   --style-room-edge: 27px;
@@ -1274,6 +1276,15 @@ div.workshop-page__discovery-row {
   min-height: var(--style-row-min-height);
 }
 
+.workshop-page__log-entry,
+.workshop-page__logs-empty,
+.shop-page__trade-history-row,
+.shop-page__trade-history-empty {
+  min-height: var(--style-log-line-height);
+  font-size: var(--style-log-font-size);
+  line-height: var(--style-log-line-height);
+}
+
 .workshop-page__world-chat-message {
   min-height: var(--style-world-chat-row-height);
   line-height: var(--style-row-min-height);
@@ -1617,7 +1628,14 @@ div.workshop-page__discovery-row {
   z-index: 30;
 }
 
-.garden-page__seed-popup[hidden] {
+.garden-page__cancel-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 31;
+}
+
+.garden-page__seed-popup[hidden],
+.garden-page__cancel-popup[hidden] {
   display: none;
 }
 
@@ -1627,6 +1645,33 @@ div.workshop-page__discovery-row {
   left: 50%;
   width: 220px;
   transform: translate(-50%, -50%);
+}
+
+.style-dialog.garden-page__cancel-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  transform: translate(-50%, -50%);
+}
+
+.garden-page__cancel-message {
+  margin: 0 0 12px;
+}
+
+.garden-page__cancel-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.style-button.garden-page__cancel-keep,
+.style-button.garden-page__cancel-confirm {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  padding: 1px 5px;
+  margin-bottom: 0;
 }
 
 .garden-page__seed-rows {
@@ -2349,6 +2394,7 @@ div.workshop-page__discovery-row {
 .garden-page__plot,
 .garden-page__herbs,
 .garden-page__seed-dialog,
+.garden-page__cancel-dialog,
 .research-page__box,
 .research-page__info-dialog,
 .shop-page__sell-dialog,
@@ -3128,6 +3174,7 @@ div.workshop-page__discovery-row {
 .brewing-page__recipes-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
 .garden-page__seed-popup:not([hidden]),
+.garden-page__cancel-popup:not([hidden]),
 .research-page__info-popup:not([hidden]),
 .shop-page__sell-popup:not([hidden]),
 .shop-page__market-popup:not([hidden]),
@@ -3146,6 +3193,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
+.game-stage:has(.garden-page__cancel-popup:not([hidden])) .garden-page,
 .game-stage:has(.research-page__info-popup:not([hidden])) .research-page,
 .game-stage:has(.shop-page__sell-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page,
@@ -3159,6 +3207,7 @@ div.workshop-page__discovery-row {
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,
+.garden-page__cancel-popup:not([hidden]) .style-dialog,
 .research-page__info-popup:not([hidden]) .style-dialog {
   animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }

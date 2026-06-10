@@ -119,14 +119,14 @@ function createGameplayFacadeFake() {
           current: false,
           unlocked: false,
           totals: {
-            maxGardenTiles: 2,
+            maxGardenTiles: 3,
             maxCauldrons: 1,
             maxNpcMarketStands: 1,
             maxPlayerMarketStands: 1,
             maxManaCap: 100,
             manaPerSecond: 2,
           },
-          effects: ['max mana cap 100', 'mana regen 2/sec'],
+          effects: ['max garden tiles 3', 'max mana cap 100', 'mana regen 2/sec'],
         },
         {
           level: 3,
@@ -140,7 +140,7 @@ function createGameplayFacadeFake() {
             maxManaCap: 150,
             manaPerSecond: 3,
           },
-          effects: ['max garden tiles 3', 'max mana cap 150', 'mana regen 3/sec'],
+          effects: ['max mana cap 150', 'mana regen 3/sec'],
         },
       ],
     },
@@ -1042,6 +1042,47 @@ function createGameplayFacadeFake() {
           kind: 'herb',
         },
         durationMs: 10_000,
+      };
+    },
+    cancelGardenPlanting: (tileNumber) => {
+      const tile = snapshot.garden.plot.tiles[tileNumber - 1];
+
+      if (!tile?.process || !tile.seedItemTypeId) {
+        return {
+          ok: false,
+          reason: 'not_in_progress',
+          tileNumber,
+        };
+      }
+
+      const seed = snapshot.garden.seeds.find(
+        (candidate) => candidate.itemTypeId === tile.seedItemTypeId,
+      );
+
+      if (seed) {
+        seed.quantity += 1;
+      }
+
+      tile.selectedSeedItemTypeId = null;
+      tile.selectedSeedKey = null;
+      tile.selectedSeedLabel = null;
+      tile.seedItemTypeId = null;
+      tile.seedKey = null;
+      tile.seedLabel = null;
+      tile.herbItemTypeId = null;
+      tile.herbKey = null;
+      tile.herbLabel = null;
+      tile.phase = 'empty';
+      tile.totalMs = 0;
+      tile.remainingMs = 0;
+      tile.progress = 0;
+      tile.process = null;
+      publish();
+
+      return {
+        ok: true,
+        tileNumber,
+        seed,
       };
     },
     buyResearch: (researchId) => {
@@ -2003,13 +2044,16 @@ describe('PagesFacade', () => {
     expect(levelPopup.querySelector('.room-top-panel__level-divider')?.hidden).toBe(false);
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
+    ).toContain('garden plots+1');
+    expect(
+      levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
     ).toContain('mana cap+50');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
     ).toContain('mana regen+1/sec');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('garden plots2');
+    ).toContain('garden plots3');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
     ).toContain('mana cap100');
@@ -2031,10 +2075,10 @@ describe('PagesFacade', () => {
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
     expect(level3AddedRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
-      'garden plots',
+      'mana cap',
     );
     expect(level3AddedRow.querySelector('.room-top-panel__level-effect-value')?.textContent).toBe(
-      '+1',
+      '+50',
     );
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
       'garden plots',
@@ -3781,6 +3825,10 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(seedPopup.hidden).toBe(true);
+    expect(stage.querySelector('.garden-page__cancel-popup')?.hidden).toBe(false);
+    expect(stage.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
+      'cancel progress?',
+    );
   });
 
   it('changes room pages with horizontal touch swipes', () => {

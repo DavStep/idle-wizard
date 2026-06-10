@@ -76,6 +76,15 @@ export class GardenTileEntityManager {
     return true;
   }
 
+  clearTile(tileNumber) {
+    if (!this.isTileUnlocked(tileNumber)) {
+      return false;
+    }
+
+    this.clearTileData(this.getTileEntityId(tileNumber));
+    return true;
+  }
+
   startGrowth({ tileNumber, seedItemTypeId, herbItemTypeId, totalSeconds }) {
     if (!this.isTileUnlocked(tileNumber) || !this.isTileEmpty(tileNumber)) {
       return false;

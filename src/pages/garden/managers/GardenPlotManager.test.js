@@ -178,6 +178,38 @@ function createGameplayFacadeFake() {
       publish();
       return { ok: true };
     },
+    cancelGardenPlanting: (tileNumber) => {
+      const tile = snapshot.garden.plot.tiles[tileNumber - 1];
+
+      if (!tile?.process || !tile.seedItemTypeId) {
+        return { ok: false };
+      }
+
+      const seed = snapshot.garden.seeds.find(
+        (candidate) => candidate.itemTypeId === tile.seedItemTypeId,
+      );
+
+      if (seed) {
+        seed.quantity += 1;
+      }
+
+      tile.selectedSeedItemTypeId = null;
+      tile.selectedSeedKey = null;
+      tile.selectedSeedLabel = null;
+      tile.seedItemTypeId = null;
+      tile.seedKey = null;
+      tile.seedLabel = null;
+      tile.herbItemTypeId = null;
+      tile.herbKey = null;
+      tile.herbLabel = null;
+      tile.phase = 'empty';
+      tile.totalMs = 0;
+      tile.remainingMs = 0;
+      tile.progress = 0;
+      tile.process = null;
+      publish();
+      return { ok: true };
+    },
   };
 
   return gameplayFacade;
@@ -229,6 +261,54 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('Mint Seed');
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('20s');
+  });
+
+  it('confirms canceling active plot progress and returns the seed', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    parent
+      .querySelector('[aria-label="select Mint Seed, owned 1"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
+
+    expect(cancelPopup.hidden).toBe(false);
+    expect(cancelPopup.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
+      'cancel progress?',
+    );
+    expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
+      'return Mint Seed and empty plot 1.',
+    );
+
+    cancelPopup
+      .querySelector('.garden-page__cancel-keep')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(cancelPopup.hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('Mint Seed');
+
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(cancelPopup.querySelector('.garden-page__cancel-confirm')?.textContent).toBe('yes');
+    cancelPopup
+      .querySelector('.garden-page__cancel-confirm')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(cancelPopup.hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(true);
+    expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
+      label: 'Mint Seed',
+      quantity: 1,
+    });
   });
 
   it('shows unresearched seed choices as locked and grays zero-count researched seeds', () => {
