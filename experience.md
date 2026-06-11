@@ -71,8 +71,9 @@
 - NPC market price UI should read backend-derived `sellGold` and `sellNeed` from the shop snapshot; do not duplicate price balance in page code.
 - NPC market auto-sell should not sell when the backend quote is missing or backend need is zero.
 - NPC market `basePriceGold` is not the visible sell payout; neutral `npcBuyPriceGold` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
-- NPC market selected stands show backend need plus sell price; local owned quantity only drives availability/notifications.
-- NPC market selected stands should get need from slot snapshots, because selected items may be hidden from picker rows.
+- NPC market demand stays in the backend/snapshot and gates sales, but current NPC market UI hides demand; visible labels show item plus sell price only.
+- NPC market demand is player-visible only through the `demand` top-border popup, grouped by `seed`/`herb`/`potion`, with locked rows gray below a divider.
+- NPC market selected stands should keep need available from slot snapshots internally, because selected items may be hidden from picker rows.
 - NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
 - NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.

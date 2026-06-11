@@ -22,6 +22,73 @@ describe('ShopShelfManager', () => {
     );
   });
 
+  it('hides NPC market demand from visible stand and picker labels', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: [] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'Sage Seed',
+              kind: 'seed',
+              quantity: 1,
+              sellGold: 8,
+              sellNeed: 919,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'Sage Seed',
+              sellQuantity: 1,
+              sellGold: 8,
+              sellNeed: 919,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const standValue = stage.querySelector('.shop-page__slot-row .row_val');
+    const itemButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')].find(
+      (button) => button.textContent.includes('Sage Seed'),
+    );
+
+    expect(standValue?.textContent).toBe('Sage Seed 8 gold');
+    expect(itemButton?.textContent).toBe('Sage Seed 8 gold');
+    expect(standValue?.textContent).not.toContain('919');
+    expect(itemButton?.textContent).not.toContain('919');
+    expect(manager.canSelectSellItem(gameplaySnapshot, gameplaySnapshot.shop.shelf.sellItems[0]))
+      .toBe(true);
+
+    manager.unmount();
+  });
+
   it('shows empty player market stand notifications as orange', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');

@@ -420,7 +420,7 @@ export class ShopShelfManager {
       row.classList.toggle('is-empty', display.empty);
       label.textContent = `${display.label} `;
       setResourceColor(label, item.kind);
-      quantity.textContent = `${this.formatSellNeed(item.sellNeed)} ${this.formatSellGold(item.sellGold)}`;
+      quantity.textContent = this.formatSellGold(item.sellGold);
       setResourceColorFromText(quantity, quantity.textContent);
       button.disabled = !canSelectItem;
       button.setAttribute('aria-disabled', canSelectItem ? 'false' : 'true');
@@ -502,7 +502,6 @@ export class ShopShelfManager {
     const sellItem = this.getSellItem(shelf, slot.sellItemTypeId);
     const quantity = Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
     const sellGold = slot.sellGold ?? sellItem?.sellGold;
-    const sellNeed = slot.sellNeed ?? sellItem?.sellNeed;
     const displayItem = sellItem ?? {
       itemTypeId: slot.sellItemTypeId,
       key: slot.sellKey,
@@ -512,9 +511,7 @@ export class ShopShelfManager {
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
       : { label: slot.sellLabel, quantity: String(quantity) };
-    const itemText = Number.isFinite(sellNeed)
-      ? `${display.label} need ${sellNeed}`
-      : display.label;
+    const itemText = display.label;
 
     if (!Number.isFinite(sellGold)) {
       return { itemText, itemKind: displayItem.kind, priceText: '' };
@@ -555,14 +552,6 @@ export class ShopShelfManager {
       Number.isFinite(item.sellNeed) &&
       item.sellNeed > 0
     );
-  }
-
-  formatSellNeed(sellNeed) {
-    if (!Number.isFinite(sellNeed)) {
-      return 'need ?';
-    }
-
-    return `need ${sellNeed}`;
   }
 
   applyPopupVisibility() {
