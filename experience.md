@@ -30,7 +30,7 @@
 - Completion logs for timed systems should come from system-manager callbacks, not from page button clicks.
 - Timed gameplay should consume uncapped `frame.timerDeltaSeconds`; keep capped `frame.deltaSeconds` only for render/UI stability.
 - Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
-- Gameplay resources/inventory/research/market state is currently in-memory only; dev HMR or reload resets it until a persistence facade exists.
+- Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 
 ## Gameplay Economy
 
@@ -63,6 +63,7 @@
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, and currently has no earning or spending rule.
 - Advanced automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide advanced research currency.
+- Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - NPC market stand 1 starts unlocked for free; later stands cost gold from `shop-balance.json`.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
@@ -155,6 +156,8 @@
 - Level milestone dialogs show a centered top-border `current` label only when the selected level is the player current level.
 - Player visual theme is stored on `PlayerFacade` snapshot and applied globally by `AppThemeManager` through `html[data-style-theme]`.
 - Player resource color mode is separate from white/black theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
+- Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
+- Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
@@ -196,14 +199,18 @@
 ## Backend And Android
 
 - Backend target is SpacetimeDB.
+- SpacetimeDB reducers are public entry points; never use first-come admin claim or raw client leaderboard/shop values without server-side caps.
+- Shared leaderboard totals, player market exchange, NPC price pressure, research announcements, and potion discoveries must stay locked down until the server owns the matching gameplay state; bounded task player levels are client-reported through `set_player_level`.
+- Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
+- Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
-- Server tables currently own shared `player` identity rows and `leaderboard` rows; client syncs username and player level only.
+- Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields, gameplay save JSON, and player level.
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
 - Shared player level displays use server `playerLevel`; sync `tasks.currentLevel` through `set_player_level` and do not infer other players locally.
 - Local player level milestones come from `player-level-balance.json`; they unlock permission to buy higher caps, never grant the tile/stand for free.
@@ -212,12 +219,13 @@
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.
 - Leaderboard total generated gold uses local gold lifetime total synced through `set_total_generated_gold`; current gold alone is not enough because spending lowers it.
-- Global progress resets should bump the local gameplay save version and migrate old saves to keep only `gold.totalGenerated`; username and leaderboard identity live outside gameplay save.
-- Hydrate username from the server `player` row before pushing local values; otherwise local `wizard` can overwrite saved DB profile data.
-- Queue explicit username edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's save.
-- First-run username prompts should wait until player profile hydration marks default `wizard` as server-confirmed; local `wizard` during startup is not enough.
+- Global progress resets should bump the gameplay save version and migrate old saves to keep only `gold.totalGenerated`; username and leaderboard identity live outside gameplay save.
+- Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
+- Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
+- First-run username prompts should wait until player profile hydration marks default `wizard` as server-confirmed; local startup defaults are not enough.
 - SpacetimeDB table callbacks pass inserted/updated rows; use those callback rows for player profile sync because immediate table scans can still read stale usernames.
 - Local SpacetimeDB CLI target should be `local` (`http://127.0.0.1:3000`); anonymous publish cannot update an existing dev DB.
+- Use `spacetime --no-config` when CLI commands must target `.env.local`/Maincloud DB names directly; otherwise `spacetime.json` can force `idle-wizard`.
 - Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
 - Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.

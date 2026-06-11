@@ -2,50 +2,37 @@ import { describe, expect, it } from 'vitest';
 
 import { PlayerFacade } from './PlayerFacade.js';
 
-function createMemoryStorage() {
-  const values = new Map();
-
-  return {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
-  };
-}
-
 describe('PlayerFacade', () => {
-  it('stores and normalizes username', () => {
-    const playerFacade = new PlayerFacade({
-      storage: createMemoryStorage(),
-    });
+  it('normalizes username edits', () => {
+    const playerFacade = new PlayerFacade();
 
     playerFacade.setUsername('  Arch  Mage  ');
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'Arch Mage',
       shouldPromptForUsername: false,
+      usernamePromptSeen: true,
       theme: 'white',
       colorMode: 'monochrome',
     });
   });
 
   it('falls back to wizard for blank username', () => {
-    const playerFacade = new PlayerFacade({
-      storage: createMemoryStorage(),
-    });
+    const playerFacade = new PlayerFacade();
 
     playerFacade.setUsername('   ');
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'wizard',
       shouldPromptForUsername: false,
+      usernamePromptSeen: true,
       theme: 'white',
       colorMode: 'monochrome',
     });
   });
 
   it('asks for a username only after a default server profile is known', () => {
-    const playerFacade = new PlayerFacade({
-      storage: createMemoryStorage(),
-    });
+    const playerFacade = new PlayerFacade();
 
     expect(playerFacade.getSnapshot().shouldPromptForUsername).toBe(false);
 
@@ -54,62 +41,74 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'wizard',
       shouldPromptForUsername: true,
+      usernamePromptSeen: false,
     });
 
     playerFacade.markUsernamePromptSeen();
 
-    expect(playerFacade.getSnapshot().shouldPromptForUsername).toBe(false);
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      shouldPromptForUsername: false,
+      usernamePromptSeen: true,
+    });
   });
 
-  it('does not ask again after restoring a saved username', () => {
-    const storage = createMemoryStorage();
-    const playerFacade = new PlayerFacade({ storage });
+  it('does not ask again after server says the prompt was seen', () => {
+    const playerFacade = new PlayerFacade();
 
-    playerFacade.setUsername('Mira');
-
-    const restoredPlayerFacade = new PlayerFacade({ storage });
-    restoredPlayerFacade.applyServerUsername('wizard');
-
-    expect(restoredPlayerFacade.getSnapshot()).toMatchObject({
+    playerFacade.applyServerProfile({
       username: 'wizard',
+      usernamePromptSeen: true,
+    });
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'wizard',
+      usernamePromptSeen: true,
       shouldPromptForUsername: false,
     });
   });
 
-  it('stores and normalizes theme', () => {
-    const storage = createMemoryStorage();
-    const playerFacade = new PlayerFacade({ storage });
+  it('normalizes theme', () => {
+    const playerFacade = new PlayerFacade();
 
     playerFacade.setTheme('black');
 
     expect(playerFacade.getSnapshot().theme).toBe('black');
 
-    const restoredPlayerFacade = new PlayerFacade({ storage });
-    expect(restoredPlayerFacade.getSnapshot().theme).toBe('black');
-
-    restoredPlayerFacade.setTheme('unknown');
-    expect(restoredPlayerFacade.getSnapshot().theme).toBe('white');
+    playerFacade.setTheme('unknown');
+    expect(playerFacade.getSnapshot().theme).toBe('white');
   });
 
-  it('stores and normalizes color mode', () => {
-    const storage = createMemoryStorage();
-    const playerFacade = new PlayerFacade({ storage });
+  it('normalizes color mode', () => {
+    const playerFacade = new PlayerFacade();
 
     playerFacade.setColorMode('resources');
 
     expect(playerFacade.getSnapshot().colorMode).toBe('resources');
 
-    const restoredPlayerFacade = new PlayerFacade({ storage });
-    expect(restoredPlayerFacade.getSnapshot().colorMode).toBe('resources');
+    playerFacade.setColorMode('unknown');
+    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
+  });
 
-    restoredPlayerFacade.setColorMode('unknown');
-    expect(restoredPlayerFacade.getSnapshot().colorMode).toBe('monochrome');
+  it('applies server profile preferences', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.applyServerProfile({
+      username: 'Mira',
+      theme: 'black',
+      colorMode: 'resources',
+      usernamePromptSeen: true,
+    });
+
+    expect(playerFacade.getProfileSnapshot()).toEqual({
+      username: 'Mira',
+      usernamePromptSeen: true,
+      theme: 'black',
+      colorMode: 'resources',
+    });
   });
 
   it('maps old dark theme names to black', () => {
-    const playerFacade = new PlayerFacade({
-      storage: createMemoryStorage(),
-    });
+    const playerFacade = new PlayerFacade();
 
     playerFacade.setTheme('night-black');
     expect(playerFacade.getSnapshot().theme).toBe('black');

@@ -152,6 +152,12 @@ export class ShopPlayerShelfManager {
     const value = document.createElement('span');
     value.className = 'row_val';
 
+    const itemValue = document.createElement('span');
+    itemValue.className = 'shop-page__slot-item-value';
+
+    const priceValue = document.createElement('span');
+    priceValue.className = 'shop-page__slot-price-value';
+
     const button = document.createElement('button');
     button.className = 'style-button shop-page__buy-slot-button';
     button.type = 'button';
@@ -161,7 +167,7 @@ export class ShopPlayerShelfManager {
     });
 
     row.append(label, value);
-    return { row, value, button };
+    return { row, value, button, itemValue, priceValue };
   }
 
   createProceedsRow() {
@@ -654,7 +660,8 @@ export class ShopPlayerShelfManager {
   }
 
   renderRows(shelf) {
-    this.refs.rows.forEach(({ row, value, button }, index) => {
+    this.refs.rows.forEach((refs, index) => {
+      const { row, value, button } = refs;
       const slotNumber = index + 1;
       const cost = shelf.slotCosts[index];
       const slot = shelf.slots[index];
@@ -667,8 +674,7 @@ export class ShopPlayerShelfManager {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select player market stand ${slotNumber}`);
-        value.textContent = this.formatPlayerSlotValue(slot, shelf, this.lastGameplaySnapshot);
-        setResourceColorFromText(value, value.textContent);
+        this.renderPlayerSlotValue(refs, slot, shelf, this.lastGameplaySnapshot);
         return;
       }
 
@@ -696,6 +702,29 @@ export class ShopPlayerShelfManager {
       value.textContent = 'locked';
       setResourceColorFromText(value, value.textContent);
     });
+  }
+
+  renderPlayerSlotValue(refs, slot, shelf, snapshot) {
+    const parts = this.getPlayerSlotParts(slot, shelf, snapshot);
+
+    if (!parts.itemText) {
+      refs.value.textContent = 'empty';
+      setResourceColorFromText(refs.value, refs.value.textContent);
+      return;
+    }
+
+    if (
+      refs.itemValue.parentElement !== refs.value ||
+      refs.priceValue.parentElement !== refs.value
+    ) {
+      refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+    }
+
+    refs.itemValue.textContent = parts.itemText;
+    this.applyPlayerSlotItemColor(refs.itemValue, parts);
+
+    refs.priceValue.textContent = parts.priceText ? ` ${parts.priceText}` : '';
+    setResourceColor(refs.priceValue, parts.priceText ? 'gold' : null);
   }
 
   formatLockedSlotAction(shelf, cost) {
@@ -1115,8 +1144,13 @@ export class ShopPlayerShelfManager {
   }
 
   formatPlayerSlotValue(slot, shelf, snapshot) {
+    const parts = this.getPlayerSlotParts(slot, shelf, snapshot);
+    return [parts.itemText, parts.priceText].filter(Boolean).join(' ');
+  }
+
+  getPlayerSlotParts(slot, shelf, snapshot) {
     if (!slot.itemLabel) {
-      return 'empty';
+      return { itemText: '', itemKind: null, priceText: '' };
     }
 
     const listingItem =
@@ -1129,7 +1163,20 @@ export class ShopPlayerShelfManager {
     };
     const display = getItemDisplay(snapshot, displayItem, slot.quantity);
 
-    return `${display.label} (${display.quantity}) ${slot.priceGold} gold`;
+    return {
+      itemText: `${display.label} (${display.quantity})`,
+      itemKind: displayItem.kind,
+      priceText: `${slot.priceGold} gold`,
+    };
+  }
+
+  applyPlayerSlotItemColor(element, parts) {
+    if (parts.itemKind === 'seed' || parts.itemKind === 'herb') {
+      setResourceColor(element, parts.itemKind);
+      return;
+    }
+
+    setResourceColorFromText(element, parts.itemText);
   }
 
   readPositiveInteger(value) {

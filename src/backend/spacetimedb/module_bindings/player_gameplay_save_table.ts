@@ -12,12 +12,6 @@ import {
 
 export default __t.row({
   identity: __t.identity().primaryKey(),
-  username: __t.string(),
-  connected: __t.bool(),
-  createdAt: __t.timestamp().name("created_at"),
-  lastSeenAt: __t.timestamp().name("last_seen_at"),
-  playerLevel: __t.u32().name("player_level"),
-  theme: __t.string(),
-  colorMode: __t.string().name("color_mode"),
-  usernamePromptSeen: __t.bool().name("username_prompt_seen"),
+  saveJson: __t.string().name("save_json"),
+  updatedAt: __t.timestamp().name("updated_at"),
 });

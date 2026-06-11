@@ -1,7 +1,7 @@
 const SAVE_KEY = 'idle-wizard.gameplay.save';
 
 export class GameplayStorageManager {
-  constructor({ storage = globalThis.localStorage, saveKey = SAVE_KEY } = {}) {
+  constructor({ storage = null, saveKey = SAVE_KEY } = {}) {
     this.storage = storage ?? null;
     this.saveKey = saveKey;
   }

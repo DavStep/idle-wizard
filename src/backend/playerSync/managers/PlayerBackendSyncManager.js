@@ -3,20 +3,22 @@ export class PlayerBackendSyncManager {
     this.connection = null;
     this.playerFacade = null;
     this.unsubscribe = null;
-    this.lastUsername = null;
+    this.lastProfileSignature = null;
     this.serverProfileLoaded = false;
     this.applyingServerProfile = false;
     this.canSyncBeforeServerProfile = false;
-    this.initialUsername = null;
-    this.pendingUsername = null;
+    this.initialProfileSignature = null;
+    this.pendingProfile = null;
   }
 
   setPlayerFacade(playerFacade) {
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.playerFacade = playerFacade;
-    this.initialUsername = playerFacade?.getSnapshot?.().username ?? null;
-    this.pendingUsername = null;
+    this.initialProfileSignature = this.getProfileSignature(
+      this.readClientProfile(playerFacade?.getProfileSnapshot?.() ?? playerFacade?.getSnapshot?.()),
+    );
+    this.pendingProfile = null;
 
     if (!playerFacade) {
       return;
@@ -41,20 +43,22 @@ export class PlayerBackendSyncManager {
     this.serverProfileLoaded = false;
     this.applyingServerProfile = false;
     this.canSyncBeforeServerProfile = false;
-    this.pendingUsername = null;
+    this.pendingProfile = null;
   }
 
   sync(snapshot) {
-    const username = snapshot?.username;
+    const profile = this.readClientProfile(snapshot);
+    const profileSignature = this.getProfileSignature(profile);
+
     if (
       !this.applyingServerProfile &&
       this.connection &&
-      username &&
+      profile.username &&
       !this.serverProfileLoaded &&
       !this.canSyncBeforeServerProfile
     ) {
-      if (username !== this.initialUsername) {
-        this.pendingUsername = username;
+      if (profileSignature !== this.initialProfileSignature) {
+        this.pendingProfile = profile;
       }
 
       return;
@@ -63,59 +67,125 @@ export class PlayerBackendSyncManager {
     if (
       this.applyingServerProfile ||
       !this.connection ||
-      !username ||
-      username === this.lastUsername ||
+      !profile.username ||
+      profileSignature === this.lastProfileSignature ||
       (!this.serverProfileLoaded && !this.canSyncBeforeServerProfile)
     ) {
       return;
     }
 
+    const setPlayerProfile = this.findSetPlayerProfileReducer();
     const setUsername = this.findSetUsernameReducer();
-    if (!setUsername) {
+
+    if (!setPlayerProfile && !setUsername) {
       return;
     }
 
-    this.lastUsername = username;
-    setUsername({ username }).catch(() => {
-      this.lastUsername = null;
+    this.lastProfileSignature = profileSignature;
+
+    let syncResult;
+    try {
+      syncResult = setPlayerProfile
+        ? setPlayerProfile({
+            username: profile.username,
+            theme: profile.theme,
+            colorMode: profile.colorMode,
+            usernamePromptSeen: profile.usernamePromptSeen,
+          })
+        : setUsername({ username: profile.username });
+    } catch {
+      this.lastProfileSignature = null;
+      return;
+    }
+
+    Promise.resolve(syncResult).catch(() => {
+      this.lastProfileSignature = null;
     });
   }
 
   applyServerProfile(profile) {
     this.serverProfileLoaded = true;
-    const pendingUsername = this.pendingUsername;
-    this.pendingUsername = null;
+    const pendingProfile = this.pendingProfile;
+    this.pendingProfile = null;
 
-    const username = profile?.username;
-    if (!username) {
+    const serverProfile = this.readServerProfile(profile);
+    if (!serverProfile.username) {
       this.markUsernameProfileLoaded();
       this.sync(this.playerFacade?.getSnapshot());
       return;
     }
 
-    this.lastUsername = username;
+    this.lastProfileSignature = this.getProfileSignature(serverProfile);
 
-    if (pendingUsername) {
-      if (this.playerFacade?.getSnapshot?.().username !== pendingUsername) {
-        this.playerFacade?.setUsername?.(pendingUsername);
+    if (pendingProfile) {
+      if (
+        this.getProfileSignature(this.readCurrentPlayerProfile()) !==
+        this.getProfileSignature(pendingProfile)
+      ) {
+        this.applyServerProfileToPlayer(pendingProfile);
       } else {
-        this.sync({ username: pendingUsername });
+        this.sync(pendingProfile);
       }
 
       return;
     }
 
-    if (this.playerFacade?.getSnapshot?.().username === username) {
+    if (
+      this.getProfileSignature(this.readCurrentPlayerProfile()) ===
+      this.getProfileSignature(serverProfile)
+    ) {
       this.markUsernameProfileLoaded();
       return;
     }
 
     try {
       this.applyingServerProfile = true;
-      this.applyServerUsername(username);
+      this.applyServerProfileToPlayer(serverProfile);
     } finally {
       this.applyingServerProfile = false;
     }
+  }
+
+  readCurrentPlayerProfile() {
+    return this.readClientProfile(
+      this.playerFacade?.getProfileSnapshot?.() ?? this.playerFacade?.getSnapshot?.(),
+    );
+  }
+
+  readClientProfile(snapshot = {}) {
+    return {
+      username: snapshot?.username,
+      theme: snapshot?.theme ?? 'white',
+      colorMode: snapshot?.colorMode ?? 'monochrome',
+      usernamePromptSeen: Boolean(snapshot?.usernamePromptSeen),
+    };
+  }
+
+  readServerProfile(profile = {}) {
+    return {
+      username: profile?.username,
+      theme: profile?.theme ?? 'white',
+      colorMode: profile?.colorMode ?? 'monochrome',
+      usernamePromptSeen: Boolean(profile?.usernamePromptSeen),
+    };
+  }
+
+  getProfileSignature(profile) {
+    if (!profile?.username) {
+      return null;
+    }
+
+    return JSON.stringify({
+      username: profile.username,
+      theme: profile.theme,
+      colorMode: profile.colorMode,
+      usernamePromptSeen: Boolean(profile.usernamePromptSeen),
+    });
+  }
+
+  findSetPlayerProfileReducer() {
+    const reducers = this.connection?.reducers;
+    return reducers?.setPlayerProfile ?? reducers?.set_player_profile ?? null;
   }
 
   findSetUsernameReducer() {
@@ -123,13 +193,19 @@ export class PlayerBackendSyncManager {
     return reducers?.setUsername ?? reducers?.set_username ?? null;
   }
 
-  applyServerUsername(username) {
-    if (typeof this.playerFacade?.applyServerUsername === 'function') {
-      this.playerFacade.applyServerUsername(username);
+  applyServerProfileToPlayer(profile) {
+    if (typeof this.playerFacade?.applyServerProfile === 'function') {
+      this.playerFacade.applyServerProfile(profile);
       return;
     }
 
-    this.playerFacade?.setUsername?.(username);
+    this.playerFacade?.setUsername?.(profile.username);
+    this.playerFacade?.setTheme?.(profile.theme);
+    this.playerFacade?.setColorMode?.(profile.colorMode);
+
+    if (profile.usernamePromptSeen) {
+      this.playerFacade?.markUsernamePromptSeen?.();
+    }
   }
 
   markUsernameProfileLoaded() {

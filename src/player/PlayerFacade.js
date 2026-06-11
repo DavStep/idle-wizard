@@ -1,28 +1,16 @@
 import { PlayerColorModeManager } from './managers/PlayerColorModeManager.js';
-import { PlayerColorModeStorageManager } from './managers/PlayerColorModeStorageManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
-import { PlayerNameStorageManager } from './managers/PlayerNameStorageManager.js';
 import { PlayerStateObserverManager } from './managers/PlayerStateObserverManager.js';
 import { PlayerThemeManager } from './managers/PlayerThemeManager.js';
-import { PlayerThemeStorageManager } from './managers/PlayerThemeStorageManager.js';
 
 export class PlayerFacade {
   static explain =
     'Keeps the player name shown in the room header, so the game can greet the right wizard.';
 
-  constructor({ storage } = {}) {
-    this.nameStorageManager = new PlayerNameStorageManager({ storage });
-    this.nameManager = new PlayerNameManager({
-      storageManager: this.nameStorageManager,
-    });
-    this.themeStorageManager = new PlayerThemeStorageManager({ storage });
-    this.themeManager = new PlayerThemeManager({
-      storageManager: this.themeStorageManager,
-    });
-    this.colorModeStorageManager = new PlayerColorModeStorageManager({ storage });
-    this.colorModeManager = new PlayerColorModeManager({
-      storageManager: this.colorModeStorageManager,
-    });
+  constructor() {
+    this.nameManager = new PlayerNameManager();
+    this.themeManager = new PlayerThemeManager();
+    this.colorModeManager = new PlayerColorModeManager();
     this.stateObserverManager = new PlayerStateObserverManager();
   }
 
@@ -34,6 +22,14 @@ export class PlayerFacade {
 
   applyServerUsername(username) {
     this.nameManager.applyServerUsername(username);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  applyServerProfile(profile) {
+    this.nameManager.applyServerProfile(profile);
+    this.themeManager.applyServerTheme(profile?.theme);
+    this.colorModeManager.applyServerColorMode(profile?.colorMode);
     this.publishSnapshot();
     return this.getSnapshot();
   }
@@ -74,8 +70,19 @@ export class PlayerFacade {
     return {
       username: this.nameManager.getUsername(),
       shouldPromptForUsername: this.nameManager.shouldPromptForUsername(),
+      usernamePromptSeen: this.nameManager.getUsernamePromptSeen(),
       theme: this.themeManager.getTheme(),
       colorMode: this.colorModeManager.getColorMode(),
+    };
+  }
+
+  getProfileSnapshot() {
+    const snapshot = this.getSnapshot();
+    return {
+      username: snapshot.username,
+      usernamePromptSeen: snapshot.usernamePromptSeen,
+      theme: snapshot.theme,
+      colorMode: snapshot.colorMode,
     };
   }
 

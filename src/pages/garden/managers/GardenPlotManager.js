@@ -147,7 +147,6 @@ export class GardenPlotManager {
 
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';
-    setResourceColor(label, 'seed');
 
     const state = document.createElement('span');
     state.className = 'garden-page__plot-state';
@@ -199,6 +198,7 @@ export class GardenPlotManager {
     const button = document.createElement('button');
     button.className = 'garden-page__seed-button';
     button.type = 'button';
+    setResourceColor(button, 'seed');
     button.addEventListener('click', () => this.onSelectSeed(seed.itemTypeId));
 
     const label = document.createElement('span');
@@ -288,6 +288,7 @@ export class GardenPlotManager {
 
     if (!tile.unlocked) {
       refs.label.textContent = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
+      setResourceColor(refs.label, null);
       refs.state.textContent = '';
       this.setTileAction(refs, {
         label: isNextLockedTile ? this.formatLockedTileAction(plot) : '',
@@ -310,6 +311,7 @@ export class GardenPlotManager {
 
     if (tile.phase === 'empty') {
       refs.label.textContent = tile.selectedSeedLabel ?? 'empty';
+      setResourceColor(refs.label, hasSelectedSeed ? 'seed' : null);
       refs.state.textContent = '';
       this.setTileAction(refs, {
         label: hasSelectedSeed ? (selectedSeedQuantity > 0 ? 'plant' : 'no seeds') : 'choose',
@@ -325,6 +327,10 @@ export class GardenPlotManager {
     }
 
     refs.label.textContent = tile.selectedSeedLabel ?? 'empty';
+    setResourceColor(
+      refs.label,
+      tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
+    );
     refs.state.textContent = '';
     this.setTileAction(refs, this.formatTileAction(tile));
     const activeSeedLabel = tile.seedLabel ?? tile.selectedSeedLabel ?? 'seed';

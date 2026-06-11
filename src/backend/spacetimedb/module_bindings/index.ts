@@ -34,6 +34,7 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AnnounceLevelUpReducer from "./announce_level_up_reducer";
 import AnnounceResearchReducer from "./announce_research_reducer";
 import BuyFromNpcReducer from "./buy_from_npc_reducer";
 import BuyPlayerShopListingReducer from "./buy_player_shop_listing_reducer";
@@ -45,8 +46,11 @@ import RemoveNpcMarketItemConfigReducer from "./remove_npc_market_item_config_re
 import RemoveResearchConfigReducer from "./remove_research_config_reducer";
 import SellToNpcReducer from "./sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
+import SetAdminPlayerDataReducer from "./set_admin_player_data_reducer";
 import SetNpcMarketItemBasePriceReducer from "./set_npc_market_item_base_price_reducer";
+import SetPlayerGameplaySaveReducer from "./set_player_gameplay_save_reducer";
 import SetPlayerLevelReducer from "./set_player_level_reducer";
+import SetPlayerProfileReducer from "./set_player_profile_reducer";
 import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetUsernameReducer from "./set_username_reducer";
@@ -64,6 +68,7 @@ import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketItemConfigRow from "./npc_market_item_config_table";
 import NpcMarketPriceRow from "./npc_market_price_table";
 import PlayerRow from "./player_table";
+import PlayerGameplaySaveRow from "./player_gameplay_save_table";
 import PlayerShopListingRow from "./player_shop_listing_table";
 import PlayerShopProceedsRow from "./player_shop_proceeds_table";
 import PlayerShopTradeRow from "./player_shop_trade_table";
@@ -156,6 +161,17 @@ const tablesSchema = __schema({
       { name: 'player_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, PlayerRow),
+  playerGameplaySave: __table({
+    name: 'player_gameplay_save',
+    indexes: [
+      { accessor: 'identity', name: 'player_gameplay_save_identity_idx_btree', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_gameplay_save_identity_key', constraint: 'unique', columns: ['identity'] },
+    ],
+  }, PlayerGameplaySaveRow),
   playerShopListing: __table({
     name: 'player_shop_listing',
     indexes: [
@@ -253,6 +269,7 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("announce_level_up", AnnounceLevelUpReducer),
   __reducerSchema("announce_research", AnnounceResearchReducer),
   __reducerSchema("buy_from_npc", BuyFromNpcReducer),
   __reducerSchema("buy_player_shop_listing", BuyPlayerShopListingReducer),
@@ -264,8 +281,11 @@ const reducersSchema = __reducers(
   __reducerSchema("remove_research_config", RemoveResearchConfigReducer),
   __reducerSchema("sell_to_npc", SellToNpcReducer),
   __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),
+  __reducerSchema("set_admin_player_data", SetAdminPlayerDataReducer),
   __reducerSchema("set_npc_market_item_base_price", SetNpcMarketItemBasePriceReducer),
+  __reducerSchema("set_player_gameplay_save", SetPlayerGameplaySaveReducer),
   __reducerSchema("set_player_level", SetPlayerLevelReducer),
+  __reducerSchema("set_player_profile", SetPlayerProfileReducer),
   __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_username", SetUsernameReducer),

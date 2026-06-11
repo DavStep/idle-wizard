@@ -6,6 +6,17 @@ function createBackendWithFakes() {
   const backendFacade = new BackendFacade();
   const clearOwnProgress = vi.fn(() => Promise.resolve({ ok: true }));
 
+  backendFacade.gameConfigFacade = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+  backendFacade.gameplaySaveFacade = {
+    connect: vi.fn((_connection, _identity, { onReady } = {}) => {
+      onReady?.({ ok: true, save: null });
+      return true;
+    }),
+    disconnect: vi.fn(),
+  };
   backendFacade.leaderboardFacade = {
     setGameplayFacade: vi.fn(),
     connect: vi.fn(),
@@ -72,5 +83,26 @@ describe('BackendFacade', () => {
     });
 
     expect(clearOwnProgress).not.toHaveBeenCalled();
+  });
+
+  it('hydrates gameplay save before marking backend online', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    const onGameplaySaveReady = vi.fn();
+    const onOnline = vi.fn();
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onGameplaySaveReady,
+      onOnline,
+    });
+
+    expect(onGameplaySaveReady).toHaveBeenCalledWith({
+      save: null,
+      updatedAtMs: 0,
+    });
+    expect(onOnline).toHaveBeenCalledTimes(1);
   });
 });

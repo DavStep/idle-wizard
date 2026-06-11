@@ -52,6 +52,7 @@ export class AppLifecycleManager {
       const result = await this.backendFacade.start({
         gameplayFacade: this.gameplayFacade,
         playerFacade: this.playerFacade,
+        onGameplaySaveReady: (snapshot) => this.handleGameplaySaveReady(snapshot),
         onOnline: () => this.handleOnline(),
         onOffline: ({ reason } = {}) => this.handleOffline(reason),
       });
@@ -61,6 +62,14 @@ export class AppLifecycleManager {
       }
     } catch {
       this.handleOffline('connect_error');
+    }
+  }
+
+  handleGameplaySaveReady({ save } = {}) {
+    const loaded = this.gameplayFacade.loadPersistenceSave(save, this.ecsFacade);
+
+    if (!loaded) {
+      this.gameplayFacade.savePersistenceSnapshot();
     }
   }
 
@@ -110,12 +119,12 @@ export class AppLifecycleManager {
 
     this.stopping = true;
     this.stopFrameLoop();
+    this.gameplayFacade.shutdown();
     this.backendFacade.stop();
     this.onlineGateManager.unmount();
     this.appThemeManager?.unmount();
     this.renderFacade.unmount();
     this.pagesFacade.unmount();
-    this.gameplayFacade.shutdown();
     this.viewportFacade.unmount();
     this.ecsFacade.destroyWorld();
     this.shellManager.unmount();

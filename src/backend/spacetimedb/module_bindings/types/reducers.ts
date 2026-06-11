@@ -6,6 +6,7 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AnnounceLevelUpReducer from "../announce_level_up_reducer";
 import AnnounceResearchReducer from "../announce_research_reducer";
 import BuyFromNpcReducer from "../buy_from_npc_reducer";
 import BuyPlayerShopListingReducer from "../buy_player_shop_listing_reducer";
@@ -17,8 +18,11 @@ import RemoveNpcMarketItemConfigReducer from "../remove_npc_market_item_config_r
 import RemoveResearchConfigReducer from "../remove_research_config_reducer";
 import SellToNpcReducer from "../sell_to_npc_reducer";
 import SendWorldChatMessageReducer from "../send_world_chat_message_reducer";
+import SetAdminPlayerDataReducer from "../set_admin_player_data_reducer";
 import SetNpcMarketItemBasePriceReducer from "../set_npc_market_item_base_price_reducer";
+import SetPlayerGameplaySaveReducer from "../set_player_gameplay_save_reducer";
 import SetPlayerLevelReducer from "../set_player_level_reducer";
+import SetPlayerProfileReducer from "../set_player_profile_reducer";
 import SetPlayerShopSlotReducer from "../set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "../set_total_generated_gold_reducer";
 import SetUsernameReducer from "../set_username_reducer";
@@ -27,6 +31,7 @@ import UpsertGameConfigReducer from "../upsert_game_config_reducer";
 import UpsertNpcMarketItemConfigReducer from "../upsert_npc_market_item_config_reducer";
 import UpsertResearchConfigReducer from "../upsert_research_config_reducer";
 
+export type AnnounceLevelUpParams = __Infer<typeof AnnounceLevelUpReducer>;
 export type AnnounceResearchParams = __Infer<typeof AnnounceResearchReducer>;
 export type BuyFromNpcParams = __Infer<typeof BuyFromNpcReducer>;
 export type BuyPlayerShopListingParams = __Infer<typeof BuyPlayerShopListingReducer>;
@@ -38,8 +43,11 @@ export type RemoveNpcMarketItemConfigParams = __Infer<typeof RemoveNpcMarketItem
 export type RemoveResearchConfigParams = __Infer<typeof RemoveResearchConfigReducer>;
 export type SellToNpcParams = __Infer<typeof SellToNpcReducer>;
 export type SendWorldChatMessageParams = __Infer<typeof SendWorldChatMessageReducer>;
+export type SetAdminPlayerDataParams = __Infer<typeof SetAdminPlayerDataReducer>;
 export type SetNpcMarketItemBasePriceParams = __Infer<typeof SetNpcMarketItemBasePriceReducer>;
+export type SetPlayerGameplaySaveParams = __Infer<typeof SetPlayerGameplaySaveReducer>;
 export type SetPlayerLevelParams = __Infer<typeof SetPlayerLevelReducer>;
+export type SetPlayerProfileParams = __Infer<typeof SetPlayerProfileReducer>;
 export type SetPlayerShopSlotParams = __Infer<typeof SetPlayerShopSlotReducer>;
 export type SetTotalGeneratedGoldParams = __Infer<typeof SetTotalGeneratedGoldReducer>;
 export type SetUsernameParams = __Infer<typeof SetUsernameReducer>;

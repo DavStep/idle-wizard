@@ -1,4 +1,5 @@
 import { WorldChatSendManager } from './managers/WorldChatSendManager.js';
+import { WorldChatLevelUpAnnouncementManager } from './managers/WorldChatLevelUpAnnouncementManager.js';
 import { WorldChatResearchAnnouncementManager } from './managers/WorldChatResearchAnnouncementManager.js';
 import { WorldChatStateObserverManager } from './managers/WorldChatStateObserverManager.js';
 import { WorldChatSubscriptionManager } from './managers/WorldChatSubscriptionManager.js';
@@ -13,17 +14,20 @@ export class WorldChatBackendFacade {
       onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
     });
     this.sendManager = new WorldChatSendManager();
+    this.levelUpAnnouncementManager = new WorldChatLevelUpAnnouncementManager();
     this.researchAnnouncementManager = new WorldChatResearchAnnouncementManager();
   }
 
   connect(connection) {
     this.subscriptionManager.connect(connection);
     this.sendManager.connect(connection);
+    this.levelUpAnnouncementManager.connect(connection);
     this.researchAnnouncementManager.connect(connection);
   }
 
   disconnect() {
     this.researchAnnouncementManager.disconnect();
+    this.levelUpAnnouncementManager.disconnect();
     this.sendManager.disconnect();
     this.subscriptionManager.disconnect();
   }
@@ -42,5 +46,9 @@ export class WorldChatBackendFacade {
 
   announceResearch(researchName) {
     return this.researchAnnouncementManager.announceResearch(researchName);
+  }
+
+  announceLevelUp(playerLevel) {
+    return this.levelUpAnnouncementManager.announceLevelUp(playerLevel);
   }
 }

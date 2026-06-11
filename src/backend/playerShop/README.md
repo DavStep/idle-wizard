@@ -2,6 +2,6 @@
 
 Shares player market listings through SpacetimeDB.
 
-The client publishes one listing per player market stand. The server owns listed quantity, decrements it when another player buys, and stores seller sale proceeds until the seller claims them.
+Player market exchange is locked down until inventory and spendable gold become server-authoritative. The server clears stale listing, trade, and proceeds rows on connect so old poisoned rows cannot be claimed.
 
-Completed purchases are recorded in `player_shop_trade` so the client can show own and global trade history.
+Keep the facade boundary in place; re-enable publishing, purchases, proceeds, and `player_shop_trade` only when the backend can debit buyer gold and reserve seller inventory itself.

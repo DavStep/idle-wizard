@@ -101,6 +101,12 @@ export class ShopShelfManager {
     const value = document.createElement('span');
     value.className = 'row_val';
 
+    const itemValue = document.createElement('span');
+    itemValue.className = 'shop-page__slot-item-value';
+
+    const priceValue = document.createElement('span');
+    priceValue.className = 'shop-page__slot-price-value';
+
     const button = document.createElement('button');
     button.className = 'style-button shop-page__buy-slot-button';
     button.type = 'button';
@@ -110,7 +116,7 @@ export class ShopShelfManager {
     });
 
     row.append(label, value);
-    return { row, value, button };
+    return { row, value, button, itemValue, priceValue };
   }
 
   createSellControls() {
@@ -275,7 +281,8 @@ export class ShopShelfManager {
 
     this.renderSellControls(snapshot, shelf);
 
-    this.refs.rows.forEach(({ row, value, button }, index) => {
+    this.refs.rows.forEach((refs, index) => {
+      const { row, value, button } = refs;
       const slotNumber = index + 1;
       const cost = shelf.slotCosts[index];
       const slot = shelf.slots[index];
@@ -288,8 +295,7 @@ export class ShopShelfManager {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
-        value.textContent = this.formatSlotSellValue(slot, shelf, snapshot);
-        setResourceColorFromText(value, value.textContent);
+        this.renderSlotSellValue(refs, slot, shelf, snapshot);
         return;
       }
 
@@ -317,6 +323,29 @@ export class ShopShelfManager {
       value.textContent = 'locked';
       setResourceColorFromText(value, value.textContent);
     });
+  }
+
+  renderSlotSellValue(refs, slot, shelf, snapshot) {
+    const parts = this.getSlotSellParts(slot, shelf, snapshot);
+
+    if (!parts.itemText) {
+      refs.value.textContent = 'empty';
+      setResourceColorFromText(refs.value, refs.value.textContent);
+      return;
+    }
+
+    if (
+      refs.itemValue.parentElement !== refs.value ||
+      refs.priceValue.parentElement !== refs.value
+    ) {
+      refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+    }
+
+    refs.itemValue.textContent = parts.itemText;
+    this.applySlotItemColor(refs.itemValue, parts);
+
+    refs.priceValue.textContent = parts.priceText ? ` ${parts.priceText}` : '';
+    setResourceColor(refs.priceValue, parts.priceText ? 'gold' : null);
   }
 
   formatLockedSlotAction(shelf, cost) {
@@ -440,8 +469,13 @@ export class ShopShelfManager {
   }
 
   formatSlotSellValue(slot, shelf, snapshot) {
+    const parts = this.getSlotSellParts(slot, shelf, snapshot);
+    return [parts.itemText, parts.priceText].filter(Boolean).join(' ');
+  }
+
+  getSlotSellParts(slot, shelf, snapshot) {
     if (!slot.sellLabel) {
-      return 'empty';
+      return { itemText: '', itemKind: null, priceText: '' };
     }
 
     const sellItem = this.getSellItem(shelf, slot.sellItemTypeId);
@@ -456,18 +490,28 @@ export class ShopShelfManager {
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
       : { label: slot.sellLabel, quantity: String(quantity) };
+    const itemText = Number.isFinite(quantity)
+      ? `${display.label} (${display.quantity})`
+      : display.label;
 
     if (!Number.isFinite(sellGold)) {
-      return Number.isFinite(quantity)
-        ? `${display.label} (${display.quantity})`
-        : display.label;
+      return { itemText, itemKind: displayItem.kind, priceText: '' };
     }
 
-    if (!Number.isFinite(quantity)) {
-      return `${display.label} ${this.formatSellGold(sellGold)}`;
+    return {
+      itemText,
+      itemKind: displayItem.kind,
+      priceText: this.formatSellGold(sellGold),
+    };
+  }
+
+  applySlotItemColor(element, parts) {
+    if (parts.itemKind === 'seed' || parts.itemKind === 'herb') {
+      setResourceColor(element, parts.itemKind);
+      return;
     }
 
-    return `${display.label} (${display.quantity}) ${this.formatSellGold(sellGold)}`;
+    setResourceColorFromText(element, parts.itemText);
   }
 
   getSellItem(shelf, itemTypeId) {

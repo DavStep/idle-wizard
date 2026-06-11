@@ -1,5 +1,6 @@
 import { AuthFacade } from './auth/AuthFacade.js';
 import { GameConfigBackendFacade } from './gameConfig/GameConfigBackendFacade.js';
+import { GameplaySaveBackendFacade } from './gameplaySave/GameplaySaveBackendFacade.js';
 import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade.js';
 import { NpcMarketBackendFacade } from './npcMarket/NpcMarketBackendFacade.js';
 import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js';
@@ -18,6 +19,7 @@ export class BackendFacade {
   } = {}) {
     this.authFacade = new AuthFacade();
     this.gameConfigFacade = new GameConfigBackendFacade();
+    this.gameplaySaveFacade = new GameplaySaveBackendFacade();
     this.leaderboardFacade = new LeaderboardBackendFacade();
     this.worldChatFacade = new WorldChatBackendFacade();
     this.npcMarketFacade = new NpcMarketBackendFacade();
@@ -38,13 +40,45 @@ export class BackendFacade {
     }));
   }
 
-  async start({ gameplayFacade, playerFacade, onOnline, onOffline } = {}) {
+  async start({
+    gameplayFacade,
+    playerFacade,
+    onOnline,
+    onOffline,
+    onGameplaySaveReady,
+  } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
     this.playerSyncFacade.setPlayerFacade(playerFacade);
     this.playerSyncFacade.setGameplayFacade(gameplayFacade);
 
     return this.spacetimeDbFacade.connectGeneratedBindings({
       onConnect: (connection, identity) => {
+        let gameplaySaveReady = false;
+        const finishGameplaySaveReady = (result) => {
+          if (gameplaySaveReady) {
+            return;
+          }
+
+          gameplaySaveReady = true;
+
+          if (result?.ok === false) {
+            this.disconnectBackendFacades();
+            onOffline?.({ reason: result.reason });
+            return;
+          }
+
+          onGameplaySaveReady?.({
+            save: result?.save ?? null,
+            updatedAtMs: result?.updatedAtMs ?? 0,
+          });
+
+          if (gameplayFacade?.consumeProgressResetPending?.()) {
+            void this.playerShopFacade.clearOwnProgress();
+          }
+
+          onOnline?.({ connection, identity });
+        };
+
         this.gameConfigFacade.connect(connection);
         this.leaderboardFacade.connect(connection, identity);
         this.worldChatFacade.connect(connection);
@@ -52,45 +86,37 @@ export class BackendFacade {
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
         this.potionDiscoveryFacade.connect(connection);
-        if (gameplayFacade?.consumeProgressResetPending?.()) {
-          void this.playerShopFacade.clearOwnProgress();
-        }
-        onOnline?.({ connection, identity });
+        this.gameplaySaveFacade.connect(connection, identity, {
+          onReady: finishGameplaySaveReady,
+        });
       },
       onConnectError: (error) => {
-        this.gameConfigFacade.disconnect();
-        this.leaderboardFacade.disconnect();
-        this.worldChatFacade.disconnect();
-        this.npcMarketFacade.disconnect();
-        this.playerSyncFacade.disconnect();
-        this.playerShopFacade.disconnect();
-        this.potionDiscoveryFacade.disconnect();
+        this.disconnectBackendFacades();
         onOffline?.({ reason: 'connect_error', error });
       },
       onDisconnect: () => {
-        this.gameConfigFacade.disconnect();
-        this.leaderboardFacade.disconnect();
-        this.worldChatFacade.disconnect();
-        this.npcMarketFacade.disconnect();
-        this.playerSyncFacade.disconnect();
-        this.playerShopFacade.disconnect();
-        this.potionDiscoveryFacade.disconnect();
+        this.disconnectBackendFacades();
         onOffline?.({ reason: 'disconnect' });
       },
     });
   }
 
   stop() {
-    this.gameConfigFacade.disconnect();
-    this.leaderboardFacade.disconnect();
+    this.disconnectBackendFacades();
     this.leaderboardFacade.setGameplayFacade(null);
+    this.playerSyncFacade.setGameplayFacade(null);
+    this.spacetimeDbFacade.disconnect();
+  }
+
+  disconnectBackendFacades() {
+    this.gameConfigFacade.disconnect();
+    this.gameplaySaveFacade.disconnect();
+    this.leaderboardFacade.disconnect();
     this.worldChatFacade.disconnect();
     this.npcMarketFacade.disconnect();
     this.playerSyncFacade.disconnect();
-    this.playerSyncFacade.setGameplayFacade(null);
     this.playerShopFacade.disconnect();
     this.potionDiscoveryFacade.disconnect();
-    this.spacetimeDbFacade.disconnect();
   }
 
   getAuthFacade() {
@@ -99,6 +125,10 @@ export class BackendFacade {
 
   getGameConfigFacade() {
     return this.gameConfigFacade;
+  }
+
+  getGameplaySaveFacade() {
+    return this.gameplaySaveFacade;
   }
 
   getSpacetimeDbFacade() {

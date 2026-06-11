@@ -650,10 +650,10 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoPlantTile:1',
           label: 'auto plant tile 1',
-          value: '50000 crystal',
+          value: '1 crystal',
           effect: 'auto',
           costGold: 0,
-          costCrystal: 50000,
+          costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
           canResearch: false,
@@ -664,7 +664,7 @@ function createGameplayFacadeFake() {
           value: 'locked',
           effect: 'auto',
           costGold: 0,
-          costCrystal: 75000,
+          costCrystal: 2,
           costCurrency: 'crystal',
           completed: false,
           locked: true,
@@ -679,10 +679,10 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoHarvestPlant:1',
           label: 'auto harvest tile 1',
-          value: '75000 crystal',
+          value: '1 crystal',
           effect: 'auto',
           costGold: 0,
-          costCrystal: 75000,
+          costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
           canResearch: false,
@@ -696,10 +696,10 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoBrewCauldron:1',
           label: 'auto brew cauldron 1',
-          value: '100000 crystal',
+          value: '1 crystal',
           effect: 'auto',
           costGold: 0,
-          costCrystal: 100000,
+          costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
           canResearch: false,
@@ -713,10 +713,10 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoBottleCauldron:1',
           label: 'auto bottle cauldron 1',
-          value: '125000 crystal',
+          value: '1 crystal',
           effect: 'auto',
           costGold: 0,
-          costCrystal: 125000,
+          costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
           canResearch: false,
@@ -730,10 +730,10 @@ function createGameplayFacadeFake() {
         {
           id: 'automation:autoCollectCauldron:1',
           label: 'auto collect cauldron 1',
-          value: '150000 crystal',
+          value: '1 crystal',
           effect: 'auto',
           costGold: 0,
-          costCrystal: 150000,
+          costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
           canResearch: false,
@@ -3347,6 +3347,11 @@ describe('PagesFacade', () => {
     ).toBe(false);
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('empty');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('buy (1 gold)');
+    expect(
+      stage
+        .querySelector('.shop-page__buy-slot-button')
+        ?.getAttribute('data-resource-color'),
+    ).toBe('gold');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('stand 3locked');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('3 gold');
     expect(stage.querySelector('.shop-page__sell-popup')).not.toBeNull();
@@ -3406,7 +3411,7 @@ describe('PagesFacade', () => {
       'auto plant tile 1',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      '50000 crystal',
+      '1 crystal',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
       'seed unlock researches',
@@ -3904,11 +3909,15 @@ describe('PagesFacade', () => {
     expect(seedPopup.textContent).not.toContain('Mint Seed');
     expect(seedPopup.querySelector('.garden-page__seed-divider')).toBeNull();
     expect(seedButtons[0].disabled).toBe(false);
+    expect(seedButtons[1].dataset.resourceColor).toBe('seed');
 
     seedButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(seedPopup.hidden).toBe(true);
     expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('Sage Seed');
+    expect(rows[0].querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
+      'seed',
+    );
     expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('');
     expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
     expect(rows[0].querySelector('.garden-page__plot-action-label')?.textContent).toBe('growing');
@@ -4092,6 +4101,8 @@ describe('PagesFacade', () => {
     const sageButton = [...stage.querySelectorAll('.brewing-page__herb-button')].find(
       (button) => button.textContent === 'Sage3',
     );
+
+    expect(sageButton?.getAttribute('data-resource-color')).toBe('herb');
 
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -4529,10 +4540,56 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       'stand 1Sage Seed (0) 1 gold',
     );
+    expect(
+      stage
+        .querySelector('.shop-page__slot-item-value')
+        ?.getAttribute('data-resource-color'),
+    ).toBe('seed');
+    expect(
+      stage
+        .querySelector('.shop-page__slot-price-value')
+        ?.getAttribute('data-resource-color'),
+    ).toBe('gold');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
       'stand 1 sells Sage Seed',
     );
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+  });
+
+  it('colors NPC market item names and prices separately', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.setGold(3);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'shop');
+
+    stage
+      .querySelector('.shop-page__slot-row--interactive')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    [...stage.querySelectorAll('.shop-page__sell-tab-button')]
+      .find((button) => button.textContent === 'potions')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    [...stage.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent === 'Mana Tonic (0) 5 gold')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const itemValue = stage.querySelector('.shop-page__slot-item-value');
+    const priceValue = stage.querySelector('.shop-page__slot-price-value');
+
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
+      'stand 1Mana Tonic (0) 5 gold',
+    );
+    expect(itemValue?.textContent).toBe('Mana Tonic (0)');
+    expect(itemValue?.getAttribute('data-resource-color')).toBe('mana');
+    expect(priceValue?.textContent).toBe(' 5 gold');
+    expect(priceValue?.getAttribute('data-resource-color')).toBe('gold');
   });
 
   it('does not open shop sell picker for locked NPC market stands', () => {
@@ -4806,6 +4863,16 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
       'stand 1Sage Seed (2) 4 gold',
     );
+    expect(
+      stage
+        .querySelector('.shop-page__player-shelf .shop-page__slot-item-value')
+        ?.getAttribute('data-resource-color'),
+    ).toBe('seed');
+    expect(
+      stage
+        .querySelector('.shop-page__player-shelf .shop-page__slot-price-value')
+        ?.getAttribute('data-resource-color'),
+    ).toBe('gold');
     expect(listingPopup.hidden).toBe(true);
 
     stage

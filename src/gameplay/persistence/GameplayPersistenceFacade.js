@@ -7,10 +7,11 @@ const AUTOSAVE_SECONDS = 5;
 
 export class GameplayPersistenceFacade {
   static explain =
-    'Saves player progress on this device so reloads do not erase the wizard state.';
+    'Creates and restores player progress saves; the app chooses the storage behind it.';
 
   constructor({
     storage,
+    storageManager,
     manaFacade,
     goldFacade,
     crystalFacade,
@@ -23,7 +24,7 @@ export class GameplayPersistenceFacade {
     tasksFacade,
     now = () => Date.now(),
   }) {
-    this.storageManager = new GameplayStorageManager({ storage });
+    this.storageManager = storageManager ?? new GameplayStorageManager({ storage });
     this.migrationManager = new GameplayMigrationManager();
     this.saveManager = new GameplaySaveManager({
       manaFacade,
@@ -57,16 +58,24 @@ export class GameplayPersistenceFacade {
   }
 
   load() {
-    const save = this.migrationManager.migrate(this.storageManager.load());
+    return this.loadSave(this.storageManager.load());
+  }
 
-    if (!save) {
+  loadSave(save) {
+    const migratedSave = this.migrationManager.migrate(save);
+
+    if (!migratedSave) {
       this.offlineDeltaSeconds = 0;
       return false;
     }
 
-    const loaded = this.loadManager.applySave(save);
-    this.offlineDeltaSeconds = loaded ? this.getOfflineDeltaSeconds(save) : 0;
+    const loaded = this.loadManager.applySave(migratedSave);
+    this.offlineDeltaSeconds = loaded ? this.getOfflineDeltaSeconds(migratedSave) : 0;
     return loaded;
+  }
+
+  setStorageManager(storageManager) {
+    this.storageManager = storageManager ?? new GameplayStorageManager();
   }
 
   save() {

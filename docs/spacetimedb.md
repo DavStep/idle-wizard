@@ -82,7 +82,8 @@ For production auth, pass an OIDC token from SpacetimeAuth or another OIDC provi
 
 The server module defines:
 
-- `player`: one row per SpacetimeDB identity, with `username`, player level, connection state, and timestamps.
+- `player`: one row per SpacetimeDB identity, with `username`, visual preferences, player level, connection state, and timestamps.
+- `player_gameplay_save`: one row per identity, with the full gameplay save JSON and update time.
 - `leaderboard`: one row per identity, with `username`, player level, and `totalIncome`.
 - `world_chat`: one row per chat message, with sender identity, username, sender player level, body, and timestamp.
 - `player_shop_listing`: one row per published player market stand, keyed by seller identity and slot number.
@@ -91,19 +92,23 @@ The server module defines:
 - `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
 - `npc_market_admin`: identities allowed to change NPC market config.
 
-`clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`.
+`clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`. `set_player_profile` updates username, theme, color mode, and username prompt state together.
 
-`set_total_generated_gold` accepts the client's persisted lifetime generated gold total and keeps the server `totalIncome` at the highest reported value. Current spendable gold is not used for this value because spending lowers it.
+`set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for this subscription before opening the room gate, applies the saved gameplay snapshot, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
-`set_player_level` accepts the client's current task level and keeps the server player level at the highest reported value. Leaderboard rows read that level, and new chat rows store the sender level at send time.
+`set_total_generated_gold` currently rejects client-authored totals by using a `0` server cap. Connect-time sanitation also clamps old leaderboard rows back to safe values. Do not re-enable shared leaderboard totals until gold is server-authoritative.
 
-`set_player_shop_slot` publishes a player market stand after the client reserves local inventory. `buy_player_shop_listing` decrements server listing quantity and adds server-side seller proceeds. `claim_player_shop_proceeds` clears the proceeds row after the client claims the gold locally.
+`set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
-`sell_to_npc` and `buy_from_npc` record player/NPC trade pressure and stock movement. `tick_npc_market` applies bounded price movement from stock plus rolling demand/supply scores. Player shop trades do not affect `npc_market_price`.
+Player market exchange reducers are locked down until inventory and spendable gold are server-authoritative. On connect, the module clears old `player_shop_listing`, `player_shop_proceeds`, and `player_shop_trade` rows so stale poisoned market state cannot be claimed.
 
-NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` lets the first caller claim market-admin rights, and `set_npc_market_item_base_price` changes a DB-owned base price after that. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are still computed from the market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
+`sell_to_npc` and `buy_from_npc` are currently no-ops, so clients cannot move shared NPC prices for free. `tick_npc_market` still maintains catalog rows, and connect-time sanitation resets old client-driven pressure/price drift back to base quotes.
 
-Example local calls after publishing the updated module:
+NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are still computed from the market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
+
+`upsert_game_config` accepts only known config keys (`tasks`, `playerLevel`) and validates bounded schemas before storing JSON. Existing invalid rows are reset to the built-in defaults on connect.
+
+Example local calls after adding your identity hex to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` and publishing the updated module:
 
 ```sh
 spacetime call -s local idle-wizard claim_npc_market_admin
@@ -116,6 +121,7 @@ The web client starts safely even before generated bindings exist. After `npm ru
 
 ```sql
 SELECT * FROM player
+SELECT * FROM player_gameplay_save
 SELECT * FROM leaderboard
 SELECT * FROM world_chat
 SELECT * FROM player_shop_listing
@@ -123,6 +129,6 @@ SELECT * FROM player_shop_proceeds
 SELECT * FROM npc_market_price
 ```
 
-The `player` row is treated as the source of truth on reconnect, then later local username edits are sent through `set_username`. Local generated gold totals are sent through `set_total_generated_gold`, and local task levels are sent through `set_player_level`. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.
+The `player` row is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals still call their shared reducer, but generated-gold leaderboard values stay locked at safe defaults until gold is server-authoritative. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.

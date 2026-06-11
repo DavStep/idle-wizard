@@ -70,8 +70,18 @@ export const Player = __t.object("Player", {
   createdAt: __t.timestamp(),
   lastSeenAt: __t.timestamp(),
   playerLevel: __t.u32(),
+  theme: __t.string(),
+  colorMode: __t.string(),
+  usernamePromptSeen: __t.bool(),
 });
 export type Player = __Infer<typeof Player>;
+
+export const PlayerGameplaySave = __t.object("PlayerGameplaySave", {
+  identity: __t.identity(),
+  saveJson: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerGameplaySave = __Infer<typeof PlayerGameplaySave>;
 
 export const PlayerShopListing = __t.object("PlayerShopListing", {
   listingKey: __t.string(),

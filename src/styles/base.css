@@ -40,6 +40,8 @@
   --style-log-font-size: var(--style-world-chat-popup-font-size);
   --style-log-line-height: var(--style-world-chat-popup-line-height);
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
+  --style-research-value-width: 84px;
+  --style-research-column-gap: 8px;
   --style-button-width: 100px;
   --style-room-edge: 27px;
   --style-room-chrome-edge: 16px;
@@ -121,27 +123,27 @@
   --style-resource-herb: oklch(75% 0.11 145);
 }
 
-:where([data-resource-color="mana"]) {
+:root [data-resource-color="mana"] {
   color: var(--style-resource-mana);
 }
 
-:where([data-resource-color="gold"]) {
+:root [data-resource-color="gold"] {
   color: var(--style-resource-gold);
 }
 
-:where([data-resource-color="crystal"]) {
+:root [data-resource-color="crystal"] {
   color: var(--style-resource-crystal);
 }
 
-:where([data-resource-color="seed"]) {
+:root [data-resource-color="seed"] {
   color: var(--style-resource-seed);
 }
 
-:where([data-resource-color="herb"]) {
+:root [data-resource-color="herb"] {
   color: var(--style-resource-herb);
 }
 
-:where(
+:root :where(
     [aria-disabled="true"],
     :disabled,
     .is-disabled,
@@ -151,7 +153,7 @@
     .is-unknown
   )
   :where([data-resource-color]),
-:where([data-resource-color]):where(
+:root :where([data-resource-color]):where(
     [aria-disabled="true"],
     :disabled,
     .is-disabled,
@@ -591,11 +593,11 @@ body {
 
 .research-page__row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 84px;
+  grid-template-columns: minmax(0, 1fr) minmax(var(--style-research-value-width), max-content);
   align-items: start;
   min-height: var(--style-research-row-height);
   clear: both;
-  column-gap: 0;
+  column-gap: var(--style-research-column-gap);
   overflow: visible;
   line-height: normal;
 }
@@ -1921,7 +1923,8 @@ div.workshop-page__discovery-row {
 
 .research-page__research-value {
   display: block;
-  width: 84px;
+  width: max-content;
+  min-width: var(--style-research-value-width);
   height: var(--style-research-row-height);
   min-height: var(--style-research-row-height);
   color: var(--style-muted);
@@ -1933,7 +1936,8 @@ div.workshop-page__discovery-row {
 .style-button.research-page__research-button {
   justify-self: end;
   float: none;
-  width: 84px;
+  width: max-content;
+  min-width: var(--style-research-value-width);
   height: var(--style-research-row-height);
   min-height: var(--style-research-row-height);
   padding: 0;

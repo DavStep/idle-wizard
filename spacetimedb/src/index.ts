@@ -1,17 +1,34 @@
+import { type Identity } from 'spacetimedb';
 import { schema, table, t, type ReducerCtx, type InferSchema } from 'spacetimedb/server';
 
 const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
-const MAX_PLAYER_LEVEL = 100_000;
+const DEFAULT_PLAYER_THEME = 'white';
+const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
+const MAX_REPORTED_PLAYER_LEVEL = 20;
+const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
+const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = false;
+const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
+const ENABLE_CLIENT_POTION_DISCOVERY = false;
+const ENABLE_PLAYER_SHOP_EXCHANGE = false;
+const ENABLE_NPC_MARKET_PRESSURE = false;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
+const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
+const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
+const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
 const MAX_RESEARCH_NAME_LENGTH = 80;
 const MAX_RESEARCH_ID_LENGTH = 96;
 const MAX_RESEARCH_LABEL_LENGTH = 80;
 const MAX_RESEARCH_GROUP_ID_LENGTH = 32;
-const WORLD_CHAT_HISTORY_LIMIT = 40;
+const WORLD_CHAT_HISTORY_LIMIT = 200;
 const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
 const MAX_PLAYER_SHOP_SLOTS = 5;
+const MAX_PLAYER_SHOP_LISTING_QUANTITY = 1_000;
+const MAX_PLAYER_SHOP_PRICE_GOLD = 1_000_000n;
+const PLAYER_SHOP_MAX_PRICE_MULTIPLIER_BPS = 50_000n;
+const MAX_PLAYER_SHOP_TRADE_TOTAL_GOLD = 10_000_000n;
+const MAX_PLAYER_SHOP_PROCEEDS_GOLD = 50_000_000n;
 const MAX_ITEM_KEY_LENGTH = 64;
 const MAX_ITEM_LABEL_LENGTH = 80;
 const MAX_ITEM_KIND_LENGTH = 24;
@@ -31,6 +48,24 @@ const NPC_MARKET_DEFAULT_CUSTOM_VOLATILITY_BPS = 800n;
 const MAX_RESEARCH_COST_GOLD = 1_000_000_000n;
 const MAX_GAME_CONFIG_KEY_LENGTH = 48;
 const MAX_GAME_CONFIG_JSON_LENGTH = 80_000;
+const MAX_GAME_CONFIG_LEVELS = 20;
+const MAX_GAME_CONFIG_TASKS_PER_LEVEL = 5;
+const MAX_GAME_CONFIG_TASK_QUANTITY = 1_000_000;
+const MAX_GAME_CONFIG_RESOURCE_LIMIT = 1_000_000;
+const MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH = 250_000;
+const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
+const RESERVED_USERNAMES = new Set(['admin', 'system']);
+const PLAYER_THEMES = new Set(['white', 'black']);
+const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
+
+// Fill this with owner SpacetimeDB identity hex strings before publishing a fresh DB.
+// Legacy npc_market_admin rows are audit/display only; they are not authorization.
+const NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST: string[] = [];
+const npcMarketAdminIdentityAllowlist = new Set(
+  NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST.map((identityHex) =>
+    normalizeIdentityHex(identityHex),
+  ).filter(Boolean),
+);
 
 const DEFAULT_TASKS_CONFIG_JSON = "{\"levels\":[{\"level\":1,\"tasks\":[{\"id\":\"level1-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":20},{\"id\":\"level1-sage-herb\",\"itemKey\":\"sageHerb\",\"quantity\":10},{\"id\":\"level1-mana-tonic\",\"itemKey\":\"manaTonic\",\"quantity\":2},{\"id\":\"level1-mint-seeds\",\"itemKey\":\"mintSeed\",\"quantity\":15},{\"id\":\"level1-mint-herb\",\"itemKey\":\"mintHerb\",\"quantity\":8}]},{\"level\":2,\"tasks\":[{\"id\":\"level2-nettle-seeds\",\"itemKey\":\"nettleSeed\",\"quantity\":35},{\"id\":\"level2-nettle-herb\",\"itemKey\":\"nettleHerb\",\"quantity\":18},{\"id\":\"level2-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":4},{\"id\":\"level2-lavender-seeds\",\"itemKey\":\"lavenderSeed\",\"quantity\":30},{\"id\":\"level2-calming-draught\",\"itemKey\":\"calmingDraught\",\"quantity\":3}]},{\"level\":3,\"tasks\":[{\"id\":\"level3-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":60},{\"id\":\"level3-mint-herb\",\"itemKey\":\"mintHerb\",\"quantity\":30},{\"id\":\"level3-minor-healing-potion\",\"itemKey\":\"minorHealingPotion\",\"quantity\":6},{\"id\":\"level3-briar-seeds\",\"itemKey\":\"briarSeed\",\"quantity\":45},{\"id\":\"level3-simple-antidote\",\"itemKey\":\"simpleAntidote\",\"quantity\":5}]},{\"level\":4,\"tasks\":[{\"id\":\"level4-lavender-herb\",\"itemKey\":\"lavenderHerb\",\"quantity\":42},{\"id\":\"level4-briar-herb\",\"itemKey\":\"briarHerb\",\"quantity\":38},{\"id\":\"level4-venom-draught\",\"itemKey\":\"venomDraught\",\"quantity\":7},{\"id\":\"level4-glowcap-seeds\",\"itemKey\":\"glowcapSeed\",\"quantity\":65},{\"id\":\"level4-briar-ward\",\"itemKey\":\"briarWard\",\"quantity\":6}]},{\"level\":5,\"tasks\":[{\"id\":\"level5-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":100},{\"id\":\"level5-glowcap-herb\",\"itemKey\":\"glowcapHerb\",\"quantity\":55},{\"id\":\"level5-lantern-tonic\",\"itemKey\":\"lanternTonic\",\"quantity\":9},{\"id\":\"level5-mandrake-seeds\",\"itemKey\":\"mandrakeSeed\",\"quantity\":80},{\"id\":\"level5-healing-potion\",\"itemKey\":\"healingPotion\",\"quantity\":8}]},{\"level\":6,\"tasks\":[{\"id\":\"level6-nettle-seeds\",\"itemKey\":\"nettleSeed\",\"quantity\":110},{\"id\":\"level6-mandrake-herb\",\"itemKey\":\"mandrakeHerb\",\"quantity\":65},{\"id\":\"level6-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":12},{\"id\":\"level6-sunroot-seeds\",\"itemKey\":\"sunrootSeed\",\"quantity\":90},{\"id\":\"level6-sunroot-stamina\",\"itemKey\":\"sunrootStamina\",\"quantity\":10}]},{\"level\":7,\"tasks\":[{\"id\":\"level7-moonflower-seeds\",\"itemKey\":\"moonflowerSeed\",\"quantity\":105},{\"id\":\"level7-moonflower-herb\",\"itemKey\":\"moonflowerHerb\",\"quantity\":75},{\"id\":\"level7-moonlit-focus\",\"itemKey\":\"moonlitFocus\",\"quantity\":12},{\"id\":\"level7-lavender-herb\",\"itemKey\":\"lavenderHerb\",\"quantity\":80},{\"id\":\"level7-calming-draught\",\"itemKey\":\"calmingDraught\",\"quantity\":14}]},{\"level\":8,\"tasks\":[{\"id\":\"level8-frostmoss-seeds\",\"itemKey\":\"frostmossSeed\",\"quantity\":125},{\"id\":\"level8-frostmoss-herb\",\"itemKey\":\"frostmossHerb\",\"quantity\":90},{\"id\":\"level8-frostmoss-cleanse\",\"itemKey\":\"frostmossCleanse\",\"quantity\":16},{\"id\":\"level8-briar-herb\",\"itemKey\":\"briarHerb\",\"quantity\":95},{\"id\":\"level8-briar-ward\",\"itemKey\":\"briarWard\",\"quantity\":15}]},{\"level\":9,\"tasks\":[{\"id\":\"level9-dreambell-seeds\",\"itemKey\":\"dreambellSeed\",\"quantity\":145},{\"id\":\"level9-dreambell-herb\",\"itemKey\":\"dreambellHerb\",\"quantity\":105},{\"id\":\"level9-sleep-draught\",\"itemKey\":\"sleepDraught\",\"quantity\":18},{\"id\":\"level9-mana-tonic\",\"itemKey\":\"manaTonic\",\"quantity\":25},{\"id\":\"level9-healing-potion\",\"itemKey\":\"healingPotion\",\"quantity\":18}]},{\"level\":10,\"tasks\":[{\"id\":\"level10-star-anise-seeds\",\"itemKey\":\"starAniseSeed\",\"quantity\":165},{\"id\":\"level10-star-anise-herb\",\"itemKey\":\"starAniseHerb\",\"quantity\":120},{\"id\":\"level10-star-luck-philtre\",\"itemKey\":\"starLuckPhiltre\",\"quantity\":20},{\"id\":\"level10-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":200},{\"id\":\"level10-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":24}]},{\"level\":11,\"tasks\":[{\"id\":\"level11-bloodrose-seeds\",\"itemKey\":\"bloodroseSeed\",\"quantity\":185},{\"id\":\"level11-bloodrose-herb\",\"itemKey\":\"bloodroseHerb\",\"quantity\":135},{\"id\":\"level11-elixir-of-life\",\"itemKey\":\"elixirOfLife\",\"quantity\":22},{\"id\":\"level11-moonlit-focus\",\"itemKey\":\"moonlitFocus\",\"quantity\":25},{\"id\":\"level11-simple-antidote\",\"itemKey\":\"simpleAntidote\",\"quantity\":28}]},{\"level\":12,\"tasks\":[{\"id\":\"level12-dragonpepper-seeds\",\"itemKey\":\"dragonpepperSeed\",\"quantity\":205},{\"id\":\"level12-dragonpepper-herb\",\"itemKey\":\"dragonpepperHerb\",\"quantity\":150},{\"id\":\"level12-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":24},{\"id\":\"level12-sunroot-stamina\",\"itemKey\":\"sunrootStamina\",\"quantity\":28},{\"id\":\"level12-frostmoss-cleanse\",\"itemKey\":\"frostmossCleanse\",\"quantity\":26}]},{\"level\":13,\"tasks\":[{\"id\":\"level13-glowcap-seeds\",\"itemKey\":\"glowcapSeed\",\"quantity\":230},{\"id\":\"level13-mandrake-herb\",\"itemKey\":\"mandrakeHerb\",\"quantity\":165},{\"id\":\"level13-deep-dream-vision\",\"itemKey\":\"deepDreamVision\",\"quantity\":26},{\"id\":\"level13-star-anise-herb\",\"itemKey\":\"starAniseHerb\",\"quantity\":160},{\"id\":\"level13-star-luck-philtre\",\"itemKey\":\"starLuckPhiltre\",\"quantity\":30}]},{\"level\":14,\"tasks\":[{\"id\":\"level14-briar-seeds\",\"itemKey\":\"briarSeed\",\"quantity\":250},{\"id\":\"level14-bloodrose-herb\",\"itemKey\":\"bloodroseHerb\",\"quantity\":180},{\"id\":\"level14-pact-ward\",\"itemKey\":\"pactWard\",\"quantity\":28},{\"id\":\"level14-venom-draught\",\"itemKey\":\"venomDraught\",\"quantity\":34},{\"id\":\"level14-briar-ward\",\"itemKey\":\"briarWard\",\"quantity\":32}]},{\"level\":15,\"tasks\":[{\"id\":\"level15-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":300},{\"id\":\"level15-mint-herb\",\"itemKey\":\"mintHerb\",\"quantity\":220},{\"id\":\"level15-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":40},{\"id\":\"level15-healing-potion\",\"itemKey\":\"healingPotion\",\"quantity\":38},{\"id\":\"level15-elixir-of-life\",\"itemKey\":\"elixirOfLife\",\"quantity\":34}]},{\"level\":16,\"tasks\":[{\"id\":\"level16-nettle-seeds\",\"itemKey\":\"nettleSeed\",\"quantity\":330},{\"id\":\"level16-lavender-herb\",\"itemKey\":\"lavenderHerb\",\"quantity\":240},{\"id\":\"level16-calming-draught\",\"itemKey\":\"calmingDraught\",\"quantity\":44},{\"id\":\"level16-sleep-draught\",\"itemKey\":\"sleepDraught\",\"quantity\":38},{\"id\":\"level16-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":36}]},{\"level\":17,\"tasks\":[{\"id\":\"level17-moonflower-seeds\",\"itemKey\":\"moonflowerSeed\",\"quantity\":360},{\"id\":\"level17-frostmoss-herb\",\"itemKey\":\"frostmossHerb\",\"quantity\":260},{\"id\":\"level17-moonlit-focus\",\"itemKey\":\"moonlitFocus\",\"quantity\":46},{\"id\":\"level17-frostmoss-cleanse\",\"itemKey\":\"frostmossCleanse\",\"quantity\":42},{\"id\":\"level17-deep-dream-vision\",\"itemKey\":\"deepDreamVision\",\"quantity\":38}]},{\"level\":18,\"tasks\":[{\"id\":\"level18-star-anise-seeds\",\"itemKey\":\"starAniseSeed\",\"quantity\":390},{\"id\":\"level18-dragonpepper-herb\",\"itemKey\":\"dragonpepperHerb\",\"quantity\":280},{\"id\":\"level18-star-luck-philtre\",\"itemKey\":\"starLuckPhiltre\",\"quantity\":48},{\"id\":\"level18-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":44},{\"id\":\"level18-pact-ward\",\"itemKey\":\"pactWard\",\"quantity\":40}]},{\"level\":19,\"tasks\":[{\"id\":\"level19-bloodrose-seeds\",\"itemKey\":\"bloodroseSeed\",\"quantity\":430},{\"id\":\"level19-bloodrose-herb\",\"itemKey\":\"bloodroseHerb\",\"quantity\":310},{\"id\":\"level19-elixir-of-life\",\"itemKey\":\"elixirOfLife\",\"quantity\":52},{\"id\":\"level19-deep-dream-vision\",\"itemKey\":\"deepDreamVision\",\"quantity\":46},{\"id\":\"level19-pact-ward\",\"itemKey\":\"pactWard\",\"quantity\":44}]},{\"level\":20,\"tasks\":[{\"id\":\"level20-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":500},{\"id\":\"level20-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":140},{\"id\":\"level20-dragonpepper-seeds\",\"itemKey\":\"dragonpepperSeed\",\"quantity\":460},{\"id\":\"level20-dragonpepper-herb\",\"itemKey\":\"dragonpepperHerb\",\"quantity\":340},{\"id\":\"level20-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":60}]}]}";
 const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = "{\"maxLevel\":20,\"mana\":{\"baseMaxManaCap\":50,\"maxManaCapPerLevel\":50,\"baseManaPerSecond\":1,\"manaPerSecondPerLevel\":1},\"milestones\":[{\"level\":1,\"maxGardenTiles\":2,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":2,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":3,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":5,\"maxGardenTiles\":5,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":8,\"maxGardenTiles\":7,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":10,\"maxGardenTiles\":8,\"maxCauldrons\":4,\"maxNpcMarketStands\":3,\"maxPlayerMarketStands\":3},{\"level\":13,\"maxGardenTiles\":9,\"maxCauldrons\":4,\"maxNpcMarketStands\":4,\"maxPlayerMarketStands\":4},{\"level\":17,\"maxGardenTiles\":10,\"maxCauldrons\":5,\"maxNpcMarketStands\":5,\"maxPlayerMarketStands\":5}]}";
@@ -171,41 +206,41 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockRecipe:dragonCourage': 4_100n,
   'unlockRecipe:deepDreamVision': 4_850n,
   'unlockRecipe:pactWard': 5_700n,
-  'automation:autoPlantTile:1': 50_000n,
-  'automation:autoPlantTile:2': 75_000n,
-  'automation:autoPlantTile:3': 100_000n,
-  'automation:autoPlantTile:4': 125_000n,
-  'automation:autoPlantTile:5': 150_000n,
-  'automation:autoPlantTile:6': 175_000n,
-  'automation:autoPlantTile:7': 200_000n,
-  'automation:autoPlantTile:8': 225_000n,
-  'automation:autoPlantTile:9': 250_000n,
-  'automation:autoPlantTile:10': 275_000n,
-  'automation:autoHarvestPlant:1': 75_000n,
-  'automation:autoHarvestPlant:2': 100_000n,
-  'automation:autoHarvestPlant:3': 125_000n,
-  'automation:autoHarvestPlant:4': 150_000n,
-  'automation:autoHarvestPlant:5': 175_000n,
-  'automation:autoHarvestPlant:6': 200_000n,
-  'automation:autoHarvestPlant:7': 225_000n,
-  'automation:autoHarvestPlant:8': 250_000n,
-  'automation:autoHarvestPlant:9': 275_000n,
-  'automation:autoHarvestPlant:10': 300_000n,
-  'automation:autoBrewCauldron:1': 100_000n,
-  'automation:autoBrewCauldron:2': 150_000n,
-  'automation:autoBrewCauldron:3': 200_000n,
-  'automation:autoBrewCauldron:4': 250_000n,
-  'automation:autoBrewCauldron:5': 300_000n,
-  'automation:autoBottleCauldron:1': 125_000n,
-  'automation:autoBottleCauldron:2': 175_000n,
-  'automation:autoBottleCauldron:3': 225_000n,
-  'automation:autoBottleCauldron:4': 275_000n,
-  'automation:autoBottleCauldron:5': 325_000n,
-  'automation:autoCollectCauldron:1': 150_000n,
-  'automation:autoCollectCauldron:2': 200_000n,
-  'automation:autoCollectCauldron:3': 250_000n,
-  'automation:autoCollectCauldron:4': 300_000n,
-  'automation:autoCollectCauldron:5': 350_000n,
+  'automation:autoPlantTile:1': 1n,
+  'automation:autoPlantTile:2': 2n,
+  'automation:autoPlantTile:3': 3n,
+  'automation:autoPlantTile:4': 4n,
+  'automation:autoPlantTile:5': 5n,
+  'automation:autoPlantTile:6': 6n,
+  'automation:autoPlantTile:7': 7n,
+  'automation:autoPlantTile:8': 8n,
+  'automation:autoPlantTile:9': 9n,
+  'automation:autoPlantTile:10': 10n,
+  'automation:autoHarvestPlant:1': 1n,
+  'automation:autoHarvestPlant:2': 2n,
+  'automation:autoHarvestPlant:3': 3n,
+  'automation:autoHarvestPlant:4': 4n,
+  'automation:autoHarvestPlant:5': 5n,
+  'automation:autoHarvestPlant:6': 6n,
+  'automation:autoHarvestPlant:7': 7n,
+  'automation:autoHarvestPlant:8': 8n,
+  'automation:autoHarvestPlant:9': 9n,
+  'automation:autoHarvestPlant:10': 10n,
+  'automation:autoBrewCauldron:1': 1n,
+  'automation:autoBrewCauldron:2': 2n,
+  'automation:autoBrewCauldron:3': 3n,
+  'automation:autoBrewCauldron:4': 4n,
+  'automation:autoBrewCauldron:5': 5n,
+  'automation:autoBottleCauldron:1': 1n,
+  'automation:autoBottleCauldron:2': 2n,
+  'automation:autoBottleCauldron:3': 3n,
+  'automation:autoBottleCauldron:4': 4n,
+  'automation:autoBottleCauldron:5': 5n,
+  'automation:autoCollectCauldron:1': 1n,
+  'automation:autoCollectCauldron:2': 2n,
+  'automation:autoCollectCauldron:3': 3n,
+  'automation:autoCollectCauldron:4': 4n,
+  'automation:autoCollectCauldron:5': 5n,
 };
 
 const potionCatalog = [
@@ -341,6 +376,20 @@ const spacetimedb = schema({
       createdAt: t.timestamp(),
       lastSeenAt: t.timestamp(),
       playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
+      theme: t.string().default(DEFAULT_PLAYER_THEME),
+      colorMode: t.string().default(DEFAULT_PLAYER_COLOR_MODE),
+      usernamePromptSeen: t.bool().default(false),
+    },
+  ),
+  playerGameplaySave: table(
+    {
+      name: 'player_gameplay_save',
+      public: true,
+    },
+    {
+      identity: t.identity().primaryKey(),
+      saveJson: t.string(),
+      updatedAt: t.timestamp(),
     },
   ),
   leaderboard: table(
@@ -530,33 +579,129 @@ const spacetimedb = schema({
 type IdleWizardSchema = InferSchema<typeof spacetimedb>;
 type IdleWizardReducerCtx = ReducerCtx<IdleWizardSchema>;
 
+function normalizeIdentityHex(identityHex: string): string {
+  return String(identityHex ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/^0x/, '');
+}
+
+function getIdentityHex(identity: { toHexString: () => string }): string {
+  return normalizeIdentityHex(identity.toHexString());
+}
+
+function isReservedUsername(username: string): boolean {
+  return RESERVED_USERNAMES.has(username.toLowerCase());
+}
+
+function stripUnsafeTextControls(value: string): string {
+  return value.replace(
+    /[\u0000-\u001f\u007f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
+    '',
+  );
+}
+
 function normalizeUsername(username: string): string {
-  const value = String(username ?? '')
+  const value = stripUnsafeTextControls(String(username ?? ''))
     .trim()
     .replace(/\s+/g, ' ');
+  const normalizedUsername = (value || DEFAULT_USERNAME).slice(0, MAX_USERNAME_LENGTH);
 
-  return (value || DEFAULT_USERNAME).slice(0, MAX_USERNAME_LENGTH);
+  if (isReservedUsername(normalizedUsername)) {
+    return DEFAULT_USERNAME;
+  }
+
+  return normalizedUsername;
+}
+
+function normalizePlayerTheme(theme: string): string {
+  const value = String(theme ?? '').trim();
+  return PLAYER_THEMES.has(value) ? value : DEFAULT_PLAYER_THEME;
+}
+
+function normalizePlayerColorMode(colorMode: string): string {
+  const value = String(colorMode ?? '').trim();
+  return PLAYER_COLOR_MODES.has(value) ? value : DEFAULT_PLAYER_COLOR_MODE;
+}
+
+function assertUsernameAvailableForIdentity(
+  ctx: IdleWizardReducerCtx,
+  username: string,
+  identity: Identity,
+) {
+  const requestedUsername = username.toLowerCase();
+
+  if (requestedUsername === DEFAULT_USERNAME) {
+    return;
+  }
+
+  for (const player of ctx.db.player.iter()) {
+    if (
+      player.username.toLowerCase() === requestedUsername &&
+      !player.identity.isEqual(identity)
+    ) {
+      throw new Error('Username is already taken.');
+    }
+  }
+}
+
+function assertUsernameAvailable(ctx: IdleWizardReducerCtx, username: string) {
+  assertUsernameAvailableForIdentity(ctx, username, ctx.sender);
 }
 
 function normalizePlayerLevel(playerLevel: unknown): number {
+  if (!ENABLE_CLIENT_REPORTED_PLAYER_LEVEL) {
+    return DEFAULT_PLAYER_LEVEL;
+  }
+
   const value = Math.floor(Number(playerLevel));
 
   if (!Number.isFinite(value) || value < DEFAULT_PLAYER_LEVEL) {
     return DEFAULT_PLAYER_LEVEL;
   }
 
-  return Math.min(value, MAX_PLAYER_LEVEL);
+  return Math.min(value, MAX_REPORTED_PLAYER_LEVEL);
+}
+
+function validateAdminPlayerLevel(playerLevel: unknown): number {
+  const value = Math.floor(Number(playerLevel));
+
+  if (
+    !Number.isInteger(value) ||
+    value < DEFAULT_PLAYER_LEVEL ||
+    value > MAX_REPORTED_PLAYER_LEVEL
+  ) {
+    throw new Error('Invalid player level.');
+  }
+
+  return value;
+}
+
+function findPlayerByIdentityHex(ctx: IdleWizardReducerCtx, identityHex: string) {
+  const safeIdentityHex = normalizeIdentityHex(identityHex);
+
+  if (!safeIdentityHex) {
+    throw new Error('Player identity is required.');
+  }
+
+  for (const player of ctx.db.player.iter()) {
+    if (getIdentityHex(player.identity) === safeIdentityHex) {
+      return player;
+    }
+  }
+
+  throw new Error('Player not found.');
 }
 
 function normalizeWorldChatMessage(body: string): string {
-  return String(body ?? '')
+  return stripUnsafeTextControls(String(body ?? ''))
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, MAX_WORLD_CHAT_MESSAGE_LENGTH);
 }
 
 function normalizeResearchName(researchName: string): string {
-  return String(researchName ?? '')
+  return stripUnsafeTextControls(String(researchName ?? ''))
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, MAX_RESEARCH_NAME_LENGTH);
@@ -569,7 +714,7 @@ function normalizeResearchId(researchId: string): string {
 }
 
 function normalizeResearchLabel(label: string): string {
-  return String(label ?? '')
+  return stripUnsafeTextControls(String(label ?? ''))
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, MAX_RESEARCH_LABEL_LENGTH);
@@ -582,10 +727,57 @@ function normalizeResearchGroupId(groupId: string): string {
 }
 
 function normalizePlayerShopText(value: string, maxLength: number): string {
-  return String(value ?? '')
+  return stripUnsafeTextControls(String(value ?? ''))
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, maxLength);
+}
+
+function getPlayerShopCatalogItem(itemKey: string) {
+  const safeItemKey = normalizePlayerShopText(itemKey, MAX_ITEM_KEY_LENGTH);
+  const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
+
+  if (!catalogItem) {
+    throw new Error('Unknown player shop item.');
+  }
+
+  return catalogItem;
+}
+
+function validatePlayerShopQuantity(quantity: number): number {
+  const safeQuantity = Math.floor(Number(quantity));
+
+  if (
+    !Number.isInteger(safeQuantity) ||
+    safeQuantity < 1 ||
+    safeQuantity > MAX_PLAYER_SHOP_LISTING_QUANTITY
+  ) {
+    throw new Error('Invalid player shop quantity.');
+  }
+
+  return safeQuantity;
+}
+
+function getMaxPlayerShopPriceGold(item: (typeof npcMarketCatalog)[number]): bigint {
+  return clampBigInt(
+    ceilDiv(item.basePriceGold * PLAYER_SHOP_MAX_PRICE_MULTIPLIER_BPS, 10_000n),
+    1n,
+    MAX_PLAYER_SHOP_PRICE_GOLD,
+  );
+}
+
+function validatePlayerShopPriceGold(
+  priceGold: bigint | number,
+  item: (typeof npcMarketCatalog)[number],
+): bigint {
+  const safePriceGold = toBigInt(priceGold);
+  const maxPriceGold = getMaxPlayerShopPriceGold(item);
+
+  if (safePriceGold < 1n || safePriceGold > maxPriceGold) {
+    throw new Error('Invalid player shop price.');
+  }
+
+  return safePriceGold;
 }
 
 function normalizePotionKey(potionKey: string): string {
@@ -637,6 +829,18 @@ function validateNpcMarketQuantity(quantity: number): number {
   }
 
   return safeQuantity;
+}
+
+function getBoundedNpcMarketTradeQuantity(
+  score: bigint,
+  requestedQuantity: bigint,
+  targetStock: bigint,
+): bigint {
+  if (score >= targetStock) {
+    return 0n;
+  }
+
+  return clampBigInt(requestedQuantity, 0n, targetStock - score);
 }
 
 function getNpcMarketCatalogItem(itemKey: string) {
@@ -763,25 +967,271 @@ function normalizeGameConfigKey(configKey: string): string {
     .slice(0, MAX_GAME_CONFIG_KEY_LENGTH);
 }
 
-function validateGameConfigJson(configJson: string): string {
+function validateGameConfigJson(configKey: string, configJson: string): string {
   const value = String(configJson ?? '').trim();
 
   if (!value || value.length > MAX_GAME_CONFIG_JSON_LENGTH) {
     throw new Error('Invalid game config JSON length.');
   }
 
+  let parsedConfig: unknown;
+
   try {
-    JSON.parse(value);
+    parsedConfig = JSON.parse(value);
   } catch {
     throw new Error('Invalid game config JSON.');
+  }
+
+  validateGameConfigValue(configKey, parsedConfig);
+
+  return value;
+}
+
+function validatePlayerGameplaySaveJson(saveJson: string): string {
+  const value = String(saveJson ?? '').trim();
+
+  if (!value || value.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
+    throw new Error('Invalid player save JSON length.');
+  }
+
+  let parsedSave: unknown;
+
+  try {
+    parsedSave = JSON.parse(value);
+  } catch {
+    throw new Error('Invalid player save JSON.');
+  }
+
+  if (!parsedSave || typeof parsedSave !== 'object') {
+    throw new Error('Invalid player save value.');
   }
 
   return value;
 }
 
-function normalizeGameConfigJsonOrDefault(configJson: string, fallbackJson: string): string {
+function validateGameConfigValue(configKey: string, value: unknown) {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Invalid game config value.');
+  }
+
+  if (configKey === 'tasks') {
+    validateTasksGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'playerLevel') {
+    validatePlayerLevelGameConfig(value);
+    return;
+  }
+
+  throw new Error('Unknown game config key.');
+}
+
+function validateTasksGameConfig(value: unknown) {
+  const levels = (value as { levels?: unknown }).levels;
+
+  if (
+    !Array.isArray(levels) ||
+    levels.length < 1 ||
+    levels.length > MAX_GAME_CONFIG_LEVELS
+  ) {
+    throw new Error('Invalid tasks config levels.');
+  }
+
+  const seenTaskIds = new Set<string>();
+
+  levels.forEach((levelConfig, levelIndex) => {
+    const level = levelConfig as { level?: unknown; tasks?: unknown };
+
+    if (level.level !== levelIndex + 1 || !Array.isArray(level.tasks)) {
+      throw new Error('Invalid tasks config level.');
+    }
+
+    if (level.tasks.length !== MAX_GAME_CONFIG_TASKS_PER_LEVEL) {
+      throw new Error('Invalid tasks config task count.');
+    }
+
+    for (const taskConfig of level.tasks) {
+      const task = taskConfig as {
+        id?: unknown;
+        itemKey?: unknown;
+        quantity?: unknown;
+      };
+      const taskId = normalizeResearchId(String(task.id ?? ''));
+      const itemKey = normalizeNpcMarketItemKey(String(task.itemKey ?? ''));
+      const quantity = Number(task.quantity);
+
+      if (!taskId || seenTaskIds.has(taskId)) {
+        throw new Error('Invalid tasks config task id.');
+      }
+
+      if (!npcMarketCatalogByItemKey.has(itemKey)) {
+        throw new Error('Invalid tasks config item.');
+      }
+
+      if (
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > MAX_GAME_CONFIG_TASK_QUANTITY
+      ) {
+        throw new Error('Invalid tasks config quantity.');
+      }
+
+      seenTaskIds.add(taskId);
+    }
+  });
+}
+
+function validatePlayerLevelGameConfig(value: unknown) {
+  const config = value as {
+    maxLevel?: unknown;
+    mana?: unknown;
+    milestones?: unknown;
+    levels?: unknown;
+  };
+  const maxLevel = Number(config.maxLevel);
+  const milestones = config.milestones ?? config.levels;
+
+  if (
+    !Number.isInteger(maxLevel) ||
+    maxLevel < 1 ||
+    maxLevel > MAX_GAME_CONFIG_LEVELS ||
+    !Array.isArray(milestones) ||
+    milestones.length < 1 ||
+    milestones.length > MAX_GAME_CONFIG_LEVELS
+  ) {
+    throw new Error('Invalid player level config.');
+  }
+
+  validatePlayerLevelManaConfig(config.mana);
+
+  let previousLevel = 0;
+  let previousGardenTiles = 0;
+  let previousCauldrons = 0;
+  let previousNpcMarketStands = 0;
+  let previousPlayerMarketStands = 0;
+
+  for (const milestoneConfig of milestones) {
+    const milestone = milestoneConfig as Record<string, unknown>;
+    const level = Number(milestone.level);
+    const maxGardenTiles = Number(milestone.maxGardenTiles ?? previousGardenTiles);
+    const maxCauldrons = Number(milestone.maxCauldrons ?? previousCauldrons);
+    const maxNpcMarketStands = Number(
+      milestone.maxNpcMarketStands ?? milestone.maxShopSlots ?? previousNpcMarketStands,
+    );
+    const maxPlayerMarketStands = Number(
+      milestone.maxPlayerMarketStands ?? milestone.maxShopSlots ?? previousPlayerMarketStands,
+    );
+
+    if (
+      !Number.isInteger(level) ||
+      level <= previousLevel ||
+      level > maxLevel ||
+      !isNonDecreasingBoundedInteger(maxGardenTiles, previousGardenTiles) ||
+      !isNonDecreasingBoundedInteger(maxCauldrons, previousCauldrons) ||
+      !isNonDecreasingBoundedInteger(maxNpcMarketStands, previousNpcMarketStands) ||
+      !isNonDecreasingBoundedInteger(maxPlayerMarketStands, previousPlayerMarketStands)
+    ) {
+      throw new Error('Invalid player level milestone.');
+    }
+
+    validateStringList(milestone.unlocks);
+    validateStringList(
+      milestone.researchUnlocks ??
+        milestone.allowsResearch ??
+        milestone.allowsResearching,
+    );
+
+    previousLevel = level;
+    previousGardenTiles = maxGardenTiles;
+    previousCauldrons = maxCauldrons;
+    previousNpcMarketStands = maxNpcMarketStands;
+    previousPlayerMarketStands = maxPlayerMarketStands;
+  }
+}
+
+function validatePlayerLevelManaConfig(value: unknown) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  const mana = value as Record<string, unknown>;
+
+  for (const key of [
+    'baseMaxManaCap',
+    'maxManaCapPerLevel',
+    'baseManaPerSecond',
+    'manaPerSecondPerLevel',
+  ]) {
+    const amount = Number(mana[key]);
+
+    if (
+      !Number.isFinite(amount) ||
+      amount < 0 ||
+      amount > MAX_GAME_CONFIG_RESOURCE_LIMIT
+    ) {
+      throw new Error('Invalid player level mana config.');
+    }
+  }
+}
+
+function validateStringList(value: unknown) {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (!Array.isArray(value) || value.length > MAX_GAME_CONFIG_LEVELS) {
+    throw new Error('Invalid string list.');
+  }
+
+  for (const item of value) {
+    if (typeof item !== 'string' || stripUnsafeTextControls(item).length > 80) {
+      throw new Error('Invalid string list item.');
+    }
+  }
+}
+
+function isNonDecreasingBoundedInteger(value: number, previousValue: number): boolean {
+  return (
+    Number.isInteger(value) &&
+    value >= previousValue &&
+    value <= MAX_GAME_CONFIG_RESOURCE_LIMIT
+  );
+}
+
+function getLeaderboardTotalIncomeCap(playerLevel: number): bigint {
+  if (!ENABLE_CLIENT_REPORTED_TOTAL_INCOME) {
+    return 0n;
+  }
+
+  return BigInt(normalizePlayerLevel(playerLevel)) * LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL;
+}
+
+function clampLeaderboardTotalIncome(totalIncome: bigint, playerLevel: number): bigint {
+  return clampBigInt(totalIncome, 0n, getLeaderboardTotalIncomeCap(playerLevel));
+}
+
+function normalizeReportedLeaderboardTotalIncome(
+  totalGeneratedGold: bigint,
+  playerLevel: number,
+): bigint | null {
+  const safeTotalGeneratedGold = toBigInt(totalGeneratedGold);
+  const maxTotalIncome = getLeaderboardTotalIncomeCap(playerLevel);
+
+  if (safeTotalGeneratedGold > maxTotalIncome) {
+    return null;
+  }
+
+  return safeTotalGeneratedGold;
+}
+
+function normalizeGameConfigJsonOrDefault(
+  configKey: string,
+  configJson: string,
+  fallbackJson: string,
+): string {
   try {
-    return validateGameConfigJson(configJson);
+    return validateGameConfigJson(configKey, configJson);
   } catch {
     return fallbackJson;
   }
@@ -1126,6 +1576,7 @@ function ensureGameConfig(
 
   if (existingConfig) {
     const configJson = normalizeGameConfigJsonOrDefault(
+      catalogConfig.configKey,
       existingConfig.configJson,
       catalogConfig.configJson,
     );
@@ -1228,19 +1679,121 @@ function applyNpcMarketTick(ctx: IdleWizardReducerCtx, row: any) {
 function applyDueNpcMarketTicks(ctx: IdleWizardReducerCtx) {
   ensureNpcMarketCatalog(ctx);
 
+  if (!ENABLE_NPC_MARKET_PRESSURE) {
+    resetNpcMarketRows(ctx);
+    return;
+  }
+
   for (const row of ctx.db.npcMarketPrice.iter()) {
     applyNpcMarketTick(ctx, row);
   }
 }
 
+function resetNpcMarketRows(ctx: IdleWizardReducerCtx) {
+  for (const row of ctx.db.npcMarketPrice.iter()) {
+    const targetStock = toBigInt(row.targetStock);
+    const basePriceGold = toBigInt(row.basePriceGold);
+    const resetRow = getNpcMarketRowWithQuotes(row, basePriceGold);
+
+    if (
+      row.marketPriceGold === resetRow.marketPriceGold &&
+      row.npcBuyPriceGold === resetRow.npcBuyPriceGold &&
+      row.npcSellPriceGold === resetRow.npcSellPriceGold &&
+      row.npcStock === targetStock &&
+      row.demandScore === 0n &&
+      row.supplyScore === 0n
+    ) {
+      continue;
+    }
+
+    ctx.db.npcMarketPrice.itemKey.update({
+      ...resetRow,
+      npcStock: targetStock,
+      demandScore: 0n,
+      supplyScore: 0n,
+      updatedAt: ctx.timestamp,
+      lastTickAt: ctx.timestamp,
+    });
+  }
+}
+
+function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
+  for (const player of ctx.db.player.iter()) {
+    const username = normalizeUsername(player.username);
+    const playerLevel = normalizePlayerLevel(player.playerLevel);
+    const theme = normalizePlayerTheme(player.theme);
+    const colorMode = normalizePlayerColorMode(player.colorMode);
+    const usernamePromptSeen = Boolean(player.usernamePromptSeen);
+
+    if (
+      player.username === username &&
+      player.playerLevel === playerLevel &&
+      player.theme === theme &&
+      player.colorMode === colorMode &&
+      player.usernamePromptSeen === usernamePromptSeen
+    ) {
+      continue;
+    }
+
+    ctx.db.player.identity.update({
+      ...player,
+      username,
+      playerLevel,
+      theme,
+      colorMode,
+      usernamePromptSeen,
+      lastSeenAt: ctx.timestamp,
+    });
+  }
+}
+
+function sanitizeLeaderboardRows(ctx: IdleWizardReducerCtx) {
+  for (const entry of ctx.db.leaderboard.iter()) {
+    const username = normalizeUsername(entry.username);
+    const playerLevel = normalizePlayerLevel(entry.playerLevel);
+    const totalIncome = clampLeaderboardTotalIncome(entry.totalIncome, playerLevel);
+
+    if (
+      entry.username === username &&
+      entry.playerLevel === playerLevel &&
+      entry.totalIncome === totalIncome
+    ) {
+      continue;
+    }
+
+    ctx.db.leaderboard.identity.update({
+      ...entry,
+      username,
+      playerLevel,
+      totalIncome,
+      updatedAt: ctx.timestamp,
+    });
+  }
+}
+
+function deleteAllPotionDiscoveries(ctx: IdleWizardReducerCtx) {
+  for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
+    ctx.db.potionRecipeDiscovery.delete(discovery);
+  }
+}
+
 function ensurePlayer(ctx: IdleWizardReducerCtx) {
   const existingPlayer = ctx.db.player.identity.find(ctx.sender);
-  const username = existingPlayer?.username ?? DEFAULT_USERNAME;
+  const username = normalizeUsername(existingPlayer?.username ?? DEFAULT_USERNAME);
+  const theme = normalizePlayerTheme(existingPlayer?.theme ?? DEFAULT_PLAYER_THEME);
+  const colorMode = normalizePlayerColorMode(
+    existingPlayer?.colorMode ?? DEFAULT_PLAYER_COLOR_MODE,
+  );
+  const usernamePromptSeen = Boolean(existingPlayer?.usernamePromptSeen);
 
   if (existingPlayer) {
     return ctx.db.player.identity.update({
       ...existingPlayer,
+      username,
       playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
+      theme,
+      colorMode,
+      usernamePromptSeen,
       connected: true,
       lastSeenAt: ctx.timestamp,
     });
@@ -1250,6 +1803,9 @@ function ensurePlayer(ctx: IdleWizardReducerCtx) {
     identity: ctx.sender,
     username,
     playerLevel: DEFAULT_PLAYER_LEVEL,
+    theme: DEFAULT_PLAYER_THEME,
+    colorMode: DEFAULT_PLAYER_COLOR_MODE,
+    usernamePromptSeen: false,
     connected: true,
     createdAt: ctx.timestamp,
     lastSeenAt: ctx.timestamp,
@@ -1263,12 +1819,16 @@ function ensureLeaderboardEntry(
 ) {
   const existingEntry = ctx.db.leaderboard.identity.find(ctx.sender);
   const safePlayerLevel = normalizePlayerLevel(playerLevel);
+  const safeTotalIncome = existingEntry
+    ? clampLeaderboardTotalIncome(existingEntry.totalIncome, safePlayerLevel)
+    : 0n;
 
   if (existingEntry) {
     return ctx.db.leaderboard.identity.update({
       ...existingEntry,
       username,
       playerLevel: safePlayerLevel,
+      totalIncome: safeTotalIncome,
       updatedAt: ctx.timestamp,
     });
   }
@@ -1280,6 +1840,47 @@ function ensureLeaderboardEntry(
     totalIncome: 0n,
     updatedAt: ctx.timestamp,
   });
+}
+
+function assertWorldChatRateLimit(ctx: IdleWizardReducerCtx) {
+  const windowStartMicros =
+    ctx.timestamp.microsSinceUnixEpoch - WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS;
+  let sentInWindow = 0;
+  let globalSentInWindow = 0;
+
+  for (const row of ctx.db.worldChat.iter()) {
+    if (row.sentAt.microsSinceUnixEpoch < windowStartMicros) {
+      continue;
+    }
+
+    globalSentInWindow += 1;
+
+    if (row.senderIdentity.isEqual(ctx.sender)) {
+      sentInWindow += 1;
+    }
+  }
+
+  if (sentInWindow >= WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES) {
+    throw new Error('World chat is rate limited.');
+  }
+
+  if (globalSentInWindow >= WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES) {
+    throw new Error('World chat is globally rate limited.');
+  }
+}
+
+function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
+  for (const listing of Array.from(ctx.db.playerShopListing.iter())) {
+    ctx.db.playerShopListing.delete(listing);
+  }
+
+  for (const proceeds of Array.from(ctx.db.playerShopProceeds.iter())) {
+    ctx.db.playerShopProceeds.delete(proceeds);
+  }
+
+  for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
+    ctx.db.playerShopTrade.delete(trade);
+  }
 }
 
 function pruneWorldChat(ctx: IdleWizardReducerCtx) {
@@ -1307,6 +1908,16 @@ function pruneWorldChat(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function hasWorldChatBodyForSender(ctx: IdleWizardReducerCtx, body: string): boolean {
+  for (const row of ctx.db.worldChat.iter()) {
+    if (row.username === 'system' && row.senderIdentity.isEqual(ctx.sender) && row.body === body) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
   const rows = Array.from(ctx.db.playerShopTrade.iter()).sort((left, right) => {
     const leftTradedAt = left.tradedAt.microsSinceUnixEpoch;
@@ -1332,14 +1943,16 @@ function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
   }
 }
 
-function hasNpcMarketAdmin(ctx: IdleWizardReducerCtx): boolean {
-  return Array.from(ctx.db.npcMarketAdmin.iter()).length > 0;
+function isConfiguredNpcMarketAdmin(ctx: IdleWizardReducerCtx): boolean {
+  return npcMarketAdminIdentityAllowlist.has(getIdentityHex(ctx.sender));
 }
 
 function assertGameConfigAdmin(ctx: IdleWizardReducerCtx) {
-  if (!ctx.db.npcMarketAdmin.identity.find(ctx.sender)) {
-    throw new Error('Game config requires admin.');
+  if (isConfiguredNpcMarketAdmin(ctx)) {
+    return;
   }
+
+  throw new Error('Game config requires admin.');
 }
 
 function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
@@ -1347,10 +1960,18 @@ function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
 }
 
 export const onConnect = spacetimedb.clientConnected((ctx) => {
+  sanitizeSharedPlayerRows(ctx);
+  sanitizeLeaderboardRows(ctx);
+  if (!ENABLE_CLIENT_POTION_DISCOVERY) {
+    deleteAllPotionDiscoveries(ctx);
+  }
   const player = ensurePlayer(ctx);
   ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
   ensureResearchConfigCatalog(ctx);
   ensureGameConfigCatalog(ctx);
+  if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
+    deleteAllPlayerShopState(ctx);
+  }
   applyDueNpcMarketTicks(ctx);
 });
 
@@ -1369,6 +1990,8 @@ export const onDisconnect = spacetimedb.clientDisconnected((ctx) => {
 
 export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, { username }) => {
   const normalizedUsername = normalizeUsername(username);
+  assertUsernameAvailable(ctx, normalizedUsername);
+
   const existingPlayer = ctx.db.player.identity.find(ctx.sender);
   let player;
 
@@ -1377,6 +2000,11 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       ...existingPlayer,
       username: normalizedUsername,
       playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
+      theme: normalizePlayerTheme(existingPlayer.theme),
+      colorMode: normalizePlayerColorMode(existingPlayer.colorMode),
+      usernamePromptSeen:
+        Boolean(existingPlayer.usernamePromptSeen) ||
+        normalizedUsername !== DEFAULT_USERNAME,
       lastSeenAt: ctx.timestamp,
     });
   } else {
@@ -1384,6 +2012,9 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       identity: ctx.sender,
       username: normalizedUsername,
       playerLevel: DEFAULT_PLAYER_LEVEL,
+      theme: DEFAULT_PLAYER_THEME,
+      colorMode: DEFAULT_PLAYER_COLOR_MODE,
+      usernamePromptSeen: normalizedUsername !== DEFAULT_USERNAME,
       connected: true,
       createdAt: ctx.timestamp,
       lastSeenAt: ctx.timestamp,
@@ -1392,6 +2023,142 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
 
   ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
 });
+
+export const set_player_profile = spacetimedb.reducer(
+  {
+    username: t.string(),
+    theme: t.string(),
+    colorMode: t.string(),
+    usernamePromptSeen: t.bool(),
+  },
+  (ctx, { username, theme, colorMode, usernamePromptSeen }) => {
+    const normalizedUsername = normalizeUsername(username);
+    assertUsernameAvailable(ctx, normalizedUsername);
+
+    const safeTheme = normalizePlayerTheme(theme);
+    const safeColorMode = normalizePlayerColorMode(colorMode);
+    const safeUsernamePromptSeen =
+      Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
+    const existingPlayer = ctx.db.player.identity.find(ctx.sender);
+    let player;
+
+    if (existingPlayer) {
+      player = ctx.db.player.identity.update({
+        ...existingPlayer,
+        username: normalizedUsername,
+        playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
+        theme: safeTheme,
+        colorMode: safeColorMode,
+        usernamePromptSeen: safeUsernamePromptSeen,
+        lastSeenAt: ctx.timestamp,
+      });
+    } else {
+      player = ctx.db.player.insert({
+        identity: ctx.sender,
+        username: normalizedUsername,
+        playerLevel: DEFAULT_PLAYER_LEVEL,
+        theme: safeTheme,
+        colorMode: safeColorMode,
+        usernamePromptSeen: safeUsernamePromptSeen,
+        connected: true,
+        createdAt: ctx.timestamp,
+        lastSeenAt: ctx.timestamp,
+      });
+    }
+
+    ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
+  },
+);
+
+export const set_admin_player_data = spacetimedb.reducer(
+  {
+    identityHex: t.string(),
+    username: t.string(),
+    playerLevel: t.u32(),
+    totalIncome: t.u64(),
+    theme: t.string(),
+    colorMode: t.string(),
+    usernamePromptSeen: t.bool(),
+  },
+  (
+    ctx,
+    {
+      identityHex,
+      username,
+      playerLevel,
+      totalIncome,
+      theme,
+      colorMode,
+      usernamePromptSeen,
+    },
+  ) => {
+    assertGameConfigAdmin(ctx);
+
+    const player = findPlayerByIdentityHex(ctx, identityHex);
+    const normalizedUsername = normalizeUsername(username);
+    const safePlayerLevel = validateAdminPlayerLevel(playerLevel);
+    const safeTotalIncome = toBigInt(totalIncome);
+    const safeTheme = normalizePlayerTheme(theme);
+    const safeColorMode = normalizePlayerColorMode(colorMode);
+    const safeUsernamePromptSeen =
+      Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
+
+    assertUsernameAvailableForIdentity(ctx, normalizedUsername, player.identity);
+
+    const nextPlayer = ctx.db.player.identity.update({
+      ...player,
+      username: normalizedUsername,
+      playerLevel: safePlayerLevel,
+      theme: safeTheme,
+      colorMode: safeColorMode,
+      usernamePromptSeen: safeUsernamePromptSeen,
+      lastSeenAt: ctx.timestamp,
+    });
+
+    const existingEntry = ctx.db.leaderboard.identity.find(player.identity);
+
+    if (existingEntry) {
+      ctx.db.leaderboard.identity.update({
+        ...existingEntry,
+        username: nextPlayer.username,
+        playerLevel: nextPlayer.playerLevel,
+        totalIncome: safeTotalIncome,
+        updatedAt: ctx.timestamp,
+      });
+      return;
+    }
+
+    ctx.db.leaderboard.insert({
+      identity: nextPlayer.identity,
+      username: nextPlayer.username,
+      playerLevel: nextPlayer.playerLevel,
+      totalIncome: safeTotalIncome,
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const set_player_gameplay_save = spacetimedb.reducer(
+  { saveJson: t.string() },
+  (ctx, { saveJson }) => {
+    const safeSaveJson = validatePlayerGameplaySaveJson(saveJson);
+    ensurePlayer(ctx);
+
+    const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender);
+    const nextSave = {
+      identity: ctx.sender,
+      saveJson: safeSaveJson,
+      updatedAt: ctx.timestamp,
+    };
+
+    if (existingSave) {
+      ctx.db.playerGameplaySave.identity.update(nextSave);
+      return;
+    }
+
+    ctx.db.playerGameplaySave.insert(nextSave);
+  },
+);
 
 export const set_player_level = spacetimedb.reducer(
   { playerLevel: t.u32() },
@@ -1411,13 +2178,74 @@ export const set_player_level = spacetimedb.reducer(
   },
 );
 
+export const announce_level_up = spacetimedb.reducer(
+  { playerLevel: t.u32() },
+  (ctx, { playerLevel }) => {
+    const safePlayerLevel = normalizePlayerLevel(playerLevel);
+
+    if (safePlayerLevel <= DEFAULT_PLAYER_LEVEL) {
+      return;
+    }
+
+    const player = ensurePlayer(ctx);
+    const alreadyAtLevel = safePlayerLevel <= player.playerLevel;
+    const nextPlayer =
+      alreadyAtLevel
+        ? player
+        : ctx.db.player.identity.update({
+            ...player,
+            playerLevel: safePlayerLevel,
+            lastSeenAt: ctx.timestamp,
+          });
+    ensureLeaderboardEntry(ctx, nextPlayer.username, nextPlayer.playerLevel);
+
+    const body = `${nextPlayer.username} reached level ${safePlayerLevel}`;
+    if (alreadyAtLevel && hasWorldChatBodyForSender(ctx, body)) {
+      return;
+    }
+
+    ctx.db.worldChat.insert({
+      messageId: ctx.newUuidV7(),
+      senderIdentity: ctx.sender,
+      username: 'system',
+      playerLevel: 0,
+      body,
+      sentAt: ctx.timestamp,
+    });
+    pruneWorldChat(ctx);
+  },
+);
+
 export const set_total_generated_gold = spacetimedb.reducer(
   { totalGeneratedGold: t.u64() },
   (ctx, { totalGeneratedGold }) => {
     const player = ensurePlayer(ctx);
     const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+    const currentTotalIncome = clampLeaderboardTotalIncome(
+      entry.totalIncome,
+      player.playerLevel,
+    );
+    const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
+      totalGeneratedGold,
+      player.playerLevel,
+    );
+
+    if (reportedTotalIncome === null) {
+      if (currentTotalIncome !== entry.totalIncome) {
+        ctx.db.leaderboard.identity.update({
+          ...entry,
+          totalIncome: currentTotalIncome,
+          updatedAt: ctx.timestamp,
+        });
+      }
+
+      return;
+    }
+
     const nextTotalIncome =
-      totalGeneratedGold > entry.totalIncome ? totalGeneratedGold : entry.totalIncome;
+      reportedTotalIncome > currentTotalIncome
+        ? reportedTotalIncome
+        : currentTotalIncome;
 
     if (nextTotalIncome === entry.totalIncome) {
       return;
@@ -1440,6 +2268,8 @@ export const send_world_chat_message = spacetimedb.reducer(
       return;
     }
 
+    assertWorldChatRateLimit(ctx);
+
     const player = ensurePlayer(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
 
@@ -1458,11 +2288,17 @@ export const send_world_chat_message = spacetimedb.reducer(
 export const announce_research = spacetimedb.reducer(
   { researchName: t.string() },
   (ctx, { researchName }) => {
+    if (!ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS) {
+      return;
+    }
+
     const safeResearchName = normalizeResearchName(researchName);
 
     if (!safeResearchName) {
       return;
     }
+
+    assertWorldChatRateLimit(ctx);
 
     const player = ensurePlayer(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
@@ -1482,6 +2318,10 @@ export const announce_research = spacetimedb.reducer(
 export const discover_potion_recipe = spacetimedb.reducer(
   { potionKey: t.string() },
   (ctx, { potionKey }) => {
+    if (!ENABLE_CLIENT_POTION_DISCOVERY) {
+      return;
+    }
+
     const catalogItem = getUnknownPotionCatalogItem(potionKey);
     const existingDiscovery = ctx.db.potionRecipeDiscovery.potionKey.find(
       catalogItem.key,
@@ -1493,6 +2333,7 @@ export const discover_potion_recipe = spacetimedb.reducer(
 
     const player = ensurePlayer(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+    assertWorldChatRateLimit(ctx);
 
     ctx.db.potionRecipeDiscovery.insert({
       potionKey: catalogItem.key,
@@ -1524,21 +2365,23 @@ export const set_player_shop_slot = spacetimedb.reducer(
     priceGold: t.u64(),
   },
   (ctx, { slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
+    if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
+      throw new Error('Player shop exchange requires server inventory.');
+    }
+
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
-    const safeItemKey = normalizePlayerShopText(itemKey, MAX_ITEM_KEY_LENGTH);
-    const safeItemLabel = normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH);
-    const safeItemKind = normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH);
+    const catalogItem = getPlayerShopCatalogItem(itemKey);
+    const safeItemKey = catalogItem.itemKey;
+    const safeItemLabel = catalogItem.itemLabel;
+    const safeItemKind = catalogItem.itemKind;
+    const safeQuantity = validatePlayerShopQuantity(quantity);
+    const safePriceGold = validatePlayerShopPriceGold(priceGold, catalogItem);
 
-    if (!safeItemKey || !safeItemLabel || !safeItemKind) {
+    if (
+      normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !== safeItemLabel ||
+      normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH) !== safeItemKind
+    ) {
       throw new Error('Player shop item is required.');
-    }
-
-    if (quantity < 1) {
-      throw new Error('Player shop quantity must be positive.');
-    }
-
-    if (priceGold < 1n) {
-      throw new Error('Player shop price must be positive.');
     }
 
     const player = ensurePlayer(ctx);
@@ -1552,8 +2395,8 @@ export const set_player_shop_slot = spacetimedb.reducer(
       itemKey: safeItemKey,
       itemLabel: safeItemLabel,
       itemKind: safeItemKind,
-      quantity,
-      priceGold,
+      quantity: safeQuantity,
+      priceGold: safePriceGold,
       updatedAt: ctx.timestamp,
     };
 
@@ -1584,6 +2427,10 @@ export const clear_player_shop_slot = spacetimedb.reducer(
 export const buy_player_shop_listing = spacetimedb.reducer(
   { listingKey: t.string(), quantity: t.u32() },
   (ctx, { listingKey, quantity }) => {
+    if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
+      throw new Error('Player shop exchange requires server inventory.');
+    }
+
     const safeListingKey = normalizePlayerShopText(listingKey, 120);
     const listing = ctx.db.playerShopListing.listingKey.find(safeListingKey);
 
@@ -1601,6 +2448,11 @@ export const buy_player_shop_listing = spacetimedb.reducer(
 
     const buyer = ensurePlayer(ctx);
     const remainingQuantity = listing.quantity - quantity;
+    const proceedsGold = listing.priceGold * BigInt(quantity);
+
+    if (proceedsGold > MAX_PLAYER_SHOP_TRADE_TOTAL_GOLD) {
+      throw new Error('Player shop trade total is too high.');
+    }
 
     ctx.db.playerShopListing.listingKey.update({
       ...listing,
@@ -1608,15 +2460,20 @@ export const buy_player_shop_listing = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    const proceedsGold = listing.priceGold * BigInt(quantity);
     const existingProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(
       listing.sellerIdentity,
     );
 
     if (existingProceeds) {
+      const nextProceedsGold = existingProceeds.gold + proceedsGold;
+
+      if (nextProceedsGold > MAX_PLAYER_SHOP_PROCEEDS_GOLD) {
+        throw new Error('Player shop proceeds are too high.');
+      }
+
       ctx.db.playerShopProceeds.sellerIdentity.update({
         ...existingProceeds,
-        gold: existingProceeds.gold + proceedsGold,
+        gold: nextProceedsGold,
         updatedAt: ctx.timestamp,
       });
     } else {
@@ -1646,6 +2503,10 @@ export const buy_player_shop_listing = spacetimedb.reducer(
 );
 
 export const claim_player_shop_proceeds = spacetimedb.reducer({}, (ctx) => {
+  if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
+    throw new Error('Player shop exchange requires server inventory.');
+  }
+
   const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender);
 
   if (!proceeds) {
@@ -1658,6 +2519,10 @@ export const claim_player_shop_proceeds = spacetimedb.reducer({}, (ctx) => {
 export const sell_to_npc = spacetimedb.reducer(
   { itemKey: t.string(), quantity: t.u32() },
   (ctx, { itemKey, quantity }) => {
+    if (!ENABLE_NPC_MARKET_PRESSURE) {
+      return;
+    }
+
     const safeQuantity = validateNpcMarketQuantity(quantity);
     let row = ensureNpcMarketItem(ctx, itemKey);
     row = applyNpcMarketTick(ctx, row);
@@ -1666,13 +2531,18 @@ export const sell_to_npc = spacetimedb.reducer(
     const targetStock = toBigInt(row.targetStock);
     const npcStock = toBigInt(row.npcStock);
     const supplyScore = toBigInt(row.supplyScore);
+    const effectiveTradeQuantity = getBoundedNpcMarketTradeQuantity(
+      supplyScore,
+      tradeQuantity,
+      targetStock,
+    );
     const maxStock = targetStock * 10n;
-    const nextStock = clampBigInt(npcStock + tradeQuantity, 0n, maxStock);
+    const nextStock = clampBigInt(npcStock + effectiveTradeQuantity, 0n, maxStock);
 
     ctx.db.npcMarketPrice.itemKey.update({
       ...row,
       npcStock: nextStock,
-      supplyScore: supplyScore + tradeQuantity,
+      supplyScore: supplyScore + effectiveTradeQuantity,
       updatedAt: ctx.timestamp,
     });
   },
@@ -1681,6 +2551,10 @@ export const sell_to_npc = spacetimedb.reducer(
 export const buy_from_npc = spacetimedb.reducer(
   { itemKey: t.string(), quantity: t.u32() },
   (ctx, { itemKey, quantity }) => {
+    if (!ENABLE_NPC_MARKET_PRESSURE) {
+      return;
+    }
+
     const safeQuantity = validateNpcMarketQuantity(quantity);
     let row = ensureNpcMarketItem(ctx, itemKey);
     row = applyNpcMarketTick(ctx, row);
@@ -1688,15 +2562,21 @@ export const buy_from_npc = spacetimedb.reducer(
     const tradeQuantity = BigInt(safeQuantity);
     const npcStock = toBigInt(row.npcStock);
     const demandScore = toBigInt(row.demandScore);
+    const targetStock = toBigInt(row.targetStock);
+    const effectiveTradeQuantity = getBoundedNpcMarketTradeQuantity(
+      demandScore,
+      tradeQuantity,
+      targetStock,
+    );
 
-    if (npcStock < tradeQuantity) {
+    if (effectiveTradeQuantity < 1n || npcStock < effectiveTradeQuantity) {
       throw new Error('NPC market item is out of stock.');
     }
 
     ctx.db.npcMarketPrice.itemKey.update({
       ...row,
-      npcStock: npcStock - tradeQuantity,
-      demandScore: demandScore + tradeQuantity,
+      npcStock: npcStock - effectiveTradeQuantity,
+      demandScore: demandScore + effectiveTradeQuantity,
       updatedAt: ctx.timestamp,
     });
   },
@@ -1707,8 +2587,13 @@ export const tick_npc_market = spacetimedb.reducer({}, (ctx) => {
 });
 
 export const claim_npc_market_admin = spacetimedb.reducer({}, (ctx) => {
-  if (hasNpcMarketAdmin(ctx)) {
-    throw new Error('NPC market admin already claimed.');
+  if (!isConfiguredNpcMarketAdmin(ctx)) {
+    throw new Error('NPC market admin is not claimable.');
+  }
+
+  const existingAdmin = ctx.db.npcMarketAdmin.identity.find(ctx.sender);
+  if (existingAdmin) {
+    return;
   }
 
   const player = ctx.db.player.identity.find(ctx.sender);
@@ -1939,11 +2824,12 @@ export const upsert_game_config = spacetimedb.reducer(
     assertGameConfigAdmin(ctx);
 
     const safeConfigKey = normalizeGameConfigKey(configKey);
-    const safeConfigJson = validateGameConfigJson(configJson);
 
     if (!safeConfigKey) {
       throw new Error('Game config requires key.');
     }
+
+    const safeConfigJson = validateGameConfigJson(safeConfigKey, configJson);
 
     const existingConfig = ctx.db.gameConfig.configKey.find(safeConfigKey);
     const nextConfig = {

@@ -2,12 +2,10 @@ const DEFAULT_USERNAME = 'wizard';
 const MAX_USERNAME_LENGTH = 24;
 
 export class PlayerNameManager {
-  constructor({ storageManager }) {
-    this.storageManager = storageManager;
-    const storedUsername = this.storageManager.loadUsername();
-    this.username = this.normalizeUsername(storedUsername);
-    this.hasExplicitUsername = this.isExplicitUsername(storedUsername);
-    this.usernamePromptSeen = this.storageManager.loadUsernamePromptSeen();
+  constructor() {
+    this.username = DEFAULT_USERNAME;
+    this.hasExplicitUsername = false;
+    this.usernamePromptSeen = false;
     this.profileLoaded = false;
   }
 
@@ -23,22 +21,20 @@ export class PlayerNameManager {
     this.username = this.normalizeUsername(username);
     this.hasExplicitUsername = true;
     this.usernamePromptSeen = true;
-    this.storageManager.saveUsername(this.username);
-    this.storageManager.saveUsernamePromptSeen();
 
     return this.username;
   }
 
   applyServerUsername(username) {
-    this.profileLoaded = true;
-    this.username = this.normalizeUsername(username);
+    return this.applyServerProfile({ username });
+  }
 
-    if (this.isExplicitUsername(username) && this.username !== DEFAULT_USERNAME) {
-      this.hasExplicitUsername = true;
-      this.usernamePromptSeen = true;
-      this.storageManager.saveUsername(this.username);
-      this.storageManager.saveUsernamePromptSeen();
-    }
+  applyServerProfile(profile = {}) {
+    this.profileLoaded = true;
+    this.username = this.normalizeUsername(profile.username);
+    this.hasExplicitUsername =
+      this.isExplicitUsername(profile.username) && this.username !== DEFAULT_USERNAME;
+    this.usernamePromptSeen = Boolean(profile.usernamePromptSeen) || this.hasExplicitUsername;
 
     return this.username;
   }
@@ -49,7 +45,10 @@ export class PlayerNameManager {
 
   markUsernamePromptSeen() {
     this.usernamePromptSeen = true;
-    this.storageManager.saveUsernamePromptSeen();
+  }
+
+  getUsernamePromptSeen() {
+    return this.usernamePromptSeen;
   }
 
   normalizeUsername(username) {

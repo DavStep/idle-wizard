@@ -73,7 +73,13 @@ describe('PlayerProfileSubscriptionManager', () => {
     const profiles = [];
     const table = createPlayerTable([
       { identity: 'other', username: 'Other' },
-      { identity: 'mine', username: 'Server Mage' },
+      {
+        identity: 'mine',
+        username: 'Server Mage',
+        theme: 'black',
+        colorMode: 'resources',
+        usernamePromptSeen: true,
+      },
     ]);
     const manager = new PlayerProfileSubscriptionManager({
       onProfile: (profile) => profiles.push(profile),
@@ -81,7 +87,12 @@ describe('PlayerProfileSubscriptionManager', () => {
 
     manager.connect(createConnection(table), 'mine');
 
-    expect(profiles.at(-1)).toEqual({ username: 'Server Mage' });
+    expect(profiles.at(-1)).toEqual({
+      username: 'Server Mage',
+      theme: 'black',
+      colorMode: 'resources',
+      usernamePromptSeen: true,
+    });
   });
 
   it('matches SpacetimeDB identity objects by hex string', () => {
@@ -98,7 +109,12 @@ describe('PlayerProfileSubscriptionManager', () => {
 
     manager.connect(createConnection(table), { toHexString: () => 'abc123' });
 
-    expect(profiles.at(-1)).toEqual({ username: 'Hex Mage' });
+    expect(profiles.at(-1)).toEqual({
+      username: 'Hex Mage',
+      theme: 'white',
+      colorMode: 'monochrome',
+      usernamePromptSeen: false,
+    });
   });
 
   it('publishes the updated row from table callbacks even when the table cache is stale', () => {
@@ -112,10 +128,21 @@ describe('PlayerProfileSubscriptionManager', () => {
     table.callbacks.update(
       {},
       { identity: 'mine', username: 'wizard' },
-      { identity: 'mine', username: 'MobileDav' },
+      {
+        identity: 'mine',
+        username: 'MobileDav',
+        theme: 'black',
+        color_mode: 'resources',
+        username_prompt_seen: true,
+      },
     );
 
-    expect(profiles.at(-1)).toEqual({ username: 'MobileDav' });
+    expect(profiles.at(-1)).toEqual({
+      username: 'MobileDav',
+      theme: 'black',
+      colorMode: 'resources',
+      usernamePromptSeen: true,
+    });
   });
 
   it('unsubscribes and removes table callbacks on disconnect', () => {

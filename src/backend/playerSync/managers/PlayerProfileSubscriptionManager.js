@@ -70,7 +70,7 @@ export class PlayerProfileSubscriptionManager {
     const row = Array.from(this.table.iter()).find((playerRow) => this.isOwnRow(playerRow));
 
     if (row || this.subscriptionApplied) {
-      this.publish(row ? { username: row.username } : null);
+      this.publish(row ? this.mapProfile(row) : null);
     }
   }
 
@@ -79,7 +79,18 @@ export class PlayerProfileSubscriptionManager {
       return;
     }
 
-    this.publish({ username: row.username });
+    this.publish(this.mapProfile(row));
+  }
+
+  mapProfile(row) {
+    return {
+      username: row.username,
+      theme: row.theme ?? 'white',
+      colorMode: row.colorMode ?? row.color_mode ?? 'monochrome',
+      usernamePromptSeen: Boolean(
+        row.usernamePromptSeen ?? row.username_prompt_seen,
+      ),
+    };
   }
 
   isOwnRow(row) {

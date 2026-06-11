@@ -93,6 +93,10 @@ export class GameplayFacade {
     this.initialized = false;
   }
 
+  setPersistenceStorage(storageManager) {
+    this.persistenceFacade.setStorageManager(storageManager);
+  }
+
   setGameConfigFacade(gameConfigFacade) {
     this.gameConfigUnsubscribe?.();
     this.gameConfigFacade = gameConfigFacade;
@@ -234,6 +238,7 @@ export class GameplayFacade {
     const result = this.tasksFacade.completeTask(taskId);
     if (result.ok && result.advanced) {
       this.syncPlayerLevelManaEffects();
+      void this.worldChatFacade?.announceLevelUp?.(result.currentLevel);
     }
     this.publishAndSaveSnapshot();
     return result;
@@ -419,6 +424,22 @@ export class GameplayFacade {
   publishAndSaveSnapshot() {
     this.publishSnapshot();
     this.persistenceFacade.save();
+  }
+
+  loadPersistenceSave(save, ecsFacade) {
+    const loaded = this.persistenceFacade.loadSave(save);
+    this.syncPlayerLevelManaEffects();
+
+    if (loaded) {
+      this.applyOfflineTimerCatchup(ecsFacade);
+    }
+
+    this.publishSnapshot();
+    return loaded;
+  }
+
+  savePersistenceSnapshot() {
+    return this.persistenceFacade.save();
   }
 
   consumeProgressResetPending() {

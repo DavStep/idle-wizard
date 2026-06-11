@@ -2,10 +2,9 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
 
 const TOUCH_DRAG_DISTANCE = 8;
-
-import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class BrewingCauldronManager {
   constructor({ gameplayFacade } = {}) {
@@ -232,6 +231,7 @@ export class BrewingCauldronManager {
       button.className = 'brewing-page__herb-button';
       button.type = 'button';
       button.draggable = true;
+      setResourceColor(button, 'herb');
       button.addEventListener('click', (event) => this.onHerbButtonClick(event, herb.itemTypeId));
       button.addEventListener('dragstart', (event) =>
         this.onDragStart(event, herb.itemTypeId),

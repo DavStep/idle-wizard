@@ -4,9 +4,8 @@ import {
 } from '../playerColorModes.js';
 
 export class PlayerColorModeManager {
-  constructor({ storageManager }) {
-    this.storageManager = storageManager;
-    this.colorMode = normalizePlayerColorMode(this.storageManager.loadColorMode());
+  constructor() {
+    this.colorMode = normalizePlayerColorMode();
   }
 
   getColorMode() {
@@ -19,7 +18,11 @@ export class PlayerColorModeManager {
 
   setColorMode(colorMode) {
     this.colorMode = normalizePlayerColorMode(colorMode);
-    this.storageManager.saveColorMode(this.colorMode);
+    return this.colorMode;
+  }
+
+  applyServerColorMode(colorMode) {
+    this.colorMode = normalizePlayerColorMode(colorMode);
     return this.colorMode;
   }
 }

@@ -641,11 +641,11 @@ describe('GameplayFacade', () => {
     expect(research.tabs[1].boxes[1].researches[0]).toEqual({
       id: automationResearchIds.autoPlantTile(1),
       label: 'auto plant tile 1',
-      value: '50000 crystal',
+      value: '1 crystal',
       effect: 'auto',
       description: 'garden tile 1 plants its selected seed when one is available.',
       costGold: 0,
-      costCrystal: 50000,
+      costCrystal: 1,
       costCurrency: 'crystal',
       completed: false,
       canResearch: false,
@@ -656,18 +656,18 @@ describe('GameplayFacade', () => {
       value: 'locked',
       requiredResearchIds: [automationResearchIds.autoPlantTile(1)],
       costGold: 0,
-      costCrystal: 75000,
+      costCrystal: 2,
       costCurrency: 'crystal',
       locked: true,
     });
     expect(research.tabs[1].boxes[3].researches[0]).toMatchObject({
       id: automationResearchIds.autoBrewCauldron(1),
       label: 'auto brew cauldron 1',
-      value: '100000 crystal',
+      value: '1 crystal',
       description:
         'cauldron 1 starts brewing when staged ingredients and mana are ready.',
       costGold: 0,
-      costCrystal: 100000,
+      costCrystal: 1,
       costCurrency: 'crystal',
     });
     expect(research.boxes.map((box) => box.id)).toEqual([
@@ -847,6 +847,22 @@ describe('GameplayFacade', () => {
       cost: 0,
     });
     expect(researchAnnouncements).toEqual(['Sage Seed']);
+  });
+
+  it('announces task level-ups to world chat', () => {
+    const { gameplayFacade } = createGameplay();
+    const levelUpAnnouncements = [];
+
+    gameplayFacade.setWorldChatFacade({
+      announceLevelUp: (playerLevel) => {
+        levelUpAnnouncements.push(playerLevel);
+        return Promise.resolve({ ok: true, playerLevel });
+      },
+    });
+
+    finishCurrentTaskLevel(gameplayFacade);
+
+    expect(levelUpAnnouncements).toEqual([2]);
   });
 
   it('rejects removed mana research ids', () => {
@@ -1125,21 +1141,21 @@ describe('GameplayFacade', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.goldFacade.add(80);
-    gameplayFacade.crystalFacade.add(375000);
+    gameplayFacade.crystalFacade.add(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1))).toMatchObject({
       ok: true,
-      cost: 100000,
+      cost: 1,
       costCurrency: 'crystal',
     });
     expect(gameplayFacade.buyResearch(automationResearchIds.autoBottleCauldron(1))).toMatchObject({
       ok: true,
-      cost: 125000,
+      cost: 1,
       costCurrency: 'crystal',
     });
     expect(gameplayFacade.buyResearch(automationResearchIds.autoCollectCauldron(1))).toMatchObject({
       ok: true,
-      cost: 150000,
+      cost: 1,
       costCurrency: 'crystal',
     });
     gameplayFacade.itemsFacade.addItem(1001, 3);
@@ -1611,19 +1627,19 @@ describe('GameplayFacade', () => {
     finishCurrentTaskLevel(gameplayFacade);
     finishCurrentTaskLevel(gameplayFacade);
     gameplayFacade.goldFacade.add(25);
-    gameplayFacade.crystalFacade.add(125000);
+    gameplayFacade.crystalFacade.add(2);
     expect(gameplayFacade.buyGardenTile()).toMatchObject({
       ok: true,
       tileNumber: 2,
     });
     expect(gameplayFacade.buyResearch(automationResearchIds.autoPlantTile(1))).toMatchObject({
       ok: true,
-      cost: 50000,
+      cost: 1,
       costCurrency: 'crystal',
     });
     expect(gameplayFacade.buyResearch(automationResearchIds.autoHarvestPlant(1))).toMatchObject({
       ok: true,
-      cost: 75000,
+      cost: 1,
       costCurrency: 'crystal',
     });
     gameplayFacade.itemsFacade.addItem(1, 4);

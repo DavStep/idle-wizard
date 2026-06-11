@@ -24,6 +24,7 @@ export class AppFacade {
     this.backendFacade = new BackendFacade();
     this.onlineGateManager = new AppOnlineGateManager();
     this.appThemeManager = new AppThemeManager();
+    this.gameplayFacade.setPersistenceStorage(this.backendFacade.getGameplaySaveFacade());
     this.gameplayFacade.setGameConfigFacade(this.backendFacade.getGameConfigFacade());
     this.gameplayFacade.setNpcMarketFacade(this.backendFacade.getNpcMarketFacade());
     this.gameplayFacade.setPotionDiscoveryFacade(

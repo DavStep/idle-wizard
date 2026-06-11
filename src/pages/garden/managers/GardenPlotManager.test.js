@@ -250,6 +250,7 @@ describe('GardenPlotManager', () => {
     const mintButton = parent.querySelector('[aria-label="select Mint Seed, owned 1"]');
 
     expect(mintButton).not.toBeNull();
+    expect(mintButton.dataset.resourceColor).toBe('seed');
 
     gameplayFacade.publish();
 
@@ -259,6 +260,9 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('Mint Seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
+      'seed',
+    );
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('20s');
   });
