@@ -77,6 +77,7 @@ export class WorkshopSeedBlockManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__summon-button';
     button.type = 'button';
+    button.dataset.tutorialId = 'workshop:summonSeed';
 
     this.refs.summonButtonLabel = document.createElement('span');
     this.refs.summonButtonLabel.className = 'workshop-page__summon-button-label';

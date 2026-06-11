@@ -530,6 +530,68 @@ body {
   z-index: 6;
 }
 
+.tutorial-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  pointer-events: none;
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
+}
+
+.tutorial-layer[hidden] {
+  display: none;
+}
+
+.tutorial-layer,
+.tutorial-layer *,
+.tutorial-layer *::before,
+.tutorial-layer *::after {
+  box-sizing: content-box;
+}
+
+.tutorial-layer__highlight {
+  position: absolute;
+  border: var(--style-border);
+  pointer-events: none;
+}
+
+.tutorial-layer__hint {
+  position: absolute;
+  z-index: 1;
+  width: 150px;
+  pointer-events: auto;
+}
+
+.tutorial-layer__text {
+  min-height: var(--style-row-min-height);
+  margin: 0 0 5px;
+}
+
+.tutorial-layer__skip {
+  float: right;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  color: var(--style-muted);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: normal;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.tutorial-layer__skip:hover,
+.tutorial-layer__skip:focus-visible {
+  color: var(--style-text);
+  outline: none;
+  text-decoration: underline;
+}
+
 .workshop-page__ui-layer,
 .workshop-page__ui-layer *,
 .workshop-page__ui-layer *::before,
@@ -3226,6 +3288,7 @@ div.workshop-page__discovery-row {
 .garden-page__cancel-dialog,
 .research-page__box,
 .research-page__info-dialog,
+.tutorial-layer__hint,
 .shop-page__sell-dialog,
 .shop-page__market-dialog,
 .shop-page__trade-history-dialog,

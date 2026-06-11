@@ -141,6 +141,7 @@ export class GardenPlotManager {
     const button = document.createElement('button');
     button.className = 'garden-page__plot-row';
     button.type = 'button';
+    button.dataset.tutorialId = `garden:plot:${tileNumber}`;
     button.addEventListener('click', (event) => this.onTileClick(tileNumber, event));
 
     const number = document.createElement('span');
@@ -149,6 +150,7 @@ export class GardenPlotManager {
 
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';
+    label.dataset.tutorialId = `garden:plot:${tileNumber}:label`;
 
     const state = document.createElement('span');
     state.className = 'garden-page__plot-state';
@@ -200,6 +202,7 @@ export class GardenPlotManager {
     const button = document.createElement('button');
     button.className = 'garden-page__seed-button';
     button.type = 'button';
+    button.dataset.tutorialId = `garden:seed:${seed.key}`;
     setResourceColor(button, 'seed');
     button.addEventListener('click', () => this.onSelectSeed(seed.itemTypeId));
 

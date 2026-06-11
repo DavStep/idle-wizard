@@ -19,6 +19,7 @@ export class WorkshopManaSphereManager {
 
     this.root = document.createElement('section');
     this.root.className = 'workshop-page__mana-sphere style-box';
+    this.root.dataset.tutorialId = 'workshop:manaSphere';
     this.root.setAttribute('aria-label', 'Mana sphere');
 
     this.refs.title = this.createTitle();

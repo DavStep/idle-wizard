@@ -31,6 +31,7 @@ export class WorkshopTaskManager {
     this.refs.summary = document.createElement('button');
     this.refs.summary.className = 'workshop-page__tasks-summary';
     this.refs.summary.type = 'button';
+    this.refs.summary.dataset.tutorialId = 'workshop:tasks';
     this.refs.summary.setAttribute('aria-expanded', 'false');
     this.refs.summary.setAttribute('aria-controls', 'workshop-task-list');
     this.refs.summary.addEventListener('click', () => this.toggleExpanded());
@@ -152,6 +153,7 @@ export class WorkshopTaskManager {
     button.className = 'style-button workshop-page__task-button';
     button.type = 'button';
     button.dataset.taskId = task.taskId;
+    button.dataset.tutorialId = `task:${task.taskId}`;
     button.addEventListener('click', () => this.onTaskButton(task.taskId));
 
     const progress = document.createElement('div');

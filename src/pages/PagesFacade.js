@@ -5,6 +5,7 @@ import { ResearchPageFacade } from './research/ResearchPageFacade.js';
 import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
 import { PageNotificationFacade } from './notifications/PageNotificationFacade.js';
 import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
+import { TutorialFacade } from './tutorial/TutorialFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
@@ -58,6 +59,10 @@ export class PagesFacade {
       worldChatFacade,
       tradeAllianceFacade,
     });
+    this.tutorialFacade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => this.getCurrentPageId(),
+    });
 
     this.registryManager.register(
       'workshop',
@@ -101,9 +106,11 @@ export class PagesFacade {
     this.notificationFacade.mount();
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
+    this.tutorialFacade.mount(stage);
   }
 
   unmount() {
+    this.tutorialFacade.unmount();
     this.topPanelFacade.unmount();
     this.worldChatManager.unmount();
     this.notificationFacade.unmount();
@@ -115,6 +122,7 @@ export class PagesFacade {
   show(pageId) {
     this.currentPageManager.show(pageId);
     this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
+    this.tutorialFacade.scheduleRefresh();
   }
 
   getCurrentPageId() {

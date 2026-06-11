@@ -250,6 +250,7 @@ export class ResearchBoxListManager {
     const button = document.createElement('button');
     button.className = 'style-button research-page__research-button';
     button.type = 'button';
+    button.dataset.tutorialId = `research:${research.id}`;
     button.textContent = research.value;
     setResourceColorFromText(button, research.value);
     button.disabled = !research.canResearch;

@@ -92,6 +92,7 @@ export class BottomPanelViewManager {
     button.type = 'button';
     button.textContent = tab.label;
     button.dataset.pageId = tab.id;
+    button.dataset.tutorialId = `page:${tab.id}`;
     button.setAttribute('aria-label', `show ${tab.label}`);
     button.setAttribute('aria-selected', 'false');
     button.addEventListener('click', () => this.onShowPage?.(tab.id));

@@ -1,0 +1,32 @@
+export class TutorialTargetManager {
+  constructor({ stage } = {}) {
+    this.stage = stage;
+  }
+
+  setStage(stage) {
+    this.stage = stage;
+  }
+
+  getTarget(targetId) {
+    if (!this.stage || !targetId) {
+      return null;
+    }
+
+    return (
+      [...this.stage.querySelectorAll('[data-tutorial-id]')].find(
+        (element) => element.dataset.tutorialId === targetId,
+      ) ?? null
+    );
+  }
+
+  getDomState() {
+    return {
+      isGardenSeedPopupOpen: () =>
+        Boolean(this.stage?.querySelector('.garden-page__seed-popup:not([hidden])')),
+      isTasksExpanded: () => {
+        const tasks = this.stage?.querySelector('[data-tutorial-id="workshop:tasks"]');
+        return tasks?.getAttribute('aria-expanded') === 'true';
+      },
+    };
+  }
+}
