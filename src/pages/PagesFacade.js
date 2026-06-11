@@ -3,6 +3,7 @@ import { GardenPageFacade } from './garden/GardenPageFacade.js';
 import { ShopPageFacade } from './shop/ShopPageFacade.js';
 import { ResearchPageFacade } from './research/ResearchPageFacade.js';
 import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
+import { PageNotificationFacade } from './notifications/PageNotificationFacade.js';
 import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
@@ -22,6 +23,7 @@ export class PagesFacade {
     playerFacade,
     leaderboardFacade,
     worldChatFacade,
+    feedbackFacade,
     playerShopFacade,
     authFacade,
     defaultPageId = 'workshop',
@@ -40,10 +42,16 @@ export class PagesFacade {
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
     });
+    this.notificationFacade = new PageNotificationFacade({
+      gameplayFacade,
+      playerShopFacade,
+      onChange: (snapshot) => this.bottomPanelFacade.setNotifications(snapshot.pages),
+    });
     this.topPanelFacade = new TopPanelFacade({
       gameplayFacade,
       playerFacade,
       authFacade,
+      feedbackFacade,
     });
     this.worldChatManager = new WorkshopWorldChatManager({ worldChatFacade });
 
@@ -85,6 +93,7 @@ export class PagesFacade {
     this.currentPageManager.mount(stage);
     this.swipeNavigationManager.mount(stage);
     this.bottomPanelFacade.mount(stage);
+    this.notificationFacade.mount();
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
   }
@@ -92,6 +101,7 @@ export class PagesFacade {
   unmount() {
     this.topPanelFacade.unmount();
     this.worldChatManager.unmount();
+    this.notificationFacade.unmount();
     this.bottomPanelFacade.unmount();
     this.swipeNavigationManager.unmount();
     this.currentPageManager.unmount();

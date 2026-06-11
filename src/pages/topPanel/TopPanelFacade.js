@@ -9,12 +9,12 @@ export class TopPanelFacade {
   static explain =
     'Shows the small always-visible room header with the player name and current resources.';
 
-  constructor({ gameplayFacade, playerFacade, authFacade } = {}) {
+  constructor({ gameplayFacade, playerFacade, authFacade, feedbackFacade } = {}) {
     this.viewManager = new TopPanelViewManager();
     this.authManager = new TopPanelAuthManager({ authFacade });
     this.levelManager = new TopPanelLevelManager({ gameplayFacade });
     this.resourceDisplayManager = new TopPanelResourceDisplayManager({ gameplayFacade });
-    this.settingsManager = new TopPanelSettingsManager({ playerFacade });
+    this.settingsManager = new TopPanelSettingsManager({ playerFacade, feedbackFacade });
     this.usernamePromptManager = new TopPanelUsernamePromptManager({
       playerFacade,
       settingsManager: this.settingsManager,

@@ -6,6 +6,7 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
@@ -657,9 +658,16 @@ export class ShopPlayerShelfManager {
     this.renderListingControls(shelf, this.lastGameplaySnapshot);
     this.renderProceeds();
     this.renderMarketRows();
+    setNotificationBadge(this.refs.otherShopsButton, this.hasAffordableMarketListing());
   }
 
   renderRows(shelf) {
+    const hasListableItem = shelf.sellItems.some(
+      (item) =>
+        item.quantity > 0 &&
+        shouldShowItemInActionList(this.lastGameplaySnapshot, item, item.quantity),
+    );
+
     this.refs.rows.forEach((refs, index) => {
       const { row, value, button } = refs;
       const slotNumber = index + 1;
@@ -674,6 +682,11 @@ export class ShopPlayerShelfManager {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select player market stand ${slotNumber}`);
+        setNotificationBadge(
+          row,
+          this.lastPlayerShopSnapshot.connected && !slot.itemTypeId && hasListableItem,
+        );
+        setNotificationBadge(button, false);
         this.renderPlayerSlotValue(refs, slot, shelf, this.lastGameplaySnapshot);
         return;
       }
@@ -687,6 +700,8 @@ export class ShopPlayerShelfManager {
         setResourceColorFromText(button, button.textContent);
         button.disabled = shelf.nextSlotLockedByLevel || this.lastGameplaySnapshot.gold.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+        setNotificationBadge(row, false);
+        setNotificationBadge(button, !button.disabled);
 
         if (button.parentElement !== value) {
           value.replaceChildren(button);
@@ -699,6 +714,8 @@ export class ShopPlayerShelfManager {
       row.removeAttribute('role');
       row.removeAttribute('aria-label');
       row.removeAttribute('tabindex');
+      setNotificationBadge(row, false);
+      setNotificationBadge(button, false);
       value.textContent = 'locked';
       setResourceColorFromText(value, value.textContent);
     });
@@ -748,6 +765,15 @@ export class ShopPlayerShelfManager {
       const selected = this.selectedSellTab === sellKind.kind;
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
       button.setAttribute('tabindex', selected ? '0' : '-1');
+      setNotificationBadge(
+        button,
+        shelf.sellItems.some(
+          (item) =>
+            item.kind === sellKind.kind &&
+            item.quantity > 0 &&
+            shouldShowItemInActionList(snapshot, item, item.quantity),
+        ),
+      );
     }
 
     this.refs.listingControls.emptyButton.setAttribute(
@@ -771,6 +797,7 @@ export class ShopPlayerShelfManager {
       'aria-disabled',
       canPlace ? 'false' : 'true',
     );
+    setNotificationBadge(this.refs.listingControls.placeButton, false);
 
     for (const [itemTypeId, row] of this.refs.listingControls.itemRows) {
       if (!visibleItemTypeIds.has(itemTypeId)) {
@@ -798,6 +825,7 @@ export class ShopPlayerShelfManager {
         'aria-pressed',
         this.draftListingItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
+      setNotificationBadge(button, actionVisible && item.quantity > 0);
     }
   }
 
@@ -812,6 +840,7 @@ export class ShopPlayerShelfManager {
         this.refs.proceedsRow.value,
         this.refs.proceedsRow.value.textContent,
       );
+      setNotificationBadge(this.refs.proceedsRow.button, false);
       return;
     }
 
@@ -820,6 +849,7 @@ export class ShopPlayerShelfManager {
     setResourceColorFromText(button, button.textContent);
     button.disabled = !this.lastPlayerShopSnapshot.connected;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+    setNotificationBadge(button, !button.disabled);
 
     if (button.parentElement !== this.refs.proceedsRow.value) {
       this.refs.proceedsRow.value.replaceChildren(button);
@@ -1004,7 +1034,19 @@ export class ShopPlayerShelfManager {
 
     row.button.disabled = disabled;
     row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    setNotificationBadge(row.button, !disabled);
     row.button.onclick = () => this.onBuyListing(listing, row.quantityInput.value);
+  }
+
+  hasAffordableMarketListing() {
+    if (!this.lastPlayerShopSnapshot.connected) {
+      return false;
+    }
+
+    const gold = this.lastGameplaySnapshot?.gold?.current ?? 0;
+    return (this.lastPlayerShopSnapshot.listings ?? []).some(
+      (listing) => gold >= (listing.priceGold ?? Infinity),
+    );
   }
 
   groupMarketListings(rows) {

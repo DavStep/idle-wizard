@@ -14,9 +14,12 @@ const ENABLE_PLAYER_SHOP_EXCHANGE = false;
 const ENABLE_NPC_MARKET_PRESSURE = false;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
+const MAX_FEEDBACK_BODY_LENGTH = 2000;
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
+const FEEDBACK_RATE_LIMIT_WINDOW_MICROS = 10n * 60n * 1_000_000n;
+const FEEDBACK_RATE_LIMIT_MAX_MESSAGES = 5;
 const MAX_RESEARCH_NAME_LENGTH = 80;
 const MAX_RESEARCH_ID_LENGTH = 96;
 const MAX_RESEARCH_LABEL_LENGTH = 80;
@@ -420,6 +423,24 @@ const spacetimedb = schema({
       playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
     },
   ),
+  playerFeedback: table(
+    {
+      name: 'player_feedback',
+      public: false,
+      indexes: [
+        { accessor: 'bySenderIdentity', algorithm: 'btree', columns: ['senderIdentity'] },
+        { accessor: 'bySubmittedAt', algorithm: 'btree', columns: ['submittedAt'] },
+      ],
+    },
+    {
+      feedbackId: t.uuid().primaryKey(),
+      senderIdentity: t.identity(),
+      username: t.string(),
+      playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
+      body: t.string(),
+      submittedAt: t.timestamp(),
+    },
+  ),
   potionRecipeDiscovery: table(
     {
       name: 'potion_recipe_discovery',
@@ -698,6 +719,14 @@ function normalizeWorldChatMessage(body: string): string {
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, MAX_WORLD_CHAT_MESSAGE_LENGTH);
+}
+
+function normalizeFeedbackBody(body: string): string {
+  return String(body ?? '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
+    .trim()
+    .slice(0, MAX_FEEDBACK_BODY_LENGTH);
 }
 
 function normalizeResearchName(researchName: string): string {
@@ -1910,6 +1939,25 @@ function assertWorldChatRateLimit(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function assertFeedbackRateLimit(ctx: IdleWizardReducerCtx) {
+  const windowStartMicros =
+    ctx.timestamp.microsSinceUnixEpoch - FEEDBACK_RATE_LIMIT_WINDOW_MICROS;
+  let sentInWindow = 0;
+
+  for (const row of ctx.db.playerFeedback.iter()) {
+    if (
+      row.senderIdentity.isEqual(ctx.sender) &&
+      row.submittedAt.microsSinceUnixEpoch >= windowStartMicros
+    ) {
+      sentInWindow += 1;
+    }
+  }
+
+  if (sentInWindow >= FEEDBACK_RATE_LIMIT_MAX_MESSAGES) {
+    throw new Error('Feedback is rate limited.');
+  }
+}
+
 function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
   for (const listing of Array.from(ctx.db.playerShopListing.iter())) {
     ctx.db.playerShopListing.delete(listing);
@@ -2325,6 +2373,27 @@ export const send_world_chat_message = spacetimedb.reducer(
     pruneWorldChat(ctx);
   },
 );
+
+export const submit_feedback = spacetimedb.reducer({ body: t.string() }, (ctx, { body }) => {
+  const safeBody = normalizeFeedbackBody(body);
+
+  if (!safeBody) {
+    return;
+  }
+
+  assertFeedbackRateLimit(ctx);
+
+  const player = ensurePlayer(ctx);
+
+  ctx.db.playerFeedback.insert({
+    feedbackId: ctx.newUuidV7(),
+    senderIdentity: ctx.sender,
+    username: player.username,
+    playerLevel: player.playerLevel,
+    body: safeBody,
+    submittedAt: ctx.timestamp,
+  });
+});
 
 export const announce_research = spacetimedb.reducer(
   { researchName: t.string() },

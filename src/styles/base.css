@@ -6,6 +6,8 @@
   --style-disabled: #b2b2b2;
   --style-active-surface: #f7f7f7;
   --style-system-text: oklch(44% 0.12 25);
+  --style-notification: #c1121f;
+  --style-notification-size: 6px;
   --style-resource-mana: var(--style-text);
   --style-resource-gold: var(--style-text);
   --style-resource-crystal: var(--style-text);
@@ -676,6 +678,34 @@ body {
 .row_val {
   float: right;
   font-variant-numeric: tabular-nums lining-nums;
+}
+
+:where(button, [role="button"])[data-notification="true"] {
+  position: relative;
+}
+
+:where(button, [role="button"])[data-notification="true"]::before {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  z-index: 2;
+  width: var(--style-notification-size);
+  height: var(--style-notification-size);
+  pointer-events: none;
+  content: "";
+  background: var(--style-notification);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--style-surface);
+}
+
+.style-button[data-notification="true"]::before {
+  top: -3px;
+  right: -3px;
+}
+
+.room-bottom-panel__tab[data-notification="true"]::before {
+  top: 2px;
+  right: 4px;
 }
 
 .workshop-page__row--interactive {
@@ -2852,6 +2882,13 @@ div.workshop-page__discovery-row {
   width: 218px;
 }
 
+.style-input.room-top-panel__feedback-input {
+  display: block;
+  width: 218px;
+  min-height: 120px;
+  resize: none;
+}
+
 .style-input {
   width: 198px;
   padding: 5px 10px;
@@ -2890,6 +2927,27 @@ div.workshop-page__discovery-row {
   gap: 10px;
 }
 
+.room-top-panel__feedback-form {
+  display: none;
+  margin: 0;
+}
+
+.room-top-panel__feedback-status {
+  min-height: var(--style-row-min-height);
+  margin: -5px 0 10px;
+  color: var(--style-muted);
+}
+
+.room-top-panel__feedback-status[hidden] {
+  display: none;
+}
+
+.room-top-panel__feedback-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
 .room-top-panel__theme-buttons,
 .room-top-panel__color-buttons {
   display: grid;
@@ -2922,10 +2980,30 @@ div.workshop-page__discovery-row {
   text-align: center;
 }
 
+.style-button.room-top-panel__feedback-open {
+  width: 218px;
+  margin-bottom: 0;
+  text-align: center;
+}
+
 .room-top-panel__settings.is-username-prompt .room-top-panel__theme-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__color-section,
+.room-top-panel__settings.is-username-prompt .room-top-panel__feedback-section,
+.room-top-panel__settings.is-username-prompt .room-top-panel__feedback-form,
 .room-top-panel__settings.is-username-prompt .room-top-panel__auth-section {
   display: none;
+}
+
+.room-top-panel__settings.is-feedback .room-top-panel__username-section,
+.room-top-panel__settings.is-feedback .room-top-panel__theme-section,
+.room-top-panel__settings.is-feedback .room-top-panel__color-section,
+.room-top-panel__settings.is-feedback .room-top-panel__feedback-section,
+.room-top-panel__settings.is-feedback .room-top-panel__auth-section {
+  display: none;
+}
+
+.room-top-panel__settings.is-feedback .room-top-panel__feedback-form {
+  display: block;
 }
 
 .style-dialog {

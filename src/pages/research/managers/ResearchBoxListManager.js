@@ -1,4 +1,5 @@
 import { setResourceColorFromText } from '../../shared/resourceColor.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 const maxLockedResearchesPerBox = 3;
 
@@ -147,7 +148,14 @@ export class ResearchBoxListManager {
       button.textContent = tab.label;
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
       button.setAttribute('tabindex', selected ? '0' : '-1');
+      setNotificationBadge(button, this.tabHasNotification(tab));
     }
+  }
+
+  tabHasNotification(tab) {
+    return (tab.boxes ?? []).some((box) =>
+      (box.researches ?? []).some((research) => research.canResearch),
+    );
   }
 
   onSelectTab(tabId) {
@@ -247,6 +255,7 @@ export class ResearchBoxListManager {
     button.disabled = !research.canResearch;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
     button.setAttribute('aria-label', this.formatResearchButtonLabel(research));
+    setNotificationBadge(button, research.canResearch);
     button.addEventListener('click', () => this.gameplayFacade.buyResearch(research.id));
     return button;
   }

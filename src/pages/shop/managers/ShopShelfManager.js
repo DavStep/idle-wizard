@@ -6,6 +6,7 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 export class ShopShelfManager {
   constructor({ gameplayFacade } = {}) {
@@ -280,6 +281,11 @@ export class ShopShelfManager {
     this.ensureSellItemButtons(shelf.sellItems);
 
     this.renderSellControls(snapshot, shelf);
+    const hasSellableItem = shelf.sellItems.some(
+      (item) =>
+        item.quantity > 0 &&
+        shouldShowItemInActionList(snapshot, item, item.quantity),
+    );
 
     this.refs.rows.forEach((refs, index) => {
       const { row, value, button } = refs;
@@ -295,6 +301,8 @@ export class ShopShelfManager {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
+        setNotificationBadge(row, !slot.sellItemTypeId && hasSellableItem);
+        setNotificationBadge(button, false);
         this.renderSlotSellValue(refs, slot, shelf, snapshot);
         return;
       }
@@ -308,6 +316,8 @@ export class ShopShelfManager {
         setResourceColorFromText(button, button.textContent);
         button.disabled = shelf.nextSlotLockedByLevel || snapshot.gold.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+        setNotificationBadge(row, false);
+        setNotificationBadge(button, !button.disabled);
 
         if (button.parentElement !== value) {
           value.replaceChildren(button);
@@ -320,6 +330,8 @@ export class ShopShelfManager {
       row.removeAttribute('role');
       row.removeAttribute('aria-label');
       row.removeAttribute('tabindex');
+      setNotificationBadge(row, false);
+      setNotificationBadge(button, false);
       value.textContent = 'locked';
       setResourceColorFromText(value, value.textContent);
     });
@@ -372,6 +384,15 @@ export class ShopShelfManager {
       const selected = this.selectedSellTab === sellKind.kind;
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
       button.setAttribute('tabindex', selected ? '0' : '-1');
+      setNotificationBadge(
+        button,
+        shelf.sellItems.some(
+          (item) =>
+            item.kind === sellKind.kind &&
+            item.quantity > 0 &&
+            shouldShowItemInActionList(snapshot, item, item.quantity),
+        ),
+      );
     }
 
     this.refs.sellControls.emptyButton.setAttribute(
@@ -408,6 +429,7 @@ export class ShopShelfManager {
         'aria-pressed',
         selectedSlot.sellItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
+      setNotificationBadge(button, actionVisible && item.quantity > 0);
     }
 
     this.refs.sellControls.itemList.hidden = false;

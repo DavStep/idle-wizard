@@ -1749,6 +1749,21 @@ function createAuthFacadeFake({ enabled = true, authenticated = false } = {}) {
   };
 }
 
+function createFeedbackFacadeFake() {
+  const messages = [];
+
+  return {
+    getMessages: () => messages,
+    submitFeedback: async (body) => {
+      messages.push(body);
+      return {
+        ok: true,
+        body,
+      };
+    },
+  };
+}
+
 function createWorldChatFacadeFake({ messages } = {}) {
   const snapshot = {
     connected: true,
@@ -2062,6 +2077,39 @@ describe('PagesFacade', () => {
     );
   });
 
+  it('shows a garden tab notification when garden work is ready outside Workshop', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const gardenTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="garden"]');
+    expect(gardenTab?.dataset.notification).toBeUndefined();
+
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+    tile.phase = 'ready';
+    tile.selectedSeedItemTypeId = 1;
+    tile.selectedSeedLabel = 'Sage Seed';
+    tile.seedItemTypeId = 1;
+    tile.seedLabel = 'Sage Seed';
+    tile.herbItemTypeId = 1001;
+    tile.herbLabel = 'Sage';
+    gameplayFacade.publishSnapshot();
+
+    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
+    expect(gardenTab?.dataset.notification).toBe('true');
+    expect(gardenTab?.getAttribute('aria-label')).toBe('show garden, action available');
+
+    clickRoomTab(stage, 'garden');
+
+    const row = stage.querySelector('.garden-page__plot-row');
+    expect(row?.dataset.notification).toBe('true');
+  });
+
   it('opens level rewards from the top-panel level', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
@@ -2339,6 +2387,9 @@ describe('PagesFacade', () => {
         (button) => button.textContent,
       ),
     ).toEqual(['monochrome', 'resources']);
+    expect(stage.querySelector('.room-top-panel__feedback-open')?.textContent).toBe(
+      'feedback',
+    );
     expect(focusOptions).toEqual([{ preventScroll: true }]);
 
     input.value = 'Mira';
@@ -2347,6 +2398,44 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().username).toBe('Mira');
     expect(usernameButton.textContent).toBe('Mira');
     expect(settings.hidden).toBe(true);
+  });
+
+  it('opens feedback from settings and sends player feedback', async () => {
+    const stage = document.createElement('section');
+    const feedbackFacade = createFeedbackFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin'),
+      feedbackFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    stage
+      .querySelector('.room-top-panel__feedback-open')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const settings = stage.querySelector('.room-top-panel__settings');
+    const input = stage.querySelector('.room-top-panel__feedback-input');
+    const form = stage.querySelector('.room-top-panel__feedback-form');
+
+    expect(settings.querySelector('.style-box__title')?.textContent).toBe('feedback');
+    expect(settings.classList.contains('is-feedback')).toBe(true);
+    expect(stage.querySelector('.room-top-panel__feedback-close')?.textContent).toBe('close');
+
+    input.value = ' needs more quiet space ';
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await Promise.resolve();
+
+    expect(feedbackFacade.getMessages()).toEqual([' needs more quiet space ']);
+    expect(stage.querySelector('.room-top-panel__feedback-status')?.textContent).toBe(
+      'sent',
+    );
+    expect(input.value).toBe('');
   });
 
   it('asks first landed players to set a username', () => {

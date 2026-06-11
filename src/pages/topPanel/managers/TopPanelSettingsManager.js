@@ -8,12 +8,15 @@ import {
 } from '../../../player/playerThemes.js';
 
 export class TopPanelSettingsManager {
-  constructor({ playerFacade } = {}) {
+  constructor({ playerFacade, feedbackFacade } = {}) {
     this.playerFacade = playerFacade;
+    this.feedbackFacade = feedbackFacade;
     this.refs = null;
     this.unsubscribe = null;
     this.visible = false;
     this.usernamePromptMode = false;
+    this.feedbackMode = false;
+    this.feedbackPending = false;
     this.previousFocus = null;
     this.handleUsernameClick = () => this.showSettings();
     this.handleCloseClick = () => this.hide();
@@ -50,6 +53,19 @@ export class TopPanelSettingsManager {
     this.handleColorModeClick = (event) => {
       this.playerFacade?.setColorMode?.(event.currentTarget.dataset.colorMode);
     };
+    this.handleFeedbackOpenClick = () => this.showFeedback();
+    this.handleFeedbackSubmit = (event) => {
+      event.preventDefault();
+      void this.sendFeedback();
+    };
+    this.handleFeedbackSendPointerDown = (event) => {
+      if (!this.visible || !this.feedbackMode) {
+        return;
+      }
+
+      event.preventDefault();
+      void this.sendFeedback();
+    };
     this.handleKeydown = (event) => {
       if (!this.visible || event.key !== 'Escape') {
         return;
@@ -71,6 +87,13 @@ export class TopPanelSettingsManager {
     this.refs.usernameSaveButton.addEventListener('touchstart', this.handleSaveTouchStart, {
       passive: false,
     });
+    this.refs.feedbackOpenButton.addEventListener('click', this.handleFeedbackOpenClick);
+    this.refs.feedbackForm.addEventListener('submit', this.handleFeedbackSubmit);
+    this.refs.feedbackSendButton.addEventListener(
+      'pointerdown',
+      this.handleFeedbackSendPointerDown,
+    );
+    this.refs.feedbackCloseButton.addEventListener('click', this.handleCloseClick);
 
     for (const button of this.refs.themeButtons) {
       button.addEventListener('click', this.handleThemeClick);
@@ -114,6 +137,13 @@ export class TopPanelSettingsManager {
         'touchstart',
         this.handleSaveTouchStart,
       );
+      this.refs.feedbackOpenButton.removeEventListener('click', this.handleFeedbackOpenClick);
+      this.refs.feedbackForm.removeEventListener('submit', this.handleFeedbackSubmit);
+      this.refs.feedbackSendButton.removeEventListener(
+        'pointerdown',
+        this.handleFeedbackSendPointerDown,
+      );
+      this.refs.feedbackCloseButton.removeEventListener('click', this.handleCloseClick);
 
       for (const button of this.refs.themeButtons) {
         button.removeEventListener('click', this.handleThemeClick);
@@ -127,6 +157,7 @@ export class TopPanelSettingsManager {
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs = null;
     this.visible = false;
+    this.feedbackPending = false;
     this.previousFocus = null;
   }
 
@@ -135,39 +166,51 @@ export class TopPanelSettingsManager {
   }
 
   showSettings() {
-    this.open({ usernamePromptMode: false });
+    this.open({ usernamePromptMode: false, feedbackMode: false });
   }
 
   showUsernamePrompt() {
-    this.open({ usernamePromptMode: true });
+    this.open({ usernamePromptMode: true, feedbackMode: false });
+  }
+
+  showFeedback() {
+    this.open({ usernamePromptMode: false, feedbackMode: true });
   }
 
   isVisible() {
     return this.visible;
   }
 
-  open({ usernamePromptMode }) {
+  open({ usernamePromptMode, feedbackMode }) {
     if (!this.refs) {
       return;
     }
 
-    this.previousFocus = document.activeElement;
+    if (!this.visible) {
+      this.previousFocus = document.activeElement;
+    }
+
     this.visible = true;
     this.usernamePromptMode = usernamePromptMode;
+    this.feedbackMode = feedbackMode;
     this.applyMode();
     this.refs.usernameInput.value =
       usernamePromptMode && this.refs.usernameButton.textContent === 'wizard'
         ? ''
         : this.refs.usernameButton.textContent;
     this.clearUsernameError();
+    this.clearFeedbackStatus();
+    this.setFeedbackPending(false);
     this.applyVisibility();
-    this.focusWithoutScroll(this.refs.settingsDialog);
+    this.focusWithoutScroll(feedbackMode ? this.refs.feedbackInput : this.refs.settingsDialog);
   }
 
   hide() {
     const wasVisible = this.visible;
     this.visible = false;
     this.usernamePromptMode = false;
+    this.feedbackMode = false;
+    this.feedbackPending = false;
     this.applyMode();
     this.applyVisibility();
 
@@ -189,6 +232,41 @@ export class TopPanelSettingsManager {
 
     this.playerFacade?.setUsername(username);
     this.hide();
+  }
+
+  async sendFeedback() {
+    if (!this.refs || this.feedbackPending) {
+      return;
+    }
+
+    const body = this.refs.feedbackInput.value;
+
+    if (!body.trim()) {
+      this.showFeedbackStatus('write feedback');
+      this.focusWithoutScroll(this.refs.feedbackInput);
+      return;
+    }
+
+    this.setFeedbackPending(true);
+    this.clearFeedbackStatus();
+
+    const result = this.feedbackFacade?.submitFeedback
+      ? await this.feedbackFacade.submitFeedback(body)
+      : { ok: false, reason: 'offline' };
+
+    this.setFeedbackPending(false);
+
+    if (!this.refs || !this.visible || !this.feedbackMode) {
+      return;
+    }
+
+    if (result?.ok) {
+      this.refs.feedbackInput.value = '';
+      this.showFeedbackStatus('sent');
+      return;
+    }
+
+    this.showFeedbackStatus(this.getFeedbackErrorMessage(result?.reason));
   }
 
   render(snapshot) {
@@ -246,13 +324,22 @@ export class TopPanelSettingsManager {
       return;
     }
 
-    const title = this.usernamePromptMode ? 'username' : 'settings';
+    const title = this.feedbackMode
+      ? 'feedback'
+      : this.usernamePromptMode
+        ? 'username'
+        : 'settings';
     const closeLabel = this.usernamePromptMode ? 'later' : 'close';
 
     this.refs.settings.classList.toggle('is-username-prompt', this.usernamePromptMode);
+    this.refs.settings.classList.toggle('is-feedback', this.feedbackMode);
     this.refs.settingsDialog.setAttribute(
       'aria-label',
-      this.usernamePromptMode ? 'Set username' : 'Settings',
+      this.feedbackMode
+        ? 'Feedback'
+        : this.usernamePromptMode
+          ? 'Set username'
+          : 'Settings',
     );
 
     if (this.refs.settingsTitle.textContent !== title) {
@@ -286,6 +373,56 @@ export class TopPanelSettingsManager {
     }
 
     this.refs.usernameError.hidden = true;
+  }
+
+  showFeedbackStatus(message) {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.refs.feedbackStatus.textContent !== message) {
+      this.refs.feedbackStatus.textContent = message;
+    }
+
+    this.refs.feedbackStatus.hidden = false;
+  }
+
+  clearFeedbackStatus() {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.refs.feedbackStatus.textContent !== '') {
+      this.refs.feedbackStatus.textContent = '';
+    }
+
+    this.refs.feedbackStatus.hidden = true;
+  }
+
+  setFeedbackPending(pending) {
+    if (!this.refs) {
+      return;
+    }
+
+    this.feedbackPending = pending;
+    this.refs.feedbackSendButton.disabled = pending;
+
+    const label = pending ? 'sending' : 'send';
+    if (this.refs.feedbackSendButton.textContent !== label) {
+      this.refs.feedbackSendButton.textContent = label;
+    }
+  }
+
+  getFeedbackErrorMessage(reason) {
+    if (reason === 'empty_feedback') {
+      return 'write feedback';
+    }
+
+    if (reason === 'offline') {
+      return 'server unavailable';
+    }
+
+    return 'send failed';
   }
 
   focusWithoutScroll(element) {

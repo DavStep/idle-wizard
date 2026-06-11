@@ -163,6 +163,7 @@
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
+- Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
@@ -199,6 +200,7 @@
 ## Backend And Android
 
 - Backend target is SpacetimeDB.
+- Player feedback is server-backed through private `player_feedback` rows written by `submit_feedback`; dashboard review should add a guarded read surface later.
 - SpacetimeDB reducers are public entry points; never use first-come admin claim or raw client leaderboard/shop values without server-side caps.
 - Shared leaderboard totals, player market exchange, NPC price pressure, research announcements, and potion discoveries must stay locked down until the server owns the matching gameplay state; bounded task player levels are client-reported through `set_player_level`.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.

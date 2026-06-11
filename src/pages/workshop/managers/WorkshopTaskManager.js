@@ -1,3 +1,5 @@
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
+
 export class WorkshopTaskManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -102,6 +104,10 @@ export class WorkshopTaskManager {
         : `${taskSnapshot.level.completedTasks}/${taskSnapshot.level.totalTasks}`,
     );
     this.root.classList.toggle('is-all-complete', taskSnapshot.completedAllLevels);
+    setNotificationBadge(
+      this.refs.summary,
+      tasks.some((task) => task.canFill || task.canComplete),
+    );
 
     for (const task of tasks) {
       this.renderTask(task);
@@ -203,6 +209,7 @@ export class WorkshopTaskManager {
     row.button.disabled = disabled;
     row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     row.button.setAttribute('aria-label', `${buttonText} ${task.itemLabel} task`);
+    setNotificationBadge(row.button, !disabled);
     row.fill.style.width = `${Math.max(0, Math.min(1, task.progress)) * 100}%`;
   }
 

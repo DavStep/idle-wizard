@@ -6,6 +6,8 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 
 export class GardenPlotManager {
@@ -241,6 +243,7 @@ export class GardenPlotManager {
     const seedQuantityById = new Map(
       seeds.map((seed) => [seed.itemTypeId, seed.quantity]),
     );
+    const hasPlantableSeed = seeds.some((seed) => seed.quantity > 0);
     this.ensureTiles(garden.plot.maxTiles);
     this.ensureEmptySeedRow();
     this.ensureSeedRows(seeds);
@@ -251,6 +254,7 @@ export class GardenPlotManager {
         plot: garden.plot,
         gold: snapshot.gold,
         seedQuantityById,
+        hasPlantableSeed,
       });
     }
 
@@ -268,7 +272,7 @@ export class GardenPlotManager {
       .filter((seed) => shouldShowItemInActionList(snapshot, seed, seed.quantity));
   }
 
-  renderTile({ tile, plot, gold, seedQuantityById }) {
+  renderTile({ tile, plot, gold, seedQuantityById, hasPlantableSeed }) {
     const refs = this.tileRefs.get(tile.tileNumber);
     const isNextLockedTile = tile.tileNumber === plot.nextTileNumber;
     const selectedSeedQuantity = tile.selectedSeedItemTypeId
@@ -285,6 +289,16 @@ export class GardenPlotManager {
     );
     refs.button.classList.toggle('is-ready', tile.phase === 'ready');
     refs.button.classList.toggle('is-processing', Boolean(tile.process));
+    setNotificationBadge(
+      refs.button,
+      hasGardenTileNotification({
+        tile,
+        plot,
+        gold,
+        seedQuantityById,
+        hasPlantableSeed,
+      }),
+    );
 
     if (!tile.unlocked) {
       refs.label.textContent = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
@@ -385,6 +399,7 @@ export class GardenPlotManager {
       this.emptySeedRef.button.disabled = false;
       this.emptySeedRef.button.setAttribute('aria-disabled', 'false');
       this.emptySeedRef.button.setAttribute('aria-label', 'set plot seed to empty');
+      setNotificationBadge(this.emptySeedRef.button, false);
     }
 
     for (const seed of seeds) {
@@ -396,6 +411,7 @@ export class GardenPlotManager {
       refs.button.disabled = false;
       refs.button.setAttribute('aria-disabled', 'false');
       refs.button.setAttribute('aria-label', `select ${seed.label}, owned ${seed.quantity}`);
+      setNotificationBadge(refs.button, seed.quantity > 0);
     }
 
     this.applySeedRowOrder(seeds);

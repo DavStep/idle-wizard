@@ -76,6 +76,16 @@ export const Player = __t.object("Player", {
 });
 export type Player = __Infer<typeof Player>;
 
+export const PlayerFeedback = __t.object("PlayerFeedback", {
+  feedbackId: __t.uuid(),
+  senderIdentity: __t.identity(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  body: __t.string(),
+  submittedAt: __t.timestamp(),
+});
+export type PlayerFeedback = __Infer<typeof PlayerFeedback>;
+
 export const PlayerGameplaySave = __t.object("PlayerGameplaySave", {
   identity: __t.identity(),
   saveJson: __t.string(),

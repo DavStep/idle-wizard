@@ -3,6 +3,7 @@ import {
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 const TOUCH_DRAG_DISTANCE = 8;
 
@@ -268,6 +269,7 @@ export class BrewingCauldronManager {
       this.setDraggable(refs.button, !disabled);
       this.setAttribute(refs.button, 'aria-disabled', disabled ? 'true' : 'false');
       this.setAttribute(refs.button, 'aria-label', `add ${herb.label} to cauldron`);
+      setNotificationBadge(refs.button, !disabled);
     }
   }
 
@@ -426,6 +428,7 @@ export class BrewingCauldronManager {
       'aria-label',
       action.ariaLabel,
     );
+    setNotificationBadge(this.refs.actions.actionButton, !action.disabled);
     this.setHidden(this.refs.actions.message, true);
     this.setText(this.refs.actions.message, '');
   }

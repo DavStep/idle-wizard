@@ -54,6 +54,7 @@ import SetPlayerProfileReducer from "./set_player_profile_reducer";
 import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetUsernameReducer from "./set_username_reducer";
+import SubmitFeedbackReducer from "./submit_feedback_reducer";
 import TickNpcMarketReducer from "./tick_npc_market_reducer";
 import UpsertGameConfigReducer from "./upsert_game_config_reducer";
 import UpsertNpcMarketItemConfigReducer from "./upsert_npc_market_item_config_reducer";
@@ -289,6 +290,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_username", SetUsernameReducer),
+  __reducerSchema("submit_feedback", SubmitFeedbackReducer),
   __reducerSchema("tick_npc_market", TickNpcMarketReducer),
   __reducerSchema("upsert_game_config", UpsertGameConfigReducer),
   __reducerSchema("upsert_npc_market_item_config", UpsertNpcMarketItemConfigReducer),

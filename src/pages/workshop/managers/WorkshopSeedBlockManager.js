@@ -1,4 +1,5 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 export class WorkshopSeedBlockManager {
   constructor({ gameplayFacade, onSeedsClick, onSummonNotice } = {}) {
@@ -160,5 +161,6 @@ export class WorkshopSeedBlockManager {
       snapshot.seedSummoning.canSummon ? 'false' : 'true',
     );
     this.refs.button.disabled = !snapshot.seedSummoning.canSummon;
+    setNotificationBadge(this.refs.button, snapshot.seedSummoning.canSummon);
   }
 }

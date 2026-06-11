@@ -13,6 +13,7 @@ export class BottomPanelViewManager {
     this.tabs = tabs;
     this.root = null;
     this.tabButtons = new Map();
+    this.notifications = {};
   }
 
   mount(stage) {
@@ -55,6 +56,14 @@ export class BottomPanelViewManager {
     }
   }
 
+  setNotifications(notifications = {}) {
+    this.notifications = notifications ?? {};
+
+    for (const tab of this.tabs) {
+      this.syncTabNotification(tab);
+    }
+  }
+
   createPanel() {
     const panel = document.createElement('nav');
     panel.className = 'room-bottom-panel style-panel';
@@ -81,6 +90,28 @@ export class BottomPanelViewManager {
     button.setAttribute('aria-selected', 'false');
     button.addEventListener('click', () => this.onShowPage?.(tab.id));
     this.tabButtons.set(tab.id, button);
+    this.syncTabNotification(tab);
     return button;
+  }
+
+  syncTabNotification(tab) {
+    const button = this.tabButtons.get(tab.id);
+
+    if (!button) {
+      return;
+    }
+
+    const pageNotification = this.notifications?.[tab.id];
+    const active =
+      pageNotification === true || pageNotification?.active === true;
+
+    if (active) {
+      button.dataset.notification = 'true';
+      button.setAttribute('aria-label', `show ${tab.label}, action available`);
+      return;
+    }
+
+    delete button.dataset.notification;
+    button.setAttribute('aria-label', `show ${tab.label}`);
   }
 }

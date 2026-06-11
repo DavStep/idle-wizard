@@ -121,7 +121,8 @@ export class TopPanelViewManager {
     this.refs.settingsTitle.textContent = 'settings';
 
     const usernameSection = document.createElement('div');
-    usernameSection.className = 'room-top-panel__settings-section';
+    usernameSection.className =
+      'room-top-panel__settings-section room-top-panel__username-section';
 
     const usernameLabel = document.createElement('label');
     usernameLabel.className = 'room-top-panel__settings-label';
@@ -217,6 +218,52 @@ export class TopPanelViewManager {
 
     colorSection.append(colorLabel, colorButtons);
 
+    const feedbackSection = document.createElement('div');
+    feedbackSection.className =
+      'room-top-panel__settings-section room-top-panel__feedback-section';
+
+    this.refs.feedbackOpenButton = document.createElement('button');
+    this.refs.feedbackOpenButton.className = 'style-button room-top-panel__feedback-open';
+    this.refs.feedbackOpenButton.type = 'button';
+    this.refs.feedbackOpenButton.textContent = 'feedback';
+    this.refs.feedbackOpenButton.setAttribute('aria-haspopup', 'dialog');
+
+    feedbackSection.append(this.refs.feedbackOpenButton);
+
+    this.refs.feedbackForm = document.createElement('form');
+    this.refs.feedbackForm.className = 'room-top-panel__feedback-form';
+
+    this.refs.feedbackInput = document.createElement('textarea');
+    this.refs.feedbackInput.className = 'style-input room-top-panel__feedback-input';
+    this.refs.feedbackInput.maxLength = 2000;
+    this.refs.feedbackInput.rows = 7;
+    this.refs.feedbackInput.placeholder = 'write feedback';
+    this.refs.feedbackInput.setAttribute('aria-label', 'feedback');
+
+    this.refs.feedbackStatus = document.createElement('div');
+    this.refs.feedbackStatus.className = 'room-top-panel__feedback-status';
+    this.refs.feedbackStatus.hidden = true;
+
+    const feedbackActions = document.createElement('div');
+    feedbackActions.className = 'room-top-panel__feedback-actions';
+
+    this.refs.feedbackSendButton = document.createElement('button');
+    this.refs.feedbackSendButton.className = 'style-button room-top-panel__feedback-send';
+    this.refs.feedbackSendButton.type = 'submit';
+    this.refs.feedbackSendButton.textContent = 'send';
+
+    this.refs.feedbackCloseButton = document.createElement('button');
+    this.refs.feedbackCloseButton.className = 'style-button room-top-panel__feedback-close';
+    this.refs.feedbackCloseButton.type = 'button';
+    this.refs.feedbackCloseButton.textContent = 'close';
+
+    feedbackActions.append(this.refs.feedbackSendButton, this.refs.feedbackCloseButton);
+    this.refs.feedbackForm.append(
+      this.refs.feedbackInput,
+      this.refs.feedbackStatus,
+      feedbackActions,
+    );
+
     this.refs.authSection = document.createElement('div');
     this.refs.authSection.className =
       'room-top-panel__settings-section room-top-panel__auth-section';
@@ -242,6 +289,8 @@ export class TopPanelViewManager {
       usernameSection,
       themeSection,
       colorSection,
+      feedbackSection,
+      this.refs.feedbackForm,
       this.refs.authSection,
     );
     this.refs.settings.append(this.refs.settingsDialog);

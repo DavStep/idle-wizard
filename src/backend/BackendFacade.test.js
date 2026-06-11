@@ -26,6 +26,10 @@ function createBackendWithFakes() {
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
+  backendFacade.feedbackFacade = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
   backendFacade.npcMarketFacade = {
     connect: vi.fn(),
     disconnect: vi.fn(),
