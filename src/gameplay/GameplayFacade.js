@@ -296,6 +296,28 @@ export class GameplayFacade {
     return result;
   }
 
+  setBrewingAutoBrewRecipe(recipeKey) {
+    const result = this.brewingFacade.setAutoBrewRecipeKey(recipeKey);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setBrewingAutoBrewEnabled(enabled) {
+    const result = this.brewingFacade.setAutoBrewEnabled(enabled);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  toggleBrewingAutoBrewEnabled() {
+    const result = this.brewingFacade.toggleAutoBrewEnabled();
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  getBrewingAutoBrewRecipeKey() {
+    return this.brewingFacade.getAutoBrewRecipeKey();
+  }
+
   brewCauldron() {
     const result = this.brewingFacade.brew();
     if (result.ok && result.discovery?.potionKey) {

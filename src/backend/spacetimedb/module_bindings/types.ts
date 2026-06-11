@@ -10,6 +10,17 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const AdminPlayerGameplaySave = __t.object("AdminPlayerGameplaySave", {});
+export type AdminPlayerGameplaySave = __Infer<typeof AdminPlayerGameplaySave>;
+
+export const AdminPlayerGameplaySaveResult = __t.object("AdminPlayerGameplaySaveResult", {
+  identity: __t.identity(),
+  currentGold: __t.f64(),
+  currentCrystal: __t.u32(),
+  updatedAt: __t.timestamp(),
+});
+export type AdminPlayerGameplaySaveResult = __Infer<typeof AdminPlayerGameplaySaveResult>;
+
 export const GameConfig = __t.object("GameConfig", {
   configKey: __t.string(),
   configJson: __t.string(),

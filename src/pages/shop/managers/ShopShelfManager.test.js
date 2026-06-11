@@ -2,10 +2,74 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { ShopMarketTabsManager } from './ShopMarketTabsManager.js';
 import { ShopPlayerShelfManager } from './ShopPlayerShelfManager.js';
+import { ShopPlayerRequestManager } from './ShopPlayerRequestManager.js';
 import { ShopShelfManager } from './ShopShelfManager.js';
 
 describe('ShopShelfManager', () => {
+  it('switches between npm and player market panels', () => {
+    const stage = document.createElement('section');
+    const manager = new ShopMarketTabsManager();
+
+    manager.mount(stage);
+
+    const npmPanel = manager.getPanel('npm');
+    const playerPanel = manager.getPanel('player');
+    const playerTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
+      (button) => button.textContent === 'player market',
+    );
+
+    expect(npmPanel.hidden).toBe(false);
+    expect(playerPanel.hidden).toBe(true);
+
+    playerTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(npmPanel.hidden).toBe(true);
+    expect(playerPanel.hidden).toBe(false);
+    expect(playerTab.getAttribute('aria-selected')).toBe('true');
+
+    manager.unmount();
+  });
+
+  it('stores one local player market request', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const manager = new ShopPlayerRequestManager();
+
+    manager.mount(stage, popupLayer);
+
+    stage
+      .querySelector('.shop-page__player-request-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.shop-page__request-popup');
+    const [itemInput, quantityInput, goldInput] =
+      popup.querySelectorAll('.shop-page__request-input');
+    itemInput.value = 'Mint Seed';
+    quantityInput.value = '2';
+    goldInput.value = '3.25';
+
+    popup
+      .querySelector('.shop-page__request-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(true);
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      'requestMint Seed (2) 3.25 gold',
+    );
+
+    stage
+      .querySelectorAll('.shop-page__player-request-button')[1]
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      'requestnone',
+    );
+
+    manager.unmount();
+  });
+
   it('shows zero-cost NPC market stand buys as free', () => {
     const manager = new ShopShelfManager();
 

@@ -43,11 +43,13 @@ export class BrewingAutomationManager {
       return;
     }
 
-    if (!this.brewingFacade.getSnapshot().canBrew) {
+    const snapshot = this.brewingFacade.getSnapshot();
+
+    if (!snapshot.autoBrewEnabled || !snapshot.autoBrewRecipeKey) {
       return;
     }
 
-    const result = this.brewingFacade.brew();
+    const result = this.brewingFacade.autoBrew();
 
     if (result.ok && result.discovery?.potionKey) {
       this.onPotionRecipeDiscovery?.(result.discovery.potionKey);

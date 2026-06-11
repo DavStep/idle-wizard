@@ -26,6 +26,7 @@ const OPEN_POPUP_SELECTOR = [
   '.research-page__info-popup:not([hidden])',
   '.shop-page__sell-popup:not([hidden])',
   '.shop-page__market-popup:not([hidden])',
+  '.shop-page__request-popup:not([hidden])',
   '.room-top-panel__settings:not([hidden])',
 ].join(',');
 

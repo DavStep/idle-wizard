@@ -44,6 +44,8 @@ export class BrewingFacade {
       brewingProcessEntityManager: this.brewingProcessEntityManager,
       itemsFacade,
     });
+    this.autoBrewEnabled = false;
+    this.autoBrewRecipeKey = null;
     this.onBrewComplete = onBrewComplete;
     this.brewingSnapshotManager = new BrewingSnapshotManager({
       brewingBalanceManager: this.brewingBalanceManager,
@@ -52,6 +54,8 @@ export class BrewingFacade {
       brewingRecipeMatchManager: this.brewingRecipeMatchManager,
       itemsFacade,
       manaFacade,
+      getAutoBrewEnabled: () => this.autoBrewEnabled,
+      getAutoBrewRecipeKey: () => this.autoBrewRecipeKey,
     });
   }
 
@@ -63,6 +67,75 @@ export class BrewingFacade {
 
   setPotionDiscoveryFacade(potionDiscoveryFacade) {
     this.brewingRecipeMatchManager.setPotionDiscoveryFacade(potionDiscoveryFacade);
+  }
+
+  setAutoBrewRecipeKey(recipeKey) {
+    const nextKey = typeof recipeKey === 'string' && recipeKey.length > 0 ? recipeKey : null;
+
+    const recipe = nextKey ? this.brewingRecipeMatchManager.getRecipeByKey(nextKey) : null;
+
+    if (!recipe || !this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)) {
+      this.autoBrewRecipeKey = null;
+      this.autoBrewEnabled = false;
+      return {
+        ok: true,
+        autoBrewRecipeKey: null,
+        autoBrewEnabled: false,
+      };
+    }
+
+    this.autoBrewRecipeKey = nextKey;
+    return {
+      ok: true,
+      autoBrewRecipeKey: this.autoBrewRecipeKey,
+      autoBrewEnabled: this.autoBrewEnabled,
+    };
+  }
+
+  getAutoBrewRecipeKey() {
+    return this.autoBrewRecipeKey;
+  }
+
+  setAutoBrewEnabled(enabled) {
+    const nextEnabled = enabled === true;
+    if (nextEnabled && !this.autoBrewRecipeKey) {
+      return {
+        ok: false,
+        reason: 'auto_brew_recipe_required',
+      };
+    }
+
+    this.autoBrewEnabled = nextEnabled;
+
+    return {
+      ok: true,
+      autoBrewEnabled: this.autoBrewEnabled,
+    };
+  }
+
+  toggleAutoBrewEnabled() {
+    return this.setAutoBrewEnabled(!this.autoBrewEnabled);
+  }
+
+  getAutoBrewEnabled() {
+    return this.autoBrewEnabled;
+  }
+
+  autoBrew() {
+    if (!this.autoBrewEnabled) {
+      return {
+        ok: false,
+        reason: 'auto_brew_disabled',
+      };
+    }
+
+    const prepared = this.brewingStartManager.prepareRecipeForAutoBrew(this.autoBrewRecipeKey);
+
+    if (!prepared.ok) {
+      return prepared;
+    }
+
+    return this.brew();
   }
 
   applyRuntimeConfig(snapshot = {}) {
@@ -127,6 +200,8 @@ export class BrewingFacade {
     const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
 
     return {
+      autoBrewEnabled: this.autoBrewEnabled,
+      autoBrewRecipeKey: this.autoBrewRecipeKey,
       cauldronItemKeys: this.brewingCauldronEntityManager
         .getIngredientSnapshots()
         .map((ingredient) => ingredient.key),
@@ -146,6 +221,11 @@ export class BrewingFacade {
     if (!snapshot || typeof snapshot !== 'object') {
       return;
     }
+
+    this.setAutoBrewRecipeKey(
+      typeof snapshot.autoBrewRecipeKey === 'string' ? snapshot.autoBrewRecipeKey : null,
+    );
+    this.setAutoBrewEnabled(Boolean(snapshot.autoBrewEnabled));
 
     this.brewingCauldronEntityManager.clearIngredients();
 

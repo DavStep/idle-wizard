@@ -65,6 +65,15 @@
   --style-main-box-width: 280px;
   --style-room-nav-button-width: 100px;
   --brewing-page-guide-sequence-height: var(--style-row-min-height);
+  --brewing-page-guide-panel-height: calc(
+    var(--style-row-min-height) + 3px + var(--brewing-page-guide-sequence-height) +
+      12px
+  );
+  --brewing-page-guide-controls-gap: 8px;
+  --brewing-page-guide-controls-bottom: calc(
+    var(--style-room-chat-clearance) + var(--brewing-page-guide-panel-height) +
+      var(--style-room-chat-title-overhang) + var(--brewing-page-guide-controls-gap)
+  );
   --garden-page-box-gap: 24px;
   --garden-page-plot-rows-height: 220px;
   --garden-page-herb-rows-height: 210px;
@@ -647,6 +656,10 @@ body {
 .shop-page__player-listing-item-row,
 .shop-page__player-listing-choice-row,
 .shop-page__player-listing-action-row,
+.shop-page__player-request-row,
+.shop-page__request-field,
+.shop-page__request-action-row,
+.shop-page__request-status,
 .shop-page__market-row,
 .shop-page__trade-history-row,
 .shop-page__trade-history-empty,
@@ -666,6 +679,10 @@ body {
 .shop-page__player-listing-item-row::after,
 .shop-page__player-listing-choice-row::after,
 .shop-page__player-listing-action-row::after,
+.shop-page__player-request-row::after,
+.shop-page__request-field::after,
+.shop-page__request-action-row::after,
+.shop-page__request-status::after,
 .shop-page__market-row::after,
 .shop-page__trade-history-row::after,
 .shop-page__player-proceeds-row::after {
@@ -888,25 +905,32 @@ body {
 .brewing-page__herb-row,
 .brewing-page__cauldron-status,
 .brewing-page__cauldron-empty,
+.brewing-page__cauldron-recipe-row,
+.brewing-page__cauldron-guide-step,
 .brewing-page__active-brew,
 .brewing-page__message {
   min-height: var(--style-row-min-height);
 }
 
-.brewing-page__herb-row {
+.brewing-page__herb-row,
+.brewing-page__cauldron-recipe-row,
+.brewing-page__cauldron-guide-step {
   clear: both;
 }
 
 .brewing-page__herb-row::after,
 .brewing-page__herb-button::after,
-.brewing-page__ingredient-row::after {
+.brewing-page__ingredient-row::after,
+.brewing-page__cauldron-recipe-row::after,
+.brewing-page__cauldron-guide-step::after {
   display: block;
   clear: both;
   content: "";
 }
 
 .brewing-page__herb-button,
-.brewing-page__ingredient-row {
+.brewing-page__ingredient-row,
+.brewing-page__cauldron-guide-step {
   display: block;
   width: 100%;
   min-height: var(--style-row-min-height);
@@ -931,28 +955,35 @@ body {
   cursor: pointer;
 }
 
-.brewing-page__ingredient-row[hidden] {
+.brewing-page__ingredient-row[hidden],
+.brewing-page__cauldron-guide[hidden],
+.brewing-page__cauldron-guide-step[hidden] {
   display: none;
 }
 
 .brewing-page__herb-button:hover .row_key,
 .brewing-page__herb-button:focus .row_key,
 .brewing-page__ingredient-row:hover .row_key,
-.brewing-page__ingredient-row:focus .row_key {
+.brewing-page__ingredient-row:focus .row_key,
+.brewing-page__cauldron-guide-step:not(:disabled):hover .row_key,
+.brewing-page__cauldron-guide-step:not(:disabled):focus .row_key {
   text-decoration: underline;
 }
 
 .brewing-page__herb-button:focus,
-.brewing-page__ingredient-row:focus {
+.brewing-page__ingredient-row:focus,
+.brewing-page__cauldron-guide-step:focus {
   outline: none;
 }
 
-.brewing-page__herb-button:disabled {
+.brewing-page__herb-button:disabled,
+.brewing-page__cauldron-guide-step:disabled {
   color: var(--style-disabled);
   cursor: default;
 }
 
-.brewing-page__herb-button:disabled:hover .row_key {
+.brewing-page__herb-button:disabled:hover .row_key,
+.brewing-page__cauldron-guide-step:disabled:hover .row_key {
   text-decoration: none;
 }
 
@@ -980,6 +1011,36 @@ body {
 
 .brewing-page__cauldron-items {
   min-height: 48px;
+}
+
+.brewing-page__cauldron-guide {
+  margin-bottom: 3px;
+}
+
+.brewing-page__cauldron-guide-sequence {
+  max-height: calc(var(--style-row-min-height) * 5);
+  margin-top: 3px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.brewing-page__cauldron-guide-sequence::-webkit-scrollbar {
+  display: none;
+}
+
+.brewing-page__cauldron-guide-step {
+  color: var(--style-muted);
+}
+
+.brewing-page__cauldron-guide-step.is-placed,
+.brewing-page__cauldron-guide-step.is-next,
+.brewing-page__cauldron-guide-step.is-mismatch {
+  color: var(--style-text);
+}
+
+.brewing-page__cauldron-guide-step:disabled.is-next,
+.brewing-page__cauldron-guide-step:disabled.is-mismatch {
+  color: var(--style-text);
 }
 
 .brewing-page__cauldron-items.is-empty {
@@ -1021,6 +1082,13 @@ body {
   text-align: center;
 }
 
+.brewing-page__action-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+}
+
 .style-button.brewing-page__action-button {
   display: inline-flex;
   flex-direction: column;
@@ -1041,6 +1109,33 @@ body {
   font-size: 10px;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: 10px;
+}
+
+.brewing-page__cauldron-auto-brew-text {
+  position: absolute;
+  right: var(--style-box-title-left);
+  bottom: -9px;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  background: var(--style-surface);
+  appearance: none;
+  color: var(--style-text);
+  font-size: 14px;
+  font-weight: normal;
+  line-height: normal;
+}
+
+.brewing-page__cauldron-auto-brew-text[aria-disabled="true"] {
+  color: var(--style-disabled);
+  cursor: default;
+}
+
+.brewing-page__cauldron-auto-brew-text:disabled,
+.brewing-page__cauldron-auto-brew-text:not([aria-disabled="true"]) {
+  cursor: pointer;
 }
 
 .brewing-page__message {
@@ -1103,7 +1198,8 @@ body {
 .style-button.brewing-page__recipes-button,
 .style-button.brewing-page__potions-button {
   position: absolute;
-  top: 492px;
+  top: auto;
+  bottom: calc(var(--style-room-chat-clearance) + var(--brewing-page-guide-controls-gap));
   width: 132px;
   margin-bottom: 0;
 }
@@ -1216,6 +1312,12 @@ body {
   z-index: 30;
 }
 
+.workshop-page__trade-alliance-member-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+}
+
 .workshop-page__world-chat-popup {
   position: absolute;
   inset: 0;
@@ -1237,6 +1339,7 @@ body {
 
 .workshop-page__leaderboard-popup[hidden],
 .workshop-page__trade-alliance-popup[hidden],
+.workshop-page__trade-alliance-member-popup[hidden],
 .workshop-page__world-chat-popup[hidden],
 .workshop-page__logs-popup[hidden],
 .workshop-page__discoveries-popup[hidden] {
@@ -1593,6 +1696,19 @@ div.workshop-page__discovery-row {
   min-width: 0;
 }
 
+.workshop-page__trade-alliance-member-row.is-actionable {
+  cursor: pointer;
+}
+
+.workshop-page__trade-alliance-member-row.is-actionable:hover .row_key,
+.workshop-page__trade-alliance-member-row.is-actionable:focus .row_key {
+  text-decoration: underline;
+}
+
+.workshop-page__trade-alliance-member-row.is-actionable:focus {
+  outline: none;
+}
+
 .style-button.workshop-page__trade-alliance-list-action,
 .style-button.workshop-page__trade-alliance-quest-action {
   flex: 0 0 auto;
@@ -1699,6 +1815,35 @@ div.workshop-page__discovery-row {
   top: calc(var(--style-room-content-top) + 330px);
   right: var(--style-room-content-edge);
   left: var(--style-room-content-edge);
+}
+
+.shop-page__market-tabs {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  z-index: 11;
+  display: flex;
+  gap: 3px;
+}
+
+.shop-page__market-panel {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 42px);
+  right: var(--style-room-content-edge);
+  bottom: var(--style-room-chat-clearance);
+  left: var(--style-room-content-edge);
+  padding-top: var(--style-room-chat-title-overhang);
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.shop-page__market-panel[hidden] {
+  display: none;
+}
+
+.shop-page__market-panel::-webkit-scrollbar {
+  display: none;
 }
 
 .garden-page__plot {
@@ -2212,6 +2357,7 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipes-popup,
+.brewing-page__auto-popup,
 .brewing-page__potions-popup {
   position: absolute;
   inset: 0;
@@ -2219,11 +2365,13 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipes-popup[hidden],
+.brewing-page__auto-popup[hidden],
 .brewing-page__potions-popup[hidden] {
   display: none;
 }
 
 .style-dialog.brewing-page__recipes-dialog,
+.style-dialog.brewing-page__auto-dialog,
 .style-dialog.brewing-page__potions-dialog {
   position: absolute;
   top: 50%;
@@ -2233,9 +2381,11 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.brewing-page__recipes-close,
+.style-button.brewing-page__auto-close,
 .style-button.brewing-page__potions-close,
 .style-button.workshop-page__world-chat-close,
 .style-button.workshop-page__trade-alliance-close,
+.style-button.shop-page__request-close,
 .style-button.shop-page__stock-buy-close {
   position: absolute;
   top: var(--style-box-title-top);
@@ -2249,14 +2399,17 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.brewing-page__recipes-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.brewing-page__auto-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.brewing-page__potions-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__trade-alliance-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.shop-page__request-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
 }
 
-.brewing-page__recipe-list {
+.brewing-page__recipe-list,
+.brewing-page__auto-list {
   padding-top: 0;
   max-height: 430px;
   overflow: hidden auto;
@@ -2271,8 +2424,55 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipe-list::-webkit-scrollbar,
+.brewing-page__auto-list::-webkit-scrollbar,
 .brewing-page__potion-list::-webkit-scrollbar {
   display: none;
+}
+
+.brewing-page__auto-summary {
+  padding-bottom: 7px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.brewing-page__auto-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: var(--style-row-min-height);
+  column-gap: 8px;
+}
+
+.brewing-page__auto-row .row_key,
+.brewing-page__auto-row .row_val {
+  float: none;
+  clear: none;
+}
+
+.brewing-page__auto-state-button {
+  justify-self: end;
+  min-width: 0;
+  padding: 0;
+  appearance: none;
+  color: inherit;
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.brewing-page__auto-state-button:hover,
+.brewing-page__auto-state-button:focus {
+  text-decoration: underline;
+}
+
+.brewing-page__auto-state-button:disabled {
+  color: var(--style-disabled);
+  cursor: default;
+  text-decoration: none;
 }
 
 .brewing-page__potion-row,
@@ -2332,7 +2532,8 @@ div.workshop-page__discovery-row {
   overflow-wrap: anywhere;
 }
 
-.brewing-page__recipe-mark-button {
+.brewing-page__recipe-mark-button,
+.brewing-page__auto-recipe-button {
   justify-self: end;
   min-width: 0;
   padding: 0;
@@ -2350,12 +2551,16 @@ div.workshop-page__discovery-row {
 
 .brewing-page__recipe-mark-button:hover,
 .brewing-page__recipe-mark-button:focus,
+.brewing-page__auto-recipe-button:hover,
+.brewing-page__auto-recipe-button:focus,
 .brewing-page__recipe-row.is-selected .brewing-page__recipe-mark-button,
+.brewing-page__recipe-row.is-selected .brewing-page__auto-recipe-button,
 .brewing-page__recipe-row.is-selected .brewing-page__recipe-name {
   text-decoration: underline;
 }
 
-.brewing-page__recipe-mark-button:focus {
+.brewing-page__recipe-mark-button:focus,
+.brewing-page__auto-recipe-button:focus {
   outline: none;
 }
 
@@ -2415,6 +2620,12 @@ div.workshop-page__discovery-row {
   z-index: 30;
 }
 
+.shop-page__request-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
 .shop-page__trade-history-popup,
 .shop-page__demand-popup,
 .shop-page__stock-buy-popup {
@@ -2425,6 +2636,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__sell-popup[hidden],
 .shop-page__market-popup[hidden],
+.shop-page__request-popup[hidden],
 .shop-page__trade-history-popup[hidden],
 .shop-page__demand-popup[hidden],
 .shop-page__stock-buy-popup[hidden] {
@@ -2504,6 +2716,15 @@ div.workshop-page__discovery-row {
   top: 50%;
   left: 50%;
   width: 300px;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.style-dialog.shop-page__request-dialog {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 260px;
   overflow: visible;
   transform: translate(-50%, -50%);
 }
@@ -2777,6 +2998,39 @@ div.workshop-page__discovery-row {
   margin-top: 5px;
 }
 
+.shop-page__player-request-row.is-empty {
+  color: var(--style-muted);
+}
+
+.shop-page__player-request-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.shop-page__request-field {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.style-input.shop-page__request-input {
+  box-sizing: border-box;
+  float: right;
+  width: 142px;
+  padding: 1px 4px;
+  margin: 0;
+}
+
+.shop-page__request-action-row {
+  margin-top: 8px;
+  text-align: right;
+}
+
+.shop-page__request-status {
+  color: var(--style-muted);
+}
+
 .shop-page__sell-item-list {
   max-height: 320px;
   overflow: hidden auto;
@@ -2833,8 +3087,27 @@ div.workshop-page__discovery-row {
 .shop-page__demand-dialog,
 .shop-page__shelf,
 .shop-page__stock,
+.shop-page__player-request,
 .shop-page__player-shelf {
   position: absolute;
+}
+
+.shop-page__market-panel .shop-page__shelf,
+.shop-page__market-panel .shop-page__stock,
+.shop-page__market-panel .shop-page__player-request,
+.shop-page__market-panel .shop-page__player-shelf {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  margin-bottom: 24px;
+}
+
+.shop-page__market-panel .shop-page__shelf:last-child,
+.shop-page__market-panel .shop-page__stock:last-child,
+.shop-page__market-panel .shop-page__player-request:last-child,
+.shop-page__market-panel .shop-page__player-shelf:last-child {
+  margin-bottom: 0;
 }
 
 .research-page__box {
@@ -3436,6 +3709,14 @@ div.workshop-page__discovery-row {
   width: 300px;
 }
 
+.style-dialog.workshop-page__trade-alliance-member-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
+  transform: translate(-50%, -50%);
+}
+
 .style-dialog.workshop-page__discoveries-dialog {
   position: relative;
   width: 286px;
@@ -3545,6 +3826,18 @@ div.workshop-page__discovery-row {
   margin: 0;
 }
 
+.style-button.shop-page__player-request-button {
+  width: 86px;
+  padding: 1px 5px;
+  margin: 0;
+}
+
+.style-button.shop-page__request-place-button {
+  width: 112px;
+  padding: 1px 5px;
+  margin: 0;
+}
+
 .style-button.shop-page__market-buy-button {
   width: 96px;
   padding: 1px 5px;
@@ -3571,6 +3864,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__sell-tab-button,
+.style-button.shop-page__market-tab-button,
 .style-button.shop-page__stock-tab-button,
 .style-button.shop-page__trade-history-tab-button,
 .style-button.shop-page__demand-tab-button {
@@ -3582,6 +3876,7 @@ div.workshop-page__discovery-row {
   border: var(--style-tab-border);
 }
 
+.style-button.shop-page__market-tab-button,
 .style-button.shop-page__stock-tab-button {
   border: var(--style-border);
 }
@@ -3635,6 +3930,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__sell-tab-button[aria-selected="true"],
+.style-button.shop-page__market-tab-button[aria-selected="true"],
 .style-button.shop-page__stock-tab-button[aria-selected="true"],
 .style-button.shop-page__trade-history-tab-button[aria-selected="true"],
 .style-button.shop-page__demand-tab-button[aria-selected="true"] {
@@ -3757,16 +4053,19 @@ div.workshop-page__discovery-row {
 .workshop-page__seed-inventory:not([hidden]),
 .workshop-page__leaderboard-popup:not([hidden]),
 .workshop-page__trade-alliance-popup:not([hidden]),
+.workshop-page__trade-alliance-member-popup:not([hidden]),
 .workshop-page__world-chat-popup:not([hidden]),
 .workshop-page__logs-popup:not([hidden]),
 .workshop-page__discoveries-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
+.brewing-page__auto-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
 .garden-page__seed-popup:not([hidden]),
 .garden-page__cancel-popup:not([hidden]),
 .research-page__info-popup:not([hidden]),
 .shop-page__sell-popup:not([hidden]),
 .shop-page__market-popup:not([hidden]),
+.shop-page__request-popup:not([hidden]),
 .shop-page__trade-history-popup:not([hidden]),
 .shop-page__demand-popup:not([hidden]),
 .shop-page__stock-buy-popup:not([hidden]),
@@ -3783,12 +4082,14 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
+.game-stage:has(.brewing-page__auto-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
 .game-stage:has(.garden-page__cancel-popup:not([hidden])) .garden-page,
 .game-stage:has(.research-page__info-popup:not([hidden])) .research-page,
 .game-stage:has(.shop-page__sell-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page,
+.game-stage:has(.shop-page__request-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__trade-history-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__demand-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__stock-buy-popup:not([hidden])) .shop-page {
@@ -3798,6 +4099,7 @@ div.workshop-page__discovery-row {
 .workshop-page__seed-inventory:not([hidden]) .style-dialog,
 .workshop-page__logs-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
+.brewing-page__auto-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,
 .garden-page__cancel-popup:not([hidden]) .style-dialog,
@@ -3815,10 +4117,13 @@ div.workshop-page__discovery-row {
 
 .workshop-page__leaderboard-popup:not([hidden]) .workshop-page__leaderboard-panel,
 .workshop-page__trade-alliance-popup:not([hidden]) .workshop-page__trade-alliance-panel,
+.workshop-page__trade-alliance-member-popup:not([hidden])
+  .workshop-page__trade-alliance-member-dialog,
 .workshop-page__world-chat-popup:not([hidden]) .workshop-page__world-chat-panel,
 .workshop-page__discoveries-popup:not([hidden]) .workshop-page__discoveries-panel,
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
+.shop-page__request-popup:not([hidden]) .shop-page__request-dialog,
 .shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel,
 .shop-page__demand-popup:not([hidden]) .shop-page__demand-panel,
 .shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog {

@@ -21,6 +21,18 @@ export class BrewingRecipeMatchManager {
     }));
   }
 
+  getRecipeByKey(recipeKey) {
+    if (typeof recipeKey !== 'string' || recipeKey.length === 0) {
+      return null;
+    }
+
+    try {
+      return this.itemsFacade.getPotionRecipe(recipeKey);
+    } catch {
+      return null;
+    }
+  }
+
   isRecipeUnlocked(recipe) {
     if (this.isUnknownRecipe(recipe)) {
       return this.isRecipeDiscovered(recipe);

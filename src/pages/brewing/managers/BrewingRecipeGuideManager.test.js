@@ -73,8 +73,20 @@ describe('BrewingRecipeGuideManager', () => {
     expect(guide.style.getPropertyValue('--brewing-page-guide-sequence-height')).toBe(
       'calc(var(--style-row-min-height) * 2)',
     );
+    expect(parent.style.getPropertyValue('--brewing-page-guide-sequence-height')).toBe(
+      'calc(var(--style-row-min-height) * 2)',
+    );
+    expect(parent.style.getPropertyValue('--brewing-page-guide-panel-height')).toBe(
+      'calc(var(--style-row-min-height) + 3px + calc(var(--style-row-min-height) * 2) + 12px)',
+    );
+    expect(parent.style.getPropertyValue('--brewing-page-guide-controls-bottom')).toContain(
+      'var(--style-room-chat-clearance)',
+    );
 
     manager.unmount();
+    expect(parent.style.getPropertyValue('--brewing-page-guide-sequence-height')).toBe('');
+    expect(parent.style.getPropertyValue('--brewing-page-guide-panel-height')).toBe('');
+    expect(parent.style.getPropertyValue('--brewing-page-guide-controls-bottom')).toBe('');
     parent.remove();
   });
 

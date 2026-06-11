@@ -45,9 +45,16 @@ export class WorkshopTradeAllianceManager {
     this.status = '';
     this.lastSnapshot = {};
     this.previousFocus = null;
+    this.memberEditVisible = false;
+    this.selectedMemberIdentity = null;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
+      }
+    };
+    this.handleMemberPopupClick = (event) => {
+      if (event.target === this.refs.memberPopup) {
+        this.hideMemberEdit();
       }
     };
     this.handleKeydown = (event) => {
@@ -56,6 +63,11 @@ export class WorkshopTradeAllianceManager {
       }
 
       event.preventDefault();
+      if (this.memberEditVisible) {
+        this.hideMemberEdit();
+        return;
+      }
+
       this.hide();
     };
   }
@@ -130,7 +142,48 @@ export class WorkshopTradeAllianceManager {
       this.refs.status,
     );
     panel.append(dialog, this.refs.tabs);
-    popup.append(panel);
+    this.refs.memberPopup = this.createMemberEditPopup();
+    popup.append(panel, this.refs.memberPopup);
+    return popup;
+  }
+
+  createMemberEditPopup() {
+    const popup = document.createElement('section');
+    popup.className = 'workshop-page__trade-alliance-member-popup';
+    popup.hidden = true;
+    popup.setAttribute('aria-hidden', 'true');
+    popup.addEventListener('click', this.handleMemberPopupClick);
+
+    const dialog = document.createElement('section');
+    dialog.className = 'workshop-page__trade-alliance-member-dialog style-dialog';
+    dialog.setAttribute('aria-label', 'Alliance member');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('role', 'dialog');
+    dialog.tabIndex = -1;
+
+    this.refs.memberEditDialog = dialog;
+    this.refs.memberEditTitle = document.createElement('div');
+    this.refs.memberEditTitle.className = 'style-box__title';
+    this.refs.memberEditTitle.textContent = 'member';
+
+    this.refs.memberEditCloseButton = document.createElement('button');
+    this.refs.memberEditCloseButton.className = 'style-button workshop-page__trade-alliance-close';
+    this.refs.memberEditCloseButton.type = 'button';
+    this.refs.memberEditCloseButton.textContent = 'close';
+    this.refs.memberEditCloseButton.addEventListener('click', () => this.hideMemberEdit());
+
+    this.refs.memberEditContent = document.createElement('div');
+    this.refs.memberEditContent.className = 'workshop-page__trade-alliance-rows';
+    this.refs.memberEditStatus = document.createElement('div');
+    this.refs.memberEditStatus.className = 'workshop-page__trade-alliance-status';
+
+    dialog.append(
+      this.refs.memberEditTitle,
+      this.refs.memberEditCloseButton,
+      this.refs.memberEditContent,
+      this.refs.memberEditStatus,
+    );
+    popup.append(dialog);
     return popup;
   }
 
@@ -160,7 +213,10 @@ export class WorkshopTradeAllianceManager {
   hide() {
     const wasVisible = this.visible;
     this.visible = false;
+    this.memberEditVisible = false;
+    this.selectedMemberIdentity = null;
     this.applyVisibility();
+    this.applyMemberEditVisibility();
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
       this.previousFocus.focus();
@@ -183,6 +239,8 @@ export class WorkshopTradeAllianceManager {
     this.status = '';
     this.lastSnapshot = {};
     this.previousFocus = null;
+    this.memberEditVisible = false;
+    this.selectedMemberIdentity = null;
   }
 
   render(snapshot) {
@@ -192,6 +250,7 @@ export class WorkshopTradeAllianceManager {
 
     this.lastSnapshot = snapshot ?? {};
     const ownAlliance = this.lastSnapshot.ownAlliance ?? null;
+    this.syncMemberEditState();
     this.refs.button.textContent = ownAlliance ? 'alliance' : 'alliance';
     this.refs.title.textContent = ownAlliance
       ? `${ownAlliance.name} [${ownAlliance.tag}]`
@@ -201,9 +260,11 @@ export class WorkshopTradeAllianceManager {
     if (ownAlliance) {
       this.renderTabs(MEMBER_TABS, this.selectedMemberTabId);
       this.renderMemberView(this.selectedMemberTabId);
+      this.renderMemberEditPopup();
       return;
     }
 
+    this.hideMemberEdit({ focusDialog: false });
     this.renderTabs(SOLO_TABS, this.selectedSoloTabId);
     this.renderSoloView(this.selectedSoloTabId);
   }
@@ -476,31 +537,76 @@ export class WorkshopTradeAllianceManager {
       this.createTextRow('daily', this.formatNumber(member.dailyContribution), { muted: true }),
     );
 
-    const controls = document.createElement('div');
-    controls.className = 'workshop-page__trade-alliance-member-controls';
+    if (this.canModifyMember(member)) {
+      row.classList.add('is-actionable');
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-label', `edit ${member.username}`);
+      row.addEventListener('click', () => this.showMemberEdit(member));
+      row.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+          return;
+        }
 
-    if (this.canManageMember(member)) {
-      const select = document.createElement('select');
-      select.className = 'style-input workshop-page__trade-alliance-role-select';
-      select.setAttribute('aria-label', `${member.username} role`);
-      for (const role of ROLE_OPTIONS.filter((roleId) => roleId !== 'tradeMaster')) {
-        const option = document.createElement('option');
-        option.value = role;
-        option.textContent = this.formatRole(role);
-        option.selected = role === member.role;
-        select.append(option);
-      }
-      select.addEventListener('change', () =>
-        void this.runAction(() =>
-          this.tradeAllianceFacade.setMemberRole(member.memberIdentity, select.value),
-        ),
-      );
-      controls.append(select);
+        event.preventDefault();
+        this.showMemberEdit(member);
+      });
     }
 
-    if (this.lastSnapshot.ownRole === 'tradeMaster' && member.role !== 'tradeMaster') {
-      controls.append(
-        this.createSmallButton('lead', () =>
+    row.append(main);
+    return row;
+  }
+
+  showMemberEdit(member) {
+    if (!this.canModifyMember(member)) {
+      return;
+    }
+
+    this.selectedMemberIdentity = member.memberIdentity;
+    this.memberEditVisible = true;
+    this.renderMemberEditPopup();
+    this.applyMemberEditVisibility();
+    this.refs.memberEditDialog?.focus();
+  }
+
+  hideMemberEdit({ focusDialog = true } = {}) {
+    const wasVisible = this.memberEditVisible;
+    this.memberEditVisible = false;
+    this.selectedMemberIdentity = null;
+    this.applyMemberEditVisibility();
+
+    if (wasVisible && focusDialog && this.visible) {
+      this.refs.dialog?.focus();
+    }
+  }
+
+  renderMemberEditPopup() {
+    if (!this.refs.memberEditContent) {
+      return;
+    }
+
+    const member = this.getSelectedMember();
+    if (!this.memberEditVisible || !member) {
+      this.refs.memberEditTitle.textContent = 'member';
+      this.refs.memberEditContent.replaceChildren();
+      this.refs.memberEditStatus.textContent = this.status;
+      this.applyMemberEditVisibility();
+      return;
+    }
+
+    this.refs.memberEditTitle.textContent = `${member.username}(${member.playerLevel})`;
+    const rows = [
+      this.createTextRow('role', this.formatRole(member.role)),
+      this.createTextRow('daily', this.formatNumber(member.dailyContribution), { muted: true }),
+    ];
+
+    if (this.canManageMember(member)) {
+      rows.push(this.createMemberRoleField(member));
+    }
+
+    if (this.canTransferLeadership(member)) {
+      rows.push(
+        this.createDangerButton('lead', () =>
           this.runAction(() =>
             this.tradeAllianceFacade.transferLeadership(member.memberIdentity),
           ),
@@ -509,15 +615,43 @@ export class WorkshopTradeAllianceManager {
     }
 
     if (this.canKickMember(member)) {
-      controls.append(
-        this.createSmallButton('kick', () =>
+      rows.push(
+        this.createDangerButton('kick', () =>
           this.runAction(() => this.tradeAllianceFacade.kickMember(member.memberIdentity)),
         ),
       );
     }
 
-    row.append(main, controls);
-    return row;
+    this.refs.memberEditContent.replaceChildren(...rows);
+    this.refs.memberEditStatus.textContent = this.status;
+    this.applyMemberEditVisibility();
+  }
+
+  createMemberRoleField(member) {
+    const field = document.createElement('label');
+    field.className = 'workshop-page__trade-alliance-field';
+
+    const span = document.createElement('span');
+    span.textContent = 'change role';
+
+    const select = document.createElement('select');
+    select.className = 'style-input workshop-page__trade-alliance-input';
+    select.setAttribute('aria-label', `${member.username} role`);
+    for (const role of ROLE_OPTIONS.filter((roleId) => roleId !== 'tradeMaster')) {
+      const option = document.createElement('option');
+      option.value = role;
+      option.textContent = this.formatRole(role);
+      option.selected = role === member.role;
+      select.append(option);
+    }
+    select.addEventListener('change', () =>
+      void this.runAction(() =>
+        this.tradeAllianceFacade.setMemberRole(member.memberIdentity, select.value),
+      ),
+    );
+
+    field.append(span, select);
+    return field;
   }
 
   createApplicationRow(application) {
@@ -761,9 +895,55 @@ export class WorkshopTradeAllianceManager {
     return contribution?.contribution ?? 0;
   }
 
+  getSelectedMember() {
+    if (!this.selectedMemberIdentity) {
+      return null;
+    }
+
+    const allianceId = this.lastSnapshot.ownAlliance?.allianceId;
+    return (
+      (this.lastSnapshot.members ?? []).find(
+        (member) =>
+          member.allianceId === allianceId &&
+          member.memberIdentity === this.selectedMemberIdentity,
+      ) ?? null
+    );
+  }
+
+  syncMemberEditState() {
+    if (!this.memberEditVisible) {
+      return;
+    }
+
+    const member = this.getSelectedMember();
+    if (member && this.canModifyMember(member)) {
+      return;
+    }
+
+    this.memberEditVisible = false;
+    this.selectedMemberIdentity = null;
+    this.applyMemberEditVisibility();
+  }
+
+  canModifyMember(member) {
+    return (
+      this.canManageMember(member) ||
+      this.canTransferLeadership(member) ||
+      this.canKickMember(member)
+    );
+  }
+
   canManageMember(member) {
     return (
       this.lastSnapshot.canManageRoles &&
+      member.memberIdentity !== this.lastSnapshot.ownMember?.memberIdentity &&
+      member.role !== 'tradeMaster'
+    );
+  }
+
+  canTransferLeadership(member) {
+    return (
+      this.lastSnapshot.ownRole === 'tradeMaster' &&
       member.memberIdentity !== this.lastSnapshot.ownMember?.memberIdentity &&
       member.role !== 'tradeMaster'
     );
@@ -800,6 +980,9 @@ export class WorkshopTradeAllianceManager {
     if (this.refs.status) {
       this.refs.status.textContent = text;
     }
+    if (this.refs.memberEditStatus) {
+      this.refs.memberEditStatus.textContent = text;
+    }
   }
 
   formatFailure(reason) {
@@ -830,5 +1013,15 @@ export class WorkshopTradeAllianceManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  applyMemberEditVisibility() {
+    if (!this.refs.memberPopup) {
+      return;
+    }
+
+    const hidden = !this.visible || !this.memberEditVisible;
+    this.refs.memberPopup.hidden = hidden;
+    this.refs.memberPopup.setAttribute('aria-hidden', hidden ? 'true' : 'false');
   }
 }

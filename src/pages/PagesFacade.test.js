@@ -1922,8 +1922,15 @@ function createWorldChatFacadeFake({ messages } = {}) {
   };
 }
 
-function createTradeAllianceFacadeFake({ memberCount = 1 } = {}) {
+function createTradeAllianceFacadeFake({
+  memberCount = 1,
+  members = [],
+  canManageRoles = true,
+} = {}) {
   const profileUpdates = [];
+  const roleUpdates = [];
+  const leadershipTransfers = [];
+  const kickedMembers = [];
   let leaveCount = 0;
   let snapshot = {
     connected: true,
@@ -1949,9 +1956,9 @@ function createTradeAllianceFacadeFake({ memberCount = 1 } = {}) {
     },
     ownRole: 'tradeMaster',
     canEditSettings: true,
-    canManageRoles: true,
+    canManageRoles,
     canManageApplications: true,
-    members: [],
+    members,
     applications: [],
     quests: [],
     contributions: [],
@@ -1967,6 +1974,9 @@ function createTradeAllianceFacadeFake({ memberCount = 1 } = {}) {
   return {
     getSnapshot: () => snapshot,
     getProfileUpdates: () => profileUpdates,
+    getRoleUpdates: () => roleUpdates,
+    getLeadershipTransfers: () => leadershipTransfers,
+    getKickedMembers: () => kickedMembers,
     getLeaveCount: () => leaveCount,
     subscribe: (listener) => {
       listeners.add(listener);
@@ -1981,6 +1991,50 @@ function createTradeAllianceFacadeFake({ memberCount = 1 } = {}) {
           ...snapshot.ownAlliance,
           ...profile,
         },
+      };
+      publish();
+      return { ok: true };
+    },
+    setMemberRole: async (memberIdentity, role) => {
+      roleUpdates.push({ memberIdentity, role });
+      snapshot = {
+        ...snapshot,
+        members: snapshot.members.map((member) =>
+          member.memberIdentity === memberIdentity ? { ...member, role } : member,
+        ),
+      };
+      publish();
+      return { ok: true };
+    },
+    transferLeadership: async (memberIdentity) => {
+      leadershipTransfers.push(memberIdentity);
+      snapshot = {
+        ...snapshot,
+        ownRole: snapshot.ownMember?.memberIdentity === memberIdentity ? 'tradeMaster' : 'trader',
+        members: snapshot.members.map((member) => {
+          if (member.memberIdentity === memberIdentity) {
+            return { ...member, role: 'tradeMaster' };
+          }
+
+          if (member.memberIdentity === snapshot.ownMember?.memberIdentity) {
+            return { ...member, role: 'trader' };
+          }
+
+          return member;
+        }),
+      };
+      publish();
+      return { ok: true };
+    },
+    kickMember: async (memberIdentity) => {
+      kickedMembers.push(memberIdentity);
+      snapshot = {
+        ...snapshot,
+        ownAlliance: {
+          ...snapshot.ownAlliance,
+          memberCount: Math.max(1, Number(snapshot.ownAlliance?.memberCount ?? 1) - 1),
+        },
+        members: snapshot.members.filter((member) => member.memberIdentity !== memberIdentity),
       };
       publish();
       return { ok: true };
@@ -3280,6 +3334,91 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
+  it('opens trade alliance member actions from a manageable member row', async () => {
+    const stage = document.createElement('section');
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      memberCount: 2,
+      members: [
+        {
+          allianceId: 'alliance-1',
+          memberIdentity: 'self',
+          username: 'wizard',
+          playerLevel: 2,
+          role: 'tradeMaster',
+          dailyContribution: 0,
+        },
+        {
+          allianceId: 'alliance-1',
+          memberIdentity: 'member-2',
+          username: 'Ada',
+          playerLevel: 4,
+          role: 'trader',
+          dailyContribution: 120,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const membersTab = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button'),
+    ].find((button) => button.textContent === 'members');
+
+    membersTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const memberPopup = popup.querySelector('.workshop-page__trade-alliance-member-popup');
+    const memberRows = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-member-row'),
+    ];
+
+    expect(memberRows).toHaveLength(2);
+    expect(memberRows.every((row) => row.querySelector('button, select') === null)).toBe(true);
+
+    memberRows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(memberPopup.hidden).toBe(true);
+
+    memberRows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(memberPopup.hidden).toBe(false);
+    expect(memberPopup.querySelector('.style-box__title').textContent).toBe('Ada(4)');
+    expect(
+      [...memberPopup.querySelectorAll('.workshop-page__trade-alliance-wide-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['lead', 'kick']);
+
+    const roleSelect = memberPopup.querySelector('select');
+    roleSelect.value = 'quartermaster';
+    roleSelect.dispatchEvent(new window.Event('change', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(tradeAllianceFacade.getRoleUpdates()).toEqual([
+      { memberIdentity: 'member-2', role: 'quartermaster' },
+    ]);
+    expect(memberPopup.querySelector('select').value).toBe('quartermaster');
+
+    const kickButton = [
+      ...memberPopup.querySelectorAll('.workshop-page__trade-alliance-wide-button'),
+    ].find((button) => button.textContent === 'kick');
+    kickButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(tradeAllianceFacade.getKickedMembers()).toEqual(['member-2']);
+    expect(memberPopup.hidden).toBe(true);
+  });
+
   it('saves trade alliance settings on touch before mobile keyboard blur can move layout', async () => {
     const stage = document.createElement('section');
     const tradeAllianceFacade = createTradeAllianceFacadeFake();
@@ -3788,9 +3927,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__ui-layer')).not.toBeNull();
     expect(stage.querySelector('.brewing-page__herbs')).not.toBeNull();
     expect(stage.querySelector('.brewing-page__cauldron')).not.toBeNull();
-    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain(
-      'select in recipes',
-    );
+    expect(stage.querySelector('.brewing-page__guide')).toBeNull();
+    expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('empty');
     expect(stage.querySelector('.brewing-page__recipes-button')?.textContent).toBe('recipes');
     expect(stage.querySelector('.brewing-page__potions-button')?.textContent).toBe('potions');
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
@@ -3847,10 +3985,24 @@ describe('PagesFacade', () => {
 
     expect(pagesFacade.getCurrentPageId()).toBe('shop');
     expect(stage.querySelector('.shop-page')).not.toBeNull();
+    expect(
+      [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['npm market', 'player market']);
+    expect(
+      stage
+        .querySelector('.shop-page__market-tab-button')
+        ?.getAttribute('aria-selected'),
+    ).toBe('true');
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('npc market');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
+      'npm demand market',
+    );
     expect(stage.querySelector('.shop-page__stock')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__stock')?.textContent).toContain('market stock');
+    expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(
+      'npm stock market',
+    );
     expect(
       [...stage.querySelectorAll('.shop-page__shelf .shop-page__slot-row')].some(
         (row) => row.querySelector('.row_key')?.textContent === 'gold',
@@ -4002,15 +4154,17 @@ describe('PagesFacade', () => {
     manaTonicMarkButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain('recipeMana Tonic');
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
+      'recipeMana Tonic',
+    );
     expect(
-      [...stage.querySelectorAll('.brewing-page__guide-row .row_key')].map(
+      [...stage.querySelectorAll('.brewing-page__cauldron-recipe-row .row_key')].map(
         (row) => row.textContent,
       ),
     ).toEqual(['recipe']);
-    expect(stage.querySelector('.brewing-page__guide-step.is-next')?.textContent).toContain(
-      '- 3 Sage',
-    );
+    expect(
+      stage.querySelector('.brewing-page__cauldron-guide-step.is-next')?.textContent,
+    ).toContain('- 3 Sage');
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(
@@ -4077,13 +4231,17 @@ describe('PagesFacade', () => {
       .querySelector('.brewing-page__recipe-mark-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain('recipeMana Tonic');
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
+      'recipeMana Tonic',
+    );
 
     clickRoomTab(stage, 'garden');
     expect(pagesFacade.getCurrentPageId()).toBe('garden');
 
     clickRoomTab(stage, 'brewing');
-    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain('recipeMana Tonic');
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
+      'recipeMana Tonic',
+    );
 
     stage
       .querySelector('.brewing-page__recipes-button')
@@ -4095,10 +4253,10 @@ describe('PagesFacade', () => {
 
     markButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__guide')?.textContent).toContain('recipenone');
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(true);
   });
 
-  it('keeps Brewing guide step DOM stable across snapshot renders', () => {
+  it('keeps Brewing cauldron guide step DOM stable across snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
@@ -4119,15 +4277,15 @@ describe('PagesFacade', () => {
       .querySelector('.brewing-page__recipe-mark-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const guide = stage.querySelector('.brewing-page__guide');
-    const firstStep = guide.querySelector('.brewing-page__guide-step');
+    const guide = stage.querySelector('.brewing-page__cauldron-guide');
+    const firstStep = guide.querySelector('.brewing-page__cauldron-guide-step');
 
     expect(firstStep).not.toBeNull();
     expect(firstStep.textContent).toContain('- 3 Sage');
 
     gameplayFacade.setMana(0);
 
-    expect(guide.querySelector('.brewing-page__guide-step')).toBe(firstStep);
+    expect(guide.querySelector('.brewing-page__cauldron-guide-step')).toBe(firstStep);
 
     const sageButton = [...stage.querySelectorAll('.brewing-page__herb-button')].find((button) =>
       button.textContent.includes('Sage'),
@@ -4136,9 +4294,14 @@ describe('PagesFacade', () => {
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(guide.querySelector('.brewing-page__guide-step')).toBe(firstStep);
+    expect(guide.querySelector('.brewing-page__cauldron-guide-step')).toBe(firstStep);
     expect(firstStep.classList.contains('is-placed')).toBe(true);
-    expect(firstStep.textContent).toContain('placed');
+    expect(firstStep.textContent).toContain('remove');
+
+    firstStep.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(guide.querySelector('.brewing-page__cauldron-guide-step')).toBe(firstStep);
+    expect(firstStep.textContent).toContain('- 2/3 Sage');
   });
 
   it('keeps top panel resource text DOM stable across unchanged snapshot renders', () => {
@@ -5335,6 +5498,40 @@ describe('PagesFacade', () => {
     gameplayFacade.setGold(10);
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
+
+    [...stage.querySelectorAll('.shop-page__market-tab-button')]
+      .find((button) => button.textContent === 'player market')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      stage
+        .querySelector('.shop-page__market-panel--player')
+        ?.hasAttribute('hidden'),
+    ).toBe(false);
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      'requestnone',
+    );
+
+    stage
+      .querySelector('.shop-page__player-request-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const requestPopup = stage.querySelector('.shop-page__request-popup');
+    expect(requestPopup.hidden).toBe(false);
+
+    const [requestItemInput, requestQuantityInput, requestGoldInput] =
+      requestPopup.querySelectorAll('.shop-page__request-input');
+    requestItemInput.value = 'Sage Seed';
+    requestQuantityInput.value = '3';
+    requestGoldInput.value = '2.5';
+    requestPopup
+      .querySelector('.shop-page__request-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(requestPopup.hidden).toBe(true);
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      'requestSage Seed (3) 2.50 gold',
+    );
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
       'player market',

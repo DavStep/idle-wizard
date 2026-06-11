@@ -191,6 +191,64 @@ export class BrewingStartManager {
     };
   }
 
+  prepareRecipeForAutoBrew(recipeKey) {
+    const recipe = this.brewingRecipeMatchManager.getRecipeByKey(recipeKey);
+
+    if (!recipe) {
+      return {
+        ok: false,
+        reason: 'auto_recipe_not_found',
+      };
+    }
+
+    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+      return {
+        ok: false,
+        reason: 'brew_in_progress',
+      };
+    }
+
+    const ingredientItemTypeIds = this.getRecipeIngredientItemTypeIds(recipe);
+    const maxIngredients = this.brewingBalanceManager.getMaxCauldronIngredients();
+
+    if (ingredientItemTypeIds.length > maxIngredients) {
+      return {
+        ok: false,
+        reason: 'recipe_too_long',
+        maxIngredients,
+      };
+    }
+
+    if (!this.hasEnoughInventory(ingredientItemTypeIds)) {
+      return {
+        ok: false,
+        reason: 'not_enough_ingredients',
+      };
+    }
+
+    this.brewingCauldronEntityManager.clearIngredients();
+
+    for (const itemTypeId of ingredientItemTypeIds) {
+      const added = this.brewingCauldronEntityManager.addIngredient(itemTypeId);
+
+      if (!added) {
+        this.brewingCauldronEntityManager.clearIngredients();
+
+        return {
+          ok: false,
+          reason: 'cauldron_full',
+          maxIngredients,
+        };
+      }
+    }
+
+    return {
+      ok: true,
+      recipe,
+      ingredientItemTypeIds,
+    };
+  }
+
   hasEnoughInventory(itemTypeIds) {
     const counts = this.getCounts(itemTypeIds);
 
@@ -217,5 +275,17 @@ export class BrewingStartManager {
     }
 
     return counts;
+  }
+
+  getRecipeIngredientItemTypeIds(recipe) {
+    if (!recipe || !Array.isArray(recipe.ingredients)) {
+      return [];
+    }
+
+    return recipe.ingredients.flatMap((ingredient) => {
+      const quantity = Number.isFinite(ingredient.quantity) ? Math.floor(ingredient.quantity) : 1;
+      const normalizedQuantity = Math.max(1, quantity);
+      return Array.from({ length: normalizedQuantity }, () => ingredient.itemTypeId);
+    });
   }
 }

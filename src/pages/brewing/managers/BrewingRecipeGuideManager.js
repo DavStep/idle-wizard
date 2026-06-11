@@ -1,6 +1,8 @@
 export class BrewingRecipeGuideManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, getSelectedRecipeKey, onSelectRecipe } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.getSelectedRecipeKeyCallback = getSelectedRecipeKey;
+    this.onSelectRecipe = onSelectRecipe;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -48,6 +50,7 @@ export class BrewingRecipeGuideManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.clearGuideLayoutVariables();
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -72,12 +75,25 @@ export class BrewingRecipeGuideManager {
   }
 
   selectRecipe(recipeKey) {
-    this.selectedRecipeKey = this.selectedRecipeKey === recipeKey ? null : recipeKey;
+    const targetRecipeKey =
+      typeof recipeKey === 'string' ? recipeKey : recipeKey?.key ?? null;
+
+    if (!targetRecipeKey) {
+      return;
+    }
+
+    if (this.onSelectRecipe) {
+      this.onSelectRecipe(targetRecipeKey);
+      this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
+      return;
+    }
+
+    this.selectedRecipeKey = this.selectedRecipeKey === targetRecipeKey ? null : targetRecipeKey;
     this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
   }
 
   getSelectedRecipeKey() {
-    return this.selectedRecipeKey;
+    return this.getSelectedRecipeKeyCallback?.() ?? this.selectedRecipeKey;
   }
 
   render(snapshot) {
@@ -110,11 +126,13 @@ export class BrewingRecipeGuideManager {
   }
 
   getSelectedRecipe(recipes) {
-    if (!this.selectedRecipeKey) {
+    const selectedRecipeKey = this.getSelectedRecipeKey();
+
+    if (!selectedRecipeKey) {
       return null;
     }
 
-    return recipes.find((recipe) => recipe.key === this.selectedRecipeKey) ?? null;
+    return recipes.find((recipe) => recipe.key === selectedRecipeKey) ?? null;
   }
 
   expandIngredientSequence(ingredients = []) {
@@ -251,7 +269,29 @@ export class BrewingRecipeGuideManager {
       visibleRowCount === 1
         ? 'var(--style-row-min-height)'
         : `calc(var(--style-row-min-height) * ${visibleRowCount})`;
+    const panelHeight = `calc(var(--style-row-min-height) + 3px + ${sequenceHeight} + 12px)`;
+    const controlsBottom =
+      `calc(var(--style-room-chat-clearance) + ${panelHeight} + ` +
+      'var(--style-room-chat-title-overhang) + var(--brewing-page-guide-controls-gap))';
     this.root.style.setProperty('--brewing-page-guide-sequence-height', sequenceHeight);
+    this.root.parentElement?.style.setProperty(
+      '--brewing-page-guide-sequence-height',
+      sequenceHeight,
+    );
+    this.root.parentElement?.style.setProperty(
+      '--brewing-page-guide-panel-height',
+      panelHeight,
+    );
+    this.root.parentElement?.style.setProperty(
+      '--brewing-page-guide-controls-bottom',
+      controlsBottom,
+    );
+  }
+
+  clearGuideLayoutVariables() {
+    this.root?.parentElement?.style.removeProperty('--brewing-page-guide-sequence-height');
+    this.root?.parentElement?.style.removeProperty('--brewing-page-guide-panel-height');
+    this.root?.parentElement?.style.removeProperty('--brewing-page-guide-controls-bottom');
   }
 
   ensureEmptyStep() {

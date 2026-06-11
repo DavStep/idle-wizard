@@ -8,14 +8,17 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 const TOUCH_DRAG_DISTANCE = 8;
 
 export class BrewingCauldronManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, getSelectedRecipeKey, onOpenAutoBrew } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.getSelectedRecipeKey = getSelectedRecipeKey;
+    this.onOpenAutoBrew = onOpenAutoBrew;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
     this.herbRows = new Map();
     this.herbRowsSignature = '';
     this.ingredientRows = [];
+    this.cauldronGuideRows = [];
     this.message = '';
     this.draggedItemTypeId = null;
     this.pointerDrag = null;
@@ -61,6 +64,7 @@ export class BrewingCauldronManager {
     this.herbRows.clear();
     this.herbRowsSignature = '';
     this.ingredientRows = [];
+    this.cauldronGuideRows = [];
     this.message = '';
     this.draggedItemTypeId = null;
     this.pointerDrag = null;
@@ -99,6 +103,33 @@ export class BrewingCauldronManager {
     count.className = 'brewing-page__cauldron-count';
     count.textContent = '0/0';
 
+    const autoBrewButton = document.createElement('button');
+    autoBrewButton.className = 'brewing-page__cauldron-auto-brew-text';
+    autoBrewButton.type = 'button';
+    autoBrewButton.textContent = 'auto brewing';
+    autoBrewButton.setAttribute('aria-haspopup', 'dialog');
+    autoBrewButton.addEventListener('click', () => this.onOpenAutoBrew?.());
+
+    const guide = document.createElement('div');
+    guide.className = 'brewing-page__cauldron-guide';
+    guide.hidden = true;
+
+    const recipeRow = document.createElement('div');
+    recipeRow.className = 'brewing-page__cauldron-recipe-row';
+
+    const recipeLabel = document.createElement('span');
+    recipeLabel.className = 'row_key';
+    recipeLabel.textContent = 'recipe';
+
+    const recipeValue = document.createElement('span');
+    recipeValue.className = 'row_val';
+
+    const guideSequence = document.createElement('div');
+    guideSequence.className = 'brewing-page__cauldron-guide-sequence';
+
+    recipeRow.append(recipeLabel, recipeValue);
+    guide.append(recipeRow, guideSequence);
+
     const items = document.createElement('div');
     items.className = 'brewing-page__cauldron-items';
 
@@ -128,11 +159,17 @@ export class BrewingCauldronManager {
 
     activeProgress.append(activeProgressFill, activeProgressText);
     active.append(activeText, activeProgress);
-    root.append(title, count, status, items, active);
+    root.append(title, count, guide, status, items, active, autoBrewButton);
     return {
       root,
       count,
+      guide,
+      recipeRow,
+      recipeLabel,
+      recipeValue,
+      guideSequence,
       status,
+      autoBrewButton,
       items,
       active,
       activeText,
@@ -145,6 +182,7 @@ export class BrewingCauldronManager {
   createActions() {
     const root = document.createElement('div');
     root.className = 'brewing-page__actions';
+    root.setAttribute('aria-live', 'polite');
 
     const actionButton = document.createElement('button');
     actionButton.className = 'style-button brewing-page__action-button';
@@ -158,14 +196,19 @@ export class BrewingCauldronManager {
     actionButtonCost.className = 'brewing-page__action-button-cost';
     setResourceColor(actionButtonCost, 'mana');
 
+    const actionRow = document.createElement('div');
+    actionRow.className = 'brewing-page__action-row';
+
     actionButton.append(actionButtonLabel, actionButtonCost);
+    actionRow.append(actionButton);
 
     const message = document.createElement('div');
     message.className = 'brewing-page__message';
 
-    root.append(actionButton, message);
+    root.append(actionRow, message);
     return {
       root,
+      actionRow,
       actionButton,
       actionButtonLabel,
       actionButtonCost,
@@ -174,10 +217,15 @@ export class BrewingCauldronManager {
   }
 
   render(snapshot) {
+    if (!snapshot) {
+      return;
+    }
+
     const brewing = {
       ...snapshot.brewing,
       herbs: this.getHerbRows(snapshot),
     };
+    brewing.selectedRecipe = this.getSelectedRecipe(brewing.recipes ?? []);
     this.syncHerbRows(brewing.herbs);
     this.renderHerbs(snapshot, brewing);
     this.renderCauldron(brewing);
@@ -278,6 +326,7 @@ export class BrewingCauldronManager {
     const statusText = this.formatCauldronStatus(brewing);
     this.setHidden(this.refs.cauldron.status, statusText === '');
     this.setText(this.refs.cauldron.status, statusText);
+    this.renderCauldronGuide(brewing);
     this.renderCauldronItems(brewing);
 
     if (brewing.activeBrew) {
@@ -311,10 +360,16 @@ export class BrewingCauldronManager {
     this.ensureCauldronEmptyRow();
 
     const hasIngredients = brewing.ingredients.length > 0;
-    const showEmpty = !hasIngredients && !brewing.activeBrew;
+    const showGuideContents = Boolean(brewing.selectedRecipe && !brewing.activeBrew);
+    const showEmpty = !hasIngredients && !brewing.activeBrew && !showGuideContents;
     this.refs.cauldron.items.classList.toggle('is-empty', showEmpty);
     this.setHidden(this.refs.cauldron.empty, !showEmpty);
     this.setText(this.refs.cauldron.empty, showEmpty ? 'empty' : '');
+
+    if (showGuideContents) {
+      this.hideExtraIngredientRows(0);
+      return;
+    }
 
     const ingredientGroups = this.groupAdjacentIngredients(brewing.ingredients);
 
@@ -328,7 +383,11 @@ export class BrewingCauldronManager {
       this.setText(refs.action, 'remove');
     }
 
-    for (let index = ingredientGroups.length; index < this.ingredientRows.length; index += 1) {
+    this.hideExtraIngredientRows(ingredientGroups.length);
+  }
+
+  hideExtraIngredientRows(visibleCount) {
+    for (let index = visibleCount; index < this.ingredientRows.length; index += 1) {
       const refs = this.ingredientRows[index];
       this.setHidden(refs.row, true);
       this.removeAttribute(refs.row, 'aria-label');
@@ -337,6 +396,275 @@ export class BrewingCauldronManager {
       this.setText(refs.label, '');
       this.setText(refs.action, '');
     }
+  }
+
+  renderCauldronGuide(brewing) {
+    const recipe = brewing.selectedRecipe;
+    const showGuide = Boolean(recipe && !brewing.activeBrew);
+    this.setHidden(this.refs.cauldron.guide, !showGuide);
+
+    if (!showGuide) {
+      this.setText(this.refs.cauldron.recipeValue, '');
+      this.hideExtraCauldronGuideRows(0);
+      return;
+    }
+
+    this.setText(this.refs.cauldron.recipeValue, recipe.label);
+    const targetIngredients = this.expandIngredientSequence(recipe.ingredients);
+    const ingredientGroups = this.createIngredientGroups(recipe.ingredients);
+    const match = this.getIngredientMatch(targetIngredients, brewing.ingredients);
+    let renderedRows = 0;
+
+    for (const ingredient of ingredientGroups) {
+      const refs = this.ensureCauldronGuideRow(renderedRows);
+      const rowState = this.getCauldronGuideRowState(ingredient, brewing.ingredients, match);
+      this.renderCauldronGuideRow(refs, rowState);
+      renderedRows += 1;
+    }
+
+    const extraGroups = this.groupAdjacentIngredients(
+      brewing.ingredients.slice(targetIngredients.length),
+    ).map((ingredient) => ({
+      ...ingredient,
+      slotIndex: ingredient.slotIndex + targetIngredients.length,
+    }));
+
+    for (const ingredient of extraGroups) {
+      const refs = this.ensureCauldronGuideRow(renderedRows);
+      this.renderCauldronGuideRow(refs, {
+        label: this.formatIngredientGroup(ingredient),
+        value: 'remove',
+        removeSlotIndex: ingredient.slotIndex + ingredient.quantity - 1,
+        isPlaced: false,
+        isNext: false,
+        isMismatch: true,
+      });
+      renderedRows += 1;
+    }
+
+    this.hideExtraCauldronGuideRows(renderedRows);
+  }
+
+  ensureCauldronGuideRow(index) {
+    if (this.cauldronGuideRows[index]) {
+      return this.cauldronGuideRows[index];
+    }
+
+    const row = document.createElement('button');
+    row.className = 'brewing-page__cauldron-guide-step';
+    row.type = 'button';
+    row.addEventListener('click', (event) => {
+      const slotIndex = Number(event.currentTarget.dataset.slotIndex);
+
+      if (Number.isInteger(slotIndex)) {
+        this.onRemoveIngredient(slotIndex);
+      }
+    });
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+
+    const value = document.createElement('span');
+    value.className = 'row_val';
+
+    row.append(label, value);
+    this.refs.cauldron.guideSequence.append(row);
+
+    const refs = { row, label, value };
+    this.cauldronGuideRows[index] = refs;
+    return refs;
+  }
+
+  renderCauldronGuideRow(refs, rowState) {
+    this.setHidden(refs.row, false);
+    this.setText(refs.label, rowState.label);
+    this.setText(refs.value, rowState.value);
+    refs.row.classList.toggle('is-placed', rowState.isPlaced);
+    refs.row.classList.toggle('is-next', rowState.isNext);
+    refs.row.classList.toggle('is-mismatch', rowState.isMismatch);
+
+    if (Number.isInteger(rowState.removeSlotIndex)) {
+      this.setDisabled(refs.row, false);
+      this.setAttribute(refs.row, 'data-slot-index', String(rowState.removeSlotIndex));
+      this.setAttribute(refs.row, 'aria-disabled', 'false');
+      this.setAttribute(refs.row, 'aria-label', `remove ${rowState.label} from cauldron`);
+      return;
+    }
+
+    this.setDisabled(refs.row, true);
+    this.removeAttribute(refs.row, 'data-slot-index');
+    this.setAttribute(refs.row, 'aria-disabled', 'true');
+    this.removeAttribute(refs.row, 'aria-label');
+  }
+
+  hideExtraCauldronGuideRows(visibleCount) {
+    for (let index = visibleCount; index < this.cauldronGuideRows.length; index += 1) {
+      const refs = this.cauldronGuideRows[index];
+      this.setHidden(refs.row, true);
+      this.setDisabled(refs.row, true);
+      this.removeAttribute(refs.row, 'data-slot-index');
+      this.removeAttribute(refs.row, 'aria-label');
+      this.setAttribute(refs.row, 'aria-disabled', 'true');
+      refs.row.classList.remove('is-placed', 'is-next', 'is-mismatch');
+      this.setText(refs.label, '');
+      this.setText(refs.value, '');
+    }
+  }
+
+  getCauldronGuideRowState(ingredient, ingredients, match) {
+    const actualSlots = ingredients.slice(ingredient.startIndex, ingredient.endIndex);
+    const mismatchOffset = actualSlots.findIndex(
+      (actual) => actual.itemTypeId !== ingredient.itemTypeId,
+    );
+    const hasMismatch = mismatchOffset >= 0;
+    const matchedQuantity = hasMismatch ? mismatchOffset : actualSlots.length;
+    const hasIngredient = actualSlots.length > 0;
+    const removeSlotIndex = hasIngredient
+      ? ingredient.startIndex + actualSlots.length - 1
+      : null;
+
+    if (hasMismatch) {
+      const wrongIngredient = actualSlots[mismatchOffset];
+      return {
+        label: this.formatIngredientGroup({
+          label: wrongIngredient?.label ?? 'unknown',
+          quantity: 1,
+        }),
+        value: 'remove',
+        removeSlotIndex,
+        isPlaced: false,
+        isNext: false,
+        isMismatch: true,
+      };
+    }
+
+    if (matchedQuantity > 0 && matchedQuantity < ingredient.quantity) {
+      return {
+        label: `- ${matchedQuantity}/${ingredient.quantity} ${ingredient.label}`,
+        value: 'remove',
+        removeSlotIndex,
+        isPlaced: false,
+        isNext: true,
+        isMismatch: false,
+      };
+    }
+
+    if (hasIngredient) {
+      return {
+        label: this.formatIngredientGroup(ingredient),
+        value: 'remove',
+        removeSlotIndex,
+        isPlaced: ingredient.endIndex <= match.matchedCount,
+        isNext: false,
+        isMismatch: false,
+      };
+    }
+
+    return {
+      label: this.formatIngredientGroup(ingredient),
+      value: this.formatGuideStepValue(ingredient, match),
+      removeSlotIndex: null,
+      isPlaced: false,
+      isNext:
+        match.prefixMatches &&
+        ingredient.startIndex <= match.matchedCount &&
+        match.matchedCount < ingredient.endIndex &&
+        !match.ready,
+      isMismatch:
+        ingredient.startIndex <= match.firstMismatchIndex &&
+        match.firstMismatchIndex < ingredient.endIndex,
+    };
+  }
+
+  getSelectedRecipe(recipes) {
+    const selectedRecipeKey = this.getSelectedRecipeKey?.();
+
+    if (!selectedRecipeKey) {
+      return null;
+    }
+
+    return recipes.find((recipe) => recipe.key === selectedRecipeKey && recipe.unlocked) ?? null;
+  }
+
+  expandIngredientSequence(ingredients = []) {
+    return ingredients.flatMap((ingredient) => {
+      const quantity = this.normalizeIngredientQuantity(ingredient);
+      return Array.from({ length: quantity }, () => ingredient);
+    });
+  }
+
+  createIngredientGroups(ingredients = []) {
+    let startIndex = 0;
+
+    return ingredients.map((ingredient) => {
+      const quantity = this.normalizeIngredientQuantity(ingredient);
+      const group = {
+        ...ingredient,
+        quantity,
+        startIndex,
+        endIndex: startIndex + quantity,
+      };
+      startIndex = group.endIndex;
+      return group;
+    });
+  }
+
+  normalizeIngredientQuantity(ingredient) {
+    const quantity = Number.isFinite(ingredient?.quantity) ? Math.floor(ingredient.quantity) : 1;
+    return Math.max(1, quantity);
+  }
+
+  getIngredientMatch(targetIngredients, ingredients) {
+    let firstMismatchIndex = -1;
+
+    for (let index = 0; index < ingredients.length; index += 1) {
+      const target = targetIngredients[index];
+
+      if (!target || target.itemTypeId !== ingredients[index].itemTypeId) {
+        firstMismatchIndex = index;
+        break;
+      }
+    }
+
+    const prefixMatches = firstMismatchIndex === -1;
+    const matchedCount = prefixMatches
+      ? Math.min(ingredients.length, targetIngredients.length)
+      : firstMismatchIndex;
+
+    return {
+      firstMismatchIndex,
+      matchedCount,
+      prefixMatches,
+      ready: prefixMatches && ingredients.length === targetIngredients.length,
+    };
+  }
+
+  formatIngredientGroup(ingredient) {
+    return `- ${ingredient.quantity} ${ingredient.label}`;
+  }
+
+  formatGuideStepValue(ingredient, match) {
+    if (ingredient.endIndex <= match.matchedCount) {
+      return 'placed';
+    }
+
+    if (
+      ingredient.startIndex <= match.firstMismatchIndex &&
+      match.firstMismatchIndex < ingredient.endIndex
+    ) {
+      return 'needed';
+    }
+
+    if (
+      match.prefixMatches &&
+      ingredient.startIndex <= match.matchedCount &&
+      match.matchedCount < ingredient.endIndex &&
+      !match.ready
+    ) {
+      return 'next';
+    }
+
+    return '';
   }
 
   groupAdjacentIngredients(ingredients) {
@@ -431,6 +759,29 @@ export class BrewingCauldronManager {
     setNotificationBadge(this.refs.actions.actionButton, !action.disabled);
     this.setHidden(this.refs.actions.message, true);
     this.setText(this.refs.actions.message, '');
+    this.renderAutoBrewButton(brewing);
+  }
+
+  renderAutoBrewButton(brewing) {
+    const autoBrewButton = this.refs.cauldron?.autoBrewButton;
+
+    if (!autoBrewButton) {
+      return;
+    }
+
+    this.setText(autoBrewButton, 'auto brewing');
+    this.setDisabled(autoBrewButton, false);
+    this.setAttribute(
+      autoBrewButton,
+      'aria-label',
+      'open auto brewing',
+    );
+    this.setAttribute(autoBrewButton, 'data-state', brewing.autoBrewEnabled ? 'on' : 'off');
+    this.setAttribute(
+      autoBrewButton,
+      'aria-pressed',
+      brewing.autoBrewEnabled ? 'true' : 'false',
+    );
   }
 
   getPrimaryAction(brewing) {
@@ -732,6 +1083,10 @@ export class BrewingCauldronManager {
 
     if (result.reason === 'brew_not_done') {
       return 'wait for brew';
+    }
+
+    if (result.reason === 'auto_brew_recipe_required') {
+      return 'select recipe for auto brew';
     }
 
     if (result.reason === 'bottling_in_progress') {

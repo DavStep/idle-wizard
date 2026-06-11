@@ -76,7 +76,7 @@ export class ShopDemandManager {
     button.className = 'style-button shop-page__demand-button';
     button.type = 'button';
     button.textContent = 'demand';
-    button.setAttribute('aria-label', 'show npc demand');
+    button.setAttribute('aria-label', 'show npm demand');
     button.addEventListener('click', () => this.show());
     return button;
   }

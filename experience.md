@@ -84,7 +84,8 @@
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
 - Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
-- User-facing shop naming is `npc market` for automatic NPC sales and `player market` for player listings; visible rows are `stand N`, even if internal/backend fields still say `slot`.
+- Market page uses visible `npm market` / `player market` tabs; NPC internals and backend names can remain `npc`.
+- Player market request UI is local-only until backend request listings exist; do not fake server trades.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
@@ -188,12 +189,14 @@
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
 - Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.
+- Hidden popups should not reuse another popup's action button class; broad selectors and clicks can hit hidden controls first.
 - Cauldron ingredient remove buttons also need stable DOM nodes across snapshot renders; mobile click fires after touchend and can miss replaced targets.
 - Rows with author `display` rules need explicit `[hidden] { display: none; }`; UA hidden can be overridden and still affect flex layout.
 - Page boxes that also use `.style-box` must reassert `position: absolute` after the shared `.style-box` rule, or they become relative and can overflow.
 - Logs popup shows newest entries first, starts at top, and uses scroll progress plus bottom fade instead of showing a native scrollbar.
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
+- Brewing marked recipe guide renders inside the cauldron; do not add a separate guide box back to the bottom of the room.
 
 ## Development Operations
 

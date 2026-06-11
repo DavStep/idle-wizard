@@ -1,4 +1,4 @@
-import { type Identity } from 'spacetimedb';
+import { Timestamp, type Identity } from 'spacetimedb';
 import { schema, table, t, type ReducerCtx, type InferSchema } from 'spacetimedb/server';
 
 const DEFAULT_USERNAME = 'wizard';
@@ -112,7 +112,9 @@ const TRADE_ALLIANCE_ROLE_CAPS = new Map<string, number>([
 
 // Fill this with owner SpacetimeDB identity hex strings before publishing a fresh DB.
 // Legacy npc_market_admin rows are audit/display only; they are not authorization.
-const NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST: string[] = [];
+const NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST: string[] = [
+  'c20034d8b5052c22876c7a357fe1e1e891ad5cb48c0c09651d92813edc2bba17',
+];
 const npcMarketAdminIdentityAllowlist = new Set(
   NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST.map((identityHex) =>
     normalizeIdentityHex(identityHex),
@@ -1247,6 +1249,14 @@ const playerGameplaySaveResult = t.option(
     updatedAt: t.timestamp(),
   }),
 );
+const adminPlayerGameplaySaveResult = t.array(
+  t.row('AdminPlayerGameplaySaveResult', {
+    identity: t.identity().primaryKey(),
+    currentGold: t.f64(),
+    currentCrystal: t.u32(),
+    updatedAt: t.timestamp(),
+  }),
+);
 const ownTradeAllianceChatResult = t.array(
   t.row('OwnTradeAllianceChatResult', {
     messageId: t.uuid().primaryKey(),
@@ -1277,6 +1287,37 @@ export const own_player_gameplay_save = spacetimedb.view(
   { name: 'own_player_gameplay_save', public: true },
   playerGameplaySaveResult,
   (ctx) => ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined,
+);
+
+export const admin_player_gameplay_save = spacetimedb.view(
+  { name: 'admin_player_gameplay_save', public: true },
+  adminPlayerGameplaySaveResult,
+  (ctx) => {
+    if (!npcMarketAdminIdentityAllowlist.has(getIdentityHex(ctx.sender))) {
+      return [];
+    }
+
+    return Array.from(ctx.db.playerGameplaySave.iter())
+      .map((save) => toAdminPlayerGameplaySaveResult(save))
+      .filter(
+        (save): save is NonNullable<ReturnType<typeof toAdminPlayerGameplaySaveResult>> =>
+          Boolean(save),
+      )
+      .sort((left, right) => {
+        const leftUpdatedAt = left.updatedAt.microsSinceUnixEpoch;
+        const rightUpdatedAt = right.updatedAt.microsSinceUnixEpoch;
+
+        if (leftUpdatedAt < rightUpdatedAt) {
+          return 1;
+        }
+
+        if (leftUpdatedAt > rightUpdatedAt) {
+          return -1;
+        }
+
+        return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+      });
+  },
 );
 
 export const own_trade_alliance_chat = spacetimedb.view(
@@ -1336,6 +1377,11 @@ export const own_trade_alliance_reward_inbox = spacetimedb.view(
 
 type IdleWizardSchema = InferSchema<typeof spacetimedb>;
 type IdleWizardReducerCtx = ReducerCtx<IdleWizardSchema>;
+type PlayerGameplaySaveRowValue = {
+  identity: Identity;
+  saveJson: string;
+  updatedAt: { microsSinceUnixEpoch: bigint };
+};
 
 function normalizeIdentityHex(identityHex: string): string {
   return String(identityHex ?? '')
@@ -2217,6 +2263,123 @@ function normalizePlayerGameplaySave(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function parsePlayerGameplaySaveJson(saveJson?: string): Record<string, unknown> | null {
+  if (!saveJson) {
+    return null;
+  }
+
+  try {
+    const save = JSON.parse(String(saveJson));
+    return isRecord(save) ? save : null;
+  } catch {
+    return null;
+  }
+}
+
+function toAdminPlayerGameplaySaveResult(save: PlayerGameplaySaveRowValue) {
+  const parsedSave = parsePlayerGameplaySaveJson(save.saveJson);
+
+  if (!parsedSave) {
+    return null;
+  }
+
+  return {
+    identity: save.identity,
+    currentGold: getSaveCurrentGold(parsedSave),
+    currentCrystal: getSaveCurrentCrystal(parsedSave),
+    updatedAt: new Timestamp(save.updatedAt.microsSinceUnixEpoch),
+  };
+}
+
+function getSaveCurrentGold(save: Record<string, unknown>): number {
+  const gold = isRecord(save.gold) ? save.gold : {};
+  return clampSaveGoldPrice(gold.current, BigInt(MAX_PLAYER_SAVE_CURRENT_GOLD));
+}
+
+function getSaveCurrentCrystal(save: Record<string, unknown>): number {
+  const crystal = isRecord(save.crystal) ? save.crystal : {};
+  return clampSaveInteger(crystal.current, 0, MAX_PLAYER_SAVE_CURRENT_CRYSTAL, 0);
+}
+
+function validateAdminCurrentGold(currentGold: unknown): number {
+  const safeGold = normalizeGoldPrice(Number(currentGold));
+
+  if (safeGold === null || safeGold > MAX_PLAYER_SAVE_CURRENT_GOLD) {
+    throw new Error(`Invalid player gold. Max ${MAX_PLAYER_SAVE_CURRENT_GOLD}.`);
+  }
+
+  return safeGold;
+}
+
+function validateAdminCurrentCrystal(currentCrystal: unknown): number {
+  const value = Math.floor(Number(currentCrystal));
+
+  if (
+    !Number.isFinite(value) ||
+    value < 0 ||
+    value > MAX_PLAYER_SAVE_CURRENT_CRYSTAL
+  ) {
+    throw new Error(`Invalid player crystal. Max ${MAX_PLAYER_SAVE_CURRENT_CRYSTAL}.`);
+  }
+
+  return value;
+}
+
+function createAdminPlayerGameplaySaveJson(
+  ctx: IdleWizardReducerCtx,
+  existingSave: PlayerGameplaySaveRowValue | undefined,
+  currentGold: number,
+  currentCrystal: number,
+): string {
+  const previousSave = parsePlayerGameplaySaveJson(existingSave?.saveJson) ?? {};
+  const previousGold = isRecord(previousSave.gold) ? previousSave.gold : {};
+  const previousCrystal = isRecord(previousSave.crystal) ? previousSave.crystal : {};
+  const totalGenerated = Math.max(
+    currentGold,
+    clampSaveGoldPrice(
+      previousGold.totalGenerated,
+      BigInt(MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD),
+    ),
+  );
+
+  return validatePlayerGameplaySaveJson(
+    ctx,
+    JSON.stringify({
+      ...previousSave,
+      gold: {
+        ...previousGold,
+        current: currentGold,
+        totalGenerated,
+      },
+      crystal: {
+        ...previousCrystal,
+        current: currentCrystal,
+      },
+    }),
+    existingSave?.saveJson,
+  );
+}
+
+function upsertAdminPlayerGameplaySave(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+  saveJson: string,
+  existingSave: PlayerGameplaySaveRowValue | undefined,
+) {
+  const nextSave = {
+    identity,
+    saveJson,
+    updatedAt: ctx.timestamp,
+  };
+
+  if (existingSave) {
+    ctx.db.playerGameplaySave.identity.update(nextSave);
+    return;
+  }
+
+  ctx.db.playerGameplaySave.insert(nextSave);
 }
 
 function normalizeSaveTimestamp(ctx: IdleWizardReducerCtx): number {
@@ -5019,6 +5182,8 @@ export const set_admin_player_data = spacetimedb.reducer(
     username: t.string(),
     playerLevel: t.u32(),
     totalIncome: t.u64(),
+    currentGold: t.f64(),
+    currentCrystal: t.u32(),
     theme: t.string(),
     colorMode: t.string(),
     usernamePromptSeen: t.bool(),
@@ -5030,6 +5195,8 @@ export const set_admin_player_data = spacetimedb.reducer(
       username,
       playerLevel,
       totalIncome,
+      currentGold,
+      currentCrystal,
       theme,
       colorMode,
       usernamePromptSeen,
@@ -5041,10 +5208,19 @@ export const set_admin_player_data = spacetimedb.reducer(
     const normalizedUsername = normalizeUsername(username);
     const safePlayerLevel = validateAdminPlayerLevel(playerLevel);
     const safeTotalIncome = toBigInt(totalIncome);
+    const safeCurrentGold = validateAdminCurrentGold(currentGold);
+    const safeCurrentCrystal = validateAdminCurrentCrystal(currentCrystal);
     const safeTheme = normalizePlayerTheme(theme);
     const safeColorMode = normalizePlayerColorMode(colorMode);
     const safeUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
+    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const safeSaveJson = createAdminPlayerGameplaySaveJson(
+      ctx,
+      existingSave,
+      safeCurrentGold,
+      safeCurrentCrystal,
+    );
 
     assertUsernameAvailableForIdentity(ctx, normalizedUsername, player.identity);
 
@@ -5065,6 +5241,7 @@ export const set_admin_player_data = spacetimedb.reducer(
     );
 
     const existingEntry = ctx.db.leaderboard.identity.find(player.identity);
+    upsertAdminPlayerGameplaySave(ctx, nextPlayer.identity, safeSaveJson, existingSave);
 
     if (existingEntry) {
       ctx.db.leaderboard.identity.update({

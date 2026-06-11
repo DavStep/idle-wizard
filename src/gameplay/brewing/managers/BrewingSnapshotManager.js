@@ -6,6 +6,8 @@ export class BrewingSnapshotManager {
     brewingRecipeMatchManager,
     itemsFacade,
     manaFacade,
+    getAutoBrewEnabled,
+    getAutoBrewRecipeKey,
   }) {
     this.brewingBalanceManager = brewingBalanceManager;
     this.brewingCauldronEntityManager = brewingCauldronEntityManager;
@@ -13,6 +15,8 @@ export class BrewingSnapshotManager {
     this.brewingRecipeMatchManager = brewingRecipeMatchManager;
     this.itemsFacade = itemsFacade;
     this.manaFacade = manaFacade;
+    this.getAutoBrewEnabled = getAutoBrewEnabled;
+    this.getAutoBrewRecipeKey = getAutoBrewRecipeKey;
   }
 
   getSnapshot() {
@@ -64,6 +68,8 @@ export class BrewingSnapshotManager {
       canStartBottling: Boolean(activeBrew?.canStartBottling),
       canCollectPotion: Boolean(activeBrew?.canCollect),
       maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
+      autoBrewEnabled: this.getAutoBrewEnabled?.() === true,
+      autoBrewRecipeKey: this.getAutoBrewRecipeKey?.() ?? null,
     };
   }
 

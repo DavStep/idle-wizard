@@ -44,7 +44,7 @@ export class ShopShelfManager {
 
     this.root = document.createElement('section');
     this.root.className = 'shop-page__shelf style-box';
-    this.root.setAttribute('aria-label', 'NPC market');
+    this.root.setAttribute('aria-label', 'NPM demand market');
 
     this.refs.title = this.createTitle();
     this.refs.rows = [];
@@ -79,7 +79,7 @@ export class ShopShelfManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'npc market';
+    title.textContent = 'npm demand market';
     return title;
   }
 

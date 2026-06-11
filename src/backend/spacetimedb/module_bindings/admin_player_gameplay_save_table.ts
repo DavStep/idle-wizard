@@ -10,14 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {
-  identityHex: __t.string(),
-  username: __t.string(),
-  playerLevel: __t.u32(),
-  totalIncome: __t.u64(),
-  currentGold: __t.f64(),
-  currentCrystal: __t.u32(),
-  theme: __t.string(),
-  colorMode: __t.string(),
-  usernamePromptSeen: __t.bool(),
-};
+export default __t.row({
+  identity: __t.identity().primaryKey(),
+  currentGold: __t.f64().name("current_gold"),
+  currentCrystal: __t.u32().name("current_crystal"),
+  updatedAt: __t.timestamp().name("updated_at"),
+});

@@ -1421,6 +1421,14 @@ describe('GameplayFacade', () => {
       cost: 1,
       costCurrency: 'crystal',
     });
+    expect(gameplayFacade.setBrewingAutoBrewRecipe('manaTonic')).toMatchObject({
+      ok: true,
+      autoBrewRecipeKey: 'manaTonic',
+    });
+    expect(gameplayFacade.setBrewingAutoBrewEnabled(true)).toMatchObject({
+      ok: true,
+      autoBrewEnabled: true,
+    });
     gameplayFacade.itemsFacade.addItem(1001, 3);
     ecsFacade.update({ deltaSeconds: 12 });
     gameplayFacade.addBrewingIngredient(1001);
