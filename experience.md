@@ -12,6 +12,7 @@
 - This is an Android-first mobile JavaScript game.
 - The authored game viewport is `1080x2170`.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
+- FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id can remain `shop` for compatibility.

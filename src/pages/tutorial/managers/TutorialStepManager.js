@@ -67,23 +67,11 @@ const STEPS = [
     id: 'harvest-sage',
     pageId: 'garden',
     getTargetId: ({ snapshot }) => {
-      const tile = getActiveGardenTile(snapshot);
+      const tile = getReadyGardenTile(snapshot);
       return tile ? `garden:plot:${tile.tileNumber}` : null;
     },
-    getText: ({ snapshot }) => {
-      const tile = getActiveGardenTile(snapshot);
-
-      if (tile?.phase === 'ready') {
-        return 'harvest';
-      }
-
-      if (tile?.phase === 'harvesting') {
-        return 'harvesting';
-      }
-
-      return 'growing';
-    },
-    isAvailable: ({ snapshot }) => Boolean(getActiveGardenTile(snapshot)),
+    getText: () => 'harvest',
+    isAvailable: ({ snapshot }) => Boolean(getReadyGardenTile(snapshot)),
     isComplete: ({ snapshot }) => getItemQuantity(snapshot, SAGE_HERB_KEY) > 0,
   },
   {
@@ -210,6 +198,12 @@ function getActiveGardenTile(snapshot) {
     (tile) =>
       tile.unlocked &&
       (tile.phase === 'growing' || tile.phase === 'ready' || tile.phase === 'harvesting'),
+  );
+}
+
+function getReadyGardenTile(snapshot) {
+  return (snapshot?.garden?.plot?.tiles ?? []).find(
+    (tile) => tile.unlocked && tile.phase === 'ready',
   );
 }
 
