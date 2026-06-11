@@ -42,6 +42,7 @@ describe('PlayerLevelSyncManager', () => {
         setPlayerLevel,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 2 });
@@ -64,6 +65,7 @@ describe('PlayerLevelSyncManager', () => {
         setPlayerLevel,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     gameplayFacade.publishPlayerLevel(4);
@@ -84,6 +86,7 @@ describe('PlayerLevelSyncManager', () => {
         setPlayerLevel,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     gameplayFacade.publishPlayerLevel(1);
@@ -113,6 +116,7 @@ describe('PlayerLevelSyncManager', () => {
         setPlayerLevel,
       },
     });
+    manager.setReadyToSync(true);
     gameplayFacade.publishPlayerLevel(1);
     rejectFirstSync(new Error('sync failed'));
     await Promise.resolve();
@@ -132,8 +136,86 @@ describe('PlayerLevelSyncManager', () => {
         set_player_level: setPlayerLevel,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 5 });
+  });
+
+  it('waits for gameplay save hydration before reporting level', async () => {
+    const setPlayerLevel = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(1);
+    const manager = new PlayerLevelSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setPlayerLevel,
+      },
+    });
+    await Promise.resolve();
+
+    expect(setPlayerLevel).not.toHaveBeenCalled();
+
+    manager.markGameplaySaveHydrated();
+    gameplayFacade.publishPlayerLevel(4);
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+
+    expect(setPlayerLevel).toHaveBeenCalledTimes(1);
+    expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 4 });
+  });
+
+  it('drops pre-hydration default level before syncing restored level', async () => {
+    const setPlayerLevel = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(1);
+    const manager = new PlayerLevelSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setPlayerLevel,
+      },
+    });
+    manager.discardPreHydrationLevel();
+    manager.markGameplaySaveHydrated();
+    gameplayFacade.publishPlayerLevel(6);
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+
+    expect(setPlayerLevel).toHaveBeenCalledTimes(1);
+    expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 6 });
+  });
+
+  it('keeps hydrated pending level through reconnect discard', async () => {
+    const failingSetPlayerLevel = vi.fn(() => {
+      throw new Error('offline');
+    });
+    const setPlayerLevel = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(1);
+    const manager = new PlayerLevelSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.markGameplaySaveHydrated();
+    gameplayFacade.publishPlayerLevel(7);
+    manager.connect({
+      reducers: {
+        setPlayerLevel: failingSetPlayerLevel,
+      },
+    });
+    manager.setReadyToSync(true);
+    manager.disconnect();
+    manager.discardPreHydrationLevel();
+    manager.connect({
+      reducers: {
+        setPlayerLevel,
+      },
+    });
+    manager.markGameplaySaveHydrated();
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+
+    expect(setPlayerLevel).toHaveBeenCalledTimes(1);
+    expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 7 });
   });
 });

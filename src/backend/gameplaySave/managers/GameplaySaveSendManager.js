@@ -2,7 +2,9 @@ export class GameplaySaveSendManager {
   constructor() {
     this.connection = null;
     this.pendingSaveJson = null;
+    this.pendingSaveWasHydrated = false;
     this.syncPromise = null;
+    this.readyToSend = false;
   }
 
   connect(connection) {
@@ -13,6 +15,12 @@ export class GameplaySaveSendManager {
   disconnect() {
     this.connection = null;
     this.syncPromise = null;
+    this.readyToSend = false;
+  }
+
+  setReadyToSend(ready = true) {
+    this.readyToSend = Boolean(ready);
+    this.flush();
   }
 
   save(save) {
@@ -22,6 +30,7 @@ export class GameplaySaveSendManager {
 
     try {
       this.pendingSaveJson = JSON.stringify(save);
+      this.pendingSaveWasHydrated = this.readyToSend;
     } catch {
       return false;
     }
@@ -30,8 +39,22 @@ export class GameplaySaveSendManager {
     return true;
   }
 
+  discardPreHydrationSave() {
+    if (this.pendingSaveWasHydrated) {
+      return;
+    }
+
+    this.pendingSaveJson = null;
+    this.pendingSaveWasHydrated = false;
+  }
+
   flush() {
-    if (!this.connection || !this.pendingSaveJson || this.syncPromise) {
+    if (
+      !this.readyToSend ||
+      !this.connection ||
+      !this.pendingSaveJson ||
+      this.syncPromise
+    ) {
       return;
     }
 
@@ -41,19 +64,21 @@ export class GameplaySaveSendManager {
     }
 
     const saveJson = this.pendingSaveJson;
+    const saveWasHydrated = this.pendingSaveWasHydrated;
     this.pendingSaveJson = null;
+    this.pendingSaveWasHydrated = false;
 
     let syncResult;
     try {
       syncResult = setPlayerGameplaySave({ saveJson });
     } catch {
-      this.restorePending(saveJson);
+      this.restorePending(saveJson, saveWasHydrated);
       return;
     }
 
     this.syncPromise = Promise.resolve(syncResult)
       .catch(() => {
-        this.restorePending(saveJson);
+        this.restorePending(saveJson, saveWasHydrated);
       })
       .finally(() => {
         this.syncPromise = null;
@@ -61,8 +86,9 @@ export class GameplaySaveSendManager {
       });
   }
 
-  restorePending(saveJson) {
+  restorePending(saveJson, saveWasHydrated = true) {
     this.pendingSaveJson = saveJson;
+    this.pendingSaveWasHydrated = saveWasHydrated;
   }
 
   findSetPlayerGameplaySaveReducer() {

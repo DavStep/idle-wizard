@@ -12,7 +12,7 @@ const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
 const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
 const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
 const ENABLE_CLIENT_POTION_DISCOVERY = false;
-const ENABLE_PLAYER_SHOP_EXCHANGE = false;
+const ENABLE_PLAYER_SHOP_EXCHANGE = true;
 const ENABLE_NPC_MARKET_PRESSURE = false;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
@@ -2395,6 +2395,34 @@ function upsertAdminPlayerGameplaySave(
   ctx.db.playerGameplaySave.insert(nextSave);
 }
 
+function syncPlayerLevelFromGameplaySave(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof ensurePlayer>,
+  saveJson: string,
+) {
+  const savedPlayerLevel = readSavedCurrentLevel(saveJson);
+
+  if (savedPlayerLevel === null || savedPlayerLevel <= player.playerLevel) {
+    return player;
+  }
+
+  const nextPlayer = ctx.db.player.identity.update({
+    ...player,
+    playerLevel: savedPlayerLevel,
+    lastSeenAt: ctx.timestamp,
+  });
+
+  ensureLeaderboardEntry(ctx, nextPlayer.username, nextPlayer.playerLevel);
+  updateTradeAllianceMemberProfile(
+    ctx,
+    nextPlayer.identity,
+    nextPlayer.username,
+    nextPlayer.playerLevel,
+  );
+
+  return nextPlayer;
+}
+
 function normalizeSaveTimestamp(ctx: IdleWizardReducerCtx): number {
   const nowMs = Number(ctx.timestamp.microsSinceUnixEpoch / 1000n);
   return nowMs;
@@ -3424,6 +3452,65 @@ function readSavedTotalGeneratedGold(saveJson?: string): bigint | null {
     return toBigInt(Math.min(Math.floor(totalGenerated), MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD));
   } catch {
     return null;
+  }
+}
+
+function readSavedResearchCount(saveJson?: string): number | null {
+  if (!saveJson) {
+    return null;
+  }
+
+  try {
+    const save = JSON.parse(saveJson);
+    const research = isRecord(save?.research) ? save.research : {};
+    if (!Array.isArray(research.completedIds)) {
+      return null;
+    }
+
+    return new Set(
+      research.completedIds
+        .map((researchId: unknown) => normalizeResearchId(String(researchId ?? '')))
+        .filter((researchId: string) => researchCatalogById.has(researchId)),
+    ).size;
+  } catch {
+    return null;
+  }
+}
+
+function assertClientSaveDoesNotDowngradeProgress(
+  existingSave: PlayerGameplaySaveRowValue | undefined,
+  safeSaveJson: string,
+) {
+  if (!existingSave) {
+    return;
+  }
+
+  const previousLevel = readSavedCurrentLevel(existingSave.saveJson);
+  const nextLevel = readSavedCurrentLevel(safeSaveJson);
+
+  if (previousLevel !== null && nextLevel !== null && nextLevel < previousLevel) {
+    throw new Error('Refusing older player save: level would decrease.');
+  }
+
+  const previousTotalGeneratedGold = readSavedTotalGeneratedGold(existingSave.saveJson);
+  const nextTotalGeneratedGold = readSavedTotalGeneratedGold(safeSaveJson);
+
+  if (
+    previousTotalGeneratedGold !== null &&
+    (nextTotalGeneratedGold === null || nextTotalGeneratedGold < previousTotalGeneratedGold)
+  ) {
+    throw new Error('Refusing older player save: lifetime gold would decrease.');
+  }
+
+  const previousResearchCount = readSavedResearchCount(existingSave.saveJson);
+  const nextResearchCount = readSavedResearchCount(safeSaveJson);
+
+  if (
+    previousResearchCount !== null &&
+    nextResearchCount !== null &&
+    nextResearchCount < previousResearchCount
+  ) {
+    throw new Error('Refusing older player save: research would decrease.');
   }
 }
 
@@ -5292,14 +5379,15 @@ export const set_admin_player_data = spacetimedb.reducer(
 export const set_player_gameplay_save = spacetimedb.reducer(
   { saveJson: t.string() },
   (ctx, { saveJson }) => {
-    ensurePlayer(ctx);
+    const player = ensurePlayer(ctx);
 
-    const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender);
+    const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined;
     const safeSaveJson = validatePlayerGameplaySaveJson(
       ctx,
       saveJson,
       existingSave?.saveJson,
     );
+    assertClientSaveDoesNotDowngradeProgress(existingSave, safeSaveJson);
     const nextSave = {
       identity: ctx.sender,
       saveJson: safeSaveJson,
@@ -5308,10 +5396,12 @@ export const set_player_gameplay_save = spacetimedb.reducer(
 
     if (existingSave) {
       ctx.db.playerGameplaySave.identity.update(nextSave);
+      syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson);
       return;
     }
 
     ctx.db.playerGameplaySave.insert(nextSave);
+    syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson);
   },
 );
 
@@ -5321,7 +5411,7 @@ export const set_player_level = spacetimedb.reducer(
     const player = ensurePlayer(ctx);
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
     const nextPlayer =
-      safePlayerLevel === player.playerLevel
+      safePlayerLevel <= player.playerLevel
         ? player
         : ctx.db.player.identity.update({
             ...player,

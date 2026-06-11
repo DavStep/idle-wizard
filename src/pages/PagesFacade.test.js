@@ -4051,7 +4051,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['npm market', 'player market']);
+    ).toEqual(['npc market', 'player market']);
     expect(
       stage
         .querySelector('.shop-page__market-tab-button')
@@ -4059,11 +4059,11 @@ describe('PagesFacade', () => {
     ).toBe('true');
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'npm demand market',
+      'npc demand market',
     );
     expect(stage.querySelector('.shop-page__stock')).not.toBeNull();
     expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(
-      'npm stock market',
+      'npc stock market',
     );
     expect(
       [...stage.querySelectorAll('.shop-page__shelf .shop-page__slot-row')].some(
@@ -5571,7 +5571,7 @@ describe('PagesFacade', () => {
         ?.hasAttribute('hidden'),
     ).toBe(false);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      'requestnone',
+      '1.empty',
     );
 
     stage
@@ -5581,9 +5581,14 @@ describe('PagesFacade', () => {
     const requestPopup = stage.querySelector('.shop-page__request-popup');
     expect(requestPopup.hidden).toBe(false);
 
-    const [requestItemInput, requestQuantityInput, requestGoldInput] =
+    expect(requestPopup.querySelector('.shop-page__request-tabs')?.textContent).toBe(
+      'seedsherbspotions',
+    );
+    [...requestPopup.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent === 'Sage Seed (4)')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const [requestQuantityInput, requestGoldInput] =
       requestPopup.querySelectorAll('.shop-page__request-input');
-    requestItemInput.value = 'Sage Seed';
     requestQuantityInput.value = '3';
     requestGoldInput.value = '2.5';
     requestPopup
@@ -5592,7 +5597,7 @@ describe('PagesFacade', () => {
 
     expect(requestPopup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      'requestSage Seed (3) 2.50 gold',
+      '1.Sage Seed (3) 2.50 gold',
     );
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(

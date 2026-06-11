@@ -25,6 +25,10 @@ export class TradeAllianceBackendFacade {
     this.rewardManager.setGameplayFacade(gameplayFacade);
   }
 
+  setRewardProcessingReady(ready) {
+    this.rewardManager.setReady(ready);
+  }
+
   connect(connection, identity) {
     this.actionManager.connect(connection);
     this.subscriptionManager.connect(connection, identity);

@@ -542,7 +542,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('resets version 1 gameplay saves but keeps lifetime generated gold', () => {
+  it('migrates version 1 gameplay saves without wiping progress', () => {
     const persistenceStorage = createMemoryStorage();
     persistenceStorage.setItem(
       'idle-wizard.gameplay.save',
@@ -567,13 +567,18 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
     const snapshot = gameplayFacade.getSnapshot();
 
-    expect(snapshot.gold.current).toBe(0);
+    expect(snapshot.gold.current).toBe(12);
     expect(snapshot.gold.totalGenerated).toBe(18);
-    expect(snapshot.inventory).toEqual([]);
-    expect(snapshot.research.completedResearchIds).toEqual([]);
+    expect(snapshot.inventory).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'Sage Seed',
+      kind: 'seed',
+      quantity: 3,
+    });
+    expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
     expect(snapshot.tasks.currentLevel).toBe(1);
     expect(snapshot.tasks.level.tasks).toHaveLength(5);
-    expect(gameplayFacade.consumeProgressResetPending()).toBe(true);
     expect(gameplayFacade.consumeProgressResetPending()).toBe(false);
   });
 

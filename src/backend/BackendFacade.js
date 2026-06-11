@@ -53,6 +53,9 @@ export class BackendFacade {
   } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setGameplayFacade(gameplayFacade);
+    this.tradeAllianceFacade.setRewardProcessingReady(false);
+    this.gameplaySaveFacade.setReadyToSend(false);
+    this.playerSyncFacade.setLevelSyncReady(false);
     this.playerSyncFacade.setPlayerFacade(playerFacade);
     this.playerSyncFacade.setGameplayFacade(gameplayFacade);
 
@@ -72,15 +75,21 @@ export class BackendFacade {
             return;
           }
 
+          this.gameplaySaveFacade.discardPreHydrationSave();
+          this.playerSyncFacade.discardPreHydrationPlayerLevel();
+          this.playerSyncFacade.markGameplaySaveHydrated();
           onGameplaySaveReady?.({
             save: result?.save ?? null,
             updatedAtMs: result?.updatedAtMs ?? 0,
           });
+          this.gameplaySaveFacade.setReadyToSend(true);
+          this.playerSyncFacade.setLevelSyncReady(true);
 
           if (gameplayFacade?.consumeProgressResetPending?.()) {
             void this.playerShopFacade.clearOwnProgress();
           }
 
+          this.tradeAllianceFacade.setRewardProcessingReady(true);
           onOnline?.({ connection, identity });
         };
 

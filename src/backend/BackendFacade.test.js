@@ -15,10 +15,18 @@ function createBackendWithFakes() {
       onReady?.({ ok: true, save: null });
       return true;
     }),
+    discardPreHydrationSave: vi.fn(),
     disconnect: vi.fn(),
+    setReadyToSend: vi.fn(),
   };
   backendFacade.leaderboardFacade = {
     setGameplayFacade: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+  backendFacade.tradeAllianceFacade = {
+    setGameplayFacade: vi.fn(),
+    setRewardProcessingReady: vi.fn(),
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
@@ -37,6 +45,9 @@ function createBackendWithFakes() {
   backendFacade.playerSyncFacade = {
     setPlayerFacade: vi.fn(),
     setGameplayFacade: vi.fn(),
+    setLevelSyncReady: vi.fn(),
+    discardPreHydrationPlayerLevel: vi.fn(),
+    markGameplaySaveHydrated: vi.fn(),
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
@@ -107,6 +118,47 @@ describe('BackendFacade', () => {
       save: null,
       updatedAtMs: 0,
     });
+    expect(
+      backendFacade.tradeAllianceFacade.setRewardProcessingReady.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false, true]);
+    expect(
+      backendFacade.gameplaySaveFacade.setReadyToSend.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false, true]);
+    expect(
+      backendFacade.gameplaySaveFacade.discardPreHydrationSave,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      backendFacade.playerSyncFacade.discardPreHydrationPlayerLevel,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      backendFacade.playerSyncFacade.markGameplaySaveHydrated,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      backendFacade.gameplaySaveFacade.discardPreHydrationSave.mock.invocationCallOrder[0],
+    ).toBeLessThan(onGameplaySaveReady.mock.invocationCallOrder[0]);
+    expect(
+      backendFacade.playerSyncFacade.discardPreHydrationPlayerLevel.mock
+        .invocationCallOrder[0],
+    ).toBeLessThan(onGameplaySaveReady.mock.invocationCallOrder[0]);
+    expect(
+      onGameplaySaveReady.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      backendFacade.gameplaySaveFacade.setReadyToSend.mock.invocationCallOrder[1],
+    );
+    expect(
+      backendFacade.gameplaySaveFacade.setReadyToSend.mock.invocationCallOrder[1],
+    ).toBeLessThan(
+      backendFacade.playerSyncFacade.setLevelSyncReady.mock.invocationCallOrder[1],
+    );
+    expect(
+      backendFacade.playerSyncFacade.setLevelSyncReady.mock.invocationCallOrder[1],
+    ).toBeLessThan(
+      backendFacade.tradeAllianceFacade.setRewardProcessingReady.mock.invocationCallOrder[1],
+    );
     expect(onOnline).toHaveBeenCalledTimes(1);
   });
 });

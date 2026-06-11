@@ -17,41 +17,36 @@ export class GameplayMigrationManager {
     }
 
     if (save.version === 1) {
-      this.progressResetPending = true;
-      return this.createResetSave(save);
+      return this.createVersion2Save(save);
     }
 
     return null;
   }
 
-  createResetSave(save) {
-    return {
+  createVersion2Save(save) {
+    const migratedSave = {
       version: GAMEPLAY_SAVE_VERSION,
-      gold: {
-        current: 0,
-        totalGenerated: this.readTotalGeneratedGold(save),
-      },
     };
-  }
 
-  readTotalGeneratedGold(save) {
-    const gold = save?.gold;
-    if (!gold || typeof gold !== 'object') {
-      return 0;
+    for (const key of [
+      'savedAt',
+      'mana',
+      'gold',
+      'crystal',
+      'logs',
+      'inventory',
+      'research',
+      'shop',
+      'brewing',
+      'garden',
+      'tasks',
+    ]) {
+      if (save[key] !== undefined) {
+        migratedSave[key] = save[key];
+      }
     }
 
-    return Math.max(
-      0,
-      this.toWholeNumber(gold.totalGenerated),
-      this.toWholeNumber(gold.totalGeneratedGold),
-      this.toWholeNumber(gold.totalIncome),
-      this.toWholeNumber(gold.current),
-    );
-  }
-
-  toWholeNumber(value) {
-    const number = Number(value);
-    return Number.isFinite(number) ? Math.floor(number) : 0;
+    return migratedSave;
   }
 
   consumeProgressResetPending() {

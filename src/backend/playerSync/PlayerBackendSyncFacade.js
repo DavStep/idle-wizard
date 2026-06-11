@@ -22,6 +22,18 @@ export class PlayerBackendSyncFacade {
     this.levelSyncManager.setGameplayFacade(gameplayFacade);
   }
 
+  setLevelSyncReady(ready) {
+    this.levelSyncManager.setReadyToSync(ready);
+  }
+
+  discardPreHydrationPlayerLevel() {
+    this.levelSyncManager.discardPreHydrationLevel();
+  }
+
+  markGameplaySaveHydrated() {
+    this.levelSyncManager.markGameplaySaveHydrated();
+  }
+
   connect(connection, identity) {
     this.syncManager.connect(connection);
     this.levelSyncManager.connect(connection);

@@ -5,6 +5,7 @@
 - Use caveman communication by default: terse, technical, no filler.
 - If a requested feature is ambiguous, ask first instead of guessing.
 - The user wants only what was asked for; avoid adding gameplay, visuals, or extra systems early.
+- Before any change that can cause player data loss or needs migration, warn the user first; even after approval, ask one more explicit confirmation before making the change.
 
 ## Product Shape
 
@@ -31,6 +32,9 @@
 - Timed gameplay should consume uncapped `frame.timerDeltaSeconds`; keep capped `frame.deltaSeconds` only for render/UI stability.
 - Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
+- Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
+- Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
+- Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 
 ## Gameplay Economy
 
@@ -46,7 +50,7 @@
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
 - Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
 - Brewing herb controls are tap-first on mobile; drag should start only after movement crosses a small threshold.
-- Brewing keeps the action button generic (`brew (N mana)`); cauldron status carries matched potion, locked recipe, and wasted mix state.
+- Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Marked Brewing recipes persist across room tab changes; only explicit unmarking or marking another recipe clears the guide.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 Sage`), not expanded numbered slots.
@@ -84,8 +88,11 @@
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
 - Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
-- Market page uses visible `npm market` / `player market` tabs; NPC internals and backend names can remain `npc`.
+- Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
+- Market page uses visible `npc market` / `player market` tabs; legacy internal tab ids can remain `npm`.
 - Player market request UI is local-only until backend request listings exist; do not fake server trades.
+- Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
+- Player market requests use local numbered slots that follow player market stand unlock state.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
@@ -171,6 +178,7 @@
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
+- NPC stock market category controls are bottom-border text tabs, not boxed buttons.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
@@ -205,6 +213,8 @@
 
 - Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
+- Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
+- SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.
 - Match verification to risk: tiny deterministic edits can use inspection or a focused check, while shared runtime/UI changes justify lint, tests, build, and browser/device checks.
 - If local shows `server unavailable`, check both Vite `55173` and SpacetimeDB `3000`; this workspace may target `.env.local` database `idle-wizard-codex-run`, so publish that DB directly when `npm run stdb:publish` is unauthorized for `idle-wizard`.
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
@@ -235,6 +245,7 @@
 - World chat rows store `allianceTag` at send time; chat display should format tagged senders as `[TAG] username(lvl)`.
 - Trade alliance daily quests are configured by `game_config.tradeAlliance.dailyQuests`; current supported server-verified source is capped `allianceIncome`.
 - Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
+- Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.

@@ -17,7 +17,7 @@ export class ShopPageFacade {
     this.shelfManager = new ShopShelfManager({ gameplayFacade });
     this.demandManager = new ShopDemandManager({ gameplayFacade });
     this.stockManager = new ShopStockManager({ gameplayFacade });
-    this.playerRequestManager = new ShopPlayerRequestManager();
+    this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
     this.playerShelfManager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
     this.tradeHistoryManager = new ShopTradeHistoryManager({ playerShopFacade });
   }

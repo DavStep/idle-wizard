@@ -58,11 +58,11 @@ export class ShopStockManager {
 
     this.root = document.createElement('section');
     this.root.className = 'shop-page__stock style-box';
-    this.root.setAttribute('aria-label', 'NPM stock market');
+    this.root.setAttribute('aria-label', 'NPC stock market');
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'npm stock market';
+    title.textContent = 'npc stock market';
 
     this.refs.tabs = this.createTabs();
     this.refs.rowsRoot = document.createElement('div');

@@ -5,7 +5,10 @@ export class PlayerLevelSyncManager {
     this.unsubscribe = null;
     this.lastObservedPlayerLevel = null;
     this.pendingPlayerLevel = null;
+    this.pendingPlayerLevelWasHydrated = false;
     this.syncPromise = null;
+    this.readyToSync = false;
+    this.hydratedLevelSource = false;
   }
 
   setGameplayFacade(gameplayFacade) {
@@ -29,6 +32,8 @@ export class PlayerLevelSyncManager {
 
   disconnect() {
     this.connection = null;
+    this.readyToSync = false;
+    this.hydratedLevelSource = false;
   }
 
   dispose() {
@@ -55,11 +60,18 @@ export class PlayerLevelSyncManager {
 
   queue(playerLevel) {
     this.pendingPlayerLevel = playerLevel;
+    this.pendingPlayerLevelWasHydrated =
+      this.readyToSync || this.hydratedLevelSource;
     this.flush();
   }
 
   flush() {
-    if (this.syncPromise || this.pendingPlayerLevel === null || !this.connection) {
+    if (
+      !this.readyToSync ||
+      this.syncPromise ||
+      this.pendingPlayerLevel === null ||
+      !this.connection
+    ) {
       return;
     }
 
@@ -69,19 +81,21 @@ export class PlayerLevelSyncManager {
     }
 
     const playerLevel = this.pendingPlayerLevel;
+    const playerLevelWasHydrated = this.pendingPlayerLevelWasHydrated;
     this.pendingPlayerLevel = null;
+    this.pendingPlayerLevelWasHydrated = false;
 
     let syncResult;
     try {
       syncResult = setPlayerLevel({ playerLevel });
     } catch {
-      this.restorePending(playerLevel);
+      this.restorePending(playerLevel, playerLevelWasHydrated);
       return;
     }
 
     this.syncPromise = Promise.resolve(syncResult)
       .catch(() => {
-        this.restorePending(playerLevel);
+        this.restorePending(playerLevel, playerLevelWasHydrated);
       })
       .finally(() => {
         this.syncPromise = null;
@@ -89,8 +103,36 @@ export class PlayerLevelSyncManager {
       });
   }
 
-  restorePending(playerLevel) {
+  restorePending(playerLevel, playerLevelWasHydrated = true) {
     this.pendingPlayerLevel = this.pendingPlayerLevel ?? playerLevel;
+    this.pendingPlayerLevelWasHydrated =
+      this.pendingPlayerLevelWasHydrated || playerLevelWasHydrated;
+  }
+
+  discardPreHydrationLevel() {
+    if (this.pendingPlayerLevelWasHydrated) {
+      return;
+    }
+
+    this.pendingPlayerLevel = null;
+    this.lastObservedPlayerLevel = null;
+    this.pendingPlayerLevelWasHydrated = false;
+  }
+
+  markGameplaySaveHydrated() {
+    this.hydratedLevelSource = true;
+  }
+
+  setReadyToSync(ready = true) {
+    this.readyToSync = Boolean(ready);
+
+    if (!this.readyToSync) {
+      this.hydratedLevelSource = false;
+      return;
+    }
+
+    this.observe(this.gameplayFacade?.getSnapshot?.());
+    this.flush();
   }
 
   readPlayerLevel(snapshot) {

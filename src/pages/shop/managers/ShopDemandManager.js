@@ -76,7 +76,7 @@ export class ShopDemandManager {
     button.className = 'style-button shop-page__demand-button';
     button.type = 'button';
     button.textContent = 'demand';
-    button.setAttribute('aria-label', 'show npm demand');
+    button.setAttribute('aria-label', 'show npc demand');
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -184,10 +184,6 @@ export class ShopDemandManager {
     const lockedRows = demandGroups.locked.map((item) => this.createDemandRow(item));
     const children = [...primaryRows];
 
-    if (primaryRows.length > 0 && lockedRows.length > 0) {
-      children.push(this.createDivider());
-    }
-
     children.push(...lockedRows);
 
     if (children.length === 0) {
@@ -245,13 +241,6 @@ export class ShopDemandManager {
 
     row.append(label, value);
     return row;
-  }
-
-  createDivider() {
-    const divider = document.createElement('div');
-    divider.className = 'shop-page__demand-divider';
-    divider.setAttribute('aria-hidden', 'true');
-    return divider;
   }
 
   formatDemand(sellNeed) {

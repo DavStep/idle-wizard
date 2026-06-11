@@ -65,7 +65,7 @@ describe('ShopStockManager', () => {
     manager.mount(stage);
 
     expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(
-      'npm stock market',
+      'npc stock market',
     );
     expect(stage.querySelector('.shop-page__stock-row')?.textContent).toContain(
       'Sage Seed (3)',

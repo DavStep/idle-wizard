@@ -2,15 +2,28 @@ import {
   formatGoldPriceText,
   parsePositiveGoldPrice,
 } from '../../../shared/goldPrice.js';
-import { setResourceColorFromText } from '../../shared/resourceColor.js';
+import {
+  getItemDisplay,
+  shouldShowItemInActionList,
+} from '../../shared/itemResearchStatus.js';
+import {
+  setResourceColor,
+  setResourceColorFromText,
+} from '../../shared/resourceColor.js';
 
 export class ShopPlayerRequestManager {
-  constructor() {
+  constructor({ gameplayFacade } = {}) {
+    this.gameplayFacade = gameplayFacade;
     this.root = null;
+    this.unsubscribeGameplay = null;
     this.refs = {};
-    this.request = null;
+    this.requests = new Map();
+    this.selectedRequestSlotNumber = 1;
+    this.selectedRequestItemTypeId = null;
+    this.selectedRequestTab = 'seed';
     this.visible = false;
     this.previousFocus = null;
+    this.lastGameplaySnapshot = null;
     this.handledPointerPlace = false;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
@@ -44,14 +57,21 @@ export class ShopPlayerRequestManager {
     title.className = 'style-box__title';
     title.textContent = 'requests';
 
-    this.refs.row = this.createRequestRow();
+    this.refs.rows = [];
     this.refs.actions = this.createActions();
     this.refs.popup = this.createPopup();
 
-    this.root.append(title, this.refs.row.row, this.refs.actions);
+    this.root.append(title, this.refs.actions);
     parent.append(this.root);
     popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
+    if (this.gameplayFacade) {
+      this.unsubscribeGameplay = this.gameplayFacade.subscribe((snapshot) => {
+        this.lastGameplaySnapshot = snapshot;
+        this.render();
+      });
+      this.lastGameplaySnapshot = this.gameplayFacade.getSnapshot();
+    }
     this.render();
     this.applyPopupVisibility();
 
@@ -59,31 +79,52 @@ export class ShopPlayerRequestManager {
   }
 
   unmount() {
+    this.unsubscribeGameplay?.();
+    this.unsubscribeGameplay = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
     this.refs = {};
-    this.request = null;
+    this.requests = new Map();
+    this.selectedRequestSlotNumber = 1;
+    this.selectedRequestItemTypeId = null;
+    this.selectedRequestTab = 'seed';
     this.visible = false;
     this.previousFocus = null;
+    this.lastGameplaySnapshot = null;
     this.handledPointerPlace = false;
   }
 
-  createRequestRow() {
+  createRequestRow(slotNumber) {
     const row = document.createElement('div');
-    row.className = 'shop-page__player-request-row';
+    row.className = 'shop-page__slot-row shop-page__player-request-row';
+    row.addEventListener('click', (event) => this.onSelectRequestSlot(event, slotNumber));
+    row.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      event.preventDefault();
+      this.onSelectRequestSlot(event, slotNumber);
+    });
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    label.textContent = 'request';
+    label.textContent = `${slotNumber}.`;
 
     const value = document.createElement('span');
     value.className = 'row_val';
 
+    const itemValue = document.createElement('span');
+    itemValue.className = 'shop-page__request-row-item';
+
+    const priceValue = document.createElement('span');
+    priceValue.className = 'shop-page__request-row-price';
+
     row.append(label, value);
-    return { row, value };
+    return { row, value, itemValue, priceValue };
   }
 
   createActions() {
@@ -111,12 +152,15 @@ export class ShopPlayerRequestManager {
     popup.className = 'shop-page__request-popup';
     popup.addEventListener('click', this.handlePopupClick);
 
+    const panel = document.createElement('section');
+    panel.className = 'shop-page__request-panel';
+    panel.setAttribute('aria-label', 'Request player market item');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('role', 'dialog');
+    panel.tabIndex = -1;
+
     const dialog = document.createElement('section');
     dialog.className = 'shop-page__request-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Request player market item');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('role', 'dialog');
-    dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
@@ -128,12 +172,13 @@ export class ShopPlayerRequestManager {
     closeButton.textContent = 'close';
     closeButton.addEventListener('click', () => this.hidePopup());
 
-    this.refs.itemField = this.createTextField('item', 'Item requested');
     this.refs.quantityField = this.createNumberField('quantity', 'Request quantity');
     this.refs.goldField = this.createNumberField('gold each', 'Gold offered per item');
     this.refs.goldField.input.inputMode = 'decimal';
     this.refs.goldField.input.min = '0.01';
     this.refs.goldField.input.step = '0.01';
+    this.refs.itemPicker = this.createItemPicker();
+    this.refs.itemTabs = this.createItemTabs();
 
     const actionRow = document.createElement('div');
     actionRow.className = 'shop-page__request-action-row';
@@ -163,35 +208,56 @@ export class ShopPlayerRequestManager {
     dialog.append(
       title,
       closeButton,
-      this.refs.itemField.field,
+      this.refs.itemPicker.selectedRow,
       this.refs.quantityField.field,
       this.refs.goldField.field,
       actionRow,
+      this.refs.itemPicker.divider,
+      this.refs.itemPicker.list,
       this.refs.status,
     );
-    popup.append(dialog);
-    this.refs.dialog = dialog;
+    panel.append(dialog, this.refs.itemTabs);
+    popup.append(panel);
+    this.refs.dialog = panel;
     return popup;
   }
 
-  createTextField(labelText, ariaLabel) {
-    const field = document.createElement('label');
-    field.className = 'shop-page__request-field';
+  createItemPicker() {
+    const selectedRow = document.createElement('div');
+    selectedRow.className = 'shop-page__request-selected-row';
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    label.textContent = labelText;
+    label.textContent = 'item';
 
-    const input = document.createElement('input');
-    input.className = 'style-input shop-page__request-input';
-    input.type = 'text';
-    input.maxLength = 40;
-    input.autocomplete = 'off';
-    input.setAttribute('aria-label', ariaLabel);
-    input.addEventListener('input', () => this.setStatus(''));
+    const selectedValue = document.createElement('span');
+    selectedValue.className = 'row_val shop-page__request-selected-value';
 
-    field.append(label, input);
-    return { field, input };
+    selectedRow.append(label, selectedValue);
+
+    const divider = document.createElement('div');
+    divider.className = 'shop-page__request-choice-divider';
+
+    const list = document.createElement('div');
+    list.className = 'shop-page__sell-item-list shop-page__request-item-list';
+
+    const empty = document.createElement('div');
+    empty.className = 'shop-page__request-empty';
+    empty.textContent = 'empty';
+    list.append(empty);
+
+    return {
+      selectedRow,
+      selectedValue,
+      divider,
+      list,
+      empty,
+      tabButtons: new Map(),
+      itemRows: new Map(),
+      itemButtons: new Map(),
+      itemLabels: new Map(),
+      itemQuantities: new Map(),
+    };
   }
 
   createNumberField(labelText, ariaLabel) {
@@ -216,14 +282,27 @@ export class ShopPlayerRequestManager {
     return { field, input };
   }
 
-  showPopup() {
+  createItemTabs() {
+    const tabs = document.createElement('div');
+    tabs.className = 'shop-page__request-tabs';
+    tabs.setAttribute('aria-label', 'Request item type');
+    tabs.setAttribute('role', 'tablist');
+    return tabs;
+  }
+
+  showPopup(slotNumber = this.selectedRequestSlotNumber) {
+    if (!this.canUseRequestSlot(slotNumber)) {
+      return;
+    }
+
+    this.selectedRequestSlotNumber = slotNumber;
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.prefillFields();
     this.setStatus('');
+    this.render();
     this.applyPopupVisibility();
-    this.refs.itemField?.input.focus({ preventScroll: true });
-    this.refs.itemField?.input.select();
+    this.refs.dialog?.focus();
   }
 
   hidePopup() {
@@ -240,26 +319,56 @@ export class ShopPlayerRequestManager {
   }
 
   prefillFields() {
-    if (!this.refs.itemField) {
+    if (!this.refs.quantityField) {
       return;
     }
 
-    this.refs.itemField.input.value = this.request?.itemLabel ?? '';
-    this.refs.quantityField.input.value = this.request
-      ? String(this.request.quantity)
+    const request = this.getSelectedRequest();
+    this.selectedRequestItemTypeId = request?.itemTypeId ?? null;
+    this.selectedRequestTab = request?.itemKind ?? this.selectedRequestTab;
+    this.refs.quantityField.input.value = request
+      ? String(request.quantity)
       : '1';
-    this.refs.goldField.input.value = this.request
-      ? String(this.request.priceGold)
+    this.refs.goldField.input.value = request
+      ? String(request.priceGold)
       : '1';
   }
 
+  onSelectRequestSlot(event, slotNumber) {
+    if (event.target?.tagName === 'BUTTON' || !this.canUseRequestSlot(slotNumber)) {
+      return;
+    }
+
+    this.showPopup(slotNumber);
+  }
+
+  onSelectRequestTab(kind) {
+    this.selectedRequestTab = kind;
+    this.render();
+  }
+
+  onSelectRequestItem(itemTypeId) {
+    const item = this.getRequestItems().find(
+      (candidate) => candidate.itemTypeId === itemTypeId,
+    );
+
+    if (!item) {
+      return;
+    }
+
+    this.selectedRequestItemTypeId = item.itemTypeId;
+    this.selectedRequestTab = item.kind;
+    this.setStatus('');
+    this.render();
+  }
+
   onPlaceRequest() {
-    const itemLabel = this.refs.itemField?.input.value.trim();
+    const item = this.getSelectedRequestItem();
     const quantity = this.readPositiveInteger(this.refs.quantityField?.input.value);
     const priceGold = parsePositiveGoldPrice(this.refs.goldField?.input.value);
 
-    if (!itemLabel) {
-      this.setStatus('bad item');
+    if (!item) {
+      this.setStatus('choose item');
       return;
     }
 
@@ -273,42 +382,186 @@ export class ShopPlayerRequestManager {
       return;
     }
 
-    this.request = {
-      itemLabel,
+    this.requests.set(this.selectedRequestSlotNumber, {
+      itemTypeId: item.itemTypeId,
+      itemKey: item.key,
+      itemKind: item.kind,
+      itemLabel: item.label,
       quantity,
       priceGold,
-    };
+    });
     this.hidePopup();
     this.render();
   }
 
   clearRequest() {
-    this.request = null;
+    this.requests.delete(this.selectedRequestSlotNumber);
     this.render();
   }
 
   render() {
-    if (!this.refs.row) {
+    if (!this.root) {
       return;
     }
 
-    if (!this.request) {
-      this.refs.row.value.textContent = 'none';
-      this.refs.row.row.classList.add('is-empty');
-      this.refs.requestButton.textContent = 'request';
-      this.refs.clearButton.hidden = true;
-      setResourceColorFromText(this.refs.row.value, this.refs.row.value.textContent);
+    const shelf = this.getRequestShelf();
+    const rowCount = this.getRequestSlotCount(shelf);
+    this.ensureRows(rowCount);
+    this.ensureSelectedRequestSlot(shelf);
+    this.renderRows(shelf, rowCount);
+    this.renderActions();
+    this.renderItemPicker();
+  }
+
+  ensureRows(rowCount) {
+    while (this.refs.rows.length < rowCount) {
+      const row = this.createRequestRow(this.refs.rows.length + 1);
+      this.refs.rows.push(row);
+      this.root.insertBefore(row.row, this.refs.actions);
+    }
+
+    for (const [index, refs] of this.refs.rows.entries()) {
+      refs.row.hidden = index + 1 > rowCount;
+    }
+  }
+
+  ensureSelectedRequestSlot(shelf) {
+    if (this.canUseRequestSlot(this.selectedRequestSlotNumber)) {
       return;
     }
 
-    const text = `${this.request.itemLabel} (${this.request.quantity}) ${formatGoldPriceText(
-      this.request.priceGold,
-    )}`;
-    this.refs.row.value.textContent = text;
-    this.refs.row.row.classList.remove('is-empty');
-    this.refs.requestButton.textContent = 'change';
-    this.refs.clearButton.hidden = false;
-    setResourceColorFromText(this.refs.row.value, text);
+    const rowCount = this.getRequestSlotCount(shelf);
+    for (let slotNumber = 1; slotNumber <= rowCount; slotNumber += 1) {
+      if (this.getRequestSlotSnapshot(shelf, slotNumber).unlocked) {
+        this.selectedRequestSlotNumber = slotNumber;
+        return;
+      }
+    }
+
+    this.selectedRequestSlotNumber = 1;
+  }
+
+  renderRows(shelf, rowCount) {
+    for (const [index, refs] of this.refs.rows.entries()) {
+      const slotNumber = index + 1;
+
+      if (slotNumber > rowCount) {
+        continue;
+      }
+
+      const slot = this.getRequestSlotSnapshot(shelf, slotNumber);
+      const request = this.requests.get(slotNumber) ?? null;
+      const unlocked = Boolean(slot.unlocked);
+
+      refs.row.classList.toggle('is-selected', slotNumber === this.selectedRequestSlotNumber);
+      refs.row.classList.toggle('is-locked', !unlocked);
+      refs.row.classList.toggle('is-empty', unlocked && !request);
+
+      if (unlocked) {
+        refs.row.classList.add('shop-page__slot-row--interactive');
+        refs.row.setAttribute('role', 'button');
+        refs.row.tabIndex = 0;
+        refs.row.setAttribute('aria-label', `set player market request ${slotNumber}`);
+        this.renderRequestSlotValue(refs, request);
+        continue;
+      }
+
+      refs.row.classList.remove('shop-page__slot-row--interactive');
+      refs.row.removeAttribute('role');
+      refs.row.removeAttribute('aria-label');
+      refs.row.removeAttribute('tabindex');
+      refs.value.textContent = this.getLockedRequestSlotText(shelf, slotNumber);
+      setResourceColorFromText(refs.value, refs.value.textContent);
+    }
+  }
+
+  renderRequestSlotValue(refs, request) {
+    if (!request) {
+      refs.value.textContent = 'empty';
+      setResourceColorFromText(refs.value, refs.value.textContent);
+      return;
+    }
+
+    const itemText = `${request.itemLabel} (${request.quantity})`;
+    const priceText = formatGoldPriceText(request.priceGold);
+    if (
+      refs.itemValue.parentElement !== refs.value ||
+      refs.priceValue.parentElement !== refs.value
+    ) {
+      refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+    }
+
+    refs.itemValue.textContent = itemText;
+    setResourceColor(refs.itemValue, request.itemKind);
+    refs.priceValue.textContent = ` ${priceText}`;
+    setResourceColor(refs.priceValue, 'gold');
+  }
+
+  renderActions() {
+    const request = this.getSelectedRequest();
+    const canUseSlot = this.canUseRequestSlot(this.selectedRequestSlotNumber);
+
+    this.refs.requestButton.textContent = request ? 'change' : 'request';
+    this.refs.requestButton.disabled = !canUseSlot;
+    this.refs.requestButton.setAttribute(
+      'aria-disabled',
+      this.refs.requestButton.disabled ? 'true' : 'false',
+    );
+    this.refs.clearButton.hidden = !request;
+    this.refs.clearButton.disabled = !canUseSlot;
+    this.refs.clearButton.setAttribute(
+      'aria-disabled',
+      this.refs.clearButton.disabled ? 'true' : 'false',
+    );
+  }
+
+  getRequestShelf() {
+    return this.lastGameplaySnapshot?.shop?.playerShelf ?? null;
+  }
+
+  getRequestSlotCount(shelf = this.getRequestShelf()) {
+    const maxSlots = Number.isInteger(shelf?.maxSlots) ? shelf.maxSlots : null;
+    const slotCount = Array.isArray(shelf?.slots) ? shelf.slots.length : 0;
+    return Math.max(1, maxSlots ?? slotCount);
+  }
+
+  getRequestSlotSnapshot(shelf = this.getRequestShelf(), slotNumber) {
+    const slot = shelf?.slots?.find(
+      (candidate) => candidate?.slotNumber === slotNumber,
+    );
+
+    if (slot) {
+      return slot;
+    }
+
+    return {
+      slotNumber,
+      unlocked: slotNumber === 1,
+    };
+  }
+
+  getLockedRequestSlotText(shelf, slotNumber) {
+    if (
+      slotNumber === shelf?.nextSlotNumber &&
+      shelf.nextSlotLockedByLevel &&
+      shelf.nextSlotRequiresLevel
+    ) {
+      return `level ${shelf.nextSlotRequiresLevel}`;
+    }
+
+    return 'locked';
+  }
+
+  canUseRequestSlot(slotNumber) {
+    if (!Number.isInteger(slotNumber) || slotNumber < 1) {
+      return false;
+    }
+
+    return Boolean(this.getRequestSlotSnapshot(this.getRequestShelf(), slotNumber).unlocked);
+  }
+
+  getSelectedRequest() {
+    return this.requests.get(this.selectedRequestSlotNumber) ?? null;
   }
 
   setStatus(status) {
@@ -333,5 +586,195 @@ export class ShopPlayerRequestManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  renderItemPicker() {
+    if (!this.refs.itemPicker) {
+      return;
+    }
+
+    const snapshot = this.lastGameplaySnapshot;
+    const sellKinds = snapshot?.shop?.playerShelf?.sellKinds ?? [
+      { kind: 'seed', label: 'seeds' },
+      { kind: 'herb', label: 'herbs' },
+      { kind: 'potion', label: 'potions' },
+    ];
+    const items = this.getRequestItems();
+    this.ensureRequestTabButtons(sellKinds);
+    this.ensureRequestItemButtons(items);
+
+    for (const sellKind of sellKinds) {
+      const button = this.refs.itemPicker.tabButtons.get(sellKind.kind);
+      const selected = this.selectedRequestTab === sellKind.kind;
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button.setAttribute('tabindex', selected ? '0' : '-1');
+    }
+
+    const visibleItemTypeIds = new Set(items.map((item) => item.itemTypeId));
+    let visibleRows = 0;
+
+    for (const [itemTypeId, row] of this.refs.itemPicker.itemRows) {
+      if (!visibleItemTypeIds.has(itemTypeId)) {
+        row.hidden = true;
+      }
+    }
+
+    for (const item of items) {
+      const row = this.refs.itemPicker.itemRows.get(item.itemTypeId);
+      const button = this.refs.itemPicker.itemButtons.get(item.itemTypeId);
+      const label = this.refs.itemPicker.itemLabels.get(item.itemTypeId);
+      const quantity = this.refs.itemPicker.itemQuantities.get(item.itemTypeId);
+      const display = getItemDisplay(snapshot, item, item.quantity);
+      const actionVisible = shouldShowItemInActionList(snapshot, item, item.quantity);
+      const visible = item.kind === this.selectedRequestTab && actionVisible;
+      row.hidden = !visible;
+      row.classList.toggle('is-locked', display.locked);
+      row.classList.toggle('is-unknown', display.unknown);
+      row.classList.toggle('is-empty', display.empty);
+      label.textContent = `${display.label} `;
+      setResourceColor(label, item.kind);
+      quantity.textContent = `(${display.quantity})`;
+      button.disabled = !actionVisible;
+      button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
+      button.setAttribute(
+        'aria-pressed',
+        this.selectedRequestItemTypeId === item.itemTypeId ? 'true' : 'false',
+      );
+      visibleRows += visible ? 1 : 0;
+    }
+
+    this.refs.itemPicker.empty.hidden = visibleRows > 0;
+    this.renderSelectedRequestItem();
+  }
+
+  renderSelectedRequestItem() {
+    const item = this.getSelectedRequestItem();
+    const selectedValue = this.refs.itemPicker?.selectedValue;
+
+    if (!selectedValue) {
+      return;
+    }
+
+    if (!item) {
+      selectedValue.textContent = 'none';
+      setResourceColorFromText(selectedValue, selectedValue.textContent);
+    } else {
+      selectedValue.textContent = getItemDisplay(
+        this.lastGameplaySnapshot,
+        item,
+        item.quantity,
+      ).label;
+      setResourceColor(selectedValue, item.kind);
+    }
+
+    const canPlace = Boolean(item) && this.canUseRequestSlot(this.selectedRequestSlotNumber);
+    this.refs.placeButton.disabled = !canPlace;
+    this.refs.placeButton.setAttribute('aria-disabled', canPlace ? 'false' : 'true');
+  }
+
+  ensureRequestTabButtons(sellKinds) {
+    for (const sellKind of sellKinds) {
+      if (this.refs.itemPicker.tabButtons.has(sellKind.kind)) {
+        continue;
+      }
+
+      const button = document.createElement('button');
+      button.className = 'style-button shop-page__request-tab-button';
+      button.type = 'button';
+      button.textContent = sellKind.label;
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => this.onSelectRequestTab(sellKind.kind));
+      this.refs.itemPicker.tabButtons.set(sellKind.kind, button);
+      this.refs.itemTabs.append(button);
+    }
+  }
+
+  ensureRequestItemButtons(items) {
+    for (const item of items) {
+      if (this.refs.itemPicker.itemButtons.has(item.itemTypeId)) {
+        continue;
+      }
+
+      const row = document.createElement('div');
+      row.className = 'shop-page__player-request-item-row';
+
+      const button = document.createElement('button');
+      button.className = 'shop-page__sell-item-button';
+      button.type = 'button';
+      button.addEventListener('click', () => this.onSelectRequestItem(item.itemTypeId));
+
+      const label = document.createElement('span');
+      label.className = 'row_key';
+
+      const quantity = document.createElement('span');
+      quantity.className = 'row_val';
+
+      button.append(label, quantity);
+      row.append(button);
+      this.refs.itemPicker.itemRows.set(item.itemTypeId, row);
+      this.refs.itemPicker.itemButtons.set(item.itemTypeId, button);
+      this.refs.itemPicker.itemLabels.set(item.itemTypeId, label);
+      this.refs.itemPicker.itemQuantities.set(item.itemTypeId, quantity);
+      this.refs.itemPicker.list.append(row);
+    }
+  }
+
+  getRequestItems() {
+    const snapshot = this.lastGameplaySnapshot;
+    const itemsByKey = new Map();
+    const addItem = (item) => {
+      if (!item?.key || !item?.kind) {
+        return;
+      }
+
+      itemsByKey.set(item.key, { ...itemsByKey.get(item.key), ...item });
+    };
+
+    for (const item of snapshot?.seedInventory ?? []) {
+      addItem(item);
+    }
+
+    for (const item of snapshot?.garden?.herbs ?? []) {
+      addItem(item);
+    }
+
+    const ownedPotions = (snapshot?.inventory ?? []).filter(
+      (item) => item.kind === 'potion',
+    );
+    const ownedPotionsByKey = new Map(ownedPotions.map((item) => [item.key, item]));
+
+    for (const recipe of snapshot?.brewing?.recipes ?? []) {
+      const owned = ownedPotionsByKey.get(recipe.key);
+      addItem({
+        itemTypeId: recipe.potionTypeId,
+        key: recipe.key,
+        label: recipe.label,
+        kind: 'potion',
+        quantity: owned?.quantity ?? 0,
+        researched: Boolean(recipe.unlocked),
+      });
+    }
+
+    for (const item of ownedPotions) {
+      addItem(item);
+    }
+
+    for (const item of snapshot?.shop?.playerShelf?.sellItems ?? []) {
+      addItem(item);
+    }
+
+    return [...itemsByKey.values()];
+  }
+
+  getSelectedRequestItem() {
+    if (!this.selectedRequestItemTypeId) {
+      return null;
+    }
+
+    return (
+      this.getRequestItems().find(
+        (item) => item.itemTypeId === this.selectedRequestItemTypeId,
+      ) ?? null
+    );
   }
 }

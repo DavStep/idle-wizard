@@ -41,7 +41,7 @@ function createSnapshot() {
 }
 
 describe('ShopDemandManager', () => {
-  it('opens NPC demand in tabbed popup with locked rows separated and muted', () => {
+  it('opens NPC demand in tabbed popup with locked rows muted', () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');
     const snapshot = createSnapshot();
@@ -80,7 +80,7 @@ describe('ShopDemandManager', () => {
       ['Sage Seed', '235', false],
       ['Mint Seed', '623', true],
     ]);
-    expect(popup.querySelector('.shop-page__demand-divider')).not.toBeNull();
+    expect(popup.querySelector('.shop-page__demand-divider')).toBeNull();
 
     manager.unmount();
   });

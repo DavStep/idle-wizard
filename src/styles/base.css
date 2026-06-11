@@ -652,7 +652,10 @@ body {
 .shop-page__sell-item-row.is-unknown .shop-page__sell-item-button,
 .shop-page__player-listing-item-row.is-empty .shop-page__sell-item-button,
 .shop-page__player-listing-item-row.is-locked .shop-page__sell-item-button,
-.shop-page__player-listing-item-row.is-unknown .shop-page__sell-item-button {
+.shop-page__player-listing-item-row.is-unknown .shop-page__sell-item-button,
+.shop-page__player-request-item-row.is-empty .shop-page__sell-item-button,
+.shop-page__player-request-item-row.is-locked .shop-page__sell-item-button,
+.shop-page__player-request-item-row.is-unknown .shop-page__sell-item-button {
   color: var(--style-disabled);
 }
 
@@ -663,6 +666,9 @@ body {
 .shop-page__player-listing-choice-row,
 .shop-page__player-listing-action-row,
 .shop-page__player-request-row,
+.shop-page__request-selected-row,
+.shop-page__player-request-item-row,
+.shop-page__request-empty,
 .shop-page__request-field,
 .shop-page__request-action-row,
 .shop-page__request-status,
@@ -686,6 +692,9 @@ body {
 .shop-page__player-listing-choice-row::after,
 .shop-page__player-listing-action-row::after,
 .shop-page__player-request-row::after,
+.shop-page__request-selected-row::after,
+.shop-page__player-request-item-row::after,
+.shop-page__request-empty::after,
 .shop-page__request-field::after,
 .shop-page__request-action-row::after,
 .shop-page__request-status::after,
@@ -1082,39 +1091,59 @@ body {
 
 .brewing-page__actions {
   position: absolute;
-  top: 386px;
-  right: var(--style-room-content-edge);
-  left: var(--style-room-content-edge);
-  text-align: center;
+  bottom: -9px;
+  left: var(--style-box-title-left);
+  z-index: 1;
+  width: auto;
+  background: var(--style-surface);
+  text-align: left;
 }
 
 .brewing-page__action-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  width: 100%;
+  display: block;
+  width: auto;
 }
 
 .style-button.brewing-page__action-button {
   display: inline-flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  align-items: baseline;
   justify-content: center;
-  width: 70px;
-  padding: 3px 8px;
+  width: auto;
+  min-width: 0;
+  padding: 0 2px;
+  margin: 0;
+  background: var(--style-surface);
+  border-color: transparent;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .brewing-page__action-button-label {
-  line-height: 15px;
+  line-height: normal;
 }
 
 .brewing-page__action-button-cost {
-  margin-top: 1px;
+  margin-left: 3px;
+  margin-top: 0;
   color: var(--style-muted);
-  font-size: 10px;
+  font-size: var(--style-font-size);
   font-variant-numeric: tabular-nums lining-nums;
-  line-height: 10px;
+  line-height: normal;
+}
+
+.style-button.brewing-page__action-button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--style-surface);
+}
+
+.style-button.brewing-page__action-button[aria-disabled="true"],
+.style-button.brewing-page__action-button:disabled {
+  border-color: transparent;
+}
+
+.style-button.brewing-page__action-button[aria-disabled="true"] .brewing-page__action-button-cost,
+.style-button.brewing-page__action-button:disabled .brewing-page__action-button-cost {
+  color: inherit;
 }
 
 .brewing-page__cauldron-auto-brew-text {
@@ -2653,6 +2682,7 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-panel,
 .workshop-page__world-chat-panel,
 .shop-page__sell-panel,
+.shop-page__request-panel,
 .shop-page__trade-history-panel,
 .shop-page__demand-panel {
   position: absolute;
@@ -2695,6 +2725,14 @@ div.workshop-page__discovery-row {
   margin-top: var(--style-dialog-tab-gap);
 }
 
+.shop-page__request-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
 .shop-page__trade-history-tabs,
 .shop-page__demand-tabs {
   position: relative;
@@ -2705,6 +2743,12 @@ div.workshop-page__discovery-row {
 }
 
 .style-dialog.shop-page__sell-dialog {
+  position: relative;
+  width: 260px;
+  overflow: visible;
+}
+
+.style-dialog.shop-page__request-dialog {
   position: relative;
   width: 260px;
   overflow: visible;
@@ -2722,15 +2766,6 @@ div.workshop-page__discovery-row {
   top: 50%;
   left: 50%;
   width: 300px;
-  overflow: visible;
-  transform: translate(-50%, -50%);
-}
-
-.style-dialog.shop-page__request-dialog {
-  position: absolute;
-  top: 45%;
-  left: 50%;
-  width: 260px;
   overflow: visible;
   transform: translate(-50%, -50%);
 }
@@ -2866,16 +2901,14 @@ div.workshop-page__discovery-row {
   color: var(--style-muted);
 }
 
-.shop-page__demand-divider {
-  height: 1px;
-  margin: 5px 0;
-  background: var(--style-text);
-}
-
 .shop-page__stock-tabs {
+  position: absolute;
+  right: 10px;
+  bottom: -10px;
+  left: 10px;
   display: flex;
-  gap: 3px;
-  margin-top: 5px;
+  justify-content: space-around;
+  gap: 8px;
 }
 
 .shop-page__stock-rows {
@@ -2890,10 +2923,6 @@ div.workshop-page__discovery-row {
 
 .shop-page__stock-row {
   padding: 1px 0;
-}
-
-.shop-page__stock-row + .shop-page__stock-row {
-  border-top: 1px solid var(--style-disabled);
 }
 
 .shop-page__stock-row .row_key {
@@ -2999,8 +3028,9 @@ div.workshop-page__discovery-row {
 
 .shop-page__player-shop-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: var(--style-row-min-height);
   margin-top: 5px;
 }
 
@@ -3020,6 +3050,17 @@ div.workshop-page__discovery-row {
   margin-bottom: 5px;
 }
 
+.shop-page__request-selected-row {
+  margin-bottom: 5px;
+}
+
+.shop-page__request-selected-value {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .style-input.shop-page__request-input {
   box-sizing: border-box;
   float: right;
@@ -3031,6 +3072,12 @@ div.workshop-page__discovery-row {
 .shop-page__request-action-row {
   margin-top: 8px;
   text-align: right;
+}
+
+.shop-page__request-choice-divider {
+  height: 1px;
+  margin: 8px 0 5px;
+  background: var(--style-text);
 }
 
 .shop-page__request-status {
@@ -3049,6 +3096,10 @@ div.workshop-page__discovery-row {
 
 .shop-page__player-listing-controls .shop-page__sell-item-list {
   max-height: 260px;
+}
+
+.shop-page__request-item-list {
+  max-height: 220px;
 }
 
 .style-panel,
@@ -3070,6 +3121,10 @@ div.workshop-page__discovery-row {
 .style-box {
   z-index: 10;
   border: var(--style-border);
+}
+
+.style-box.shop-page__stock {
+  padding-bottom: calc(5px + var(--style-row-min-height));
 }
 
 .workshop-page__seed-inventory-dialog,
@@ -3803,15 +3858,24 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__other-shops-button {
-  width: 132px;
-  padding: 1px 5px;
+  width: auto;
+  padding: 0;
   margin: 0;
+  background: transparent;
+  border-color: transparent;
 }
 
 .style-button.shop-page__trade-history-button {
-  width: 132px;
-  padding: 1px 5px;
+  width: auto;
+  padding: 0;
   margin: 0;
+  background: transparent;
+  border-color: transparent;
+}
+
+.style-button.shop-page__other-shops-button:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.shop-page__trade-history-button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: transparent;
 }
 
 .style-button.shop-page__demand-button {
@@ -3874,6 +3938,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__sell-tab-button,
+.style-button.shop-page__request-tab-button,
 .style-button.shop-page__market-tab-button,
 .style-button.shop-page__stock-tab-button,
 .style-button.shop-page__trade-history-tab-button,
@@ -3887,8 +3952,21 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__market-tab-button,
-.style-button.shop-page__stock-tab-button {
+.style-button.shop-page__market-tab-button {
   border: var(--style-border);
+}
+
+.style-button.shop-page__stock-tab-button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: var(--style-row-min-height);
+  padding: 0 8px;
+  background: var(--style-surface);
+  border: 0;
+}
+
+.style-button.shop-page__stock-tab-button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--style-surface);
 }
 
 .style-button.workshop-page__leaderboard-tab-button,
@@ -3940,6 +4018,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__sell-tab-button[aria-selected="true"],
+.style-button.shop-page__request-tab-button[aria-selected="true"],
 .style-button.shop-page__market-tab-button[aria-selected="true"],
 .style-button.shop-page__stock-tab-button[aria-selected="true"],
 .style-button.shop-page__trade-history-tab-button[aria-selected="true"],
@@ -4133,7 +4212,7 @@ div.workshop-page__discovery-row {
 .workshop-page__discoveries-popup:not([hidden]) .workshop-page__discoveries-panel,
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
-.shop-page__request-popup:not([hidden]) .shop-page__request-dialog,
+.shop-page__request-popup:not([hidden]) .shop-page__request-panel,
 .shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel,
 .shop-page__demand-popup:not([hidden]) .shop-page__demand-panel,
 .shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog {

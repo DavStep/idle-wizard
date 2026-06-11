@@ -43,7 +43,8 @@ export class BrewingCauldronManager {
     this.refs.herbs = this.createHerbsBox();
     this.refs.cauldron = this.createCauldronBox();
     this.refs.actions = this.createActions();
-    this.root.append(this.refs.herbs.root, this.refs.cauldron.root, this.refs.actions.root);
+    this.refs.cauldron.root.append(this.refs.actions.root);
+    this.root.append(this.refs.herbs.root, this.refs.cauldron.root);
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));

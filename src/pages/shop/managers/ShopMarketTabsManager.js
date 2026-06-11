@@ -1,5 +1,5 @@
 const MARKET_TABS = [
-  { id: 'npm', label: 'npm market' },
+  { id: 'npm', label: 'npc market' },
   { id: 'player', label: 'player market' },
 ];
 

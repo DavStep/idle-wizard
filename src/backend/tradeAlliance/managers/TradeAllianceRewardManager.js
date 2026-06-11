@@ -2,20 +2,38 @@ export class TradeAllianceRewardManager {
   constructor({ actionManager } = {}) {
     this.actionManager = actionManager;
     this.gameplayFacade = null;
+    this.ready = false;
+    this.lastSnapshot = null;
     this.processingRewardKeys = new Set();
     this.appliedRewardKeys = new Set();
   }
 
   setGameplayFacade(gameplayFacade) {
     this.gameplayFacade = gameplayFacade;
+
+    if (!gameplayFacade) {
+      this.ready = false;
+    }
+  }
+
+  setReady(ready) {
+    this.ready = Boolean(ready);
+
+    if (this.ready && this.lastSnapshot) {
+      this.processSnapshot(this.lastSnapshot);
+    }
   }
 
   disconnect() {
+    this.ready = false;
+    this.lastSnapshot = null;
     this.processingRewardKeys.clear();
   }
 
   processSnapshot(snapshot) {
-    if (!this.gameplayFacade || !snapshot?.connected) {
+    this.lastSnapshot = snapshot ?? null;
+
+    if (!this.ready || !this.gameplayFacade || !snapshot?.connected) {
       return;
     }
 
@@ -24,7 +42,7 @@ export class TradeAllianceRewardManager {
     for (const reward of rewardInbox) {
       const rewardKey = reward?.rewardKey;
 
-      if (!rewardKey || this.processingRewardKeys.has(rewardKey)) {
+      if (reward?.collected || !rewardKey || this.processingRewardKeys.has(rewardKey)) {
         continue;
       }
 

@@ -11,6 +11,7 @@ export class GameplaySaveBackendFacade {
   }
 
   connect(connection, identity, { onReady } = {}) {
+    this.sendManager.setReadyToSend(false);
     this.sendManager.connect(connection);
     return this.subscriptionManager.connect(connection, identity, { onReady });
   }
@@ -26,6 +27,14 @@ export class GameplaySaveBackendFacade {
 
   save(save) {
     return this.sendManager.save(save);
+  }
+
+  discardPreHydrationSave() {
+    this.sendManager.discardPreHydrationSave();
+  }
+
+  setReadyToSend(ready = true) {
+    this.sendManager.setReadyToSend(ready);
   }
 
   getSnapshot() {

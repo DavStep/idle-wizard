@@ -2,6 +2,6 @@
 
 Shares player market listings through SpacetimeDB.
 
-Player market exchange is locked down until inventory and spendable gold become server-authoritative. The server clears stale listing, trade, and proceeds rows on connect so old poisoned rows cannot be claimed.
+Player market exchange is enabled. The server stores listings, listing quantity, proceeds, and trade history; local gameplay still owns item reservation, buyer gold spending, and claimed proceeds application after reducer success.
 
-Keep the facade boundary in place; re-enable publishing, purchases, proceeds, and `player_shop_trade` only when the backend can debit buyer gold and reserve seller inventory itself.
+Keep the facade boundary in place. Do not expose raw generated database APIs to gameplay features.
