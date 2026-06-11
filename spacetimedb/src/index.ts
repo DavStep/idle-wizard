@@ -3059,6 +3059,33 @@ function readSavedCurrentLevel(saveJson?: string): number | null {
   }
 }
 
+function readSavedTotalGeneratedGold(saveJson?: string): bigint | null {
+  if (!saveJson) {
+    return null;
+  }
+
+  try {
+    const save = JSON.parse(saveJson);
+    const gold = isRecord(save?.gold) ? save.gold : {};
+    const totalGenerated = [
+      gold.totalGenerated,
+      gold.totalGeneratedGold,
+      gold.totalIncome,
+      gold.current,
+    ]
+      .map((value) => Number(value))
+      .find((value) => Number.isFinite(value) && value > 0);
+
+    if (totalGenerated === undefined || !Number.isFinite(totalGenerated)) {
+      return null;
+    }
+
+    return toBigInt(Math.min(Math.floor(totalGenerated), MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD));
+  } catch {
+    return null;
+  }
+}
+
 function getDefaultBrewingMaxIngredients(): number {
   try {
     const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as { maxCauldronIngredients?: unknown };
@@ -4319,6 +4346,71 @@ function sanitizeLeaderboardRows(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerCtx) {
+  if (!ENABLE_CLIENT_REPORTED_TOTAL_INCOME) {
+    return;
+  }
+
+  for (const save of ctx.db.playerGameplaySave.iter()) {
+    const savedTotalIncome = readSavedTotalGeneratedGold(save.saveJson);
+
+    if (savedTotalIncome === null || savedTotalIncome <= 0n) {
+      continue;
+    }
+
+    const player = ctx.db.player.identity.find(save.identity);
+    const existingEntry = ctx.db.leaderboard.identity.find(save.identity);
+    const username = normalizeUsername(
+      player?.username ?? existingEntry?.username ?? DEFAULT_USERNAME,
+    );
+    const playerLevel = normalizePlayerLevel(
+      player?.playerLevel ?? existingEntry?.playerLevel ?? DEFAULT_PLAYER_LEVEL,
+    );
+    const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
+      savedTotalIncome,
+      playerLevel,
+    );
+
+    if (reportedTotalIncome === null) {
+      continue;
+    }
+
+    const currentTotalIncome = clampLeaderboardTotalIncome(
+      existingEntry?.totalIncome ?? 0n,
+      playerLevel,
+    );
+    const totalIncome =
+      reportedTotalIncome > currentTotalIncome ? reportedTotalIncome : currentTotalIncome;
+
+    if (existingEntry) {
+      if (
+        existingEntry.username === username &&
+        existingEntry.playerLevel === playerLevel &&
+        existingEntry.totalIncome === totalIncome
+      ) {
+        continue;
+      }
+
+      ctx.db.leaderboard.identity.update({
+        ...existingEntry,
+        username,
+        playerLevel,
+        totalIncome,
+        updatedAt: ctx.timestamp,
+      });
+      continue;
+    }
+
+    ctx.db.leaderboard.insert({
+      identity: save.identity,
+      username,
+      playerLevel,
+      totalIncome,
+      updatedAt: ctx.timestamp,
+    });
+  }
+}
+
 function deleteAllPotionDiscoveries(ctx: IdleWizardReducerCtx) {
   for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
     ctx.db.potionRecipeDiscovery.delete(discovery);
@@ -4628,6 +4720,7 @@ function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   sanitizeSharedPlayerRows(ctx);
   sanitizeLeaderboardRows(ctx);
+  backfillLeaderboardTotalIncomeFromGameplaySaves(ctx);
   if (!ENABLE_CLIENT_POTION_DISCOVERY) {
     deleteAllPotionDiscoveries(ctx);
   }
