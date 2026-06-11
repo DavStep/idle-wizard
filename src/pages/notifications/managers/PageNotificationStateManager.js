@@ -2,6 +2,12 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import {
+  getNotificationTone,
+  isNotificationActive,
+  NOTIFICATION_TONE_ORANGE,
+  NOTIFICATION_TONE_RED,
+} from '../../shared/notificationBadge.js';
 
 export class PageNotificationStateManager {
   getSnapshot(gameplaySnapshot = {}, { playerShop = {} } = {}) {
@@ -80,8 +86,12 @@ export class PageNotificationStateManager {
 
   getShopPage(snapshot, playerShop = {}) {
     const shop = snapshot.shop ?? {};
-    const sellItems = shop.shelf?.sellItems ?? [];
-    const hasSellItem = this.getVisibleActionItems(snapshot, sellItems).some(
+    const npcSellItems = shop.shelf?.sellItems ?? [];
+    const playerSellItems = shop.playerShelf?.sellItems ?? npcSellItems;
+    const hasNpcSellItem = this.getVisibleActionItems(snapshot, npcSellItems).some(
+      (item) => item.quantity > 0,
+    );
+    const hasPlayerSellItem = this.getVisibleActionItems(snapshot, playerSellItems).some(
       (item) => item.quantity > 0,
     );
     const hasNpcEmptyStand = (shop.shelf?.slots ?? []).some(
@@ -96,10 +106,12 @@ export class PageNotificationStateManager {
 
     return this.createPage({
       npcStand: canBuyNextSlot(snapshot, shop.shelf),
-      npcListing: hasNpcEmptyStand && hasSellItem,
+      npcListing: hasNpcEmptyStand && hasNpcSellItem,
       playerStand: canBuyNextSlot(snapshot, shop.playerShelf),
       playerListing:
-        playerShop.connected === true && hasPlayerEmptyStand && hasSellItem,
+        playerShop.connected === true && hasPlayerEmptyStand && hasPlayerSellItem
+          ? NOTIFICATION_TONE_ORANGE
+          : false,
       playerProceeds:
         playerShop.connected === true && (playerShop.proceedsGold ?? 0) > 0,
       playerMarket:
@@ -117,10 +129,22 @@ export class PageNotificationStateManager {
   }
 
   createPage(children) {
-    return {
-      active: Object.values(children).some(Boolean),
+    const childTones = Object.values(children)
+      .filter(isNotificationActive)
+      .map((child) => getNotificationTone(child));
+    const active = childTones.length > 0;
+    const page = {
+      active,
       children,
     };
+
+    if (active) {
+      page.tone = childTones.includes(NOTIFICATION_TONE_RED)
+        ? NOTIFICATION_TONE_RED
+        : NOTIFICATION_TONE_ORANGE;
+    }
+
+    return page;
   }
 }
 

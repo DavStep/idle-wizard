@@ -6,7 +6,9 @@
   --style-disabled: #b2b2b2;
   --style-active-surface: #f7f7f7;
   --style-system-text: oklch(44% 0.12 25);
-  --style-notification: #c1121f;
+  --style-notification-red: #c1121f;
+  --style-notification-orange: #d66a00;
+  --style-notification: var(--style-notification-red);
   --style-notification-size: 6px;
   --style-resource-mana: var(--style-text);
   --style-resource-gold: var(--style-text);
@@ -682,6 +684,11 @@ body {
 
 :where(button, [role="button"])[data-notification="true"] {
   position: relative;
+  --style-notification-current: var(--style-notification);
+}
+
+:where(button, [role="button"])[data-notification-tone="orange"] {
+  --style-notification-current: var(--style-notification-orange);
 }
 
 :where(button, [role="button"])[data-notification="true"]::before {
@@ -693,7 +700,7 @@ body {
   height: var(--style-notification-size);
   pointer-events: none;
   content: "";
-  background: var(--style-notification);
+  background: var(--style-notification-current);
   border-radius: 50%;
   box-shadow: 0 0 0 1px var(--style-surface);
 }
@@ -830,6 +837,7 @@ body {
   width: 58px;
   padding: 1px 4px;
   margin-bottom: 0;
+  font-size: 12px;
 }
 
 .workshop-page__task-progress {

@@ -6,7 +6,10 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
-import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import {
+  NOTIFICATION_TONE_ORANGE,
+  setNotificationBadge,
+} from '../../shared/notificationBadge.js';
 
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
@@ -685,6 +688,7 @@ export class ShopPlayerShelfManager {
         setNotificationBadge(
           row,
           this.lastPlayerShopSnapshot.connected && !slot.itemTypeId && hasListableItem,
+          NOTIFICATION_TONE_ORANGE,
         );
         setNotificationBadge(button, false);
         this.renderPlayerSlotValue(refs, slot, shelf, this.lastGameplaySnapshot);

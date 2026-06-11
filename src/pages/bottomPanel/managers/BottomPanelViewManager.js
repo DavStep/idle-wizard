@@ -1,3 +1,9 @@
+import {
+  getNotificationTone,
+  isNotificationActive,
+  setNotificationBadge,
+} from '../../shared/notificationBadge.js';
+
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
   { id: 'garden', label: 'garden' },
@@ -102,16 +108,15 @@ export class BottomPanelViewManager {
     }
 
     const pageNotification = this.notifications?.[tab.id];
-    const active =
-      pageNotification === true || pageNotification?.active === true;
+    const active = isNotificationActive(pageNotification);
 
     if (active) {
-      button.dataset.notification = 'true';
+      setNotificationBadge(button, true, getNotificationTone(pageNotification));
       button.setAttribute('aria-label', `show ${tab.label}, action available`);
       return;
     }
 
-    delete button.dataset.notification;
+    setNotificationBadge(button, false);
     button.setAttribute('aria-label', `show ${tab.label}`);
   }
 }

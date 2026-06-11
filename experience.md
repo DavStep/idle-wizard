@@ -164,6 +164,7 @@
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
+- Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
@@ -174,6 +175,7 @@
 - Workshop tasks sit below the top panel and stay collapsed until the summary row is pressed.
 - Workshop tasks should expand in normal flow above mana sphere/seeds; do not overlay action panels.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
+- Workshop task action buttons use a 12px source font so `complete` fits the fixed 58px action slot.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
 - Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.

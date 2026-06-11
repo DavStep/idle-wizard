@@ -126,4 +126,71 @@ describe('PageNotificationStateManager', () => {
     snapshot.gold.current = 1;
     expect(manager.getSnapshot(snapshot).pages.garden.active).toBe(true);
   });
+
+  it('marks empty player market stands as orange when no red shop action exists', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.shop.playerShelf.sellItems = [
+      {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'Sage Seed',
+        kind: 'seed',
+        quantity: 1,
+      },
+    ];
+    snapshot.shop.playerShelf.slots = [
+      {
+        slotNumber: 1,
+        unlocked: true,
+        itemTypeId: null,
+      },
+    ];
+
+    expect(
+      manager.getSnapshot(snapshot, { playerShop: { connected: true } }).pages.shop,
+    ).toMatchObject({
+      active: true,
+      tone: 'orange',
+      children: {
+        playerListing: 'orange',
+      },
+    });
+  });
+
+  it('rolls the market page up to red when any shop action is red', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.shop.playerShelf.sellItems = [
+      {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'Sage Seed',
+        kind: 'seed',
+        quantity: 1,
+      },
+    ];
+    snapshot.shop.playerShelf.slots = [
+      {
+        slotNumber: 1,
+        unlocked: true,
+        itemTypeId: null,
+      },
+    ];
+
+    expect(
+      manager.getSnapshot(snapshot, {
+        playerShop: { connected: true, proceedsGold: 1 },
+      }).pages.shop,
+    ).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        playerListing: 'orange',
+        playerProceeds: true,
+      },
+    });
+  });
 });
