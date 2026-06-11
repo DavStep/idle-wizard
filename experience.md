@@ -164,6 +164,7 @@
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
+- Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.

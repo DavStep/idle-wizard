@@ -5,12 +5,14 @@ import {
 
 export class PageNotificationStateManager {
   getSnapshot(gameplaySnapshot = {}, { playerShop = {} } = {}) {
+    const snapshot = gameplaySnapshot ?? {};
+    const playerShopSnapshot = playerShop ?? {};
     const pages = {
-      brewing: this.getBrewingPage(gameplaySnapshot),
-      garden: this.getGardenPage(gameplaySnapshot),
-      workshop: this.getWorkshopPage(gameplaySnapshot),
-      research: this.getResearchPage(gameplaySnapshot),
-      shop: this.getShopPage(gameplaySnapshot, playerShop),
+      brewing: this.getBrewingPage(snapshot),
+      garden: this.getGardenPage(snapshot),
+      workshop: this.getWorkshopPage(snapshot),
+      research: this.getResearchPage(snapshot),
+      shop: this.getShopPage(snapshot, playerShopSnapshot),
     };
 
     return {

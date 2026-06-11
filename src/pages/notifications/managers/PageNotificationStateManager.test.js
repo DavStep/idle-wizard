@@ -74,6 +74,31 @@ function createSnapshot() {
 }
 
 describe('PageNotificationStateManager', () => {
+  it('handles missing startup snapshots before gameplay publishes', () => {
+    const manager = new PageNotificationStateManager();
+
+    expect(manager.getSnapshot(null, { playerShop: null })).toEqual({
+      active: false,
+      pages: {
+        brewing: { active: false, children: { herbs: false, action: false } },
+        garden: { active: false, children: { plots: false } },
+        workshop: { active: false, children: { seeds: false, tasks: false } },
+        research: { active: false, children: { research: false } },
+        shop: {
+          active: false,
+          children: {
+            npcStand: false,
+            npcListing: false,
+            playerStand: false,
+            playerListing: false,
+            playerProceeds: false,
+            playerMarket: false,
+          },
+        },
+      },
+    });
+  });
+
   it('rolls plantable garden tiles up to the garden page', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();
