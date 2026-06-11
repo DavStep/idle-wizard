@@ -24,6 +24,7 @@ export class LeaderboardGeneratedGoldSyncManager {
 
   connect(connection) {
     this.connection = connection;
+    this.queueCurrentTotalGeneratedGold();
     this.flush();
   }
 
@@ -94,6 +95,18 @@ export class LeaderboardGeneratedGoldSyncManager {
 
   restorePending(totalGeneratedGold) {
     this.pendingTotalGeneratedGold = Math.max(this.pendingTotalGeneratedGold ?? 0, totalGeneratedGold);
+  }
+
+  queueCurrentTotalGeneratedGold() {
+    const totalGeneratedGold = this.readTotalGeneratedGold(this.gameplayFacade?.getSnapshot?.());
+    if (!Number.isFinite(totalGeneratedGold)) {
+      return;
+    }
+
+    const flooredTotalGeneratedGold = Math.floor(totalGeneratedGold);
+    if (flooredTotalGeneratedGold > 0) {
+      this.queue(flooredTotalGeneratedGold);
+    }
   }
 
   readTotalGeneratedGold(snapshot) {

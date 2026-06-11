@@ -1,3 +1,5 @@
+import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
+
 const LISTINGS_QUERY = 'SELECT * FROM player_shop_listing';
 const PROCEEDS_QUERY = 'SELECT * FROM player_shop_proceeds';
 const TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade';
@@ -145,13 +147,16 @@ export class PlayerShopSubscriptionManager {
       ownListings,
       tradeHistory,
       ownTradeHistory,
-      proceedsGold: this.toNumber(proceedsRow?.gold),
+      proceedsGold:
+        this.toGoldPrice(proceedsRow?.gold, proceedsRow?.goldScale ?? proceedsRow?.gold_scale) ??
+        0,
     });
   }
 
   mapListing(row) {
     const quantity = this.toNumber(row.quantity);
-    const priceGold = this.toNumber(row.priceGold ?? row.price_gold);
+    const priceGold =
+      this.toGoldPrice(row.priceGold ?? row.price_gold, row.priceScale ?? row.price_scale) ?? 0;
 
     return {
       listingKey: String(row.listingKey ?? row.listing_key ?? ''),
@@ -192,10 +197,12 @@ export class PlayerShopSubscriptionManager {
 
   mapTrade(row) {
     const quantity = this.toNumber(row.quantity);
-    const priceGold = this.toNumber(row.priceGold ?? row.price_gold);
+    const priceScale = row.priceScale ?? row.price_scale;
+    const priceGold = this.toGoldPrice(row.priceGold ?? row.price_gold, priceScale) ?? 0;
     const buyerUsername = row.buyerUsername ?? row.buyer_username;
     const sellerUsername = row.sellerUsername ?? row.seller_username;
-    const totalPriceGold = this.toNumber(row.totalPriceGold ?? row.total_price_gold);
+    const totalPriceGold =
+      this.toGoldPrice(row.totalPriceGold ?? row.total_price_gold, priceScale) ?? 0;
 
     return {
       tradeId: this.toId(row.tradeId ?? row.trade_id),
@@ -272,5 +279,10 @@ export class PlayerShopSubscriptionManager {
     }
 
     return Number.isFinite(value) ? Number(value) : 0;
+  }
+
+  toGoldPrice(value, scaleValue) {
+    const scale = Number(scaleValue) === 100 ? 100 : 1;
+    return normalizeGoldPrice(this.toNumber(value) / scale);
   }
 }

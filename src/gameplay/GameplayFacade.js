@@ -357,6 +357,21 @@ export class GameplayFacade {
     return result;
   }
 
+  async buyNpcMarketStockItem(itemTypeId, quantity = 1) {
+    const result = await this.shopFacade.buyStockItem(itemTypeId, quantity);
+
+    if (result.ok) {
+      this.gameplayLogFacade.logItemBought({
+        item: result.item,
+        gold: result.totalPriceGold,
+        quantity: result.quantity,
+      });
+    }
+
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   claimPlayerShopSaleProceeds(gold) {
     const result = this.shopFacade.claimPlayerShopSaleProceeds(gold);
     this.publishAndSaveSnapshot();

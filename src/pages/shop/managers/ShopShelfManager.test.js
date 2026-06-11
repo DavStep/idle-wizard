@@ -22,7 +22,7 @@ describe('ShopShelfManager', () => {
     );
   });
 
-  it('hides NPC market demand from visible stand and picker labels', () => {
+  it('shows NPC market quantities while hiding demand from stand and picker labels', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
@@ -79,8 +79,8 @@ describe('ShopShelfManager', () => {
       (button) => button.textContent.includes('Sage Seed'),
     );
 
-    expect(standValue?.textContent).toBe('Sage Seed 8 gold');
-    expect(itemButton?.textContent).toBe('Sage Seed 8 gold');
+    expect(standValue?.textContent).toBe('Sage Seed (1) 8.00 gold');
+    expect(itemButton?.textContent).toBe('Sage Seed (1) 8.00 gold');
     expect(standValue?.textContent).not.toContain('919');
     expect(itemButton?.textContent).not.toContain('919');
     expect(manager.canSelectSellItem(gameplaySnapshot, gameplaySnapshot.shop.shelf.sellItems[0]))

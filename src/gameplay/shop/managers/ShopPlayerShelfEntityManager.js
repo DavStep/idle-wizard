@@ -1,4 +1,5 @@
 import { PlayerShopShelf, PlayerShopShelfSlot } from '../components/ShopComponents.js';
+import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
 export class ShopPlayerShelfEntityManager {
   constructor({ initialUnlockedSlots = 0, maxSlots }) {
@@ -105,9 +106,10 @@ export class ShopPlayerShelfEntityManager {
     }
 
     const slotEntityId = this.getSlotEntityId(slotNumber);
+    const safePriceGold = normalizeGoldPrice(priceGold) ?? 0;
     PlayerShopShelfSlot.itemTypeId[slotEntityId] = itemTypeId;
     PlayerShopShelfSlot.quantity[slotEntityId] = quantity;
-    PlayerShopShelfSlot.priceGold[slotEntityId] = priceGold;
+    PlayerShopShelfSlot.priceGold[slotEntityId] = safePriceGold;
     return true;
   }
 
@@ -156,9 +158,7 @@ export class ShopPlayerShelfEntityManager {
       const slot = slots.find((candidate) => candidate?.slotNumber === slotNumber);
       const isUnlocked = slotNumber <= safeUnlockedSlots;
       const quantity = Number.isFinite(slot?.quantity) ? Math.max(0, Math.floor(slot.quantity)) : 0;
-      const priceGold = Number.isFinite(slot?.priceGold)
-        ? Math.max(0, Math.floor(slot.priceGold))
-        : 0;
+      const priceGold = normalizeGoldPrice(slot?.priceGold) ?? 0;
 
       PlayerShopShelfSlot.isUnlocked[slotEntityId] = isUnlocked ? 1 : 0;
       PlayerShopShelfSlot.itemTypeId[slotEntityId] =

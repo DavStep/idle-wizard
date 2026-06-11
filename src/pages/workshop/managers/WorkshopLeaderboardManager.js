@@ -272,10 +272,10 @@ export class WorkshopLeaderboardManager {
       name: user.name,
       playerLevel: this.normalizePlayerLevel(user.playerLevel),
       income: Number.isFinite(user.income) ? user.income : 0,
-      totalGeneratedGold: Number.isFinite(user.totalGeneratedGold)
-        ? user.totalGeneratedGold
-        : Number.isFinite(user.totalIncome)
-          ? user.totalIncome
+      totalGeneratedGold: Number.isFinite(user.totalIncome)
+        ? user.totalIncome
+        : Number.isFinite(user.totalGeneratedGold)
+          ? user.totalGeneratedGold
           : 0,
       totalIncome: Number.isFinite(user.totalIncome) ? user.totalIncome : 0,
     };

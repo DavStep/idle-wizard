@@ -1,3 +1,5 @@
+import { normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
+
 export class ShopNpcPriceManager {
   constructor({ npcMarketFacade = null } = {}) {
     this.npcMarketFacade = npcMarketFacade;
@@ -9,9 +11,10 @@ export class ShopNpcPriceManager {
 
   getNpcBuyPriceGold(item) {
     const dynamicPrice = this.npcMarketFacade?.getNpcBuyPriceGold?.(item.key);
+    const priceGold = normalizePositiveGoldPrice(dynamicPrice);
 
-    if (Number.isFinite(dynamicPrice) && dynamicPrice > 0) {
-      return Math.floor(dynamicPrice);
+    if (priceGold !== null) {
+      return priceGold;
     }
 
     return null;
@@ -19,9 +22,22 @@ export class ShopNpcPriceManager {
 
   getNpcSellPriceGold(item) {
     const dynamicPrice = this.npcMarketFacade?.getNpcSellPriceGold?.(item.key);
+    const priceGold = normalizePositiveGoldPrice(dynamicPrice);
 
-    if (Number.isFinite(dynamicPrice) && dynamicPrice > 0) {
-      return Math.floor(dynamicPrice);
+    if (priceGold !== null) {
+      return priceGold;
+    }
+
+    return null;
+  }
+
+  getNpcStock(item) {
+    const npcStock =
+      this.npcMarketFacade?.getNpcStock?.(item.key) ??
+      this.npcMarketFacade?.getPrice?.(item.key)?.npcStock;
+
+    if (Number.isFinite(npcStock) && npcStock >= 0) {
+      return Math.floor(npcStock);
     }
 
     return null;
@@ -51,6 +67,31 @@ export class ShopNpcPriceManager {
 
   recordSellToNpc(item, quantity = 1) {
     return this.npcMarketFacade?.sellToNpc?.({
+      itemKey: item.key,
+      quantity,
+    }) ?? Promise.resolve({
+      ok: false,
+      reason: 'offline',
+    });
+  }
+
+  canBuyFromNpc(item, quantity = 1) {
+    const safeQuantity = Math.floor(Number(quantity));
+    const npcSellPriceGold = this.getNpcSellPriceGold(item);
+    const npcStock = this.getNpcStock(item);
+
+    return (
+      Number.isInteger(safeQuantity) &&
+      safeQuantity > 0 &&
+      Number.isFinite(npcSellPriceGold) &&
+      npcSellPriceGold > 0 &&
+      Number.isFinite(npcStock) &&
+      npcStock >= safeQuantity
+    );
+  }
+
+  recordBuyFromNpc(item, quantity = 1) {
+    return this.npcMarketFacade?.buyFromNpc?.({
       itemKey: item.key,
       quantity,
     }) ?? Promise.resolve({

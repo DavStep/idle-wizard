@@ -426,7 +426,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
       'researched Sage Seed',
       'summoned Sage Seed',
-      'sold Sage Seed for 1 gold',
+      'sold Sage Seed for 1.00 gold',
       'brewed Wasted Potion',
       'planted Sage Seed',
       'harvested Sage',
@@ -1474,6 +1474,8 @@ describe('GameplayFacade', () => {
       quantity: 1,
       sellGold: 1,
       sellNeed: 1000,
+      buyGold: null,
+      stock: null,
     });
   });
 

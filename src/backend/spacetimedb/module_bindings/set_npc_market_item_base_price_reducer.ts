@@ -12,5 +12,5 @@ import {
 
 export default {
   itemKey: __t.string(),
-  basePriceGold: __t.u64(),
+  basePriceGold: __t.f64(),
 };

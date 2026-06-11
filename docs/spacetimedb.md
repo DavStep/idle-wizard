@@ -96,7 +96,7 @@ The server module defines:
 
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for this subscription before opening the room gate, applies the saved gameplay snapshot, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
-`set_total_generated_gold` currently rejects client-authored totals by using a `0` server cap. Connect-time sanitation also clamps old leaderboard rows back to safe values. Do not re-enable shared leaderboard totals until gold is server-authoritative.
+`set_total_generated_gold` accepts client-reported lifetime generated gold, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap.
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
@@ -131,6 +131,6 @@ SELECT * FROM research_config
 SELECT * FROM game_config
 ```
 
-The `player` row is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals still call their shared reducer, but generated-gold leaderboard values stay locked at safe defaults until gold is server-authoritative. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.
+The `player` row is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals call `set_total_generated_gold`, and the server stores the capped lifetime value in `leaderboard.totalIncome`. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.

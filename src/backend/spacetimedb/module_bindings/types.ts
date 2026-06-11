@@ -43,6 +43,7 @@ export const NpcMarketItemConfig = __t.object("NpcMarketItemConfig", {
   targetStock: __t.u64(),
   volatilityBps: __t.u64(),
   enabled: __t.bool(),
+  priceScale: __t.u32(),
 });
 export type NpcMarketItemConfig = __Infer<typeof NpcMarketItemConfig>;
 
@@ -63,6 +64,7 @@ export const NpcMarketPrice = __t.object("NpcMarketPrice", {
   npcNeed: __t.u64(),
   targetNeed: __t.u64(),
   maxNeed: __t.u64(),
+  priceScale: __t.u32(),
 });
 export type NpcMarketPrice = __Infer<typeof NpcMarketPrice>;
 
@@ -107,6 +109,7 @@ export const PlayerShopListing = __t.object("PlayerShopListing", {
   quantity: __t.u32(),
   priceGold: __t.u64(),
   updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
 });
 export type PlayerShopListing = __Infer<typeof PlayerShopListing>;
 
@@ -114,6 +117,7 @@ export const PlayerShopProceeds = __t.object("PlayerShopProceeds", {
   sellerIdentity: __t.identity(),
   gold: __t.u64(),
   updatedAt: __t.timestamp(),
+  goldScale: __t.u32(),
 });
 export type PlayerShopProceeds = __Infer<typeof PlayerShopProceeds>;
 
@@ -130,6 +134,7 @@ export const PlayerShopTrade = __t.object("PlayerShopTrade", {
   priceGold: __t.u64(),
   totalPriceGold: __t.u64(),
   tradedAt: __t.timestamp(),
+  priceScale: __t.u32(),
 });
 export type PlayerShopTrade = __Infer<typeof PlayerShopTrade>;
 

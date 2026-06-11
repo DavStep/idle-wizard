@@ -14,4 +14,5 @@ export default __t.row({
   sellerIdentity: __t.identity().primaryKey().name("seller_identity"),
   gold: __t.u64(),
   updatedAt: __t.timestamp().name("updated_at"),
+  goldScale: __t.u32().name("gold_scale"),
 });

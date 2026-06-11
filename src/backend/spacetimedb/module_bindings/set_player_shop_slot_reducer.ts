@@ -16,5 +16,5 @@ export default {
   itemLabel: __t.string(),
   itemKind: __t.string(),
   quantity: __t.u32(),
-  priceGold: __t.u64(),
+  priceGold: __t.f64(),
 };

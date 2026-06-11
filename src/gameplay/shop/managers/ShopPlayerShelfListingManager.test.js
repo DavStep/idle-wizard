@@ -88,4 +88,50 @@ describe('ShopPlayerShelfListingManager', () => {
     });
     expect(quantity).toBe(2);
   });
+
+  it('keeps player market listing prices as two-decimal values', () => {
+    const spend = vi.fn().mockReturnValue(true);
+    const addItem = vi.fn();
+    const removeItem = vi.fn().mockReturnValue(true);
+    const itemsFacade = {
+      getItemDefinition: () => sageHerb,
+      safeGetDefinitionByKey: () => sageHerb,
+      getItemQuantity: () => 3,
+      removeItem,
+      addItem,
+    };
+    const manager = new ShopPlayerShelfListingManager({
+      goldFacade: { spend },
+      itemsFacade,
+      shopSellKindManager: {
+        isSellKind: () => true,
+      },
+      shopPlayerShelfEntityManager: createPlayerShelfEntityManager(),
+    });
+
+    expect(
+      manager.setSelectedSlotListing({
+        itemTypeId: 1001,
+        quantity: 1,
+        priceGold: 4.25,
+      }),
+    ).toMatchObject({
+      ok: true,
+      quantity: 1,
+      priceGold: 4.25,
+    });
+
+    expect(
+      manager.buyListingItem({
+        itemKey: 'sageHerb',
+        quantity: 3,
+        priceGold: 0.75,
+      }),
+    ).toMatchObject({
+      ok: true,
+      priceGold: 0.75,
+      totalPriceGold: 2.25,
+    });
+    expect(spend).toHaveBeenCalledWith(2.25);
+  });
 });

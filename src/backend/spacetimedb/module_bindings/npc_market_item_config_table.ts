@@ -20,4 +20,5 @@ export default __t.row({
   targetStock: __t.u64().name("target_stock"),
   volatilityBps: __t.u64().name("volatility_bps"),
   enabled: __t.bool(),
+  priceScale: __t.u32().name("price_scale"),
 });

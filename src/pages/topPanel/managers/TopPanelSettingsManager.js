@@ -7,6 +7,31 @@ import {
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
 
+const DEFAULT_FEEDBACK_KIND = 'feedback';
+const FEEDBACK_KIND_CONFIG = {
+  feedback: {
+    title: 'feedback',
+    ariaLabel: 'Feedback',
+    placeholder: 'write feedback',
+    emptyMessage: 'write feedback',
+    prefix: '',
+  },
+  bug: {
+    title: 'report a bug',
+    ariaLabel: 'Report a bug',
+    placeholder: 'describe the bug',
+    emptyMessage: 'describe the bug',
+    prefix: 'bug report:',
+  },
+  feature: {
+    title: 'request a feature',
+    ariaLabel: 'Request a feature',
+    placeholder: 'describe the feature',
+    emptyMessage: 'describe the feature',
+    prefix: 'feature request:',
+  },
+};
+
 export class TopPanelSettingsManager {
   constructor({ playerFacade, feedbackFacade } = {}) {
     this.playerFacade = playerFacade;
@@ -16,6 +41,7 @@ export class TopPanelSettingsManager {
     this.visible = false;
     this.usernamePromptMode = false;
     this.feedbackMode = false;
+    this.feedbackKind = DEFAULT_FEEDBACK_KIND;
     this.feedbackPending = false;
     this.previousFocus = null;
     this.handleUsernameClick = () => this.showSettings();
@@ -53,7 +79,8 @@ export class TopPanelSettingsManager {
     this.handleColorModeClick = (event) => {
       this.playerFacade?.setColorMode?.(event.currentTarget.dataset.colorMode);
     };
-    this.handleFeedbackOpenClick = () => this.showFeedback();
+    this.handleFeedbackOpenClick = (event) =>
+      this.showFeedback(event.currentTarget.dataset.feedbackKind);
     this.handleFeedbackSubmit = (event) => {
       event.preventDefault();
       void this.sendFeedback();
@@ -87,7 +114,9 @@ export class TopPanelSettingsManager {
     this.refs.usernameSaveButton.addEventListener('touchstart', this.handleSaveTouchStart, {
       passive: false,
     });
-    this.refs.feedbackOpenButton.addEventListener('click', this.handleFeedbackOpenClick);
+    for (const button of this.refs.feedbackOpenButtons) {
+      button.addEventListener('click', this.handleFeedbackOpenClick);
+    }
     this.refs.feedbackForm.addEventListener('submit', this.handleFeedbackSubmit);
     this.refs.feedbackSendButton.addEventListener(
       'pointerdown',
@@ -137,7 +166,9 @@ export class TopPanelSettingsManager {
         'touchstart',
         this.handleSaveTouchStart,
       );
-      this.refs.feedbackOpenButton.removeEventListener('click', this.handleFeedbackOpenClick);
+      for (const button of this.refs.feedbackOpenButtons) {
+        button.removeEventListener('click', this.handleFeedbackOpenClick);
+      }
       this.refs.feedbackForm.removeEventListener('submit', this.handleFeedbackSubmit);
       this.refs.feedbackSendButton.removeEventListener(
         'pointerdown',
@@ -173,15 +204,19 @@ export class TopPanelSettingsManager {
     this.open({ usernamePromptMode: true, feedbackMode: false });
   }
 
-  showFeedback() {
-    this.open({ usernamePromptMode: false, feedbackMode: true });
+  showFeedback(feedbackKind = DEFAULT_FEEDBACK_KIND) {
+    this.open({
+      usernamePromptMode: false,
+      feedbackMode: true,
+      feedbackKind,
+    });
   }
 
   isVisible() {
     return this.visible;
   }
 
-  open({ usernamePromptMode, feedbackMode }) {
+  open({ usernamePromptMode, feedbackMode, feedbackKind = DEFAULT_FEEDBACK_KIND }) {
     if (!this.refs) {
       return;
     }
@@ -193,6 +228,9 @@ export class TopPanelSettingsManager {
     this.visible = true;
     this.usernamePromptMode = usernamePromptMode;
     this.feedbackMode = feedbackMode;
+    this.feedbackKind = feedbackMode
+      ? this.normalizeFeedbackKind(feedbackKind)
+      : DEFAULT_FEEDBACK_KIND;
     this.applyMode();
     this.refs.usernameInput.value =
       usernamePromptMode && this.refs.usernameButton.textContent === 'wizard'
@@ -210,6 +248,7 @@ export class TopPanelSettingsManager {
     this.visible = false;
     this.usernamePromptMode = false;
     this.feedbackMode = false;
+    this.feedbackKind = DEFAULT_FEEDBACK_KIND;
     this.feedbackPending = false;
     this.applyMode();
     this.applyVisibility();
@@ -242,7 +281,7 @@ export class TopPanelSettingsManager {
     const body = this.refs.feedbackInput.value;
 
     if (!body.trim()) {
-      this.showFeedbackStatus('write feedback');
+      this.showFeedbackStatus(this.getFeedbackConfig().emptyMessage);
       this.focusWithoutScroll(this.refs.feedbackInput);
       return;
     }
@@ -251,7 +290,7 @@ export class TopPanelSettingsManager {
     this.clearFeedbackStatus();
 
     const result = this.feedbackFacade?.submitFeedback
-      ? await this.feedbackFacade.submitFeedback(body)
+      ? await this.feedbackFacade.submitFeedback(this.createFeedbackBody(body))
       : { ok: false, reason: 'offline' };
 
     this.setFeedbackPending(false);
@@ -324,8 +363,9 @@ export class TopPanelSettingsManager {
       return;
     }
 
+    const feedbackConfig = this.getFeedbackConfig();
     const title = this.feedbackMode
-      ? 'feedback'
+      ? feedbackConfig.title
       : this.usernamePromptMode
         ? 'username'
         : 'settings';
@@ -336,11 +376,19 @@ export class TopPanelSettingsManager {
     this.refs.settingsDialog.setAttribute(
       'aria-label',
       this.feedbackMode
-        ? 'Feedback'
+        ? feedbackConfig.ariaLabel
         : this.usernamePromptMode
           ? 'Set username'
           : 'Settings',
     );
+
+    if (this.refs.feedbackInput.placeholder !== feedbackConfig.placeholder) {
+      this.refs.feedbackInput.placeholder = feedbackConfig.placeholder;
+    }
+
+    if (this.refs.feedbackInput.getAttribute('aria-label') !== feedbackConfig.title) {
+      this.refs.feedbackInput.setAttribute('aria-label', feedbackConfig.title);
+    }
 
     if (this.refs.settingsTitle.textContent !== title) {
       this.refs.settingsTitle.textContent = title;
@@ -423,6 +471,19 @@ export class TopPanelSettingsManager {
     }
 
     return 'send failed';
+  }
+
+  getFeedbackConfig() {
+    return FEEDBACK_KIND_CONFIG[this.feedbackKind] ?? FEEDBACK_KIND_CONFIG.feedback;
+  }
+
+  normalizeFeedbackKind(feedbackKind) {
+    return FEEDBACK_KIND_CONFIG[feedbackKind] ? feedbackKind : DEFAULT_FEEDBACK_KIND;
+  }
+
+  createFeedbackBody(body) {
+    const prefix = this.getFeedbackConfig().prefix;
+    return prefix ? `${prefix}\n${body}` : body;
   }
 
   focusWithoutScroll(element) {

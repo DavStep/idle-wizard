@@ -14,7 +14,7 @@ export default {
   itemKey: __t.string(),
   itemLabel: __t.string(),
   itemKind: __t.string(),
-  basePriceGold: __t.u64(),
+  basePriceGold: __t.f64(),
   targetStock: __t.u64(),
   volatilityBps: __t.u64(),
   enabled: __t.bool(),

@@ -102,6 +102,21 @@ describe('LeaderboardSubscriptionManager', () => {
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
   });
 
+  it('uses canonical totalIncome when legacy generated-gold rows are zero', () => {
+    const rows = [
+      { username: 'Low', playerLevel: 2, income: 0n, totalGeneratedGold: 0n, totalIncome: 3n },
+      { username: 'High', playerLevel: 10, income: 0n, totalGeneratedGold: 0n, totalIncome: 12n },
+    ];
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)));
+
+    expect(manager.getSnapshot().topGeneratedGoldUsers).toEqual([
+      { name: 'High', playerLevel: 10, income: 0, totalGeneratedGold: 12, totalIncome: 12 },
+      { name: 'Low', playerLevel: 2, income: 0, totalGeneratedGold: 3, totalIncome: 3 },
+    ]);
+  });
+
   it('publishes the connected player rank when they are outside a top list', () => {
     const rows = Array.from({ length: 11 }, (_value, index) => ({
       identity: `other-${index + 1}`,

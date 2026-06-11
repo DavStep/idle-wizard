@@ -73,6 +73,32 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
     expect(setTotalGeneratedGold).toHaveBeenCalledTimes(1);
   });
 
+  it('resends the current generated gold total when a new connection attaches', async () => {
+    const firstSetTotalGeneratedGold = vi.fn(() => Promise.resolve());
+    const secondSetTotalGeneratedGold = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(11);
+    const manager = new LeaderboardGeneratedGoldSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setTotalGeneratedGold: firstSetTotalGeneratedGold,
+      },
+    });
+    await Promise.resolve();
+
+    manager.disconnect();
+    manager.connect({
+      reducers: {
+        setTotalGeneratedGold: secondSetTotalGeneratedGold,
+      },
+    });
+    await Promise.resolve();
+
+    expect(firstSetTotalGeneratedGold).toHaveBeenCalledWith({ totalGeneratedGold: 11n });
+    expect(secondSetTotalGeneratedGold).toHaveBeenCalledWith({ totalGeneratedGold: 11n });
+  });
+
   it('uses snake-case reducer bindings when camel-case bindings are missing', async () => {
     const setTotalGeneratedGold = vi.fn(() => Promise.resolve());
     const gameplayFacade = createGameplayFacade(7);

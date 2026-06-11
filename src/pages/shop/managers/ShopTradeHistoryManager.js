@@ -9,6 +9,8 @@ const EMPTY_PLAYER_SHOP_SNAPSHOT = {
   ownTradeHistory: [],
 };
 
+import { formatGoldPrice } from '../../../shared/goldPrice.js';
+
 export class ShopTradeHistoryManager {
   constructor({ playerShopFacade } = {}) {
     this.playerShopFacade = playerShopFacade;
@@ -217,7 +219,7 @@ export class ShopTradeHistoryManager {
       ' from ',
       sellerUsername,
       ' for ',
-      String(gold),
+      formatGoldPrice(gold),
       ' gold',
     ].join('');
   }
@@ -239,7 +241,7 @@ export class ShopTradeHistoryManager {
       buyer,
       ` bought ${itemText} from `,
       seller,
-      ` for ${gold} gold`,
+      ` for ${formatGoldPrice(gold)} gold`,
     );
     return row;
   }
@@ -247,9 +249,9 @@ export class ShopTradeHistoryManager {
   getTradeSummary(trade) {
     const quantity = Math.max(1, Math.floor(Number(trade.quantity) || 1));
     const itemText = quantity > 1 ? `${quantity} ${trade.itemLabel}` : trade.itemLabel;
-    const gold =
-      Math.floor(Number(trade.totalPriceGold) || 0) ||
-      Math.floor(Number(trade.priceGold) || 0) * quantity;
+    const totalPriceGold = Number(trade.totalPriceGold) || 0;
+    const priceGold = Number(trade.priceGold) || 0;
+    const gold = totalPriceGold || priceGold * quantity;
 
     return {
       buyerUsername: trade.buyerUsername || 'wizard',

@@ -4,7 +4,7 @@ import { NpcMarketTradeManager } from './managers/NpcMarketTradeManager.js';
 
 export class NpcMarketBackendFacade {
   static explain =
-    'Shares NPC bazar prices through the server so the trader pays more for scarce items and less for dumped items.';
+    'Shares NPC bazar prices and stock through the server so all players see the same trader market.';
 
   constructor() {
     this.stateObserverManager = new NpcMarketStateObserverManager();
@@ -47,6 +47,10 @@ export class NpcMarketBackendFacade {
 
   getNpcNeed(itemKey) {
     return this.getPrice(itemKey)?.npcNeed ?? null;
+  }
+
+  getNpcStock(itemKey) {
+    return this.getPrice(itemKey)?.npcStock ?? null;
   }
 
   sellToNpc({ itemKey, quantity = 1 }) {

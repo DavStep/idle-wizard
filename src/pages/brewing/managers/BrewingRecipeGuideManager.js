@@ -104,6 +104,7 @@ export class BrewingRecipeGuideManager {
 
   renderEmpty() {
     this.setText(this.refs.recipeValue, 'none');
+    this.setSequenceRowCount(1);
     this.showEmptyStep();
     this.hideExtraIngredientSteps(0);
   }
@@ -172,6 +173,7 @@ export class BrewingRecipeGuideManager {
 
   renderIngredientSteps(ingredientGroups, match) {
     this.hideEmptyStep();
+    this.setSequenceRowCount(ingredientGroups.length);
 
     for (const [index, ingredient] of ingredientGroups.entries()) {
       const refs = this.ensureIngredientStep(index);
@@ -241,6 +243,15 @@ export class BrewingRecipeGuideManager {
 
     this.emptyStep.hidden = true;
     this.setText(this.emptyStep, '');
+  }
+
+  setSequenceRowCount(rowCount) {
+    const visibleRowCount = Math.max(1, rowCount);
+    const sequenceHeight =
+      visibleRowCount === 1
+        ? 'var(--style-row-min-height)'
+        : `calc(var(--style-row-min-height) * ${visibleRowCount})`;
+    this.root.style.setProperty('--brewing-page-guide-sequence-height', sequenceHeight);
   }
 
   ensureEmptyStep() {

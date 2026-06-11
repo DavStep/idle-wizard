@@ -65,10 +65,14 @@ describe('BrewingRecipeGuideManager', () => {
     const labels = [...parent.querySelectorAll('.brewing-page__guide-step .row_key')].map(
       (row) => row.textContent,
     );
+    const guide = parent.querySelector('.brewing-page__guide');
 
     expect(labels).toEqual(['- 2 Sage', '- 1 Mint']);
     expect(labels).not.toContain('1. Sage');
     expect(labels).not.toContain('2. Sage');
+    expect(guide.style.getPropertyValue('--brewing-page-guide-sequence-height')).toBe(
+      'calc(var(--style-row-min-height) * 2)',
+    );
 
     manager.unmount();
     parent.remove();
@@ -136,6 +140,11 @@ describe('BrewingRecipeGuideManager', () => {
 
     expect(manager.getSelectedRecipeKey()).toBe(null);
     expect(parent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe('none');
+    expect(
+      parent
+        .querySelector('.brewing-page__guide')
+        .style.getPropertyValue('--brewing-page-guide-sequence-height'),
+    ).toBe('var(--style-row-min-height)');
 
     manager.unmount();
     parent.remove();

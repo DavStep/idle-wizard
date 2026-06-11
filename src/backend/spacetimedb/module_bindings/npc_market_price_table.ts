@@ -27,4 +27,5 @@ export default __t.row({
   npcNeed: __t.u64().name("npc_need"),
   targetNeed: __t.u64().name("target_need"),
   maxNeed: __t.u64().name("max_need"),
+  priceScale: __t.u32().name("price_scale"),
 });

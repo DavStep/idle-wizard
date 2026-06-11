@@ -1,3 +1,5 @@
+import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
+
 const PRICES_QUERY = 'SELECT * FROM npc_market_price';
 const EMPTY_SNAPSHOT = {
   connected: false,
@@ -99,14 +101,20 @@ export class NpcMarketSubscriptionManager {
   }
 
   mapPrice(row) {
+    const priceScale = row.priceScale ?? row.price_scale;
+
     return {
       itemKey: String(row.itemKey ?? row.item_key ?? ''),
       itemLabel: String(row.itemLabel ?? row.item_label ?? ''),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
-      basePriceGold: this.toNumber(row.basePriceGold ?? row.base_price_gold),
-      marketPriceGold: this.toNumber(row.marketPriceGold ?? row.market_price_gold),
-      npcBuyPriceGold: this.toNumber(row.npcBuyPriceGold ?? row.npc_buy_price_gold),
-      npcSellPriceGold: this.toNumber(row.npcSellPriceGold ?? row.npc_sell_price_gold),
+      basePriceGold:
+        this.toGoldPrice(row.basePriceGold ?? row.base_price_gold, priceScale) ?? 0,
+      marketPriceGold:
+        this.toGoldPrice(row.marketPriceGold ?? row.market_price_gold, priceScale) ?? 0,
+      npcBuyPriceGold:
+        this.toGoldPrice(row.npcBuyPriceGold ?? row.npc_buy_price_gold, priceScale) ?? 0,
+      npcSellPriceGold:
+        this.toGoldPrice(row.npcSellPriceGold ?? row.npc_sell_price_gold, priceScale) ?? 0,
       npcStock: this.toNumber(row.npcStock ?? row.npc_stock),
       targetStock: this.toNumber(row.targetStock ?? row.target_stock),
       npcNeed: this.toNumber(row.npcNeed ?? row.npc_need),
@@ -152,5 +160,10 @@ export class NpcMarketSubscriptionManager {
     }
 
     return Number.isFinite(value) ? Number(value) : 0;
+  }
+
+  toGoldPrice(value, scaleValue) {
+    const scale = Number(scaleValue) === 100 ? 100 : 1;
+    return normalizeGoldPrice(this.toNumber(value) / scale);
   }
 }

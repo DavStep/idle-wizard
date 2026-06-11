@@ -120,6 +120,11 @@ export class TopPanelViewManager {
     this.refs.settingsTitle.className = 'style-box__title';
     this.refs.settingsTitle.textContent = 'settings';
 
+    this.refs.settingsCloseButton = document.createElement('button');
+    this.refs.settingsCloseButton.className = 'room-top-panel__settings-close';
+    this.refs.settingsCloseButton.type = 'button';
+    this.refs.settingsCloseButton.textContent = 'close';
+
     const usernameSection = document.createElement('div');
     usernameSection.className =
       'room-top-panel__settings-section room-top-panel__username-section';
@@ -153,12 +158,7 @@ export class TopPanelViewManager {
     this.refs.usernameSaveButton.type = 'submit';
     this.refs.usernameSaveButton.textContent = 'save';
 
-    this.refs.settingsCloseButton = document.createElement('button');
-    this.refs.settingsCloseButton.className = 'style-button room-top-panel__settings-close';
-    this.refs.settingsCloseButton.type = 'button';
-    this.refs.settingsCloseButton.textContent = 'close';
-
-    actions.append(this.refs.usernameSaveButton, this.refs.settingsCloseButton);
+    actions.append(this.refs.usernameSaveButton);
     this.refs.usernameForm.append(this.refs.usernameInput, this.refs.usernameError, actions);
     usernameSection.append(usernameLabel, this.refs.usernameForm);
 
@@ -222,13 +222,28 @@ export class TopPanelViewManager {
     feedbackSection.className =
       'room-top-panel__settings-section room-top-panel__feedback-section';
 
-    this.refs.feedbackOpenButton = document.createElement('button');
-    this.refs.feedbackOpenButton.className = 'style-button room-top-panel__feedback-open';
-    this.refs.feedbackOpenButton.type = 'button';
-    this.refs.feedbackOpenButton.textContent = 'feedback';
-    this.refs.feedbackOpenButton.setAttribute('aria-haspopup', 'dialog');
+    const feedbackButtons = document.createElement('div');
+    feedbackButtons.className = 'room-top-panel__feedback-buttons';
+    this.refs.feedbackOpenButtons = [];
 
-    feedbackSection.append(this.refs.feedbackOpenButton);
+    for (const option of [
+      { kind: 'feedback', label: 'feedback', ref: 'feedbackOpenButton' },
+      { kind: 'bug', label: 'report a bug', ref: 'bugReportOpenButton' },
+      { kind: 'feature', label: 'request a feature', ref: 'featureRequestOpenButton' },
+    ]) {
+      const button = document.createElement('button');
+      button.className = 'style-button room-top-panel__feedback-open';
+      button.type = 'button';
+      button.textContent = option.label;
+      button.dataset.feedbackKind = option.kind;
+      button.setAttribute('aria-haspopup', 'dialog');
+      button.setAttribute('aria-label', option.label);
+      feedbackButtons.append(button);
+      this.refs.feedbackOpenButtons.push(button);
+      this.refs[option.ref] = button;
+    }
+
+    feedbackSection.append(feedbackButtons);
 
     this.refs.feedbackForm = document.createElement('form');
     this.refs.feedbackForm.className = 'room-top-panel__feedback-form';
@@ -286,6 +301,7 @@ export class TopPanelViewManager {
 
     this.refs.settingsDialog.append(
       this.refs.settingsTitle,
+      this.refs.settingsCloseButton,
       usernameSection,
       themeSection,
       colorSection,

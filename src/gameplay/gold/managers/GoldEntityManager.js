@@ -1,4 +1,5 @@
 import { PlayerGold } from '../components/GoldComponents.js';
+import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
 export class GoldEntityManager {
   constructor({ initialCurrent = 0 } = {}) {
@@ -30,7 +31,7 @@ export class GoldEntityManager {
   }
 
   setCurrent(value) {
-    PlayerGold.current[this.getEntityId()] = Math.max(0, value);
+    PlayerGold.current[this.getEntityId()] = normalizeGoldPrice(value) ?? 0;
   }
 
   addCurrent(amount) {
@@ -46,7 +47,7 @@ export class GoldEntityManager {
   }
 
   setTotalGenerated(value) {
-    PlayerGold.totalGenerated[this.getEntityId()] = Math.max(0, value);
+    PlayerGold.totalGenerated[this.getEntityId()] = normalizeGoldPrice(value) ?? 0;
   }
 
   addTotalGenerated(amount) {

@@ -50,6 +50,7 @@
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Marked Brewing recipes persist across room tab changes; only explicit unmarking or marking another recipe clears the guide.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 Sage`), not expanded numbered slots.
+- Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
 - Brewing recipe popup rows use an explicit `mark` action to send a recipe to the guide; do not hide that action behind the recipe name.
 - Brewing shows `recipes` and `potions` as sibling buttons, not a bordered recipes block; potions popup reads owned potion stacks from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
@@ -62,6 +63,7 @@
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, level-ups grant `playerLevel.crystal.perLevel`, and advanced research spends it.
+- Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Advanced automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide advanced research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
@@ -72,6 +74,7 @@
 - NPC market auto-sell should not sell when the backend quote is missing or backend need is zero.
 - NPC market `basePriceGold` is not the visible sell payout; neutral `npcBuyPriceGold` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
 - NPC market demand stays in the backend/snapshot and gates sales, but current NPC market UI hides demand; visible labels show item plus sell price only.
+- NPC market stand and sell-picker labels include available quantity as `<item> (N)` before the sell price.
 - NPC market demand is player-visible only through the `demand` top-border popup, grouped by `seed`/`herb`/`potion`, with locked rows gray below a divider.
 - NPC market selected stands should keep need available from slot snapshots internally, because selected items may be hidden from picker rows.
 - NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
@@ -107,6 +110,7 @@
 - Text-entry focus should use `preventScroll` so mobile browsers do not pan the game surface.
 - Text-entry dialogs should sit high enough that the mobile keyboard does not cover save/cancel actions.
 - Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
+- For Android safe areas, let chrome backgrounds visually extend behind status/gesture areas and inset only interactive content; avoid black gutter padding.
 - Non-dialog boxes stay simple: `1px` border, compact padding, no shadow.
 - Popup/dialog panels can use the thicker event-panel treatment: `2px` border and `5px 5px 5px #666` shadow in source UI units.
 - The Workshop mana-only resource block is called `mana sphere`.
@@ -166,6 +170,7 @@
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
 - Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
+- If notification dots grow beyond page-level flags, move to a provider tree with centralized child aggregation and graph validation instead of ad hoc booleans.
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
@@ -191,12 +196,14 @@
 
 - Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
+- Match verification to risk: tiny deterministic edits can use inspection or a focused check, while shared runtime/UI changes justify lint, tests, build, and browser/device checks.
 - If local shows `server unavailable`, check both Vite `55173` and SpacetimeDB `3000`; this workspace may target `.env.local` database `idle-wizard-codex-run`, so publish that DB directly when `npm run stdb:publish` is unauthorized for `idle-wizard`.
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
+- SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.
 - Optional Google login is controlled by `VITE_SPACETIME_AUTH_CLIENT_ID`; GitHub Pages reads it from the `SPACETIME_AUTH_CLIENT_ID` Actions variable.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
@@ -205,8 +212,11 @@
 
 - Backend target is SpacetimeDB.
 - Player feedback is server-backed through private `player_feedback` rows written by `submit_feedback`; dashboard review should add a guarded read surface later.
+- Top-panel `report a bug` and `request a feature` reuse `submit_feedback` with `bug report:` / `feature request:` body prefixes.
 - SpacetimeDB reducers are public entry points; never use first-come admin claim or raw client leaderboard/shop values without server-side caps.
-- Shared leaderboard totals, player market exchange, research announcements, and potion discoveries must stay locked down until the server owns the matching gameplay state; bounded task player levels are client-reported through `set_player_level`.
+- Server-visible names/messages should strip all Unicode control and format chars; partial bidi lists miss zero-width spoofing.
+- Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
+- Generated-gold leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedGold` field.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
 - Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
@@ -217,16 +227,16 @@
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
-- Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields, gameplay save JSON, and player level.
+- Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
-- Shared player level displays use server `playerLevel`; sync `tasks.currentLevel` through `set_player_level` and do not infer other players locally.
+- Shared player level displays use server `playerLevel`; do not trust `tasks.currentLevel` for other players until task completion is server-authoritative.
 - Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.
 - Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror the client bootstrap default; hosted `game_config.playerLevel` can override milestones.
 - Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
 - Player level-up crystal rewards also come from `game_config.playerLevel`; level 1 start does not grant the reward.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.
-- Leaderboard total generated gold uses local gold lifetime total synced through `set_total_generated_gold`; current gold alone is not enough because spending lowers it.
+- Leaderboard total generated gold should stay admin/server-owned until gold generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.
 - Global progress resets should bump the gameplay save version and migrate old saves to keep only `gold.totalGenerated`; username and leaderboard identity live outside gameplay save.
 - Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
 - Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
@@ -237,9 +247,9 @@
 - Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
 - Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
-- NPC market backend uses one-way demand: `npc_need` decreases when players sell, replenishes on market ticks, and drives `npcBuyPriceGold`; it is not NPC stock.
-- Current NPC market backend owns shared prices/need, but shop inventory and gold settlement still happen locally until server-owned inventory/gold exists.
+- NPC market backend can expose shared baseline prices/need, but client buy/sell calls must not mutate shared stock or demand until server-owned inventory/gold exists.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
+- Market price amounts are cent-rounded floats and visible prices use two decimals; use shared gold-price helpers instead of flooring.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local gold.
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
 - Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.

@@ -471,6 +471,42 @@ function createGameplayFacadeFake() {
           },
         ],
       },
+      stock: {
+        sellKinds: [
+          { id: 1, kind: 'seed', label: 'seeds' },
+          { id: 2, kind: 'herb', label: 'herbs' },
+          { id: 3, kind: 'potion', label: 'potions' },
+        ],
+        items: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            label: 'Sage Seed',
+            kind: 'seed',
+            quantity: 0,
+            buyGold: 1.2,
+            stock: 4,
+          },
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'Sage',
+            kind: 'herb',
+            quantity: 0,
+            buyGold: 2.4,
+            stock: 3,
+          },
+          {
+            itemTypeId: 2001,
+            key: 'manaTonic',
+            label: 'Mana Tonic',
+            kind: 'potion',
+            quantity: 0,
+            buyGold: 6,
+            stock: 2,
+          },
+        ],
+      },
       playerShelf: {
         unlockedSlots: 1,
         maxSlots: 5,
@@ -623,12 +659,14 @@ function createGameplayFacadeFake() {
           name: 'Ada',
           playerLevel: 2,
           income: 3,
+          totalGeneratedGold: 0,
           totalIncome: 120,
         },
         {
           name: 'Merlin',
           playerLevel: 10,
           income: 9,
+          totalGeneratedGold: 0,
           totalIncome: 75,
         },
       ],
@@ -1549,6 +1587,40 @@ function createGameplayFacadeFake() {
         totalPriceGold,
       };
     },
+    buyNpcMarketStockItem: async (itemTypeId, quantity = 1) => {
+      const item = snapshot.shop.stock.items.find(
+        (stockItem) => stockItem.itemTypeId === itemTypeId,
+      );
+
+      if (!item || item.stock < quantity) {
+        return {
+          ok: false,
+          reason: 'empty_stock',
+        };
+      }
+
+      const totalPriceGold = quantity * item.buyGold;
+
+      if (snapshot.gold.current < totalPriceGold) {
+        return {
+          ok: false,
+          reason: 'not_enough_gold',
+        };
+      }
+
+      snapshot.gold.current -= totalPriceGold;
+      item.stock -= quantity;
+      item.quantity += quantity;
+      publish();
+
+      return {
+        ok: true,
+        item,
+        quantity,
+        priceGold: item.buyGold,
+        totalPriceGold,
+      };
+    },
     claimPlayerShopSaleProceeds: (gold) => {
       snapshot.gold.current += gold;
       publish();
@@ -1598,6 +1670,11 @@ function createGameplayFacadeFake() {
     },
     setShopSellItems: (sellItems) => {
       snapshot.shop.shelf.sellItems = sellItems;
+      snapshot.shop.stock.items = sellItems.map((item) => ({
+        ...item,
+        buyGold: item.buyGold ?? item.sellGold,
+        stock: item.stock ?? item.sellNeed ?? 0,
+      }));
       snapshot.shop.playerShelf.sellItems = sellItems.map((item) => ({ ...item }));
       publish();
     },
@@ -1608,6 +1685,14 @@ function createGameplayFacadeFake() {
 
       if (item) {
         item.quantity = quantity;
+      }
+
+      const stockItem = snapshot.shop.stock.items.find(
+        (sellItem) => sellItem.itemTypeId === itemTypeId,
+      );
+
+      if (stockItem) {
+        stockItem.quantity = quantity;
       }
 
       const playerItem = snapshot.shop.playerShelf.sellItems.find(
@@ -2412,6 +2497,11 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-top-panel__feedback-open')?.textContent).toBe(
       'feedback',
     );
+    expect(
+      [...stage.querySelectorAll('.room-top-panel__feedback-open')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['feedback', 'report a bug', 'request a feature']);
     expect(focusOptions).toEqual([{ preventScroll: true }]);
 
     input.value = 'Mira';
@@ -2419,6 +2509,30 @@ describe('PagesFacade', () => {
 
     expect(playerFacade.getSnapshot().username).toBe('Mira');
     expect(usernameButton.textContent).toBe('Mira');
+    expect(settings.hidden).toBe(true);
+  });
+
+  it('closes settings from the popup close button', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin'),
+    });
+
+    pagesFacade.mount(stage);
+
+    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const settings = stage.querySelector('.room-top-panel__settings');
+    const closeButton = stage.querySelector('.room-top-panel__settings-close');
+
+    usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(settings.hidden).toBe(false);
+    expect(closeButton?.textContent).toBe('close');
+    expect(closeButton?.closest('.room-top-panel__settings-dialog')).not.toBeNull();
+
+    closeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     expect(settings.hidden).toBe(true);
   });
 
@@ -2458,6 +2572,61 @@ describe('PagesFacade', () => {
       'sent',
     );
     expect(input.value).toBe('');
+  });
+
+  it('opens bug and feature feedback buttons with typed submit prefixes', async () => {
+    const stage = document.createElement('section');
+    const feedbackFacade = createFeedbackFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin'),
+      feedbackFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const settings = stage.querySelector('.room-top-panel__settings');
+    const input = stage.querySelector('.room-top-panel__feedback-input');
+    const form = stage.querySelector('.room-top-panel__feedback-form');
+    const closeButton = stage.querySelector('.room-top-panel__feedback-close');
+    const cases = [
+      {
+        kind: 'bug',
+        title: 'report a bug',
+        placeholder: 'describe the bug',
+        body: 'button disappears',
+        expected: 'bug report:\nbutton disappears',
+      },
+      {
+        kind: 'feature',
+        title: 'request a feature',
+        placeholder: 'describe the feature',
+        body: 'add quieter controls',
+        expected: 'feature request:\nadd quieter controls',
+      },
+    ];
+
+    for (const item of cases) {
+      usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      stage
+        .querySelector(`[data-feedback-kind="${item.kind}"]`)
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(settings.querySelector('.style-box__title')?.textContent).toBe(item.title);
+      expect(input.placeholder).toBe(item.placeholder);
+
+      input.value = item.body;
+      form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+
+      const messages = feedbackFacade.getMessages();
+      expect(messages[messages.length - 1]).toBe(item.expected);
+
+      closeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    }
+
+    expect(feedbackFacade.getMessages()).toEqual(cases.map((item) => item.expected));
   });
 
   it('asks first landed players to set a username', () => {
@@ -3461,6 +3630,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('npc market');
+    expect(stage.querySelector('.shop-page__stock')).not.toBeNull();
+    expect(stage.querySelector('.shop-page__stock')?.textContent).toContain('market stock');
     expect(
       [...stage.querySelectorAll('.shop-page__shelf .shop-page__slot-row')].some(
         (row) => row.querySelector('.row_key')?.textContent === 'gold',
@@ -4639,7 +4810,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('herbs');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('potions');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'Sage Seed need 1000 1 gold',
+      'Sage Seed (0) 1.00 gold',
     );
     expect(
       stage.querySelector('.shop-page__sell-dialog .shop-page__sell-tab-button'),
@@ -4654,12 +4825,12 @@ describe('PagesFacade', () => {
     ).toBe('empty');
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Sage Seed need 1000 1 gold',
+      (button) => button.textContent === 'Sage Seed (0) 1.00 gold',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed need 1000 1 gold',
+      'stand 1Sage Seed (0) 1.00 gold',
     );
     expect(
       stage
@@ -4698,18 +4869,18 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Mana Tonic need 300 5 gold')
+      .find((button) => button.textContent === 'Mana Tonic (0) 5.00 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const itemValue = stage.querySelector('.shop-page__slot-item-value');
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Mana Tonic need 300 5 gold',
+      'stand 1Mana Tonic (0) 5.00 gold',
     );
-    expect(itemValue?.textContent).toBe('Mana Tonic need 300');
+    expect(itemValue?.textContent).toBe('Mana Tonic (0)');
     expect(itemValue?.getAttribute('data-resource-color')).toBe('mana');
-    expect(priceValue?.textContent).toBe(' 5 gold');
+    expect(priceValue?.textContent).toBe(' 5.00 gold');
     expect(priceValue?.getAttribute('data-resource-color')).toBe('gold');
   });
 
@@ -4746,11 +4917,11 @@ describe('PagesFacade', () => {
       .querySelector('.shop-page__slot-row--interactive')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Sage Seed need 1000 1 gold')
+      .find((button) => button.textContent === 'Sage Seed (0) 1.00 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed need 1000 1 gold',
+      'stand 1Sage Seed (0) 1.00 gold',
     );
 
     stage
@@ -4771,7 +4942,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
-  it('updates visible shop sell prices and needs from gameplay snapshots', () => {
+  it('updates visible shop sell prices from gameplay snapshots while hiding needs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
@@ -4786,28 +4957,29 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Sage Seed need 1000 1 gold',
+      (button) => button.textContent === 'Sage Seed (0) 1.00 gold',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     gameplayFacade.setShopSellGold('seed', 7);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed need 1000 7 gold',
+      'stand 1Sage Seed (0) 7.00 gold',
     );
 
     gameplayFacade.setShopSellNeed(1, 4);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed need 4 7 gold',
+      'stand 1Sage Seed (0) 7.00 gold',
     );
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('need 4');
 
     stage
       .querySelector('.shop-page__slot-row--interactive')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'Sage Seed need 4 7 gold',
+      'Sage Seed (0) 7.00 gold',
     );
   });
 
@@ -4842,10 +5014,10 @@ describe('PagesFacade', () => {
       row.textContent.includes('Sage Seed'),
     );
     const mintButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Mint Seed need ? 1 gold',
+      (button) => button.textContent === 'Mint Seed (1) 1.00 gold',
     );
 
-    expect(visibleRows).toEqual(['empty', 'Mint Seed need ? 1 gold']);
+    expect(visibleRows).toEqual(['empty', 'Mint Seed (1) 1.00 gold']);
     expect(mintButton?.disabled).toBe(true);
     expect(sageRow?.hidden ?? true).toBe(true);
   });
@@ -4865,13 +5037,13 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Sage Seed need 1000 1 gold')
+      .find((button) => button.textContent === 'Sage Seed (0) 1.00 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     gameplayFacade.setShopSellItems([]);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed need 1000 1 gold',
+      'stand 1Sage Seed (0) 1.00 gold',
     );
   });
 
@@ -4896,7 +5068,7 @@ describe('PagesFacade', () => {
     herbsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const sageHerbButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Sage need 800 2 gold',
+      (button) => button.textContent === 'Sage (0) 2.00 gold',
     );
     expect(sageHerbButton.closest('.shop-page__sell-item-row').hidden).toBe(false);
 
@@ -4905,7 +5077,7 @@ describe('PagesFacade', () => {
     const visiblePotionRows = [...stage.querySelectorAll('.shop-page__sell-item-row')]
       .filter((row) => !row.hidden)
       .map((row) => row.textContent);
-    expect(visiblePotionRows).not.toContain('Mana Tonic need 300 5 gold');
+    expect(visiblePotionRows).not.toContain('Mana Tonic (locked) 5.00 gold');
   });
 
   it('hides shop sell picker with Escape or outside click', () => {
@@ -4986,7 +5158,7 @@ describe('PagesFacade', () => {
     await Promise.resolve();
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      'stand 1Sage Seed (2) 4 gold',
+      'stand 1Sage Seed (2) 4.00 gold',
     );
     expect(
       stage

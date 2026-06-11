@@ -7,6 +7,7 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
 export class ShopShelfManager {
   constructor({ gameplayFacade } = {}) {
@@ -418,7 +419,7 @@ export class ShopShelfManager {
       row.classList.toggle('is-locked', display.locked);
       row.classList.toggle('is-unknown', display.unknown);
       row.classList.toggle('is-empty', display.empty);
-      label.textContent = `${display.label} `;
+      label.textContent = `${display.label} (${display.quantity}) `;
       setResourceColor(label, item.kind);
       quantity.textContent = this.formatSellGold(item.sellGold);
       setResourceColorFromText(quantity, quantity.textContent);
@@ -511,7 +512,7 @@ export class ShopShelfManager {
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
       : { label: slot.sellLabel, quantity: String(quantity) };
-    const itemText = display.label;
+    const itemText = `${display.label} (${display.quantity})`;
 
     if (!Number.isFinite(sellGold)) {
       return { itemText, itemKind: displayItem.kind, priceText: '' };
@@ -542,7 +543,7 @@ export class ShopShelfManager {
       return '? gold';
     }
 
-    return `${sellGold} gold`;
+    return formatGoldPriceText(sellGold);
   }
 
   canSelectSellItem(snapshot, item) {

@@ -10,6 +10,12 @@ import {
   NOTIFICATION_TONE_ORANGE,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
+import {
+  formatGoldPrice,
+  formatGoldPriceText,
+  multiplyGoldPrice,
+  parsePositiveGoldPrice,
+} from '../../../shared/goldPrice.js';
 
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
@@ -229,6 +235,9 @@ export class ShopPlayerShelfManager {
 
     const quantityField = this.createNumberField('quantity', 'quantity', 'Listing quantity');
     const priceField = this.createNumberField('gold each', 'gold each', 'Listing gold value per item');
+    priceField.input.inputMode = 'decimal';
+    priceField.input.min = '0.01';
+    priceField.input.step = '0.01';
     this.refs.quantityInput = quantityField.input;
     this.refs.priceInput = priceField.input;
     fields.append(quantityField.field, priceField.field);
@@ -440,7 +449,7 @@ export class ShopPlayerShelfManager {
     const itemTypeId = this.draftListingItemTypeId;
     const item = shelf?.sellItems.find((sellItem) => sellItem.itemTypeId === itemTypeId);
     const quantity = this.readPositiveInteger(this.refs.quantityInput?.value);
-    const priceGold = this.readPositiveInteger(this.refs.priceInput?.value);
+    const priceGold = parsePositiveGoldPrice(this.refs.priceInput?.value);
 
     if (!selectedSlot || !item) {
       this.setListingStatus('choose item');
@@ -571,9 +580,9 @@ export class ShopPlayerShelfManager {
       return;
     }
 
-    const totalPriceGold = buyQuantity * listing.priceGold;
+    const totalPriceGold = multiplyGoldPrice(listing.priceGold, buyQuantity);
 
-    if ((this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold) {
+    if (totalPriceGold === null || (this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold) {
       this.setMarketStatus('not enough gold');
       return;
     }
@@ -849,7 +858,7 @@ export class ShopPlayerShelfManager {
     }
 
     const button = this.refs.proceedsRow.button;
-    button.textContent = `claim (${proceedsGold} gold)`;
+    button.textContent = `claim (${formatGoldPriceText(proceedsGold)})`;
     setResourceColorFromText(button, button.textContent);
     button.disabled = !this.lastPlayerShopSnapshot.connected;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
@@ -1027,9 +1036,14 @@ export class ShopPlayerShelfManager {
 
   renderMarketRowBuyState(row, listing) {
     const quantity = this.clampListingQuantity(row.quantityInput.value, listing.quantity);
-    const totalPriceGold = quantity ? quantity * listing.priceGold : listing.priceGold;
-    const label = `buy (${totalPriceGold} gold)`;
-    const disabled = !quantity || (this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold;
+    const totalPriceGold = quantity
+      ? multiplyGoldPrice(listing.priceGold, quantity)
+      : listing.priceGold;
+    const label = `buy (${formatGoldPriceText(totalPriceGold)})`;
+    const disabled =
+      !quantity ||
+      totalPriceGold === null ||
+      (this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold;
 
     if (row.button.textContent !== label) {
       row.button.textContent = label;
@@ -1183,7 +1197,7 @@ export class ShopPlayerShelfManager {
     }
 
     if (this.refs.priceInput) {
-      this.refs.priceInput.value = String(selectedSlot?.priceGold || 1);
+      this.refs.priceInput.value = formatGoldPrice(selectedSlot?.priceGold || 1);
     }
 
     this.setListingStatus('');
@@ -1212,7 +1226,7 @@ export class ShopPlayerShelfManager {
     return {
       itemText: `${display.label} (${display.quantity})`,
       itemKind: displayItem.kind,
-      priceText: `${slot.priceGold} gold`,
+      priceText: formatGoldPriceText(slot.priceGold),
     };
   }
 

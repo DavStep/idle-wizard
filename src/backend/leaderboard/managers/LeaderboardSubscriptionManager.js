@@ -78,7 +78,7 @@ export class LeaderboardSubscriptionManager {
         name: row.username,
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
-        totalGeneratedGold: this.toNumber(row.totalGeneratedGold ?? row.totalIncome),
+        totalGeneratedGold: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
         totalIncome: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
       }));
     const rankedGeneratedGoldUsers = this.getRankedUsersBy(users, 'totalGeneratedGold');

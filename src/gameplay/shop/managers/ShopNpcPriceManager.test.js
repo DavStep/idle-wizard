@@ -24,6 +24,16 @@ describe('ShopNpcPriceManager', () => {
     expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(7);
   });
 
+  it('keeps decimal NPC buy prices to cents', () => {
+    const manager = new ShopNpcPriceManager({
+      npcMarketFacade: {
+        getNpcBuyPriceGold: () => 0.805,
+      },
+    });
+
+    expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(0.81);
+  });
+
   it('uses backend NPC need when available', () => {
     const manager = new ShopNpcPriceManager({
       npcMarketFacade: {
@@ -32,6 +42,18 @@ describe('ShopNpcPriceManager', () => {
     });
 
     expect(manager.getNpcNeed(sageSeed)).toBe(12);
+  });
+
+  it('uses backend NPC stock when available', () => {
+    const manager = new ShopNpcPriceManager({
+      npcMarketFacade: {
+        getPrice: () => ({
+          npcStock: 9,
+        }),
+      },
+    });
+
+    expect(manager.getNpcStock(sageSeed)).toBe(9);
   });
 
   it('requires backend price and positive need before selling to NPC', () => {
@@ -74,6 +96,35 @@ describe('ShopNpcPriceManager', () => {
     expect(sellToNpc).toHaveBeenCalledWith({
       itemKey: 'sageSeed',
       quantity: 3,
+    });
+  });
+
+  it('requires backend sell price and stock before buying from NPC', () => {
+    const manager = new ShopNpcPriceManager({
+      npcMarketFacade: {
+        getNpcSellPriceGold: () => 9,
+        getPrice: () => ({
+          npcStock: 2,
+        }),
+      },
+    });
+
+    expect(manager.canBuyFromNpc(sageSeed, 2)).toBe(true);
+    expect(manager.canBuyFromNpc(sageSeed, 3)).toBe(false);
+  });
+
+  it('records NPC buy pressure through the backend facade', async () => {
+    const buyFromNpc = vi.fn().mockResolvedValue({ ok: true });
+    const manager = new ShopNpcPriceManager({
+      npcMarketFacade: {
+        buyFromNpc,
+      },
+    });
+
+    await expect(manager.recordBuyFromNpc(sageSeed, 2)).resolves.toEqual({ ok: true });
+    expect(buyFromNpc).toHaveBeenCalledWith({
+      itemKey: 'sageSeed',
+      quantity: 2,
     });
   });
 });

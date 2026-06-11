@@ -1,3 +1,8 @@
+import {
+  multiplyGoldPrice,
+  normalizePositiveGoldPrice,
+} from '../../../shared/goldPrice.js';
+
 export class ShopPlayerShelfListingManager {
   constructor({
     goldFacade,
@@ -39,7 +44,7 @@ export class ShopPlayerShelfListingManager {
     }
 
     const safeQuantity = Math.floor(Number(quantity));
-    const safePriceGold = Math.floor(Number(priceGold));
+    const safePriceGold = normalizePositiveGoldPrice(priceGold);
 
     if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
       return {
@@ -48,7 +53,7 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    if (!Number.isInteger(safePriceGold) || safePriceGold <= 0) {
+    if (safePriceGold === null) {
       return {
         ok: false,
         reason: 'invalid_price',
@@ -165,7 +170,7 @@ export class ShopPlayerShelfListingManager {
 
   buyListingItem({ itemKey, quantity = 1, priceGold }) {
     const safeQuantity = Math.floor(Number(quantity));
-    const safePriceGold = Math.floor(Number(priceGold));
+    const safePriceGold = normalizePositiveGoldPrice(priceGold);
 
     if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
       return {
@@ -174,7 +179,7 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    if (!Number.isInteger(safePriceGold) || safePriceGold <= 0) {
+    if (safePriceGold === null) {
       return {
         ok: false,
         reason: 'invalid_price',
@@ -191,13 +196,13 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    const totalPriceGold = safeQuantity * safePriceGold;
+    const totalPriceGold = multiplyGoldPrice(safePriceGold, safeQuantity);
 
-    if (!this.goldFacade.spend(totalPriceGold)) {
+    if (totalPriceGold === null || !this.goldFacade.spend(totalPriceGold)) {
       return {
         ok: false,
         reason: 'not_enough_gold',
-        cost: totalPriceGold,
+        cost: totalPriceGold ?? 0,
       };
     }
 
@@ -213,9 +218,9 @@ export class ShopPlayerShelfListingManager {
   }
 
   claimSaleProceeds(gold) {
-    const safeGold = Math.floor(Number(gold));
+    const safeGold = normalizePositiveGoldPrice(gold);
 
-    if (!Number.isInteger(safeGold) || safeGold <= 0) {
+    if (safeGold === null) {
       return {
         ok: false,
         reason: 'invalid_gold',

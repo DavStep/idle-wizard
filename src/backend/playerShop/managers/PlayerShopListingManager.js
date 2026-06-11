@@ -1,3 +1,5 @@
+import { normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
+
 const MAX_PLAYER_SHOP_SLOTS = 5;
 
 export class PlayerShopListingManager {
@@ -15,11 +17,19 @@ export class PlayerShopListingManager {
 
   async setSlotListing(slot) {
     const setPlayerShopSlot = this.findReducer('setPlayerShopSlot', 'set_player_shop_slot');
+    const priceGold = normalizePositiveGoldPrice(slot.priceGold);
 
     if (!setPlayerShopSlot) {
       return {
         ok: false,
         reason: 'offline',
+      };
+    }
+
+    if (priceGold === null) {
+      return {
+        ok: false,
+        reason: 'invalid_price',
       };
     }
 
@@ -30,7 +40,7 @@ export class PlayerShopListingManager {
         itemLabel: slot.itemLabel,
         itemKind: slot.itemKind,
         quantity: slot.quantity,
-        priceGold: BigInt(slot.priceGold),
+        priceGold,
       });
 
       return {

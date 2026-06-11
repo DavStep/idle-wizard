@@ -9,11 +9,12 @@ import { ShopPlayerShelfEntityManager } from './managers/ShopPlayerShelfEntityMa
 import { ShopPlayerShelfListingManager } from './managers/ShopPlayerShelfListingManager.js';
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
+import { ShopStockPurchaseManager } from './managers/ShopStockPurchaseManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ShopFacade {
   static explain =
-    'The market has NPC stands for automatic sales and player stands for listings other players can buy.';
+    'The market has NPC stands for automatic sales, shared NPC stock to buy, and player stands for listings other players can buy.';
 
   constructor({
     goldFacade,
@@ -73,6 +74,11 @@ export class ShopFacade {
       shopSellKindManager: this.shopSellKindManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopPlayerShelfEntityManager: this.shopPlayerShelfEntityManager,
+    });
+    this.shopStockPurchaseManager = new ShopStockPurchaseManager({
+      goldFacade,
+      itemsFacade,
+      shopNpcPriceManager: this.shopNpcPriceManager,
     });
     this.shopAutoSellManager = new ShopAutoSellManager({
       goldFacade,
@@ -161,6 +167,10 @@ export class ShopFacade {
     return this.shopPlayerShelfListingManager.buyListingItem(listing);
   }
 
+  buyStockItem(itemTypeId, quantity = 1) {
+    return this.shopStockPurchaseManager.buyItem({ itemTypeId, quantity });
+  }
+
   claimPlayerShopSaleProceeds(gold) {
     return this.shopPlayerShelfListingManager.claimSaleProceeds(gold);
   }
@@ -222,6 +232,10 @@ export class ShopFacade {
         sellItems: visibleSellItems,
         slots: this.getPlayerSlotSnapshots(),
       },
+      stock: {
+        sellKinds,
+        items: visibleSellItems,
+      },
     };
   }
 
@@ -258,6 +272,8 @@ export class ShopFacade {
           : {}),
         sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
         sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
+        buyGold: this.shopNpcPriceManager.getNpcSellPriceGold(item),
+        stock: this.shopNpcPriceManager.getNpcStock(item),
       }));
   }
 
