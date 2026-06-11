@@ -11,7 +11,7 @@ const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = false;
 const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
 const ENABLE_CLIENT_POTION_DISCOVERY = false;
 const ENABLE_PLAYER_SHOP_EXCHANGE = false;
-const ENABLE_NPC_MARKET_PRESSURE = false;
+const ENABLE_NPC_MARKET_PRESSURE = true;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
 const MAX_FEEDBACK_BODY_LENGTH = 2000;
@@ -38,8 +38,6 @@ const MAX_ITEM_KIND_LENGTH = 24;
 const NPC_MARKET_TICK_MICROS = 5n * 60n * 1_000_000n;
 const NPC_MARKET_DECAY_NUMERATOR = 85n;
 const NPC_MARKET_DECAY_DENOMINATOR = 100n;
-const NPC_MARKET_PRICE_MOVE_LIMIT_BPS = 300n;
-const NPC_MARKET_PRESSURE_LIMIT_BPS = 10_000n;
 const NPC_MARKET_BUY_BPS = 8_000n;
 const NPC_MARKET_SELL_BPS = 12_000n;
 const NPC_MARKET_MAX_TRADE_QUANTITY = 10_000;
@@ -74,20 +72,20 @@ const DEFAULT_TASKS_CONFIG_JSON = "{\"levels\":[{\"level\":1,\"tasks\":[{\"id\":
 const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = "{\"maxLevel\":20,\"mana\":{\"baseMaxManaCap\":50,\"maxManaCapPerLevel\":50,\"baseManaPerSecond\":1,\"manaPerSecondPerLevel\":1},\"crystal\":{\"perLevel\":1},\"milestones\":[{\"level\":1,\"maxGardenTiles\":2,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":2,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":3,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":5,\"maxGardenTiles\":5,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":8,\"maxGardenTiles\":7,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":10,\"maxGardenTiles\":8,\"maxCauldrons\":4,\"maxNpcMarketStands\":3,\"maxPlayerMarketStands\":3},{\"level\":13,\"maxGardenTiles\":9,\"maxCauldrons\":4,\"maxNpcMarketStands\":4,\"maxPlayerMarketStands\":4},{\"level\":17,\"maxGardenTiles\":10,\"maxCauldrons\":5,\"maxNpcMarketStands\":5,\"maxPlayerMarketStands\":5}]}";
 
 const herbCatalog = [
-  { key: 'sage', label: 'Sage' },
-  { key: 'mint', label: 'Mint' },
-  { key: 'nettle', label: 'Nettle' },
-  { key: 'lavender', label: 'Lavender' },
-  { key: 'briar', label: 'Briar' },
-  { key: 'glowcap', label: 'Glowcap' },
-  { key: 'mandrake', label: 'Mandrake' },
-  { key: 'sunroot', label: 'Sunroot' },
-  { key: 'moonflower', label: 'Moonflower' },
-  { key: 'frostmoss', label: 'Frostmoss' },
-  { key: 'dreambell', label: 'Dreambell' },
-  { key: 'starAnise', label: 'Star Anise' },
-  { key: 'bloodrose', label: 'Bloodrose' },
-  { key: 'dragonpepper', label: 'Dragonpepper' },
+  { key: 'sage', label: 'Sage', growthDurationMs: 20_000 },
+  { key: 'mint', label: 'Mint', growthDurationMs: 25_000 },
+  { key: 'nettle', label: 'Nettle', growthDurationMs: 30_000 },
+  { key: 'lavender', label: 'Lavender', growthDurationMs: 40_000 },
+  { key: 'briar', label: 'Briar', growthDurationMs: 50_000 },
+  { key: 'glowcap', label: 'Glowcap', growthDurationMs: 60_000 },
+  { key: 'mandrake', label: 'Mandrake', growthDurationMs: 75_000 },
+  { key: 'sunroot', label: 'Sunroot', growthDurationMs: 90_000 },
+  { key: 'moonflower', label: 'Moonflower', growthDurationMs: 105_000 },
+  { key: 'frostmoss', label: 'Frostmoss', growthDurationMs: 120_000 },
+  { key: 'dreambell', label: 'Dreambell', growthDurationMs: 135_000 },
+  { key: 'starAnise', label: 'Star Anise', growthDurationMs: 150_000 },
+  { key: 'bloodrose', label: 'Bloodrose', growthDurationMs: 180_000 },
+  { key: 'dragonpepper', label: 'Dragonpepper', growthDurationMs: 210_000 },
 ];
 
 const knownPotionCatalog = [
@@ -246,10 +244,320 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'automation:autoCollectCauldron:5': 5n,
 };
 
+const researchDefaultCostCrystalById: Record<string, number> = {
+  'automation:autoSeedSpawn': 10,
+  'automation:autoPlantTile:1': 1,
+  'automation:autoPlantTile:2': 2,
+  'automation:autoPlantTile:3': 3,
+  'automation:autoPlantTile:4': 4,
+  'automation:autoPlantTile:5': 5,
+  'automation:autoPlantTile:6': 6,
+  'automation:autoPlantTile:7': 7,
+  'automation:autoPlantTile:8': 8,
+  'automation:autoPlantTile:9': 9,
+  'automation:autoPlantTile:10': 10,
+  'automation:autoHarvestPlant:1': 1,
+  'automation:autoHarvestPlant:2': 2,
+  'automation:autoHarvestPlant:3': 3,
+  'automation:autoHarvestPlant:4': 4,
+  'automation:autoHarvestPlant:5': 5,
+  'automation:autoHarvestPlant:6': 6,
+  'automation:autoHarvestPlant:7': 7,
+  'automation:autoHarvestPlant:8': 8,
+  'automation:autoHarvestPlant:9': 9,
+  'automation:autoHarvestPlant:10': 10,
+  'automation:autoBrewCauldron:1': 1,
+  'automation:autoBrewCauldron:2': 2,
+  'automation:autoBrewCauldron:3': 3,
+  'automation:autoBrewCauldron:4': 4,
+  'automation:autoBrewCauldron:5': 5,
+  'automation:autoBottleCauldron:1': 1,
+  'automation:autoBottleCauldron:2': 2,
+  'automation:autoBottleCauldron:3': 3,
+  'automation:autoBottleCauldron:4': 4,
+  'automation:autoBottleCauldron:5': 5,
+  'automation:autoCollectCauldron:1': 1,
+  'automation:autoCollectCauldron:2': 2,
+  'automation:autoCollectCauldron:3': 3,
+  'automation:autoCollectCauldron:4': 4,
+  'automation:autoCollectCauldron:5': 5,
+};
+
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
   { key: 'wastedPotion', label: 'Wasted Potion', basePriceGold: 1n },
+];
+
+const potionRecipeCatalog = [
+  {
+    potionKey: 'manaTonic',
+    manaCost: 12,
+    brewDurationMs: 30_000,
+    ingredients: [{ itemKey: 'sageHerb', quantity: 3 }],
+  },
+  {
+    potionKey: 'minorHealingPotion',
+    manaCost: 14,
+    brewDurationMs: 35_000,
+    ingredients: [
+      { itemKey: 'sageHerb', quantity: 2 },
+      { itemKey: 'mintHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'nettleVigor',
+    manaCost: 16,
+    brewDurationMs: 40_000,
+    ingredients: [
+      { itemKey: 'nettleHerb', quantity: 2 },
+      { itemKey: 'sageHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'calmingDraught',
+    manaCost: 18,
+    brewDurationMs: 45_000,
+    ingredients: [
+      { itemKey: 'mintHerb', quantity: 2 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'simpleAntidote',
+    manaCost: 22,
+    brewDurationMs: 50_000,
+    ingredients: [
+      { itemKey: 'nettleHerb', quantity: 2 },
+      { itemKey: 'sageHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'venomDraught',
+    manaCost: 24,
+    brewDurationMs: 60_000,
+    ingredients: [
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+      { itemKey: 'nettleHerb', quantity: 2 },
+      { itemKey: 'glowcapHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'briarWard',
+    manaCost: 24,
+    brewDurationMs: 60_000,
+    ingredients: [
+      { itemKey: 'briarHerb', quantity: 2 },
+      { itemKey: 'sageHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'lanternTonic',
+    manaCost: 22,
+    brewDurationMs: 55_000,
+    ingredients: [
+      { itemKey: 'glowcapHerb', quantity: 2 },
+      { itemKey: 'mintHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'healingPotion',
+    manaCost: 26,
+    brewDurationMs: 65_000,
+    ingredients: [
+      { itemKey: 'sageHerb', quantity: 2 },
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'moonlitFocus',
+    manaCost: 30,
+    brewDurationMs: 70_000,
+    ingredients: [
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'sunrootStamina',
+    manaCost: 34,
+    brewDurationMs: 75_000,
+    ingredients: [
+      { itemKey: 'sunrootHerb', quantity: 2 },
+      { itemKey: 'nettleHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'frostmossCleanse',
+    manaCost: 38,
+    brewDurationMs: 85_000,
+    ingredients: [
+      { itemKey: 'frostmossHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'sleepDraught',
+    manaCost: 42,
+    brewDurationMs: 95_000,
+    ingredients: [
+      { itemKey: 'dreambellHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 2 },
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'elixirOfLife',
+    manaCost: 44,
+    brewDurationMs: 100_000,
+    ingredients: [
+      { itemKey: 'mandrakeHerb', quantity: 3 },
+      { itemKey: 'moonflowerHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'starLuckPhiltre',
+    manaCost: 50,
+    brewDurationMs: 110_000,
+    ingredients: [
+      { itemKey: 'starAniseHerb', quantity: 1 },
+      { itemKey: 'moonflowerHerb', quantity: 2 },
+      { itemKey: 'mintHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'dragonCourage',
+    manaCost: 58,
+    brewDurationMs: 125_000,
+    ingredients: [
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'sunrootHerb', quantity: 2 },
+      { itemKey: 'nettleHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'deepDreamVision',
+    manaCost: 62,
+    brewDurationMs: 135_000,
+    ingredients: [
+      { itemKey: 'dreambellHerb', quantity: 2 },
+      { itemKey: 'starAniseHerb', quantity: 1 },
+      { itemKey: 'moonflowerHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'pactWard',
+    manaCost: 64,
+    brewDurationMs: 145_000,
+    ingredients: [
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+      { itemKey: 'briarHerb', quantity: 2 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'ashenMemory',
+    manaCost: 36,
+    brewDurationMs: 80_000,
+    ingredients: [
+      { itemKey: 'sageHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'silverleafQuiet',
+    manaCost: 34,
+    brewDurationMs: 75_000,
+    ingredients: [
+      { itemKey: 'mintHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 1 },
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'emberSight',
+    manaCost: 58,
+    brewDurationMs: 120_000,
+    ingredients: [
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'starAniseHerb', quantity: 1 },
+      { itemKey: 'sageHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'thornSleep',
+    manaCost: 44,
+    brewDurationMs: 90_000,
+    ingredients: [
+      { itemKey: 'briarHerb', quantity: 1 },
+      { itemKey: 'dreambellHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'glassMoonElixir',
+    manaCost: 52,
+    brewDurationMs: 110_000,
+    ingredients: [
+      { itemKey: 'moonflowerHerb', quantity: 2 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+      { itemKey: 'starAniseHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'rootboundResolve',
+    manaCost: 48,
+    brewDurationMs: 100_000,
+    ingredients: [
+      { itemKey: 'sunrootHerb', quantity: 1 },
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+      { itemKey: 'briarHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'nightOrchardTonic',
+    manaCost: 60,
+    brewDurationMs: 125_000,
+    ingredients: [
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+      { itemKey: 'mintHerb', quantity: 2 },
+      { itemKey: 'dreambellHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'starlessCourage',
+    manaCost: 68,
+    brewDurationMs: 140_000,
+    ingredients: [
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+      { itemKey: 'sunrootHerb', quantity: 1 },
+      { itemKey: 'nettleHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'frostveinDraught',
+    manaCost: 54,
+    brewDurationMs: 115_000,
+    ingredients: [
+      { itemKey: 'frostmossHerb', quantity: 2 },
+      { itemKey: 'nettleHerb', quantity: 1 },
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'bloodlightWard',
+    manaCost: 62,
+    brewDurationMs: 130_000,
+    ingredients: [
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 2 },
+      { itemKey: 'briarHerb', quantity: 1 },
+      { itemKey: 'sageHerb', quantity: 1 },
+    ],
+  },
 ];
 
 const unknownPotionCatalogByKey = new Map(
@@ -364,9 +672,96 @@ const researchCatalogById = new Map(
   researchCatalog.map((research) => [research.researchId, research]),
 );
 
+function toGameConfigJson(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+function toNumberRecord(record: Record<string, bigint>): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(record).map(([key, value]) => [key, Number(value)]),
+  );
+}
+
+function getDefaultItemsConfig() {
+  return {
+    seeds: herbCatalog.map((herb, index) => ({
+      id: index + 1,
+      key: `${herb.key}Seed`,
+      label: `${herb.label} Seed`,
+      producesHerbTypeId: 1001 + index,
+      dropWeight: 1,
+      summonManaCost: 10,
+      baseSellPrice: 1,
+    })),
+    herbs: herbCatalog.map((herb, index) => ({
+      id: 1001 + index,
+      key: `${herb.key}Herb`,
+      label: herb.label,
+      growthDurationMs: herb.growthDurationMs,
+      baseSellPrice: Number((herbMarketBasePriceGoldByKey[herb.key] * NPC_MARKET_BUY_BPS) / 10_000n),
+    })),
+    potions: potionCatalog.map((potion, index) => ({
+      id: 2001 + index,
+      key: potion.key,
+      label: potion.label,
+      ...(unknownPotionCatalogByKey.has(potion.key)
+        ? {
+            discoveryType: 'unknown',
+            type: 'unknown',
+            unknown: true,
+            known: false,
+            researchable: false,
+          }
+        : {}),
+      ...(potion.key === 'wastedPotion' ? { hasRecipe: false } : {}),
+      baseSellPrice:
+        'basePriceGold' in potion
+          ? Number((potion.basePriceGold * NPC_MARKET_BUY_BPS) / 10_000n)
+          : Number((potionMarketBasePriceGoldByKey[potion.key] * NPC_MARKET_BUY_BPS) / 10_000n),
+    })),
+  };
+}
+
+const DEFAULT_GARDEN_CONFIG_JSON = toGameConfigJson({
+  garden: {
+    initialUnlockedTiles: 1,
+    tileCostsGold: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
+    tilesPerRow: 4,
+    harvestSeconds: 10,
+  },
+});
+const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
+  shopShelf: {
+    initialUnlockedSlots: 1,
+    slotCostsGold: [0, 50, 150, 400, 1000],
+    autoSellSeconds: 5,
+  },
+});
+const DEFAULT_RESEARCH_CONFIG_JSON = toGameConfigJson({
+  researchCostsGold: toNumberRecord(researchDefaultCostGoldById),
+  researchCostsCrystal: researchDefaultCostCrystalById,
+});
+const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
+  wastedBrewManaCost: 5,
+  wastedBrewDurationMs: 4_000,
+  bottlingDurationMs: 2_000,
+  maxCauldronIngredients: 5,
+  wastedPotionKey: 'wastedPotion',
+});
+const DEFAULT_ITEMS_CONFIG_JSON = toGameConfigJson(getDefaultItemsConfig());
+const DEFAULT_POTION_RECIPES_CONFIG_JSON = toGameConfigJson({
+  recipes: potionRecipeCatalog,
+});
+
 const gameConfigCatalog = [
   { configKey: 'tasks', configJson: DEFAULT_TASKS_CONFIG_JSON },
   { configKey: 'playerLevel', configJson: DEFAULT_PLAYER_LEVEL_CONFIG_JSON },
+  { configKey: 'garden', configJson: DEFAULT_GARDEN_CONFIG_JSON },
+  { configKey: 'shop', configJson: DEFAULT_SHOP_CONFIG_JSON },
+  { configKey: 'research', configJson: DEFAULT_RESEARCH_CONFIG_JSON },
+  { configKey: 'brewing', configJson: DEFAULT_BREWING_CONFIG_JSON },
+  { configKey: 'items', configJson: DEFAULT_ITEMS_CONFIG_JSON },
+  { configKey: 'potionRecipes', configJson: DEFAULT_POTION_RECIPES_CONFIG_JSON },
 ];
 
 const spacetimedb = schema({
@@ -536,6 +931,9 @@ const spacetimedb = schema({
       supplyScore: t.u64(),
       updatedAt: t.timestamp(),
       lastTickAt: t.timestamp(),
+      npcNeed: t.u64().default(0n),
+      targetNeed: t.u64().default(0n),
+      maxNeed: t.u64().default(0n),
     },
   ),
   npcMarketItemConfig: table(
@@ -860,18 +1258,6 @@ function validateNpcMarketQuantity(quantity: number): number {
   return safeQuantity;
 }
 
-function getBoundedNpcMarketTradeQuantity(
-  score: bigint,
-  requestedQuantity: bigint,
-  targetStock: bigint,
-): bigint {
-  if (score >= targetStock) {
-    return 0n;
-  }
-
-  return clampBigInt(requestedQuantity, 0n, targetStock - score);
-}
-
 function getNpcMarketCatalogItem(itemKey: string) {
   const safeItemKey = normalizeNpcMarketItemKey(itemKey);
   const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
@@ -1050,6 +1436,36 @@ function validateGameConfigValue(configKey: string, value: unknown) {
 
   if (configKey === 'playerLevel') {
     validatePlayerLevelGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'garden') {
+    validateGardenGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'shop') {
+    validateShopGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'research') {
+    validateResearchGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'brewing') {
+    validateBrewingGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'items') {
+    validateItemsGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'potionRecipes') {
+    validatePotionRecipesGameConfig(value);
     return;
   }
 
@@ -1245,6 +1661,295 @@ function validatePlayerLevelManaConfig(value: unknown) {
   }
 }
 
+function validateGardenGameConfig(value: unknown) {
+  const garden = (value as { garden?: unknown }).garden as Record<string, unknown>;
+
+  if (!garden || typeof garden !== 'object' || Array.isArray(garden)) {
+    throw new Error('Invalid garden config.');
+  }
+
+  const tileCostsGold = garden.tileCostsGold;
+  const initialUnlockedTiles = Number(garden.initialUnlockedTiles ?? 0);
+  const tilesPerRow = Number(garden.tilesPerRow);
+  const harvestSeconds = Number(garden.harvestSeconds);
+
+  validateCostList(tileCostsGold, 1, MAX_GAME_CONFIG_RESOURCE_LIMIT);
+
+  if (
+    !Number.isInteger(initialUnlockedTiles) ||
+    initialUnlockedTiles < 0 ||
+    initialUnlockedTiles > (tileCostsGold as unknown[]).length ||
+    !Number.isInteger(tilesPerRow) ||
+    tilesPerRow < 1 ||
+    tilesPerRow > MAX_GAME_CONFIG_RESOURCE_LIMIT ||
+    !Number.isFinite(harvestSeconds) ||
+    harvestSeconds <= 0 ||
+    harvestSeconds > MAX_GAME_CONFIG_RESOURCE_LIMIT
+  ) {
+    throw new Error('Invalid garden config.');
+  }
+}
+
+function validateShopGameConfig(value: unknown) {
+  const shopShelf = (value as { shopShelf?: unknown }).shopShelf as Record<string, unknown>;
+
+  if (!shopShelf || typeof shopShelf !== 'object' || Array.isArray(shopShelf)) {
+    throw new Error('Invalid shop config.');
+  }
+
+  const slotCostsGold = shopShelf.slotCostsGold;
+  const initialUnlockedSlots = Number(shopShelf.initialUnlockedSlots ?? 0);
+  const autoSellSeconds = Number(shopShelf.autoSellSeconds);
+
+  validateCostList(slotCostsGold, 1, MAX_PLAYER_SHOP_SLOTS);
+
+  if (
+    !Number.isInteger(initialUnlockedSlots) ||
+    initialUnlockedSlots < 0 ||
+    initialUnlockedSlots > (slotCostsGold as unknown[]).length ||
+    !Number.isFinite(autoSellSeconds) ||
+    autoSellSeconds <= 0 ||
+    autoSellSeconds > MAX_GAME_CONFIG_RESOURCE_LIMIT
+  ) {
+    throw new Error('Invalid shop config.');
+  }
+}
+
+function validateResearchGameConfig(value: unknown) {
+  const config = value as {
+    researchCostsGold?: unknown;
+    researchCostsCrystal?: unknown;
+  };
+
+  validateCostRecord(config.researchCostsGold, MAX_RESEARCH_COST_GOLD);
+  validateCostRecord(config.researchCostsCrystal, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+}
+
+function validateBrewingGameConfig(value: unknown) {
+  const config = value as Record<string, unknown>;
+  const wastedBrewManaCost = Number(config.wastedBrewManaCost);
+  const wastedBrewDurationMs = Number(config.wastedBrewDurationMs);
+  const bottlingDurationMs = Number(config.bottlingDurationMs);
+  const maxCauldronIngredients = Number(config.maxCauldronIngredients);
+  const wastedPotionKey = normalizeNpcMarketItemKey(String(config.wastedPotionKey ?? ''));
+
+  if (
+    !Number.isFinite(wastedBrewManaCost) ||
+    wastedBrewManaCost < 0 ||
+    wastedBrewManaCost > MAX_GAME_CONFIG_RESOURCE_LIMIT ||
+    !Number.isFinite(wastedBrewDurationMs) ||
+    wastedBrewDurationMs <= 0 ||
+    wastedBrewDurationMs > MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000 ||
+    !Number.isFinite(bottlingDurationMs) ||
+    bottlingDurationMs <= 0 ||
+    bottlingDurationMs > MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000 ||
+    !Number.isInteger(maxCauldronIngredients) ||
+    maxCauldronIngredients < 1 ||
+    maxCauldronIngredients > 10 ||
+    !npcMarketCatalogByItemKey.has(wastedPotionKey)
+  ) {
+    throw new Error('Invalid brewing config.');
+  }
+}
+
+function validateItemsGameConfig(value: unknown) {
+  const config = value as { seeds?: unknown; herbs?: unknown; potions?: unknown };
+  const seenIds = new Set<number>();
+  const seenKeys = new Set<string>();
+
+  validateItemDefinitionList(config.seeds, {
+    expectedKind: 'seed',
+    minCount: 1,
+    maxCount: 100,
+    seenIds,
+    seenKeys,
+  });
+  validateItemDefinitionList(config.herbs, {
+    expectedKind: 'herb',
+    minCount: 1,
+    maxCount: 100,
+    seenIds,
+    seenKeys,
+  });
+  validateItemDefinitionList(config.potions, {
+    expectedKind: 'potion',
+    minCount: 1,
+    maxCount: 150,
+    seenIds,
+    seenKeys,
+  });
+}
+
+function validateItemDefinitionList(
+  value: unknown,
+  {
+    expectedKind,
+    minCount,
+    maxCount,
+    seenIds,
+    seenKeys,
+  }: {
+    expectedKind: 'seed' | 'herb' | 'potion';
+    minCount: number;
+    maxCount: number;
+    seenIds: Set<number>;
+    seenKeys: Set<string>;
+  },
+) {
+  if (!Array.isArray(value) || value.length < minCount || value.length > maxCount) {
+    throw new Error('Invalid item config list.');
+  }
+
+  for (const itemConfig of value) {
+    const item = itemConfig as Record<string, unknown>;
+    const id = Number(item.id);
+    const key = normalizeNpcMarketItemKey(String(item.key ?? ''));
+    const label = normalizePlayerShopText(String(item.label ?? ''), MAX_ITEM_LABEL_LENGTH);
+
+    if (
+      !Number.isInteger(id) ||
+      id < 1 ||
+      id > MAX_GAME_CONFIG_RESOURCE_LIMIT ||
+      seenIds.has(id) ||
+      !key ||
+      seenKeys.has(key) ||
+      !label
+    ) {
+      throw new Error('Invalid item config identity.');
+    }
+
+    seenIds.add(id);
+    seenKeys.add(key);
+
+    if (expectedKind === 'seed') {
+      validatePositiveInteger(item.producesHerbTypeId, 'Invalid seed item config.');
+      validatePositiveNumber(item.dropWeight, 'Invalid seed item config.');
+      validateNonNegativeNumber(item.summonManaCost, 'Invalid seed item config.');
+      validateNonNegativeNumber(item.baseSellPrice, 'Invalid seed item config.');
+      continue;
+    }
+
+    if (expectedKind === 'herb') {
+      validatePositiveNumber(item.growthDurationMs, 'Invalid herb item config.');
+      validateNonNegativeNumber(item.baseSellPrice, 'Invalid herb item config.');
+      continue;
+    }
+
+    validateNonNegativeNumber(item.baseSellPrice, 'Invalid potion item config.');
+  }
+}
+
+function validatePotionRecipesGameConfig(value: unknown) {
+  const recipes = (value as { recipes?: unknown }).recipes;
+
+  if (!Array.isArray(recipes) || recipes.length < 1 || recipes.length > 150) {
+    throw new Error('Invalid potion recipe config.');
+  }
+
+  const seenPotionKeys = new Set<string>();
+
+  for (const recipeConfig of recipes) {
+    const recipe = recipeConfig as Record<string, unknown>;
+    const potionKey = normalizeNpcMarketItemKey(String(recipe.potionKey ?? ''));
+    const manaCost = Number(recipe.manaCost);
+    const brewDurationMs = Number(recipe.brewDurationMs);
+    const ingredients = recipe.ingredients;
+
+    if (
+      !potionKey ||
+      seenPotionKeys.has(potionKey) ||
+      !npcMarketCatalogByItemKey.has(potionKey) ||
+      !Number.isFinite(manaCost) ||
+      manaCost < 0 ||
+      manaCost > MAX_GAME_CONFIG_RESOURCE_LIMIT ||
+      !Number.isFinite(brewDurationMs) ||
+      brewDurationMs <= 0 ||
+      brewDurationMs > MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000 ||
+      !Array.isArray(ingredients) ||
+      ingredients.length < 1 ||
+      ingredients.length > 10
+    ) {
+      throw new Error('Invalid potion recipe config.');
+    }
+
+    seenPotionKeys.add(potionKey);
+
+    for (const ingredientConfig of ingredients) {
+      const ingredient = ingredientConfig as Record<string, unknown>;
+      const itemKey = normalizeNpcMarketItemKey(String(ingredient.itemKey ?? ''));
+      const quantity = Number(ingredient.quantity);
+
+      if (
+        !itemKey ||
+        !npcMarketCatalogByItemKey.has(itemKey) ||
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > MAX_GAME_CONFIG_TASK_QUANTITY
+      ) {
+        throw new Error('Invalid potion recipe ingredient config.');
+      }
+    }
+  }
+}
+
+function validateCostList(value: unknown, minLength: number, maxLength: number) {
+  if (!Array.isArray(value) || value.length < minLength || value.length > maxLength) {
+    throw new Error('Invalid cost list.');
+  }
+
+  for (const cost of value) {
+    validateNonNegativeNumber(cost, 'Invalid cost list value.');
+  }
+}
+
+function validateCostRecord(value: unknown, maxValue: bigint) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Invalid cost record.');
+  }
+
+  for (const [key, cost] of Object.entries(value as Record<string, unknown>)) {
+    const safeKey = normalizeResearchId(key);
+    const safeCost = Number(cost);
+
+    if (
+      !safeKey ||
+      !Number.isInteger(safeCost) ||
+      safeCost < 0 ||
+      BigInt(safeCost) > maxValue
+    ) {
+      throw new Error('Invalid cost record value.');
+    }
+  }
+}
+
+function validatePositiveInteger(value: unknown, message: string) {
+  const amount = Number(value);
+
+  if (
+    !Number.isInteger(amount) ||
+    amount < 1 ||
+    amount > MAX_GAME_CONFIG_RESOURCE_LIMIT
+  ) {
+    throw new Error(message);
+  }
+}
+
+function validatePositiveNumber(value: unknown, message: string) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000) {
+    throw new Error(message);
+  }
+}
+
+function validateNonNegativeNumber(value: unknown, message: string) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount) || amount < 0 || amount > MAX_GAME_CONFIG_RESOURCE_LIMIT) {
+    throw new Error(message);
+  }
+}
+
 function validateStringList(value: unknown) {
   if (value === undefined || value === null) {
     return;
@@ -1307,14 +2012,6 @@ function normalizeGameConfigJsonOrDefault(
   }
 }
 
-function clampSignedBps(value: bigint): bigint {
-  return clampBigInt(
-    value,
-    -NPC_MARKET_PRESSURE_LIMIT_BPS,
-    NPC_MARKET_PRESSURE_LIMIT_BPS,
-  );
-}
-
 function getNpcBuyPriceGold(marketPriceGold: bigint): bigint {
   return clampBigInt(
     (marketPriceGold * NPC_MARKET_BUY_BPS) / 10_000n,
@@ -1346,36 +2043,55 @@ function clampNpcMarketPrice(basePriceGold: bigint, priceGold: bigint) {
   );
 }
 
-function applyNpcPriceMove(
-  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'>,
-  marketPriceGold: bigint,
-  moveBps: bigint,
-): bigint {
-  let nextPriceGold = (marketPriceGold * (10_000n + moveBps)) / 10_000n;
-
-  if (moveBps > 0n && nextPriceGold <= marketPriceGold) {
-    nextPriceGold = marketPriceGold + 1n;
-  }
-
-  if (moveBps < 0n && nextPriceGold >= marketPriceGold && marketPriceGold > 1n) {
-    nextPriceGold = marketPriceGold - 1n;
-  }
-
-  return clampNpcMarketPrice(marketConfig.basePriceGold, nextPriceGold);
+function getNpcMarketMaxNeed(targetNeed: bigint): bigint {
+  return targetNeed * 2n > targetNeed ? targetNeed * 2n : targetNeed + 1n;
 }
 
-function moveBigIntToward(value: bigint, target: bigint, step: bigint): bigint {
-  if (value < target) {
-    const nextValue = value + step;
-    return nextValue > target ? target : nextValue;
+function getNpcMarketNeedState(row: any, targetNeed: bigint) {
+  const safeTargetNeed = targetNeed > 0n ? targetNeed : 1n;
+  const previousTargetNeed = toBigInt(row.targetNeed ?? 0n);
+  const maxNeed = getNpcMarketMaxNeed(safeTargetNeed);
+  const rawNeed =
+    previousTargetNeed > 0n
+      ? toBigInt(row.npcNeed ?? safeTargetNeed)
+      : safeTargetNeed;
+
+  return {
+    npcNeed: clampBigInt(rawNeed, 0n, maxNeed),
+    targetNeed: safeTargetNeed,
+    maxNeed,
+  };
+}
+
+function getNpcMarketPriceFromNeed(
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold'>,
+  npcNeed: bigint,
+  targetNeed: bigint,
+  maxNeed: bigint,
+): bigint {
+  const basePriceGold = marketConfig.basePriceGold;
+  const floorGold = getNpcMarketFloorGold(basePriceGold);
+  const ceilingGold = getNpcMarketCeilingGold(basePriceGold);
+  const safeTargetNeed = targetNeed > 0n ? targetNeed : 1n;
+  const safeMaxNeed = maxNeed > safeTargetNeed ? maxNeed : safeTargetNeed + 1n;
+  const safeNeed = clampBigInt(npcNeed, 0n, safeMaxNeed);
+
+  if (safeNeed <= safeTargetNeed) {
+    const lowerRange = basePriceGold - floorGold;
+    return clampNpcMarketPrice(
+      basePriceGold,
+      floorGold + (lowerRange * safeNeed) / safeTargetNeed,
+    );
   }
 
-  if (value > target) {
-    const nextValue = value - step;
-    return nextValue < target ? target : nextValue;
-  }
+  const upperRange = ceilingGold - basePriceGold;
+  const upperNeed = safeMaxNeed - safeTargetNeed;
+  const extraNeed = safeNeed - safeTargetNeed;
 
-  return value;
+  return clampNpcMarketPrice(
+    basePriceGold,
+    basePriceGold + (upperRange * extraNeed) / upperNeed,
+  );
 }
 
 function getNpcMarketRowWithQuotes(row: any, marketPriceGold: bigint) {
@@ -1518,14 +2234,13 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
   const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.itemKey);
 
   if (existingRow) {
-    const existingBasePriceGold = toBigInt(existingRow.basePriceGold);
-    const marketPriceGold =
-      existingBasePriceGold === marketConfig.basePriceGold
-        ? clampNpcMarketPrice(
-            marketConfig.basePriceGold,
-            toBigInt(existingRow.marketPriceGold),
-          )
-        : marketConfig.basePriceGold;
+    const needState = getNpcMarketNeedState(existingRow, marketConfig.targetStock);
+    const marketPriceGold = getNpcMarketPriceFromNeed(
+      marketConfig,
+      needState.npcNeed,
+      needState.targetNeed,
+      needState.maxNeed,
+    );
     const normalizedRow = getNpcMarketRowWithQuotes(
       existingRow,
       marketPriceGold,
@@ -1536,7 +2251,11 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
       normalizedRow.itemKind === marketConfig.itemKind &&
       normalizedRow.basePriceGold === marketConfig.basePriceGold &&
       normalizedRow.marketPriceGold === toBigInt(existingRow.marketPriceGold) &&
-      normalizedRow.targetStock === marketConfig.targetStock
+      normalizedRow.targetStock === marketConfig.targetStock &&
+      normalizedRow.npcStock === needState.npcNeed &&
+      normalizedRow.npcNeed === needState.npcNeed &&
+      normalizedRow.targetNeed === needState.targetNeed &&
+      normalizedRow.maxNeed === needState.maxNeed
     ) {
       return normalizedRow;
     }
@@ -1547,20 +2266,36 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
       itemKind: marketConfig.itemKind,
       basePriceGold: marketConfig.basePriceGold,
       targetStock: marketConfig.targetStock,
+      npcStock: needState.npcNeed,
+      npcNeed: needState.npcNeed,
+      targetNeed: needState.targetNeed,
+      maxNeed: needState.maxNeed,
       updatedAt: ctx.timestamp,
     });
   }
+
+  const targetNeed = marketConfig.targetStock;
+  const maxNeed = getNpcMarketMaxNeed(targetNeed);
+  const marketPriceGold = getNpcMarketPriceFromNeed(
+    marketConfig,
+    targetNeed,
+    targetNeed,
+    maxNeed,
+  );
 
   return ctx.db.npcMarketPrice.insert({
     itemKey: marketConfig.itemKey,
     itemLabel: marketConfig.itemLabel,
     itemKind: marketConfig.itemKind,
     basePriceGold: marketConfig.basePriceGold,
-    marketPriceGold: marketConfig.basePriceGold,
-    npcBuyPriceGold: getNpcBuyPriceGold(marketConfig.basePriceGold),
-    npcSellPriceGold: getNpcSellPriceGold(marketConfig.basePriceGold),
-    npcStock: marketConfig.targetStock,
+    marketPriceGold,
+    npcBuyPriceGold: getNpcBuyPriceGold(marketPriceGold),
+    npcSellPriceGold: getNpcSellPriceGold(marketPriceGold),
+    npcStock: targetNeed,
     targetStock: marketConfig.targetStock,
+    npcNeed: targetNeed,
+    targetNeed,
+    maxNeed,
     demandScore: 0n,
     supplyScore: 0n,
     updatedAt: ctx.timestamp,
@@ -1690,43 +2425,20 @@ function applyNpcMarketTick(ctx: IdleWizardReducerCtx, row: any) {
   const marketConfig = getNpcMarketRuntimeConfig(ctx, row.itemKey);
   const demandScore = toBigInt(row.demandScore);
   const supplyScore = toBigInt(row.supplyScore);
-  const marketPriceGold =
-    toBigInt(row.basePriceGold) === marketConfig.basePriceGold
-      ? toBigInt(row.marketPriceGold)
-      : marketConfig.basePriceGold;
-  const npcStock = toBigInt(row.npcStock);
-  const targetStock = toBigInt(row.targetStock);
-  const totalVolume = demandScore + supplyScore;
-  const minVolume = targetStock / 20n > 10n ? targetStock / 20n : 10n;
-  const flowDivisor = totalVolume > minVolume ? totalVolume : minVolume;
-  const stockPressureBps = clampSignedBps(
-    ((targetStock - npcStock) * 10_000n) / targetStock,
+  const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
+  const needReplenishStep =
+    needState.targetNeed / 20n > 1n ? needState.targetNeed / 20n : 1n;
+  const nextNpcNeed = clampBigInt(
+    needState.npcNeed + needReplenishStep,
+    0n,
+    needState.maxNeed,
   );
-  const flowPressureBps = clampSignedBps(
-    ((demandScore - supplyScore) * 10_000n) / flowDivisor,
-  );
-  const rawPressureBps = (stockPressureBps * 70n + flowPressureBps * 30n) / 100n;
-  const moveBps = clampBigInt(
-    (rawPressureBps * marketConfig.volatilityBps) / 10_000n,
-    -NPC_MARKET_PRICE_MOVE_LIMIT_BPS,
-    NPC_MARKET_PRICE_MOVE_LIMIT_BPS,
-  );
-  let nextMarketPriceGold = applyNpcPriceMove(
+  const nextMarketPriceGold = getNpcMarketPriceFromNeed(
     marketConfig,
-    marketPriceGold,
-    moveBps,
+    nextNpcNeed,
+    needState.targetNeed,
+    needState.maxNeed,
   );
-
-  if (totalVolume === 0n && nextMarketPriceGold === marketPriceGold) {
-    nextMarketPriceGold = moveBigIntToward(
-      marketPriceGold,
-      marketConfig.basePriceGold,
-      1n,
-    );
-  }
-
-  const stockRebalanceStep = targetStock / 100n > 1n ? targetStock / 100n : 1n;
-  const nextNpcStock = moveBigIntToward(npcStock, targetStock, stockRebalanceStep);
   const nextDemandScore =
     (demandScore * NPC_MARKET_DECAY_NUMERATOR) / NPC_MARKET_DECAY_DENOMINATOR;
   const nextSupplyScore =
@@ -1738,7 +2450,10 @@ function applyNpcMarketTick(ctx: IdleWizardReducerCtx, row: any) {
     itemKind: marketConfig.itemKind,
     basePriceGold: marketConfig.basePriceGold,
     targetStock: marketConfig.targetStock,
-    npcStock: nextNpcStock,
+    npcStock: nextNpcNeed,
+    npcNeed: nextNpcNeed,
+    targetNeed: needState.targetNeed,
+    maxNeed: needState.maxNeed,
     demandScore: nextDemandScore,
     supplyScore: nextSupplyScore,
     updatedAt: ctx.timestamp,
@@ -1762,6 +2477,7 @@ function applyDueNpcMarketTicks(ctx: IdleWizardReducerCtx) {
 function resetNpcMarketRows(ctx: IdleWizardReducerCtx) {
   for (const row of ctx.db.npcMarketPrice.iter()) {
     const targetStock = toBigInt(row.targetStock);
+    const needState = getNpcMarketNeedState(row, targetStock);
     const basePriceGold = toBigInt(row.basePriceGold);
     const resetRow = getNpcMarketRowWithQuotes(row, basePriceGold);
 
@@ -1769,7 +2485,10 @@ function resetNpcMarketRows(ctx: IdleWizardReducerCtx) {
       row.marketPriceGold === resetRow.marketPriceGold &&
       row.npcBuyPriceGold === resetRow.npcBuyPriceGold &&
       row.npcSellPriceGold === resetRow.npcSellPriceGold &&
-      row.npcStock === targetStock &&
+      row.npcStock === needState.targetNeed &&
+      row.npcNeed === needState.targetNeed &&
+      row.targetNeed === needState.targetNeed &&
+      row.maxNeed === needState.maxNeed &&
       row.demandScore === 0n &&
       row.supplyScore === 0n
     ) {
@@ -1778,7 +2497,10 @@ function resetNpcMarketRows(ctx: IdleWizardReducerCtx) {
 
     ctx.db.npcMarketPrice.itemKey.update({
       ...resetRow,
-      npcStock: targetStock,
+      npcStock: needState.targetNeed,
+      npcNeed: needState.targetNeed,
+      targetNeed: needState.targetNeed,
+      maxNeed: needState.maxNeed,
       demandScore: 0n,
       supplyScore: 0n,
       updatedAt: ctx.timestamp,
@@ -2638,21 +3360,30 @@ export const sell_to_npc = spacetimedb.reducer(
     row = applyNpcMarketTick(ctx, row);
 
     const tradeQuantity = BigInt(safeQuantity);
-    const targetStock = toBigInt(row.targetStock);
-    const npcStock = toBigInt(row.npcStock);
+    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
+    const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
     const supplyScore = toBigInt(row.supplyScore);
-    const effectiveTradeQuantity = getBoundedNpcMarketTradeQuantity(
-      supplyScore,
-      tradeQuantity,
-      targetStock,
+    const fulfilledQuantity = clampBigInt(tradeQuantity, 0n, needState.npcNeed);
+
+    if (fulfilledQuantity < 1n) {
+      throw new Error('NPC market item has no demand.');
+    }
+
+    const nextNpcNeed = needState.npcNeed - fulfilledQuantity;
+    const nextMarketPriceGold = getNpcMarketPriceFromNeed(
+      marketConfig,
+      nextNpcNeed,
+      needState.targetNeed,
+      needState.maxNeed,
     );
-    const maxStock = targetStock * 10n;
-    const nextStock = clampBigInt(npcStock + effectiveTradeQuantity, 0n, maxStock);
 
     ctx.db.npcMarketPrice.itemKey.update({
-      ...row,
-      npcStock: nextStock,
-      supplyScore: supplyScore + effectiveTradeQuantity,
+      ...getNpcMarketRowWithQuotes(row, nextMarketPriceGold),
+      npcStock: nextNpcNeed,
+      npcNeed: nextNpcNeed,
+      targetNeed: needState.targetNeed,
+      maxNeed: needState.maxNeed,
+      supplyScore: supplyScore + fulfilledQuantity,
       updatedAt: ctx.timestamp,
     });
   },
@@ -2665,30 +3396,9 @@ export const buy_from_npc = spacetimedb.reducer(
       return;
     }
 
-    const safeQuantity = validateNpcMarketQuantity(quantity);
-    let row = ensureNpcMarketItem(ctx, itemKey);
-    row = applyNpcMarketTick(ctx, row);
-
-    const tradeQuantity = BigInt(safeQuantity);
-    const npcStock = toBigInt(row.npcStock);
-    const demandScore = toBigInt(row.demandScore);
-    const targetStock = toBigInt(row.targetStock);
-    const effectiveTradeQuantity = getBoundedNpcMarketTradeQuantity(
-      demandScore,
-      tradeQuantity,
-      targetStock,
-    );
-
-    if (effectiveTradeQuantity < 1n || npcStock < effectiveTradeQuantity) {
-      throw new Error('NPC market item is out of stock.');
-    }
-
-    ctx.db.npcMarketPrice.itemKey.update({
-      ...row,
-      npcStock: npcStock - effectiveTradeQuantity,
-      demandScore: demandScore + effectiveTradeQuantity,
-      updatedAt: ctx.timestamp,
-    });
+    validateNpcMarketQuantity(quantity);
+    getNpcMarketRuntimeConfig(ctx, itemKey);
+    throw new Error('NPC market does not sell items.');
   },
 );
 
@@ -2784,12 +3494,25 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
     const existingRow = ctx.db.npcMarketPrice.itemKey.find(safeItemKey);
 
     if (existingRow) {
+      const marketConfig = normalizeNpcMarketRuntimeConfig(nextConfig, catalogItem);
+      const needState = getNpcMarketNeedState(existingRow, safeTargetStock);
+      const marketPriceGold = getNpcMarketPriceFromNeed(
+        marketConfig,
+        needState.npcNeed,
+        needState.targetNeed,
+        needState.maxNeed,
+      );
+
       ctx.db.npcMarketPrice.itemKey.update({
-        ...getNpcMarketRowWithQuotes(existingRow, safeBasePriceGold),
+        ...getNpcMarketRowWithQuotes(existingRow, marketPriceGold),
         itemLabel: safeItemLabel,
         itemKind: safeItemKind,
         basePriceGold: safeBasePriceGold,
         targetStock: safeTargetStock,
+        npcStock: needState.npcNeed,
+        npcNeed: needState.npcNeed,
+        targetNeed: needState.targetNeed,
+        maxNeed: needState.maxNeed,
         updatedAt: ctx.timestamp,
       });
       return;
@@ -2847,12 +3570,28 @@ export const set_npc_market_item_base_price = spacetimedb.reducer(
       return;
     }
 
+    const nextMarketConfig = {
+      ...marketConfig,
+      basePriceGold: safeBasePriceGold,
+    };
+    const needState = getNpcMarketNeedState(existingRow, marketConfig.targetStock);
+    const marketPriceGold = getNpcMarketPriceFromNeed(
+      nextMarketConfig,
+      needState.npcNeed,
+      needState.targetNeed,
+      needState.maxNeed,
+    );
+
     ctx.db.npcMarketPrice.itemKey.update({
-      ...getNpcMarketRowWithQuotes(existingRow, safeBasePriceGold),
+      ...getNpcMarketRowWithQuotes(existingRow, marketPriceGold),
       itemLabel: marketConfig.itemLabel,
       itemKind: marketConfig.itemKind,
       basePriceGold: safeBasePriceGold,
       targetStock: marketConfig.targetStock,
+      npcStock: needState.npcNeed,
+      npcNeed: needState.npcNeed,
+      targetNeed: needState.targetNeed,
+      maxNeed: needState.maxNeed,
       updatedAt: ctx.timestamp,
     });
   },

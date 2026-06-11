@@ -7,6 +7,7 @@ import { BrewingProcessManager } from './managers/BrewingProcessManager.js';
 import { BrewingRecipeMatchManager } from './managers/BrewingRecipeMatchManager.js';
 import { BrewingSnapshotManager } from './managers/BrewingSnapshotManager.js';
 import { BrewingStartManager } from './managers/BrewingStartManager.js';
+import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class BrewingFacade {
   static explain =
@@ -62,6 +63,23 @@ export class BrewingFacade {
 
   setPotionDiscoveryFacade(potionDiscoveryFacade) {
     this.brewingRecipeMatchManager.setPotionDiscoveryFacade(potionDiscoveryFacade);
+  }
+
+  applyRuntimeConfig(snapshot = {}) {
+    const balance = parseGameConfig(snapshot, 'brewing');
+
+    if (!balance) {
+      return;
+    }
+
+    try {
+      this.brewingBalanceManager.setRuntimeBalance(balance);
+      this.brewingCauldronEntityManager.configureCapacity({
+        maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
+      });
+    } catch {
+      return;
+    }
   }
 
   addIngredient(itemTypeId) {

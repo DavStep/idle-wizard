@@ -1,6 +1,7 @@
 const EMPTY_SNAPSHOT = {
   connected: false,
   researchConfigs: [],
+  gameConfigs: [],
 };
 
 export class GameConfigStateObserverManager {

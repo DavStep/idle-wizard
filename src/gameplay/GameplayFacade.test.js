@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { automationResearchIds } from './automation/automationResearchIds.js';
 import { GameplayFacade } from './GameplayFacade.js';
-import playerLevelBalance from './playerLevel/player-level-balance.json';
+import { DEFAULT_PLAYER_LEVEL_BALANCE } from './playerLevel/managers/PlayerLevelBalanceManager.js';
 
 function createMemoryStorage() {
   const values = new Map();
@@ -18,7 +18,22 @@ function createGameplay({ persistenceStorage, persistenceNow = () => 0 } = {}) {
   const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow });
   ecsFacade.createWorld();
   gameplayFacade.initialize(ecsFacade);
+  gameplayFacade.setNpcMarketFacade(createNpcMarketFacadeFake(gameplayFacade));
   return { ecsFacade, gameplayFacade };
+}
+
+function createNpcMarketFacadeFake(gameplayFacade) {
+  return {
+    getNpcBuyPriceGold(itemKey) {
+      return gameplayFacade.itemsFacade.safeGetDefinitionByKey(itemKey)?.baseSellPrice ?? null;
+    },
+    getNpcNeed() {
+      return 1000;
+    },
+    sellToNpc() {
+      return Promise.resolve({ ok: true });
+    },
+  };
 }
 
 function unlockSageSeed(gameplayFacade) {
@@ -253,7 +268,7 @@ describe('GameplayFacade', () => {
         {
           configKey: 'playerLevel',
           configJson: JSON.stringify({
-            ...playerLevelBalance,
+            ...DEFAULT_PLAYER_LEVEL_BALANCE,
             crystal: {
               perLevel: 3,
             },
@@ -266,6 +281,119 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
+  });
+
+  it('uses SpacetimeDB runtime config for balance and catalog data', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.applyRuntimeConfig({
+      gameConfigs: [
+        {
+          configKey: 'garden',
+          configJson: JSON.stringify({
+            garden: {
+              initialUnlockedTiles: 1,
+              tileCostsGold: [0, 11],
+              tilesPerRow: 2,
+              harvestSeconds: 7,
+            },
+          }),
+        },
+        {
+          configKey: 'shop',
+          configJson: JSON.stringify({
+            shopShelf: {
+              initialUnlockedSlots: 1,
+              slotCostsGold: [0, 22],
+              autoSellSeconds: 3,
+            },
+          }),
+        },
+        {
+          configKey: 'brewing',
+          configJson: JSON.stringify({
+            wastedBrewManaCost: 9,
+            wastedBrewDurationMs: 8_000,
+            bottlingDurationMs: 1_500,
+            maxCauldronIngredients: 3,
+            wastedPotionKey: 'manaTonic',
+          }),
+        },
+        {
+          configKey: 'items',
+          configJson: JSON.stringify({
+            seeds: [
+              {
+                id: 1,
+                key: 'sageSeed',
+                label: 'Config Sage Seed',
+                producesHerbTypeId: 1001,
+                dropWeight: 2,
+                summonManaCost: 4,
+                baseSellPrice: 1,
+              },
+            ],
+            herbs: [
+              {
+                id: 1001,
+                key: 'sageHerb',
+                label: 'Config Sage',
+                growthDurationMs: 12_345,
+                baseSellPrice: 8,
+              },
+            ],
+            potions: [
+              {
+                id: 2001,
+                key: 'manaTonic',
+                label: 'Config Tonic',
+                baseSellPrice: 44,
+              },
+            ],
+          }),
+        },
+        {
+          configKey: 'potionRecipes',
+          configJson: JSON.stringify({
+            recipes: [
+              {
+                potionKey: 'manaTonic',
+                manaCost: 6,
+                brewDurationMs: 7_000,
+                ingredients: [{ itemKey: 'sageHerb', quantity: 1 }],
+              },
+            ],
+          }),
+        },
+      ],
+    });
+
+    const snapshot = gameplayFacade.getSnapshot();
+
+    expect(snapshot.seedSummoning.cost).toBe(4);
+    expect(snapshot.garden.plot).toMatchObject({
+      tileCosts: [0, 11],
+      tilesPerRow: 2,
+      harvestSeconds: 7,
+    });
+    expect(snapshot.garden.seeds[0]).toMatchObject({
+      key: 'sageSeed',
+      label: 'Config Sage Seed',
+    });
+    expect(snapshot.shop.shelf).toMatchObject({
+      slotCosts: [0, 22],
+      autoSellSeconds: 3,
+    });
+    expect(snapshot.brewing).toMatchObject({
+      manaCost: 9,
+      maxIngredients: 3,
+    });
+    expect(snapshot.brewing.recipes[0]).toMatchObject({
+      key: 'manaTonic',
+      label: 'Config Tonic',
+      manaCost: 6,
+      brewDurationMs: 7_000,
+    });
   });
 
   it('logs completed gameplay events', () => {
@@ -1345,6 +1473,7 @@ describe('GameplayFacade', () => {
       baseSellPrice: 1,
       quantity: 1,
       sellGold: 1,
+      sellNeed: 1000,
     });
   });
 

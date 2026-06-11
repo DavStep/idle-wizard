@@ -1,11 +1,131 @@
-import researchBalance from '../research-balance.json';
+const DEFAULT_RESEARCH_BALANCE = {
+  researchCostsGold: {
+    'unlockSeed:sageSeed': 0,
+    'unlockSeed:mintSeed': 25,
+    'unlockSeed:nettleSeed': 50,
+    'unlockSeed:lavenderSeed': 90,
+    'unlockSeed:briarSeed': 150,
+    'unlockSeed:glowcapSeed': 240,
+    'unlockSeed:mandrakeSeed': 360,
+    'unlockSeed:sunrootSeed': 520,
+    'unlockSeed:moonflowerSeed': 720,
+    'unlockSeed:frostmossSeed': 980,
+    'unlockSeed:dreambellSeed': 1300,
+    'unlockSeed:starAniseSeed': 1700,
+    'unlockSeed:bloodroseSeed': 2200,
+    'unlockSeed:dragonpepperSeed': 2800,
+    summonSeedsX2: 300,
+    summonSeedsX3: 900,
+    summonSeedsX4: 2200,
+    summonSeedsX5: 5000,
+    'unlockRecipe:manaTonic': 80,
+    'unlockRecipe:minorHealingPotion': 120,
+    'unlockRecipe:nettleVigor': 170,
+    'unlockRecipe:calmingDraught': 240,
+    'unlockRecipe:simpleAntidote': 330,
+    'unlockRecipe:venomDraught': 450,
+    'unlockRecipe:briarWard': 600,
+    'unlockRecipe:lanternTonic': 780,
+    'unlockRecipe:healingPotion': 1000,
+    'unlockRecipe:moonlitFocus': 1260,
+    'unlockRecipe:sunrootStamina': 1580,
+    'unlockRecipe:frostmossCleanse': 1950,
+    'unlockRecipe:sleepDraught': 2380,
+    'unlockRecipe:elixirOfLife': 2880,
+    'unlockRecipe:starLuckPhiltre': 3450,
+    'unlockRecipe:dragonCourage': 4100,
+    'unlockRecipe:deepDreamVision': 4850,
+    'unlockRecipe:pactWard': 5700,
+    'automation:autoPlantTile:1': 1,
+    'automation:autoPlantTile:2': 2,
+    'automation:autoPlantTile:3': 3,
+    'automation:autoPlantTile:4': 4,
+    'automation:autoPlantTile:5': 5,
+    'automation:autoPlantTile:6': 6,
+    'automation:autoPlantTile:7': 7,
+    'automation:autoPlantTile:8': 8,
+    'automation:autoPlantTile:9': 9,
+    'automation:autoPlantTile:10': 10,
+    'automation:autoHarvestPlant:1': 1,
+    'automation:autoHarvestPlant:2': 2,
+    'automation:autoHarvestPlant:3': 3,
+    'automation:autoHarvestPlant:4': 4,
+    'automation:autoHarvestPlant:5': 5,
+    'automation:autoHarvestPlant:6': 6,
+    'automation:autoHarvestPlant:7': 7,
+    'automation:autoHarvestPlant:8': 8,
+    'automation:autoHarvestPlant:9': 9,
+    'automation:autoHarvestPlant:10': 10,
+    'automation:autoBrewCauldron:1': 1,
+    'automation:autoBrewCauldron:2': 2,
+    'automation:autoBrewCauldron:3': 3,
+    'automation:autoBrewCauldron:4': 4,
+    'automation:autoBrewCauldron:5': 5,
+    'automation:autoBottleCauldron:1': 1,
+    'automation:autoBottleCauldron:2': 2,
+    'automation:autoBottleCauldron:3': 3,
+    'automation:autoBottleCauldron:4': 4,
+    'automation:autoBottleCauldron:5': 5,
+    'automation:autoCollectCauldron:1': 1,
+    'automation:autoCollectCauldron:2': 2,
+    'automation:autoCollectCauldron:3': 3,
+    'automation:autoCollectCauldron:4': 4,
+    'automation:autoCollectCauldron:5': 5,
+  },
+  researchCostsCrystal: {
+    'automation:autoSeedSpawn': 10,
+    'automation:autoPlantTile:1': 1,
+    'automation:autoPlantTile:2': 2,
+    'automation:autoPlantTile:3': 3,
+    'automation:autoPlantTile:4': 4,
+    'automation:autoPlantTile:5': 5,
+    'automation:autoPlantTile:6': 6,
+    'automation:autoPlantTile:7': 7,
+    'automation:autoPlantTile:8': 8,
+    'automation:autoPlantTile:9': 9,
+    'automation:autoPlantTile:10': 10,
+    'automation:autoHarvestPlant:1': 1,
+    'automation:autoHarvestPlant:2': 2,
+    'automation:autoHarvestPlant:3': 3,
+    'automation:autoHarvestPlant:4': 4,
+    'automation:autoHarvestPlant:5': 5,
+    'automation:autoHarvestPlant:6': 6,
+    'automation:autoHarvestPlant:7': 7,
+    'automation:autoHarvestPlant:8': 8,
+    'automation:autoHarvestPlant:9': 9,
+    'automation:autoHarvestPlant:10': 10,
+    'automation:autoBrewCauldron:1': 1,
+    'automation:autoBrewCauldron:2': 2,
+    'automation:autoBrewCauldron:3': 3,
+    'automation:autoBrewCauldron:4': 4,
+    'automation:autoBrewCauldron:5': 5,
+    'automation:autoBottleCauldron:1': 1,
+    'automation:autoBottleCauldron:2': 2,
+    'automation:autoBottleCauldron:3': 3,
+    'automation:autoBottleCauldron:4': 4,
+    'automation:autoBottleCauldron:5': 5,
+    'automation:autoCollectCauldron:1': 1,
+    'automation:autoCollectCauldron:2': 2,
+    'automation:autoCollectCauldron:3': 3,
+    'automation:autoCollectCauldron:4': 4,
+    'automation:autoCollectCauldron:5': 5,
+  },
+};
 
 export class ResearchBalanceManager {
-  constructor({ balance = researchBalance } = {}) {
+  constructor({ balance = DEFAULT_RESEARCH_BALANCE } = {}) {
+    this.runtimeConfigByResearchId = new Map();
+    this.setBalance(balance);
+  }
+
+  setRuntimeBalance(balance) {
+    this.setBalance(balance);
+  }
+
+  setBalance(balance) {
     this.balance = balance;
     this.costGoldByResearchId = this.readCostGoldByResearchId();
     this.costCrystalByResearchId = this.readCostCrystalByResearchId();
-    this.runtimeConfigByResearchId = new Map();
   }
 
   getCost(researchId) {
@@ -24,7 +144,7 @@ export class ResearchBalanceManager {
       this.costGoldByResearchId[normalizedResearchId];
 
     if (!Number.isFinite(costGold)) {
-      throw new Error(`research-balance.json missing cost for ${researchId}.`);
+      throw new Error(`game_config.research missing cost for ${researchId}.`);
     }
 
     return {
@@ -93,12 +213,12 @@ export class ResearchBalanceManager {
     const costs = this.balance?.researchCostsGold;
 
     if (!costs || typeof costs !== 'object' || Array.isArray(costs)) {
-      throw new Error('research-balance.json requires researchCostsGold.');
+      throw new Error('game_config.research requires researchCostsGold.');
     }
 
     for (const cost of Object.values(costs)) {
       if (!Number.isFinite(cost) || cost < 0) {
-        throw new Error('research-balance.json research costs must be zero or positive numbers.');
+        throw new Error('game_config.research costs must be zero or positive numbers.');
       }
     }
 
@@ -113,12 +233,12 @@ export class ResearchBalanceManager {
     }
 
     if (!costs || typeof costs !== 'object' || Array.isArray(costs)) {
-      throw new Error('research-balance.json researchCostsCrystal must be an object.');
+      throw new Error('game_config.research researchCostsCrystal must be an object.');
     }
 
     for (const cost of Object.values(costs)) {
       if (!Number.isFinite(cost) || cost < 0) {
-        throw new Error('research-balance.json crystal costs must be zero or positive numbers.');
+        throw new Error('game_config.research crystal costs must be zero or positive numbers.');
       }
     }
 

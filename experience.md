@@ -54,7 +54,7 @@
 - Brewing shows `recipes` and `potions` as sibling buttons, not a bordered recipes block; potions popup reads owned potion stacks from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - Wasted Potion is not researchable and sells for 1 gold by item-level sell price override.
-- Research prices come from `src/gameplay/research/research-balance.json`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
+- Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
 - Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
@@ -64,15 +64,15 @@
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, level-ups grant `playerLevel.crystal.perLevel`, and advanced research spends it.
 - Advanced automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide advanced research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
-- NPC market stand 1 starts unlocked for free; later stands cost gold from `shop-balance.json`.
+- NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
-- NPC market price UI should read `sellGold` from the shop snapshot; do not duplicate price balance in page code.
-- NPC market auto-sell should pass the item definition to `getSellGold(kind, item)` so item-level price overrides apply.
+- NPC market price UI should read backend-derived `sellGold` and `sellNeed` from the shop snapshot; do not duplicate price balance in page code.
+- NPC market auto-sell should not sell when the backend quote is missing or backend need is zero.
 - NPC market `basePriceGold` is not the visible sell payout; neutral `npcBuyPriceGold` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
-- NPC market selected stands show owned item quantity plus sell price; do not render a separate shelf gold row.
-- NPC market selected stands should get quantity from slot snapshots, because zero-count selected items may be hidden from picker rows.
+- NPC market selected stands show backend need plus sell price; local owned quantity only drives availability/notifications.
+- NPC market selected stands should get need from slot snapshots, because selected items may be hidden from picker rows.
 - NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
 - NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
@@ -205,8 +205,9 @@
 - Backend target is SpacetimeDB.
 - Player feedback is server-backed through private `player_feedback` rows written by `submit_feedback`; dashboard review should add a guarded read surface later.
 - SpacetimeDB reducers are public entry points; never use first-come admin claim or raw client leaderboard/shop values without server-side caps.
-- Shared leaderboard totals, player market exchange, NPC price pressure, research announcements, and potion discoveries must stay locked down until the server owns the matching gameplay state; bounded task player levels are client-reported through `set_player_level`.
+- Shared leaderboard totals, player market exchange, research announcements, and potion discoveries must stay locked down until the server owns the matching gameplay state; bounded task player levels are client-reported through `set_player_level`.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
+- Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
@@ -218,10 +219,10 @@
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields, gameplay save JSON, and player level.
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
 - Shared player level displays use server `playerLevel`; sync `tasks.currentLevel` through `set_player_level` and do not infer other players locally.
-- Local player level milestones come from `player-level-balance.json`; they unlock permission to buy higher caps, never grant the tile/stand for free.
-- Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror local `player-level-balance.json`; hosted `game_config` can override local milestones.
-- Player level sets mana cap and mana regen from `player-level-balance.json`; there are no separate mana research bonuses.
-- Player level-up crystal rewards also come from `player-level-balance.json`/hosted `playerLevel` config; level 1 start does not grant the reward.
+- Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.
+- Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror the client bootstrap default; hosted `game_config.playerLevel` can override milestones.
+- Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
+- Player level-up crystal rewards also come from `game_config.playerLevel`; level 1 start does not grant the reward.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.
 - Leaderboard total generated gold uses local gold lifetime total synced through `set_total_generated_gold`; current gold alone is not enough because spending lowers it.
@@ -235,7 +236,8 @@
 - Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
 - Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
-- Current NPC market backend owns shared prices/stock/pressure, but shop inventory and gold settlement still happen locally until server-owned inventory/gold exists.
+- NPC market backend uses one-way demand: `npc_need` decreases when players sell, replenishes on market ticks, and drives `npcBuyPriceGold`; it is not NPC stock.
+- Current NPC market backend owns shared prices/need, but shop inventory and gold settlement still happen locally until server-owned inventory/gold exists.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local gold.
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.

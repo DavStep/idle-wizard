@@ -1,7 +1,22 @@
-import gardenBalance from '../garden-balance.json';
+const DEFAULT_GARDEN_BALANCE = {
+  garden: {
+    initialUnlockedTiles: 1,
+    tileCostsGold: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
+    tilesPerRow: 4,
+    harvestSeconds: 10,
+  },
+};
 
 export class GardenBalanceManager {
-  constructor({ balance = gardenBalance } = {}) {
+  constructor({ balance = DEFAULT_GARDEN_BALANCE } = {}) {
+    this.setBalance(balance);
+  }
+
+  setRuntimeBalance(balance) {
+    this.setBalance(balance);
+  }
+
+  setBalance(balance) {
     this.balance = balance;
     this.tileCostsGold = this.readTileCostsGold();
     this.initialUnlockedTiles = this.readInitialUnlockedTiles();
@@ -37,11 +52,11 @@ export class GardenBalanceManager {
     const tileCosts = this.balance?.garden?.tileCostsGold;
 
     if (!Array.isArray(tileCosts) || tileCosts.length === 0) {
-      throw new Error('garden-balance.json requires garden.tileCostsGold.');
+      throw new Error('game_config.garden requires garden.tileCostsGold.');
     }
 
     if (tileCosts.some((cost) => !Number.isFinite(cost) || cost < 0)) {
-      throw new Error('garden-balance.json tile costs must be zero or positive numbers.');
+      throw new Error('game_config.garden tile costs must be zero or positive numbers.');
     }
 
     return [...tileCosts];
@@ -55,7 +70,7 @@ export class GardenBalanceManager {
       initialUnlockedTiles < 0 ||
       initialUnlockedTiles > this.getMaxTiles()
     ) {
-      throw new Error('garden-balance.json initial unlocked tiles must fit garden tiles.');
+      throw new Error('game_config.garden initial unlocked tiles must fit garden tiles.');
     }
 
     return initialUnlockedTiles;
@@ -65,7 +80,7 @@ export class GardenBalanceManager {
     const tilesPerRow = this.balance?.garden?.tilesPerRow;
 
     if (!Number.isInteger(tilesPerRow) || tilesPerRow <= 0) {
-      throw new Error('garden-balance.json requires positive garden.tilesPerRow.');
+      throw new Error('game_config.garden requires positive garden.tilesPerRow.');
     }
 
     return tilesPerRow;
@@ -75,7 +90,7 @@ export class GardenBalanceManager {
     const harvestSeconds = this.balance?.garden?.harvestSeconds;
 
     if (!Number.isFinite(harvestSeconds) || harvestSeconds <= 0) {
-      throw new Error('garden-balance.json requires positive garden.harvestSeconds.');
+      throw new Error('game_config.garden requires positive garden.harvestSeconds.');
     }
 
     return harvestSeconds;

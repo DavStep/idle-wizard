@@ -1,7 +1,28 @@
-import playerLevelBalance from '../player-level-balance.json';
+export const DEFAULT_PLAYER_LEVEL_BALANCE = {
+  maxLevel: 20,
+  mana: {
+    baseMaxManaCap: 50,
+    maxManaCapPerLevel: 50,
+    baseManaPerSecond: 1,
+    manaPerSecondPerLevel: 1,
+  },
+  crystal: {
+    perLevel: 1,
+  },
+  milestones: [
+    { level: 1, maxGardenTiles: 2, maxCauldrons: 1, maxNpcMarketStands: 1, maxPlayerMarketStands: 1 },
+    { level: 2, maxGardenTiles: 3, maxCauldrons: 1, maxNpcMarketStands: 1, maxPlayerMarketStands: 1 },
+    { level: 3, maxGardenTiles: 3, maxCauldrons: 1, maxNpcMarketStands: 2, maxPlayerMarketStands: 2 },
+    { level: 5, maxGardenTiles: 5, maxCauldrons: 3, maxNpcMarketStands: 2, maxPlayerMarketStands: 2 },
+    { level: 8, maxGardenTiles: 7, maxCauldrons: 3, maxNpcMarketStands: 2, maxPlayerMarketStands: 2 },
+    { level: 10, maxGardenTiles: 8, maxCauldrons: 4, maxNpcMarketStands: 3, maxPlayerMarketStands: 3 },
+    { level: 13, maxGardenTiles: 9, maxCauldrons: 4, maxNpcMarketStands: 4, maxPlayerMarketStands: 4 },
+    { level: 17, maxGardenTiles: 10, maxCauldrons: 5, maxNpcMarketStands: 5, maxPlayerMarketStands: 5 },
+  ],
+};
 
 export class PlayerLevelBalanceManager {
-  constructor({ balance = playerLevelBalance } = {}) {
+  constructor({ balance = DEFAULT_PLAYER_LEVEL_BALANCE } = {}) {
     this.balance = balance;
     this.setBalance(balance);
   }
@@ -252,7 +273,7 @@ export class PlayerLevelBalanceManager {
     const maxLevel = balance?.maxLevel ?? balance?.levels?.at(-1)?.level ?? 1;
 
     if (!Number.isInteger(maxLevel) || maxLevel <= 0) {
-      throw new Error('player-level-balance.json requires positive maxLevel.');
+      throw new Error('game_config.playerLevel requires positive maxLevel.');
     }
 
     return maxLevel;
@@ -262,7 +283,7 @@ export class PlayerLevelBalanceManager {
     const milestones = balance?.milestones ?? balance?.levels;
 
     if (!Array.isArray(milestones) || milestones.length <= 0) {
-      throw new Error('player-level-balance.json requires milestones.');
+      throw new Error('game_config.playerLevel requires milestones.');
     }
 
     let previousGardenTiles = 0;
@@ -278,7 +299,7 @@ export class PlayerLevelBalanceManager {
         level.level > maxLevel
       ) {
         throw new Error(
-          'player-level-balance.json milestones must use increasing levels within maxLevel.',
+          'game_config.playerLevel milestones must use increasing levels within maxLevel.',
         );
       }
 
@@ -295,11 +316,11 @@ export class PlayerLevelBalanceManager {
       );
 
       if (!Number.isInteger(maxGardenTiles) || maxGardenTiles < previousGardenTiles) {
-        throw new Error('player-level-balance.json maxGardenTiles must be non-decreasing integers.');
+        throw new Error('game_config.playerLevel maxGardenTiles must be non-decreasing integers.');
       }
 
       if (!Number.isInteger(maxCauldrons) || maxCauldrons < previousCauldrons) {
-        throw new Error('player-level-balance.json maxCauldrons must be non-decreasing integers.');
+        throw new Error('game_config.playerLevel maxCauldrons must be non-decreasing integers.');
       }
 
       if (
@@ -307,7 +328,7 @@ export class PlayerLevelBalanceManager {
         maxNpcMarketStands < previousNpcMarketStands
       ) {
         throw new Error(
-          'player-level-balance.json maxNpcMarketStands must be non-decreasing integers.',
+          'game_config.playerLevel maxNpcMarketStands must be non-decreasing integers.',
         );
       }
 
@@ -316,7 +337,7 @@ export class PlayerLevelBalanceManager {
         maxPlayerMarketStands < previousPlayerMarketStands
       ) {
         throw new Error(
-          'player-level-balance.json maxPlayerMarketStands must be non-decreasing integers.',
+          'game_config.playerLevel maxPlayerMarketStands must be non-decreasing integers.',
         );
       }
 
@@ -373,7 +394,7 @@ export class PlayerLevelBalanceManager {
       crystal !== null &&
       (typeof crystal !== 'object' || Array.isArray(crystal))
     ) {
-      throw new Error('player-level-balance.json crystal must be an object.');
+      throw new Error('game_config.playerLevel crystal must be an object.');
     }
 
     const nestedPerLevel =
@@ -397,7 +418,7 @@ export class PlayerLevelBalanceManager {
     }
 
     if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string' || !entry)) {
-      throw new Error(`player-level-balance.json ${key} must be a string array.`);
+      throw new Error(`game_config.playerLevel ${key} must be a string array.`);
     }
 
     return [...value];
@@ -405,7 +426,7 @@ export class PlayerLevelBalanceManager {
 
   readNonNegativeNumber(value, key) {
     if (!Number.isFinite(value) || value < 0) {
-      throw new Error(`player-level-balance.json ${key} must be a non-negative number.`);
+      throw new Error(`game_config.playerLevel ${key} must be a non-negative number.`);
     }
 
     return value;
@@ -413,7 +434,7 @@ export class PlayerLevelBalanceManager {
 
   readNonNegativeInteger(value, key) {
     if (!Number.isInteger(value) || value < 0) {
-      throw new Error(`player-level-balance.json ${key} must be a non-negative integer.`);
+      throw new Error(`game_config.playerLevel ${key} must be a non-negative integer.`);
     }
 
     return value;

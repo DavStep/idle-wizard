@@ -120,4 +120,36 @@ describe('ShopAutoSellManager', () => {
     expect(addGold).toHaveBeenCalledTimes(1);
     expect(addGold).toHaveBeenCalledWith(6);
   });
+
+  it('does not sell when backend NPC price is missing', () => {
+    const addGold = vi.fn();
+    const removeItem = vi.fn();
+    const manager = new ShopAutoSellManager({
+      goldFacade: {
+        add: addGold,
+      },
+      itemsFacade: {
+        getItemDefinition: () => ({
+          id: 1,
+          key: 'sageSeed',
+          label: 'Sage Seed',
+          kind: 'seed',
+        }),
+        removeItem,
+      },
+      shopBalanceManager: {
+        getAutoSellSeconds: () => 5,
+      },
+      shopNpcPriceManager: {
+        getNpcBuyPriceGold: () => null,
+        recordSellToNpc: vi.fn(),
+      },
+      shopShelfEntityManager: createSlotManager(),
+    });
+
+    manager.update(5);
+
+    expect(removeItem).not.toHaveBeenCalled();
+    expect(addGold).not.toHaveBeenCalled();
+  });
 });

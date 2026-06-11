@@ -43,6 +43,17 @@ export class ShopAutoSellManager {
         this.shopShelfEntityManager.getSellProgressSeconds(slot.slotNumber) + deltaSeconds;
 
       while (progressSeconds >= autoSellSeconds) {
+        const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
+
+        if (
+          !Number.isFinite(gold) ||
+          gold <= 0 ||
+          this.shopNpcPriceManager.canSellToNpc?.(item) === false
+        ) {
+          progressSeconds = autoSellSeconds;
+          break;
+        }
+
         if (!this.canSellItem(slot.sellItemTypeId, 1)) {
           progressSeconds = autoSellSeconds;
           break;
@@ -55,7 +66,6 @@ export class ShopAutoSellManager {
           break;
         }
 
-        const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
         this.goldFacade.add(gold);
         void this.shopNpcPriceManager.recordSellToNpc(item, 1);
         this.onItemSold?.({

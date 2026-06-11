@@ -12,6 +12,46 @@ export class BrewingBalanceManager {
     maxCauldronIngredients = DEFAULT_MAX_CAULDRON_INGREDIENTS,
     wastedPotionKey = WASTED_POTION_KEY,
   } = {}) {
+    this.setBalance({
+      wastedBrewManaCost,
+      wastedBrewDurationMs,
+      bottlingDurationMs,
+      maxCauldronIngredients,
+      wastedPotionKey,
+    });
+  }
+
+  setRuntimeBalance(balance) {
+    this.setBalance(balance);
+  }
+
+  setBalance({
+    wastedBrewManaCost = DEFAULT_WASTED_BREW_MANA_COST,
+    wastedBrewDurationMs = DEFAULT_WASTED_BREW_DURATION_MS,
+    bottlingDurationMs = DEFAULT_BOTTLING_DURATION_MS,
+    maxCauldronIngredients = DEFAULT_MAX_CAULDRON_INGREDIENTS,
+    wastedPotionKey = WASTED_POTION_KEY,
+  } = {}) {
+    if (!Number.isFinite(wastedBrewManaCost) || wastedBrewManaCost < 0) {
+      throw new Error('brewing config requires non-negative wastedBrewManaCost.');
+    }
+
+    if (!Number.isFinite(wastedBrewDurationMs) || wastedBrewDurationMs <= 0) {
+      throw new Error('brewing config requires positive wastedBrewDurationMs.');
+    }
+
+    if (!Number.isFinite(bottlingDurationMs) || bottlingDurationMs <= 0) {
+      throw new Error('brewing config requires positive bottlingDurationMs.');
+    }
+
+    if (!Number.isInteger(maxCauldronIngredients) || maxCauldronIngredients <= 0) {
+      throw new Error('brewing config requires positive maxCauldronIngredients.');
+    }
+
+    if (typeof wastedPotionKey !== 'string' || wastedPotionKey.length <= 0) {
+      throw new Error('brewing config requires wastedPotionKey.');
+    }
+
     this.wastedBrewManaCost = wastedBrewManaCost;
     this.wastedBrewDurationMs = wastedBrewDurationMs;
     this.bottlingDurationMs = bottlingDurationMs;

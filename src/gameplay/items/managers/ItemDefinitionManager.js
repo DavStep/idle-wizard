@@ -152,35 +152,137 @@ const seedDefinitions = herbCatalog.map((herb, index) => ({
 
 export class ItemDefinitionManager {
   constructor() {
+    this.setDefinitions({
+      seedDefinitions,
+      herbDefinitions,
+      potionDefinitions,
+    });
+  }
+
+  setRuntimeConfig(config) {
+    this.setDefinitions(this.createDefinitionsFromConfig(config));
+  }
+
+  setDefinitions({ seedDefinitions, herbDefinitions, potionDefinitions }) {
+    this.seedDefinitions = seedDefinitions;
+    this.herbDefinitions = herbDefinitions;
+    this.potionDefinitions = potionDefinitions;
     this.definitionsById = new Map();
     this.definitionsByKey = new Map();
 
-    for (const definition of [...seedDefinitions, ...herbDefinitions, ...potionDefinitions]) {
+    for (const definition of [
+      ...this.seedDefinitions,
+      ...this.herbDefinitions,
+      ...this.potionDefinitions,
+    ]) {
+      if (this.definitionsById.has(definition.id) || this.definitionsByKey.has(definition.key)) {
+        throw new Error('Duplicate item definition.');
+      }
+
       this.definitionsById.set(definition.id, definition);
       this.definitionsByKey.set(definition.key, definition);
     }
   }
 
+  createDefinitionsFromConfig(config = {}) {
+    const seeds = this.readDefinitions(config.seeds, itemKinds.seed).map((seed) => ({
+      ...seed,
+      producesHerbTypeId: this.readPositiveInteger(seed.producesHerbTypeId),
+      dropWeight: this.readPositiveNumber(seed.dropWeight ?? 1),
+      summonManaCost: this.readNonNegativeNumber(seed.summonManaCost ?? SEED_SUMMON_MANA_COST),
+      baseSellPrice: this.readNonNegativeNumber(seed.baseSellPrice ?? 1),
+    }));
+    const herbs = this.readDefinitions(config.herbs, itemKinds.herb).map((herb) => ({
+      ...herb,
+      growthDurationMs: this.readPositiveNumber(herb.growthDurationMs),
+      baseSellPrice: this.readNonNegativeNumber(herb.baseSellPrice),
+    }));
+    const potions = this.readDefinitions(config.potions, itemKinds.potion).map((potion) => ({
+      ...potion,
+      ...(potion.discoveryType ? { discoveryType: String(potion.discoveryType) } : {}),
+      ...(potion.type ? { type: String(potion.type) } : {}),
+      ...(potion.unknown === undefined ? {} : { unknown: Boolean(potion.unknown) }),
+      ...(potion.known === undefined ? {} : { known: Boolean(potion.known) }),
+      ...(potion.researchable === undefined
+        ? {}
+        : { researchable: Boolean(potion.researchable) }),
+      ...(potion.hasRecipe === undefined ? {} : { hasRecipe: Boolean(potion.hasRecipe) }),
+      baseSellPrice: this.readNonNegativeNumber(potion.baseSellPrice),
+    }));
+
+    return {
+      seedDefinitions: seeds,
+      herbDefinitions: herbs,
+      potionDefinitions: potions,
+    };
+  }
+
+  readDefinitions(definitions, expectedKind) {
+    if (!Array.isArray(definitions) || definitions.length <= 0) {
+      throw new Error('Item config requires definitions.');
+    }
+
+    return definitions.map((definition) => ({
+      ...definition,
+      id: this.readPositiveInteger(definition.id),
+      key: this.readNonEmptyString(definition.key),
+      label: this.readNonEmptyString(definition.label),
+      kind: expectedKind,
+    }));
+  }
+
+  readNonEmptyString(value) {
+    if (typeof value !== 'string' || value.trim().length <= 0) {
+      throw new Error('Item config requires non-empty strings.');
+    }
+
+    return value.trim();
+  }
+
+  readPositiveInteger(value) {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new Error('Item config requires positive integers.');
+    }
+
+    return value;
+  }
+
+  readPositiveNumber(value) {
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error('Item config requires positive numbers.');
+    }
+
+    return value;
+  }
+
+  readNonNegativeNumber(value) {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error('Item config requires non-negative numbers.');
+    }
+
+    return value;
+  }
+
   getSeedDefinitions() {
-    return seedDefinitions;
+    return this.seedDefinitions;
   }
 
   getHerbDefinitions() {
-    return herbDefinitions;
+    return this.herbDefinitions;
   }
 
   getPotionDefinitions() {
-    return potionDefinitions;
+    return this.potionDefinitions;
   }
 
   getRecipePotionDefinitions() {
-    return potionDefinitions.filter(
+    return this.potionDefinitions.filter(
       (potion) => potion.hasRecipe !== false && potion.researchable !== false,
     );
   }
 
   getUnknownPotionDefinitions() {
-    return potionDefinitions.filter((potion) => potion.discoveryType === 'unknown');
+    return this.potionDefinitions.filter((potion) => potion.discoveryType === 'unknown');
   }
 
   getSeedDefinition(seedTypeId) {
@@ -208,6 +310,6 @@ export class ItemDefinitionManager {
   }
 
   getVisibleSummonCost() {
-    return seedDefinitions[0]?.summonManaCost ?? 0;
+    return this.seedDefinitions[0]?.summonManaCost ?? 0;
   }
 }

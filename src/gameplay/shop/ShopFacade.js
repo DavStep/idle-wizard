@@ -9,6 +9,7 @@ import { ShopPlayerShelfEntityManager } from './managers/ShopPlayerShelfEntityMa
 import { ShopPlayerShelfListingManager } from './managers/ShopPlayerShelfListingManager.js';
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
+import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ShopFacade {
   static explain =
@@ -25,7 +26,6 @@ export class ShopFacade {
   } = {}) {
     this.shopBalanceManager = new ShopBalanceManager();
     this.shopNpcPriceManager = new ShopNpcPriceManager({
-      shopBalanceManager: this.shopBalanceManager,
       npcMarketFacade,
     });
     this.shopSellKindManager = new ShopSellKindManager();
@@ -89,6 +89,26 @@ export class ShopFacade {
 
   setNpcMarketFacade(npcMarketFacade) {
     this.shopNpcPriceManager.setNpcMarketFacade(npcMarketFacade);
+  }
+
+  applyRuntimeConfig(snapshot = {}) {
+    const balance = parseGameConfig(snapshot, 'shop');
+
+    if (!balance) {
+      return;
+    }
+
+    try {
+      this.shopBalanceManager.setRuntimeBalance(balance);
+      const capacity = {
+        initialUnlockedSlots: this.shopBalanceManager.getInitialUnlockedSlots(),
+        maxSlots: this.shopBalanceManager.getMaxShelfSlots(),
+      };
+      this.shopShelfEntityManager.configureCapacity(capacity);
+      this.shopPlayerShelfEntityManager.configureCapacity(capacity);
+    } catch {
+      return;
+    }
   }
 
   setPotionDiscoveryFacade(potionDiscoveryFacade) {
@@ -166,7 +186,6 @@ export class ShopFacade {
     const visibleSellItems = this.getVisibleSellItemSnapshots(sellableItems);
     const sellKinds = this.shopSellKindManager.getSellKinds().map((sellKind) => ({
       ...sellKind,
-      sellGold: this.shopBalanceManager.getSellGold(sellKind.kind),
     }));
 
     return {
@@ -238,6 +257,7 @@ export class ShopFacade {
           ? { discovered: item.discoveryType === 'unknown', researched: true, unlocked: true, known: true }
           : {}),
         sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
+        sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
       }));
   }
 
@@ -253,6 +273,7 @@ export class ShopFacade {
           sellLabel: null,
           sellQuantity: null,
           sellGold: null,
+          sellNeed: null,
         };
       }
 
@@ -266,6 +287,7 @@ export class ShopFacade {
         sellLabel: item.label,
         sellQuantity: sellableItem?.quantity ?? 0,
         sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
+        sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
       };
     });
   }

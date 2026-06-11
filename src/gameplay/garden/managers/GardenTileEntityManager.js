@@ -22,23 +22,40 @@ export class GardenTileEntityManager {
     this.ecsManagers = ecsManagers;
 
     for (let tileNumber = 1; tileNumber <= this.maxTiles; tileNumber += 1) {
-      const tileEntityId = ecsManagers.entities.createEntity();
-      ecsManagers.components.add(tileEntityId, GardenTile);
-      GardenTile.tileNumber[tileEntityId] = tileNumber;
-      GardenTile.isUnlocked[tileEntityId] = tileNumber <= this.initialUnlockedTiles ? 1 : 0;
-      this.clearTileData(tileEntityId);
-      this.tileEntityIds.push(tileEntityId);
+      this.createTileEntity(tileNumber);
     }
   }
 
+  configureCapacity({ initialUnlockedTiles = this.initialUnlockedTiles, maxTiles = this.maxTiles } = {}) {
+    this.initialUnlockedTiles = initialUnlockedTiles;
+    this.maxTiles = maxTiles;
+
+    if (!this.ecsManagers) {
+      return;
+    }
+
+    for (let tileNumber = this.tileEntityIds.length + 1; tileNumber <= this.maxTiles; tileNumber += 1) {
+      this.createTileEntity(tileNumber);
+    }
+  }
+
+  createTileEntity(tileNumber) {
+    const tileEntityId = this.ecsManagers.entities.createEntity();
+    this.ecsManagers.components.add(tileEntityId, GardenTile);
+    GardenTile.tileNumber[tileEntityId] = tileNumber;
+    GardenTile.isUnlocked[tileEntityId] = tileNumber <= this.initialUnlockedTiles ? 1 : 0;
+    this.clearTileData(tileEntityId);
+    this.tileEntityIds.push(tileEntityId);
+  }
+
   getUnlockedTiles() {
-    return this.tileEntityIds.filter(
+    return this.getActiveTileEntityIds().filter(
       (tileEntityId) => GardenTile.isUnlocked[tileEntityId] === 1,
     ).length;
   }
 
   unlockNextTile() {
-    const nextTileEntityId = this.tileEntityIds.find(
+    const nextTileEntityId = this.getActiveTileEntityIds().find(
       (tileEntityId) => GardenTile.isUnlocked[tileEntityId] !== 1,
     );
 
@@ -164,7 +181,7 @@ export class GardenTileEntityManager {
       ? Math.max(this.initialUnlockedTiles, Math.min(unlockedTiles, this.maxTiles))
       : this.initialUnlockedTiles;
 
-    for (const tileEntityId of this.tileEntityIds) {
+    for (const tileEntityId of this.getActiveTileEntityIds()) {
       const tileNumber = GardenTile.tileNumber[tileEntityId];
       const tile = tiles.find((candidate) => candidate?.tileNumber === tileNumber);
       const isUnlocked = tileNumber <= safeUnlockedTiles;
@@ -206,7 +223,7 @@ export class GardenTileEntityManager {
   }
 
   getTileSnapshots() {
-    return this.tileEntityIds.map((tileEntityId) => {
+    return this.getActiveTileEntityIds().map((tileEntityId) => {
       const totalSeconds = GardenTile.totalSeconds[tileEntityId] ?? 0;
       const remainingSeconds = GardenTile.remainingSeconds[tileEntityId] ?? 0;
       const phase = GardenTile.phase[tileEntityId] ?? gardenTilePhases.empty;
@@ -227,7 +244,7 @@ export class GardenTileEntityManager {
   }
 
   getTileEntityId(tileNumber) {
-    const tileEntityId = this.tileEntityIds.find(
+    const tileEntityId = this.getActiveTileEntityIds().find(
       (entityId) => GardenTile.tileNumber[entityId] === tileNumber,
     );
 
@@ -240,11 +257,19 @@ export class GardenTileEntityManager {
 
   getProcessingTileEntityIds(phase = null) {
     return query(this.ecsManagers.world.getWorld(), [GardenTile]).filter((tileEntityId) => {
+      if (GardenTile.tileNumber[tileEntityId] > this.maxTiles) {
+        return false;
+      }
+
       const tilePhase = GardenTile.phase[tileEntityId];
       const isProcessing =
         tilePhase === gardenTilePhases.growing || tilePhase === gardenTilePhases.harvesting;
       return phase === null ? isProcessing : tilePhase === phase;
     });
+  }
+
+  getActiveTileEntityIds() {
+    return this.tileEntityIds.filter((tileEntityId) => GardenTile.tileNumber[tileEntityId] <= this.maxTiles);
   }
 
   clearTileData(tileEntityId) {

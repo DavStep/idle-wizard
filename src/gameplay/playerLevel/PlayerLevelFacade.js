@@ -1,5 +1,6 @@
 import { PlayerLevelBalanceManager } from './managers/PlayerLevelBalanceManager.js';
 import { PlayerLevelSnapshotManager } from './managers/PlayerLevelSnapshotManager.js';
+import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class PlayerLevelFacade {
   static explain =
@@ -93,19 +94,5 @@ export class PlayerLevelFacade {
 
   getSnapshot() {
     return this.playerLevelSnapshotManager.getSnapshot();
-  }
-}
-
-function parseGameConfig(snapshot, configKey) {
-  const config = snapshot?.gameConfigs?.find?.((row) => row?.configKey === configKey);
-
-  if (!config?.configJson) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(config.configJson);
-  } catch {
-    return null;
   }
 }

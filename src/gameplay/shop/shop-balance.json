@@ -2,11 +2,6 @@
   "shopShelf": {
     "initialUnlockedSlots": 1,
     "slotCostsGold": [0, 50, 150, 400, 1000],
-    "autoSellSeconds": 5,
-    "sellGoldByKind": {
-      "seed": 1,
-      "herb": 2,
-      "potion": 5
-    }
+    "autoSellSeconds": 5
   }
 }

@@ -24,4 +24,7 @@ export default __t.row({
   supplyScore: __t.u64().name("supply_score"),
   updatedAt: __t.timestamp().name("updated_at"),
   lastTickAt: __t.timestamp().name("last_tick_at"),
+  npcNeed: __t.u64().name("npc_need"),
+  targetNeed: __t.u64().name("target_need"),
+  maxNeed: __t.u64().name("max_need"),
 });

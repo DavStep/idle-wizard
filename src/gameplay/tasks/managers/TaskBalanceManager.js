@@ -72,7 +72,7 @@ export class TaskBalanceManager {
     const levels = balance?.levels;
 
     if (!Array.isArray(levels) || levels.length <= 0) {
-      throw new Error('tasks.json requires levels.');
+      throw new Error('game_config.tasks requires levels.');
     }
 
     const seenTaskIds = new Set();
@@ -82,18 +82,18 @@ export class TaskBalanceManager {
       const levelNumber = levelIndex + 1;
 
       if (level?.level !== levelNumber) {
-        throw new Error('tasks.json levels must be sequential starting at 1.');
+        throw new Error('game_config.tasks levels must be sequential starting at 1.');
       }
 
       if (!Array.isArray(level.tasks) || level.tasks.length !== TASKS_PER_LEVEL) {
-        throw new Error('tasks.json requires exactly 5 tasks per level.');
+        throw new Error('game_config.tasks requires exactly 5 tasks per level.');
       }
 
       return {
         level: levelNumber,
         tasks: level.tasks.map((task) => {
           if (!task || typeof task.id !== 'string' || task.id.length <= 0) {
-            throw new Error('tasks.json task id must be a non-empty string.');
+            throw new Error('game_config.tasks task id must be a non-empty string.');
           }
 
           if (seenTaskIds.has(task.id)) {

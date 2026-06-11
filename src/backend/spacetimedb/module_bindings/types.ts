@@ -60,6 +60,9 @@ export const NpcMarketPrice = __t.object("NpcMarketPrice", {
   supplyScore: __t.u64(),
   updatedAt: __t.timestamp(),
   lastTickAt: __t.timestamp(),
+  npcNeed: __t.u64(),
+  targetNeed: __t.u64(),
+  maxNeed: __t.u64(),
 });
 export type NpcMarketPrice = __Infer<typeof NpcMarketPrice>;
 

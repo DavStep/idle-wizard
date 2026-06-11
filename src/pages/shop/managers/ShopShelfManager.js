@@ -282,9 +282,7 @@ export class ShopShelfManager {
 
     this.renderSellControls(snapshot, shelf);
     const hasSellableItem = shelf.sellItems.some(
-      (item) =>
-        item.quantity > 0 &&
-        shouldShowItemInActionList(snapshot, item, item.quantity),
+      (item) => item.quantity > 0 && this.canSelectSellItem(snapshot, item),
     );
 
     this.refs.rows.forEach((refs, index) => {
@@ -390,7 +388,7 @@ export class ShopShelfManager {
           (item) =>
             item.kind === sellKind.kind &&
             item.quantity > 0 &&
-            shouldShowItemInActionList(snapshot, item, item.quantity),
+            this.canSelectSellItem(snapshot, item),
         ),
       );
     }
@@ -415,21 +413,22 @@ export class ShopShelfManager {
       const quantity = this.refs.sellControls.itemQuantities.get(item.itemTypeId);
       const display = getItemDisplay(snapshot, item, item.quantity);
       const actionVisible = shouldShowItemInActionList(snapshot, item, item.quantity);
+      const canSelectItem = this.canSelectSellItem(snapshot, item);
       row.hidden = item.kind !== this.selectedSellTab || !actionVisible;
       row.classList.toggle('is-locked', display.locked);
       row.classList.toggle('is-unknown', display.unknown);
       row.classList.toggle('is-empty', display.empty);
       label.textContent = `${display.label} `;
       setResourceColor(label, item.kind);
-      quantity.textContent = `(${display.quantity}) ${this.formatSellGold(item.sellGold)}`;
+      quantity.textContent = `${this.formatSellNeed(item.sellNeed)} ${this.formatSellGold(item.sellGold)}`;
       setResourceColorFromText(quantity, quantity.textContent);
-      button.disabled = !actionVisible;
-      button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
+      button.disabled = !canSelectItem;
+      button.setAttribute('aria-disabled', canSelectItem ? 'false' : 'true');
       button.setAttribute(
         'aria-pressed',
         selectedSlot.sellItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
-      setNotificationBadge(button, actionVisible && item.quantity > 0);
+      setNotificationBadge(button, canSelectItem && item.quantity > 0);
     }
 
     this.refs.sellControls.itemList.hidden = false;
@@ -503,6 +502,7 @@ export class ShopShelfManager {
     const sellItem = this.getSellItem(shelf, slot.sellItemTypeId);
     const quantity = Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
     const sellGold = slot.sellGold ?? sellItem?.sellGold;
+    const sellNeed = slot.sellNeed ?? sellItem?.sellNeed;
     const displayItem = sellItem ?? {
       itemTypeId: slot.sellItemTypeId,
       key: slot.sellKey,
@@ -512,8 +512,8 @@ export class ShopShelfManager {
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
       : { label: slot.sellLabel, quantity: String(quantity) };
-    const itemText = Number.isFinite(quantity)
-      ? `${display.label} (${display.quantity})`
+    const itemText = Number.isFinite(sellNeed)
+      ? `${display.label} need ${sellNeed}`
       : display.label;
 
     if (!Number.isFinite(sellGold)) {
@@ -546,6 +546,23 @@ export class ShopShelfManager {
     }
 
     return `${sellGold} gold`;
+  }
+
+  canSelectSellItem(snapshot, item) {
+    return (
+      shouldShowItemInActionList(snapshot, item, item.quantity) &&
+      Number.isFinite(item.sellGold) &&
+      Number.isFinite(item.sellNeed) &&
+      item.sellNeed > 0
+    );
+  }
+
+  formatSellNeed(sellNeed) {
+    if (!Number.isFinite(sellNeed)) {
+      return 'need ?';
+    }
+
+    return `need ${sellNeed}`;
   }
 
   applyPopupVisibility() {

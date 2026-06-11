@@ -24,6 +24,10 @@ export class BrewingCauldronEntityManager {
     ecsManagers.components.add(this.entityId, BrewingCauldron);
   }
 
+  configureCapacity({ maxIngredients = this.maxIngredients } = {}) {
+    this.maxIngredients = maxIngredients;
+  }
+
   addIngredient(itemTypeId) {
     if (this.getIngredientCount() >= this.maxIngredients) {
       return false;

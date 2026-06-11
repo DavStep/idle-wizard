@@ -6,6 +6,7 @@ import { GardenSnapshotManager } from './managers/GardenSnapshotManager.js';
 import { GardenTileEntityManager } from './managers/GardenTileEntityManager.js';
 import { GardenTilePurchaseManager } from './managers/GardenTilePurchaseManager.js';
 import { gardenTilePhases } from './components/GardenComponents.js';
+import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class GardenFacade {
   static explain =
@@ -50,6 +51,24 @@ export class GardenFacade {
   initialize(ecsManagers) {
     this.gardenTileEntityManager.initialize(ecsManagers);
     this.gardenProcessManager.register(ecsManagers.systems);
+  }
+
+  applyRuntimeConfig(snapshot = {}) {
+    const balance = parseGameConfig(snapshot, 'garden');
+
+    if (!balance) {
+      return;
+    }
+
+    try {
+      this.gardenBalanceManager.setRuntimeBalance(balance);
+      this.gardenTileEntityManager.configureCapacity({
+        initialUnlockedTiles: this.gardenBalanceManager.getInitialUnlockedTiles(),
+        maxTiles: this.gardenBalanceManager.getMaxTiles(),
+      });
+    } catch {
+      return;
+    }
   }
 
   buyNextTile() {

@@ -4,6 +4,7 @@ import { ResearchManaEffectManager } from './managers/ResearchManaEffectManager.
 import { ResearchPurchaseManager } from './managers/ResearchPurchaseManager.js';
 import { ResearchSnapshotManager } from './managers/ResearchSnapshotManager.js';
 import { ResearchStateEntityManager } from './managers/ResearchStateEntityManager.js';
+import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ResearchFacade {
   static explain =
@@ -47,6 +48,16 @@ export class ResearchFacade {
   }
 
   applyRuntimeConfig(snapshot = {}) {
+    const balance = parseGameConfig(snapshot, 'research');
+
+    if (balance) {
+      try {
+        this.researchBalanceManager.setRuntimeBalance(balance);
+      } catch {
+        return;
+      }
+    }
+
     this.researchBalanceManager.setRuntimeConfigs(snapshot?.researchConfigs);
 
     if (this.initialized) {

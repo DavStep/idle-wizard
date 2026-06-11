@@ -1,6 +1,5 @@
 export class ShopNpcPriceManager {
-  constructor({ shopBalanceManager, npcMarketFacade = null }) {
-    this.shopBalanceManager = shopBalanceManager;
+  constructor({ npcMarketFacade = null } = {}) {
     this.npcMarketFacade = npcMarketFacade;
   }
 
@@ -15,7 +14,7 @@ export class ShopNpcPriceManager {
       return Math.floor(dynamicPrice);
     }
 
-    return this.shopBalanceManager.getSellGold(item.kind, item);
+    return null;
   }
 
   getNpcSellPriceGold(item) {
@@ -25,7 +24,29 @@ export class ShopNpcPriceManager {
       return Math.floor(dynamicPrice);
     }
 
-    return this.getNpcBuyPriceGold(item) + 1;
+    return null;
+  }
+
+  getNpcNeed(item) {
+    const npcNeed = this.npcMarketFacade?.getNpcNeed?.(item.key);
+
+    if (Number.isFinite(npcNeed) && npcNeed >= 0) {
+      return Math.floor(npcNeed);
+    }
+
+    return null;
+  }
+
+  canSellToNpc(item) {
+    const npcBuyPriceGold = this.getNpcBuyPriceGold(item);
+    const npcNeed = this.getNpcNeed(item);
+
+    return (
+      Number.isFinite(npcBuyPriceGold) &&
+      npcBuyPriceGold > 0 &&
+      Number.isFinite(npcNeed) &&
+      npcNeed > 0
+    );
   }
 
   recordSellToNpc(item, quantity = 1) {

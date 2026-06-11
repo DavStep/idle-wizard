@@ -45,6 +45,10 @@ export class NpcMarketBackendFacade {
     return this.getPrice(itemKey)?.npcSellPriceGold ?? null;
   }
 
+  getNpcNeed(itemKey) {
+    return this.getPrice(itemKey)?.npcNeed ?? null;
+  }
+
   sellToNpc({ itemKey, quantity = 1 }) {
     return this.tradeManager.sellToNpc({ itemKey, quantity });
   }

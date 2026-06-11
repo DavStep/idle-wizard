@@ -88,7 +88,7 @@ The server module defines:
 - `world_chat`: one row per chat message, with sender identity, username, sender player level, body, and timestamp.
 - `player_shop_listing`: one row per published player market stand, keyed by seller identity and slot number.
 - `player_shop_proceeds`: one row per seller with unclaimed gold from player shop sales.
-- `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC stock, and rolling demand/supply scores.
+- `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC need, and rolling fulfilled/supply scores.
 - `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
 - `npc_market_admin`: identities allowed to change NPC market config.
 
@@ -102,11 +102,11 @@ The server module defines:
 
 Player market exchange reducers are locked down until inventory and spendable gold are server-authoritative. On connect, the module clears old `player_shop_listing`, `player_shop_proceeds`, and `player_shop_trade` rows so stale poisoned market state cannot be claimed.
 
-`sell_to_npc` and `buy_from_npc` are currently no-ops, so clients cannot move shared NPC prices for free. `tick_npc_market` still maintains catalog rows, and connect-time sanitation resets old client-driven pressure/price drift back to base quotes.
+`sell_to_npc` records a one-way NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, and recomputes the backend quote. `tick_npc_market` replenishes `npc_need` over time and recomputes prices from current need. `buy_from_npc` is rejected because the current game has no NPC seller flow.
 
-NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are still computed from the market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
+NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are computed from the need-derived market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
 
-`upsert_game_config` accepts only known config keys (`tasks`, `playerLevel`) and validates bounded schemas before storing JSON. Existing invalid rows are reset to the built-in defaults on connect.
+`upsert_game_config` accepts only known config keys (`tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `items`, `potionRecipes`) and validates bounded schemas before storing JSON. Existing invalid rows are reset to the built-in defaults on connect.
 
 Example local calls after adding your identity hex to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` and publishing the updated module:
 
@@ -127,6 +127,8 @@ SELECT * FROM world_chat
 SELECT * FROM player_shop_listing
 SELECT * FROM player_shop_proceeds
 SELECT * FROM npc_market_price
+SELECT * FROM research_config
+SELECT * FROM game_config
 ```
 
 The `player` row is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals still call their shared reducer, but generated-gold leaderboard values stay locked at safe defaults until gold is server-authoritative. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.

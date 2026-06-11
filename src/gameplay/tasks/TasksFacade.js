@@ -2,6 +2,7 @@ import { TaskBalanceManager } from './managers/TaskBalanceManager.js';
 import { TaskFillManager } from './managers/TaskFillManager.js';
 import { TaskSnapshotManager } from './managers/TaskSnapshotManager.js';
 import { TaskStateEntityManager } from './managers/TaskStateEntityManager.js';
+import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
@@ -68,19 +69,5 @@ export class TasksFacade {
     }
 
     this.taskStateEntityManager.applySnapshot(snapshot);
-  }
-}
-
-function parseGameConfig(snapshot, configKey) {
-  const config = snapshot?.gameConfigs?.find?.((row) => row?.configKey === configKey);
-
-  if (!config?.configJson) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(config.configJson);
-  } catch {
-    return null;
   }
 }

@@ -1,6 +1,7 @@
 import { InventoryStackManager } from './managers/InventoryStackManager.js';
 import { ItemDefinitionManager } from './managers/ItemDefinitionManager.js';
 import { PotionRecipeManager } from './managers/PotionRecipeManager.js';
+import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ItemsFacade {
   static explain =
@@ -18,6 +19,23 @@ export class ItemsFacade {
 
   initialize(ecsManagers) {
     this.inventoryStackManager.initialize(ecsManagers);
+  }
+
+  applyRuntimeConfig(snapshot = {}) {
+    const itemsConfig = parseGameConfig(snapshot, 'items');
+    const potionRecipesConfig = parseGameConfig(snapshot, 'potionRecipes');
+
+    try {
+      if (itemsConfig) {
+        this.itemDefinitionManager.setRuntimeConfig(itemsConfig);
+      }
+
+      if (potionRecipesConfig) {
+        this.potionRecipeManager.setRuntimeConfig(potionRecipesConfig);
+      }
+    } catch {
+      return;
+    }
   }
 
   addItem(itemTypeId, quantity) {

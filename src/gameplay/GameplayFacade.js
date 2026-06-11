@@ -116,6 +116,10 @@ export class GameplayFacade {
   }
 
   applyRuntimeConfig(snapshot = {}) {
+    this.itemsFacade.applyRuntimeConfig(snapshot);
+    this.brewingFacade.applyRuntimeConfig(snapshot);
+    this.gardenFacade.applyRuntimeConfig(snapshot);
+    this.shopFacade.applyRuntimeConfig(snapshot);
     this.researchFacade.applyRuntimeConfig(snapshot);
     this.tasksFacade.applyRuntimeConfig(snapshot);
     this.playerLevelFacade.applyRuntimeConfig(snapshot);

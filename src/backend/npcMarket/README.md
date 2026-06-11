@@ -1,5 +1,5 @@
 # NPC Market Backend
 
-Shares NPC bazar prices and stock through SpacetimeDB.
+Shares NPC bazar prices and item need through SpacetimeDB.
 
-The NPC market is separate from player shops. Player-to-NPC and NPC-to-player pressure writes are currently no-ops so custom clients cannot move shared prices without server-authoritative inventory and gold.
+The NPC market is separate from player shops. It is a one-way buyer: players sell items to NPC demand. Selling reduces `npcNeed`; market ticks replenish need; backend-owned `npcBuyPriceGold` changes from that need. Clients should only display backend quotes and should not fall back to local price balance.

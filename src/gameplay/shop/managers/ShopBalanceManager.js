@@ -1,14 +1,27 @@
-import shopBalance from '../shop-balance.json';
+const DEFAULT_SHOP_BALANCE = {
+  shopShelf: {
+    initialUnlockedSlots: 1,
+    slotCostsGold: [0, 50, 150, 400, 1000],
+    autoSellSeconds: 5,
+  },
+};
 
 const MAX_SHELF_SLOTS = 5;
 
 export class ShopBalanceManager {
-  constructor({ balance = shopBalance } = {}) {
+  constructor({ balance = DEFAULT_SHOP_BALANCE } = {}) {
+    this.setBalance(balance);
+  }
+
+  setRuntimeBalance(balance) {
+    this.setBalance(balance);
+  }
+
+  setBalance(balance) {
     this.balance = balance;
     this.slotCostsGold = this.readSlotCostsGold();
     this.initialUnlockedSlots = this.readInitialUnlockedSlots();
     this.autoSellSeconds = this.readAutoSellSeconds();
-    this.sellGoldByKind = this.readSellGoldByKind();
   }
 
   getMaxShelfSlots() {
@@ -31,15 +44,11 @@ export class ShopBalanceManager {
     return this.autoSellSeconds;
   }
 
-  getSellGold(kind, item = null) {
-    return item?.baseSellPrice ?? this.sellGoldByKind[kind] ?? 0;
-  }
-
   readSlotCostsGold() {
     const slotCosts = this.balance?.shopShelf?.slotCostsGold;
 
     if (!Array.isArray(slotCosts)) {
-      throw new Error('shop-balance.json requires shopShelf.slotCostsGold.');
+      throw new Error('game_config.shop requires shopShelf.slotCostsGold.');
     }
 
     if (slotCosts.length > MAX_SHELF_SLOTS) {
@@ -47,7 +56,7 @@ export class ShopBalanceManager {
     }
 
     if (slotCosts.some((cost) => !Number.isFinite(cost) || cost < 0)) {
-      throw new Error('shop-balance.json slot costs must be zero or positive numbers.');
+      throw new Error('game_config.shop slot costs must be zero or positive numbers.');
     }
 
     return [...slotCosts];
@@ -61,7 +70,7 @@ export class ShopBalanceManager {
       initialUnlockedSlots < 0 ||
       initialUnlockedSlots > this.getMaxShelfSlots()
     ) {
-      throw new Error('shop-balance.json initial unlocked slots must fit market stands.');
+      throw new Error('game_config.shop initial unlocked slots must fit market stands.');
     }
 
     return initialUnlockedSlots;
@@ -71,25 +80,10 @@ export class ShopBalanceManager {
     const autoSellSeconds = this.balance?.shopShelf?.autoSellSeconds;
 
     if (!Number.isFinite(autoSellSeconds) || autoSellSeconds <= 0) {
-      throw new Error('shop-balance.json requires positive shopShelf.autoSellSeconds.');
+      throw new Error('game_config.shop requires positive shopShelf.autoSellSeconds.');
     }
 
     return autoSellSeconds;
   }
 
-  readSellGoldByKind() {
-    const sellGoldByKind = this.balance?.shopShelf?.sellGoldByKind;
-
-    if (!sellGoldByKind || typeof sellGoldByKind !== 'object') {
-      throw new Error('shop-balance.json requires shopShelf.sellGoldByKind.');
-    }
-
-    for (const amount of Object.values(sellGoldByKind)) {
-      if (!Number.isFinite(amount) || amount <= 0) {
-        throw new Error('shop-balance.json sell gold values must be positive numbers.');
-      }
-    }
-
-    return { ...sellGoldByKind };
-  }
 }

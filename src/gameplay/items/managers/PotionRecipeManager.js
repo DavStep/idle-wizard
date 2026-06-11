@@ -272,14 +272,88 @@ const recipeCatalog = [
 export class PotionRecipeManager {
   constructor({ itemDefinitionManager }) {
     this.itemDefinitionManager = itemDefinitionManager;
+    this.recipeCatalog = recipeCatalog;
+  }
+
+  setRuntimeConfig(config = {}) {
+    const recipes = Array.isArray(config) ? config : config.recipes;
+
+    if (!Array.isArray(recipes) || recipes.length <= 0) {
+      throw new Error('Potion recipe config requires recipes.');
+    }
+
+    const nextRecipes = recipes.map((recipe) => this.readRecipe(recipe));
+
+    for (const recipe of nextRecipes) {
+      this.resolveRecipe(recipe);
+    }
+
+    this.recipeCatalog = nextRecipes;
+  }
+
+  readRecipe(recipe) {
+    if (!recipe || typeof recipe !== 'object') {
+      throw new Error('Invalid potion recipe config.');
+    }
+
+    const potionKey = this.readNonEmptyString(recipe.potionKey);
+    const manaCost = this.readNonNegativeNumber(recipe.manaCost);
+    const brewDurationMs = this.readPositiveNumber(recipe.brewDurationMs);
+    const ingredients = recipe.ingredients;
+
+    if (!Array.isArray(ingredients) || ingredients.length <= 0) {
+      throw new Error('Potion recipe config requires ingredients.');
+    }
+
+    return {
+      potionKey,
+      manaCost,
+      brewDurationMs,
+      ingredients: ingredients.map((ingredient) => ({
+        itemKey: this.readNonEmptyString(ingredient?.itemKey),
+        quantity: this.readPositiveInteger(ingredient?.quantity),
+      })),
+    };
+  }
+
+  readNonEmptyString(value) {
+    if (typeof value !== 'string' || value.trim().length <= 0) {
+      throw new Error('Potion recipe config requires non-empty strings.');
+    }
+
+    return value.trim();
+  }
+
+  readNonNegativeNumber(value) {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error('Potion recipe config requires non-negative numbers.');
+    }
+
+    return value;
+  }
+
+  readPositiveNumber(value) {
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error('Potion recipe config requires positive numbers.');
+    }
+
+    return value;
+  }
+
+  readPositiveInteger(value) {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new Error('Potion recipe config requires positive integers.');
+    }
+
+    return value;
   }
 
   getPotionRecipes() {
-    return recipeCatalog.map((recipe) => this.resolveRecipe(recipe));
+    return this.recipeCatalog.map((recipe) => this.resolveRecipe(recipe));
   }
 
   getPotionRecipe(potionKey) {
-    const recipe = recipeCatalog.find((candidate) => candidate.potionKey === potionKey);
+    const recipe = this.recipeCatalog.find((candidate) => candidate.potionKey === potionKey);
 
     if (!recipe) {
       throw new Error(`Unknown potion recipe: ${potionKey}`);
@@ -289,7 +363,7 @@ export class PotionRecipeManager {
   }
 
   getPotionRecipeByIngredientSequence(ingredientItemTypeIds) {
-    const recipe = recipeCatalog.find((candidate) =>
+    const recipe = this.recipeCatalog.find((candidate) =>
       this.hasIngredientSequence(candidate, ingredientItemTypeIds),
     );
 
