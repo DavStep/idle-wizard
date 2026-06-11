@@ -260,6 +260,80 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
   });
 
+  it('backfills missed level crystals when loading old saves', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 2,
+        mana: {},
+        gold: {},
+        crystal: { current: 0 },
+        inventory: [],
+        research: { completedIds: [] },
+        tasks: {
+          currentLevel: 3,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
+  });
+
+  it('does not duplicate existing level crystals when loading saves', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 2,
+        mana: {},
+        gold: {},
+        crystal: { current: 2 },
+        inventory: [],
+        research: { completedIds: [] },
+        tasks: {
+          currentLevel: 3,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
+  });
+
+  it('counts spent crystal research when backfilling old saves', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 2,
+        mana: {},
+        gold: {},
+        crystal: { current: 0 },
+        inventory: [],
+        research: {
+          completedIds: [automationResearchIds.autoPlantTile(1)],
+        },
+        tasks: {
+          currentLevel: 3,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
+  });
+
   it('uses runtime player-level config for crystal level-up rewards', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -281,6 +355,27 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
+  });
+
+  it('keeps crystal level-up rewards when legacy runtime config omits crystal', () => {
+    const { crystal, ...legacyPlayerLevelBalance } = DEFAULT_PLAYER_LEVEL_BALANCE;
+    const { gameplayFacade } = createGameplay();
+
+    expect(crystal.perLevel).toBe(1);
+
+    gameplayFacade.applyRuntimeConfig({
+      gameConfigs: [
+        {
+          configKey: 'playerLevel',
+          configJson: JSON.stringify(legacyPlayerLevelBalance),
+        },
+      ],
+    });
+
+    finishCurrentTaskLevel(gameplayFacade);
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
   });
 
   it('uses SpacetimeDB runtime config for balance and catalog data', () => {

@@ -308,13 +308,15 @@ export class WorkshopTradeAllianceManager {
     const form = document.createElement('form');
     form.className = 'workshop-page__trade-alliance-form';
     form.addEventListener('submit', (event) => this.onCreateSubmit(event, form));
+    const submitButton = this.createSubmitButton('create');
+    this.bindSubmitPressStart(submitButton, form);
 
     form.append(
       this.createInputField('name', 'name', { maxLength: 24 }),
       this.createInputField('tag', 'tag', { maxLength: 5, autocapitalize: 'characters' }),
       this.createInputField('description', 'description', { maxLength: 120 }),
       this.createJoinModeField('join mode'),
-      this.createSubmitButton('create'),
+      submitButton,
     );
 
     this.refs.content.replaceChildren(form);
@@ -550,6 +552,8 @@ export class WorkshopTradeAllianceManager {
     const form = document.createElement('form');
     form.className = 'workshop-page__trade-alliance-form';
     form.addEventListener('submit', (event) => this.onSettingsSubmit(event, form));
+    const submitButton = this.createSubmitButton('save');
+    this.bindSubmitPressStart(submitButton, form);
 
     form.append(
       this.createInputField('name', 'name', { value: alliance.name, maxLength: 24 }),
@@ -564,10 +568,8 @@ export class WorkshopTradeAllianceManager {
       }),
       this.createInputField('notice', 'notice', { value: alliance.notice, maxLength: 160 }),
       this.createJoinModeField('join mode', alliance.joinMode),
-      this.createSubmitButton('save'),
-      this.createDangerButton('disband', () =>
-        this.setStatus('dashboard only for disband'),
-      ),
+      submitButton,
+      this.createDangerButton('disband', () => this.onDisband()),
     );
 
     this.refs.content.replaceChildren(form);
@@ -638,12 +640,37 @@ export class WorkshopTradeAllianceManager {
     return button;
   }
 
+  bindSubmitPressStart(button, form) {
+    const submit = (event) => {
+      if (button.disabled) {
+        return;
+      }
+
+      event.preventDefault();
+      this.submitForm(form);
+    };
+
+    button.addEventListener('pointerdown', submit);
+    if (typeof window.PointerEvent !== 'function') {
+      button.addEventListener('touchstart', submit, { passive: false });
+    }
+  }
+
+  submitForm(form) {
+    if (typeof form.requestSubmit === 'function') {
+      form.requestSubmit();
+      return;
+    }
+
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+  }
+
   createDangerButton(label, onClick) {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__trade-alliance-wide-button';
     button.type = 'button';
     button.textContent = label;
-    button.addEventListener('click', onClick);
+    button.addEventListener('click', () => void onClick());
     return button;
   }
 
@@ -755,6 +782,17 @@ export class WorkshopTradeAllianceManager {
     const result = await action();
     this.setStatus(result?.ok ? '' : this.formatFailure(result?.reason));
     return result;
+  }
+
+  onDisband() {
+    const memberCount = Number(this.lastSnapshot.ownAlliance?.memberCount ?? 0);
+
+    if (memberCount > 1) {
+      this.setStatus('remove members first');
+      return null;
+    }
+
+    return this.runAction(() => this.tradeAllianceFacade.leaveAlliance());
   }
 
   setStatus(text) {

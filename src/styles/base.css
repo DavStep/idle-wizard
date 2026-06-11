@@ -1630,6 +1630,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.workshop-page__trade-alliance-wide-button {
+  box-sizing: border-box;
   width: 100%;
   margin: 0;
 }

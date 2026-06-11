@@ -77,6 +77,15 @@ export class ResearchFacade {
     return this.researchDefinitionManager.getResearch(researchId)?.label ?? researchId;
   }
 
+  getCompletedCrystalCostTotal() {
+    return this.researchStateEntityManager
+      .getCompletedResearchIds()
+      .reduce(
+        (total, researchId) => total + this.researchBalanceManager.getCostCrystal(researchId),
+        0,
+      );
+  }
+
   getSnapshot() {
     return this.researchSnapshotManager.getSnapshot();
   }

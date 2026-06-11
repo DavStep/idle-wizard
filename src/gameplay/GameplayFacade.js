@@ -32,15 +32,17 @@ export class GameplayFacade {
     this.playerLevelFacade = new PlayerLevelFacade({
       tasksFacade: this.tasksFacade,
     });
-    this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
-      crystalFacade: this.crystalFacade,
-      playerLevelFacade: this.playerLevelFacade,
-    });
     this.researchFacade = new ResearchFacade({
       crystalFacade: this.crystalFacade,
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
+    });
+    this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
+      crystalFacade: this.crystalFacade,
+      playerLevelFacade: this.playerLevelFacade,
+      getCompletedCrystalResearchCostTotal: () =>
+        this.researchFacade.getCompletedCrystalCostTotal(),
     });
     this.brewingFacade = new BrewingFacade({
       itemsFacade: this.itemsFacade,
@@ -173,9 +175,15 @@ export class GameplayFacade {
     this.gardenFacade.initialize(ecsManagers);
     this.automationFacade.initialize(ecsManagers);
     const loaded = this.persistenceFacade.load();
+    const backfilledCrystal = loaded
+      ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
+      : 0;
     this.syncPlayerLevelManaEffects();
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
+      if (backfilledCrystal > 0) {
+        this.persistenceFacade.save();
+      }
     }
     this.persistenceFacade.start();
     this.initialized = true;
@@ -483,10 +491,16 @@ export class GameplayFacade {
 
   loadPersistenceSave(save, ecsFacade) {
     const loaded = this.persistenceFacade.loadSave(save);
+    const backfilledCrystal = loaded
+      ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
+      : 0;
     this.syncPlayerLevelManaEffects();
 
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
+      if (backfilledCrystal > 0) {
+        this.persistenceFacade.save();
+      }
     }
 
     this.publishSnapshot();

@@ -85,7 +85,12 @@ The server module defines:
 - `player`: one row per SpacetimeDB identity, with `username`, visual preferences, player level, connection state, and timestamps.
 - `player_gameplay_save`: one row per identity, with the full gameplay save JSON and update time.
 - `leaderboard`: one row per identity, with `username`, player level, and `totalIncome`.
-- `world_chat`: one row per chat message, with sender identity, username, sender player level, body, and timestamp.
+- `world_chat`: one row per chat message, with sender identity, username, sender player level, alliance tag, body, and timestamp.
+- `trade_alliance`: one row per alliance, with unique tag, leader identity, join mode, member count, income totals, season key, and day key.
+- `trade_alliance_member`: one row per member identity, with alliance id, username/player-level snapshot, role, and contribution totals.
+- `trade_alliance_application`: pending join requests for apply-mode alliances.
+- `trade_alliance_quest_progress` and `trade_alliance_quest_contribution`: daily alliance quest progress and per-player contribution rows.
+- `trade_alliance_chat` and `trade_alliance_reward_inbox`: private base tables exposed through sender-scoped views for the current member/reward recipient.
 - `player_shop_listing`: one row per published player market stand, keyed by seller identity and slot number.
 - `player_shop_proceeds`: one row per seller with unclaimed gold from player shop sales.
 - `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC need, and rolling fulfilled/supply scores.
@@ -96,7 +101,7 @@ The server module defines:
 
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for this subscription before opening the room gate, applies the saved gameplay snapshot, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
-`set_total_generated_gold` accepts client-reported lifetime generated gold, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap.
+`set_total_generated_gold` accepts client-reported lifetime generated gold, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap. The accepted delta also raises the player's alliance income and current daily alliance-income quest progress.
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
@@ -106,7 +111,7 @@ Player market exchange reducers are locked down until inventory and spendable go
 
 NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are computed from the need-derived market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
 
-`upsert_game_config` accepts only known config keys (`tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `items`, `potionRecipes`) and validates bounded schemas before storing JSON. Existing invalid rows are reset to the built-in defaults on connect.
+`upsert_game_config` accepts only known config keys (`tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, `potionRecipes`) and validates bounded schemas before storing JSON. Existing invalid rows are reset to the built-in defaults on connect. The `tradeAlliance` config currently owns `dailyQuests`; the supported quest type is `allianceIncome`.
 
 Example local calls after adding your identity hex to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` and publishing the updated module:
 
@@ -129,8 +134,17 @@ SELECT * FROM player_shop_proceeds
 SELECT * FROM npc_market_price
 SELECT * FROM research_config
 SELECT * FROM game_config
+SELECT * FROM trade_alliance
+SELECT * FROM trade_alliance_member
+SELECT * FROM trade_alliance_application
+SELECT * FROM trade_alliance_quest_progress
+SELECT * FROM trade_alliance_quest_contribution
+SELECT * FROM own_trade_alliance_chat
+SELECT * FROM own_trade_alliance_reward_inbox
 ```
 
 The `player` row is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals call `set_total_generated_gold`, and the server stores the capped lifetime value in `leaderboard.totalIncome`. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.
+
+Trade alliance client code subscribes to public alliance/member/application/progress rows plus sender-scoped private views for alliance chat and reward inbox. Claiming a quest creates a reward inbox row on the server; the client grants the local crystal reward, then calls `collect_trade_alliance_reward` to mark it collected.

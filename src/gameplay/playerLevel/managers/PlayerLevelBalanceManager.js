@@ -407,7 +407,7 @@ export class PlayerLevelBalanceManager {
     return {
       perLevel:
         perLevel === undefined
-          ? 0
+          ? DEFAULT_PLAYER_LEVEL_BALANCE.crystal.perLevel
           : this.readNonNegativeInteger(perLevel, 'crystal.perLevel'),
     };
   }

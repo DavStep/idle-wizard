@@ -150,6 +150,7 @@
 - Dialog close controls should sit as normal-weight border labels, like titles but not bold, not as boxed buttons inside the panel.
 - Room UI layer uses `box-sizing: content-box`; wrappers that center fixed-width `.style-dialog` content must account for dialog padding and borders.
 - Padded inputs inside flex columns need `box-sizing: border-box` or explicit width math; content-box `width: 100%` overflows columns.
+- Full-width padded dialog buttons also need `box-sizing: border-box`; otherwise their right borders clip outside the popup content.
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
@@ -222,8 +223,12 @@
 - Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
 - Generated-gold leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedGold` field.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
-- Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
+- Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
+- When adding new fields to SpacetimeDB `game_config` JSON, server normalization and client readers must default legacy rows; otherwise old hosted config can silently disable the new behavior.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
+- World chat rows store `allianceTag` at send time; chat display should format tagged senders as `[TAG] username(lvl)`.
+- Trade alliance daily quests are configured by `game_config.tradeAlliance.dailyQuests`; current supported server-verified source is capped `allianceIncome`.
+- Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.

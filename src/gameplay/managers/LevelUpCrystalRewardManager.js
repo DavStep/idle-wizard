@@ -1,7 +1,12 @@
 export class LevelUpCrystalRewardManager {
-  constructor({ crystalFacade, playerLevelFacade }) {
+  constructor({
+    crystalFacade,
+    playerLevelFacade,
+    getCompletedCrystalResearchCostTotal = () => 0,
+  }) {
     this.crystalFacade = crystalFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.getCompletedCrystalResearchCostTotal = getCompletedCrystalResearchCostTotal;
   }
 
   grantForLevelRange(levelBefore, levelAfter) {
@@ -15,5 +20,26 @@ export class LevelUpCrystalRewardManager {
     }
 
     return crystalReward;
+  }
+
+  grantMissingForCurrentLevel() {
+    const currentLevel = this.playerLevelFacade.getSnapshot().currentLevel ?? 1;
+    const earnedCrystal = this.playerLevelFacade.getCrystalRewardForLevelRange(1, currentLevel);
+    const spentCrystal = Math.max(
+      0,
+      Math.floor(Number(this.getCompletedCrystalResearchCostTotal()) || 0),
+    );
+    const minimumCurrentCrystal = Math.max(0, earnedCrystal - spentCrystal);
+    const currentCrystal = Math.max(
+      0,
+      Math.floor(Number(this.crystalFacade.getSnapshot().current) || 0),
+    );
+    const missingCrystal = Math.max(0, minimumCurrentCrystal - currentCrystal);
+
+    if (missingCrystal > 0) {
+      this.crystalFacade.add(missingCrystal);
+    }
+
+    return missingCrystal;
   }
 }

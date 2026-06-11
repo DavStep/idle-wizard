@@ -1922,6 +1922,86 @@ function createWorldChatFacadeFake({ messages } = {}) {
   };
 }
 
+function createTradeAllianceFacadeFake({ memberCount = 1 } = {}) {
+  const profileUpdates = [];
+  let leaveCount = 0;
+  let snapshot = {
+    connected: true,
+    alliances: [],
+    ownAlliance: {
+      allianceId: 'alliance-1',
+      name: 'All Seeing Void',
+      tag: 'VOID',
+      description: 'Yes',
+      notice: '',
+      joinMode: 'apply',
+      memberCount,
+      seasonIncome: 0,
+      dailyIncome: 0,
+    },
+    ownMember: {
+      allianceId: 'alliance-1',
+      memberIdentity: 'self',
+      username: 'wizard',
+      playerLevel: 2,
+      role: 'tradeMaster',
+      dailyContribution: 0,
+    },
+    ownRole: 'tradeMaster',
+    canEditSettings: true,
+    canManageRoles: true,
+    canManageApplications: true,
+    members: [],
+    applications: [],
+    quests: [],
+    contributions: [],
+  };
+  const listeners = new Set();
+
+  const publish = () => {
+    for (const listener of listeners) {
+      listener(snapshot);
+    }
+  };
+
+  return {
+    getSnapshot: () => snapshot,
+    getProfileUpdates: () => profileUpdates,
+    getLeaveCount: () => leaveCount,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      listener(snapshot);
+      return () => listeners.delete(listener);
+    },
+    updateProfile: async (profile) => {
+      profileUpdates.push(profile);
+      snapshot = {
+        ...snapshot,
+        ownAlliance: {
+          ...snapshot.ownAlliance,
+          ...profile,
+        },
+      };
+      publish();
+      return { ok: true };
+    },
+    leaveAlliance: async () => {
+      leaveCount += 1;
+      snapshot = {
+        ...snapshot,
+        ownAlliance: null,
+        ownMember: null,
+        ownRole: null,
+        canEditSettings: false,
+        canManageRoles: false,
+        canManageApplications: false,
+      };
+      publish();
+      return { ok: true };
+    },
+  };
+}
+
 function createPlayerShopFacadeFake() {
   const snapshot = {
     connected: true,
@@ -3198,6 +3278,126 @@ describe('PagesFacade', () => {
     popup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(true);
+  });
+
+  it('saves trade alliance settings on touch before mobile keyboard blur can move layout', async () => {
+    const stage = document.createElement('section');
+    const tradeAllianceFacade = createTradeAllianceFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const settingsTab = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button'),
+    ].find((button) => button.textContent === 'settings');
+
+    settingsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    popup.querySelector('input[name="name"]').value = 'Tap Void';
+    popup.querySelector('input[name="tag"]').value = 'TAP';
+    popup.querySelector('input[name="description"]').value = 'tap save';
+    popup.querySelector('input[name="notice"]').value = 'mobile';
+    popup.querySelector('select[name="joinMode"]').value = 'closed';
+
+    const saveButton = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-wide-button'),
+    ].find((button) => button.textContent === 'save');
+    const pointerDown = new window.Event('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    saveButton.dispatchEvent(pointerDown);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(pointerDown.defaultPrevented).toBe(true);
+    expect(tradeAllianceFacade.getProfileUpdates()).toEqual([
+      {
+        name: 'Tap Void',
+        tag: 'TAP',
+        description: 'tap save',
+        notice: 'mobile',
+        joinMode: 'closed',
+      },
+    ]);
+    expect(popup.querySelector('.style-box__title').textContent).toBe('Tap Void [TAP]');
+  });
+
+  it('disbands a solo trade alliance from settings', async () => {
+    const stage = document.createElement('section');
+    const tradeAllianceFacade = createTradeAllianceFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const settingsTab = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button'),
+    ].find((button) => button.textContent === 'settings');
+
+    settingsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const disbandButton = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-wide-button'),
+    ].find((button) => button.textContent === 'disband');
+
+    disbandButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(tradeAllianceFacade.getLeaveCount()).toBe(1);
+    expect(popup.querySelector('.style-box__title').textContent).toBe('trade alliance');
+    expect(
+      [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['browse', 'create']);
+  });
+
+  it('leaves a solo trade alliance from home', async () => {
+    const stage = document.createElement('section');
+    const tradeAllianceFacade = createTradeAllianceFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const leaveButton = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-wide-button'),
+    ].find((button) => button.textContent === 'leave');
+
+    leaveButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(tradeAllianceFacade.getLeaveCount()).toBe(1);
+    expect(popup.querySelector('.style-box__title').textContent).toBe('trade alliance');
   });
 
   it('shows discoveries tabs and revealed unknown potion recipes', () => {

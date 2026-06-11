@@ -3,6 +3,7 @@ import { schema, table, t, type ReducerCtx, type InferSchema } from 'spacetimedb
 
 const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
+const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
 const MAX_REPORTED_PLAYER_LEVEL = 20;
@@ -2118,8 +2119,37 @@ function validateGameConfigJson(configKey: string, configJson: string): string {
   }
 
   validateGameConfigValue(configKey, parsedConfig);
+  const normalizedValue = normalizeGameConfigJson(configKey, parsedConfig, value);
 
-  return value;
+  if (normalizedValue.length > MAX_GAME_CONFIG_JSON_LENGTH) {
+    throw new Error('Invalid game config JSON length.');
+  }
+
+  return normalizedValue;
+}
+
+function normalizeGameConfigJson(
+  configKey: string,
+  parsedConfig: unknown,
+  originalJson: string,
+): string {
+  if (configKey !== 'playerLevel' || !isRecord(parsedConfig)) {
+    return originalJson;
+  }
+
+  if (readPlayerLevelCrystalPerLevel(parsedConfig) !== undefined) {
+    return originalJson;
+  }
+
+  const crystal = isRecord(parsedConfig.crystal) ? parsedConfig.crystal : {};
+
+  return JSON.stringify({
+    ...parsedConfig,
+    crystal: {
+      ...crystal,
+      perLevel: DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL,
+    },
+  });
 }
 
 function validatePlayerGameplaySaveJson(
@@ -2162,16 +2192,22 @@ function normalizePlayerGameplaySave(
   const previousLevel = readSavedCurrentLevel(previousSaveJson);
   const tasks = normalizeSaveTasks(save.tasks, taskCatalog, previousLevel);
   const levelLimits = getSaveLevelLimits(ctx, tasks.currentLevel);
+  const research = normalizeSaveResearch(save.research);
+  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(
+    ctx,
+    tasks.currentLevel,
+    research.completedIds,
+  );
 
   return {
     version: 2,
     savedAt: normalizeSaveTimestamp(ctx),
     mana: normalizeSaveResource(save.mana),
     gold: normalizeSaveGold(save.gold),
-    crystal: normalizeSaveCrystal(save.crystal),
+    crystal: normalizeSaveCrystal(save.crystal, minimumCurrentCrystal),
     logs: normalizeSaveLogs(save.logs),
     inventory: normalizeSaveInventory(save.inventory, itemCatalog),
-    research: normalizeSaveResearch(save.research),
+    research,
     shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
     brewing: normalizeSaveBrewing(save.brewing, itemCatalog),
     garden: normalizeSaveGarden(save.garden, itemCatalog, levelLimits),
@@ -2213,12 +2249,141 @@ function normalizeSaveGold(value: unknown) {
   };
 }
 
-function normalizeSaveCrystal(value: unknown) {
+function normalizeSaveCrystal(value: unknown, minimumCurrent = 0) {
   const crystal = isRecord(value) ? value : {};
+  const current = clampSaveInteger(
+    crystal.current,
+    0,
+    MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+    0,
+  );
 
   return {
-    current: clampSaveInteger(crystal.current, 0, MAX_PLAYER_SAVE_CURRENT_CRYSTAL, 0),
+    current: clampNumber(
+      Math.max(current, minimumCurrent),
+      0,
+      MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+    ),
   };
+}
+
+function getMinimumCurrentCrystalForSave(
+  ctx: IdleWizardReducerCtx,
+  currentLevel: number,
+  completedResearchIds: string[],
+) {
+  const earnedLevelCrystal =
+    Math.max(0, currentLevel - DEFAULT_PLAYER_LEVEL) * getPlayerLevelCrystalPerLevel(ctx);
+  const spentCrystal = completedResearchIds.reduce(
+    (total, researchId) => total + getResearchCrystalCost(ctx, researchId),
+    0,
+  );
+
+  return clampNumber(
+    Math.max(0, earnedLevelCrystal - spentCrystal),
+    0,
+    MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+  );
+}
+
+function getPlayerLevelCrystalPerLevel(ctx: IdleWizardReducerCtx) {
+  const config = getParsedGameConfig(
+    ctx,
+    'playerLevel',
+    DEFAULT_PLAYER_LEVEL_CONFIG_JSON,
+  ) as { crystal?: unknown; crystalPerLevel?: unknown; crystalPerLevelUp?: unknown };
+  const perLevel = readPlayerLevelCrystalPerLevel(config);
+  const amount = Number(perLevel ?? DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL);
+
+  if (!Number.isInteger(amount) || amount < 0) {
+    return DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL;
+  }
+
+  return Math.min(amount, MAX_PLAYER_SAVE_CURRENT_CRYSTAL);
+}
+
+function getResearchCrystalCost(ctx: IdleWizardReducerCtx, researchId: string) {
+  const config = getParsedGameConfig(
+    ctx,
+    'research',
+    DEFAULT_RESEARCH_CONFIG_JSON,
+  ) as { researchCostsCrystal?: unknown };
+  const costs = isRecord(config.researchCostsCrystal) ? config.researchCostsCrystal : {};
+  const cost = Number(costs[researchId] ?? 0);
+
+  if (!Number.isFinite(cost) || cost < 0) {
+    return 0;
+  }
+
+  return Math.floor(cost);
+}
+
+function backfillPlayerGameplaySaveLevelCrystals(ctx: IdleWizardReducerCtx) {
+  for (const save of ctx.db.playerGameplaySave.iter()) {
+    const saveJson = backfillGameplaySaveLevelCrystalsJson(ctx, save.saveJson);
+
+    if (!saveJson || saveJson === save.saveJson) {
+      continue;
+    }
+
+    ctx.db.playerGameplaySave.identity.update({
+      ...save,
+      saveJson,
+      updatedAt: ctx.timestamp,
+    });
+  }
+}
+
+function backfillGameplaySaveLevelCrystalsJson(
+  ctx: IdleWizardReducerCtx,
+  saveJson: string,
+): string | null {
+  let save: unknown;
+
+  try {
+    save = JSON.parse(String(saveJson ?? ''));
+  } catch {
+    return null;
+  }
+
+  if (!isRecord(save)) {
+    return null;
+  }
+
+  const tasks = isRecord(save.tasks) ? save.tasks : {};
+  const currentLevel = clampSaveInteger(
+    tasks.currentLevel,
+    DEFAULT_PLAYER_LEVEL,
+    MAX_REPORTED_PLAYER_LEVEL,
+    DEFAULT_PLAYER_LEVEL,
+  );
+  const research = normalizeSaveResearch(save.research);
+  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(
+    ctx,
+    currentLevel,
+    research.completedIds,
+  );
+  const crystal = isRecord(save.crystal) ? save.crystal : {};
+  const currentCrystal = clampSaveInteger(
+    crystal.current,
+    0,
+    MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+    0,
+  );
+
+  if (currentCrystal >= minimumCurrentCrystal) {
+    return null;
+  }
+
+  const nextSaveJson = JSON.stringify({
+    ...save,
+    crystal: {
+      ...crystal,
+      current: minimumCurrentCrystal,
+    },
+  });
+
+  return nextSaveJson.length <= MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH ? nextSaveJson : null;
 }
 
 function normalizeSaveLogs(value: unknown) {
@@ -3342,8 +3507,6 @@ function validatePlayerLevelCrystalConfig(config: {
   crystalPerLevel?: unknown;
   crystalPerLevelUp?: unknown;
 }) {
-  const crystal = config.crystal as Record<string, unknown> | null | undefined;
-
   if (
     config.crystal !== undefined &&
     config.crystal !== null &&
@@ -3352,12 +3515,7 @@ function validatePlayerLevelCrystalConfig(config: {
     throw new Error('Invalid player level crystal config.');
   }
 
-  const nestedPerLevel =
-    crystal
-      ? crystal.perLevel ?? crystal.perLevelUp
-      : undefined;
-  const perLevel =
-    nestedPerLevel ?? config.crystalPerLevel ?? config.crystalPerLevelUp;
+  const perLevel = readPlayerLevelCrystalPerLevel(config);
 
   if (perLevel === undefined) {
     return;
@@ -3372,6 +3530,17 @@ function validatePlayerLevelCrystalConfig(config: {
   ) {
     throw new Error('Invalid player level crystal config.');
   }
+}
+
+function readPlayerLevelCrystalPerLevel(config: {
+  crystal?: unknown;
+  crystalPerLevel?: unknown;
+  crystalPerLevelUp?: unknown;
+}) {
+  const crystal = isRecord(config.crystal) ? config.crystal : null;
+  const nestedPerLevel = crystal ? crystal.perLevel ?? crystal.perLevelUp : undefined;
+
+  return nestedPerLevel ?? config.crystalPerLevel ?? config.crystalPerLevelUp;
 }
 
 function validatePlayerLevelManaConfig(value: unknown) {
@@ -4728,6 +4897,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
   ensureResearchConfigCatalog(ctx);
   ensureGameConfigCatalog(ctx);
+  backfillPlayerGameplaySaveLevelCrystals(ctx);
   const tradeAllianceMember = getTradeAllianceMember(ctx);
   if (tradeAllianceMember) {
     try {
