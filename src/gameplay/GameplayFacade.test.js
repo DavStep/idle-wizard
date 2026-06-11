@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { automationResearchIds } from './automation/automationResearchIds.js';
 import { GameplayFacade } from './GameplayFacade.js';
+import playerLevelBalance from './playerLevel/player-level-balance.json';
 
 function createMemoryStorage() {
   const values = new Map();
@@ -226,6 +227,45 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
     expect(gameplayFacade.getSnapshot().mana.cap).toBe(150);
     expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(3);
+  });
+
+  it('grants configured crystal when player level advances', () => {
+    const { gameplayFacade } = createGameplay();
+
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
+
+    finishCurrentTaskLevel(gameplayFacade);
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
+
+    finishCurrentTaskLevel(gameplayFacade);
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
+  });
+
+  it('uses runtime player-level config for crystal level-up rewards', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.applyRuntimeConfig({
+      gameConfigs: [
+        {
+          configKey: 'playerLevel',
+          configJson: JSON.stringify({
+            ...playerLevelBalance,
+            crystal: {
+              perLevel: 3,
+            },
+          }),
+        },
+      ],
+    });
+
+    finishCurrentTaskLevel(gameplayFacade);
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
   });
 
   it('logs completed gameplay events', () => {

@@ -77,6 +77,7 @@ export class TaskFillManager {
       ok: true,
       taskId,
       level: task.level,
+      levelBefore: completion.levelBefore,
       currentLevel: completion.levelAfter,
       advanced: completion.advanced,
       completedAllLevels: completion.completedAllLevels,

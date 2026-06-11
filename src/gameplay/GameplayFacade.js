@@ -6,6 +6,7 @@ import { GardenFacade } from './garden/GardenFacade.js';
 import { ItemsFacade } from './items/ItemsFacade.js';
 import { ManaFacade } from './mana/ManaFacade.js';
 import { GameplayStateObserverManager } from './managers/GameplayStateObserverManager.js';
+import { LevelUpCrystalRewardManager } from './managers/LevelUpCrystalRewardManager.js';
 import { GameplayLogFacade } from './logs/GameplayLogFacade.js';
 import { GameplayPersistenceFacade } from './persistence/GameplayPersistenceFacade.js';
 import { PlayerLevelFacade } from './playerLevel/PlayerLevelFacade.js';
@@ -30,6 +31,10 @@ export class GameplayFacade {
     });
     this.playerLevelFacade = new PlayerLevelFacade({
       tasksFacade: this.tasksFacade,
+    });
+    this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
+      crystalFacade: this.crystalFacade,
+      playerLevelFacade: this.playerLevelFacade,
     });
     this.researchFacade = new ResearchFacade({
       crystalFacade: this.crystalFacade,
@@ -237,6 +242,10 @@ export class GameplayFacade {
   completeTask(taskId) {
     const result = this.tasksFacade.completeTask(taskId);
     if (result.ok && result.advanced) {
+      this.levelUpCrystalRewardManager.grantForLevelRange(
+        result.levelBefore ?? result.level,
+        result.currentLevel,
+      );
       this.syncPlayerLevelManaEffects();
       void this.worldChatFacade?.announceLevelUp?.(result.currentLevel);
     }

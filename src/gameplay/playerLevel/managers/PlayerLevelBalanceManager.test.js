@@ -13,6 +13,9 @@ describe('PlayerLevelBalanceManager', () => {
           baseManaPerSecond: 1,
           manaPerSecondPerLevel: 0.1,
         },
+        crystal: {
+          perLevel: 2,
+        },
         milestones: [
           {
             level: 1,
@@ -47,6 +50,7 @@ describe('PlayerLevelBalanceManager', () => {
       'unlocks chat',
       'max mana cap 70',
       'mana regen 1.2/sec',
+      'crystal reward 2',
     ]);
     expect(manager.getLevelSummaries(1)[1].totals).toEqual({
       maxGardenTiles: 1,
@@ -66,6 +70,9 @@ describe('PlayerLevelBalanceManager', () => {
       maxManaCap: 70,
       manaPerSecond: 1.2,
     });
+    expect(manager.getCrystalRewardForLevel(1)).toBe(0);
+    expect(manager.getCrystalRewardForLevel(3)).toBe(2);
+    expect(manager.getCrystalRewardForLevelRange(1, 3)).toBe(4);
     expect(manager.getEffects(3)).toEqual({
       maxGardenTiles: 2,
       maxCauldrons: 1,

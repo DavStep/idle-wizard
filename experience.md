@@ -61,7 +61,7 @@
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
-- Crystal is the hard currency; it starts at `0`, appears in the top panel, and currently has no earning or spending rule.
+- Crystal is the hard currency; it starts at `0`, appears in the top panel, level-ups grant `playerLevel.crystal.perLevel`, and advanced research spends it.
 - Advanced automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide advanced research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - NPC market stand 1 starts unlocked for free; later stands cost gold from `shop-balance.json`.
@@ -216,6 +216,7 @@
 - Local player level milestones come from `player-level-balance.json`; they unlock permission to buy higher caps, never grant the tile/stand for free.
 - Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror local `player-level-balance.json`; hosted `game_config` can override local milestones.
 - Player level sets mana cap and mana regen from `player-level-balance.json`; there are no separate mana research bonuses.
+- Player level-up crystal rewards also come from `player-level-balance.json`/hosted `playerLevel` config; level 1 start does not grant the reward.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.
 - Leaderboard total generated gold uses local gold lifetime total synced through `set_total_generated_gold`; current gold alone is not enough because spending lowers it.

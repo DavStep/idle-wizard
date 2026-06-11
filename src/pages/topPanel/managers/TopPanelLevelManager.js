@@ -276,6 +276,12 @@ export class TopPanelLevelManager {
       return { label: 'research', value: researchMatch[1] };
     }
 
+    const crystalRewardMatch = effect.match(/^crystal reward ([\d.]+)$/);
+
+    if (crystalRewardMatch) {
+      return { label: 'crystal', value: `+${this.formatNumber(Number(crystalRewardMatch[1]))}` };
+    }
+
     return { label: effect, value: '' };
   }
 

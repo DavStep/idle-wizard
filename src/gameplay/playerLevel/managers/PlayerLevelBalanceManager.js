@@ -13,11 +13,13 @@ export class PlayerLevelBalanceManager {
   setBalance(balance) {
     const maxLevel = this.readMaxLevel(balance);
     const manaProgression = this.readManaProgression(balance);
+    const crystalRewards = this.readCrystalRewards(balance);
     const milestones = this.readMilestones(balance, maxLevel);
 
     this.balance = balance;
     this.maxLevel = maxLevel;
     this.manaProgression = manaProgression;
+    this.crystalRewards = crystalRewards;
     this.milestones = milestones;
   }
 
@@ -86,6 +88,35 @@ export class PlayerLevelBalanceManager {
           (safeLevel - 1) * this.manaProgression.manaPerSecondPerLevel,
       ),
     };
+  }
+
+  getCrystalRewardForLevel(levelNumber) {
+    const safeLevel = this.clampLevelNumber(levelNumber);
+
+    if (safeLevel <= 1) {
+      return 0;
+    }
+
+    return this.crystalRewards.perLevel;
+  }
+
+  getCrystalRewardForLevelRange(levelBefore, levelAfter) {
+    const safeLevelBefore = this.clampLevelNumber(levelBefore);
+    const safeLevelAfter = this.clampLevelNumber(levelAfter);
+
+    if (safeLevelAfter <= safeLevelBefore) {
+      return 0;
+    }
+
+    const firstRewardLevel = Math.max(2, safeLevelBefore + 1);
+
+    if (safeLevelAfter < firstRewardLevel) {
+      return 0;
+    }
+
+    return this.roundStat(
+      (safeLevelAfter - firstRewardLevel + 1) * this.crystalRewards.perLevel,
+    );
   }
 
   getRequiredLevelForGardenTile(tileNumber) {
@@ -181,6 +212,7 @@ export class PlayerLevelBalanceManager {
     const effects = [
       ...(milestone ? this.describeLevel(milestone, previousMilestone) : []),
       ...this.describeManaLevel(levelNumber),
+      ...this.describeCrystalLevel(levelNumber),
     ];
 
     return effects.length > 0 ? effects : ['no new unlock'];
@@ -204,6 +236,16 @@ export class PlayerLevelBalanceManager {
     }
 
     return effects;
+  }
+
+  describeCrystalLevel(levelNumber) {
+    const crystalReward = this.getCrystalRewardForLevel(levelNumber);
+
+    if (crystalReward <= 0) {
+      return [];
+    }
+
+    return [`crystal reward ${this.formatStat(crystalReward)}`];
   }
 
   readMaxLevel(balance = this.balance) {
@@ -323,6 +365,32 @@ export class PlayerLevelBalanceManager {
     };
   }
 
+  readCrystalRewards(balance = this.balance) {
+    const crystal = balance?.crystal;
+
+    if (
+      crystal !== undefined &&
+      crystal !== null &&
+      (typeof crystal !== 'object' || Array.isArray(crystal))
+    ) {
+      throw new Error('player-level-balance.json crystal must be an object.');
+    }
+
+    const nestedPerLevel =
+      crystal
+        ? crystal.perLevel ?? crystal.perLevelUp
+        : undefined;
+    const perLevel =
+      nestedPerLevel ?? balance?.crystalPerLevel ?? balance?.crystalPerLevelUp;
+
+    return {
+      perLevel:
+        perLevel === undefined
+          ? 0
+          : this.readNonNegativeInteger(perLevel, 'crystal.perLevel'),
+    };
+  }
+
   readStringList(value, key) {
     if (value === undefined) {
       return [];
@@ -338,6 +406,14 @@ export class PlayerLevelBalanceManager {
   readNonNegativeNumber(value, key) {
     if (!Number.isFinite(value) || value < 0) {
       throw new Error(`player-level-balance.json ${key} must be a non-negative number.`);
+    }
+
+    return value;
+  }
+
+  readNonNegativeInteger(value, key) {
+    if (!Number.isInteger(value) || value < 0) {
+      throw new Error(`player-level-balance.json ${key} must be a non-negative integer.`);
     }
 
     return value;

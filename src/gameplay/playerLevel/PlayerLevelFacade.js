@@ -64,6 +64,17 @@ export class PlayerLevelFacade {
     return this.getEffects().manaPerSecond;
   }
 
+  getCrystalRewardForLevel(levelNumber) {
+    return this.playerLevelBalanceManager.getCrystalRewardForLevel(levelNumber);
+  }
+
+  getCrystalRewardForLevelRange(levelBefore, levelAfter) {
+    return this.playerLevelBalanceManager.getCrystalRewardForLevelRange(
+      levelBefore,
+      levelAfter,
+    );
+  }
+
   getRequiredLevelForGardenTile(tileNumber) {
     return this.playerLevelBalanceManager.getRequiredLevelForGardenTile(tileNumber);
   }

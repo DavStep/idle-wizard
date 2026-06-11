@@ -6,6 +6,9 @@
     "baseManaPerSecond": 1,
     "manaPerSecondPerLevel": 1
   },
+  "crystal": {
+    "perLevel": 1
+  },
   "milestones": [
     {
       "level": 1,

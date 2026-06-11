@@ -126,7 +126,12 @@ function createGameplayFacadeFake() {
             maxManaCap: 100,
             manaPerSecond: 2,
           },
-          effects: ['max garden tiles 3', 'max mana cap 100', 'mana regen 2/sec'],
+          effects: [
+            'max garden tiles 3',
+            'max mana cap 100',
+            'mana regen 2/sec',
+            'crystal reward 1',
+          ],
         },
         {
           level: 3,
@@ -145,6 +150,7 @@ function createGameplayFacadeFake() {
             'max player market stands 2',
             'max mana cap 150',
             'mana regen 3/sec',
+            'crystal reward 1',
           ],
         },
       ],
@@ -2121,6 +2127,9 @@ describe('PagesFacade', () => {
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
     ).toContain('mana regen+1/sec');
     expect(
+      levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
+    ).toContain('crystal+1');
+    expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
     ).toContain('garden plots3');
     expect(
@@ -2145,6 +2154,7 @@ describe('PagesFacade', () => {
     expect(level3AddedText).toContain('npc stands+1');
     expect(level3AddedText).toContain('player stands+1');
     expect(level3AddedText).toContain('mana cap+50');
+    expect(level3AddedText).toContain('crystal+1');
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
       'garden plots',
     );

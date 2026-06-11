@@ -6,6 +6,8 @@ The current scope gates how many garden tiles, NPC market stands, and player mar
 
 Player level also sets mana cap and mana regen through the `mana` progression in `player-level-balance.json`. Each level gives the old mana research amounts: +50 cap and +1 mana per second.
 
+Player level-ups also grant crystal through `crystal.perLevel` in `player-level-balance.json`. Level 1 is the starting level and does not grant this reward.
+
 Milestones can also include display-only `unlocks` and `researchUnlocks` arrays. Those render as `unlocks chat` or `allows researching "Mana Cap"` in the level dialog; they do not gate gameplay until a feature wires that rule.
 
 `maxCauldrons` is exposed in the level dialog as a milestone cap, but cauldron buying is not wired yet.
