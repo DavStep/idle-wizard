@@ -8,6 +8,7 @@ function createPlayerFacade(username) {
     username,
     usernamePromptSeen: username !== 'wizard',
     theme: 'white',
+    font: 'source-serif',
     colorMode: 'monochrome',
   };
 
@@ -32,6 +33,13 @@ function createPlayerFacade(username) {
     },
     setTheme: (theme) => {
       snapshot = { ...snapshot, theme };
+
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
+    setFont: (font) => {
+      snapshot = { ...snapshot, font };
 
       for (const listener of listeners) {
         listener(snapshot);
@@ -63,6 +71,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenCalledWith({
       username: 'Merlin',
       theme: 'white',
+      font: 'source-serif',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
     });
@@ -82,11 +91,13 @@ describe('PlayerBackendSyncManager', () => {
     playerFacade.setUsername('Mira');
     playerFacade.setUsername('Mira');
     playerFacade.setTheme('black');
+    playerFacade.setFont('inter');
 
-    expect(setPlayerProfile).toHaveBeenCalledTimes(3);
+    expect(setPlayerProfile).toHaveBeenCalledTimes(4);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'Mira',
       theme: 'black',
+      font: 'inter',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
     });
@@ -123,6 +134,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'Mira',
       theme: 'black',
+      font: 'source-serif',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
     });
@@ -145,6 +157,7 @@ describe('PlayerBackendSyncManager', () => {
 
     playerFacade.setUsername('MobileDav');
     playerFacade.setTheme('black');
+    playerFacade.setFont('inter');
 
     expect(setPlayerProfile).not.toHaveBeenCalled();
 
@@ -153,11 +166,13 @@ describe('PlayerBackendSyncManager', () => {
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'MobileDav',
       theme: 'black',
+      font: 'inter',
     });
     expect(setPlayerProfile).toHaveBeenCalledTimes(1);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'MobileDav',
       theme: 'black',
+      font: 'inter',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
     });

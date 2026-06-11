@@ -123,6 +123,7 @@ export const Player = __t.object("Player", {
   theme: __t.string(),
   colorMode: __t.string(),
   usernamePromptSeen: __t.bool(),
+  font: __t.string(),
 });
 export type Player = __Infer<typeof Player>;
 

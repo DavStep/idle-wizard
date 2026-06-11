@@ -97,7 +97,7 @@ The server module defines:
 - `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
 - `npc_market_admin`: identities allowed to change NPC market config.
 
-`clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`. `set_player_profile` updates username, theme, color mode, and username prompt state together.
+`clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`. `set_player_profile` updates username, theme, font, color mode, and username prompt state together.
 
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for this subscription before opening the room gate, applies the saved gameplay snapshot, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 

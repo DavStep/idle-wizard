@@ -13,6 +13,7 @@ describe('PlayerFacade', () => {
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'white',
+      font: 'source-serif',
       colorMode: 'monochrome',
     });
   });
@@ -27,6 +28,7 @@ describe('PlayerFacade', () => {
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'white',
+      font: 'source-serif',
       colorMode: 'monochrome',
     });
   });
@@ -89,12 +91,24 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
   });
 
+  it('normalizes font', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setFont('inter');
+
+    expect(playerFacade.getSnapshot().font).toBe('inter');
+
+    playerFacade.setFont('unknown');
+    expect(playerFacade.getSnapshot().font).toBe('source-serif');
+  });
+
   it('applies server profile preferences', () => {
     const playerFacade = new PlayerFacade();
 
     playerFacade.applyServerProfile({
       username: 'Mira',
       theme: 'black',
+      font: 'inter',
       colorMode: 'resources',
       usernamePromptSeen: true,
     });
@@ -103,12 +117,19 @@ describe('PlayerFacade', () => {
       username: 'Mira',
       usernamePromptSeen: true,
       theme: 'black',
+      font: 'inter',
       colorMode: 'resources',
     });
   });
 
-  it('maps old dark theme names to black', () => {
+  it('maps old theme names to canonical themes', () => {
     const playerFacade = new PlayerFacade();
+
+    playerFacade.setTheme('mild-white');
+    expect(playerFacade.getSnapshot().theme).toBe('white');
+
+    playerFacade.setTheme('mild-black');
+    expect(playerFacade.getSnapshot().theme).toBe('black');
 
     playerFacade.setTheme('night-black');
     expect(playerFacade.getSnapshot().theme).toBe('black');

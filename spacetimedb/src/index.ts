@@ -5,6 +5,7 @@ const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
+const DEFAULT_PLAYER_FONT = 'source-serif';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
 const MAX_REPORTED_PLAYER_LEVEL = 20;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
@@ -80,6 +81,11 @@ const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const PLAYER_THEMES = new Set(['white', 'black']);
+const PLAYER_THEME_ALIASES = new Map([
+  ['mild-white', 'white'],
+  ['mild-black', 'black'],
+]);
+const PLAYER_FONTS = new Set(['source-serif', 'inter']);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
 const TRADE_ALLIANCE_ROLE_TRADE_MASTER = 'tradeMaster';
@@ -863,6 +869,7 @@ const spacetimedb = schema({
       theme: t.string().default(DEFAULT_PLAYER_THEME),
       colorMode: t.string().default(DEFAULT_PLAYER_COLOR_MODE),
       usernamePromptSeen: t.bool().default(false),
+      font: t.string().default(DEFAULT_PLAYER_FONT),
     },
   ),
   playerGameplaySave: table(
@@ -1417,7 +1424,13 @@ function normalizeUsername(username: string): string {
 
 function normalizePlayerTheme(theme: string): string {
   const value = String(theme ?? '').trim();
-  return PLAYER_THEMES.has(value) ? value : DEFAULT_PLAYER_THEME;
+  const normalizedValue = PLAYER_THEME_ALIASES.get(value) ?? value;
+  return PLAYER_THEMES.has(normalizedValue) ? normalizedValue : DEFAULT_PLAYER_THEME;
+}
+
+function normalizePlayerFont(font: string): string {
+  const value = String(font ?? '').trim();
+  return PLAYER_FONTS.has(value) ? value : DEFAULT_PLAYER_FONT;
 }
 
 function normalizePlayerColorMode(colorMode: string): string {
@@ -4629,6 +4642,7 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
     const username = normalizeUsername(player.username);
     const playerLevel = normalizePlayerLevel(player.playerLevel);
     const theme = normalizePlayerTheme(player.theme);
+    const font = normalizePlayerFont(player.font);
     const colorMode = normalizePlayerColorMode(player.colorMode);
     const usernamePromptSeen = Boolean(player.usernamePromptSeen);
 
@@ -4636,6 +4650,7 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
       player.username === username &&
       player.playerLevel === playerLevel &&
       player.theme === theme &&
+      player.font === font &&
       player.colorMode === colorMode &&
       player.usernamePromptSeen === usernamePromptSeen
     ) {
@@ -4647,6 +4662,7 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
       username,
       playerLevel,
       theme,
+      font,
       colorMode,
       usernamePromptSeen,
       lastSeenAt: ctx.timestamp,
@@ -4753,6 +4769,7 @@ function ensurePlayer(ctx: IdleWizardReducerCtx) {
   const existingPlayer = ctx.db.player.identity.find(ctx.sender);
   const username = normalizeUsername(existingPlayer?.username ?? DEFAULT_USERNAME);
   const theme = normalizePlayerTheme(existingPlayer?.theme ?? DEFAULT_PLAYER_THEME);
+  const font = normalizePlayerFont(existingPlayer?.font ?? DEFAULT_PLAYER_FONT);
   const colorMode = normalizePlayerColorMode(
     existingPlayer?.colorMode ?? DEFAULT_PLAYER_COLOR_MODE,
   );
@@ -4764,6 +4781,7 @@ function ensurePlayer(ctx: IdleWizardReducerCtx) {
       username,
       playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
       theme,
+      font,
       colorMode,
       usernamePromptSeen,
       connected: true,
@@ -4776,6 +4794,7 @@ function ensurePlayer(ctx: IdleWizardReducerCtx) {
     username,
     playerLevel: DEFAULT_PLAYER_LEVEL,
     theme: DEFAULT_PLAYER_THEME,
+    font: DEFAULT_PLAYER_FONT,
     colorMode: DEFAULT_PLAYER_COLOR_MODE,
     usernamePromptSeen: false,
     connected: true,
@@ -5105,6 +5124,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       username: normalizedUsername,
       playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
       theme: normalizePlayerTheme(existingPlayer.theme),
+      font: normalizePlayerFont(existingPlayer.font),
       colorMode: normalizePlayerColorMode(existingPlayer.colorMode),
       usernamePromptSeen:
         Boolean(existingPlayer.usernamePromptSeen) ||
@@ -5117,6 +5137,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       username: normalizedUsername,
       playerLevel: DEFAULT_PLAYER_LEVEL,
       theme: DEFAULT_PLAYER_THEME,
+      font: DEFAULT_PLAYER_FONT,
       colorMode: DEFAULT_PLAYER_COLOR_MODE,
       usernamePromptSeen: normalizedUsername !== DEFAULT_USERNAME,
       connected: true,
@@ -5135,12 +5156,14 @@ export const set_player_profile = spacetimedb.reducer(
     theme: t.string(),
     colorMode: t.string(),
     usernamePromptSeen: t.bool(),
+    font: t.string(),
   },
-  (ctx, { username, theme, colorMode, usernamePromptSeen }) => {
+  (ctx, { username, theme, colorMode, usernamePromptSeen, font }) => {
     const normalizedUsername = normalizeUsername(username);
     assertUsernameAvailable(ctx, normalizedUsername);
 
     const safeTheme = normalizePlayerTheme(theme);
+    const safeFont = normalizePlayerFont(font);
     const safeColorMode = normalizePlayerColorMode(colorMode);
     const safeUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
@@ -5153,6 +5176,7 @@ export const set_player_profile = spacetimedb.reducer(
         username: normalizedUsername,
         playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
         theme: safeTheme,
+        font: safeFont,
         colorMode: safeColorMode,
         usernamePromptSeen: safeUsernamePromptSeen,
         lastSeenAt: ctx.timestamp,
@@ -5163,6 +5187,7 @@ export const set_player_profile = spacetimedb.reducer(
         username: normalizedUsername,
         playerLevel: DEFAULT_PLAYER_LEVEL,
         theme: safeTheme,
+        font: safeFont,
         colorMode: safeColorMode,
         usernamePromptSeen: safeUsernamePromptSeen,
         connected: true,

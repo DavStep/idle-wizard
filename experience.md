@@ -155,7 +155,7 @@
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
-- Clicking the top-panel username opens settings; username editing and `white` / `black` visual theme choices live there.
+- Clicking the top-panel username opens settings; username editing and visual theme choices live there.
 - Settings use bottom tabs outside the popup border: `profile`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
 - Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
 - Level milestone dialogs use the selected level as the title, omit current/open/max filler, show gained `+N` rows above a divider, then total limits with right-aligned numbers.
@@ -163,7 +163,10 @@
 - Level milestone dialog content uses fixed height with internal scrolling so changing levels does not resize the popup.
 - Level milestone dialogs show a centered top-border `current` label only when the selected level is the player current level.
 - Player visual theme is stored on `PlayerFacade` snapshot and applied globally by `AppThemeManager` through `html[data-style-theme]`.
-- Player resource color mode is separate from white/black theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
+- Player visual theme options live in `src/player/playerThemes.js`; settings render from that list, and theme colors are CSS vars in `src/styles/base.css`.
+- Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to `white`.
+- Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
+- Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.

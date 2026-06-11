@@ -1756,11 +1756,16 @@ function clickRoomTab(stage, pageId) {
 function createPlayerFacadeFake(
   initialUsername = 'wizard',
   initialTheme = 'white',
-  { shouldPromptForUsername = false, initialColorMode = 'monochrome' } = {},
+  {
+    shouldPromptForUsername = false,
+    initialColorMode = 'monochrome',
+    initialFont = 'source-serif',
+  } = {},
 ) {
   let snapshot = {
     username: initialUsername,
     theme: initialTheme,
+    font: initialFont,
     colorMode: initialColorMode,
     shouldPromptForUsername,
   };
@@ -1794,9 +1799,25 @@ function createPlayerFacadeFake(
     setTheme: (theme) => {
       snapshot = {
         ...snapshot,
-        theme: ['white', 'black', 'dark-gray', 'night-black'].includes(theme)
-          ? theme.replace('dark-gray', 'black').replace('night-black', 'black')
+        theme: ['white', 'mild-white', 'mild-black', 'black', 'dark-gray', 'night-black'].includes(
+          theme,
+        )
+          ? theme
+              .replace('mild-white', 'white')
+              .replace('mild-black', 'black')
+              .replace('dark-gray', 'black')
+              .replace('night-black', 'black')
           : 'white',
+      };
+
+      publish();
+      return snapshot;
+    },
+    setFont: (font) => {
+      const normalizedFont = font === 'inter' ? 'inter' : 'source-serif';
+      snapshot = {
+        ...snapshot,
+        font: normalizedFont,
       };
 
       publish();
@@ -2633,6 +2654,11 @@ describe('PagesFacade', () => {
       ),
     ).toEqual(['white', 'black']);
     expect(
+      [...settings.querySelectorAll('.room-top-panel__font-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['source serif', 'inter']);
+    expect(
       [...settings.querySelectorAll('.room-top-panel__color-button')].map(
         (button) => button.textContent,
       ),
@@ -2835,12 +2861,20 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const whiteButton = stage.querySelector('.room-top-panel__theme-button[data-theme="white"]');
+    const mildWhiteButton = stage.querySelector(
+      '.room-top-panel__theme-button[data-theme="mild-white"]',
+    );
+    const mildBlackButton = stage.querySelector(
+      '.room-top-panel__theme-button[data-theme="mild-black"]',
+    );
     const darkGrayButton = stage.querySelector(
       '.room-top-panel__theme-button[data-theme="dark-gray"]',
     );
     const blackButton = stage.querySelector('.room-top-panel__theme-button[data-theme="black"]');
 
     expect(whiteButton.getAttribute('aria-checked')).toBe('true');
+    expect(mildWhiteButton).toBeNull();
+    expect(mildBlackButton).toBeNull();
     expect(darkGrayButton).toBeNull();
 
     blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -2878,6 +2912,34 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().colorMode).toBe('resources');
     expect(resourcesButton.getAttribute('aria-checked')).toBe('true');
     expect(monoButton.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('changes font from settings', () => {
+    const stage = document.createElement('section');
+    const playerFacade = createPlayerFacadeFake('Merlin');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const sourceButton = stage.querySelector(
+      '.room-top-panel__font-button[data-font="source-serif"]',
+    );
+    const interButton = stage.querySelector('.room-top-panel__font-button[data-font="inter"]');
+
+    expect(sourceButton.getAttribute('aria-checked')).toBe('true');
+
+    interButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().font).toBe('inter');
+    expect(interButton.getAttribute('aria-checked')).toBe('true');
+    expect(sourceButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('shows optional google login in settings when auth is configured', async () => {

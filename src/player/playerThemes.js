@@ -13,6 +13,8 @@ export const PLAYER_THEME_OPTIONS = Object.freeze([
 
 const THEME_KEYS = new Set(PLAYER_THEME_OPTIONS.map((theme) => theme.key));
 const THEME_ALIASES = new Map([
+  ['mild-white', 'white'],
+  ['mild-black', 'black'],
   ['dark-gray', 'black'],
   ['night-black', 'black'],
 ]);

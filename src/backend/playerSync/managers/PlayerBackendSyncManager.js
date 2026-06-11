@@ -89,6 +89,7 @@ export class PlayerBackendSyncManager {
         ? setPlayerProfile({
             username: profile.username,
             theme: profile.theme,
+            font: profile.font,
             colorMode: profile.colorMode,
             usernamePromptSeen: profile.usernamePromptSeen,
           })
@@ -156,6 +157,7 @@ export class PlayerBackendSyncManager {
     return {
       username: snapshot?.username,
       theme: snapshot?.theme ?? 'white',
+      font: snapshot?.font ?? 'source-serif',
       colorMode: snapshot?.colorMode ?? 'monochrome',
       usernamePromptSeen: Boolean(snapshot?.usernamePromptSeen),
     };
@@ -165,6 +167,7 @@ export class PlayerBackendSyncManager {
     return {
       username: profile?.username,
       theme: profile?.theme ?? 'white',
+      font: profile?.font ?? 'source-serif',
       colorMode: profile?.colorMode ?? 'monochrome',
       usernamePromptSeen: Boolean(profile?.usernamePromptSeen),
     };
@@ -178,6 +181,7 @@ export class PlayerBackendSyncManager {
     return JSON.stringify({
       username: profile.username,
       theme: profile.theme,
+      font: profile.font,
       colorMode: profile.colorMode,
       usernamePromptSeen: Boolean(profile.usernamePromptSeen),
     });
@@ -201,6 +205,7 @@ export class PlayerBackendSyncManager {
 
     this.playerFacade?.setUsername?.(profile.username);
     this.playerFacade?.setTheme?.(profile.theme);
+    this.playerFacade?.setFont?.(profile.font);
     this.playerFacade?.setColorMode?.(profile.colorMode);
 
     if (profile.usernamePromptSeen) {

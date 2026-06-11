@@ -1,4 +1,5 @@
 import { PlayerColorModeManager } from './managers/PlayerColorModeManager.js';
+import { PlayerFontManager } from './managers/PlayerFontManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
 import { PlayerStateObserverManager } from './managers/PlayerStateObserverManager.js';
 import { PlayerThemeManager } from './managers/PlayerThemeManager.js';
@@ -10,6 +11,7 @@ export class PlayerFacade {
   constructor() {
     this.nameManager = new PlayerNameManager();
     this.themeManager = new PlayerThemeManager();
+    this.fontManager = new PlayerFontManager();
     this.colorModeManager = new PlayerColorModeManager();
     this.stateObserverManager = new PlayerStateObserverManager();
   }
@@ -29,6 +31,7 @@ export class PlayerFacade {
   applyServerProfile(profile) {
     this.nameManager.applyServerProfile(profile);
     this.themeManager.applyServerTheme(profile?.theme);
+    this.fontManager.applyServerFont(profile?.font);
     this.colorModeManager.applyServerColorMode(profile?.colorMode);
     this.publishSnapshot();
     return this.getSnapshot();
@@ -56,6 +59,16 @@ export class PlayerFacade {
     return this.themeManager.getThemeOptions();
   }
 
+  setFont(font) {
+    this.fontManager.setFont(font);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  getFontOptions() {
+    return this.fontManager.getFontOptions();
+  }
+
   setColorMode(colorMode) {
     this.colorModeManager.setColorMode(colorMode);
     this.publishSnapshot();
@@ -72,6 +85,7 @@ export class PlayerFacade {
       shouldPromptForUsername: this.nameManager.shouldPromptForUsername(),
       usernamePromptSeen: this.nameManager.getUsernamePromptSeen(),
       theme: this.themeManager.getTheme(),
+      font: this.fontManager.getFont(),
       colorMode: this.colorModeManager.getColorMode(),
     };
   }
@@ -82,6 +96,7 @@ export class PlayerFacade {
       username: snapshot.username,
       usernamePromptSeen: snapshot.usernamePromptSeen,
       theme: snapshot.theme,
+      font: snapshot.font,
       colorMode: snapshot.colorMode,
     };
   }

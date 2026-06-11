@@ -1,10 +1,10 @@
 :root {
-  --style-bg: #fff;
-  --style-surface: #fff;
-  --style-text: #000;
-  --style-muted: #666;
-  --style-disabled: #b2b2b2;
-  --style-active-surface: #f7f7f7;
+  --style-bg: #dedede;
+  --style-surface: #e5e5e5;
+  --style-text: #1a1a1a;
+  --style-muted: #5e5e5e;
+  --style-disabled: #969696;
+  --style-active-surface: #d6d6d6;
   --style-system-text: oklch(44% 0.12 25);
   --style-notification-red: #c1121f;
   --style-notification-orange: #d66a00;
@@ -15,8 +15,8 @@
   --style-resource-crystal: var(--style-text);
   --style-resource-seed: var(--style-text);
   --style-resource-herb: var(--style-text);
-  --style-backdrop-rgb: 255 255 255;
-  --style-log-fade-rgb: 255 255 255;
+  --style-backdrop-rgb: 222 222 222;
+  --style-log-fade-rgb: 229 229 229;
   --style-border: 1px solid var(--style-text);
   --style-tab-border: var(--style-border-strong);
   --style-border-strong: 2px solid var(--style-text);
@@ -104,19 +104,25 @@
   text-rendering: optimizeLegibility;
 }
 
+:root[data-style-font="inter"] {
+  --style-font:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
 :root[data-style-theme="black"] {
-  --style-bg: #000;
-  --style-surface: #050505;
-  --style-text: #fff;
-  --style-muted: #aaa;
-  --style-disabled: #707070;
-  --style-active-surface: #151515;
+  --style-bg: #1a1a1a;
+  --style-surface: #202020;
+  --style-text: #e8e8e8;
+  --style-muted: #a6a6a6;
+  --style-disabled: #7a7a7a;
+  --style-active-surface: #2a2a2a;
   --style-system-text: oklch(74% 0.11 25);
-  --style-backdrop-rgb: 0 0 0;
-  --style-log-fade-rgb: 5 5 5;
-  --style-block-shadow: 5px 5px 5px #222;
-  --style-overlay-shadow: 5px 5px 5px #222;
-  --style-tooltip-shadow: -1px 3px 2px #222;
+  --style-backdrop-rgb: 26 26 26;
+  --style-log-fade-rgb: 32 32 32;
+  --style-block-shadow: 5px 5px 5px #363636;
+  --style-overlay-shadow: 5px 5px 5px #363636;
+  --style-tooltip-shadow: -1px 3px 2px #363636;
   color-scheme: dark;
 }
 
@@ -3599,12 +3605,14 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__theme-buttons,
+.room-top-panel__font-buttons,
 .room-top-panel__color-buttons {
   display: grid;
   gap: 5px;
 }
 
 .style-button.room-top-panel__theme-button,
+.style-button.room-top-panel__font-button,
 .style-button.room-top-panel__color-button {
   width: 218px;
   margin-bottom: 0;
@@ -3612,6 +3620,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.room-top-panel__theme-button[aria-checked="true"],
+.style-button.room-top-panel__font-button[aria-checked="true"],
 .style-button.room-top-panel__color-button[aria-checked="true"] {
   text-decoration: underline;
 }
@@ -3648,6 +3657,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__settings.is-username-prompt .room-top-panel__theme-section,
+.room-top-panel__settings.is-username-prompt .room-top-panel__font-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__color-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__feedback-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__auth-section {

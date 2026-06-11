@@ -13,7 +13,8 @@ This project should use the same kind of minimal text-game language, without cop
 
 ## Typography
 
-- Font family: `"Source Serif 4", Charter, "Iowan Old Style", "Noto Serif", Georgia, serif`.
+- Default font family: `"Source Serif 4", Charter, "Iowan Old Style", "Noto Serif", Georgia, serif`.
+- Optional sans font family: `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
 - Source UI font size: `15px`.
 - Popup/dialog title font size stays `16px`.
 - Mobile readability comes from the room UI scale layer, not from changing the source font size.

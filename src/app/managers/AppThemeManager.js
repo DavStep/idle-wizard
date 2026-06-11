@@ -6,6 +6,10 @@ import {
   DEFAULT_PLAYER_COLOR_MODE,
   normalizePlayerColorMode,
 } from '../../player/playerColorModes.js';
+import {
+  DEFAULT_PLAYER_FONT,
+  normalizePlayerFont,
+} from '../../player/playerFonts.js';
 
 export class AppThemeManager {
   constructor({ rootElement = globalThis.document?.documentElement } = {}) {
@@ -30,11 +34,13 @@ export class AppThemeManager {
     this.unsubscribe = null;
     this.playerFacade = null;
     this.applyTheme(DEFAULT_PLAYER_THEME);
+    this.applyFont(DEFAULT_PLAYER_FONT);
     this.applyColorMode(DEFAULT_PLAYER_COLOR_MODE);
   }
 
   applySettings(snapshot) {
     this.applyTheme(snapshot?.theme);
+    this.applyFont(snapshot?.font);
     this.applyColorMode(snapshot?.colorMode);
   }
 
@@ -44,6 +50,14 @@ export class AppThemeManager {
     }
 
     this.rootElement.dataset.styleTheme = normalizePlayerTheme(theme);
+  }
+
+  applyFont(font) {
+    if (!this.rootElement) {
+      return;
+    }
+
+    this.rootElement.dataset.styleFont = normalizePlayerFont(font);
   }
 
   applyColorMode(colorMode) {

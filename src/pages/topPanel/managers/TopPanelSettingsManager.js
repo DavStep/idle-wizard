@@ -3,6 +3,10 @@ import {
   normalizePlayerColorMode,
 } from '../../../player/playerColorModes.js';
 import {
+  DEFAULT_PLAYER_FONT,
+  normalizePlayerFont,
+} from '../../../player/playerFonts.js';
+import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
@@ -79,6 +83,9 @@ export class TopPanelSettingsManager {
     this.handleThemeClick = (event) => {
       this.playerFacade?.setTheme?.(event.currentTarget.dataset.theme);
     };
+    this.handleFontClick = (event) => {
+      this.playerFacade?.setFont?.(event.currentTarget.dataset.font);
+    };
     this.handleColorModeClick = (event) => {
       this.playerFacade?.setColorMode?.(event.currentTarget.dataset.colorMode);
     };
@@ -135,6 +142,10 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleThemeClick);
     }
 
+    for (const button of this.refs.fontButtons) {
+      button.addEventListener('click', this.handleFontClick);
+    }
+
     for (const button of this.refs.colorModeButtons) {
       button.addEventListener('click', this.handleColorModeClick);
     }
@@ -148,6 +159,7 @@ export class TopPanelSettingsManager {
       this.render({
         username: 'wizard',
         theme: DEFAULT_PLAYER_THEME,
+        font: DEFAULT_PLAYER_FONT,
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
       });
     }
@@ -187,6 +199,10 @@ export class TopPanelSettingsManager {
 
       for (const button of this.refs.themeButtons) {
         button.removeEventListener('click', this.handleThemeClick);
+      }
+
+      for (const button of this.refs.fontButtons) {
+        button.removeEventListener('click', this.handleFontClick);
       }
 
       for (const button of this.refs.colorModeButtons) {
@@ -339,6 +355,7 @@ export class TopPanelSettingsManager {
     }
 
     this.applyThemeSelection(snapshot.theme);
+    this.applyFontSelection(snapshot.font);
     this.applyColorModeSelection(snapshot.colorMode);
 
     if (
@@ -365,6 +382,16 @@ export class TopPanelSettingsManager {
 
     for (const button of this.refs.colorModeButtons) {
       const selected = button.dataset.colorMode === selectedColorMode;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-checked', selected ? 'true' : 'false');
+    }
+  }
+
+  applyFontSelection(font) {
+    const selectedFont = normalizePlayerFont(font);
+
+    for (const button of this.refs.fontButtons) {
+      const selected = button.dataset.font === selectedFont;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
     }

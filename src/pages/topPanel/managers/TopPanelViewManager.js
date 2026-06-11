@@ -1,4 +1,5 @@
 import { PLAYER_COLOR_MODE_OPTIONS } from '../../../player/playerColorModes.js';
+import { PLAYER_FONT_OPTIONS } from '../../../player/playerFonts.js';
 import { PLAYER_THEME_OPTIONS } from '../../../player/playerThemes.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
@@ -205,6 +206,34 @@ export class TopPanelViewManager {
 
     themeSection.append(themeLabel, themeButtons);
 
+    const fontSection = document.createElement('div');
+    fontSection.className =
+      'room-top-panel__settings-section room-top-panel__font-section';
+
+    const fontLabel = document.createElement('div');
+    fontLabel.className = 'room-top-panel__settings-label';
+    fontLabel.textContent = 'font';
+
+    const fontButtons = document.createElement('div');
+    fontButtons.className = 'room-top-panel__font-buttons';
+    fontButtons.setAttribute('role', 'radiogroup');
+    fontButtons.setAttribute('aria-label', 'font');
+    this.refs.fontButtons = [];
+
+    for (const font of PLAYER_FONT_OPTIONS) {
+      const button = document.createElement('button');
+      button.className = 'style-button room-top-panel__font-button';
+      button.type = 'button';
+      button.textContent = font.label;
+      button.dataset.font = font.key;
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-checked', 'false');
+      fontButtons.append(button);
+      this.refs.fontButtons.push(button);
+    }
+
+    fontSection.append(fontLabel, fontButtons);
+
     const colorSection = document.createElement('div');
     colorSection.className =
       'room-top-panel__settings-section room-top-panel__color-section';
@@ -318,7 +347,7 @@ export class TopPanelViewManager {
 
     this.refs.accountPane.append(usernameSection, this.refs.authSection);
     this.refs.reportPane.append(feedbackSection, this.refs.feedbackForm);
-    this.refs.themePane.append(themeSection, colorSection);
+    this.refs.themePane.append(themeSection, fontSection, colorSection);
 
     this.refs.settingsTabs = document.createElement('div');
     this.refs.settingsTabs.className = 'room-top-panel__settings-tabs';
