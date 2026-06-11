@@ -23,6 +23,7 @@ export class PagesFacade {
     playerFacade,
     leaderboardFacade,
     worldChatFacade,
+    tradeAllianceFacade,
     feedbackFacade,
     playerShopFacade,
     authFacade,
@@ -53,13 +54,17 @@ export class PagesFacade {
       authFacade,
       feedbackFacade,
     });
-    this.worldChatManager = new WorkshopWorldChatManager({ worldChatFacade });
+    this.worldChatManager = new WorkshopWorldChatManager({
+      worldChatFacade,
+      tradeAllianceFacade,
+    });
 
     this.registryManager.register(
       'workshop',
       new WorkshopPageFacade({
         gameplayFacade,
         leaderboardFacade,
+        tradeAllianceFacade,
       }),
     );
     this.registryManager.register(

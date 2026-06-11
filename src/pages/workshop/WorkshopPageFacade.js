@@ -7,6 +7,7 @@ import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
 import { WorkshopLogDialogManager } from './managers/WorkshopLogDialogManager.js';
 import { WorkshopDiscoveriesManager } from './managers/WorkshopDiscoveriesManager.js';
 import { WorkshopTaskManager } from './managers/WorkshopTaskManager.js';
+import { WorkshopTradeAllianceManager } from './managers/WorkshopTradeAllianceManager.js';
 
 export class WorkshopPageFacade {
   static explain =
@@ -15,6 +16,7 @@ export class WorkshopPageFacade {
   constructor({
     gameplayFacade,
     leaderboardFacade,
+    tradeAllianceFacade,
   } = {}) {
     this.roomViewManager = new WorkshopRoomViewManager();
     this.flyoutManager = new WorkshopFlyoutManager();
@@ -24,7 +26,12 @@ export class WorkshopPageFacade {
       onSeedsClick: () => this.seedInventoryManager.toggle(),
       onSummonNotice: (message) => this.flyoutManager.show(message),
     });
-    this.leaderboardManager = new WorkshopLeaderboardManager({ gameplayFacade, leaderboardFacade });
+    this.leaderboardManager = new WorkshopLeaderboardManager({
+      gameplayFacade,
+      leaderboardFacade,
+      tradeAllianceFacade,
+    });
+    this.tradeAllianceManager = new WorkshopTradeAllianceManager({ tradeAllianceFacade });
     this.logDialogManager = new WorkshopLogDialogManager({ gameplayFacade });
     this.discoveriesManager = new WorkshopDiscoveriesManager({ gameplayFacade });
     this.manaSphereManager = new WorkshopManaSphereManager({ gameplayFacade });
@@ -40,6 +47,7 @@ export class WorkshopPageFacade {
     this.seedBlockManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.leaderboardManager.mount(uiLayer, popupLayer);
+    this.tradeAllianceManager.mount(uiLayer, popupLayer);
     this.logDialogManager.mount(uiLayer, popupLayer);
     this.discoveriesManager.mount(uiLayer, popupLayer);
     this.seedInventoryManager.mount(popupLayer);
@@ -49,6 +57,7 @@ export class WorkshopPageFacade {
     this.seedInventoryManager.unmount();
     this.discoveriesManager.unmount();
     this.logDialogManager.unmount();
+    this.tradeAllianceManager.unmount();
     this.leaderboardManager.unmount();
     this.taskManager.unmount();
     this.seedBlockManager.unmount();

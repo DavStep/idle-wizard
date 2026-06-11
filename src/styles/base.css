@@ -1137,6 +1137,13 @@ body {
   width: 132px;
 }
 
+.style-button.workshop-page__trade-alliance-button {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 380px);
+  right: var(--style-room-content-edge);
+  width: 132px;
+}
+
 .workshop-page__world-chat-box {
   position: absolute;
   right: var(--style-room-chrome-edge);
@@ -1186,6 +1193,11 @@ body {
 }
 
 .workshop-page__ui-layer:has(.workshop-page__tasks.is-expanded)
+  .style-button.workshop-page__trade-alliance-button {
+  top: calc(var(--style-room-content-top) + 410px);
+}
+
+.workshop-page__ui-layer:has(.workshop-page__tasks.is-expanded)
   .style-button.workshop-page__logs-button,
 .workshop-page__ui-layer:has(.workshop-page__tasks.is-expanded)
   .style-button.workshop-page__discoveries-button {
@@ -1193,6 +1205,12 @@ body {
 }
 
 .workshop-page__leaderboard-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.workshop-page__trade-alliance-popup {
   position: absolute;
   inset: 0;
   z-index: 30;
@@ -1218,6 +1236,7 @@ body {
 }
 
 .workshop-page__leaderboard-popup[hidden],
+.workshop-page__trade-alliance-popup[hidden],
 .workshop-page__world-chat-popup[hidden],
 .workshop-page__logs-popup[hidden],
 .workshop-page__discoveries-popup[hidden] {
@@ -1234,6 +1253,19 @@ body {
   display: flex;
   gap: 3px;
   margin-top: var(--style-dialog-tab-gap);
+}
+
+.workshop-page__trade-alliance-tabs,
+.workshop-page__world-chat-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
+.workshop-page__world-chat-tabs[hidden] {
+  display: none;
 }
 
 .workshop-page__discoveries-tabs {
@@ -1503,6 +1535,132 @@ div.workshop-page__discovery-row {
   align-items: stretch;
   gap: 5px;
   margin: 0;
+}
+
+.workshop-page__trade-alliance-content {
+  max-height: 320px;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.workshop-page__trade-alliance-content::-webkit-scrollbar {
+  display: none;
+}
+
+.workshop-page__trade-alliance-rows {
+  display: grid;
+  gap: 5px;
+}
+
+.workshop-page__trade-alliance-row.is-muted,
+.workshop-page__trade-alliance-empty,
+.workshop-page__trade-alliance-paragraph,
+.workshop-page__trade-alliance-status,
+.workshop-page__trade-alliance-section-label {
+  color: var(--style-muted);
+}
+
+.workshop-page__trade-alliance-empty,
+.workshop-page__trade-alliance-status,
+.workshop-page__trade-alliance-section-label {
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__trade-alliance-paragraph {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.workshop-page__trade-alliance-divider {
+  height: 1px;
+  margin: 3px 0;
+  border-top: var(--style-border);
+}
+
+.workshop-page__trade-alliance-list-row,
+.workshop-page__trade-alliance-quest-row,
+.workshop-page__trade-alliance-member-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__trade-alliance-list-main,
+.workshop-page__trade-alliance-quest-main,
+.workshop-page__trade-alliance-member-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.style-button.workshop-page__trade-alliance-list-action,
+.style-button.workshop-page__trade-alliance-quest-action {
+  flex: 0 0 auto;
+  width: 62px;
+  padding: 1px 4px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.workshop-page__trade-alliance-form {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.workshop-page__trade-alliance-field {
+  display: grid;
+  gap: 2px;
+}
+
+.style-input.workshop-page__trade-alliance-search,
+.style-input.workshop-page__trade-alliance-input {
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.style-input.workshop-page__trade-alliance-role-select {
+  box-sizing: border-box;
+  width: 104px;
+  height: auto;
+  padding: 1px 3px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.style-button.workshop-page__trade-alliance-wide-button {
+  width: 100%;
+  margin: 0;
+}
+
+.style-button.workshop-page__trade-alliance-small-button {
+  width: 48px;
+  padding: 1px 4px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.workshop-page__trade-alliance-member-controls {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 3px;
+  justify-items: end;
+}
+
+.workshop-page__trade-alliance-application-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px 58px;
+  align-items: start;
+  gap: 4px;
+}
+
+.workshop-page__trade-alliance-progress {
+  margin-top: 3px;
+}
+
+.workshop-page__trade-alliance-progress-fill {
+  width: 0%;
 }
 
 .style-input.workshop-page__world-chat-input {
@@ -2076,6 +2234,7 @@ div.workshop-page__discovery-row {
 .style-button.brewing-page__recipes-close,
 .style-button.brewing-page__potions-close,
 .style-button.workshop-page__world-chat-close,
+.style-button.workshop-page__trade-alliance-close,
 .style-button.shop-page__stock-buy-close {
   position: absolute;
   top: var(--style-box-title-top);
@@ -2091,6 +2250,7 @@ div.workshop-page__discovery-row {
 .style-button.brewing-page__recipes-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.brewing-page__potions-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.workshop-page__trade-alliance-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
 }
@@ -2271,6 +2431,8 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__leaderboard-panel,
+.workshop-page__trade-alliance-panel,
+.workshop-page__world-chat-panel,
 .shop-page__sell-panel,
 .shop-page__trade-history-panel,
 .shop-page__demand-panel {
@@ -2291,6 +2453,14 @@ div.workshop-page__discovery-row {
   width: var(--style-discoveries-dialog-width);
   outline: none;
   transform: translate(-50%, -50%);
+}
+
+.workshop-page__trade-alliance-panel {
+  width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+}
+
+.workshop-page__world-chat-panel {
+  width: calc(286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
 }
 
 .shop-page__trade-history-panel,
@@ -3260,17 +3430,19 @@ div.workshop-page__discovery-row {
   width: 260px;
 }
 
+.style-dialog.workshop-page__trade-alliance-dialog {
+  position: relative;
+  width: 300px;
+}
+
 .style-dialog.workshop-page__discoveries-dialog {
   position: relative;
   width: 286px;
 }
 
 .style-dialog.workshop-page__world-chat-dialog {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  position: relative;
   width: 286px;
-  transform: translate(-50%, -50%);
 }
 
 .style-dialog.workshop-page__logs-dialog {
@@ -3414,7 +3586,9 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.workshop-page__leaderboard-tab-button,
-.style-button.workshop-page__discoveries-tab-button {
+.style-button.workshop-page__discoveries-tab-button,
+.style-button.workshop-page__trade-alliance-tab-button,
+.style-button.workshop-page__world-chat-tab-button {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
@@ -3467,7 +3641,9 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.workshop-page__leaderboard-tab-button[aria-selected="true"],
-.style-button.workshop-page__discoveries-tab-button[aria-selected="true"] {
+.style-button.workshop-page__discoveries-tab-button[aria-selected="true"],
+.style-button.workshop-page__trade-alliance-tab-button[aria-selected="true"],
+.style-button.workshop-page__world-chat-tab-button[aria-selected="true"] {
   text-decoration: underline;
 }
 
@@ -3579,6 +3755,7 @@ div.workshop-page__discovery-row {
 
 .workshop-page__seed-inventory:not([hidden]),
 .workshop-page__leaderboard-popup:not([hidden]),
+.workshop-page__trade-alliance-popup:not([hidden]),
 .workshop-page__world-chat-popup:not([hidden]),
 .workshop-page__logs-popup:not([hidden]),
 .workshop-page__discoveries-popup:not([hidden]),
@@ -3600,6 +3777,7 @@ div.workshop-page__discovery-row {
 
 .game-stage:has(.workshop-page__seed-inventory:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__leaderboard-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__trade-alliance-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
@@ -3617,7 +3795,6 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__seed-inventory:not([hidden]) .style-dialog,
-.workshop-page__world-chat-popup:not([hidden]) .style-dialog,
 .workshop-page__logs-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
@@ -3636,6 +3813,8 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__leaderboard-popup:not([hidden]) .workshop-page__leaderboard-panel,
+.workshop-page__trade-alliance-popup:not([hidden]) .workshop-page__trade-alliance-panel,
+.workshop-page__world-chat-popup:not([hidden]) .workshop-page__world-chat-panel,
 .workshop-page__discoveries-popup:not([hidden]) .workshop-page__discoveries-panel,
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,

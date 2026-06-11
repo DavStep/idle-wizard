@@ -382,6 +382,29 @@ export class GameplayFacade {
     return result;
   }
 
+  claimTradeAllianceCrystalReward(reward) {
+    const crystalReward = Math.max(0, Math.floor(Number(reward?.crystalReward) || 0));
+
+    if (crystalReward <= 0) {
+      return {
+        ok: false,
+        reason: 'empty_reward',
+      };
+    }
+
+    this.crystalFacade.add(crystalReward);
+    this.gameplayLogFacade.logTradeAllianceReward({
+      questLabel: reward?.questLabel,
+      crystalReward,
+    });
+    this.publishAndSaveSnapshot();
+
+    return {
+      ok: true,
+      crystalReward,
+    };
+  }
+
   plantGardenSeed(tileNumber, seedTypeId) {
     const result = this.gardenFacade.plantSeed(tileNumber, seedTypeId);
     if (result.ok) {

@@ -77,6 +77,16 @@ export class GameplayLogFacade {
     );
   }
 
+  logTradeAllianceReward({ questLabel = 'daily route', crystalReward = 0 }) {
+    const amount = Math.max(0, Math.floor(Number(crystalReward) || 0));
+
+    if (amount <= 0) {
+      return null;
+    }
+
+    return this.logManager.add(`claimed alliance ${questLabel} for ${amount} crystal`);
+  }
+
   getSnapshot() {
     return this.logManager.getSnapshot();
   }

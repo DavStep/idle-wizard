@@ -8,6 +8,7 @@ import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js
 import { PlayerShopBackendFacade } from './playerShop/PlayerShopBackendFacade.js';
 import { PotionDiscoveryBackendFacade } from './potionDiscoveries/PotionDiscoveryBackendFacade.js';
 import { SpacetimeDbFacade } from './spacetime/SpacetimeDbFacade.js';
+import { TradeAllianceBackendFacade } from './tradeAlliance/TradeAllianceBackendFacade.js';
 import { WorldChatBackendFacade } from './worldChat/WorldChatBackendFacade.js';
 
 export class BackendFacade {
@@ -28,6 +29,7 @@ export class BackendFacade {
     this.playerSyncFacade = new PlayerBackendSyncFacade();
     this.playerShopFacade = new PlayerShopBackendFacade();
     this.potionDiscoveryFacade = new PotionDiscoveryBackendFacade();
+    this.tradeAllianceFacade = new TradeAllianceBackendFacade();
     this.spacetimeDbFacade = new SpacetimeDbFacade({
       uri,
       databaseName,
@@ -50,6 +52,7 @@ export class BackendFacade {
     onGameplaySaveReady,
   } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
+    this.tradeAllianceFacade.setGameplayFacade(gameplayFacade);
     this.playerSyncFacade.setPlayerFacade(playerFacade);
     this.playerSyncFacade.setGameplayFacade(gameplayFacade);
 
@@ -89,6 +92,7 @@ export class BackendFacade {
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
         this.potionDiscoveryFacade.connect(connection);
+        this.tradeAllianceFacade.connect(connection, identity);
         this.gameplaySaveFacade.connect(connection, identity, {
           onReady: finishGameplaySaveReady,
         });
@@ -107,6 +111,7 @@ export class BackendFacade {
   stop() {
     this.disconnectBackendFacades();
     this.leaderboardFacade.setGameplayFacade(null);
+    this.tradeAllianceFacade.setGameplayFacade(null);
     this.playerSyncFacade.setGameplayFacade(null);
     this.spacetimeDbFacade.disconnect();
   }
@@ -121,6 +126,7 @@ export class BackendFacade {
     this.playerSyncFacade.disconnect();
     this.playerShopFacade.disconnect();
     this.potionDiscoveryFacade.disconnect();
+    this.tradeAllianceFacade.disconnect();
   }
 
   getAuthFacade() {
@@ -161,5 +167,9 @@ export class BackendFacade {
 
   getPotionDiscoveryFacade() {
     return this.potionDiscoveryFacade;
+  }
+
+  getTradeAllianceFacade() {
+    return this.tradeAllianceFacade;
   }
 }

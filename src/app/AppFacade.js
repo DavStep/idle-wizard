@@ -36,6 +36,7 @@ export class AppFacade {
       playerFacade: this.playerFacade,
       leaderboardFacade: this.backendFacade.getLeaderboardFacade(),
       worldChatFacade: this.backendFacade.getWorldChatFacade(),
+      tradeAllianceFacade: this.backendFacade.getTradeAllianceFacade(),
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
       authFacade: this.backendFacade.getAuthFacade(),

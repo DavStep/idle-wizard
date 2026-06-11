@@ -92,6 +92,7 @@ export class WorldChatSubscriptionManager {
         row.username === 'system' ? null : 1,
       ),
       body: typeof row.body === 'string' ? row.body : '',
+      allianceTag: typeof row.allianceTag === 'string' ? row.allianceTag : '',
       sentAtMs: this.toTimestampMs(row.sentAt ?? row.sent_at),
     };
   }

@@ -1,17 +1,32 @@
-const EMPTY_SNAPSHOT = {
+const EMPTY_CHAT_SNAPSHOT = {
   connected: false,
   messages: [],
 };
 
+const EMPTY_ALLIANCE_SNAPSHOT = {
+  connected: false,
+  ownAlliance: null,
+  allianceChatMessages: [],
+};
+
+const CHAT_CHANNELS = [
+  { id: 'world', label: 'world chat' },
+  { id: 'alliance', label: 'alliance chat' },
+];
+
 export class WorkshopWorldChatManager {
-  constructor({ worldChatFacade } = {}) {
+  constructor({ worldChatFacade, tradeAllianceFacade } = {}) {
     this.worldChatFacade = worldChatFacade;
+    this.tradeAllianceFacade = tradeAllianceFacade;
     this.root = null;
-    this.unsubscribe = null;
+    this.unsubscribeWorldChat = null;
+    this.unsubscribeTradeAlliance = null;
     this.refs = {};
     this.visible = false;
     this.sending = false;
-    this.lastSnapshot = { ...EMPTY_SNAPSHOT };
+    this.selectedChannelId = 'world';
+    this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
+    this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
     this.previousFocus = null;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
@@ -44,12 +59,22 @@ export class WorkshopWorldChatManager {
     document.addEventListener('keydown', this.handleKeydown);
 
     if (this.worldChatFacade) {
-      this.unsubscribe = this.worldChatFacade.subscribe((snapshot) => this.render(snapshot));
-      this.render(this.worldChatFacade.getSnapshot());
-    } else {
-      this.render({ ...EMPTY_SNAPSHOT });
+      this.unsubscribeWorldChat = this.worldChatFacade.subscribe((snapshot) => {
+        this.worldChatSnapshot = snapshot ?? { ...EMPTY_CHAT_SNAPSHOT };
+        this.render();
+      });
+      this.worldChatSnapshot = this.worldChatFacade.getSnapshot();
     }
 
+    if (this.tradeAllianceFacade) {
+      this.unsubscribeTradeAlliance = this.tradeAllianceFacade.subscribe((snapshot) => {
+        this.tradeAllianceSnapshot = snapshot ?? { ...EMPTY_ALLIANCE_SNAPSHOT };
+        this.render();
+      });
+      this.tradeAllianceSnapshot = this.tradeAllianceFacade.getSnapshot();
+    }
+
+    this.render();
     this.applyVisibility();
 
     return this.root;
@@ -58,7 +83,7 @@ export class WorkshopWorldChatManager {
   createBox() {
     const box = document.createElement('section');
     box.className = 'workshop-page__world-chat-box style-box';
-    box.setAttribute('aria-label', 'World chat preview');
+    box.setAttribute('aria-label', 'Chat preview');
 
     this.refs.button = this.createButton();
     this.refs.buttonPreview = document.createElement('div');
@@ -82,14 +107,17 @@ export class WorkshopWorldChatManager {
     popup.className = 'workshop-page__world-chat-popup';
     popup.addEventListener('click', this.handleRootClick);
 
+    const panel = document.createElement('section');
+    panel.className = 'workshop-page__world-chat-panel';
+    panel.setAttribute('aria-label', 'Chat');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('role', 'dialog');
+    panel.tabIndex = -1;
+
     const dialog = document.createElement('section');
     dialog.className = 'workshop-page__world-chat-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'World chat');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('role', 'dialog');
-    dialog.tabIndex = -1;
 
-    this.refs.dialog = dialog;
+    this.refs.dialog = panel;
     this.refs.title = this.createTitle();
     this.refs.closeButton = this.createCloseButton();
     this.refs.messages = document.createElement('div');
@@ -97,6 +125,8 @@ export class WorkshopWorldChatManager {
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'workshop-page__world-chat-status';
     this.refs.form = this.createForm();
+    this.refs.tabs = this.createTabs();
+
     dialog.append(
       this.refs.title,
       this.refs.closeButton,
@@ -104,7 +134,8 @@ export class WorkshopWorldChatManager {
       this.refs.status,
       this.refs.form,
     );
-    popup.append(dialog);
+    panel.append(dialog, this.refs.tabs);
+    popup.append(panel);
 
     return popup;
   }
@@ -136,7 +167,7 @@ export class WorkshopWorldChatManager {
     this.refs.input.maxLength = 160;
     this.refs.input.autocomplete = 'off';
     this.refs.input.placeholder = 'message';
-    this.refs.input.setAttribute('aria-label', 'World chat message');
+    this.refs.input.setAttribute('aria-label', 'Chat message');
     this.refs.input.addEventListener('input', () => this.updateFormState());
 
     this.refs.sendButton = document.createElement('button');
@@ -148,10 +179,41 @@ export class WorkshopWorldChatManager {
     return form;
   }
 
+  createTabs() {
+    const tabs = document.createElement('div');
+    tabs.className = 'workshop-page__world-chat-tabs';
+    tabs.setAttribute('aria-label', 'Chat channel');
+    tabs.setAttribute('role', 'tablist');
+    this.refs.tabButtons = new Map();
+
+    for (const channel of CHAT_CHANNELS) {
+      const button = document.createElement('button');
+      button.className = 'style-button workshop-page__world-chat-tab-button';
+      button.type = 'button';
+      button.textContent = channel.label;
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => this.onSelectChannel(channel.id));
+      this.refs.tabButtons.set(channel.id, button);
+      tabs.append(button);
+    }
+
+    return tabs;
+  }
+
+  onSelectChannel(channelId) {
+    if (channelId === 'alliance' && !this.hasAllianceChat()) {
+      return;
+    }
+
+    this.selectedChannelId = channelId;
+    this.render();
+  }
+
   async onSubmit(event) {
     event.preventDefault();
 
-    if (this.sending || !this.worldChatFacade) {
+    const facade = this.getSelectedSendFacade();
+    if (this.sending || !facade) {
       return;
     }
 
@@ -166,13 +228,13 @@ export class WorkshopWorldChatManager {
     this.setStatus('sending');
     this.updateFormState();
 
-    const result = await this.worldChatFacade.sendMessage(body);
+    const result = await facade.sendMessage(body);
 
     this.sending = false;
 
     if (result.ok) {
       this.refs.input.value = '';
-      this.setStatus(this.lastSnapshot.connected ? '' : 'offline');
+      this.setStatus(this.getSelectedSnapshot().connected ? '' : 'offline');
     } else {
       this.setStatus(this.formatFailure(result.reason));
     }
@@ -201,47 +263,77 @@ export class WorkshopWorldChatManager {
   }
 
   unmount() {
-    this.unsubscribe?.();
-    this.unsubscribe = null;
+    this.unsubscribeWorldChat?.();
+    this.unsubscribeTradeAlliance?.();
+    this.unsubscribeWorldChat = null;
+    this.unsubscribeTradeAlliance = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.root?.remove();
     this.root = null;
     this.refs = {};
     this.visible = false;
     this.sending = false;
-    this.lastSnapshot = { ...EMPTY_SNAPSHOT };
+    this.selectedChannelId = 'world';
+    this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
+    this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
     this.previousFocus = null;
   }
 
-  render(snapshot) {
+  render() {
     if (!this.root) {
       return;
     }
 
-    this.lastSnapshot = snapshot ?? { ...EMPTY_SNAPSHOT };
-    const messages = Array.isArray(this.lastSnapshot.messages) ? this.lastSnapshot.messages : [];
-    const chatMessages = this.getMessagesWithBody(messages);
-    const previewMessages = this.getPreviewMessages(chatMessages);
-
-    this.renderButtonPreview(previewMessages);
-
-    if (!chatMessages.length) {
-      const empty = document.createElement('div');
-      empty.className = 'workshop-page__world-chat-empty';
-      empty.textContent = this.lastSnapshot.connected ? 'no messages yet' : 'offline';
-      this.refs.messages.replaceChildren(empty);
-    } else {
-      this.refs.messages.replaceChildren(
-        ...chatMessages.map((message) => this.createMessage(message)),
-      );
+    if (this.selectedChannelId === 'alliance' && !this.hasAllianceChat()) {
+      this.selectedChannelId = 'world';
     }
 
+    const channel = this.getSelectedChannel();
+    const snapshot = this.getSelectedSnapshot();
+    const messages = this.getMessagesWithBody(snapshot.messages);
+    const previewMessages = this.getPreviewMessages(messages);
+
+    this.refs.button.textContent = channel.label;
+    this.refs.title.textContent = channel.label;
+    this.refs.input?.setAttribute('aria-label', `${channel.label} message`);
+    this.renderTabs();
+    this.renderButtonPreview(previewMessages, channel);
+    this.renderMessages(messages, snapshot);
+
     if (!this.sending) {
-      this.setStatus(this.lastSnapshot.connected ? '' : 'offline');
+      this.setStatus(snapshot.connected ? '' : 'offline');
     }
 
     this.updateFormState();
     this.scrollMessagesToBottom();
+  }
+
+  renderMessages(messages, snapshot) {
+    if (!messages.length) {
+      const empty = document.createElement('div');
+      empty.className = 'workshop-page__world-chat-empty';
+      empty.textContent = snapshot.connected ? 'no messages yet' : 'offline';
+      this.refs.messages.replaceChildren(empty);
+      return;
+    }
+
+    this.refs.messages.replaceChildren(
+      ...messages.map((message) => this.createMessage(message)),
+    );
+  }
+
+  renderTabs() {
+    const hasAllianceChat = this.hasAllianceChat();
+    this.refs.tabs.hidden = !hasAllianceChat;
+
+    for (const channel of CHAT_CHANNELS) {
+      const selected = this.selectedChannelId === channel.id;
+      const disabled = channel.id === 'alliance' && !hasAllianceChat;
+      const button = this.refs.tabButtons?.get(channel.id);
+      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      button.disabled = disabled;
+    }
   }
 
   createMessage(message) {
@@ -264,14 +356,14 @@ export class WorkshopWorldChatManager {
   }
 
   getMessagesWithBody(messages) {
-    return messages.filter((message) => message?.body);
+    return Array.isArray(messages) ? messages.filter((message) => message?.body) : [];
   }
 
   getPreviewMessages(messages) {
     return messages.slice(-2);
   }
 
-  renderButtonPreview(messages) {
+  renderButtonPreview(messages, channel) {
     if (!this.refs.buttonPreview || !this.refs.button) {
       return;
     }
@@ -279,9 +371,9 @@ export class WorkshopWorldChatManager {
     if (!messages.length) {
       const empty = document.createElement('div');
       empty.className = 'workshop-page__world-chat-empty';
-      empty.textContent = this.lastSnapshot.connected ? 'no messages yet' : 'offline';
+      empty.textContent = this.getSelectedSnapshot().connected ? 'no messages yet' : 'offline';
       this.refs.buttonPreview.replaceChildren(empty);
-      this.refs.button.setAttribute('aria-label', `world chat, ${empty.textContent}`);
+      this.refs.button.setAttribute('aria-label', `${channel.label}, ${empty.textContent}`);
       return;
     }
 
@@ -290,7 +382,7 @@ export class WorkshopWorldChatManager {
     );
     this.refs.button.setAttribute(
       'aria-label',
-      `world chat, latest messages: ${messages
+      `${channel.label}, latest messages: ${messages
         .map((message) => `${this.formatSender(message)}: ${message.body}`)
         .join('; ')}`,
     );
@@ -300,12 +392,22 @@ export class WorkshopWorldChatManager {
     const username = message?.username || 'wizard';
     const fallbackLevel = this.isSystemMessage(message) ? null : 1;
     const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
+    const allianceTag = this.normalizeAllianceTag(message?.allianceTag);
+    const prefix = allianceTag ? `[${allianceTag}] ` : '';
 
     if (!playerLevel) {
-      return username;
+      return `${prefix}${username}`;
     }
 
-    return `${username}(${playerLevel})`;
+    return `${prefix}${username}(${playerLevel})`;
+  }
+
+  normalizeAllianceTag(tag) {
+    const normalized = String(tag ?? '')
+      .trim()
+      .toUpperCase();
+
+    return /^[A-Z]{2,5}$/.test(normalized) ? normalized : '';
   }
 
   isSystemMessage(message) {
@@ -331,13 +433,15 @@ export class WorkshopWorldChatManager {
       return;
     }
 
+    const snapshot = this.getSelectedSnapshot();
+    const facade = this.getSelectedSendFacade();
     const canSend =
-      Boolean(this.worldChatFacade) &&
-      Boolean(this.lastSnapshot.connected) &&
+      Boolean(facade) &&
+      Boolean(snapshot.connected) &&
       !this.sending &&
       Boolean(this.refs.input.value.trim());
 
-    this.refs.input.disabled = !this.worldChatFacade || !this.lastSnapshot.connected || this.sending;
+    this.refs.input.disabled = !facade || !snapshot.connected || this.sending;
     this.refs.sendButton.disabled = !canSend;
   }
 
@@ -374,5 +478,35 @@ export class WorkshopWorldChatManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  getSelectedChannel() {
+    return (
+      CHAT_CHANNELS.find((channel) => channel.id === this.selectedChannelId) ??
+      CHAT_CHANNELS[0]
+    );
+  }
+
+  getSelectedSnapshot() {
+    if (this.selectedChannelId === 'alliance') {
+      return {
+        connected: this.tradeAllianceSnapshot?.connected && this.hasAllianceChat(),
+        messages: this.tradeAllianceSnapshot?.allianceChatMessages ?? [],
+      };
+    }
+
+    return this.worldChatSnapshot ?? { ...EMPTY_CHAT_SNAPSHOT };
+  }
+
+  getSelectedSendFacade() {
+    if (this.selectedChannelId === 'alliance') {
+      return this.tradeAllianceFacade;
+    }
+
+    return this.worldChatFacade;
+  }
+
+  hasAllianceChat() {
+    return Boolean(this.tradeAllianceSnapshot?.ownAlliance);
   }
 }
