@@ -6,8 +6,8 @@ const DEFAULT_PLAYER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
 const MAX_REPORTED_PLAYER_LEVEL = 20;
-const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = false;
-const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = false;
+const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
+const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
 const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
 const ENABLE_CLIENT_POTION_DISCOVERY = false;
 const ENABLE_PLAYER_SHOP_EXCHANGE = false;
@@ -15,6 +15,17 @@ const ENABLE_NPC_MARKET_PRESSURE = false;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
 const MAX_FEEDBACK_BODY_LENGTH = 2000;
+const MAX_TRADE_ALLIANCE_MEMBERS = 50;
+const MAX_TRADE_ALLIANCE_NAME_LENGTH = 32;
+const MIN_TRADE_ALLIANCE_NAME_LENGTH = 3;
+const MAX_TRADE_ALLIANCE_DESCRIPTION_LENGTH = 160;
+const MAX_TRADE_ALLIANCE_NOTICE_LENGTH = 160;
+const MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS = 50;
+const MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS_PER_PLAYER = 5;
+const MAX_TRADE_ALLIANCE_DAILY_QUESTS = 5;
+const MAX_TRADE_ALLIANCE_QUEST_TARGET = 1_000_000_000n;
+const MAX_TRADE_ALLIANCE_QUEST_CRYSTAL_REWARD = 100;
+const TRADE_ALLIANCE_CHAT_HISTORY_LIMIT = 200;
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
@@ -55,10 +66,48 @@ const MAX_GAME_CONFIG_TASKS_PER_LEVEL = 5;
 const MAX_GAME_CONFIG_TASK_QUANTITY = 1_000_000;
 const MAX_GAME_CONFIG_RESOURCE_LIMIT = 1_000_000;
 const MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH = 250_000;
+const MAX_PLAYER_SAVE_LOG_ENTRIES = 100;
+const MAX_PLAYER_SAVE_LOG_MESSAGE_LENGTH = 240;
+const MAX_PLAYER_SAVE_ITEM_STACKS = 400;
+const MAX_PLAYER_SAVE_ITEM_QUANTITY = 10_000;
+const MAX_PLAYER_SAVE_MANA_CURRENT = 5_000;
+const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
+const MAX_PLAYER_SAVE_CURRENT_GOLD = 250_000;
+const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
+const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
+const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const PLAYER_THEMES = new Set(['white', 'black']);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
+const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
+const TRADE_ALLIANCE_ROLE_TRADE_MASTER = 'tradeMaster';
+const TRADE_ALLIANCE_ROLE_QUARTERMASTER = 'quartermaster';
+const TRADE_ALLIANCE_ROLE_FACTOR = 'factor';
+const TRADE_ALLIANCE_ROLE_BROKER = 'broker';
+const TRADE_ALLIANCE_ROLE_TRADER = 'trader';
+const TRADE_ALLIANCE_ROLES = [
+  TRADE_ALLIANCE_ROLE_TRADE_MASTER,
+  TRADE_ALLIANCE_ROLE_QUARTERMASTER,
+  TRADE_ALLIANCE_ROLE_FACTOR,
+  TRADE_ALLIANCE_ROLE_BROKER,
+  TRADE_ALLIANCE_ROLE_TRADER,
+] as const;
+const TRADE_ALLIANCE_ROLE_SET = new Set<string>(TRADE_ALLIANCE_ROLES);
+const TRADE_ALLIANCE_ROLE_POWER = new Map<string, number>([
+  [TRADE_ALLIANCE_ROLE_TRADE_MASTER, 5],
+  [TRADE_ALLIANCE_ROLE_QUARTERMASTER, 4],
+  [TRADE_ALLIANCE_ROLE_FACTOR, 3],
+  [TRADE_ALLIANCE_ROLE_BROKER, 2],
+  [TRADE_ALLIANCE_ROLE_TRADER, 1],
+]);
+const TRADE_ALLIANCE_ROLE_CAPS = new Map<string, number>([
+  [TRADE_ALLIANCE_ROLE_TRADE_MASTER, 1],
+  [TRADE_ALLIANCE_ROLE_QUARTERMASTER, 2],
+  [TRADE_ALLIANCE_ROLE_FACTOR, 5],
+  [TRADE_ALLIANCE_ROLE_BROKER, 10],
+  [TRADE_ALLIANCE_ROLE_TRADER, MAX_TRADE_ALLIANCE_MEMBERS],
+]);
 
 // Fill this with owner SpacetimeDB identity hex strings before publishing a fresh DB.
 // Legacy npc_market_admin rows are audit/display only; they are not authorization.
@@ -753,6 +802,34 @@ const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
   maxCauldronIngredients: 5,
   wastedPotionKey: 'wastedPotion',
 });
+const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
+  dailyQuests: [
+    {
+      id: 'allianceIncomeEasy',
+      label: 'small caravan',
+      type: 'allianceIncome',
+      target: 500,
+      minContribution: 25,
+      crystalReward: 1,
+    },
+    {
+      id: 'allianceIncomeMedium',
+      label: 'busy road',
+      type: 'allianceIncome',
+      target: 2_000,
+      minContribution: 100,
+      crystalReward: 2,
+    },
+    {
+      id: 'allianceIncomeHard',
+      label: 'long route',
+      type: 'allianceIncome',
+      target: 8_000,
+      minContribution: 400,
+      crystalReward: 3,
+    },
+  ],
+});
 const DEFAULT_ITEMS_CONFIG_JSON = toGameConfigJson(getDefaultItemsConfig());
 const DEFAULT_POTION_RECIPES_CONFIG_JSON = toGameConfigJson({
   recipes: potionRecipeCatalog,
@@ -765,6 +842,7 @@ const gameConfigCatalog = [
   { configKey: 'shop', configJson: DEFAULT_SHOP_CONFIG_JSON },
   { configKey: 'research', configJson: DEFAULT_RESEARCH_CONFIG_JSON },
   { configKey: 'brewing', configJson: DEFAULT_BREWING_CONFIG_JSON },
+  { configKey: 'tradeAlliance', configJson: DEFAULT_TRADE_ALLIANCE_CONFIG_JSON },
   { configKey: 'items', configJson: DEFAULT_ITEMS_CONFIG_JSON },
   { configKey: 'potionRecipes', configJson: DEFAULT_POTION_RECIPES_CONFIG_JSON },
 ];
@@ -787,7 +865,7 @@ const spacetimedb = schema({
   playerGameplaySave: table(
     {
       name: 'player_gameplay_save',
-      public: true,
+      public: false,
     },
     {
       identity: t.identity().primaryKey(),
@@ -821,6 +899,162 @@ const spacetimedb = schema({
       body: t.string(),
       sentAt: t.timestamp(),
       playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
+      allianceTag: t.string().default(''),
+    },
+  ),
+  tradeAlliance: table(
+    {
+      name: 'trade_alliance',
+      public: true,
+      indexes: [
+        { accessor: 'byTag', algorithm: 'btree', columns: ['tag'] },
+        { accessor: 'byTotalIncome', algorithm: 'btree', columns: ['totalIncome'] },
+        { accessor: 'bySeasonIncome', algorithm: 'btree', columns: ['seasonIncome'] },
+      ],
+    },
+    {
+      allianceId: t.uuid().primaryKey(),
+      name: t.string(),
+      normalizedName: t.string(),
+      tag: t.string(),
+      description: t.string(),
+      notice: t.string(),
+      joinMode: t.string(),
+      leaderIdentity: t.identity(),
+      memberCount: t.u32(),
+      totalIncome: t.u64(),
+      seasonIncome: t.u64(),
+      createdAt: t.timestamp(),
+      updatedAt: t.timestamp(),
+      seasonKey: t.string().default(''),
+      dayKey: t.string().default(''),
+      dailyIncome: t.u64().default(0n),
+    },
+  ),
+  tradeAllianceMember: table(
+    {
+      name: 'trade_alliance_member',
+      public: true,
+      indexes: [
+        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
+        { accessor: 'byJoinedAt', algorithm: 'btree', columns: ['joinedAt'] },
+      ],
+    },
+    {
+      memberIdentity: t.identity().primaryKey(),
+      allianceId: t.uuid(),
+      username: t.string(),
+      playerLevel: t.u32(),
+      role: t.string(),
+      joinedAt: t.timestamp(),
+      updatedAt: t.timestamp(),
+      totalContribution: t.u64().default(0n),
+      dailyContribution: t.u64().default(0n),
+      dayKey: t.string().default(''),
+    },
+  ),
+  tradeAllianceApplication: table(
+    {
+      name: 'trade_alliance_application',
+      public: true,
+      indexes: [
+        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
+        { accessor: 'byApplicantIdentity', algorithm: 'btree', columns: ['applicantIdentity'] },
+        { accessor: 'byCreatedAt', algorithm: 'btree', columns: ['createdAt'] },
+      ],
+    },
+    {
+      applicationKey: t.string().primaryKey(),
+      allianceId: t.uuid(),
+      applicantIdentity: t.identity(),
+      username: t.string(),
+      playerLevel: t.u32(),
+      createdAt: t.timestamp(),
+    },
+  ),
+  tradeAllianceChat: table(
+    {
+      name: 'trade_alliance_chat',
+      public: false,
+      indexes: [
+        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
+        { accessor: 'bySentAt', algorithm: 'btree', columns: ['sentAt'] },
+      ],
+    },
+    {
+      messageId: t.uuid().primaryKey(),
+      allianceId: t.uuid(),
+      allianceTag: t.string(),
+      senderIdentity: t.identity(),
+      username: t.string(),
+      playerLevel: t.u32(),
+      body: t.string(),
+      sentAt: t.timestamp(),
+    },
+  ),
+  tradeAllianceQuestProgress: table(
+    {
+      name: 'trade_alliance_quest_progress',
+      public: true,
+      indexes: [
+        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
+        { accessor: 'byDayKey', algorithm: 'btree', columns: ['dayKey'] },
+      ],
+    },
+    {
+      questKey: t.string().primaryKey(),
+      allianceId: t.uuid(),
+      dayKey: t.string(),
+      questId: t.string(),
+      label: t.string(),
+      questType: t.string(),
+      target: t.u64(),
+      progress: t.u64(),
+      minContribution: t.u64(),
+      crystalReward: t.u32(),
+      updatedAt: t.timestamp(),
+    },
+  ),
+  tradeAllianceQuestContribution: table(
+    {
+      name: 'trade_alliance_quest_contribution',
+      public: true,
+      indexes: [
+        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
+        { accessor: 'byContributorIdentity', algorithm: 'btree', columns: ['contributorIdentity'] },
+      ],
+    },
+    {
+      contributionKey: t.string().primaryKey(),
+      allianceId: t.uuid(),
+      dayKey: t.string(),
+      questId: t.string(),
+      contributorIdentity: t.identity(),
+      username: t.string(),
+      contribution: t.u64(),
+      updatedAt: t.timestamp(),
+    },
+  ),
+  tradeAllianceRewardInbox: table(
+    {
+      name: 'trade_alliance_reward_inbox',
+      public: false,
+      indexes: [
+        { accessor: 'byRecipientIdentity', algorithm: 'btree', columns: ['recipientIdentity'] },
+        { accessor: 'byClaimedAt', algorithm: 'btree', columns: ['claimedAt'] },
+      ],
+    },
+    {
+      rewardKey: t.string().primaryKey(),
+      recipientIdentity: t.identity(),
+      allianceId: t.uuid(),
+      allianceName: t.string(),
+      questId: t.string(),
+      questLabel: t.string(),
+      dayKey: t.string(),
+      crystalReward: t.u32(),
+      claimedAt: t.timestamp(),
+      collected: t.bool().default(false),
     },
   ),
   playerFeedback: table(
@@ -1005,6 +1239,100 @@ const spacetimedb = schema({
   ),
 });
 
+const playerGameplaySaveResult = t.option(
+  t.row('PlayerGameplaySaveResult', {
+    identity: t.identity().primaryKey(),
+    saveJson: t.string(),
+    updatedAt: t.timestamp(),
+  }),
+);
+const ownTradeAllianceChatResult = t.array(
+  t.row('OwnTradeAllianceChatResult', {
+    messageId: t.uuid().primaryKey(),
+    allianceId: t.uuid(),
+    allianceTag: t.string(),
+    senderIdentity: t.identity(),
+    username: t.string(),
+    playerLevel: t.u32(),
+    body: t.string(),
+    sentAt: t.timestamp(),
+  }),
+);
+const ownTradeAllianceRewardInboxResult = t.array(
+  t.row('OwnTradeAllianceRewardInboxResult', {
+    rewardKey: t.string().primaryKey(),
+    recipientIdentity: t.identity(),
+    allianceId: t.uuid(),
+    allianceName: t.string(),
+    questId: t.string(),
+    questLabel: t.string(),
+    dayKey: t.string(),
+    crystalReward: t.u32(),
+    claimedAt: t.timestamp(),
+  }),
+);
+
+export const own_player_gameplay_save = spacetimedb.view(
+  { name: 'own_player_gameplay_save', public: true },
+  playerGameplaySaveResult,
+  (ctx) => ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined,
+);
+
+export const own_trade_alliance_chat = spacetimedb.view(
+  { name: 'own_trade_alliance_chat', public: true },
+  ownTradeAllianceChatResult,
+  (ctx) => {
+    const member = ctx.db.tradeAllianceMember.memberIdentity.find(ctx.sender);
+    if (!member) {
+      return [];
+    }
+
+    return Array.from(ctx.db.tradeAllianceChat.iter())
+      .filter(
+        (message) =>
+          getTradeAllianceIdKey(message.allianceId) ===
+          getTradeAllianceIdKey(member.allianceId),
+      )
+      .sort((left, right) => {
+        const leftSentAt = left.sentAt.microsSinceUnixEpoch;
+        const rightSentAt = right.sentAt.microsSinceUnixEpoch;
+
+        if (leftSentAt < rightSentAt) {
+          return -1;
+        }
+
+        if (leftSentAt > rightSentAt) {
+          return 1;
+        }
+
+        return left.messageId.compareTo(right.messageId);
+      })
+      .slice(-40);
+  },
+);
+
+export const own_trade_alliance_reward_inbox = spacetimedb.view(
+  { name: 'own_trade_alliance_reward_inbox', public: true },
+  ownTradeAllianceRewardInboxResult,
+  (ctx) =>
+    Array.from(ctx.db.tradeAllianceRewardInbox.iter())
+      .filter((reward) => reward.recipientIdentity.isEqual(ctx.sender) && !reward.collected)
+      .sort((left, right) => {
+        const leftClaimedAt = left.claimedAt.microsSinceUnixEpoch;
+        const rightClaimedAt = right.claimedAt.microsSinceUnixEpoch;
+
+        if (leftClaimedAt < rightClaimedAt) {
+          return -1;
+        }
+
+        if (leftClaimedAt > rightClaimedAt) {
+          return 1;
+        }
+
+        return left.rewardKey.localeCompare(right.rewardKey);
+      }),
+);
+
 type IdleWizardSchema = InferSchema<typeof spacetimedb>;
 type IdleWizardReducerCtx = ReducerCtx<IdleWizardSchema>;
 
@@ -1134,6 +1462,130 @@ function normalizeFeedbackBody(body: string): string {
     .slice(0, MAX_FEEDBACK_BODY_LENGTH);
 }
 
+function normalizeTradeAllianceName(name: string): string {
+  return stripUnsafeTextControls(String(name ?? ''))
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, MAX_TRADE_ALLIANCE_NAME_LENGTH);
+}
+
+function getTradeAllianceNormalizedName(name: string): string {
+  return normalizeTradeAllianceName(name).toLowerCase();
+}
+
+function validateTradeAllianceName(name: string): string {
+  const safeName = normalizeTradeAllianceName(name);
+
+  if (safeName.length < MIN_TRADE_ALLIANCE_NAME_LENGTH) {
+    throw new Error('Alliance name is too short.');
+  }
+
+  return safeName;
+}
+
+function validateTradeAllianceTag(tag: string): string {
+  const safeTag = stripUnsafeTextControls(String(tag ?? '')).trim().toUpperCase();
+
+  if (!/^[A-Z]{2,5}$/.test(safeTag)) {
+    throw new Error('Alliance tag must be 2-5 uppercase English letters.');
+  }
+
+  return safeTag;
+}
+
+function normalizeTradeAllianceDescription(description: string): string {
+  return stripUnsafeTextControls(String(description ?? ''))
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, MAX_TRADE_ALLIANCE_DESCRIPTION_LENGTH);
+}
+
+function normalizeTradeAllianceNotice(notice: string): string {
+  return stripUnsafeTextControls(String(notice ?? ''))
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, MAX_TRADE_ALLIANCE_NOTICE_LENGTH);
+}
+
+function normalizeTradeAllianceJoinMode(joinMode: string): string {
+  const safeJoinMode = String(joinMode ?? '').trim();
+
+  return TRADE_ALLIANCE_JOIN_MODES.has(safeJoinMode) ? safeJoinMode : 'apply';
+}
+
+function validateTradeAllianceRole(role: string): string {
+  const safeRole = String(role ?? '').trim();
+
+  if (!TRADE_ALLIANCE_ROLE_SET.has(safeRole)) {
+    throw new Error('Invalid alliance role.');
+  }
+
+  return safeRole;
+}
+
+function getTradeAllianceRolePower(role: string): number {
+  return TRADE_ALLIANCE_ROLE_POWER.get(role) ?? 0;
+}
+
+function getTradeAllianceRoleCap(role: string): number {
+  return TRADE_ALLIANCE_ROLE_CAPS.get(role) ?? MAX_TRADE_ALLIANCE_MEMBERS;
+}
+
+function getTradeAllianceIdKey(allianceId: unknown): string {
+  if (!allianceId) {
+    return '';
+  }
+
+  if (typeof allianceId === 'string') {
+    return allianceId;
+  }
+
+  if (
+    typeof allianceId === 'object' &&
+    allianceId !== null &&
+    'toHexString' in allianceId &&
+    typeof allianceId.toHexString === 'function'
+  ) {
+    return allianceId.toHexString();
+  }
+
+  return String(allianceId);
+}
+
+function getTradeAllianceDayKey(ctx: IdleWizardReducerCtx): string {
+  return String(ctx.timestamp.microsSinceUnixEpoch / 86_400_000_000n);
+}
+
+function getTradeAllianceSeasonKey(ctx: IdleWizardReducerCtx): string {
+  return String(ctx.timestamp.microsSinceUnixEpoch / (7n * 86_400_000_000n));
+}
+
+function getTradeAllianceApplicationKey(allianceId: unknown, identity: Identity): string {
+  return `${getTradeAllianceIdKey(allianceId)}:${getIdentityHex(identity)}`;
+}
+
+function getTradeAllianceQuestKey(allianceId: unknown, dayKey: string, questId: string): string {
+  return `${dayKey}:${getTradeAllianceIdKey(allianceId)}:${questId}`;
+}
+
+function getTradeAllianceContributionKey(
+  allianceId: unknown,
+  dayKey: string,
+  questId: string,
+  identity: Identity,
+): string {
+  return `${getTradeAllianceQuestKey(allianceId, dayKey, questId)}:${getIdentityHex(identity)}`;
+}
+
+function getTradeAllianceRewardKey(
+  allianceId: unknown,
+  dayKey: string,
+  questId: string,
+  identity: Identity,
+): string {
+  return `${getTradeAllianceQuestKey(allianceId, dayKey, questId)}:${getIdentityHex(identity)}`;
+}
+
 function normalizeResearchName(researchName: string): string {
   return stripUnsafeTextControls(String(researchName ?? ''))
     .trim()
@@ -1233,6 +1685,211 @@ function getUnknownPotionCatalogItem(potionKey: string) {
 
 function getPlayerShopListingKey(ctx: IdleWizardReducerCtx, slotNumber: number): string {
   return `${ctx.sender.toHexString()}:${slotNumber}`;
+}
+
+function findTradeAllianceById(ctx: IdleWizardReducerCtx, allianceId: string) {
+  const safeAllianceId = String(allianceId ?? '').trim();
+
+  if (!safeAllianceId) {
+    throw new Error('Alliance is required.');
+  }
+
+  for (const alliance of ctx.db.tradeAlliance.iter()) {
+    if (getTradeAllianceIdKey(alliance.allianceId) === safeAllianceId) {
+      return alliance;
+    }
+  }
+
+  throw new Error('Alliance not found.');
+}
+
+function findTradeAllianceByTag(ctx: IdleWizardReducerCtx, tag: string) {
+  const safeTag = validateTradeAllianceTag(tag);
+
+  for (const alliance of ctx.db.tradeAlliance.iter()) {
+    if (alliance.tag === safeTag) {
+      return alliance;
+    }
+  }
+
+  return null;
+}
+
+function assertTradeAllianceNameAvailable(
+  ctx: IdleWizardReducerCtx,
+  normalizedName: string,
+  currentAllianceId = '',
+) {
+  for (const alliance of ctx.db.tradeAlliance.iter()) {
+    if (
+      alliance.normalizedName === normalizedName &&
+      getTradeAllianceIdKey(alliance.allianceId) !== currentAllianceId
+    ) {
+      throw new Error('Alliance name is already taken.');
+    }
+  }
+}
+
+function assertTradeAllianceTagAvailable(
+  ctx: IdleWizardReducerCtx,
+  tag: string,
+  currentAllianceId = '',
+) {
+  for (const alliance of ctx.db.tradeAlliance.iter()) {
+    if (
+      alliance.tag === tag &&
+      getTradeAllianceIdKey(alliance.allianceId) !== currentAllianceId
+    ) {
+      throw new Error('Alliance tag is already taken.');
+    }
+  }
+}
+
+function getTradeAllianceMember(ctx: IdleWizardReducerCtx, identity = ctx.sender) {
+  return ctx.db.tradeAllianceMember.memberIdentity.find(identity) ?? null;
+}
+
+function getTradeAllianceMembers(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+  const allianceKey = getTradeAllianceIdKey(allianceId);
+
+  return Array.from(ctx.db.tradeAllianceMember.iter()).filter(
+    (member) => getTradeAllianceIdKey(member.allianceId) === allianceKey,
+  );
+}
+
+function getTradeAllianceMemberCount(ctx: IdleWizardReducerCtx, allianceId: unknown): number {
+  return getTradeAllianceMembers(ctx, allianceId).length;
+}
+
+function getTradeAllianceRoleCount(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+  role: string,
+): number {
+  return getTradeAllianceMembers(ctx, allianceId).filter((member) => member.role === role).length;
+}
+
+function assertTradeAllianceRoleCap(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+  role: string,
+  targetIdentity?: Identity,
+) {
+  const cap = getTradeAllianceRoleCap(role);
+  const count = getTradeAllianceMembers(ctx, allianceId).filter(
+    (member) => member.role === role && !member.memberIdentity.isEqual(targetIdentity ?? ctx.sender),
+  ).length;
+
+  if (count >= cap) {
+    throw new Error('Alliance role is full.');
+  }
+}
+
+function assertTradeAllianceCanManageApplications(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+  const member = getTradeAllianceMember(ctx);
+
+  if (
+    !member ||
+    getTradeAllianceIdKey(member.allianceId) !== getTradeAllianceIdKey(allianceId) ||
+    getTradeAllianceRolePower(member.role) < getTradeAllianceRolePower(TRADE_ALLIANCE_ROLE_FACTOR)
+  ) {
+    throw new Error('Alliance applications require factor role.');
+  }
+
+  return member;
+}
+
+function assertTradeAllianceCanManageMember(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+  targetMember: { memberIdentity: Identity; role: string; allianceId: unknown },
+) {
+  const actor = getTradeAllianceMember(ctx);
+
+  if (!actor || getTradeAllianceIdKey(actor.allianceId) !== getTradeAllianceIdKey(allianceId)) {
+    throw new Error('Alliance role required.');
+  }
+
+  if (targetMember.memberIdentity.isEqual(ctx.sender)) {
+    throw new Error('Cannot change your own alliance role this way.');
+  }
+
+  const actorPower = getTradeAllianceRolePower(actor.role);
+  const targetPower = getTradeAllianceRolePower(targetMember.role);
+
+  if (actor.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+    return actor;
+  }
+
+  if (actor.role === TRADE_ALLIANCE_ROLE_QUARTERMASTER && targetPower < actorPower) {
+    return actor;
+  }
+
+  if (actor.role === TRADE_ALLIANCE_ROLE_FACTOR && targetPower < actorPower) {
+    return actor;
+  }
+
+  throw new Error('Alliance role is not high enough.');
+}
+
+function assertTradeAllianceCanAssignRole(
+  actor: { role: string },
+  targetRole: string,
+) {
+  const actorPower = getTradeAllianceRolePower(actor.role);
+  const targetPower = getTradeAllianceRolePower(targetRole);
+
+  if (actor.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+    return;
+  }
+
+  if (
+    actor.role === TRADE_ALLIANCE_ROLE_QUARTERMASTER &&
+    targetPower < actorPower &&
+    targetRole !== TRADE_ALLIANCE_ROLE_TRADE_MASTER
+  ) {
+    return;
+  }
+
+  if (
+    actor.role === TRADE_ALLIANCE_ROLE_FACTOR &&
+    (targetRole === TRADE_ALLIANCE_ROLE_BROKER ||
+      targetRole === TRADE_ALLIANCE_ROLE_TRADER)
+  ) {
+    return;
+  }
+
+  throw new Error('Alliance role is not assignable.');
+}
+
+function updateTradeAllianceMemberProfile(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+  username: string,
+  playerLevel: number,
+) {
+  const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
+
+  if (member) {
+    ctx.db.tradeAllianceMember.memberIdentity.update({
+      ...member,
+      username,
+      playerLevel,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+    if (!application.applicantIdentity.isEqual(identity)) {
+      continue;
+    }
+
+    ctx.db.tradeAllianceApplication.applicationKey.update({
+      ...application,
+      username,
+      playerLevel,
+    });
+  }
 }
 
 function validatePlayerShopSlotNumber(slotNumber: number): number {
@@ -1465,7 +2122,11 @@ function validateGameConfigJson(configKey: string, configJson: string): string {
   return value;
 }
 
-function validatePlayerGameplaySaveJson(saveJson: string): string {
+function validatePlayerGameplaySaveJson(
+  ctx: IdleWizardReducerCtx,
+  saveJson: string,
+  previousSaveJson?: string,
+): string {
   const value = String(saveJson ?? '').trim();
 
   if (!value || value.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
@@ -1484,7 +2145,989 @@ function validatePlayerGameplaySaveJson(saveJson: string): string {
     throw new Error('Invalid player save value.');
   }
 
-  return value;
+  return JSON.stringify(normalizePlayerGameplaySave(ctx, parsedSave, previousSaveJson));
+}
+
+function normalizePlayerGameplaySave(
+  ctx: IdleWizardReducerCtx,
+  save: unknown,
+  previousSaveJson?: string,
+) {
+  if (!isRecord(save)) {
+    throw new Error('Invalid player save value.');
+  }
+
+  const itemCatalog = getSaveItemCatalog(ctx);
+  const taskCatalog = getSaveTaskCatalog(ctx);
+  const previousLevel = readSavedCurrentLevel(previousSaveJson);
+  const tasks = normalizeSaveTasks(save.tasks, taskCatalog, previousLevel);
+  const levelLimits = getSaveLevelLimits(ctx, tasks.currentLevel);
+
+  return {
+    version: 2,
+    savedAt: normalizeSaveTimestamp(ctx),
+    mana: normalizeSaveResource(save.mana),
+    gold: normalizeSaveGold(save.gold),
+    crystal: normalizeSaveCrystal(save.crystal),
+    logs: normalizeSaveLogs(save.logs),
+    inventory: normalizeSaveInventory(save.inventory, itemCatalog),
+    research: normalizeSaveResearch(save.research),
+    shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
+    brewing: normalizeSaveBrewing(save.brewing, itemCatalog),
+    garden: normalizeSaveGarden(save.garden, itemCatalog, levelLimits),
+    tasks,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeSaveTimestamp(ctx: IdleWizardReducerCtx): number {
+  const nowMs = Number(ctx.timestamp.microsSinceUnixEpoch / 1000n);
+  return nowMs;
+}
+
+function normalizeSaveResource(value: unknown) {
+  const resource = isRecord(value) ? value : {};
+  const cap = clampSaveNumber(resource.cap, 0, MAX_PLAYER_SAVE_MANA_CURRENT, 0);
+
+  return {
+    current: clampSaveNumber(resource.current, 0, cap, 0),
+    cap,
+    perSecond: clampSaveNumber(resource.perSecond, 0, MAX_PLAYER_SAVE_MANA_PER_SECOND, 0),
+  };
+}
+
+function normalizeSaveGold(value: unknown) {
+  const gold = isRecord(value) ? value : {};
+  const current = clampSaveGoldPrice(gold.current, BigInt(MAX_PLAYER_SAVE_CURRENT_GOLD));
+  const totalGenerated = clampSaveGoldPrice(
+    gold.totalGenerated,
+    BigInt(MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD),
+  );
+
+  return {
+    current,
+    totalGenerated: Math.max(current, totalGenerated),
+  };
+}
+
+function normalizeSaveCrystal(value: unknown) {
+  const crystal = isRecord(value) ? value : {};
+
+  return {
+    current: clampSaveInteger(crystal.current, 0, MAX_PLAYER_SAVE_CURRENT_CRYSTAL, 0),
+  };
+}
+
+function normalizeSaveLogs(value: unknown) {
+  const logs = isRecord(value) ? value : {};
+  const entries = Array.isArray(logs.entries)
+    ? logs.entries
+        .map((entry) => normalizeSaveLogEntry(entry))
+        .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+        .slice(-MAX_PLAYER_SAVE_LOG_ENTRIES)
+    : [];
+  const highestId = entries.reduce((maxId, entry) => Math.max(maxId, entry.id), 0);
+
+  return {
+    nextId: Math.max(
+      highestId + 1,
+      clampSaveInteger(logs.nextId, 1, Number.MAX_SAFE_INTEGER, highestId + 1),
+    ),
+    entries,
+  };
+}
+
+function normalizeSaveLogEntry(value: unknown) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const message = stripUnsafeTextControls(String(value.message ?? ''))
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, MAX_PLAYER_SAVE_LOG_MESSAGE_LENGTH);
+
+  if (!message) {
+    return null;
+  }
+
+  return {
+    id: clampSaveInteger(value.id, 1, Number.MAX_SAFE_INTEGER, 1),
+    type: normalizeSaveText(value.type, 32) || 'gameplay',
+    message,
+    createdAt: clampSaveNumber(value.createdAt, 0, Number.MAX_SAFE_INTEGER, 0),
+  };
+}
+
+function normalizeSaveInventory(value: unknown, itemCatalog: Map<string, string>) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const quantityByItemKey = new Map<string, number>();
+
+  for (const item of value.slice(0, MAX_PLAYER_SAVE_ITEM_STACKS)) {
+    if (!isRecord(item)) {
+      continue;
+    }
+
+    const itemKey = normalizeSaveItemKey(item.itemKey);
+
+    if (!itemCatalog.has(itemKey)) {
+      continue;
+    }
+
+    const quantity = clampSaveInteger(item.quantity, 0, MAX_PLAYER_SAVE_ITEM_QUANTITY, 0);
+    if (quantity <= 0) {
+      continue;
+    }
+
+    quantityByItemKey.set(
+      itemKey,
+      clampNumber(
+        (quantityByItemKey.get(itemKey) ?? 0) + quantity,
+        0,
+        MAX_PLAYER_SAVE_ITEM_QUANTITY,
+      ),
+    );
+  }
+
+  return [...quantityByItemKey.entries()].map(([itemKey, quantity]) => ({
+    itemKey,
+    quantity,
+  }));
+}
+
+function normalizeSaveResearch(value: unknown) {
+  const completedIds = isRecord(value) && Array.isArray(value.completedIds)
+    ? value.completedIds
+        .map((researchId) => normalizeResearchId(String(researchId ?? '')))
+        .filter((researchId) => researchCatalogById.has(researchId))
+    : [];
+  const requested = new Set(completedIds);
+  const accepted = new Set<string>();
+
+  for (const research of researchCatalog) {
+    if (!requested.has(research.researchId)) {
+      continue;
+    }
+
+    const requiredIds = getSaveRequiredResearchIds(research.researchId);
+    if (requiredIds.every((requiredId) => accepted.has(requiredId))) {
+      accepted.add(research.researchId);
+    }
+  }
+
+  return {
+    completedIds: [...accepted],
+  };
+}
+
+function getSaveRequiredResearchIds(researchId: string): string[] {
+  if (researchId.startsWith('unlockSeed:')) {
+    const seedKeys = herbCatalog.map((herb) => `${herb.key}Seed`);
+    const seedKey = researchId.slice('unlockSeed:'.length);
+    const index = seedKeys.indexOf(seedKey);
+    return index > 0 ? [`unlockSeed:${seedKeys[index - 1]}`] : [];
+  }
+
+  if (researchId.startsWith('unlockRecipe:')) {
+    const potionKey = researchId.slice('unlockRecipe:'.length);
+    const index = knownPotionCatalog.findIndex((potion) => potion.key === potionKey);
+    return index > 0 ? [`unlockRecipe:${knownPotionCatalog[index - 1].key}`] : [];
+  }
+
+  const summonIndex = summonSeedResearchCatalog.findIndex(
+    (research) => research.id === researchId,
+  );
+  if (summonIndex > 0) {
+    return [summonSeedResearchCatalog[summonIndex - 1].id];
+  }
+
+  const automationMatch = /^automation:([^:]+):(\d+)$/.exec(researchId);
+  if (!automationMatch) {
+    return [];
+  }
+
+  const targetNumber = Number(automationMatch[2]);
+  return targetNumber > 1 ? [`automation:${automationMatch[1]}:${targetNumber - 1}`] : [];
+}
+
+function normalizeSaveTasks(
+  value: unknown,
+  taskCatalog: ReturnType<typeof getSaveTaskCatalog>,
+  previousLevel: number | null,
+) {
+  const savedTasks = isRecord(value) && Array.isArray(value.tasks) ? value.tasks : [];
+  const savedTasksById = new Map(
+    savedTasks
+      .filter((task): task is Record<string, unknown> => isRecord(task))
+      .map((task) => [String(task.taskId ?? ''), task]),
+  );
+  const normalizedTasks = taskCatalog.tasks.map((task) => {
+    const savedTask = savedTasksById.get(task.id);
+    const progressQuantity = clampSaveInteger(
+      savedTask?.progressQuantity,
+      0,
+      task.quantity,
+      0,
+    );
+    const completed = Boolean(savedTask?.completed) && progressQuantity >= task.quantity;
+
+    return {
+      taskId: task.id,
+      progressQuantity: completed ? task.quantity : progressQuantity,
+      completed,
+      level: task.level,
+      requiredQuantity: task.quantity,
+    };
+  });
+  const derivedLevel = getFirstIncompleteSaveLevel(normalizedTasks, taskCatalog);
+  const maxAllowedLevel = previousLevel === null
+    ? taskCatalog.initialLevel
+    : Math.min(taskCatalog.maxLevel, previousLevel + 1);
+  const currentLevel = Math.min(derivedLevel, maxAllowedLevel);
+
+  return {
+    currentLevel,
+    tasks: normalizedTasks.map((task) => {
+      if (task.level < currentLevel) {
+        return {
+          taskId: task.taskId,
+          progressQuantity: task.requiredQuantity,
+          completed: true,
+        };
+      }
+
+      if (task.level > currentLevel || derivedLevel > currentLevel) {
+        return {
+          taskId: task.taskId,
+          progressQuantity: 0,
+          completed: false,
+        };
+      }
+
+      return {
+        taskId: task.taskId,
+        progressQuantity: task.progressQuantity,
+        completed: task.completed,
+      };
+    }),
+  };
+}
+
+function getFirstIncompleteSaveLevel(
+  tasks: Array<{
+    taskId: string;
+    progressQuantity: number;
+    completed: boolean;
+    level: number;
+    requiredQuantity: number;
+  }>,
+  taskCatalog: ReturnType<typeof getSaveTaskCatalog>,
+): number {
+  for (const level of taskCatalog.levels) {
+    const levelTasks = tasks.filter((task) => task.level === level);
+    if (!levelTasks.every((task) => task.completed)) {
+      return level;
+    }
+  }
+
+  return taskCatalog.maxLevel;
+}
+
+function normalizeSaveShop(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+  levelLimits: ReturnType<typeof getSaveLevelLimits>,
+) {
+  const shop = isRecord(value) ? value : {};
+  const shelf = normalizeSaveShopShelf(shop.shelf ?? shop, itemCatalog, levelLimits.maxNpcMarketStands);
+  const playerShelf = normalizeSavePlayerShopShelf(
+    shop.playerShelf,
+    itemCatalog,
+    levelLimits.maxPlayerMarketStands,
+  );
+
+  return {
+    shelf,
+    playerShelf,
+  };
+}
+
+function normalizeSaveShopShelf(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+  maxUnlockedSlots: number,
+) {
+  const shelf = isRecord(value) ? value : {};
+  const unlockedSlots = clampSaveInteger(shelf.unlockedSlots, 0, maxUnlockedSlots, 0);
+
+  return {
+    unlockedSlots,
+    selectedSlotNumber: normalizeSaveSelectedNumber(shelf.selectedSlotNumber, unlockedSlots),
+    slots: normalizeSaveSlotRows(shelf.slots, unlockedSlots, (slot) => {
+      const itemKey = normalizeSaveItemKey(slot.sellItemKey);
+      const itemKind = itemCatalog.get(itemKey);
+
+      return {
+        slotNumber: clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1),
+        sellItemKey: itemKind ? itemKey : null,
+        sellProgressSeconds: clampSaveNumber(
+          slot.sellProgressSeconds,
+          0,
+          MAX_GAME_CONFIG_RESOURCE_LIMIT,
+          0,
+        ),
+      };
+    }),
+  };
+}
+
+function normalizeSavePlayerShopShelf(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+  maxUnlockedSlots: number,
+) {
+  const shelf = isRecord(value) ? value : {};
+  const unlockedSlots = clampSaveInteger(shelf.unlockedSlots, 0, maxUnlockedSlots, 0);
+
+  return {
+    unlockedSlots,
+    selectedSlotNumber: normalizeSaveSelectedNumber(shelf.selectedSlotNumber, unlockedSlots),
+    slots: normalizeSaveSlotRows(shelf.slots, unlockedSlots, (slot) => {
+      const itemKey = normalizeSaveItemKey(slot.itemKey);
+      const itemKind = itemCatalog.get(itemKey);
+      const quantity = clampSaveInteger(slot.quantity, 0, MAX_PLAYER_SHOP_LISTING_QUANTITY, 0);
+      const priceGold = clampSaveGoldPrice(
+        slot.priceGold,
+        BigInt(MAX_PLAYER_SHOP_PRICE_GOLD),
+      );
+
+      return {
+        slotNumber: clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1),
+        itemKey: itemKind && quantity > 0 && priceGold > 0 ? itemKey : null,
+        quantity,
+        priceGold,
+      };
+    }),
+  };
+}
+
+function normalizeSaveSlotRows<T>(
+  value: unknown,
+  unlockedSlots: number,
+  normalize: (slot: Record<string, unknown>) => T & { slotNumber: number },
+) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const rowsBySlotNumber = new Map<number, T & { slotNumber: number }>();
+
+  for (const slot of value) {
+    if (!isRecord(slot)) {
+      continue;
+    }
+
+    const slotNumber = clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1);
+    if (slotNumber > unlockedSlots) {
+      continue;
+    }
+
+    rowsBySlotNumber.set(slotNumber, normalize({ ...slot, slotNumber }));
+  }
+
+  return [...rowsBySlotNumber.values()].sort(
+    (left, right) => left.slotNumber - right.slotNumber,
+  );
+}
+
+function normalizeSaveSelectedNumber(value: unknown, max: number): number | null {
+  const selected = clampSaveInteger(value, 1, max, 0);
+  return selected > 0 ? selected : null;
+}
+
+function normalizeSaveBrewing(value: unknown, itemCatalog: Map<string, string>) {
+  const brewing = isRecord(value) ? value : {};
+  const maxIngredients = getDefaultBrewingMaxIngredients();
+  const cauldronItemKeys = Array.isArray(brewing.cauldronItemKeys)
+    ? brewing.cauldronItemKeys
+        .map((itemKey) => normalizeSaveItemKey(itemKey))
+        .filter((itemKey) => itemCatalog.get(itemKey) === 'herb')
+        .slice(0, maxIngredients)
+    : [];
+
+  return {
+    cauldronItemKeys,
+    activeBrew: normalizeSaveActiveBrew(brewing.activeBrew, itemCatalog),
+  };
+}
+
+function normalizeSaveActiveBrew(value: unknown, itemCatalog: Map<string, string>) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const resultItemKey = normalizeSaveItemKey(value.resultItemKey);
+  if (itemCatalog.get(resultItemKey) !== 'potion') {
+    return null;
+  }
+
+  const totalMs = clampSaveInteger(value.totalMs, 0, MAX_PLAYER_SAVE_TIMER_MS, 0);
+  const remainingMs = clampSaveInteger(value.remainingMs, 0, totalMs, 0);
+  const bottlingTotalMs = clampSaveInteger(
+    value.bottlingTotalMs,
+    0,
+    MAX_PLAYER_SAVE_TIMER_MS,
+    getDefaultBottlingDurationMs(),
+  );
+  const phase = ['brewing', 'brewed', 'bottling', 'ready'].includes(String(value.phase))
+    ? String(value.phase)
+    : 'brewing';
+
+  return {
+    resultItemKey,
+    phase,
+    remainingMs,
+    totalMs,
+    bottlingTotalMs,
+  };
+}
+
+function normalizeSaveGarden(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+  levelLimits: ReturnType<typeof getSaveLevelLimits>,
+) {
+  const garden = isRecord(value) ? value : {};
+  const unlockedTiles = clampSaveInteger(
+    garden.unlockedTiles,
+    0,
+    levelLimits.maxGardenTiles,
+    0,
+  );
+  const tiles = Array.isArray(garden.tiles)
+    ? garden.tiles
+        .map((tile) => normalizeSaveGardenTile(tile, itemCatalog, unlockedTiles))
+        .filter((tile): tile is NonNullable<typeof tile> => Boolean(tile))
+    : [];
+
+  return {
+    unlockedTiles,
+    tiles,
+  };
+}
+
+function normalizeSaveGardenTile(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+  unlockedTiles: number,
+) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const tileNumber = clampSaveInteger(value.tileNumber, 1, MAX_GAME_CONFIG_RESOURCE_LIMIT, 0);
+  if (tileNumber < 1 || tileNumber > unlockedTiles) {
+    return null;
+  }
+
+  const phase = ['empty', 'growing', 'ready', 'harvesting'].includes(String(value.phase))
+    ? String(value.phase)
+    : 'empty';
+  const selectedSeedItemKey = normalizeSaveItemKey(value.selectedSeedItemKey);
+  const seedItemKey = normalizeSaveItemKey(value.seedItemKey);
+  const herbItemKey = normalizeSaveItemKey(value.herbItemKey);
+  const totalMs = clampSaveInteger(value.totalMs, 0, MAX_PLAYER_SAVE_TIMER_MS, 0);
+  const remainingMs = phase === 'ready'
+    ? 0
+    : clampSaveInteger(value.remainingMs, 0, totalMs, 0);
+  const hasSeed = itemCatalog.get(seedItemKey) === 'seed';
+  const hasHerb = itemCatalog.get(herbItemKey) === 'herb';
+
+  return {
+    tileNumber,
+    selectedSeedItemKey: itemCatalog.get(selectedSeedItemKey) === 'seed'
+      ? selectedSeedItemKey
+      : null,
+    seedItemKey: hasSeed && phase !== 'empty' ? seedItemKey : null,
+    herbItemKey: hasHerb && phase !== 'empty' ? herbItemKey : null,
+    phase: hasSeed && hasHerb ? phase : 'empty',
+    totalMs: phase === 'ready' ? 0 : totalMs,
+    remainingMs,
+  };
+}
+
+function getSaveItemCatalog(ctx: IdleWizardReducerCtx): Map<string, string> {
+  const config = getParsedGameConfig(ctx, 'items', DEFAULT_ITEMS_CONFIG_JSON) as {
+    seeds?: unknown;
+    herbs?: unknown;
+    potions?: unknown;
+  };
+  const itemCatalog = new Map<string, string>();
+
+  addSaveItemCatalogRows(itemCatalog, config.seeds, 'seed');
+  addSaveItemCatalogRows(itemCatalog, config.herbs, 'herb');
+  addSaveItemCatalogRows(itemCatalog, config.potions, 'potion');
+  return itemCatalog;
+}
+
+function addSaveItemCatalogRows(
+  itemCatalog: Map<string, string>,
+  value: unknown,
+  kind: string,
+) {
+  if (!Array.isArray(value)) {
+    return;
+  }
+
+  for (const item of value) {
+    if (!isRecord(item)) {
+      continue;
+    }
+
+    const itemKey = normalizeSaveItemKey(item.key);
+    if (itemKey) {
+      itemCatalog.set(itemKey, kind);
+    }
+  }
+}
+
+function getSaveTaskCatalog(ctx: IdleWizardReducerCtx) {
+  const config = getParsedGameConfig(ctx, 'tasks', DEFAULT_TASKS_CONFIG_JSON) as {
+    levels?: Array<{ level?: number; tasks?: Array<{ id?: string; quantity?: number }> }>;
+  };
+  const levels = Array.isArray(config.levels)
+    ? config.levels.map((level) => Number(level.level)).filter(Number.isInteger)
+    : [DEFAULT_PLAYER_LEVEL];
+  const tasks = Array.isArray(config.levels)
+    ? config.levels.flatMap((level) =>
+        Array.isArray(level.tasks)
+          ? level.tasks.map((task) => ({
+              id: String(task.id ?? ''),
+              level: Number(level.level),
+              quantity: clampSaveInteger(
+                task.quantity,
+                1,
+                MAX_GAME_CONFIG_TASK_QUANTITY,
+                1,
+              ),
+            }))
+          : [],
+      )
+    : [];
+
+  return {
+    levels,
+    tasks,
+    initialLevel: levels[0] ?? DEFAULT_PLAYER_LEVEL,
+    maxLevel: levels.at(-1) ?? DEFAULT_PLAYER_LEVEL,
+  };
+}
+
+function getSaveLevelLimits(ctx: IdleWizardReducerCtx, currentLevel: number) {
+  const config = getParsedGameConfig(
+    ctx,
+    'playerLevel',
+    DEFAULT_PLAYER_LEVEL_CONFIG_JSON,
+  ) as { milestones?: unknown; levels?: unknown };
+  const milestones = Array.isArray(config.milestones)
+    ? config.milestones
+    : Array.isArray(config.levels)
+      ? config.levels
+      : [];
+  const limits = {
+    maxGardenTiles: 0,
+    maxNpcMarketStands: 0,
+    maxPlayerMarketStands: 0,
+  };
+
+  for (const milestone of milestones) {
+    if (!isRecord(milestone)) {
+      continue;
+    }
+
+    const level = Number(milestone.level);
+    if (!Number.isInteger(level) || level > currentLevel) {
+      continue;
+    }
+
+    limits.maxGardenTiles = clampSaveInteger(
+      milestone.maxGardenTiles,
+      limits.maxGardenTiles,
+      MAX_GAME_CONFIG_RESOURCE_LIMIT,
+      limits.maxGardenTiles,
+    );
+    limits.maxNpcMarketStands = clampSaveInteger(
+      milestone.maxNpcMarketStands ?? milestone.maxShopSlots,
+      limits.maxNpcMarketStands,
+      MAX_PLAYER_SHOP_SLOTS,
+      limits.maxNpcMarketStands,
+    );
+    limits.maxPlayerMarketStands = clampSaveInteger(
+      milestone.maxPlayerMarketStands ?? milestone.maxShopSlots,
+      limits.maxPlayerMarketStands,
+      MAX_PLAYER_SHOP_SLOTS,
+      limits.maxPlayerMarketStands,
+    );
+  }
+
+  return limits;
+}
+
+function getParsedGameConfig(
+  ctx: IdleWizardReducerCtx,
+  configKey: string,
+  fallbackJson: string,
+): unknown {
+  const row = ctx.db.gameConfig.configKey.find(configKey);
+  const configJson = row?.configJson ?? fallbackJson;
+
+  try {
+    return JSON.parse(validateGameConfigJson(configKey, configJson));
+  } catch {
+    return JSON.parse(fallbackJson);
+  }
+}
+
+type TradeAllianceDailyQuestConfig = {
+  id: string;
+  label: string;
+  type: string;
+  target: bigint;
+  minContribution: bigint;
+  crystalReward: number;
+};
+
+function getTradeAllianceRuntimeConfig(ctx: IdleWizardReducerCtx) {
+  const config = getParsedGameConfig(
+    ctx,
+    'tradeAlliance',
+    DEFAULT_TRADE_ALLIANCE_CONFIG_JSON,
+  ) as { dailyQuests?: unknown };
+
+  return {
+    dailyQuests: normalizeTradeAllianceDailyQuestConfigs(config.dailyQuests),
+  };
+}
+
+function normalizeTradeAllianceDailyQuestConfigs(value: unknown): TradeAllianceDailyQuestConfig[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seenQuestIds = new Set<string>();
+  const quests: TradeAllianceDailyQuestConfig[] = [];
+
+  for (const questConfig of value.slice(0, MAX_TRADE_ALLIANCE_DAILY_QUESTS)) {
+    if (!isRecord(questConfig)) {
+      continue;
+    }
+
+    const id = normalizeResearchId(String(questConfig.id ?? ''));
+    const label = normalizePlayerShopText(
+      String(questConfig.label ?? id),
+      MAX_RESEARCH_LABEL_LENGTH,
+    );
+    const type = String(questConfig.type ?? '').trim();
+    const target = toBigInt(Number(questConfig.target ?? 0));
+    const minContribution = toBigInt(Number(questConfig.minContribution ?? 0));
+    const crystalReward = Math.floor(Number(questConfig.crystalReward ?? 0));
+
+    if (
+      !id ||
+      seenQuestIds.has(id) ||
+      !label ||
+      type !== 'allianceIncome' ||
+      target < 1n ||
+      target > MAX_TRADE_ALLIANCE_QUEST_TARGET ||
+      minContribution < 0n ||
+      minContribution > target ||
+      crystalReward < 0 ||
+      crystalReward > MAX_TRADE_ALLIANCE_QUEST_CRYSTAL_REWARD
+    ) {
+      continue;
+    }
+
+    seenQuestIds.add(id);
+    quests.push({
+      id,
+      label,
+      type,
+      target,
+      minContribution,
+      crystalReward,
+    });
+  }
+
+  return quests;
+}
+
+function refreshTradeAllianceDay(ctx: IdleWizardReducerCtx, alliance: any) {
+  const dayKey = getTradeAllianceDayKey(ctx);
+  const seasonKey = getTradeAllianceSeasonKey(ctx);
+  const needsDayReset = alliance.dayKey !== dayKey;
+  const needsSeasonReset = alliance.seasonKey !== seasonKey;
+
+  if (!needsDayReset && !needsSeasonReset) {
+    ensureTradeAllianceDailyQuests(ctx, alliance);
+    return alliance;
+  }
+
+  const nextAlliance = ctx.db.tradeAlliance.allianceId.update({
+    ...alliance,
+    dayKey,
+    dailyIncome: needsDayReset ? 0n : alliance.dailyIncome,
+    seasonKey,
+    seasonIncome: needsSeasonReset ? 0n : alliance.seasonIncome,
+    updatedAt: ctx.timestamp,
+  });
+  ensureTradeAllianceDailyQuests(ctx, nextAlliance);
+  return nextAlliance;
+}
+
+function refreshTradeAllianceMemberDay(ctx: IdleWizardReducerCtx, member: any) {
+  const dayKey = getTradeAllianceDayKey(ctx);
+
+  if (member.dayKey === dayKey) {
+    return member;
+  }
+
+  return ctx.db.tradeAllianceMember.memberIdentity.update({
+    ...member,
+    dayKey,
+    dailyContribution: 0n,
+    updatedAt: ctx.timestamp,
+  });
+}
+
+function ensureTradeAllianceDailyQuests(ctx: IdleWizardReducerCtx, alliance: any) {
+  const config = getTradeAllianceRuntimeConfig(ctx);
+  const dayKey = getTradeAllianceDayKey(ctx);
+
+  for (const quest of config.dailyQuests) {
+    const questKey = getTradeAllianceQuestKey(alliance.allianceId, dayKey, quest.id);
+    const existingQuest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
+    const baseProgress = quest.type === 'allianceIncome' ? toBigInt(alliance.dailyIncome) : 0n;
+    const nextProgress = clampBigInt(
+      existingQuest && existingQuest.progress > baseProgress
+        ? existingQuest.progress
+        : baseProgress,
+      0n,
+      quest.target,
+    );
+
+    const nextQuest = {
+      questKey,
+      allianceId: alliance.allianceId,
+      dayKey,
+      questId: quest.id,
+      label: quest.label,
+      questType: quest.type,
+      target: quest.target,
+      progress: nextProgress,
+      minContribution: quest.minContribution,
+      crystalReward: quest.crystalReward,
+      updatedAt: ctx.timestamp,
+    };
+
+    if (existingQuest) {
+      if (
+        existingQuest.label === nextQuest.label &&
+        existingQuest.questType === nextQuest.questType &&
+        existingQuest.target === nextQuest.target &&
+        existingQuest.progress === nextQuest.progress &&
+        existingQuest.minContribution === nextQuest.minContribution &&
+        existingQuest.crystalReward === nextQuest.crystalReward
+      ) {
+        continue;
+      }
+
+      ctx.db.tradeAllianceQuestProgress.questKey.update({
+        ...existingQuest,
+        ...nextQuest,
+      });
+      continue;
+    }
+
+    ctx.db.tradeAllianceQuestProgress.insert(nextQuest);
+  }
+}
+
+function applyTradeAllianceIncomeDelta(
+  ctx: IdleWizardReducerCtx,
+  player: { username: string; playerLevel: number },
+  delta: bigint,
+) {
+  if (delta <= 0n) {
+    return;
+  }
+
+  const existingMember = getTradeAllianceMember(ctx);
+
+  if (!existingMember) {
+    return;
+  }
+
+  let member = refreshTradeAllianceMemberDay(ctx, existingMember);
+  let alliance = refreshTradeAllianceDay(
+    ctx,
+    findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId)),
+  );
+  alliance = ctx.db.tradeAlliance.allianceId.update({
+    ...alliance,
+    totalIncome: toBigInt(alliance.totalIncome) + delta,
+    seasonIncome: toBigInt(alliance.seasonIncome) + delta,
+    dailyIncome: toBigInt(alliance.dailyIncome) + delta,
+    updatedAt: ctx.timestamp,
+  });
+  member = ctx.db.tradeAllianceMember.memberIdentity.update({
+    ...member,
+    username: player.username,
+    playerLevel: player.playerLevel,
+    totalContribution: toBigInt(member.totalContribution) + delta,
+    dailyContribution: toBigInt(member.dailyContribution) + delta,
+    updatedAt: ctx.timestamp,
+  });
+  ensureTradeAllianceDailyQuests(ctx, alliance);
+
+  for (const quest of getTradeAllianceRuntimeConfig(ctx).dailyQuests) {
+    if (quest.type !== 'allianceIncome') {
+      continue;
+    }
+
+    const questKey = getTradeAllianceQuestKey(alliance.allianceId, alliance.dayKey, quest.id);
+    const progress = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
+    if (!progress) {
+      continue;
+    }
+
+    ctx.db.tradeAllianceQuestProgress.questKey.update({
+      ...progress,
+      progress: clampBigInt(toBigInt(progress.progress) + delta, 0n, quest.target),
+      updatedAt: ctx.timestamp,
+    });
+
+    const contributionKey = getTradeAllianceContributionKey(
+      alliance.allianceId,
+      alliance.dayKey,
+      quest.id,
+      member.memberIdentity,
+    );
+    const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
+      contributionKey,
+    );
+    const nextContribution = {
+      contributionKey,
+      allianceId: alliance.allianceId,
+      dayKey: alliance.dayKey,
+      questId: quest.id,
+      contributorIdentity: member.memberIdentity,
+      username: player.username,
+      contribution: (contribution?.contribution ?? 0n) + delta,
+      updatedAt: ctx.timestamp,
+    };
+
+    if (contribution) {
+      ctx.db.tradeAllianceQuestContribution.contributionKey.update({
+        ...contribution,
+        ...nextContribution,
+      });
+    } else {
+      ctx.db.tradeAllianceQuestContribution.insert(nextContribution);
+    }
+  }
+}
+
+function readSavedCurrentLevel(saveJson?: string): number | null {
+  if (!saveJson) {
+    return null;
+  }
+
+  try {
+    const save = JSON.parse(saveJson);
+    const currentLevel = Number(save?.tasks?.currentLevel);
+    return Number.isInteger(currentLevel) && currentLevel >= DEFAULT_PLAYER_LEVEL
+      ? currentLevel
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function getDefaultBrewingMaxIngredients(): number {
+  try {
+    const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as { maxCauldronIngredients?: unknown };
+    return clampSaveInteger(config.maxCauldronIngredients, 1, 10, 5);
+  } catch {
+    return 5;
+  }
+}
+
+function getDefaultBottlingDurationMs(): number {
+  try {
+    const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as { bottlingDurationMs?: unknown };
+    return clampSaveInteger(config.bottlingDurationMs, 0, MAX_PLAYER_SAVE_TIMER_MS, 2_000);
+  } catch {
+    return 2_000;
+  }
+}
+
+function normalizeSaveItemKey(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .slice(0, MAX_ITEM_KEY_LENGTH);
+}
+
+function normalizeSaveText(value: unknown, maxLength: number): string {
+  return stripUnsafeTextControls(String(value ?? ''))
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, maxLength);
+}
+
+function clampSaveInteger(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  const number = Math.floor(Number(value));
+
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+
+  return Math.floor(clampNumber(number, min, max));
+}
+
+function clampSaveNumber(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+
+  return clampNumber(number, min, max);
+}
+
+function clampSaveGoldPrice(value: unknown, max: bigint): number {
+  const price = normalizeGoldPrice(typeof value === 'bigint' ? value : Number(value));
+
+  if (price === null) {
+    return 0;
+  }
+
+  return clampNumber(price, 0, Number(max));
 }
 
 function validateGameConfigValue(configKey: string, value: unknown) {
@@ -1519,6 +3162,11 @@ function validateGameConfigValue(configKey: string, value: unknown) {
 
   if (configKey === 'brewing') {
     validateBrewingGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'tradeAlliance') {
+    validateTradeAllianceGameConfig(value);
     return;
   }
 
@@ -1812,6 +3460,24 @@ function validateBrewingGameConfig(value: unknown) {
     !npcMarketCatalogByItemKey.has(wastedPotionKey)
   ) {
     throw new Error('Invalid brewing config.');
+  }
+}
+
+function validateTradeAllianceGameConfig(value: unknown) {
+  const config = value as { dailyQuests?: unknown };
+
+  if (
+    !Array.isArray(config.dailyQuests) ||
+    config.dailyQuests.length < 1 ||
+    config.dailyQuests.length > MAX_TRADE_ALLIANCE_DAILY_QUESTS
+  ) {
+    throw new Error('Invalid trade alliance quest config.');
+  }
+
+  const quests = normalizeTradeAllianceDailyQuestConfigs(config.dailyQuests);
+
+  if (quests.length !== config.dailyQuests.length) {
+    throw new Error('Invalid trade alliance quest config.');
   }
 }
 
@@ -2809,6 +4475,76 @@ function pruneWorldChat(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function pruneTradeAllianceChat(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+  const allianceKey = getTradeAllianceIdKey(allianceId);
+  const rows = Array.from(ctx.db.tradeAllianceChat.iter())
+    .filter((row) => getTradeAllianceIdKey(row.allianceId) === allianceKey)
+    .sort((left, right) => {
+      const leftSentAt = left.sentAt.microsSinceUnixEpoch;
+      const rightSentAt = right.sentAt.microsSinceUnixEpoch;
+
+      if (leftSentAt < rightSentAt) {
+        return -1;
+      }
+
+      if (leftSentAt > rightSentAt) {
+        return 1;
+      }
+
+      return left.messageId.compareTo(right.messageId);
+    });
+
+  while (rows.length > TRADE_ALLIANCE_CHAT_HISTORY_LIMIT) {
+    const row = rows.shift();
+
+    if (row) {
+      ctx.db.tradeAllianceChat.delete(row);
+    }
+  }
+}
+
+function deleteTradeAllianceApplications(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+  const allianceKey = getTradeAllianceIdKey(allianceId);
+
+  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+    if (getTradeAllianceIdKey(application.allianceId) === allianceKey) {
+      ctx.db.tradeAllianceApplication.delete(application);
+    }
+  }
+}
+
+function deleteTradeAllianceState(ctx: IdleWizardReducerCtx, alliance: any) {
+  const allianceKey = getTradeAllianceIdKey(alliance.allianceId);
+
+  for (const member of Array.from(ctx.db.tradeAllianceMember.iter())) {
+    if (getTradeAllianceIdKey(member.allianceId) === allianceKey) {
+      ctx.db.tradeAllianceMember.delete(member);
+    }
+  }
+
+  deleteTradeAllianceApplications(ctx, alliance.allianceId);
+
+  for (const chat of Array.from(ctx.db.tradeAllianceChat.iter())) {
+    if (getTradeAllianceIdKey(chat.allianceId) === allianceKey) {
+      ctx.db.tradeAllianceChat.delete(chat);
+    }
+  }
+
+  for (const quest of Array.from(ctx.db.tradeAllianceQuestProgress.iter())) {
+    if (getTradeAllianceIdKey(quest.allianceId) === allianceKey) {
+      ctx.db.tradeAllianceQuestProgress.delete(quest);
+    }
+  }
+
+  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+    if (getTradeAllianceIdKey(contribution.allianceId) === allianceKey) {
+      ctx.db.tradeAllianceQuestContribution.delete(contribution);
+    }
+  }
+
+  ctx.db.tradeAlliance.delete(alliance);
+}
+
 function hasWorldChatBodyForSender(ctx: IdleWizardReducerCtx, body: string): boolean {
   for (const row of ctx.db.worldChat.iter()) {
     if (row.username === 'system' && row.senderIdentity.isEqual(ctx.sender) && row.body === body) {
@@ -2836,6 +4572,16 @@ function hasLevelUpAnnouncementForSender(
   }
 
   return false;
+}
+
+function getSenderTradeAllianceTag(ctx: IdleWizardReducerCtx, identity = ctx.sender): string {
+  const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
+  if (!member) {
+    return '';
+  }
+
+  const alliance = ctx.db.tradeAlliance.allianceId.find(member.allianceId);
+  return alliance?.tag ?? '';
 }
 
 function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
@@ -2889,6 +4635,18 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
   ensureResearchConfigCatalog(ctx);
   ensureGameConfigCatalog(ctx);
+  const tradeAllianceMember = getTradeAllianceMember(ctx);
+  if (tradeAllianceMember) {
+    try {
+      refreshTradeAllianceMemberDay(ctx, tradeAllianceMember);
+      refreshTradeAllianceDay(
+        ctx,
+        findTradeAllianceById(ctx, getTradeAllianceIdKey(tradeAllianceMember.allianceId)),
+      );
+    } catch {
+      ctx.db.tradeAllianceMember.delete(tradeAllianceMember);
+    }
+  }
   if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
     deleteAllPlayerShopState(ctx);
   }
@@ -2942,6 +4700,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
   }
 
   ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
+  updateTradeAllianceMemberProfile(ctx, player.identity, player.username, player.playerLevel);
 });
 
 export const set_player_profile = spacetimedb.reducer(
@@ -2987,6 +4746,7 @@ export const set_player_profile = spacetimedb.reducer(
     }
 
     ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
+    updateTradeAllianceMemberProfile(ctx, player.identity, player.username, player.playerLevel);
   },
 );
 
@@ -3034,6 +4794,12 @@ export const set_admin_player_data = spacetimedb.reducer(
       usernamePromptSeen: safeUsernamePromptSeen,
       lastSeenAt: ctx.timestamp,
     });
+    updateTradeAllianceMemberProfile(
+      ctx,
+      nextPlayer.identity,
+      nextPlayer.username,
+      nextPlayer.playerLevel,
+    );
 
     const existingEntry = ctx.db.leaderboard.identity.find(player.identity);
 
@@ -3061,10 +4827,14 @@ export const set_admin_player_data = spacetimedb.reducer(
 export const set_player_gameplay_save = spacetimedb.reducer(
   { saveJson: t.string() },
   (ctx, { saveJson }) => {
-    const safeSaveJson = validatePlayerGameplaySaveJson(saveJson);
     ensurePlayer(ctx);
 
     const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender);
+    const safeSaveJson = validatePlayerGameplaySaveJson(
+      ctx,
+      saveJson,
+      existingSave?.saveJson,
+    );
     const nextSave = {
       identity: ctx.sender,
       saveJson: safeSaveJson,
@@ -3095,6 +4865,12 @@ export const set_player_level = spacetimedb.reducer(
           });
 
     ensureLeaderboardEntry(ctx, nextPlayer.username, nextPlayer.playerLevel);
+    updateTradeAllianceMemberProfile(
+      ctx,
+      nextPlayer.identity,
+      nextPlayer.username,
+      nextPlayer.playerLevel,
+    );
   },
 );
 
@@ -3118,6 +4894,12 @@ export const announce_level_up = spacetimedb.reducer(
             lastSeenAt: ctx.timestamp,
           });
     ensureLeaderboardEntry(ctx, nextPlayer.username, nextPlayer.playerLevel);
+    updateTradeAllianceMemberProfile(
+      ctx,
+      nextPlayer.identity,
+      nextPlayer.username,
+      nextPlayer.playerLevel,
+    );
 
     const body = `${nextPlayer.username} reached level ${safePlayerLevel}`;
     if (
@@ -3136,6 +4918,7 @@ export const announce_level_up = spacetimedb.reducer(
       playerLevel: 0,
       body,
       sentAt: ctx.timestamp,
+      allianceTag: '',
     });
     pruneWorldChat(ctx);
   },
@@ -3176,11 +4959,13 @@ export const set_total_generated_gold = spacetimedb.reducer(
       return;
     }
 
+    const incomeDelta = nextTotalIncome - entry.totalIncome;
     ctx.db.leaderboard.identity.update({
       ...entry,
       totalIncome: nextTotalIncome,
       updatedAt: ctx.timestamp,
     });
+    applyTradeAllianceIncomeDelta(ctx, player, incomeDelta);
   },
 );
 
@@ -3205,8 +4990,704 @@ export const send_world_chat_message = spacetimedb.reducer(
       playerLevel: player.playerLevel,
       body: message,
       sentAt: ctx.timestamp,
+      allianceTag: getSenderTradeAllianceTag(ctx),
     });
     pruneWorldChat(ctx);
+  },
+);
+
+export const create_trade_alliance = spacetimedb.reducer(
+  {
+    name: t.string(),
+    tag: t.string(),
+    description: t.string(),
+    joinMode: t.string(),
+  },
+  (ctx, { name, tag, description, joinMode }) => {
+    if (getTradeAllianceMember(ctx)) {
+      throw new Error('Already in an alliance.');
+    }
+
+    const player = ensurePlayer(ctx);
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+    const safeName = validateTradeAllianceName(name);
+    const normalizedName = getTradeAllianceNormalizedName(safeName);
+    const safeTag = validateTradeAllianceTag(tag);
+    const safeDescription = normalizeTradeAllianceDescription(description);
+    const safeJoinMode = normalizeTradeAllianceJoinMode(joinMode);
+
+    assertTradeAllianceNameAvailable(ctx, normalizedName);
+    assertTradeAllianceTagAvailable(ctx, safeTag);
+
+    const allianceId = ctx.newUuidV7();
+    const alliance = ctx.db.tradeAlliance.insert({
+      allianceId,
+      name: safeName,
+      normalizedName,
+      tag: safeTag,
+      description: safeDescription,
+      notice: '',
+      joinMode: safeJoinMode,
+      leaderIdentity: ctx.sender,
+      memberCount: 1,
+      totalIncome: 0n,
+      seasonIncome: 0n,
+      seasonKey: getTradeAllianceSeasonKey(ctx),
+      dayKey: getTradeAllianceDayKey(ctx),
+      dailyIncome: 0n,
+      createdAt: ctx.timestamp,
+      updatedAt: ctx.timestamp,
+    });
+
+    ctx.db.tradeAllianceMember.insert({
+      memberIdentity: ctx.sender,
+      allianceId,
+      username: player.username,
+      playerLevel: player.playerLevel,
+      role: TRADE_ALLIANCE_ROLE_TRADE_MASTER,
+      joinedAt: ctx.timestamp,
+      updatedAt: ctx.timestamp,
+      totalContribution: 0n,
+      dailyContribution: 0n,
+      dayKey: getTradeAllianceDayKey(ctx),
+    });
+    ensureTradeAllianceDailyQuests(ctx, alliance);
+  },
+);
+
+export const update_trade_alliance_profile = spacetimedb.reducer(
+  {
+    name: t.string(),
+    tag: t.string(),
+    description: t.string(),
+    notice: t.string(),
+    joinMode: t.string(),
+  },
+  (ctx, { name, tag, description, notice, joinMode }) => {
+    const member = getTradeAllianceMember(ctx);
+
+    if (!member || member.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+      throw new Error('Alliance settings require trade master.');
+    }
+
+    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId));
+    const allianceKey = getTradeAllianceIdKey(alliance.allianceId);
+    const safeName = validateTradeAllianceName(name);
+    const normalizedName = getTradeAllianceNormalizedName(safeName);
+    const safeTag = validateTradeAllianceTag(tag);
+
+    assertTradeAllianceNameAvailable(ctx, normalizedName, allianceKey);
+    assertTradeAllianceTagAvailable(ctx, safeTag, allianceKey);
+
+    ctx.db.tradeAlliance.allianceId.update({
+      ...alliance,
+      name: safeName,
+      normalizedName,
+      tag: safeTag,
+      description: normalizeTradeAllianceDescription(description),
+      notice: normalizeTradeAllianceNotice(notice),
+      joinMode: normalizeTradeAllianceJoinMode(joinMode),
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const join_trade_alliance = spacetimedb.reducer(
+  { allianceId: t.string() },
+  (ctx, { allianceId }) => {
+    if (getTradeAllianceMember(ctx)) {
+      throw new Error('Already in an alliance.');
+    }
+
+    const alliance = refreshTradeAllianceDay(ctx, findTradeAllianceById(ctx, allianceId));
+
+    if (alliance.joinMode !== 'open') {
+      throw new Error('Alliance requires application.');
+    }
+
+    const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
+    if (memberCount >= MAX_TRADE_ALLIANCE_MEMBERS) {
+      throw new Error('Alliance is full.');
+    }
+
+    const player = ensurePlayer(ctx);
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+
+    ctx.db.tradeAllianceMember.insert({
+      memberIdentity: ctx.sender,
+      allianceId: alliance.allianceId,
+      username: player.username,
+      playerLevel: player.playerLevel,
+      role: TRADE_ALLIANCE_ROLE_TRADER,
+      joinedAt: ctx.timestamp,
+      updatedAt: ctx.timestamp,
+      totalContribution: 0n,
+      dailyContribution: 0n,
+      dayKey: getTradeAllianceDayKey(ctx),
+    });
+    ctx.db.tradeAlliance.allianceId.update({
+      ...alliance,
+      memberCount: memberCount + 1,
+      updatedAt: ctx.timestamp,
+    });
+
+    for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+      if (application.applicantIdentity.isEqual(ctx.sender)) {
+        ctx.db.tradeAllianceApplication.delete(application);
+      }
+    }
+  },
+);
+
+export const apply_trade_alliance = spacetimedb.reducer(
+  { allianceId: t.string() },
+  (ctx, { allianceId }) => {
+    if (getTradeAllianceMember(ctx)) {
+      throw new Error('Already in an alliance.');
+    }
+
+    const alliance = refreshTradeAllianceDay(ctx, findTradeAllianceById(ctx, allianceId));
+
+    if (alliance.joinMode === 'closed') {
+      throw new Error('Alliance is closed.');
+    }
+
+    if (alliance.joinMode === 'open') {
+      throw new Error('Alliance is open. Join directly.');
+    }
+
+    const allianceApplications = Array.from(ctx.db.tradeAllianceApplication.iter()).filter(
+      (application) =>
+        getTradeAllianceIdKey(application.allianceId) ===
+        getTradeAllianceIdKey(alliance.allianceId),
+    );
+    if (allianceApplications.length >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS) {
+      throw new Error('Alliance applications are full.');
+    }
+
+    const ownApplicationCount = Array.from(ctx.db.tradeAllianceApplication.iter()).filter(
+      (application) => application.applicantIdentity.isEqual(ctx.sender),
+    ).length;
+    if (ownApplicationCount >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS_PER_PLAYER) {
+      throw new Error('Too many pending alliance applications.');
+    }
+
+    const applicationKey = getTradeAllianceApplicationKey(alliance.allianceId, ctx.sender);
+    if (ctx.db.tradeAllianceApplication.applicationKey.find(applicationKey)) {
+      return;
+    }
+
+    const player = ensurePlayer(ctx);
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+    ctx.db.tradeAllianceApplication.insert({
+      applicationKey,
+      allianceId: alliance.allianceId,
+      applicantIdentity: ctx.sender,
+      username: player.username,
+      playerLevel: player.playerLevel,
+      createdAt: ctx.timestamp,
+    });
+  },
+);
+
+export const cancel_trade_alliance_application = spacetimedb.reducer(
+  { applicationKey: t.string() },
+  (ctx, { applicationKey }) => {
+    const safeApplicationKey = String(applicationKey ?? '').trim();
+    const application = ctx.db.tradeAllianceApplication.applicationKey.find(safeApplicationKey);
+
+    if (!application || !application.applicantIdentity.isEqual(ctx.sender)) {
+      return;
+    }
+
+    ctx.db.tradeAllianceApplication.delete(application);
+  },
+);
+
+export const accept_trade_alliance_application = spacetimedb.reducer(
+  { applicationKey: t.string() },
+  (ctx, { applicationKey }) => {
+    const application = ctx.db.tradeAllianceApplication.applicationKey.find(
+      String(applicationKey ?? '').trim(),
+    );
+
+    if (!application) {
+      return;
+    }
+
+    const alliance = refreshTradeAllianceDay(
+      ctx,
+      findTradeAllianceById(ctx, getTradeAllianceIdKey(application.allianceId)),
+    );
+    assertTradeAllianceCanManageApplications(ctx, alliance.allianceId);
+
+    if (getTradeAllianceMember(ctx, application.applicantIdentity)) {
+      ctx.db.tradeAllianceApplication.delete(application);
+      return;
+    }
+
+    const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
+    if (memberCount >= MAX_TRADE_ALLIANCE_MEMBERS) {
+      throw new Error('Alliance is full.');
+    }
+
+    ctx.db.tradeAllianceMember.insert({
+      memberIdentity: application.applicantIdentity,
+      allianceId: alliance.allianceId,
+      username: application.username,
+      playerLevel: application.playerLevel,
+      role: TRADE_ALLIANCE_ROLE_TRADER,
+      joinedAt: ctx.timestamp,
+      updatedAt: ctx.timestamp,
+      totalContribution: 0n,
+      dailyContribution: 0n,
+      dayKey: getTradeAllianceDayKey(ctx),
+    });
+    ctx.db.tradeAlliance.allianceId.update({
+      ...alliance,
+      memberCount: memberCount + 1,
+      updatedAt: ctx.timestamp,
+    });
+
+    for (const pending of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+      if (pending.applicantIdentity.isEqual(application.applicantIdentity)) {
+        ctx.db.tradeAllianceApplication.delete(pending);
+      }
+    }
+  },
+);
+
+export const reject_trade_alliance_application = spacetimedb.reducer(
+  { applicationKey: t.string() },
+  (ctx, { applicationKey }) => {
+    const application = ctx.db.tradeAllianceApplication.applicationKey.find(
+      String(applicationKey ?? '').trim(),
+    );
+
+    if (!application) {
+      return;
+    }
+
+    assertTradeAllianceCanManageApplications(ctx, application.allianceId);
+    ctx.db.tradeAllianceApplication.delete(application);
+  },
+);
+
+export const leave_trade_alliance = spacetimedb.reducer({}, (ctx) => {
+  const member = getTradeAllianceMember(ctx);
+
+  if (!member) {
+    return;
+  }
+
+  const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId));
+  const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
+
+  if (member.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER && memberCount > 1) {
+    throw new Error('Trade master must transfer leadership before leaving.');
+  }
+
+  if (memberCount <= 1) {
+    deleteTradeAllianceState(ctx, alliance);
+    return;
+  }
+
+  ctx.db.tradeAllianceMember.delete(member);
+  ctx.db.tradeAlliance.allianceId.update({
+    ...alliance,
+    memberCount: memberCount - 1,
+    updatedAt: ctx.timestamp,
+  });
+});
+
+export const transfer_trade_alliance_leadership = spacetimedb.reducer(
+  { memberIdentityHex: t.string() },
+  (ctx, { memberIdentityHex }) => {
+    const leader = getTradeAllianceMember(ctx);
+
+    if (!leader || leader.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+      throw new Error('Leadership transfer requires trade master.');
+    }
+
+    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
+    const target = getTradeAllianceMembers(ctx, leader.allianceId).find(
+      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
+    );
+
+    if (!target || target.memberIdentity.isEqual(ctx.sender)) {
+      throw new Error('Leadership target not found.');
+    }
+
+    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(leader.allianceId));
+    const oldLeaderNextRole =
+      getTradeAllianceRoleCount(
+        ctx,
+        leader.allianceId,
+        TRADE_ALLIANCE_ROLE_QUARTERMASTER,
+      ) < getTradeAllianceRoleCap(TRADE_ALLIANCE_ROLE_QUARTERMASTER)
+        ? TRADE_ALLIANCE_ROLE_QUARTERMASTER
+        : TRADE_ALLIANCE_ROLE_TRADER;
+
+    ctx.db.tradeAllianceMember.memberIdentity.update({
+      ...target,
+      role: TRADE_ALLIANCE_ROLE_TRADE_MASTER,
+      updatedAt: ctx.timestamp,
+    });
+    ctx.db.tradeAllianceMember.memberIdentity.update({
+      ...leader,
+      role: oldLeaderNextRole,
+      updatedAt: ctx.timestamp,
+    });
+    ctx.db.tradeAlliance.allianceId.update({
+      ...alliance,
+      leaderIdentity: target.memberIdentity,
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const set_trade_alliance_member_role = spacetimedb.reducer(
+  {
+    memberIdentityHex: t.string(),
+    role: t.string(),
+  },
+  (ctx, { memberIdentityHex, role }) => {
+    const targetRole = validateTradeAllianceRole(role);
+    if (targetRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+      throw new Error('Use leadership transfer.');
+    }
+
+    const actor = getTradeAllianceMember(ctx);
+    if (!actor) {
+      throw new Error('Alliance role required.');
+    }
+
+    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
+    const target = getTradeAllianceMembers(ctx, actor.allianceId).find(
+      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
+    );
+
+    if (!target) {
+      throw new Error('Alliance member not found.');
+    }
+
+    const manager = assertTradeAllianceCanManageMember(ctx, actor.allianceId, target);
+    assertTradeAllianceCanAssignRole(manager, targetRole);
+    assertTradeAllianceRoleCap(ctx, actor.allianceId, targetRole, target.memberIdentity);
+
+    ctx.db.tradeAllianceMember.memberIdentity.update({
+      ...target,
+      role: targetRole,
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const kick_trade_alliance_member = spacetimedb.reducer(
+  { memberIdentityHex: t.string() },
+  (ctx, { memberIdentityHex }) => {
+    const actor = getTradeAllianceMember(ctx);
+    if (!actor) {
+      throw new Error('Alliance role required.');
+    }
+
+    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
+    const target = getTradeAllianceMembers(ctx, actor.allianceId).find(
+      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
+    );
+
+    if (!target) {
+      return;
+    }
+
+    if (target.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+      throw new Error('Cannot kick trade master.');
+    }
+
+    assertTradeAllianceCanManageMember(ctx, actor.allianceId, target);
+    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(actor.allianceId));
+    const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
+
+    ctx.db.tradeAllianceMember.delete(target);
+    ctx.db.tradeAlliance.allianceId.update({
+      ...alliance,
+      memberCount: Math.max(0, memberCount - 1),
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const send_trade_alliance_chat_message = spacetimedb.reducer(
+  { body: t.string() },
+  (ctx, { body }) => {
+    const message = normalizeWorldChatMessage(body);
+
+    if (!message) {
+      return;
+    }
+
+    assertWorldChatRateLimit(ctx);
+
+    const member = getTradeAllianceMember(ctx);
+    if (!member) {
+      throw new Error('Alliance chat requires membership.');
+    }
+
+    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId));
+    const player = ensurePlayer(ctx);
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+
+    ctx.db.tradeAllianceChat.insert({
+      messageId: ctx.newUuidV7(),
+      allianceId: alliance.allianceId,
+      allianceTag: alliance.tag,
+      senderIdentity: ctx.sender,
+      username: player.username,
+      playerLevel: player.playerLevel,
+      body: message,
+      sentAt: ctx.timestamp,
+    });
+    pruneTradeAllianceChat(ctx, alliance.allianceId);
+  },
+);
+
+export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
+  { questId: t.string() },
+  (ctx, { questId }) => {
+    const member = getTradeAllianceMember(ctx);
+    if (!member) {
+      throw new Error('Alliance quest requires membership.');
+    }
+
+    const alliance = refreshTradeAllianceDay(
+      ctx,
+      findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId)),
+    );
+    const dayKey = getTradeAllianceDayKey(ctx);
+    const safeQuestId = normalizeResearchId(questId);
+    const questKey = getTradeAllianceQuestKey(alliance.allianceId, dayKey, safeQuestId);
+    const quest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
+
+    if (!quest) {
+      throw new Error('Alliance quest not found.');
+    }
+
+    if (quest.progress < quest.target) {
+      throw new Error('Alliance quest is not complete.');
+    }
+
+    const contributionKey = getTradeAllianceContributionKey(
+      alliance.allianceId,
+      dayKey,
+      safeQuestId,
+      ctx.sender,
+    );
+    const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
+      contributionKey,
+    );
+    if ((contribution?.contribution ?? 0n) < quest.minContribution) {
+      throw new Error('Alliance quest needs more contribution.');
+    }
+
+    const rewardKey = getTradeAllianceRewardKey(
+      alliance.allianceId,
+      dayKey,
+      safeQuestId,
+      ctx.sender,
+    );
+    if (ctx.db.tradeAllianceRewardInbox.rewardKey.find(rewardKey)) {
+      return;
+    }
+
+    ctx.db.tradeAllianceRewardInbox.insert({
+      rewardKey,
+      recipientIdentity: ctx.sender,
+      allianceId: alliance.allianceId,
+      allianceName: alliance.name,
+      questId: quest.questId,
+      questLabel: quest.label,
+      dayKey,
+      crystalReward: quest.crystalReward,
+      claimedAt: ctx.timestamp,
+      collected: false,
+    });
+  },
+);
+
+export const collect_trade_alliance_reward = spacetimedb.reducer(
+  { rewardKey: t.string() },
+  (ctx, { rewardKey }) => {
+    const reward = ctx.db.tradeAllianceRewardInbox.rewardKey.find(String(rewardKey ?? '').trim());
+
+    if (!reward || !reward.recipientIdentity.isEqual(ctx.sender) || reward.collected) {
+      return;
+    }
+
+    ctx.db.tradeAllianceRewardInbox.rewardKey.update({
+      ...reward,
+      collected: true,
+    });
+  },
+);
+
+export const admin_disband_trade_alliance = spacetimedb.reducer(
+  { allianceId: t.string() },
+  (ctx, { allianceId }) => {
+    assertGameConfigAdmin(ctx);
+    deleteTradeAllianceState(ctx, findTradeAllianceById(ctx, allianceId));
+  },
+);
+
+export const admin_set_trade_alliance_member_role = spacetimedb.reducer(
+  {
+    memberIdentityHex: t.string(),
+    role: t.string(),
+  },
+  (ctx, { memberIdentityHex, role }) => {
+    assertGameConfigAdmin(ctx);
+    const safeRole = validateTradeAllianceRole(role);
+    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
+    const target = Array.from(ctx.db.tradeAllianceMember.iter()).find(
+      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
+    );
+
+    if (!target) {
+      throw new Error('Alliance member not found.');
+    }
+
+    if (safeRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+      const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(target.allianceId));
+      const oldLeader = ctx.db.tradeAllianceMember.memberIdentity.find(alliance.leaderIdentity);
+      if (oldLeader && !oldLeader.memberIdentity.isEqual(target.memberIdentity)) {
+        ctx.db.tradeAllianceMember.memberIdentity.update({
+          ...oldLeader,
+          role: TRADE_ALLIANCE_ROLE_TRADER,
+          updatedAt: ctx.timestamp,
+        });
+      }
+      ctx.db.tradeAlliance.allianceId.update({
+        ...alliance,
+        leaderIdentity: target.memberIdentity,
+        updatedAt: ctx.timestamp,
+      });
+    } else {
+      assertTradeAllianceRoleCap(ctx, target.allianceId, safeRole, target.memberIdentity);
+    }
+
+    ctx.db.tradeAllianceMember.memberIdentity.update({
+      ...target,
+      role: safeRole,
+      updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_move_trade_alliance_member = spacetimedb.reducer(
+  {
+    memberIdentityHex: t.string(),
+    allianceId: t.string(),
+    role: t.string(),
+  },
+  (ctx, { memberIdentityHex, allianceId, role }) => {
+    assertGameConfigAdmin(ctx);
+    const player = findPlayerByIdentityHex(ctx, memberIdentityHex);
+    const alliance = findTradeAllianceById(ctx, allianceId);
+    const safeRole = validateTradeAllianceRole(role);
+    const existingMember = ctx.db.tradeAllianceMember.memberIdentity.find(player.identity);
+    const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
+
+    if (
+      (!existingMember ||
+        getTradeAllianceIdKey(existingMember.allianceId) !==
+          getTradeAllianceIdKey(alliance.allianceId)) &&
+      memberCount >= MAX_TRADE_ALLIANCE_MEMBERS
+    ) {
+      throw new Error('Alliance is full.');
+    }
+
+    if (safeRole !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+      assertTradeAllianceRoleCap(ctx, alliance.allianceId, safeRole, player.identity);
+    } else {
+      const currentLeader = ctx.db.tradeAllianceMember.memberIdentity.find(alliance.leaderIdentity);
+      if (currentLeader && !currentLeader.memberIdentity.isEqual(player.identity)) {
+        ctx.db.tradeAllianceMember.memberIdentity.update({
+          ...currentLeader,
+          role: TRADE_ALLIANCE_ROLE_TRADER,
+          updatedAt: ctx.timestamp,
+        });
+      }
+    }
+
+    if (existingMember) {
+      const oldAlliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(existingMember.allianceId));
+      const oldMemberCount = getTradeAllianceMemberCount(ctx, oldAlliance.allianceId);
+      ctx.db.tradeAllianceMember.memberIdentity.update({
+        ...existingMember,
+        allianceId: alliance.allianceId,
+        username: player.username,
+        playerLevel: player.playerLevel,
+        role: safeRole,
+        updatedAt: ctx.timestamp,
+        dayKey: getTradeAllianceDayKey(ctx),
+        dailyContribution:
+          getTradeAllianceIdKey(existingMember.allianceId) ===
+          getTradeAllianceIdKey(alliance.allianceId)
+          ? existingMember.dailyContribution
+          : 0n,
+      });
+      if (
+        getTradeAllianceIdKey(oldAlliance.allianceId) !==
+        getTradeAllianceIdKey(alliance.allianceId)
+      ) {
+        if (existingMember.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER && oldMemberCount > 1) {
+          const nextLeader = getTradeAllianceMembers(ctx, oldAlliance.allianceId).find(
+            (member) => !member.memberIdentity.isEqual(player.identity),
+          );
+
+          if (nextLeader) {
+            ctx.db.tradeAllianceMember.memberIdentity.update({
+              ...nextLeader,
+              role: TRADE_ALLIANCE_ROLE_TRADE_MASTER,
+              updatedAt: ctx.timestamp,
+            });
+          }
+        }
+
+        ctx.db.tradeAlliance.allianceId.update({
+          ...oldAlliance,
+          memberCount: Math.max(0, oldMemberCount - 1),
+          leaderIdentity:
+            existingMember.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER && oldMemberCount > 1
+              ? getTradeAllianceMembers(ctx, oldAlliance.allianceId).find(
+                  (member) => !member.memberIdentity.isEqual(player.identity),
+                )?.memberIdentity ?? oldAlliance.leaderIdentity
+              : oldAlliance.leaderIdentity,
+          updatedAt: ctx.timestamp,
+        });
+      }
+    } else {
+      ctx.db.tradeAllianceMember.insert({
+        memberIdentity: player.identity,
+        allianceId: alliance.allianceId,
+        username: player.username,
+        playerLevel: player.playerLevel,
+        role: safeRole,
+        joinedAt: ctx.timestamp,
+        updatedAt: ctx.timestamp,
+        totalContribution: 0n,
+        dailyContribution: 0n,
+        dayKey: getTradeAllianceDayKey(ctx),
+      });
+    }
+
+    const nextMemberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
+    ctx.db.tradeAlliance.allianceId.update({
+      ...alliance,
+      memberCount: nextMemberCount,
+      leaderIdentity:
+        safeRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER ? player.identity : alliance.leaderIdentity,
+      updatedAt: ctx.timestamp,
+    });
   },
 );
 
@@ -3256,6 +5737,7 @@ export const announce_research = spacetimedb.reducer(
       playerLevel: 0,
       body: `${player.username} researched ${safeResearchName}`,
       sentAt: ctx.timestamp,
+      allianceTag: '',
     });
     pruneWorldChat(ctx);
   },
@@ -3296,6 +5778,7 @@ export const discover_potion_recipe = spacetimedb.reducer(
       playerLevel: 0,
       body: `${player.username} discovered a new potion recipe!`,
       sentAt: ctx.timestamp,
+      allianceTag: '',
     });
     pruneWorldChat(ctx);
   },

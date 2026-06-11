@@ -31,6 +31,10 @@ export class ShopNpcPriceManager {
     return null;
   }
 
+  getNpcPrice(item) {
+    return this.npcMarketFacade?.getPrice?.(item.key) ?? null;
+  }
+
   getNpcStock(item) {
     const npcStock =
       this.npcMarketFacade?.getNpcStock?.(item.key) ??

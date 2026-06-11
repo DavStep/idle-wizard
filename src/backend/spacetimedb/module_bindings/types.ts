@@ -68,6 +68,40 @@ export const NpcMarketPrice = __t.object("NpcMarketPrice", {
 });
 export type NpcMarketPrice = __Infer<typeof NpcMarketPrice>;
 
+export const OwnPlayerGameplaySave = __t.object("OwnPlayerGameplaySave", {});
+export type OwnPlayerGameplaySave = __Infer<typeof OwnPlayerGameplaySave>;
+
+export const OwnTradeAllianceChat = __t.object("OwnTradeAllianceChat", {});
+export type OwnTradeAllianceChat = __Infer<typeof OwnTradeAllianceChat>;
+
+export const OwnTradeAllianceChatResult = __t.object("OwnTradeAllianceChatResult", {
+  messageId: __t.uuid(),
+  allianceId: __t.uuid(),
+  allianceTag: __t.string(),
+  senderIdentity: __t.identity(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type OwnTradeAllianceChatResult = __Infer<typeof OwnTradeAllianceChatResult>;
+
+export const OwnTradeAllianceRewardInbox = __t.object("OwnTradeAllianceRewardInbox", {});
+export type OwnTradeAllianceRewardInbox = __Infer<typeof OwnTradeAllianceRewardInbox>;
+
+export const OwnTradeAllianceRewardInboxResult = __t.object("OwnTradeAllianceRewardInboxResult", {
+  rewardKey: __t.string(),
+  recipientIdentity: __t.identity(),
+  allianceId: __t.uuid(),
+  allianceName: __t.string(),
+  questId: __t.string(),
+  questLabel: __t.string(),
+  dayKey: __t.string(),
+  crystalReward: __t.u32(),
+  claimedAt: __t.timestamp(),
+});
+export type OwnTradeAllianceRewardInboxResult = __Infer<typeof OwnTradeAllianceRewardInboxResult>;
+
 export const Player = __t.object("Player", {
   identity: __t.identity(),
   username: __t.string(),
@@ -97,6 +131,13 @@ export const PlayerGameplaySave = __t.object("PlayerGameplaySave", {
   updatedAt: __t.timestamp(),
 });
 export type PlayerGameplaySave = __Infer<typeof PlayerGameplaySave>;
+
+export const PlayerGameplaySaveResult = __t.object("PlayerGameplaySaveResult", {
+  identity: __t.identity(),
+  saveJson: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerGameplaySaveResult = __Infer<typeof PlayerGameplaySaveResult>;
 
 export const PlayerShopListing = __t.object("PlayerShopListing", {
   listingKey: __t.string(),
@@ -158,6 +199,103 @@ export const ResearchConfig = __t.object("ResearchConfig", {
 });
 export type ResearchConfig = __Infer<typeof ResearchConfig>;
 
+export const TradeAlliance = __t.object("TradeAlliance", {
+  allianceId: __t.uuid(),
+  name: __t.string(),
+  normalizedName: __t.string(),
+  tag: __t.string(),
+  description: __t.string(),
+  notice: __t.string(),
+  joinMode: __t.string(),
+  leaderIdentity: __t.identity(),
+  memberCount: __t.u32(),
+  totalIncome: __t.u64(),
+  seasonIncome: __t.u64(),
+  createdAt: __t.timestamp(),
+  updatedAt: __t.timestamp(),
+  seasonKey: __t.string(),
+  dayKey: __t.string(),
+  dailyIncome: __t.u64(),
+});
+export type TradeAlliance = __Infer<typeof TradeAlliance>;
+
+export const TradeAllianceApplication = __t.object("TradeAllianceApplication", {
+  applicationKey: __t.string(),
+  allianceId: __t.uuid(),
+  applicantIdentity: __t.identity(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  createdAt: __t.timestamp(),
+});
+export type TradeAllianceApplication = __Infer<typeof TradeAllianceApplication>;
+
+export const TradeAllianceChat = __t.object("TradeAllianceChat", {
+  messageId: __t.uuid(),
+  allianceId: __t.uuid(),
+  allianceTag: __t.string(),
+  senderIdentity: __t.identity(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type TradeAllianceChat = __Infer<typeof TradeAllianceChat>;
+
+export const TradeAllianceMember = __t.object("TradeAllianceMember", {
+  memberIdentity: __t.identity(),
+  allianceId: __t.uuid(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  role: __t.string(),
+  joinedAt: __t.timestamp(),
+  updatedAt: __t.timestamp(),
+  totalContribution: __t.u64(),
+  dailyContribution: __t.u64(),
+  dayKey: __t.string(),
+});
+export type TradeAllianceMember = __Infer<typeof TradeAllianceMember>;
+
+export const TradeAllianceQuestContribution = __t.object("TradeAllianceQuestContribution", {
+  contributionKey: __t.string(),
+  allianceId: __t.uuid(),
+  dayKey: __t.string(),
+  questId: __t.string(),
+  contributorIdentity: __t.identity(),
+  username: __t.string(),
+  contribution: __t.u64(),
+  updatedAt: __t.timestamp(),
+});
+export type TradeAllianceQuestContribution = __Infer<typeof TradeAllianceQuestContribution>;
+
+export const TradeAllianceQuestProgress = __t.object("TradeAllianceQuestProgress", {
+  questKey: __t.string(),
+  allianceId: __t.uuid(),
+  dayKey: __t.string(),
+  questId: __t.string(),
+  label: __t.string(),
+  questType: __t.string(),
+  target: __t.u64(),
+  progress: __t.u64(),
+  minContribution: __t.u64(),
+  crystalReward: __t.u32(),
+  updatedAt: __t.timestamp(),
+});
+export type TradeAllianceQuestProgress = __Infer<typeof TradeAllianceQuestProgress>;
+
+export const TradeAllianceRewardInbox = __t.object("TradeAllianceRewardInbox", {
+  rewardKey: __t.string(),
+  recipientIdentity: __t.identity(),
+  allianceId: __t.uuid(),
+  allianceName: __t.string(),
+  questId: __t.string(),
+  questLabel: __t.string(),
+  dayKey: __t.string(),
+  crystalReward: __t.u32(),
+  claimedAt: __t.timestamp(),
+  collected: __t.bool(),
+});
+export type TradeAllianceRewardInbox = __Infer<typeof TradeAllianceRewardInbox>;
+
 export const WorldChat = __t.object("WorldChat", {
   messageId: __t.uuid(),
   senderIdentity: __t.identity(),
@@ -165,6 +303,7 @@ export const WorldChat = __t.object("WorldChat", {
   body: __t.string(),
   sentAt: __t.timestamp(),
   playerLevel: __t.u32(),
+  allianceTag: __t.string(),
 });
 export type WorldChat = __Infer<typeof WorldChat>;
 

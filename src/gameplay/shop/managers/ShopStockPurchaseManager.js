@@ -8,10 +8,12 @@ export class ShopStockPurchaseManager {
     goldFacade,
     itemsFacade,
     shopNpcPriceManager,
+    shopStockPriceQuoteManager,
   } = {}) {
     this.goldFacade = goldFacade;
     this.itemsFacade = itemsFacade;
     this.shopNpcPriceManager = shopNpcPriceManager;
+    this.shopStockPriceQuoteManager = shopStockPriceQuoteManager;
   }
 
   async buyItem({ itemTypeId, quantity = 1 } = {}) {
@@ -25,32 +27,17 @@ export class ShopStockPurchaseManager {
     }
 
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
-    const priceGold = normalizePositiveGoldPrice(
-      this.shopNpcPriceManager.getNpcSellPriceGold(item),
-    );
-    const stock = this.shopNpcPriceManager.getNpcStock(item);
+    const quote = this.quoteItem({ itemTypeId, quantity: safeQuantity });
 
-    if (priceGold === null) {
-      return {
-        ok: false,
-        reason: 'missing_price',
-      };
+    if (!quote.ok) {
+      return quote;
     }
 
-    if (!Number.isFinite(stock) || stock < safeQuantity) {
-      return {
-        ok: false,
-        reason: 'empty_stock',
-      };
-    }
-
-    const totalPriceGold = multiplyGoldPrice(priceGold, safeQuantity);
-
-    if (totalPriceGold === null || !this.goldFacade.canSpend(totalPriceGold)) {
+    if (!this.goldFacade.canSpend(quote.totalPriceGold)) {
       return {
         ok: false,
         reason: 'not_enough_gold',
-        cost: totalPriceGold ?? 0,
+        cost: quote.totalPriceGold,
       };
     }
 
@@ -66,11 +53,11 @@ export class ShopStockPurchaseManager {
       };
     }
 
-    if (!this.goldFacade.spend(totalPriceGold)) {
+    if (!this.goldFacade.spend(quote.totalPriceGold)) {
       return {
         ok: false,
         reason: 'not_enough_gold',
-        cost: totalPriceGold,
+        cost: quote.totalPriceGold,
       };
     }
 
@@ -80,8 +67,47 @@ export class ShopStockPurchaseManager {
       ok: true,
       item: this.mapItem(item),
       quantity: safeQuantity,
+      priceGold: quote.priceGold,
+      totalPriceGold: quote.totalPriceGold,
+    };
+  }
+
+  quoteItem({ itemTypeId, quantity = 1 } = {}) {
+    const safeQuantity = Math.floor(Number(quantity));
+
+    if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
+      return {
+        ok: false,
+        reason: 'invalid_quantity',
+      };
+    }
+
+    const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    const quote = this.shopStockPriceQuoteManager?.quoteItem({
+      item,
+      quantity: safeQuantity,
+    });
+
+    if (quote) {
+      return quote;
+    }
+
+    const priceGold = normalizePositiveGoldPrice(
+      this.shopNpcPriceManager.getNpcSellPriceGold(item),
+    );
+
+    if (priceGold === null) {
+      return {
+        ok: false,
+        reason: 'missing_price',
+      };
+    }
+
+    return {
+      ok: true,
+      quantity: safeQuantity,
       priceGold,
-      totalPriceGold,
+      totalPriceGold: multiplyGoldPrice(priceGold, safeQuantity),
     };
   }
 

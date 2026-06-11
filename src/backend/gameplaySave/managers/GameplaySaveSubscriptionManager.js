@@ -1,4 +1,4 @@
-const PLAYER_GAMEPLAY_SAVE_QUERY = 'SELECT * FROM player_gameplay_save';
+const OWN_PLAYER_GAMEPLAY_SAVE_QUERY = 'SELECT * FROM own_player_gameplay_save';
 const EMPTY_SNAPSHOT = {
   connected: false,
   save: null,
@@ -25,8 +25,8 @@ export class GameplaySaveSubscriptionManager {
     this.readyCallback = onReady;
     this.readyDelivered = false;
     this.table =
-      connection?.db?.playerGameplaySave ??
-      connection?.db?.player_gameplay_save ??
+      connection?.db?.ownPlayerGameplaySave ??
+      connection?.db?.own_player_gameplay_save ??
       null;
 
     if (!this.table || !this.identity) {
@@ -56,7 +56,7 @@ export class GameplaySaveSubscriptionManager {
           reason: 'gameplay_save_subscription_error',
         });
       })
-      .subscribe(PLAYER_GAMEPLAY_SAVE_QUERY);
+      .subscribe(OWN_PLAYER_GAMEPLAY_SAVE_QUERY);
 
     return true;
   }
@@ -99,10 +99,7 @@ export class GameplaySaveSubscriptionManager {
       return;
     }
 
-    const identityKey = this.toIdentityKey(this.identity);
-    const row = Array.from(this.table.iter()).find(
-      (candidate) => this.toIdentityKey(candidate.identity) === identityKey,
-    );
+    const row = this.table.iter().next().value ?? null;
 
     this.publish({
       connected: true,
@@ -136,22 +133,6 @@ export class GameplaySaveSubscriptionManager {
 
     this.readyDelivered = true;
     this.readyCallback?.(result);
-  }
-
-  toIdentityKey(identity) {
-    if (!identity) {
-      return '';
-    }
-
-    if (typeof identity === 'string') {
-      return identity;
-    }
-
-    if (typeof identity.toHexString === 'function') {
-      return identity.toHexString();
-    }
-
-    return String(identity);
   }
 
   toTimestampMs(value) {

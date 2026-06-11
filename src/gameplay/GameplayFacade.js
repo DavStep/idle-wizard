@@ -372,6 +372,10 @@ export class GameplayFacade {
     return result;
   }
 
+  quoteNpcMarketStockPurchase(itemTypeId, quantity = 1) {
+    return this.shopFacade.quoteStockPurchase(itemTypeId, quantity);
+  }
+
   claimPlayerShopSaleProceeds(gold) {
     const result = this.shopFacade.claimPlayerShopSaleProceeds(gold);
     this.publishAndSaveSnapshot();

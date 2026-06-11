@@ -2467,7 +2467,7 @@ describe('PagesFacade', () => {
     const settings = stage.querySelector('.room-top-panel__settings');
     const input = stage.querySelector('.room-top-panel__username-input');
     const form = stage.querySelector('.room-top-panel__username-form');
-    const dialog = stage.querySelector('.room-top-panel__settings-dialog');
+    const dialog = stage.querySelector('.room-top-panel__settings-panel');
     const focusOptions = [];
     const focus = dialog.focus.bind(dialog);
     dialog.focus = (options) => {
@@ -2485,6 +2485,15 @@ describe('PagesFacade', () => {
     expect(input.value).toBe('Merlin');
     expect(input.getAttribute('enterkeyhint')).toBe('done');
     expect(
+      [...settings.querySelectorAll('.room-top-panel__settings-tab-button')].map(
+        (button) => [button.textContent, button.getAttribute('aria-selected')],
+      ),
+    ).toEqual([
+      ['profile', 'true'],
+      ['report', 'false'],
+      ['theme', 'false'],
+    ]);
+    expect(
       [...settings.querySelectorAll('.room-top-panel__theme-button')].map(
         (button) => button.textContent,
       ),
@@ -2501,7 +2510,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.room-top-panel__feedback-open')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['feedback', 'report a bug', 'request a feature']);
+    ).toEqual(['feedback', 'bug', 'feature']);
     expect(focusOptions).toEqual([{ preventScroll: true }]);
 
     input.value = 'Mira';
@@ -2552,16 +2561,20 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     stage
-      .querySelector('.room-top-panel__feedback-open')
+      .querySelector('[data-settings-tab="report"]')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const settings = stage.querySelector('.room-top-panel__settings');
     const input = stage.querySelector('.room-top-panel__feedback-input');
     const form = stage.querySelector('.room-top-panel__feedback-form');
 
-    expect(settings.querySelector('.style-box__title')?.textContent).toBe('feedback');
-    expect(settings.classList.contains('is-feedback')).toBe(true);
-    expect(stage.querySelector('.room-top-panel__feedback-close')?.textContent).toBe('close');
+    expect(settings.querySelector('.style-box__title')?.textContent).toBe('settings');
+    expect(settings.classList.contains('is-feedback')).toBe(false);
+    expect(settings.querySelector('[data-settings-tab="report"]')?.getAttribute('aria-selected')).toBe(
+      'true',
+    );
+    expect(stage.querySelector('.room-top-panel__feedback-close')).toBeNull();
+    expect(input.placeholder).toBe('write feedback');
 
     input.value = ' needs more quiet space ';
     form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
@@ -2589,18 +2602,16 @@ describe('PagesFacade', () => {
     const settings = stage.querySelector('.room-top-panel__settings');
     const input = stage.querySelector('.room-top-panel__feedback-input');
     const form = stage.querySelector('.room-top-panel__feedback-form');
-    const closeButton = stage.querySelector('.room-top-panel__feedback-close');
+    const closeButton = stage.querySelector('.room-top-panel__settings-close');
     const cases = [
       {
         kind: 'bug',
-        title: 'report a bug',
         placeholder: 'describe the bug',
         body: 'button disappears',
         expected: 'bug report:\nbutton disappears',
       },
       {
         kind: 'feature',
-        title: 'request a feature',
         placeholder: 'describe the feature',
         body: 'add quieter controls',
         expected: 'feature request:\nadd quieter controls',
@@ -2613,7 +2624,15 @@ describe('PagesFacade', () => {
         .querySelector(`[data-feedback-kind="${item.kind}"]`)
         .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-      expect(settings.querySelector('.style-box__title')?.textContent).toBe(item.title);
+      expect(settings.querySelector('.style-box__title')?.textContent).toBe('settings');
+      expect(settings.querySelector('[data-settings-tab="report"]')?.getAttribute('aria-selected')).toBe(
+        'true',
+      );
+      expect(
+        settings
+          .querySelector(`[data-feedback-kind="${item.kind}"]`)
+          ?.getAttribute('aria-pressed'),
+      ).toBe('true');
       expect(input.placeholder).toBe(item.placeholder);
 
       input.value = item.body;

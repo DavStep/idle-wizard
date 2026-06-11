@@ -27,7 +27,7 @@ export class ShopPageFacade {
       buttonParent: shelfRoot,
       popupParent: popupLayer,
     });
-    this.stockManager.mount(uiLayer);
+    this.stockManager.mount(uiLayer, popupLayer);
     this.playerShelfManager.mount(uiLayer, popupLayer);
     this.tradeHistoryManager.mount({
       buttonParent: this.playerShelfManager.getActionsRoot(),

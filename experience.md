@@ -154,6 +154,7 @@
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
 - Clicking the top-panel username opens settings; username editing and `white` / `black` visual theme choices live there.
+- Settings use bottom tabs outside the popup border: `profile`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
 - Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
 - Level milestone dialogs use the selected level as the title, omit current/open/max filler, show gained `+N` rows above a divider, then total limits with right-aligned numbers.
 - Level milestone previous/next navigation uses bottom tabs outside the bordered dialog, not inline pager text.
@@ -164,6 +165,7 @@
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
+- Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
@@ -215,6 +217,8 @@
 - Top-panel `report a bug` and `request a feature` reuse `submit_feedback` with `bug report:` / `feature request:` body prefixes.
 - SpacetimeDB reducers are public entry points; never use first-come admin claim or raw client leaderboard/shop values without server-side caps.
 - Server-visible names/messages should strip all Unicode control and format chars; partial bidi lists miss zero-width spoofing.
+- Private player-owned tables need a sender-scoped client read path, such as an own-row view; `SELECT *` subscriptions on public base tables leak every row.
+- SpacetimeDB TypeScript UUID values expose `compareTo`/string conversion, not `isEqual`; normalize UUID keys before comparing alliance IDs.
 - Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
 - Generated-gold leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedGold` field.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.

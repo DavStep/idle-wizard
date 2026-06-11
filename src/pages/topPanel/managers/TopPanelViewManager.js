@@ -109,12 +109,15 @@ export class TopPanelViewManager {
     this.refs.settings.className = 'room-top-panel__settings';
     this.refs.settings.hidden = true;
 
+    this.refs.settingsPanel = document.createElement('section');
+    this.refs.settingsPanel.className = 'room-top-panel__settings-panel';
+    this.refs.settingsPanel.setAttribute('aria-label', 'Settings');
+    this.refs.settingsPanel.setAttribute('aria-modal', 'true');
+    this.refs.settingsPanel.setAttribute('role', 'dialog');
+    this.refs.settingsPanel.tabIndex = -1;
+
     this.refs.settingsDialog = document.createElement('section');
     this.refs.settingsDialog.className = 'room-top-panel__settings-dialog style-dialog';
-    this.refs.settingsDialog.setAttribute('aria-label', 'Settings');
-    this.refs.settingsDialog.setAttribute('aria-modal', 'true');
-    this.refs.settingsDialog.setAttribute('role', 'dialog');
-    this.refs.settingsDialog.tabIndex = -1;
 
     this.refs.settingsTitle = document.createElement('div');
     this.refs.settingsTitle.className = 'style-box__title';
@@ -124,6 +127,12 @@ export class TopPanelViewManager {
     this.refs.settingsCloseButton.className = 'room-top-panel__settings-close';
     this.refs.settingsCloseButton.type = 'button';
     this.refs.settingsCloseButton.textContent = 'close';
+
+    this.refs.accountPane = document.createElement('div');
+    this.refs.accountPane.id = 'room-top-panel-settings-account';
+    this.refs.accountPane.className =
+      'room-top-panel__settings-pane room-top-panel__account-pane';
+    this.refs.accountPane.setAttribute('role', 'tabpanel');
 
     const usernameSection = document.createElement('div');
     usernameSection.className =
@@ -161,6 +170,12 @@ export class TopPanelViewManager {
     actions.append(this.refs.usernameSaveButton);
     this.refs.usernameForm.append(this.refs.usernameInput, this.refs.usernameError, actions);
     usernameSection.append(usernameLabel, this.refs.usernameForm);
+
+    this.refs.themePane = document.createElement('div');
+    this.refs.themePane.id = 'room-top-panel-settings-theme';
+    this.refs.themePane.className =
+      'room-top-panel__settings-pane room-top-panel__theme-pane';
+    this.refs.themePane.setAttribute('role', 'tabpanel');
 
     const themeSection = document.createElement('div');
     themeSection.className =
@@ -218,6 +233,12 @@ export class TopPanelViewManager {
 
     colorSection.append(colorLabel, colorButtons);
 
+    this.refs.reportPane = document.createElement('div');
+    this.refs.reportPane.id = 'room-top-panel-settings-report';
+    this.refs.reportPane.className =
+      'room-top-panel__settings-pane room-top-panel__report-pane';
+    this.refs.reportPane.setAttribute('role', 'tabpanel');
+
     const feedbackSection = document.createElement('div');
     feedbackSection.className =
       'room-top-panel__settings-section room-top-panel__feedback-section';
@@ -228,15 +249,15 @@ export class TopPanelViewManager {
 
     for (const option of [
       { kind: 'feedback', label: 'feedback', ref: 'feedbackOpenButton' },
-      { kind: 'bug', label: 'report a bug', ref: 'bugReportOpenButton' },
-      { kind: 'feature', label: 'request a feature', ref: 'featureRequestOpenButton' },
+      { kind: 'bug', label: 'bug', ref: 'bugReportOpenButton' },
+      { kind: 'feature', label: 'feature', ref: 'featureRequestOpenButton' },
     ]) {
       const button = document.createElement('button');
       button.className = 'style-button room-top-panel__feedback-open';
       button.type = 'button';
       button.textContent = option.label;
       button.dataset.feedbackKind = option.kind;
-      button.setAttribute('aria-haspopup', 'dialog');
+      button.setAttribute('aria-pressed', 'false');
       button.setAttribute('aria-label', option.label);
       feedbackButtons.append(button);
       this.refs.feedbackOpenButtons.push(button);
@@ -246,7 +267,8 @@ export class TopPanelViewManager {
     feedbackSection.append(feedbackButtons);
 
     this.refs.feedbackForm = document.createElement('form');
-    this.refs.feedbackForm.className = 'room-top-panel__feedback-form';
+    this.refs.feedbackForm.className =
+      'room-top-panel__settings-section room-top-panel__feedback-form';
 
     this.refs.feedbackInput = document.createElement('textarea');
     this.refs.feedbackInput.className = 'style-input room-top-panel__feedback-input';
@@ -267,12 +289,7 @@ export class TopPanelViewManager {
     this.refs.feedbackSendButton.type = 'submit';
     this.refs.feedbackSendButton.textContent = 'send';
 
-    this.refs.feedbackCloseButton = document.createElement('button');
-    this.refs.feedbackCloseButton.className = 'style-button room-top-panel__feedback-close';
-    this.refs.feedbackCloseButton.type = 'button';
-    this.refs.feedbackCloseButton.textContent = 'close';
-
-    feedbackActions.append(this.refs.feedbackSendButton, this.refs.feedbackCloseButton);
+    feedbackActions.append(this.refs.feedbackSendButton);
     this.refs.feedbackForm.append(
       this.refs.feedbackInput,
       this.refs.feedbackStatus,
@@ -299,17 +316,47 @@ export class TopPanelViewManager {
 
     this.refs.authSection.append(authLabel, this.refs.authStatus, this.refs.authButton);
 
+    this.refs.accountPane.append(usernameSection, this.refs.authSection);
+    this.refs.reportPane.append(feedbackSection, this.refs.feedbackForm);
+    this.refs.themePane.append(themeSection, colorSection);
+
+    this.refs.settingsTabs = document.createElement('div');
+    this.refs.settingsTabs.className = 'room-top-panel__settings-tabs';
+    this.refs.settingsTabs.setAttribute('aria-label', 'Settings sections');
+    this.refs.settingsTabs.setAttribute('role', 'tablist');
+    this.refs.settingsTabButtons = [];
+
+    for (const tab of [
+      { key: 'account', label: 'profile', controls: this.refs.accountPane.id },
+      { key: 'report', label: 'report', controls: this.refs.reportPane.id },
+      { key: 'theme', label: 'theme', controls: this.refs.themePane.id },
+    ]) {
+      const button = document.createElement('button');
+      button.id = `room-top-panel-settings-${tab.key}-tab`;
+      button.className = 'style-button room-top-panel__settings-tab-button';
+      button.type = 'button';
+      button.textContent = tab.label;
+      button.dataset.settingsTab = tab.key;
+      button.setAttribute('aria-controls', tab.controls);
+      button.setAttribute('aria-selected', 'false');
+      button.setAttribute('role', 'tab');
+      this.refs.settingsTabs.append(button);
+      this.refs.settingsTabButtons.push(button);
+    }
+
+    this.refs.accountPane.setAttribute('aria-labelledby', 'room-top-panel-settings-account-tab');
+    this.refs.reportPane.setAttribute('aria-labelledby', 'room-top-panel-settings-report-tab');
+    this.refs.themePane.setAttribute('aria-labelledby', 'room-top-panel-settings-theme-tab');
+
     this.refs.settingsDialog.append(
       this.refs.settingsTitle,
       this.refs.settingsCloseButton,
-      usernameSection,
-      themeSection,
-      colorSection,
-      feedbackSection,
-      this.refs.feedbackForm,
-      this.refs.authSection,
+      this.refs.accountPane,
+      this.refs.reportPane,
+      this.refs.themePane,
     );
-    this.refs.settings.append(this.refs.settingsDialog);
+    this.refs.settingsPanel.append(this.refs.settingsDialog, this.refs.settingsTabs);
+    this.refs.settings.append(this.refs.settingsPanel);
 
     return this.refs.settings;
   }

@@ -44,54 +44,61 @@ function createConnection(table) {
     isEnded: () => false,
     unsubscribe: vi.fn(),
   };
+  const builder = {
+    onApplied(callback) {
+      this.applied = callback;
+      return this;
+    },
+    onError(callback) {
+      this.error = callback;
+      return this;
+    },
+    subscribe(query) {
+      this.query = query;
+      this.applied();
+      return subscription;
+    },
+  };
 
   return {
     db: {
-      playerGameplaySave: table,
+      own_player_gameplay_save: table,
     },
+    builder,
     subscription,
-    subscriptionBuilder: () => ({
-      onApplied(callback) {
-        this.applied = callback;
-        return this;
-      },
-      onError(callback) {
-        this.error = callback;
-        return this;
-      },
-      subscribe(query) {
-        this.query = query;
-        this.applied();
-        return subscription;
-      },
-    }),
+    subscriptionBuilder: () => builder,
   };
 }
 
 describe('GameplaySaveSubscriptionManager', () => {
-  it('publishes own gameplay save when subscription is ready', () => {
+  it('publishes own gameplay save from the own-save view', () => {
     const save = { version: 2, gold: { current: 12 } };
     const table = createSaveTable([
-      { identity: 'other', saveJson: JSON.stringify({ version: 2 }) },
-      { identity: 'mine', saveJson: JSON.stringify(save) },
+      {
+        saveJson: JSON.stringify(save),
+        updatedAt: { microsSinceUnixEpoch: 12_000n },
+      },
     ]);
+    const connection = createConnection(table);
     const ready = vi.fn();
     const manager = new GameplaySaveSubscriptionManager();
 
-    manager.connect(createConnection(table), 'mine', { onReady: ready });
+    manager.connect(connection, 'mine', { onReady: ready });
 
+    expect(connection.builder.query).toBe('SELECT * FROM own_player_gameplay_save');
     expect(manager.getSnapshot()).toMatchObject({
       connected: true,
       save,
+      updatedAtMs: 12,
     });
     expect(ready).toHaveBeenCalledWith({
       ok: true,
       save,
-      updatedAtMs: 0,
+      updatedAtMs: 12,
     });
   });
 
-  it('reports missing save table as not ready', () => {
+  it('reports missing own-save view as not ready', () => {
     const ready = vi.fn();
     const manager = new GameplaySaveSubscriptionManager();
 

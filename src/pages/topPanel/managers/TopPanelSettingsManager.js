@@ -7,6 +7,8 @@ import {
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
 
+const DEFAULT_SETTINGS_TAB = 'account';
+const SETTINGS_TABS = ['account', 'report', 'theme'];
 const DEFAULT_FEEDBACK_KIND = 'feedback';
 const FEEDBACK_KIND_CONFIG = {
   feedback: {
@@ -41,6 +43,7 @@ export class TopPanelSettingsManager {
     this.visible = false;
     this.usernamePromptMode = false;
     this.feedbackMode = false;
+    this.settingsTab = DEFAULT_SETTINGS_TAB;
     this.feedbackKind = DEFAULT_FEEDBACK_KIND;
     this.feedbackPending = false;
     this.previousFocus = null;
@@ -79,14 +82,16 @@ export class TopPanelSettingsManager {
     this.handleColorModeClick = (event) => {
       this.playerFacade?.setColorMode?.(event.currentTarget.dataset.colorMode);
     };
+    this.handleSettingsTabClick = (event) =>
+      this.selectSettingsTab(event.currentTarget.dataset.settingsTab);
     this.handleFeedbackOpenClick = (event) =>
-      this.showFeedback(event.currentTarget.dataset.feedbackKind);
+      this.selectFeedbackKind(event.currentTarget.dataset.feedbackKind);
     this.handleFeedbackSubmit = (event) => {
       event.preventDefault();
       void this.sendFeedback();
     };
     this.handleFeedbackSendPointerDown = (event) => {
-      if (!this.visible || !this.feedbackMode) {
+      if (!this.visible || this.settingsTab !== 'report') {
         return;
       }
 
@@ -114,6 +119,9 @@ export class TopPanelSettingsManager {
     this.refs.usernameSaveButton.addEventListener('touchstart', this.handleSaveTouchStart, {
       passive: false,
     });
+    for (const button of this.refs.settingsTabButtons) {
+      button.addEventListener('click', this.handleSettingsTabClick);
+    }
     for (const button of this.refs.feedbackOpenButtons) {
       button.addEventListener('click', this.handleFeedbackOpenClick);
     }
@@ -122,7 +130,6 @@ export class TopPanelSettingsManager {
       'pointerdown',
       this.handleFeedbackSendPointerDown,
     );
-    this.refs.feedbackCloseButton.addEventListener('click', this.handleCloseClick);
 
     for (const button of this.refs.themeButtons) {
       button.addEventListener('click', this.handleThemeClick);
@@ -166,6 +173,9 @@ export class TopPanelSettingsManager {
         'touchstart',
         this.handleSaveTouchStart,
       );
+      for (const button of this.refs.settingsTabButtons) {
+        button.removeEventListener('click', this.handleSettingsTabClick);
+      }
       for (const button of this.refs.feedbackOpenButtons) {
         button.removeEventListener('click', this.handleFeedbackOpenClick);
       }
@@ -174,7 +184,6 @@ export class TopPanelSettingsManager {
         'pointerdown',
         this.handleFeedbackSendPointerDown,
       );
-      this.refs.feedbackCloseButton.removeEventListener('click', this.handleCloseClick);
 
       for (const button of this.refs.themeButtons) {
         button.removeEventListener('click', this.handleThemeClick);
@@ -197,17 +206,18 @@ export class TopPanelSettingsManager {
   }
 
   showSettings() {
-    this.open({ usernamePromptMode: false, feedbackMode: false });
+    this.open({ usernamePromptMode: false, feedbackMode: false, settingsTab: 'account' });
   }
 
   showUsernamePrompt() {
-    this.open({ usernamePromptMode: true, feedbackMode: false });
+    this.open({ usernamePromptMode: true, feedbackMode: false, settingsTab: 'account' });
   }
 
   showFeedback(feedbackKind = DEFAULT_FEEDBACK_KIND) {
     this.open({
       usernamePromptMode: false,
-      feedbackMode: true,
+      feedbackMode: false,
+      settingsTab: 'report',
       feedbackKind,
     });
   }
@@ -216,7 +226,12 @@ export class TopPanelSettingsManager {
     return this.visible;
   }
 
-  open({ usernamePromptMode, feedbackMode, feedbackKind = DEFAULT_FEEDBACK_KIND }) {
+  open({
+    usernamePromptMode,
+    feedbackMode,
+    settingsTab = DEFAULT_SETTINGS_TAB,
+    feedbackKind = DEFAULT_FEEDBACK_KIND,
+  }) {
     if (!this.refs) {
       return;
     }
@@ -228,9 +243,10 @@ export class TopPanelSettingsManager {
     this.visible = true;
     this.usernamePromptMode = usernamePromptMode;
     this.feedbackMode = feedbackMode;
-    this.feedbackKind = feedbackMode
-      ? this.normalizeFeedbackKind(feedbackKind)
-      : DEFAULT_FEEDBACK_KIND;
+    this.settingsTab = usernamePromptMode
+      ? DEFAULT_SETTINGS_TAB
+      : this.normalizeSettingsTab(feedbackMode ? 'report' : settingsTab);
+    this.feedbackKind = this.normalizeFeedbackKind(feedbackKind);
     this.applyMode();
     this.refs.usernameInput.value =
       usernamePromptMode && this.refs.usernameButton.textContent === 'wizard'
@@ -240,7 +256,11 @@ export class TopPanelSettingsManager {
     this.clearFeedbackStatus();
     this.setFeedbackPending(false);
     this.applyVisibility();
-    this.focusWithoutScroll(feedbackMode ? this.refs.feedbackInput : this.refs.settingsDialog);
+    this.focusWithoutScroll(
+      this.settingsTab === 'report' && !usernamePromptMode
+        ? this.refs.feedbackInput
+        : this.getFocusTarget(),
+    );
   }
 
   hide() {
@@ -248,6 +268,7 @@ export class TopPanelSettingsManager {
     this.visible = false;
     this.usernamePromptMode = false;
     this.feedbackMode = false;
+    this.settingsTab = DEFAULT_SETTINGS_TAB;
     this.feedbackKind = DEFAULT_FEEDBACK_KIND;
     this.feedbackPending = false;
     this.applyMode();
@@ -274,7 +295,7 @@ export class TopPanelSettingsManager {
   }
 
   async sendFeedback() {
-    if (!this.refs || this.feedbackPending) {
+    if (!this.refs || this.feedbackPending || this.settingsTab !== 'report') {
       return;
     }
 
@@ -295,7 +316,7 @@ export class TopPanelSettingsManager {
 
     this.setFeedbackPending(false);
 
-    if (!this.refs || !this.visible || !this.feedbackMode) {
+    if (!this.refs || !this.visible || this.settingsTab !== 'report') {
       return;
     }
 
@@ -364,22 +385,14 @@ export class TopPanelSettingsManager {
     }
 
     const feedbackConfig = this.getFeedbackConfig();
-    const title = this.feedbackMode
-      ? feedbackConfig.title
-      : this.usernamePromptMode
-        ? 'username'
-        : 'settings';
+    const title = this.usernamePromptMode ? 'username' : 'settings';
     const closeLabel = this.usernamePromptMode ? 'later' : 'close';
 
     this.refs.settings.classList.toggle('is-username-prompt', this.usernamePromptMode);
-    this.refs.settings.classList.toggle('is-feedback', this.feedbackMode);
-    this.refs.settingsDialog.setAttribute(
+    this.refs.settings.classList.toggle('is-feedback', false);
+    this.getFocusTarget().setAttribute(
       'aria-label',
-      this.feedbackMode
-        ? feedbackConfig.ariaLabel
-        : this.usernamePromptMode
-          ? 'Set username'
-          : 'Settings',
+      this.usernamePromptMode ? 'Set username' : 'Settings',
     );
 
     if (this.refs.feedbackInput.placeholder !== feedbackConfig.placeholder) {
@@ -396,6 +409,66 @@ export class TopPanelSettingsManager {
 
     if (this.refs.settingsCloseButton.textContent !== closeLabel) {
       this.refs.settingsCloseButton.textContent = closeLabel;
+    }
+
+    this.applySettingsTabSelection();
+    this.applyFeedbackKindSelection();
+  }
+
+  selectSettingsTab(settingsTab) {
+    const nextTab = this.normalizeSettingsTab(settingsTab);
+
+    if (this.settingsTab === nextTab) {
+      return;
+    }
+
+    this.settingsTab = nextTab;
+    this.applyMode();
+  }
+
+  selectFeedbackKind(feedbackKind) {
+    this.settingsTab = 'report';
+    this.feedbackKind = this.normalizeFeedbackKind(feedbackKind);
+    this.clearFeedbackStatus();
+    this.applyMode();
+    this.focusWithoutScroll(this.refs.feedbackInput);
+  }
+
+  applySettingsTabSelection() {
+    if (!this.refs) {
+      return;
+    }
+
+    const activeTab = this.usernamePromptMode ? DEFAULT_SETTINGS_TAB : this.settingsTab;
+    const panes = {
+      account: this.refs.accountPane,
+      report: this.refs.reportPane,
+      theme: this.refs.themePane,
+    };
+
+    this.refs.settingsTabs.hidden = this.usernamePromptMode;
+
+    for (const button of this.refs.settingsTabButtons) {
+      const selected = button.dataset.settingsTab === activeTab;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button.tabIndex = selected ? 0 : -1;
+    }
+
+    for (const [tab, pane] of Object.entries(panes)) {
+      pane.hidden = tab !== activeTab;
+    }
+  }
+
+  applyFeedbackKindSelection() {
+    if (!this.refs) {
+      return;
+    }
+
+    for (const button of this.refs.feedbackOpenButtons) {
+      const selected = button.dataset.feedbackKind === this.feedbackKind;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     }
   }
 
@@ -481,9 +554,17 @@ export class TopPanelSettingsManager {
     return FEEDBACK_KIND_CONFIG[feedbackKind] ? feedbackKind : DEFAULT_FEEDBACK_KIND;
   }
 
+  normalizeSettingsTab(settingsTab) {
+    return SETTINGS_TABS.includes(settingsTab) ? settingsTab : DEFAULT_SETTINGS_TAB;
+  }
+
   createFeedbackBody(body) {
     const prefix = this.getFeedbackConfig().prefix;
     return prefix ? `${prefix}\n${body}` : body;
+  }
+
+  getFocusTarget() {
+    return this.refs.settingsPanel ?? this.refs.settingsDialog;
   }
 
   focusWithoutScroll(element) {

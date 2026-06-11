@@ -14,6 +14,18 @@ function createGameplayFacade(snapshot) {
       listener(snapshot);
       return () => listeners.delete(listener);
     },
+    quoteNpcMarketStockPurchase: vi.fn((itemTypeId, quantity = 1) => {
+      const item = snapshot.shop.stock.items.find(
+        (stockItem) => stockItem.itemTypeId === itemTypeId,
+      );
+
+      return {
+        ok: true,
+        quantity,
+        priceGold: item.buyGold,
+        totalPriceGold: quantity === 2 ? 2.6 : item.buyGold * quantity,
+      };
+    }),
     buyNpcMarketStockItem: vi.fn().mockResolvedValue({
       ok: true,
       item: snapshot.shop.stock.items[0],
@@ -25,7 +37,7 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ShopStockManager', () => {
-  it('renders shared NPC stock below the NPC market with a one-item buy action', async () => {
+  it('renders shared NPC stock with bottom tabs and a quantity buy dialog', async () => {
     const stage = document.createElement('section');
     const snapshot = {
       gold: { current: 5 },
@@ -61,10 +73,31 @@ describe('ShopStockManager', () => {
     expect(stage.querySelector('.shop-page__stock-buy-button')?.textContent).toBe(
       'buy 1.25 gold',
     );
+    expect(
+      stage.querySelector('.shop-page__stock')?.lastElementChild,
+    ).toBe(stage.querySelector('.shop-page__stock-tabs'));
 
     await manager.onBuyItem(1);
 
-    expect(gameplayFacade.buyNpcMarketStockItem).toHaveBeenCalledWith(1, 1);
+    expect(stage.querySelector('.shop-page__stock-buy-popup')?.hidden).toBe(false);
+    expect(gameplayFacade.buyNpcMarketStockItem).not.toHaveBeenCalled();
+    expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
+      'total1.25 gold',
+    );
+
+    const input = stage.querySelector('.shop-page__stock-buy-input');
+    input.value = '2';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 2);
+    expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
+      'total2.60 gold',
+    );
+
+    await manager.onConfirmBuy();
+
+    expect(gameplayFacade.buyNpcMarketStockItem).toHaveBeenCalledWith(1, 2);
+    expect(stage.querySelector('.shop-page__stock-buy-popup')?.hidden).toBe(true);
 
     manager.unmount();
   });

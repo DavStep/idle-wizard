@@ -11,11 +11,12 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  messageId: __t.uuid().primaryKey().name("message_id"),
-  senderIdentity: __t.identity().name("sender_identity"),
+  contributionKey: __t.string().primaryKey().name("contribution_key"),
+  allianceId: __t.uuid().name("alliance_id"),
+  dayKey: __t.string().name("day_key"),
+  questId: __t.string().name("quest_id"),
+  contributorIdentity: __t.identity().name("contributor_identity"),
   username: __t.string(),
-  body: __t.string(),
-  sentAt: __t.timestamp().name("sent_at"),
-  playerLevel: __t.u32().name("player_level"),
-  allianceTag: __t.string().name("alliance_tag"),
+  contribution: __t.u64(),
+  updatedAt: __t.timestamp().name("updated_at"),
 });

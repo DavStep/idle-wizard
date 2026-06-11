@@ -10,6 +10,7 @@ import { ShopPlayerShelfListingManager } from './managers/ShopPlayerShelfListing
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
 import { ShopStockPurchaseManager } from './managers/ShopStockPurchaseManager.js';
+import { ShopStockPriceQuoteManager } from './managers/ShopStockPriceQuoteManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ShopFacade {
@@ -36,6 +37,9 @@ export class ShopFacade {
     this.shopSellAvailabilityManager = new ShopSellAvailabilityManager({
       itemsFacade,
       getReservedItemQuantity,
+    });
+    this.shopStockPriceQuoteManager = new ShopStockPriceQuoteManager({
+      shopNpcPriceManager: this.shopNpcPriceManager,
     });
     this.shopShelfEntityManager = new ShopShelfEntityManager({
       initialUnlockedSlots: this.shopBalanceManager.getInitialUnlockedSlots(),
@@ -79,6 +83,7 @@ export class ShopFacade {
       goldFacade,
       itemsFacade,
       shopNpcPriceManager: this.shopNpcPriceManager,
+      shopStockPriceQuoteManager: this.shopStockPriceQuoteManager,
     });
     this.shopAutoSellManager = new ShopAutoSellManager({
       goldFacade,
@@ -169,6 +174,10 @@ export class ShopFacade {
 
   buyStockItem(itemTypeId, quantity = 1) {
     return this.shopStockPurchaseManager.buyItem({ itemTypeId, quantity });
+  }
+
+  quoteStockPurchase(itemTypeId, quantity = 1) {
+    return this.shopStockPurchaseManager.quoteItem({ itemTypeId, quantity });
   }
 
   claimPlayerShopSaleProceeds(gold) {
@@ -265,16 +274,30 @@ export class ShopFacade {
   getVisibleSellItemSnapshots(sellableItems = this.getAvailableSellableItemSnapshots()) {
     return this.shopSellItemVisibilityManager
       .getVisibleSellItems(sellableItems)
-      .map((item) => ({
-        ...item,
-        ...(this.shopSellItemVisibilityManager.isResearched(item)
-          ? { discovered: item.discoveryType === 'unknown', researched: true, unlocked: true, known: true }
-          : {}),
-        sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
-        sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
-        buyGold: this.shopNpcPriceManager.getNpcSellPriceGold(item),
-        stock: this.shopNpcPriceManager.getNpcStock(item),
-      }));
+      .map((item) => {
+        const npcPrice = this.shopNpcPriceManager.getNpcPrice(item);
+
+        return {
+          ...item,
+          ...(this.shopSellItemVisibilityManager.isResearched(item)
+            ? { discovered: item.discoveryType === 'unknown', researched: true, unlocked: true, known: true }
+            : {}),
+          ...(npcPrice
+            ? {
+                basePriceGold: npcPrice.basePriceGold,
+                marketPriceGold: npcPrice.marketPriceGold,
+                npcNeed: npcPrice.npcNeed,
+                targetNeed: npcPrice.targetNeed,
+                maxNeed: npcPrice.maxNeed,
+                targetStock: npcPrice.targetStock,
+              }
+            : {}),
+          sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
+          sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
+          buyGold: this.shopNpcPriceManager.getNpcSellPriceGold(item),
+          stock: this.shopNpcPriceManager.getNpcStock(item),
+        };
+      });
   }
 
   getSlotSnapshots(sellableItems = this.getAvailableSellableItemSnapshots()) {

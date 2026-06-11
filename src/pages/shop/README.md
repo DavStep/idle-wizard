@@ -8,6 +8,6 @@ The NPC market displays up to five stands. Stand 1 starts unlocked, the next loc
 
 The `demand` label on the NPC market top border opens a demand popup. It has `seed`, `herb`, and `potion` tabs below the bordered dialog. Each tab lists item names with demand values; non-locked rows are dark, locked rows are gray, and a plain divider separates the locked group.
 
-The `market stock` block sits under `npc market`. It has `seed`, `herb`, and `potion` tabs, lists unlocked or owned item rows, and buys one item at the backend NPC sell price when shared stock exists and the player has enough gold.
+The `market stock` block sits under `npc market`. It has `seed`, `herb`, and `potion` tabs along the bottom, lists unlocked or owned item rows, and opens a quantity dialog before buying from shared NPC stock. Batch buy totals use marginal NPC sell prices across the backend need curve.
 
 The player market uses the same stand pattern, but selected items are listed with a player-entered quantity and gold value instead of being auto-sold. The list popup stages the item choice first, then `place` publishes the listing and reserves the quantity from local inventory. The `browse market` button opens a popup of server listings from other players grouped by seller; each listing has a buy quantity input and a buy action using the selected quantity.

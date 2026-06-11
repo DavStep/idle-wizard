@@ -2075,7 +2075,8 @@ div.workshop-page__discovery-row {
 
 .style-button.brewing-page__recipes-close,
 .style-button.brewing-page__potions-close,
-.style-button.workshop-page__world-chat-close {
+.style-button.workshop-page__world-chat-close,
+.style-button.shop-page__stock-buy-close {
   position: absolute;
   top: var(--style-box-title-top);
   right: var(--style-box-title-left);
@@ -2089,7 +2090,8 @@ div.workshop-page__discovery-row {
 
 .style-button.brewing-page__recipes-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.brewing-page__potions-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
 }
 
@@ -2253,7 +2255,8 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__trade-history-popup,
-.shop-page__demand-popup {
+.shop-page__demand-popup,
+.shop-page__stock-buy-popup {
   position: absolute;
   inset: 0;
   z-index: 30;
@@ -2262,7 +2265,8 @@ div.workshop-page__discovery-row {
 .shop-page__sell-popup[hidden],
 .shop-page__market-popup[hidden],
 .shop-page__trade-history-popup[hidden],
-.shop-page__demand-popup[hidden] {
+.shop-page__demand-popup[hidden],
+.shop-page__stock-buy-popup[hidden] {
   display: none;
 }
 
@@ -2329,6 +2333,15 @@ div.workshop-page__discovery-row {
   top: 50%;
   left: 50%;
   width: 300px;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.style-dialog.shop-page__stock-buy-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
   overflow: visible;
   transform: translate(-50%, -50%);
 }
@@ -2464,7 +2477,7 @@ div.workshop-page__discovery-row {
 .shop-page__stock-tabs {
   display: flex;
   gap: 3px;
-  margin-bottom: 5px;
+  margin-top: 5px;
 }
 
 .shop-page__stock-rows {
@@ -2494,6 +2507,38 @@ div.workshop-page__discovery-row {
 
 .shop-page__stock-status {
   margin-top: 4px;
+}
+
+.shop-page__stock-buy-row,
+.shop-page__stock-buy-field,
+.shop-page__stock-buy-action-row,
+.shop-page__stock-buy-status {
+  min-height: var(--style-row-min-height);
+  clear: both;
+}
+
+.shop-page__stock-buy-row::after,
+.shop-page__stock-buy-field::after,
+.shop-page__stock-buy-action-row::after,
+.shop-page__stock-buy-status::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.shop-page__stock-buy-action-row {
+  margin-top: 8px;
+  text-align: right;
+}
+
+.style-input.shop-page__stock-buy-input {
+  box-sizing: border-box;
+  float: right;
+  width: 86px;
+  padding: 1px 4px;
+  margin: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
 }
 
 .shop-page__player-listing-fields {
@@ -2815,12 +2860,22 @@ div.workshop-page__discovery-row {
   pointer-events: auto;
 }
 
-.style-dialog.room-top-panel__settings-dialog {
+.room-top-panel__settings-panel {
   position: absolute;
   top: 72px;
   left: 50%;
-  width: 240px;
+  width: calc(240px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  outline: none;
   transform: translateX(-50%);
+}
+
+.room-top-panel__settings:not(.is-username-prompt) .room-top-panel__settings-panel {
+  width: calc(310px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+}
+
+.style-dialog.room-top-panel__settings-dialog {
+  position: relative;
+  width: 240px;
 }
 
 .room-top-panel__settings:not(.is-username-prompt)
@@ -2859,10 +2914,6 @@ div.workshop-page__discovery-row {
   background: var(--style-surface);
   border: 0;
   border-radius: 0;
-}
-
-.room-top-panel__settings.is-feedback .room-top-panel__settings-close {
-  display: none;
 }
 
 .room-top-panel__settings-close:hover,
@@ -2977,6 +3028,11 @@ div.workshop-page__discovery-row {
   margin-top: 12px;
 }
 
+.room-top-panel__settings-pane[hidden],
+.room-top-panel__settings-tabs[hidden] {
+  display: none;
+}
+
 .room-top-panel__settings-label {
   display: block;
   margin-bottom: 4px;
@@ -3045,8 +3101,33 @@ div.workshop-page__discovery-row {
   gap: 10px;
 }
 
+.room-top-panel__settings-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
+.style-button.room-top-panel__settings-tab-button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  min-height: var(--style-row-min-height);
+  padding: 1px 4px;
+  margin-bottom: 0;
+  overflow: hidden;
+  border: var(--style-tab-border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-button.room-top-panel__settings-tab-button[aria-selected="true"] {
+  text-decoration: underline;
+}
+
 .room-top-panel__feedback-form {
-  display: none;
+  display: block;
   margin: 0;
 }
 
@@ -3068,7 +3149,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__feedback-buttons {
   display: grid;
-  grid-template-columns: 72px 100px 128px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
   width: 310px;
 }
@@ -3118,24 +3199,15 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.style-button.room-top-panel__feedback-open[aria-pressed="true"] {
+  text-decoration: underline;
+}
+
 .room-top-panel__settings.is-username-prompt .room-top-panel__theme-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__color-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__feedback-section,
-.room-top-panel__settings.is-username-prompt .room-top-panel__feedback-form,
 .room-top-panel__settings.is-username-prompt .room-top-panel__auth-section {
   display: none;
-}
-
-.room-top-panel__settings.is-feedback .room-top-panel__username-section,
-.room-top-panel__settings.is-feedback .room-top-panel__theme-section,
-.room-top-panel__settings.is-feedback .room-top-panel__color-section,
-.room-top-panel__settings.is-feedback .room-top-panel__feedback-section,
-.room-top-panel__settings.is-feedback .room-top-panel__auth-section {
-  display: none;
-}
-
-.room-top-panel__settings.is-feedback .room-top-panel__feedback-form {
-  display: block;
 }
 
 .style-dialog {
@@ -3310,6 +3382,19 @@ div.workshop-page__discovery-row {
   width: 112px;
   padding: 1px 5px;
   margin: 0;
+  text-align: right;
+  background: transparent;
+  border-color: transparent;
+}
+
+.style-button.shop-page__stock-buy-button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: transparent;
+}
+
+.style-button.shop-page__stock-buy-confirm {
+  width: 86px;
+  padding: 1px 5px;
+  margin: 0;
 }
 
 .style-button.shop-page__sell-tab-button,
@@ -3408,7 +3493,9 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__buy-slot-button[aria-disabled="true"],
-.style-button.shop-page__buy-slot-button:disabled {
+.style-button.shop-page__buy-slot-button:disabled,
+.style-button.shop-page__stock-buy-button[aria-disabled="true"],
+.style-button.shop-page__stock-buy-button:disabled {
   border-color: transparent;
 }
 
@@ -3504,6 +3591,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-popup:not([hidden]),
 .shop-page__trade-history-popup:not([hidden]),
 .shop-page__demand-popup:not([hidden]),
+.shop-page__stock-buy-popup:not([hidden]),
 .room-top-panel__settings:not([hidden]),
 .room-top-panel__level-popup:not([hidden]) {
   background: rgb(var(--style-backdrop-rgb) / 68%);
@@ -3523,7 +3611,8 @@ div.workshop-page__discovery-row {
 .game-stage:has(.shop-page__sell-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__trade-history-popup:not([hidden])) .shop-page,
-.game-stage:has(.shop-page__demand-popup:not([hidden])) .shop-page {
+.game-stage:has(.shop-page__demand-popup:not([hidden])) .shop-page,
+.game-stage:has(.shop-page__stock-buy-popup:not([hidden])) .shop-page {
   z-index: 3;
 }
 
@@ -3538,7 +3627,7 @@ div.workshop-page__discovery-row {
   animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
-.room-top-panel__settings:not([hidden]) .style-dialog {
+.room-top-panel__settings:not([hidden]) .room-top-panel__settings-panel {
   animation: style-dialog-top-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
@@ -3551,7 +3640,8 @@ div.workshop-page__discovery-row {
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
 .shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel,
-.shop-page__demand-popup:not([hidden]) .shop-page__demand-panel {
+.shop-page__demand-popup:not([hidden]) .shop-page__demand-panel,
+.shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog {
   animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
