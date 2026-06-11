@@ -839,6 +839,22 @@ const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
     },
   ],
 });
+const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
+  costsCrystal: {
+    theme: {
+      white: 0,
+      black: 0,
+    },
+    font: {
+      'source-serif': 0,
+      inter: 0,
+    },
+    color: {
+      monochrome: 0,
+      resources: 0,
+    },
+  },
+});
 const DEFAULT_ITEMS_CONFIG_JSON = toGameConfigJson(getDefaultItemsConfig());
 const DEFAULT_POTION_RECIPES_CONFIG_JSON = toGameConfigJson({
   recipes: potionRecipeCatalog,
@@ -852,6 +868,7 @@ const gameConfigCatalog = [
   { configKey: 'research', configJson: DEFAULT_RESEARCH_CONFIG_JSON },
   { configKey: 'brewing', configJson: DEFAULT_BREWING_CONFIG_JSON },
   { configKey: 'tradeAlliance', configJson: DEFAULT_TRADE_ALLIANCE_CONFIG_JSON },
+  { configKey: 'visualSettings', configJson: DEFAULT_VISUAL_SETTINGS_CONFIG_JSON },
   { configKey: 'items', configJson: DEFAULT_ITEMS_CONFIG_JSON },
   { configKey: 'potionRecipes', configJson: DEFAULT_POTION_RECIPES_CONFIG_JSON },
 ];
@@ -3625,6 +3642,11 @@ function validateGameConfigValue(configKey: string, value: unknown) {
     return;
   }
 
+  if (configKey === 'visualSettings') {
+    validateVisualSettingsGameConfig(value);
+    return;
+  }
+
   if (configKey === 'items') {
     validateItemsGameConfig(value);
     return;
@@ -3893,6 +3915,25 @@ function validateResearchGameConfig(value: unknown) {
 
   validateCostRecord(config.researchCostsGold, MAX_RESEARCH_COST_GOLD);
   validateCostRecord(config.researchCostsCrystal, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+}
+
+function validateVisualSettingsGameConfig(value: unknown) {
+  const config = value as {
+    costsCrystal?: unknown;
+  };
+  const costsCrystal = config.costsCrystal as Record<string, unknown>;
+
+  if (!costsCrystal || typeof costsCrystal !== 'object' || Array.isArray(costsCrystal)) {
+    throw new Error('Invalid visual settings config.');
+  }
+
+  for (const category of ['theme', 'font', 'color']) {
+    try {
+      validateCostRecord(costsCrystal[category], BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+    } catch {
+      throw new Error('Invalid visual settings config.');
+    }
+  }
 }
 
 function validateBrewingGameConfig(value: unknown) {

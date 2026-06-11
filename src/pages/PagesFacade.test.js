@@ -2281,6 +2281,10 @@ describe('PagesFacade', () => {
       'seeds',
     );
     expect(stage.querySelector('.workshop-page__seed-block')?.textContent).toContain('seeds');
+    expect(stage.querySelector('.workshop-page__seed-count-button')?.textContent).toBe('0 seeds');
+    expect(
+      stage.querySelector('.workshop-page__seed-block .workshop-page__row--interactive'),
+    ).toBeNull();
     expect(
       stage.querySelector('.workshop-page__summon-button-label')?.textContent,
     ).toBe('summon seed');
@@ -2650,19 +2654,27 @@ describe('PagesFacade', () => {
     ]);
     expect(
       [...settings.querySelectorAll('.room-top-panel__theme-button')].map(
-        (button) => button.textContent,
+        (button) =>
+          button.querySelector('.room-top-panel__visual-option-name')?.textContent,
       ),
     ).toEqual(['white', 'black']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
-        (button) => button.textContent,
+        (button) =>
+          button.querySelector('.room-top-panel__visual-option-name')?.textContent,
       ),
     ).toEqual(['source serif', 'inter']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__color-button')].map(
-        (button) => button.textContent,
+        (button) =>
+          button.querySelector('.room-top-panel__visual-option-name')?.textContent,
       ),
     ).toEqual(['monochrome', 'resources']);
+    expect(
+      [...settings.querySelectorAll('.room-top-panel__visual-option-price')].map(
+        (price) => price.textContent,
+      ),
+    ).toEqual(['free', 'free', 'free', 'free', 'free', 'free']);
     expect(stage.querySelector('.room-top-panel__feedback-open')?.textContent).toBe(
       'feedback',
     );
@@ -3059,7 +3071,7 @@ describe('PagesFacade', () => {
     expect(settings.hidden).toBe(true);
   });
 
-  it('shows seed inventory when the seeds row is clicked', () => {
+  it('shows seed inventory when the seeds border labels are clicked', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
@@ -3071,17 +3083,19 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const seedInventory = stage.querySelector('.workshop-page__seed-inventory');
-    const seedsRow = stage.querySelector(
-      '.workshop-page__seed-block .workshop-page__row--interactive',
-    );
+    const seedsTitle = stage.querySelector('.workshop-page__seed-title');
+    const seedsCount = stage.querySelector('.workshop-page__seed-count-button');
 
     expect(seedInventory.hidden).toBe(true);
 
-    seedsRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    seedsTitle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(seedInventory.hidden).toBe(false);
     expect(seedInventory.querySelector('[role="dialog"]')).not.toBeNull();
     expect(seedInventory.querySelector('.style-dialog')).not.toBeNull();
+    expect(seedInventory.querySelector('.workshop-page__seed-inventory-close')?.textContent).toBe(
+      'close',
+    );
     expect(seedInventory.textContent).toContain('Sage Seed');
     expect(seedInventory.textContent).toContain('0');
     expect(
@@ -3089,6 +3103,10 @@ describe('PagesFacade', () => {
         'is-empty',
       ),
     ).toBe(true);
+
+    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    seedsCount.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(seedInventory.hidden).toBe(false);
   });
 
   it('separates researched seed inventory rows from unresearched rows', () => {
@@ -3179,7 +3197,7 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     stage
-      .querySelector('.workshop-page__seed-block .workshop-page__row--interactive')
+      .querySelector('.workshop-page__seed-title')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const seedInventory = stage.querySelector('.workshop-page__seed-inventory');
@@ -3225,17 +3243,38 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const seedInventory = stage.querySelector('.workshop-page__seed-inventory');
-    const seedsRow = stage.querySelector(
-      '.workshop-page__seed-block .workshop-page__row--interactive',
-    );
+    const seedsTitle = stage.querySelector('.workshop-page__seed-title');
 
-    seedsRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    seedsTitle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     expect(seedInventory.hidden).toBe(true);
 
-    seedsRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    seedsTitle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     seedInventory.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(seedInventory.hidden).toBe(true);
+  });
+
+  it('hides seed inventory popup with close button', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const seedInventory = stage.querySelector('.workshop-page__seed-inventory');
+    const seedsTitle = stage.querySelector('.workshop-page__seed-title');
+
+    seedsTitle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(seedInventory.hidden).toBe(false);
+
+    seedInventory
+      .querySelector('.workshop-page__seed-inventory-close')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(seedInventory.hidden).toBe(true);
   });
@@ -3996,6 +4035,10 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew (12 mana)',
     );
+    expect(stage.querySelector('.brewing-page__cauldron-auto-brew-text')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__actions')?.classList.contains('is-centered')).toBe(
+      true,
+    );
     expect(stage.querySelector('.brewing-page__clear-button')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'brewing',
@@ -4104,6 +4147,34 @@ describe('PagesFacade', () => {
 
     expect(pagesFacade.getCurrentPageId()).toBe('brewing');
     expect(stage.querySelector('.brewing-page')).not.toBeNull();
+  });
+
+  it('shows the Brewing auto control only after auto brew research', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    const autoButton = stage.querySelector('.brewing-page__cauldron-auto-brew-text');
+    const actions = stage.querySelector('.brewing-page__actions');
+
+    expect(autoButton?.hidden).toBe(true);
+    expect(actions?.classList.contains('is-centered')).toBe(true);
+
+    gameplayFacade.getSnapshot().crystal.current = 1;
+    expect(gameplayFacade.buyResearch('automation:autoBrewCauldron:1')).toMatchObject({
+      ok: true,
+    });
+
+    expect(autoButton?.hidden).toBe(false);
+    expect(autoButton?.textContent).toBe('auto brewing');
+    expect(autoButton?.getAttribute('aria-label')).toBe('open auto brewing');
+    expect(actions?.classList.contains('is-centered')).toBe(false);
   });
 
   it('switches the research page between regular and advanced research', () => {
@@ -4805,7 +4876,7 @@ describe('PagesFacade', () => {
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     stage
-      .querySelector('.workshop-page__seed-block .workshop-page__row--interactive')
+      .querySelector('.workshop-page__seed-title')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.workshop-page__seed-inventory').hidden).toBe(false);

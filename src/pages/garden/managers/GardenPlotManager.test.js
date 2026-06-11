@@ -235,6 +235,33 @@ describe('GardenPlotManager', () => {
     expect(plotRow.disabled).toBe(false);
   });
 
+  it('keeps unaffordable plot buy prices disabled without gold color', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    snapshot.garden.plot.unlockedTiles = 0;
+    snapshot.garden.plot.nextTileNumber = 1;
+    snapshot.garden.plot.nextTileCost = 25;
+    snapshot.garden.plot.tiles[0].unlocked = false;
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const actionLabel = plotRow.querySelector('.garden-page__plot-action-label');
+
+    expect(actionLabel?.textContent).toBe('buy 25g');
+    expect(plotRow.disabled).toBe(true);
+    expect(actionLabel?.getAttribute('data-resource-color')).toBeNull();
+
+    snapshot.gold.current = 25;
+    gameplayFacade.publish();
+
+    expect(plotRow.disabled).toBe(false);
+    expect(actionLabel?.getAttribute('data-resource-color')).toBe('gold');
+  });
+
   it('keeps plant seed buttons stable between renders and plants Mint Seed', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

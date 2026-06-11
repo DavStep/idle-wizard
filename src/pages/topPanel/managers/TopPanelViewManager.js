@@ -1,6 +1,4 @@
-import { PLAYER_COLOR_MODE_OPTIONS } from '../../../player/playerColorModes.js';
-import { PLAYER_FONT_OPTIONS } from '../../../player/playerFonts.js';
-import { PLAYER_THEME_OPTIONS } from '../../../player/playerThemes.js';
+import { getPlayerVisualSettingCategories } from '../../../player/playerVisualSettings.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class TopPanelViewManager {
@@ -178,89 +176,20 @@ export class TopPanelViewManager {
       'room-top-panel__settings-pane room-top-panel__theme-pane';
     this.refs.themePane.setAttribute('role', 'tabpanel');
 
-    const themeSection = document.createElement('div');
-    themeSection.className =
-      'room-top-panel__settings-section room-top-panel__theme-section';
+    const themeSection = this.createVisualSettingSection('theme');
+    const fontSection = this.createVisualSettingSection('font');
+    const colorSection = this.createVisualSettingSection('color');
 
-    const themeLabel = document.createElement('div');
-    themeLabel.className = 'room-top-panel__settings-label';
-    themeLabel.textContent = 'theme';
+    this.refs.visualSettingStatus = document.createElement('div');
+    this.refs.visualSettingStatus.className = 'room-top-panel__visual-status';
+    this.refs.visualSettingStatus.hidden = true;
 
-    const themeButtons = document.createElement('div');
-    themeButtons.className = 'room-top-panel__theme-buttons';
-    themeButtons.setAttribute('role', 'radiogroup');
-    themeButtons.setAttribute('aria-label', 'theme');
-    this.refs.themeButtons = [];
-
-    for (const theme of PLAYER_THEME_OPTIONS) {
-      const button = document.createElement('button');
-      button.className = 'style-button room-top-panel__theme-button';
-      button.type = 'button';
-      button.textContent = theme.label;
-      button.dataset.theme = theme.key;
-      button.setAttribute('role', 'radio');
-      button.setAttribute('aria-checked', 'false');
-      themeButtons.append(button);
-      this.refs.themeButtons.push(button);
-    }
-
-    themeSection.append(themeLabel, themeButtons);
-
-    const fontSection = document.createElement('div');
-    fontSection.className =
-      'room-top-panel__settings-section room-top-panel__font-section';
-
-    const fontLabel = document.createElement('div');
-    fontLabel.className = 'room-top-panel__settings-label';
-    fontLabel.textContent = 'font';
-
-    const fontButtons = document.createElement('div');
-    fontButtons.className = 'room-top-panel__font-buttons';
-    fontButtons.setAttribute('role', 'radiogroup');
-    fontButtons.setAttribute('aria-label', 'font');
-    this.refs.fontButtons = [];
-
-    for (const font of PLAYER_FONT_OPTIONS) {
-      const button = document.createElement('button');
-      button.className = 'style-button room-top-panel__font-button';
-      button.type = 'button';
-      button.textContent = font.label;
-      button.dataset.font = font.key;
-      button.setAttribute('role', 'radio');
-      button.setAttribute('aria-checked', 'false');
-      fontButtons.append(button);
-      this.refs.fontButtons.push(button);
-    }
-
-    fontSection.append(fontLabel, fontButtons);
-
-    const colorSection = document.createElement('div');
-    colorSection.className =
-      'room-top-panel__settings-section room-top-panel__color-section';
-
-    const colorLabel = document.createElement('div');
-    colorLabel.className = 'room-top-panel__settings-label';
-    colorLabel.textContent = 'color';
-
-    const colorButtons = document.createElement('div');
-    colorButtons.className = 'room-top-panel__color-buttons';
-    colorButtons.setAttribute('role', 'radiogroup');
-    colorButtons.setAttribute('aria-label', 'color');
-    this.refs.colorModeButtons = [];
-
-    for (const colorMode of PLAYER_COLOR_MODE_OPTIONS) {
-      const button = document.createElement('button');
-      button.className = 'style-button room-top-panel__color-button';
-      button.type = 'button';
-      button.textContent = colorMode.label;
-      button.dataset.colorMode = colorMode.key;
-      button.setAttribute('role', 'radio');
-      button.setAttribute('aria-checked', 'false');
-      colorButtons.append(button);
-      this.refs.colorModeButtons.push(button);
-    }
-
-    colorSection.append(colorLabel, colorButtons);
+    this.refs.themePane.append(
+      themeSection,
+      fontSection,
+      colorSection,
+      this.refs.visualSettingStatus,
+    );
 
     this.refs.reportPane = document.createElement('div');
     this.refs.reportPane.id = 'room-top-panel-settings-report';
@@ -347,7 +276,6 @@ export class TopPanelViewManager {
 
     this.refs.accountPane.append(usernameSection, this.refs.authSection);
     this.refs.reportPane.append(feedbackSection, this.refs.feedbackForm);
-    this.refs.themePane.append(themeSection, fontSection, colorSection);
 
     this.refs.settingsTabs = document.createElement('div');
     this.refs.settingsTabs.className = 'room-top-panel__settings-tabs';
@@ -388,6 +316,75 @@ export class TopPanelViewManager {
     this.refs.settings.append(this.refs.settingsPanel);
 
     return this.refs.settings;
+  }
+
+  createVisualSettingSection(categoryKey) {
+    const category = getPlayerVisualSettingCategories().find(
+      (candidate) => candidate.key === categoryKey,
+    );
+    const section = document.createElement('section');
+    section.className = `room-top-panel__settings-section room-top-panel__visual-section room-top-panel__${categoryKey}-section style-box`;
+
+    const title = document.createElement('div');
+    title.className = 'style-box__title';
+    title.textContent = category.label;
+
+    const buttons = document.createElement('div');
+    buttons.className = `room-top-panel__visual-options room-top-panel__${categoryKey}-buttons`;
+    buttons.setAttribute('role', 'radiogroup');
+    buttons.setAttribute('aria-label', category.label);
+
+    this.refs.visualSettingButtons ??= [];
+    this.refs.visualSettingPriceLabels ??= [];
+
+    if (categoryKey === 'theme') {
+      this.refs.themeButtons = [];
+    }
+
+    if (categoryKey === 'font') {
+      this.refs.fontButtons = [];
+    }
+
+    if (categoryKey === 'color') {
+      this.refs.colorModeButtons = [];
+    }
+
+    for (const option of category.options) {
+      const button = document.createElement('button');
+      button.className = `room-top-panel__visual-option room-top-panel__${categoryKey}-button`;
+      button.type = 'button';
+      button.dataset.visualCategory = categoryKey;
+      button.dataset.visualOption = option.key;
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-checked', 'false');
+
+      const name = document.createElement('span');
+      name.className = 'room-top-panel__visual-option-name';
+      name.textContent = option.label;
+
+      const price = document.createElement('span');
+      price.className = 'room-top-panel__visual-option-price';
+      price.textContent = 'free';
+
+      if (categoryKey === 'theme') {
+        button.dataset.theme = option.key;
+        this.refs.themeButtons.push(button);
+      } else if (categoryKey === 'font') {
+        button.dataset.font = option.key;
+        this.refs.fontButtons.push(button);
+      } else {
+        button.dataset.colorMode = option.key;
+        this.refs.colorModeButtons.push(button);
+      }
+
+      button.append(name, price);
+      buttons.append(button);
+      this.refs.visualSettingButtons.push(button);
+      this.refs.visualSettingPriceLabels.push(price);
+    }
+
+    section.append(title, buttons);
+    return section;
   }
 
   createLevelPopup() {

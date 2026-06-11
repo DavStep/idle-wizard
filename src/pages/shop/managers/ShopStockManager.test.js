@@ -71,7 +71,15 @@ describe('ShopStockManager', () => {
       'Sage Seed (3)',
     );
     expect(stage.querySelector('.shop-page__stock-buy-button')?.textContent).toBe(
-      'buy 1.25 gold',
+      '1.25 gold',
+    );
+    expect(
+      stage
+        .querySelector('.shop-page__stock-buy-button')
+        ?.getAttribute('data-resource-color'),
+    ).toBe('gold');
+    expect(stage.querySelector('.shop-page__stock-buy-button')?.disabled).toBe(
+      false,
     );
     expect(
       stage.querySelector('.shop-page__stock')?.lastElementChild,
@@ -98,6 +106,42 @@ describe('ShopStockManager', () => {
 
     expect(gameplayFacade.buyNpcMarketStockItem).toHaveBeenCalledWith(1, 2);
     expect(stage.querySelector('.shop-page__stock-buy-popup')?.hidden).toBe(true);
+
+    manager.unmount();
+  });
+
+  it('keeps unaffordable stock buy prices disabled without gold color', () => {
+    const stage = document.createElement('section');
+    const snapshot = {
+      gold: { current: 1 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        stock: {
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          items: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'Sage Seed',
+              kind: 'seed',
+              quantity: 0,
+              buyGold: 1.25,
+              stock: 3,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopStockManager({ gameplayFacade });
+
+    manager.mount(stage);
+
+    const button = stage.querySelector('.shop-page__stock-buy-button');
+
+    expect(button?.textContent).toBe('1.25 gold');
+    expect(button?.disabled).toBe(true);
+    expect(button?.getAttribute('data-resource-color')).toBeNull();
 
     manager.unmount();
   });

@@ -38,7 +38,9 @@ This project should use the same kind of minimal text-game language, without cop
 - Ordinary box padding follows A Dark Room's stores spacing: `5px 10px` in source UI units.
 - Box titles sit over the top border on white background, like A Dark Room's simple store boxes.
 - Do not put a separate heading inside a box when the label belongs in the border.
+- Non-title labels that sit on a box border, such as counts, close/current controls, bottom-edge actions, and tabs, should use smaller text with the line box centered on the border line.
 - Popup/dialog panels may use `2px solid black`, `20px` padding, and a bottom-right gray shadow: `5px 5px 5px #666` in source UI units.
+- Theme popup/dialog shadows should stay visible by contrasting with the active surface: dark on white, light on black.
 - Tooltips may use `1px solid black`, white background, and a small offset gray shadow.
 - Ordinary room/page surfaces should not use shadows.
 
@@ -71,4 +73,5 @@ This project should use the same kind of minimal text-game language, without cop
 - Do not copy A Dark Room's desktop `700px` layout dimensions.
 - Keep future page UI as sparse panels positioned inside the room view.
 - Show all five room page names in the bottom panel and underline the current page tab.
+- Keep bottom-border category tabs and paired actions edge-weighted: first left, middle centered, last right, with the border line visible between labels.
 - Avoid gradients, textures, illustrations, icons, rounded cards, and decorative shadows.

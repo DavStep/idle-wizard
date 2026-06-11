@@ -14,6 +14,7 @@ import { ResearchFacade } from './research/ResearchFacade.js';
 import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
 import { ShopFacade } from './shop/ShopFacade.js';
 import { TasksFacade } from './tasks/TasksFacade.js';
+import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
 
 export class GameplayFacade {
   static explain =
@@ -25,6 +26,9 @@ export class GameplayFacade {
     this.manaFacade = new ManaFacade();
     this.goldFacade = new GoldFacade();
     this.crystalFacade = new CrystalFacade();
+    this.visualSettingsFacade = new VisualSettingsFacade({
+      crystalFacade: this.crystalFacade,
+    });
     this.gameplayLogFacade = new GameplayLogFacade();
     this.tasksFacade = new TasksFacade({
       itemsFacade: this.itemsFacade,
@@ -123,6 +127,7 @@ export class GameplayFacade {
     this.gardenFacade.applyRuntimeConfig(snapshot);
     this.shopFacade.applyRuntimeConfig(snapshot);
     this.researchFacade.applyRuntimeConfig(snapshot);
+    this.visualSettingsFacade.applyRuntimeConfig(snapshot);
     this.tasksFacade.applyRuntimeConfig(snapshot);
     this.playerLevelFacade.applyRuntimeConfig(snapshot);
 
@@ -435,6 +440,12 @@ export class GameplayFacade {
     };
   }
 
+  buyVisualSettingOption(categoryKey, optionKey) {
+    const result = this.visualSettingsFacade.buyOption(categoryKey, optionKey);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   plantGardenSeed(tileNumber, seedTypeId) {
     const result = this.gardenFacade.plantSeed(tileNumber, seedTypeId);
     if (result.ok) {
@@ -497,6 +508,7 @@ export class GameplayFacade {
       playerLevel: this.playerLevelFacade.getSnapshot(),
       tasks: this.tasksFacade.getSnapshot(),
       research: this.researchFacade.getSnapshot(),
+      visualSettings: this.visualSettingsFacade.getSnapshot(),
       shop: this.shopFacade.getSnapshot(),
       garden: this.gardenFacade.getSnapshot(),
     };

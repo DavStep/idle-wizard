@@ -46,9 +46,10 @@ export class WorkshopSeedInventoryManager {
     this.refs.dialog.tabIndex = -1;
 
     this.refs.title = this.createTitle();
+    this.refs.closeButton = this.createCloseButton();
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__seed-inventory-rows';
-    this.refs.dialog.append(this.refs.title, this.refs.rows);
+    this.refs.dialog.append(this.refs.title, this.refs.closeButton, this.refs.rows);
     this.root.append(this.refs.dialog);
     parent.append(this.root);
     document.addEventListener('keydown', this.handleKeydown);
@@ -65,6 +66,15 @@ export class WorkshopSeedInventoryManager {
     title.className = 'style-box__title';
     title.textContent = 'seeds';
     return title;
+  }
+
+  createCloseButton() {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__seed-inventory-close';
+    button.type = 'button';
+    button.textContent = 'close';
+    button.addEventListener('click', () => this.hide());
+    return button;
   }
 
   toggle() {

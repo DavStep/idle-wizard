@@ -404,6 +404,7 @@ export class ShopStockManager {
     const display = getItemDisplay(this.lastSnapshot, item, item.quantity);
     const stock = Number.isFinite(item.stock) ? Math.floor(item.stock) : null;
     const buying = this.buyingItemTypeId === item.itemTypeId;
+    const canBuy = this.canBuyItem(item);
 
     refs.row.classList.toggle('is-empty', stock === 0);
     refs.row.classList.toggle('is-locked', display.locked);
@@ -412,9 +413,9 @@ export class ShopStockManager {
     setResourceColor(refs.label, item.kind);
 
     refs.button.textContent = buying ? 'buying' : this.getBuyButtonText(item);
-    setResourceColorFromText(refs.button, refs.button.textContent);
-    refs.button.disabled = buying || !this.canBuyItem(item);
+    refs.button.disabled = buying || !canBuy;
     refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
+    setResourceColor(refs.button, refs.button.disabled ? null : 'gold');
   }
 
   renderStatus(message) {
@@ -567,7 +568,7 @@ export class ShopStockManager {
       return 'empty';
     }
 
-    return `buy ${formatGoldPriceText(item.buyGold)}`;
+    return formatGoldPriceText(item.buyGold);
   }
 
   getCannotBuyStatus(item) {

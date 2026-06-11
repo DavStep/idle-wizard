@@ -14,7 +14,11 @@ export class TopPanelFacade {
     this.authManager = new TopPanelAuthManager({ authFacade });
     this.levelManager = new TopPanelLevelManager({ gameplayFacade });
     this.resourceDisplayManager = new TopPanelResourceDisplayManager({ gameplayFacade });
-    this.settingsManager = new TopPanelSettingsManager({ playerFacade, feedbackFacade });
+    this.settingsManager = new TopPanelSettingsManager({
+      gameplayFacade,
+      playerFacade,
+      feedbackFacade,
+    });
     this.usernamePromptManager = new TopPanelUsernamePromptManager({
       playerFacade,
       settingsManager: this.settingsManager,

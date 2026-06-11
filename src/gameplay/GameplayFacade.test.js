@@ -750,6 +750,46 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
   });
 
+  it('prices visual settings from runtime config and spends crystal', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.applyRuntimeConfig({
+      gameConfigs: [
+        {
+          configKey: 'visualSettings',
+          configJson: JSON.stringify({
+            costsCrystal: {
+              theme: { white: 0, black: 2 },
+              font: { 'source-serif': 0, inter: 0 },
+              color: { monochrome: 0, resources: 0 },
+            },
+          }),
+        },
+      ],
+    });
+
+    expect(gameplayFacade.getSnapshot().visualSettings.costsCrystal.theme.black).toBe(2);
+    expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
+      ok: false,
+      reason: 'not_enough_crystal',
+      category: 'theme',
+      optionKey: 'black',
+      costCrystal: 2,
+      costCurrency: 'crystal',
+    });
+
+    gameplayFacade.crystalFacade.add(2);
+
+    expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
+      ok: true,
+      category: 'theme',
+      optionKey: 'black',
+      costCrystal: 2,
+      costCurrency: 'crystal',
+    });
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
+  });
+
   it('spends mana to summon a seed into inventory', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 

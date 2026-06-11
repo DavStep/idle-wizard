@@ -1,10 +1,12 @@
 import {
+  getCompletedResearchIds,
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
+const AUTO_BREW_CAULDRON_RESEARCH_ID = 'automation:autoBrewCauldron:1';
 const TOUCH_DRAG_DISTANCE = 8;
 
 export class BrewingCauldronManager {
@@ -225,6 +227,7 @@ export class BrewingCauldronManager {
     const brewing = {
       ...snapshot.brewing,
       herbs: this.getHerbRows(snapshot),
+      autoBrewAvailable: this.isAutoBrewAvailable(snapshot),
     };
     brewing.selectedRecipe = this.getSelectedRecipe(brewing.recipes ?? []);
     this.syncHerbRows(brewing.herbs);
@@ -770,8 +773,22 @@ export class BrewingCauldronManager {
       return;
     }
 
+    const visible = brewing.autoBrewAvailable === true;
+    this.setHidden(autoBrewButton, !visible);
+    this.refs.actions.root.classList.toggle('is-centered', !visible);
+
+    if (!visible) {
+      this.setDisabled(autoBrewButton, true);
+      this.setAttribute(autoBrewButton, 'aria-hidden', 'true');
+      this.removeAttribute(autoBrewButton, 'aria-label');
+      this.removeAttribute(autoBrewButton, 'data-state');
+      this.removeAttribute(autoBrewButton, 'aria-pressed');
+      return;
+    }
+
     this.setText(autoBrewButton, 'auto brewing');
     this.setDisabled(autoBrewButton, false);
+    this.removeAttribute(autoBrewButton, 'aria-hidden');
     this.setAttribute(
       autoBrewButton,
       'aria-label',
@@ -783,6 +800,20 @@ export class BrewingCauldronManager {
       'aria-pressed',
       brewing.autoBrewEnabled ? 'true' : 'false',
     );
+  }
+
+  isAutoBrewAvailable(snapshot) {
+    if (snapshot?.brewing?.autoBrewEnabled === true) {
+      return true;
+    }
+
+    const completedResearchIds = getCompletedResearchIds(snapshot);
+
+    if (completedResearchIds === null) {
+      return false;
+    }
+
+    return completedResearchIds.has(AUTO_BREW_CAULDRON_RESEARCH_ID);
   }
 
   getPrimaryAction(brewing) {

@@ -25,12 +25,7 @@ export class WorkshopSeedBlockManager {
     this.root.setAttribute('aria-label', 'Seeds');
 
     this.refs.title = this.createTitle();
-    this.refs.seeds = this.createRow('seeds', '0', {
-      ariaLabel: 'show seed inventory',
-      interactive: true,
-      onClick: () => this.onSeedsClick?.(),
-    });
-    setResourceColor(this.refs.seeds.row, 'seed');
+    this.refs.seedCountButton = this.createSeedCountButton();
     this.refs.actionRow = document.createElement('div');
     this.refs.actionRow.className = 'workshop-page__seed-action-row';
     this.refs.button = this.createButton();
@@ -38,7 +33,7 @@ export class WorkshopSeedBlockManager {
 
     this.root.append(
       this.refs.title,
-      this.refs.seeds.row,
+      this.refs.seedCountButton,
       this.refs.actionRow,
     );
     parent.append(this.root);
@@ -58,44 +53,24 @@ export class WorkshopSeedBlockManager {
   }
 
   createTitle() {
-    const title = document.createElement('div');
-    title.className = 'style-box__title';
+    const title = document.createElement('button');
+    title.className = 'workshop-page__seed-title style-box__title';
+    title.type = 'button';
     title.textContent = 'seeds';
+    title.setAttribute('aria-label', 'show seed inventory');
+    title.addEventListener('click', () => this.onSeedsClick?.());
     return title;
   }
 
-  createRow(label, value, { ariaLabel = null, interactive = false, onClick = null } = {}) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__row';
-
-    if (interactive) {
-      row.classList.add('workshop-page__row--interactive');
-      row.setAttribute('role', 'button');
-      row.tabIndex = 0;
-      if (ariaLabel) {
-        row.setAttribute('aria-label', ariaLabel);
-      }
-      row.addEventListener('click', () => onClick?.());
-      row.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') {
-          return;
-        }
-
-        event.preventDefault();
-        onClick?.();
-      });
-    }
-
-    const key = document.createElement('span');
-    key.className = 'row_key';
-    key.textContent = label;
-
-    const val = document.createElement('span');
-    val.className = 'row_val';
-    val.textContent = value;
-
-    row.append(key, val);
-    return { row, val };
+  createSeedCountButton() {
+    const button = document.createElement('button');
+    button.className = 'workshop-page__seed-count-button';
+    button.type = 'button';
+    button.textContent = '0 seeds';
+    button.setAttribute('aria-label', 'show seed inventory, 0 seeds');
+    setResourceColor(button, 'seed');
+    button.addEventListener('click', () => this.onSeedsClick?.());
+    return button;
   }
 
   createButton() {
@@ -149,7 +124,13 @@ export class WorkshopSeedBlockManager {
     const quantity = snapshot.seedSummoning.quantity ?? 1;
     const summonLabel = quantity > 1 ? `summon x${quantity}` : 'summon seed';
 
-    this.refs.seeds.val.textContent = String(seedCount);
+    const seedCountText = this.formatSeedCount(seedCount);
+
+    this.refs.seedCountButton.textContent = seedCountText;
+    this.refs.seedCountButton.setAttribute(
+      'aria-label',
+      `show seed inventory, ${seedCountText}`,
+    );
     this.refs.summonButtonLabel.textContent = summonLabel;
     this.refs.summonButtonCost.textContent = `${snapshot.seedSummoning.cost} mana`;
     this.refs.button.setAttribute(
@@ -162,5 +143,9 @@ export class WorkshopSeedBlockManager {
     );
     this.refs.button.disabled = !snapshot.seedSummoning.canSummon;
     setNotificationBadge(this.refs.button, snapshot.seedSummoning.canSummon);
+  }
+
+  formatSeedCount(seedCount) {
+    return `${seedCount} ${seedCount === 1 ? 'seed' : 'seeds'}`;
   }
 }

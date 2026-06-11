@@ -301,14 +301,17 @@ export class GardenPlotManager {
     );
 
     if (!tile.unlocked) {
+      const lockedTileAction = isNextLockedTile ? this.formatLockedTileAction(plot) : '';
+      const lockedTileDisabled =
+        !isNextLockedTile || plot.nextTileLockedByLevel || gold.current < plot.nextTileCost;
       refs.label.textContent = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
       setResourceColor(refs.label, null);
       refs.state.textContent = '';
       this.setTileAction(refs, {
-        label: isNextLockedTile ? this.formatLockedTileAction(plot) : '',
+        label: lockedTileAction,
+        colorResource: !lockedTileDisabled,
       });
-      refs.button.disabled =
-        !isNextLockedTile || plot.nextTileLockedByLevel || gold.current < plot.nextTileCost;
+      refs.button.disabled = lockedTileDisabled;
       refs.button.setAttribute(
         'aria-label',
         isNextLockedTile
@@ -667,11 +670,16 @@ export class GardenPlotManager {
     return 'growing';
   }
 
-  setTileAction(refs, { label, timer = '' }) {
+  setTileAction(refs, { label, timer = '', colorResource = true }) {
     this.setText(refs.actionLabel, label);
     this.setText(refs.actionGap, timer ? ' ' : '');
     this.setText(refs.actionTimer, timer);
-    setResourceColorFromText(refs.actionLabel, label);
+    if (colorResource) {
+      setResourceColorFromText(refs.actionLabel, label);
+      return;
+    }
+
+    setResourceColor(refs.actionLabel, null);
   }
 
   formatTileAction(tile) {

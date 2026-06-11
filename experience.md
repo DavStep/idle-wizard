@@ -112,6 +112,7 @@
 - Project typography uses `Source Serif 4` at `15px` source size with tabular lining numerals for values.
 - Keep popup/dialog titles at `16px`; ordinary block titles and body text share the source size.
 - Box titles use bold weight.
+- Non-title labels that sit on a box border (counts, close/current controls, bottom-edge actions/tabs) use smaller text and a fixed line box centered on the border line.
 - Mobile readability comes from the room UI scale layer, not from changing the source font size upward.
 - Source UI scale must follow the fitted viewport scale, not stay fixed at `3`, so web and mobile views both fit.
 - Mobile keyboard resize must not recompute scale from the shrunken visual height while text input is focused or while the keyboard is closing after focus leaves.
@@ -121,9 +122,10 @@
 - For Android safe areas, let chrome backgrounds visually extend behind status/gesture areas and inset only interactive content; avoid black gutter padding.
 - Non-dialog boxes stay simple: `1px` border, compact padding, no shadow.
 - Popup/dialog panels can use the thicker event-panel treatment: `2px` border and `5px 5px 5px #666` shadow in source UI units.
+- Popup/dialog shadow tokens must contrast with the active theme: dark shadow on white surfaces, light shadow on black surfaces.
 - The Workshop mana-only resource block is called `mana sphere`.
-- Workshop seed count and summon seed action live in a separate `seeds` block.
-- Clicking `seeds` in the seeds block opens the seed inventory as a popup, not an inline room block.
+- Workshop seed count and summon seed action live in a separate `seeds` block; title and count are border labels, with no inner seed summary row.
+- Clicking the `seeds` title or count in the seeds block opens the seed inventory as a popup, not an inline room block.
 - Do not add decorative visuals unless the user explicitly asks.
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
@@ -174,11 +176,15 @@
 - Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to `white`.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
+- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; zero crystal displays as `free`, and the dashboard `Visuals` tab edits those prices.
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
-- NPC stock market category controls are bottom-border text tabs, not boxed buttons.
+- NPC stock market category controls are bottom-border text tabs, not boxed buttons; keep `seed` left, `herb` centered, and `potion` right.
+- NPC stock buy row controls show only the price (`25 gold`), not a `buy` prefix; enabled prices use gold resource color, disabled/unaffordable prices inherit muted disabled color.
+- Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
+- Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.

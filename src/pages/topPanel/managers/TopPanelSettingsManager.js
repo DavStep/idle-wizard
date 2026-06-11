@@ -39,11 +39,15 @@ const FEEDBACK_KIND_CONFIG = {
 };
 
 export class TopPanelSettingsManager {
-  constructor({ playerFacade, feedbackFacade } = {}) {
+  constructor({ playerFacade, gameplayFacade, feedbackFacade } = {}) {
     this.playerFacade = playerFacade;
+    this.gameplayFacade = gameplayFacade;
     this.feedbackFacade = feedbackFacade;
     this.refs = null;
     this.unsubscribe = null;
+    this.gameplayUnsubscribe = null;
+    this.playerSnapshot = null;
+    this.gameplaySnapshot = null;
     this.visible = false;
     this.usernamePromptMode = false;
     this.feedbackMode = false;
@@ -81,13 +85,13 @@ export class TopPanelSettingsManager {
     this.handleSavePointerDown = (event) => this.handleSavePressStart(event);
     this.handleSaveTouchStart = (event) => this.handleSavePressStart(event);
     this.handleThemeClick = (event) => {
-      this.playerFacade?.setTheme?.(event.currentTarget.dataset.theme);
+      this.selectVisualSetting('theme', event.currentTarget.dataset.theme);
     };
     this.handleFontClick = (event) => {
-      this.playerFacade?.setFont?.(event.currentTarget.dataset.font);
+      this.selectVisualSetting('font', event.currentTarget.dataset.font);
     };
     this.handleColorModeClick = (event) => {
-      this.playerFacade?.setColorMode?.(event.currentTarget.dataset.colorMode);
+      this.selectVisualSetting('color', event.currentTarget.dataset.colorMode);
     };
     this.handleSettingsTabClick = (event) =>
       this.selectSettingsTab(event.currentTarget.dataset.settingsTab);
@@ -153,14 +157,28 @@ export class TopPanelSettingsManager {
     document.addEventListener('keydown', this.handleKeydown);
 
     if (this.playerFacade) {
-      this.unsubscribe = this.playerFacade.subscribe((snapshot) => this.render(snapshot));
-      this.render(this.playerFacade.getSnapshot());
+      this.unsubscribe = this.playerFacade.subscribe((snapshot) =>
+        this.renderPlayerSnapshot(snapshot),
+      );
+      this.renderPlayerSnapshot(this.playerFacade.getSnapshot());
     } else {
-      this.render({
+      this.renderPlayerSnapshot({
         username: 'wizard',
         theme: DEFAULT_PLAYER_THEME,
         font: DEFAULT_PLAYER_FONT,
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
+      });
+    }
+
+    if (this.gameplayFacade) {
+      this.gameplayUnsubscribe = this.gameplayFacade.subscribe((snapshot) =>
+        this.renderGameplaySnapshot(snapshot),
+      );
+      this.renderGameplaySnapshot(this.gameplayFacade.getSnapshot());
+    } else {
+      this.renderGameplaySnapshot({
+        crystal: { current: 0 },
+        visualSettings: { costsCrystal: {} },
       });
     }
 
@@ -170,6 +188,8 @@ export class TopPanelSettingsManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.gameplayUnsubscribe?.();
+    this.gameplayUnsubscribe = null;
 
     if (this.refs) {
       this.refs.usernameButton.removeEventListener('click', this.handleUsernameClick);
@@ -212,6 +232,8 @@ export class TopPanelSettingsManager {
 
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs = null;
+    this.playerSnapshot = null;
+    this.gameplaySnapshot = null;
     this.visible = false;
     this.feedbackPending = false;
     this.previousFocus = null;
@@ -270,6 +292,7 @@ export class TopPanelSettingsManager {
         : this.refs.usernameButton.textContent;
     this.clearUsernameError();
     this.clearFeedbackStatus();
+    this.clearVisualSettingStatus();
     this.setFeedbackPending(false);
     this.applyVisibility();
     this.focusWithoutScroll(
@@ -345,10 +368,12 @@ export class TopPanelSettingsManager {
     this.showFeedbackStatus(this.getFeedbackErrorMessage(result?.reason));
   }
 
-  render(snapshot) {
+  renderPlayerSnapshot(snapshot) {
     if (!this.refs || !snapshot) {
       return;
     }
+
+    this.playerSnapshot = snapshot;
 
     if (this.refs.usernameButton.textContent !== snapshot.username) {
       this.refs.usernameButton.textContent = snapshot.username;
@@ -357,6 +382,7 @@ export class TopPanelSettingsManager {
     this.applyThemeSelection(snapshot.theme);
     this.applyFontSelection(snapshot.font);
     this.applyColorModeSelection(snapshot.colorMode);
+    this.renderVisualSettingPrices();
 
     if (
       this.usernamePromptMode &&
@@ -365,6 +391,15 @@ export class TopPanelSettingsManager {
     ) {
       this.hide();
     }
+  }
+
+  renderGameplaySnapshot(snapshot) {
+    if (!this.refs || !snapshot) {
+      return;
+    }
+
+    this.gameplaySnapshot = snapshot;
+    this.renderVisualSettingPrices();
   }
 
   applyThemeSelection(theme) {
@@ -395,6 +430,112 @@ export class TopPanelSettingsManager {
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
     }
+  }
+
+  selectVisualSetting(categoryKey, optionKey) {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.isCurrentVisualSetting(categoryKey, optionKey)) {
+      this.applyPlayerVisualSetting(categoryKey, optionKey);
+      this.clearVisualSettingStatus();
+      return;
+    }
+
+    const result = this.gameplayFacade?.buyVisualSettingOption
+      ? this.gameplayFacade.buyVisualSettingOption(categoryKey, optionKey)
+      : { ok: true };
+
+    if (!result?.ok) {
+      this.showVisualSettingStatus(this.getVisualSettingErrorMessage(result?.reason));
+      this.renderVisualSettingPrices();
+      return;
+    }
+
+    this.applyPlayerVisualSetting(categoryKey, optionKey);
+    this.clearVisualSettingStatus();
+  }
+
+  applyPlayerVisualSetting(categoryKey, optionKey) {
+    if (categoryKey === 'theme') {
+      this.playerFacade?.setTheme?.(optionKey);
+      return;
+    }
+
+    if (categoryKey === 'font') {
+      this.playerFacade?.setFont?.(optionKey);
+      return;
+    }
+
+    if (categoryKey === 'color') {
+      this.playerFacade?.setColorMode?.(optionKey);
+    }
+  }
+
+  renderVisualSettingPrices() {
+    if (!this.refs) {
+      return;
+    }
+
+    const currentCrystal = Number(this.gameplaySnapshot?.crystal?.current ?? 0);
+
+    for (const button of this.refs.visualSettingButtons ?? []) {
+      const categoryKey = button.dataset.visualCategory;
+      const optionKey = button.dataset.visualOption;
+      const costCrystal = this.getVisualSettingCostCrystal(categoryKey, optionKey);
+      const selected = this.isCurrentVisualSetting(categoryKey, optionKey);
+      const canAfford = selected || costCrystal <= currentCrystal || !this.gameplayFacade;
+      const price = button.querySelector('.room-top-panel__visual-option-price');
+      const label = button.querySelector('.room-top-panel__visual-option-name')?.textContent ?? '';
+      const priceLabel = this.formatVisualSettingPrice(costCrystal);
+
+      if (price && price.textContent !== priceLabel) {
+        price.textContent = priceLabel;
+      }
+
+      button.disabled = !canAfford;
+      button.classList.toggle('is-unaffordable', !canAfford);
+      button.setAttribute(
+        'aria-label',
+        `${label}, ${priceLabel}${canAfford ? '' : ', not enough crystal'}`,
+      );
+    }
+  }
+
+  getVisualSettingCostCrystal(categoryKey, optionKey) {
+    const costs = this.gameplaySnapshot?.visualSettings?.costsCrystal?.[categoryKey];
+    const cost = Number(costs?.[optionKey] ?? 0);
+
+    return Number.isFinite(cost) && cost > 0 ? Math.floor(cost) : 0;
+  }
+
+  isCurrentVisualSetting(categoryKey, optionKey) {
+    if (categoryKey === 'theme') {
+      return normalizePlayerTheme(this.playerSnapshot?.theme) === optionKey;
+    }
+
+    if (categoryKey === 'font') {
+      return normalizePlayerFont(this.playerSnapshot?.font) === optionKey;
+    }
+
+    if (categoryKey === 'color') {
+      return normalizePlayerColorMode(this.playerSnapshot?.colorMode) === optionKey;
+    }
+
+    return false;
+  }
+
+  formatVisualSettingPrice(costCrystal) {
+    return costCrystal > 0 ? `${costCrystal} crystal` : 'free';
+  }
+
+  getVisualSettingErrorMessage(reason) {
+    if (reason === 'not_enough_crystal') {
+      return 'not enough crystal';
+    }
+
+    return 'setting unavailable';
   }
 
   applyVisibility() {
@@ -545,6 +686,30 @@ export class TopPanelSettingsManager {
     }
 
     this.refs.feedbackStatus.hidden = true;
+  }
+
+  showVisualSettingStatus(message) {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.refs.visualSettingStatus.textContent !== message) {
+      this.refs.visualSettingStatus.textContent = message;
+    }
+
+    this.refs.visualSettingStatus.hidden = false;
+  }
+
+  clearVisualSettingStatus() {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.refs.visualSettingStatus.textContent !== '') {
+      this.refs.visualSettingStatus.textContent = '';
+    }
+
+    this.refs.visualSettingStatus.hidden = true;
   }
 
   setFeedbackPending(pending) {
