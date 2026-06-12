@@ -72,8 +72,24 @@ describe('LeaderboardSubscriptionManager', () => {
   it('publishes top users sorted by leaderboard metric', () => {
     const snapshots = [];
     const rows = [
-      { username: 'Low', playerLevel: 2, income: 20n, totalIncome: 3n },
-      { username: 'High', playerLevel: 10, income: 1n, totalIncome: 12n },
+      {
+        username: 'Low',
+        playerLevel: 2,
+        income: 20n,
+        dailyIncome: 9n,
+        weeklyIncome: 2n,
+        monthlyIncome: 1n,
+        totalIncome: 3n,
+      },
+      {
+        username: 'High',
+        playerLevel: 10,
+        income: 1n,
+        dailyIncome: 1n,
+        weeklyIncome: 10n,
+        monthlyIncome: 4n,
+        totalIncome: 12n,
+      },
     ];
     const table = createLeaderboardTable(rows);
     const connection = createConnection(table);
@@ -83,22 +99,149 @@ describe('LeaderboardSubscriptionManager', () => {
 
     manager.connect(connection);
 
-    expect(manager.getSnapshot()).toEqual({
+    expect(manager.getSnapshot()).toMatchObject({
       topUsers: [
-        { name: 'High', playerLevel: 10, income: 1, totalGeneratedGold: 12, totalIncome: 12 },
-        { name: 'Low', playerLevel: 2, income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+        {
+          name: 'High',
+          playerLevel: 10,
+          income: 1,
+          dailyIncome: 1,
+          weeklyIncome: 10,
+          monthlyIncome: 4,
+          totalGeneratedGold: 12,
+          totalIncome: 12,
+        },
+        {
+          name: 'Low',
+          playerLevel: 2,
+          income: 20,
+          dailyIncome: 9,
+          weeklyIncome: 2,
+          monthlyIncome: 1,
+          totalGeneratedGold: 3,
+          totalIncome: 3,
+        },
       ],
       topGeneratedGoldUsers: [
-        { name: 'High', playerLevel: 10, income: 1, totalGeneratedGold: 12, totalIncome: 12 },
-        { name: 'Low', playerLevel: 2, income: 20, totalGeneratedGold: 3, totalIncome: 3 },
+        {
+          name: 'High',
+          playerLevel: 10,
+          income: 1,
+          dailyIncome: 1,
+          weeklyIncome: 10,
+          monthlyIncome: 4,
+          totalGeneratedGold: 12,
+          totalIncome: 12,
+        },
+        {
+          name: 'Low',
+          playerLevel: 2,
+          income: 20,
+          dailyIncome: 9,
+          weeklyIncome: 2,
+          monthlyIncome: 1,
+          totalGeneratedGold: 3,
+          totalIncome: 3,
+        },
       ],
       topIncomeUsers: [
-        { name: 'Low', playerLevel: 2, income: 20, totalGeneratedGold: 3, totalIncome: 3 },
-        { name: 'High', playerLevel: 10, income: 1, totalGeneratedGold: 12, totalIncome: 12 },
+        {
+          name: 'Low',
+          playerLevel: 2,
+          income: 20,
+          dailyIncome: 9,
+          weeklyIncome: 2,
+          monthlyIncome: 1,
+          totalGeneratedGold: 3,
+          totalIncome: 3,
+        },
+        {
+          name: 'High',
+          playerLevel: 10,
+          income: 1,
+          dailyIncome: 1,
+          weeklyIncome: 10,
+          monthlyIncome: 4,
+          totalGeneratedGold: 12,
+          totalIncome: 12,
+        },
+      ],
+      topDailyUsers: [
+        {
+          name: 'Low',
+          playerLevel: 2,
+          income: 20,
+          dailyIncome: 9,
+          weeklyIncome: 2,
+          monthlyIncome: 1,
+          totalGeneratedGold: 3,
+          totalIncome: 3,
+        },
+        {
+          name: 'High',
+          playerLevel: 10,
+          income: 1,
+          dailyIncome: 1,
+          weeklyIncome: 10,
+          monthlyIncome: 4,
+          totalGeneratedGold: 12,
+          totalIncome: 12,
+        },
+      ],
+      topWeeklyUsers: [
+        {
+          name: 'High',
+          playerLevel: 10,
+          income: 1,
+          dailyIncome: 1,
+          weeklyIncome: 10,
+          monthlyIncome: 4,
+          totalGeneratedGold: 12,
+          totalIncome: 12,
+        },
+        {
+          name: 'Low',
+          playerLevel: 2,
+          income: 20,
+          dailyIncome: 9,
+          weeklyIncome: 2,
+          monthlyIncome: 1,
+          totalGeneratedGold: 3,
+          totalIncome: 3,
+        },
+      ],
+      topMonthlyUsers: [
+        {
+          name: 'High',
+          playerLevel: 10,
+          income: 1,
+          dailyIncome: 1,
+          weeklyIncome: 10,
+          monthlyIncome: 4,
+          totalGeneratedGold: 12,
+          totalIncome: 12,
+        },
+        {
+          name: 'Low',
+          playerLevel: 2,
+          income: 20,
+          dailyIncome: 9,
+          weeklyIncome: 2,
+          monthlyIncome: 1,
+          totalGeneratedGold: 3,
+          totalIncome: 3,
+        },
       ],
       currentGeneratedGoldUser: null,
       currentIncomeUser: null,
+      currentDailyUser: null,
+      currentWeeklyUser: null,
+      currentMonthlyUser: null,
+      currentAllTimeUser: null,
     });
+    expect(manager.getSnapshot().topAllTimeUsers).toEqual(
+      manager.getSnapshot().topGeneratedGoldUsers,
+    );
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
   });
 
@@ -112,8 +255,26 @@ describe('LeaderboardSubscriptionManager', () => {
     manager.connect(createConnection(createLeaderboardTable(rows)));
 
     expect(manager.getSnapshot().topGeneratedGoldUsers).toEqual([
-      { name: 'High', playerLevel: 10, income: 0, totalGeneratedGold: 12, totalIncome: 12 },
-      { name: 'Low', playerLevel: 2, income: 0, totalGeneratedGold: 3, totalIncome: 3 },
+      {
+        name: 'High',
+        playerLevel: 10,
+        income: 0,
+        dailyIncome: 0,
+        weeklyIncome: 0,
+        monthlyIncome: 0,
+        totalGeneratedGold: 12,
+        totalIncome: 12,
+      },
+      {
+        name: 'Low',
+        playerLevel: 2,
+        income: 0,
+        dailyIncome: 0,
+        weeklyIncome: 0,
+        monthlyIncome: 0,
+        totalGeneratedGold: 3,
+        totalIncome: 3,
+      },
     ]);
   });
 
@@ -141,6 +302,9 @@ describe('LeaderboardSubscriptionManager', () => {
       name: 'Mine',
       playerLevel: 4,
       income: 50,
+      dailyIncome: 0,
+      weeklyIncome: 0,
+      monthlyIncome: 0,
       totalGeneratedGold: 1,
       totalIncome: 1,
       rank: 12,
@@ -149,6 +313,9 @@ describe('LeaderboardSubscriptionManager', () => {
       name: 'Mine',
       playerLevel: 4,
       income: 50,
+      dailyIncome: 0,
+      weeklyIncome: 0,
+      monthlyIncome: 0,
       totalGeneratedGold: 1,
       totalIncome: 1,
       rank: 1,
@@ -183,8 +350,16 @@ describe('LeaderboardSubscriptionManager', () => {
       topUsers: [],
       topGeneratedGoldUsers: [],
       topIncomeUsers: [],
+      topDailyUsers: [],
+      topWeeklyUsers: [],
+      topMonthlyUsers: [],
+      topAllTimeUsers: [],
       currentGeneratedGoldUser: null,
       currentIncomeUser: null,
+      currentDailyUser: null,
+      currentWeeklyUser: null,
+      currentMonthlyUser: null,
+      currentAllTimeUser: null,
     });
   });
 });

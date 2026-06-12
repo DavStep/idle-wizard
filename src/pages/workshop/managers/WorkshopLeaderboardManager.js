@@ -1,16 +1,56 @@
-const LEADERBOARD_TABS = [
+const LEADERBOARD_SCOPES = [
   {
-    id: 'totalGeneratedGold',
-    label: 'wealth',
-    valueKey: 'totalGeneratedGold',
+    id: 'singlePlayer',
+    label: 'single player',
+    rowLabel: 'user',
+    emptyLabel: 'no users yet',
   },
   {
     id: 'alliance',
-    label: 'alliance wealth',
-    valueKey: 'seasonIncome',
+    label: 'alliance',
+    rowLabel: 'alliance',
+    emptyLabel: 'no alliances yet',
   },
 ];
+
+const LEADERBOARD_PERIODS = [
+  {
+    id: 'daily',
+    label: 'daily',
+    valueKey: 'dailyIncome',
+    userListKey: 'topDailyUsers',
+    currentUserKey: 'currentDailyUser',
+    allianceListKey: 'topDailyAlliances',
+  },
+  {
+    id: 'weekly',
+    label: 'weekly',
+    valueKey: 'weeklyIncome',
+    userListKey: 'topWeeklyUsers',
+    currentUserKey: 'currentWeeklyUser',
+    allianceListKey: 'topWeeklyAlliances',
+  },
+  {
+    id: 'monthly',
+    label: 'monthly',
+    valueKey: 'monthlyIncome',
+    userListKey: 'topMonthlyUsers',
+    currentUserKey: 'currentMonthlyUser',
+    allianceListKey: 'topMonthlyAlliances',
+  },
+  {
+    id: 'allTime',
+    label: 'all time',
+    valueKey: 'totalIncome',
+    userListKey: 'topAllTimeUsers',
+    currentUserKey: 'currentAllTimeUser',
+    allianceListKey: 'topAllTimeAlliances',
+  },
+];
+
 const LEADERBOARD_VISIBLE_USER_LIMIT = 10;
+const DEFAULT_SCOPE_ID = 'singlePlayer';
+const DEFAULT_PERIOD_ID = 'allTime';
 
 export class WorkshopLeaderboardManager {
   constructor({ gameplayFacade, leaderboardFacade, tradeAllianceFacade } = {}) {
@@ -23,7 +63,8 @@ export class WorkshopLeaderboardManager {
     this.unsubscribeTradeAlliance = null;
     this.refs = {};
     this.visible = false;
-    this.selectedTabId = LEADERBOARD_TABS[0].id;
+    this.selectedScopeId = DEFAULT_SCOPE_ID;
+    this.selectedPeriodId = DEFAULT_PERIOD_ID;
     this.lastLeaderboardSnapshot = {};
     this.lastTradeAllianceSnapshot = {};
     this.previousFocus = null;
@@ -113,11 +154,24 @@ export class WorkshopLeaderboardManager {
 
     this.refs.dialog = panel;
     this.refs.title = this.createTitle();
-    this.refs.tabs = this.createTabs();
+    this.refs.scopeTabs = this.createTabs({
+      className: 'workshop-page__leaderboard-tabs workshop-page__leaderboard-scope-tabs',
+      label: 'Leaderboard type',
+      tabs: LEADERBOARD_SCOPES,
+      refKey: 'scopeTabButtons',
+      onSelect: (tabId) => this.onSelectScope(tabId),
+    });
+    this.refs.periodTabs = this.createTabs({
+      className: 'workshop-page__leaderboard-tabs workshop-page__leaderboard-period-tabs',
+      label: 'Leaderboard period',
+      tabs: LEADERBOARD_PERIODS,
+      refKey: 'periodTabButtons',
+      onSelect: (tabId) => this.onSelectPeriod(tabId),
+    });
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__leaderboard-rows';
     dialog.append(this.refs.title, this.refs.rows);
-    panel.append(dialog, this.refs.tabs);
+    panel.append(dialog, this.refs.scopeTabs, this.refs.periodTabs);
     popup.append(panel);
 
     return popup;
@@ -130,34 +184,43 @@ export class WorkshopLeaderboardManager {
     return title;
   }
 
-  createTabs() {
+  createTabs({ className, label, tabs: tabList, refKey, onSelect }) {
     const tabs = document.createElement('div');
-    tabs.className = 'workshop-page__leaderboard-tabs';
-    tabs.setAttribute('aria-label', 'Leaderboard type');
+    tabs.className = className;
+    tabs.setAttribute('aria-label', label);
     tabs.setAttribute('role', 'tablist');
 
-    this.refs.tabButtons = new Map();
+    this.refs[refKey] = new Map();
 
-    for (const tab of LEADERBOARD_TABS) {
+    for (const tab of tabList) {
       const button = document.createElement('button');
       button.className = 'style-button workshop-page__leaderboard-tab-button';
       button.type = 'button';
       button.textContent = tab.label;
       button.setAttribute('role', 'tab');
-      button.addEventListener('click', () => this.onSelectTab(tab.id));
-      this.refs.tabButtons.set(tab.id, button);
+      button.addEventListener('click', () => onSelect(tab.id));
+      this.refs[refKey].set(tab.id, button);
       tabs.append(button);
     }
 
     return tabs;
   }
 
-  onSelectTab(tabId) {
-    if (this.selectedTabId === tabId) {
+  onSelectScope(scopeId) {
+    if (this.selectedScopeId === scopeId) {
       return;
     }
 
-    this.selectedTabId = tabId;
+    this.selectedScopeId = scopeId;
+    this.render();
+  }
+
+  onSelectPeriod(periodId) {
+    if (this.selectedPeriodId === periodId) {
+      return;
+    }
+
+    this.selectedPeriodId = periodId;
     this.render();
   }
 
@@ -192,7 +255,8 @@ export class WorkshopLeaderboardManager {
     this.root = null;
     this.refs = {};
     this.visible = false;
-    this.selectedTabId = LEADERBOARD_TABS[0].id;
+    this.selectedScopeId = DEFAULT_SCOPE_ID;
+    this.selectedPeriodId = DEFAULT_PERIOD_ID;
     this.lastLeaderboardSnapshot = {};
     this.lastTradeAllianceSnapshot = {};
     this.previousFocus = null;
@@ -205,37 +269,38 @@ export class WorkshopLeaderboardManager {
 
     this.updateTabs();
 
-    const activeTab = this.getActiveTab();
-    const isAllianceTab = activeTab.id === 'alliance';
-    const rows = isAllianceTab
-      ? this.getTopAlliances(this.lastTradeAllianceSnapshot, activeTab)
-      : this.getTopUsers(this.lastLeaderboardSnapshot, activeTab);
-    const currentUser = isAllianceTab
+    const activeScope = this.getActiveScope();
+    const activePeriod = this.getActivePeriod();
+    const isAllianceScope = activeScope.id === 'alliance';
+    const rows = isAllianceScope
+      ? this.getTopAlliances(this.lastTradeAllianceSnapshot, activePeriod)
+      : this.getTopUsers(this.lastLeaderboardSnapshot, activePeriod);
+    const currentUser = isAllianceScope
       ? null
-      : this.getCurrentUser(this.lastLeaderboardSnapshot, activeTab);
+      : this.getCurrentUser(this.lastLeaderboardSnapshot, activePeriod);
 
     if (!rows.length) {
       const empty = document.createElement('div');
       empty.className = 'workshop-page__leaderboard-empty';
-      empty.textContent = isAllianceTab ? 'no alliances yet' : 'no users yet';
+      empty.textContent = activeScope.emptyLabel;
       this.refs.rows.replaceChildren(empty);
       return;
     }
 
-    const header = this.createRow(isAllianceTab ? 'alliance' : 'user', activeTab.label, {
+    const header = this.createRow(activeScope.rowLabel, activePeriod.label, {
       header: true,
     });
     const bodyRows = rows.map((row, index) =>
       this.createRow(
-        isAllianceTab ? this.formatAllianceLabel(row, index) : this.formatUserLabel(row, index),
-        this.formatValue(row[activeTab.valueKey]),
+        isAllianceScope ? this.formatAllianceLabel(row, index) : this.formatUserLabel(row, index),
+        this.formatValue(row[activePeriod.valueKey]),
       ),
     );
     const currentRow = this.shouldShowCurrentUser(rows, currentUser)
       ? [
           this.createRow(
             this.formatUserLabel(currentUser),
-            this.formatValue(currentUser[activeTab.valueKey]),
+            this.formatValue(currentUser[activePeriod.valueKey]),
             { current: true },
           ),
         ]
@@ -245,24 +310,39 @@ export class WorkshopLeaderboardManager {
   }
 
   updateTabs() {
-    for (const tab of LEADERBOARD_TABS) {
-      const selected = this.selectedTabId === tab.id;
-      const button = this.refs.tabButtons?.get(tab.id);
+    for (const tab of LEADERBOARD_SCOPES) {
+      const selected = this.selectedScopeId === tab.id;
+      const button = this.refs.scopeTabButtons?.get(tab.id);
+      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button?.setAttribute('tabindex', selected ? '0' : '-1');
+    }
+
+    for (const tab of LEADERBOARD_PERIODS) {
+      const selected = this.selectedPeriodId === tab.id;
+      const button = this.refs.periodTabButtons?.get(tab.id);
       button?.setAttribute('aria-selected', selected ? 'true' : 'false');
       button?.setAttribute('tabindex', selected ? '0' : '-1');
     }
   }
 
-  getActiveTab() {
-    return LEADERBOARD_TABS.find((tab) => tab.id === this.selectedTabId) ?? LEADERBOARD_TABS[0];
+  getActiveScope() {
+    return (
+      LEADERBOARD_SCOPES.find((scope) => scope.id === this.selectedScopeId) ??
+      LEADERBOARD_SCOPES[0]
+    );
   }
 
-  getTopUsers(snapshot, tab) {
+  getActivePeriod() {
+    return (
+      LEADERBOARD_PERIODS.find((period) => period.id === this.selectedPeriodId) ??
+      LEADERBOARD_PERIODS.find((period) => period.id === DEFAULT_PERIOD_ID) ??
+      LEADERBOARD_PERIODS[0]
+    );
+  }
+
+  getTopUsers(snapshot, period) {
     const leaderboard = snapshot?.leaderboard ?? snapshot ?? {};
-    const users =
-      tab.id === 'income'
-        ? leaderboard.topIncomeUsers ?? leaderboard.topUsers
-        : leaderboard.topGeneratedGoldUsers ?? leaderboard.topUsers;
+    const users = this.getUserRowsForPeriod(leaderboard, period);
 
     if (!Array.isArray(users)) {
       return [];
@@ -271,36 +351,66 @@ export class WorkshopLeaderboardManager {
     return users
       .map((user) => this.normalizeUser(user))
       .filter(Boolean)
-      .sort((left, right) => right[tab.valueKey] - left[tab.valueKey])
+      .sort((left, right) => right[period.valueKey] - left[period.valueKey])
       .slice(0, LEADERBOARD_VISIBLE_USER_LIMIT);
   }
 
-  getCurrentUser(snapshot, tab) {
+  getCurrentUser(snapshot, period) {
     const leaderboard = snapshot?.leaderboard ?? snapshot ?? {};
     const user =
-      tab.id === 'income'
-        ? leaderboard.currentIncomeUser ?? leaderboard.currentUser
-        : leaderboard.currentGeneratedGoldUser ?? leaderboard.currentUser;
+      leaderboard[period.currentUserKey] ??
+      (period.id === 'allTime'
+        ? leaderboard.currentGeneratedGoldUser ?? leaderboard.currentUser
+        : null);
 
     return this.normalizeUser(user, { includeRank: true });
   }
 
-  getTopAlliances(snapshot, tab) {
-    const alliances = Array.isArray(snapshot?.topAlliances)
-      ? snapshot.topAlliances
-      : Array.isArray(snapshot?.alliances)
-        ? snapshot.alliances
-        : [];
+  getTopAlliances(snapshot, period) {
+    const alliances = this.getAllianceRowsForPeriod(snapshot, period);
 
     return alliances
       .map((alliance) => this.normalizeAlliance(alliance))
       .filter(Boolean)
-      .sort((left, right) => right[tab.valueKey] - left[tab.valueKey])
+      .sort((left, right) => right[period.valueKey] - left[period.valueKey])
       .slice(0, LEADERBOARD_VISIBLE_USER_LIMIT)
       .map((alliance, index) => ({
         ...alliance,
         rank: alliance.rank ?? index + 1,
       }));
+  }
+
+  getUserRowsForPeriod(leaderboard, period) {
+    if (Array.isArray(leaderboard?.[period.userListKey])) {
+      return leaderboard[period.userListKey];
+    }
+
+    if (period.id === 'allTime') {
+      return (
+        leaderboard.topAllTimeUsers ??
+        leaderboard.topGeneratedGoldUsers ??
+        leaderboard.topUsers ??
+        []
+      );
+    }
+
+    return [];
+  }
+
+  getAllianceRowsForPeriod(snapshot, period) {
+    if (Array.isArray(snapshot?.[period.allianceListKey])) {
+      return snapshot[period.allianceListKey];
+    }
+
+    if (Array.isArray(snapshot?.alliances)) {
+      return snapshot.alliances;
+    }
+
+    if (period.id === 'weekly' && Array.isArray(snapshot?.topAlliances)) {
+      return snapshot.topAlliances;
+    }
+
+    return [];
   }
 
   formatValue(value) {
@@ -327,13 +437,12 @@ export class WorkshopLeaderboardManager {
     const normalizedUser = {
       name: user.name,
       playerLevel: this.normalizePlayerLevel(user.playerLevel),
-      income: Number.isFinite(user.income) ? user.income : 0,
-      totalGeneratedGold: Number.isFinite(user.totalIncome)
-        ? user.totalIncome
-        : Number.isFinite(user.totalGeneratedGold)
-          ? user.totalGeneratedGold
-          : 0,
-      totalIncome: Number.isFinite(user.totalIncome) ? user.totalIncome : 0,
+      income: this.normalizeMetric(user.income),
+      dailyIncome: this.normalizeMetric(user.dailyIncome),
+      weeklyIncome: this.normalizeMetric(user.weeklyIncome, user.seasonIncome),
+      monthlyIncome: this.normalizeMetric(user.monthlyIncome),
+      totalGeneratedGold: this.normalizeMetric(user.totalIncome, user.totalGeneratedGold),
+      totalIncome: this.normalizeMetric(user.totalIncome, user.totalGeneratedGold),
     };
 
     if (includeRank) {
@@ -351,10 +460,27 @@ export class WorkshopLeaderboardManager {
     return {
       name: alliance.name,
       tag: typeof alliance.tag === 'string' ? alliance.tag : '',
-      seasonIncome: Number.isFinite(alliance.seasonIncome) ? alliance.seasonIncome : 0,
-      totalIncome: Number.isFinite(alliance.totalIncome) ? alliance.totalIncome : 0,
+      dailyIncome: this.normalizeMetric(alliance.dailyIncome),
+      weeklyIncome: this.normalizeMetric(alliance.weeklyIncome, alliance.seasonIncome),
+      monthlyIncome: this.normalizeMetric(alliance.monthlyIncome),
+      seasonIncome: this.normalizeMetric(alliance.seasonIncome, alliance.weeklyIncome),
+      totalIncome: this.normalizeMetric(alliance.totalIncome),
       rank: this.normalizeRank(alliance.rank),
     };
+  }
+
+  normalizeMetric(...values) {
+    for (const value of values) {
+      if (typeof value === 'bigint') {
+        return Number(value);
+      }
+
+      if (Number.isFinite(value)) {
+        return value;
+      }
+    }
+
+    return 0;
   }
 
   normalizeRank(rank) {

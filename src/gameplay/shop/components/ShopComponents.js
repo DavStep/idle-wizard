@@ -20,3 +20,7 @@ export const PlayerShopShelfSlot = {
   quantity: [],
   priceGold: [],
 };
+
+export const ShopGoldOffer = {
+  cooldownRemainingSeconds: [],
+};

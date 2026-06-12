@@ -1,4 +1,3 @@
-import { BrewingAutoBrewManager } from './managers/BrewingAutoBrewManager.js';
 import { BrewingCauldronManager } from './managers/BrewingCauldronManager.js';
 import { BrewingPotionInventoryManager } from './managers/BrewingPotionInventoryManager.js';
 import { BrewingRecipeBookManager } from './managers/BrewingRecipeBookManager.js';
@@ -12,12 +11,11 @@ export class BrewingPageFacade {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new BrewingRoomViewManager();
-    this.autoBrewManager = new BrewingAutoBrewManager({ gameplayFacade });
     this.recipeGuideManager = new BrewingRecipeGuideManager({ gameplayFacade });
     this.cauldronManager = new BrewingCauldronManager({
       gameplayFacade,
       getSelectedRecipeKey: () => this.recipeGuideManager.getSelectedRecipeKey(),
-      onOpenAutoBrew: () => this.autoBrewManager.show(),
+      onOpenSelectRecipe: () => this.recipeBookManager.show(),
     });
     this.recipeBookManager = new BrewingRecipeBookManager({
       gameplayFacade,
@@ -32,7 +30,6 @@ export class BrewingPageFacade {
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.cauldronManager.mount(uiLayer);
-    this.autoBrewManager.mount(popupLayer);
     this.recipeBookManager.mount(uiLayer, popupLayer);
     this.potionInventoryManager.mount(uiLayer, popupLayer);
   }
@@ -41,13 +38,24 @@ export class BrewingPageFacade {
     this.recipeGuideManager.unmount();
     this.potionInventoryManager.unmount();
     this.recipeBookManager.unmount();
-    this.autoBrewManager.unmount();
     this.cauldronManager.unmount();
     this.roomViewManager.unmount();
   }
 
   selectRecipe(recipeKey) {
+    if (!recipeKey) {
+      return null;
+    }
+
     this.recipeGuideManager.selectRecipe(recipeKey);
+    const result = this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey) ?? null;
+    const snapshot = this.gameplayFacade?.getSnapshot();
+
+    if (snapshot?.brewing?.autoBrewEnabled === true) {
+      this.gameplayFacade?.setBrewingAutoBrewRecipe?.(recipeKey);
+    }
+
     this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
+    return result;
   }
 }

@@ -310,6 +310,12 @@ export class GameplayFacade {
     return result;
   }
 
+  prepareBrewingRecipe(recipeKey) {
+    const result = this.brewingFacade.prepareRecipeForSelection(recipeKey);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   setBrewingAutoBrewRecipe(recipeKey) {
     const result = this.brewingFacade.setAutoBrewRecipeKey(recipeKey);
     this.publishAndSaveSnapshot();
@@ -422,6 +428,12 @@ export class GameplayFacade {
 
   claimPlayerShopSaleProceeds(gold) {
     const result = this.shopFacade.claimPlayerShopSaleProceeds(gold);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  collectShopGoldOffer() {
+    const result = this.shopFacade.collectGoldOffer();
     this.publishAndSaveSnapshot();
     return result;
   }

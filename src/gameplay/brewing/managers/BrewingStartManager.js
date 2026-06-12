@@ -192,6 +192,14 @@ export class BrewingStartManager {
   }
 
   prepareRecipeForAutoBrew(recipeKey) {
+    return this.prepareRecipe(recipeKey, { clearOnMissing: false });
+  }
+
+  prepareRecipeForSelection(recipeKey) {
+    return this.prepareRecipe(recipeKey, { clearOnMissing: true });
+  }
+
+  prepareRecipe(recipeKey, { clearOnMissing = false } = {}) {
     const recipe = this.brewingRecipeMatchManager.getRecipeByKey(recipeKey);
 
     if (!recipe) {
@@ -220,9 +228,15 @@ export class BrewingStartManager {
     }
 
     if (!this.hasEnoughInventory(ingredientItemTypeIds)) {
+      if (clearOnMissing) {
+        this.brewingCauldronEntityManager.clearIngredients();
+      }
+
       return {
         ok: false,
         reason: 'not_enough_ingredients',
+        recipe,
+        missingIngredients: this.getMissingInventory(ingredientItemTypeIds),
       };
     }
 
@@ -247,6 +261,31 @@ export class BrewingStartManager {
       recipe,
       ingredientItemTypeIds,
     };
+  }
+
+  getMissingInventory(itemTypeIds) {
+    return [...this.getCounts(itemTypeIds)]
+      .map(([itemTypeId, requiredQuantity]) => {
+        const ownedQuantity = this.itemsFacade.getItemQuantity(itemTypeId);
+        const missingQuantity = requiredQuantity - ownedQuantity;
+
+        if (missingQuantity <= 0) {
+          return null;
+        }
+
+        const item = this.itemsFacade.getItemDefinition(itemTypeId);
+
+        return {
+          itemTypeId,
+          key: item.key,
+          label: item.label,
+          kind: item.kind,
+          requiredQuantity,
+          ownedQuantity,
+          missingQuantity,
+        };
+      })
+      .filter(Boolean);
   }
 
   hasEnoughInventory(itemTypeIds) {

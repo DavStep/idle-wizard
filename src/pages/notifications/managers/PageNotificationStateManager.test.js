@@ -194,4 +194,25 @@ describe('PageNotificationStateManager', () => {
       },
     });
   });
+
+  it('rolls ready crystal-tab gold offers up to the market page', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.shop.goldOffer = {
+      canCollect: true,
+    };
+
+    expect(manager.getSnapshot(snapshot).pages.shop).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        crystals: true,
+      },
+    });
+
+    snapshot.shop.goldOffer.canCollect = false;
+
+    expect(manager.getSnapshot(snapshot).pages.shop.children.crystals).toBe(false);
+  });
 });

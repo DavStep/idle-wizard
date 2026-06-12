@@ -116,7 +116,7 @@ export class PageNotificationStateManager {
         playerShop.connected === true && (playerShop.proceedsGold ?? 0) > 0,
       playerMarket:
         playerShop.connected === true && hasAffordableListing,
-      crystals: false,
+      crystals: shop.goldOffer?.canCollect === true,
     });
   }
 

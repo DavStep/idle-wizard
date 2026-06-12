@@ -1422,7 +1422,7 @@ body {
   color: inherit;
 }
 
-.style-box .brewing-page__cauldron-auto-brew-text {
+.style-box .brewing-page__cauldron-select-recipe-text {
   position: absolute;
   right: var(--style-box-title-left);
   bottom: var(--style-box-border-label-offset);
@@ -1440,18 +1440,18 @@ body {
   line-height: var(--style-box-border-label-line-height);
 }
 
-.style-box .brewing-page__cauldron-auto-brew-text[hidden] {
+.style-box .brewing-page__cauldron-select-recipe-text[hidden] {
   display: none;
 }
 
-.style-box .brewing-page__cauldron-auto-brew-text:disabled,
-.style-box .brewing-page__cauldron-auto-brew-text[aria-disabled="true"] {
+.style-box .brewing-page__cauldron-select-recipe-text:disabled,
+.style-box .brewing-page__cauldron-select-recipe-text[aria-disabled="true"] {
   color: var(--style-disabled);
   cursor: default;
 }
 
 .style-box
-  .brewing-page__cauldron-auto-brew-text:not(:disabled):not([aria-disabled="true"]) {
+  .brewing-page__cauldron-select-recipe-text:not(:disabled):not([aria-disabled="true"]) {
   cursor: pointer;
 }
 
@@ -1673,6 +1673,10 @@ body {
   display: flex;
   gap: 3px;
   margin-top: var(--style-dialog-tab-gap);
+}
+
+.workshop-page__leaderboard-tabs + .workshop-page__leaderboard-tabs {
+  margin-top: 3px;
 }
 
 .workshop-page__trade-alliance-tabs,
@@ -2125,6 +2129,56 @@ div.workshop-page__discovery-row {
   top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
   left: var(--style-room-content-edge);
+}
+
+.shop-page__gold-offer {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.shop-page__gold-offer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(58px, max-content);
+  align-items: baseline;
+  min-height: var(--style-row-min-height);
+  column-gap: 8px;
+  clear: both;
+}
+
+.shop-page__gold-offer-row > :where(span, button) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-page__gold-offer-action {
+  justify-self: end;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.shop-page__gold-offer-action:hover,
+.shop-page__gold-offer-action:focus-visible {
+  outline: none;
+  text-decoration: underline;
+}
+
+.shop-page__gold-offer-action:disabled {
+  color: var(--style-disabled);
+  cursor: default;
+  text-decoration: none;
 }
 
 .shop-page__crystal-row {
@@ -2760,7 +2814,6 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipes-popup,
-.brewing-page__auto-popup,
 .brewing-page__potions-popup {
   position: absolute;
   inset: 0;
@@ -2768,13 +2821,11 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipes-popup[hidden],
-.brewing-page__auto-popup[hidden],
 .brewing-page__potions-popup[hidden] {
   display: none;
 }
 
 .style-dialog.brewing-page__recipes-dialog,
-.style-dialog.brewing-page__auto-dialog,
 .style-dialog.brewing-page__potions-dialog {
   position: absolute;
   top: 50%;
@@ -2784,7 +2835,6 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.brewing-page__recipes-close,
-.style-button.brewing-page__auto-close,
 .style-button.brewing-page__potions-close,
 .style-button.workshop-page__seed-inventory-close,
 .style-button.workshop-page__world-chat-close,
@@ -2806,7 +2856,6 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.brewing-page__recipes-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.brewing-page__auto-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.brewing-page__potions-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__seed-inventory-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]),
@@ -2819,8 +2868,7 @@ div.workshop-page__discovery-row {
   background: var(--style-surface);
 }
 
-.brewing-page__recipe-list,
-.brewing-page__auto-list {
+.brewing-page__recipe-list {
   padding-top: 0;
   max-height: 430px;
   overflow: hidden auto;
@@ -2835,7 +2883,6 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipe-list::-webkit-scrollbar,
-.brewing-page__auto-list::-webkit-scrollbar,
 .brewing-page__potion-list::-webkit-scrollbar {
   display: none;
 }
@@ -2844,6 +2891,10 @@ div.workshop-page__discovery-row {
   padding-bottom: 7px;
   margin-bottom: 6px;
   border-bottom: 1px solid #d9d9d9;
+}
+
+.brewing-page__auto-summary[hidden] {
+  display: none;
 }
 
 .brewing-page__auto-row {
@@ -2878,6 +2929,10 @@ div.workshop-page__discovery-row {
 .brewing-page__auto-state-button:hover,
 .brewing-page__auto-state-button:focus {
   text-decoration: underline;
+}
+
+.brewing-page__auto-state-button:focus {
+  outline: none;
 }
 
 .brewing-page__auto-state-button:disabled {
@@ -2943,8 +2998,7 @@ div.workshop-page__discovery-row {
   overflow-wrap: anywhere;
 }
 
-.brewing-page__recipe-mark-button,
-.brewing-page__auto-recipe-button {
+.brewing-page__recipe-select-button {
   justify-self: end;
   min-width: 0;
   padding: 0;
@@ -2960,18 +3014,14 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.brewing-page__recipe-mark-button:hover,
-.brewing-page__recipe-mark-button:focus,
-.brewing-page__auto-recipe-button:hover,
-.brewing-page__auto-recipe-button:focus,
-.brewing-page__recipe-row.is-selected .brewing-page__recipe-mark-button,
-.brewing-page__recipe-row.is-selected .brewing-page__auto-recipe-button,
+.brewing-page__recipe-select-button:hover,
+.brewing-page__recipe-select-button:focus,
+.brewing-page__recipe-row.is-selected .brewing-page__recipe-select-button,
 .brewing-page__recipe-row.is-selected .brewing-page__recipe-name {
   text-decoration: underline;
 }
 
-.brewing-page__recipe-mark-button:focus,
-.brewing-page__auto-recipe-button:focus {
+.brewing-page__recipe-select-button:focus {
   outline: none;
 }
 
@@ -3569,6 +3619,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-dialog,
 .shop-page__trade-history-dialog,
 .shop-page__demand-dialog,
+.shop-page__gold-offer,
 .shop-page__crystal-offers,
 .shop-page__shelf,
 .shop-page__stock,
@@ -3579,6 +3630,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-panel .shop-page__shelf,
 .shop-page__market-panel .shop-page__stock,
+.shop-page__market-panel .shop-page__gold-offer,
 .shop-page__market-panel .shop-page__crystal-offers,
 .shop-page__market-panel .shop-page__player-request,
 .shop-page__market-panel .shop-page__player-shelf {
@@ -3591,6 +3643,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-panel .shop-page__shelf:last-child,
 .shop-page__market-panel .shop-page__stock:last-child,
+.shop-page__market-panel .shop-page__gold-offer:last-child,
 .shop-page__market-panel .shop-page__crystal-offers:last-child,
 .shop-page__market-panel .shop-page__player-request:last-child,
 .shop-page__market-panel .shop-page__player-shelf:last-child {
@@ -4687,7 +4740,6 @@ div.workshop-page__discovery-row {
 .workshop-page__logs-popup:not([hidden]),
 .workshop-page__discoveries-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
-.brewing-page__auto-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
 .garden-page__seed-popup:not([hidden]),
 .garden-page__cancel-popup:not([hidden]),
@@ -4712,7 +4764,6 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
-.game-stage:has(.brewing-page__auto-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
 .game-stage:has(.garden-page__cancel-popup:not([hidden])) .garden-page,
@@ -4730,7 +4781,6 @@ div.workshop-page__discovery-row {
 .workshop-page__seed-inventory:not([hidden]) .style-dialog,
 .workshop-page__logs-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
-.brewing-page__auto-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,
 .garden-page__cancel-popup:not([hidden]) .style-dialog,

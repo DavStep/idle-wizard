@@ -9,6 +9,7 @@ import { ShopPlayerShelfEntityManager } from './managers/ShopPlayerShelfEntityMa
 import { ShopPlayerShelfListingManager } from './managers/ShopPlayerShelfListingManager.js';
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
+import { ShopGoldOfferManager } from './managers/ShopGoldOfferManager.js';
 import { ShopStockPurchaseManager } from './managers/ShopStockPurchaseManager.js';
 import { ShopStockPriceQuoteManager } from './managers/ShopStockPriceQuoteManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
@@ -40,6 +41,10 @@ export class ShopFacade {
     });
     this.shopStockPriceQuoteManager = new ShopStockPriceQuoteManager({
       shopNpcPriceManager: this.shopNpcPriceManager,
+    });
+    this.shopGoldOfferManager = new ShopGoldOfferManager({
+      goldFacade,
+      playerLevelFacade,
     });
     this.shopShelfEntityManager = new ShopShelfEntityManager({
       initialUnlockedSlots: this.shopBalanceManager.getInitialUnlockedSlots(),
@@ -129,7 +134,9 @@ export class ShopFacade {
   initialize(ecsManagers) {
     this.shopShelfEntityManager.initialize(ecsManagers);
     this.shopPlayerShelfEntityManager.initialize(ecsManagers);
+    this.shopGoldOfferManager.initialize(ecsManagers);
     this.shopAutoSellManager.register(ecsManagers.systems);
+    this.shopGoldOfferManager.register(ecsManagers.systems);
   }
 
   buyNextShelfSlot() {
@@ -182,6 +189,10 @@ export class ShopFacade {
 
   claimPlayerShopSaleProceeds(gold) {
     return this.shopPlayerShelfListingManager.claimSaleProceeds(gold);
+  }
+
+  collectGoldOffer() {
+    return this.shopGoldOfferManager.collect();
   }
 
   getSnapshot() {
@@ -245,6 +256,7 @@ export class ShopFacade {
         sellKinds,
         items: visibleSellItems,
       },
+      goldOffer: this.shopGoldOfferManager.getSnapshot(),
     };
   }
 
@@ -380,6 +392,7 @@ export class ShopFacade {
           priceGold: slot.priceGold,
         })),
       },
+      goldOffer: this.shopGoldOfferManager.getPersistenceSnapshot(),
     };
   }
 
@@ -424,6 +437,7 @@ export class ShopFacade {
       selectedSlotNumber: playerShelfSnapshot?.selectedSlotNumber,
       slots: playerSlots,
     });
+    this.shopGoldOfferManager.applyPersistenceSnapshot(snapshot.goldOffer);
   }
 
   clampUnlockedSlotsByLevel(unlockedSlots) {

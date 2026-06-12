@@ -1,4 +1,7 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { getCompletedResearchIds } from '../../shared/itemResearchStatus.js';
+
+const AUTO_BREW_CAULDRON_RESEARCH_ID = 'automation:autoBrewCauldron:1';
 
 export class BrewingRecipeBookManager {
   constructor({ gameplayFacade, getSelectedRecipeKey, onSelectRecipe } = {}) {
@@ -66,8 +69,8 @@ export class BrewingRecipeBookManager {
     const button = document.createElement('button');
     button.className = 'style-button brewing-page__recipes-button';
     button.type = 'button';
-    button.textContent = 'recipes';
-    button.setAttribute('aria-label', 'open recipes');
+    button.textContent = 'select recipe';
+    button.setAttribute('aria-label', 'open select recipe');
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -79,14 +82,14 @@ export class BrewingRecipeBookManager {
 
     const dialog = document.createElement('section');
     dialog.className = 'brewing-page__recipes-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Recipes');
+    dialog.setAttribute('aria-label', 'Select recipe');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
     dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'recipes';
+    title.textContent = 'select recipe';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'style-button brewing-page__recipes-close';
@@ -97,11 +100,53 @@ export class BrewingRecipeBookManager {
     const rows = document.createElement('div');
     rows.className = 'brewing-page__recipe-list';
 
-    dialog.append(title, closeButton, rows);
+    const autoSummary = this.createAutoSummary();
+
+    dialog.append(title, closeButton, autoSummary.root, rows);
     popup.append(dialog);
     this.refs.dialog = dialog;
+    this.refs.autoSummary = autoSummary.root;
+    this.refs.autoStateButton = autoSummary.stateButton;
+    this.refs.autoRecipeValue = autoSummary.recipeValue;
     this.refs.rows = rows;
     return popup;
+  }
+
+  createAutoSummary() {
+    const root = document.createElement('div');
+    root.className = 'brewing-page__auto-summary';
+    root.hidden = true;
+
+    const stateRow = this.createAutoRow('auto');
+    const recipeRow = this.createAutoRow('recipe');
+
+    const stateButton = document.createElement('button');
+    stateButton.className = 'row_val brewing-page__auto-state-button';
+    stateButton.type = 'button';
+    stateButton.addEventListener('click', () => this.toggleAutoBrew());
+    stateRow.value.replaceWith(stateButton);
+
+    root.append(stateRow.row, recipeRow.row);
+    return {
+      root,
+      stateButton,
+      recipeValue: recipeRow.value,
+    };
+  }
+
+  createAutoRow(labelText) {
+    const row = document.createElement('div');
+    row.className = 'brewing-page__auto-row';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+    label.textContent = labelText;
+
+    const value = document.createElement('span');
+    value.className = 'row_val';
+
+    row.append(label, value);
+    return { row, value };
   }
 
   show() {
@@ -130,6 +175,7 @@ export class BrewingRecipeBookManager {
 
     const recipes = snapshot.brewing?.recipes ?? [];
     const unlockedRecipes = recipes.filter((recipe) => recipe.unlocked);
+    this.renderAutoSummary(snapshot, unlockedRecipes);
     const signature = this.createRenderSignature(unlockedRecipes);
 
     if (signature === this.renderedSignature) {
@@ -139,6 +185,41 @@ export class BrewingRecipeBookManager {
     this.renderedSignature = signature;
 
     this.refs.rows.replaceChildren(...this.createRecipeListRows(unlockedRecipes));
+  }
+
+  renderAutoSummary(snapshot, recipes) {
+    const visible = this.isAutoBrewAvailable(snapshot);
+    this.setHidden(this.refs.autoSummary, !visible);
+
+    if (!visible) {
+      this.setText(this.refs.autoStateButton, '');
+      this.setText(this.refs.autoRecipeValue, '');
+      this.setDisabled(this.refs.autoStateButton, true);
+      this.setAttribute(this.refs.autoStateButton, 'aria-hidden', 'true');
+      this.setAttribute(this.refs.autoStateButton, 'aria-disabled', 'true');
+      this.setAttribute(this.refs.autoStateButton, 'aria-pressed', 'false');
+      return;
+    }
+
+    const brewing = snapshot.brewing ?? {};
+    const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? null;
+    const selectedRecipe = recipes.find((recipe) => recipe.key === selectedRecipeKey);
+    const hasSelectedRecipe = Boolean(selectedRecipe);
+    const autoEnabled =
+      brewing.autoBrewEnabled === true && brewing.autoBrewRecipeKey === selectedRecipeKey;
+    const disabled = !autoEnabled && !hasSelectedRecipe;
+
+    this.setText(this.refs.autoStateButton, autoEnabled ? 'enabled' : 'disabled');
+    this.setText(this.refs.autoRecipeValue, selectedRecipe?.label ?? 'none');
+    this.setDisabled(this.refs.autoStateButton, disabled);
+    this.removeAttribute(this.refs.autoStateButton, 'aria-hidden');
+    this.setAttribute(this.refs.autoStateButton, 'aria-disabled', disabled ? 'true' : 'false');
+    this.setAttribute(this.refs.autoStateButton, 'aria-pressed', autoEnabled ? 'true' : 'false');
+    this.setAttribute(
+      this.refs.autoStateButton,
+      'aria-label',
+      this.formatAutoStateAriaLabel(autoEnabled, hasSelectedRecipe),
+    );
   }
 
   createRenderSignature(recipes) {
@@ -180,14 +261,17 @@ export class BrewingRecipeBookManager {
     label.className = 'row_key brewing-page__recipe-name';
     label.textContent = recipe.label;
 
-    const markButton = document.createElement('button');
-    const markAction = selected ? 'unmark' : 'mark';
-    markButton.className = 'row_val brewing-page__recipe-mark-button';
-    markButton.type = 'button';
-    markButton.textContent = markAction;
-    markButton.setAttribute('aria-pressed', selected ? 'true' : 'false');
-    markButton.setAttribute('aria-label', `${markAction} ${recipe.label} as guide`);
-    markButton.addEventListener('click', () => this.selectRecipe(recipe));
+    const selectButton = document.createElement('button');
+    const selectAction = selected ? 'selected' : 'select';
+    selectButton.className = 'row_val brewing-page__recipe-select-button';
+    selectButton.type = 'button';
+    selectButton.textContent = selectAction;
+    selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    selectButton.setAttribute(
+      'aria-label',
+      selected ? `${recipe.label} selected recipe` : `select ${recipe.label} recipe`,
+    );
+    selectButton.addEventListener('click', () => this.selectRecipe(recipe));
 
     const ingredients = this.createIngredientsList(recipe.ingredients);
 
@@ -205,15 +289,70 @@ export class BrewingRecipeBookManager {
 
     meta.append(cost, duration);
 
-    main.append(label, markButton);
+    main.append(label, selectButton);
     row.append(main, ingredients, meta);
     return row;
   }
 
   selectRecipe(recipe) {
     this.onSelectRecipe?.(recipe);
+    const snapshot = this.gameplayFacade.getSnapshot();
+    this.render(snapshot);
+
+    if (!this.isAutoBrewAvailable(snapshot)) {
+      this.hide();
+    }
+  }
+
+  toggleAutoBrew() {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const brewing = snapshot.brewing ?? {};
+    const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? null;
+    const enabled =
+      brewing.autoBrewEnabled === true && brewing.autoBrewRecipeKey === selectedRecipeKey;
+
+    if (enabled) {
+      this.gameplayFacade.setBrewingAutoBrewEnabled?.(false);
+      this.render(this.gameplayFacade.getSnapshot());
+      return;
+    }
+
+    if (!selectedRecipeKey) {
+      this.render(snapshot);
+      return;
+    }
+
+    const selectResult = this.gameplayFacade.setBrewingAutoBrewRecipe?.(selectedRecipeKey);
+
+    if (selectResult?.ok === false) {
+      this.render(this.gameplayFacade.getSnapshot());
+      return;
+    }
+
+    this.gameplayFacade.setBrewingAutoBrewEnabled?.(true);
     this.render(this.gameplayFacade.getSnapshot());
-    this.hide();
+  }
+
+  isAutoBrewAvailable(snapshot) {
+    if (snapshot?.brewing?.autoBrewEnabled === true) {
+      return true;
+    }
+
+    const completedResearchIds = getCompletedResearchIds(snapshot);
+
+    if (completedResearchIds === null) {
+      return false;
+    }
+
+    return completedResearchIds.has(AUTO_BREW_CAULDRON_RESEARCH_ID);
+  }
+
+  formatAutoStateAriaLabel(enabled, hasSelectedRecipe) {
+    if (enabled) {
+      return 'disable auto';
+    }
+
+    return hasSelectedRecipe ? 'enable auto' : 'select recipe before enabling auto';
   }
 
   createIngredientsList(ingredients = []) {
@@ -262,5 +401,35 @@ export class BrewingRecipeBookManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  setHidden(element, hidden) {
+    if (element.hidden !== hidden) {
+      element.hidden = hidden;
+    }
+  }
+
+  setText(element, value) {
+    if (element.textContent !== value) {
+      element.textContent = value;
+    }
+  }
+
+  setDisabled(element, disabled) {
+    if (element.disabled !== disabled) {
+      element.disabled = disabled;
+    }
+  }
+
+  setAttribute(element, name, value) {
+    if (element.getAttribute(name) !== value) {
+      element.setAttribute(name, value);
+    }
+  }
+
+  removeAttribute(element, name) {
+    if (element.hasAttribute(name)) {
+      element.removeAttribute(name);
+    }
   }
 }

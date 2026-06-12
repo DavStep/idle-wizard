@@ -38,7 +38,7 @@ function createSnapshot() {
 }
 
 describe('BrewingRecipeBookManager', () => {
-  it('shows selected recipe action as unmark', () => {
+  it('shows selected recipe action as selected', () => {
     const parent = document.createElement('div');
     document.body.append(parent);
     const manager = new BrewingRecipeBookManager({
@@ -49,11 +49,11 @@ describe('BrewingRecipeBookManager', () => {
 
     manager.mount(parent);
 
-    const button = parent.querySelector('.brewing-page__recipe-mark-button');
+    const button = parent.querySelector('.brewing-page__recipe-select-button');
 
-    expect(button.textContent).toBe('unmark');
+    expect(button.textContent).toBe('selected');
     expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(button.getAttribute('aria-label')).toBe('unmark Minor Healing Potion as guide');
+    expect(button.getAttribute('aria-label')).toBe('Minor Healing Potion selected recipe');
 
     manager.unmount();
     parent.remove();

@@ -25,6 +25,10 @@ const EMPTY_SNAPSHOT = {
   canManageApplications: false,
   canManageRoles: false,
   topAlliances: [],
+  topDailyAlliances: [],
+  topWeeklyAlliances: [],
+  topMonthlyAlliances: [],
+  topAllTimeAlliances: [],
 };
 
 const ROLE_RANK = {
@@ -202,7 +206,11 @@ export class TradeAllianceSubscriptionManager {
       canEditSettings: ownRole === 'tradeMaster',
       canManageApplications: this.getRoleRank(ownRole) >= ROLE_RANK.factor,
       canManageRoles: this.getRoleRank(ownRole) >= ROLE_RANK.quartermaster,
-      topAlliances: this.rankAlliances(alliances, 'seasonIncome'),
+      topAlliances: this.rankAlliances(alliances, 'weeklyIncome'),
+      topDailyAlliances: this.rankAlliances(alliances, 'dailyIncome'),
+      topWeeklyAlliances: this.rankAlliances(alliances, 'weeklyIncome'),
+      topMonthlyAlliances: this.rankAlliances(alliances, 'monthlyIncome'),
+      topAllTimeAlliances: this.rankAlliances(alliances, 'totalIncome'),
     });
   }
 
@@ -227,8 +235,13 @@ export class TradeAllianceSubscriptionManager {
       memberCount: this.toNumber(row.memberCount ?? row.member_count),
       totalIncome: this.toNumber(row.totalIncome ?? row.total_income),
       seasonIncome: this.toNumber(row.seasonIncome ?? row.season_income),
+      weeklyIncome: this.toNumber(
+        row.weeklyIncome ?? row.weekly_income ?? row.seasonIncome ?? row.season_income,
+      ),
+      monthlyIncome: this.toNumber(row.monthlyIncome ?? row.monthly_income),
       dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
       seasonKey: String(row.seasonKey ?? row.season_key ?? ''),
+      monthKey: String(row.monthKey ?? row.month_key ?? ''),
       dayKey: String(row.dayKey ?? row.day_key ?? ''),
       createdAtMs: this.toTimestampMs(row.createdAt ?? row.created_at),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),

@@ -80,6 +80,8 @@ const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
+const PERIOD_DAY_MICROS = 86_400_000_000n;
+const PERIOD_WEEK_DAYS = 7n;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const PLAYER_THEMES = new Set(['white', 'black', 'midnight']);
 const PLAYER_THEME_ALIASES = new Map([
@@ -944,12 +946,23 @@ const spacetimedb = schema({
   leaderboard: table(
     {
       public: true,
-      indexes: [{ accessor: 'byTotalIncome', algorithm: 'btree', columns: ['totalIncome'] }],
+      indexes: [
+        { accessor: 'byDailyIncome', algorithm: 'btree', columns: ['dailyIncome'] },
+        { accessor: 'byWeeklyIncome', algorithm: 'btree', columns: ['weeklyIncome'] },
+        { accessor: 'byMonthlyIncome', algorithm: 'btree', columns: ['monthlyIncome'] },
+        { accessor: 'byTotalIncome', algorithm: 'btree', columns: ['totalIncome'] },
+      ],
     },
     {
       identity: t.identity().primaryKey(),
       username: t.string(),
       totalIncome: t.u64(),
+      dailyIncome: t.u64().default(0n),
+      weeklyIncome: t.u64().default(0n),
+      monthlyIncome: t.u64().default(0n),
+      dayKey: t.string().default(''),
+      weekKey: t.string().default(''),
+      monthKey: t.string().default(''),
       updatedAt: t.timestamp(),
       playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
     },
@@ -978,6 +991,7 @@ const spacetimedb = schema({
         { accessor: 'byTag', algorithm: 'btree', columns: ['tag'] },
         { accessor: 'byTotalIncome', algorithm: 'btree', columns: ['totalIncome'] },
         { accessor: 'bySeasonIncome', algorithm: 'btree', columns: ['seasonIncome'] },
+        { accessor: 'byMonthlyIncome', algorithm: 'btree', columns: ['monthlyIncome'] },
       ],
     },
     {
@@ -992,9 +1006,11 @@ const spacetimedb = schema({
       memberCount: t.u32(),
       totalIncome: t.u64(),
       seasonIncome: t.u64(),
+      monthlyIncome: t.u64().default(0n),
       createdAt: t.timestamp(),
       updatedAt: t.timestamp(),
       seasonKey: t.string().default(''),
+      monthKey: t.string().default(''),
       dayKey: t.string().default(''),
       dailyIncome: t.u64().default(0n),
     },
@@ -1672,12 +1688,55 @@ function getTradeAllianceIdKey(allianceId: unknown): string {
   return String(allianceId);
 }
 
+function getPeriodKey(ctx: IdleWizardReducerCtx, daySpan: bigint): string {
+  return String(ctx.timestamp.microsSinceUnixEpoch / (daySpan * PERIOD_DAY_MICROS));
+}
+
+function getDailyPeriodKey(ctx: IdleWizardReducerCtx): string {
+  return getPeriodKey(ctx, 1n);
+}
+
+function getWeeklyPeriodKey(ctx: IdleWizardReducerCtx): string {
+  return getPeriodKey(ctx, PERIOD_WEEK_DAYS);
+}
+
+function getUtcMonthKeyFromEpochDay(epochDay: number): string {
+  const shiftedDay = epochDay + 719_468;
+  const era = Math.floor(shiftedDay / 146_097);
+  const dayOfEra = shiftedDay - era * 146_097;
+  const yearOfEra = Math.floor(
+    (dayOfEra -
+      Math.floor(dayOfEra / 1_460) +
+      Math.floor(dayOfEra / 36_524) -
+      Math.floor(dayOfEra / 146_096)) /
+      365,
+  );
+  const dayOfYear =
+    dayOfEra -
+    (365 * yearOfEra + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100));
+  const monthPrime = Math.floor((5 * dayOfYear + 2) / 153);
+  const month = monthPrime < 10 ? monthPrime + 3 : monthPrime - 9;
+  const year = yearOfEra + era * 400 + (month <= 2 ? 1 : 0);
+
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function getMonthlyPeriodKey(ctx: IdleWizardReducerCtx): string {
+  const epochDay = Number(ctx.timestamp.microsSinceUnixEpoch / PERIOD_DAY_MICROS);
+
+  return getUtcMonthKeyFromEpochDay(epochDay);
+}
+
 function getTradeAllianceDayKey(ctx: IdleWizardReducerCtx): string {
-  return String(ctx.timestamp.microsSinceUnixEpoch / 86_400_000_000n);
+  return getDailyPeriodKey(ctx);
 }
 
 function getTradeAllianceSeasonKey(ctx: IdleWizardReducerCtx): string {
-  return String(ctx.timestamp.microsSinceUnixEpoch / (7n * 86_400_000_000n));
+  return getWeeklyPeriodKey(ctx);
+}
+
+function getTradeAllianceMonthKey(ctx: IdleWizardReducerCtx): string {
+  return getMonthlyPeriodKey(ctx);
 }
 
 function getTradeAllianceApplicationKey(allianceId: unknown, identity: Identity): string {
@@ -2845,7 +2904,63 @@ function normalizeSaveResearch(value: unknown) {
 
   return {
     completedIds: [...accepted],
+    inProgress: normalizeSaveInProgressResearches(value, accepted),
   };
+}
+
+function normalizeSaveInProgressResearches(value: unknown, completedIds: Set<string>) {
+  if (!isRecord(value) || !Array.isArray(value.inProgress)) {
+    return [];
+  }
+
+  const inProgressResearches = [];
+  const inProgressIds = new Set<string>();
+  const maxResearchSeconds = Number(MAX_RESEARCH_DURATION_SECONDS);
+
+  for (const progress of value.inProgress) {
+    if (!isRecord(progress)) {
+      continue;
+    }
+
+    const researchId = normalizeResearchId(String(progress.researchId ?? ''));
+    if (
+      !researchCatalogById.has(researchId) ||
+      completedIds.has(researchId) ||
+      inProgressIds.has(researchId)
+    ) {
+      continue;
+    }
+
+    const requiredIds = getSaveRequiredResearchIds(researchId);
+    if (!requiredIds.every((requiredId) => completedIds.has(requiredId))) {
+      continue;
+    }
+
+    const totalSeconds = clampSaveNumber(
+      progress.totalSeconds,
+      0,
+      maxResearchSeconds,
+      0,
+    );
+    const remainingSeconds = clampSaveNumber(
+      progress.remainingSeconds,
+      0,
+      totalSeconds,
+      0,
+    );
+    if (totalSeconds <= 0 || remainingSeconds <= 0) {
+      continue;
+    }
+
+    inProgressIds.add(researchId);
+    inProgressResearches.push({
+      researchId,
+      totalSeconds,
+      remainingSeconds,
+    });
+  }
+
+  return inProgressResearches;
 }
 
 function getSaveRequiredResearchIds(researchId: string): string[] {
@@ -3392,10 +3507,12 @@ function normalizeTradeAllianceDailyQuestConfigs(value: unknown): TradeAllianceD
 function refreshTradeAllianceDay(ctx: IdleWizardReducerCtx, alliance: any) {
   const dayKey = getTradeAllianceDayKey(ctx);
   const seasonKey = getTradeAllianceSeasonKey(ctx);
+  const monthKey = getTradeAllianceMonthKey(ctx);
   const needsDayReset = alliance.dayKey !== dayKey;
   const needsSeasonReset = alliance.seasonKey !== seasonKey;
+  const needsMonthReset = alliance.monthKey !== monthKey;
 
-  if (!needsDayReset && !needsSeasonReset) {
+  if (!needsDayReset && !needsSeasonReset && !needsMonthReset) {
     ensureTradeAllianceDailyQuests(ctx, alliance);
     return alliance;
   }
@@ -3406,6 +3523,8 @@ function refreshTradeAllianceDay(ctx: IdleWizardReducerCtx, alliance: any) {
     dailyIncome: needsDayReset ? 0n : alliance.dailyIncome,
     seasonKey,
     seasonIncome: needsSeasonReset ? 0n : alliance.seasonIncome,
+    monthKey,
+    monthlyIncome: needsMonthReset ? 0n : alliance.monthlyIncome,
     updatedAt: ctx.timestamp,
   });
   ensureTradeAllianceDailyQuests(ctx, nextAlliance);
@@ -3505,6 +3624,7 @@ function applyTradeAllianceIncomeDelta(
     totalIncome: toBigInt(alliance.totalIncome) + delta,
     seasonIncome: toBigInt(alliance.seasonIncome) + delta,
     dailyIncome: toBigInt(alliance.dailyIncome) + delta,
+    monthlyIncome: toBigInt(alliance.monthlyIncome) + delta,
     updatedAt: ctx.timestamp,
   });
   member = ctx.db.tradeAllianceMember.memberIdentity.update({
@@ -4370,6 +4490,48 @@ function normalizeReportedLeaderboardTotalIncome(
   return safeTotalGeneratedGold;
 }
 
+function getLeaderboardPeriodDefaults(ctx: IdleWizardReducerCtx) {
+  return {
+    dayKey: getDailyPeriodKey(ctx),
+    weekKey: getWeeklyPeriodKey(ctx),
+    monthKey: getMonthlyPeriodKey(ctx),
+    dailyIncome: 0n,
+    weeklyIncome: 0n,
+    monthlyIncome: 0n,
+  };
+}
+
+function refreshLeaderboardPeriods(ctx: IdleWizardReducerCtx, entry: any) {
+  const dayKey = getDailyPeriodKey(ctx);
+  const weekKey = getWeeklyPeriodKey(ctx);
+  const monthKey = getMonthlyPeriodKey(ctx);
+  const dailyIncome = entry.dayKey === dayKey ? toBigInt(entry.dailyIncome) : 0n;
+  const weeklyIncome = entry.weekKey === weekKey ? toBigInt(entry.weeklyIncome) : 0n;
+  const monthlyIncome = entry.monthKey === monthKey ? toBigInt(entry.monthlyIncome) : 0n;
+
+  if (
+    entry.dayKey === dayKey &&
+    entry.weekKey === weekKey &&
+    entry.monthKey === monthKey &&
+    entry.dailyIncome === dailyIncome &&
+    entry.weeklyIncome === weeklyIncome &&
+    entry.monthlyIncome === monthlyIncome
+  ) {
+    return entry;
+  }
+
+  return ctx.db.leaderboard.identity.update({
+    ...entry,
+    dayKey,
+    weekKey,
+    monthKey,
+    dailyIncome,
+    weeklyIncome,
+    monthlyIncome,
+    updatedAt: ctx.timestamp,
+  });
+}
+
 function normalizeGameConfigJsonOrDefault(
   configKey: string,
   configJson: string,
@@ -4949,15 +5111,22 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
 }
 
 function sanitizeLeaderboardRows(ctx: IdleWizardReducerCtx) {
-  for (const entry of ctx.db.leaderboard.iter()) {
+  for (const rawEntry of ctx.db.leaderboard.iter()) {
+    const entry = refreshLeaderboardPeriods(ctx, rawEntry);
     const username = normalizeUsername(entry.username);
     const playerLevel = normalizePlayerLevel(entry.playerLevel);
     const totalIncome = clampLeaderboardTotalIncome(entry.totalIncome, playerLevel);
+    const dailyIncome = toBigInt(entry.dailyIncome);
+    const weeklyIncome = toBigInt(entry.weeklyIncome);
+    const monthlyIncome = toBigInt(entry.monthlyIncome);
 
     if (
       entry.username === username &&
       entry.playerLevel === playerLevel &&
-      entry.totalIncome === totalIncome
+      entry.totalIncome === totalIncome &&
+      entry.dailyIncome === dailyIncome &&
+      entry.weeklyIncome === weeklyIncome &&
+      entry.monthlyIncome === monthlyIncome
     ) {
       continue;
     }
@@ -4967,6 +5136,9 @@ function sanitizeLeaderboardRows(ctx: IdleWizardReducerCtx) {
       username,
       playerLevel,
       totalIncome,
+      dailyIncome,
+      weeklyIncome,
+      monthlyIncome,
       updatedAt: ctx.timestamp,
     });
   }
@@ -4985,7 +5157,10 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
     }
 
     const player = ctx.db.player.identity.find(save.identity);
-    const existingEntry = ctx.db.leaderboard.identity.find(save.identity);
+    const rawExistingEntry = ctx.db.leaderboard.identity.find(save.identity);
+    const existingEntry = rawExistingEntry
+      ? refreshLeaderboardPeriods(ctx, rawExistingEntry)
+      : undefined;
     const username = normalizeUsername(
       player?.username ?? existingEntry?.username ?? DEFAULT_USERNAME,
     );
@@ -5032,6 +5207,7 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
       username,
       playerLevel,
       totalIncome,
+      ...getLeaderboardPeriodDefaults(ctx),
       updatedAt: ctx.timestamp,
     });
   }
@@ -5086,7 +5262,10 @@ function ensureLeaderboardEntry(
   username: string,
   playerLevel = DEFAULT_PLAYER_LEVEL,
 ) {
-  const existingEntry = ctx.db.leaderboard.identity.find(ctx.sender);
+  const rawExistingEntry = ctx.db.leaderboard.identity.find(ctx.sender);
+  const existingEntry = rawExistingEntry
+    ? refreshLeaderboardPeriods(ctx, rawExistingEntry)
+    : undefined;
   const safePlayerLevel = normalizePlayerLevel(playerLevel);
   const safeTotalIncome = existingEntry
     ? clampLeaderboardTotalIncome(existingEntry.totalIncome, safePlayerLevel)
@@ -5107,6 +5286,7 @@ function ensureLeaderboardEntry(
     username,
     playerLevel: safePlayerLevel,
     totalIncome: 0n,
+    ...getLeaderboardPeriodDefaults(ctx),
     updatedAt: ctx.timestamp,
   });
 }
@@ -5544,7 +5724,10 @@ export const set_admin_player_data = spacetimedb.reducer(
       nextPlayer.playerLevel,
     );
 
-    const existingEntry = ctx.db.leaderboard.identity.find(player.identity);
+    const rawExistingEntry = ctx.db.leaderboard.identity.find(player.identity);
+    const existingEntry = rawExistingEntry
+      ? refreshLeaderboardPeriods(ctx, rawExistingEntry)
+      : undefined;
     upsertAdminPlayerGameplaySave(ctx, nextPlayer.identity, safeSaveJson, existingSave);
 
     if (existingEntry) {
@@ -5563,6 +5746,7 @@ export const set_admin_player_data = spacetimedb.reducer(
       username: nextPlayer.username,
       playerLevel: nextPlayer.playerLevel,
       totalIncome: safeTotalIncome,
+      ...getLeaderboardPeriodDefaults(ctx),
       updatedAt: ctx.timestamp,
     });
   },
@@ -5710,6 +5894,9 @@ export const set_total_generated_gold = spacetimedb.reducer(
     ctx.db.leaderboard.identity.update({
       ...entry,
       totalIncome: nextTotalIncome,
+      dailyIncome: toBigInt(entry.dailyIncome) + incomeDelta,
+      weeklyIncome: toBigInt(entry.weeklyIncome) + incomeDelta,
+      monthlyIncome: toBigInt(entry.monthlyIncome) + incomeDelta,
       updatedAt: ctx.timestamp,
     });
     applyTradeAllianceIncomeDelta(ctx, player, incomeDelta);
@@ -5779,7 +5966,9 @@ export const create_trade_alliance = spacetimedb.reducer(
       memberCount: 1,
       totalIncome: 0n,
       seasonIncome: 0n,
+      monthlyIncome: 0n,
       seasonKey: getTradeAllianceSeasonKey(ctx),
+      monthKey: getTradeAllianceMonthKey(ctx),
       dayKey: getTradeAllianceDayKey(ctx),
       dailyIncome: 0n,
       createdAt: ctx.timestamp,

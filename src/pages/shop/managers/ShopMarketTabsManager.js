@@ -1,3 +1,5 @@
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
+
 const MARKET_TABS = [
   { id: 'npm', label: 'npc market' },
   { id: 'player', label: 'player market' },
@@ -5,8 +7,10 @@ const MARKET_TABS = [
 ];
 
 export class ShopMarketTabsManager {
-  constructor() {
+  constructor({ gameplayFacade } = {}) {
+    this.gameplayFacade = gameplayFacade;
     this.root = null;
+    this.unsubscribe = null;
     this.refs = {
       buttons: new Map(),
       panels: new Map(),
@@ -43,11 +47,17 @@ export class ShopMarketTabsManager {
     this.root.prepend(this.refs.tabs);
     parent.append(this.root);
     this.render();
+    this.unsubscribe = this.gameplayFacade?.subscribe?.((snapshot) =>
+      this.renderNotifications(snapshot),
+    ) ?? null;
+    this.renderNotifications(this.gameplayFacade?.getSnapshot?.());
 
     return this.root;
   }
 
   unmount() {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
     this.root?.remove();
     this.root = null;
     this.refs = {
@@ -107,5 +117,12 @@ export class ShopMarketTabsManager {
         panel.hidden = !selected;
       }
     }
+  }
+
+  renderNotifications(snapshot) {
+    setNotificationBadge(
+      this.refs.buttons.get('crystals'),
+      snapshot?.shop?.goldOffer?.canCollect === true,
+    );
   }
 }

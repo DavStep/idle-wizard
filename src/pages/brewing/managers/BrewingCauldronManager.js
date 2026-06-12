@@ -10,10 +10,10 @@ const AUTO_BREW_CAULDRON_RESEARCH_ID = 'automation:autoBrewCauldron:1';
 const TOUCH_DRAG_DISTANCE = 8;
 
 export class BrewingCauldronManager {
-  constructor({ gameplayFacade, getSelectedRecipeKey, onOpenAutoBrew } = {}) {
+  constructor({ gameplayFacade, getSelectedRecipeKey, onOpenSelectRecipe } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSelectedRecipeKey = getSelectedRecipeKey;
-    this.onOpenAutoBrew = onOpenAutoBrew;
+    this.onOpenSelectRecipe = onOpenSelectRecipe;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -106,12 +106,12 @@ export class BrewingCauldronManager {
     count.className = 'brewing-page__cauldron-count';
     count.textContent = '0/0';
 
-    const autoBrewButton = document.createElement('button');
-    autoBrewButton.className = 'brewing-page__cauldron-auto-brew-text';
-    autoBrewButton.type = 'button';
-    autoBrewButton.textContent = 'auto brewing';
-    autoBrewButton.setAttribute('aria-haspopup', 'dialog');
-    autoBrewButton.addEventListener('click', () => this.onOpenAutoBrew?.());
+    const selectRecipeButton = document.createElement('button');
+    selectRecipeButton.className = 'brewing-page__cauldron-select-recipe-text';
+    selectRecipeButton.type = 'button';
+    selectRecipeButton.textContent = 'select recipe';
+    selectRecipeButton.setAttribute('aria-haspopup', 'dialog');
+    selectRecipeButton.addEventListener('click', () => this.onOpenSelectRecipe?.());
 
     const guide = document.createElement('div');
     guide.className = 'brewing-page__cauldron-guide';
@@ -162,7 +162,7 @@ export class BrewingCauldronManager {
 
     activeProgress.append(activeProgressFill, activeProgressText);
     active.append(activeText, activeProgress);
-    root.append(title, count, guide, status, items, active, autoBrewButton);
+    root.append(title, count, guide, status, items, active, selectRecipeButton);
     return {
       root,
       count,
@@ -172,7 +172,7 @@ export class BrewingCauldronManager {
       recipeValue,
       guideSequence,
       status,
-      autoBrewButton,
+      selectRecipeButton,
       items,
       active,
       activeText,
@@ -417,11 +417,17 @@ export class BrewingCauldronManager {
     const targetIngredients = this.expandIngredientSequence(recipe.ingredients);
     const ingredientGroups = this.createIngredientGroups(recipe.ingredients);
     const match = this.getIngredientMatch(targetIngredients, brewing.ingredients);
+    const missingQuantities = this.getMissingIngredientQuantities(recipe, brewing);
     let renderedRows = 0;
 
     for (const ingredient of ingredientGroups) {
       const refs = this.ensureCauldronGuideRow(renderedRows);
-      const rowState = this.getCauldronGuideRowState(ingredient, brewing.ingredients, match);
+      const rowState = this.getCauldronGuideRowState(
+        ingredient,
+        brewing.ingredients,
+        match,
+        missingQuantities,
+      );
       this.renderCauldronGuideRow(refs, rowState);
       renderedRows += 1;
     }
@@ -515,7 +521,7 @@ export class BrewingCauldronManager {
     }
   }
 
-  getCauldronGuideRowState(ingredient, ingredients, match) {
+  getCauldronGuideRowState(ingredient, ingredients, match, missingQuantities = new Map()) {
     const actualSlots = ingredients.slice(ingredient.startIndex, ingredient.endIndex);
     const mismatchOffset = actualSlots.findIndex(
       (actual) => actual.itemTypeId !== ingredient.itemTypeId,
@@ -526,6 +532,7 @@ export class BrewingCauldronManager {
     const removeSlotIndex = hasIngredient
       ? ingredient.startIndex + actualSlots.length - 1
       : null;
+    const missingQuantity = missingQuantities.get(ingredient.itemTypeId) ?? 0;
 
     if (hasMismatch) {
       const wrongIngredient = actualSlots[mismatchOffset];
@@ -536,6 +543,17 @@ export class BrewingCauldronManager {
         }),
         value: 'remove',
         removeSlotIndex,
+        isPlaced: false,
+        isNext: false,
+        isMismatch: true,
+      };
+    }
+
+    if (!hasIngredient && missingQuantity > 0) {
+      return {
+        label: this.formatIngredientGroup(ingredient),
+        value: `missing ${missingQuantity}`,
+        removeSlotIndex: null,
         isPlaced: false,
         isNext: false,
         isMismatch: true,
@@ -616,6 +634,34 @@ export class BrewingCauldronManager {
   normalizeIngredientQuantity(ingredient) {
     const quantity = Number.isFinite(ingredient?.quantity) ? Math.floor(ingredient.quantity) : 1;
     return Math.max(1, quantity);
+  }
+
+  getMissingIngredientQuantities(recipe, brewing) {
+    const requiredQuantities = new Map();
+
+    for (const ingredient of recipe.ingredients ?? []) {
+      const quantity = this.normalizeIngredientQuantity(ingredient);
+      requiredQuantities.set(
+        ingredient.itemTypeId,
+        (requiredQuantities.get(ingredient.itemTypeId) ?? 0) + quantity,
+      );
+    }
+
+    const ownedQuantities = new Map(
+      (brewing.herbs ?? []).map((herb) => [herb.itemTypeId, herb.quantity ?? 0]),
+    );
+    const missingQuantities = new Map();
+
+    for (const [itemTypeId, requiredQuantity] of requiredQuantities) {
+      const ownedQuantity = ownedQuantities.get(itemTypeId) ?? 0;
+      const missingQuantity = requiredQuantity - ownedQuantity;
+
+      if (missingQuantity > 0) {
+        missingQuantities.set(itemTypeId, missingQuantity);
+      }
+    }
+
+    return missingQuantities;
   }
 
   getIngredientMatch(targetIngredients, ingredients) {
@@ -763,40 +809,40 @@ export class BrewingCauldronManager {
     setNotificationBadge(this.refs.actions.actionButton, !action.disabled);
     this.setHidden(this.refs.actions.message, true);
     this.setText(this.refs.actions.message, '');
-    this.renderAutoBrewButton(brewing);
+    this.renderSelectRecipeButton(brewing);
   }
 
-  renderAutoBrewButton(brewing) {
-    const autoBrewButton = this.refs.cauldron?.autoBrewButton;
+  renderSelectRecipeButton(brewing) {
+    const selectRecipeButton = this.refs.cauldron?.selectRecipeButton;
 
-    if (!autoBrewButton) {
+    if (!selectRecipeButton) {
       return;
     }
 
     const visible = brewing.autoBrewAvailable === true;
-    this.setHidden(autoBrewButton, !visible);
+    this.setHidden(selectRecipeButton, !visible);
     this.refs.actions.root.classList.toggle('is-centered', !visible);
 
     if (!visible) {
-      this.setDisabled(autoBrewButton, true);
-      this.setAttribute(autoBrewButton, 'aria-hidden', 'true');
-      this.removeAttribute(autoBrewButton, 'aria-label');
-      this.removeAttribute(autoBrewButton, 'data-state');
-      this.removeAttribute(autoBrewButton, 'aria-pressed');
+      this.setDisabled(selectRecipeButton, true);
+      this.setAttribute(selectRecipeButton, 'aria-hidden', 'true');
+      this.removeAttribute(selectRecipeButton, 'aria-label');
+      this.removeAttribute(selectRecipeButton, 'data-state');
+      this.removeAttribute(selectRecipeButton, 'aria-pressed');
       return;
     }
 
-    this.setText(autoBrewButton, 'auto brewing');
-    this.setDisabled(autoBrewButton, false);
-    this.removeAttribute(autoBrewButton, 'aria-hidden');
+    this.setText(selectRecipeButton, 'select recipe');
+    this.setDisabled(selectRecipeButton, false);
+    this.removeAttribute(selectRecipeButton, 'aria-hidden');
     this.setAttribute(
-      autoBrewButton,
+      selectRecipeButton,
       'aria-label',
-      'open auto brewing',
+      'open select recipe',
     );
-    this.setAttribute(autoBrewButton, 'data-state', brewing.autoBrewEnabled ? 'on' : 'off');
+    this.setAttribute(selectRecipeButton, 'data-state', brewing.autoBrewEnabled ? 'on' : 'off');
     this.setAttribute(
-      autoBrewButton,
+      selectRecipeButton,
       'aria-pressed',
       brewing.autoBrewEnabled ? 'true' : 'false',
     );
@@ -1118,7 +1164,7 @@ export class BrewingCauldronManager {
     }
 
     if (result.reason === 'auto_brew_recipe_required') {
-      return 'select recipe for auto brew';
+      return 'select recipe';
     }
 
     if (result.reason === 'bottling_in_progress') {

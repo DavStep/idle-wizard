@@ -20,7 +20,7 @@
 - Show all five room pages in a shared bottom tab panel; underline the current page tab.
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
-- Leaderboard shows `wealth` from `totalIncome` and `alliance wealth` from alliance season income; do not show a raw `income` tab.
+- Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 
 ## Architecture
 
@@ -39,6 +39,7 @@
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
+- SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
 
 ## Gameplay Economy
@@ -57,10 +58,10 @@
 - Brewing herb controls are tap-first on mobile; drag should start only after movement crosses a small threshold.
 - Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
-- Marked Brewing recipes persist across room tab changes; only explicit unmarking or marking another recipe clears the guide.
+- Brewing recipe selection comes from the recipes popup; selecting stages full ingredients when owned, otherwise the cauldron guide shows missing counts.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 Sage`), not expanded numbered slots.
 - Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
-- Brewing recipe popup rows use an explicit `mark` action to send a recipe to the guide; do not hide that action behind the recipe name.
+- Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
 - Brewing shows `recipes` and `potions` as sibling buttons, not a bordered recipes block; potions popup reads owned potion stacks from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - Wasted Potion is not researchable and sells for 1 gold by item-level sell price override.
@@ -100,6 +101,7 @@
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
 - Market page uses visible `npc market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
+- Crystal tab gold offer grants current level * 20 gold only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim gold; ready state owns Market/crystals notification dots.
 - Player market request UI is local-only until backend request listings exist; do not fake server trades.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
 - Player market requests use local numbered slots that follow player market stand unlock state.
@@ -242,7 +244,7 @@
 - Logs popup shows newest entries first, starts at top, and uses scroll progress plus bottom fade instead of showing a native scrollbar.
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
-- Brewing marked recipe guide renders inside the cauldron; do not add a separate guide box back to the bottom of the room.
+- Brewing selected recipe guide renders inside the cauldron; do not add a separate guide box back to the bottom of the room.
 
 ## Development Operations
 

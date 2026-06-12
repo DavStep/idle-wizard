@@ -123,11 +123,20 @@ const tablesSchema = __schema({
   leaderboard: __table({
     name: 'leaderboard',
     indexes: [
+      { accessor: 'byDailyIncome', name: 'leaderboard_daily_income_idx_btree', algorithm: 'btree', columns: [
+        'dailyIncome',
+      ] },
       { accessor: 'identity', name: 'leaderboard_identity_idx_btree', algorithm: 'btree', columns: [
         'identity',
       ] },
+      { accessor: 'byMonthlyIncome', name: 'leaderboard_monthly_income_idx_btree', algorithm: 'btree', columns: [
+        'monthlyIncome',
+      ] },
       { accessor: 'byTotalIncome', name: 'leaderboard_total_income_idx_btree', algorithm: 'btree', columns: [
         'totalIncome',
+      ] },
+      { accessor: 'byWeeklyIncome', name: 'leaderboard_weekly_income_idx_btree', algorithm: 'btree', columns: [
+        'weeklyIncome',
       ] },
     ],
     constraints: [
@@ -271,6 +280,9 @@ const tablesSchema = __schema({
     indexes: [
       { accessor: 'allianceId', name: 'trade_alliance_alliance_id_idx_btree', algorithm: 'btree', columns: [
         'allianceId',
+      ] },
+      { accessor: 'byMonthlyIncome', name: 'trade_alliance_monthly_income_idx_btree', algorithm: 'btree', columns: [
+        'monthlyIncome',
       ] },
       { accessor: 'bySeasonIncome', name: 'trade_alliance_season_income_idx_btree', algorithm: 'btree', columns: [
         'seasonIncome',

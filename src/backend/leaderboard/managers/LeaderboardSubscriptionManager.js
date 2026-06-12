@@ -3,9 +3,24 @@ const EMPTY_SNAPSHOT = {
   topUsers: [],
   topGeneratedGoldUsers: [],
   topIncomeUsers: [],
+  topDailyUsers: [],
+  topWeeklyUsers: [],
+  topMonthlyUsers: [],
+  topAllTimeUsers: [],
   currentGeneratedGoldUser: null,
   currentIncomeUser: null,
+  currentDailyUser: null,
+  currentWeeklyUser: null,
+  currentMonthlyUser: null,
+  currentAllTimeUser: null,
 };
+
+const LEADERBOARD_PERIOD_METRICS = [
+  ['Daily', 'dailyIncome'],
+  ['Weekly', 'weeklyIncome'],
+  ['Monthly', 'monthlyIncome'],
+  ['AllTime', 'totalIncome'],
+];
 
 export class LeaderboardSubscriptionManager {
   constructor({ onSnapshot } = {}) {
@@ -78,6 +93,9 @@ export class LeaderboardSubscriptionManager {
         name: row.username,
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
+        dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
+        weeklyIncome: this.toNumber(row.weeklyIncome ?? row.weekly_income),
+        monthlyIncome: this.toNumber(row.monthlyIncome ?? row.monthly_income),
         totalGeneratedGold: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
         totalIncome: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
       }));
@@ -89,11 +107,21 @@ export class LeaderboardSubscriptionManager {
     const topIncomeUsers = rankedIncomeUsers
       .slice(0, TOP_USER_LIMIT)
       .map((user) => this.toSnapshotUser(user));
+    const periodLists = {};
+
+    for (const [label, valueKey] of LEADERBOARD_PERIOD_METRICS) {
+      const rankedUsers = this.getRankedUsersBy(users, valueKey);
+      periodLists[`top${label}Users`] = rankedUsers
+        .slice(0, TOP_USER_LIMIT)
+        .map((user) => this.toSnapshotUser(user));
+      periodLists[`current${label}User`] = this.getCurrentUser(rankedUsers);
+    }
 
     this.publish({
       topUsers: topGeneratedGoldUsers,
       topGeneratedGoldUsers,
       topIncomeUsers,
+      ...periodLists,
       currentGeneratedGoldUser: this.getCurrentUser(rankedGeneratedGoldUsers),
       currentIncomeUser: this.getCurrentUser(rankedIncomeUsers),
     });
@@ -123,6 +151,9 @@ export class LeaderboardSubscriptionManager {
       name: user.name,
       playerLevel: user.playerLevel,
       income: user.income,
+      dailyIncome: user.dailyIncome,
+      weeklyIncome: user.weeklyIncome,
+      monthlyIncome: user.monthlyIncome,
       totalGeneratedGold: user.totalGeneratedGold,
       totalIncome: user.totalIncome,
     };

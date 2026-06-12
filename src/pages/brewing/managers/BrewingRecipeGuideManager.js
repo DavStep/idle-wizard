@@ -88,7 +88,7 @@ export class BrewingRecipeGuideManager {
       return;
     }
 
-    this.selectedRecipeKey = this.selectedRecipeKey === targetRecipeKey ? null : targetRecipeKey;
+    this.selectedRecipeKey = targetRecipeKey;
     this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
   }
 
@@ -251,7 +251,7 @@ export class BrewingRecipeGuideManager {
   showEmptyStep() {
     const row = this.ensureEmptyStep();
     row.hidden = false;
-    this.setText(row, 'select in recipes');
+    this.setText(row, 'select recipe');
   }
 
   hideEmptyStep() {

@@ -1670,6 +1670,60 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('prepares a selected brewing recipe from owned herbs', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+
+    expect(gameplayFacade.prepareBrewingRecipe('manaTonic')).toMatchObject({
+      ok: true,
+      recipe: {
+        key: 'manaTonic',
+      },
+      ingredientItemTypeIds: [1001, 1001, 1001],
+    });
+    expect(gameplayFacade.getSnapshot().brewing.ingredients).toHaveLength(3);
+    expect(gameplayFacade.getSnapshot().brewing.herbs[0]).toMatchObject({
+      quantity: 3,
+      stagedQuantity: 3,
+      availableQuantity: 0,
+    });
+    expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
+      itemTypeId: 1001,
+      key: 'sageHerb',
+      label: 'Sage',
+      kind: 'herb',
+      quantity: 3,
+    });
+  });
+
+  it('clears the cauldron and reports missing herbs for selected recipes', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1001, 1);
+    gameplayFacade.addBrewingIngredient(1001);
+
+    expect(gameplayFacade.prepareBrewingRecipe('manaTonic')).toMatchObject({
+      ok: false,
+      reason: 'not_enough_ingredients',
+      recipe: {
+        key: 'manaTonic',
+      },
+      missingIngredients: [
+        {
+          itemTypeId: 1001,
+          label: 'Sage',
+          requiredQuantity: 3,
+          ownedQuantity: 1,
+          missingQuantity: 2,
+        },
+      ],
+    });
+    expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
+  });
+
   it('auto brews, bottles, and collects cauldron potions after research', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
@@ -2539,6 +2593,87 @@ describe('GameplayFacade', () => {
       sellLabel: summonResult.seed.label,
       sellQuantity: 0,
     });
+  });
+
+  it('collects the crystal-tab gold offer and cools it down', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+      rewardGold: 20,
+      cooldownRemainingSeconds: 0,
+      canCollect: true,
+    });
+
+    expect(gameplayFacade.collectShopGoldOffer()).toEqual({
+      ok: true,
+      gold: 20,
+      cooldownSeconds: 7_200,
+    });
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(20);
+    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+      cooldownRemainingSeconds: 7_200,
+      canCollect: false,
+    });
+    expect(gameplayFacade.collectShopGoldOffer()).toMatchObject({
+      ok: false,
+      reason: 'cooldown',
+    });
+
+    ecsFacade.update({ timerDeltaSeconds: 7_199 });
+    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+      cooldownRemainingSeconds: 1,
+      canCollect: false,
+    });
+
+    finishCurrentTaskLevel(gameplayFacade);
+    ecsFacade.update({ timerDeltaSeconds: 1 });
+    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+      rewardGold: 40,
+      cooldownRemainingSeconds: 0,
+      canCollect: true,
+    });
+    expect(gameplayFacade.collectShopGoldOffer()).toMatchObject({
+      ok: true,
+      gold: 40,
+    });
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(60);
+  });
+
+  it('persists crystal-tab gold offer cooldown and catches it up offline', () => {
+    const persistenceStorage = createMemoryStorage();
+    let now = 1_000_000;
+    const first = createGameplay({
+      persistenceStorage,
+      persistenceNow: () => now,
+    });
+
+    first.gameplayFacade.collectShopGoldOffer();
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    now += 3_600_000;
+    const second = createGameplay({
+      persistenceStorage,
+      persistenceNow: () => now,
+    });
+    expect(second.gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+      cooldownRemainingSeconds: 3_600,
+      canCollect: false,
+    });
+    second.gameplayFacade.shutdown();
+    second.ecsFacade.destroyWorld();
+
+    now += 3_600_000;
+    const third = createGameplay({
+      persistenceStorage,
+      persistenceNow: () => now,
+    });
+    expect(third.gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+      cooldownRemainingSeconds: 0,
+      canCollect: true,
+    });
+    third.gameplayFacade.shutdown();
+    third.ecsFacade.destroyWorld();
   });
 
   it('excludes cauldron-staged herbs from NPC market sales', () => {

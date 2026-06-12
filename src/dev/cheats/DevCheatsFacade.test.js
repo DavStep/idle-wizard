@@ -12,12 +12,12 @@ function createMemoryStorage() {
   };
 }
 
-function createApp({ persistenceStorage = createMemoryStorage() } = {}) {
+function createApp({ backendFacade, persistenceStorage = createMemoryStorage() } = {}) {
   const ecsFacade = new EcsFacade();
   const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow: () => 0 });
   ecsFacade.createWorld();
   gameplayFacade.initialize(ecsFacade);
-  return { ecsFacade, app: { gameplayFacade }, persistenceStorage };
+  return { ecsFacade, app: { backendFacade, gameplayFacade }, persistenceStorage };
 }
 
 describe('DevCheatsFacade', () => {
@@ -99,5 +99,86 @@ describe('DevCheatsFacade', () => {
       reason: 'unknown_research',
       researchId: 'missingResearch',
     });
+  });
+
+  it('requires confirmation before resetting data', async () => {
+    const { app } = createApp();
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+    target.cheats.addGold(50);
+
+    await expect(target.cheats.resetData()).resolves.toEqual({
+      ok: false,
+      reason: 'confirmation_required',
+      confirmation: 'RESET',
+    });
+    expect(app.gameplayFacade.getSnapshot().gold.current).toBe(50);
+  });
+
+  it('resets gameplay data and clears server player-market progress', async () => {
+    const clearOwnProgress = vi.fn(() => Promise.resolve({ ok: true }));
+    const backendFacade = {
+      getGameplaySaveFacade: () => ({
+        getSnapshot: () => ({ connected: true }),
+      }),
+      getPlayerShopFacade: () => ({
+        clearOwnProgress,
+      }),
+    };
+    const { app, persistenceStorage } = createApp({ backendFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+    target.cheats.fillMana();
+    target.cheats.addGold(100);
+    target.cheats.addCrystal(7);
+    target.cheats.addItem('sageSeed', 3);
+    target.cheats.unlockSeed('sage');
+
+    await expect(target.cheats.resetData('RESET')).resolves.toMatchObject({
+      ok: true,
+      scope: 'gameplay_progress',
+      playerShop: { ok: true },
+      snapshot: {
+        mana: { current: 0, cap: 50, perSecond: 1 },
+        gold: { current: 0, totalGenerated: 0 },
+        crystal: { current: 0 },
+        inventory: [],
+        research: { completedResearchIds: [] },
+      },
+    });
+    expect(clearOwnProgress).toHaveBeenCalledTimes(1);
+
+    const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
+    expect(saved).toMatchObject({
+      version: 2,
+      gold: { current: 0, totalGenerated: 0 },
+      crystal: { current: 0 },
+      inventory: [],
+      research: { completedIds: [] },
+    });
+  });
+
+  it('does not reset while the backend save is not ready', async () => {
+    const backendFacade = {
+      getGameplaySaveFacade: () => ({
+        getSnapshot: () => ({ connected: false }),
+      }),
+    };
+    const { app } = createApp({ backendFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+    target.cheats.addGold(50);
+
+    await expect(target.cheats.resetData('RESET')).resolves.toEqual({
+      ok: false,
+      reason: 'backend_save_not_ready',
+    });
+    expect(app.gameplayFacade.getSnapshot().gold.current).toBe(50);
   });
 });

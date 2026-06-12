@@ -70,6 +70,7 @@ export class DevCheatConsoleManager {
       completeResearch: (researchId) => run('completeResearch', researchId),
       unlockSeed: (seedKey) => run('unlockSeed', seedKey),
       unlockRecipe: (potionKey) => run('unlockRecipe', potionKey),
+      resetData: (confirmation) => run('resetData', confirmation),
       listItems: () => run('listItems'),
       listResearch: () => run('listResearch'),
     });

@@ -7,6 +7,7 @@ export class DevCheatsFacade {
 
   constructor({ app, target = globalThis, logger = globalThis.console } = {}) {
     this.commandManager = new DevCheatCommandManager({
+      backendFacade: app?.backendFacade,
       gameplayFacade: app?.gameplayFacade,
     });
     this.consoleManager = new DevCheatConsoleManager({

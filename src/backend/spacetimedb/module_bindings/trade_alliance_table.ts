@@ -22,9 +22,11 @@ export default __t.row({
   memberCount: __t.u32().name("member_count"),
   totalIncome: __t.u64().name("total_income"),
   seasonIncome: __t.u64().name("season_income"),
+  monthlyIncome: __t.u64().name("monthly_income"),
   createdAt: __t.timestamp().name("created_at"),
   updatedAt: __t.timestamp().name("updated_at"),
   seasonKey: __t.string().name("season_key"),
+  monthKey: __t.string().name("month_key"),
   dayKey: __t.string().name("day_key"),
   dailyIncome: __t.u64().name("daily_income"),
 });

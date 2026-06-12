@@ -1,5 +1,6 @@
 import { ShopCrystalOfferManager } from './managers/ShopCrystalOfferManager.js';
 import { ShopDemandManager } from './managers/ShopDemandManager.js';
+import { ShopGoldOfferManager } from './managers/ShopGoldOfferManager.js';
 import { ShopMarketTabsManager } from './managers/ShopMarketTabsManager.js';
 import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js';
 import { ShopPlayerShelfManager } from './managers/ShopPlayerShelfManager.js';
@@ -14,13 +15,14 @@ export class ShopPageFacade {
 
   constructor({ gameplayFacade, playerShopFacade } = {}) {
     this.roomViewManager = new ShopRoomViewManager();
-    this.marketTabsManager = new ShopMarketTabsManager();
+    this.marketTabsManager = new ShopMarketTabsManager({ gameplayFacade });
     this.shelfManager = new ShopShelfManager({ gameplayFacade });
     this.demandManager = new ShopDemandManager({ gameplayFacade });
     this.stockManager = new ShopStockManager({ gameplayFacade });
     this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
     this.playerShelfManager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
     this.tradeHistoryManager = new ShopTradeHistoryManager({ playerShopFacade });
+    this.goldOfferManager = new ShopGoldOfferManager({ gameplayFacade });
     this.crystalOfferManager = new ShopCrystalOfferManager();
   }
 
@@ -44,11 +46,13 @@ export class ShopPageFacade {
       buttonParent: this.playerShelfManager.getActionsRoot(),
       popupParent: popupLayer,
     });
+    this.goldOfferManager.mount(crystalsPanel);
     this.crystalOfferManager.mount(crystalsPanel, popupLayer);
   }
 
   unmount() {
     this.crystalOfferManager.unmount();
+    this.goldOfferManager.unmount();
     this.tradeHistoryManager.unmount();
     this.playerShelfManager.unmount();
     this.playerRequestManager.unmount();

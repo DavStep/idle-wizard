@@ -1,3 +1,7 @@
+import { GAMEPLAY_SAVE_VERSION } from '../../../gameplay/persistence/managers/GameplayMigrationManager.js';
+
+const RESET_CONFIRMATION = 'RESET';
+
 const CHEAT_HELP = Object.freeze([
   'cheats.fillMana()',
   'cheats.addMana(amount)',
@@ -8,13 +12,15 @@ const CHEAT_HELP = Object.freeze([
   "cheats.completeResearch('unlockSeed:sageSeed')",
   "cheats.unlockSeed('sage')",
   "cheats.unlockRecipe('manaTonic')",
+  "cheats.resetData('RESET')",
   'cheats.listItems()',
   'cheats.listResearch()',
   'cheats.snapshot()',
 ]);
 
 export class DevCheatCommandManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ backendFacade, gameplayFacade } = {}) {
+    this.backendFacade = backendFacade;
     this.gameplayFacade = gameplayFacade;
   }
 
@@ -48,6 +54,8 @@ export class DevCheatCommandManager {
         return this.completeResearch(`unlockSeed:${this.toSeedKey(commandArgs[0])}`);
       case 'unlockrecipe':
         return this.completeResearch(`unlockRecipe:${commandArgs[0]}`);
+      case 'resetdata':
+        return this.resetData(commandArgs[0]);
       case 'listitems':
         return this.listItems();
       case 'listresearch':
@@ -191,6 +199,48 @@ export class DevCheatCommandManager {
     };
   }
 
+  async resetData(confirmation) {
+    if (confirmation !== RESET_CONFIRMATION) {
+      return {
+        ok: false,
+        reason: 'confirmation_required',
+        confirmation: RESET_CONFIRMATION,
+      };
+    }
+
+    if (!this.canSaveReset()) {
+      return {
+        ok: false,
+        reason: 'backend_save_not_ready',
+      };
+    }
+
+    const loaded = this.gameplayFacade.loadPersistenceSave(this.createResetSave());
+
+    if (!loaded) {
+      return {
+        ok: false,
+        reason: 'reset_failed',
+      };
+    }
+
+    const saved = await Promise.resolve(
+      this.gameplayFacade.savePersistenceSnapshotAndFlush(),
+    );
+    const playerShop = await this.clearPlayerShopProgress();
+    const playerShopRequired = Boolean(this.backendFacade?.getPlayerShopFacade?.());
+    const ok = Boolean(saved) && (!playerShopRequired || playerShop.ok !== false);
+
+    return {
+      ok,
+      ...(ok ? {} : { reason: saved ? playerShop.reason : 'save_failed' }),
+      scope: 'gameplay_progress',
+      preserved: ['auth', 'profile', 'global_config', 'global_discoveries', 'chat'],
+      playerShop,
+      snapshot: this.gameplayFacade.getSnapshot(),
+    };
+  }
+
   listItems() {
     return {
       ok: true,
@@ -225,6 +275,97 @@ export class DevCheatCommandManager {
           ),
         ),
     };
+  }
+
+  canSaveReset() {
+    if (!this.backendFacade) {
+      return true;
+    }
+
+    const gameplaySaveSnapshot =
+      this.backendFacade.getGameplaySaveFacade?.()?.getSnapshot?.();
+
+    return gameplaySaveSnapshot?.connected === true;
+  }
+
+  createResetSave() {
+    return {
+      version: GAMEPLAY_SAVE_VERSION,
+      savedAt: this.getNow(),
+      mana: {
+        current: 0,
+      },
+      gold: {
+        current: 0,
+        totalGenerated: 0,
+      },
+      crystal: {
+        current: 0,
+      },
+      logs: {
+        nextId: 1,
+        entries: [],
+      },
+      inventory: [],
+      research: {
+        completedIds: [],
+        inProgress: [],
+      },
+      visualSettings: {},
+      shop: {
+        shelf: {
+          slots: [],
+        },
+        playerShelf: {
+          slots: [],
+        },
+        goldOffer: {
+          cooldownRemainingSeconds: 0,
+        },
+      },
+      brewing: {
+        autoBrewEnabled: false,
+        autoBrewRecipeKey: null,
+        cauldronItemKeys: [],
+        activeBrew: null,
+      },
+      garden: {
+        tiles: [],
+      },
+      tasks: {
+        tasks: [],
+      },
+    };
+  }
+
+  getNow() {
+    const now = this.gameplayFacade?.persistenceFacade?.now;
+
+    if (typeof now !== 'function') {
+      return Date.now();
+    }
+
+    return now();
+  }
+
+  async clearPlayerShopProgress() {
+    const playerShopFacade = this.backendFacade?.getPlayerShopFacade?.();
+
+    if (typeof playerShopFacade?.clearOwnProgress !== 'function') {
+      return {
+        ok: false,
+        reason: 'backend_missing',
+      };
+    }
+
+    try {
+      return await playerShopFacade.clearOwnProgress();
+    } catch {
+      return {
+        ok: false,
+        reason: 'clear_failed',
+      };
+    }
   }
 
   getItemDefinition(itemKeyOrId) {

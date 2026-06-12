@@ -119,7 +119,7 @@ describe('BrewingRecipeGuideManager', () => {
     parent.remove();
   });
 
-  it('keeps the marked recipe across page unmount and remount', () => {
+  it('keeps the selected recipe across page unmount and remount', () => {
     const snapshot = createSnapshot();
     const parent = document.createElement('div');
     document.body.append(parent);
@@ -145,18 +145,20 @@ describe('BrewingRecipeGuideManager', () => {
     nextParent.remove();
   });
 
-  it('unmarks the selected recipe when it is selected again', () => {
+  it('keeps the selected recipe when it is selected again', () => {
     const { manager, parent } = mountGuide(createSnapshot());
 
     manager.selectRecipe('minorHealingPotion');
 
-    expect(manager.getSelectedRecipeKey()).toBe(null);
-    expect(parent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe('none');
+    expect(manager.getSelectedRecipeKey()).toBe('minorHealingPotion');
+    expect(parent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe(
+      'Minor Healing Potion',
+    );
     expect(
       parent
         .querySelector('.brewing-page__guide')
         .style.getPropertyValue('--brewing-page-guide-sequence-height'),
-    ).toBe('var(--style-row-min-height)');
+    ).toBe('calc(var(--style-row-min-height) * 2)');
 
     manager.unmount();
     parent.remove();

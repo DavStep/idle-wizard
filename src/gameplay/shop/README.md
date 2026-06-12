@@ -7,3 +7,5 @@ Stand costs and sale timing come from SpacetimeDB `game_config.shop`; NPC sale g
 Shared `market stock` also comes from the backend quote snapshot. Buying spends local gold, adds local items, and calls the backend stock reducer first so all players pull from the same NPC stock. Batch buys sum marginal NPC sell prices across the backend need curve instead of multiplying the current visible price.
 
 The player market uses the same stand costs and item groups. A listed player stand reserves the chosen item quantity from inventory and stores a per-item gold value. Clearing a stand returns the reserved quantity. Market purchases from other players spend local gold and add the bought item; claimed sale proceeds add local gold.
+
+The crystals tab also has a manual gold offer. It grants current player level `* 20` gold when collected, then enters a two-hour cooldown. Cooldown time catches up offline, but the reward is never granted until the player collects it.

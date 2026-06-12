@@ -170,6 +170,10 @@ export class BrewingFacade {
     return this.brew();
   }
 
+  prepareRecipeForSelection(recipeKey) {
+    return this.brewingStartManager.prepareRecipeForSelection(recipeKey);
+  }
+
   applyRuntimeConfig(snapshot = {}) {
     const balance = parseGameConfig(snapshot, 'brewing');
 

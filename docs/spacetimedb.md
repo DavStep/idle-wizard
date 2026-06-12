@@ -84,9 +84,9 @@ The server module defines:
 
 - `player`: one row per SpacetimeDB identity, with `username`, visual preferences, player level, connection state, and timestamps.
 - `player_gameplay_save`: one row per identity, with the full gameplay save JSON and update time.
-- `leaderboard`: one row per identity, with `username`, player level, and `totalIncome`.
+- `leaderboard`: one row per identity, with `username`, player level, all-time `totalIncome`, current daily/weekly/monthly income counters, and period keys.
 - `world_chat`: one row per chat message, with sender identity, username, sender player level, alliance tag, body, and timestamp.
-- `trade_alliance`: one row per alliance, with unique tag, leader identity, join mode, member count, income totals, season key, and day key.
+- `trade_alliance`: one row per alliance, with unique tag, leader identity, join mode, member count, all-time/daily/weekly/monthly income totals, and period keys.
 - `trade_alliance_member`: one row per member identity, with alliance id, username/player-level snapshot, role, and contribution totals.
 - `trade_alliance_application`: pending join requests for apply-mode alliances.
 - `trade_alliance_quest_progress` and `trade_alliance_quest_contribution`: daily alliance quest progress and per-player contribution rows.
@@ -101,7 +101,7 @@ The server module defines:
 
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for this subscription before opening the room gate, applies the saved gameplay snapshot, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
-`set_total_generated_gold` accepts client-reported lifetime generated gold, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap. The accepted delta also raises the player's alliance income and current daily alliance-income quest progress.
+`set_total_generated_gold` accepts client-reported lifetime generated gold, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap and rolls period counters when the server day/week/month key changes. The accepted delta raises the player's daily, weekly, monthly, and all-time leaderboard income, plus alliance income and current daily alliance-income quest progress when the player is in an alliance.
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
@@ -143,7 +143,7 @@ SELECT * FROM own_trade_alliance_chat
 SELECT * FROM own_trade_alliance_reward_inbox
 ```
 
-The `player` row is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals call `set_total_generated_gold`, and the server stores the capped lifetime value in `leaderboard.totalIncome`. The subscribed leaderboard rows are exposed as top-ten lists plus `currentGeneratedGoldUser` / `currentIncomeUser` rank rows for the Workshop leaderboard popup.
+The `player` row is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals call `set_total_generated_gold`, and the server stores capped income values on `leaderboard`. The subscribed leaderboard rows are exposed as daily, weekly, monthly, and all-time top-ten lists plus matching current-user rank rows for the Workshop leaderboard popup.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.
 
