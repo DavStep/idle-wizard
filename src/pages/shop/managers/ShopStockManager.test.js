@@ -1,5 +1,8 @@
 /* @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import process from 'node:process';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import { ShopStockManager } from './ShopStockManager.js';
@@ -144,5 +147,73 @@ describe('ShopStockManager', () => {
     expect(button?.getAttribute('data-resource-color')).toBeNull();
 
     manager.unmount();
+  });
+
+  it('shows only selected stock category rows after tab changes', () => {
+    const stage = document.createElement('section');
+    const snapshot = {
+      gold: { current: 5 },
+      research: { completedResearchIds: [] },
+      shop: {
+        stock: {
+          items: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'Sage Seed',
+              kind: 'seed',
+              quantity: 0,
+              buyGold: 1,
+              stock: 3,
+              researched: true,
+            },
+            {
+              itemTypeId: 101,
+              key: 'sageHerb',
+              label: 'Sage',
+              kind: 'herb',
+              quantity: 0,
+              buyGold: 1,
+              stock: 2,
+              researched: true,
+            },
+            {
+              itemTypeId: 201,
+              key: 'manaTonic',
+              label: 'Mana Tonic',
+              kind: 'potion',
+              quantity: 0,
+              buyGold: 1,
+              stock: 1,
+              researched: true,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopStockManager({ gameplayFacade });
+
+    manager.mount(stage);
+    manager.onSelectTab('herb');
+
+    expect(manager.refs.rows.get(1)?.row.hidden).toBe(true);
+    expect(manager.refs.rows.get(101)?.row.hidden).toBe(false);
+
+    manager.onSelectTab('potion');
+
+    expect(manager.refs.rows.get(1)?.row.hidden).toBe(true);
+    expect(manager.refs.rows.get(101)?.row.hidden).toBe(true);
+    expect(manager.refs.rows.get(201)?.row.hidden).toBe(false);
+
+    manager.unmount();
+  });
+
+  it('keeps hidden stock rows hidden under the authored grid display rule', () => {
+    const baseCss = readFileSync(`${process.cwd()}/src/styles/base.css`, 'utf8');
+
+    expect(baseCss).toMatch(
+      /\.shop-page__stock-row\[hidden\]\s*\{\s*display:\s*none;\s*\}/,
+    );
   });
 });

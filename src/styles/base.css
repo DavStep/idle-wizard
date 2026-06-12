@@ -3369,6 +3369,10 @@ div.workshop-page__discovery-row {
   padding: 0;
 }
 
+.shop-page__stock-row[hidden] {
+  display: none;
+}
+
 .shop-page__stock-row .row_key {
   float: none;
   min-width: 0;

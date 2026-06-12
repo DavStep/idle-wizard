@@ -79,6 +79,7 @@ const MAX_PLAYER_SAVE_CURRENT_GOLD = 250_000;
 const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
+const MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const PERIOD_DAY_MICROS = 86_400_000_000n;
 const PERIOD_WEEK_DAYS = 7n;
@@ -3082,7 +3083,11 @@ function normalizeSaveShop(
   levelLimits: ReturnType<typeof getSaveLevelLimits>,
 ) {
   const shop = isRecord(value) ? value : {};
-  const shelf = normalizeSaveShopShelf(shop.shelf ?? shop, itemCatalog, levelLimits.maxNpcMarketStands);
+  const shelf = normalizeSaveShopShelf(
+    shop.shelf ?? shop,
+    itemCatalog,
+    levelLimits.maxNpcMarketStands,
+  );
   const playerShelf = normalizeSavePlayerShopShelf(
     shop.playerShelf,
     itemCatalog,
@@ -3092,6 +3097,20 @@ function normalizeSaveShop(
   return {
     shelf,
     playerShelf,
+    goldOffer: normalizeSaveShopGoldOffer(shop.goldOffer),
+  };
+}
+
+function normalizeSaveShopGoldOffer(value: unknown) {
+  const offer = isRecord(value) ? value : {};
+
+  return {
+    cooldownRemainingSeconds: clampSaveNumber(
+      offer.cooldownRemainingSeconds,
+      0,
+      MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS,
+      0,
+    ),
   };
 }
 
@@ -4490,44 +4509,75 @@ function normalizeReportedLeaderboardTotalIncome(
   return safeTotalGeneratedGold;
 }
 
-function getLeaderboardPeriodDefaults(ctx: IdleWizardReducerCtx) {
+function getLeaderboardPeriodDefaults(ctx: IdleWizardReducerCtx, income = 0n) {
+  const safeIncome = toBigInt(income);
+
   return {
     dayKey: getDailyPeriodKey(ctx),
     weekKey: getWeeklyPeriodKey(ctx),
     monthKey: getMonthlyPeriodKey(ctx),
-    dailyIncome: 0n,
-    weeklyIncome: 0n,
-    monthlyIncome: 0n,
+    dailyIncome: safeIncome,
+    weeklyIncome: safeIncome,
+    monthlyIncome: safeIncome,
   };
 }
 
-function refreshLeaderboardPeriods(ctx: IdleWizardReducerCtx, entry: any) {
+function shouldSeedLeaderboardPeriodsFromTotalIncome(entry: any) {
+  return (
+    !String(entry.dayKey ?? '') &&
+    !String(entry.weekKey ?? '') &&
+    !String(entry.monthKey ?? '') &&
+    toBigInt(entry.dailyIncome) === 0n &&
+    toBigInt(entry.weeklyIncome) === 0n &&
+    toBigInt(entry.monthlyIncome) === 0n
+  );
+}
+
+function getLeaderboardPeriodValues(
+  ctx: IdleWizardReducerCtx,
+  entry: any,
+  totalIncome = toBigInt(entry.totalIncome),
+) {
   const dayKey = getDailyPeriodKey(ctx);
   const weekKey = getWeeklyPeriodKey(ctx);
   const monthKey = getMonthlyPeriodKey(ctx);
-  const dailyIncome = entry.dayKey === dayKey ? toBigInt(entry.dailyIncome) : 0n;
-  const weeklyIncome = entry.weekKey === weekKey ? toBigInt(entry.weeklyIncome) : 0n;
-  const monthlyIncome = entry.monthKey === monthKey ? toBigInt(entry.monthlyIncome) : 0n;
+  const seedIncome = shouldSeedLeaderboardPeriodsFromTotalIncome(entry)
+    ? toBigInt(totalIncome)
+    : null;
+
+  return {
+    dayKey,
+    weekKey,
+    monthKey,
+    dailyIncome: entry.dayKey === dayKey ? toBigInt(entry.dailyIncome) : seedIncome ?? 0n,
+    weeklyIncome: entry.weekKey === weekKey ? toBigInt(entry.weeklyIncome) : seedIncome ?? 0n,
+    monthlyIncome: entry.monthKey === monthKey
+      ? toBigInt(entry.monthlyIncome)
+      : seedIncome ?? 0n,
+  };
+}
+
+function refreshLeaderboardPeriods(
+  ctx: IdleWizardReducerCtx,
+  entry: any,
+  totalIncome = toBigInt(entry.totalIncome),
+) {
+  const periods = getLeaderboardPeriodValues(ctx, entry, totalIncome);
 
   if (
-    entry.dayKey === dayKey &&
-    entry.weekKey === weekKey &&
-    entry.monthKey === monthKey &&
-    entry.dailyIncome === dailyIncome &&
-    entry.weeklyIncome === weeklyIncome &&
-    entry.monthlyIncome === monthlyIncome
+    entry.dayKey === periods.dayKey &&
+    entry.weekKey === periods.weekKey &&
+    entry.monthKey === periods.monthKey &&
+    entry.dailyIncome === periods.dailyIncome &&
+    entry.weeklyIncome === periods.weeklyIncome &&
+    entry.monthlyIncome === periods.monthlyIncome
   ) {
     return entry;
   }
 
   return ctx.db.leaderboard.identity.update({
     ...entry,
-    dayKey,
-    weekKey,
-    monthKey,
-    dailyIncome,
-    weeklyIncome,
-    monthlyIncome,
+    ...periods,
     updatedAt: ctx.timestamp,
   });
 }
@@ -5112,33 +5162,31 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
 
 function sanitizeLeaderboardRows(ctx: IdleWizardReducerCtx) {
   for (const rawEntry of ctx.db.leaderboard.iter()) {
-    const entry = refreshLeaderboardPeriods(ctx, rawEntry);
-    const username = normalizeUsername(entry.username);
-    const playerLevel = normalizePlayerLevel(entry.playerLevel);
-    const totalIncome = clampLeaderboardTotalIncome(entry.totalIncome, playerLevel);
-    const dailyIncome = toBigInt(entry.dailyIncome);
-    const weeklyIncome = toBigInt(entry.weeklyIncome);
-    const monthlyIncome = toBigInt(entry.monthlyIncome);
+    const username = normalizeUsername(rawEntry.username);
+    const playerLevel = normalizePlayerLevel(rawEntry.playerLevel);
+    const totalIncome = clampLeaderboardTotalIncome(rawEntry.totalIncome, playerLevel);
+    const periods = getLeaderboardPeriodValues(ctx, rawEntry, totalIncome);
 
     if (
-      entry.username === username &&
-      entry.playerLevel === playerLevel &&
-      entry.totalIncome === totalIncome &&
-      entry.dailyIncome === dailyIncome &&
-      entry.weeklyIncome === weeklyIncome &&
-      entry.monthlyIncome === monthlyIncome
+      rawEntry.username === username &&
+      rawEntry.playerLevel === playerLevel &&
+      rawEntry.totalIncome === totalIncome &&
+      rawEntry.dayKey === periods.dayKey &&
+      rawEntry.weekKey === periods.weekKey &&
+      rawEntry.monthKey === periods.monthKey &&
+      rawEntry.dailyIncome === periods.dailyIncome &&
+      rawEntry.weeklyIncome === periods.weeklyIncome &&
+      rawEntry.monthlyIncome === periods.monthlyIncome
     ) {
       continue;
     }
 
     ctx.db.leaderboard.identity.update({
-      ...entry,
+      ...rawEntry,
       username,
       playerLevel,
       totalIncome,
-      dailyIncome,
-      weeklyIncome,
-      monthlyIncome,
+      ...periods,
       updatedAt: ctx.timestamp,
     });
   }
@@ -5157,10 +5205,7 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
     }
 
     const player = ctx.db.player.identity.find(save.identity);
-    const rawExistingEntry = ctx.db.leaderboard.identity.find(save.identity);
-    const existingEntry = rawExistingEntry
-      ? refreshLeaderboardPeriods(ctx, rawExistingEntry)
-      : undefined;
+    const existingEntry = ctx.db.leaderboard.identity.find(save.identity);
     const username = normalizeUsername(
       player?.username ?? existingEntry?.username ?? DEFAULT_USERNAME,
     );
@@ -5182,12 +5227,21 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
     );
     const totalIncome =
       reportedTotalIncome > currentTotalIncome ? reportedTotalIncome : currentTotalIncome;
+    const periods = existingEntry
+      ? getLeaderboardPeriodValues(ctx, existingEntry, totalIncome)
+      : getLeaderboardPeriodDefaults(ctx, totalIncome);
 
     if (existingEntry) {
       if (
         existingEntry.username === username &&
         existingEntry.playerLevel === playerLevel &&
-        existingEntry.totalIncome === totalIncome
+        existingEntry.totalIncome === totalIncome &&
+        existingEntry.dayKey === periods.dayKey &&
+        existingEntry.weekKey === periods.weekKey &&
+        existingEntry.monthKey === periods.monthKey &&
+        existingEntry.dailyIncome === periods.dailyIncome &&
+        existingEntry.weeklyIncome === periods.weeklyIncome &&
+        existingEntry.monthlyIncome === periods.monthlyIncome
       ) {
         continue;
       }
@@ -5197,6 +5251,7 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
         username,
         playerLevel,
         totalIncome,
+        ...periods,
         updatedAt: ctx.timestamp,
       });
       continue;
@@ -5207,7 +5262,7 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
       username,
       playerLevel,
       totalIncome,
-      ...getLeaderboardPeriodDefaults(ctx),
+      ...periods,
       updatedAt: ctx.timestamp,
     });
   }
@@ -5262,21 +5317,21 @@ function ensureLeaderboardEntry(
   username: string,
   playerLevel = DEFAULT_PLAYER_LEVEL,
 ) {
-  const rawExistingEntry = ctx.db.leaderboard.identity.find(ctx.sender);
-  const existingEntry = rawExistingEntry
-    ? refreshLeaderboardPeriods(ctx, rawExistingEntry)
-    : undefined;
   const safePlayerLevel = normalizePlayerLevel(playerLevel);
-  const safeTotalIncome = existingEntry
-    ? clampLeaderboardTotalIncome(existingEntry.totalIncome, safePlayerLevel)
+  const rawExistingEntry = ctx.db.leaderboard.identity.find(ctx.sender);
+  const safeExistingTotalIncome = rawExistingEntry
+    ? clampLeaderboardTotalIncome(rawExistingEntry.totalIncome, safePlayerLevel)
     : 0n;
+  const existingEntry = rawExistingEntry
+    ? refreshLeaderboardPeriods(ctx, rawExistingEntry, safeExistingTotalIncome)
+    : undefined;
 
   if (existingEntry) {
     return ctx.db.leaderboard.identity.update({
       ...existingEntry,
       username,
       playerLevel: safePlayerLevel,
-      totalIncome: safeTotalIncome,
+      totalIncome: safeExistingTotalIncome,
       updatedAt: ctx.timestamp,
     });
   }
@@ -5528,8 +5583,8 @@ function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
 
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   sanitizeSharedPlayerRows(ctx);
-  sanitizeLeaderboardRows(ctx);
   backfillLeaderboardTotalIncomeFromGameplaySaves(ctx);
+  sanitizeLeaderboardRows(ctx);
   if (!ENABLE_CLIENT_POTION_DISCOVERY) {
     deleteAllPotionDiscoveries(ctx);
   }
@@ -5726,7 +5781,7 @@ export const set_admin_player_data = spacetimedb.reducer(
 
     const rawExistingEntry = ctx.db.leaderboard.identity.find(player.identity);
     const existingEntry = rawExistingEntry
-      ? refreshLeaderboardPeriods(ctx, rawExistingEntry)
+      ? refreshLeaderboardPeriods(ctx, rawExistingEntry, safeTotalIncome)
       : undefined;
     upsertAdminPlayerGameplaySave(ctx, nextPlayer.identity, safeSaveJson, existingSave);
 
@@ -5746,7 +5801,7 @@ export const set_admin_player_data = spacetimedb.reducer(
       username: nextPlayer.username,
       playerLevel: nextPlayer.playerLevel,
       totalIncome: safeTotalIncome,
-      ...getLeaderboardPeriodDefaults(ctx),
+      ...getLeaderboardPeriodDefaults(ctx, safeTotalIncome),
       updatedAt: ctx.timestamp,
     });
   },

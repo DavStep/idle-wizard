@@ -40,6 +40,7 @@
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
+- When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
 
 ## Gameplay Economy
@@ -205,6 +206,7 @@
 - NPC stock market category controls are bottom-border text tabs, not boxed buttons; keep `seed` left, `herb` centered, and `potion` right.
 - NPC stock buy row controls show only the price (`25 gold`), not a `buy` prefix; enabled prices use gold resource color, disabled/unaffordable prices inherit muted disabled color.
 - NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.
+- Grid-rendered rows that are toggled with `[hidden]` need an explicit `[hidden] { display: none; }` rule, or authored `display: grid` can keep old category rows visible in browser.
 - Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
 - Numbered slot rows must never leave the middle content blank; unlocked empty rows should say the next action (`select`, `request item`), while locked empty rows keep labels like `empty stand` or `empty request` with state in the right slot.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
