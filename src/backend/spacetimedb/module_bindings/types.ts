@@ -32,14 +32,14 @@ export const Leaderboard = __t.object("Leaderboard", {
   identity: __t.identity(),
   username: __t.string(),
   totalIncome: __t.u64(),
+  updatedAt: __t.timestamp(),
+  playerLevel: __t.u32(),
   dailyIncome: __t.u64(),
   weeklyIncome: __t.u64(),
   monthlyIncome: __t.u64(),
   dayKey: __t.string(),
   weekKey: __t.string(),
   monthKey: __t.string(),
-  updatedAt: __t.timestamp(),
-  playerLevel: __t.u32(),
 });
 export type Leaderboard = __Infer<typeof Leaderboard>;
 
@@ -230,13 +230,13 @@ export const TradeAlliance = __t.object("TradeAlliance", {
   memberCount: __t.u32(),
   totalIncome: __t.u64(),
   seasonIncome: __t.u64(),
-  monthlyIncome: __t.u64(),
   createdAt: __t.timestamp(),
   updatedAt: __t.timestamp(),
   seasonKey: __t.string(),
-  monthKey: __t.string(),
   dayKey: __t.string(),
   dailyIncome: __t.u64(),
+  monthlyIncome: __t.u64(),
+  monthKey: __t.string(),
 });
 export type TradeAlliance = __Infer<typeof TradeAlliance>;
 
