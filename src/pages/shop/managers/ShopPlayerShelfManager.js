@@ -157,10 +157,10 @@ export class ShopPlayerShelfManager {
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    label.textContent = `stand ${slotNumber}`;
+    label.textContent = `${slotNumber}.`;
 
     const value = document.createElement('span');
-    value.className = 'row_val';
+    value.className = 'row_val shop-page__slot-value';
 
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
@@ -688,6 +688,7 @@ export class ShopPlayerShelfManager {
 
       row.classList.toggle('is-selected', slotNumber === shelf.selectedSlotNumber);
       row.classList.toggle('is-locked', !slot.unlocked);
+      row.classList.toggle('is-empty', slot.unlocked && !slot.itemTypeId);
 
       if (slot.unlocked) {
         row.classList.add('shop-page__slot-row--interactive');
@@ -715,9 +716,13 @@ export class ShopPlayerShelfManager {
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
         setNotificationBadge(row, false);
         setNotificationBadge(button, !button.disabled);
+        refs.itemValue.textContent = '';
 
         if (button.parentElement !== value) {
-          value.replaceChildren(button);
+          refs.priceValue.replaceChildren(button);
+        }
+        if (refs.priceValue.parentElement !== value) {
+          value.replaceChildren(refs.itemValue, refs.priceValue);
         }
 
         return;
@@ -729,8 +734,12 @@ export class ShopPlayerShelfManager {
       row.removeAttribute('tabindex');
       setNotificationBadge(row, false);
       setNotificationBadge(button, false);
-      value.textContent = 'locked';
-      setResourceColorFromText(value, value.textContent);
+      refs.itemValue.textContent = '';
+      refs.priceValue.textContent = 'locked';
+      setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
+      if (refs.priceValue.parentElement !== value) {
+        value.replaceChildren(refs.itemValue, refs.priceValue);
+      }
     });
   }
 

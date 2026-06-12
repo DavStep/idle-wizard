@@ -15,6 +15,8 @@ import {
   PageSwipeNavigationManager,
 } from './managers/PageSwipeNavigationManager.js';
 
+const FTUE_ENABLED = false;
+
 export class PagesFacade {
   static explain =
     'Chooses which room the player is looking at and asks that room to show itself.';
@@ -59,10 +61,12 @@ export class PagesFacade {
       worldChatFacade,
       tradeAllianceFacade,
     });
-    this.tutorialFacade = new TutorialFacade({
-      gameplayFacade,
-      getCurrentPageId: () => this.getCurrentPageId(),
-    });
+    this.tutorialFacade = FTUE_ENABLED
+      ? new TutorialFacade({
+          gameplayFacade,
+          getCurrentPageId: () => this.getCurrentPageId(),
+        })
+      : null;
 
     this.registryManager.register(
       'workshop',
@@ -106,11 +110,11 @@ export class PagesFacade {
     this.notificationFacade.mount();
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
-    this.tutorialFacade.mount(stage);
+    this.tutorialFacade?.mount(stage);
   }
 
   unmount() {
-    this.tutorialFacade.unmount();
+    this.tutorialFacade?.unmount();
     this.topPanelFacade.unmount();
     this.worldChatManager.unmount();
     this.notificationFacade.unmount();
@@ -122,7 +126,7 @@ export class PagesFacade {
   show(pageId) {
     this.currentPageManager.show(pageId);
     this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
-    this.tutorialFacade.scheduleRefresh();
+    this.tutorialFacade?.scheduleRefresh();
   }
 
   getCurrentPageId() {

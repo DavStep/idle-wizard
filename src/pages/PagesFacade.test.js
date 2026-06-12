@@ -2343,6 +2343,19 @@ describe('PagesFacade', () => {
     );
   });
 
+  it('keeps FTUE disabled for now', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.show('research');
+
+    expect(stage.querySelector('.tutorial-layer')).toBeNull();
+  });
+
   it('shows a garden tab notification when garden work is ready outside Workshop', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -4120,7 +4133,7 @@ describe('PagesFacade', () => {
         .querySelector('.shop-page__buy-slot-button')
         ?.getAttribute('data-resource-color'),
     ).toBe('gold');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('stand 3locked');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('3.locked');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('3 gold');
     expect(stage.querySelector('.shop-page__sell-popup')).not.toBeNull();
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
@@ -5345,7 +5358,7 @@ describe('PagesFacade', () => {
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed (0) 1.00 gold',
+      '1.Sage Seed (0) 1.00 gold',
     );
     expect(
       stage
@@ -5358,7 +5371,7 @@ describe('PagesFacade', () => {
         ?.getAttribute('data-resource-color'),
     ).toBe('gold');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
-      'stand 1 sells Sage Seed',
+      '1. sells Sage Seed',
     );
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
@@ -5391,7 +5404,7 @@ describe('PagesFacade', () => {
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Mana Tonic (0) 5.00 gold',
+      '1.Mana Tonic (0) 5.00 gold',
     );
     expect(itemValue?.textContent).toBe('Mana Tonic (0)');
     expect(itemValue?.getAttribute('data-resource-color')).toBe('mana');
@@ -5436,7 +5449,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed (0) 1.00 gold',
+      '1.Sage Seed (0) 1.00 gold',
     );
 
     stage
@@ -5452,8 +5465,8 @@ describe('PagesFacade', () => {
     expect(visibleRows[0].classList.contains('shop-page__sell-empty-row')).toBe(false);
     emptyButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('stand 1empty');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('stand 1 empty');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('1.empty');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('1. empty');
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
@@ -5479,13 +5492,13 @@ describe('PagesFacade', () => {
     gameplayFacade.setShopSellGold('seed', 7);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed (0) 7.00 gold',
+      '1.Sage Seed (0) 7.00 gold',
     );
 
     gameplayFacade.setShopSellNeed(1, 4);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed (0) 7.00 gold',
+      '1.Sage Seed (0) 7.00 gold',
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('need 4');
 
@@ -5558,7 +5571,7 @@ describe('PagesFacade', () => {
     gameplayFacade.setShopSellItems([]);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'stand 1Sage Seed (0) 1.00 gold',
+      '1.Sage Seed (0) 1.00 gold',
     );
   });
 
@@ -5702,7 +5715,7 @@ describe('PagesFacade', () => {
     expect(quantityInput.value).toBe('2');
     expect(valueInput.value).toBe('4');
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      'stand 1empty',
+      '1.empty',
     );
     expect(listingPopup.hidden).toBe(false);
 
@@ -5712,7 +5725,7 @@ describe('PagesFacade', () => {
     await Promise.resolve();
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      'stand 1Sage Seed (2) 4.00 gold',
+      '1.Sage Seed (2) 4.00 gold',
     );
     expect(
       stage

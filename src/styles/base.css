@@ -124,7 +124,7 @@
   --style-system-text: oklch(74% 0.11 25);
   --style-backdrop-rgb: 26 26 26;
   --style-log-fade-rgb: 32 32 32;
-  --style-block-shadow: 5px 5px 5px #d8d8d8;
+  --style-block-shadow: 5px 5px 5px #b8b8b8;
   --style-overlay-shadow: 5px 5px 5px #d8d8d8;
   --style-tooltip-shadow: -1px 3px 2px #d8d8d8;
   color-scheme: dark;
@@ -166,7 +166,7 @@
   color: var(--style-resource-herb);
 }
 
-:root :where(
+:root :is(
     [aria-disabled="true"],
     :disabled,
     .is-disabled,
@@ -175,8 +175,8 @@
     .is-empty,
     .is-unknown
   )
-  :where([data-resource-color]),
-:root :where([data-resource-color]):where(
+  [data-resource-color],
+:root [data-resource-color]:is(
     [aria-disabled="true"],
     :disabled,
     .is-disabled,
@@ -730,8 +730,56 @@ body {
 }
 
 .shop-page__slot-row {
+  display: grid;
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(100px, max-content);
+  align-items: center;
+  column-gap: 6px;
   min-height: var(--style-row-min-height);
   clear: both;
+}
+
+.shop-page__slot-row > .row_key {
+  float: none;
+  grid-column: 1;
+  text-align: right;
+}
+
+.shop-page__slot-row > .row_val {
+  float: none;
+  grid-column: 2 / -1;
+}
+
+.shop-page__slot-value {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: baseline;
+  column-gap: 6px;
+  min-width: 0;
+  text-align: left;
+}
+
+.shop-page__slot-row.is-locked > .shop-page__slot-value {
+  text-align: right;
+}
+
+.shop-page__slot-value > .style-button {
+  justify-self: end;
+}
+
+.shop-page__slot-item-value,
+.shop-page__request-row-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-page__slot-price-value,
+.shop-page__request-row-price {
+  justify-self: end;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .shop-page__stock-row,
@@ -811,6 +859,10 @@ body {
 }
 
 .research-page__row::after {
+  display: none;
+}
+
+.shop-page__slot-row::after {
   display: none;
 }
 
@@ -3479,6 +3531,10 @@ div.workshop-page__discovery-row {
   display: flex;
   min-width: 0;
   gap: 4px;
+}
+
+.room-top-panel__resource:last-child {
+  justify-self: end;
 }
 
 .room-top-panel__resource-key {

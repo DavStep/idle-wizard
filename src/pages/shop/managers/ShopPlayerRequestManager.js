@@ -115,7 +115,7 @@ export class ShopPlayerRequestManager {
     label.textContent = `${slotNumber}.`;
 
     const value = document.createElement('span');
-    value.className = 'row_val';
+    value.className = 'row_val shop-page__slot-value';
 
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__request-row-item';
@@ -470,8 +470,12 @@ export class ShopPlayerRequestManager {
       refs.row.removeAttribute('role');
       refs.row.removeAttribute('aria-label');
       refs.row.removeAttribute('tabindex');
-      refs.value.textContent = this.getLockedRequestSlotText(shelf, slotNumber);
-      setResourceColorFromText(refs.value, refs.value.textContent);
+      refs.itemValue.textContent = '';
+      refs.priceValue.textContent = this.getLockedRequestSlotText(shelf, slotNumber);
+      setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
+      if (refs.priceValue.parentElement !== refs.value) {
+        refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+      }
     }
   }
 

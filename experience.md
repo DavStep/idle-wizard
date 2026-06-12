@@ -109,6 +109,7 @@
 ## Style
 
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
+- Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Use black text, white surfaces, readable serif text with some character, thin black borders, compact panels, and minimal decoration.
 - Project typography uses `Source Serif 4` at `15px` source size with tabular lining numerals for values.
 - Keep popup/dialog titles at `16px`; ordinary block titles and body text share the source size.

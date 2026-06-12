@@ -12,6 +12,8 @@ Do not add seed, herb, potion, selling, economy, inventory, progression, or othe
 
 The project `STYLE` is defined in `docs/style.md`. It is inspired by A Dark Room: black text, white surfaces, readable serif text with some character, thin black borders, compact text panels, and almost no decoration.
 
+Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an existing similar concept, then reuse that row, box, popup, tab, and border-label pattern instead of inventing a near-duplicate.
+
 A Dark Room-style blocks use titles embedded over the top border on white background, not separate headings inside bordered panels.
 
 Use A Dark Room's source UI proportions, including `16px` source text, inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.
