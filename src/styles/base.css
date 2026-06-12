@@ -3514,7 +3514,7 @@ div.workshop-page__discovery-row {
 .shop-page__stock-rows {
   box-sizing: border-box;
   padding-top: 4px;
-  max-height: calc(var(--style-row-min-height) * 6);
+  max-height: calc(var(--style-row-min-height) * 7);
   overflow: hidden auto;
   scrollbar-width: none;
 }
@@ -3762,7 +3762,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-box.shop-page__stock {
-  padding-bottom: calc(5px + var(--style-row-min-height));
+  padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
 
 .style-box.shop-page__player-shelf {
