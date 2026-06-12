@@ -88,11 +88,24 @@ export class TopPanelSettingsManager {
     this.handleThemeClick = (event) => {
       this.selectVisualSetting('theme', event.currentTarget.dataset.theme);
     };
+    this.handleThemePressStart = (event) => {
+      this.selectVisualSettingFromPressStart(event, 'theme', event.currentTarget.dataset.theme);
+    };
     this.handleFontClick = (event) => {
       this.selectVisualSetting('font', event.currentTarget.dataset.font);
     };
+    this.handleFontPressStart = (event) => {
+      this.selectVisualSettingFromPressStart(event, 'font', event.currentTarget.dataset.font);
+    };
     this.handleColorModeClick = (event) => {
       this.selectVisualSetting('color', event.currentTarget.dataset.colorMode);
+    };
+    this.handleColorModePressStart = (event) => {
+      this.selectVisualSettingFromPressStart(
+        event,
+        'color',
+        event.currentTarget.dataset.colorMode,
+      );
     };
     this.handleVisualSettingResearchClick = (event) => {
       this.researchVisualSetting(
@@ -150,14 +163,17 @@ export class TopPanelSettingsManager {
     );
 
     for (const button of this.refs.themeButtons) {
+      button.addEventListener('pointerdown', this.handleThemePressStart);
       button.addEventListener('click', this.handleThemeClick);
     }
 
     for (const button of this.refs.fontButtons) {
+      button.addEventListener('pointerdown', this.handleFontPressStart);
       button.addEventListener('click', this.handleFontClick);
     }
 
     for (const button of this.refs.colorModeButtons) {
+      button.addEventListener('pointerdown', this.handleColorModePressStart);
       button.addEventListener('click', this.handleColorModeClick);
     }
 
@@ -232,14 +248,17 @@ export class TopPanelSettingsManager {
       );
 
       for (const button of this.refs.themeButtons) {
+        button.removeEventListener('pointerdown', this.handleThemePressStart);
         button.removeEventListener('click', this.handleThemeClick);
       }
 
       for (const button of this.refs.fontButtons) {
+        button.removeEventListener('pointerdown', this.handleFontPressStart);
         button.removeEventListener('click', this.handleFontClick);
       }
 
       for (const button of this.refs.colorModeButtons) {
+        button.removeEventListener('pointerdown', this.handleColorModePressStart);
         button.removeEventListener('click', this.handleColorModeClick);
       }
 
@@ -467,6 +486,15 @@ export class TopPanelSettingsManager {
 
     this.applyPlayerVisualSetting(categoryKey, optionKey);
     this.clearVisualSettingStatus();
+  }
+
+  selectVisualSettingFromPressStart(event, categoryKey, optionKey) {
+    if (!this.refs || event.currentTarget.disabled) {
+      return;
+    }
+
+    event.preventDefault();
+    this.selectVisualSetting(categoryKey, optionKey);
   }
 
   researchVisualSetting(categoryKey, optionKey) {

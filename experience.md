@@ -185,6 +185,7 @@
 - Player visual theme options live in `src/player/playerThemes.js`; settings render from that list, and theme colors are CSS vars in `src/styles/base.css`.
 - Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to `white`.
 - Theme borders use `--style-stroke` through `--style-border`; keep text contrast independent when a theme wants dim strokes.
+- Midnight popups should use dark shadow tokens; light shadows read as a harsh glow on the dark room surface.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
@@ -196,8 +197,9 @@
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC stock market category controls are bottom-border text tabs, not boxed buttons; keep `seed` left, `herb` centered, and `potion` right.
 - NPC stock buy row controls show only the price (`25 gold`), not a `buy` prefix; enabled prices use gold resource color, disabled/unaffordable prices inherit muted disabled color.
+- NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.
 - Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
-- Numbered slot rows must never leave the middle content blank; locked/empty market and request rows should still show labels like `empty stand` or `empty request`, with only state/action in the right slot.
+- Numbered slot rows must never leave the middle content blank; unlocked empty rows should say the next action (`select`, `request item`), while locked empty rows keep labels like `empty stand` or `empty request` with state in the right slot.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.

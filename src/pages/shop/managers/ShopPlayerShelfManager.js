@@ -18,6 +18,7 @@ import {
 } from '../../../shared/goldPrice.js';
 
 const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
+const EMPTY_STAND_ACTION_LABEL = 'select';
 
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
@@ -751,7 +752,7 @@ export class ShopPlayerShelfManager {
     const parts = this.getPlayerSlotParts(slot, shelf, snapshot);
 
     if (!parts.itemText) {
-      refs.value.textContent = 'empty';
+      refs.value.textContent = EMPTY_STAND_ACTION_LABEL;
       setResourceColorFromText(refs.value, refs.value.textContent);
       return;
     }

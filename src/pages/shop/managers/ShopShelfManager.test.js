@@ -122,8 +122,8 @@ describe('ShopShelfManager', () => {
 
     const requestRows = stage.querySelectorAll('.shop-page__player-request-row');
     expect([...requestRows].map((row) => row.textContent)).toEqual([
-      '1.empty',
-      '2.empty',
+      '1.request item',
+      '2.request item',
       '3.empty requestlevel 5',
       '4.empty requestlocked',
       '5.empty requestlocked',
@@ -173,11 +173,45 @@ describe('ShopShelfManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.empty',
+      '1.request item',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
       '2.Mint Seed (2) 3.25 gold',
     );
+
+    manager.unmount();
+  });
+
+  it('deselects a player market request item when selected again', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const manager = new ShopPlayerRequestManager({
+      gameplayFacade: createRequestGameplayFacadeFake(),
+    });
+
+    manager.mount(stage, popupLayer);
+    stage
+      .querySelector('.shop-page__player-request-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.shop-page__request-popup');
+    const sageButton = [...popup.querySelectorAll('.shop-page__sell-item-button')].find(
+      (button) => button.textContent === 'Sage Seed (0)',
+    );
+    const selectedValue = popup.querySelector('.shop-page__request-selected-value');
+    const placeButton = popup.querySelector('.shop-page__request-place-button');
+
+    sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(selectedValue.textContent).toBe('Sage Seed');
+    expect(sageButton.getAttribute('aria-pressed')).toBe('true');
+    expect(placeButton.disabled).toBe(false);
+
+    sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(selectedValue.textContent).toBe('none');
+    expect(sageButton.getAttribute('aria-pressed')).toBe('false');
+    expect(placeButton.disabled).toBe(true);
 
     manager.unmount();
   });
@@ -331,7 +365,7 @@ describe('ShopShelfManager', () => {
 
     const rows = [...stage.querySelectorAll('.shop-page__player-slot-row')];
     expect(rows.map((row) => row.textContent)).toEqual([
-      '1.empty',
+      '1.select',
       '2.empty standlevel 3',
       '3.empty standlocked',
       '4.empty standlocked',
@@ -368,12 +402,12 @@ describe('ShopShelfManager', () => {
             {
               slotNumber: 1,
               unlocked: true,
-              sellItemTypeId: 1,
+              sellItemTypeId: null,
               sellKind: 'seed',
               sellKey: 'sageSeed',
               sellLabel: 'Sage Seed',
               sellQuantity: 1,
-              sellGold: 8,
+              sellGold: null,
               sellNeed: 919,
             },
           ],
@@ -404,6 +438,67 @@ describe('ShopShelfManager', () => {
     expect(itemButton?.textContent).not.toContain('919');
     expect(manager.canSelectSellItem(gameplaySnapshot, gameplaySnapshot.shop.shelf.sellItems[0]))
       .toBe(true);
+
+    manager.unmount();
+  });
+
+  it('shows offline in selected NPC market stand value when price is missing', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockRecipe:manaTonic'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'potion', label: 'potions' }],
+          sellItems: [
+            {
+              itemTypeId: 2001,
+              key: 'manaTonic',
+              label: 'Mana Tonic',
+              kind: 'potion',
+              quantity: 0,
+              sellGold: null,
+              sellNeed: null,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 2001,
+              sellKind: 'potion',
+              sellKey: 'manaTonic',
+              sellLabel: 'Mana Tonic',
+              sellQuantity: 0,
+              sellGold: null,
+              sellNeed: null,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const standValue = stage.querySelector('.shop-page__slot-row .row_val');
+    const priceValue = stage.querySelector('.shop-page__slot-price-value');
+
+    expect(standValue?.textContent).toBe('Mana Tonic (0) offline');
+    expect(priceValue?.getAttribute('data-resource-color')).toBeNull();
 
     manager.unmount();
   });

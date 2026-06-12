@@ -12,6 +12,7 @@ import {
 } from '../../shared/resourceColor.js';
 
 const EMPTY_LOCKED_REQUEST_LABEL = 'empty request';
+const EMPTY_REQUEST_ACTION_LABEL = 'request item';
 
 export class ShopPlayerRequestManager {
   constructor({ gameplayFacade } = {}) {
@@ -358,7 +359,8 @@ export class ShopPlayerRequestManager {
       return;
     }
 
-    this.selectedRequestItemTypeId = item.itemTypeId;
+    this.selectedRequestItemTypeId =
+      this.selectedRequestItemTypeId === item.itemTypeId ? null : item.itemTypeId;
     this.selectedRequestTab = item.kind;
     this.setStatus('');
     this.render();
@@ -484,7 +486,7 @@ export class ShopPlayerRequestManager {
 
   renderRequestSlotValue(refs, request) {
     if (!request) {
-      refs.value.textContent = 'empty';
+      refs.value.textContent = EMPTY_REQUEST_ACTION_LABEL;
       setResourceColorFromText(refs.value, refs.value.textContent);
       return;
     }

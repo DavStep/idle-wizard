@@ -43,6 +43,8 @@
   --style-progress-height: 3px;
   --style-progress-timer-height: var(--style-progress-height);
   --style-row-min-height: 20px;
+  --style-row-column-gap: 6px;
+  --style-row-right-slot-width: 100px;
   --style-world-chat-row-height: 16px;
   --style-world-chat-row-gap: 4px;
   --style-world-chat-preview-lines: 2;
@@ -148,15 +150,15 @@
   --style-bg: #1c1e26;
   --style-surface: #1c1e26;
   --style-text: #d4d4d4;
-  --style-stroke: #232530;
+  --style-stroke: #3a3d4d;
   --style-muted: #a6a6a6;
   --style-disabled: #6a6a6a;
   --style-active-surface: #232530;
   --style-backdrop-rgb: 28 30 38;
   --style-log-fade-rgb: 28 30 38;
-  --style-block-shadow: 5px 5px 5px #9e9e9e;
-  --style-overlay-shadow: 5px 5px 5px #c6c6c6;
-  --style-tooltip-shadow: -1px 3px 2px #c6c6c6;
+  --style-block-shadow: 5px 5px 5px #0f1118;
+  --style-overlay-shadow: 5px 5px 5px #0f1118;
+  --style-tooltip-shadow: -1px 3px 2px #0f1118;
   color-scheme: dark;
 }
 
@@ -799,9 +801,9 @@ body {
 
 .shop-page__slot-row {
   display: grid;
-  grid-template-columns: 2ch minmax(0, 1fr) minmax(100px, max-content);
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
   align-items: center;
-  column-gap: 6px;
+  column-gap: var(--style-row-column-gap);
   min-height: var(--style-row-min-height);
   clear: both;
 }
@@ -821,7 +823,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   align-items: baseline;
-  column-gap: 6px;
+  column-gap: var(--style-row-column-gap);
   min-width: 0;
   text-align: left;
 }
@@ -3285,6 +3287,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-rows {
+  padding-top: 4px;
   max-height: 112px;
   overflow: hidden auto;
   scrollbar-width: none;
@@ -3295,14 +3298,33 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-row {
-  padding: 1px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
+  align-items: center;
+  column-gap: var(--style-row-column-gap);
+  min-height: var(--style-row-min-height);
+  padding: 0;
 }
 
 .shop-page__stock-row .row_key {
-  max-width: 150px;
+  float: none;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.shop-page__stock-row .row_val {
+  float: none;
+  justify-self: end;
+  min-width: var(--style-row-right-slot-width);
+  text-align: right;
+}
+
+.shop-page__shelf > .shop-page__slot-row:first-of-type,
+.shop-page__player-shelf > .shop-page__slot-row:first-of-type,
+.shop-page__player-request > .shop-page__slot-row:first-of-type {
+  margin-top: 4px;
 }
 
 .shop-page__stock-status {
@@ -4090,6 +4112,29 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.room-top-panel__font-button[data-font="source-serif"] {
+  font-family:
+    "Source Serif 4", Charter, "Iowan Old Style", "Noto Serif", Georgia, serif;
+}
+
+.room-top-panel__font-button[data-font="inter"] {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.room-top-panel__font-button[data-font="comic-sans-mono"] {
+  font-family:
+    "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS", "Comic Sans",
+    ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.room-top-panel__font-button[data-font="lexend"] {
+  font-family:
+    Lexend, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
 .room-top-panel__visual-option-price {
   min-width: 0;
   font-variant-numeric: tabular-nums lining-nums;
@@ -4378,9 +4423,11 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__stock-buy-button {
-  width: 112px;
-  padding: 1px 5px;
+  width: auto;
+  min-width: var(--style-row-right-slot-width);
+  padding: 0;
   margin: 0;
+  line-height: normal;
   text-align: right;
   background: transparent;
   border-color: transparent;

@@ -297,7 +297,7 @@ export class ShopShelfManager {
 
       row.classList.toggle('is-selected', slotNumber === shelf.selectedSlotNumber);
       row.classList.toggle('is-locked', !slot.unlocked);
-      row.classList.toggle('is-empty', slot.unlocked && !slot.sellItemTypeId);
+      row.classList.toggle('is-empty', slot.unlocked && this.isSlotEmpty(slot));
 
       if (slot.unlocked) {
         row.classList.add('shop-page__slot-row--interactive');
@@ -370,7 +370,7 @@ export class ShopShelfManager {
     this.applySlotItemColor(refs.itemValue, parts);
 
     refs.priceValue.textContent = parts.priceText ? ` ${parts.priceText}` : '';
-    setResourceColor(refs.priceValue, parts.priceText ? 'gold' : null);
+    setResourceColor(refs.priceValue, parts.priceResource ?? null);
   }
 
   formatLockedSlotAction(shelf, cost) {
@@ -410,7 +410,7 @@ export class ShopShelfManager {
 
     this.refs.sellControls.emptyButton.setAttribute(
       'aria-pressed',
-      selectedSlot.sellItemTypeId ? 'false' : 'true',
+      this.isSlotEmpty(selectedSlot) ? 'true' : 'false',
     );
 
     const visibleItemTypeIds = new Set(shelf.sellItems.map((item) => item.itemTypeId));
@@ -514,7 +514,7 @@ export class ShopShelfManager {
       return { itemText: '', itemKind: null, priceText: '' };
     }
 
-    const sellItem = this.getSellItem(shelf, slot.sellItemTypeId);
+    const sellItem = this.getSellItem(shelf, slot);
     const quantity = Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
     const sellGold = slot.sellGold ?? sellItem?.sellGold;
     const displayItem = sellItem ?? {
@@ -529,13 +529,14 @@ export class ShopShelfManager {
     const itemText = `${display.label} (${display.quantity})`;
 
     if (!Number.isFinite(sellGold)) {
-      return { itemText, itemKind: displayItem.kind, priceText: '' };
+      return { itemText, itemKind: displayItem.kind, priceText: 'offline', priceResource: null };
     }
 
     return {
       itemText,
       itemKind: displayItem.kind,
       priceText: this.formatSellGold(sellGold),
+      priceResource: 'gold',
     };
   }
 
@@ -548,8 +549,24 @@ export class ShopShelfManager {
     setResourceColorFromText(element, parts.itemText);
   }
 
-  getSellItem(shelf, itemTypeId) {
-    return shelf.sellItems.find((item) => item.itemTypeId === itemTypeId) ?? null;
+  isSlotEmpty(slot) {
+    return !slot.sellItemTypeId && !slot.sellKey && !slot.sellLabel;
+  }
+
+  getSellItem(shelf, slotOrItemTypeId) {
+    const itemTypeId =
+      typeof slotOrItemTypeId === 'object'
+        ? slotOrItemTypeId?.sellItemTypeId
+        : slotOrItemTypeId;
+    const itemKey = typeof slotOrItemTypeId === 'object' ? slotOrItemTypeId?.sellKey : null;
+
+    return (
+      shelf.sellItems.find(
+        (item) =>
+          (itemTypeId && item.itemTypeId === itemTypeId) ||
+          (itemKey && item.key === itemKey),
+      ) ?? null
+    );
   }
 
   formatSellGold(sellGold) {

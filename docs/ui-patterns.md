@@ -14,7 +14,8 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Numbered game rows use a narrow left number cell, written as `1.`, `2.`, etc.
 - Main item/content text sits in the middle.
 - Price, status, timer, or action sits right-aligned in one fixed right slot.
-- Never leave the middle content blank. Empty/locked slot rows still name the thing, such as `empty stand` or `empty request`; the right slot only carries requirement/action/state.
+- Never leave the middle content blank. Unlocked empty slot rows should invite the next action, such as `select` or `request item`; locked empty rows still name the thing, such as `empty stand` or `empty request`, with the right slot carrying requirement/state.
+- Item market rows without numbers use the same compact middle/right rhythm as numbered rows; do not give stock/picker rows looser vertical padding.
 - Do not write row type words such as `stand 1` when the surrounding box already gives the type.
 - Market stand rows, player request rows, and garden plot rows should follow this same left-number, middle-content, right-action rhythm.
 

@@ -3042,11 +3042,16 @@ describe('PagesFacade', () => {
     const midnightResearchButton = midnightButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
+    const midnightPointerDown = new window.Event('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+    });
 
     midnightResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    midnightButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    midnightButton.dispatchEvent(midnightPointerDown);
 
     expect(playerFacade.getSnapshot().theme).toBe('midnight');
+    expect(midnightPointerDown.defaultPrevented).toBe(true);
     expect(midnightButton.getAttribute('aria-checked')).toBe('true');
     expect(blackButton.getAttribute('aria-checked')).toBe('false');
   });
@@ -5948,7 +5953,7 @@ describe('PagesFacade', () => {
         ?.hasAttribute('hidden'),
     ).toBe(false);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.empty',
+      '1.request item',
     );
 
     stage
@@ -6008,7 +6013,7 @@ describe('PagesFacade', () => {
     expect(quantityInput.value).toBe('2');
     expect(valueInput.value).toBe('4');
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      '1.empty',
+      '1.select',
     );
     expect(listingPopup.hidden).toBe(false);
 
