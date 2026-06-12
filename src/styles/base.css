@@ -22,7 +22,12 @@
   --style-log-fade-rgb: 229 229 229;
   --style-scroll-fade-rgb: var(--style-log-fade-rgb);
   --style-scroll-fade-opacity: 72%;
-  --style-scroll-cue-height: 32px;
+  --style-scroll-cue-height: 64px;
+  --style-scroll-progress-gap: 6px;
+  --style-scroll-progress-height: calc(var(--style-progress-height) + 2px);
+  --style-scroll-progress-block-size: calc(
+    var(--style-scroll-progress-gap) + var(--style-scroll-progress-height)
+  );
   --style-border: 1px solid var(--style-stroke);
   --style-tab-border: var(--style-border-strong);
   --style-border-strong: 2px solid var(--style-stroke);
@@ -1813,7 +1818,7 @@ body {
 }
 
 .workshop-page__leaderboard-rows {
-  height: 240px;
+  height: calc(240px - var(--style-scroll-progress-block-size));
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -1825,7 +1830,9 @@ body {
 
 .workshop-page__discoveries-rows {
   padding-top: 19px;
-  height: var(--style-tabbed-dialog-content-height);
+  height: calc(
+    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+  );
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -1917,7 +1924,7 @@ div.workshop-page__discovery-row {
   min-height: calc(
     (var(--style-world-chat-row-height) * 2) + var(--style-world-chat-row-gap)
   );
-  height: 260px;
+  height: calc(260px - var(--style-scroll-progress-block-size));
   margin-bottom: 5px;
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -2083,7 +2090,7 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__trade-alliance-content {
-  height: 292px;
+  height: calc(292px - var(--style-scroll-progress-block-size));
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -3442,7 +3449,9 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__trade-history-rows {
-  height: var(--style-tabbed-dialog-content-height);
+  height: calc(
+    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+  );
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -3453,7 +3462,9 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__demand-rows {
-  height: var(--style-tabbed-dialog-content-height);
+  height: calc(
+    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+  );
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -3502,8 +3513,8 @@ div.workshop-page__discovery-row {
 
 .shop-page__stock-rows {
   box-sizing: border-box;
-  padding: 4px 0 12px;
-  max-height: calc(var(--style-row-min-height) * 6 + 16px);
+  padding-top: 4px;
+  max-height: calc(var(--style-row-min-height) * 6);
   overflow: hidden auto;
   scrollbar-width: none;
 }
@@ -3709,7 +3720,9 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__sell-item-list {
-  height: var(--style-tabbed-dialog-content-height);
+  height: calc(
+    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+  );
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -3720,11 +3733,11 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__player-listing-controls .shop-page__sell-item-list {
-  height: 180px;
+  height: calc(180px - var(--style-scroll-progress-block-size));
 }
 
 .shop-page__request-item-list {
-  height: 170px;
+  height: calc(170px - var(--style-scroll-progress-block-size));
 }
 
 .style-panel,
@@ -4091,7 +4104,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__level-content {
-  height: 252px;
+  height: calc(252px - var(--style-scroll-progress-block-size));
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -4184,7 +4197,9 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__settings:not(.is-username-prompt) .room-top-panel__settings-pane {
-  height: var(--style-tabbed-dialog-content-height);
+  height: calc(
+    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+  );
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -4204,12 +4219,17 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__username-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px;
+  gap: 4px 8px;
+  align-items: start;
   margin: 0;
 }
 
 .room-top-panel__username-error {
+  grid-column: 1 / -1;
   min-height: var(--style-row-min-height);
-  margin: -5px 0 10px;
+  margin: 0;
   color: var(--style-disabled);
 }
 
@@ -4218,7 +4238,9 @@ div.workshop-page__discovery-row {
 }
 
 .style-input.room-top-panel__username-input {
-  width: 218px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
 }
 
 .style-input.room-top-panel__feedback-input {
@@ -4263,7 +4285,16 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__username-actions {
   display: flex;
-  gap: 10px;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.style-button.room-top-panel__username-save {
+  box-sizing: border-box;
+  width: 58px;
+  min-height: var(--style-row-min-height);
+  padding: 5px 4px;
+  margin: 0;
 }
 
 .room-top-panel__settings-tabs {
@@ -4725,6 +4756,20 @@ div.workshop-page__discovery-row {
   background: var(--style-surface);
 }
 
+.style-button.shop-page__sell-tab-button,
+.style-button.shop-page__request-tab-button,
+.style-button.shop-page__trade-history-tab-button,
+.style-button.shop-page__demand-tab-button,
+.style-button.room-top-panel__settings-tab-button,
+.style-button.room-top-panel__level-pager-button {
+  min-height: calc(var(--style-row-min-height) * 2);
+  padding: 1px 4px;
+  line-height: normal;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 .style-button.workshop-page__leaderboard-tab-button,
 .style-button.workshop-page__discoveries-tab-button,
 .style-button.workshop-page__trade-alliance-tab-button,
@@ -4738,14 +4783,6 @@ div.workshop-page__discovery-row {
   line-height: normal;
   white-space: normal;
   border: var(--style-tab-border);
-}
-
-.style-button.workshop-page__leaderboard-tab-button {
-  min-height: var(--style-box-border-label-line-height);
-  padding: 0 6px;
-  font-size: var(--style-box-border-label-font-size);
-  line-height: var(--style-box-border-label-line-height);
-  white-space: nowrap;
 }
 
 .shop-page__sell-item-button {
@@ -4860,30 +4897,27 @@ div.workshop-page__discovery-row {
   margin-top: calc(-1 * var(--style-scroll-cue-height));
   pointer-events: none;
   content: "";
-  background:
-    linear-gradient(var(--style-text), var(--style-text)) left bottom /
-      var(--style-scroll-progress) var(--style-progress-height) no-repeat,
-    linear-gradient(var(--style-disabled), var(--style-disabled)) left bottom / 100% 1px
-      no-repeat;
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--style-scroll-fade-rgb) / 0%),
+    rgb(var(--style-scroll-fade-rgb) / var(--style-scroll-fade-opacity))
+  );
   opacity: 0;
   transition: opacity var(--style-motion-fast) var(--style-motion-ease);
 }
 
-.style-scroll-cue.has-scroll-overflow::after {
+.style-scroll-cue.has-bottom-overflow::after {
   opacity: 1;
 }
 
-.style-scroll-cue.has-scroll-overflow.has-bottom-overflow::after {
-  background:
-    linear-gradient(var(--style-text), var(--style-text)) left bottom /
-      var(--style-scroll-progress) var(--style-progress-height) no-repeat,
-    linear-gradient(var(--style-disabled), var(--style-disabled)) left bottom / 100% 1px
-      no-repeat,
-    linear-gradient(
-      to bottom,
-      rgb(var(--style-scroll-fade-rgb) / 0%),
-      rgb(var(--style-scroll-fade-rgb) / var(--style-scroll-fade-opacity))
-    );
+.style-scroll-cue-progress {
+  box-sizing: border-box;
+  height: var(--style-scroll-progress-height);
+  margin-top: var(--style-scroll-progress-gap);
+}
+
+.style-scroll-cue-progress[hidden] {
+  display: none;
 }
 
 .style-progress__fill {

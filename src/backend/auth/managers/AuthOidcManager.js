@@ -61,8 +61,17 @@ export class AuthOidcManager {
       return { ok: false, reason: 'disabled' };
     }
 
-    await this.getUserManager().signinRedirect();
-    return { ok: true };
+    this.error = null;
+    this.publish();
+
+    try {
+      await this.getUserManager().signinRedirect();
+      return { ok: true };
+    } catch (error) {
+      this.error = error?.message ?? String(error);
+      this.publish();
+      return { ok: false, reason: 'redirect_failed' };
+    }
   }
 
   async signOut() {
@@ -122,6 +131,7 @@ export class AuthOidcManager {
       this.cleanCallbackUrl();
     } catch (error) {
       this.error = error?.message ?? String(error);
+      this.cleanCallbackUrl();
     }
   }
 
@@ -153,6 +163,10 @@ export class AuthOidcManager {
       scope: DEFAULT_SCOPE,
       automaticSilentRenew: true,
       redirectMethod: 'replace',
+      stateStore: new WebStorageStateStore({
+        prefix: 'idle-wizard.oidc.state.',
+        store: this.storage,
+      }),
       userStore: new WebStorageStateStore({
         prefix: 'idle-wizard.oidc.',
         store: this.storage,

@@ -28,6 +28,7 @@ export function updateScrollCueState({
   scrollElement,
   cueElement = scrollElement,
   progressFill = null,
+  progressElement = null,
   inlineCue = true,
 } = {}) {
   if (!scrollElement || !cueElement) {
@@ -54,6 +55,10 @@ export function updateScrollCueState({
     progressFill.style.width = percentText;
   }
 
+  if (progressElement) {
+    progressElement.hidden = !hasScrollOverflow;
+  }
+
   cueElement.classList.toggle('has-bottom-overflow', hasBottomOverflow);
 
   return {
@@ -67,12 +72,15 @@ export function updateScrollCueState({
 class ManagedScrollCue {
   constructor(element) {
     this.element = element;
+    this.progress = null;
+    this.progressFill = null;
     this.frame = 0;
     this.handleScroll = () => this.scheduleUpdate();
   }
 
   mount() {
     this.element.classList.add('style-scroll-cue');
+    this.createProgress();
     this.element.addEventListener('scroll', this.handleScroll, { passive: true });
     this.scheduleUpdate();
   }
@@ -86,6 +94,29 @@ class ManagedScrollCue {
       'has-bottom-overflow',
     );
     this.element.style.removeProperty(SCROLL_PROGRESS_PROPERTY);
+    this.progress?.remove();
+    this.progress = null;
+    this.progressFill = null;
+  }
+
+  createProgress() {
+    if (this.progress || !this.element.parentNode) {
+      return;
+    }
+
+    const document = this.element.ownerDocument;
+    const progress = document.createElement('div');
+    progress.className = 'style-progress style-scroll-cue-progress';
+    progress.setAttribute('aria-hidden', 'true');
+    progress.hidden = true;
+
+    const fill = document.createElement('div');
+    fill.className = 'style-progress__fill style-scroll-cue-progress-fill';
+    progress.append(fill);
+
+    this.element.after(progress);
+    this.progress = progress;
+    this.progressFill = fill;
   }
 
   scheduleUpdate() {
@@ -115,7 +146,13 @@ class ManagedScrollCue {
   }
 
   update() {
-    updateScrollCueState({ scrollElement: this.element });
+    updateScrollCueState({
+      scrollElement: this.element,
+      cueElement: this.element,
+      progressFill: this.progressFill,
+      progressElement: this.progress,
+      inlineCue: false,
+    });
   }
 }
 

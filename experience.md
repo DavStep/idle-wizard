@@ -7,6 +7,7 @@
 - The user wants only what was asked for; avoid adding gameplay, visuals, or extra systems early.
 - Before any change that can cause player data loss or needs migration, warn the user first; even after approval, ask one more explicit confirmation before making the change.
 - Persistent save/schema/config shape changes need explicit migration code or scripts before deploy; never rely on wiping rows, startup defaults, or page reloads to move users forward.
+- Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 
 ## Product Shape
 
@@ -224,6 +225,7 @@
 - Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
 - Numbered slot rows must never leave the middle content blank; unlocked empty rows should say the next action (`select`, `request item`), while locked empty rows keep labels like `empty stand` or `empty request` with state in the right slot.
 - Scrollable room and dialog lists should use the shared scroll cue: transparent bottom fade plus scroll progress, matching the logs popup math.
+- Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
 - Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
@@ -285,6 +287,7 @@
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.
 - Optional Google login is controlled by `VITE_SPACETIME_AUTH_CLIENT_ID`; GitHub Pages reads it from the `SPACETIME_AUTH_CLIENT_ID` Actions variable.
+- OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 
 ## Backend And Android
@@ -308,6 +311,7 @@
 - Trade alliance member `dailyContribution` is a legacy column name; it now stores current weekly contribution and resets with weekly quest progress.
 - Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
 - Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
+- Trade alliance quest rewards must be capped per player/quest/week across all alliances; reward keys or guards that include alliance id allow clan hopping to claim again.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.

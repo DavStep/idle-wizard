@@ -38,5 +38,5 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Dialog titles are embedded border titles.
 - Close controls sit as normal-weight border labels, not boxed inner buttons.
 - Tabbed popups put tabs below and outside the bordered dialog, with the same stroke as the popup.
-- Tabbed dialogs keep a fixed bordered panel height; overflowing tab content scrolls inside that panel with the shared scroll cue so tabs do not move.
+- Tabbed dialogs keep a fixed bordered panel height; overflowing tab content scrolls inside that panel and uses a logs-style progress rail below the scroll frame, not inside the rows.
 - Popup rows should keep stable DOM nodes during snapshot updates so mobile taps do not miss after touchend.

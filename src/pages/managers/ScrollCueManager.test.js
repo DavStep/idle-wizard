@@ -16,7 +16,7 @@ describe('ScrollCueManager', () => {
     vi.unstubAllGlobals();
   });
 
-  it('adds progress and bottom overflow state to registered scroll containers', async () => {
+  it('adds logs-style progress below registered scroll containers', async () => {
     const root = document.createElement('div');
     const rows = document.createElement('div');
     rows.className = 'shop-page__stock-rows';
@@ -32,21 +32,54 @@ describe('ScrollCueManager', () => {
     await flushAnimationFrame();
 
     expect(rows.classList.contains('style-scroll-cue')).toBe(true);
-    expect(rows.classList.contains('has-scroll-overflow')).toBe(true);
     expect(rows.classList.contains('has-bottom-overflow')).toBe(true);
-    expect(rows.style.getPropertyValue('--style-scroll-progress')).toBe('50%');
+    expect(rows.style.getPropertyValue('--style-scroll-progress')).toBe('');
+
+    const progress = rows.nextElementSibling;
+
+    expect(progress?.classList.contains('style-progress')).toBe(true);
+    expect(progress?.classList.contains('style-scroll-cue-progress')).toBe(true);
+    expect(progress?.hidden).toBe(false);
+    expect(progress?.querySelector('.style-scroll-cue-progress-fill')?.style.width).toBe(
+      '50%',
+    );
 
     rows.scrollTop = 200;
     rows.dispatchEvent(new window.Event('scroll'));
     await flushAnimationFrame();
 
-    expect(rows.style.getPropertyValue('--style-scroll-progress')).toBe('100%');
+    expect(progress?.querySelector('.style-scroll-cue-progress-fill')?.style.width).toBe(
+      '100%',
+    );
     expect(rows.classList.contains('has-bottom-overflow')).toBe(false);
 
     manager.unmount();
 
     expect(rows.classList.contains('style-scroll-cue')).toBe(false);
     expect(rows.style.getPropertyValue('--style-scroll-progress')).toBe('');
+    expect(root.querySelector('.style-scroll-cue-progress')).toBeNull();
+  });
+
+  it('hides managed progress when a scroll container has no overflow', async () => {
+    const root = document.createElement('div');
+    const rows = document.createElement('div');
+    rows.className = 'shop-page__stock-rows';
+    root.append(rows);
+    document.body.append(root);
+
+    Object.defineProperty(rows, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(rows, 'scrollHeight', { value: 100, configurable: true });
+
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    await flushAnimationFrame();
+
+    expect(rows.nextElementSibling?.classList.contains('style-scroll-cue-progress')).toBe(
+      true,
+    );
+    expect(rows.nextElementSibling?.hidden).toBe(true);
+
+    manager.unmount();
   });
 
   it('shares progress math with framed scroll views', () => {

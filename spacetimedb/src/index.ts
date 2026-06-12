@@ -85,6 +85,7 @@ const PERIOD_DAY_MICROS = 86_400_000_000n;
 const PERIOD_WEEK_DAYS = 7n;
 const PERIOD_MONTH_DAYS = 30n;
 const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UTC, Armenia 04:00.
+const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const PLAYER_THEMES = new Set(['white', 'black', 'midnight']);
 const PLAYER_THEME_ALIASES = new Map([
@@ -1799,13 +1800,22 @@ function getTradeAllianceContributionKey(
   return `${getTradeAllianceQuestKey(allianceId, dayKey, questId)}:${getIdentityHex(identity)}`;
 }
 
-function getTradeAllianceRewardKey(
-  allianceId: unknown,
+function getTradeAllianceRewardKey(dayKey: string, questId: string, identity: Identity): string {
+  return `${dayKey}:${questId}:${getIdentityHex(identity)}`;
+}
+
+function hasTradeAllianceRewardClaimForPeriod(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
   dayKey: string,
   questId: string,
-  identity: Identity,
-): string {
-  return `${getTradeAllianceQuestKey(allianceId, dayKey, questId)}:${getIdentityHex(identity)}`;
+): boolean {
+  return Array.from(ctx.db.tradeAllianceRewardInbox.iter()).some(
+    (reward) =>
+      reward.recipientIdentity.isEqual(identity) &&
+      reward.dayKey === dayKey &&
+      reward.questId === questId,
+  );
 }
 
 function normalizeResearchName(researchName: string): string {
@@ -6600,13 +6610,11 @@ export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
       throw new Error('Alliance quest needs more contribution.');
     }
 
-    const rewardKey = getTradeAllianceRewardKey(
-      alliance.allianceId,
-      dayKey,
-      safeQuestId,
-      ctx.sender,
-    );
-    if (ctx.db.tradeAllianceRewardInbox.rewardKey.find(rewardKey)) {
+    const rewardKey = getTradeAllianceRewardKey(dayKey, safeQuestId, ctx.sender);
+    if (
+      ctx.db.tradeAllianceRewardInbox.rewardKey.find(rewardKey) ||
+      hasTradeAllianceRewardClaimForPeriod(ctx, ctx.sender, dayKey, safeQuestId)
+    ) {
       return;
     }
 

@@ -80,6 +80,7 @@ import UpsertResearchConfigReducer from "./upsert_research_config_reducer";
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import AdminPlayerFeedbackRow from "./admin_player_feedback_table";
 import AdminPlayerGameplaySaveRow from "./admin_player_gameplay_save_table";
 import GameConfigRow from "./game_config_table";
 import LeaderboardRow from "./leaderboard_table";
@@ -383,6 +384,13 @@ const tablesSchema = __schema({
       { name: 'world_chat_message_id_key', constraint: 'unique', columns: ['messageId'] },
     ],
   }, WorldChatRow),
+  admin_player_feedback: __table({
+    name: 'admin_player_feedback',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, AdminPlayerFeedbackRow),
   admin_player_gameplay_save: __table({
     name: 'admin_player_gameplay_save',
     indexes: [
