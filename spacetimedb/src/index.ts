@@ -3893,6 +3893,102 @@ function readSavedResearchCount(saveJson?: string): number | null {
   }
 }
 
+function saveJsonHasReplayProgress(saveJson: string): boolean {
+  const currentLevel = readSavedCurrentLevel(saveJson);
+  if (currentLevel !== null && currentLevel > DEFAULT_PLAYER_LEVEL) {
+    return true;
+  }
+
+  const totalGeneratedGold = readSavedTotalGeneratedGold(saveJson);
+  if (totalGeneratedGold !== null && totalGeneratedGold > 0n) {
+    return true;
+  }
+
+  const researchCount = readSavedResearchCount(saveJson);
+  if (researchCount !== null && researchCount > 0) {
+    return true;
+  }
+
+  try {
+    const save: unknown = JSON.parse(saveJson);
+    if (!isRecord(save)) {
+      return false;
+    }
+
+    const inventory = Array.isArray(save.inventory) ? save.inventory : [];
+    if (
+      inventory.some((stack) => {
+        if (!isRecord(stack)) {
+          return false;
+        }
+
+        const quantity = Math.floor(Number(stack.quantity));
+        return Number.isFinite(quantity) && quantity > 0;
+      })
+    ) {
+      return true;
+    }
+
+    const crystal = isRecord(save.crystal) ? save.crystal : {};
+    const currentCrystal = Math.floor(Number(crystal.current));
+    return Number.isFinite(currentCrystal) && currentCrystal > 0;
+  } catch {
+    return false;
+  }
+}
+
+function isPostResetPlayerWithoutAcceptedSave(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof ensurePlayer>,
+): boolean {
+  return (
+    PLAYER_DATA_RESET_GUARD_MICROS > 0n &&
+    player.createdAt.microsSinceUnixEpoch >= PLAYER_DATA_RESET_GUARD_MICROS &&
+    !ctx.db.playerGameplaySave.identity.find(player.identity)
+  );
+}
+
+function shouldIgnorePostResetFirstSave(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof ensurePlayer>,
+  existingSave: PlayerGameplaySaveRowValue | undefined,
+  safeSaveJson: string,
+): boolean {
+  return (
+    !existingSave &&
+    isPostResetPlayerWithoutAcceptedSave(ctx, player) &&
+    saveJsonHasReplayProgress(safeSaveJson)
+  );
+}
+
+function shouldIgnorePostResetReportedLevel(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof ensurePlayer>,
+  playerLevel: number,
+): boolean {
+  return (
+    playerLevel > DEFAULT_PLAYER_LEVEL &&
+    isPostResetPlayerWithoutAcceptedSave(ctx, player)
+  );
+}
+
+function shouldIgnorePostResetReportedGold(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof ensurePlayer>,
+  totalGeneratedGold: bigint | number,
+): boolean {
+  const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
+    toBigInt(totalGeneratedGold),
+    player.playerLevel,
+  );
+
+  return (
+    reportedTotalIncome !== null &&
+    reportedTotalIncome > 0n &&
+    isPostResetPlayerWithoutAcceptedSave(ctx, player)
+  );
+}
+
 function assertClientSaveDoesNotDowngradeProgress(
   existingSave: PlayerGameplaySaveRowValue | undefined,
   safeSaveJson: string,
@@ -5948,6 +6044,10 @@ export const set_player_gameplay_save = spacetimedb.reducer(
       saveJson,
       existingSave?.saveJson,
     );
+    if (shouldIgnorePostResetFirstSave(ctx, player, existingSave, safeSaveJson)) {
+      return;
+    }
+
     assertClientSaveDoesNotDowngradeProgress(existingSave, safeSaveJson);
     const nextSave = {
       identity: ctx.sender,
@@ -5971,6 +6071,11 @@ export const set_player_level = spacetimedb.reducer(
   (ctx, { playerLevel }) => {
     const player = ensurePlayer(ctx);
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
+
+    if (shouldIgnorePostResetReportedLevel(ctx, player, safePlayerLevel)) {
+      return;
+    }
+
     const nextPlayer =
       safePlayerLevel <= player.playerLevel
         ? player
@@ -6000,6 +6105,11 @@ export const announce_level_up = spacetimedb.reducer(
     }
 
     const player = ensurePlayer(ctx);
+
+    if (shouldIgnorePostResetReportedLevel(ctx, player, safePlayerLevel)) {
+      return;
+    }
+
     const alreadyAtLevel = safePlayerLevel <= player.playerLevel;
     const nextPlayer =
       alreadyAtLevel
@@ -6044,6 +6154,11 @@ export const set_total_generated_gold = spacetimedb.reducer(
   { totalGeneratedGold: t.u64() },
   (ctx, { totalGeneratedGold }) => {
     const player = ensurePlayer(ctx);
+
+    if (shouldIgnorePostResetReportedGold(ctx, player, totalGeneratedGold)) {
+      return;
+    }
+
     const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
     const currentTotalIncome = clampLeaderboardTotalIncome(
       entry.totalIncome,
