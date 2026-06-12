@@ -7,9 +7,9 @@ import { GardenPlotManager } from './GardenPlotManager.js';
 function createGameplayFacadeFake() {
   const listeners = new Set();
   const herbsBySeedId = new Map([
-    [1, { itemTypeId: 1001, key: 'sageHerb', label: 'Sage' }],
-    [2, { itemTypeId: 1002, key: 'mintHerb', label: 'Mint' }],
-    [3, { itemTypeId: 1003, key: 'nettleHerb', label: 'Nettle' }],
+    [1, { itemTypeId: 1001, key: 'sageHerb', label: 'sage' }],
+    [2, { itemTypeId: 1002, key: 'mintHerb', label: 'mint' }],
+    [3, { itemTypeId: 1003, key: 'nettleHerb', label: 'nettle' }],
   ]);
   const snapshot = {
     gold: {
@@ -49,21 +49,21 @@ function createGameplayFacadeFake() {
         {
           itemTypeId: 2,
           key: 'mintSeed',
-          label: 'Mint Seed',
+          label: 'mint seed',
           kind: 'seed',
           quantity: 1,
         },
         {
           itemTypeId: 3,
           key: 'nettleSeed',
-          label: 'Nettle Seed',
+          label: 'nettle seed',
           kind: 'seed',
           quantity: 6,
         },
         {
           itemTypeId: 1,
           key: 'sageSeed',
-          label: 'Sage Seed',
+          label: 'sage seed',
           kind: 'seed',
           quantity: 0,
         },
@@ -262,7 +262,7 @@ describe('GardenPlotManager', () => {
     expect(actionLabel?.getAttribute('data-resource-color')).toBe('gold');
   });
 
-  it('keeps plant seed buttons stable between renders and plants Mint Seed', () => {
+  it('keeps plant seed buttons stable between renders and plants mint seed', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -274,19 +274,19 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('#garden-seed-dialog-title')?.textContent).toBe('choose seed');
 
-    const mintButton = parent.querySelector('[aria-label="select Mint Seed, owned 1"]');
+    const mintButton = parent.querySelector('[aria-label="select mint seed, owned 1"]');
 
     expect(mintButton).not.toBeNull();
     expect(mintButton.dataset.resourceColor).toBe('seed');
 
     gameplayFacade.publish();
 
-    expect(parent.querySelector('[aria-label="select Mint Seed, owned 1"]')).toBe(mintButton);
+    expect(parent.querySelector('[aria-label="select mint seed, owned 1"]')).toBe(mintButton);
 
     mintButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('Mint Seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint seed');
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
       'seed',
     );
@@ -304,7 +304,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     parent
-      .querySelector('[aria-label="select Mint Seed, owned 1"]')
+      .querySelector('[aria-label="select mint seed, owned 1"]')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -316,7 +316,7 @@ describe('GardenPlotManager', () => {
       'cancel progress?',
     );
     expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
-      'return Mint Seed and empty plot 1.',
+      'return mint seed and empty plot 1.',
     );
 
     cancelPopup
@@ -324,7 +324,7 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(cancelPopup.hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('Mint Seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint seed');
 
     plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(cancelPopup.querySelector('.garden-page__cancel-confirm')?.textContent).toBe('yes');
@@ -337,7 +337,7 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
     expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(true);
     expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
-      label: 'Mint Seed',
+      label: 'mint seed',
       quantity: 1,
     });
   });
@@ -356,21 +356,21 @@ describe('GardenPlotManager', () => {
       {
         itemTypeId: 2,
         key: 'mintSeed',
-        label: 'Mint Seed',
+        label: 'mint seed',
         kind: 'seed',
         quantity: 1,
       },
       {
         itemTypeId: 3,
         key: 'nettleSeed',
-        label: 'Nettle Seed',
+        label: 'nettle seed',
         kind: 'seed',
         quantity: 0,
       },
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 0,
       },
@@ -390,14 +390,14 @@ describe('GardenPlotManager', () => {
 
     expect(buttons.map((button) => button.textContent)).toEqual([
       'empty',
-      'Mint Seed1',
-      'Sage Seed0',
+      'mint seed1',
+      'sage seed0',
     ]);
     expect(divider).toBeNull();
-    expect(findRow('Sage Seed')?.classList.contains('is-empty')).toBe(true);
-    expect(findRow('Sage Seed')?.classList.contains('is-unresearched')).toBe(false);
-    expect(findRow('Nettle Seed')).toBeUndefined();
-    expect(findRow('Sage Seed')?.querySelector('.garden-page__seed-button')?.disabled).toBe(false);
+    expect(findRow('sage seed')?.classList.contains('is-empty')).toBe(true);
+    expect(findRow('sage seed')?.classList.contains('is-unresearched')).toBe(false);
+    expect(findRow('nettle seed')).toBeUndefined();
+    expect(findRow('sage seed')?.querySelector('.garden-page__seed-button')?.disabled).toBe(false);
   });
 
   it('shows the harvest timer next to the harvesting label', () => {
@@ -409,13 +409,13 @@ describe('GardenPlotManager', () => {
     Object.assign(tile, {
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
-      selectedSeedLabel: 'Sage Seed',
+      selectedSeedLabel: 'sage seed',
       seedItemTypeId: 1,
       seedKey: 'sageSeed',
-      seedLabel: 'Sage Seed',
+      seedLabel: 'sage seed',
       herbItemTypeId: 1001,
       herbKey: 'sageHerb',
-      herbLabel: 'Sage',
+      herbLabel: 'sage',
       phase: 'ready',
       totalMs: 0,
       remainingMs: 0,
@@ -444,13 +444,13 @@ describe('GardenPlotManager', () => {
     Object.assign(tile, {
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
-      selectedSeedLabel: 'Sage Seed',
+      selectedSeedLabel: 'sage seed',
       seedItemTypeId: 1,
       seedKey: 'sageSeed',
-      seedLabel: 'Sage Seed',
+      seedLabel: 'sage seed',
       herbItemTypeId: 1001,
       herbKey: 'sageHerb',
-      herbLabel: 'Sage',
+      herbLabel: 'sage',
       phase: 'ready',
       totalMs: 0,
       remainingMs: 0,

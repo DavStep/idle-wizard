@@ -1,6 +1,7 @@
 import { AuthSessionManager } from './managers/AuthSessionManager.js';
 import { AuthOidcManager } from './managers/AuthOidcManager.js';
 import { AuthTokenStorageManager } from './managers/AuthTokenStorageManager.js';
+import { AuthAccountLinkSaveManager } from './managers/AuthAccountLinkSaveManager.js';
 
 export class AuthFacade {
   static explain =
@@ -8,6 +9,7 @@ export class AuthFacade {
 
   constructor() {
     this.tokenStorageManager = new AuthTokenStorageManager();
+    this.accountLinkSaveManager = new AuthAccountLinkSaveManager();
     this.oidcManager = new AuthOidcManager();
     this.sessionManager = new AuthSessionManager({
       tokenStorageManager: this.tokenStorageManager,
@@ -31,11 +33,23 @@ export class AuthFacade {
     return this.sessionManager.subscribe(listener);
   }
 
-  signInWithGoogle() {
+  signInWithGoogle({ pendingGameplaySave } = {}) {
+    if (pendingGameplaySave) {
+      this.accountLinkSaveManager.savePendingSave(pendingGameplaySave);
+    }
+
     return this.sessionManager.signInWithGoogle();
   }
 
   signOut() {
     return this.sessionManager.signOut();
+  }
+
+  getPendingAccountLinkSave() {
+    return this.accountLinkSaveManager.loadPendingSave();
+  }
+
+  clearPendingAccountLinkSave() {
+    this.accountLinkSaveManager.clearPendingSave();
   }
 }

@@ -20,7 +20,7 @@ export class BrewingPageFacade {
     this.recipeBookManager = new BrewingRecipeBookManager({
       gameplayFacade,
       getSelectedRecipeKey: () => this.recipeGuideManager.getSelectedRecipeKey(),
-      onSelectRecipe: (recipe) => this.selectRecipe(recipe?.key),
+      onSelectRecipe: (recipe) => this.selectRecipe(recipe?.key ?? null),
     });
     this.potionInventoryManager = new BrewingPotionInventoryManager({ gameplayFacade });
   }
@@ -44,7 +44,10 @@ export class BrewingPageFacade {
 
   selectRecipe(recipeKey) {
     if (!recipeKey) {
-      return null;
+      this.recipeGuideManager.selectRecipe(null);
+      const result = this.gameplayFacade?.setBrewingAutoBrewRecipe?.(null) ?? null;
+      this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
+      return result;
     }
 
     this.recipeGuideManager.selectRecipe(recipeKey);

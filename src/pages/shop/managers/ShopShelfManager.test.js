@@ -31,28 +31,28 @@ function createRequestGameplayFacadeFake() {
           {
             itemTypeId: 1,
             key: 'sageSeed',
-            label: 'Sage Seed',
+            label: 'sage seed',
             kind: 'seed',
             quantity: 0,
           },
           {
             itemTypeId: 2,
             key: 'mintSeed',
-            label: 'Mint Seed',
+            label: 'mint seed',
             kind: 'seed',
             quantity: 4,
           },
           {
             itemTypeId: 1001,
             key: 'sageHerb',
-            label: 'Sage',
+            label: 'sage',
             kind: 'herb',
             quantity: 2,
           },
           {
             itemTypeId: 2001,
             key: 'manaTonic',
-            label: 'Mana Tonic',
+            label: 'mana tonic',
             kind: 'potion',
             quantity: 0,
           },
@@ -137,7 +137,7 @@ describe('ShopShelfManager', () => {
 
     const popup = popupLayer.querySelector('.shop-page__request-popup');
     const mintButton = [...popup.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Mint Seed (4)',
+      (button) => button.textContent === 'mint seed (4)',
     );
     mintButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -152,12 +152,12 @@ describe('ShopShelfManager', () => {
 
     expect(popup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.Mint Seed (2) 3.25 gold',
+      '2.mint seed (2) 3.25 gold',
     );
 
     requestRows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     [...popup.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Sage Seed (0)')
+      .find((button) => button.textContent === 'sage seed (0)')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     quantityInput.value = '1';
     goldInput.value = '1';
@@ -166,10 +166,10 @@ describe('ShopShelfManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.Sage Seed (1) 1 gold',
+      '1.sage seed (1) 1 gold',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.Mint Seed (2) 3.25 gold',
+      '2.mint seed (2) 3.25 gold',
     );
 
     stage
@@ -184,7 +184,7 @@ describe('ShopShelfManager', () => {
       'request item',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.Mint Seed (2) 3.25 gold',
+      '2.mint seed (2) 3.25 gold',
     );
 
     manager.unmount();
@@ -204,14 +204,14 @@ describe('ShopShelfManager', () => {
 
     const popup = popupLayer.querySelector('.shop-page__request-popup');
     const sageButton = [...popup.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Sage Seed (0)',
+      (button) => button.textContent === 'sage seed (0)',
     );
     const selectedValue = popup.querySelector('.shop-page__request-selected-value');
     const placeButton = popup.querySelector('.shop-page__request-place-button');
 
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(selectedValue.textContent).toBe('Sage Seed');
+    expect(selectedValue.textContent).toBe('sage seed');
     expect(sageButton.getAttribute('aria-pressed')).toBe('true');
     expect(placeButton.disabled).toBe(false);
 
@@ -249,7 +249,7 @@ describe('ShopShelfManager', () => {
       [...popup.querySelectorAll('.shop-page__player-request-item-row')]
         .filter((row) => !row.hidden)
         .map((row) => row.textContent),
-    ).toEqual(['Sage Seed (0)', 'Mint Seed (4)']);
+    ).toEqual(['sage seed (0)', 'mint seed (4)']);
 
     [...tabs.querySelectorAll('.shop-page__request-tab-button')]
       .find((button) => button.textContent === 'herbs')
@@ -259,7 +259,7 @@ describe('ShopShelfManager', () => {
       [...popup.querySelectorAll('.shop-page__player-request-item-row')]
         .filter((row) => !row.hidden)
         .map((row) => row.textContent),
-    ).toEqual(['Sage (2)']);
+    ).toEqual(['sage (2)']);
 
     manager.unmount();
   });
@@ -269,6 +269,14 @@ describe('ShopShelfManager', () => {
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 0)).toBe(
       'buy (free)',
+    );
+  });
+
+  it('formats NPC market stand buy costs as compact gold text', () => {
+    const manager = new ShopShelfManager();
+
+    expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 1000)).toBe(
+      'buy (1k gold)',
     );
   });
 
@@ -312,13 +320,18 @@ describe('ShopShelfManager', () => {
     manager.mount(stage, popupLayer);
 
     const rows = [...stage.querySelectorAll('.shop-page__slot-row')];
-    expect(rows.map((row) => row.textContent)).toEqual([
-      '1.select',
-      '2.empty standlevel 3',
-      '3.empty standlocked',
-      '4.empty standlocked',
-      '5.empty standlocked',
+    expect(rows.map((row) => [
+      row.querySelector('.row_key')?.textContent,
+      row.querySelector('.shop-page__slot-item-value')?.textContent,
+      row.querySelector('.shop-page__slot-price-value')?.textContent,
+    ])).toEqual([
+      ['1.', 'select', ''],
+      ['2.', 'empty stand', 'level 3'],
+      ['3.', 'empty stand', 'locked'],
+      ['4.', 'empty stand', 'locked'],
+      ['5.', 'empty stand', 'locked'],
     ]);
+    expect(rows[0].querySelector('.shop-page__slot-empty-rule')).not.toBeNull();
 
     manager.unmount();
   });
@@ -328,6 +341,14 @@ describe('ShopShelfManager', () => {
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 0)).toBe(
       'buy (free)',
+    );
+  });
+
+  it('formats player market stand buy costs as compact gold text', () => {
+    const manager = new ShopPlayerShelfManager();
+
+    expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 1000)).toBe(
+      'buy (1k gold)',
     );
   });
 
@@ -403,7 +424,7 @@ describe('ShopShelfManager', () => {
             {
               itemTypeId: 1,
               key: 'sageSeed',
-              label: 'Sage Seed',
+              label: 'sage seed',
               kind: 'seed',
               quantity: 1,
               sellGold: 8,
@@ -417,7 +438,7 @@ describe('ShopShelfManager', () => {
               sellItemTypeId: null,
               sellKind: 'seed',
               sellKey: 'sageSeed',
-              sellLabel: 'Sage Seed',
+              sellLabel: 'sage seed',
               sellQuantity: 1,
               sellGold: null,
               sellNeed: 919,
@@ -441,11 +462,11 @@ describe('ShopShelfManager', () => {
 
     const standValue = stage.querySelector('.shop-page__slot-row .row_val');
     const itemButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent.includes('Sage Seed'),
+      (button) => button.textContent.includes('sage seed'),
     );
 
-    expect(standValue?.textContent).toBe('Sage Seed (1) 8 gold');
-    expect(itemButton?.textContent).toBe('Sage Seed (1) 8 gold');
+    expect(standValue?.textContent).toBe('sage seed (1) 8 gold');
+    expect(itemButton?.textContent).toBe('sage seed (1) 8 gold');
     expect(standValue?.textContent).not.toContain('919');
     expect(itemButton?.textContent).not.toContain('919');
     expect(manager.canSelectSellItem(gameplaySnapshot, gameplaySnapshot.shop.shelf.sellItems[0]))
@@ -470,7 +491,7 @@ describe('ShopShelfManager', () => {
             {
               itemTypeId: 2001,
               key: 'manaTonic',
-              label: 'Mana Tonic',
+              label: 'mana tonic',
               kind: 'potion',
               quantity: 0,
               sellGold: null,
@@ -484,7 +505,7 @@ describe('ShopShelfManager', () => {
               sellItemTypeId: 2001,
               sellKind: 'potion',
               sellKey: 'manaTonic',
-              sellLabel: 'Mana Tonic',
+              sellLabel: 'mana tonic',
               sellQuantity: 0,
               sellGold: null,
               sellNeed: null,
@@ -509,7 +530,7 @@ describe('ShopShelfManager', () => {
     const standValue = stage.querySelector('.shop-page__slot-row .row_val');
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
-    expect(standValue?.textContent).toBe('Mana Tonic (0) offline');
+    expect(standValue?.textContent).toBe('mana tonic (0) offline');
     expect(priceValue?.getAttribute('data-resource-color')).toBeNull();
 
     manager.unmount();
@@ -531,7 +552,7 @@ describe('ShopShelfManager', () => {
             {
               itemTypeId: 1,
               key: 'sageSeed',
-              label: 'Sage Seed',
+              label: 'sage seed',
               kind: 'seed',
               quantity: 1,
             },

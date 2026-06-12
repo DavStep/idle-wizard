@@ -16,7 +16,7 @@ export class BackendFacade {
     'Keeps online identity and server access in one place so game rules never talk to the network directly.';
 
   constructor({
-    uri = import.meta.env.VITE_SPACETIME_URI ?? 'ws://localhost:3000',
+    uri = import.meta.env.VITE_SPACETIME_URI ?? 'ws://127.0.0.1:3000',
     databaseName = import.meta.env.VITE_SPACETIME_DATABASE ?? 'idle-wizard',
   } = {}) {
     this.authFacade = new AuthFacade();
@@ -55,6 +55,9 @@ export class BackendFacade {
     this.tradeAllianceFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setRewardProcessingReady(false);
     this.gameplaySaveFacade.setReadyToSend(false);
+    this.gameplaySaveFacade.setSyncUnhealthyHandler(({ reason, error } = {}) => {
+      this.handleGameplaySaveSyncUnhealthy({ reason, error, onOffline });
+    });
     this.playerSyncFacade.setLevelSyncReady(false);
     this.playerSyncFacade.setPlayerFacade(playerFacade);
     this.playerSyncFacade.setGameplayFacade(gameplayFacade);
@@ -62,7 +65,7 @@ export class BackendFacade {
     return this.spacetimeDbFacade.connectGeneratedBindings({
       onConnect: (connection, identity) => {
         let gameplaySaveReady = false;
-        const finishGameplaySaveReady = (result) => {
+        const finishGameplaySaveReady = async (result) => {
           if (gameplaySaveReady) {
             return;
           }
@@ -78,10 +81,18 @@ export class BackendFacade {
           this.gameplaySaveFacade.discardPreHydrationSave();
           this.playerSyncFacade.discardPreHydrationPlayerLevel();
           this.playerSyncFacade.markGameplaySaveHydrated();
-          onGameplaySaveReady?.({
-            save: result?.save ?? null,
-            updatedAtMs: result?.updatedAtMs ?? 0,
-          });
+
+          try {
+            await onGameplaySaveReady?.({
+              save: result?.save ?? null,
+              updatedAtMs: result?.updatedAtMs ?? 0,
+            });
+          } catch (error) {
+            this.disconnectBackendFacades();
+            onOffline?.({ reason: 'gameplay_save_ready_error', error });
+            return;
+          }
+
           this.gameplaySaveFacade.setReadyToSend(true);
           this.playerSyncFacade.setLevelSyncReady(true);
 
@@ -119,10 +130,21 @@ export class BackendFacade {
 
   stop() {
     this.disconnectBackendFacades();
+    this.gameplaySaveFacade.setSyncUnhealthyHandler(null);
     this.leaderboardFacade.setGameplayFacade(null);
     this.tradeAllianceFacade.setGameplayFacade(null);
     this.playerSyncFacade.setGameplayFacade(null);
     this.spacetimeDbFacade.disconnect();
+  }
+
+  handleGameplaySaveSyncUnhealthy({
+    reason = 'gameplay_save_error',
+    error,
+    onOffline,
+  } = {}) {
+    this.disconnectBackendFacades();
+    this.spacetimeDbFacade.disconnect();
+    onOffline?.({ reason, error });
   }
 
   disconnectBackendFacades() {

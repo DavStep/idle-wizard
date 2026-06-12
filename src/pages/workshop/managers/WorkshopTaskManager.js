@@ -160,7 +160,7 @@ export class WorkshopTaskManager {
     }
 
     this.refs.summaryTask.root.hidden = false;
-    this.refs.summary.setAttribute('aria-label', `${task.action} ${task.itemLabel}`);
+    this.refs.summary.setAttribute('aria-label', task.itemLabel);
     this.renderTaskRow(this.refs.summaryTask, task);
   }
 
@@ -258,7 +258,7 @@ export class WorkshopTaskManager {
     row.root.classList.toggle('is-maxed', task.maxed);
     row.button.dataset.taskId = task.taskId;
     row.button.dataset.tutorialId = `task:${task.taskId}`;
-    this.setText(row.label, `${task.action} ${task.itemLabel}`);
+    this.setText(row.label, task.itemLabel);
     this.setText(row.quantity, quantityText);
     this.setText(row.button, buttonText);
     row.button.disabled = disabled;

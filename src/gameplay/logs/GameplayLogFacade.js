@@ -30,8 +30,8 @@ export class GameplayLogFacade {
     return this.formatSeedQuantity(result.seed?.label, result.quantity ?? 1);
   }
 
-  formatSeedQuantity(seedLabel = 'Seed', quantity = 1) {
-    const label = typeof seedLabel === 'string' && seedLabel ? seedLabel : 'Seed';
+  formatSeedQuantity(seedLabel = 'seed', quantity = 1) {
+    const label = typeof seedLabel === 'string' && seedLabel ? seedLabel : 'seed';
     const suffix = quantity > 1 ? ` x${quantity}` : '';
     return `${label}${suffix}`;
   }

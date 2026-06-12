@@ -5,54 +5,54 @@ const POTION_TYPE_ID_START = 2001;
 const SEED_SUMMON_MANA_COST = 10;
 
 const herbCatalog = [
-  { key: 'sage', label: 'Sage', growthDurationMs: 20_000 },
-  { key: 'mint', label: 'Mint', growthDurationMs: 25_000 },
-  { key: 'nettle', label: 'Nettle', growthDurationMs: 30_000 },
-  { key: 'lavender', label: 'Lavender', growthDurationMs: 40_000 },
-  { key: 'briar', label: 'Briar', growthDurationMs: 50_000 },
-  { key: 'glowcap', label: 'Glowcap', growthDurationMs: 60_000 },
-  { key: 'mandrake', label: 'Mandrake', growthDurationMs: 75_000 },
-  { key: 'sunroot', label: 'Sunroot', growthDurationMs: 90_000 },
-  { key: 'moonflower', label: 'Moonflower', growthDurationMs: 105_000 },
-  { key: 'frostmoss', label: 'Frostmoss', growthDurationMs: 120_000 },
-  { key: 'dreambell', label: 'Dreambell', growthDurationMs: 135_000 },
-  { key: 'starAnise', label: 'Star Anise', growthDurationMs: 150_000 },
-  { key: 'bloodrose', label: 'Bloodrose', growthDurationMs: 180_000 },
-  { key: 'dragonpepper', label: 'Dragonpepper', growthDurationMs: 210_000 },
+  { key: 'sage', label: 'sage', growthDurationMs: 20_000 },
+  { key: 'mint', label: 'mint', growthDurationMs: 25_000 },
+  { key: 'nettle', label: 'nettle', growthDurationMs: 30_000 },
+  { key: 'lavender', label: 'lavender', growthDurationMs: 40_000 },
+  { key: 'briar', label: 'briar', growthDurationMs: 50_000 },
+  { key: 'glowcap', label: 'glowcap', growthDurationMs: 60_000 },
+  { key: 'mandrake', label: 'mandrake', growthDurationMs: 75_000 },
+  { key: 'sunroot', label: 'sunroot', growthDurationMs: 90_000 },
+  { key: 'moonflower', label: 'moonflower', growthDurationMs: 105_000 },
+  { key: 'frostmoss', label: 'frostmoss', growthDurationMs: 120_000 },
+  { key: 'dreambell', label: 'dreambell', growthDurationMs: 135_000 },
+  { key: 'starAnise', label: 'star anise', growthDurationMs: 150_000 },
+  { key: 'bloodrose', label: 'bloodrose', growthDurationMs: 180_000 },
+  { key: 'dragonpepper', label: 'dragonpepper', growthDurationMs: 210_000 },
 ];
 
 const knownPotionCatalog = [
-  { key: 'manaTonic', label: 'Mana Tonic' },
-  { key: 'minorHealingPotion', label: 'Minor Healing Potion' },
-  { key: 'nettleVigor', label: 'Nettle Vigor' },
-  { key: 'calmingDraught', label: 'Calming Draught' },
-  { key: 'simpleAntidote', label: 'Simple Antidote' },
-  { key: 'venomDraught', label: 'Venom Draught' },
-  { key: 'briarWard', label: 'Briar Ward' },
-  { key: 'lanternTonic', label: 'Lantern Tonic' },
-  { key: 'healingPotion', label: 'Healing Potion' },
-  { key: 'moonlitFocus', label: 'Moonlit Focus' },
-  { key: 'sunrootStamina', label: 'Sunroot Stamina' },
-  { key: 'frostmossCleanse', label: 'Frostmoss Cleanse' },
-  { key: 'sleepDraught', label: 'Sleep Draught' },
-  { key: 'elixirOfLife', label: 'Elixir of Life' },
-  { key: 'starLuckPhiltre', label: 'Star-Luck Philtre' },
-  { key: 'dragonCourage', label: 'Dragon Courage' },
-  { key: 'deepDreamVision', label: 'Deep Dream Vision' },
-  { key: 'pactWard', label: 'Pact Ward' },
+  { key: 'manaTonic', label: 'mana tonic' },
+  { key: 'minorHealingPotion', label: 'minor healing potion' },
+  { key: 'nettleVigor', label: 'nettle vigor' },
+  { key: 'calmingDraught', label: 'calming draught' },
+  { key: 'simpleAntidote', label: 'simple antidote' },
+  { key: 'venomDraught', label: 'venom draught' },
+  { key: 'briarWard', label: 'briar ward' },
+  { key: 'lanternTonic', label: 'lantern tonic' },
+  { key: 'healingPotion', label: 'healing potion' },
+  { key: 'moonlitFocus', label: 'moonlit focus' },
+  { key: 'sunrootStamina', label: 'sunroot stamina' },
+  { key: 'frostmossCleanse', label: 'frostmoss cleanse' },
+  { key: 'sleepDraught', label: 'sleep draught' },
+  { key: 'elixirOfLife', label: 'elixir of life' },
+  { key: 'starLuckPhiltre', label: 'star-luck philtre' },
+  { key: 'dragonCourage', label: 'dragon courage' },
+  { key: 'deepDreamVision', label: 'deep dream vision' },
+  { key: 'pactWard', label: 'pact ward' },
 ];
 
 const unknownPotionCatalog = [
-  { key: 'ashenMemory', label: 'Ashen Memory' },
-  { key: 'silverleafQuiet', label: 'Silverleaf Quiet' },
-  { key: 'emberSight', label: 'Ember Sight' },
-  { key: 'thornSleep', label: 'Thorn Sleep' },
-  { key: 'glassMoonElixir', label: 'Glass Moon Elixir' },
-  { key: 'rootboundResolve', label: 'Rootbound Resolve' },
-  { key: 'nightOrchardTonic', label: 'Night Orchard Tonic' },
-  { key: 'starlessCourage', label: 'Starless Courage' },
-  { key: 'frostveinDraught', label: 'Frostvein Draught' },
-  { key: 'bloodlightWard', label: 'Bloodlight Ward' },
+  { key: 'ashenMemory', label: 'ashen memory' },
+  { key: 'silverleafQuiet', label: 'silverleaf quiet' },
+  { key: 'emberSight', label: 'ember sight' },
+  { key: 'thornSleep', label: 'thorn sleep' },
+  { key: 'glassMoonElixir', label: 'glass moon elixir' },
+  { key: 'rootboundResolve', label: 'rootbound resolve' },
+  { key: 'nightOrchardTonic', label: 'night orchard tonic' },
+  { key: 'starlessCourage', label: 'starless courage' },
+  { key: 'frostveinDraught', label: 'frostvein draught' },
+  { key: 'bloodlightWard', label: 'bloodlight ward' },
 ].map((potion) => ({
   ...potion,
   discoveryType: 'unknown',
@@ -113,7 +113,7 @@ const potionSellPricesByKey = {
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
-  { key: 'wastedPotion', label: 'Wasted Potion', hasRecipe: false, baseSellPrice: 1 },
+  { key: 'wastedPotion', label: 'wasted potion', hasRecipe: false, baseSellPrice: 1 },
 ];
 
 const herbDefinitions = herbCatalog.map((herb, index) => ({
@@ -142,7 +142,7 @@ const potionDefinitions = potionCatalog.map((potion, index) => ({
 const seedDefinitions = herbCatalog.map((herb, index) => ({
   id: index + 1,
   key: `${herb.key}Seed`,
-  label: `${herb.label} Seed`,
+  label: `${herb.label} seed`,
   kind: itemKinds.seed,
   producesHerbTypeId: HERB_TYPE_ID_START + index,
   dropWeight: 1,
@@ -226,7 +226,7 @@ export class ItemDefinitionManager {
       ...definition,
       id: this.readPositiveInteger(definition.id),
       key: this.readNonEmptyString(definition.key),
-      label: this.readNonEmptyString(definition.label),
+      label: this.readDisplayLabel(definition.label),
       kind: expectedKind,
     }));
   }
@@ -237,6 +237,10 @@ export class ItemDefinitionManager {
     }
 
     return value.trim();
+  }
+
+  readDisplayLabel(value) {
+    return this.readNonEmptyString(value).toLowerCase();
   }
 
   readPositiveInteger(value) {

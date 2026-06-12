@@ -22,7 +22,7 @@ export class WorkshopSeedBlockManager {
 
     this.root = document.createElement('section');
     this.root.className = 'workshop-page__seed-block style-box';
-    this.root.setAttribute('aria-label', 'Seeds');
+    this.root.setAttribute('aria-label', 'seeds');
 
     this.refs.title = this.createTitle();
     this.refs.seedCountButton = this.createSeedCountButton();
@@ -103,14 +103,14 @@ export class WorkshopSeedBlockManager {
 
   getSuccessMessage(result) {
     if (result.quantity <= 1 || !Array.isArray(result.seedCounts)) {
-      return `${result.seed.label} Found`;
+      return `${result.seed.label} found`;
     }
 
     if (result.seedCounts.length === 1) {
-      return `${result.seedCounts[0].seed.label} x${result.quantity} Found`;
+      return `${result.seedCounts[0].seed.label} x${result.quantity} found`;
     }
 
-    return `${result.quantity} seeds Found`;
+    return `${result.quantity} seeds found`;
   }
 
   getFailureMessage(reason) {

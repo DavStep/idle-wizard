@@ -104,6 +104,27 @@ describe('AppDeployRefreshManager', () => {
     manager.unmount();
   });
 
+  it('does not reload when the final save flush fails', async () => {
+    const stage = document.createElement('section');
+    const windowRef = createWindowRef();
+    const manager = new AppDeployRefreshManager({
+      enabled: true,
+      currentVersion: 'old-build',
+      fetchVersion: vi.fn().mockResolvedValueOnce({ version: 'new-build' }),
+      reloadDelayMs: 0,
+      beforeReload: vi.fn(() => false),
+      windowRef,
+    });
+
+    manager.mount(stage);
+    await flushAsyncWork();
+
+    expect(stage.querySelector('.app-deploy-refresh').hidden).toBe(true);
+    expect(windowRef.location.reload).not.toHaveBeenCalled();
+
+    manager.unmount();
+  });
+
   it('fetches the deploy version without cache', async () => {
     const windowRef = createWindowRef();
     windowRef.fetch.mockResolvedValueOnce({

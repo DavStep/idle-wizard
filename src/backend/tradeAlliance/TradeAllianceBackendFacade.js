@@ -5,7 +5,7 @@ import { TradeAllianceSubscriptionManager } from './managers/TradeAllianceSubscr
 
 export class TradeAllianceBackendFacade {
   static explain =
-    'Shares player trade groups, their chat, daily goals, and crystal rewards through the server.';
+    'Shares player trade groups, their chat, weekly goals, and crystal rewards through the server.';
 
   constructor() {
     this.stateObserverManager = new TradeAllianceStateObserverManager();

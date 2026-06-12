@@ -52,7 +52,7 @@ describe('ShopStockManager', () => {
             {
               itemTypeId: 1,
               key: 'sageSeed',
-              label: 'Sage Seed',
+              label: 'sage seed',
               kind: 'seed',
               quantity: 0,
               buyGold: 1.25,
@@ -71,7 +71,7 @@ describe('ShopStockManager', () => {
       'npc stock market',
     );
     expect(stage.querySelector('.shop-page__stock-row')?.textContent).toContain(
-      'Sage Seed (3)',
+      'sage seed (3)',
     );
     expect(stage.querySelector('.shop-page__stock-buy-button')?.textContent).toBe(
       '1.25 gold',
@@ -125,7 +125,7 @@ describe('ShopStockManager', () => {
             {
               itemTypeId: 1,
               key: 'sageSeed',
-              label: 'Sage Seed',
+              label: 'sage seed',
               kind: 'seed',
               quantity: 0,
               buyGold: 1.25,
@@ -160,7 +160,7 @@ describe('ShopStockManager', () => {
             {
               itemTypeId: 2,
               key: 'mintSeed',
-              label: 'Mint Seed',
+              label: 'mint seed',
               kind: 'seed',
               quantity: 0,
               buyGold: 1,
@@ -176,7 +176,7 @@ describe('ShopStockManager', () => {
     manager.mount(stage);
 
     expect(stage.querySelector('.shop-page__stock-row')?.textContent).toContain(
-      'Mint Seed (1)',
+      'mint seed (1)',
     );
     expect(stage.querySelector('.shop-page__stock-row')?.classList.contains('is-locked'))
       .toBe(false);
@@ -198,7 +198,7 @@ describe('ShopStockManager', () => {
             {
               itemTypeId: 1,
               key: 'sageSeed',
-              label: 'Sage Seed',
+              label: 'sage seed',
               kind: 'seed',
               quantity: 0,
               buyGold: 1,
@@ -208,7 +208,7 @@ describe('ShopStockManager', () => {
             {
               itemTypeId: 101,
               key: 'sageHerb',
-              label: 'Sage',
+              label: 'sage',
               kind: 'herb',
               quantity: 0,
               buyGold: 1,
@@ -218,7 +218,7 @@ describe('ShopStockManager', () => {
             {
               itemTypeId: 201,
               key: 'manaTonic',
-              label: 'Mana Tonic',
+              label: 'mana tonic',
               kind: 'potion',
               quantity: 0,
               buyGold: 1,

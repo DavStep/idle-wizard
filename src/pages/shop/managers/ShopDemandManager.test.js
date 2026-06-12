@@ -13,7 +13,7 @@ function createSnapshot() {
           {
             itemTypeId: 1,
             key: 'sageSeed',
-            label: 'Sage Seed',
+            label: 'sage seed',
             kind: 'seed',
             quantity: 1,
             sellNeed: 235,
@@ -21,7 +21,7 @@ function createSnapshot() {
           {
             itemTypeId: 2,
             key: 'mintSeed',
-            label: 'Mint Seed',
+            label: 'mint seed',
             kind: 'seed',
             quantity: 0,
             sellNeed: 623,
@@ -29,7 +29,7 @@ function createSnapshot() {
           {
             itemTypeId: 1001,
             key: 'sageHerb',
-            label: 'Sage',
+            label: 'sage',
             kind: 'herb',
             quantity: 0,
             sellNeed: 412,
@@ -77,8 +77,8 @@ describe('ShopDemandManager', () => {
       row.querySelector('.row_val')?.textContent,
       row.classList.contains('is-locked'),
     ])).toEqual([
-      ['Sage Seed', '235', false],
-      ['Mint Seed', '623', true],
+      ['sage seed', '235', false],
+      ['mint seed', '623', true],
     ]);
     expect(popup.querySelector('.shop-page__demand-divider')).toBeNull();
 
@@ -110,7 +110,7 @@ describe('ShopDemandManager', () => {
     expect(rows.map((row) => [
       row.querySelector('.row_key')?.textContent,
       row.querySelector('.row_val')?.textContent,
-    ])).toEqual([['Sage', '412']]);
+    ])).toEqual([['sage', '412']]);
     expect(herbTab.getAttribute('aria-selected')).toBe('true');
 
     manager.unmount();

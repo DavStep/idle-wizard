@@ -16,6 +16,7 @@ describe('gold price formatting', () => {
     expect(formatGoldPriceText(0)).toBe('0 gold');
     expect(formatGoldPriceText(25)).toBe('25 gold');
     expect(formatGoldPriceText(3.25)).toBe('3.25 gold');
+    expect(formatGoldPriceText(1_000)).toBe('1k gold');
     expect(formatGoldPriceText(123_234)).toBe('123k gold');
   });
 

@@ -36,6 +36,7 @@ export class GameplayMigrationManager {
       'logs',
       'inventory',
       'research',
+      'visualSettings',
       'shop',
       'brewing',
       'garden',

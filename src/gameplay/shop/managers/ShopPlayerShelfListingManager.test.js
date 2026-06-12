@@ -6,7 +6,7 @@ import { ShopSellAvailabilityManager } from './ShopSellAvailabilityManager.js';
 const sageHerb = {
   id: 1001,
   key: 'sageHerb',
-  label: 'Sage',
+  label: 'sage',
   kind: 'herb',
 };
 

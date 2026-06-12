@@ -5,7 +5,7 @@ import { GameplaySaveSendManager } from './GameplaySaveSendManager.js';
 describe('GameplaySaveSendManager', () => {
   it('sends gameplay save JSON through the generated reducer', () => {
     const setPlayerGameplaySave = vi.fn(() => Promise.resolve());
-    const manager = new GameplaySaveSendManager();
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
     manager.connect({
       reducers: {
@@ -22,7 +22,7 @@ describe('GameplaySaveSendManager', () => {
 
   it('queues the latest save until a connection is hydrated', () => {
     const set_player_gameplay_save = vi.fn(() => Promise.resolve());
-    const manager = new GameplaySaveSendManager();
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
     expect(manager.save({ version: 2, gold: { current: 1 } })).toBe(true);
     manager.save({ version: 2, gold: { current: 2 } });
@@ -44,7 +44,7 @@ describe('GameplaySaveSendManager', () => {
 
   it('drops saves made before server hydration when requested', () => {
     const set_player_gameplay_save = vi.fn(() => Promise.resolve());
-    const manager = new GameplaySaveSendManager();
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
     manager.save({ version: 2, gold: { current: 1 } });
     manager.connect({
@@ -63,7 +63,7 @@ describe('GameplaySaveSendManager', () => {
       throw new Error('offline');
     });
     const set_player_gameplay_save = vi.fn(() => Promise.resolve());
-    const manager = new GameplaySaveSendManager();
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
     manager.connect({
       reducers: {
@@ -86,6 +86,86 @@ describe('GameplaySaveSendManager', () => {
     });
   });
 
+  it('keeps an in-flight save across disconnects before the reducer ack', async () => {
+    let resolveFirstSave;
+    const firstSetPlayerGameplaySave = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveFirstSave = resolve;
+        }),
+    );
+    const secondSetPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave: firstSetPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+    manager.save({ version: 2, gold: { current: 3 } });
+
+    expect(firstSetPlayerGameplaySave).toHaveBeenCalledTimes(1);
+
+    manager.disconnect();
+    manager.discardPreHydrationSave();
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave: secondSetPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+
+    expect(secondSetPlayerGameplaySave).toHaveBeenCalledWith({
+      saveJson: JSON.stringify({ version: 2, gold: { current: 3 } }),
+    });
+
+    resolveFirstSave();
+    await Promise.resolve();
+  });
+
+  it('times out a stuck reducer ack and keeps the newest pending save', async () => {
+    let timeoutCallback;
+    const setTimeoutFn = vi.fn((callback) => {
+      timeoutCallback = callback;
+      return 'timer-1';
+    });
+    const clearTimeoutFn = vi.fn();
+    const onSyncUnhealthy = vi.fn();
+    const setPlayerGameplaySave = vi.fn(() => new Promise(() => {}));
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 50,
+      setTimeoutFn,
+      clearTimeoutFn,
+      onSyncUnhealthy,
+    });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+
+    const flush = manager.saveAndFlush({ version: 2, gold: { current: 1 } });
+    manager.save({ version: 2, gold: { current: 2 } });
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
+    expect(setTimeoutFn).toHaveBeenCalledWith(expect.any(Function), 50);
+
+    timeoutCallback();
+
+    await expect(flush).resolves.toBe(false);
+    expect(onSyncUnhealthy).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'gameplay_save_timeout' }),
+    );
+    expect(manager.pendingSaveJson).toBe(
+      JSON.stringify({ version: 2, gold: { current: 2 } }),
+    );
+    expect(manager.syncPromise).toBeNull();
+    expect(clearTimeoutFn).not.toHaveBeenCalled();
+  });
+
   it('waits for a save to flush when requested', async () => {
     let resolveSave;
     const setPlayerGameplaySave = vi.fn(
@@ -94,7 +174,7 @@ describe('GameplaySaveSendManager', () => {
           resolveSave = resolve;
         }),
     );
-    const manager = new GameplaySaveSendManager();
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
     manager.connect({
       reducers: {

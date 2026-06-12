@@ -10,6 +10,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Use browser-simple layout, not decorative game art.
 - The interface should feel like a sparse text game with small bordered panels.
 - Prefer empty space, direct labels, and restrained hierarchy.
+- Use lowercase for player-facing UI labels, including item, research, notice, and task text; keep user-entered names as typed.
 
 ## Typography
 
@@ -40,6 +41,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Non-title labels that sit on a box border, such as counts, close/current controls, bottom-edge actions, and tabs, should use smaller text with the line box centered on the border line.
 - Popup/dialog panels may use `2px solid black`, `20px` padding, and a bottom-right gray shadow: `5px 5px 5px #666` in source UI units.
 - Theme popup/dialog shadows should stay visible by contrasting with the active surface: dark on white, light on black.
+- Tabbed dialogs use a fixed panel height. If tab content is taller than that height, keep the bottom tabs fixed and scroll the content with the shared scroll cue.
 - Tooltips may use `1px solid black`, white background, and a small offset gray shadow.
 - Ordinary room/page surfaces should not use shadows.
 

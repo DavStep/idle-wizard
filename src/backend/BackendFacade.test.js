@@ -2,9 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { BackendFacade } from './BackendFacade.js';
 
+async function flushPromises() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 function createBackendWithFakes() {
   const backendFacade = new BackendFacade();
   const clearOwnProgress = vi.fn(() => Promise.resolve({ ok: true }));
+  let syncUnhealthyHandler = null;
 
   backendFacade.gameConfigFacade = {
     connect: vi.fn(),
@@ -18,6 +24,9 @@ function createBackendWithFakes() {
     discardPreHydrationSave: vi.fn(),
     disconnect: vi.fn(),
     setReadyToSend: vi.fn(),
+    setSyncUnhealthyHandler: vi.fn((handler) => {
+      syncUnhealthyHandler = handler;
+    }),
   };
   backendFacade.leaderboardFacade = {
     setGameplayFacade: vi.fn(),
@@ -68,7 +77,11 @@ function createBackendWithFakes() {
     disconnect: vi.fn(),
   };
 
-  return { backendFacade, clearOwnProgress };
+  return {
+    backendFacade,
+    clearOwnProgress,
+    getSyncUnhealthyHandler: () => syncUnhealthyHandler,
+  };
 }
 
 describe('BackendFacade', () => {
@@ -82,6 +95,7 @@ describe('BackendFacade', () => {
       gameplayFacade,
       playerFacade: {},
     });
+    await flushPromises();
 
     expect(gameplayFacade.consumeProgressResetPending).toHaveBeenCalledTimes(1);
     expect(clearOwnProgress).toHaveBeenCalledTimes(1);
@@ -96,6 +110,7 @@ describe('BackendFacade', () => {
       },
       playerFacade: {},
     });
+    await flushPromises();
 
     expect(clearOwnProgress).not.toHaveBeenCalled();
   });
@@ -113,6 +128,7 @@ describe('BackendFacade', () => {
       onGameplaySaveReady,
       onOnline,
     });
+    await flushPromises();
 
     expect(onGameplaySaveReady).toHaveBeenCalledWith({
       save: null,
@@ -160,5 +176,68 @@ describe('BackendFacade', () => {
       backendFacade.tradeAllianceFacade.setRewardProcessingReady.mock.invocationCallOrder[1],
     );
     expect(onOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for gameplay save choice before enabling server save sends', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    let finishChoice = null;
+    const onGameplaySaveReady = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finishChoice = resolve;
+        }),
+    );
+    const onOnline = vi.fn();
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onGameplaySaveReady,
+      onOnline,
+    });
+    await Promise.resolve();
+
+    expect(onGameplaySaveReady).toHaveBeenCalledTimes(1);
+    expect(
+      backendFacade.gameplaySaveFacade.setReadyToSend.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false]);
+    expect(onOnline).not.toHaveBeenCalled();
+
+    finishChoice();
+    await flushPromises();
+
+    expect(
+      backendFacade.gameplaySaveFacade.setReadyToSend.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false, true]);
+    expect(onOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('disconnects and reports offline when gameplay save sync gets stuck', async () => {
+    const { backendFacade, getSyncUnhealthyHandler } = createBackendWithFakes();
+    const onOffline = vi.fn();
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onOffline,
+    });
+    await flushPromises();
+
+    getSyncUnhealthyHandler()?.({ reason: 'gameplay_save_timeout' });
+
+    expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalledTimes(1);
+    expect(backendFacade.spacetimeDbFacade.disconnect).toHaveBeenCalledTimes(1);
+    expect(onOffline).toHaveBeenCalledWith({
+      reason: 'gameplay_save_timeout',
+      error: undefined,
+    });
   });
 });

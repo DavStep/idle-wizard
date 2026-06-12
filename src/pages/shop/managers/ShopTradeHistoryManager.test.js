@@ -12,7 +12,7 @@ function createPlayerShopFacadeFake() {
         tradeId: 'trade-global-1',
         buyerUsername: 'Merlin',
         sellerUsername: 'Ada',
-        itemLabel: 'Mint Seed',
+        itemLabel: 'mint seed',
         quantity: 2,
         priceGold: 4,
         totalPriceGold: 8,
@@ -21,7 +21,7 @@ function createPlayerShopFacadeFake() {
         tradeId: 'trade-own-1',
         buyerUsername: 'wizard',
         sellerUsername: 'Ada',
-        itemLabel: 'Sage Seed',
+        itemLabel: 'sage seed',
         quantity: 1,
         priceGold: 3,
         totalPriceGold: 3,
@@ -32,7 +32,7 @@ function createPlayerShopFacadeFake() {
         tradeId: 'trade-own-1',
         buyerUsername: 'wizard',
         sellerUsername: 'Ada',
-        itemLabel: 'Sage Seed',
+        itemLabel: 'sage seed',
         quantity: 1,
         priceGold: 3,
         totalPriceGold: 3,
@@ -83,14 +83,14 @@ describe('ShopTradeHistoryManager', () => {
         (tab) => tab.textContent,
       ),
     ).toEqual(['own', 'global']);
-    expect(popup.textContent).toContain('wizard bought Sage Seed from Ada for 3 gold');
-    expect(popup.textContent).not.toContain('Merlin bought 2 Mint Seed');
+    expect(popup.textContent).toContain('wizard bought sage seed from Ada for 3 gold');
+    expect(popup.textContent).not.toContain('Merlin bought 2 mint seed');
 
     [...popup.querySelectorAll('.shop-page__trade-history-tab-button')]
       .find((tab) => tab.textContent === 'global')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.textContent).toContain('Merlin bought 2 Mint Seed from Ada for 8 gold');
+    expect(popup.textContent).toContain('Merlin bought 2 mint seed from Ada for 8 gold');
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(popup.hidden).toBe(true);

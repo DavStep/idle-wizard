@@ -15,7 +15,7 @@ const STEPS = [
     id: 'research-sage-seed',
     pageId: 'research',
     targetId: `research:${SAGE_SEED_RESEARCH_ID}`,
-    text: 'research Sage Seed',
+    text: 'research sage seed',
     isComplete: ({ snapshot }) => hasCompletedResearch(snapshot, SAGE_SEED_RESEARCH_ID),
   },
   {
@@ -51,11 +51,11 @@ const STEPS = [
       const tile = getFirstRelevantGardenTile(snapshot);
 
       if (dom.isGardenSeedPopupOpen()) {
-        return 'choose Sage Seed';
+        return 'choose sage seed';
       }
 
       if (tile?.phase === 'empty' && tile.selectedSeedItemTypeId) {
-        return 'plant Sage Seed';
+        return 'plant sage seed';
       }
 
       return 'choose a seed';

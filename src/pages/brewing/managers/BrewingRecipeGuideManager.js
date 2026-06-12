@@ -79,6 +79,14 @@ export class BrewingRecipeGuideManager {
       typeof recipeKey === 'string' ? recipeKey : recipeKey?.key ?? null;
 
     if (!targetRecipeKey) {
+      if (this.onSelectRecipe) {
+        this.onSelectRecipe(null);
+        this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
+        return;
+      }
+
+      this.selectedRecipeKey = null;
+      this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
       return;
     }
 

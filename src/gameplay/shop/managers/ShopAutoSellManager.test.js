@@ -26,7 +26,7 @@ describe('ShopAutoSellManager', () => {
     const removeItem = vi.fn().mockReturnValue({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 1,
     });
@@ -39,7 +39,7 @@ describe('ShopAutoSellManager', () => {
         getItemDefinition: () => ({
           id: 1,
           key: 'sageSeed',
-          label: 'Sage Seed',
+          label: 'sage seed',
           kind: 'seed',
         }),
         removeItem,
@@ -62,7 +62,7 @@ describe('ShopAutoSellManager', () => {
       {
         id: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
       },
       1,
@@ -81,7 +81,7 @@ describe('ShopAutoSellManager', () => {
       return {
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
         quantity: removeQuantity,
       };
@@ -94,7 +94,7 @@ describe('ShopAutoSellManager', () => {
         getItemDefinition: () => ({
           id: 1001,
           key: 'sageHerb',
-          label: 'Sage',
+          label: 'sage',
           kind: 'herb',
         }),
         removeItem,
@@ -132,7 +132,7 @@ describe('ShopAutoSellManager', () => {
         getItemDefinition: () => ({
           id: 1,
           key: 'sageSeed',
-          label: 'Sage Seed',
+          label: 'sage seed',
           kind: 'seed',
         }),
         removeItem,

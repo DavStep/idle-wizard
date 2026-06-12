@@ -33,6 +33,10 @@ export class GameplaySaveBackendFacade {
     return this.sendManager.saveAndFlush(save);
   }
 
+  setSyncUnhealthyHandler(handler) {
+    this.sendManager.setSyncUnhealthyHandler(handler);
+  }
+
   discardPreHydrationSave() {
     this.sendManager.discardPreHydrationSave();
   }

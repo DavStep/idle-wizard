@@ -16,14 +16,14 @@ describe('PotionRecipeManager', () => {
     expect(manager.getPotionRecipe('manaTonic')).toMatchObject({
       potionTypeId: 2001,
       key: 'manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
       manaCost: 12,
       brewDurationMs: 30_000,
       ingredients: [
         {
           itemTypeId: 1001,
           key: 'sageHerb',
-          label: 'Sage',
+          label: 'sage',
           kind: 'herb',
           quantity: 3,
         },
@@ -32,28 +32,28 @@ describe('PotionRecipeManager', () => {
     expect(manager.getPotionRecipe('pactWard')).toMatchObject({
       potionTypeId: 2018,
       key: 'pactWard',
-      label: 'Pact Ward',
+      label: 'pact ward',
       manaCost: 64,
       brewDurationMs: 145_000,
       ingredients: [
         {
           itemTypeId: 1013,
           key: 'bloodroseHerb',
-          label: 'Bloodrose',
+          label: 'bloodrose',
           kind: 'herb',
           quantity: 1,
         },
         {
           itemTypeId: 1005,
           key: 'briarHerb',
-          label: 'Briar',
+          label: 'briar',
           kind: 'herb',
           quantity: 2,
         },
         {
           itemTypeId: 1010,
           key: 'frostmossHerb',
-          label: 'Frostmoss',
+          label: 'frostmoss',
           kind: 'herb',
           quantity: 1,
         },
@@ -62,7 +62,7 @@ describe('PotionRecipeManager', () => {
     expect(manager.getPotionRecipe('ashenMemory')).toMatchObject({
       potionTypeId: 2019,
       key: 'ashenMemory',
-      label: 'Ashen Memory',
+      label: 'ashen memory',
       discoveryType: 'unknown',
       type: 'unknown',
       unknown: true,
@@ -74,21 +74,21 @@ describe('PotionRecipeManager', () => {
         {
           itemTypeId: 1001,
           key: 'sageHerb',
-          label: 'Sage',
+          label: 'sage',
           kind: 'herb',
           quantity: 1,
         },
         {
           itemTypeId: 1004,
           key: 'lavenderHerb',
-          label: 'Lavender',
+          label: 'lavender',
           kind: 'herb',
           quantity: 1,
         },
         {
           itemTypeId: 1010,
           key: 'frostmossHerb',
-          label: 'Frostmoss',
+          label: 'frostmoss',
           kind: 'herb',
           quantity: 1,
         },
@@ -101,11 +101,11 @@ describe('PotionRecipeManager', () => {
 
     expect(manager.getPotionRecipeByIngredientSequence([1001, 1001, 1002])).toMatchObject({
       key: 'minorHealingPotion',
-      label: 'Minor Healing Potion',
+      label: 'minor healing potion',
     });
     expect(manager.getPotionRecipeByIngredientSequence([1001, 1004, 1010])).toMatchObject({
       key: 'ashenMemory',
-      label: 'Ashen Memory',
+      label: 'ashen memory',
       unknown: true,
     });
     expect(manager.getPotionRecipeByIngredientSequence([1002, 1001, 1001])).toBeNull();

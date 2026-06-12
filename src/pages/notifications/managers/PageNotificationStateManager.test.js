@@ -64,7 +64,7 @@ function createSnapshot() {
         {
           itemTypeId: 1,
           key: 'sageSeed',
-          label: 'Sage Seed',
+          label: 'sage seed',
           kind: 'seed',
           quantity: 0,
         },
@@ -136,7 +136,7 @@ describe('PageNotificationStateManager', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 1,
       },
@@ -168,7 +168,7 @@ describe('PageNotificationStateManager', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 1,
       },

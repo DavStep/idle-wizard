@@ -24,7 +24,7 @@ const MAX_TRADE_ALLIANCE_DESCRIPTION_LENGTH = 160;
 const MAX_TRADE_ALLIANCE_NOTICE_LENGTH = 160;
 const MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS = 50;
 const MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS_PER_PLAYER = 5;
-const MAX_TRADE_ALLIANCE_DAILY_QUESTS = 5;
+const MAX_TRADE_ALLIANCE_WEEKLY_QUESTS = 5;
 const MAX_TRADE_ALLIANCE_QUEST_TARGET = 1_000_000_000n;
 const MAX_TRADE_ALLIANCE_QUEST_CRYSTAL_REWARD = 100;
 const TRADE_ALLIANCE_CHAT_HISTORY_LIMIT = 200;
@@ -83,6 +83,8 @@ const MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const PERIOD_DAY_MICROS = 86_400_000_000n;
 const PERIOD_WEEK_DAYS = 7n;
+const PERIOD_MONTH_DAYS = 30n;
+const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UTC, Armenia 04:00.
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const PLAYER_THEMES = new Set(['white', 'black', 'midnight']);
 const PLAYER_THEME_ALIASES = new Map([
@@ -144,54 +146,54 @@ const DEFAULT_TASKS_CONFIG_JSON = "{\"levels\":[{\"level\":1,\"tasks\":[{\"id\":
 const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = "{\"maxLevel\":20,\"mana\":{\"baseMaxManaCap\":50,\"maxManaCapPerLevel\":50,\"baseManaPerSecond\":1,\"manaPerSecondPerLevel\":1},\"crystal\":{\"perLevel\":1},\"milestones\":[{\"level\":1,\"maxGardenTiles\":2,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":2,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":3,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":5,\"maxGardenTiles\":5,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":8,\"maxGardenTiles\":7,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":10,\"maxGardenTiles\":8,\"maxCauldrons\":4,\"maxNpcMarketStands\":3,\"maxPlayerMarketStands\":3},{\"level\":13,\"maxGardenTiles\":9,\"maxCauldrons\":4,\"maxNpcMarketStands\":4,\"maxPlayerMarketStands\":4},{\"level\":17,\"maxGardenTiles\":10,\"maxCauldrons\":5,\"maxNpcMarketStands\":5,\"maxPlayerMarketStands\":5}]}";
 
 const herbCatalog = [
-  { key: 'sage', label: 'Sage', growthDurationMs: 20_000 },
-  { key: 'mint', label: 'Mint', growthDurationMs: 25_000 },
-  { key: 'nettle', label: 'Nettle', growthDurationMs: 30_000 },
-  { key: 'lavender', label: 'Lavender', growthDurationMs: 40_000 },
-  { key: 'briar', label: 'Briar', growthDurationMs: 50_000 },
-  { key: 'glowcap', label: 'Glowcap', growthDurationMs: 60_000 },
-  { key: 'mandrake', label: 'Mandrake', growthDurationMs: 75_000 },
-  { key: 'sunroot', label: 'Sunroot', growthDurationMs: 90_000 },
-  { key: 'moonflower', label: 'Moonflower', growthDurationMs: 105_000 },
-  { key: 'frostmoss', label: 'Frostmoss', growthDurationMs: 120_000 },
-  { key: 'dreambell', label: 'Dreambell', growthDurationMs: 135_000 },
-  { key: 'starAnise', label: 'Star Anise', growthDurationMs: 150_000 },
-  { key: 'bloodrose', label: 'Bloodrose', growthDurationMs: 180_000 },
-  { key: 'dragonpepper', label: 'Dragonpepper', growthDurationMs: 210_000 },
+  { key: 'sage', label: 'sage', growthDurationMs: 20_000 },
+  { key: 'mint', label: 'mint', growthDurationMs: 25_000 },
+  { key: 'nettle', label: 'nettle', growthDurationMs: 30_000 },
+  { key: 'lavender', label: 'lavender', growthDurationMs: 40_000 },
+  { key: 'briar', label: 'briar', growthDurationMs: 50_000 },
+  { key: 'glowcap', label: 'glowcap', growthDurationMs: 60_000 },
+  { key: 'mandrake', label: 'mandrake', growthDurationMs: 75_000 },
+  { key: 'sunroot', label: 'sunroot', growthDurationMs: 90_000 },
+  { key: 'moonflower', label: 'moonflower', growthDurationMs: 105_000 },
+  { key: 'frostmoss', label: 'frostmoss', growthDurationMs: 120_000 },
+  { key: 'dreambell', label: 'dreambell', growthDurationMs: 135_000 },
+  { key: 'starAnise', label: 'star anise', growthDurationMs: 150_000 },
+  { key: 'bloodrose', label: 'bloodrose', growthDurationMs: 180_000 },
+  { key: 'dragonpepper', label: 'dragonpepper', growthDurationMs: 210_000 },
 ];
 
 const knownPotionCatalog = [
-  { key: 'manaTonic', label: 'Mana Tonic' },
-  { key: 'minorHealingPotion', label: 'Minor Healing Potion' },
-  { key: 'nettleVigor', label: 'Nettle Vigor' },
-  { key: 'calmingDraught', label: 'Calming Draught' },
-  { key: 'simpleAntidote', label: 'Simple Antidote' },
-  { key: 'venomDraught', label: 'Venom Draught' },
-  { key: 'briarWard', label: 'Briar Ward' },
-  { key: 'lanternTonic', label: 'Lantern Tonic' },
-  { key: 'healingPotion', label: 'Healing Potion' },
-  { key: 'moonlitFocus', label: 'Moonlit Focus' },
-  { key: 'sunrootStamina', label: 'Sunroot Stamina' },
-  { key: 'frostmossCleanse', label: 'Frostmoss Cleanse' },
-  { key: 'sleepDraught', label: 'Sleep Draught' },
-  { key: 'elixirOfLife', label: 'Elixir of Life' },
-  { key: 'starLuckPhiltre', label: 'Star-Luck Philtre' },
-  { key: 'dragonCourage', label: 'Dragon Courage' },
-  { key: 'deepDreamVision', label: 'Deep Dream Vision' },
-  { key: 'pactWard', label: 'Pact Ward' },
+  { key: 'manaTonic', label: 'mana tonic' },
+  { key: 'minorHealingPotion', label: 'minor healing potion' },
+  { key: 'nettleVigor', label: 'nettle vigor' },
+  { key: 'calmingDraught', label: 'calming draught' },
+  { key: 'simpleAntidote', label: 'simple antidote' },
+  { key: 'venomDraught', label: 'venom draught' },
+  { key: 'briarWard', label: 'briar ward' },
+  { key: 'lanternTonic', label: 'lantern tonic' },
+  { key: 'healingPotion', label: 'healing potion' },
+  { key: 'moonlitFocus', label: 'moonlit focus' },
+  { key: 'sunrootStamina', label: 'sunroot stamina' },
+  { key: 'frostmossCleanse', label: 'frostmoss cleanse' },
+  { key: 'sleepDraught', label: 'sleep draught' },
+  { key: 'elixirOfLife', label: 'elixir of life' },
+  { key: 'starLuckPhiltre', label: 'star-luck philtre' },
+  { key: 'dragonCourage', label: 'dragon courage' },
+  { key: 'deepDreamVision', label: 'deep dream vision' },
+  { key: 'pactWard', label: 'pact ward' },
 ];
 
 const unknownPotionCatalog = [
-  { key: 'ashenMemory', label: 'Ashen Memory' },
-  { key: 'silverleafQuiet', label: 'Silverleaf Quiet' },
-  { key: 'emberSight', label: 'Ember Sight' },
-  { key: 'thornSleep', label: 'Thorn Sleep' },
-  { key: 'glassMoonElixir', label: 'Glass Moon Elixir' },
-  { key: 'rootboundResolve', label: 'Rootbound Resolve' },
-  { key: 'nightOrchardTonic', label: 'Night Orchard Tonic' },
-  { key: 'starlessCourage', label: 'Starless Courage' },
-  { key: 'frostveinDraught', label: 'Frostvein Draught' },
-  { key: 'bloodlightWard', label: 'Bloodlight Ward' },
+  { key: 'ashenMemory', label: 'ashen memory' },
+  { key: 'silverleafQuiet', label: 'silverleaf quiet' },
+  { key: 'emberSight', label: 'ember sight' },
+  { key: 'thornSleep', label: 'thorn sleep' },
+  { key: 'glassMoonElixir', label: 'glass moon elixir' },
+  { key: 'rootboundResolve', label: 'rootbound resolve' },
+  { key: 'nightOrchardTonic', label: 'night orchard tonic' },
+  { key: 'starlessCourage', label: 'starless courage' },
+  { key: 'frostveinDraught', label: 'frostvein draught' },
+  { key: 'bloodlightWard', label: 'bloodlight ward' },
 ];
 
 const herbMarketBasePriceGoldByKey: Record<string, number> = {
@@ -355,17 +357,28 @@ const researchDefaultCostCrystalById: Record<string, number> = {
   'automation:autoCollectCauldron:5': 5,
 };
 
-const researchDefaultDurationSecondsById: Record<string, bigint> = Object.fromEntries(
-  [
-    ...Object.keys(researchDefaultCostGoldById),
-    ...Object.keys(researchDefaultCostCrystalById).filter(
-      (researchId) => researchDefaultCostGoldById[researchId] === undefined,
-    ),
-  ].map((researchId, index) => [
-    researchId,
-    BigInt(getDefaultResearchDurationSeconds(index)),
-  ]),
-) as Record<string, bigint>;
+const researchDefaultDurationOverrideSecondsById: Record<string, bigint> = {
+  'unlockRecipe:manaTonic': 60n,
+};
+
+const researchLegacyDurationSecondsById: Record<string, bigint> = {
+  'unlockRecipe:manaTonic': 600n,
+};
+
+const researchDefaultDurationSecondsById: Record<string, bigint> = {
+  ...(Object.fromEntries(
+    [
+      ...Object.keys(researchDefaultCostGoldById),
+      ...Object.keys(researchDefaultCostCrystalById).filter(
+        (researchId) => researchDefaultCostGoldById[researchId] === undefined,
+      ),
+    ].map((researchId, index) => [
+      researchId,
+      BigInt(getDefaultResearchDurationSeconds(index)),
+    ]),
+  ) as Record<string, bigint>),
+  ...researchDefaultDurationOverrideSecondsById,
+};
 
 function getDefaultResearchDurationSeconds(index: number): number {
   if (index === 0) {
@@ -382,7 +395,7 @@ function getDefaultResearchDurationSeconds(index: number): number {
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
-  { key: 'wastedPotion', label: 'Wasted Potion', basePriceGold: 1 },
+  { key: 'wastedPotion', label: 'wasted potion', basePriceGold: 1 },
 ];
 
 const potionRecipeCatalog = [
@@ -663,7 +676,7 @@ const unknownPotionCatalogByKey = new Map(
 const npcMarketCatalog = [
   ...herbCatalog.map((herb) => ({
     itemKey: `${herb.key}Seed`,
-    itemLabel: `${herb.label} Seed`,
+    itemLabel: `${herb.label} seed`,
     itemKind: 'seed',
     basePriceGold: 1,
     targetStock: 1_000n,
@@ -741,7 +754,7 @@ const researchCatalog = [
     const id = `unlockSeed:${herb.key}Seed`;
     return {
       researchId: id,
-      label: `${herb.label} Seed`,
+      label: `${herb.label} seed`,
       groupId: 'seedUnlocks',
       defaultCostGold: researchDefaultCostGoldById[id] ?? 0n,
     };
@@ -788,7 +801,7 @@ function getDefaultItemsConfig() {
     seeds: herbCatalog.map((herb, index) => ({
       id: index + 1,
       key: `${herb.key}Seed`,
-      label: `${herb.label} Seed`,
+      label: `${herb.label} seed`,
       producesHerbTypeId: 1001 + index,
       dropWeight: 1,
       summonManaCost: 10,
@@ -855,7 +868,7 @@ const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
   wastedPotionKey: 'wastedPotion',
 });
 const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
-  dailyQuests: [
+  weeklyQuests: [
     {
       id: 'allianceIncomeEasy',
       label: 'small caravan',
@@ -1340,6 +1353,16 @@ const adminPlayerGameplaySaveResult = t.array(
     updatedAt: t.timestamp(),
   }),
 );
+const adminPlayerFeedbackResult = t.array(
+  t.row('AdminPlayerFeedbackResult', {
+    feedbackId: t.uuid().primaryKey(),
+    senderIdentity: t.identity(),
+    username: t.string(),
+    playerLevel: t.u32(),
+    body: t.string(),
+    submittedAt: t.timestamp(),
+  }),
+);
 const ownTradeAllianceChatResult = t.array(
   t.row('OwnTradeAllianceChatResult', {
     messageId: t.uuid().primaryKey(),
@@ -1400,6 +1423,31 @@ export const admin_player_gameplay_save = spacetimedb.view(
 
         return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
       });
+  },
+);
+
+export const admin_player_feedback = spacetimedb.view(
+  { name: 'admin_player_feedback', public: true },
+  adminPlayerFeedbackResult,
+  (ctx) => {
+    if (!npcMarketAdminIdentityAllowlist.has(getIdentityHex(ctx.sender))) {
+      return [];
+    }
+
+    return Array.from(ctx.db.playerFeedback.iter()).sort((left, right) => {
+      const leftSubmittedAt = left.submittedAt.microsSinceUnixEpoch;
+      const rightSubmittedAt = right.submittedAt.microsSinceUnixEpoch;
+
+      if (leftSubmittedAt < rightSubmittedAt) {
+        return 1;
+      }
+
+      if (leftSubmittedAt > rightSubmittedAt) {
+        return -1;
+      }
+
+      return left.feedbackId.compareTo(right.feedbackId);
+    });
   },
 );
 
@@ -1689,43 +1737,33 @@ function getTradeAllianceIdKey(allianceId: unknown): string {
   return String(allianceId);
 }
 
-function getPeriodKey(ctx: IdleWizardReducerCtx, daySpan: bigint): string {
-  return String(ctx.timestamp.microsSinceUnixEpoch / (daySpan * PERIOD_DAY_MICROS));
+function floorDivBigInt(value: bigint, divisor: bigint): bigint {
+  if (value >= 0n) {
+    return value / divisor;
+  }
+
+  return -((-value + divisor - 1n) / divisor);
+}
+
+function getAnchoredPeriodKey(ctx: IdleWizardReducerCtx, daySpan: bigint): string {
+  return String(
+    floorDivBigInt(
+      ctx.timestamp.microsSinceUnixEpoch - PERIOD_LOOP_ANCHOR_MICROS,
+      daySpan * PERIOD_DAY_MICROS,
+    ),
+  );
 }
 
 function getDailyPeriodKey(ctx: IdleWizardReducerCtx): string {
-  return getPeriodKey(ctx, 1n);
+  return String(ctx.timestamp.microsSinceUnixEpoch / PERIOD_DAY_MICROS);
 }
 
 function getWeeklyPeriodKey(ctx: IdleWizardReducerCtx): string {
-  return getPeriodKey(ctx, PERIOD_WEEK_DAYS);
-}
-
-function getUtcMonthKeyFromEpochDay(epochDay: number): string {
-  const shiftedDay = epochDay + 719_468;
-  const era = Math.floor(shiftedDay / 146_097);
-  const dayOfEra = shiftedDay - era * 146_097;
-  const yearOfEra = Math.floor(
-    (dayOfEra -
-      Math.floor(dayOfEra / 1_460) +
-      Math.floor(dayOfEra / 36_524) -
-      Math.floor(dayOfEra / 146_096)) /
-      365,
-  );
-  const dayOfYear =
-    dayOfEra -
-    (365 * yearOfEra + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100));
-  const monthPrime = Math.floor((5 * dayOfYear + 2) / 153);
-  const month = monthPrime < 10 ? monthPrime + 3 : monthPrime - 9;
-  const year = yearOfEra + era * 400 + (month <= 2 ? 1 : 0);
-
-  return `${year}-${String(month).padStart(2, '0')}`;
+  return getAnchoredPeriodKey(ctx, PERIOD_WEEK_DAYS);
 }
 
 function getMonthlyPeriodKey(ctx: IdleWizardReducerCtx): string {
-  const epochDay = Number(ctx.timestamp.microsSinceUnixEpoch / PERIOD_DAY_MICROS);
-
-  return getUtcMonthKeyFromEpochDay(epochDay);
+  return getAnchoredPeriodKey(ctx, PERIOD_MONTH_DAYS);
 }
 
 function getTradeAllianceDayKey(ctx: IdleWizardReducerCtx): string {
@@ -1738,6 +1776,10 @@ function getTradeAllianceSeasonKey(ctx: IdleWizardReducerCtx): string {
 
 function getTradeAllianceMonthKey(ctx: IdleWizardReducerCtx): string {
   return getMonthlyPeriodKey(ctx);
+}
+
+function getTradeAllianceQuestPeriodKey(ctx: IdleWizardReducerCtx): string {
+  return getWeeklyPeriodKey(ctx);
 }
 
 function getTradeAllianceApplicationKey(allianceId: unknown, identity: Identity): string {
@@ -2286,6 +2328,21 @@ function normalizeResearchDurationSeconds(value: bigint | number, fallback: bigi
   return safeValue;
 }
 
+function normalizeStoredResearchDurationSeconds(
+  researchId: string,
+  value: bigint | number,
+  fallback: bigint,
+): bigint {
+  const durationSeconds = normalizeResearchDurationSeconds(value, fallback);
+  const legacyDurationSeconds = researchLegacyDurationSecondsById[researchId];
+
+  if (legacyDurationSeconds !== undefined && durationSeconds === legacyDurationSeconds) {
+    return fallback;
+  }
+
+  return durationSeconds;
+}
+
 function validateResearchDurationSeconds(durationSeconds: bigint | number): bigint {
   const safeDurationSeconds = toBigInt(durationSeconds);
 
@@ -2332,6 +2389,10 @@ function normalizeGameConfigJson(
   parsedConfig: unknown,
   originalJson: string,
 ): string {
+  if (configKey === 'potionRecipes' && isRecord(parsedConfig)) {
+    return normalizePotionRecipesGameConfigJson(parsedConfig, originalJson);
+  }
+
   if (configKey === 'research' && isRecord(parsedConfig)) {
     if (isRecord(parsedConfig.researchDurationsSeconds)) {
       return originalJson;
@@ -2359,6 +2420,35 @@ function normalizeGameConfigJson(
       ...crystal,
       perLevel: DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL,
     },
+  });
+}
+
+function normalizePotionRecipesGameConfigJson(
+  parsedConfig: Record<string, unknown>,
+  originalJson: string,
+): string {
+  const recipes = parsedConfig.recipes;
+
+  if (!Array.isArray(recipes)) {
+    return originalJson;
+  }
+
+  const seenPotionKeys = new Set(
+    recipes.map((recipe) =>
+      normalizeNpcMarketItemKey(String((recipe as Record<string, unknown>)?.potionKey ?? '')),
+    ),
+  );
+  const missingCatalogRecipes = potionRecipeCatalog.filter(
+    (recipe) => !seenPotionKeys.has(recipe.potionKey),
+  );
+
+  if (missingCatalogRecipes.length <= 0) {
+    return originalJson;
+  }
+
+  return JSON.stringify({
+    ...parsedConfig,
+    recipes: [...recipes, ...missingCatalogRecipes],
   });
 }
 
@@ -3450,7 +3540,7 @@ function getParsedGameConfig(
   }
 }
 
-type TradeAllianceDailyQuestConfig = {
+type TradeAllianceWeeklyQuestConfig = {
   id: string;
   label: string;
   type: string;
@@ -3464,22 +3554,24 @@ function getTradeAllianceRuntimeConfig(ctx: IdleWizardReducerCtx) {
     ctx,
     'tradeAlliance',
     DEFAULT_TRADE_ALLIANCE_CONFIG_JSON,
-  ) as { dailyQuests?: unknown };
+  ) as { weeklyQuests?: unknown; dailyQuests?: unknown };
 
   return {
-    dailyQuests: normalizeTradeAllianceDailyQuestConfigs(config.dailyQuests),
+    weeklyQuests: normalizeTradeAllianceWeeklyQuestConfigs(
+      config.weeklyQuests ?? config.dailyQuests,
+    ),
   };
 }
 
-function normalizeTradeAllianceDailyQuestConfigs(value: unknown): TradeAllianceDailyQuestConfig[] {
+function normalizeTradeAllianceWeeklyQuestConfigs(value: unknown): TradeAllianceWeeklyQuestConfig[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   const seenQuestIds = new Set<string>();
-  const quests: TradeAllianceDailyQuestConfig[] = [];
+  const quests: TradeAllianceWeeklyQuestConfig[] = [];
 
-  for (const questConfig of value.slice(0, MAX_TRADE_ALLIANCE_DAILY_QUESTS)) {
+  for (const questConfig of value.slice(0, MAX_TRADE_ALLIANCE_WEEKLY_QUESTS)) {
     if (!isRecord(questConfig)) {
       continue;
     }
@@ -3532,7 +3624,7 @@ function refreshTradeAllianceDay(ctx: IdleWizardReducerCtx, alliance: any) {
   const needsMonthReset = alliance.monthKey !== monthKey;
 
   if (!needsDayReset && !needsSeasonReset && !needsMonthReset) {
-    ensureTradeAllianceDailyQuests(ctx, alliance);
+    ensureTradeAllianceWeeklyQuests(ctx, alliance);
     return alliance;
   }
 
@@ -3546,12 +3638,12 @@ function refreshTradeAllianceDay(ctx: IdleWizardReducerCtx, alliance: any) {
     monthlyIncome: needsMonthReset ? 0n : alliance.monthlyIncome,
     updatedAt: ctx.timestamp,
   });
-  ensureTradeAllianceDailyQuests(ctx, nextAlliance);
+  ensureTradeAllianceWeeklyQuests(ctx, nextAlliance);
   return nextAlliance;
 }
 
-function refreshTradeAllianceMemberDay(ctx: IdleWizardReducerCtx, member: any) {
-  const dayKey = getTradeAllianceDayKey(ctx);
+function refreshTradeAllianceMemberQuestPeriod(ctx: IdleWizardReducerCtx, member: any) {
+  const dayKey = getTradeAllianceQuestPeriodKey(ctx);
 
   if (member.dayKey === dayKey) {
     return member;
@@ -3565,14 +3657,16 @@ function refreshTradeAllianceMemberDay(ctx: IdleWizardReducerCtx, member: any) {
   });
 }
 
-function ensureTradeAllianceDailyQuests(ctx: IdleWizardReducerCtx, alliance: any) {
+function ensureTradeAllianceWeeklyQuests(ctx: IdleWizardReducerCtx, alliance: any) {
   const config = getTradeAllianceRuntimeConfig(ctx);
-  const dayKey = getTradeAllianceDayKey(ctx);
+  const questPeriodKey = getTradeAllianceQuestPeriodKey(ctx);
 
-  for (const quest of config.dailyQuests) {
-    const questKey = getTradeAllianceQuestKey(alliance.allianceId, dayKey, quest.id);
+  pruneTradeAllianceQuestRows(ctx, alliance.allianceId, questPeriodKey);
+
+  for (const quest of config.weeklyQuests) {
+    const questKey = getTradeAllianceQuestKey(alliance.allianceId, questPeriodKey, quest.id);
     const existingQuest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
-    const baseProgress = quest.type === 'allianceIncome' ? toBigInt(alliance.dailyIncome) : 0n;
+    const baseProgress = quest.type === 'allianceIncome' ? toBigInt(alliance.seasonIncome) : 0n;
     const nextProgress = clampBigInt(
       existingQuest && existingQuest.progress > baseProgress
         ? existingQuest.progress
@@ -3584,7 +3678,7 @@ function ensureTradeAllianceDailyQuests(ctx: IdleWizardReducerCtx, alliance: any
     const nextQuest = {
       questKey,
       allianceId: alliance.allianceId,
-      dayKey,
+      dayKey: questPeriodKey,
       questId: quest.id,
       label: quest.label,
       questType: quest.type,
@@ -3618,6 +3712,32 @@ function ensureTradeAllianceDailyQuests(ctx: IdleWizardReducerCtx, alliance: any
   }
 }
 
+function pruneTradeAllianceQuestRows(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+  questPeriodKey: string,
+) {
+  const allianceKey = getTradeAllianceIdKey(allianceId);
+
+  for (const quest of Array.from(ctx.db.tradeAllianceQuestProgress.iter())) {
+    if (
+      getTradeAllianceIdKey(quest.allianceId) === allianceKey &&
+      quest.dayKey !== questPeriodKey
+    ) {
+      ctx.db.tradeAllianceQuestProgress.delete(quest);
+    }
+  }
+
+  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+    if (
+      getTradeAllianceIdKey(contribution.allianceId) === allianceKey &&
+      contribution.dayKey !== questPeriodKey
+    ) {
+      ctx.db.tradeAllianceQuestContribution.delete(contribution);
+    }
+  }
+}
+
 function applyTradeAllianceIncomeDelta(
   ctx: IdleWizardReducerCtx,
   player: { username: string; playerLevel: number },
@@ -3633,7 +3753,7 @@ function applyTradeAllianceIncomeDelta(
     return;
   }
 
-  let member = refreshTradeAllianceMemberDay(ctx, existingMember);
+  let member = refreshTradeAllianceMemberQuestPeriod(ctx, existingMember);
   let alliance = refreshTradeAllianceDay(
     ctx,
     findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId)),
@@ -3654,28 +3774,22 @@ function applyTradeAllianceIncomeDelta(
     dailyContribution: toBigInt(member.dailyContribution) + delta,
     updatedAt: ctx.timestamp,
   });
-  ensureTradeAllianceDailyQuests(ctx, alliance);
+  ensureTradeAllianceWeeklyQuests(ctx, alliance);
 
-  for (const quest of getTradeAllianceRuntimeConfig(ctx).dailyQuests) {
+  for (const quest of getTradeAllianceRuntimeConfig(ctx).weeklyQuests) {
     if (quest.type !== 'allianceIncome') {
       continue;
     }
 
-    const questKey = getTradeAllianceQuestKey(alliance.allianceId, alliance.dayKey, quest.id);
+    const questKey = getTradeAllianceQuestKey(alliance.allianceId, alliance.seasonKey, quest.id);
     const progress = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
     if (!progress) {
       continue;
     }
 
-    ctx.db.tradeAllianceQuestProgress.questKey.update({
-      ...progress,
-      progress: clampBigInt(toBigInt(progress.progress) + delta, 0n, quest.target),
-      updatedAt: ctx.timestamp,
-    });
-
     const contributionKey = getTradeAllianceContributionKey(
       alliance.allianceId,
-      alliance.dayKey,
+      alliance.seasonKey,
       quest.id,
       member.memberIdentity,
     );
@@ -3685,7 +3799,7 @@ function applyTradeAllianceIncomeDelta(
     const nextContribution = {
       contributionKey,
       allianceId: alliance.allianceId,
-      dayKey: alliance.dayKey,
+      dayKey: alliance.seasonKey,
       questId: quest.id,
       contributorIdentity: member.memberIdentity,
       username: player.username,
@@ -4244,19 +4358,20 @@ function validateBrewingGameConfig(value: unknown) {
 }
 
 function validateTradeAllianceGameConfig(value: unknown) {
-  const config = value as { dailyQuests?: unknown };
+  const config = value as { weeklyQuests?: unknown; dailyQuests?: unknown };
+  const questConfigs = config.weeklyQuests ?? config.dailyQuests;
 
   if (
-    !Array.isArray(config.dailyQuests) ||
-    config.dailyQuests.length < 1 ||
-    config.dailyQuests.length > MAX_TRADE_ALLIANCE_DAILY_QUESTS
+    !Array.isArray(questConfigs) ||
+    questConfigs.length < 1 ||
+    questConfigs.length > MAX_TRADE_ALLIANCE_WEEKLY_QUESTS
   ) {
     throw new Error('Invalid trade alliance quest config.');
   }
 
-  const quests = normalizeTradeAllianceDailyQuestConfigs(config.dailyQuests);
+  const quests = normalizeTradeAllianceWeeklyQuestConfigs(questConfigs);
 
-  if (quests.length !== config.dailyQuests.length) {
+  if (quests.length !== questConfigs.length) {
     throw new Error('Invalid trade alliance quest config.');
   }
 }
@@ -4940,7 +5055,8 @@ function ensureResearchConfig(
     const enabled = existingConfig.enabled !== false;
     const defaultDurationSeconds =
       researchDefaultDurationSecondsById[catalogResearch.researchId] ?? 0n;
-    const durationSeconds = normalizeResearchDurationSeconds(
+    const durationSeconds = normalizeStoredResearchDurationSeconds(
+      catalogResearch.researchId,
       existingConfig.durationSeconds,
       defaultDurationSeconds,
     );
@@ -5596,7 +5712,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   const tradeAllianceMember = getTradeAllianceMember(ctx);
   if (tradeAllianceMember) {
     try {
-      refreshTradeAllianceMemberDay(ctx, tradeAllianceMember);
+      refreshTradeAllianceMemberQuestPeriod(ctx, tradeAllianceMember);
       refreshTradeAllianceDay(
         ctx,
         findTradeAllianceById(ctx, getTradeAllianceIdKey(tradeAllianceMember.allianceId)),
@@ -5724,6 +5840,7 @@ export const set_admin_player_data = spacetimedb.reducer(
     currentCrystal: t.u32(),
     theme: t.string(),
     colorMode: t.string(),
+    font: t.string(),
     usernamePromptSeen: t.bool(),
   },
   (
@@ -5737,6 +5854,7 @@ export const set_admin_player_data = spacetimedb.reducer(
       currentCrystal,
       theme,
       colorMode,
+      font,
       usernamePromptSeen,
     },
   ) => {
@@ -5750,6 +5868,7 @@ export const set_admin_player_data = spacetimedb.reducer(
     const safeCurrentCrystal = validateAdminCurrentCrystal(currentCrystal);
     const safeTheme = normalizePlayerTheme(theme);
     const safeColorMode = normalizePlayerColorMode(colorMode);
+    const safeFont = normalizePlayerFont(font);
     const safeUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
     const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
@@ -5769,6 +5888,7 @@ export const set_admin_player_data = spacetimedb.reducer(
       playerLevel: safePlayerLevel,
       theme: safeTheme,
       colorMode: safeColorMode,
+      font: safeFont,
       usernamePromptSeen: safeUsernamePromptSeen,
       lastSeenAt: ctx.timestamp,
     });
@@ -6040,9 +6160,9 @@ export const create_trade_alliance = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
       totalContribution: 0n,
       dailyContribution: 0n,
-      dayKey: getTradeAllianceDayKey(ctx),
+      dayKey: getTradeAllianceQuestPeriodKey(ctx),
     });
-    ensureTradeAllianceDailyQuests(ctx, alliance);
+    ensureTradeAllianceWeeklyQuests(ctx, alliance);
   },
 );
 
@@ -6114,7 +6234,7 @@ export const join_trade_alliance = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
       totalContribution: 0n,
       dailyContribution: 0n,
-      dayKey: getTradeAllianceDayKey(ctx),
+      dayKey: getTradeAllianceQuestPeriodKey(ctx),
     });
     ctx.db.tradeAlliance.allianceId.update({
       ...alliance,
@@ -6232,7 +6352,7 @@ export const accept_trade_alliance_application = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
       totalContribution: 0n,
       dailyContribution: 0n,
-      dayKey: getTradeAllianceDayKey(ctx),
+      dayKey: getTradeAllianceQuestPeriodKey(ctx),
     });
     ctx.db.tradeAlliance.allianceId.update({
       ...alliance,
@@ -6454,7 +6574,7 @@ export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
       ctx,
       findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId)),
     );
-    const dayKey = getTradeAllianceDayKey(ctx);
+    const dayKey = getTradeAllianceQuestPeriodKey(ctx);
     const safeQuestId = normalizeResearchId(questId);
     const questKey = getTradeAllianceQuestKey(alliance.allianceId, dayKey, safeQuestId);
     const quest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
@@ -6610,8 +6730,14 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
     }
 
     if (existingMember) {
+      const questPeriodKey = getTradeAllianceQuestPeriodKey(ctx);
       const oldAlliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(existingMember.allianceId));
       const oldMemberCount = getTradeAllianceMemberCount(ctx, oldAlliance.allianceId);
+      const keepsWeeklyContribution =
+        getTradeAllianceIdKey(existingMember.allianceId) ===
+          getTradeAllianceIdKey(alliance.allianceId) &&
+        existingMember.dayKey === questPeriodKey;
+
       ctx.db.tradeAllianceMember.memberIdentity.update({
         ...existingMember,
         allianceId: alliance.allianceId,
@@ -6619,12 +6745,8 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
         playerLevel: player.playerLevel,
         role: safeRole,
         updatedAt: ctx.timestamp,
-        dayKey: getTradeAllianceDayKey(ctx),
-        dailyContribution:
-          getTradeAllianceIdKey(existingMember.allianceId) ===
-          getTradeAllianceIdKey(alliance.allianceId)
-          ? existingMember.dailyContribution
-          : 0n,
+        dayKey: questPeriodKey,
+        dailyContribution: keepsWeeklyContribution ? existingMember.dailyContribution : 0n,
       });
       if (
         getTradeAllianceIdKey(oldAlliance.allianceId) !==
@@ -6667,7 +6789,7 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
         updatedAt: ctx.timestamp,
         totalContribution: 0n,
         dailyContribution: 0n,
-        dayKey: getTradeAllianceDayKey(ctx),
+        dayKey: getTradeAllianceQuestPeriodKey(ctx),
       });
     }
 

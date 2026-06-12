@@ -534,7 +534,9 @@ export class WorkshopTradeAllianceManager {
     main.className = 'workshop-page__trade-alliance-member-main';
     main.append(
       this.createTextRow(`${member.username}(${member.playerLevel})`, this.formatRole(member.role)),
-      this.createTextRow('daily', this.formatNumber(member.dailyContribution), { muted: true }),
+      this.createTextRow('weekly', this.formatNumber(this.getMemberWeeklyContribution(member)), {
+        muted: true,
+      }),
     );
 
     if (this.canModifyMember(member)) {
@@ -597,7 +599,9 @@ export class WorkshopTradeAllianceManager {
     this.refs.memberEditTitle.textContent = `${member.username}(${member.playerLevel})`;
     const rows = [
       this.createTextRow('role', this.formatRole(member.role)),
-      this.createTextRow('daily', this.formatNumber(member.dailyContribution), { muted: true }),
+      this.createTextRow('weekly', this.formatNumber(this.getMemberWeeklyContribution(member)), {
+        muted: true,
+      }),
     ];
 
     if (this.canManageMember(member)) {
@@ -893,6 +897,10 @@ export class WorkshopTradeAllianceManager {
         row.dayKey === dayKey,
     );
     return contribution?.contribution ?? 0;
+  }
+
+  getMemberWeeklyContribution(member) {
+    return member.weeklyContribution ?? member.dailyContribution ?? 0;
   }
 
   getSelectedMember() {

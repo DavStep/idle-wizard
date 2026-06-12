@@ -17,17 +17,27 @@ function createGameplayFacadeFake(snapshot) {
 function createSnapshot() {
   return {
     brewing: {
+      herbs: [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          kind: 'herb',
+          quantity: 1,
+        },
+      ],
       recipes: [
         {
           key: 'minorHealingPotion',
-          label: 'Minor Healing Potion',
+          label: 'minor healing potion',
           unlocked: true,
           manaCost: 10,
           brewDurationMs: 10_000,
           ingredients: [
             {
+              itemTypeId: 1001,
               key: 'sageHerb',
-              label: 'Sage',
+              label: 'sage',
               quantity: 1,
             },
           ],
@@ -49,11 +59,152 @@ describe('BrewingRecipeBookManager', () => {
 
     manager.mount(parent);
 
-    const button = parent.querySelector('.brewing-page__recipe-select-button');
+    const row = parent.querySelector('.brewing-page__recipe-row');
+    const action = row.querySelector('.brewing-page__recipe-select-button');
 
-    expect(button.textContent).toBe('selected');
-    expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(button.getAttribute('aria-label')).toBe('Minor Healing Potion selected recipe');
+    expect(row.tagName).toBe('BUTTON');
+    expect(action.textContent).toBe('selected');
+    expect(row.getAttribute('aria-pressed')).toBe('true');
+    expect(row.getAttribute('aria-label')).toBe('unselect minor healing potion recipe');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('selects a recipe when the recipe action is clicked', () => {
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    let selectedRecipeKey = null;
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(createSnapshot()),
+      getSelectedRecipeKey: () => selectedRecipeKey,
+      onSelectRecipe: (recipe) => {
+        selectedRecipeKey = recipe.key;
+      },
+    });
+
+    manager.mount(parent);
+
+    parent
+      .querySelector('.brewing-page__recipe-select-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(selectedRecipeKey).toBe('minorHealingPotion');
+    expect(parent.querySelector('.brewing-page__recipe-row').getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
+      'selected',
+    );
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('unselects a selected recipe when the recipe action is clicked', () => {
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    let selectedRecipeKey = 'minorHealingPotion';
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(createSnapshot()),
+      getSelectedRecipeKey: () => selectedRecipeKey,
+      onSelectRecipe: (recipe) => {
+        selectedRecipeKey = recipe?.key ?? null;
+      },
+    });
+
+    manager.mount(parent);
+
+    parent
+      .querySelector('.brewing-page__recipe-select-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(selectedRecipeKey).toBeNull();
+    expect(parent.querySelector('.brewing-page__recipe-row').getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+    expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
+      'select',
+    );
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows required and owned ingredient quantities in recipe rows', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 1,
+          },
+          {
+            itemTypeId: 1005,
+            key: 'briarHerb',
+            label: 'briar',
+            kind: 'herb',
+            quantity: 7,
+          },
+        ],
+        recipes: [
+          {
+            key: 'briarWard',
+            label: 'briar ward',
+            unlocked: true,
+            manaCost: 24,
+            brewDurationMs: 60_000,
+            ingredients: [
+              {
+                itemTypeId: 1005,
+                key: 'briarHerb',
+                label: 'briar',
+                quantity: 2,
+              },
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 2,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => null,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+
+    const ingredients = [...parent.querySelectorAll('.brewing-page__recipe-ingredient-row')].map(
+      (row) => ({
+        required: row.querySelector('.brewing-page__recipe-ingredient-required')?.textContent,
+        owned: row.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
+      }),
+    );
+
+    expect(ingredients).toEqual([
+      { required: '- 2 briar', owned: 'owned 7' },
+      { required: '- 2 sage', owned: 'owned 1' },
+    ]);
+
+    snapshot.brewing.herbs[1].quantity = 8;
+    manager.render(snapshot);
+
+    expect(
+      parent
+        .querySelector('.brewing-page__recipe-ingredient-row')
+        ?.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
+    ).toBe('owned 8');
 
     manager.unmount();
     parent.remove();

@@ -1,4 +1,5 @@
 import { TopPanelAuthManager } from './managers/TopPanelAuthManager.js';
+import { TopPanelFitManager } from './managers/TopPanelFitManager.js';
 import { TopPanelLevelManager } from './managers/TopPanelLevelManager.js';
 import { TopPanelResourceDisplayManager } from './managers/TopPanelResourceDisplayManager.js';
 import { TopPanelSettingsManager } from './managers/TopPanelSettingsManager.js';
@@ -11,7 +12,8 @@ export class TopPanelFacade {
 
   constructor({ gameplayFacade, playerFacade, authFacade, feedbackFacade } = {}) {
     this.viewManager = new TopPanelViewManager();
-    this.authManager = new TopPanelAuthManager({ authFacade });
+    this.authManager = new TopPanelAuthManager({ authFacade, gameplayFacade });
+    this.fitManager = new TopPanelFitManager();
     this.levelManager = new TopPanelLevelManager({ gameplayFacade });
     this.resourceDisplayManager = new TopPanelResourceDisplayManager({ gameplayFacade });
     this.settingsManager = new TopPanelSettingsManager({
@@ -31,6 +33,7 @@ export class TopPanelFacade {
     this.authManager.mount(refs);
     this.levelManager.mount(refs);
     this.resourceDisplayManager.mount(refs);
+    this.fitManager.mount(refs);
     this.settingsManager.mount(refs);
     this.usernamePromptManager.mount();
   }
@@ -38,6 +41,7 @@ export class TopPanelFacade {
   unmount() {
     this.usernamePromptManager.unmount();
     this.settingsManager.unmount();
+    this.fitManager.unmount();
     this.resourceDisplayManager.unmount();
     this.levelManager.unmount();
     this.authManager.unmount();

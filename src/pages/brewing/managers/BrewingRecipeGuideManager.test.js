@@ -21,19 +21,19 @@ function createSnapshot(ingredients = []) {
       recipes: [
         {
           key: 'minorHealingPotion',
-          label: 'Minor Healing Potion',
+          label: 'minor healing potion',
           ingredients: [
             {
               itemTypeId: 1001,
               key: 'sageHerb',
-              label: 'Sage',
+              label: 'sage',
               kind: 'herb',
               quantity: 2,
             },
             {
               itemTypeId: 1002,
               key: 'mintHerb',
-              label: 'Mint',
+              label: 'mint',
               kind: 'herb',
               quantity: 1,
             },
@@ -67,9 +67,9 @@ describe('BrewingRecipeGuideManager', () => {
     );
     const guide = parent.querySelector('.brewing-page__guide');
 
-    expect(labels).toEqual(['- 2 Sage', '- 1 Mint']);
-    expect(labels).not.toContain('1. Sage');
-    expect(labels).not.toContain('2. Sage');
+    expect(labels).toEqual(['- 2 sage', '- 1 mint']);
+    expect(labels).not.toContain('1. sage');
+    expect(labels).not.toContain('2. sage');
     expect(guide.style.getPropertyValue('--brewing-page-guide-sequence-height')).toBe(
       'calc(var(--style-row-min-height) * 2)',
     );
@@ -96,13 +96,13 @@ describe('BrewingRecipeGuideManager', () => {
         {
           itemTypeId: 1001,
           key: 'sageHerb',
-          label: 'Sage',
+          label: 'sage',
           kind: 'herb',
         },
         {
           itemTypeId: 1001,
           key: 'sageHerb',
-          label: 'Sage',
+          label: 'sage',
           kind: 'herb',
         },
       ]),
@@ -110,9 +110,9 @@ describe('BrewingRecipeGuideManager', () => {
 
     const steps = [...parent.querySelectorAll('.brewing-page__guide-step')];
 
-    expect(steps[0].querySelector('.row_key').textContent).toBe('- 2 Sage');
+    expect(steps[0].querySelector('.row_key').textContent).toBe('- 2 sage');
     expect(steps[0].querySelector('.row_val').textContent).toBe('placed');
-    expect(steps[1].querySelector('.row_key').textContent).toBe('- 1 Mint');
+    expect(steps[1].querySelector('.row_key').textContent).toBe('- 1 mint');
     expect(steps[1].querySelector('.row_val').textContent).toBe('next');
 
     manager.unmount();
@@ -137,7 +137,7 @@ describe('BrewingRecipeGuideManager', () => {
 
     expect(manager.getSelectedRecipeKey()).toBe('minorHealingPotion');
     expect(nextParent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe(
-      'Minor Healing Potion',
+      'minor healing potion',
     );
 
     manager.unmount();
@@ -152,13 +152,26 @@ describe('BrewingRecipeGuideManager', () => {
 
     expect(manager.getSelectedRecipeKey()).toBe('minorHealingPotion');
     expect(parent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe(
-      'Minor Healing Potion',
+      'minor healing potion',
     );
     expect(
       parent
         .querySelector('.brewing-page__guide')
         .style.getPropertyValue('--brewing-page-guide-sequence-height'),
     ).toBe('calc(var(--style-row-min-height) * 2)');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('clears the selected recipe when null is selected', () => {
+    const { manager, parent } = mountGuide(createSnapshot());
+
+    manager.selectRecipe(null);
+
+    expect(manager.getSelectedRecipeKey()).toBeNull();
+    expect(parent.querySelector('.brewing-page__guide-row .row_val').textContent).toBe('none');
+    expect(parent.querySelector('.brewing-page__guide-empty').hidden).toBe(false);
 
     manager.unmount();
     parent.remove();

@@ -29,10 +29,10 @@ describe('WorldChatResearchAnnouncementManager', () => {
       ok: false,
       reason: 'missing_research',
     });
-    await expect(manager.announceResearch('Mana Tonic')).resolves.toEqual({
+    await expect(manager.announceResearch('mana tonic')).resolves.toEqual({
       ok: false,
       reason: 'offline',
-      researchName: 'Mana Tonic',
+      researchName: 'mana tonic',
     });
   });
 });

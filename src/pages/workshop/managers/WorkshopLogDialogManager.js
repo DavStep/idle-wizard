@@ -1,3 +1,5 @@
+import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
+
 export class WorkshopLogDialogManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -214,16 +216,12 @@ export class WorkshopLogDialogManager {
   }
 
   updateScrollProgress() {
-    if (!this.refs.rows || !this.refs.progressFill || !this.refs.frame) {
-      return;
-    }
-
-    const maxScroll = this.refs.rows.scrollHeight - this.refs.rows.clientHeight;
-    const progress = maxScroll > 0 ? Math.min(this.refs.rows.scrollTop / maxScroll, 1) : 1;
-    const hasBottomOverflow = maxScroll > this.refs.rows.scrollTop + 1;
-
-    this.refs.progressFill.style.width = `${Math.round(progress * 100)}%`;
-    this.refs.frame.classList.toggle('has-bottom-overflow', hasBottomOverflow);
+    updateScrollCueState({
+      scrollElement: this.refs.rows,
+      cueElement: this.refs.frame,
+      progressFill: this.refs.progressFill,
+      inlineCue: false,
+    });
   }
 
   applyVisibility() {

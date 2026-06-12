@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-12T00:00:00.000Z",
+  "title": "Design System: Idle Wizard",
+  "extensions": {
+    "colorMeta": {
+      "room-bg": {
+        "role": "neutral",
+        "displayName": "Room Background",
+        "canonical": "#dedede",
+        "tonalRamp": ["#1f1f1f", "#3a3a3a", "#5e5e5e", "#858585", "#ababab", "#c9c9c9", "#dedede", "#f2f2f2"]
+      },
+      "room-surface": {
+        "role": "neutral",
+        "displayName": "Room Surface",
+        "canonical": "#e5e5e5",
+        "tonalRamp": ["#202020", "#404040", "#666666", "#8c8c8c", "#b3b3b3", "#d1d1d1", "#e5e5e5", "#f7f7f7"]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Ledger Ink",
+        "canonical": "#1a1a1a",
+        "tonalRamp": ["#000000", "#1a1a1a", "#333333", "#555555", "#777777", "#999999", "#c0c0c0", "#eeeeee"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#5e5e5e",
+        "tonalRamp": ["#171717", "#303030", "#4a4a4a", "#5e5e5e", "#7a7a7a", "#999999", "#bdbdbd", "#e6e6e6"]
+      },
+      "disabled": {
+        "role": "neutral",
+        "displayName": "Disabled Text",
+        "canonical": "#969696",
+        "tonalRamp": ["#242424", "#424242", "#666666", "#808080", "#969696", "#adadad", "#c9c9c9", "#eeeeee"]
+      },
+      "notification-red": {
+        "role": "secondary",
+        "displayName": "Notification Red",
+        "canonical": "#c1121f",
+        "tonalRamp": ["#3a0509", "#61090f", "#850c15", "#a80f1b", "#c1121f", "#d94a54", "#eb8f96", "#f8d1d4"]
+      },
+      "notification-orange": {
+        "role": "secondary",
+        "displayName": "Notification Orange",
+        "canonical": "#d66a00",
+        "tonalRamp": ["#3d1d00", "#663000", "#8f4600", "#b85a00", "#d66a00", "#e58c34", "#f0b678", "#f8ddbf"]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Source Body",
+        "purpose": "Room rows, controls, resource values, and status text."
+      },
+      "title": {
+        "displayName": "Embedded Title",
+        "purpose": "Bold labels embedded over box borders."
+      },
+      "dialog-title": {
+        "displayName": "Dialog Title",
+        "purpose": "Popup border titles only."
+      },
+      "border-label": {
+        "displayName": "Border Label",
+        "purpose": "Counts, tabs, close controls, and edge actions centered on borders."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dialog-shadow",
+        "value": "5px 5px 5px var(--style-muted)",
+        "purpose": "Popup/dialog panels only."
+      },
+      {
+        "name": "tooltip-shadow",
+        "value": "-1px 3px 2px var(--style-muted)",
+        "purpose": "Small tooltips only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "fast",
+        "value": "140ms",
+        "purpose": "Compact control state changes."
+      },
+      {
+        "name": "normal",
+        "value": "190ms",
+        "purpose": "Room, overlay, and dialog entry."
+      },
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Default state and entry easing."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "authored-room",
+        "value": "1080x2170"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Style Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default bordered text button for room actions.",
+      "html": "<button class=\"ds-style-button\">summon</button>",
+      "css": ".ds-style-button { position: relative; width: 100px; padding: 5px 10px; appearance: none; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: var(--style-font-size, 15px); line-height: normal; text-align: center; cursor: pointer; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); border-radius: 0; transition: color 140ms linear, border-color 140ms linear, background-color 140ms linear; } .ds-style-button:hover, .ds-style-button:focus-visible { outline: none; text-decoration: underline; } .ds-style-button:active { background: var(--style-active-surface, #d6d6d6); } .ds-style-button:disabled { color: var(--style-disabled, #969696); border-color: var(--style-disabled, #969696); cursor: default; text-decoration: none; }"
+    },
+    {
+      "name": "Room Box",
+      "kind": "card",
+      "refersTo": "room-box",
+      "description": "Ordinary A Dark Room-style panel with embedded title.",
+      "html": "<section class=\"ds-room-box\"><span class=\"ds-room-box-title\">mana sphere</span><div class=\"ds-row\"><span>mana</span><span>50/50</span></div></section>",
+      "css": ".ds-room-box { position: relative; padding: 5px 10px; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: var(--style-font-size, 15px); line-height: normal; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); border-radius: 0; } .ds-room-box-title { position: absolute; top: -13px; left: 8px; display: inline-block; font-weight: 700; background: var(--style-surface, #e5e5e5); } .ds-row { display: grid; grid-template-columns: minmax(0, 1fr) 100px; min-height: 20px; column-gap: 6px; } .ds-row span:last-child { text-align: right; font-variant-numeric: tabular-nums lining-nums; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "card",
+      "refersTo": "dialog",
+      "description": "Popup panel with heavier border, embedded title, and structural shadow.",
+      "html": "<section class=\"ds-dialog\"><span class=\"ds-dialog-title\">seeds</span><div class=\"ds-row\"><span>sage</span><span>4</span></div></section>",
+      "css": ".ds-dialog { position: relative; padding: 20px; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: var(--style-font-size, 15px); line-height: normal; background: var(--style-surface, #e5e5e5); border: var(--style-border-strong, 2px solid #1a1a1a); border-radius: 0; box-shadow: var(--style-block-shadow, 5px 5px 5px #5e5e5e); } .ds-dialog-title { position: absolute; top: -13px; left: 8px; display: inline-block; font-size: var(--style-dialog-title-font-size, 16px); font-weight: 700; background: var(--style-surface, #e5e5e5); } .ds-row { display: grid; grid-template-columns: minmax(0, 1fr) 100px; min-height: 20px; column-gap: 6px; } .ds-row span:last-child { text-align: right; font-variant-numeric: tabular-nums lining-nums; }"
+    },
+    {
+      "name": "Bottom Room Tabs",
+      "kind": "nav",
+      "refersTo": "bottom-room-tabs",
+      "description": "Five shared page tabs with underline selection.",
+      "html": "<nav class=\"ds-bottom-panel\"><button>brewing</button><button>garden</button><button class=\"is-selected\">workshop</button><button>research</button><button>market</button></nav>",
+      "css": ".ds-bottom-panel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; padding: 5px 0; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: 13px; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); } .ds-bottom-panel button { min-width: 0; min-height: 20px; padding: 1px 0; overflow: hidden; appearance: none; color: inherit; font: inherit; text-align: center; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; background: transparent; border: 1px solid transparent; border-radius: 0; } .ds-bottom-panel button:hover, .ds-bottom-panel button:focus-visible, .ds-bottom-panel button.is-selected { outline: none; text-decoration: underline; }"
+    },
+    {
+      "name": "Progress Rail",
+      "kind": "custom",
+      "refersTo": "progress",
+      "description": "Compact timed progress indicator.",
+      "html": "<span class=\"ds-progress\"><span class=\"ds-progress-fill\" style=\"width: 62%\"></span></span>",
+      "css": ".ds-progress { position: relative; display: block; height: 3px; overflow: hidden; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); } .ds-progress-fill { position: absolute; inset: 0 auto 0 0; display: block; width: 0%; height: 100%; background: var(--style-text, #1a1a1a); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Plain Room Ledger",
+    "overview": "Idle Wizard uses sparse room UI that behaves like a readable ledger inside a fixed mobile game surface. The authored design size is 1080x2170; room UI is built at source scale, then fitted to the viewport. Do not make source text larger to solve mobile readability.\n\nThe system rejects decorated fantasy RPG UI, colorful idle dashboards, modern rounded mobile cards, gradients, icon-heavy controls, textures, illustration, and decorative shadows. Interface choices should feel like A Dark Room-style text-game controls without copying that game's desktop dimensions.",
+    "keyCharacteristics": [
+      "Fixed authored portrait room surface with scaled source UI.",
+      "Black or near-black text on plain light surfaces by default.",
+      "Compact bordered boxes, embedded border titles, and tab labels on borders.",
+      "Lowercase player-facing labels.",
+      "Motion only for room entry, popup entry, overlay fade, and compact state feedback."
+    ],
+    "rules": [
+      {
+        "name": "The Monochrome Default Rule",
+        "body": "Use black text, gray state colors, and white or gray surfaces unless the user explicitly requests colored UI.",
+        "section": "colors"
+      },
+      {
+        "name": "The Color Has a Job Rule",
+        "body": "Red and orange mean notification priority. Resource colors are optional settings; they must disappear into disabled state when a row is locked or unavailable.",
+        "section": "colors"
+      },
+      {
+        "name": "The Source Scale Rule",
+        "body": "Keep source UI text at 15px and make mobile readable through the room UI scale layer.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lowercase Rule",
+        "body": "Player-facing labels stay lowercase unless they are user-entered names or external proper nouns.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Room Rule",
+        "body": "Non-dialog room boxes never get shadows.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Dialog Weight Rule",
+        "body": "Popup panels use 2px border, 20px padding, and the bottom-right shadow; ordinary boxes do not borrow this treatment.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reuse `docs/ui-patterns.md` before creating any new row, box, popup, tab, or border-label treatment.",
+      "Do keep source typography at 15px body, 16px dialog title, and 13px border label.",
+      "Do use 1px borders for ordinary boxes and 2px borders only for dialogs or popup tabs.",
+      "Do keep row actions inline and right-aligned with tabular numerals.",
+      "Do support reduced motion by removing nonessential transitions and animations."
+    ],
+    "donts": [
+      "Don't make the UI look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app.",
+      "Don't use gradients, textures, illustrations, icons, rounded cards, or decorative shadows.",
+      "Don't add color except notification/resource state or an explicit user request.",
+      "Don't put headings inside boxes when the label belongs embedded over the border.",
+      "Don't inflate source font size to make mobile text readable."
+    ]
+  }
+}

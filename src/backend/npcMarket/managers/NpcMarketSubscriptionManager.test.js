@@ -75,7 +75,7 @@ describe('NpcMarketSubscriptionManager', () => {
     const pricesTable = createTable([
       {
         itemKey: 'sageSeed',
-        itemLabel: 'Sage Seed',
+        itemLabel: 'sage seed',
         itemKind: 'seed',
         basePriceGold: 1n,
         marketPriceGold: 3n,
@@ -111,7 +111,7 @@ describe('NpcMarketSubscriptionManager', () => {
       ],
     });
     expect(manager.getPrice('sageSeed')).toMatchObject({
-      itemLabel: 'Sage Seed',
+      itemLabel: 'sage seed',
       npcBuyPriceGold: 2,
     });
   });

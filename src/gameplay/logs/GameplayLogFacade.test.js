@@ -10,18 +10,18 @@ describe('GameplayLogFacade', () => {
       ok: true,
       seedCounts: [
         {
-          seed: { label: 'Sage Seed' },
+          seed: { label: 'sage seed' },
           quantity: 1,
         },
         {
-          seed: { label: 'Mint Seed' },
+          seed: { label: 'mint seed' },
           quantity: 1,
         },
       ],
       quantity: 2,
     });
 
-    expect(logs.getSnapshot().entries[0]?.message).toBe('summoned Sage Seed, Mint Seed');
+    expect(logs.getSnapshot().entries[0]?.message).toBe('summoned sage seed, mint seed');
   });
 
   it('keeps grouped quantity when same seed is summoned more than once', () => {
@@ -31,13 +31,13 @@ describe('GameplayLogFacade', () => {
       ok: true,
       seedCounts: [
         {
-          seed: { label: 'Sage Seed' },
+          seed: { label: 'sage seed' },
           quantity: 2,
         },
       ],
       quantity: 2,
     });
 
-    expect(logs.getSnapshot().entries[0]?.message).toBe('summoned Sage Seed x2');
+    expect(logs.getSnapshot().entries[0]?.message).toBe('summoned sage seed x2');
   });
 });

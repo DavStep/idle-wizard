@@ -1,0 +1,239 @@
+const SCROLL_CUE_SELECTOR = [
+  '.brewing-page__herb-rows',
+  '.brewing-page__cauldron-guide-sequence',
+  '.brewing-page__guide-sequence',
+  '.workshop-page__leaderboard-rows',
+  '.workshop-page__discoveries-rows',
+  '.workshop-page__world-chat-messages',
+  '.workshop-page__trade-alliance-content',
+  '.shop-page__market-panel',
+  '.garden-page__herb-rows',
+  '.garden-page__plot-rows',
+  '.garden-page__seed-rows',
+  '.research-page__content',
+  '.brewing-page__recipe-list',
+  '.brewing-page__potion-list',
+  '.shop-page__market-rows',
+  '.shop-page__trade-history-rows',
+  '.shop-page__demand-rows',
+  '.shop-page__stock-rows',
+  '.shop-page__sell-item-list',
+  '.room-top-panel__settings-pane',
+  '.room-top-panel__level-content',
+].join(',');
+
+const SCROLL_PROGRESS_PROPERTY = '--style-scroll-progress';
+
+export function updateScrollCueState({
+  scrollElement,
+  cueElement = scrollElement,
+  progressFill = null,
+  inlineCue = true,
+} = {}) {
+  if (!scrollElement || !cueElement) {
+    return null;
+  }
+
+  const maxScroll = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight);
+  const progress =
+    maxScroll > 0 ? Math.min(Math.max(scrollElement.scrollTop / maxScroll, 0), 1) : 1;
+  const percent = Math.round(progress * 100);
+  const percentText = `${percent}%`;
+  const hasScrollOverflow = maxScroll > 1;
+  const hasBottomOverflow = maxScroll > scrollElement.scrollTop + 1;
+
+  if (inlineCue) {
+    if (scrollElement.style.getPropertyValue(SCROLL_PROGRESS_PROPERTY) !== percentText) {
+      scrollElement.style.setProperty(SCROLL_PROGRESS_PROPERTY, percentText);
+    }
+
+    cueElement.classList.toggle('has-scroll-overflow', hasScrollOverflow);
+  }
+
+  if (progressFill && progressFill.style.width !== percentText) {
+    progressFill.style.width = percentText;
+  }
+
+  cueElement.classList.toggle('has-bottom-overflow', hasBottomOverflow);
+
+  return {
+    maxScroll,
+    percent,
+    hasScrollOverflow,
+    hasBottomOverflow,
+  };
+}
+
+class ManagedScrollCue {
+  constructor(element) {
+    this.element = element;
+    this.frame = 0;
+    this.handleScroll = () => this.scheduleUpdate();
+  }
+
+  mount() {
+    this.element.classList.add('style-scroll-cue');
+    this.element.addEventListener('scroll', this.handleScroll, { passive: true });
+    this.scheduleUpdate();
+  }
+
+  destroy() {
+    this.cancelScheduledUpdate();
+    this.element.removeEventListener('scroll', this.handleScroll);
+    this.element.classList.remove(
+      'style-scroll-cue',
+      'has-scroll-overflow',
+      'has-bottom-overflow',
+    );
+    this.element.style.removeProperty(SCROLL_PROGRESS_PROPERTY);
+  }
+
+  scheduleUpdate() {
+    if (this.frame) {
+      return;
+    }
+
+    if (typeof requestAnimationFrame === 'function') {
+      this.frame = requestAnimationFrame(() => {
+        this.frame = 0;
+        this.update();
+      });
+      return;
+    }
+
+    this.update();
+  }
+
+  cancelScheduledUpdate() {
+    if (!this.frame || typeof cancelAnimationFrame !== 'function') {
+      this.frame = 0;
+      return;
+    }
+
+    cancelAnimationFrame(this.frame);
+    this.frame = 0;
+  }
+
+  update() {
+    updateScrollCueState({ scrollElement: this.element });
+  }
+}
+
+export class ScrollCueManager {
+  constructor({ selector = SCROLL_CUE_SELECTOR } = {}) {
+    this.selector = selector;
+    this.root = null;
+    this.window = null;
+    this.observer = null;
+    this.cues = new Map();
+    this.scanFrame = 0;
+    this.handleMutation = () => this.scheduleScan();
+    this.handleResize = () => this.scheduleUpdates();
+  }
+
+  mount(root) {
+    if (!root || this.root) {
+      return;
+    }
+
+    this.root = root;
+    this.window = root.ownerDocument?.defaultView ?? globalThis;
+
+    const MutationObserverCtor = this.window?.MutationObserver;
+
+    if (typeof MutationObserverCtor === 'function') {
+      this.observer = new MutationObserverCtor(this.handleMutation);
+      this.observer.observe(root, {
+        attributes: true,
+        attributeFilter: ['class', 'hidden', 'style', 'aria-hidden'],
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    this.window?.addEventListener?.('resize', this.handleResize);
+    this.scan();
+  }
+
+  unmount() {
+    this.cancelScheduledScan();
+    this.observer?.disconnect();
+    this.observer = null;
+    this.window?.removeEventListener?.('resize', this.handleResize);
+    this.window = null;
+
+    for (const cue of this.cues.values()) {
+      cue.destroy();
+    }
+
+    this.cues.clear();
+    this.root = null;
+  }
+
+  scheduleScan() {
+    if (this.scanFrame) {
+      return;
+    }
+
+    if (typeof requestAnimationFrame === 'function') {
+      this.scanFrame = requestAnimationFrame(() => {
+        this.scanFrame = 0;
+        this.scan();
+      });
+      return;
+    }
+
+    this.scan();
+  }
+
+  cancelScheduledScan() {
+    if (!this.scanFrame || typeof cancelAnimationFrame !== 'function') {
+      this.scanFrame = 0;
+      return;
+    }
+
+    cancelAnimationFrame(this.scanFrame);
+    this.scanFrame = 0;
+  }
+
+  scan() {
+    if (!this.root) {
+      return;
+    }
+
+    this.removeDetachedCues();
+
+    for (const element of this.root.querySelectorAll(this.selector)) {
+      this.ensureCue(element);
+    }
+
+    this.scheduleUpdates();
+  }
+
+  ensureCue(element) {
+    if (this.cues.has(element)) {
+      return;
+    }
+
+    const cue = new ManagedScrollCue(element);
+    this.cues.set(element, cue);
+    cue.mount();
+  }
+
+  removeDetachedCues() {
+    for (const [element, cue] of this.cues) {
+      if (this.root.contains(element)) {
+        continue;
+      }
+
+      cue.destroy();
+      this.cues.delete(element);
+    }
+  }
+
+  scheduleUpdates() {
+    for (const cue of this.cues.values()) {
+      cue.scheduleUpdate();
+    }
+  }
+}

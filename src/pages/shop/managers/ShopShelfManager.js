@@ -112,6 +112,10 @@ export class ShopShelfManager {
     const priceValue = document.createElement('span');
     priceValue.className = 'shop-page__slot-price-value';
 
+    const emptyRule = document.createElement('span');
+    emptyRule.className = 'shop-page__slot-empty-rule';
+    emptyRule.setAttribute('aria-hidden', 'true');
+
     const button = document.createElement('button');
     button.className = 'style-button shop-page__buy-slot-button';
     button.type = 'button';
@@ -121,7 +125,7 @@ export class ShopShelfManager {
     });
 
     row.append(label, value);
-    return { row, value, button, itemValue, priceValue };
+    return { row, value, button, itemValue, priceValue, emptyRule };
   }
 
   createSellControls() {
@@ -354,8 +358,19 @@ export class ShopShelfManager {
     const parts = this.getSlotSellParts(slot, shelf, snapshot);
 
     if (!parts.itemText) {
-      refs.value.textContent = EMPTY_UNLOCKED_STAND_LABEL;
-      setResourceColorFromText(refs.value, refs.value.textContent);
+      if (
+        refs.itemValue.parentElement !== refs.value ||
+        refs.priceValue.parentElement !== refs.value
+      ) {
+        refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+      }
+
+      refs.itemValue.textContent = EMPTY_UNLOCKED_STAND_LABEL;
+      setResourceColorFromText(refs.itemValue, refs.itemValue.textContent);
+      setResourceColor(refs.priceValue, null);
+      if (refs.emptyRule.parentElement !== refs.priceValue) {
+        refs.priceValue.replaceChildren(refs.emptyRule);
+      }
       return;
     }
 
@@ -378,7 +393,7 @@ export class ShopShelfManager {
       return `level ${shelf.nextSlotRequiresLevel}`;
     }
 
-    return cost === 0 ? 'buy (free)' : `buy (${cost} gold)`;
+    return cost === 0 ? 'buy (free)' : `buy (${formatGoldPriceText(cost)})`;
   }
 
   renderSellControls(snapshot, shelf) {

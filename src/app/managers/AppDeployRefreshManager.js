@@ -1,6 +1,7 @@
 const DEFAULT_DEPLOY_VERSION_ENDPOINT = `${import.meta.env.BASE_URL ?? '/'}deploy-version.json`;
 const DEFAULT_DEPLOY_REFRESH_ENABLED = import.meta.env.PROD;
 const DEFAULT_CURRENT_DEPLOY_VERSION = import.meta.env.VITE_DEPLOY_VERSION ?? null;
+const BEFORE_RELOAD_TIMEOUT = Symbol('beforeReloadTimeout');
 
 export class AppDeployRefreshManager {
   constructor({
@@ -185,25 +186,33 @@ export class AppDeployRefreshManager {
   }
 
   async prepareReload() {
-    await this.runBeforeReload();
+    const readyToReload = await this.runBeforeReload();
+
+    if (!readyToReload) {
+      this.cancelReload();
+      return;
+    }
+
     this.scheduleReload();
   }
 
   async runBeforeReload() {
     if (typeof this.beforeReload !== 'function') {
-      return;
+      return true;
     }
 
     try {
       const result = this.beforeReload();
 
       if (!result || typeof result.then !== 'function') {
-        return;
+        return result !== false;
       }
 
-      await this.waitForBeforeReload(result);
+      const outcome = await this.waitForBeforeReload(result);
+      return outcome !== false && outcome !== BEFORE_RELOAD_TIMEOUT;
     } catch {
-      // Save failures should not trap players on the old bundle forever.
+      // A failed final save must not reload into older server progress.
+      return false;
     }
   }
 
@@ -212,16 +221,15 @@ export class AppDeployRefreshManager {
       !Number.isFinite(this.beforeReloadTimeoutMs) ||
       this.beforeReloadTimeoutMs <= 0
     ) {
-      await result;
-      return;
+      return result;
     }
 
     try {
-      await Promise.race([
+      return await Promise.race([
         result,
         new Promise((resolve) => {
           this.beforeReloadTimeoutId = this.windowRef.setTimeout(
-            resolve,
+            () => resolve(BEFORE_RELOAD_TIMEOUT),
             this.beforeReloadTimeoutMs,
           );
         }),
@@ -249,9 +257,20 @@ export class AppDeployRefreshManager {
     }, this.reloadDelayMs);
   }
 
+  cancelReload() {
+    this.reloading = false;
+    this.hide();
+  }
+
   show() {
     if (this.root) {
       this.root.hidden = false;
+    }
+  }
+
+  hide() {
+    if (this.root) {
+      this.root.hidden = true;
     }
   }
 

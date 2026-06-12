@@ -38,36 +38,42 @@
 - Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
+- Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
+- Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
+- Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
 - When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.
+- Server weekly/monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly is 7 days, monthly is 30 days, and UTC midnight is Armenia 04:00.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
 
 ## Gameplay Economy
 
 - Mana has generation and a cap; both upgrade through player level baseline plus research bonuses.
 - Summoning seeds consumes mana.
-- Canonical seed names: Sage, Mint, Nettle, Lavender, Briar, Glowcap, Mandrake, Sunroot, Moonflower, Frostmoss, Dreambell, Star Anise, Bloodrose, Dragonpepper.
+- Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper.
 - For now, all seed drops use equal weight; keep a weight field anyway so rarity can change later.
 - Seeds produce herbs, and herbs have growth duration.
 - Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
 - Garden and Brewing herb/potion use panels show only researched/unlocked or owned items; hide locked zero-count rows completely.
-- Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make Wasted Potion.
+- Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make wasted potion.
 - Potion recipe ingredient order matters; expand grouped quantities in listed order for matching.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
 - Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
 - Brewing herb controls are tap-first on mobile; drag should start only after movement crosses a small threshold.
+- Brewing herb list vertical pan must stay native; custom herb drag should cancel on vertical movement and use `touch-action: pan-y`.
+- Brewing overflow herb rows must not be native-draggable on touch/coarse pointers; tap-to-add should preserve native list scrolling.
 - Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Brewing recipe selection comes from the recipes popup; selecting stages full ingredients when owned, otherwise the cauldron guide shows missing counts.
-- Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 Sage`), not expanded numbered slots.
+- Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 sage`), not expanded numbered slots.
 - Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
 - Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
 - Brewing shows `recipes` and `potions` as sibling buttons, not a bordered recipes block; potions popup reads owned potion stacks from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
-- Wasted Potion is not researchable and sells for 1 gold by item-level sell price override.
+- wasted potion is not researchable and sells for 1 gold by item-level sell price override.
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
 - Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - For now, research timers are capped at `10 minutes`; this is temporary balance.
@@ -126,6 +132,7 @@
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
+- Player-facing UI labels should stay lowercase, including seed, herb, potion, research, notice, and task labels; preserve user-entered names as typed.
 - Project typography uses `Lexend` at `15px` source size with tabular lining numerals for values.
 - Keep popup/dialog titles at `16px`; ordinary block titles and body text share the source size.
 - Box titles use bold weight.
@@ -155,6 +162,7 @@
 - Research price controls are unboxed right-aligned text buttons; preserve click behavior without visible price boxes.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
+- Brewing recipe popup ingredient rows show required amount on the left (`- 3 sage`) and owned count on the right (`owned 31`), not `(31/3) sage`.
 - Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
@@ -165,7 +173,7 @@
 - Brewing action message should stay hidden; do not render helper/warning/result text under the brew button.
 - Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
 - Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
-- Brewing cauldron staged ingredients display as adjacent quantity groups like `- 2 Nettle`; do not show numbered slots.
+- Brewing cauldron staged ingredients display as adjacent quantity groups like `- 2 nettle`; do not show numbered slots.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
 - Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
 - Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.
@@ -181,9 +189,12 @@
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Gold displays amount-first as `<compact amount> gold` everywhere, including top chrome; use `25 gold` and `123k gold`, never `25g` or `gold 25`.
+- Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
+- Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Clicking the top-panel username opens settings; username editing and visual theme choices live there.
-- Settings use bottom tabs outside the popup border: `profile`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
+- Settings use bottom tabs outside the popup border: `account`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
+- Settings account controls should stay visible: label the tab `account`, and keep `link account` visible disabled with `login unavailable` when OIDC config is missing.
 - Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
 - Level milestone dialogs use the selected level as the title, omit current/open/max filler, show gained `+N` rows above a divider, then total limits with right-aligned numbers.
 - Level milestone previous/next navigation uses bottom tabs outside the bordered dialog, not inline pager text.
@@ -212,6 +223,8 @@
 - Grid-rendered rows that are toggled with `[hidden]` need an explicit `[hidden] { display: none; }` rule, or authored `display: grid` can keep old category rows visible in browser.
 - Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
 - Numbered slot rows must never leave the middle content blank; unlocked empty rows should say the next action (`select`, `request item`), while locked empty rows keep labels like `empty stand` or `empty request` with state in the right slot.
+- Scrollable room and dialog lists should use the shared scroll cue: transparent bottom fade plus scroll progress, matching the logs popup math.
+- Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
@@ -246,6 +259,7 @@
 - Cauldron ingredient remove buttons also need stable DOM nodes across snapshot renders; mobile click fires after touchend and can miss replaced targets.
 - Rows with author `display` rules need explicit `[hidden] { display: none; }`; UA hidden can be overridden and still affect flex layout.
 - Page boxes that also use `.style-box` must reassert `position: absolute` after the shared `.style-box` rule, or they become relative and can overflow.
+- Scroll panes whose first child is a `.style-box` need top clearance equal to the box-title overhang, or the embedded border title clips at scroll top.
 - Logs popup shows newest entries first, starts at top, and uses scroll progress plus bottom fade instead of showing a native scrollbar.
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
@@ -287,9 +301,11 @@
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
 - Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
 - When adding new fields to SpacetimeDB `game_config` JSON, server normalization and client readers must default legacy rows; otherwise old hosted config can silently disable the new behavior.
+- Catalog-backed `game_config` arrays need merge-by-key normalization for new catalog entries; valid old rows will not self-heal from defaults unless the normalizer appends missing entries.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
 - World chat rows store `allianceTag` at send time; chat display should format tagged senders as `[TAG] username(lvl)`.
-- Trade alliance daily quests are configured by `game_config.tradeAlliance.dailyQuests`; current supported server-verified source is capped `allianceIncome`.
+- Trade alliance weekly quests are configured by `game_config.tradeAlliance.weeklyQuests`; legacy `dailyQuests` config is still accepted, and current server-verified source is capped `allianceIncome`.
+- Trade alliance member `dailyContribution` is a legacy column name; it now stores current weekly contribution and resets with weekly quest progress.
 - Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
 - Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
@@ -297,6 +313,7 @@
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
+- Transient SpacetimeDB `connect_error`/`disconnect` states should keep the gate in `connecting to server...` and retry; reserve `server unavailable` for hard startup/schema failures.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.

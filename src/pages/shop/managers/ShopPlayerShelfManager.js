@@ -785,7 +785,7 @@ export class ShopPlayerShelfManager {
       return `level ${shelf.nextSlotRequiresLevel}`;
     }
 
-    return cost === 0 ? 'buy (free)' : `buy (${cost} gold)`;
+    return cost === 0 ? 'buy (free)' : `buy (${formatGoldPriceText(cost)})`;
   }
 
   renderListingControls(shelf, snapshot) {

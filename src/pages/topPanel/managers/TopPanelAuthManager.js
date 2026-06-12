@@ -1,6 +1,7 @@
 export class TopPanelAuthManager {
-  constructor({ authFacade, reload = () => window.location.reload() } = {}) {
+  constructor({ authFacade, gameplayFacade, reload = () => window.location.reload() } = {}) {
     this.authFacade = authFacade;
+    this.gameplayFacade = gameplayFacade;
     this.reload = reload;
     this.refs = null;
     this.unsubscribe = null;
@@ -37,7 +38,9 @@ export class TopPanelAuthManager {
       return;
     }
 
-    await this.authFacade.signInWithGoogle();
+    await this.authFacade.signInWithGoogle({
+      pendingGameplaySave: this.gameplayFacade?.createPersistenceSave?.(),
+    });
   }
 
   render(snapshot) {
@@ -50,12 +53,12 @@ export class TopPanelAuthManager {
 
     const oidc = snapshot?.oidc ?? {};
     this.authenticated = Boolean(oidc.authenticated);
-    section.hidden = !oidc.enabled;
+    section.hidden = false;
     button.disabled = !oidc.enabled;
-    button.textContent = this.authenticated ? 'disconnect account' : 'connect account';
+    button.textContent = this.authenticated ? 'unlink account' : 'link account';
     button.setAttribute(
       'aria-label',
-      this.authenticated ? 'disconnect google account' : 'connect google account',
+      this.authenticated ? 'unlink google account' : 'link google account',
     );
 
     const statusText = this.getStatusText(oidc);
@@ -71,6 +74,10 @@ export class TopPanelAuthManager {
 
     if (oidc.authenticated) {
       return oidc.displayName || oidc.email || 'connected';
+    }
+
+    if (!oidc.enabled) {
+      return 'login unavailable';
     }
 
     return 'not connected';

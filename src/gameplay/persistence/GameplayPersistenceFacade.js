@@ -85,6 +85,10 @@ export class GameplayPersistenceFacade {
     return this.storageManager.save(this.saveManager.createSave());
   }
 
+  createSave() {
+    return this.saveManager.createSave();
+  }
+
   saveAndFlush() {
     const save = this.saveManager.createSave();
 

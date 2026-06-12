@@ -23,7 +23,7 @@ export class WorkshopManaSphereManager {
     this.root.setAttribute('aria-label', 'Mana sphere');
 
     this.refs.title = this.createTitle();
-    this.refs.mana = this.createRow('mana', '0 / 0');
+    this.refs.mana = this.createRow('mana', '0/0');
     this.refs.generation = this.createRow('generation', '0 / second');
 
     this.root.append(this.refs.title, this.refs.mana.row, this.refs.generation.row);
@@ -68,7 +68,7 @@ export class WorkshopManaSphereManager {
   }
 
   render(snapshot) {
-    this.refs.mana.val.textContent = `${Math.floor(snapshot.mana.current)} / ${snapshot.mana.cap}`;
+    this.refs.mana.val.textContent = `${Math.floor(snapshot.mana.current)}/${snapshot.mana.cap}`;
     this.refs.generation.val.textContent = `${snapshot.mana.perSecond} / second`;
   }
 }

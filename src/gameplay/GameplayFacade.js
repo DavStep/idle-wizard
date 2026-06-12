@@ -566,6 +566,10 @@ export class GameplayFacade {
     return this.persistenceFacade.save();
   }
 
+  createPersistenceSave() {
+    return this.persistenceFacade.createSave();
+  }
+
   savePersistenceSnapshotAndFlush() {
     return this.persistenceFacade.saveAndFlush();
   }

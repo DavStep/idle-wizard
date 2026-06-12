@@ -60,16 +60,16 @@ export class TopPanelViewManager {
     identityRow.className = 'room-top-panel__identity-row';
     identityRow.append(this.refs.usernameButton, this.refs.levelButton);
 
-    const resources = document.createElement('div');
-    resources.className = 'room-top-panel__resources';
-    resources.setAttribute('aria-label', 'resources');
-    resources.append(
-      this.createResource('mana', '0 / 0'),
+    this.refs.resources = document.createElement('div');
+    this.refs.resources.className = 'room-top-panel__resources';
+    this.refs.resources.setAttribute('aria-label', 'resources');
+    this.refs.resources.append(
+      this.createResource('mana', '0/0'),
       this.createResource('gold', '0'),
       this.createResource('crystal', '0'),
     );
 
-    panel.append(identityRow, resources);
+    panel.append(identityRow, this.refs.resources);
     return panel;
   }
 
@@ -266,7 +266,7 @@ export class TopPanelViewManager {
 
     const authLabel = document.createElement('div');
     authLabel.className = 'room-top-panel__settings-label';
-    authLabel.textContent = 'auth';
+    authLabel.textContent = 'account';
 
     this.refs.authStatus = document.createElement('div');
     this.refs.authStatus.className = 'room-top-panel__auth-status';
@@ -275,7 +275,7 @@ export class TopPanelViewManager {
     this.refs.authButton = document.createElement('button');
     this.refs.authButton.className = 'style-button room-top-panel__auth-button';
     this.refs.authButton.type = 'button';
-    this.refs.authButton.textContent = 'connect account';
+    this.refs.authButton.textContent = 'link account';
 
     this.refs.authSection.append(authLabel, this.refs.authStatus, this.refs.authButton);
 
@@ -289,7 +289,7 @@ export class TopPanelViewManager {
     this.refs.settingsTabButtons = [];
 
     for (const tab of [
-      { key: 'account', label: 'profile', controls: this.refs.accountPane.id },
+      { key: 'account', label: 'account', controls: this.refs.accountPane.id },
       { key: 'report', label: 'report', controls: this.refs.reportPane.id },
       { key: 'theme', label: 'theme', controls: this.refs.themePane.id },
     ]) {

@@ -5,7 +5,7 @@ import { ShopStockPriceQuoteManager } from './ShopStockPriceQuoteManager.js';
 const sageSeed = {
   id: 1,
   key: 'sageSeed',
-  label: 'Sage Seed',
+  label: 'sage seed',
   kind: 'seed',
 };
 

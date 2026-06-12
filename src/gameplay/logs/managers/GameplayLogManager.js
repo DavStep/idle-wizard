@@ -13,7 +13,7 @@ export class GameplayLogManager {
     const entry = {
       id: this.nextId,
       type,
-      message: message.trim(),
+      message: this.normalizeMessage(message),
       createdAt,
     };
 
@@ -55,7 +55,7 @@ export class GameplayLogManager {
       return null;
     }
 
-    const message = entry.message.trim();
+    const message = this.normalizeMessage(entry.message);
 
     if (!message) {
       return null;
@@ -67,5 +67,9 @@ export class GameplayLogManager {
       message,
       createdAt: Number.isFinite(entry.createdAt) ? entry.createdAt : this.now(),
     };
+  }
+
+  normalizeMessage(message) {
+    return String(message ?? '').trim().toLowerCase();
   }
 }

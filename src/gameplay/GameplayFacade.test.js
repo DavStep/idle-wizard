@@ -94,13 +94,13 @@ describe('GameplayFacade', () => {
     expect(snapshot.crystal.current).toBe(2);
     expect(snapshot.logs.entries).toContainEqual(
       expect.objectContaining({
-        message: 'researched Sage Seed',
+        message: 'researched sage seed',
       }),
     );
     expect(snapshot.inventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 3,
     });
@@ -111,7 +111,7 @@ describe('GameplayFacade', () => {
         slotIndex: 0,
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
       },
     ]);
@@ -119,7 +119,7 @@ describe('GameplayFacade', () => {
       slotNumber: 1,
       sellItemTypeId: 1,
       sellKind: 'seed',
-      sellLabel: 'Sage Seed',
+      sellLabel: 'sage seed',
     });
   });
 
@@ -443,7 +443,7 @@ describe('GameplayFacade', () => {
               {
                 id: 1,
                 key: 'sageSeed',
-                label: 'Config Sage Seed',
+                label: 'config sage seed',
                 producesHerbTypeId: 1001,
                 dropWeight: 2,
                 summonManaCost: 4,
@@ -454,7 +454,7 @@ describe('GameplayFacade', () => {
               {
                 id: 1001,
                 key: 'sageHerb',
-                label: 'Config Sage',
+                label: 'config sage',
                 growthDurationMs: 12_345,
                 baseSellPrice: 8,
               },
@@ -463,7 +463,7 @@ describe('GameplayFacade', () => {
               {
                 id: 2001,
                 key: 'manaTonic',
-                label: 'Config Tonic',
+                label: 'config tonic',
                 baseSellPrice: 44,
               },
             ],
@@ -495,7 +495,7 @@ describe('GameplayFacade', () => {
     });
     expect(snapshot.garden.seeds[0]).toMatchObject({
       key: 'sageSeed',
-      label: 'Config Sage Seed',
+      label: 'config sage seed',
     });
     expect(snapshot.shop.shelf).toMatchObject({
       slotCosts: [0, 22],
@@ -507,7 +507,7 @@ describe('GameplayFacade', () => {
     });
     expect(snapshot.brewing.recipes[0]).toMatchObject({
       key: 'manaTonic',
-      label: 'Config Tonic',
+      label: 'config tonic',
       manaCost: 6,
       brewDurationMs: 7_000,
     });
@@ -541,12 +541,12 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ deltaSeconds: 10 });
 
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
-      'researched Sage Seed',
-      'summoned Sage Seed',
-      'sold Sage Seed for 1 gold',
-      'brewed Wasted Potion',
-      'planted Sage Seed',
-      'harvested Sage',
+      'researched sage seed',
+      'summoned sage seed',
+      'sold sage seed for 1 gold',
+      'brewed wasted potion',
+      'planted sage seed',
+      'harvested sage',
     ]);
   });
 
@@ -583,6 +583,13 @@ describe('GameplayFacade', () => {
         research: {
           completedIds: ['unlockSeed:sageSeed'],
         },
+        visualSettings: {
+          researched: {
+            theme: {
+              black: true,
+            },
+          },
+        },
       }),
     );
 
@@ -594,11 +601,12 @@ describe('GameplayFacade', () => {
     expect(snapshot.inventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 3,
     });
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
+    expect(snapshot.visualSettings.researched.theme.black).toBe(true);
     expect(snapshot.tasks.currentLevel).toBe(1);
     expect(snapshot.tasks.level.tasks).toHaveLength(5);
     expect(gameplayFacade.consumeProgressResetPending()).toBe(false);
@@ -660,7 +668,7 @@ describe('GameplayFacade', () => {
       potion: {
         itemTypeId: 2001,
         key: 'manaTonic',
-        label: 'Mana Tonic',
+        label: 'mana tonic',
         kind: 'potion',
       },
     });
@@ -668,7 +676,7 @@ describe('GameplayFacade', () => {
     expect(second.gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
       kind: 'potion',
       quantity: 1,
     });
@@ -848,7 +856,7 @@ describe('GameplayFacade', () => {
     expect(result.seed.dropWeight).toBe(1);
     expect(result.seed.key).toBe('sageSeed');
     expect(snapshot.mana.current).toBe(0);
-    expect(result.seed.label).toMatch(/Seed$/);
+    expect(result.seed.label).toMatch(/seed$/);
     expect(snapshot.inventory).toEqual([
       {
         itemTypeId: result.seed.id,
@@ -946,7 +954,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 0,
       },
@@ -954,7 +962,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
       itemTypeId: 14,
       key: 'dragonpepperSeed',
-      label: 'Dragonpepper Seed',
+      label: 'dragonpepper seed',
       kind: 'seed',
       quantity: 0,
     });
@@ -1042,10 +1050,10 @@ describe('GameplayFacade', () => {
     expect(research.boxes[0].researches).toHaveLength(14);
     expect(research.boxes[0].researches[0]).toEqual({
       id: 'unlockSeed:sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       value: 'free',
       effect: 'drop',
-      description: 'allows Sage Seed to drop from summon seed.',
+      description: 'allows sage seed to drop from summon seed.',
       costGold: 0,
       completed: false,
       canResearch: true,
@@ -1101,10 +1109,10 @@ describe('GameplayFacade', () => {
     expect(research.boxes[2].researches).toHaveLength(18);
     expect(research.boxes[2].researches[0]).toEqual({
       id: 'unlockRecipe:manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
       value: '80 gold',
       effect: 'brew',
-      description: 'allows valid cauldron ingredients to brew Mana Tonic.',
+      description: 'allows valid cauldron ingredients to brew mana tonic.',
       costGold: 80,
       completed: false,
       canResearch: false,
@@ -1258,9 +1266,9 @@ describe('GameplayFacade', () => {
       'unlockSeed:sageSeed',
     ]);
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
-      'researched Sage Seed',
+      'researched sage seed',
     ]);
-    expect(researchAnnouncements).toEqual(['Sage Seed']);
+    expect(researchAnnouncements).toEqual(['sage seed']);
   });
 
   it('buys advanced research with crystal and auto summons seeds', () => {
@@ -1294,7 +1302,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 1,
     });
@@ -1333,7 +1341,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 0,
     });
@@ -1349,7 +1357,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 0,
     });
@@ -1371,7 +1379,7 @@ describe('GameplayFacade', () => {
       researchId: 'unlockSeed:sageSeed',
       cost: 0,
     });
-    expect(researchAnnouncements).toEqual(['Sage Seed']);
+    expect(researchAnnouncements).toEqual(['sage seed']);
 
     expect(gameplayFacade.buyResearch('unlockSeed:sageSeed')).toEqual({
       ok: false,
@@ -1379,7 +1387,7 @@ describe('GameplayFacade', () => {
       researchId: 'unlockSeed:sageSeed',
       cost: 0,
     });
-    expect(researchAnnouncements).toEqual(['Sage Seed']);
+    expect(researchAnnouncements).toEqual(['sage seed']);
   });
 
   it('announces task level-ups to world chat', () => {
@@ -1573,12 +1581,12 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().brewing.recipes[0]).toMatchObject({
       key: 'manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
       unlocked: true,
       ingredients: [
         {
           key: 'sageHerb',
-          label: 'Sage',
+          label: 'sage',
           quantity: 3,
         },
       ],
@@ -1592,12 +1600,12 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.addBrewingIngredient(1001).ok).toBe(true);
     expect(gameplayFacade.addBrewingIngredient(1001).ok).toBe(true);
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
-      buttonLabel: 'brew Mana Tonic',
+      buttonLabel: 'brew mana tonic',
       manaCost: 12,
       canBrew: true,
       match: {
         key: 'manaTonic',
-        label: 'Mana Tonic',
+        label: 'mana tonic',
         unlocked: true,
       },
     });
@@ -1608,7 +1616,7 @@ describe('GameplayFacade', () => {
       potion: {
         itemTypeId: 2001,
         key: 'manaTonic',
-        label: 'Mana Tonic',
+        label: 'mana tonic',
         kind: 'potion',
       },
       manaCost: 12,
@@ -1620,7 +1628,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       resultItemTypeId: 2001,
       key: 'manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
     });
 
     ecsFacade.update({ deltaSeconds: 30 });
@@ -1655,7 +1663,7 @@ describe('GameplayFacade', () => {
       potion: {
         itemTypeId: 2001,
         key: 'manaTonic',
-        label: 'Mana Tonic',
+        label: 'mana tonic',
         kind: 'potion',
       },
       quantity: 1,
@@ -1664,7 +1672,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
       kind: 'potion',
       quantity: 1,
     });
@@ -1693,7 +1701,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 1001,
       key: 'sageHerb',
-      label: 'Sage',
+      label: 'sage',
       kind: 'herb',
       quantity: 3,
     });
@@ -1714,7 +1722,7 @@ describe('GameplayFacade', () => {
       missingIngredients: [
         {
           itemTypeId: 1001,
-          label: 'Sage',
+          label: 'sage',
           requiredQuantity: 3,
           ownedQuantity: 1,
           missingQuantity: 2,
@@ -1783,12 +1791,12 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
       kind: 'potion',
       quantity: 1,
     });
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toContain(
-      'brewed Mana Tonic',
+      'brewed mana tonic',
     );
   });
 
@@ -1807,7 +1815,7 @@ describe('GameplayFacade', () => {
       canBrew: true,
       match: {
         key: 'manaTonic',
-        label: 'Mana Tonic',
+        label: 'mana tonic',
         unlocked: false,
       },
     });
@@ -1823,7 +1831,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 1001,
       key: 'sageHerb',
-      label: 'Sage',
+      label: 'sage',
       kind: 'herb',
       quantity: 3,
     });
@@ -1847,7 +1855,7 @@ describe('GameplayFacade', () => {
       potion: {
         itemTypeId: 2029,
         key: 'wastedPotion',
-        label: 'Wasted Potion',
+        label: 'wasted potion',
         kind: 'potion',
       },
       manaCost: 5,
@@ -1876,7 +1884,7 @@ describe('GameplayFacade', () => {
       potion: {
         itemTypeId: 2029,
         key: 'wastedPotion',
-        label: 'Wasted Potion',
+        label: 'wasted potion',
         kind: 'potion',
       },
       quantity: 1,
@@ -1886,7 +1894,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 2029,
         key: 'wastedPotion',
-        label: 'Wasted Potion',
+        label: 'wasted potion',
         kind: 'potion',
         quantity: 1,
       },
@@ -1894,7 +1902,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().shop.shelf.sellItems).toContainEqual({
       itemTypeId: 2029,
       key: 'wastedPotion',
-      label: 'Wasted Potion',
+      label: 'wasted potion',
       kind: 'potion',
       hasRecipe: false,
       baseSellPrice: 1,
@@ -1983,7 +1991,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
       itemTypeId: 1001,
       key: 'sageHerb',
-      label: 'Sage',
+      label: 'sage',
       kind: 'herb',
       quantity: 0,
     });
@@ -2029,13 +2037,13 @@ describe('GameplayFacade', () => {
       seed: {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
       },
       herb: {
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
       },
       durationMs: 20_000,
@@ -2070,7 +2078,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: 'ready',
       process: null,
-      herbLabel: 'Sage',
+      herbLabel: 'sage',
     });
 
     expect(gameplayFacade.startGardenHarvest(1)).toEqual({
@@ -2079,7 +2087,7 @@ describe('GameplayFacade', () => {
       herb: {
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
       },
       durationMs: 10_000,
@@ -2102,7 +2110,7 @@ describe('GameplayFacade', () => {
       phase: 'empty',
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
-      selectedSeedLabel: 'Sage Seed',
+      selectedSeedLabel: 'sage seed',
       seedItemTypeId: null,
       herbItemTypeId: null,
       process: null,
@@ -2111,7 +2119,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
         quantity: 1,
       },
@@ -2119,7 +2127,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
       itemTypeId: 1001,
       key: 'sageHerb',
-      label: 'Sage',
+      label: 'sage',
       kind: 'herb',
       quantity: 1,
     });
@@ -2138,7 +2146,7 @@ describe('GameplayFacade', () => {
       phase: 'empty',
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
-      selectedSeedLabel: 'Sage Seed',
+      selectedSeedLabel: 'sage seed',
       seedItemTypeId: null,
       herbItemTypeId: null,
       process: null,
@@ -2146,14 +2154,14 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
       itemTypeId: 1001,
       key: 'sageHerb',
-      label: 'Sage',
+      label: 'sage',
       kind: 'herb',
       quantity: 1,
     });
     expect(gameplayFacade.getSnapshot().garden.seeds).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 1,
     });
@@ -2164,7 +2172,7 @@ describe('GameplayFacade', () => {
       seed: {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
       },
     });
@@ -2188,7 +2196,7 @@ describe('GameplayFacade', () => {
       seed: {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
       },
     });
@@ -2208,7 +2216,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.seeds).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 1,
     });
@@ -2275,14 +2283,14 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
       itemTypeId: 1001,
       key: 'sageHerb',
-      label: 'Sage',
+      label: 'sage',
       kind: 'herb',
       quantity: 1,
     });
     expect(gameplayFacade.getSnapshot().garden.seeds).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
-      label: 'Sage Seed',
+      label: 'sage seed',
       kind: 'seed',
       quantity: 1,
     });
@@ -2290,10 +2298,10 @@ describe('GameplayFacade', () => {
       'opened garden plot 2',
       'researched auto plant tile 1',
       'researched auto harvest tile 1',
-      'planted Sage Seed',
-      'planted Sage Seed',
-      'harvested Sage',
-      'planted Sage Seed',
+      'planted sage seed',
+      'planted sage seed',
+      'harvested sage',
+      'planted sage seed',
     ]);
   });
 
@@ -2370,7 +2378,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('plants non-Sage garden seeds into their matching herbs', () => {
+  it('plants non-sage garden seeds into their matching herbs', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(2, 1);
@@ -2379,19 +2387,19 @@ describe('GameplayFacade', () => {
       ok: true,
       seed: {
         key: 'mintSeed',
-        label: 'Mint Seed',
+        label: 'mint seed',
       },
       herb: {
         key: 'mintHerb',
-        label: 'Mint',
+        label: 'mint',
       },
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: 'growing',
       seedKey: 'mintSeed',
-      seedLabel: 'Mint Seed',
+      seedLabel: 'mint seed',
       herbKey: 'mintHerb',
-      herbLabel: 'Mint',
+      herbLabel: 'mint',
     });
   });
 
@@ -2454,7 +2462,7 @@ describe('GameplayFacade', () => {
       discoverPotionRecipe: (potionKey) => {
         discoveries.set(potionKey, {
           potionKey,
-          potionLabel: 'Ashen Memory',
+          potionLabel: 'ashen memory',
           username: 'Ada',
           discoveredAtMs: Date.UTC(2026, 0, 2),
         });
@@ -2490,7 +2498,7 @@ describe('GameplayFacade', () => {
       match: {
         key: 'ashenMemory',
         label: 'unknown recipe',
-        realLabel: 'Ashen Memory',
+        realLabel: 'ashen memory',
         unlocked: false,
         discoverable: true,
       },
@@ -2502,12 +2510,12 @@ describe('GameplayFacade', () => {
       potion: {
         itemTypeId: 2019,
         key: 'ashenMemory',
-        label: 'Ashen Memory',
+        label: 'ashen memory',
         kind: 'potion',
       },
       discovery: {
         potionKey: 'ashenMemory',
-        potionLabel: 'Ashen Memory',
+        potionLabel: 'ashen memory',
       },
       manaCost: 36,
       durationMs: 80_000,
@@ -2701,7 +2709,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
         quantity: 2,
       },
@@ -2720,7 +2728,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
         quantity: 2,
       },
@@ -2756,7 +2764,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 1,
       },
@@ -2780,7 +2788,7 @@ describe('GameplayFacade', () => {
       item: {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
       },
       quantity: 2,
@@ -2790,7 +2798,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 1,
       },
@@ -2799,7 +2807,7 @@ describe('GameplayFacade', () => {
       slotNumber: 1,
       itemTypeId: 1,
       itemKey: 'sageSeed',
-      itemLabel: 'Sage Seed',
+      itemLabel: 'sage seed',
       itemKind: 'seed',
       quantity: 2,
       priceGold: 4,
@@ -2813,7 +2821,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 3,
       },
@@ -2856,7 +2864,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1001,
         key: 'sageHerb',
-        label: 'Sage',
+        label: 'sage',
         kind: 'herb',
         quantity: 2,
       },
@@ -2886,7 +2894,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 2,
       },
@@ -2913,7 +2921,7 @@ describe('GameplayFacade', () => {
       {
         itemTypeId: 1,
         key: 'sageSeed',
-        label: 'Sage Seed',
+        label: 'sage seed',
         kind: 'seed',
         quantity: 1,
       },

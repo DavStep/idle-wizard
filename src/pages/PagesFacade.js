@@ -14,6 +14,7 @@ import {
   DEFAULT_PAGE_SWIPE_ORDER,
   PageSwipeNavigationManager,
 } from './managers/PageSwipeNavigationManager.js';
+import { ScrollCueManager } from './managers/ScrollCueManager.js';
 
 const FTUE_ENABLED = false;
 
@@ -42,6 +43,7 @@ export class PagesFacade {
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
     });
+    this.scrollCueManager = new ScrollCueManager();
     this.bottomPanelFacade = new BottomPanelFacade({
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
@@ -111,9 +113,11 @@ export class PagesFacade {
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
     this.tutorialFacade?.mount(stage);
+    this.scrollCueManager.mount(stage);
   }
 
   unmount() {
+    this.scrollCueManager.unmount();
     this.tutorialFacade?.unmount();
     this.topPanelFacade.unmount();
     this.worldChatManager.unmount();

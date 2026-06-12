@@ -254,11 +254,6 @@ export class WorkshopDiscoveriesManager {
     const root = document.createElement('div');
     root.className = 'brewing-page__recipe-ingredients';
 
-    const title = document.createElement('div');
-    title.className = 'brewing-page__recipe-ingredients-title';
-    title.textContent = 'ingredients:';
-    root.append(title);
-
     if (!ingredients.length) {
       const empty = document.createElement('div');
       empty.className = 'brewing-page__recipe-ingredient-row';

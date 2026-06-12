@@ -250,6 +250,12 @@ export class TradeAllianceSubscriptionManager {
 
   mapMember(row) {
     const role = String(row.role ?? 'trader');
+    const weeklyContribution = this.toNumber(
+      row.weeklyContribution ??
+        row.weekly_contribution ??
+        row.dailyContribution ??
+        row.daily_contribution,
+    );
 
     return {
       memberIdentity: this.toIdentityKey(row.memberIdentity ?? row.member_identity),
@@ -261,7 +267,8 @@ export class TradeAllianceSubscriptionManager {
       joinedAtMs: this.toTimestampMs(row.joinedAt ?? row.joined_at),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
       totalContribution: this.toNumber(row.totalContribution ?? row.total_contribution),
-      dailyContribution: this.toNumber(row.dailyContribution ?? row.daily_contribution),
+      dailyContribution: weeklyContribution,
+      weeklyContribution,
       dayKey: String(row.dayKey ?? row.day_key ?? ''),
     };
   }

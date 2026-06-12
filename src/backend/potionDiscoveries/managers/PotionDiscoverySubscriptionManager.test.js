@@ -80,14 +80,14 @@ describe('PotionDiscoverySubscriptionManager', () => {
     const table = createTable([
       {
         potionKey: 'silverleafQuiet',
-        potionLabel: 'Silverleaf Quiet',
+        potionLabel: 'silverleaf quiet',
         discoveredByIdentity: 'identity-b',
         username: 'Mira',
         discoveredAt: createTimestamp(2_000),
       },
       {
         potionKey: 'ashenMemory',
-        potionLabel: 'Ashen Memory',
+        potionLabel: 'ashen memory',
         discoveredByIdentity: 'identity-a',
         username: 'Ada',
         discoveredAt: createTimestamp(1_000),
@@ -104,14 +104,14 @@ describe('PotionDiscoverySubscriptionManager', () => {
       discoveries: [
         {
           potionKey: 'ashenMemory',
-          potionLabel: 'Ashen Memory',
+          potionLabel: 'ashen memory',
           discoveredByIdentity: 'identity-a',
           username: 'Ada',
           discoveredAtMs: 1_000,
         },
         {
           potionKey: 'silverleafQuiet',
-          potionLabel: 'Silverleaf Quiet',
+          potionLabel: 'silverleaf quiet',
           discoveredByIdentity: 'identity-b',
           username: 'Mira',
           discoveredAtMs: 2_000,

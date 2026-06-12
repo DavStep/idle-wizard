@@ -105,7 +105,7 @@ export class NpcMarketSubscriptionManager {
 
     return {
       itemKey: String(row.itemKey ?? row.item_key ?? ''),
-      itemLabel: String(row.itemLabel ?? row.item_label ?? ''),
+      itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
       basePriceGold:
         this.toGoldPrice(row.basePriceGold ?? row.base_price_gold, priceScale) ?? 0,
@@ -160,6 +160,10 @@ export class NpcMarketSubscriptionManager {
     }
 
     return Number.isFinite(value) ? Number(value) : 0;
+  }
+
+  toDisplayLabel(value) {
+    return String(value ?? '').trim().toLowerCase();
   }
 
   toGoldPrice(value, scaleValue) {

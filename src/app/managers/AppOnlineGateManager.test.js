@@ -16,9 +16,25 @@ describe('AppOnlineGateManager', () => {
     expect(gate.hidden).toBe(false);
     expect(gate.textContent).toContain('server required');
     expect(gate.textContent).toContain('connecting to server...');
+    const progress = gate.querySelector('.app-online-gate__progress');
+    expect(progress.hidden).toBe(false);
+    expect(progress.getAttribute('role')).toBe('progressbar');
+    expect(progress.classList.contains('style-progress')).toBe(true);
+    expect(progress.classList.contains('is-indeterminate')).toBe(true);
+    expect(progress.querySelector('.app-online-gate__progress-fill')).not.toBeNull();
 
     manager.showOffline('connect_error');
+    expect(gate.textContent).toContain('connecting to server...');
+    expect(progress.hidden).toBe(false);
+
+    manager.showOffline('gameplay_save_timeout');
+    expect(gate.textContent).toContain('connecting to server...');
+    expect(progress.hidden).toBe(false);
+
+    manager.showOffline('gameplay_save_missing');
     expect(gate.textContent).toContain('server unavailable');
+    expect(progress.hidden).toBe(true);
+    expect(progress.classList.contains('is-indeterminate')).toBe(false);
 
     manager.hide();
     expect(gate.hidden).toBe(true);

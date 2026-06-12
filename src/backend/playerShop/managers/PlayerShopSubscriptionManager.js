@@ -164,7 +164,7 @@ export class PlayerShopSubscriptionManager {
       username: typeof row.username === 'string' ? row.username : 'wizard',
       slotNumber: this.toNumber(row.slotNumber ?? row.slot_number),
       itemKey: String(row.itemKey ?? row.item_key ?? ''),
-      itemLabel: String(row.itemLabel ?? row.item_label ?? ''),
+      itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
       quantity,
       priceGold,
@@ -211,7 +211,7 @@ export class PlayerShopSubscriptionManager {
       sellerIdentity: this.toIdentityKey(row.sellerIdentity ?? row.seller_identity),
       sellerUsername: typeof sellerUsername === 'string' ? sellerUsername : 'wizard',
       itemKey: String(row.itemKey ?? row.item_key ?? ''),
-      itemLabel: String(row.itemLabel ?? row.item_label ?? ''),
+      itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
       quantity,
       priceGold,
@@ -279,6 +279,10 @@ export class PlayerShopSubscriptionManager {
     }
 
     return Number.isFinite(value) ? Number(value) : 0;
+  }
+
+  toDisplayLabel(value) {
+    return String(value ?? '').trim().toLowerCase();
   }
 
   toGoldPrice(value, scaleValue) {

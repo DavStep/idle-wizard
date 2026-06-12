@@ -99,7 +99,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('targets free Sage Seed research when already in research', () => {
+  it('targets free sage seed research when already in research', () => {
     const step = getStep({
       pageId: 'research',
       dom: createDomFake({ tasksExpanded: true }),
@@ -109,7 +109,7 @@ describe('TutorialStepManager', () => {
     expect(step).toMatchObject({
       id: 'research-sage-seed',
       targetId: 'research:unlockSeed:sageSeed',
-      text: 'research Sage Seed',
+      text: 'research sage seed',
     });
   });
 
@@ -149,7 +149,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('targets the garden seed popup row when choosing Sage Seed', () => {
+  it('targets the garden seed popup row when choosing sage seed', () => {
     const snapshot = createSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],
       garden: {
@@ -177,7 +177,7 @@ describe('TutorialStepManager', () => {
     expect(step).toMatchObject({
       id: 'plant-sage-seed',
       targetId: 'garden:seed:sageSeed',
-      text: 'choose Sage Seed',
+      text: 'choose sage seed',
     });
   });
 

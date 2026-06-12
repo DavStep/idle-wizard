@@ -10,7 +10,7 @@ describe('ItemDefinitionManager', () => {
     expect(manager.getHerbDefinitions()).toContainEqual({
       id: 1001,
       key: 'sageHerb',
-      label: 'Sage',
+      label: 'sage',
       kind: 'herb',
       growthDurationMs: 20_000,
       baseSellPrice: 6,
@@ -18,7 +18,7 @@ describe('ItemDefinitionManager', () => {
     expect(manager.getDefinitionByKey('dragonpepperHerb')).toEqual({
       id: 1014,
       key: 'dragonpepperHerb',
-      label: 'Dragonpepper',
+      label: 'dragonpepper',
       kind: 'herb',
       growthDurationMs: 210_000,
       baseSellPrice: 52,
@@ -29,21 +29,21 @@ describe('ItemDefinitionManager', () => {
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2001,
       key: 'manaTonic',
-      label: 'Mana Tonic',
+      label: 'mana tonic',
       kind: 'potion',
       baseSellPrice: 55,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2018,
       key: 'pactWard',
-      label: 'Pact Ward',
+      label: 'pact ward',
       kind: 'potion',
       baseSellPrice: 270,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2019,
       key: 'ashenMemory',
-      label: 'Ashen Memory',
+      label: 'ashen memory',
       kind: 'potion',
       discoveryType: 'unknown',
       type: 'unknown',
@@ -55,7 +55,7 @@ describe('ItemDefinitionManager', () => {
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2029,
       key: 'wastedPotion',
-      label: 'Wasted Potion',
+      label: 'wasted potion',
       kind: 'potion',
       hasRecipe: false,
       baseSellPrice: 1,
