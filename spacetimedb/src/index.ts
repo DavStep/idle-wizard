@@ -13,7 +13,7 @@ const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
 const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
 const ENABLE_CLIENT_POTION_DISCOVERY = false;
 const ENABLE_PLAYER_SHOP_EXCHANGE = true;
-const ENABLE_NPC_MARKET_PRESSURE = false;
+const ENABLE_NPC_MARKET_PRESSURE = true;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
 const MAX_FEEDBACK_BODY_LENGTH = 2000;
@@ -7157,7 +7157,7 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
         basePriceGold: toStoredGoldPrice(safeBasePriceGold),
         priceScale: GOLD_PRICE_SCALE,
         targetStock: safeTargetStock,
-        npcStock: needState.npcNeed,
+        npcStock: getNpcMarketStock(existingRow),
         npcNeed: needState.npcNeed,
         targetNeed: needState.targetNeed,
         maxNeed: needState.maxNeed,
@@ -7238,7 +7238,7 @@ export const set_npc_market_item_base_price = spacetimedb.reducer(
       basePriceGold: toStoredGoldPrice(safeBasePriceGold),
       priceScale: GOLD_PRICE_SCALE,
       targetStock: marketConfig.targetStock,
-      npcStock: needState.npcNeed,
+      npcStock: getNpcMarketStock(existingRow),
       npcNeed: needState.npcNeed,
       targetNeed: needState.targetNeed,
       maxNeed: needState.maxNeed,

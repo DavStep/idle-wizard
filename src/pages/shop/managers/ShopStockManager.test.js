@@ -149,6 +149,44 @@ describe('ShopStockManager', () => {
     manager.unmount();
   });
 
+  it('shows backend-stocked items even with zero local quantity and no research', () => {
+    const stage = document.createElement('section');
+    const snapshot = {
+      gold: { current: 5 },
+      research: { completedResearchIds: [] },
+      shop: {
+        stock: {
+          items: [
+            {
+              itemTypeId: 2,
+              key: 'mintSeed',
+              label: 'Mint Seed',
+              kind: 'seed',
+              quantity: 0,
+              buyGold: 1,
+              stock: 1,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopStockManager({ gameplayFacade });
+
+    manager.mount(stage);
+
+    expect(stage.querySelector('.shop-page__stock-row')?.textContent).toContain(
+      'Mint Seed (1)',
+    );
+    expect(stage.querySelector('.shop-page__stock-row')?.classList.contains('is-locked'))
+      .toBe(false);
+    expect(stage.querySelector('.shop-page__stock-buy-button')?.disabled).toBe(
+      false,
+    );
+
+    manager.unmount();
+  });
+
   it('shows only selected stock category rows after tab changes', () => {
     const stage = document.createElement('section');
     const snapshot = {

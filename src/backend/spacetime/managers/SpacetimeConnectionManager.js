@@ -11,30 +11,58 @@ export class SpacetimeConnectionManager {
       throw new Error('SpacetimeConnectionManager requires generated DbConnection bindings.');
     }
 
-    let builder = DbConnection.builder()
-      .withUri(this.uri)
-      .withDatabaseName(this.databaseName)
-      .onConnect((connection, identity, token) => {
-        this.connection = connection;
-        this.authSessionManager.acceptConnection({ identity, token });
-        onConnect?.(connection, identity, token);
-      })
-      .onConnectError((_context, error) => {
-        this.connection = null;
-        onConnectError?.(error);
-      })
-      .onDisconnect((_context, error) => {
-        this.connection = null;
-        onDisconnect?.(error);
-      });
+    const auth = await this.getConnectionAuth();
+    let retriedWithoutToken = false;
 
-    const token = await this.authSessionManager.getConnectionToken();
-    if (token) {
-      builder = builder.withToken(token);
+    const buildConnection = ({ token, canRetryWithoutToken }) => {
+      let builder = DbConnection.builder()
+        .withUri(this.uri)
+        .withDatabaseName(this.databaseName)
+        .onConnect((connection, identity, token) => {
+          this.connection = connection;
+          this.authSessionManager.acceptConnection({ identity, token });
+          onConnect?.(connection, identity, token);
+        })
+        .onConnectError((_context, error) => {
+          this.connection = null;
+
+          if (token && canRetryWithoutToken && !retriedWithoutToken) {
+            retriedWithoutToken = true;
+            this.connection = buildConnection({
+              token: undefined,
+              canRetryWithoutToken: false,
+            });
+            return;
+          }
+
+          onConnectError?.(error);
+        })
+        .onDisconnect((_context, error) => {
+          this.connection = null;
+          onDisconnect?.(error);
+        });
+
+      if (token) {
+        builder = builder.withToken(token);
+      }
+
+      return builder.build();
+    };
+
+    this.connection = buildConnection(auth);
+    return this.connection;
+  }
+
+  async getConnectionAuth() {
+    if (typeof this.authSessionManager.getConnectionAuth === 'function') {
+      return this.authSessionManager.getConnectionAuth();
     }
 
-    this.connection = builder.build();
-    return this.connection;
+    const token = await this.authSessionManager.getConnectionToken();
+    return {
+      token,
+      canRetryWithoutToken: Boolean(token),
+    };
   }
 
   disconnect() {

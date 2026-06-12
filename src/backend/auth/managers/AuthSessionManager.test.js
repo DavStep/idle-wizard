@@ -57,6 +57,24 @@ describe('AuthSessionManager', () => {
     sessionManager.acceptConnection({ identity: 'identity-1', token: 'stored-token' });
 
     await expect(sessionManager.getConnectionToken()).resolves.toBe('oidc-token');
+    await expect(sessionManager.getConnectionAuth()).resolves.toEqual({
+      token: 'oidc-token',
+      canRetryWithoutToken: false,
+    });
+  });
+
+  it('allows anonymous retry for stored SpacetimeDB tokens', async () => {
+    const tokenStorageManager = new AuthTokenStorageManager({
+      storage: createMemoryStorage(),
+    });
+    const sessionManager = new AuthSessionManager({ tokenStorageManager });
+
+    sessionManager.acceptConnection({ identity: 'identity-1', token: 'token-1' });
+
+    await expect(sessionManager.getConnectionAuth()).resolves.toEqual({
+      token: 'token-1',
+      canRetryWithoutToken: true,
+    });
   });
 
   it('does not clear unrelated storage when signing out', async () => {

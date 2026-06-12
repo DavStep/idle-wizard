@@ -27,6 +27,8 @@
 - Use full ECS for gameplay.
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
+- Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
+- SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Keep gameplay rules separate from DOM/canvas rendering and SpacetimeDB transport.
 - bitECS 0.4 component calls use entity-first order: `addComponent(world, eid, component)`.
@@ -206,6 +208,7 @@
 - NPC stock market category controls are bottom-border text tabs, not boxed buttons; keep `seed` left, `herb` centered, and `potion` right.
 - NPC stock buy row controls show only the price (`25 gold`), not a `buy` prefix; enabled prices use gold resource color, disabled/unaffordable prices inherit muted disabled color.
 - NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.
+- NPC stock row visibility and labels should treat backend `stock` as availability; local inventory quantity can be `0` right after selling into stock.
 - Grid-rendered rows that are toggled with `[hidden]` need an explicit `[hidden] { display: none; }` rule, or authored `display: grid` can keep old category rows visible in browser.
 - Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
 - Numbered slot rows must never leave the middle content blank; unlocked empty rows should say the next action (`select`, `request item`), while locked empty rows keep labels like `empty stand` or `empty request` with state in the right slot.

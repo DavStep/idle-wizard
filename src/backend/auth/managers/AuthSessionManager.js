@@ -11,7 +11,23 @@ export class AuthSessionManager {
   }
 
   async getConnectionToken() {
-    return (await this.oidcManager?.getConnectionToken()) ?? this.tokenStorageManager.loadToken();
+    return (await this.getConnectionAuth()).token;
+  }
+
+  async getConnectionAuth() {
+    const oidcToken = await this.oidcManager?.getConnectionToken();
+    if (oidcToken) {
+      return {
+        token: oidcToken,
+        canRetryWithoutToken: false,
+      };
+    }
+
+    const storedToken = this.tokenStorageManager.loadToken();
+    return {
+      token: storedToken,
+      canRetryWithoutToken: Boolean(storedToken),
+    };
   }
 
   acceptConnection({ identity, token }) {

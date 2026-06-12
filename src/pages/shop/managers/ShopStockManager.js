@@ -401,8 +401,12 @@ export class ShopStockManager {
   }
 
   renderRow(refs, item) {
-    const display = getItemDisplay(this.lastSnapshot, item, item.quantity);
     const stock = Number.isFinite(item.stock) ? Math.floor(item.stock) : null;
+    const display = getItemDisplay(
+      this.lastSnapshot,
+      item,
+      this.getStockDisplayQuantity(item, stock),
+    );
     const buying = this.buyingItemTypeId === item.itemTypeId;
     const canBuy = this.canBuyItem(item);
 
@@ -436,8 +440,12 @@ export class ShopStockManager {
       return;
     }
 
-    const display = getItemDisplay(this.lastSnapshot, item, item.quantity);
     const stock = Number.isFinite(item.stock) ? Math.floor(item.stock) : 0;
+    const display = getItemDisplay(
+      this.lastSnapshot,
+      item,
+      this.getStockDisplayQuantity(item, stock),
+    );
     const maxQuantity = Math.max(1, Math.min(stock, 10000));
     const quantity = this.clampBuyQuantity(this.buyQuantity, item) ?? 1;
     const quote = this.getBuyQuote(item, quantity);
@@ -491,8 +499,23 @@ export class ShopStockManager {
     return items.filter(
       (item) =>
         item.kind === this.selectedTab &&
-        shouldShowItemInActionList(this.lastSnapshot, item, item.quantity),
+        shouldShowItemInActionList(
+          this.lastSnapshot,
+          item,
+          this.getStockDisplayQuantity(item),
+        ),
     );
+  }
+
+  getStockDisplayQuantity(item, stock = item?.stock) {
+    const localQuantity = Number.isFinite(item?.quantity)
+      ? Math.floor(item.quantity)
+      : 0;
+    const stockQuantity = Number.isFinite(stock)
+      ? Math.floor(stock)
+      : 0;
+
+    return Math.max(localQuantity, stockQuantity);
   }
 
   getItem(itemTypeId) {
@@ -555,7 +578,11 @@ export class ShopStockManager {
       Number.isFinite(item.stock) &&
       item.stock > 0 &&
       (this.lastSnapshot?.gold?.current ?? 0) >= item.buyGold &&
-      shouldShowItemInActionList(this.lastSnapshot, item, item.quantity)
+      shouldShowItemInActionList(
+        this.lastSnapshot,
+        item,
+        this.getStockDisplayQuantity(item),
+      )
     );
   }
 
