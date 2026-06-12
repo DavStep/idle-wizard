@@ -1,6 +1,9 @@
-import { PLAYER_COLOR_MODE_OPTIONS } from './playerColorModes.js';
-import { PLAYER_FONT_OPTIONS } from './playerFonts.js';
-import { PLAYER_THEME_OPTIONS } from './playerThemes.js';
+import {
+  DEFAULT_PLAYER_COLOR_MODE,
+  PLAYER_COLOR_MODE_OPTIONS,
+} from './playerColorModes.js';
+import { DEFAULT_PLAYER_FONT, PLAYER_FONT_OPTIONS } from './playerFonts.js';
+import { DEFAULT_PLAYER_THEME, PLAYER_THEME_OPTIONS } from './playerThemes.js';
 
 export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
   Object.freeze({
@@ -28,6 +31,12 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_COSTS_CRYSTAL = Object.freeze(
     ]),
   ),
 );
+
+export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
+  theme: Object.freeze({ [DEFAULT_PLAYER_THEME]: true }),
+  font: Object.freeze({ [DEFAULT_PLAYER_FONT]: true }),
+  color: Object.freeze({ [DEFAULT_PLAYER_COLOR_MODE]: true }),
+});
 
 const CATEGORY_BY_KEY = new Map(
   PLAYER_VISUAL_SETTING_CATEGORIES.map((category) => [category.key, category]),
@@ -67,6 +76,20 @@ export function getDefaultPlayerVisualSettingsCostsCrystal() {
     Object.entries(DEFAULT_PLAYER_VISUAL_SETTINGS_COSTS_CRYSTAL).map(([category, costs]) => [
       category,
       { ...costs },
+    ]),
+  );
+}
+
+export function getDefaultPlayerVisualSettingsResearched() {
+  return Object.fromEntries(
+    PLAYER_VISUAL_SETTING_CATEGORIES.map((category) => [
+      category.key,
+      Object.fromEntries(
+        category.options.map((option) => [
+          option.key,
+          Boolean(DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED[category.key]?.[option.key]),
+        ]),
+      ),
     ]),
   );
 }

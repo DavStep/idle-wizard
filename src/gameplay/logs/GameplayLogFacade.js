@@ -1,5 +1,5 @@
 import { GameplayLogManager } from './managers/GameplayLogManager.js';
-import { formatGoldPrice } from '../../shared/goldPrice.js';
+import { formatGoldPriceText } from '../../shared/goldPrice.js';
 
 export class GameplayLogFacade {
   static explain =
@@ -67,13 +67,13 @@ export class GameplayLogFacade {
   }
 
   logItemSold({ item, gold }) {
-    return this.logManager.add(`sold ${item.label} for ${formatGoldPrice(gold)} gold`);
+    return this.logManager.add(`sold ${item.label} for ${formatGoldPriceText(gold)}`);
   }
 
   logItemBought({ item, gold, quantity = 1 }) {
     const suffix = quantity > 1 ? ` x${quantity}` : '';
     return this.logManager.add(
-      `bought ${item.label}${suffix} for ${formatGoldPrice(gold)} gold`,
+      `bought ${item.label}${suffix} for ${formatGoldPriceText(gold)}`,
     );
   }
 

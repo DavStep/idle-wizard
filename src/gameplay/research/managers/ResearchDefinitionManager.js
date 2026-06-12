@@ -34,12 +34,13 @@ const maxAutomationGardenTiles = 10;
 const maxAutomationCauldrons = 5;
 
 export class ResearchDefinitionManager {
-  constructor({ itemsFacade, researchBalanceManager }) {
+  constructor({ itemsFacade, playerLevelFacade, researchBalanceManager }) {
     this.itemsFacade = itemsFacade;
+    this.playerLevelFacade = playerLevelFacade;
     this.researchBalanceManager = researchBalanceManager;
   }
 
-  getResearchTabs() {
+  getResearchTabs({ includeLevelLockedAutomation = false } = {}) {
     return [
       {
         id: 'regular',
@@ -49,7 +50,7 @@ export class ResearchDefinitionManager {
       {
         id: 'advanced',
         label: 'advanced research',
-        boxes: this.getAutomationResearchBoxes(),
+        boxes: this.getAutomationResearchBoxes({ includeLevelLockedAutomation }),
       },
     ];
   }
@@ -74,8 +75,8 @@ export class ResearchDefinitionManager {
     ];
   }
 
-  getResearchBoxes() {
-    return this.getResearchTabs().flatMap((tab) => tab.boxes);
+  getResearchBoxes(options) {
+    return this.getResearchTabs(options).flatMap((tab) => tab.boxes);
   }
 
   getVisibleResearchBoxes(completedResearchIds = []) {
@@ -130,7 +131,7 @@ export class ResearchDefinitionManager {
     });
   }
 
-  getAutomationResearchBoxes() {
+  getAutomationResearchBoxes({ includeLevelLockedAutomation = false } = {}) {
     return [
       {
         id: 'autoSeedSpawn',
@@ -148,7 +149,7 @@ export class ResearchDefinitionManager {
         id: 'autoPlantTiles',
         label: 'auto plant tile research',
         researches: this.getNumberedResearches({
-          count: maxAutomationGardenTiles,
+          count: this.getAutomationGardenTileCount({ includeLevelLockedAutomation }),
           getId: automationResearchIds.autoPlantTile,
           label: (tileNumber) => `auto plant tile ${tileNumber}`,
           description: (tileNumber) =>
@@ -159,7 +160,7 @@ export class ResearchDefinitionManager {
         id: 'autoHarvestTiles',
         label: 'auto harvest tile research',
         researches: this.getNumberedResearches({
-          count: maxAutomationGardenTiles,
+          count: this.getAutomationGardenTileCount({ includeLevelLockedAutomation }),
           getId: automationResearchIds.autoHarvestPlant,
           label: (tileNumber) => `auto harvest tile ${tileNumber}`,
           description: (tileNumber) =>
@@ -170,7 +171,7 @@ export class ResearchDefinitionManager {
         id: 'autoBrewCauldrons',
         label: 'auto brew cauldron research',
         researches: this.getNumberedResearches({
-          count: maxAutomationCauldrons,
+          count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
           getId: automationResearchIds.autoBrewCauldron,
           label: (cauldronNumber) => `auto brew cauldron ${cauldronNumber}`,
           description: (cauldronNumber) =>
@@ -181,7 +182,7 @@ export class ResearchDefinitionManager {
         id: 'autoBottleCauldrons',
         label: 'auto bottle cauldron research',
         researches: this.getNumberedResearches({
-          count: maxAutomationCauldrons,
+          count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
           getId: automationResearchIds.autoBottleCauldron,
           label: (cauldronNumber) => `auto bottle cauldron ${cauldronNumber}`,
           description: (cauldronNumber) =>
@@ -192,7 +193,7 @@ export class ResearchDefinitionManager {
         id: 'autoCollectCauldrons',
         label: 'auto collect cauldron research',
         researches: this.getNumberedResearches({
-          count: maxAutomationCauldrons,
+          count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
           getId: automationResearchIds.autoCollectCauldron,
           label: (cauldronNumber) => `auto collect cauldron ${cauldronNumber}`,
           description: (cauldronNumber) =>
@@ -220,8 +221,38 @@ export class ResearchDefinitionManager {
     });
   }
 
-  getResearches() {
-    return this.getResearchBoxes().flatMap((box) => box.researches);
+  getAutomationGardenTileCount({ includeLevelLockedAutomation = false } = {}) {
+    if (includeLevelLockedAutomation) {
+      return maxAutomationGardenTiles;
+    }
+
+    return this.clampAutomationCount(
+      this.playerLevelFacade?.getMaxGardenTiles?.(),
+      maxAutomationGardenTiles,
+    );
+  }
+
+  getAutomationCauldronCount({ includeLevelLockedAutomation = false } = {}) {
+    if (includeLevelLockedAutomation) {
+      return maxAutomationCauldrons;
+    }
+
+    return this.clampAutomationCount(
+      this.playerLevelFacade?.getMaxCauldrons?.(),
+      maxAutomationCauldrons,
+    );
+  }
+
+  clampAutomationCount(count, maxCount) {
+    if (!Number.isInteger(count)) {
+      return maxCount;
+    }
+
+    return Math.max(0, Math.min(maxCount, count));
+  }
+
+  getResearches(options) {
+    return this.getResearchBoxes(options).flatMap((box) => box.researches);
   }
 
   hasResearch(researchId) {
@@ -229,6 +260,16 @@ export class ResearchDefinitionManager {
     return (
       this.researchBalanceManager.isResearchEnabled(normalizedResearchId) &&
       this.getResearches().some((research) => research.id === normalizedResearchId)
+    );
+  }
+
+  hasConfiguredResearch(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    return (
+      this.researchBalanceManager.isResearchEnabled(normalizedResearchId) &&
+      this.getResearches({ includeLevelLockedAutomation: true }).some(
+        (research) => research.id === normalizedResearchId,
+      )
     );
   }
 

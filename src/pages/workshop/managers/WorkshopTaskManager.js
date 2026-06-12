@@ -28,30 +28,35 @@ export class WorkshopTaskManager {
     this.refs.title.className = 'style-box__title';
     this.refs.title.textContent = 'tasks';
 
-    this.refs.summary = document.createElement('button');
+    this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'workshop-page__tasks-summary';
-    this.refs.summary.type = 'button';
     this.refs.summary.dataset.tutorialId = 'workshop:tasks';
-    this.refs.summary.setAttribute('aria-expanded', 'false');
-    this.refs.summary.setAttribute('aria-controls', 'workshop-task-list');
-    this.refs.summary.addEventListener('click', () => this.toggleExpanded());
-
-    this.refs.level = document.createElement('span');
-    this.refs.level.className = 'workshop-page__tasks-level';
-    this.refs.level.textContent = 'level 1';
+    this.refs.summaryTask = this.createTaskRow();
+    this.refs.summary.append(this.refs.summaryTask.root);
 
     this.refs.count = document.createElement('span');
     this.refs.count.className = 'workshop-page__tasks-count';
     this.refs.count.textContent = '0/5';
-
-    this.refs.summary.append(this.refs.level, this.refs.count);
 
     this.refs.list = document.createElement('div');
     this.refs.list.className = 'workshop-page__task-list';
     this.refs.list.id = 'workshop-task-list';
     this.refs.list.hidden = true;
 
-    this.root.append(this.refs.title, this.refs.summary, this.refs.list);
+    this.refs.toggleButton = document.createElement('button');
+    this.refs.toggleButton.className = 'workshop-page__tasks-toggle';
+    this.refs.toggleButton.type = 'button';
+    this.refs.toggleButton.setAttribute('aria-expanded', 'false');
+    this.refs.toggleButton.setAttribute('aria-controls', 'workshop-task-list');
+    this.refs.toggleButton.addEventListener('click', () => this.toggleExpanded());
+
+    this.root.append(
+      this.refs.title,
+      this.refs.count,
+      this.refs.summary,
+      this.refs.list,
+      this.refs.toggleButton,
+    );
     parent.append(this.root);
     this.setExpanded(this.expanded);
 
@@ -79,11 +84,14 @@ export class WorkshopTaskManager {
     this.expanded = expanded;
     this.root?.classList.toggle('is-expanded', expanded);
     this.root?.classList.toggle('is-collapsed', !expanded);
-    this.refs.summary?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    this.refs.toggleButton?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    this.setText(this.refs.toggleButton, expanded ? 'collapse' : 'expand');
 
     if (this.refs.list) {
       this.refs.list.hidden = !expanded;
     }
+
+    this.updateToggleNotification();
   }
 
   render(snapshot) {
@@ -94,25 +102,66 @@ export class WorkshopTaskManager {
     }
 
     const tasks = taskSnapshot.level.tasks ?? [];
+    const displayTasks = this.getDisplayTasks(tasks);
+    const [summaryTask, ...listTasks] = displayTasks;
     this.currentTasksById = new Map(tasks.map((task) => [task.taskId, task]));
-    this.ensureRows(tasks);
+    this.ensureRows(listTasks);
 
-    this.setText(this.refs.level, `level ${taskSnapshot.currentLevel}`);
+    this.renderSummaryTask(summaryTask, taskSnapshot.completedAllLevels);
     this.setText(
       this.refs.count,
       taskSnapshot.completedAllLevels
         ? 'done'
         : `${taskSnapshot.level.completedTasks}/${taskSnapshot.level.totalTasks}`,
     );
-    this.root.classList.toggle('is-all-complete', taskSnapshot.completedAllLevels);
-    setNotificationBadge(
-      this.refs.summary,
-      tasks.some((task) => task.canFill || task.canComplete),
+    this.refs.count.setAttribute('aria-label', this.refs.count.textContent);
+    this.refs.toggleButton.setAttribute(
+      'aria-label',
+      this.expanded ? 'collapse tasks' : 'expand tasks',
     );
+    this.root.classList.toggle('is-all-complete', taskSnapshot.completedAllLevels);
+    this.updateToggleNotification();
 
-    for (const task of tasks) {
+    for (const task of listTasks) {
       this.renderTask(task);
     }
+  }
+
+  getDisplayTasks(tasks) {
+    return [
+      ...tasks.filter((task) => !task.completed),
+      ...tasks.filter((task) => task.completed),
+    ];
+  }
+
+  updateToggleNotification() {
+    setNotificationBadge(
+      this.refs.toggleButton,
+      !this.expanded &&
+        [...this.rowsByTaskId.keys()].some((taskId) => {
+          const task = this.currentTasksById.get(taskId);
+          return task?.canFill || task?.canComplete;
+        }),
+    );
+  }
+
+  renderSummaryTask(task, completedAllLevels) {
+    if (!this.refs.summaryTask) {
+      return;
+    }
+
+    if (!task) {
+      this.refs.summaryTask.root.hidden = true;
+      this.refs.summary.setAttribute(
+        'aria-label',
+        completedAllLevels ? 'all tasks done' : 'no tasks',
+      );
+      return;
+    }
+
+    this.refs.summaryTask.root.hidden = false;
+    this.refs.summary.setAttribute('aria-label', `${task.action} ${task.itemLabel}`);
+    this.renderTaskRow(this.refs.summaryTask, task);
   }
 
   ensureRows(tasks) {
@@ -136,7 +185,7 @@ export class WorkshopTaskManager {
     }
   }
 
-  createTaskRow(task) {
+  createTaskRow() {
     const root = document.createElement('div');
     root.className = 'workshop-page__task';
 
@@ -152,9 +201,7 @@ export class WorkshopTaskManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__task-button';
     button.type = 'button';
-    button.dataset.taskId = task.taskId;
-    button.dataset.tutorialId = `task:${task.taskId}`;
-    button.addEventListener('click', () => this.onTaskButton(task.taskId));
+    button.addEventListener('click', () => this.onTaskButton(button.dataset.taskId));
 
     const progress = document.createElement('div');
     progress.className = 'style-progress workshop-page__task-progress';
@@ -199,12 +246,18 @@ export class WorkshopTaskManager {
       return;
     }
 
+    this.renderTaskRow(row, task);
+  }
+
+  renderTaskRow(row, task) {
     const quantityText = `${task.progressQuantity}/${task.requiredQuantity}`;
     const buttonText = this.getButtonText(task);
     const disabled = !task.canFill && !task.canComplete;
 
     row.root.classList.toggle('is-completed', task.completed);
     row.root.classList.toggle('is-maxed', task.maxed);
+    row.button.dataset.taskId = task.taskId;
+    row.button.dataset.tutorialId = `task:${task.taskId}`;
     this.setText(row.label, `${task.action} ${task.itemLabel}`);
     this.setText(row.quantity, quantityText);
     this.setText(row.button, buttonText);

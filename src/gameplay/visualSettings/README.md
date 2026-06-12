@@ -1,3 +1,3 @@
 # Visual Settings
 
-Visual settings prices turn profile-only choices into crystal-priced options. The facade reads `game_config.visualSettings`, quotes theme/font/color costs, and spends crystal when a non-free option is selected.
+Visual settings prices turn profile-only choices into researchable options. White, Source Serif, and monochrome start researched; other theme/font/color choices must be researched from their price label before they can be selected.

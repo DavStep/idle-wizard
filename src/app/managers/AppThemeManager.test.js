@@ -63,6 +63,12 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleFont).toBe('inter');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
 
+    playerFacade.setTheme('midnight');
+    playerFacade.setFont('comic sans mono');
+
+    expect(document.documentElement.dataset.styleTheme).toBe('midnight');
+    expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
+
     playerFacade.setTheme('night-black');
     playerFacade.setFont('unknown');
     playerFacade.setColorMode('colored');

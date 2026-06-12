@@ -1,6 +1,7 @@
 const MARKET_TABS = [
   { id: 'npm', label: 'npc market' },
   { id: 'player', label: 'player market' },
+  { id: 'crystals', label: 'crystals' },
 ];
 
 export class ShopMarketTabsManager {

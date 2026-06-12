@@ -5,7 +5,7 @@
   --style-muted: #5e5e5e;
   --style-disabled: #969696;
   --style-active-surface: #d6d6d6;
-  --style-system-text: oklch(44% 0.12 25);
+  --style-system-text: var(--style-muted);
   --style-notification-red: #c1121f;
   --style-notification-orange: #d66a00;
   --style-notification: var(--style-notification-red);
@@ -114,6 +114,12 @@
     sans-serif;
 }
 
+:root[data-style-font="comic-sans-mono"] {
+  --style-font:
+    "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS", "Comic Sans",
+    ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
 :root[data-style-theme="black"] {
   --style-bg: #1a1a1a;
   --style-surface: #202020;
@@ -121,7 +127,6 @@
   --style-muted: #a6a6a6;
   --style-disabled: #7a7a7a;
   --style-active-surface: #2a2a2a;
-  --style-system-text: oklch(74% 0.11 25);
   --style-backdrop-rgb: 26 26 26;
   --style-log-fade-rgb: 32 32 32;
   --style-block-shadow: 5px 5px 5px #b8b8b8;
@@ -130,7 +135,23 @@
   color-scheme: dark;
 }
 
+:root[data-style-theme="midnight"] {
+  --style-bg: #1e1e1e;
+  --style-surface: #252526;
+  --style-text: #d4d4d4;
+  --style-muted: #a6a6a6;
+  --style-disabled: #6a6a6a;
+  --style-active-surface: #2d2d30;
+  --style-backdrop-rgb: 30 30 30;
+  --style-log-fade-rgb: 37 37 38;
+  --style-block-shadow: 5px 5px 5px #9e9e9e;
+  --style-overlay-shadow: 5px 5px 5px #c6c6c6;
+  --style-tooltip-shadow: -1px 3px 2px #c6c6c6;
+  color-scheme: dark;
+}
+
 :root[data-style-color="resources"] {
+  --style-system-text: oklch(44% 0.12 25);
   --style-resource-mana: oklch(43% 0.14 250);
   --style-resource-gold: oklch(45% 0.13 96);
   --style-resource-crystal: oklch(44% 0.1 305);
@@ -139,11 +160,21 @@
 }
 
 :root[data-style-theme="black"][data-style-color="resources"] {
+  --style-system-text: oklch(74% 0.11 25);
   --style-resource-mana: oklch(75% 0.12 250);
   --style-resource-gold: oklch(83% 0.14 96);
   --style-resource-crystal: oklch(78% 0.1 305);
   --style-resource-seed: oklch(78% 0.08 58);
   --style-resource-herb: oklch(75% 0.11 145);
+}
+
+:root[data-style-theme="midnight"][data-style-color="resources"] {
+  --style-system-text: oklch(75% 0.11 25);
+  --style-resource-mana: oklch(78% 0.12 252);
+  --style-resource-gold: oklch(84% 0.14 96);
+  --style-resource-crystal: oklch(80% 0.1 305);
+  --style-resource-seed: oklch(79% 0.08 58);
+  --style-resource-herb: oklch(77% 0.11 145);
 }
 
 :root [data-resource-color="mana"] {
@@ -171,21 +202,26 @@
     :disabled,
     .is-disabled,
     .is-locked,
+    .is-unresearched,
     .is-unavailable,
     .is-empty,
     .is-unknown
   )
-  [data-resource-color],
+  [data-resource-color] {
+  color: inherit;
+}
+
 :root [data-resource-color]:is(
     [aria-disabled="true"],
     :disabled,
     .is-disabled,
     .is-locked,
+    .is-unresearched,
     .is-unavailable,
     .is-empty,
     .is-unknown
   ) {
-  color: inherit;
+  color: var(--style-disabled);
 }
 
 * {
@@ -273,6 +309,28 @@ body {
 }
 
 .app-online-gate__message {
+  margin: 0;
+}
+
+.app-deploy-refresh {
+  position: absolute;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  background: var(--style-surface);
+  pointer-events: auto;
+}
+
+.app-deploy-refresh[hidden] {
+  display: none;
+}
+
+.app-deploy-refresh__dialog {
+  width: 260px;
+}
+
+.app-deploy-refresh__message {
   margin: 0;
 }
 
@@ -638,7 +696,7 @@ body {
 
 .workshop-page__seed-block {
   position: relative;
-  min-height: 44px;
+  min-height: var(--style-row-min-height);
   margin: 24px var(--style-room-content-edge) 0;
 }
 
@@ -758,10 +816,6 @@ body {
   text-align: left;
 }
 
-.shop-page__slot-row.is-locked > .shop-page__slot-value {
-  text-align: right;
-}
-
 .shop-page__slot-value > .style-button {
   justify-self: end;
 }
@@ -772,6 +826,10 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.shop-page__slot-item-value {
+  text-align: left;
 }
 
 .shop-page__slot-price-value,
@@ -887,6 +945,7 @@ body {
 
 :where(button, [role="button"])[data-notification="true"] {
   position: relative;
+  overflow: visible;
   --style-notification-current: var(--style-notification);
 }
 
@@ -896,8 +955,8 @@ body {
 
 :where(button, [role="button"])[data-notification="true"]::before {
   position: absolute;
-  top: 1px;
-  right: 1px;
+  top: -3px;
+  right: -3px;
   z-index: 2;
   width: var(--style-notification-size);
   height: var(--style-notification-size);
@@ -906,16 +965,12 @@ body {
   background: var(--style-notification-current);
   border-radius: 50%;
   box-shadow: 0 0 0 1px var(--style-surface);
+  transform: none;
 }
 
-.style-button[data-notification="true"]::before {
-  top: -3px;
-  right: -3px;
-}
-
-.room-bottom-panel__tab[data-notification="true"]::before {
-  top: 2px;
-  right: 4px;
+.room-bottom-panel__tab[data-notification="true"],
+.style-button[class*="tab-button"][data-notification="true"] {
+  overflow: visible;
 }
 
 .workshop-page__row--interactive {
@@ -972,8 +1027,9 @@ body {
   background: var(--style-surface);
 }
 
-.workshop-page__tasks {
+.style-box.workshop-page__tasks {
   position: relative;
+  padding-bottom: calc(var(--style-box-border-label-line-height) - 4px);
   margin: var(--style-room-content-top) var(--style-room-content-edge) 0;
 }
 
@@ -982,36 +1038,36 @@ body {
 }
 
 .workshop-page__tasks-summary {
-  display: flex;
-  justify-content: space-between;
+  display: block;
   width: 100%;
   min-height: var(--style-row-min-height);
   padding: 0;
-  appearance: none;
   color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-font-size);
-  line-height: normal;
-  text-align: left;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  gap: 10px;
 }
 
-.workshop-page__tasks-summary:hover .workshop-page__tasks-level,
-.workshop-page__tasks-summary:focus .workshop-page__tasks-level {
+.workshop-page__tasks-toggle:hover,
+.workshop-page__tasks-toggle:focus-visible {
   text-decoration: underline;
 }
 
-.workshop-page__tasks-summary:focus {
+.workshop-page__tasks-toggle:focus {
   outline: none;
 }
 
 .workshop-page__tasks-count {
-  flex: 0 0 auto;
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  right: var(--style-box-title-left);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
   font-variant-numeric: tabular-nums lining-nums;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
 }
 
 .workshop-page__task-list {
@@ -1022,6 +1078,27 @@ body {
 
 .workshop-page__task-list[hidden] {
   display: none;
+}
+
+.workshop-page__tasks-toggle {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  z-index: 1;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+  transform: translateX(-50%);
 }
 
 .workshop-page__task-row {
@@ -2021,6 +2098,58 @@ div.workshop-page__discovery-row {
   left: var(--style-room-content-edge);
 }
 
+.shop-page__crystal-offers {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+}
+
+.shop-page__crystal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(58px, max-content);
+  align-items: baseline;
+  min-height: var(--style-row-min-height);
+  column-gap: 8px;
+  clear: both;
+}
+
+.shop-page__crystal-row--header {
+  color: var(--style-muted);
+}
+
+.shop-page__crystal-row > :where(span, button) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-page__crystal-price {
+  justify-self: end;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.shop-page__crystal-price:hover,
+.shop-page__crystal-price:focus-visible {
+  outline: none;
+  text-decoration: underline;
+}
+
+.shop-page__crystal-row--header > span:last-child {
+  text-align: right;
+}
+
 .shop-page__stock {
   position: absolute;
   top: calc(var(--style-room-content-top) + 150px);
@@ -2037,8 +2166,8 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-tabs {
   position: absolute;
-  top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
+  bottom: calc(var(--style-room-chat-clearance) + 6px);
   left: var(--style-room-content-edge);
   z-index: 11;
   display: flex;
@@ -2047,9 +2176,9 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-panel {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 42px);
+  top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
-  bottom: var(--style-room-chat-clearance);
+  bottom: calc(var(--style-room-chat-clearance) + 38px);
   left: var(--style-room-content-edge);
   padding-top: var(--style-room-chat-title-overhang);
   overflow: hidden auto;
@@ -2605,6 +2734,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__world-chat-close,
 .style-button.workshop-page__trade-alliance-close,
 .style-button.shop-page__request-close,
+.style-button.shop-page__crystal-support-close,
 .style-button.shop-page__stock-buy-close {
   position: absolute;
   top: var(--style-box-border-label-offset);
@@ -2626,6 +2756,9 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__trade-alliance-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.shop-page__request-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.shop-page__crystal-support-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
 .style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
 }
@@ -2850,6 +2983,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__trade-history-popup,
 .shop-page__demand-popup,
+.shop-page__crystal-support-popup,
 .shop-page__stock-buy-popup {
   position: absolute;
   inset: 0;
@@ -2861,6 +2995,7 @@ div.workshop-page__discovery-row {
 .shop-page__request-popup[hidden],
 .shop-page__trade-history-popup[hidden],
 .shop-page__demand-popup[hidden],
+.shop-page__crystal-support-popup[hidden],
 .shop-page__stock-buy-popup[hidden] {
   display: none;
 }
@@ -2953,6 +3088,15 @@ div.workshop-page__discovery-row {
   top: 50%;
   left: 50%;
   width: 300px;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.style-dialog.shop-page__crystal-support-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
   overflow: visible;
   transform: translate(-50%, -50%);
 }
@@ -3345,6 +3489,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-dialog,
 .shop-page__trade-history-dialog,
 .shop-page__demand-dialog,
+.shop-page__crystal-offers,
 .shop-page__shelf,
 .shop-page__stock,
 .shop-page__player-request,
@@ -3354,6 +3499,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-panel .shop-page__shelf,
 .shop-page__market-panel .shop-page__stock,
+.shop-page__market-panel .shop-page__crystal-offers,
 .shop-page__market-panel .shop-page__player-request,
 .shop-page__market-panel .shop-page__player-shelf {
   position: relative;
@@ -3365,6 +3511,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-panel .shop-page__shelf:last-child,
 .shop-page__market-panel .shop-page__stock:last-child,
+.shop-page__market-panel .shop-page__crystal-offers:last-child,
 .shop-page__market-panel .shop-page__player-request:last-child,
 .shop-page__market-panel .shop-page__player-shelf:last-child {
   margin-bottom: 0;
@@ -3877,6 +4024,10 @@ div.workshop-page__discovery-row {
   gap: 12px;
   align-items: baseline;
   min-height: var(--style-row-min-height);
+}
+
+.room-top-panel__visual-option-name,
+.room-top-panel__visual-option-price {
   padding: 0;
   margin: 0;
   appearance: none;
@@ -3899,27 +4050,33 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__visual-option-price {
+  min-width: 0;
   font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
   white-space: nowrap;
 }
 
-.room-top-panel__visual-option:hover .room-top-panel__visual-option-name,
-.room-top-panel__visual-option:focus-visible .room-top-panel__visual-option-name,
-.room-top-panel__visual-option[aria-checked="true"] .room-top-panel__visual-option-name {
+.room-top-panel__visual-option-name:hover,
+.room-top-panel__visual-option-name:focus-visible,
+.room-top-panel__visual-option-name[aria-checked="true"],
+.room-top-panel__visual-option-price:not(:disabled):hover,
+.room-top-panel__visual-option-price:not(:disabled):focus-visible {
   text-decoration: underline;
 }
 
-.room-top-panel__visual-option:focus-visible {
+.room-top-panel__visual-option-name:focus-visible,
+.room-top-panel__visual-option-price:focus-visible {
   outline: none;
 }
 
-.room-top-panel__visual-option:disabled {
+.room-top-panel__visual-option-name:disabled,
+.room-top-panel__visual-option-price:disabled {
   color: var(--style-disabled);
   cursor: default;
 }
 
-.room-top-panel__visual-option:disabled .room-top-panel__visual-option-name {
+.room-top-panel__visual-option-name:disabled,
+.room-top-panel__visual-option-price:disabled {
   text-decoration: none;
 }
 
@@ -4217,6 +4374,14 @@ div.workshop-page__discovery-row {
   border: var(--style-border);
 }
 
+.style-button.shop-page__market-tab-button {
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 8px;
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  white-space: nowrap;
+}
+
 .style-button.shop-page__stock-tab-button {
   flex: 0 0 auto;
   width: auto;
@@ -4245,6 +4410,14 @@ div.workshop-page__discovery-row {
   line-height: normal;
   white-space: normal;
   border: var(--style-tab-border);
+}
+
+.style-button.workshop-page__leaderboard-tab-button {
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 6px;
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  white-space: nowrap;
 }
 
 .shop-page__sell-item-button {
@@ -4373,6 +4546,12 @@ div.workshop-page__discovery-row {
   font-size: var(--style-box-border-label-font-size);
 }
 
+.style-box .workshop-page__tasks-count,
+.style-box .workshop-page__tasks-toggle {
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+}
+
 .style-tooltip {
   position: absolute;
   z-index: 999;
@@ -4424,6 +4603,7 @@ div.workshop-page__discovery-row {
 .shop-page__request-popup:not([hidden]),
 .shop-page__trade-history-popup:not([hidden]),
 .shop-page__demand-popup:not([hidden]),
+.shop-page__crystal-support-popup:not([hidden]),
 .shop-page__stock-buy-popup:not([hidden]),
 .room-top-panel__settings:not([hidden]),
 .room-top-panel__level-popup:not([hidden]) {
@@ -4448,6 +4628,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.shop-page__request-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__trade-history-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__demand-popup:not([hidden])) .shop-page,
+.game-stage:has(.shop-page__crystal-support-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__stock-buy-popup:not([hidden])) .shop-page {
   z-index: 3;
 }
@@ -4482,6 +4663,7 @@ div.workshop-page__discovery-row {
 .shop-page__request-popup:not([hidden]) .shop-page__request-panel,
 .shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel,
 .shop-page__demand-popup:not([hidden]) .shop-page__demand-panel,
+.shop-page__crystal-support-popup:not([hidden]) .shop-page__crystal-support-dialog,
 .shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog {
   animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }

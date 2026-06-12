@@ -81,7 +81,7 @@ export class TopPanelViewManager {
 
     const key = document.createElement('span');
     key.className = 'room-top-panel__resource-key';
-    key.textContent = `${label} `;
+    key.textContent = label === 'gold' ? ' gold' : `${label} `;
 
     const val = document.createElement('span');
     val.className = 'room-top-panel__resource-val';
@@ -97,6 +97,11 @@ export class TopPanelViewManager {
 
     if (label === 'crystal') {
       this.refs.crystalValue = val;
+    }
+
+    if (label === 'gold') {
+      resource.append(val, key);
+      return resource;
     }
 
     resource.append(key, val);
@@ -335,6 +340,7 @@ export class TopPanelViewManager {
     buttons.setAttribute('aria-label', category.label);
 
     this.refs.visualSettingButtons ??= [];
+    this.refs.visualSettingResearchButtons ??= [];
     this.refs.visualSettingPriceLabels ??= [];
 
     if (categoryKey === 'theme') {
@@ -350,36 +356,43 @@ export class TopPanelViewManager {
     }
 
     for (const option of category.options) {
-      const button = document.createElement('button');
-      button.className = `room-top-panel__visual-option room-top-panel__${categoryKey}-button`;
-      button.type = 'button';
-      button.dataset.visualCategory = categoryKey;
-      button.dataset.visualOption = option.key;
-      button.setAttribute('role', 'radio');
-      button.setAttribute('aria-checked', 'false');
+      const row = document.createElement('div');
+      row.className = 'room-top-panel__visual-option';
 
-      const name = document.createElement('span');
+      const name = document.createElement('button');
       name.className = 'room-top-panel__visual-option-name';
+      name.type = 'button';
       name.textContent = option.label;
+      name.dataset.visualCategory = categoryKey;
+      name.dataset.visualOption = option.key;
+      name.setAttribute('role', 'radio');
+      name.setAttribute('aria-checked', 'false');
 
-      const price = document.createElement('span');
+      const price = document.createElement('button');
       price.className = 'room-top-panel__visual-option-price';
+      price.type = 'button';
       price.textContent = 'free';
+      price.dataset.visualCategory = categoryKey;
+      price.dataset.visualOption = option.key;
 
       if (categoryKey === 'theme') {
-        button.dataset.theme = option.key;
-        this.refs.themeButtons.push(button);
+        name.classList.add('room-top-panel__theme-button');
+        name.dataset.theme = option.key;
+        this.refs.themeButtons.push(name);
       } else if (categoryKey === 'font') {
-        button.dataset.font = option.key;
-        this.refs.fontButtons.push(button);
+        name.classList.add('room-top-panel__font-button');
+        name.dataset.font = option.key;
+        this.refs.fontButtons.push(name);
       } else {
-        button.dataset.colorMode = option.key;
-        this.refs.colorModeButtons.push(button);
+        name.classList.add('room-top-panel__color-button');
+        name.dataset.colorMode = option.key;
+        this.refs.colorModeButtons.push(name);
       }
 
-      button.append(name, price);
-      buttons.append(button);
-      this.refs.visualSettingButtons.push(button);
+      row.append(name, price);
+      buttons.append(row);
+      this.refs.visualSettingButtons.push(name);
+      this.refs.visualSettingResearchButtons.push(price);
       this.refs.visualSettingPriceLabels.push(price);
     }
 

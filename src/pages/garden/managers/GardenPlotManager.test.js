@@ -251,7 +251,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     const actionLabel = plotRow.querySelector('.garden-page__plot-action-label');
 
-    expect(actionLabel?.textContent).toBe('buy 25g');
+    expect(actionLabel?.textContent).toBe('buy 25 gold');
     expect(plotRow.disabled).toBe(true);
     expect(actionLabel?.getAttribute('data-resource-color')).toBeNull();
 

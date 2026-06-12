@@ -61,22 +61,28 @@ function createLifecycle() {
       hide: vi.fn(),
       unmount: vi.fn(),
     },
+    deployRefreshManager: {
+      mount: vi.fn(),
+      unmount: vi.fn(),
+    },
   });
 
   return {
     lifecycle,
+    stage,
     getBackendCallbacks: () => backendCallbacks,
   };
 }
 
 describe('AppLifecycleManager', () => {
   it('does not run the game loop until the server connects', async () => {
-    const { lifecycle, getBackendCallbacks } = createLifecycle();
+    const { lifecycle, stage, getBackendCallbacks } = createLifecycle();
 
     lifecycle.start();
     await Promise.resolve();
 
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.deployRefreshManager.mount).toHaveBeenCalledWith(stage);
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
 
     getBackendCallbacks().onOnline();
@@ -95,6 +101,16 @@ describe('AppLifecycleManager', () => {
 
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showOffline).toHaveBeenCalledWith('disconnect');
+  });
+
+  it('unmounts the deploy refresh gate when the app stops', async () => {
+    const { lifecycle } = createLifecycle();
+
+    lifecycle.start();
+    await Promise.resolve();
+    lifecycle.stop();
+
+    expect(lifecycle.deployRefreshManager.unmount).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the gate up when backend startup fails', async () => {

@@ -1,7 +1,8 @@
 import { automationResearchIds } from '../automationResearchIds.js';
 
 export class SeedSummoningAutomationManager {
-  constructor({ gameplayLogFacade, researchFacade, seedSummoningFacade } = {}) {
+  constructor({ brewingFacade, gameplayLogFacade, researchFacade, seedSummoningFacade } = {}) {
+    this.brewingFacade = brewingFacade;
     this.gameplayLogFacade = gameplayLogFacade;
     this.researchFacade = researchFacade;
     this.seedSummoningFacade = seedSummoningFacade;
@@ -12,7 +13,9 @@ export class SeedSummoningAutomationManager {
       return;
     }
 
-    if (!this.seedSummoningFacade?.getSnapshot().canSummon) {
+    const reservedMana = this.getReservedManaForAutoBrew();
+
+    if (!this.seedSummoningFacade?.canSummonSeed({ reservedMana })) {
       return;
     }
 
@@ -25,5 +28,17 @@ export class SeedSummoningAutomationManager {
 
   hasResearch(researchId) {
     return this.researchFacade?.hasCompletedResearch(researchId) === true;
+  }
+
+  getReservedManaForAutoBrew() {
+    const cauldronNumber = this.brewingFacade?.getSnapshot?.().cauldronNumber ?? 1;
+
+    if (!this.hasResearch(automationResearchIds.autoBrewCauldron(cauldronNumber))) {
+      return 0;
+    }
+
+    const pendingCost = this.brewingFacade?.getPendingAutoBrewManaCost?.() ?? 0;
+
+    return Number.isFinite(pendingCost) ? Math.max(0, pendingCost) : 0;
   }
 }

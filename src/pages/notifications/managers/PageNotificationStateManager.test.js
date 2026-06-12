@@ -93,6 +93,7 @@ describe('PageNotificationStateManager', () => {
             playerListing: false,
             playerProceeds: false,
             playerMarket: false,
+            crystals: false,
           },
         },
       },

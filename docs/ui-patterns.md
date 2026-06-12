@@ -14,6 +14,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Numbered game rows use a narrow left number cell, written as `1.`, `2.`, etc.
 - Main item/content text sits in the middle.
 - Price, status, timer, or action sits right-aligned in one fixed right slot.
+- Never leave the middle content blank. Empty/locked slot rows still name the thing, such as `empty stand` or `empty request`; the right slot only carries requirement/action/state.
 - Do not write row type words such as `stand 1` when the surrounding box already gives the type.
 - Market stand rows, player request rows, and garden plot rows should follow this same left-number, middle-content, right-action rhythm.
 
@@ -22,6 +23,14 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Row actions are text controls on the line, not separate decorative cards.
 - Buy/place/claim prices stay right-aligned and use tabular numerals.
 - Disabled or locked right-side actions use muted text and keep the same row height as enabled rows.
+
+## Expandable Boxes
+
+- Collapsed boxes keep one full summary row visible inside the box.
+- Use a top-right border label for count or progress, such as `2/5`.
+- Use a bottom-center border label as the toggle: `expand` when collapsed, `collapse` when open.
+- Expand hidden rows in normal flow inside the same box, without overlaying nearby panels.
+- Notification dots may appear on `expand` when hidden rows need attention, but never on `collapse`.
 
 ## Popup Structure
 

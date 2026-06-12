@@ -18,4 +18,5 @@ export default __t.row({
   costGold: __t.u64().name("cost_gold"),
   enabled: __t.bool(),
   updatedAt: __t.timestamp().name("updated_at"),
+  durationSeconds: __t.u64().name("duration_seconds"),
 });

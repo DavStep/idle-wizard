@@ -5,6 +5,7 @@ import { PagesFacade } from '../pages/PagesFacade.js';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { RenderFacade } from '../rendering/RenderFacade.js';
 import { ViewportFacade } from '../viewport/ViewportFacade.js';
+import { AppDeployRefreshManager } from './managers/AppDeployRefreshManager.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
 import { AppOnlineGateManager } from './managers/AppOnlineGateManager.js';
 import { AppShellManager } from './managers/AppShellManager.js';
@@ -23,6 +24,7 @@ export class AppFacade {
     this.playerFacade = new PlayerFacade();
     this.backendFacade = new BackendFacade();
     this.onlineGateManager = new AppOnlineGateManager();
+    this.deployRefreshManager = new AppDeployRefreshManager();
     this.appThemeManager = new AppThemeManager();
     this.gameplayFacade.setPersistenceStorage(this.backendFacade.getGameplaySaveFacade());
     this.gameplayFacade.setGameConfigFacade(this.backendFacade.getGameConfigFacade());
@@ -52,6 +54,7 @@ export class AppFacade {
       backendFacade: this.backendFacade,
       playerFacade: this.playerFacade,
       onlineGateManager: this.onlineGateManager,
+      deployRefreshManager: this.deployRefreshManager,
       appThemeManager: this.appThemeManager,
     });
   }

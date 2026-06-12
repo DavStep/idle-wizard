@@ -76,6 +76,9 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot().theme).toBe('black');
 
+    playerFacade.setTheme('midnight');
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
+
     playerFacade.setTheme('unknown');
     expect(playerFacade.getSnapshot().theme).toBe('white');
   });
@@ -97,6 +100,9 @@ describe('PlayerFacade', () => {
     playerFacade.setFont('inter');
 
     expect(playerFacade.getSnapshot().font).toBe('inter');
+
+    playerFacade.setFont('comic-sans-mono');
+    expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
 
     playerFacade.setFont('unknown');
     expect(playerFacade.getSnapshot().font).toBe('source-serif');
@@ -136,5 +142,8 @@ describe('PlayerFacade', () => {
 
     playerFacade.setTheme('dark-gray');
     expect(playerFacade.getSnapshot().theme).toBe('black');
+
+    playerFacade.setTheme('vs-code-midnight');
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
   });
 });

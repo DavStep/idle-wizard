@@ -6,6 +6,7 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
+import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
@@ -658,7 +659,7 @@ export class GardenPlotManager {
       return 'free';
     }
 
-    return Number.isFinite(value) ? `${value}g` : '?g';
+    return formatGoldPriceText(value);
   }
 
   formatTileStatus(phase) {

@@ -37,6 +37,15 @@ export class ResearchPurchaseManager {
       };
     }
 
+    if (this.researchStateEntityManager.isInProgress(normalizedResearchId)) {
+      return {
+        ok: false,
+        reason: 'research_in_progress',
+        researchId: normalizedResearchId,
+        ...this.getCostResult(cost),
+      };
+    }
+
     const missingRequiredResearchId = this.researchDefinitionManager
       .getRequiredResearchIds(normalizedResearchId)
       .find((requiredResearchId) => !this.researchStateEntityManager.isCompleted(requiredResearchId));
@@ -56,6 +65,20 @@ export class ResearchPurchaseManager {
         ok: false,
         reason: `not_enough_${cost.currency}`,
         researchId: normalizedResearchId,
+        ...this.getCostResult(cost),
+      };
+    }
+
+    const durationSeconds = this.researchBalanceManager.getDurationSeconds(normalizedResearchId);
+
+    if (durationSeconds > 0) {
+      this.researchStateEntityManager.start(normalizedResearchId, durationSeconds);
+
+      return {
+        ok: true,
+        researchId: normalizedResearchId,
+        durationSeconds,
+        remainingSeconds: durationSeconds,
         ...this.getCostResult(cost),
       };
     }

@@ -112,6 +112,34 @@ const DEFAULT_RESEARCH_BALANCE = {
   },
 };
 
+DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDurations(
+  DEFAULT_RESEARCH_BALANCE.researchCostsGold,
+  DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
+);
+
+function createDefaultResearchDurations(costsGold, costsCrystal = {}) {
+  const researchIds = [
+    ...Object.keys(costsGold),
+    ...Object.keys(costsCrystal).filter((researchId) => costsGold[researchId] === undefined),
+  ];
+
+  return Object.fromEntries(
+    researchIds.map((researchId, index) => [researchId, getDefaultResearchDurationSeconds(index)]),
+  );
+}
+
+function getDefaultResearchDurationSeconds(index) {
+  if (index === 0) {
+    return 3;
+  }
+
+  if (index === 1) {
+    return 60;
+  }
+
+  return 300 + Math.max(0, index - 2) * 300;
+}
+
 export class ResearchBalanceManager {
   constructor({ balance = DEFAULT_RESEARCH_BALANCE } = {}) {
     this.runtimeConfigByResearchId = new Map();
@@ -126,6 +154,7 @@ export class ResearchBalanceManager {
     this.balance = balance;
     this.costGoldByResearchId = this.readCostGoldByResearchId();
     this.costCrystalByResearchId = this.readCostCrystalByResearchId();
+    this.durationSecondsByResearchId = this.readDurationSecondsByResearchId();
   }
 
   getCost(researchId) {
@@ -165,6 +194,16 @@ export class ResearchBalanceManager {
     return cost.currency === 'crystal' ? cost.amount : 0;
   }
 
+  getDurationSeconds(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    const durationSeconds =
+      this.runtimeConfigByResearchId.get(normalizedResearchId)?.durationSeconds ??
+      this.durationSecondsByResearchId[normalizedResearchId] ??
+      0;
+
+    return this.normalizeDurationSeconds(durationSeconds);
+  }
+
   getResearchEffect() {
     return null;
   }
@@ -189,7 +228,8 @@ export class ResearchBalanceManager {
       }
 
       this.runtimeConfigByResearchId.set(researchId, {
-        costGold: this.normalizeCostGold(config?.costGold),
+        costGold: this.normalizeOptionalCostGold(config?.costGold),
+        durationSeconds: this.normalizeOptionalDurationSeconds(config?.durationSeconds),
         enabled: config?.enabled !== false,
       });
     }
@@ -199,8 +239,30 @@ export class ResearchBalanceManager {
     return String(researchId ?? '').trim();
   }
 
-  normalizeCostGold(costGold) {
+  normalizeOptionalCostGold(costGold) {
+    if (costGold === undefined || costGold === null) {
+      return undefined;
+    }
+
     const value = Number(costGold);
+
+    if (!Number.isFinite(value) || value < 0) {
+      return 0;
+    }
+
+    return Math.floor(value);
+  }
+
+  normalizeOptionalDurationSeconds(durationSeconds) {
+    if (durationSeconds === undefined || durationSeconds === null) {
+      return undefined;
+    }
+
+    return this.normalizeDurationSeconds(durationSeconds);
+  }
+
+  normalizeDurationSeconds(durationSeconds) {
+    const value = Number(durationSeconds);
 
     if (!Number.isFinite(value) || value < 0) {
       return 0;
@@ -243,5 +305,25 @@ export class ResearchBalanceManager {
     }
 
     return { ...costs };
+  }
+
+  readDurationSecondsByResearchId() {
+    const durations = this.balance?.researchDurationsSeconds;
+
+    if (durations === undefined) {
+      return { ...DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds };
+    }
+
+    if (!durations || typeof durations !== 'object' || Array.isArray(durations)) {
+      throw new Error('game_config.research researchDurationsSeconds must be an object.');
+    }
+
+    for (const durationSeconds of Object.values(durations)) {
+      if (!Number.isFinite(durationSeconds) || durationSeconds < 0) {
+        throw new Error('game_config.research durations must be zero or positive numbers.');
+      }
+    }
+
+    return { ...durations };
   }
 }

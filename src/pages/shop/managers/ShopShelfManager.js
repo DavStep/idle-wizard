@@ -9,6 +9,9 @@ import {
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
+const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
+const EMPTY_UNLOCKED_STAND_LABEL = 'select';
+
 export class ShopShelfManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -318,7 +321,8 @@ export class ShopShelfManager {
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
         setNotificationBadge(row, false);
         setNotificationBadge(button, !button.disabled);
-        refs.itemValue.textContent = '';
+        refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+        setResourceColor(refs.itemValue, null);
 
         if (button.parentElement !== value) {
           refs.priceValue.replaceChildren(button);
@@ -336,7 +340,8 @@ export class ShopShelfManager {
       row.removeAttribute('tabindex');
       setNotificationBadge(row, false);
       setNotificationBadge(button, false);
-      refs.itemValue.textContent = '';
+      refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+      setResourceColor(refs.itemValue, null);
       refs.priceValue.textContent = 'locked';
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       if (refs.priceValue.parentElement !== value) {
@@ -349,7 +354,7 @@ export class ShopShelfManager {
     const parts = this.getSlotSellParts(slot, shelf, snapshot);
 
     if (!parts.itemText) {
-      refs.value.textContent = 'empty';
+      refs.value.textContent = EMPTY_UNLOCKED_STAND_LABEL;
       setResourceColorFromText(refs.value, refs.value.textContent);
       return;
     }

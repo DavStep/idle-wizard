@@ -9,6 +9,10 @@ export const PLAYER_FONT_OPTIONS = Object.freeze([
     key: 'inter',
     label: 'inter',
   }),
+  Object.freeze({
+    key: 'comic-sans-mono',
+    label: 'comic sans mono',
+  }),
 ]);
 
 const FONT_KEYS = new Set(PLAYER_FONT_OPTIONS.map((font) => font.key));
@@ -18,6 +22,8 @@ const FONT_ALIASES = new Map([
   ['source serif', 'source-serif'],
   ['sans', 'inter'],
   ['sans-serif', 'inter'],
+  ['comic sans mono', 'comic-sans-mono'],
+  ['comic-mono', 'comic-sans-mono'],
 ]);
 
 export function normalizePlayerFont(font) {

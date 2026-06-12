@@ -121,6 +121,38 @@ export class BrewingFacade {
     return this.autoBrewEnabled;
   }
 
+  getPendingAutoBrewManaCost() {
+    if (!this.autoBrewEnabled || !this.autoBrewRecipeKey) {
+      return 0;
+    }
+
+    const recipe = this.brewingRecipeMatchManager.getRecipeByKey(this.autoBrewRecipeKey);
+
+    if (!recipe || !this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)) {
+      return 0;
+    }
+
+    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+      return 0;
+    }
+
+    const ingredientItemTypeIds =
+      this.brewingStartManager.getRecipeIngredientItemTypeIds(recipe);
+
+    if (
+      ingredientItemTypeIds.length >
+      this.brewingBalanceManager.getMaxCauldronIngredients()
+    ) {
+      return 0;
+    }
+
+    if (!this.brewingStartManager.hasEnoughInventory(ingredientItemTypeIds)) {
+      return 0;
+    }
+
+    return Number.isFinite(recipe.manaCost) ? Math.max(0, recipe.manaCost) : 0;
+  }
+
   autoBrew() {
     if (!this.autoBrewEnabled) {
       return {

@@ -26,6 +26,7 @@ export class ResearchSnapshotManager {
       tabs,
       boxes: tabs[0]?.boxes ?? [],
       completedResearchIds,
+      inProgressResearches: this.researchStateEntityManager.getInProgressResearches(),
     };
   }
 
@@ -39,6 +40,7 @@ export class ResearchSnapshotManager {
   getResearchSnapshot(research) {
     const cost = this.researchBalanceManager.getCost(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
+    const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
     const hasRequiredResearch = this.researchDefinitionManager
       .getRequiredResearchIds(research.id)
       .every((requiredResearchId) => this.researchStateEntityManager.isCompleted(requiredResearchId));
@@ -46,18 +48,35 @@ export class ResearchSnapshotManager {
     return {
       ...research,
       effect: research.value,
-      value: this.formatResearchValue({ completed, hasRequiredResearch, cost }),
+      value: this.formatResearchValue({ completed, hasRequiredResearch, cost, progress }),
       ...this.getCostSnapshot(cost),
       completed,
-      ...(!completed && !hasRequiredResearch ? { locked: true } : {}),
+      ...(progress.inProgress
+        ? {
+            inProgress: true,
+            totalSeconds: progress.totalSeconds,
+            remainingSeconds: progress.remainingSeconds,
+            totalMs: Math.round(progress.totalSeconds * 1000),
+            remainingMs: Math.round(progress.remainingSeconds * 1000),
+            progress: progress.progress,
+          }
+        : {}),
+      ...(!completed && !progress.inProgress && !hasRequiredResearch ? { locked: true } : {}),
       canResearch:
-        !completed && hasRequiredResearch && this.getCurrencyFacade(cost.currency)?.canSpend(cost.amount),
+        !completed &&
+        !progress.inProgress &&
+        hasRequiredResearch &&
+        this.getCurrencyFacade(cost.currency)?.canSpend(cost.amount),
     };
   }
 
-  formatResearchValue({ completed, hasRequiredResearch, cost }) {
+  formatResearchValue({ completed, hasRequiredResearch, cost, progress }) {
     if (completed) {
       return 'researched';
+    }
+
+    if (progress.inProgress) {
+      return this.formatDuration(progress.remainingSeconds);
     }
 
     if (!hasRequiredResearch) {
@@ -73,6 +92,26 @@ export class ResearchSnapshotManager {
     }
 
     return `${cost.amount} ${cost.currency}`;
+  }
+
+  formatDuration(seconds) {
+    const safeSeconds = Math.max(0, Math.ceil(Number(seconds) || 0));
+
+    if (safeSeconds < 60) {
+      return `${safeSeconds}s`;
+    }
+
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainingSeconds = safeSeconds % 60;
+
+    if (minutes < 60) {
+      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   }
 
   getCurrencyFacade(currency) {

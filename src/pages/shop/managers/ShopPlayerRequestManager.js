@@ -11,6 +11,8 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 
+const EMPTY_LOCKED_REQUEST_LABEL = 'empty request';
+
 export class ShopPlayerRequestManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -470,7 +472,8 @@ export class ShopPlayerRequestManager {
       refs.row.removeAttribute('role');
       refs.row.removeAttribute('aria-label');
       refs.row.removeAttribute('tabindex');
-      refs.itemValue.textContent = '';
+      refs.itemValue.textContent = EMPTY_LOCKED_REQUEST_LABEL;
+      setResourceColor(refs.itemValue, null);
       refs.priceValue.textContent = this.getLockedRequestSlotText(shelf, slotNumber);
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       if (refs.priceValue.parentElement !== refs.value) {

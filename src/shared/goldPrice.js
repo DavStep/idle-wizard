@@ -1,5 +1,11 @@
 const GOLD_PRICE_FACTOR = 100;
 const GOLD_PRICE_PATTERN = /^\d+(?:\.\d{0,2})?$/;
+const COMPACT_GOLD_UNITS = [
+  { value: 1_000_000_000_000, suffix: 't' },
+  { value: 1_000_000_000, suffix: 'b' },
+  { value: 1_000_000, suffix: 'm' },
+  { value: 1_000, suffix: 'k' },
+];
 
 export function normalizeGoldPrice(value) {
   const number = Number(value);
@@ -42,6 +48,30 @@ export function formatGoldPrice(value) {
   return price === null ? '?' : price.toFixed(2);
 }
 
+export function formatGoldAmount(value) {
+  const price = normalizeGoldPrice(value);
+
+  if (price === null) {
+    return '?';
+  }
+
+  if (price < 1_000) {
+    return trimGoldDecimals(price.toFixed(2));
+  }
+
+  const unit = COMPACT_GOLD_UNITS.find((candidate) => price >= candidate.value);
+  const scaled = price / unit.value;
+  const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+  const factor = 10 ** decimals;
+  const compact = Math.floor(scaled * factor) / factor;
+
+  return `${trimGoldDecimals(compact.toFixed(decimals))}${unit.suffix}`;
+}
+
 export function formatGoldPriceText(value) {
-  return `${formatGoldPrice(value)} gold`;
+  return `${formatGoldAmount(value)} gold`;
+}
+
+function trimGoldDecimals(text) {
+  return text.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
 }

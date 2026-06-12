@@ -83,14 +83,14 @@ describe('ShopTradeHistoryManager', () => {
         (tab) => tab.textContent,
       ),
     ).toEqual(['own', 'global']);
-    expect(popup.textContent).toContain('wizard bought Sage Seed from Ada for 3.00 gold');
+    expect(popup.textContent).toContain('wizard bought Sage Seed from Ada for 3 gold');
     expect(popup.textContent).not.toContain('Merlin bought 2 Mint Seed');
 
     [...popup.querySelectorAll('.shop-page__trade-history-tab-button')]
       .find((tab) => tab.textContent === 'global')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.textContent).toContain('Merlin bought 2 Mint Seed from Ada for 8.00 gold');
+    expect(popup.textContent).toContain('Merlin bought 2 Mint Seed from Ada for 8 gold');
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(popup.hidden).toBe(true);

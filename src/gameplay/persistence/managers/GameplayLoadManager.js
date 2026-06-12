@@ -6,6 +6,7 @@ export class GameplayLoadManager {
     gameplayLogFacade,
     itemsFacade,
     researchFacade,
+    visualSettingsFacade,
     shopFacade,
     brewingFacade,
     gardenFacade,
@@ -17,6 +18,7 @@ export class GameplayLoadManager {
     this.gameplayLogFacade = gameplayLogFacade;
     this.itemsFacade = itemsFacade;
     this.researchFacade = researchFacade;
+    this.visualSettingsFacade = visualSettingsFacade;
     this.shopFacade = shopFacade;
     this.brewingFacade = brewingFacade;
     this.gardenFacade = gardenFacade;
@@ -34,6 +36,7 @@ export class GameplayLoadManager {
     this.gameplayLogFacade.applyPersistenceSnapshot(save.logs);
     this.itemsFacade.applyPersistenceSnapshot(save.inventory);
     this.researchFacade.applyPersistenceSnapshot(save.research);
+    this.visualSettingsFacade.applyPersistenceSnapshot(save.visualSettings);
     this.tasksFacade.applyPersistenceSnapshot(save.tasks);
     this.shopFacade.applyPersistenceSnapshot(save.shop);
     this.brewingFacade.applyPersistenceSnapshot(save.brewing, this.itemsFacade);

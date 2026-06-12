@@ -15,5 +15,6 @@ export default {
   label: __t.string(),
   groupId: __t.string(),
   costGold: __t.u64(),
+  durationSeconds: __t.u64(),
   enabled: __t.bool(),
 };

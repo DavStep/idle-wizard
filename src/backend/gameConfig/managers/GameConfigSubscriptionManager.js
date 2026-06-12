@@ -109,6 +109,7 @@ export class GameConfigSubscriptionManager {
       groupId: String(row.groupId ?? row.group_id ?? ''),
       defaultCostGold: this.toNumber(row.defaultCostGold ?? row.default_cost_gold),
       costGold: this.toNumber(row.costGold ?? row.cost_gold),
+      durationSeconds: this.toNumber(row.durationSeconds ?? row.duration_seconds),
       enabled: row.enabled !== false,
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };

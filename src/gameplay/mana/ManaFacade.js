@@ -47,6 +47,18 @@ export class ManaFacade {
     return this.manaSpendManager.canSpend(amount);
   }
 
+  add(amount) {
+    this.manaEntityManager.addCurrent(amount);
+  }
+
+  setCurrent(amount) {
+    this.manaEntityManager.setCurrent(amount);
+  }
+
+  fill() {
+    this.setCurrent(this.manaEntityManager.getCap());
+  }
+
   getSnapshot() {
     return {
       ...this.manaEntityManager.getSnapshot(),

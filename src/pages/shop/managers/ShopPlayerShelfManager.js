@@ -17,6 +17,8 @@ import {
   parsePositiveGoldPrice,
 } from '../../../shared/goldPrice.js';
 
+const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
+
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -716,7 +718,8 @@ export class ShopPlayerShelfManager {
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
         setNotificationBadge(row, false);
         setNotificationBadge(button, !button.disabled);
-        refs.itemValue.textContent = '';
+        refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+        setResourceColor(refs.itemValue, null);
 
         if (button.parentElement !== value) {
           refs.priceValue.replaceChildren(button);
@@ -734,7 +737,8 @@ export class ShopPlayerShelfManager {
       row.removeAttribute('tabindex');
       setNotificationBadge(row, false);
       setNotificationBadge(button, false);
-      refs.itemValue.textContent = '';
+      refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+      setResourceColor(refs.itemValue, null);
       refs.priceValue.textContent = 'locked';
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       if (refs.priceValue.parentElement !== value) {

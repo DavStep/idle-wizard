@@ -8,8 +8,24 @@ JavaScript mobile game scaffold with a full ECS architecture, Vite client, and S
 npm install
 npm run dev
 npm run build
+npm run build:dev
+npm run build:prod
 npm run lint
 npm run android:assembleDebug
+npm run android:assembleRelease
+```
+
+`npm run dev`, `npm run build:dev`, and `npm run android:assembleDebug` load development env and enable console cheats. Production builds use `VITE_ENABLE_CHEATS=false`.
+
+In a dev build, open the browser console:
+
+```js
+cheats.help()
+cheats.fillMana()
+cheats.addGold(1000)
+cheats.addCrystal(10)
+cheats.addItem('sageSeed', 5)
+cheats.completeResearch('unlockSeed:sageSeed')
 ```
 
 ## GitHub Pages

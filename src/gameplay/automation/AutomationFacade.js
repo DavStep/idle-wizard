@@ -15,6 +15,7 @@ export class AutomationFacade {
     seedSummoningFacade,
   } = {}) {
     this.seedSummoningAutomationManager = new SeedSummoningAutomationManager({
+      brewingFacade,
       gameplayLogFacade,
       researchFacade,
       seedSummoningFacade,
@@ -44,8 +45,8 @@ export class AutomationFacade {
   }
 
   update() {
+    this.brewingAutomationManager.update();
     this.seedSummoningAutomationManager.update();
     this.gardenAutomationManager.update();
-    this.brewingAutomationManager.update();
   }
 }

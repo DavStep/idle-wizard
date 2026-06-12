@@ -99,7 +99,7 @@ describe('ShopStockManager', () => {
 
     expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 2);
     expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
-      'total2.60 gold',
+      'total2.6 gold',
     );
 
     await manager.onConfirmBuy();

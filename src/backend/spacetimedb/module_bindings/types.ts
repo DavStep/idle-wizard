@@ -208,6 +208,7 @@ export const ResearchConfig = __t.object("ResearchConfig", {
   costGold: __t.u64(),
   enabled: __t.bool(),
   updatedAt: __t.timestamp(),
+  durationSeconds: __t.u64(),
 });
 export type ResearchConfig = __Infer<typeof ResearchConfig>;
 

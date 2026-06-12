@@ -13,13 +13,33 @@ function createMemoryStorage() {
   };
 }
 
-function createGameplay({ persistenceStorage, persistenceNow = () => 0 } = {}) {
+function createGameplay({
+  instantResearch = true,
+  persistenceStorage,
+  persistenceNow = () => 0,
+} = {}) {
   const ecsFacade = new EcsFacade();
   const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow });
   ecsFacade.createWorld();
   gameplayFacade.initialize(ecsFacade);
+  if (instantResearch) {
+    makeResearchInstant(gameplayFacade);
+  }
   gameplayFacade.setNpcMarketFacade(createNpcMarketFacadeFake(gameplayFacade));
   return { ecsFacade, gameplayFacade };
+}
+
+function makeResearchInstant(gameplayFacade) {
+  const researchConfigs = gameplayFacade.researchFacade.researchDefinitionManager
+    .getResearches({ includeLevelLockedAutomation: true })
+    .map((research) => ({
+      researchId: research.id,
+      costGold: gameplayFacade.researchFacade.researchBalanceManager.getCostGold(research.id),
+      durationSeconds: 0,
+      enabled: true,
+    }));
+
+  gameplayFacade.applyRuntimeConfig({ researchConfigs });
 }
 
 function createNpcMarketFacadeFake(gameplayFacade) {
@@ -60,6 +80,7 @@ describe('GameplayFacade', () => {
     first.gameplayFacade.itemsFacade.addItem(1, 3);
     first.gameplayFacade.itemsFacade.addItem(1001, 2);
     first.gameplayFacade.buyResearch('unlockSeed:sageSeed');
+    first.gameplayFacade.buyVisualSettingOption('theme', 'black');
     first.gameplayFacade.addBrewingIngredient(1001);
     first.gameplayFacade.setSelectedShopShelfSlotSellItem(1);
     first.gameplayFacade.shutdown();
@@ -84,6 +105,7 @@ describe('GameplayFacade', () => {
       quantity: 3,
     });
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
+    expect(snapshot.visualSettings.researched.theme.black).toBe(true);
     expect(snapshot.brewing.ingredients).toEqual([
       {
         slotIndex: 0,
@@ -521,7 +543,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
       'researched Sage Seed',
       'summoned Sage Seed',
-      'sold Sage Seed for 1.00 gold',
+      'sold Sage Seed for 1 gold',
       'brewed Wasted Potion',
       'planted Sage Seed',
       'harvested Sage',
@@ -750,7 +772,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
   });
 
-  it('prices visual settings from runtime config and spends crystal', () => {
+  it('researches visual settings from runtime config and spends crystal', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.applyRuntimeConfig({
@@ -759,8 +781,8 @@ describe('GameplayFacade', () => {
           configKey: 'visualSettings',
           configJson: JSON.stringify({
             costsCrystal: {
-              theme: { white: 0, black: 2 },
-              font: { 'source-serif': 0, inter: 0 },
+              theme: { white: 0, black: 2, midnight: 0 },
+              font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0 },
               color: { monochrome: 0, resources: 0 },
             },
           }),
@@ -769,6 +791,11 @@ describe('GameplayFacade', () => {
     });
 
     expect(gameplayFacade.getSnapshot().visualSettings.costsCrystal.theme.black).toBe(2);
+    expect(gameplayFacade.getSnapshot().visualSettings.researched).toMatchObject({
+      theme: { white: true, black: false, midnight: false },
+      font: { 'source-serif': true, inter: false, 'comic-sans-mono': false },
+      color: { monochrome: true, resources: false },
+    });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
       ok: false,
       reason: 'not_enough_crystal',
@@ -788,6 +815,15 @@ describe('GameplayFacade', () => {
       costCurrency: 'crystal',
     });
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
+    expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
+      ok: false,
+      reason: 'already_researched',
+      category: 'theme',
+      optionKey: 'black',
+      costCrystal: 2,
+      costCurrency: 'crystal',
+    });
   });
 
   it('spends mana to summon a seed into inventory', () => {
@@ -968,6 +1004,23 @@ describe('GameplayFacade', () => {
       costCurrency: 'crystal',
       locked: true,
     });
+    expect(research.tabs[1].boxes[1].researches.map((research) => research.id)).toEqual([
+      automationResearchIds.autoPlantTile(1),
+      automationResearchIds.autoPlantTile(2),
+    ]);
+    expect(research.tabs[1].boxes[2].researches.map((research) => research.id)).toEqual([
+      automationResearchIds.autoHarvestPlant(1),
+      automationResearchIds.autoHarvestPlant(2),
+    ]);
+    expect(research.tabs[1].boxes[3].researches.map((research) => research.id)).toEqual([
+      automationResearchIds.autoBrewCauldron(1),
+    ]);
+    expect(research.tabs[1].boxes[4].researches.map((research) => research.id)).toEqual([
+      automationResearchIds.autoBottleCauldron(1),
+    ]);
+    expect(research.tabs[1].boxes[5].researches.map((research) => research.id)).toEqual([
+      automationResearchIds.autoCollectCauldron(1),
+    ]);
     expect(research.tabs[1].boxes[3].researches[0]).toMatchObject({
       id: automationResearchIds.autoBrewCauldron(1),
       label: 'auto brew cauldron 1',
@@ -1055,6 +1108,70 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('hides tile and cauldron automation research above current level caps', () => {
+    const { gameplayFacade } = createGameplay();
+    const getAdvancedBoxResearchIds = (boxId) =>
+      gameplayFacade
+        .getSnapshot()
+        .research.tabs.find((tab) => tab.id === 'advanced')
+        ?.boxes.find((box) => box.id === boxId)
+        ?.researches.map((research) => research.id) ?? [];
+
+    expect(getAdvancedBoxResearchIds('autoPlantTiles')).toEqual([
+      automationResearchIds.autoPlantTile(1),
+      automationResearchIds.autoPlantTile(2),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoHarvestTiles')).toEqual([
+      automationResearchIds.autoHarvestPlant(1),
+      automationResearchIds.autoHarvestPlant(2),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoBrewCauldrons')).toEqual([
+      automationResearchIds.autoBrewCauldron(1),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoBottleCauldrons')).toEqual([
+      automationResearchIds.autoBottleCauldron(1),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoCollectCauldrons')).toEqual([
+      automationResearchIds.autoCollectCauldron(1),
+    ]);
+
+    finishCurrentTaskLevel(gameplayFacade);
+    finishCurrentTaskLevel(gameplayFacade);
+    finishCurrentTaskLevel(gameplayFacade);
+    finishCurrentTaskLevel(gameplayFacade);
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(5);
+    expect(getAdvancedBoxResearchIds('autoPlantTiles')).toEqual([
+      automationResearchIds.autoPlantTile(1),
+      automationResearchIds.autoPlantTile(2),
+      automationResearchIds.autoPlantTile(3),
+      automationResearchIds.autoPlantTile(4),
+      automationResearchIds.autoPlantTile(5),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoHarvestTiles')).toEqual([
+      automationResearchIds.autoHarvestPlant(1),
+      automationResearchIds.autoHarvestPlant(2),
+      automationResearchIds.autoHarvestPlant(3),
+      automationResearchIds.autoHarvestPlant(4),
+      automationResearchIds.autoHarvestPlant(5),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoBrewCauldrons')).toEqual([
+      automationResearchIds.autoBrewCauldron(1),
+      automationResearchIds.autoBrewCauldron(2),
+      automationResearchIds.autoBrewCauldron(3),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoBottleCauldrons')).toEqual([
+      automationResearchIds.autoBottleCauldron(1),
+      automationResearchIds.autoBottleCauldron(2),
+      automationResearchIds.autoBottleCauldron(3),
+    ]);
+    expect(getAdvancedBoxResearchIds('autoCollectCauldrons')).toEqual([
+      automationResearchIds.autoCollectCauldron(1),
+      automationResearchIds.autoCollectCauldron(2),
+      automationResearchIds.autoCollectCauldron(3),
+    ]);
+  });
+
   it('buys research with gold from research balance', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -1093,6 +1210,56 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('takes time to complete research', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay({ instantResearch: false });
+    const researchAnnouncements = [];
+
+    gameplayFacade.setWorldChatFacade({
+      announceResearch: (researchName) => {
+        researchAnnouncements.push(researchName);
+        return Promise.resolve({ ok: true, researchName });
+      },
+    });
+
+    expect(gameplayFacade.buyResearch('unlockSeed:sageSeed')).toEqual({
+      ok: true,
+      researchId: 'unlockSeed:sageSeed',
+      durationSeconds: 3,
+      remainingSeconds: 3,
+      cost: 0,
+    });
+    expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([]);
+    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[0]).toMatchObject({
+      id: 'unlockSeed:sageSeed',
+      value: '3s',
+      inProgress: true,
+      remainingMs: 3_000,
+      totalMs: 3_000,
+      canResearch: false,
+    });
+    expect(gameplayFacade.getSnapshot().logs.entries).toEqual([]);
+    expect(researchAnnouncements).toEqual([]);
+
+    ecsFacade.update({ timerDeltaSeconds: 2 });
+
+    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[0]).toMatchObject({
+      value: '1s',
+      inProgress: true,
+      remainingMs: 1_000,
+    });
+    expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([]);
+
+    ecsFacade.update({ timerDeltaSeconds: 1 });
+
+    expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([
+      'unlockSeed:sageSeed',
+    ]);
+    expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
+      'researched Sage Seed',
+    ]);
+    expect(researchAnnouncements).toEqual(['Sage Seed']);
+  });
+
   it('buys advanced research with crystal and auto summons seeds', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
@@ -1127,6 +1294,61 @@ describe('GameplayFacade', () => {
       label: 'Sage Seed',
       kind: 'seed',
       quantity: 1,
+    });
+  });
+
+  it('reserves mana for pending auto brew before auto summoning seeds', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    unlockSageSeed(gameplayFacade);
+    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.crystalFacade.add(11);
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+
+    expect(gameplayFacade.buyResearch('unlockRecipe:manaTonic')).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoSeedSpawn())).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1))).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.setBrewingAutoBrewRecipe('manaTonic')).toMatchObject({
+      ok: true,
+      autoBrewRecipeKey: 'manaTonic',
+    });
+    expect(gameplayFacade.setBrewingAutoBrewEnabled(true)).toMatchObject({
+      ok: true,
+      autoBrewEnabled: true,
+    });
+
+    ecsFacade.update({ deltaSeconds: 10 });
+
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(10);
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
+    expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'Sage Seed',
+      kind: 'seed',
+      quantity: 0,
+    });
+
+    ecsFacade.update({ deltaSeconds: 2 });
+
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      key: 'manaTonic',
+      phase: 'brewing',
+      remainingMs: 30_000,
+    });
+    expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'Sage Seed',
+      kind: 'seed',
+      quantity: 0,
     });
   });
 

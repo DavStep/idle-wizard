@@ -1,13 +1,15 @@
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 import { VisualSettingsBalanceManager } from './managers/VisualSettingsBalanceManager.js';
+import { VisualSettingsResearchManager } from './managers/VisualSettingsResearchManager.js';
 
 export class VisualSettingsFacade {
   static explain =
-    'Prices player visual choices so themes, fonts, and color modes can be sold for crystal.';
+    'Researches player visual choices so themes, fonts, and color modes can unlock before selection.';
 
   constructor({ crystalFacade } = {}) {
     this.crystalFacade = crystalFacade;
     this.balanceManager = new VisualSettingsBalanceManager();
+    this.researchManager = new VisualSettingsResearchManager();
   }
 
   applyRuntimeConfig(snapshot = {}) {
@@ -15,7 +17,10 @@ export class VisualSettingsFacade {
   }
 
   getSnapshot() {
-    return this.balanceManager.getSnapshot();
+    return {
+      ...this.balanceManager.getSnapshot(),
+      ...this.researchManager.getSnapshot(),
+    };
   }
 
   getCostCrystal(categoryKey, optionKey) {
@@ -32,7 +37,19 @@ export class VisualSettingsFacade {
       };
     }
 
+    if (this.researchManager.isResearched(categoryKey, optionKey)) {
+      return {
+        ok: false,
+        reason: 'already_researched',
+        category: categoryKey,
+        optionKey,
+        costCrystal,
+        costCurrency: 'crystal',
+      };
+    }
+
     if (costCrystal <= 0) {
+      this.researchManager.research(categoryKey, optionKey);
       return {
         ok: true,
         category: categoryKey,
@@ -53,6 +70,8 @@ export class VisualSettingsFacade {
       };
     }
 
+    this.researchManager.research(categoryKey, optionKey);
+
     return {
       ok: true,
       category: categoryKey,
@@ -60,5 +79,17 @@ export class VisualSettingsFacade {
       costCrystal,
       costCurrency: 'crystal',
     };
+  }
+
+  isOptionResearched(categoryKey, optionKey) {
+    return this.researchManager.isResearched(categoryKey, optionKey);
+  }
+
+  getPersistenceSnapshot() {
+    return this.researchManager.getPersistenceSnapshot();
+  }
+
+  applyPersistenceSnapshot(snapshot = {}) {
+    this.researchManager.applyPersistenceSnapshot(snapshot);
   }
 }

@@ -39,15 +39,24 @@ export class SeedSummoningFacade {
     return this.seedSummonRequestManager.summonSeed();
   }
 
+  canSummonSeed({ reservedMana = 0 } = {}) {
+    const cost = this.seedSummonCostManager.getVisibleSummonCost();
+    const currentMana = this.manaFacade.getSnapshot().current;
+    const reserved = Number.isFinite(reservedMana) ? Math.max(0, reservedMana) : 0;
+    const availableMana = Math.max(0, currentMana - reserved);
+    const hasSummonableSeed = this.seedSummonEligibilityManager.getSummonableSeeds().length > 0;
+
+    return hasSummonableSeed && availableMana >= cost;
+  }
+
   getSnapshot() {
     const cost = this.seedSummonCostManager.getVisibleSummonCost();
     const quantity = this.seedSummonMultiplierManager.getSummonQuantity();
-    const hasSummonableSeed = this.seedSummonEligibilityManager.getSummonableSeeds().length > 0;
 
     return {
       cost,
       quantity,
-      canSummon: hasSummonableSeed && this.manaFacade.canSpend(cost),
+      canSummon: this.canSummonSeed(),
     };
   }
 }

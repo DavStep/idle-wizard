@@ -1,17 +1,12 @@
 const LEADERBOARD_TABS = [
   {
     id: 'totalGeneratedGold',
-    label: 'total generated gold',
+    label: 'wealth',
     valueKey: 'totalGeneratedGold',
   },
   {
-    id: 'income',
-    label: 'income',
-    valueKey: 'income',
-  },
-  {
     id: 'alliance',
-    label: 'alliance income',
+    label: 'alliance wealth',
     valueKey: 'seasonIncome',
   },
 ];

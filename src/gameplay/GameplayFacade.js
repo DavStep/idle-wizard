@@ -41,6 +41,8 @@ export class GameplayFacade {
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
+      onResearchComplete: (event) => this.handleResearchComplete(event),
+      playerLevelFacade: this.playerLevelFacade,
     });
     this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
       crystalFacade: this.crystalFacade,
@@ -91,6 +93,7 @@ export class GameplayFacade {
       gameplayLogFacade: this.gameplayLogFacade,
       itemsFacade: this.itemsFacade,
       researchFacade: this.researchFacade,
+      visualSettingsFacade: this.visualSettingsFacade,
       shopFacade: this.shopFacade,
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
@@ -272,15 +275,21 @@ export class GameplayFacade {
 
   buyResearch(researchId) {
     const result = this.researchFacade.buyResearch(researchId);
-    if (result.ok) {
-      const label = this.researchFacade.getResearchLabel(result.researchId);
-      this.gameplayLogFacade.logResearchBought({
-        label,
+    if (result.ok && this.researchFacade.hasCompletedResearch(result.researchId)) {
+      this.handleResearchComplete({
+        researchId: result.researchId,
+        label: this.researchFacade.getResearchLabel(result.researchId),
       });
-      void this.worldChatFacade?.announceResearch(label);
     }
     this.publishAndSaveSnapshot();
     return result;
+  }
+
+  handleResearchComplete({ label }) {
+    this.gameplayLogFacade.logResearchBought({
+      label,
+    });
+    void this.worldChatFacade?.announceResearch(label);
   }
 
   addBrewingIngredient(itemTypeId) {

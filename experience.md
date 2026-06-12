@@ -15,17 +15,18 @@
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
-- Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id can remain `shop` for compatibility.
+- Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
 - Show all five room pages in a shared bottom tab panel; underline the current page tab.
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
-- Leaderboard `income` tab should read server-provided `income`; `total generated gold` can use existing `totalIncome`.
+- Leaderboard shows `wealth` from `totalIncome` and `alliance wealth` from alliance season income; do not show a raw `income` tab.
 
 ## Architecture
 
 - Use full ECS for gameplay.
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
+- Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Keep gameplay rules separate from DOM/canvas rendering and SpacetimeDB transport.
 - bitECS 0.4 component calls use entity-first order: `addComponent(world, eid, component)`.
 - Player-facing event logs belong in gameplay/logs; page code should only render snapshot logs.
@@ -36,6 +37,7 @@
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
+- Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
 
 ## Gameplay Economy
 
@@ -61,6 +63,7 @@
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - Wasted Potion is not researchable and sells for 1 gold by item-level sell price override.
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
+- Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
@@ -68,9 +71,12 @@
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel, level-ups grant `playerLevel.crystal.perLevel`, and advanced research spends it.
+- Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
+- Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Advanced automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide advanced research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
+- Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
@@ -90,7 +96,7 @@
 - Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
-- Market page uses visible `npc market` / `player market` tabs; legacy internal tab ids can remain `npm`.
+- Market page uses visible `npc market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
 - Player market request UI is local-only until backend request listings exist; do not fake server trades.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
 - Player market requests use local numbered slots that follow player market stand unlock state.
@@ -165,6 +171,7 @@
 - Full-width padded dialog buttons also need `box-sizing: border-box`; otherwise their right borders clip outside the popup content.
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
+- Gold displays amount-first as `<compact amount> gold` everywhere, including top chrome; use `25 gold` and `123k gold`, never `25g` or `gold 25`.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
 - Clicking the top-panel username opens settings; username editing and visual theme choices live there.
 - Settings use bottom tabs outside the popup border: `profile`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
@@ -178,14 +185,16 @@
 - Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to `white`.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
-- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; zero crystal displays as `free`, and the dashboard `Visuals` tab edits those prices.
+- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Source Serif, and monochrome start researched, while other visual options show their price/free research action until researched.
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
+- If `data-resource-color` sits on the same row as `is-empty`/`is-locked`, set disabled color on that row; reserve `inherit` for child resource spans inside disabled parents.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC stock market category controls are bottom-border text tabs, not boxed buttons; keep `seed` left, `herb` centered, and `potion` right.
 - NPC stock buy row controls show only the price (`25 gold`), not a `buy` prefix; enabled prices use gold resource color, disabled/unaffordable prices inherit muted disabled color.
 - Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
+- Numbered slot rows must never leave the middle content blank; locked/empty market and request rows should still show labels like `empty stand` or `empty request`, with only state/action in the right slot.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
@@ -193,15 +202,22 @@
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
 - Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
+- Notification dots sit at each notified control's top-right corner, offset out by 3px.
+- Expand/collapse toggles may show a notification only in the collapsed `expand` state; the `collapse` state should never have a notification dot.
 - If notification dots grow beyond page-level flags, move to a provider tree with centralized child aggregation and graph validation instead of ad hoc booleans.
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
+- World chat system sender labels stay muted gray in monochrome; reserve the reddish system accent for resource color mode.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
 - World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
 - Main room page content panels should also use the Research-width `16px` source side inset.
-- Workshop tasks sit below the top panel and stay collapsed until the summary row is pressed.
+- Workshop tasks sit below the top panel and stay collapsed until the bottom-border expand action is pressed.
+- Workshop collapsed task summary renders the first task as a full task row; a bottom-border `expand`/`collapse` action reveals the remaining rows, and progress count stays as the top-right border label.
+- Workshop collapsed task summary should preview the first incomplete task in level order; expanded task display keeps incomplete rows before completed rows.
+- Reuse the Workshop-style box expansion pattern for future boxes: one summary row remains visible, top-right border label shows progress/count, bottom-center border label toggles `expand`/`collapse`, and expanded rows appear in normal flow inside the same box.
+- Workshop task border labels need higher-specificity or late CSS overrides because generic `.style-box` padding and `.style-box :where(button, ...)` font-size rules otherwise override component styles.
 - Workshop tasks should expand in normal flow above mana sphere/seeds; do not overlay action panels.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Workshop task action buttons use a 12px source font so `complete` fits the fixed 58px action slot.
@@ -227,7 +243,9 @@
 - If local shows `server unavailable`, check both Vite `55173` and SpacetimeDB `3000`; this workspace may target `.env.local` database `idle-wizard-codex-run`, so publish that DB directly when `npm run stdb:publish` is unauthorized for `idle-wizard`.
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
+- If `build` delegates to `build:prod`, keep `build` as `npm run build:prod --` so Pages' `--base=/idle-wizard/` reaches Vite.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
+- Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`, then reloads on version change.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
@@ -265,6 +283,7 @@
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
 - Shared player level displays use server `playerLevel`; do not trust `tasks.currentLevel` for other players until task completion is server-authoritative.
 - Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.
+- Cauldron unlocks must be bought one at a time; level milestones only raise the max purchasable cauldron cap, never bulk-unlock cauldrons.
 - Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror the client bootstrap default; hosted `game_config.playerLevel` can override milestones.
 - Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
 - Player level-up crystal rewards also come from `game_config.playerLevel`; level 1 start does not grant the reward.

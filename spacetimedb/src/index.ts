@@ -61,6 +61,7 @@ const NPC_MARKET_MAX_VOLATILITY_BPS = 10_000n;
 const NPC_MARKET_DEFAULT_CUSTOM_TARGET_STOCK = 100n;
 const NPC_MARKET_DEFAULT_CUSTOM_VOLATILITY_BPS = 800n;
 const MAX_RESEARCH_COST_GOLD = 1_000_000_000n;
+const MAX_RESEARCH_DURATION_SECONDS = 1_000_000n;
 const MAX_GAME_CONFIG_KEY_LENGTH = 48;
 const MAX_GAME_CONFIG_JSON_LENGTH = 80_000;
 const MAX_GAME_CONFIG_LEVELS = 20;
@@ -80,12 +81,25 @@ const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
-const PLAYER_THEMES = new Set(['white', 'black']);
+const PLAYER_THEMES = new Set(['white', 'black', 'midnight']);
 const PLAYER_THEME_ALIASES = new Map([
   ['mild-white', 'white'],
   ['mild-black', 'black'],
+  ['dark-gray', 'black'],
+  ['night-black', 'black'],
+  ['vs-code-midnight', 'midnight'],
+  ['vscode-midnight', 'midnight'],
 ]);
-const PLAYER_FONTS = new Set(['source-serif', 'inter']);
+const PLAYER_FONTS = new Set(['source-serif', 'inter', 'comic-sans-mono']);
+const PLAYER_FONT_ALIASES = new Map([
+  ['serif', 'source-serif'],
+  ['source-serif-4', 'source-serif'],
+  ['source serif', 'source-serif'],
+  ['sans', 'inter'],
+  ['sans-serif', 'inter'],
+  ['comic sans mono', 'comic-sans-mono'],
+  ['comic-mono', 'comic-sans-mono'],
+]);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
 const TRADE_ALLIANCE_ROLE_TRADE_MASTER = 'tradeMaster';
@@ -341,6 +355,30 @@ const researchDefaultCostCrystalById: Record<string, number> = {
   'automation:autoCollectCauldron:4': 4,
   'automation:autoCollectCauldron:5': 5,
 };
+
+const researchDefaultDurationSecondsById: Record<string, bigint> = Object.fromEntries(
+  [
+    ...Object.keys(researchDefaultCostGoldById),
+    ...Object.keys(researchDefaultCostCrystalById).filter(
+      (researchId) => researchDefaultCostGoldById[researchId] === undefined,
+    ),
+  ].map((researchId, index) => [
+    researchId,
+    BigInt(getDefaultResearchDurationSeconds(index)),
+  ]),
+) as Record<string, bigint>;
+
+function getDefaultResearchDurationSeconds(index: number): number {
+  if (index === 0) {
+    return 3;
+  }
+
+  if (index === 1) {
+    return 60;
+  }
+
+  return 300 + Math.max(0, index - 2) * 300;
+}
 
 const potionCatalog = [
   ...knownPotionCatalog,
@@ -667,6 +705,11 @@ const summonSeedResearchCatalog = [
 const automationGardenTileNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const automationCauldronNumbers = [1, 2, 3, 4, 5];
 const automationResearchCatalog = [
+  {
+    id: 'automation:autoSeedSpawn',
+    label: 'auto seed spawn',
+    groupId: 'autoSeedSpawn',
+  },
   ...automationGardenTileNumbers.map((tileNumber) => ({
     id: `automation:autoPlantTile:${tileNumber}`,
     label: `auto plant tile ${tileNumber}`,
@@ -803,6 +846,7 @@ const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
 const DEFAULT_RESEARCH_CONFIG_JSON = toGameConfigJson({
   researchCostsGold: toNumberRecord(researchDefaultCostGoldById),
   researchCostsCrystal: researchDefaultCostCrystalById,
+  researchDurationsSeconds: toNumberRecord(researchDefaultDurationSecondsById),
 });
 const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
   wastedBrewManaCost: 5,
@@ -844,10 +888,12 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
     theme: {
       white: 0,
       black: 0,
+      midnight: 0,
     },
     font: {
       'source-serif': 0,
       inter: 0,
+      'comic-sans-mono': 0,
     },
     color: {
       monochrome: 0,
@@ -1250,6 +1296,7 @@ const spacetimedb = schema({
       costGold: t.u64(),
       enabled: t.bool().default(true),
       updatedAt: t.timestamp(),
+      durationSeconds: t.u64().default(0n),
     },
   ),
   gameConfig: table(
@@ -1447,7 +1494,8 @@ function normalizePlayerTheme(theme: string): string {
 
 function normalizePlayerFont(font: string): string {
   const value = String(font ?? '').trim();
-  return PLAYER_FONTS.has(value) ? value : DEFAULT_PLAYER_FONT;
+  const normalizedValue = PLAYER_FONT_ALIASES.get(value) ?? value;
+  return PLAYER_FONTS.has(normalizedValue) ? normalizedValue : DEFAULT_PLAYER_FONT;
 }
 
 function normalizePlayerColorMode(colorMode: string): string {
@@ -2173,6 +2221,26 @@ function validateResearchCostGold(costGold: bigint | number): bigint {
   return safeCostGold;
 }
 
+function normalizeResearchDurationSeconds(value: bigint | number, fallback: bigint): bigint {
+  const safeValue = toBigInt(value);
+
+  if (safeValue <= 0n || safeValue > MAX_RESEARCH_DURATION_SECONDS) {
+    return fallback;
+  }
+
+  return safeValue;
+}
+
+function validateResearchDurationSeconds(durationSeconds: bigint | number): bigint {
+  const safeDurationSeconds = toBigInt(durationSeconds);
+
+  if (safeDurationSeconds <= 0n || safeDurationSeconds > MAX_RESEARCH_DURATION_SECONDS) {
+    throw new Error('Invalid research duration.');
+  }
+
+  return safeDurationSeconds;
+}
+
 function normalizeGameConfigKey(configKey: string): string {
   return String(configKey ?? '')
     .trim()
@@ -2209,6 +2277,17 @@ function normalizeGameConfigJson(
   parsedConfig: unknown,
   originalJson: string,
 ): string {
+  if (configKey === 'research' && isRecord(parsedConfig)) {
+    if (isRecord(parsedConfig.researchDurationsSeconds)) {
+      return originalJson;
+    }
+
+    return JSON.stringify({
+      ...parsedConfig,
+      researchDurationsSeconds: toNumberRecord(researchDefaultDurationSecondsById),
+    });
+  }
+
   if (configKey !== 'playerLevel' || !isRecord(parsedConfig)) {
     return originalJson;
   }
@@ -3911,10 +3990,15 @@ function validateResearchGameConfig(value: unknown) {
   const config = value as {
     researchCostsGold?: unknown;
     researchCostsCrystal?: unknown;
+    researchDurationsSeconds?: unknown;
   };
 
   validateCostRecord(config.researchCostsGold, MAX_RESEARCH_COST_GOLD);
   validateCostRecord(config.researchCostsCrystal, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+
+  if (config.researchDurationsSeconds !== undefined) {
+    validateCostRecord(config.researchDurationsSeconds, MAX_RESEARCH_DURATION_SECONDS);
+  }
 }
 
 function validateVisualSettingsGameConfig(value: unknown) {
@@ -4585,13 +4669,20 @@ function ensureResearchConfig(
       catalogResearch.defaultCostGold,
     );
     const enabled = existingConfig.enabled !== false;
+    const defaultDurationSeconds =
+      researchDefaultDurationSecondsById[catalogResearch.researchId] ?? 0n;
+    const durationSeconds = normalizeResearchDurationSeconds(
+      existingConfig.durationSeconds,
+      defaultDurationSeconds,
+    );
 
     if (
       existingConfig.label === label &&
       existingConfig.groupId === groupId &&
       existingConfig.defaultCostGold === catalogResearch.defaultCostGold &&
       existingConfig.costGold === costGold &&
-      existingConfig.enabled === enabled
+      existingConfig.enabled === enabled &&
+      existingConfig.durationSeconds === durationSeconds
     ) {
       return existingConfig;
     }
@@ -4604,6 +4695,7 @@ function ensureResearchConfig(
       costGold,
       enabled,
       updatedAt: ctx.timestamp,
+      durationSeconds,
     });
   }
 
@@ -4615,6 +4707,7 @@ function ensureResearchConfig(
     costGold: catalogResearch.defaultCostGold,
     enabled: true,
     updatedAt: ctx.timestamp,
+    durationSeconds: researchDefaultDurationSecondsById[catalogResearch.researchId] ?? 0n,
   });
 }
 
@@ -6858,9 +6951,10 @@ export const upsert_research_config = spacetimedb.reducer(
     label: t.string(),
     groupId: t.string(),
     costGold: t.u64(),
+    durationSeconds: t.u64(),
     enabled: t.bool(),
   },
-  (ctx, { researchId, label, groupId, costGold, enabled }) => {
+  (ctx, { researchId, label, groupId, costGold, durationSeconds, enabled }) => {
     assertGameConfigAdmin(ctx);
 
     const safeResearchId = normalizeResearchId(researchId);
@@ -6872,6 +6966,7 @@ export const upsert_research_config = spacetimedb.reducer(
     }
 
     const safeCostGold = validateResearchCostGold(costGold);
+    const safeDurationSeconds = validateResearchDurationSeconds(durationSeconds);
     const catalogResearch = researchCatalogById.get(safeResearchId);
     const existingConfig = ctx.db.researchConfig.researchId.find(safeResearchId);
     const nextConfig = {
@@ -6885,6 +6980,7 @@ export const upsert_research_config = spacetimedb.reducer(
       costGold: safeCostGold,
       enabled,
       updatedAt: ctx.timestamp,
+      durationSeconds: safeDurationSeconds,
     };
 
     if (existingConfig) {

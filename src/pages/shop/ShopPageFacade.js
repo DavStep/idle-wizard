@@ -1,3 +1,4 @@
+import { ShopCrystalOfferManager } from './managers/ShopCrystalOfferManager.js';
 import { ShopDemandManager } from './managers/ShopDemandManager.js';
 import { ShopMarketTabsManager } from './managers/ShopMarketTabsManager.js';
 import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js';
@@ -9,7 +10,7 @@ import { ShopTradeHistoryManager } from './managers/ShopTradeHistoryManager.js';
 
 export class ShopPageFacade {
   static explain =
-    'Shows the market room, where players sell to NPC demand, buy shared NPC stock, and list items for other players.';
+    'Shows the market room, where players sell to NPC demand, trade with other players, and see crystal prices.';
 
   constructor({ gameplayFacade, playerShopFacade } = {}) {
     this.roomViewManager = new ShopRoomViewManager();
@@ -20,6 +21,7 @@ export class ShopPageFacade {
     this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
     this.playerShelfManager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
     this.tradeHistoryManager = new ShopTradeHistoryManager({ playerShopFacade });
+    this.crystalOfferManager = new ShopCrystalOfferManager();
   }
 
   mount(stage) {
@@ -29,6 +31,7 @@ export class ShopPageFacade {
     this.marketTabsManager.mount(uiLayer);
     const npmMarketPanel = this.marketTabsManager.getPanel('npm');
     const playerMarketPanel = this.marketTabsManager.getPanel('player');
+    const crystalsPanel = this.marketTabsManager.getPanel('crystals');
     const shelfRoot = this.shelfManager.mount(npmMarketPanel, popupLayer);
     this.demandManager.mount({
       buttonParent: shelfRoot,
@@ -41,9 +44,11 @@ export class ShopPageFacade {
       buttonParent: this.playerShelfManager.getActionsRoot(),
       popupParent: popupLayer,
     });
+    this.crystalOfferManager.mount(crystalsPanel, popupLayer);
   }
 
   unmount() {
+    this.crystalOfferManager.unmount();
     this.tradeHistoryManager.unmount();
     this.playerShelfManager.unmount();
     this.playerRequestManager.unmount();

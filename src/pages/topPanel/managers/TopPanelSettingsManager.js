@@ -10,6 +10,7 @@ import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
+import { getDefaultPlayerVisualSettingsResearched } from '../../../player/playerVisualSettings.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
 const SETTINGS_TABS = ['account', 'report', 'theme'];
@@ -93,6 +94,12 @@ export class TopPanelSettingsManager {
     this.handleColorModeClick = (event) => {
       this.selectVisualSetting('color', event.currentTarget.dataset.colorMode);
     };
+    this.handleVisualSettingResearchClick = (event) => {
+      this.researchVisualSetting(
+        event.currentTarget.dataset.visualCategory,
+        event.currentTarget.dataset.visualOption,
+      );
+    };
     this.handleSettingsTabClick = (event) =>
       this.selectSettingsTab(event.currentTarget.dataset.settingsTab);
     this.handleFeedbackOpenClick = (event) =>
@@ -154,6 +161,10 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleColorModeClick);
     }
 
+    for (const button of this.refs.visualSettingResearchButtons ?? []) {
+      button.addEventListener('click', this.handleVisualSettingResearchClick);
+    }
+
     document.addEventListener('keydown', this.handleKeydown);
 
     if (this.playerFacade) {
@@ -178,7 +189,10 @@ export class TopPanelSettingsManager {
     } else {
       this.renderGameplaySnapshot({
         crystal: { current: 0 },
-        visualSettings: { costsCrystal: {} },
+        visualSettings: {
+          costsCrystal: {},
+          researched: getDefaultPlayerVisualSettingsResearched(),
+        },
       });
     }
 
@@ -227,6 +241,10 @@ export class TopPanelSettingsManager {
 
       for (const button of this.refs.colorModeButtons) {
         button.removeEventListener('click', this.handleColorModeClick);
+      }
+
+      for (const button of this.refs.visualSettingResearchButtons ?? []) {
+        button.removeEventListener('click', this.handleVisualSettingResearchClick);
       }
     }
 
@@ -437,8 +455,26 @@ export class TopPanelSettingsManager {
       return;
     }
 
+    if (!this.isVisualSettingResearched(categoryKey, optionKey)) {
+      this.showVisualSettingStatus('research first');
+      return;
+    }
+
     if (this.isCurrentVisualSetting(categoryKey, optionKey)) {
-      this.applyPlayerVisualSetting(categoryKey, optionKey);
+      this.clearVisualSettingStatus();
+      return;
+    }
+
+    this.applyPlayerVisualSetting(categoryKey, optionKey);
+    this.clearVisualSettingStatus();
+  }
+
+  researchVisualSetting(categoryKey, optionKey) {
+    if (!this.refs) {
+      return;
+    }
+
+    if (this.isVisualSettingResearched(categoryKey, optionKey)) {
       this.clearVisualSettingStatus();
       return;
     }
@@ -453,7 +489,6 @@ export class TopPanelSettingsManager {
       return;
     }
 
-    this.applyPlayerVisualSetting(categoryKey, optionKey);
     this.clearVisualSettingStatus();
   }
 
@@ -485,21 +520,38 @@ export class TopPanelSettingsManager {
       const optionKey = button.dataset.visualOption;
       const costCrystal = this.getVisualSettingCostCrystal(categoryKey, optionKey);
       const selected = this.isCurrentVisualSetting(categoryKey, optionKey);
-      const canAfford = selected || costCrystal <= currentCrystal || !this.gameplayFacade;
-      const price = button.querySelector('.room-top-panel__visual-option-price');
-      const label = button.querySelector('.room-top-panel__visual-option-name')?.textContent ?? '';
+      const researched = this.isVisualSettingResearched(categoryKey, optionKey);
+      const canResearch = !researched && (costCrystal <= currentCrystal || !this.gameplayFacade);
+      const price = this.refs.visualSettingResearchButtons?.find(
+        (candidate) =>
+          candidate.dataset.visualCategory === categoryKey &&
+          candidate.dataset.visualOption === optionKey,
+      );
+      const label = button.textContent ?? '';
       const priceLabel = this.formatVisualSettingPrice(costCrystal);
+      const statusLabel = researched ? 'researched' : priceLabel;
 
-      if (price && price.textContent !== priceLabel) {
-        price.textContent = priceLabel;
+      if (price && price.textContent !== statusLabel) {
+        price.textContent = statusLabel;
       }
 
-      button.disabled = !canAfford;
-      button.classList.toggle('is-unaffordable', !canAfford);
+      button.disabled = !researched;
+      button.classList.toggle('is-unresearched', !researched);
       button.setAttribute(
         'aria-label',
-        `${label}, ${priceLabel}${canAfford ? '' : ', not enough crystal'}`,
+        `${label}, ${researched ? 'researched' : 'not researched'}${
+          selected ? ', selected' : ''
+        }`,
       );
+
+      if (price) {
+        price.disabled = researched || !canResearch;
+        price.classList.toggle('is-unaffordable', !researched && !canResearch);
+        price.setAttribute(
+          'aria-label',
+          `${label}, ${statusLabel}${canResearch ? '' : researched ? '' : ', not enough crystal'}`,
+        );
+      }
     }
   }
 
@@ -526,6 +578,18 @@ export class TopPanelSettingsManager {
     return false;
   }
 
+  isVisualSettingResearched(categoryKey, optionKey) {
+    const researched = this.gameplaySnapshot?.visualSettings?.researched;
+    const categoryResearch =
+      researched && typeof researched === 'object' ? researched[categoryKey] : null;
+
+    if (categoryResearch && typeof categoryResearch === 'object') {
+      return Boolean(categoryResearch[optionKey]);
+    }
+
+    return Boolean(getDefaultPlayerVisualSettingsResearched()[categoryKey]?.[optionKey]);
+  }
+
   formatVisualSettingPrice(costCrystal) {
     return costCrystal > 0 ? `${costCrystal} crystal` : 'free';
   }
@@ -533,6 +597,10 @@ export class TopPanelSettingsManager {
   getVisualSettingErrorMessage(reason) {
     if (reason === 'not_enough_crystal') {
       return 'not enough crystal';
+    }
+
+    if (reason === 'already_researched') {
+      return 'researched';
     }
 
     return 'setting unavailable';

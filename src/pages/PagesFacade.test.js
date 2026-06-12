@@ -17,6 +17,18 @@ function createGameplayFacadeFake() {
     crystal: {
       current: 0,
     },
+    visualSettings: {
+      costsCrystal: {
+        theme: { white: 0, black: 0, midnight: 0 },
+        font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0 },
+        color: { monochrome: 0, resources: 0 },
+      },
+      researched: {
+        theme: { white: true, black: false, midnight: false },
+        font: { 'source-serif': true, inter: false, 'comic-sans-mono': false },
+        color: { monochrome: true, resources: false },
+      },
+    },
     inventory: [],
     seedInventory: [
       {
@@ -1234,6 +1246,52 @@ function createGameplayFacadeFake() {
         ...(research.costCurrency ? { costCurrency: research.costCurrency } : {}),
       };
     },
+    buyVisualSettingOption: (categoryKey, optionKey) => {
+      const category = snapshot.visualSettings.researched[categoryKey];
+
+      if (!category || !(optionKey in category)) {
+        return {
+          ok: false,
+          reason: 'unknown_visual_setting',
+        };
+      }
+
+      const costCrystal = snapshot.visualSettings.costsCrystal[categoryKey]?.[optionKey] ?? 0;
+
+      if (category[optionKey]) {
+        return {
+          ok: false,
+          reason: 'already_researched',
+          category: categoryKey,
+          optionKey,
+          costCrystal,
+          costCurrency: 'crystal',
+        };
+      }
+
+      if (snapshot.crystal.current < costCrystal) {
+        return {
+          ok: false,
+          reason: 'not_enough_crystal',
+          category: categoryKey,
+          optionKey,
+          costCrystal,
+          costCurrency: 'crystal',
+        };
+      }
+
+      snapshot.crystal.current -= costCrystal;
+      category[optionKey] = true;
+      publish();
+
+      return {
+        ok: true,
+        category: categoryKey,
+        optionKey,
+        costCrystal,
+        costCurrency: 'crystal',
+      };
+    },
     selectShopShelfSlot: (slotNumber) => {
       const slot = snapshot.shop.shelf.slots.find(
         (shelfSlot) => shelfSlot.slotNumber === slotNumber,
@@ -1799,14 +1857,24 @@ function createPlayerFacadeFake(
     setTheme: (theme) => {
       snapshot = {
         ...snapshot,
-        theme: ['white', 'mild-white', 'mild-black', 'black', 'dark-gray', 'night-black'].includes(
-          theme,
-        )
+        theme: [
+          'white',
+          'mild-white',
+          'mild-black',
+          'black',
+          'dark-gray',
+          'night-black',
+          'midnight',
+          'vs-code-midnight',
+          'vscode-midnight',
+        ].includes(theme)
           ? theme
               .replace('mild-white', 'white')
               .replace('mild-black', 'black')
               .replace('dark-gray', 'black')
               .replace('night-black', 'black')
+              .replace('vs-code-midnight', 'midnight')
+              .replace('vscode-midnight', 'midnight')
           : 'white',
       };
 
@@ -1814,7 +1882,12 @@ function createPlayerFacadeFake(
       return snapshot;
     },
     setFont: (font) => {
-      const normalizedFont = font === 'inter' ? 'inter' : 'source-serif';
+      const normalizedFont =
+        font === 'inter'
+          ? 'inter'
+          : ['comic-sans-mono', 'comic sans mono', 'comic-mono'].includes(font)
+            ? 'comic-sans-mono'
+            : 'source-serif';
       snapshot = {
         ...snapshot,
         font: normalizedFont,
@@ -1944,6 +2017,7 @@ function createWorldChatFacadeFake({ messages } = {}) {
 }
 
 function createTradeAllianceFacadeFake({
+  alliances = [],
   memberCount = 1,
   members = [],
   canManageRoles = true,
@@ -1955,7 +2029,7 @@ function createTradeAllianceFacadeFake({
   let leaveCount = 0;
   let snapshot = {
     connected: true,
-    alliances: [],
+    alliances,
     ownAlliance: {
       allianceId: 'alliance-1',
       name: 'All Seeing Void',
@@ -2337,7 +2411,7 @@ describe('PagesFacade', () => {
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain(
       'mana 0 / 50',
     );
-    expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain('gold 0');
+    expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain('0 gold');
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain(
       'crystal 0',
     );
@@ -2496,7 +2570,7 @@ describe('PagesFacade', () => {
     expect(levelPopup.hidden).toBe(true);
   });
 
-  it('shows Workshop tasks collapsed and expands them from the summary row', () => {
+  it('shows Workshop tasks collapsed and expands them from the bottom action', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -2507,23 +2581,44 @@ describe('PagesFacade', () => {
 
     const tasks = stage.querySelector('.workshop-page__tasks');
     const summary = stage.querySelector('.workshop-page__tasks-summary');
+    const count = stage.querySelector('.workshop-page__tasks-count');
+    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
+    const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summary?.textContent).toBe('level 11/2');
-    expect(summary?.getAttribute('aria-expanded')).toBe('false');
+    expect(summaryRow?.textContent).toBe('drop Sage3/10fill');
+    expect(
+      summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
+    ).toBe('30%');
+    expect(stage.querySelector('.workshop-page__tasks-level')).toBeNull();
+    expect(count?.textContent).toBe('1/2');
+    expect(toggle?.textContent).toBe('expand');
+    expect(toggle?.dataset.notification).toBeUndefined();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(list?.hidden).toBe(true);
+    expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(1);
 
     summary.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(summary.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(list.hidden).toBe(true);
+
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.textContent).toBe('collapse');
+    expect(toggle.dataset.notification).toBeUndefined();
     expect(list.hidden).toBe(false);
-    expect(tasks.textContent).toContain('drop Sage');
+    expect(list.textContent).toContain('drop Sage Seed20/20done');
+    expect(list.textContent).not.toContain('drop Sage3/10fill');
     expect(tasks.classList.contains('is-expanded')).toBe(true);
 
-    summary.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(summary.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.textContent).toBe('expand');
+    expect(toggle.dataset.notification).toBeUndefined();
     expect(list.hidden).toBe(true);
     expect(tasks.classList.contains('is-collapsed')).toBe(true);
   });
@@ -2538,17 +2633,17 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     stage
-      .querySelector('.workshop-page__tasks-summary')
+      .querySelector('.workshop-page__tasks-toggle')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     pagesFacade.show('brewing');
     pagesFacade.show('workshop');
 
     const tasks = stage.querySelector('.workshop-page__tasks');
-    const summary = stage.querySelector('.workshop-page__tasks-summary');
+    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
 
-    expect(summary?.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(list?.hidden).toBe(false);
     expect(tasks?.classList.contains('is-expanded')).toBe(true);
   });
@@ -2667,27 +2762,33 @@ describe('PagesFacade', () => {
     ]);
     expect(
       [...settings.querySelectorAll('.room-top-panel__theme-button')].map(
-        (button) =>
-          button.querySelector('.room-top-panel__visual-option-name')?.textContent,
+        (button) => button.textContent,
       ),
-    ).toEqual(['white', 'black']);
+    ).toEqual(['white', 'black', 'midnight']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
-        (button) =>
-          button.querySelector('.room-top-panel__visual-option-name')?.textContent,
+        (button) => button.textContent,
       ),
-    ).toEqual(['source serif', 'inter']);
+    ).toEqual(['source serif', 'inter', 'comic sans mono']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__color-button')].map(
-        (button) =>
-          button.querySelector('.room-top-panel__visual-option-name')?.textContent,
+        (button) => button.textContent,
       ),
     ).toEqual(['monochrome', 'resources']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__visual-option-price')].map(
         (price) => price.textContent,
       ),
-    ).toEqual(['free', 'free', 'free', 'free', 'free', 'free']);
+    ).toEqual([
+      'researched',
+      'free',
+      'free',
+      'researched',
+      'free',
+      'free',
+      'researched',
+      'free',
+    ]);
     expect(stage.querySelector('.room-top-panel__feedback-open')?.textContent).toBe(
       'feedback',
     );
@@ -2873,9 +2974,10 @@ describe('PagesFacade', () => {
 
   it('changes the theme from settings', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
     const playerFacade = createPlayerFacadeFake('Merlin');
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade,
     });
 
@@ -2896,17 +2998,49 @@ describe('PagesFacade', () => {
       '.room-top-panel__theme-button[data-theme="dark-gray"]',
     );
     const blackButton = stage.querySelector('.room-top-panel__theme-button[data-theme="black"]');
+    const midnightButton = stage.querySelector(
+      '.room-top-panel__theme-button[data-theme="midnight"]',
+    );
+    const blackResearchButton = blackButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
 
     expect(whiteButton.getAttribute('aria-checked')).toBe('true');
     expect(mildWhiteButton).toBeNull();
     expect(mildBlackButton).toBeNull();
     expect(darkGrayButton).toBeNull();
+    expect(blackButton.disabled).toBe(true);
+    expect(midnightButton.disabled).toBe(true);
+    expect(blackResearchButton?.textContent).toBe('free');
+
+    blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().theme).toBe('white');
+    expect(stage.querySelector('.room-top-panel__visual-status')?.textContent).toBe(
+      'research first',
+    );
+
+    blackResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
+    expect(blackResearchButton?.textContent).toBe('researched');
 
     blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().theme).toBe('black');
     expect(blackButton.getAttribute('aria-checked')).toBe('true');
     expect(whiteButton.getAttribute('aria-checked')).toBe('false');
+
+    const midnightResearchButton = midnightButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
+
+    midnightResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    midnightButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
+    expect(midnightButton.getAttribute('aria-checked')).toBe('true');
+    expect(blackButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes resource color mode from settings', () => {
@@ -2929,9 +3063,18 @@ describe('PagesFacade', () => {
     const resourcesButton = stage.querySelector(
       '.room-top-panel__color-button[data-color-mode="resources"]',
     );
+    const resourcesResearchButton = resourcesButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
 
     expect(monoButton.getAttribute('aria-checked')).toBe('true');
+    expect(resourcesButton.disabled).toBe(true);
 
+    resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
+
+    resourcesResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().colorMode).toBe('resources');
@@ -2957,14 +3100,38 @@ describe('PagesFacade', () => {
       '.room-top-panel__font-button[data-font="source-serif"]',
     );
     const interButton = stage.querySelector('.room-top-panel__font-button[data-font="inter"]');
+    const comicButton = stage.querySelector(
+      '.room-top-panel__font-button[data-font="comic-sans-mono"]',
+    );
+    const interResearchButton = interButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
 
     expect(sourceButton.getAttribute('aria-checked')).toBe('true');
+    expect(interButton.disabled).toBe(true);
+    expect(comicButton.disabled).toBe(true);
 
+    interButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().font).toBe('source-serif');
+
+    interResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     interButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().font).toBe('inter');
     expect(interButton.getAttribute('aria-checked')).toBe('true');
     expect(sourceButton.getAttribute('aria-checked')).toBe('false');
+
+    const comicResearchButton = comicButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
+
+    comicResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    comicButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
+    expect(comicButton.getAttribute('aria-checked')).toBe('true');
+    expect(interButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('shows optional google login in settings when auth is configured', async () => {
@@ -3294,8 +3461,19 @@ describe('PagesFacade', () => {
 
   it('shows leaderboard popup when leaderboard button is clicked', () => {
     const stage = document.createElement('section');
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      alliances: [
+        {
+          allianceId: 'alliance-1',
+          name: 'All Seeing Void',
+          tag: 'VOID',
+          seasonIncome: 42,
+        },
+      ],
+    });
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
+      tradeAllianceFacade,
     });
 
     pagesFacade.mount(stage);
@@ -3314,29 +3492,39 @@ describe('PagesFacade', () => {
     expect(
       popup.querySelector('.workshop-page__leaderboard-dialog')?.nextElementSibling,
     ).toBe(popup.querySelector('.workshop-page__leaderboard-tabs'));
-    expect(popup.querySelector('.workshop-page__leaderboard-tab-button')?.textContent).toBe(
-      'total generated gold',
-    );
-    expect(popup.textContent).toContain('1. Ada(2)');
-    expect(popup.textContent).toContain('120');
-    expect(popup.textContent).toContain('2. Merlin(10)');
-    expect(popup.textContent).toContain('75');
+    const tabButtons = [...popup.querySelectorAll('.workshop-page__leaderboard-tab-button')];
+    expect(tabButtons.map((tabButton) => tabButton.textContent)).toEqual([
+      'wealth',
+      'alliance wealth',
+    ]);
+    expect(tabButtons.find((tabButton) => tabButton.textContent === 'income')).toBeUndefined();
 
-    const incomeButton = [...popup.querySelectorAll('.workshop-page__leaderboard-tab-button')].find(
-      (tabButton) => tabButton.textContent === 'income',
-    );
-
-    incomeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(incomeButton.getAttribute('aria-selected')).toBe('true');
     const rowLabels = [
       ...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_key'),
     ].map((row) => row.textContent);
     const rowValues = [
       ...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val'),
     ].map((row) => row.textContent);
-    expect(rowLabels).toEqual(['user', '1. Merlin(10)', '2. Ada(2)']);
-    expect(rowValues).toEqual(['income', '9', '3']);
+    expect(rowLabels).toEqual(['user', '1. Ada(2)', '2. Merlin(10)']);
+    expect(rowValues).toEqual(['wealth', '120', '75']);
+
+    const allianceWealthButton = tabButtons.find(
+      (tabButton) => tabButton.textContent === 'alliance wealth',
+    );
+
+    allianceWealthButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(allianceWealthButton.getAttribute('aria-selected')).toBe('true');
+    expect(
+      [...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_key')].map(
+        (row) => row.textContent,
+      ),
+    ).toEqual(['alliance', '1. All Seeing Void [VOID]']);
+    expect(
+      [...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val')].map(
+        (row) => row.textContent,
+      ),
+    ).toEqual(['alliance wealth', '42']);
   });
 
   it('shows the current player rank below the leaderboard when outside the top ten', () => {
@@ -4006,7 +4194,7 @@ describe('PagesFacade', () => {
     expect(row?.textContent).toBe('system: Ada researched Mana Tonic');
   });
 
-  it('orders rooms as Brewing, Garden, Workshop, Research, Shop with Workshop default', () => {
+  it('orders rooms as Brewing, Garden, Workshop, Research, Market with Workshop default', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed', 'mintSeed');
@@ -4103,11 +4291,12 @@ describe('PagesFacade', () => {
 
     expect(pagesFacade.getCurrentPageId()).toBe('shop');
     expect(stage.querySelector('.shop-page')).not.toBeNull();
+    expect(stage.querySelector('.shop-page')?.getAttribute('aria-label')).toBe('Market room');
     expect(
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['npc market', 'player market']);
+    ).toEqual(['npc market', 'player market', 'crystals']);
     expect(
       stage
         .querySelector('.shop-page__market-tab-button')
@@ -4121,22 +4310,55 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(
       'npc stock market',
     );
+    expect(stage.querySelector('.shop-page__market-panel--crystals')?.hidden).toBe(true);
+
+    const crystalsTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
+      (button) => button.textContent === 'crystals',
+    );
+    crystalsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.shop-page__market-panel--crystals')?.hidden).toBe(false);
+    expect(stage.querySelector('.shop-page__crystal-offers')).not.toBeNull();
+    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain(
+      'crystals',
+    );
+    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('each');
+    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('note');
+    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('base');
     expect(
-      [...stage.querySelectorAll('.shop-page__shelf .shop-page__slot-row')].some(
-        (row) => row.querySelector('.row_key')?.textContent === 'gold',
+      [...stage.querySelectorAll('.shop-page__crystal-row:not(.shop-page__crystal-row--header)')]
+        .map((row) => row.textContent),
+    ).toEqual([
+      '1 crystal$4.99',
+      '2 crystals$8.99',
+      '5 crystals$19.99',
+      '10 crystals$36.99',
+      '20 crystals$69.99',
+      '50 crystals$159.99',
+    ]);
+    expect(
+      stage.querySelector('.shop-page__crystal-row[data-crystal-count="50"]')?.getAttribute(
+        'aria-label',
       ),
-    ).toBe(false);
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('empty');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('buy (1 gold)');
+    ).toBe('50 crystals, $159.99');
+    const crystalPriceButton = stage.querySelector(
+      '.shop-page__crystal-row[data-crystal-count="50"] .shop-page__crystal-price',
+    );
+    expect(crystalPriceButton?.tagName).toBe('BUTTON');
+    expect(stage.querySelector('.shop-page__crystal-support-popup')?.hidden).toBe(true);
+
+    crystalPriceButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const crystalSupportPopup = stage.querySelector('.shop-page__crystal-support-popup');
+    expect(crystalSupportPopup?.hidden).toBe(false);
     expect(
-      stage
-        .querySelector('.shop-page__buy-slot-button')
-        ?.getAttribute('data-resource-color'),
-    ).toBe('gold');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('3.locked');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('3 gold');
-    expect(stage.querySelector('.shop-page__sell-popup')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+      crystalSupportPopup?.querySelector('.shop-page__crystal-support-message')?.textContent,
+    ).toBe(
+      'thank you for trying to support the project but the transactions are not yet available <3',
+    );
+
+    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(crystalSupportPopup?.hidden).toBe(true);
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'shop',
     );
@@ -4683,7 +4905,7 @@ describe('PagesFacade', () => {
     expect(rows[0].disabled).toBe(false);
     expect(rows[1].querySelector('.garden-page__plot-label')?.textContent).toBe('plot 2');
     expect(rows[1].querySelector('.garden-page__plot-state')?.textContent).toBe('');
-    expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('buy 1g');
+    expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('buy 1 gold');
     expect(rows[1].disabled).toBe(true);
 
     gameplayFacade.setGold(1);
@@ -5165,7 +5387,7 @@ describe('PagesFacade', () => {
     researchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(5);
-    expect(stage.querySelector('.room-top-panel')?.textContent).toContain('gold 5');
+    expect(stage.querySelector('.room-top-panel')?.textContent).toContain('5 gold');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('researched');
   });
 
@@ -5338,7 +5560,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('herbs');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('potions');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'Sage Seed (0) 1.00 gold',
+      'Sage Seed (0) 1 gold',
     );
     expect(
       stage.querySelector('.shop-page__sell-dialog .shop-page__sell-tab-button'),
@@ -5353,12 +5575,12 @@ describe('PagesFacade', () => {
     ).toBe('empty');
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Sage Seed (0) 1.00 gold',
+      (button) => button.textContent === 'Sage Seed (0) 1 gold',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.Sage Seed (0) 1.00 gold',
+      '1.Sage Seed (0) 1 gold',
     );
     expect(
       stage
@@ -5397,18 +5619,18 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Mana Tonic (0) 5.00 gold')
+      .find((button) => button.textContent === 'Mana Tonic (0) 5 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const itemValue = stage.querySelector('.shop-page__slot-item-value');
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.Mana Tonic (0) 5.00 gold',
+      '1.Mana Tonic (0) 5 gold',
     );
     expect(itemValue?.textContent).toBe('Mana Tonic (0)');
     expect(itemValue?.getAttribute('data-resource-color')).toBe('mana');
-    expect(priceValue?.textContent).toBe(' 5.00 gold');
+    expect(priceValue?.textContent).toBe(' 5 gold');
     expect(priceValue?.getAttribute('data-resource-color')).toBe('gold');
   });
 
@@ -5445,11 +5667,11 @@ describe('PagesFacade', () => {
       .querySelector('.shop-page__slot-row--interactive')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Sage Seed (0) 1.00 gold')
+      .find((button) => button.textContent === 'Sage Seed (0) 1 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.Sage Seed (0) 1.00 gold',
+      '1.Sage Seed (0) 1 gold',
     );
 
     stage
@@ -5465,8 +5687,8 @@ describe('PagesFacade', () => {
     expect(visibleRows[0].classList.contains('shop-page__sell-empty-row')).toBe(false);
     emptyButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('1.empty');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('1. empty');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('1.select');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('1. select');
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
@@ -5485,20 +5707,20 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Sage Seed (0) 1.00 gold',
+      (button) => button.textContent === 'Sage Seed (0) 1 gold',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     gameplayFacade.setShopSellGold('seed', 7);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.Sage Seed (0) 7.00 gold',
+      '1.Sage Seed (0) 7 gold',
     );
 
     gameplayFacade.setShopSellNeed(1, 4);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.Sage Seed (0) 7.00 gold',
+      '1.Sage Seed (0) 7 gold',
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('need 4');
 
@@ -5507,7 +5729,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'Sage Seed (0) 7.00 gold',
+      'Sage Seed (0) 7 gold',
     );
   });
 
@@ -5542,10 +5764,10 @@ describe('PagesFacade', () => {
       row.textContent.includes('Sage Seed'),
     );
     const mintButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Mint Seed (1) 1.00 gold',
+      (button) => button.textContent === 'Mint Seed (1) 1 gold',
     );
 
-    expect(visibleRows).toEqual(['empty', 'Mint Seed (1) 1.00 gold']);
+    expect(visibleRows).toEqual(['empty', 'Mint Seed (1) 1 gold']);
     expect(mintButton?.disabled).toBe(true);
     expect(sageRow?.hidden ?? true).toBe(true);
   });
@@ -5565,13 +5787,13 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'Sage Seed (0) 1.00 gold')
+      .find((button) => button.textContent === 'Sage Seed (0) 1 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     gameplayFacade.setShopSellItems([]);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.Sage Seed (0) 1.00 gold',
+      '1.Sage Seed (0) 1 gold',
     );
   });
 
@@ -5596,7 +5818,7 @@ describe('PagesFacade', () => {
     herbsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const sageHerbButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'Sage (0) 2.00 gold',
+      (button) => button.textContent === 'Sage (0) 2 gold',
     );
     expect(sageHerbButton.closest('.shop-page__sell-item-row').hidden).toBe(false);
 
@@ -5605,7 +5827,7 @@ describe('PagesFacade', () => {
     const visiblePotionRows = [...stage.querySelectorAll('.shop-page__sell-item-row')]
       .filter((row) => !row.hidden)
       .map((row) => row.textContent);
-    expect(visiblePotionRows).not.toContain('Mana Tonic (locked) 5.00 gold');
+    expect(visiblePotionRows).not.toContain('Mana Tonic (locked) 5 gold');
   });
 
   it('hides shop sell picker with Escape or outside click', () => {
@@ -5681,7 +5903,7 @@ describe('PagesFacade', () => {
 
     expect(requestPopup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.Sage Seed (3) 2.50 gold',
+      '1.Sage Seed (3) 2.5 gold',
     );
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
@@ -5725,7 +5947,7 @@ describe('PagesFacade', () => {
     await Promise.resolve();
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      '1.Sage Seed (2) 4.00 gold',
+      '1.Sage Seed (2) 4 gold',
     );
     expect(
       stage
@@ -5768,4 +5990,5 @@ describe('PagesFacade', () => {
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(9);
   });
+
 });

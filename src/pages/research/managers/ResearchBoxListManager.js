@@ -66,7 +66,7 @@ export class ResearchBoxListManager {
           `${box.id}:${box.researches
             .map(
               (research) =>
-                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.description}:${research.completed}:${research.locked}:${research.canResearch}`,
+                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.description}:${research.completed}:${research.inProgress}:${research.remainingSeconds}:${research.locked}:${research.canResearch}`,
             )
             .join(',')}`,
       )
@@ -207,6 +207,7 @@ export class ResearchBoxListManager {
       !research.completed && !research.canResearch,
     );
     row.classList.toggle('is-locked', Boolean(research.locked));
+    row.classList.toggle('is-in-progress', Boolean(research.inProgress));
 
     const key = document.createElement('button');
     key.className = 'row_key research-page__research-label research-page__research-label-button';
@@ -216,7 +217,10 @@ export class ResearchBoxListManager {
     key.addEventListener('click', () => this.onShowResearchInfo?.(research));
     key.append(...this.createResearchLabelParts(research));
 
-    const val = research.completed ? this.createCompletedValue(research) : this.createBuyButton(research);
+    const val =
+      research.completed || research.inProgress
+        ? this.createReadonlyValue(research)
+        : this.createBuyButton(research);
 
     row.append(key, val);
     return row;
@@ -238,7 +242,7 @@ export class ResearchBoxListManager {
     return [name, effect];
   }
 
-  createCompletedValue(research) {
+  createReadonlyValue(research) {
     const val = document.createElement('span');
     val.className = 'row_val research-page__research-value';
     val.textContent = research.value;
@@ -268,6 +272,10 @@ export class ResearchBoxListManager {
   formatResearchButtonLabel(research) {
     if (research.locked) {
       return `${this.formatResearchName(research)} is locked`;
+    }
+
+    if (research.inProgress) {
+      return `${this.formatResearchName(research)} is researching, ${research.value} remaining`;
     }
 
     return `research ${this.formatResearchName(research)} for ${research.value}`;

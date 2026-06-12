@@ -9,6 +9,10 @@ export const PLAYER_THEME_OPTIONS = Object.freeze([
     key: 'black',
     label: 'black',
   }),
+  Object.freeze({
+    key: 'midnight',
+    label: 'midnight',
+  }),
 ]);
 
 const THEME_KEYS = new Set(PLAYER_THEME_OPTIONS.map((theme) => theme.key));
@@ -17,6 +21,8 @@ const THEME_ALIASES = new Map([
   ['mild-black', 'black'],
   ['dark-gray', 'black'],
   ['night-black', 'black'],
+  ['vs-code-midnight', 'midnight'],
+  ['vscode-midnight', 'midnight'],
 ]);
 
 export function normalizePlayerTheme(theme) {

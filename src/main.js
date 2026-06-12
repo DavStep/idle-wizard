@@ -8,9 +8,26 @@ import { AppFacade } from './app/AppFacade.js';
 
 const root = document.querySelector('#app');
 const app = new AppFacade({ root });
+let devCheatsFacade = null;
+let disposed = false;
 
 app.start();
 
+if (import.meta.env.VITE_ENABLE_CHEATS === 'true') {
+  void import('./dev/cheats/DevCheatsFacade.js').then(({ DevCheatsFacade }) => {
+    if (disposed) {
+      return;
+    }
+
+    devCheatsFacade = new DevCheatsFacade({ app });
+    devCheatsFacade.mount();
+  });
+}
+
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => app.stop());
+  import.meta.hot.dispose(() => {
+    disposed = true;
+    devCheatsFacade?.unmount();
+    app.stop();
+  });
 }

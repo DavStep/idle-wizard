@@ -9,6 +9,7 @@ export class AppLifecycleManager {
     backendFacade,
     playerFacade,
     onlineGateManager,
+    deployRefreshManager,
     appThemeManager,
   }) {
     this.shellManager = shellManager;
@@ -20,6 +21,7 @@ export class AppLifecycleManager {
     this.backendFacade = backendFacade;
     this.playerFacade = playerFacade;
     this.onlineGateManager = onlineGateManager;
+    this.deployRefreshManager = deployRefreshManager;
     this.appThemeManager = appThemeManager;
     this.started = false;
     this.frameLoopStarted = false;
@@ -35,6 +37,7 @@ export class AppLifecycleManager {
     this.appThemeManager?.mount(this.playerFacade);
     const stage = this.viewportFacade.mount(shell);
     this.onlineGateManager.mount(stage);
+    this.deployRefreshManager?.mount(stage);
     this.onlineGateManager.showConnecting();
 
     this.ecsFacade.createWorld();
@@ -121,6 +124,7 @@ export class AppLifecycleManager {
     this.stopFrameLoop();
     this.gameplayFacade.shutdown();
     this.backendFacade.stop();
+    this.deployRefreshManager?.unmount();
     this.onlineGateManager.unmount();
     this.appThemeManager?.unmount();
     this.renderFacade.unmount();
