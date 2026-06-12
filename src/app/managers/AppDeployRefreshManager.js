@@ -13,6 +13,8 @@ export class AppDeployRefreshManager {
     documentRef = document,
     fetchVersion = null,
     reload = null,
+    beforeReload = null,
+    beforeReloadTimeoutMs = 2_000,
   } = {}) {
     this.endpoint = endpoint;
     this.intervalMs = intervalMs;
@@ -22,12 +24,15 @@ export class AppDeployRefreshManager {
     this.documentRef = documentRef;
     this.fetchVersion = fetchVersion ?? (() => this.fetchEndpointVersion());
     this.reload = reload ?? (() => this.windowRef.location.reload());
+    this.beforeReload = beforeReload;
+    this.beforeReloadTimeoutMs = beforeReloadTimeoutMs;
     this.root = null;
     this.refs = null;
     this.initialVersion = this.normalizeVersion(currentVersion);
     this.currentVersion = this.initialVersion;
     this.intervalId = null;
     this.reloadTimeoutId = null;
+    this.beforeReloadTimeoutId = null;
     this.checking = false;
     this.reloading = false;
     this.handleVisibilityChange = () => {
@@ -176,6 +181,63 @@ export class AppDeployRefreshManager {
 
     this.reloading = true;
     this.show();
+    void this.prepareReload();
+  }
+
+  async prepareReload() {
+    await this.runBeforeReload();
+    this.scheduleReload();
+  }
+
+  async runBeforeReload() {
+    if (typeof this.beforeReload !== 'function') {
+      return;
+    }
+
+    try {
+      const result = this.beforeReload();
+
+      if (!result || typeof result.then !== 'function') {
+        return;
+      }
+
+      await this.waitForBeforeReload(result);
+    } catch {
+      // Save failures should not trap players on the old bundle forever.
+    }
+  }
+
+  async waitForBeforeReload(result) {
+    if (
+      !Number.isFinite(this.beforeReloadTimeoutMs) ||
+      this.beforeReloadTimeoutMs <= 0
+    ) {
+      await result;
+      return;
+    }
+
+    try {
+      await Promise.race([
+        result,
+        new Promise((resolve) => {
+          this.beforeReloadTimeoutId = this.windowRef.setTimeout(
+            resolve,
+            this.beforeReloadTimeoutMs,
+          );
+        }),
+      ]);
+    } finally {
+      if (this.beforeReloadTimeoutId !== null) {
+        this.windowRef.clearTimeout(this.beforeReloadTimeoutId);
+        this.beforeReloadTimeoutId = null;
+      }
+    }
+  }
+
+  scheduleReload() {
+    if (!this.reloading) {
+      return;
+    }
 
     if (this.reloadDelayMs <= 0) {
       this.reload();
@@ -199,6 +261,11 @@ export class AppDeployRefreshManager {
     if (this.reloadTimeoutId !== null) {
       this.windowRef.clearTimeout(this.reloadTimeoutId);
       this.reloadTimeoutId = null;
+    }
+
+    if (this.beforeReloadTimeoutId !== null) {
+      this.windowRef.clearTimeout(this.beforeReloadTimeoutId);
+      this.beforeReloadTimeoutId = null;
     }
 
     this.root?.remove();

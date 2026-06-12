@@ -23,6 +23,12 @@ function createWindowRef() {
   };
 }
 
+async function flushAsyncWork() {
+  for (let index = 0; index < 8; index += 1) {
+    await Promise.resolve();
+  }
+}
+
 describe('AppDeployRefreshManager', () => {
   it('blocks the stage and reloads after the deploy version changes', async () => {
     const stage = document.createElement('section');
@@ -40,8 +46,9 @@ describe('AppDeployRefreshManager', () => {
     });
 
     manager.mount(stage);
-    await Promise.resolve();
+    await flushAsyncWork();
     await manager.checkNow();
+    await flushAsyncWork();
 
     const gate = stage.querySelector('.app-deploy-refresh');
     expect(gate.hidden).toBe(false);
@@ -64,10 +71,35 @@ describe('AppDeployRefreshManager', () => {
     });
 
     manager.mount(stage);
-    await Promise.resolve();
+    await flushAsyncWork();
 
     expect(stage.querySelector('.app-deploy-refresh').hidden).toBe(false);
     expect(windowRef.location.reload).toHaveBeenCalledTimes(1);
+
+    manager.unmount();
+  });
+
+  it('flushes a save before reload', async () => {
+    const stage = document.createElement('section');
+    const windowRef = createWindowRef();
+    const events = [];
+    windowRef.location.reload = vi.fn(() => events.push('reload'));
+    const manager = new AppDeployRefreshManager({
+      enabled: true,
+      currentVersion: 'old-build',
+      fetchVersion: vi.fn().mockResolvedValueOnce({ version: 'new-build' }),
+      reloadDelayMs: 0,
+      beforeReload: vi.fn(() => {
+        events.push('save');
+        return Promise.resolve();
+      }),
+      windowRef,
+    });
+
+    manager.mount(stage);
+    await flushAsyncWork();
+
+    expect(events).toEqual(['save', 'reload']);
 
     manager.unmount();
   });

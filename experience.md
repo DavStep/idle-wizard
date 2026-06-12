@@ -6,6 +6,7 @@
 - If a requested feature is ambiguous, ask first instead of guessing.
 - The user wants only what was asked for; avoid adding gameplay, visuals, or extra systems early.
 - Before any change that can cause player data loss or needs migration, warn the user first; even after approval, ask one more explicit confirmation before making the change.
+- Persistent save/schema/config shape changes need explicit migration code or scripts before deploy; never rely on wiping rows, startup defaults, or page reloads to move users forward.
 
 ## Product Shape
 
@@ -256,6 +257,8 @@
 - If `build` delegates to `build:prod`, keep `build` as `npm run build:prod --` so Pages' `--base=/idle-wizard/` reaches Vite.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
 - Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`, then reloads on version change.
+- Deploy-triggered page refresh should only load compatible new code after migrations/sanitizers preserve player saves; refresh must not write defaults over hydrated user data.
+- Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.

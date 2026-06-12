@@ -554,6 +554,10 @@ export class GameplayFacade {
     return this.persistenceFacade.save();
   }
 
+  savePersistenceSnapshotAndFlush() {
+    return this.persistenceFacade.saveAndFlush();
+  }
+
   consumeProgressResetPending() {
     return this.persistenceFacade.consumeProgressResetPending();
   }

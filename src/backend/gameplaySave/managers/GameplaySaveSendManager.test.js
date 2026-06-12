@@ -85,4 +85,38 @@ describe('GameplaySaveSendManager', () => {
       saveJson: JSON.stringify({ version: 2, gold: { current: 3 } }),
     });
   });
+
+  it('waits for a save to flush when requested', async () => {
+    let resolveSave;
+    const setPlayerGameplaySave = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const manager = new GameplaySaveSendManager();
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+
+    const flush = manager.saveAndFlush({ version: 2, gold: { current: 9 } });
+    let settled = false;
+    flush.then(() => {
+      settled = true;
+    });
+
+    await Promise.resolve();
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
+    expect(settled).toBe(false);
+
+    resolveSave();
+
+    await expect(flush).resolves.toBe(true);
+    expect(settled).toBe(true);
+  });
 });

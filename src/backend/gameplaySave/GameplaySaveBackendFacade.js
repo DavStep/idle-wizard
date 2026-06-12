@@ -29,6 +29,10 @@ export class GameplaySaveBackendFacade {
     return this.sendManager.save(save);
   }
 
+  saveAndFlush(save) {
+    return this.sendManager.saveAndFlush(save);
+  }
+
   discardPreHydrationSave() {
     this.sendManager.discardPreHydrationSave();
   }

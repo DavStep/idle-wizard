@@ -85,6 +85,16 @@ export class GameplayPersistenceFacade {
     return this.storageManager.save(this.saveManager.createSave());
   }
 
+  saveAndFlush() {
+    const save = this.saveManager.createSave();
+
+    if (typeof this.storageManager.saveAndFlush === 'function') {
+      return this.storageManager.saveAndFlush(save);
+    }
+
+    return this.storageManager.save(save);
+  }
+
   afterUpdate(frame = {}) {
     const deltaSeconds = Number.isFinite(frame.timerDeltaSeconds)
       ? frame.timerDeltaSeconds

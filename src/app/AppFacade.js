@@ -24,7 +24,9 @@ export class AppFacade {
     this.playerFacade = new PlayerFacade();
     this.backendFacade = new BackendFacade();
     this.onlineGateManager = new AppOnlineGateManager();
-    this.deployRefreshManager = new AppDeployRefreshManager();
+    this.deployRefreshManager = new AppDeployRefreshManager({
+      beforeReload: () => this.gameplayFacade.savePersistenceSnapshotAndFlush(),
+    });
     this.appThemeManager = new AppThemeManager();
     this.gameplayFacade.setPersistenceStorage(this.backendFacade.getGameplaySaveFacade());
     this.gameplayFacade.setGameConfigFacade(this.backendFacade.getGameConfigFacade());

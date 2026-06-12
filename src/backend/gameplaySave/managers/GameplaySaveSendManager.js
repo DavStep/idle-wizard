@@ -39,6 +39,18 @@ export class GameplaySaveSendManager {
     return true;
   }
 
+  async saveAndFlush(save) {
+    if (!this.save(save)) {
+      return false;
+    }
+
+    while (this.syncPromise) {
+      await this.syncPromise;
+    }
+
+    return this.pendingSaveJson === null;
+  }
+
   discardPreHydrationSave() {
     if (this.pendingSaveWasHydrated) {
       return;
