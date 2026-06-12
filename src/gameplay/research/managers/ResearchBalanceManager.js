@@ -1,3 +1,5 @@
+const maxResearchDurationSeconds = 10 * 60;
+
 const DEFAULT_RESEARCH_BALANCE = {
   researchCostsGold: {
     'unlockSeed:sageSeed': 0,
@@ -137,7 +139,7 @@ function getDefaultResearchDurationSeconds(index) {
     return 60;
   }
 
-  return 300 + Math.max(0, index - 2) * 300;
+  return Math.min(maxResearchDurationSeconds, 300 + Math.max(0, index - 2) * 300);
 }
 
 export class ResearchBalanceManager {
@@ -268,7 +270,7 @@ export class ResearchBalanceManager {
       return 0;
     }
 
-    return Math.floor(value);
+    return Math.min(maxResearchDurationSeconds, Math.floor(value));
   }
 
   readCostGoldByResearchId() {

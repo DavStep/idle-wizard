@@ -14,6 +14,7 @@ export class ResearchBoxListManager {
     this.signature = '';
     this.selectedTabId = 'regular';
     this.tabButtons = new Map();
+    this.rowRefs = new Map();
   }
 
   mount(parent) {
@@ -52,6 +53,7 @@ export class ResearchBoxListManager {
     this.signature = '';
     this.selectedTabId = 'regular';
     this.tabButtons.clear();
+    this.rowRefs.clear();
   }
 
   render(snapshot) {
@@ -66,7 +68,7 @@ export class ResearchBoxListManager {
           `${box.id}:${box.researches
             .map(
               (research) =>
-                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.description}:${research.completed}:${research.inProgress}:${research.remainingSeconds}:${research.locked}:${research.canResearch}`,
+                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}`,
             )
             .join(',')}`,
       )
@@ -74,13 +76,16 @@ export class ResearchBoxListManager {
 
     if (signature === this.signature) {
       this.syncTabState(tabs, selectedTab);
+      this.syncResearchProgress(boxes);
       return;
     }
 
     this.signature = signature;
     this.syncTabs(tabs);
     this.syncTabState(tabs, selectedTab);
+    this.rowRefs.clear();
     this.boxesRoot.replaceChildren(...boxes.map((box) => this.createBox(box)));
+    this.syncResearchProgress(boxes);
   }
 
   getTabs(snapshot) {
@@ -204,7 +209,7 @@ export class ResearchBoxListManager {
     row.classList.toggle('is-completed', Boolean(research.completed));
     row.classList.toggle(
       'is-unavailable',
-      !research.completed && !research.canResearch,
+      !research.completed && !research.inProgress && !research.canResearch,
     );
     row.classList.toggle('is-locked', Boolean(research.locked));
     row.classList.toggle('is-in-progress', Boolean(research.inProgress));
@@ -223,6 +228,18 @@ export class ResearchBoxListManager {
         : this.createBuyButton(research);
 
     row.append(key, val);
+
+    const ref = { row, value: val };
+
+    if (research.inProgress) {
+      const progress = this.createProgress(research);
+      ref.progress = progress.root;
+      ref.progressFill = progress.fill;
+      ref.progressText = progress.text;
+      row.append(progress.root);
+    }
+
+    this.rowRefs.set(research.id, ref);
     return row;
   }
 
@@ -250,6 +267,46 @@ export class ResearchBoxListManager {
     return val;
   }
 
+  createProgress(research) {
+    const root = document.createElement('div');
+    root.className = 'style-progress style-progress--timer research-page__research-progress';
+    root.setAttribute('role', 'progressbar');
+    root.setAttribute('aria-label', `${this.formatResearchName(research)} research progress`);
+    root.setAttribute('aria-valuemin', '0');
+    root.setAttribute('aria-valuemax', '100');
+
+    const fill = document.createElement('span');
+    fill.className = 'style-progress__fill research-page__research-progress-fill';
+
+    const text = document.createElement('span');
+    text.className = 'style-progress__text research-page__research-progress-text';
+
+    root.append(fill, text);
+    return { root, fill, text };
+  }
+
+  syncResearchProgress(boxes) {
+    for (const box of boxes) {
+      for (const research of box.researches ?? []) {
+        const ref = this.rowRefs.get(research.id);
+
+        if (!ref?.progress) {
+          continue;
+        }
+
+        const percent = this.getProgressPercent(research.progress);
+        this.setStyleWidth(ref.progressFill, `${percent}%`);
+        this.setText(ref.progressText, '');
+        this.setAttribute(ref.progress, 'aria-valuenow', String(percent));
+      }
+    }
+  }
+
+  getProgressPercent(progress) {
+    const safeProgress = Number.isFinite(progress) ? progress : 0;
+    return Math.round(Math.max(0, Math.min(1, safeProgress)) * 100);
+  }
+
   createBuyButton(research) {
     const button = document.createElement('button');
     button.className = 'style-button research-page__research-button';
@@ -275,9 +332,27 @@ export class ResearchBoxListManager {
     }
 
     if (research.inProgress) {
-      return `${this.formatResearchName(research)} is researching, ${research.value} remaining`;
+      return `${this.formatResearchName(research)} is researching`;
     }
 
     return `research ${this.formatResearchName(research)} for ${research.value}`;
+  }
+
+  setText(element, value) {
+    if (element.textContent !== value) {
+      element.textContent = value;
+    }
+  }
+
+  setAttribute(element, name, value) {
+    if (element.getAttribute(name) !== value) {
+      element.setAttribute(name, value);
+    }
+  }
+
+  setStyleWidth(element, value) {
+    if (element.style.width !== value) {
+      element.style.width = value;
+    }
   }
 }

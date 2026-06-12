@@ -20,12 +20,17 @@ function createGameplayFacadeFake() {
     visualSettings: {
       costsCrystal: {
         theme: { white: 0, black: 0, midnight: 0 },
-        font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0 },
+        font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0, lexend: 0 },
         color: { monochrome: 0, resources: 0 },
       },
       researched: {
         theme: { white: true, black: false, midnight: false },
-        font: { 'source-serif': true, inter: false, 'comic-sans-mono': false },
+        font: {
+          'source-serif': true,
+          inter: false,
+          'comic-sans-mono': false,
+          lexend: false,
+        },
         color: { monochrome: true, resources: false },
       },
     },
@@ -1885,8 +1890,10 @@ function createPlayerFacadeFake(
       const normalizedFont =
         font === 'inter'
           ? 'inter'
-          : ['comic-sans-mono', 'comic sans mono', 'comic-mono'].includes(font)
-            ? 'comic-sans-mono'
+        : ['comic-sans-mono', 'comic sans mono', 'comic-mono'].includes(font)
+          ? 'comic-sans-mono'
+          : ['lexend', 'google-lexend'].includes(font)
+            ? 'lexend'
             : 'source-serif';
       snapshot = {
         ...snapshot,
@@ -2769,7 +2776,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['source serif', 'inter', 'comic sans mono']);
+    ).toEqual(['source serif', 'inter', 'comic sans mono', 'lexend']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__color-button')].map(
         (button) => button.textContent,
@@ -2784,6 +2791,7 @@ describe('PagesFacade', () => {
       'free',
       'free',
       'researched',
+      'free',
       'free',
       'free',
       'researched',
@@ -3103,6 +3111,7 @@ describe('PagesFacade', () => {
     const comicButton = stage.querySelector(
       '.room-top-panel__font-button[data-font="comic-sans-mono"]',
     );
+    const lexendButton = stage.querySelector('.room-top-panel__font-button[data-font="lexend"]');
     const interResearchButton = interButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
@@ -3110,6 +3119,7 @@ describe('PagesFacade', () => {
     expect(sourceButton.getAttribute('aria-checked')).toBe('true');
     expect(interButton.disabled).toBe(true);
     expect(comicButton.disabled).toBe(true);
+    expect(lexendButton.disabled).toBe(true);
 
     interButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -3132,6 +3142,17 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
     expect(comicButton.getAttribute('aria-checked')).toBe('true');
     expect(interButton.getAttribute('aria-checked')).toBe('false');
+
+    const lexendResearchButton = lexendButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
+
+    lexendResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    lexendButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().font).toBe('lexend');
+    expect(lexendButton.getAttribute('aria-checked')).toBe('true');
+    expect(comicButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('shows optional google login in settings when auth is configured', async () => {
@@ -5389,6 +5410,56 @@ describe('PagesFacade', () => {
     expect(gameplayFacade.getSnapshot().gold.current).toBe(5);
     expect(stage.querySelector('.room-top-panel')?.textContent).toContain('5 gold');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('researched');
+  });
+
+  it('shows active research as researching with a progress bar', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const research = gameplayFacade
+      .getSnapshot()
+      .research.boxes.find((box) => box.id === 'seedUnlocks').researches[0];
+
+    Object.assign(research, {
+      value: 'researching',
+      completed: false,
+      inProgress: true,
+      canResearch: false,
+      totalMs: 10_000,
+      remainingMs: 7_500,
+      progress: 0.25,
+    });
+
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'research');
+
+    const row = stage.querySelector('.research-page__row.is-in-progress');
+    const progressBar = row?.querySelector('.research-page__research-progress');
+
+    expect(row?.classList.contains('is-unavailable')).toBe(false);
+    expect(row?.querySelector('.research-page__research-value')?.textContent).toBe(
+      'researching',
+    );
+    expect(progressBar?.classList.contains('style-progress')).toBe(true);
+    expect(progressBar?.classList.contains('style-progress--timer')).toBe(true);
+    expect(progressBar?.getAttribute('role')).toBe('progressbar');
+    expect(progressBar?.getAttribute('aria-valuenow')).toBe('25');
+    expect(
+      progressBar?.querySelector('.research-page__research-progress-fill')?.style.width,
+    ).toBe('25%');
+
+    research.remainingMs = 2_000;
+    research.progress = 0.8;
+    gameplayFacade.publishSnapshot();
+
+    expect(progressBar?.getAttribute('aria-valuenow')).toBe('80');
+    expect(
+      progressBar?.querySelector('.research-page__research-progress-fill')?.style.width,
+    ).toBe('80%');
   });
 
   it('marks unaffordable and locked research rows unavailable', () => {

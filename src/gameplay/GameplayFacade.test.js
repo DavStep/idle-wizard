@@ -782,7 +782,7 @@ describe('GameplayFacade', () => {
           configJson: JSON.stringify({
             costsCrystal: {
               theme: { white: 0, black: 2, midnight: 0 },
-              font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0 },
+              font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0, lexend: 0 },
               color: { monochrome: 0, resources: 0 },
             },
           }),
@@ -793,7 +793,12 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().visualSettings.costsCrystal.theme.black).toBe(2);
     expect(gameplayFacade.getSnapshot().visualSettings.researched).toMatchObject({
       theme: { white: true, black: false, midnight: false },
-      font: { 'source-serif': true, inter: false, 'comic-sans-mono': false },
+      font: {
+        'source-serif': true,
+        inter: false,
+        'comic-sans-mono': false,
+        lexend: false,
+      },
       color: { monochrome: true, resources: false },
     });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
@@ -1231,7 +1236,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([]);
     expect(gameplayFacade.getSnapshot().research.boxes[0].researches[0]).toMatchObject({
       id: 'unlockSeed:sageSeed',
-      value: '3s',
+      value: 'researching',
       inProgress: true,
       remainingMs: 3_000,
       totalMs: 3_000,
@@ -1243,7 +1248,7 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ timerDeltaSeconds: 2 });
 
     expect(gameplayFacade.getSnapshot().research.boxes[0].researches[0]).toMatchObject({
-      value: '1s',
+      value: 'researching',
       inProgress: true,
       remainingMs: 1_000,
     });

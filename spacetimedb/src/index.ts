@@ -61,7 +61,7 @@ const NPC_MARKET_MAX_VOLATILITY_BPS = 10_000n;
 const NPC_MARKET_DEFAULT_CUSTOM_TARGET_STOCK = 100n;
 const NPC_MARKET_DEFAULT_CUSTOM_VOLATILITY_BPS = 800n;
 const MAX_RESEARCH_COST_GOLD = 1_000_000_000n;
-const MAX_RESEARCH_DURATION_SECONDS = 1_000_000n;
+const MAX_RESEARCH_DURATION_SECONDS = 10n * 60n;
 const MAX_GAME_CONFIG_KEY_LENGTH = 48;
 const MAX_GAME_CONFIG_JSON_LENGTH = 80_000;
 const MAX_GAME_CONFIG_LEVELS = 20;
@@ -90,7 +90,7 @@ const PLAYER_THEME_ALIASES = new Map([
   ['vs-code-midnight', 'midnight'],
   ['vscode-midnight', 'midnight'],
 ]);
-const PLAYER_FONTS = new Set(['source-serif', 'inter', 'comic-sans-mono']);
+const PLAYER_FONTS = new Set(['source-serif', 'inter', 'comic-sans-mono', 'lexend']);
 const PLAYER_FONT_ALIASES = new Map([
   ['serif', 'source-serif'],
   ['source-serif-4', 'source-serif'],
@@ -99,6 +99,7 @@ const PLAYER_FONT_ALIASES = new Map([
   ['sans-serif', 'inter'],
   ['comic sans mono', 'comic-sans-mono'],
   ['comic-mono', 'comic-sans-mono'],
+  ['google-lexend', 'lexend'],
 ]);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
@@ -377,7 +378,7 @@ function getDefaultResearchDurationSeconds(index: number): number {
     return 60;
   }
 
-  return 300 + Math.max(0, index - 2) * 300;
+  return Math.min(Number(MAX_RESEARCH_DURATION_SECONDS), 300 + Math.max(0, index - 2) * 300);
 }
 
 const potionCatalog = [
@@ -894,6 +895,7 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       'source-serif': 0,
       inter: 0,
       'comic-sans-mono': 0,
+      lexend: 0,
     },
     color: {
       monochrome: 0,

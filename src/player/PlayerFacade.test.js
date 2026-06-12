@@ -104,6 +104,9 @@ describe('PlayerFacade', () => {
     playerFacade.setFont('comic-sans-mono');
     expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
 
+    playerFacade.setFont('lexend');
+    expect(playerFacade.getSnapshot().font).toBe('lexend');
+
     playerFacade.setFont('unknown');
     expect(playerFacade.getSnapshot().font).toBe('source-serif');
   });

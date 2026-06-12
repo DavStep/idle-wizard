@@ -76,7 +76,7 @@ export class ResearchSnapshotManager {
     }
 
     if (progress.inProgress) {
-      return this.formatDuration(progress.remainingSeconds);
+      return 'researching';
     }
 
     if (!hasRequiredResearch) {

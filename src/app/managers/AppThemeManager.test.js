@@ -69,6 +69,10 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleTheme).toBe('midnight');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
 
+    playerFacade.setFont('google-lexend');
+
+    expect(document.documentElement.dataset.styleFont).toBe('lexend');
+
     playerFacade.setTheme('night-black');
     playerFacade.setFont('unknown');
     playerFacade.setColorMode('colored');
