@@ -147,7 +147,7 @@ export class GardenPlotManager {
 
     const number = document.createElement('span');
     number.className = 'garden-page__plot-number';
-    number.textContent = String(tileNumber);
+    number.textContent = `${tileNumber}.`;
 
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';

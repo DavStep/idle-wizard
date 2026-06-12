@@ -782,7 +782,7 @@ describe('GameplayFacade', () => {
           configJson: JSON.stringify({
             costsCrystal: {
               theme: { white: 0, black: 2, midnight: 0 },
-              font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0, lexend: 0 },
+              font: { lexend: 0, 'comic-sans-mono': 0 },
               color: { monochrome: 0, resources: 0 },
             },
           }),
@@ -794,10 +794,8 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().visualSettings.researched).toMatchObject({
       theme: { white: true, black: false, midnight: false },
       font: {
-        'source-serif': true,
-        inter: false,
+        lexend: true,
         'comic-sans-mono': false,
-        lexend: false,
       },
       color: { monochrome: true, resources: false },
     });

@@ -13,7 +13,7 @@ describe('PlayerFacade', () => {
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'white',
-      font: 'source-serif',
+      font: 'lexend',
       colorMode: 'monochrome',
     });
   });
@@ -28,7 +28,7 @@ describe('PlayerFacade', () => {
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'white',
-      font: 'source-serif',
+      font: 'lexend',
       colorMode: 'monochrome',
     });
   });
@@ -97,10 +97,6 @@ describe('PlayerFacade', () => {
   it('normalizes font', () => {
     const playerFacade = new PlayerFacade();
 
-    playerFacade.setFont('inter');
-
-    expect(playerFacade.getSnapshot().font).toBe('inter');
-
     playerFacade.setFont('comic-sans-mono');
     expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
 
@@ -108,7 +104,7 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().font).toBe('lexend');
 
     playerFacade.setFont('unknown');
-    expect(playerFacade.getSnapshot().font).toBe('source-serif');
+    expect(playerFacade.getSnapshot().font).toBe('lexend');
   });
 
   it('applies server profile preferences', () => {
@@ -117,7 +113,7 @@ describe('PlayerFacade', () => {
     playerFacade.applyServerProfile({
       username: 'Mira',
       theme: 'black',
-      font: 'inter',
+      font: 'comic-sans-mono',
       colorMode: 'resources',
       usernamePromptSeen: true,
     });
@@ -126,7 +122,7 @@ describe('PlayerFacade', () => {
       username: 'Mira',
       usernamePromptSeen: true,
       theme: 'black',
-      font: 'inter',
+      font: 'comic-sans-mono',
       colorMode: 'resources',
     });
   });

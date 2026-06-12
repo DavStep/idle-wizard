@@ -77,7 +77,7 @@ describe('PlayerProfileSubscriptionManager', () => {
         identity: 'mine',
         username: 'Server Mage',
         theme: 'black',
-        font: 'inter',
+        font: 'comic-sans-mono',
         colorMode: 'resources',
         usernamePromptSeen: true,
       },
@@ -91,7 +91,7 @@ describe('PlayerProfileSubscriptionManager', () => {
     expect(profiles.at(-1)).toEqual({
       username: 'Server Mage',
       theme: 'black',
-      font: 'inter',
+      font: 'comic-sans-mono',
       colorMode: 'resources',
       usernamePromptSeen: true,
     });
@@ -114,7 +114,7 @@ describe('PlayerProfileSubscriptionManager', () => {
     expect(profiles.at(-1)).toEqual({
       username: 'Hex Mage',
       theme: 'white',
-      font: 'source-serif',
+      font: 'lexend',
       colorMode: 'monochrome',
       usernamePromptSeen: false,
     });
@@ -135,7 +135,7 @@ describe('PlayerProfileSubscriptionManager', () => {
         identity: 'mine',
         username: 'MobileDav',
         theme: 'black',
-        font: 'inter',
+        font: 'comic-sans-mono',
         color_mode: 'resources',
         username_prompt_seen: true,
       },
@@ -144,7 +144,7 @@ describe('PlayerProfileSubscriptionManager', () => {
     expect(profiles.at(-1)).toEqual({
       username: 'MobileDav',
       theme: 'black',
-      font: 'inter',
+      font: 'comic-sans-mono',
       colorMode: 'resources',
       usernamePromptSeen: true,
     });

@@ -752,8 +752,17 @@ export class ShopPlayerShelfManager {
     const parts = this.getPlayerSlotParts(slot, shelf, snapshot);
 
     if (!parts.itemText) {
-      refs.value.textContent = EMPTY_STAND_ACTION_LABEL;
-      setResourceColorFromText(refs.value, refs.value.textContent);
+      if (
+        refs.itemValue.parentElement !== refs.value ||
+        refs.priceValue.parentElement !== refs.value
+      ) {
+        refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+      }
+
+      refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+      setResourceColor(refs.itemValue, null);
+      refs.priceValue.textContent = EMPTY_STAND_ACTION_LABEL;
+      setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       return;
     }
 

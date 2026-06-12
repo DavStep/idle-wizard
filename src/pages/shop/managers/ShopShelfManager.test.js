@@ -121,12 +121,16 @@ describe('ShopShelfManager', () => {
     manager.mount(stage, popupLayer);
 
     const requestRows = stage.querySelectorAll('.shop-page__player-request-row');
-    expect([...requestRows].map((row) => row.textContent)).toEqual([
-      '1.request item',
-      '2.request item',
-      '3.empty requestlevel 5',
-      '4.empty requestlocked',
-      '5.empty requestlocked',
+    expect([...requestRows].map((row) => [
+      row.querySelector('.row_key')?.textContent,
+      row.querySelector('.shop-page__request-row-item')?.textContent,
+      row.querySelector('.shop-page__request-row-price')?.textContent,
+    ])).toEqual([
+      ['1.', 'empty request', 'request item'],
+      ['2.', 'empty request', 'request item'],
+      ['3.', 'empty request', 'level 5'],
+      ['4.', 'empty request', 'locked'],
+      ['5.', 'empty request', 'locked'],
     ]);
 
     requestRows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -172,8 +176,12 @@ describe('ShopShelfManager', () => {
       .querySelectorAll('.shop-page__player-request-button')[1]
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.request item',
+    const clearedRequestRow = stage.querySelector('.shop-page__player-request-row');
+    expect(clearedRequestRow?.querySelector('.shop-page__request-row-item')?.textContent).toBe(
+      'empty request',
+    );
+    expect(clearedRequestRow?.querySelector('.shop-page__request-row-price')?.textContent).toBe(
+      'request item',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
       '2.Mint Seed (2) 3.25 gold',
@@ -364,12 +372,16 @@ describe('ShopShelfManager', () => {
     manager.mount(stage, popupLayer);
 
     const rows = [...stage.querySelectorAll('.shop-page__player-slot-row')];
-    expect(rows.map((row) => row.textContent)).toEqual([
-      '1.select',
-      '2.empty standlevel 3',
-      '3.empty standlocked',
-      '4.empty standlocked',
-      '5.empty standlocked',
+    expect(rows.map((row) => [
+      row.querySelector('.row_key')?.textContent,
+      row.querySelector('.shop-page__slot-item-value')?.textContent,
+      row.querySelector('.shop-page__slot-price-value')?.textContent,
+    ])).toEqual([
+      ['1.', 'empty stand', 'select'],
+      ['2.', 'empty stand', 'level 3'],
+      ['3.', 'empty stand', 'locked'],
+      ['4.', 'empty stand', 'locked'],
+      ['5.', 'empty stand', 'locked'],
     ]);
 
     manager.unmount();

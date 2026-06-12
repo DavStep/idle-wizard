@@ -37,6 +37,7 @@
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
+- SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
 
 ## Gameplay Economy
@@ -104,6 +105,7 @@
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
+- Garden plot number cells use the shared numbered-row label (`1.`, `2.`) and spacing, matching market stand/request rows.
 - Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.
 - Inventory-style seed/herb/potion rows should display `locked` instead of `0` when the matching research is incomplete.
 - Garden seed picker title is `choose seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
@@ -117,8 +119,8 @@
 
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
-- Use black text, white surfaces, readable serif text with some character, thin black borders, compact panels, and minimal decoration.
-- Project typography uses `Source Serif 4` at `15px` source size with tabular lining numerals for values.
+- Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
+- Project typography uses `Lexend` at `15px` source size with tabular lining numerals for values.
 - Keep popup/dialog titles at `16px`; ordinary block titles and body text share the source size.
 - Box titles use bold weight.
 - Non-title labels that sit on a box border (counts, close/current controls, bottom-edge actions/tabs) use smaller text and a fixed line box centered on the border line.
@@ -189,7 +191,9 @@
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
-- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Source Serif, and monochrome start researched, while other visual options show their price/free research action until researched.
+- Profile sync can echo stale server visual values after a local choice; keep in-flight client choices optimistic until a matching server echo arrives.
+- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Lexend, and monochrome start researched, while other visual options show their price/free research action until researched.
+- Zero-cost visual setting names should unlock and select directly; do not require a separate tap on `free`.
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - If `data-resource-color` sits on the same row as `is-empty`/`is-locked`, set disabled color on that row; reserve `inherit` for child resource spans inside disabled parents.

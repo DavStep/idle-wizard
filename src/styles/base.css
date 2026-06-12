@@ -98,7 +98,8 @@
   --app-viewport-width: 100vw;
   --app-viewport-height: 100vh;
   --style-font:
-    "Source Serif 4", Charter, "Iowan Old Style", "Noto Serif", Georgia, serif;
+    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   color-scheme: light;
   background: var(--style-bg);
   color: var(--style-text);
@@ -113,12 +114,6 @@
   text-rendering: optimizeLegibility;
 }
 
-:root[data-style-font="inter"] {
-  --style-font:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-}
-
 :root[data-style-font="comic-sans-mono"] {
   --style-font:
     "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS", "Comic Sans",
@@ -127,7 +122,7 @@
 
 :root[data-style-font="lexend"] {
   --style-font:
-    Lexend, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
 
@@ -2301,12 +2296,12 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-row {
   display: grid;
-  grid-template-columns: 2ch minmax(0, 1fr) minmax(112px, max-content);
-  column-gap: 6px;
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
+  column-gap: var(--style-row-column-gap);
   row-gap: 2px;
   align-items: center;
   width: 100%;
-  min-height: 22px;
+  min-height: var(--style-row-min-height);
 }
 
 .garden-page__plot-row {
@@ -2405,7 +2400,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-action {
   justify-self: end;
-  min-width: 112px;
+  min-width: var(--style-row-right-slot-width);
   font-size: 13px;
   line-height: normal;
   text-align: right;
@@ -3439,6 +3434,10 @@ div.workshop-page__discovery-row {
   color: var(--style-muted);
 }
 
+.shop-page__player-request-row.is-empty .shop-page__request-row-price {
+  color: var(--style-text);
+}
+
 .shop-page__player-request-actions {
   display: flex;
   justify-content: flex-end;
@@ -4112,17 +4111,6 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
-.room-top-panel__font-button[data-font="source-serif"] {
-  font-family:
-    "Source Serif 4", Charter, "Iowan Old Style", "Noto Serif", Georgia, serif;
-}
-
-.room-top-panel__font-button[data-font="inter"] {
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-}
-
 .room-top-panel__font-button[data-font="comic-sans-mono"] {
   font-family:
     "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS", "Comic Sans",
@@ -4131,7 +4119,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__font-button[data-font="lexend"] {
   font-family:
-    Lexend, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
 

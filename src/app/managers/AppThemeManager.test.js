@@ -7,7 +7,7 @@ import { AppThemeManager } from './AppThemeManager.js';
 function createPlayerFacade(
   initialTheme = 'white',
   initialColorMode = 'monochrome',
-  initialFont = 'source-serif',
+  initialFont = 'lexend',
 ) {
   let snapshot = {
     theme: initialTheme,
@@ -54,13 +54,13 @@ describe('AppThemeManager', () => {
   });
 
   it('applies current and changed player visual settings to the document root', () => {
-    const playerFacade = createPlayerFacade('black', 'resources', 'inter');
+    const playerFacade = createPlayerFacade('black', 'resources', 'comic-sans-mono');
     const manager = new AppThemeManager();
 
     manager.mount(playerFacade);
 
     expect(document.documentElement.dataset.styleTheme).toBe('black');
-    expect(document.documentElement.dataset.styleFont).toBe('inter');
+    expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
 
     playerFacade.setTheme('midnight');
@@ -78,7 +78,7 @@ describe('AppThemeManager', () => {
     playerFacade.setColorMode('colored');
 
     expect(document.documentElement.dataset.styleTheme).toBe('black');
-    expect(document.documentElement.dataset.styleFont).toBe('source-serif');
+    expect(document.documentElement.dataset.styleFont).toBe('lexend');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
 
     playerFacade.setTheme('mild-white');
@@ -87,7 +87,7 @@ describe('AppThemeManager', () => {
 
     manager.unmount();
     expect(document.documentElement.dataset.styleTheme).toBe('white');
-    expect(document.documentElement.dataset.styleFont).toBe('source-serif');
+    expect(document.documentElement.dataset.styleFont).toBe('lexend');
     expect(document.documentElement.dataset.styleColor).toBe('monochrome');
   });
 });

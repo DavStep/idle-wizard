@@ -5,7 +5,7 @@ const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
-const DEFAULT_PLAYER_FONT = 'source-serif';
+const DEFAULT_PLAYER_FONT = 'lexend';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
 const MAX_REPORTED_PLAYER_LEVEL = 20;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
@@ -90,13 +90,8 @@ const PLAYER_THEME_ALIASES = new Map([
   ['vs-code-midnight', 'midnight'],
   ['vscode-midnight', 'midnight'],
 ]);
-const PLAYER_FONTS = new Set(['source-serif', 'inter', 'comic-sans-mono', 'lexend']);
+const PLAYER_FONTS = new Set(['lexend', 'comic-sans-mono']);
 const PLAYER_FONT_ALIASES = new Map([
-  ['serif', 'source-serif'],
-  ['source-serif-4', 'source-serif'],
-  ['source serif', 'source-serif'],
-  ['sans', 'inter'],
-  ['sans-serif', 'inter'],
   ['comic sans mono', 'comic-sans-mono'],
   ['comic-mono', 'comic-sans-mono'],
   ['google-lexend', 'lexend'],
@@ -892,10 +887,8 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       midnight: 0,
     },
     font: {
-      'source-serif': 0,
-      inter: 0,
-      'comic-sans-mono': 0,
       lexend: 0,
+      'comic-sans-mono': 0,
     },
     color: {
       monochrome: 0,
@@ -2313,6 +2306,7 @@ function validatePlayerGameplaySaveJson(
   ctx: IdleWizardReducerCtx,
   saveJson: string,
   previousSaveJson?: string,
+  identity = ctx.sender,
 ): string {
   const value = String(saveJson ?? '').trim();
 
@@ -2332,13 +2326,16 @@ function validatePlayerGameplaySaveJson(
     throw new Error('Invalid player save value.');
   }
 
-  return JSON.stringify(normalizePlayerGameplaySave(ctx, parsedSave, previousSaveJson));
+  return JSON.stringify(
+    normalizePlayerGameplaySave(ctx, parsedSave, previousSaveJson, identity),
+  );
 }
 
 function normalizePlayerGameplaySave(
   ctx: IdleWizardReducerCtx,
   save: unknown,
   previousSaveJson?: string,
+  identity = ctx.sender,
 ) {
   if (!isRecord(save)) {
     throw new Error('Invalid player save value.');
@@ -2365,6 +2362,7 @@ function normalizePlayerGameplaySave(
     logs: normalizeSaveLogs(save.logs),
     inventory: normalizeSaveInventory(save.inventory, itemCatalog),
     research,
+    visualSettings: normalizeSaveVisualSettings(ctx, save.visualSettings, identity),
     shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
     brewing: normalizeSaveBrewing(save.brewing, itemCatalog),
     garden: normalizeSaveGarden(save.garden, itemCatalog, levelLimits),
@@ -2441,6 +2439,7 @@ function validateAdminCurrentCrystal(currentCrystal: unknown): number {
 function createAdminPlayerGameplaySaveJson(
   ctx: IdleWizardReducerCtx,
   existingSave: PlayerGameplaySaveRowValue | undefined,
+  identity: Identity,
   currentGold: number,
   currentCrystal: number,
 ): string {
@@ -2470,6 +2469,7 @@ function createAdminPlayerGameplaySaveJson(
       },
     }),
     existingSave?.saveJson,
+    identity,
   );
 }
 
@@ -2567,6 +2567,61 @@ function normalizeSaveCrystal(value: unknown, minimumCurrent = 0) {
       MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
     ),
   };
+}
+
+function normalizeSaveVisualSettings(
+  ctx: IdleWizardReducerCtx,
+  value: unknown,
+  identity?: Identity,
+) {
+  const visualSettings = isRecord(value) ? value : {};
+  const researched = isRecord(visualSettings.researched) ? visualSettings.researched : {};
+  const player = identity ? ctx.db.player.identity.find(identity) : null;
+
+  return {
+    researched: {
+      theme: normalizeSaveVisualSettingCategory(
+        researched.theme,
+        PLAYER_THEMES,
+        DEFAULT_PLAYER_THEME,
+        player ? normalizePlayerTheme(player.theme) : null,
+      ),
+      font: normalizeSaveVisualSettingCategory(
+        researched.font,
+        PLAYER_FONTS,
+        DEFAULT_PLAYER_FONT,
+        player ? normalizePlayerFont(player.font) : null,
+      ),
+      color: normalizeSaveVisualSettingCategory(
+        researched.color,
+        PLAYER_COLOR_MODES,
+        DEFAULT_PLAYER_COLOR_MODE,
+        player ? normalizePlayerColorMode(player.colorMode) : null,
+      ),
+    },
+  };
+}
+
+function normalizeSaveVisualSettingCategory(
+  value: unknown,
+  allowedOptions: Set<string>,
+  defaultOption: string,
+  selectedOption?: string | null,
+) {
+  const source = isRecord(value) ? value : {};
+  const options: Record<string, boolean> = {};
+
+  for (const option of allowedOptions) {
+    options[option] = Boolean(source[option]);
+  }
+
+  options[defaultOption] = true;
+
+  if (selectedOption && allowedOptions.has(selectedOption)) {
+    options[selectedOption] = true;
+  }
+
+  return options;
 }
 
 function getMinimumCurrentCrystalForSave(
@@ -5466,6 +5521,7 @@ export const set_admin_player_data = spacetimedb.reducer(
     const safeSaveJson = createAdminPlayerGameplaySaveJson(
       ctx,
       existingSave,
+      player.identity,
       safeCurrentGold,
       safeCurrentCrystal,
     );

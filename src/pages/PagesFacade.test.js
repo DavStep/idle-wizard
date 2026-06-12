@@ -20,16 +20,14 @@ function createGameplayFacadeFake() {
     visualSettings: {
       costsCrystal: {
         theme: { white: 0, black: 0, midnight: 0 },
-        font: { 'source-serif': 0, inter: 0, 'comic-sans-mono': 0, lexend: 0 },
+        font: { lexend: 0, 'comic-sans-mono': 0 },
         color: { monochrome: 0, resources: 0 },
       },
       researched: {
         theme: { white: true, black: false, midnight: false },
         font: {
-          'source-serif': true,
-          inter: false,
+          lexend: true,
           'comic-sans-mono': false,
-          lexend: false,
         },
         color: { monochrome: true, resources: false },
       },
@@ -1822,7 +1820,7 @@ function createPlayerFacadeFake(
   {
     shouldPromptForUsername = false,
     initialColorMode = 'monochrome',
-    initialFont = 'source-serif',
+    initialFont = 'lexend',
   } = {},
 ) {
   let snapshot = {
@@ -1888,13 +1886,11 @@ function createPlayerFacadeFake(
     },
     setFont: (font) => {
       const normalizedFont =
-        font === 'inter'
-          ? 'inter'
-        : ['comic-sans-mono', 'comic sans mono', 'comic-mono'].includes(font)
+        ['comic-sans-mono', 'comic sans mono', 'comic-mono'].includes(font)
           ? 'comic-sans-mono'
           : ['lexend', 'google-lexend'].includes(font)
             ? 'lexend'
-            : 'source-serif';
+            : 'lexend';
       snapshot = {
         ...snapshot,
         font: normalizedFont,
@@ -2776,7 +2772,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['source serif', 'inter', 'comic sans mono', 'lexend']);
+    ).toEqual(['lexend', 'comic sans mono']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__color-button')].map(
         (button) => button.textContent,
@@ -2791,8 +2787,6 @@ describe('PagesFacade', () => {
       'free',
       'free',
       'researched',
-      'free',
-      'free',
       'free',
       'researched',
       'free',
@@ -3017,40 +3011,27 @@ describe('PagesFacade', () => {
     expect(mildWhiteButton).toBeNull();
     expect(mildBlackButton).toBeNull();
     expect(darkGrayButton).toBeNull();
-    expect(blackButton.disabled).toBe(true);
-    expect(midnightButton.disabled).toBe(true);
+    expect(blackButton.disabled).toBe(false);
+    expect(midnightButton.disabled).toBe(false);
     expect(blackResearchButton?.textContent).toBe('free');
 
     blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().theme).toBe('white');
-    expect(stage.querySelector('.room-top-panel__visual-status')?.textContent).toBe(
-      'research first',
-    );
-
-    blackResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
+    expect(playerFacade.getSnapshot().theme).toBe('black');
     expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
     expect(blackResearchButton?.textContent).toBe('researched');
-
-    blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().theme).toBe('black');
     expect(blackButton.getAttribute('aria-checked')).toBe('true');
     expect(whiteButton.getAttribute('aria-checked')).toBe('false');
 
-    const midnightResearchButton = midnightButton
-      ?.closest('.room-top-panel__visual-option')
-      ?.querySelector('.room-top-panel__visual-option-price');
     const midnightPointerDown = new window.Event('pointerdown', {
       bubbles: true,
       cancelable: true,
     });
 
-    midnightResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     midnightButton.dispatchEvent(midnightPointerDown);
 
     expect(playerFacade.getSnapshot().theme).toBe('midnight');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(true);
     expect(midnightPointerDown.defaultPrevented).toBe(true);
     expect(midnightButton.getAttribute('aria-checked')).toBe('true');
     expect(blackButton.getAttribute('aria-checked')).toBe('false');
@@ -3081,16 +3062,12 @@ describe('PagesFacade', () => {
       ?.querySelector('.room-top-panel__visual-option-price');
 
     expect(monoButton.getAttribute('aria-checked')).toBe('true');
-    expect(resourcesButton.disabled).toBe(true);
+    expect(resourcesButton.disabled).toBe(false);
 
-    resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
-
-    resourcesResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().colorMode).toBe('resources');
+    expect(resourcesResearchButton?.textContent).toBe('researched');
     expect(resourcesButton.getAttribute('aria-checked')).toBe('true');
     expect(monoButton.getAttribute('aria-checked')).toBe('false');
   });
@@ -3098,8 +3075,9 @@ describe('PagesFacade', () => {
   it('changes font from settings', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin');
+    const gameplayFacade = createGameplayFacadeFake();
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade,
     });
 
@@ -3109,50 +3087,27 @@ describe('PagesFacade', () => {
       .querySelector('.room-top-panel__username')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const sourceButton = stage.querySelector(
-      '.room-top-panel__font-button[data-font="source-serif"]',
-    );
-    const interButton = stage.querySelector('.room-top-panel__font-button[data-font="inter"]');
     const comicButton = stage.querySelector(
       '.room-top-panel__font-button[data-font="comic-sans-mono"]',
     );
     const lexendButton = stage.querySelector('.room-top-panel__font-button[data-font="lexend"]');
-    const interResearchButton = interButton
-      ?.closest('.room-top-panel__visual-option')
-      ?.querySelector('.room-top-panel__visual-option-price');
-
-    expect(sourceButton.getAttribute('aria-checked')).toBe('true');
-    expect(interButton.disabled).toBe(true);
-    expect(comicButton.disabled).toBe(true);
-    expect(lexendButton.disabled).toBe(true);
-
-    interButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().font).toBe('source-serif');
-
-    interResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    interButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().font).toBe('inter');
-    expect(interButton.getAttribute('aria-checked')).toBe('true');
-    expect(sourceButton.getAttribute('aria-checked')).toBe('false');
-
     const comicResearchButton = comicButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
 
-    comicResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(lexendButton.getAttribute('aria-checked')).toBe('true');
+    expect(comicButton.disabled).toBe(false);
+
     comicButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.font['comic-sans-mono']).toBe(
+      true,
+    );
+    expect(comicResearchButton?.textContent).toBe('researched');
     expect(comicButton.getAttribute('aria-checked')).toBe('true');
-    expect(interButton.getAttribute('aria-checked')).toBe('false');
+    expect(lexendButton.getAttribute('aria-checked')).toBe('false');
 
-    const lexendResearchButton = lexendButton
-      ?.closest('.room-top-panel__visual-option')
-      ?.querySelector('.room-top-panel__visual-option-price');
-
-    lexendResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     lexendButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().font).toBe('lexend');
@@ -4924,7 +4879,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__plot')?.textContent).not.toContain('locked');
     expect(stage.querySelector('.garden-page__tile-button')).toBeNull();
     expect(stage.querySelector('.garden-page__plot .style-box__title')?.textContent).toBe('plots');
-    expect(rows[0].querySelector('.garden-page__plot-number')?.textContent).toBe('1');
+    expect(rows[0].querySelector('.garden-page__plot-number')?.textContent).toBe('1.');
     expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
     expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('');
     expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
@@ -5952,8 +5907,12 @@ describe('PagesFacade', () => {
         .querySelector('.shop-page__market-panel--player')
         ?.hasAttribute('hidden'),
     ).toBe(false);
-    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.request item',
+    const firstRequestRow = stage.querySelector('.shop-page__player-request-row');
+    expect(firstRequestRow?.querySelector('.shop-page__request-row-item')?.textContent).toBe(
+      'empty request',
+    );
+    expect(firstRequestRow?.querySelector('.shop-page__request-row-price')?.textContent).toBe(
+      'request item',
     );
 
     stage
@@ -6012,8 +5971,14 @@ describe('PagesFacade', () => {
     expect(sageListingButton.getAttribute('aria-pressed')).toBe('true');
     expect(quantityInput.value).toBe('2');
     expect(valueInput.value).toBe('4');
-    expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      '1.select',
+    const firstPlayerStand = stage.querySelector(
+      '.shop-page__player-shelf .shop-page__player-slot-row',
+    );
+    expect(firstPlayerStand?.querySelector('.shop-page__slot-item-value')?.textContent).toBe(
+      'empty stand',
+    );
+    expect(firstPlayerStand?.querySelector('.shop-page__slot-price-value')?.textContent).toBe(
+      'select',
     );
     expect(listingPopup.hidden).toBe(false);
 

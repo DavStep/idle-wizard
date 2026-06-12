@@ -475,8 +475,16 @@ export class TopPanelSettingsManager {
     }
 
     if (!this.isVisualSettingResearched(categoryKey, optionKey)) {
-      this.showVisualSettingStatus('research first');
-      return;
+      if (this.getVisualSettingCostCrystal(categoryKey, optionKey) > 0) {
+        this.showVisualSettingStatus('research first');
+        return;
+      }
+
+      const result = this.researchVisualSetting(categoryKey, optionKey);
+
+      if (result?.ok === false) {
+        return;
+      }
     }
 
     if (this.isCurrentVisualSetting(categoryKey, optionKey)) {
@@ -499,12 +507,17 @@ export class TopPanelSettingsManager {
 
   researchVisualSetting(categoryKey, optionKey) {
     if (!this.refs) {
-      return;
+      return { ok: false, reason: 'unmounted' };
     }
 
     if (this.isVisualSettingResearched(categoryKey, optionKey)) {
       this.clearVisualSettingStatus();
-      return;
+      return {
+        ok: true,
+        reason: 'already_researched',
+        category: categoryKey,
+        optionKey,
+      };
     }
 
     const result = this.gameplayFacade?.buyVisualSettingOption
@@ -514,10 +527,11 @@ export class TopPanelSettingsManager {
     if (!result?.ok) {
       this.showVisualSettingStatus(this.getVisualSettingErrorMessage(result?.reason));
       this.renderVisualSettingPrices();
-      return;
+      return result;
     }
 
     this.clearVisualSettingStatus();
+    return result;
   }
 
   applyPlayerVisualSetting(categoryKey, optionKey) {
@@ -563,7 +577,7 @@ export class TopPanelSettingsManager {
         price.textContent = statusLabel;
       }
 
-      button.disabled = !researched;
+      button.disabled = !researched && costCrystal > 0;
       button.classList.toggle('is-unresearched', !researched);
       button.setAttribute(
         'aria-label',

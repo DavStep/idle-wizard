@@ -8,7 +8,7 @@ function createPlayerFacade(username) {
     username,
     usernamePromptSeen: username !== 'wizard',
     theme: 'white',
-    font: 'source-serif',
+    font: 'lexend',
     colorMode: 'monochrome',
   };
 
@@ -71,7 +71,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenCalledWith({
       username: 'Merlin',
       theme: 'white',
-      font: 'source-serif',
+      font: 'lexend',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
     });
@@ -91,13 +91,13 @@ describe('PlayerBackendSyncManager', () => {
     playerFacade.setUsername('Mira');
     playerFacade.setUsername('Mira');
     playerFacade.setTheme('black');
-    playerFacade.setFont('inter');
+    playerFacade.setFont('comic-sans-mono');
 
     expect(setPlayerProfile).toHaveBeenCalledTimes(4);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'Mira',
       theme: 'black',
-      font: 'inter',
+      font: 'comic-sans-mono',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
     });
@@ -134,7 +134,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'Mira',
       theme: 'black',
-      font: 'source-serif',
+      font: 'lexend',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
     });
@@ -157,7 +157,7 @@ describe('PlayerBackendSyncManager', () => {
 
     playerFacade.setUsername('MobileDav');
     playerFacade.setTheme('black');
-    playerFacade.setFont('inter');
+    playerFacade.setFont('comic-sans-mono');
 
     expect(setPlayerProfile).not.toHaveBeenCalled();
 
@@ -166,15 +166,63 @@ describe('PlayerBackendSyncManager', () => {
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'MobileDav',
       theme: 'black',
-      font: 'inter',
+      font: 'comic-sans-mono',
     });
     expect(setPlayerProfile).toHaveBeenCalledTimes(1);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'MobileDav',
       theme: 'black',
-      font: 'inter',
+      font: 'comic-sans-mono',
       colorMode: 'monochrome',
       usernamePromptSeen: true,
+    });
+  });
+
+  it('keeps a local visual change while waiting for the matching server echo', () => {
+    const setPlayerProfile = vi.fn(() => Promise.resolve());
+    const playerFacade = createPlayerFacade('wizard');
+    const manager = new PlayerBackendSyncManager();
+
+    manager.setPlayerFacade(playerFacade);
+    manager.connect({
+      db: {
+        player: {},
+      },
+      reducers: {
+        setPlayerProfile,
+      },
+    });
+    manager.applyServerProfile({
+      username: 'wizard',
+      theme: 'white',
+      font: 'lexend',
+      colorMode: 'monochrome',
+      usernamePromptSeen: false,
+    });
+    setPlayerProfile.mockClear();
+
+    playerFacade.setTheme('midnight');
+
+    expect(setPlayerProfile).toHaveBeenCalledTimes(1);
+    expect(setPlayerProfile).toHaveBeenLastCalledWith({
+      username: 'wizard',
+      theme: 'midnight',
+      font: 'lexend',
+      colorMode: 'monochrome',
+      usernamePromptSeen: false,
+    });
+
+    manager.applyServerProfile({
+      username: 'wizard',
+      theme: 'white',
+      font: 'lexend',
+      colorMode: 'monochrome',
+      usernamePromptSeen: false,
+    });
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      theme: 'midnight',
+      font: 'lexend',
     });
   });
 

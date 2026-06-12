@@ -9,6 +9,7 @@ export class PlayerBackendSyncManager {
     this.canSyncBeforeServerProfile = false;
     this.initialProfileSignature = null;
     this.pendingProfile = null;
+    this.pendingSyncSignature = null;
   }
 
   setPlayerFacade(playerFacade) {
@@ -44,6 +45,7 @@ export class PlayerBackendSyncManager {
     this.applyingServerProfile = false;
     this.canSyncBeforeServerProfile = false;
     this.pendingProfile = null;
+    this.pendingSyncSignature = null;
   }
 
   sync(snapshot) {
@@ -82,6 +84,7 @@ export class PlayerBackendSyncManager {
     }
 
     this.lastProfileSignature = profileSignature;
+    this.pendingSyncSignature = setPlayerProfile ? profileSignature : null;
 
     let syncResult;
     try {
@@ -101,6 +104,9 @@ export class PlayerBackendSyncManager {
 
     Promise.resolve(syncResult).catch(() => {
       this.lastProfileSignature = null;
+      if (this.pendingSyncSignature === profileSignature) {
+        this.pendingSyncSignature = null;
+      }
     });
   }
 
@@ -116,12 +122,23 @@ export class PlayerBackendSyncManager {
       return;
     }
 
-    this.lastProfileSignature = this.getProfileSignature(serverProfile);
+    const serverProfileSignature = this.getProfileSignature(serverProfile);
+    const currentProfileSignature = this.getProfileSignature(this.readCurrentPlayerProfile());
+
+    if (this.pendingSyncSignature) {
+      if (serverProfileSignature === this.pendingSyncSignature) {
+        this.pendingSyncSignature = null;
+      } else if (currentProfileSignature === this.pendingSyncSignature) {
+        this.markUsernameProfileLoaded();
+        return;
+      }
+    }
+
+    this.lastProfileSignature = serverProfileSignature;
 
     if (pendingProfile) {
       if (
-        this.getProfileSignature(this.readCurrentPlayerProfile()) !==
-        this.getProfileSignature(pendingProfile)
+        currentProfileSignature !== this.getProfileSignature(pendingProfile)
       ) {
         this.applyServerProfileToPlayer(pendingProfile);
       } else {
@@ -157,7 +174,7 @@ export class PlayerBackendSyncManager {
     return {
       username: snapshot?.username,
       theme: snapshot?.theme ?? 'white',
-      font: snapshot?.font ?? 'source-serif',
+      font: snapshot?.font ?? 'lexend',
       colorMode: snapshot?.colorMode ?? 'monochrome',
       usernamePromptSeen: Boolean(snapshot?.usernamePromptSeen),
     };
@@ -167,7 +184,7 @@ export class PlayerBackendSyncManager {
     return {
       username: profile?.username,
       theme: profile?.theme ?? 'white',
-      font: profile?.font ?? 'source-serif',
+      font: profile?.font ?? 'lexend',
       colorMode: profile?.colorMode ?? 'monochrome',
       usernamePromptSeen: Boolean(profile?.usernamePromptSeen),
     };

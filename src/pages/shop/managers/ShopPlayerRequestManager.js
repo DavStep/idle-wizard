@@ -486,8 +486,17 @@ export class ShopPlayerRequestManager {
 
   renderRequestSlotValue(refs, request) {
     if (!request) {
-      refs.value.textContent = EMPTY_REQUEST_ACTION_LABEL;
-      setResourceColorFromText(refs.value, refs.value.textContent);
+      if (
+        refs.itemValue.parentElement !== refs.value ||
+        refs.priceValue.parentElement !== refs.value
+      ) {
+        refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+      }
+
+      refs.itemValue.textContent = EMPTY_LOCKED_REQUEST_LABEL;
+      setResourceColor(refs.itemValue, null);
+      refs.priceValue.textContent = EMPTY_REQUEST_ACTION_LABEL;
+      setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       return;
     }
 
