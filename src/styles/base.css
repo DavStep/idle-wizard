@@ -2669,6 +2669,24 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.research-page__row.is-in-progress .research-page__research-value {
+  color: var(--style-muted);
+  font-size: 13px;
+  line-height: normal;
+  transform: translateY(2px);
+}
+
+.research-page__research-value-label,
+.research-page__research-value-gap,
+.research-page__research-value-timer {
+  display: inline;
+}
+
+.research-page__research-value-timer {
+  color: var(--style-text);
+  font-size: 12px;
+}
+
 .research-page__research-progress {
   grid-column: 1 / -1;
   margin: 1px 0 2px;

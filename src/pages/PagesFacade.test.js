@@ -5402,7 +5402,13 @@ describe('PagesFacade', () => {
 
     expect(row?.classList.contains('is-unavailable')).toBe(false);
     expect(row?.querySelector('.research-page__research-value')?.textContent).toBe(
+      'researching 8s',
+    );
+    expect(row?.querySelector('.research-page__research-value-label')?.textContent).toBe(
       'researching',
+    );
+    expect(row?.querySelector('.research-page__research-value-timer')?.textContent).toBe(
+      '8s',
     );
     expect(progressBar?.classList.contains('style-progress')).toBe(true);
     expect(progressBar?.classList.contains('style-progress--timer')).toBe(true);
@@ -5416,6 +5422,9 @@ describe('PagesFacade', () => {
     research.progress = 0.8;
     gameplayFacade.publishSnapshot();
 
+    expect(row?.querySelector('.research-page__research-value')?.textContent).toBe(
+      'researching 2s',
+    );
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('80');
     expect(
       progressBar?.querySelector('.research-page__research-progress-fill')?.style.width,

@@ -232,6 +232,9 @@ export class ResearchBoxListManager {
     const ref = { row, value: val };
 
     if (research.inProgress) {
+      ref.valueLabel = val.querySelector('.research-page__research-value-label');
+      ref.valueGap = val.querySelector('.research-page__research-value-gap');
+      ref.valueTimer = val.querySelector('.research-page__research-value-timer');
       const progress = this.createProgress(research);
       ref.progress = progress.root;
       ref.progressFill = progress.fill;
@@ -262,8 +265,27 @@ export class ResearchBoxListManager {
   createReadonlyValue(research) {
     const val = document.createElement('span');
     val.className = 'row_val research-page__research-value';
-    val.textContent = research.value;
-    setResourceColorFromText(val, research.value);
+
+    if (!research.inProgress) {
+      val.textContent = research.value;
+      setResourceColorFromText(val, research.value);
+      return val;
+    }
+
+    const label = document.createElement('span');
+    label.className = 'research-page__research-value-label';
+
+    const gap = document.createElement('span');
+    gap.className = 'research-page__research-value-gap';
+
+    const timer = document.createElement('span');
+    timer.className = 'research-page__research-value-timer';
+
+    val.append(label, gap, timer);
+    this.setResearchValueStatus(
+      { value: val, valueLabel: label, valueGap: gap, valueTimer: timer },
+      research,
+    );
     return val;
   }
 
@@ -295,6 +317,7 @@ export class ResearchBoxListManager {
         }
 
         const percent = this.getProgressPercent(research.progress);
+        this.setResearchValueStatus(ref, research);
         this.setStyleWidth(ref.progressFill, `${percent}%`);
         this.setText(ref.progressText, '');
         this.setAttribute(ref.progress, 'aria-valuenow', String(percent));
@@ -305,6 +328,27 @@ export class ResearchBoxListManager {
   getProgressPercent(progress) {
     const safeProgress = Number.isFinite(progress) ? progress : 0;
     return Math.round(Math.max(0, Math.min(1, safeProgress)) * 100);
+  }
+
+  setResearchValueStatus(ref, research) {
+    if (!ref?.valueLabel || !ref?.valueGap || !ref?.valueTimer) {
+      return;
+    }
+
+    const timer = this.formatResearchTimer(research);
+    this.setText(ref.valueLabel, research.value);
+    this.setText(ref.valueGap, timer ? ' ' : '');
+    this.setText(ref.valueTimer, timer);
+    this.setAttribute(
+      ref.value,
+      'aria-label',
+      `${this.formatResearchName(research)} is researching${timer ? `, ${timer} remaining` : ''}`,
+    );
+  }
+
+  formatResearchTimer(research) {
+    const remainingMs = Number.isFinite(research?.remainingMs) ? research.remainingMs : 0;
+    return `${Math.max(0, Math.ceil(remainingMs / 1_000))}s`;
   }
 
   createBuyButton(research) {
