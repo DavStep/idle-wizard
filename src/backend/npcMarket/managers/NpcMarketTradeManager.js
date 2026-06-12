@@ -93,6 +93,30 @@ export class NpcMarketTradeManager {
     }
   }
 
+  async resetMarket() {
+    const resetNpcMarket = this.findReducer('resetNpcMarket', 'reset_npc_market');
+
+    if (!resetNpcMarket) {
+      return {
+        ok: false,
+        reason: 'offline',
+      };
+    }
+
+    try {
+      await resetNpcMarket({});
+
+      return {
+        ok: true,
+      };
+    } catch {
+      return {
+        ok: false,
+        reason: 'reset_failed',
+      };
+    }
+  }
+
   startMarketTicks() {
     this.stopMarketTicks();
     this.tickIntervalId = globalThis.setInterval(() => {

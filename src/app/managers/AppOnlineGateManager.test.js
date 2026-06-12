@@ -36,6 +36,10 @@ describe('AppOnlineGateManager', () => {
     expect(progress.hidden).toBe(true);
     expect(progress.classList.contains('is-indeterminate')).toBe(false);
 
+    manager.showOffline('account_in_use');
+    expect(gate.textContent).toContain('account opened on another device');
+    expect(progress.hidden).toBe(true);
+
     manager.hide();
     expect(gate.hidden).toBe(true);
   });

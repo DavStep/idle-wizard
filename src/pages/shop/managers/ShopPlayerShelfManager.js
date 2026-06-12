@@ -83,14 +83,14 @@ export class ShopPlayerShelfManager {
 
     this.refs.title = this.createTitle();
     this.refs.rows = [];
-    this.refs.proceedsRow = this.createProceedsRow();
     this.refs.actions = this.createActions();
     this.refs.otherShopsButton = this.createOtherShopsButton();
+    this.refs.proceedsButton = this.createProceedsButton();
     this.refs.listingPopup = this.createListingPopup();
     this.refs.marketPopup = this.createMarketPopup();
 
-    this.refs.actions.append(this.refs.otherShopsButton);
-    this.root.append(this.refs.title, this.refs.proceedsRow.row, this.refs.actions);
+    this.refs.actions.append(this.refs.otherShopsButton, this.refs.proceedsButton);
+    this.root.append(this.refs.title, this.refs.actions);
     parent.append(this.root);
     popupParent.append(this.refs.listingPopup, this.refs.marketPopup);
     document.addEventListener('keydown', this.handleKeydown);
@@ -183,26 +183,6 @@ export class ShopPlayerShelfManager {
     return { row, value, button, itemValue, priceValue };
   }
 
-  createProceedsRow() {
-    const row = document.createElement('div');
-    row.className = 'shop-page__player-proceeds-row';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = 'sales';
-
-    const value = document.createElement('span');
-    value.className = 'row_val';
-
-    const button = document.createElement('button');
-    button.className = 'style-button shop-page__buy-slot-button';
-    button.type = 'button';
-    button.addEventListener('click', () => this.onClaimProceeds());
-
-    row.append(label, value);
-    return { row, value, button };
-  }
-
   createActions() {
     const actions = document.createElement('div');
     actions.className = 'shop-page__player-shop-actions';
@@ -219,6 +199,15 @@ export class ShopPlayerShelfManager {
     button.type = 'button';
     button.textContent = 'browse market';
     button.addEventListener('click', () => this.showMarketPopup());
+    return button;
+  }
+
+  createProceedsButton() {
+    const button = document.createElement('button');
+    button.className = 'style-button shop-page__other-shops-button shop-page__claim-proceeds-button';
+    button.type = 'button';
+    button.hidden = true;
+    button.addEventListener('click', () => this.onClaimProceeds());
     return button;
   }
 
@@ -867,29 +856,22 @@ export class ShopPlayerShelfManager {
 
   renderProceeds() {
     const proceedsGold = this.lastPlayerShopSnapshot.proceedsGold ?? 0;
+    const button = this.refs.proceedsButton;
 
     if (proceedsGold <= 0) {
-      this.refs.proceedsRow.value.textContent = this.lastPlayerShopSnapshot.connected
-        ? 'none'
-        : 'offline';
-      setResourceColorFromText(
-        this.refs.proceedsRow.value,
-        this.refs.proceedsRow.value.textContent,
-      );
-      setNotificationBadge(this.refs.proceedsRow.button, false);
+      button.hidden = true;
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      setNotificationBadge(button, false);
       return;
     }
 
-    const button = this.refs.proceedsRow.button;
+    button.hidden = false;
     button.textContent = `claim (${formatGoldPriceText(proceedsGold)})`;
     setResourceColorFromText(button, button.textContent);
     button.disabled = !this.lastPlayerShopSnapshot.connected;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
     setNotificationBadge(button, !button.disabled);
-
-    if (button.parentElement !== this.refs.proceedsRow.value) {
-      this.refs.proceedsRow.value.replaceChildren(button);
-    }
   }
 
   renderMarketRows() {
@@ -1143,7 +1125,7 @@ export class ShopPlayerShelfManager {
     while (this.refs.rows.length < rowCount) {
       const row = this.createSlotRow(this.refs.rows.length + 1);
       this.refs.rows.push(row);
-      this.root.insertBefore(row.row, this.refs.proceedsRow.row);
+      this.root.insertBefore(row.row, this.refs.actions);
     }
   }
 

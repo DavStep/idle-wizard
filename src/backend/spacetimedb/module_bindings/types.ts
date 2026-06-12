@@ -56,6 +56,12 @@ export const Leaderboard = __t.object("Leaderboard", {
 });
 export type Leaderboard = __Infer<typeof Leaderboard>;
 
+export const MaintenanceState = __t.object("MaintenanceState", {
+  stateKey: __t.string(),
+  appliedAt: __t.timestamp(),
+});
+export type MaintenanceState = __Infer<typeof MaintenanceState>;
+
 export const NpcMarketAdmin = __t.object("NpcMarketAdmin", {
   identity: __t.identity(),
   username: __t.string(),
@@ -100,6 +106,9 @@ export type NpcMarketPrice = __Infer<typeof NpcMarketPrice>;
 
 export const OwnPlayerGameplaySave = __t.object("OwnPlayerGameplaySave", {});
 export type OwnPlayerGameplaySave = __Infer<typeof OwnPlayerGameplaySave>;
+
+export const OwnPlayerSession = __t.object("OwnPlayerSession", {});
+export type OwnPlayerSession = __Infer<typeof OwnPlayerSession>;
 
 export const OwnTradeAllianceChat = __t.object("OwnTradeAllianceChat", {});
 export type OwnTradeAllianceChat = __Infer<typeof OwnTradeAllianceChat>;
@@ -169,6 +178,20 @@ export const PlayerGameplaySaveResult = __t.object("PlayerGameplaySaveResult", {
   updatedAt: __t.timestamp(),
 });
 export type PlayerGameplaySaveResult = __Infer<typeof PlayerGameplaySaveResult>;
+
+export const PlayerSession = __t.object("PlayerSession", {
+  identity: __t.identity(),
+  activeConnectionId: __t.connectionId(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerSession = __Infer<typeof PlayerSession>;
+
+export const PlayerSessionResult = __t.object("PlayerSessionResult", {
+  identity: __t.identity(),
+  activeConnectionId: __t.connectionId(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerSessionResult = __Infer<typeof PlayerSessionResult>;
 
 export const PlayerShopListing = __t.object("PlayerShopListing", {
   listingKey: __t.string(),

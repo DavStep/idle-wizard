@@ -475,16 +475,8 @@ export class TopPanelSettingsManager {
     }
 
     if (!this.isVisualSettingResearched(categoryKey, optionKey)) {
-      if (this.getVisualSettingCostCrystal(categoryKey, optionKey) > 0) {
-        this.showVisualSettingStatus('research first');
-        return;
-      }
-
-      const result = this.researchVisualSetting(categoryKey, optionKey);
-
-      if (result?.ok === false) {
-        return;
-      }
+      this.showVisualSettingStatus('research first');
+      return;
     }
 
     if (this.isCurrentVisualSetting(categoryKey, optionKey)) {

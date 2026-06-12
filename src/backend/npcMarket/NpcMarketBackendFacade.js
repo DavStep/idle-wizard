@@ -64,4 +64,8 @@ export class NpcMarketBackendFacade {
   tickMarket() {
     return this.tradeManager.tickMarket();
   }
+
+  resetMarket() {
+    return this.tradeManager.resetMarket();
+  }
 }

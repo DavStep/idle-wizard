@@ -16,6 +16,11 @@ function createBackendWithFakes() {
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
+  backendFacade.accountSessionFacade = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    getSnapshot: vi.fn(() => ({ active: true })),
+  };
   backendFacade.gameplaySaveFacade = {
     connect: vi.fn((_connection, _identity, { onReady } = {}) => {
       onReady?.({ ok: true, save: null });
@@ -239,5 +244,31 @@ describe('BackendFacade', () => {
       reason: 'gameplay_save_timeout',
       error: undefined,
     });
+  });
+
+  it('disconnects and reports account-in-use when another connection takes over', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    const onOffline = vi.fn();
+    let onInactive = null;
+    backendFacade.accountSessionFacade.connect.mockImplementation((_connection, options) => {
+      onInactive = options.onInactive;
+      return true;
+    });
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onOffline,
+    });
+    await flushPromises();
+
+    onInactive();
+
+    expect(backendFacade.accountSessionFacade.disconnect).toHaveBeenCalled();
+    expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalled();
+    expect(backendFacade.spacetimeDbFacade.disconnect).toHaveBeenCalledTimes(1);
+    expect(onOffline).toHaveBeenCalledWith({ reason: 'account_in_use' });
   });
 });

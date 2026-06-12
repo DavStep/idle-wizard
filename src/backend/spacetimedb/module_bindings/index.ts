@@ -57,6 +57,7 @@ import LeaveTradeAllianceReducer from "./leave_trade_alliance_reducer";
 import RejectTradeAllianceApplicationReducer from "./reject_trade_alliance_application_reducer";
 import RemoveNpcMarketItemConfigReducer from "./remove_npc_market_item_config_reducer";
 import RemoveResearchConfigReducer from "./remove_research_config_reducer";
+import ResetNpcMarketReducer from "./reset_npc_market_reducer";
 import SellToNpcReducer from "./sell_to_npc_reducer";
 import SendTradeAllianceChatMessageReducer from "./send_trade_alliance_chat_message_reducer";
 import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
@@ -88,6 +89,7 @@ import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketItemConfigRow from "./npc_market_item_config_table";
 import NpcMarketPriceRow from "./npc_market_price_table";
 import OwnPlayerGameplaySaveRow from "./own_player_gameplay_save_table";
+import OwnPlayerSessionRow from "./own_player_session_table";
 import OwnTradeAllianceChatRow from "./own_trade_alliance_chat_table";
 import OwnTradeAllianceRewardInboxRow from "./own_trade_alliance_reward_inbox_table";
 import PlayerRow from "./player_table";
@@ -405,6 +407,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnPlayerGameplaySaveRow),
+  own_player_session: __table({
+    name: 'own_player_session',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerSessionRow),
   own_trade_alliance_chat: __table({
     name: 'own_trade_alliance_chat',
     indexes: [
@@ -446,6 +455,7 @@ const reducersSchema = __reducers(
   __reducerSchema("reject_trade_alliance_application", RejectTradeAllianceApplicationReducer),
   __reducerSchema("remove_npc_market_item_config", RemoveNpcMarketItemConfigReducer),
   __reducerSchema("remove_research_config", RemoveResearchConfigReducer),
+  __reducerSchema("reset_npc_market", ResetNpcMarketReducer),
   __reducerSchema("sell_to_npc", SellToNpcReducer),
   __reducerSchema("send_trade_alliance_chat_message", SendTradeAllianceChatMessageReducer),
   __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),

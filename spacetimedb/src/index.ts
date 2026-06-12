@@ -86,6 +86,7 @@ const PERIOD_WEEK_DAYS = 7n;
 const PERIOD_MONTH_DAYS = 30n;
 const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UTC, Armenia 04:00.
 const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
+const NPC_MARKET_DATA_RESET_STATE_KEY = `npc-market-data-reset:${PLAYER_DATA_RESET_GUARD_MICROS}`;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const PLAYER_THEMES = new Set(['white', 'black', 'midnight']);
 const PLAYER_THEME_ALIASES = new Map([
@@ -872,27 +873,27 @@ const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
   weeklyQuests: [
     {
       id: 'allianceIncomeEasy',
-      label: 'small caravan',
+      label: 'hard route',
       type: 'allianceIncome',
-      target: 500,
-      minContribution: 25,
-      crystalReward: 1,
-    },
-    {
-      id: 'allianceIncomeMedium',
-      label: 'busy road',
-      type: 'allianceIncome',
-      target: 2_000,
-      minContribution: 100,
+      target: 10_000,
+      minContribution: 500,
       crystalReward: 2,
     },
     {
-      id: 'allianceIncomeHard',
-      label: 'long route',
+      id: 'allianceIncomeMedium',
+      label: 'bulk route',
       type: 'allianceIncome',
-      target: 8_000,
-      minContribution: 400,
-      crystalReward: 3,
+      target: 50_000,
+      minContribution: 2_500,
+      crystalReward: 5,
+    },
+    {
+      id: 'allianceIncomeHard',
+      label: 'grand route',
+      type: 'allianceIncome',
+      target: 250_000,
+      minContribution: 12_500,
+      crystalReward: 12,
     },
   ],
 });
@@ -955,6 +956,17 @@ const spacetimedb = schema({
     {
       identity: t.identity().primaryKey(),
       saveJson: t.string(),
+      updatedAt: t.timestamp(),
+    },
+  ),
+  playerSession: table(
+    {
+      name: 'player_session',
+      public: false,
+    },
+    {
+      identity: t.identity().primaryKey(),
+      activeConnectionId: t.connectionId(),
       updatedAt: t.timestamp(),
     },
   ),
@@ -1305,6 +1317,16 @@ const spacetimedb = schema({
       addedAt: t.timestamp(),
     },
   ),
+  maintenanceState: table(
+    {
+      name: 'maintenance_state',
+      public: false,
+    },
+    {
+      stateKey: t.string().primaryKey(),
+      appliedAt: t.timestamp(),
+    },
+  ),
   researchConfig: table(
     {
       name: 'research_config',
@@ -1343,6 +1365,13 @@ const playerGameplaySaveResult = t.option(
   t.row('PlayerGameplaySaveResult', {
     identity: t.identity().primaryKey(),
     saveJson: t.string(),
+    updatedAt: t.timestamp(),
+  }),
+);
+const playerSessionResult = t.option(
+  t.row('PlayerSessionResult', {
+    identity: t.identity().primaryKey(),
+    activeConnectionId: t.connectionId(),
     updatedAt: t.timestamp(),
   }),
 );
@@ -1394,6 +1423,12 @@ export const own_player_gameplay_save = spacetimedb.view(
   { name: 'own_player_gameplay_save', public: true },
   playerGameplaySaveResult,
   (ctx) => ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined,
+);
+
+export const own_player_session = spacetimedb.view(
+  { name: 'own_player_session', public: true },
+  playerSessionResult,
+  (ctx) => ctx.db.playerSession.identity.find(ctx.sender) ?? undefined,
 );
 
 export const admin_player_gameplay_save = spacetimedb.view(
@@ -2399,6 +2434,10 @@ function normalizeGameConfigJson(
   parsedConfig: unknown,
   originalJson: string,
 ): string {
+  if (configKey === 'tradeAlliance' && isLegacyTradeAllianceGameConfig(parsedConfig)) {
+    return DEFAULT_TRADE_ALLIANCE_CONFIG_JSON;
+  }
+
   if (configKey === 'potionRecipes' && isRecord(parsedConfig)) {
     return normalizePotionRecipesGameConfigJson(parsedConfig, originalJson);
   }
@@ -2431,6 +2470,66 @@ function normalizeGameConfigJson(
       perLevel: DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL,
     },
   });
+}
+
+function isLegacyTradeAllianceGameConfig(parsedConfig: unknown): boolean {
+  if (!isRecord(parsedConfig)) {
+    return false;
+  }
+
+  const quests = parsedConfig.weeklyQuests ?? parsedConfig.dailyQuests;
+  if (!Array.isArray(quests) || quests.length !== 3) {
+    return false;
+  }
+
+  return (
+    isLegacyTradeAllianceQuestConfig(
+      quests[0],
+      'allianceIncomeEasy',
+      'small caravan',
+      500,
+      25,
+      1,
+    ) &&
+    isLegacyTradeAllianceQuestConfig(
+      quests[1],
+      'allianceIncomeMedium',
+      'busy road',
+      2_000,
+      100,
+      2,
+    ) &&
+    isLegacyTradeAllianceQuestConfig(
+      quests[2],
+      'allianceIncomeHard',
+      'long route',
+      8_000,
+      400,
+      3,
+    )
+  );
+}
+
+function isLegacyTradeAllianceQuestConfig(
+  quest: unknown,
+  id: string,
+  label: string,
+  target: number,
+  minContribution: number,
+  crystalReward: number,
+): boolean {
+  if (!isRecord(quest)) {
+    return false;
+  }
+
+  return (
+    quest.id === id &&
+    quest.label === label &&
+    quest.type === 'allianceIncome' &&
+    Number(quest.target) === target &&
+    Number(quest.minContribution) === minContribution &&
+    Number(quest.crystalReward) === crystalReward
+  );
 }
 
 function normalizePotionRecipesGameConfigJson(
@@ -3989,6 +4088,42 @@ function shouldIgnorePostResetReportedGold(
   );
 }
 
+function upsertPlayerSession(ctx: IdleWizardReducerCtx) {
+  const activeConnectionId = ctx.connectionId;
+  if (!activeConnectionId) {
+    return null;
+  }
+
+  const existingSession = ctx.db.playerSession.identity.find(ctx.sender);
+  const nextSession = {
+    identity: ctx.sender,
+    activeConnectionId,
+    updatedAt: ctx.timestamp,
+  };
+
+  return existingSession
+    ? ctx.db.playerSession.identity.update(nextSession)
+    : ctx.db.playerSession.insert(nextSession);
+}
+
+function isActivePlayerSession(ctx: IdleWizardReducerCtx): boolean {
+  const connectionId = ctx.connectionId;
+  if (!connectionId) {
+    return true;
+  }
+
+  const session = ctx.db.playerSession.identity.find(ctx.sender);
+  return !session || session.activeConnectionId.isEqual(connectionId);
+}
+
+function assertActivePlayerSession(ctx: IdleWizardReducerCtx) {
+  if (isActivePlayerSession(ctx)) {
+    return;
+  }
+
+  throw new Error('Account is open on another device.');
+}
+
 function assertClientSaveDoesNotDowngradeProgress(
   existingSave: PlayerGameplaySaveRowValue | undefined,
   safeSaveJson: string,
@@ -5299,9 +5434,10 @@ function applyNpcMarketTick(ctx: IdleWizardReducerCtx, row: any) {
 
 function applyDueNpcMarketTicks(ctx: IdleWizardReducerCtx) {
   ensureNpcMarketCatalog(ctx);
+  applyNpcMarketDataResetOnce(ctx);
 
   if (!ENABLE_NPC_MARKET_PRESSURE) {
-    resetNpcMarketRows(ctx);
+    resetNpcMarketRows(ctx, { resetStock: true });
     return;
   }
 
@@ -5310,7 +5446,26 @@ function applyDueNpcMarketTicks(ctx: IdleWizardReducerCtx) {
   }
 }
 
-function resetNpcMarketRows(ctx: IdleWizardReducerCtx) {
+function applyNpcMarketDataResetOnce(ctx: IdleWizardReducerCtx) {
+  if (PLAYER_DATA_RESET_GUARD_MICROS <= 0n) {
+    return;
+  }
+
+  if (ctx.db.maintenanceState.stateKey.find(NPC_MARKET_DATA_RESET_STATE_KEY)) {
+    return;
+  }
+
+  resetNpcMarketRows(ctx, { resetStock: true });
+  ctx.db.maintenanceState.insert({
+    stateKey: NPC_MARKET_DATA_RESET_STATE_KEY,
+    appliedAt: ctx.timestamp,
+  });
+}
+
+function resetNpcMarketRows(
+  ctx: IdleWizardReducerCtx,
+  { resetStock = false }: { resetStock?: boolean } = {},
+) {
   for (const row of ctx.db.npcMarketPrice.iter()) {
     const targetStock = toBigInt(row.targetStock);
     const needState = getNpcMarketNeedState(row, targetStock);
@@ -5320,12 +5475,13 @@ function resetNpcMarketRows(ctx: IdleWizardReducerCtx) {
       row.priceScale,
     );
     const resetRow = getNpcMarketRowWithQuotes(row, basePriceGold);
+    const resetNpcStock = resetStock ? 0n : getNpcMarketStock(row);
 
     if (
       row.marketPriceGold === resetRow.marketPriceGold &&
       row.npcBuyPriceGold === resetRow.npcBuyPriceGold &&
       row.npcSellPriceGold === resetRow.npcSellPriceGold &&
-      row.npcStock === getNpcMarketStock(row) &&
+      row.npcStock === resetNpcStock &&
       row.npcNeed === needState.targetNeed &&
       row.targetNeed === needState.targetNeed &&
       row.maxNeed === needState.maxNeed &&
@@ -5337,7 +5493,7 @@ function resetNpcMarketRows(ctx: IdleWizardReducerCtx) {
 
     ctx.db.npcMarketPrice.itemKey.update({
       ...resetRow,
-      npcStock: getNpcMarketStock(row),
+      npcStock: resetNpcStock,
       npcNeed: needState.targetNeed,
       targetNeed: needState.targetNeed,
       maxNeed: needState.maxNeed,
@@ -5804,6 +5960,7 @@ function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
 }
 
 export const onConnect = spacetimedb.clientConnected((ctx) => {
+  upsertPlayerSession(ctx);
   sanitizeSharedPlayerRows(ctx);
   backfillLeaderboardTotalIncomeFromGameplaySaves(ctx);
   sanitizeLeaderboardRows(ctx);
@@ -5811,7 +5968,9 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
     deleteAllPotionDiscoveries(ctx);
   }
   const player = ensurePlayer(ctx);
-  ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+  if (!isPostResetPlayerWithoutAcceptedSave(ctx, player)) {
+    ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+  }
   ensureResearchConfigCatalog(ctx);
   ensureGameConfigCatalog(ctx);
   backfillPlayerGameplaySaveLevelCrystals(ctx);
@@ -5834,6 +5993,15 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
 });
 
 export const onDisconnect = spacetimedb.clientDisconnected((ctx) => {
+  if (!isActivePlayerSession(ctx)) {
+    return;
+  }
+
+  const existingSession = ctx.db.playerSession.identity.find(ctx.sender);
+  if (existingSession) {
+    ctx.db.playerSession.delete(existingSession);
+  }
+
   const existingPlayer = ctx.db.player.identity.find(ctx.sender);
   if (!existingPlayer) {
     return;
@@ -5847,6 +6015,8 @@ export const onDisconnect = spacetimedb.clientDisconnected((ctx) => {
 });
 
 export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, { username }) => {
+  assertActivePlayerSession(ctx);
+
   const normalizedUsername = normalizeUsername(username);
   assertUsernameAvailable(ctx, normalizedUsername);
 
@@ -5894,6 +6064,8 @@ export const set_player_profile = spacetimedb.reducer(
     font: t.string(),
   },
   (ctx, { username, theme, colorMode, usernamePromptSeen, font }) => {
+    assertActivePlayerSession(ctx);
+
     const normalizedUsername = normalizeUsername(username);
     assertUsernameAvailable(ctx, normalizedUsername);
 
@@ -6036,6 +6208,8 @@ export const set_admin_player_data = spacetimedb.reducer(
 export const set_player_gameplay_save = spacetimedb.reducer(
   { saveJson: t.string() },
   (ctx, { saveJson }) => {
+    assertActivePlayerSession(ctx);
+
     const player = ensurePlayer(ctx);
 
     const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined;
@@ -6069,6 +6243,8 @@ export const set_player_gameplay_save = spacetimedb.reducer(
 export const set_player_level = spacetimedb.reducer(
   { playerLevel: t.u32() },
   (ctx, { playerLevel }) => {
+    assertActivePlayerSession(ctx);
+
     const player = ensurePlayer(ctx);
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
 
@@ -6098,6 +6274,8 @@ export const set_player_level = spacetimedb.reducer(
 export const announce_level_up = spacetimedb.reducer(
   { playerLevel: t.u32() },
   (ctx, { playerLevel }) => {
+    assertActivePlayerSession(ctx);
+
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
 
     if (safePlayerLevel <= DEFAULT_PLAYER_LEVEL) {
@@ -6153,19 +6331,30 @@ export const announce_level_up = spacetimedb.reducer(
 export const set_total_generated_gold = spacetimedb.reducer(
   { totalGeneratedGold: t.u64() },
   (ctx, { totalGeneratedGold }) => {
+    assertActivePlayerSession(ctx);
+
     const player = ensurePlayer(ctx);
+    const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
+      totalGeneratedGold,
+      player.playerLevel,
+    );
 
     if (shouldIgnorePostResetReportedGold(ctx, player, totalGeneratedGold)) {
+      return;
+    }
+
+    const rawExistingEntry = ctx.db.leaderboard.identity.find(player.identity);
+    if (
+      !rawExistingEntry &&
+      (reportedTotalIncome === null || reportedTotalIncome <= 0n) &&
+      isPostResetPlayerWithoutAcceptedSave(ctx, player)
+    ) {
       return;
     }
 
     const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
     const currentTotalIncome = clampLeaderboardTotalIncome(
       entry.totalIncome,
-      player.playerLevel,
-    );
-    const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
-      totalGeneratedGold,
       player.playerLevel,
     );
 
@@ -7291,6 +7480,12 @@ export const buy_from_npc = spacetimedb.reducer(
 
 export const tick_npc_market = spacetimedb.reducer({}, (ctx) => {
   applyDueNpcMarketTicks(ctx);
+});
+
+export const reset_npc_market = spacetimedb.reducer({}, (ctx) => {
+  assertNpcMarketAdmin(ctx);
+  ensureNpcMarketCatalog(ctx);
+  resetNpcMarketRows(ctx, { resetStock: true });
 });
 
 export const claim_npc_market_admin = spacetimedb.reducer({}, (ctx) => {

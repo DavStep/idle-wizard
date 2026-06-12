@@ -96,6 +96,7 @@ The server module defines:
 - `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC need, and rolling fulfilled/supply scores.
 - `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
 - `npc_market_admin`: identities allowed to change NPC market config.
+- `maintenance_state`: private one-time server maintenance markers, including NPC market demand/stock reset keys.
 
 `clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`. `set_player_profile` updates username, theme, font, color mode, and username prompt state together.
 
@@ -109,9 +110,9 @@ Period loops use server UTC time. Daily periods reset at UTC 00:00, which is 04:
 
 Player market exchange reducers are locked down until inventory and spendable gold are server-authoritative. On connect, the module clears old `player_shop_listing`, `player_shop_proceeds`, and `player_shop_trade` rows so stale poisoned market state cannot be claimed.
 
-`sell_to_npc` records a one-way NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, and recomputes the backend quote. `tick_npc_market` replenishes `npc_need` over time and recomputes prices from current need. `buy_from_npc` is rejected because the current game has no NPC seller flow.
+`sell_to_npc` records a one-way NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, and recomputes the backend quote. `tick_npc_market` replenishes `npc_need` over time and recomputes prices from current need. During a server data reset, the module clears NPC market demand and stock once using a `maintenance_state` key tied to `PLAYER_DATA_RESET_GUARD_MICROS`. `buy_from_npc` is rejected because the current game has no NPC seller flow.
 
-NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are computed from the need-derived market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
+NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. `reset_npc_market` restores neutral demand, clears rolling scores, resets prices to base, and clears NPC stock. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Sell quotes are computed from the need-derived market price; currently `npcBuyPriceGold` is 80% of `marketPriceGold`.
 
 `upsert_game_config` accepts only known config keys (`tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, `potionRecipes`) and validates bounded schemas before storing JSON. Existing invalid rows are reset to the built-in defaults on connect. The `tradeAlliance` config currently owns `weeklyQuests`; legacy `dailyQuests` rows are still accepted. The supported quest type is `allianceIncome`.
 
@@ -120,6 +121,7 @@ Example local calls after adding your identity hex to `NPC_MARKET_ADMIN_IDENTITY
 ```sh
 spacetime call -s local idle-wizard claim_npc_market_admin
 spacetime call -s local idle-wizard set_npc_market_item_base_price manaTonic 10
+spacetime call -s local idle-wizard reset_npc_market
 ```
 
 ## Client Wiring

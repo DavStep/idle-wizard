@@ -132,6 +132,11 @@ describe('ShopShelfManager', () => {
       ['4.', 'empty request', 'locked'],
       ['5.', 'empty request', 'locked'],
     ]);
+    expect(
+      [...stage.querySelectorAll('.shop-page__player-request-button')].map(
+        (button) => button.textContent,
+      ),
+    ).not.toContain('request');
 
     requestRows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -173,7 +178,7 @@ describe('ShopShelfManager', () => {
     );
 
     stage
-      .querySelectorAll('.shop-page__player-request-button')[1]
+      .querySelector('.shop-page__player-request-clear-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const clearedRequestRow = stage.querySelector('.shop-page__player-request-row');
@@ -199,7 +204,7 @@ describe('ShopShelfManager', () => {
 
     manager.mount(stage, popupLayer);
     stage
-      .querySelector('.shop-page__player-request-button')
+      .querySelector('.shop-page__player-request-row')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const popup = popupLayer.querySelector('.shop-page__request-popup');
@@ -233,7 +238,7 @@ describe('ShopShelfManager', () => {
 
     manager.mount(stage, popupLayer);
     stage
-      .querySelector('.shop-page__player-request-button')
+      .querySelector('.shop-page__player-request-row')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const popup = popupLayer.querySelector('.shop-page__request-popup');
@@ -404,6 +409,7 @@ describe('ShopShelfManager', () => {
       ['4.', 'empty stand', 'locked'],
       ['5.', 'empty stand', 'locked'],
     ]);
+    expect(stage.querySelector('.shop-page__player-proceeds-row')).toBeNull();
 
     manager.unmount();
   });
@@ -599,6 +605,8 @@ describe('ShopShelfManager', () => {
     const row = stage.querySelector('.shop-page__player-slot-row');
     expect(row?.dataset.notification).toBe('true');
     expect(row?.dataset.notificationTone).toBe('orange');
+    expect(stage.querySelector('.shop-page__player-proceeds-row')).toBeNull();
+    expect(stage.querySelector('.shop-page__claim-proceeds-button')?.hidden).toBe(true);
 
     manager.unmount();
   });

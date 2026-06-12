@@ -14,6 +14,8 @@ The project `STYLE` is defined in `docs/style.md`. It is inspired by A Dark Room
 
 Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an existing similar concept, then reuse that row, box, popup, tab, and border-label pattern instead of inventing a near-duplicate.
 
+For any UI, UX, layout, visual, popup, dialog, screen, page, button, label, or flow change, use the `impeccable` skill and follow `PRODUCT.md`, `DESIGN.md`, `docs/style.md`, and `docs/ui-patterns.md` before editing.
+
 A Dark Room-style blocks use titles embedded over the top border on white background, not separate headings inside bordered panels.
 
 Use A Dark Room's source UI proportions, including `16px` source text, inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.

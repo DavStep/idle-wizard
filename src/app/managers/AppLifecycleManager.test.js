@@ -159,6 +159,22 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
   });
 
+  it('does not reconnect when the account is active elsewhere', async () => {
+    const { lifecycle, getBackendCallbacks } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+    getBackendCallbacks().onOffline({ reason: 'account_in_use' });
+
+    expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showOffline).toHaveBeenCalledWith(
+      'account_in_use',
+    );
+    expect(lifecycle.connectionRetryManager.clear).toHaveBeenCalledTimes(1);
+    expect(lifecycle.connectionRetryManager.schedule).not.toHaveBeenCalled();
+  });
+
   it('keeps connecting and retries when backend startup hits a transient error', async () => {
     const { lifecycle, getRetryCallback } = createLifecycle();
     lifecycle.backendFacade.start.mockRejectedValueOnce(new Error('server booting'));
@@ -220,6 +236,7 @@ describe('AppLifecycleManager', () => {
 
     await lifecycle.handleGameplaySaveReady({ save: accountSave });
 
+    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
     expect(accountLinkChoiceManager.choose).toHaveBeenCalledWith({
       deviceSave,
       accountSave,

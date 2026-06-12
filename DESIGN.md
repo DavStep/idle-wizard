@@ -13,6 +13,7 @@ colors:
   black-theme-bg: "#1a1a1a"
   black-theme-surface: "#202020"
   black-theme-ink: "#e8e8e8"
+  black-theme-stroke: "#6a6a6a"
   midnight-theme-bg: "#1c1e26"
   midnight-theme-ink: "#d4d4d4"
 typography:

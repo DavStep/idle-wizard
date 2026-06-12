@@ -1,4 +1,5 @@
 import { AuthFacade } from './auth/AuthFacade.js';
+import { AccountSessionBackendFacade } from './accountSession/AccountSessionBackendFacade.js';
 import { FeedbackBackendFacade } from './feedback/FeedbackBackendFacade.js';
 import { GameConfigBackendFacade } from './gameConfig/GameConfigBackendFacade.js';
 import { GameplaySaveBackendFacade } from './gameplaySave/GameplaySaveBackendFacade.js';
@@ -20,6 +21,7 @@ export class BackendFacade {
     databaseName = import.meta.env.VITE_SPACETIME_DATABASE ?? 'idle-wizard',
   } = {}) {
     this.authFacade = new AuthFacade();
+    this.accountSessionFacade = new AccountSessionBackendFacade();
     this.gameConfigFacade = new GameConfigBackendFacade();
     this.gameplaySaveFacade = new GameplaySaveBackendFacade();
     this.leaderboardFacade = new LeaderboardBackendFacade();
@@ -30,6 +32,7 @@ export class BackendFacade {
     this.playerShopFacade = new PlayerShopBackendFacade();
     this.potionDiscoveryFacade = new PotionDiscoveryBackendFacade();
     this.tradeAllianceFacade = new TradeAllianceBackendFacade();
+    this.accountSessionInactive = false;
     this.spacetimeDbFacade = new SpacetimeDbFacade({
       uri,
       databaseName,
@@ -54,6 +57,7 @@ export class BackendFacade {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setRewardProcessingReady(false);
+    this.accountSessionInactive = false;
     this.gameplaySaveFacade.setReadyToSend(false);
     this.gameplaySaveFacade.setSyncUnhealthyHandler(({ reason, error } = {}) => {
       this.handleGameplaySaveSyncUnhealthy({ reason, error, onOffline });
@@ -65,8 +69,20 @@ export class BackendFacade {
     return this.spacetimeDbFacade.connectGeneratedBindings({
       onConnect: (connection, identity) => {
         let gameplaySaveReady = false;
+        let accountSessionInactive = false;
+        const handleAccountSessionInactive = () => {
+          if (accountSessionInactive) {
+            return;
+          }
+
+          accountSessionInactive = true;
+          this.accountSessionInactive = true;
+          this.disconnectBackendFacades();
+          this.spacetimeDbFacade.disconnect();
+          onOffline?.({ reason: 'account_in_use' });
+        };
         const finishGameplaySaveReady = async (result) => {
-          if (gameplaySaveReady) {
+          if (gameplaySaveReady || accountSessionInactive) {
             return;
           }
 
@@ -88,8 +104,16 @@ export class BackendFacade {
               updatedAtMs: result?.updatedAtMs ?? 0,
             });
           } catch (error) {
+            if (accountSessionInactive) {
+              return;
+            }
+
             this.disconnectBackendFacades();
             onOffline?.({ reason: 'gameplay_save_ready_error', error });
+            return;
+          }
+
+          if (accountSessionInactive) {
             return;
           }
 
@@ -103,6 +127,13 @@ export class BackendFacade {
           this.tradeAllianceFacade.setRewardProcessingReady(true);
           onOnline?.({ connection, identity });
         };
+
+        this.accountSessionFacade.connect(connection, {
+          onInactive: handleAccountSessionInactive,
+        });
+        if (accountSessionInactive) {
+          return;
+        }
 
         this.gameConfigFacade.connect(connection);
         this.leaderboardFacade.connect(connection, identity);
@@ -122,6 +153,10 @@ export class BackendFacade {
         onOffline?.({ reason: 'connect_error', error });
       },
       onDisconnect: () => {
+        if (this.accountSessionInactive) {
+          return;
+        }
+
         this.disconnectBackendFacades();
         onOffline?.({ reason: 'disconnect' });
       },
@@ -129,6 +164,7 @@ export class BackendFacade {
   }
 
   stop() {
+    this.accountSessionInactive = false;
     this.disconnectBackendFacades();
     this.gameplaySaveFacade.setSyncUnhealthyHandler(null);
     this.leaderboardFacade.setGameplayFacade(null);
@@ -148,6 +184,7 @@ export class BackendFacade {
   }
 
   disconnectBackendFacades() {
+    this.accountSessionFacade.disconnect();
     this.gameConfigFacade.disconnect();
     this.gameplaySaveFacade.disconnect();
     this.leaderboardFacade.disconnect();

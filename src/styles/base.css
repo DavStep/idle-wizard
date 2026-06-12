@@ -139,6 +139,7 @@
   --style-bg: #1a1a1a;
   --style-surface: #202020;
   --style-text: #e8e8e8;
+  --style-stroke: #6a6a6a;
   --style-muted: #a6a6a6;
   --style-disabled: #7a7a7a;
   --style-active-surface: #2a2a2a;
@@ -347,7 +348,10 @@ body {
   z-index: 120;
   display: grid;
   place-items: center;
+  padding: var(--style-dialog-padding);
+  box-sizing: border-box;
   background: rgb(var(--style-backdrop-rgb) / 68%);
+  overflow: hidden;
   pointer-events: auto;
 }
 
@@ -360,16 +364,19 @@ body {
 }
 
 .app-account-link-choice__panel {
-  width: calc(310px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  max-width: 100%;
   outline: none;
 }
 
 .app-account-link-choice:not([hidden]) .app-account-link-choice__panel {
-  animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: app-account-link-choice-dialog-enter var(--style-motion-normal)
+    var(--style-motion-ease) both;
 }
 
 .style-dialog.app-account-link-choice__dialog {
-  width: 310px;
+  width: 260px;
+  max-width: calc(100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px);
 }
 
 .app-account-link-choice__message,
@@ -386,18 +393,23 @@ body {
 
 .app-account-link-choice__row {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  column-gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 1px;
   align-items: baseline;
-  min-height: var(--style-row-min-height);
+  min-height: 0;
 }
 
 .app-account-link-choice__label,
 .app-account-link-choice__summary {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.app-account-link-choice__label {
+  font-weight: bold;
+}
+
+.app-account-link-choice__summary {
+  overflow-wrap: anywhere;
 }
 
 .app-account-link-choice__warning {
@@ -407,7 +419,7 @@ body {
 
 .app-account-link-choice__actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   margin-top: var(--style-dialog-tab-gap);
 }
@@ -5101,6 +5113,18 @@ div.workshop-page__discovery-row {
   to {
     opacity: 1;
     transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes app-account-link-choice-dialog-enter {
+  from {
+    opacity: 0.01;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

@@ -41,11 +41,16 @@
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
+- SpacetimeAuth client URI fields are list values; the dashboard form submits JSON fields `redirectUris` and `postLogoutRedirectUris`, and typing without adding list members leaves auth with `invalid_redirect_uri`.
+- Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
+- SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
+- Global background work like NPC market ticks should be scheduled or single-owner server work, not one reducer interval per connected client.
+- Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress.
 - When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.
 - Server weekly/monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly is 7 days, monthly is 30 days, and UTC midnight is Armenia 04:00.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
@@ -182,6 +187,7 @@
 - Tabbed popups put tab buttons below and outside the bordered `.style-dialog`; keep modal role/focus on the wrapper.
 - Keep an `8px` source gap between tabbed popup dialogs and their bottom tab buttons.
 - Popup tab buttons use the same `2px` stroke as popup dialogs.
+- Discoveries popup tab height is the canonical dialog-tab height: use `calc(var(--style-row-min-height) * 2)` and do not shrink dialog tabs to border-label height.
 - Tabbed popup wrappers should own centering/enter animation; do not also animate the nested `.style-dialog` with centered-dialog transforms.
 - Dialog close controls should sit as normal-weight border labels, like titles but not bold, not as boxed buttons inside the panel.
 - Room UI layer uses `box-sizing: content-box`; wrappers that center fixed-width `.style-dialog` content must account for dialog padding and borders.
@@ -211,12 +217,14 @@
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
 - Profile sync can echo stale server visual values after a local choice; keep in-flight client choices optimistic until a matching server echo arrives.
 - Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Lexend, and monochrome start researched, while other visual options show their price/free research action until researched.
-- Zero-cost visual setting names should unlock and select directly; do not require a separate tap on `free`.
+- Zero-cost visual setting names should not unlock or select directly; tap `free` to research first, then tap the option name to select.
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - If `data-resource-color` sits on the same row as `is-empty`/`is-locked`, set disabled color on that row; reserve `inherit` for child resource spans inside disabled parents.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
+- NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
+- Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
 - NPC stock market category controls are bottom-border text tabs, not boxed buttons; keep `seed` left, `herb` centered, and `potion` right.
 - NPC stock buy row controls show only the price (`25 gold`), not a `buy` prefix; enabled prices use gold resource color, disabled/unaffordable prices inherit muted disabled color.
 - NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.

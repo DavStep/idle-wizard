@@ -3215,6 +3215,9 @@ describe('PagesFacade', () => {
     const blackResearchButton = blackButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
+    const midnightResearchButton = midnightButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
 
     expect(whiteButton.getAttribute('aria-checked')).toBe('true');
     expect(mildWhiteButton).toBeNull();
@@ -3223,12 +3226,26 @@ describe('PagesFacade', () => {
     expect(blackButton.disabled).toBe(false);
     expect(midnightButton.disabled).toBe(false);
     expect(blackResearchButton?.textContent).toBe('free');
+    expect(midnightResearchButton?.textContent).toBe('free');
+
+    blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().theme).toBe('white');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(false);
+    expect(stage.querySelector('.room-top-panel__visual-status')?.textContent).toBe(
+      'research first',
+    );
+
+    blackResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().theme).toBe('white');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
+    expect(blackResearchButton?.textContent).toBe('researched');
+    expect(blackButton.getAttribute('aria-checked')).toBe('false');
 
     blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().theme).toBe('black');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
-    expect(blackResearchButton?.textContent).toBe('researched');
     expect(blackButton.getAttribute('aria-checked')).toBe('true');
     expect(whiteButton.getAttribute('aria-checked')).toBe('false');
 
@@ -3239,9 +3256,26 @@ describe('PagesFacade', () => {
 
     midnightButton.dispatchEvent(midnightPointerDown);
 
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(true);
+    expect(playerFacade.getSnapshot().theme).toBe('black');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(false);
     expect(midnightPointerDown.defaultPrevented).toBe(true);
+    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
+
+    midnightResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().theme).toBe('black');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(true);
+    expect(midnightResearchButton?.textContent).toBe('researched');
+
+    const midnightSelectPointerDown = new window.Event('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    midnightButton.dispatchEvent(midnightSelectPointerDown);
+
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
+    expect(midnightSelectPointerDown.defaultPrevented).toBe(true);
     expect(midnightButton.getAttribute('aria-checked')).toBe('true');
     expect(blackButton.getAttribute('aria-checked')).toBe('false');
   });
@@ -3249,8 +3283,9 @@ describe('PagesFacade', () => {
   it('changes resource color mode from settings', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin');
+    const gameplayFacade = createGameplayFacadeFake();
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade,
     });
 
@@ -3275,8 +3310,18 @@ describe('PagesFacade', () => {
 
     resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().colorMode).toBe('resources');
+    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.color.resources).toBe(false);
+
+    resourcesResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.color.resources).toBe(true);
     expect(resourcesResearchButton?.textContent).toBe('researched');
+
+    resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().colorMode).toBe('resources');
     expect(resourcesButton.getAttribute('aria-checked')).toBe('true');
     expect(monoButton.getAttribute('aria-checked')).toBe('false');
   });
@@ -3309,11 +3354,23 @@ describe('PagesFacade', () => {
 
     comicButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
+    expect(playerFacade.getSnapshot().font).toBe('lexend');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.font['comic-sans-mono']).toBe(
+      false,
+    );
+
+    comicResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().font).toBe('lexend');
     expect(gameplayFacade.getSnapshot().visualSettings.researched.font['comic-sans-mono']).toBe(
       true,
     );
     expect(comicResearchButton?.textContent).toBe('researched');
+    expect(comicButton.getAttribute('aria-checked')).toBe('false');
+
+    comicButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
     expect(comicButton.getAttribute('aria-checked')).toBe('true');
     expect(lexendButton.getAttribute('aria-checked')).toBe('false');
 
@@ -6439,9 +6496,7 @@ describe('PagesFacade', () => {
       'request item',
     );
 
-    stage
-      .querySelector('.shop-page__player-request-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    firstRequestRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const requestPopup = stage.querySelector('.shop-page__request-popup');
     expect(requestPopup.hidden).toBe(false);
@@ -6467,6 +6522,10 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
       'player market',
+    );
+    expect(stage.querySelector('.shop-page__player-proceeds-row')).toBeNull();
+    expect(stage.querySelector('.shop-page__player-shelf')?.textContent).not.toContain(
+      'sales',
     );
 
     stage
@@ -6548,12 +6607,14 @@ describe('PagesFacade', () => {
     expect(marketPopup.textContent).toContain('empty');
 
     playerShopFacade.setProceedsGold(5);
-    stage
-      .querySelector('.shop-page__player-proceeds-row button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const claimProceedsButton = stage.querySelector('.shop-page__claim-proceeds-button');
+    expect(claimProceedsButton?.hidden).toBe(false);
+    expect(claimProceedsButton?.textContent).toBe('claim (5 gold)');
+    claimProceedsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(9);
+    expect(claimProceedsButton.hidden).toBe(true);
   });
 
 });

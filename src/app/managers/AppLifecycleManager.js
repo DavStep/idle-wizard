@@ -122,6 +122,7 @@ export class AppLifecycleManager {
     const accountLinkSave = this.getPendingAccountLinkSave();
 
     if (accountLinkSave && this.isAuthenticatedAccount()) {
+      this.onlineGateManager.hide();
       const choice = await this.accountLinkChoiceManager.choose({
         deviceSave: accountLinkSave,
         accountSave: save,

@@ -29,6 +29,7 @@ import LeaveTradeAllianceReducer from "../leave_trade_alliance_reducer";
 import RejectTradeAllianceApplicationReducer from "../reject_trade_alliance_application_reducer";
 import RemoveNpcMarketItemConfigReducer from "../remove_npc_market_item_config_reducer";
 import RemoveResearchConfigReducer from "../remove_research_config_reducer";
+import ResetNpcMarketReducer from "../reset_npc_market_reducer";
 import SellToNpcReducer from "../sell_to_npc_reducer";
 import SendTradeAllianceChatMessageReducer from "../send_trade_alliance_chat_message_reducer";
 import SendWorldChatMessageReducer from "../send_world_chat_message_reducer";
@@ -72,6 +73,7 @@ export type LeaveTradeAllianceParams = __Infer<typeof LeaveTradeAllianceReducer>
 export type RejectTradeAllianceApplicationParams = __Infer<typeof RejectTradeAllianceApplicationReducer>;
 export type RemoveNpcMarketItemConfigParams = __Infer<typeof RemoveNpcMarketItemConfigReducer>;
 export type RemoveResearchConfigParams = __Infer<typeof RemoveResearchConfigReducer>;
+export type ResetNpcMarketParams = __Infer<typeof ResetNpcMarketReducer>;
 export type SellToNpcParams = __Infer<typeof SellToNpcReducer>;
 export type SendTradeAllianceChatMessageParams = __Infer<typeof SendTradeAllianceChatMessageReducer>;
 export type SendWorldChatMessageParams = __Infer<typeof SendWorldChatMessageReducer>;

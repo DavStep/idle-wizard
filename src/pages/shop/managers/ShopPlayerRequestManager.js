@@ -134,19 +134,14 @@ export class ShopPlayerRequestManager {
     const actions = document.createElement('div');
     actions.className = 'shop-page__player-request-actions';
 
-    this.refs.requestButton = document.createElement('button');
-    this.refs.requestButton.className = 'style-button shop-page__player-request-button';
-    this.refs.requestButton.type = 'button';
-    this.refs.requestButton.textContent = 'request';
-    this.refs.requestButton.addEventListener('click', () => this.showPopup());
-
     this.refs.clearButton = document.createElement('button');
-    this.refs.clearButton.className = 'style-button shop-page__player-request-button';
+    this.refs.clearButton.className =
+      'style-button shop-page__player-request-button shop-page__player-request-clear-button';
     this.refs.clearButton.type = 'button';
     this.refs.clearButton.textContent = 'clear';
     this.refs.clearButton.addEventListener('click', () => this.clearRequest());
 
-    actions.append(this.refs.requestButton, this.refs.clearButton);
+    actions.append(this.refs.clearButton);
     return actions;
   }
 
@@ -519,12 +514,7 @@ export class ShopPlayerRequestManager {
     const request = this.getSelectedRequest();
     const canUseSlot = this.canUseRequestSlot(this.selectedRequestSlotNumber);
 
-    this.refs.requestButton.textContent = request ? 'change' : 'request';
-    this.refs.requestButton.disabled = !canUseSlot;
-    this.refs.requestButton.setAttribute(
-      'aria-disabled',
-      this.refs.requestButton.disabled ? 'true' : 'false',
-    );
+    this.refs.actions.hidden = !request;
     this.refs.clearButton.hidden = !request;
     this.refs.clearButton.disabled = !canUseSlot;
     this.refs.clearButton.setAttribute(
