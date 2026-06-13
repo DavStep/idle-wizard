@@ -47,7 +47,7 @@ function createConnection(table) {
 
   return {
     db: {
-      leaderboard: table,
+      leaderboardSummary: table,
     },
     subscription,
     subscriptionBuilder: () => ({
@@ -61,6 +61,7 @@ function createConnection(table) {
       },
       subscribe(query) {
         this.query = query;
+        subscription.query = query;
         this.applied();
         return subscription;
       },
@@ -99,6 +100,7 @@ describe('LeaderboardSubscriptionManager', () => {
 
     manager.connect(connection);
 
+    expect(connection.subscription.query).toBe('SELECT * FROM leaderboard_summary');
     expect(manager.getSnapshot()).toMatchObject({
       topUsers: [
         {
@@ -320,6 +322,48 @@ describe('LeaderboardSubscriptionManager', () => {
       totalIncome: 1,
       rank: 1,
     });
+  });
+
+  it('uses server ranks when the subscribed summary only includes top rows and the player row', () => {
+    const rows = Array.from({ length: 10 }, (_value, index) => ({
+      identity: `top-${index + 1}`,
+      username: `Top ${index + 1}`,
+      playerLevel: 1,
+      income: BigInt(1000 - index),
+      dailyIncome: BigInt(500 - index),
+      weeklyIncome: BigInt(700 - index),
+      monthlyIncome: BigInt(900 - index),
+      totalIncome: BigInt(1000 - index),
+      dailyRank: index + 1,
+      weeklyRank: index + 1,
+      monthlyRank: index + 1,
+      allTimeRank: index + 1,
+    }));
+    rows.push({
+      identity: { toHexString: () => 'mine' },
+      username: 'Mine',
+      playerLevel: 4,
+      income: 5n,
+      dailyIncome: 4n,
+      weeklyIncome: 3n,
+      monthlyIncome: 2n,
+      totalIncome: 1n,
+      dailyRank: 22,
+      weeklyRank: 23,
+      monthlyRank: 24,
+      allTimeRank: 25,
+    });
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)), 'mine');
+
+    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(10);
+    expect(manager.getSnapshot().currentGeneratedGoldUser).toMatchObject({ name: 'Mine', rank: 25 });
+    expect(manager.getSnapshot().currentIncomeUser).toMatchObject({ name: 'Mine', rank: 25 });
+    expect(manager.getSnapshot().currentDailyUser).toMatchObject({ name: 'Mine', rank: 22 });
+    expect(manager.getSnapshot().currentWeeklyUser).toMatchObject({ name: 'Mine', rank: 23 });
+    expect(manager.getSnapshot().currentMonthlyUser).toMatchObject({ name: 'Mine', rank: 24 });
+    expect(manager.getSnapshot().currentAllTimeUser).toMatchObject({ name: 'Mine', rank: 25 });
   });
 
   it('falls back to level 1 when older rows do not have a player level', () => {

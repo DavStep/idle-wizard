@@ -4,6 +4,7 @@ import { FeedbackBackendFacade } from './feedback/FeedbackBackendFacade.js';
 import { GameConfigBackendFacade } from './gameConfig/GameConfigBackendFacade.js';
 import { GameplaySaveBackendFacade } from './gameplaySave/GameplaySaveBackendFacade.js';
 import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade.js';
+import { MaintenanceBackendFacade } from './maintenance/MaintenanceBackendFacade.js';
 import { NpcMarketBackendFacade } from './npcMarket/NpcMarketBackendFacade.js';
 import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js';
 import { PlayerShopBackendFacade } from './playerShop/PlayerShopBackendFacade.js';
@@ -23,6 +24,9 @@ export class BackendFacade {
     this.authFacade = new AuthFacade();
     this.accountSessionFacade = new AccountSessionBackendFacade();
     this.gameConfigFacade = new GameConfigBackendFacade();
+    this.maintenanceFacade = new MaintenanceBackendFacade({
+      gameConfigFacade: this.gameConfigFacade,
+    });
     this.gameplaySaveFacade = new GameplaySaveBackendFacade();
     this.leaderboardFacade = new LeaderboardBackendFacade();
     this.worldChatFacade = new WorldChatBackendFacade();
@@ -222,6 +226,10 @@ export class BackendFacade {
 
   getGameConfigFacade() {
     return this.gameConfigFacade;
+  }
+
+  getMaintenanceFacade() {
+    return this.maintenanceFacade;
   }
 
   getGameplaySaveFacade() {

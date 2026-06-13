@@ -14,6 +14,7 @@ export class AppLifecycleManager {
     gameplayFacade,
     backendFacade,
     playerFacade,
+    maintenanceFacade,
     onlineGateManager,
     accountLinkChoiceManager = new AppAccountLinkChoiceManager(),
     connectionRetryManager = new AppConnectionRetryManager(),
@@ -28,6 +29,7 @@ export class AppLifecycleManager {
     this.gameplayFacade = gameplayFacade;
     this.backendFacade = backendFacade;
     this.playerFacade = playerFacade;
+    this.maintenanceFacade = maintenanceFacade;
     this.onlineGateManager = onlineGateManager;
     this.accountLinkChoiceManager = accountLinkChoiceManager;
     this.connectionRetryManager = connectionRetryManager;
@@ -38,6 +40,13 @@ export class AppLifecycleManager {
     this.stopping = false;
     this.backendConnecting = false;
     this.backendConnectAttempt = 0;
+    this.backendOnline = false;
+    this.maintenanceUnsubscribe = null;
+    this.maintenanceSnapshot = this.normalizeMaintenanceSnapshot(
+      maintenanceFacade?.getSnapshot?.(),
+    );
+    this.maintenanceFlushPromise = null;
+    this.maintenanceFlushKey = '';
   }
 
   start() {
@@ -52,6 +61,9 @@ export class AppLifecycleManager {
     this.accountLinkChoiceManager.mount(stage);
     this.deployRefreshManager?.mount(stage);
     this.onlineGateManager.showConnecting();
+    this.maintenanceUnsubscribe = this.maintenanceFacade?.subscribe?.((snapshot) => {
+      this.handleMaintenanceChange(snapshot);
+    }) ?? null;
     this.connectionRetryManager.reset();
 
     this.ecsFacade.createWorld();
@@ -175,9 +187,9 @@ export class AppLifecycleManager {
       return;
     }
 
-    this.onlineGateManager.hide();
+    this.backendOnline = true;
     this.connectionRetryManager.reset();
-    this.startFrameLoop();
+    this.applyMaintenanceState();
   }
 
   handleOffline(reason) {
@@ -185,7 +197,20 @@ export class AppLifecycleManager {
       return;
     }
 
+    this.backendOnline = false;
     this.stopFrameLoop();
+
+    if (this.isMaintenanceActive()) {
+      this.onlineGateManager.showMaintenance(this.maintenanceSnapshot);
+
+      if (this.isTransientOfflineReason(reason)) {
+        this.scheduleBackendReconnect();
+      } else {
+        this.connectionRetryManager.clear();
+      }
+
+      return;
+    }
 
     if (this.isTransientOfflineReason(reason)) {
       this.onlineGateManager.showConnecting();
@@ -213,6 +238,89 @@ export class AppLifecycleManager {
 
   isCurrentBackendAttempt(attempt) {
     return this.started && !this.stopping && this.backendConnectAttempt === attempt;
+  }
+
+  handleMaintenanceChange(snapshot) {
+    this.maintenanceSnapshot = this.normalizeMaintenanceSnapshot(snapshot);
+    this.applyMaintenanceState();
+  }
+
+  applyMaintenanceState() {
+    if (!this.started || this.stopping) {
+      return;
+    }
+
+    if (this.isMaintenanceActive()) {
+      this.stopFrameLoop();
+
+      if (this.maintenanceSnapshot.mode === 'drain' && this.backendOnline) {
+        this.startMaintenanceDrainSave();
+        return;
+      }
+
+      this.onlineGateManager.showMaintenance(this.maintenanceSnapshot);
+      return;
+    }
+
+    this.maintenanceFlushPromise = null;
+    this.maintenanceFlushKey = '';
+
+    if (this.backendOnline) {
+      this.onlineGateManager.hide();
+      this.startFrameLoop();
+    }
+  }
+
+  startMaintenanceDrainSave() {
+    const flushKey = [
+      this.maintenanceSnapshot.mode,
+      this.maintenanceSnapshot.updatedAtMs,
+      this.maintenanceSnapshot.message,
+    ].join(':');
+
+    if (this.maintenanceFlushPromise || this.maintenanceFlushKey === flushKey) {
+      this.onlineGateManager.showMaintenance({
+        ...this.maintenanceSnapshot,
+        saving: Boolean(this.maintenanceFlushPromise),
+      });
+      return;
+    }
+
+    this.maintenanceFlushKey = flushKey;
+    this.onlineGateManager.showMaintenance({
+      ...this.maintenanceSnapshot,
+      saving: true,
+    });
+
+    this.maintenanceFlushPromise = Promise.resolve(
+      this.gameplayFacade.savePersistenceSnapshotAndFlush?.(),
+    )
+      .catch(() => false)
+      .then(() => {
+        this.maintenanceFlushPromise = null;
+
+        if (!this.isMaintenanceActive() || this.maintenanceSnapshot.mode !== 'drain') {
+          this.applyMaintenanceState();
+          return;
+        }
+
+        this.onlineGateManager.showMaintenance(this.maintenanceSnapshot);
+      });
+  }
+
+  isMaintenanceActive() {
+    return this.maintenanceSnapshot.active;
+  }
+
+  normalizeMaintenanceSnapshot(snapshot = {}) {
+    const mode = ['drain', 'locked'].includes(snapshot?.mode) ? snapshot.mode : 'off';
+
+    return {
+      mode,
+      message: String(snapshot?.message || 'maintenance in progress').trim(),
+      active: mode !== 'off',
+      updatedAtMs: Number.isFinite(snapshot?.updatedAtMs) ? snapshot.updatedAtMs : 0,
+    };
   }
 
   startFrameLoop() {
@@ -244,6 +352,9 @@ export class AppLifecycleManager {
     this.stopping = true;
     this.backendConnectAttempt += 1;
     this.backendConnecting = false;
+    this.backendOnline = false;
+    this.maintenanceUnsubscribe?.();
+    this.maintenanceUnsubscribe = null;
     this.connectionRetryManager.clear();
     this.stopFrameLoop();
     this.gameplayFacade.shutdown();

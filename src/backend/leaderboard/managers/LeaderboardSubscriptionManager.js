@@ -1,4 +1,5 @@
 const TOP_USER_LIMIT = 10;
+const LEADERBOARD_QUERY = 'SELECT * FROM leaderboard_summary';
 const EMPTY_SNAPSHOT = {
   topUsers: [],
   topGeneratedGoldUsers: [],
@@ -39,7 +40,11 @@ export class LeaderboardSubscriptionManager {
     this.connection = connection;
     this.identity = identity;
     this.identityKey = this.toIdentityKey(identity);
-    this.table = connection?.db?.leaderboard ?? null;
+    this.table =
+      connection?.db?.leaderboardSummary ??
+      connection?.db?.leaderboard_summary ??
+      connection?.db?.leaderboard ??
+      null;
 
     if (!this.table) {
       this.publish({ ...EMPTY_SNAPSHOT });
@@ -54,7 +59,7 @@ export class LeaderboardSubscriptionManager {
       .subscriptionBuilder()
       .onApplied(() => this.publishFromTable())
       .onError(() => this.publish({ ...EMPTY_SNAPSHOT }))
-      .subscribe('SELECT * FROM leaderboard');
+      .subscribe(LEADERBOARD_QUERY);
     this.publishFromTable();
   }
 
@@ -98,6 +103,10 @@ export class LeaderboardSubscriptionManager {
         monthlyIncome: this.toNumber(row.monthlyIncome ?? row.monthly_income),
         totalGeneratedGold: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
         totalIncome: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
+        dailyRank: this.toRank(row.dailyRank ?? row.daily_rank),
+        weeklyRank: this.toRank(row.weeklyRank ?? row.weekly_rank),
+        monthlyRank: this.toRank(row.monthlyRank ?? row.monthly_rank),
+        allTimeRank: this.toRank(row.allTimeRank ?? row.all_time_rank),
       }));
     const rankedGeneratedGoldUsers = this.getRankedUsersBy(users, 'totalGeneratedGold');
     const rankedIncomeUsers = this.getRankedUsersBy(users, 'income');
@@ -128,12 +137,31 @@ export class LeaderboardSubscriptionManager {
   }
 
   getRankedUsersBy(users, key) {
+    const rankKey = this.getRankKeyForValueKey(key);
+
     return [...users]
       .sort((left, right) => right[key] - left[key])
       .map((user, index) => ({
         ...user,
-        rank: index + 1,
+        rank: rankKey ? user[rankKey] || index + 1 : index + 1,
       }));
+  }
+
+  getRankKeyForValueKey(key) {
+    switch (key) {
+      case 'dailyIncome':
+        return 'dailyRank';
+      case 'weeklyIncome':
+        return 'weeklyRank';
+      case 'monthlyIncome':
+        return 'monthlyRank';
+      case 'income':
+      case 'totalGeneratedGold':
+      case 'totalIncome':
+        return 'allTimeRank';
+      default:
+        return null;
+    }
   }
 
   getCurrentUser(rankedUsers) {
@@ -176,6 +204,16 @@ export class LeaderboardSubscriptionManager {
     }
 
     return Number.isFinite(value) ? value : 0;
+  }
+
+  toRank(value) {
+    const rank = this.toNumber(value);
+
+    if (!Number.isFinite(rank) || rank < 1) {
+      return 0;
+    }
+
+    return Math.floor(rank);
   }
 
   toPlayerLevel(value, fallback = 1) {

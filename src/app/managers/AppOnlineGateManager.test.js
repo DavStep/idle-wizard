@@ -48,6 +48,22 @@ describe('AppOnlineGateManager', () => {
     expect(gate.textContent).toContain('account opened on another device');
     expect(progress.hidden).toBe(true);
 
+    manager.showMaintenance({
+      mode: 'drain',
+      message: 'maintenance in progress',
+      saving: true,
+    });
+    expect(gate.textContent).toContain('maintenance');
+    expect(gate.textContent).toContain('saving progress');
+    expect(progress.hidden).toBe(false);
+
+    manager.showMaintenance({
+      mode: 'locked',
+      message: 'maintenance in progress',
+    });
+    expect(gate.textContent).toContain('maintenance in progress');
+    expect(progress.hidden).toBe(true);
+
     manager.hide();
     expect(gate.hidden).toBe(true);
   });

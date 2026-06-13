@@ -1,4 +1,4 @@
-const WORLD_CHAT_QUERY = 'SELECT * FROM world_chat';
+const WORLD_CHAT_QUERY = 'SELECT * FROM world_chat_recent';
 const MESSAGE_LIMIT = 40;
 const EMPTY_SNAPSHOT = {
   connected: false,
@@ -18,7 +18,12 @@ export class WorldChatSubscriptionManager {
   connect(connection) {
     this.disconnect();
     this.connection = connection;
-    this.table = connection?.db?.worldChat ?? connection?.db?.world_chat ?? null;
+    this.table =
+      connection?.db?.worldChatRecent ??
+      connection?.db?.world_chat_recent ??
+      connection?.db?.worldChat ??
+      connection?.db?.world_chat ??
+      null;
 
     if (!this.table) {
       this.publish({ ...EMPTY_SNAPSHOT });

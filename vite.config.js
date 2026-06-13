@@ -1,13 +1,16 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { defineConfig } from 'vite';
 
 const deployVersion = createDeployVersion();
+const clientReleaseVersion = createClientReleaseVersion();
 
 export default defineConfig({
   plugins: [deployVersionPlugin()],
   define: {
     'import.meta.env.VITE_DEPLOY_VERSION': JSON.stringify(deployVersion),
+    'import.meta.env.VITE_CLIENT_RELEASE_VERSION': JSON.stringify(clientReleaseVersion),
   },
   server: {
     host: '0.0.0.0',
@@ -34,6 +37,29 @@ function createDeployVersion() {
   return gitSha ? `${gitSha}-${stamp}` : stamp;
 }
 
+function createClientReleaseVersion() {
+  const explicitVersion = process.env.VITE_CLIENT_RELEASE_VERSION?.trim();
+
+  if (explicitVersion) {
+    return explicitVersion;
+  }
+
+  return readPackageVersion();
+}
+
+function readPackageVersion() {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+    );
+    const version = typeof packageJson.version === 'string' ? packageJson.version.trim() : '';
+
+    return version || '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
 function readGitSha() {
   try {
     return execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
@@ -46,7 +72,11 @@ function readGitSha() {
 }
 
 function deployVersionPlugin() {
-  const source = `${JSON.stringify({ version: deployVersion }, null, 2)}\n`;
+  const source = `${JSON.stringify(
+    { version: deployVersion, releaseVersion: clientReleaseVersion },
+    null,
+    2,
+  )}\n`;
 
   return {
     name: 'idle-wizard-deploy-version',

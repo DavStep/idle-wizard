@@ -15,6 +15,7 @@ export class GameplaySaveSubscriptionManager {
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.readyCallback = null;
     this.readyDelivered = false;
+    this.hydrationSubscriptionApplied = false;
     this.handleTableChange = () => this.publishFromTable();
   }
 
@@ -24,6 +25,7 @@ export class GameplaySaveSubscriptionManager {
     this.identity = identity;
     this.readyCallback = onReady;
     this.readyDelivered = false;
+    this.hydrationSubscriptionApplied = false;
     this.table =
       connection?.db?.ownPlayerGameplaySave ??
       connection?.db?.own_player_gameplay_save ??
@@ -48,6 +50,8 @@ export class GameplaySaveSubscriptionManager {
           save: this.snapshot.save,
           updatedAtMs: this.snapshot.updatedAtMs,
         });
+        this.hydrationSubscriptionApplied = true;
+        this.endHydrationSubscription();
       })
       .onError(() => {
         this.publish({ ...EMPTY_SNAPSHOT });
@@ -57,6 +61,10 @@ export class GameplaySaveSubscriptionManager {
         });
       })
       .subscribe(OWN_PLAYER_GAMEPLAY_SAVE_QUERY);
+
+    if (this.hydrationSubscriptionApplied) {
+      this.endHydrationSubscription();
+    }
 
     return true;
   }
@@ -74,6 +82,7 @@ export class GameplaySaveSubscriptionManager {
     this.subscription = null;
     this.readyCallback = null;
     this.readyDelivered = false;
+    this.hydrationSubscriptionApplied = false;
     this.publish({ ...EMPTY_SNAPSHOT });
   }
 
@@ -91,6 +100,16 @@ export class GameplaySaveSubscriptionManager {
     table?.removeOnInsert?.(this.handleTableChange);
     table?.removeOnUpdate?.(this.handleTableChange);
     table?.removeOnDelete?.(this.handleTableChange);
+  }
+
+  endHydrationSubscription() {
+    this.unbindTable(this.table);
+
+    if (this.subscription && !this.subscription.isEnded?.()) {
+      this.subscription.unsubscribe();
+    }
+
+    this.subscription = null;
   }
 
   publishFromTable() {

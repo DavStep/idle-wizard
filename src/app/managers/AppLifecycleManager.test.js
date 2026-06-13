@@ -10,16 +10,30 @@ async function flushPromises() {
   await Promise.resolve();
 }
 
-function createLifecycle({ accountLinkChoiceManager, authFacade } = {}) {
+function createLifecycle({ accountLinkChoiceManager, authFacade, maintenanceFacade } = {}) {
   const root = document.createElement('div');
   const shell = document.createElement('main');
   const stage = document.createElement('section');
   let backendCallbacks = null;
   let retryCallback = null;
+  let maintenanceListener = null;
   const authFacadeFake = authFacade ?? {
     getPendingAccountLinkSave: vi.fn(() => null),
     clearPendingAccountLinkSave: vi.fn(),
     getSnapshot: vi.fn(() => ({ oidc: { authenticated: false } })),
+  };
+  const maintenanceFacadeFake = maintenanceFacade ?? {
+    getSnapshot: vi.fn(() => ({
+      mode: 'off',
+      message: 'maintenance in progress',
+      active: false,
+      updatedAtMs: 0,
+    })),
+    subscribe: vi.fn((listener) => {
+      maintenanceListener = listener;
+      listener(maintenanceFacadeFake.getSnapshot());
+      return vi.fn();
+    }),
   };
 
   const lifecycle = new AppLifecycleManager({
@@ -58,6 +72,7 @@ function createLifecycle({ accountLinkChoiceManager, authFacade } = {}) {
       afterUpdate: vi.fn(),
       loadPersistenceSave: vi.fn(() => true),
       savePersistenceSnapshot: vi.fn(),
+      savePersistenceSnapshotAndFlush: vi.fn(() => Promise.resolve(true)),
     },
     backendFacade: {
       prepare: vi.fn(),
@@ -69,10 +84,12 @@ function createLifecycle({ accountLinkChoiceManager, authFacade } = {}) {
       getAuthFacade: vi.fn(() => authFacadeFake),
     },
     playerFacade: {},
+    maintenanceFacade: maintenanceFacadeFake,
     onlineGateManager: {
       mount: vi.fn(() => stage.append(document.createElement('div'))),
       showConnecting: vi.fn(),
       showOffline: vi.fn(),
+      showMaintenance: vi.fn(),
       hide: vi.fn(),
       unmount: vi.fn(),
     },
@@ -99,8 +116,10 @@ function createLifecycle({ accountLinkChoiceManager, authFacade } = {}) {
     lifecycle,
     stage,
     authFacade: authFacadeFake,
+    maintenanceFacade: maintenanceFacadeFake,
     getBackendCallbacks: () => backendCallbacks,
     getRetryCallback: () => retryCallback,
+    setMaintenance: (snapshot) => maintenanceListener?.(snapshot),
   };
 }
 
@@ -217,6 +236,82 @@ describe('AppLifecycleManager', () => {
 
     expect(accountLinkChoiceManager.mount).toHaveBeenCalledWith(stage);
     expect(accountLinkChoiceManager.unmount).toHaveBeenCalledTimes(1);
+  });
+
+  it('pauses gameplay and flushes the last save when maintenance drains', async () => {
+    const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+
+    expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(1);
+
+    setMaintenance({
+      mode: 'drain',
+      message: 'maintenance in progress',
+      active: true,
+      updatedAtMs: 10,
+    });
+
+    expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showMaintenance).toHaveBeenLastCalledWith(
+      expect.objectContaining({ mode: 'drain', saving: true }),
+    );
+
+    await flushPromises();
+
+    const settledMaintenanceCall =
+      lifecycle.onlineGateManager.showMaintenance.mock.calls.at(-1)?.[0];
+    expect(settledMaintenanceCall).toMatchObject({ mode: 'drain' });
+    expect(settledMaintenanceCall.saving).toBeUndefined();
+    expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks gameplay without flushing when maintenance is locked', async () => {
+    const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+
+    setMaintenance({
+      mode: 'locked',
+      message: 'maintenance in progress',
+      active: true,
+      updatedAtMs: 11,
+    });
+
+    expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush).not.toHaveBeenCalled();
+    expect(lifecycle.onlineGateManager.showMaintenance).toHaveBeenLastCalledWith(
+      expect.objectContaining({ mode: 'locked' }),
+    );
+  });
+
+  it('resumes gameplay when maintenance turns off', async () => {
+    const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+    setMaintenance({
+      mode: 'locked',
+      message: 'maintenance in progress',
+      active: true,
+      updatedAtMs: 12,
+    });
+
+    setMaintenance({
+      mode: 'off',
+      message: 'maintenance in progress',
+      active: false,
+      updatedAtMs: 13,
+    });
+
+    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(2);
+    expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(2);
   });
 
   it('overwrites the connected account when selected after Google login', async () => {

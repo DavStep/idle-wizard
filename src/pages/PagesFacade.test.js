@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import packageJson from '../../package.json';
 import { PagesFacade } from './PagesFacade.js';
 
 function createGameplayFacadeFake() {
@@ -3152,6 +3153,9 @@ describe('PagesFacade', () => {
       'connect account',
     );
     expect(stage.querySelector('.room-top-panel__auth-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.room-top-panel__version-value')?.textContent).toBe(
+      packageJson.version,
+    );
     expect(
       [...settings.querySelectorAll('.room-top-panel__theme-button')].map(
         (button) => button.textContent,

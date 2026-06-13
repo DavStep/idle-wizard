@@ -86,6 +86,21 @@ export class AppOnlineGateManager {
     });
   }
 
+  showMaintenance({ mode = 'drain', message = 'maintenance in progress', saving = false } = {}) {
+    const normalizedMessage = String(message || 'maintenance in progress').trim();
+    const gateMessage = saving
+      ? 'maintenance active. saving progress...'
+      : mode === 'locked'
+        ? normalizedMessage
+        : `${normalizedMessage}. progress is saved.`;
+
+    this.show({
+      title: 'maintenance',
+      message: gateMessage,
+      progress: saving,
+    });
+  }
+
   hide() {
     if (this.root) {
       this.root.hidden = true;

@@ -55,6 +55,7 @@ export class AppFacade {
       gameplayFacade: this.gameplayFacade,
       backendFacade: this.backendFacade,
       playerFacade: this.playerFacade,
+      maintenanceFacade: this.backendFacade.getMaintenanceFacade(),
       onlineGateManager: this.onlineGateManager,
       deployRefreshManager: this.deployRefreshManager,
       appThemeManager: this.appThemeManager,

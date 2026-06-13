@@ -96,6 +96,10 @@ describe('GameplaySaveSubscriptionManager', () => {
       save,
       updatedAtMs: 12,
     });
+    expect(connection.subscription.unsubscribe).toHaveBeenCalledTimes(1);
+    expect(table.callbacks.insert).toBeNull();
+    expect(table.callbacks.update).toBeNull();
+    expect(table.callbacks.delete).toBeNull();
   });
 
   it('reports missing own-save view as not ready', () => {

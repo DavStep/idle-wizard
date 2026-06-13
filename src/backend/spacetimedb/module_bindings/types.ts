@@ -56,6 +56,26 @@ export const Leaderboard = __t.object("Leaderboard", {
 });
 export type Leaderboard = __Infer<typeof Leaderboard>;
 
+export const LeaderboardSummary = __t.object("LeaderboardSummary", {});
+export type LeaderboardSummary = __Infer<typeof LeaderboardSummary>;
+
+export const LeaderboardSummaryResult = __t.object("LeaderboardSummaryResult", {
+  identity: __t.identity(),
+  username: __t.string(),
+  totalIncome: __t.u64(),
+  income: __t.u64(),
+  dailyIncome: __t.u64(),
+  weeklyIncome: __t.u64(),
+  monthlyIncome: __t.u64(),
+  updatedAt: __t.timestamp(),
+  playerLevel: __t.u32(),
+  dailyRank: __t.u32(),
+  weeklyRank: __t.u32(),
+  monthlyRank: __t.u32(),
+  allTimeRank: __t.u32(),
+});
+export type LeaderboardSummaryResult = __Infer<typeof LeaderboardSummaryResult>;
+
 export const MaintenanceState = __t.object("MaintenanceState", {
   stateKey: __t.string(),
   appliedAt: __t.timestamp(),
@@ -364,4 +384,18 @@ export const WorldChat = __t.object("WorldChat", {
   allianceTag: __t.string(),
 });
 export type WorldChat = __Infer<typeof WorldChat>;
+
+export const WorldChatRecent = __t.object("WorldChatRecent", {});
+export type WorldChatRecent = __Infer<typeof WorldChatRecent>;
+
+export const WorldChatRecentResult = __t.object("WorldChatRecentResult", {
+  messageId: __t.uuid(),
+  senderIdentity: __t.identity(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+  allianceTag: __t.string(),
+});
+export type WorldChatRecentResult = __Infer<typeof WorldChatRecentResult>;
 

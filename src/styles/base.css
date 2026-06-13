@@ -4500,6 +4500,14 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.room-top-panel__version-value {
+  overflow: hidden;
+  color: var(--style-muted);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .style-button.room-top-panel__auth-button {
   width: 218px;
   margin-bottom: 0;
@@ -4527,7 +4535,8 @@ div.workshop-page__discovery-row {
 .room-top-panel__settings.is-username-prompt .room-top-panel__font-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__color-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__feedback-section,
-.room-top-panel__settings.is-username-prompt .room-top-panel__auth-section {
+.room-top-panel__settings.is-username-prompt .room-top-panel__auth-section,
+.room-top-panel__settings.is-username-prompt .room-top-panel__version-section {
   display: none;
 }
 

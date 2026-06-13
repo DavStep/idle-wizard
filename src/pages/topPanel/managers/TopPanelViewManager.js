@@ -1,4 +1,5 @@
 import { getPlayerVisualSettingCategories } from '../../../player/playerVisualSettings.js';
+import { getClientReleaseVersion } from '../../../shared/clientReleaseVersion.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class TopPanelViewManager {
@@ -279,7 +280,22 @@ export class TopPanelViewManager {
 
     this.refs.authSection.append(authLabel, this.refs.authStatus, this.refs.authButton);
 
-    this.refs.accountPane.append(usernameSection, this.refs.authSection);
+    const versionSection = document.createElement('div');
+    versionSection.className =
+      'room-top-panel__settings-section room-top-panel__version-section';
+
+    const versionLabel = document.createElement('div');
+    versionLabel.className = 'room-top-panel__settings-label';
+    versionLabel.textContent = 'version';
+
+    this.refs.versionValue = document.createElement('div');
+    this.refs.versionValue.className = 'room-top-panel__version-value';
+    this.refs.versionValue.textContent = getClientReleaseVersion();
+    this.refs.versionValue.setAttribute('aria-label', 'client release version');
+
+    versionSection.append(versionLabel, this.refs.versionValue);
+
+    this.refs.accountPane.append(usernameSection, this.refs.authSection, versionSection);
     this.refs.reportPane.append(feedbackSection, this.refs.feedbackForm);
 
     this.refs.settingsTabs = document.createElement('div');

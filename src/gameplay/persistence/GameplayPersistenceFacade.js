@@ -3,7 +3,7 @@ import { GameplayMigrationManager } from './managers/GameplayMigrationManager.js
 import { GameplaySaveManager } from './managers/GameplaySaveManager.js';
 import { GameplayStorageManager } from './managers/GameplayStorageManager.js';
 
-const AUTOSAVE_SECONDS = 5;
+const AUTOSAVE_SECONDS = 30;
 
 export class GameplayPersistenceFacade {
   static explain =

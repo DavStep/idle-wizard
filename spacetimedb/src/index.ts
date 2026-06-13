@@ -16,6 +16,7 @@ const ENABLE_PLAYER_SHOP_EXCHANGE = true;
 const ENABLE_NPC_MARKET_PRESSURE = true;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
+const MAX_MAINTENANCE_MESSAGE_LENGTH = 160;
 const MAX_FEEDBACK_BODY_LENGTH = 2000;
 const MAX_TRADE_ALLIANCE_MEMBERS = 50;
 const MAX_TRADE_ALLIANCE_NAME_LENGTH = 32;
@@ -38,6 +39,7 @@ const MAX_RESEARCH_NAME_LENGTH = 80;
 const MAX_RESEARCH_ID_LENGTH = 96;
 const MAX_RESEARCH_LABEL_LENGTH = 80;
 const MAX_RESEARCH_GROUP_ID_LENGTH = 32;
+const MAX_MAINTENANCE_KEY_LENGTH = 96;
 const WORLD_CHAT_HISTORY_LIMIT = 200;
 const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
 const MAX_PLAYER_SHOP_SLOTS = 5;
@@ -89,6 +91,14 @@ const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UT
 const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const NPC_MARKET_DATA_RESET_STATE_KEY = `npc-market-data-reset:${PLAYER_DATA_RESET_GUARD_MICROS}`;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
+const MAINTENANCE_MODE_OFF = 'off';
+const MAINTENANCE_MODE_DRAIN = 'drain';
+const MAINTENANCE_MODE_LOCKED = 'locked';
+const MAINTENANCE_MODES = new Set([
+  MAINTENANCE_MODE_OFF,
+  MAINTENANCE_MODE_DRAIN,
+  MAINTENANCE_MODE_LOCKED,
+]);
 const PLAYER_THEMES = new Set(['white', 'black', 'midnight']);
 const PLAYER_THEME_ALIASES = new Map([
   ['mild-white', 'white'],
@@ -968,6 +978,10 @@ const DEFAULT_ITEMS_CONFIG_JSON = toGameConfigJson(getDefaultItemsConfig());
 const DEFAULT_POTION_RECIPES_CONFIG_JSON = toGameConfigJson({
   recipes: potionRecipeCatalog,
 });
+const DEFAULT_MAINTENANCE_CONFIG_JSON = toGameConfigJson({
+  mode: MAINTENANCE_MODE_OFF,
+  message: 'maintenance in progress',
+});
 
 const gameConfigCatalog = [
   { configKey: 'tasks', configJson: DEFAULT_TASKS_CONFIG_JSON },
@@ -980,6 +994,7 @@ const gameConfigCatalog = [
   { configKey: 'visualSettings', configJson: DEFAULT_VISUAL_SETTINGS_CONFIG_JSON },
   { configKey: 'items', configJson: DEFAULT_ITEMS_CONFIG_JSON },
   { configKey: 'potionRecipes', configJson: DEFAULT_POTION_RECIPES_CONFIG_JSON },
+  { configKey: 'maintenance', configJson: DEFAULT_MAINTENANCE_CONFIG_JSON },
 ];
 
 const spacetimedb = schema({
@@ -1443,6 +1458,23 @@ const adminPlayerFeedbackResult = t.array(
     submittedAt: t.timestamp(),
   }),
 );
+const leaderboardSummaryResult = t.array(
+  t.row('LeaderboardSummaryResult', {
+    identity: t.identity().primaryKey(),
+    username: t.string(),
+    totalIncome: t.u64(),
+    income: t.u64(),
+    dailyIncome: t.u64(),
+    weeklyIncome: t.u64(),
+    monthlyIncome: t.u64(),
+    updatedAt: t.timestamp(),
+    playerLevel: t.u32(),
+    dailyRank: t.u32(),
+    weeklyRank: t.u32(),
+    monthlyRank: t.u32(),
+    allTimeRank: t.u32(),
+  }),
+);
 const ownTradeAllianceChatResult = t.array(
   t.row('OwnTradeAllianceChatResult', {
     messageId: t.uuid().primaryKey(),
@@ -1467,6 +1499,17 @@ const ownTradeAllianceRewardInboxResult = t.array(
     crystalReward: t.u32(),
     claimedAt: t.timestamp(),
     collected: t.bool(),
+  }),
+);
+const worldChatRecentResult = t.array(
+  t.row('WorldChatRecentResult', {
+    messageId: t.uuid().primaryKey(),
+    senderIdentity: t.identity(),
+    username: t.string(),
+    playerLevel: t.u32(),
+    body: t.string(),
+    sentAt: t.timestamp(),
+    allianceTag: t.string(),
   }),
 );
 
@@ -1538,6 +1581,12 @@ export const admin_player_feedback = spacetimedb.view(
   },
 );
 
+export const leaderboard_summary = spacetimedb.view(
+  { name: 'leaderboard_summary', public: true },
+  leaderboardSummaryResult,
+  (ctx) => getLeaderboardSummaryRows(ctx),
+);
+
 export const own_trade_alliance_chat = spacetimedb.view(
   { name: 'own_trade_alliance_chat', public: true },
   ownTradeAllianceChatResult,
@@ -1569,6 +1618,28 @@ export const own_trade_alliance_chat = spacetimedb.view(
       })
       .slice(-40);
   },
+);
+
+export const world_chat_recent = spacetimedb.view(
+  { name: 'world_chat_recent', public: true },
+  worldChatRecentResult,
+  (ctx) =>
+    Array.from(ctx.db.worldChat.iter())
+      .sort((left, right) => {
+        const leftSentAt = left.sentAt.microsSinceUnixEpoch;
+        const rightSentAt = right.sentAt.microsSinceUnixEpoch;
+
+        if (leftSentAt < rightSentAt) {
+          return -1;
+        }
+
+        if (leftSentAt > rightSentAt) {
+          return 1;
+        }
+
+        return left.messageId.compareTo(right.messageId);
+      })
+      .slice(-40),
 );
 
 export const own_trade_alliance_reward_inbox = spacetimedb.view(
@@ -2456,6 +2527,36 @@ function normalizeGameConfigKey(configKey: string): string {
     .slice(0, MAX_GAME_CONFIG_KEY_LENGTH);
 }
 
+function normalizeMaintenanceMode(mode: unknown): string {
+  const value = String(mode ?? MAINTENANCE_MODE_OFF).trim().toLowerCase();
+
+  if (MAINTENANCE_MODES.has(value)) {
+    return value;
+  }
+
+  throw new Error('Invalid maintenance mode.');
+}
+
+function normalizeMaintenanceMessage(message: unknown): string {
+  const value = String(message ?? 'maintenance in progress')
+    .trim()
+    .slice(0, MAX_MAINTENANCE_MESSAGE_LENGTH);
+
+  return value || 'maintenance in progress';
+}
+
+function normalizeMaintenanceKey(value: unknown): string {
+  const key = String(value ?? '')
+    .trim()
+    .slice(0, MAX_MAINTENANCE_KEY_LENGTH);
+
+  if (!key) {
+    throw new Error('Maintenance key is required.');
+  }
+
+  return key;
+}
+
 function validateGameConfigJson(configKey: string, configJson: string): string {
   const value = String(configJson ?? '').trim();
 
@@ -2689,6 +2790,7 @@ function normalizePlayerGameplaySave(
   save: unknown,
   previousSaveJson?: string,
   identity = ctx.sender,
+  { preserveSavedAt = false } = {},
 ) {
   if (!isRecord(save)) {
     throw new Error('Invalid player save value.');
@@ -2708,7 +2810,9 @@ function normalizePlayerGameplaySave(
 
   return {
     version: 2,
-    savedAt: normalizeSaveTimestamp(ctx),
+    savedAt: preserveSavedAt
+      ? normalizeSaveExistingTimestamp(save.savedAt, ctx)
+      : normalizeSaveTimestamp(ctx),
     mana: normalizeSaveResource(save.mana),
     gold: normalizeSaveGold(save.gold),
     crystal: normalizeSaveCrystal(save.crystal, minimumCurrentCrystal),
@@ -2738,6 +2842,27 @@ function parsePlayerGameplaySaveJson(saveJson?: string): Record<string, unknown>
   } catch {
     return null;
   }
+}
+
+function migratePlayerGameplaySaveJson(
+  ctx: IdleWizardReducerCtx,
+  save: PlayerGameplaySaveRowValue,
+): string {
+  const parsedSave = parsePlayerGameplaySaveJson(save.saveJson);
+
+  if (!parsedSave) {
+    throw new Error('Cannot migrate invalid player save JSON.');
+  }
+
+  return JSON.stringify(
+    normalizePlayerGameplaySave(
+      ctx,
+      parsedSave,
+      save.saveJson,
+      save.identity,
+      { preserveSavedAt: true },
+    ),
+  );
 }
 
 function toAdminPlayerGameplaySaveResult(save: PlayerGameplaySaveRowValue) {
@@ -2877,6 +3002,16 @@ function syncPlayerLevelFromGameplaySave(
 function normalizeSaveTimestamp(ctx: IdleWizardReducerCtx): number {
   const nowMs = Number(ctx.timestamp.microsSinceUnixEpoch / 1000n);
   return nowMs;
+}
+
+function normalizeSaveExistingTimestamp(value: unknown, ctx: IdleWizardReducerCtx): number {
+  const timestamp = Math.floor(Number(value));
+
+  if (Number.isFinite(timestamp) && timestamp >= 0) {
+    return timestamp;
+  }
+
+  return normalizeSaveTimestamp(ctx);
 }
 
 function normalizeSaveResource(value: unknown) {
@@ -3743,6 +3878,20 @@ function getParsedGameConfig(
   }
 }
 
+function getMaintenanceConfig(ctx: IdleWizardReducerCtx) {
+  const config = getParsedGameConfig(
+    ctx,
+    'maintenance',
+    DEFAULT_MAINTENANCE_CONFIG_JSON,
+  );
+  const record = isRecord(config) ? config : {};
+
+  return {
+    mode: normalizeMaintenanceMode(record.mode),
+    message: normalizeMaintenanceMessage(record.message),
+  };
+}
+
 type TradeAllianceWeeklyQuestConfig = {
   id: string;
   label: string;
@@ -4338,12 +4487,23 @@ function isActivePlayerSession(ctx: IdleWizardReducerCtx): boolean {
   return !session || session.activeConnectionId.isEqual(connectionId);
 }
 
-function assertActivePlayerSession(ctx: IdleWizardReducerCtx) {
-  if (isActivePlayerSession(ctx)) {
+function assertActivePlayerSession(
+  ctx: IdleWizardReducerCtx,
+  { allowMaintenanceDrainSave = false } = {},
+) {
+  if (!isActivePlayerSession(ctx)) {
+    throw new Error('Account is open on another device.');
+  }
+
+  const maintenance = getMaintenanceConfig(ctx);
+  if (
+    maintenance.mode === MAINTENANCE_MODE_OFF ||
+    (allowMaintenanceDrainSave && maintenance.mode === MAINTENANCE_MODE_DRAIN)
+  ) {
     return;
   }
 
-  throw new Error('Account is open on another device.');
+  throw new Error('Server maintenance is active.');
 }
 
 function assertClientSaveDoesNotDowngradeProgress(
@@ -4506,6 +4666,11 @@ function validateGameConfigValue(configKey: string, value: unknown) {
 
   if (configKey === 'potionRecipes') {
     validatePotionRecipesGameConfig(value);
+    return;
+  }
+
+  if (configKey === 'maintenance') {
+    validateMaintenanceGameConfig(value);
     return;
   }
 
@@ -4979,6 +5144,15 @@ function validatePotionRecipesGameConfig(value: unknown) {
   }
 }
 
+function validateMaintenanceGameConfig(value: unknown) {
+  if (!isRecord(value)) {
+    throw new Error('Invalid maintenance config.');
+  }
+
+  normalizeMaintenanceMode(value.mode);
+  normalizeMaintenanceMessage(value.message);
+}
+
 function validateCostList(value: unknown, minLength: number, maxLength: number) {
   if (!Array.isArray(value) || value.length < minLength || value.length > maxLength) {
     throw new Error('Invalid cost list.');
@@ -5133,6 +5307,115 @@ function getLeaderboardPeriodValues(
       ? toBigInt(entry.monthlyIncome)
       : seedIncome ?? 0n,
   };
+}
+
+function getLeaderboardSummaryRows(ctx: { sender: Identity; db: any }) {
+  const entries = Array.from<any>(ctx.db.leaderboard.iter()).map((entry: any) => {
+    const totalIncome = toBigInt(entry.totalIncome);
+
+    return {
+      ...entry,
+      totalIncome,
+      dailyIncome: toBigInt(entry.dailyIncome),
+      weeklyIncome: toBigInt(entry.weeklyIncome),
+      monthlyIncome: toBigInt(entry.monthlyIncome),
+    };
+  });
+  const allTimeRanked = getRankedLeaderboardEntries(entries, 'totalIncome');
+  const dailyRanked = getRankedLeaderboardEntries(entries, 'dailyIncome');
+  const weeklyRanked = getRankedLeaderboardEntries(entries, 'weeklyIncome');
+  const monthlyRanked = getRankedLeaderboardEntries(entries, 'monthlyIncome');
+  const ranksByIdentity = new Map<string, {
+    dailyRank: number;
+    weeklyRank: number;
+    monthlyRank: number;
+    allTimeRank: number;
+  }>();
+  const visibleByIdentity = new Map<string, (typeof entries)[number]>();
+  const addVisible = (entry: (typeof entries)[number]) => {
+    visibleByIdentity.set(getIdentityHex(entry.identity), entry);
+  };
+  const addRanks = (ranked: typeof allTimeRanked, rankKey: keyof {
+    dailyRank: number;
+    weeklyRank: number;
+    monthlyRank: number;
+    allTimeRank: number;
+  }) => {
+    ranked.forEach((entry, index) => {
+      const identityKey = getIdentityHex(entry.identity);
+      const ranks = ranksByIdentity.get(identityKey) ?? {
+        dailyRank: 0,
+        weeklyRank: 0,
+        monthlyRank: 0,
+        allTimeRank: 0,
+      };
+      ranks[rankKey] = index + 1;
+      ranksByIdentity.set(identityKey, ranks);
+    });
+  };
+
+  addRanks(dailyRanked, 'dailyRank');
+  addRanks(weeklyRanked, 'weeklyRank');
+  addRanks(monthlyRanked, 'monthlyRank');
+  addRanks(allTimeRanked, 'allTimeRank');
+
+  for (const ranked of [dailyRanked, weeklyRanked, monthlyRanked, allTimeRanked]) {
+    ranked.slice(0, 10).forEach(addVisible);
+  }
+
+  const ownEntry = ctx.db.leaderboard.identity.find(ctx.sender) as any;
+  if (ownEntry) {
+    const totalIncome = toBigInt(ownEntry.totalIncome);
+    addVisible({
+      ...ownEntry,
+      totalIncome,
+      dailyIncome: toBigInt(ownEntry.dailyIncome),
+      weeklyIncome: toBigInt(ownEntry.weeklyIncome),
+      monthlyIncome: toBigInt(ownEntry.monthlyIncome),
+    });
+  }
+
+  return Array.from(visibleByIdentity.values()).map((entry) => {
+    const ranks = ranksByIdentity.get(getIdentityHex(entry.identity)) ?? {
+      dailyRank: 0,
+      weeklyRank: 0,
+      monthlyRank: 0,
+      allTimeRank: 0,
+    };
+
+    return {
+      identity: entry.identity,
+      username: entry.username,
+      totalIncome: toBigInt(entry.totalIncome),
+      income: toBigInt(entry.totalIncome),
+      dailyIncome: toBigInt(entry.dailyIncome),
+      weeklyIncome: toBigInt(entry.weeklyIncome),
+      monthlyIncome: toBigInt(entry.monthlyIncome),
+      updatedAt: new Timestamp(entry.updatedAt.microsSinceUnixEpoch),
+      playerLevel: normalizePlayerLevel(entry.playerLevel),
+      ...ranks,
+    };
+  });
+}
+
+function getRankedLeaderboardEntries<T extends { identity: Identity }>(
+  entries: T[],
+  key: keyof T,
+) {
+  return [...entries].sort((left, right) => {
+    const leftValue = toBigInt(left[key] as bigint | number);
+    const rightValue = toBigInt(right[key] as bigint | number);
+
+    if (leftValue < rightValue) {
+      return 1;
+    }
+
+    if (leftValue > rightValue) {
+      return -1;
+    }
+
+    return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+  });
 }
 
 function refreshLeaderboardPeriods(
@@ -6181,6 +6464,14 @@ function assertNpcMarketAdmin(ctx: IdleWizardReducerCtx) {
   assertGameConfigAdmin(ctx);
 }
 
+function assertMaintenanceLocked(ctx: IdleWizardReducerCtx) {
+  if (getMaintenanceConfig(ctx).mode === MAINTENANCE_MODE_LOCKED) {
+    return;
+  }
+
+  throw new Error('Maintenance must be locked.');
+}
+
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   upsertPlayerSession(ctx);
   sanitizeSharedPlayerRows(ctx);
@@ -6430,7 +6721,7 @@ export const set_admin_player_data = spacetimedb.reducer(
 export const set_player_gameplay_save = spacetimedb.reducer(
   { saveJson: t.string() },
   (ctx, { saveJson }) => {
-    assertActivePlayerSession(ctx);
+    assertActivePlayerSession(ctx, { allowMaintenanceDrainSave: true });
 
     const player = ensurePlayer(ctx);
 
@@ -8070,6 +8361,72 @@ export const upsert_game_config = spacetimedb.reducer(
     }
 
     ctx.db.gameConfig.insert(nextConfig);
+  },
+);
+
+export const set_maintenance_mode = spacetimedb.reducer(
+  {
+    mode: t.string(),
+    message: t.string(),
+  },
+  (ctx, { mode, message }) => {
+    assertGameConfigAdmin(ctx);
+
+    const safeConfigJson = validateGameConfigJson(
+      'maintenance',
+      toGameConfigJson({
+        mode: normalizeMaintenanceMode(mode),
+        message: normalizeMaintenanceMessage(message),
+      }),
+    );
+    const existingConfig = ctx.db.gameConfig.configKey.find('maintenance');
+    const nextConfig = {
+      configKey: 'maintenance',
+      configJson: safeConfigJson,
+      updatedAt: ctx.timestamp,
+    };
+
+    if (existingConfig) {
+      ctx.db.gameConfig.configKey.update({
+        ...existingConfig,
+        ...nextConfig,
+      });
+      return;
+    }
+
+    ctx.db.gameConfig.insert(nextConfig);
+  },
+);
+
+export const migrate_player_gameplay_saves = spacetimedb.reducer(
+  { migrationKey: t.string() },
+  (ctx, { migrationKey }) => {
+    assertGameConfigAdmin(ctx);
+    assertMaintenanceLocked(ctx);
+
+    const stateKey = `player-save-migration:${normalizeMaintenanceKey(migrationKey)}`;
+    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+      return;
+    }
+
+    for (const save of Array.from(ctx.db.playerGameplaySave.iter())) {
+      const nextSaveJson = migratePlayerGameplaySaveJson(ctx, save);
+
+      if (nextSaveJson === save.saveJson) {
+        continue;
+      }
+
+      ctx.db.playerGameplaySave.identity.update({
+        ...save,
+        saveJson: nextSaveJson,
+        updatedAt: ctx.timestamp,
+      });
+    }
+
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
   },
 );
 
