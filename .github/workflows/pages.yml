@@ -38,7 +38,6 @@ jobs:
         env:
           VITE_SPACETIME_URI: https://maincloud.spacetimedb.com
           VITE_SPACETIME_DATABASE: idle-wizard
-          VITE_SPACETIME_AUTH_CLIENT_ID: ${{ vars.SPACETIME_AUTH_CLIENT_ID }}
         run: npm run build -- --base=/idle-wizard/
 
       - name: Upload artifact

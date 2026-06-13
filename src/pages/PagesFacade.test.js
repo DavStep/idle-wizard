@@ -2974,7 +2974,7 @@ describe('PagesFacade', () => {
       'login unavailable',
     );
     expect(stage.querySelector('.room-top-panel__auth-button')?.textContent).toBe(
-      'link account',
+      'connect account',
     );
     expect(stage.querySelector('.room-top-panel__auth-button')?.disabled).toBe(true);
     expect(
@@ -3386,7 +3386,7 @@ describe('PagesFacade', () => {
     expect(comicButton.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('shows optional google login in settings when auth is configured', async () => {
+  it('shows optional google account connect in settings when auth is configured', async () => {
     const stage = document.createElement('section');
     const authFacade = createAuthFacadeFake();
     const pagesFacade = new PagesFacade({
@@ -3408,7 +3408,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
       'not connected',
     );
-    expect(authButton.textContent).toBe('link account');
+    expect(authButton.textContent).toBe('connect account');
 
     authButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();

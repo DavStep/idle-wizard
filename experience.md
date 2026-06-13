@@ -41,10 +41,10 @@
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
-- SpacetimeAuth client URI fields are list values; the dashboard form submits JSON fields `redirectUris` and `postLogoutRedirectUris`, and typing without adding list members leaves auth with `invalid_redirect_uri`.
-- Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` SpacetimeAuth redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail SpacetimeAuth validation.
-- Native Android builds should keep SpacetimeAuth/OIDC disabled by default; entering the game should use the normal anonymous SpacetimeDB session token unless mobile account linking is explicitly requested.
-- When native OIDC is disabled, hide the account-linking settings row instead of showing `login unavailable`; that label looks like a broken required login.
+- Account linking should use Google OIDC directly, not SpacetimeAuth, so the player sees only the Google account picker/consent before returning to the game.
+- Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` Google redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail provider validation.
+- Android Google account linking should open through Capacitor Browser/Chrome Custom Tab, not the game WebView, so Google shows the normal account picker.
+- SpacetimeDB computes OIDC identities from `iss` + `sub`, so a direct Google ID token creates a stable account without a SpacetimeAuth hop.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
@@ -204,7 +204,7 @@
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Clicking the top-panel username opens settings; username editing and visual theme choices live there.
 - Settings use bottom tabs outside the popup border: `account`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
-- Settings account controls should stay visible: label the tab `account`, and keep `link account` visible disabled with `login unavailable` when OIDC config is missing.
+- Settings account controls should stay visible: label the tab `account`, and keep `connect account` visible disabled with `login unavailable` when OIDC config is missing.
 - Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
 - Level milestone dialogs use the selected level as the title, omit current/open/max filler, show gained `+N` rows above a divider, then total limits with right-aligned numbers.
 - Level milestone previous/next navigation uses bottom tabs outside the bordered dialog, not inline pager text.
@@ -297,7 +297,7 @@
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.
-- Optional Google login is controlled by `VITE_SPACETIME_AUTH_CLIENT_ID`; GitHub Pages reads it from the `SPACETIME_AUTH_CLIENT_ID` Actions variable.
+- Optional Google login is controlled by `VITE_GOOGLE_AUTH_CLIENT_ID`; the Google OAuth client ID is public config and can live in `.env.production`.
 - OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 

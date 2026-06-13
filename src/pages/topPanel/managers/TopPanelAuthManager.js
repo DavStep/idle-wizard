@@ -61,10 +61,10 @@ export class TopPanelAuthManager {
 
     section.hidden = false;
     button.disabled = !oidc.enabled;
-    button.textContent = this.authenticated ? 'unlink account' : 'link account';
+    button.textContent = this.authenticated ? 'disconnect account' : 'connect account';
     button.setAttribute(
       'aria-label',
-      this.authenticated ? 'unlink google account' : 'link google account',
+      this.authenticated ? 'disconnect google account' : 'connect google account',
     );
 
     const statusText = this.getStatusText(oidc);

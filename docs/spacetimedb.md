@@ -47,36 +47,29 @@ The GitHub Pages workflow already sets those values before `npm run build -- --b
 
 ## Google Login
 
-Google login uses SpacetimeAuth as the OIDC provider. Keep the Google client secret only in the SpacetimeAuth dashboard; never commit it.
+Google login uses Google as the OIDC provider directly. Do not route players
+through SpacetimeAuth for account linking, because the player-facing flow should
+be `connect account` -> Google account picker -> return to game.
 
-Configure the SpacetimeAuth client with these redirect URIs and post logout redirect URIs:
+Configure Google OAuth with these authorized redirect URIs:
 
 ```txt
 https://davstep.github.io/idle-wizard/
 http://127.0.0.1:55173/
 ```
 
-Native Android builds keep SpacetimeAuth/OIDC disabled by default and enter the
-game through the normal SpacetimeDB anonymous session token. Keep
-`VITE_ENABLE_NATIVE_OIDC=false` unless mobile account linking is explicitly
-requested again. The native settings UI hides the account-linking row in this
-state so players do not see a dead `login unavailable` control.
+Native Android account linking uses `https://davstep.github.io/idle-wizard/` as
+the Google redirect URI, then the hosted page forwards OIDC callback params to
+the installed app with `com.idlewizard.game://auth/callback`. The native app
+opens Google through Capacitor Browser so players see the normal Chrome account
+picker instead of an embedded WebView login.
 
-If native account linking is re-enabled later, Android should use
-`https://davstep.github.io/idle-wizard/` as the SpacetimeAuth redirect URI, then
-the hosted page can forward OIDC callback params to the installed app with
-`com.idlewizard.game://auth/callback`.
-
-Configure Google OAuth with this authorized redirect URI:
+The Google OAuth client ID is public configuration, not a secret. Hosted and
+production builds read:
 
 ```txt
-https://auth.spacetimedb.com/interactions/federated/callback/google
-```
-
-After SpacetimeAuth gives a client ID, set it for hosted builds as the GitHub Actions repository variable `SPACETIME_AUTH_CLIENT_ID`. Local builds can set:
-
-```txt
-VITE_SPACETIME_AUTH_CLIENT_ID=<spacetimeauth-client-id>
+VITE_GOOGLE_AUTH_CLIENT_ID=<google-client-id>
+VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI=https://davstep.github.io/idle-wizard/
 ```
 
 ## Auth Flow
@@ -87,7 +80,9 @@ The client auth boundary is already split:
 - `AuthSessionManager`: decides whether the next connection should reuse a token or start anonymous.
 - `SpacetimeConnectionManager`: receives the generated `DbConnection` class later and applies the auth token to the builder.
 
-For production auth, pass an OIDC token from SpacetimeAuth or another OIDC provider through the auth session manager.
+For production auth, pass a Google OIDC identity token through the auth session
+manager. SpacetimeDB computes the account identity from the token issuer and
+subject.
 
 ## Current Schema
 

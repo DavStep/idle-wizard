@@ -17,7 +17,7 @@ function createMemoryStorage() {
 }
 
 describe('AuthOidcManager', () => {
-  it('stays disabled without a SpacetimeAuth client id', async () => {
+  it('stays disabled without a Google client id', async () => {
     const manager = new AuthOidcManager({
       clientId: '',
       windowRef: null,
@@ -57,9 +57,9 @@ describe('AuthOidcManager', () => {
         location: {
           origin: 'https://davstep.github.io',
           pathname: '/idle-wizard/',
-          search: '?code=abc&state=def',
-          hash: '',
-          href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
+          search: '',
+          hash: '#id_token=abc&state=def',
+          href: 'https://davstep.github.io/idle-wizard/#id_token=abc&state=def',
         },
       },
       createUserManager: (settings) => {
@@ -71,6 +71,9 @@ describe('AuthOidcManager', () => {
     await manager.prepare();
 
     expect(capturedSettings.redirect_uri).toBe('https://davstep.github.io/idle-wizard/');
+    expect(capturedSettings.authority).toBe('https://accounts.google.com');
+    expect(capturedSettings.response_type).toBe('id_token token');
+    expect(capturedSettings.prompt).toBe('select_account');
     expect(capturedSettings.stateStore).toBeDefined();
     await capturedSettings.stateStore.set('callback-state', 'saved');
     expect(storage.getItem('idle-wizard.oidc.state.callback-state')).toBe(
@@ -121,7 +124,7 @@ describe('AuthOidcManager', () => {
     expect(replaceState).toHaveBeenCalledWith({}, 'Idle Wizard', '/idle-wizard/');
   });
 
-  it('stays disabled on native builds by default', async () => {
+  it('can disable OIDC on native builds', async () => {
     const addListener = vi.fn(() => Promise.resolve({ remove: vi.fn() }));
     const getLaunchUrl = vi.fn(() =>
       Promise.resolve({
@@ -134,6 +137,7 @@ describe('AuthOidcManager', () => {
       capacitor: {
         getPlatform: () => 'android',
       },
+      nativeOidcEnabled: false,
       appPlugin: {
         addListener,
         getLaunchUrl,
@@ -146,7 +150,7 @@ describe('AuthOidcManager', () => {
         },
       },
       createUserManager: () => {
-        throw new Error('native OIDC should stay disabled');
+        throw new Error('native OIDC should be disabled');
       },
     });
 
@@ -160,13 +164,18 @@ describe('AuthOidcManager', () => {
     expect(getLaunchUrl).not.toHaveBeenCalled();
   });
 
-  it('uses the Android app callback URL when native OIDC is explicitly enabled', async () => {
+  it('uses the hosted redirect and handles the Android app callback on native builds', async () => {
     let capturedSettings = null;
+    let capturedRedirectNavigator = null;
     const user = {
       id_token: 'id-token',
       profile: {
         email: 'dav@example.com',
       },
+    };
+    const browserPlugin = {
+      open: vi.fn(() => Promise.resolve()),
+      close: vi.fn(() => Promise.resolve()),
     };
     const oidcClient = {
       signinCallback: vi.fn(() => Promise.resolve(user)),
@@ -175,7 +184,6 @@ describe('AuthOidcManager', () => {
     const manager = new AuthOidcManager({
       clientId: 'client-1',
       mobileRedirectUri: 'https://davstep.github.io/idle-wizard/',
-      nativeOidcEnabled: true,
       storage: createMemoryStorage(),
       capacitor: {
         getPlatform: () => 'android',
@@ -188,6 +196,7 @@ describe('AuthOidcManager', () => {
           }),
         ),
       },
+      browserPlugin,
       windowRef: {
         location: {
           origin: 'http://localhost',
@@ -195,8 +204,9 @@ describe('AuthOidcManager', () => {
           search: '',
         },
       },
-      createUserManager: (settings) => {
+      createUserManager: (settings, redirectNavigator) => {
         capturedSettings = settings;
+        capturedRedirectNavigator = redirectNavigator;
         return oidcClient;
       },
     });
@@ -209,6 +219,16 @@ describe('AuthOidcManager', () => {
     expect(oidcClient.signinCallback).toHaveBeenCalledWith(
       'com.idlewizard.game://auth/callback?code=abc&state=def',
     );
+    expect(browserPlugin.close).toHaveBeenCalledTimes(1);
+
+    const handle = await capturedRedirectNavigator.prepare();
+    void handle.navigate({ url: 'https://accounts.google.com/o/oauth2/v2/auth' });
+    await Promise.resolve();
+
+    expect(browserPlugin.open).toHaveBeenCalledWith({
+      url: 'https://accounts.google.com/o/oauth2/v2/auth',
+      presentationStyle: 'fullscreen',
+    });
     await expect(manager.getConnectionToken()).resolves.toBe('id-token');
   });
 

@@ -275,7 +275,7 @@ export class TopPanelViewManager {
     this.refs.authButton = document.createElement('button');
     this.refs.authButton.className = 'style-button room-top-panel__auth-button';
     this.refs.authButton.type = 'button';
-    this.refs.authButton.textContent = 'link account';
+    this.refs.authButton.textContent = 'connect account';
 
     this.refs.authSection.append(authLabel, this.refs.authStatus, this.refs.authButton);
 

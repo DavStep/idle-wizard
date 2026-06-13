@@ -1,37 +1,44 @@
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Browser as CapacitorBrowser } from '@capacitor/browser';
 
-const DEFAULT_AUTHORITY = 'https://auth.spacetimedb.com/oidc';
+const DEFAULT_AUTHORITY = 'https://accounts.google.com';
 const DEFAULT_SCOPE = 'openid profile email';
-const DEFAULT_MOBILE_REDIRECT_URI = 'com.idlewizard.game://auth/callback';
+const DEFAULT_RESPONSE_TYPE = 'id_token token';
+const DEFAULT_MOBILE_REDIRECT_URI = 'https://davstep.github.io/idle-wizard/';
 
 export class AuthOidcManager {
   constructor({
-    authority = import.meta.env.VITE_SPACETIME_AUTH_AUTHORITY ?? DEFAULT_AUTHORITY,
-    clientId = import.meta.env.VITE_SPACETIME_AUTH_CLIENT_ID,
-    redirectUri = import.meta.env.VITE_SPACETIME_AUTH_REDIRECT_URI,
-    postLogoutRedirectUri = import.meta.env.VITE_SPACETIME_AUTH_POST_LOGOUT_REDIRECT_URI,
-    mobileRedirectUri = import.meta.env.VITE_SPACETIME_AUTH_MOBILE_REDIRECT_URI ??
+    authority = import.meta.env.VITE_GOOGLE_AUTH_AUTHORITY ?? DEFAULT_AUTHORITY,
+    clientId = import.meta.env.VITE_GOOGLE_AUTH_CLIENT_ID,
+    redirectUri = import.meta.env.VITE_GOOGLE_AUTH_REDIRECT_URI,
+    postLogoutRedirectUri = import.meta.env.VITE_GOOGLE_AUTH_POST_LOGOUT_REDIRECT_URI,
+    mobileRedirectUri = import.meta.env.VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI ??
       DEFAULT_MOBILE_REDIRECT_URI,
-    nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC === 'true',
+    responseType = import.meta.env.VITE_GOOGLE_AUTH_RESPONSE_TYPE ?? DEFAULT_RESPONSE_TYPE,
+    nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC !== 'false',
     basePath = import.meta.env.BASE_URL ?? '/',
     storage = globalThis.localStorage,
     windowRef = globalThis.window,
     capacitor = globalThis.Capacitor,
     appPlugin = CapacitorApp,
-    createUserManager = (settings) => new UserManager(settings),
+    browserPlugin = CapacitorBrowser,
+    createUserManager = (settings, redirectNavigator) =>
+      new UserManager(settings, redirectNavigator),
   } = {}) {
     this.authority = authority;
     this.clientId = clientId;
     this.redirectUri = redirectUri;
     this.postLogoutRedirectUri = postLogoutRedirectUri;
     this.mobileRedirectUri = mobileRedirectUri;
+    this.responseType = responseType;
     this.nativeOidcEnabled = nativeOidcEnabled;
     this.basePath = basePath;
     this.storage = storage;
     this.windowRef = windowRef;
     this.capacitor = capacitor;
     this.appPlugin = appPlugin;
+    this.browserPlugin = browserPlugin;
     this.createUserManager = createUserManager;
     this.userManager = null;
     this.user = null;
@@ -164,7 +171,10 @@ export class AuthOidcManager {
     }
 
     const launchUrl = await this.appPlugin.getLaunchUrl();
-    await this.handleCallbackHref(manager, launchUrl?.url);
+    const handled = await this.handleCallbackHref(manager, launchUrl?.url);
+    if (handled) {
+      await this.closeNativeBrowser();
+    }
   }
 
   watchNativeCallbackUrls() {
@@ -184,6 +194,9 @@ export class AuthOidcManager {
   async handleNativeCallbackUrl(url) {
     const manager = this.getUserManager();
     const handled = await this.handleCallbackHref(manager, url);
+    if (handled) {
+      await this.closeNativeBrowser();
+    }
     if (handled && !this.error) {
       this.user = this.user ?? (await manager.getUser());
     }
@@ -196,7 +209,13 @@ export class AuthOidcManager {
     }
 
     const params = this.getCallbackParams(href);
-    if (!params?.has('state') || (!params.has('code') && !params.has('error'))) {
+    if (
+      !params?.has('state') ||
+      (!params.has('code') &&
+        !params.has('id_token') &&
+        !params.has('access_token') &&
+        !params.has('error'))
+    ) {
       return false;
     }
 
@@ -211,7 +230,13 @@ export class AuthOidcManager {
 
   getCallbackParams(href) {
     try {
-      return new URL(href).searchParams;
+      const url = new URL(href);
+      const params = new URLSearchParams(url.search);
+      const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+      for (const [key, value] of hashParams) {
+        params.set(key, value);
+      }
+      return params;
     } catch {
       return null;
     }
@@ -226,7 +251,7 @@ export class AuthOidcManager {
     history.replaceState(
       {},
       this.windowRef.document?.title ?? '',
-      location.pathname + location.hash,
+      location.pathname,
     );
   }
 
@@ -243,9 +268,10 @@ export class AuthOidcManager {
       client_id: this.clientId,
       redirect_uri: redirectUri,
       post_logout_redirect_uri: postLogoutRedirectUri,
-      response_type: 'code',
+      response_type: this.responseType,
       scope: DEFAULT_SCOPE,
-      automaticSilentRenew: true,
+      prompt: 'select_account',
+      automaticSilentRenew: false,
       redirectMethod: 'replace',
       stateStore: new WebStorageStateStore({
         prefix: 'idle-wizard.oidc.state.',
@@ -255,9 +281,31 @@ export class AuthOidcManager {
         prefix: 'idle-wizard.oidc.',
         store: this.storage,
       }),
-    });
+    }, this.getRedirectNavigator());
 
     return this.userManager;
+  }
+
+  getRedirectNavigator() {
+    if (!this.isNativePlatform() || !this.browserPlugin?.open) {
+      return undefined;
+    }
+
+    return new NativeBrowserRedirectNavigator({
+      browserPlugin: this.browserPlugin,
+    });
+  }
+
+  async closeNativeBrowser() {
+    if (!this.isNativePlatform() || !this.browserPlugin?.close) {
+      return;
+    }
+
+    try {
+      await this.browserPlugin.close();
+    } catch {
+      // The browser may already be closed after Android returns to the app.
+    }
   }
 
   getAppUrl() {
@@ -280,5 +328,30 @@ export class AuthOidcManager {
 
     const isNativePlatform = this.capacitor?.isNativePlatform;
     return typeof isNativePlatform === 'function' && isNativePlatform();
+  }
+}
+
+class NativeBrowserRedirectNavigator {
+  constructor({ browserPlugin }) {
+    this.browserPlugin = browserPlugin;
+  }
+
+  async prepare() {
+    return {
+      navigate: async ({ url }) => {
+        await this.browserPlugin.open({
+          url,
+          presentationStyle: 'fullscreen',
+        });
+        return new Promise(() => {});
+      },
+      close: () => {
+        void this.browserPlugin.close?.();
+      },
+    };
+  }
+
+  async callback() {
+    return undefined;
   }
 }

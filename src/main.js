@@ -5,7 +5,7 @@ import './styles/base.css';
 import { AppFacade } from './app/AppFacade.js';
 
 const mobileAuthCallbackUri =
-  import.meta.env.VITE_SPACETIME_AUTH_MOBILE_CALLBACK_URI ??
+  import.meta.env.VITE_GOOGLE_AUTH_MOBILE_CALLBACK_URI ??
   'com.idlewizard.game://auth/callback';
 
 function redirectMobileOidcCallbackToApp() {
@@ -15,7 +15,16 @@ function redirectMobileOidcCallbackToApp() {
 
   const { location, navigator } = globalThis;
   const params = new URLSearchParams(location.search);
-  const hasCallback = params.has('state') && (params.has('code') || params.has('error'));
+  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  for (const [key, value] of hashParams) {
+    params.set(key, value);
+  }
+  const hasCallback =
+    params.has('state') &&
+    (params.has('code') ||
+      params.has('id_token') ||
+      params.has('access_token') ||
+      params.has('error'));
   const isAndroidBrowser = /Android/i.test(navigator?.userAgent ?? '');
   if (!hasCallback || !isAndroidBrowser) {
     return false;
