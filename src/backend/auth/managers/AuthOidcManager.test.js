@@ -512,6 +512,62 @@ describe('AuthOidcManager', () => {
     await expect(reloadedManager.getConnectionToken()).resolves.toBe(idToken);
   });
 
+  it('uses native Google result fields when WebView token decoding fails', async () => {
+    const storage = createMemoryStorage();
+    const originalAtob = globalThis.atob;
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() =>
+        Promise.resolve({
+          idToken,
+          email: 'dav@example.com',
+          displayName: 'Dav',
+          uniqueId: 'google-sub',
+        }),
+      ),
+      consumePendingSignInResult: vi.fn(() => Promise.resolve({})),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    try {
+      globalThis.atob = () => {
+        throw new Error('decode failed');
+      };
+
+      await expect(manager.signIn()).resolves.toEqual({
+        ok: true,
+        reloadRequired: true,
+      });
+    } finally {
+      globalThis.atob = originalAtob;
+    }
+
+    expect(storage.getItem('idle-wizard.native-google.user')).toContain('google-sub');
+    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
+    expect(manager.getSnapshot()).toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+  });
+
   it('recovers native Google auth when Android returns after the WebView restarts', async () => {
     const storage = createMemoryStorage();
     const idToken = createFakeJwt({

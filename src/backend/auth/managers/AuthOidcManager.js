@@ -12,6 +12,7 @@ const DEFAULT_MOBILE_REDIRECT_URI = 'https://davstep.github.io/idle-wizard/?nati
 const WEB_GOOGLE_USER_STORAGE_KEY = 'idle-wizard.web-google.user';
 const NATIVE_GOOGLE_USER_STORAGE_KEY = 'idle-wizard.native-google.user';
 const ACTIVE_ACCOUNT_LINK_ATTEMPT_KEY = 'idle-wizard.account-link.active-attempt';
+const NATIVE_GOOGLE_TOKEN_FALLBACK_TTL_MS = 55 * 60 * 1000;
 const DEFAULT_SCRIPT_LOAD_TIMEOUT_MS = 10_000;
 const DEFAULT_WEB_PROMPT_TIMEOUT_MS = 90_000;
 
@@ -518,14 +519,15 @@ export class AuthOidcManager {
 
   createNativeUser(result = {}, { accountLinkAttemptId } = {}) {
     const token = result.idToken;
-    const profile = this.validateGoogleIdToken(token, {
+    const profile = this.validateNativeGoogleIdToken(token, {
       expectedNonce: result.nonce,
+      result,
     });
 
     return this.withAccountLinkAttempt(
       {
         id_token: token,
-        expires_at: this.getJwtExpiresAt(token),
+        expires_at: this.getJwtExpiresAt(token) ?? this.getNativeGoogleFallbackExpiresAt(),
         profile: {
           sub: profile.sub ?? result.uniqueId ?? '',
           email: profile.email ?? result.email ?? '',
@@ -537,6 +539,31 @@ export class AuthOidcManager {
       },
       accountLinkAttemptId,
     );
+  }
+
+  validateNativeGoogleIdToken(token, { expectedNonce, result } = {}) {
+    try {
+      return this.validateGoogleIdToken(token, { expectedNonce });
+    } catch (error) {
+      if (!this.canUseNativeGoogleResultFallback(error, token, result)) {
+        throw error;
+      }
+
+      return {};
+    }
+  }
+
+  canUseNativeGoogleResultFallback(error, token, result = {}) {
+    return (
+      error?.message === 'Google login returned an invalid identity token.' &&
+      typeof token === 'string' &&
+      token.split('.').length === 3 &&
+      Boolean(result.uniqueId)
+    );
+  }
+
+  getNativeGoogleFallbackExpiresAt() {
+    return Date.now() + NATIVE_GOOGLE_TOKEN_FALLBACK_TTL_MS;
   }
 
   createWebGoogleUser(response = {}, { accountLinkAttemptId } = {}) {
