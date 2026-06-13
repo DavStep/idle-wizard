@@ -249,6 +249,32 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the device save without prompting when a new Google account has no save', async () => {
+    const deviceSave = { tasks: { currentLevel: 4 } };
+    const accountLinkChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT)),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => deviceSave),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({ oidc: { authenticated: true } })),
+    };
+    const { lifecycle } = createLifecycle({ accountLinkChoiceManager, authFacade });
+
+    await lifecycle.handleGameplaySaveReady({ save: null });
+
+    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
+    expect(accountLinkChoiceManager.choose).not.toHaveBeenCalled();
+    expect(authFacade.clearPendingAccountLinkSave).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      deviceSave,
+      lifecycle.ecsFacade,
+    );
+    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+  });
+
   it('forgets the device save when selected after Google login', async () => {
     const deviceSave = { tasks: { currentLevel: 4 } };
     const accountSave = { tasks: { currentLevel: 2 } };

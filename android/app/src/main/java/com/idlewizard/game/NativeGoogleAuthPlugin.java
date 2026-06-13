@@ -1,5 +1,7 @@
 package com.idlewizard.game;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.CancellationSignal;
 
 import androidx.credentials.ClearCredentialStateRequest;
@@ -25,9 +27,13 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import org.json.JSONException;
 
 @CapacitorPlugin(name = "NativeGoogleAuth")
 public class NativeGoogleAuthPlugin extends Plugin {
+    private static final String AUTH_PREFS = "native_google_auth";
+    private static final String PENDING_SIGN_IN_RESULT_KEY = "pending_sign_in_result";
+
     private CredentialManager credentialManager;
     private final Executor executor = Executors.newSingleThreadExecutor();
 
@@ -77,6 +83,7 @@ public class NativeGoogleAuthPlugin extends Plugin {
 
     @PluginMethod
     public void signOut(PluginCall call) {
+        clearPendingSignInResult();
         credentialManager.clearCredentialStateAsync(
             new ClearCredentialStateRequest(),
             new CancellationSignal(),
@@ -93,6 +100,22 @@ public class NativeGoogleAuthPlugin extends Plugin {
                 }
             }
         );
+    }
+
+    @PluginMethod
+    public void consumePendingSignInResult(PluginCall call) {
+        String pendingJson = getAuthPreferences().getString(PENDING_SIGN_IN_RESULT_KEY, null);
+        clearPendingSignInResult();
+        if (pendingJson == null || pendingJson.trim().isEmpty()) {
+            call.resolve(new JSObject());
+            return;
+        }
+
+        try {
+            call.resolve(new JSObject(pendingJson));
+        } catch (JSONException exception) {
+            call.resolve(new JSObject());
+        }
     }
 
     private void resolveSignIn(PluginCall call, GetCredentialResponse result, String nonce) {
@@ -126,6 +149,7 @@ public class NativeGoogleAuthPlugin extends Plugin {
             if (googleCredential.getProfilePictureUri() != null) {
                 ret.put("profilePictureUri", googleCredential.getProfilePictureUri().toString());
             }
+            savePendingSignInResult(ret);
             getActivity().runOnUiThread(() -> call.resolve(ret));
         } catch (RuntimeException exception) {
             rejectOnUiThread(call, "Invalid Google ID token", "native_error", exception);
@@ -140,6 +164,24 @@ public class NativeGoogleAuthPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("cancelled", true);
         getActivity().runOnUiThread(() -> call.resolve(ret));
+    }
+
+    private void savePendingSignInResult(JSObject result) {
+        getAuthPreferences()
+            .edit()
+            .putString(PENDING_SIGN_IN_RESULT_KEY, result.toString())
+            .apply();
+    }
+
+    private void clearPendingSignInResult() {
+        getAuthPreferences()
+            .edit()
+            .remove(PENDING_SIGN_IN_RESULT_KEY)
+            .apply();
+    }
+
+    private SharedPreferences getAuthPreferences() {
+        return getContext().getSharedPreferences(AUTH_PREFS, Context.MODE_PRIVATE);
     }
 
     private String createNonce() {

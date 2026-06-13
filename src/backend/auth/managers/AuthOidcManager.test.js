@@ -16,6 +16,20 @@ function createMemoryStorage() {
   };
 }
 
+function createFakeJwt({ expiresAtSeconds } = {}) {
+  const encode = (value) =>
+    globalThis
+      .btoa(JSON.stringify(value))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/u, '');
+  return [
+    encode({ alg: 'none', typ: 'JWT' }),
+    encode({ exp: expiresAtSeconds }),
+    'signature',
+  ].join('.');
+}
+
 describe('AuthOidcManager', () => {
   it('stays disabled without a Google client id', async () => {
     const manager = new AuthOidcManager({
@@ -234,19 +248,24 @@ describe('AuthOidcManager', () => {
   });
 
   it('uses native Google auth on native builds', async () => {
+    const storage = createMemoryStorage();
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
     const nativeGoogleAuthPlugin = {
       signIn: vi.fn(() =>
         Promise.resolve({
-          idToken: 'native-id-token',
+          idToken,
           email: 'dav@example.com',
           displayName: 'Dav',
           uniqueId: 'google-sub',
         }),
       ),
+      consumePendingSignInResult: vi.fn(() => Promise.resolve({})),
     };
     const manager = new AuthOidcManager({
       clientId: 'client-1',
-      storage: createMemoryStorage(),
+      storage,
       capacitor: {
         getPlatform: () => 'android',
       },
@@ -267,12 +286,16 @@ describe('AuthOidcManager', () => {
       enabled: true,
       authenticated: false,
     });
-    await expect(manager.signIn()).resolves.toEqual({ ok: true });
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: true,
+      reloadRequired: true,
+    });
 
     expect(nativeGoogleAuthPlugin.signIn).toHaveBeenCalledWith({
       serverClientId: 'client-1',
     });
-    await expect(manager.getConnectionToken()).resolves.toBe('native-id-token');
+    expect(nativeGoogleAuthPlugin.consumePendingSignInResult).toHaveBeenCalledTimes(2);
+    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
     expect(manager.getSnapshot()).toMatchObject({
       enabled: true,
       authenticated: true,
@@ -280,6 +303,131 @@ describe('AuthOidcManager', () => {
       email: 'dav@example.com',
       disabledReason: null,
     });
+
+    const reloadedManager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(reloadedManager.prepare()).resolves.toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+    await expect(reloadedManager.getConnectionToken()).resolves.toBe(idToken);
+  });
+
+  it('recovers native Google auth when Android returns after the WebView restarts', async () => {
+    const storage = createMemoryStorage();
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(),
+      consumePendingSignInResult: vi.fn(() =>
+        Promise.resolve({
+          idToken,
+          email: 'dav@example.com',
+          displayName: 'Dav',
+          uniqueId: 'google-sub',
+        }),
+      ),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(manager.prepare()).resolves.toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+
+    expect(nativeGoogleAuthPlugin.signIn).not.toHaveBeenCalled();
+    expect(nativeGoogleAuthPlugin.consumePendingSignInResult).toHaveBeenCalledTimes(1);
+    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
+    expect(storage.getItem('idle-wizard.native-google.user')).toContain(idToken);
+  });
+
+  it('keeps native Google profile after the stored ID token expires', async () => {
+    const storage = createMemoryStorage();
+    const expiredToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) - 3600,
+    });
+    storage.setItem(
+      'idle-wizard.native-google.user',
+      JSON.stringify({
+        id_token: expiredToken,
+        expires_at: Date.now() - 3600_000,
+        profile: {
+          email: 'dav@example.com',
+          name: 'Dav',
+        },
+      }),
+    );
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin: {
+        signIn: vi.fn(),
+      },
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await manager.prepare();
+
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+    await expect(manager.getConnectionToken()).resolves.toBeUndefined();
+    expect(storage.getItem('idle-wizard.native-google.user')).toBe(
+      JSON.stringify({
+        profile: {
+          sub: '',
+          email: 'dav@example.com',
+          name: 'Dav',
+          given_name: '',
+          family_name: '',
+          picture: '',
+        },
+      }),
+    );
   });
 
   it('reports native Google auth failures', async () => {
@@ -376,6 +524,7 @@ describe('AuthOidcManager', () => {
   });
 
   it('clears native Google auth state on sign out', async () => {
+    const storage = createMemoryStorage();
     const nativeGoogleAuthPlugin = {
       signIn: vi.fn(() =>
         Promise.resolve({
@@ -387,7 +536,7 @@ describe('AuthOidcManager', () => {
     };
     const manager = new AuthOidcManager({
       clientId: 'client-1',
-      storage: createMemoryStorage(),
+      storage,
       capacitor: {
         getPlatform: () => 'android',
       },
@@ -402,9 +551,11 @@ describe('AuthOidcManager', () => {
     });
 
     await manager.signIn();
+    expect(storage.getItem('idle-wizard.native-google.user')).not.toBeNull();
     await expect(manager.signOut()).resolves.toEqual({ ok: true });
 
     expect(nativeGoogleAuthPlugin.signOut).toHaveBeenCalledTimes(1);
+    expect(storage.getItem('idle-wizard.native-google.user')).toBeNull();
     await expect(manager.getConnectionToken()).resolves.toBeUndefined();
     expect(manager.getSnapshot()).toMatchObject({
       authenticated: false,

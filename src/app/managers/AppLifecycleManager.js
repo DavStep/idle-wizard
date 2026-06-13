@@ -123,6 +123,13 @@ export class AppLifecycleManager {
 
     if (accountLinkSave && this.isAuthenticatedAccount()) {
       this.onlineGateManager.hide();
+
+      if (!save) {
+        this.clearPendingAccountLinkSave();
+        this.loadGameplaySave(accountLinkSave, { persistLoaded: true });
+        return;
+      }
+
       const choice = await this.accountLinkChoiceManager.choose({
         deviceSave: accountLinkSave,
         accountSave: save,

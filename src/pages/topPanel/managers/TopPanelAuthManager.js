@@ -38,9 +38,12 @@ export class TopPanelAuthManager {
       return;
     }
 
-    await this.authFacade.signInWithGoogle({
+    const result = await this.authFacade.signInWithGoogle({
       pendingGameplaySave: this.gameplayFacade?.createPersistenceSave?.(),
     });
+    if (result?.ok && result.reloadRequired) {
+      this.reload();
+    }
   }
 
   render(snapshot) {

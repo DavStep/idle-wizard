@@ -7,6 +7,8 @@ const DEFAULT_AUTHORITY = 'https://accounts.google.com';
 const DEFAULT_SCOPE = 'openid profile email';
 const DEFAULT_RESPONSE_TYPE = 'code';
 const DEFAULT_MOBILE_REDIRECT_URI = 'https://davstep.github.io/idle-wizard/?native_auth=1';
+const NATIVE_GOOGLE_USER_STORAGE_KEY = 'idle-wizard.native-google.user';
+const TOKEN_EXPIRY_SKEW_MS = 60 * 1000;
 
 export class AuthOidcManager {
   constructor({
@@ -68,6 +70,7 @@ export class AuthOidcManager {
     }
 
     if (this.shouldUseNativeGoogleAuth()) {
+      this.user = (await this.consumePendingNativeUser()) ?? this.loadNativeUser();
       this.publish();
       return this.getSnapshot();
     }
@@ -89,7 +92,7 @@ export class AuthOidcManager {
     }
 
     if (this.shouldUseNativeGoogleAuth()) {
-      return this.user?.id_token;
+      return this.getNativeConnectionToken();
     }
 
     this.user = this.user ?? (await this.getUserManager().getUser());
@@ -129,6 +132,7 @@ export class AuthOidcManager {
       this.user = null;
       this.error = null;
       this.cancelled = false;
+      this.clearNativeUser();
       this.publish();
       return { ok: true };
     }
@@ -206,10 +210,12 @@ export class AuthOidcManager {
         return { ok: false, reason: 'native_cancelled' };
       }
       this.user = this.createNativeUser(result);
+      this.saveNativeUser(this.user);
+      await this.clearPendingNativeUser();
       this.error = null;
       this.cancelled = false;
       this.publish();
-      return { ok: true };
+      return { ok: true, reloadRequired: true };
     } catch (error) {
       if (this.isNativeGoogleAuthCancellation(error)) {
         this.error = null;
@@ -227,6 +233,7 @@ export class AuthOidcManager {
   createNativeUser(result = {}) {
     return {
       id_token: result.idToken,
+      expires_at: this.getJwtExpiresAt(result.idToken),
       profile: {
         sub: result.uniqueId ?? '',
         email: result.email ?? '',
@@ -236,6 +243,147 @@ export class AuthOidcManager {
         picture: result.profilePictureUri ?? '',
       },
     };
+  }
+
+  getNativeConnectionToken() {
+    if (!this.user?.id_token) {
+      return undefined;
+    }
+
+    if (this.isTokenExpired(this.user.expires_at)) {
+      this.user = this.stripNativeToken(this.user);
+      this.saveNativeUser(this.user);
+      return undefined;
+    }
+
+    return this.user.id_token;
+  }
+
+  async consumePendingNativeUser() {
+    if (!this.nativeGoogleAuthPlugin?.consumePendingSignInResult) {
+      return null;
+    }
+
+    try {
+      const result = await this.nativeGoogleAuthPlugin.consumePendingSignInResult();
+      if (!result?.idToken) {
+        return null;
+      }
+
+      const user = this.createNativeUser(result);
+      this.saveNativeUser(user);
+      this.error = null;
+      this.cancelled = false;
+      return user;
+    } catch {
+      return null;
+    }
+  }
+
+  async clearPendingNativeUser() {
+    try {
+      await this.nativeGoogleAuthPlugin?.consumePendingSignInResult?.();
+    } catch {
+      // The local copy is already saved; a stale native handoff can be overwritten later.
+    }
+  }
+
+  loadNativeUser() {
+    const raw = this.storage?.getItem?.(NATIVE_GOOGLE_USER_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed?.profile || typeof parsed.profile !== 'object') {
+        return null;
+      }
+
+      const user = {
+        id_token: parsed.id_token,
+        expires_at: parsed.expires_at,
+        profile: {
+          sub: parsed.profile.sub ?? '',
+          email: parsed.profile.email ?? '',
+          name: parsed.profile.name ?? '',
+          given_name: parsed.profile.given_name ?? '',
+          family_name: parsed.profile.family_name ?? '',
+          picture: parsed.profile.picture ?? '',
+        },
+      };
+
+      if (this.isTokenExpired(user.expires_at)) {
+        const userWithoutToken = this.stripNativeToken(user);
+        this.saveNativeUser(userWithoutToken);
+        return userWithoutToken;
+      }
+
+      return user;
+    } catch {
+      this.clearNativeUser();
+      return null;
+    }
+  }
+
+  saveNativeUser(user) {
+    if (!user?.profile || !this.storage?.setItem) {
+      return;
+    }
+
+    const persisted = {
+      profile: user.profile,
+    };
+
+    if (user.id_token && !this.isTokenExpired(user.expires_at)) {
+      persisted.id_token = user.id_token;
+      persisted.expires_at = user.expires_at;
+    }
+
+    this.storage.setItem(NATIVE_GOOGLE_USER_STORAGE_KEY, JSON.stringify(persisted));
+  }
+
+  clearNativeUser() {
+    this.storage?.removeItem?.(NATIVE_GOOGLE_USER_STORAGE_KEY);
+  }
+
+  stripNativeToken(user) {
+    return {
+      profile: user.profile,
+    };
+  }
+
+  getJwtExpiresAt(token) {
+    if (!token || typeof token !== 'string') {
+      return null;
+    }
+
+    const payload = token.split('.')[1];
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      const decoded = this.decodeBase64Url(payload);
+      const parsed = JSON.parse(decoded);
+      const expiresAtSeconds = Number(parsed.exp);
+      return Number.isFinite(expiresAtSeconds) ? expiresAtSeconds * 1000 : null;
+    } catch {
+      return null;
+    }
+  }
+
+  decodeBase64Url(value) {
+    const base64 = value
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(value.length / 4) * 4, '=');
+    const decoder = this.windowRef?.atob ?? globalThis.atob;
+    return decoder(base64);
+  }
+
+  isTokenExpired(expiresAt) {
+    return Number.isFinite(expiresAt) && Date.now() + TOKEN_EXPIRY_SKEW_MS >= expiresAt;
   }
 
   shouldUseNativeGoogleAuth() {
