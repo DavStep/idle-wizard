@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { TextEncoder } from 'node:util';
 
 import { AuthOidcManager } from './AuthOidcManager.js';
 
@@ -16,22 +17,36 @@ function createMemoryStorage() {
   };
 }
 
-function createFakeJwt({ expiresAtSeconds, nonce, audience = 'client-1' } = {}) {
-  const encode = (value) =>
-    globalThis
-      .btoa(JSON.stringify(value))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/u, '');
+function encodeBase64Url(value) {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return globalThis
+    .btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/u, '');
+}
+
+function createFakeJwt({
+  expiresAtSeconds,
+  nonce,
+  audience = 'client-1',
+  profile = {},
+} = {}) {
   return [
-    encode({ alg: 'none', typ: 'JWT' }),
-    encode({
+    encodeBase64Url({ alg: 'none', typ: 'JWT' }),
+    encodeBase64Url({
       exp: expiresAtSeconds,
       sub: 'google-sub',
       aud: audience,
       email: 'dav@example.com',
       name: 'Dav',
       nonce,
+      ...profile,
     }),
     'signature',
   ].join('.');
@@ -241,6 +256,57 @@ describe('AuthOidcManager', () => {
     await expect(manager.signOut()).resolves.toEqual({ ok: true });
     expect(google.accounts.id.disableAutoSelect).toHaveBeenCalledTimes(1);
     expect(storage.getItem('idle-wizard.web-google.user')).toBeNull();
+  });
+
+  it('binds browser atob while decoding web Google ID tokens', async () => {
+    const storage = createMemoryStorage();
+    const originalAtob = globalThis.atob;
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
+    let capturedConfig = null;
+    const google = {
+      accounts: {
+        id: {
+          initialize: vi.fn((config) => {
+            capturedConfig = config;
+          }),
+          prompt: vi.fn(() => {
+            capturedConfig.callback({
+              credential: idToken,
+            });
+          }),
+        },
+      },
+    };
+    const windowRef = {
+      atob(value) {
+        if (this !== windowRef) {
+          throw new Error('Illegal invocation');
+        }
+
+        return originalAtob.call(globalThis, value);
+      },
+      document: {},
+      google,
+      setTimeout: vi.fn(() => 1),
+      clearTimeout: vi.fn(),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      windowRef,
+    });
+
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: true,
+      reloadRequired: true,
+    });
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
   });
 
   it('reports web Google Identity prompt failures', async () => {

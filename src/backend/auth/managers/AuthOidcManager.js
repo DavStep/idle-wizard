@@ -56,15 +56,16 @@ export class AuthOidcManager {
     this.basePath = basePath;
     this.storage = storage;
     this.windowRef = windowRef;
-    this.googleTokenManager = new AuthGoogleTokenManager({
-      clientId: this.clientId,
-      atob: this.windowRef?.atob ?? globalThis.atob,
-    });
     this.capacitor = capacitor;
     this.appPlugin = appPlugin;
     this.browserPlugin = browserPlugin;
     this.nativeGoogleAuthPlugin = nativeGoogleAuthPlugin;
     this.createUserManager = createUserManager;
+    const atobOwner = this.windowRef?.atob ? this.windowRef : globalThis;
+    this.googleTokenManager = new AuthGoogleTokenManager({
+      clientId: this.clientId,
+      atob: (value) => atobOwner.atob(value),
+    });
     this.userManager = null;
     this.user = null;
     this.error = null;

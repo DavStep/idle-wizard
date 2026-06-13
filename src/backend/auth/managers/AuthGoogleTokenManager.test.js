@@ -1,22 +1,36 @@
 import { describe, expect, it } from 'vitest';
+import { TextEncoder } from 'node:util';
 
 import { AuthGoogleTokenManager } from './AuthGoogleTokenManager.js';
 
-function createFakeJwt({ expiresAtSeconds, nonce, audience = 'client-1' } = {}) {
-  const encode = (value) =>
-    globalThis
-      .btoa(JSON.stringify(value))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/u, '');
+function encodeBase64Url(value) {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
 
+  return globalThis
+    .btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/u, '');
+}
+
+function createFakeJwt({
+  expiresAtSeconds,
+  nonce,
+  audience = 'client-1',
+  profile = {},
+} = {}) {
   return [
-    encode({ alg: 'none', typ: 'JWT' }),
-    encode({
+    encodeBase64Url({ alg: 'none', typ: 'JWT' }),
+    encodeBase64Url({
       exp: expiresAtSeconds,
       sub: 'google-sub',
       aud: audience,
       nonce,
+      ...profile,
     }),
     'signature',
   ].join('.');
@@ -52,5 +66,24 @@ describe('AuthGoogleTokenManager', () => {
     } finally {
       globalThis.atob = originalAtob;
     }
+  });
+
+  it('decodes UTF-8 Google token payloads', () => {
+    const token = createFakeJwt({
+      audience: 'client-1',
+      expiresAtSeconds: 4_102_444_800,
+      profile: {
+        name: 'Դավիթ',
+      },
+    });
+    const manager = new AuthGoogleTokenManager({
+      clientId: 'client-1',
+      now: () => 1_000,
+    });
+
+    expect(manager.validateIdToken(token)).toMatchObject({
+      sub: 'google-sub',
+      name: 'Դավիթ',
+    });
   });
 });

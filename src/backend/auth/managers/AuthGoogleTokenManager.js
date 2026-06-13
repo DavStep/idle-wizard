@@ -61,7 +61,26 @@ export class AuthGoogleTokenManager {
       .replace(/-/g, '+')
       .replace(/_/g, '/')
       .padEnd(Math.ceil(value.length / 4) * 4, '=');
-    return this.atob(base64);
+    return this.decodeUtf8BinaryString(this.atob(base64));
+  }
+
+  decodeUtf8BinaryString(value) {
+    if (typeof globalThis.TextDecoder === 'function') {
+      const bytes = Uint8Array.from(value, (character) => character.charCodeAt(0));
+      return new globalThis.TextDecoder().decode(bytes);
+    }
+
+    try {
+      return decodeURIComponent(
+        [...value]
+          .map((character) =>
+            `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`,
+          )
+          .join(''),
+      );
+    } catch {
+      return value;
+    }
   }
 
   isTokenExpired(expiresAt) {
