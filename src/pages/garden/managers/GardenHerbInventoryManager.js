@@ -2,6 +2,7 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { applyMysteryText } from '../../shared/mysteryText.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
@@ -64,6 +65,7 @@ export class GardenHerbInventoryManager {
       const refs = this.herbRefs.get(herb.itemTypeId);
       refs.label.textContent = herb.display.label;
       applyMysteryText(refs.label, herb, herb.display.unknown);
+      setItemIconLabel(refs.label, herb.display.unknown ? null : herb.kind, herb.key);
       refs.quantity.textContent = herb.display.quantity;
       refs.row.classList.toggle('is-empty', herb.quantity <= 0);
       refs.row.classList.toggle('is-locked', herb.display.locked);

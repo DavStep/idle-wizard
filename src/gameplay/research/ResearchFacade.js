@@ -5,11 +5,16 @@ import { ResearchProcessManager } from './managers/ResearchProcessManager.js';
 import { ResearchPurchaseManager } from './managers/ResearchPurchaseManager.js';
 import { ResearchSnapshotManager } from './managers/ResearchSnapshotManager.js';
 import { ResearchStateEntityManager } from './managers/ResearchStateEntityManager.js';
+import {
+  advancedResearchIds,
+  advancedResearchMaxLevel,
+  applyAdvancedResearchTimeReduction,
+} from './advancedResearchIds.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ResearchFacade {
   static explain =
-    'Research lets the wizard spend gold or crystal on studies that unlock seeds, recipes, and automation.';
+    'Research lets the wizard spend gold, crystal, or ruby on studies that unlock seeds, recipes, automation, and speed upgrades.';
 
   constructor({
     crystalFacade,
@@ -18,6 +23,7 @@ export class ResearchFacade {
     manaFacade,
     onResearchComplete,
     playerLevelFacade,
+    rubyFacade,
   }) {
     this.researchBalanceManager = new ResearchBalanceManager();
     this.researchDefinitionManager = new ResearchDefinitionManager({
@@ -36,6 +42,7 @@ export class ResearchFacade {
     this.researchPurchaseManager = new ResearchPurchaseManager({
       crystalFacade,
       goldFacade,
+      rubyFacade,
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
       researchManaEffectManager: this.researchManaEffectManager,
@@ -50,6 +57,7 @@ export class ResearchFacade {
     this.researchSnapshotManager = new ResearchSnapshotManager({
       crystalFacade,
       goldFacade,
+      rubyFacade,
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
       researchStateEntityManager: this.researchStateEntityManager,
@@ -100,6 +108,48 @@ export class ResearchFacade {
         (total, researchId) => total + this.researchBalanceManager.getCostCrystal(researchId),
         0,
       );
+  }
+
+  getCompletedCauldronBrewingLevel(cauldronNumber) {
+    return this.getCompletedAdvancedLevel({
+      getId: advancedResearchIds.cauldronBrewing,
+      targetNumber: cauldronNumber,
+    });
+  }
+
+  getReducedCauldronBrewingDurationMs(cauldronNumber, durationMs) {
+    return applyAdvancedResearchTimeReduction(
+      durationMs,
+      this.getCompletedCauldronBrewingLevel(cauldronNumber),
+    );
+  }
+
+  getCompletedPlotGrowthLevel(plotNumber) {
+    return this.getCompletedAdvancedLevel({
+      getId: advancedResearchIds.plotGrowth,
+      targetNumber: plotNumber,
+    });
+  }
+
+  getReducedPlotGrowthDurationMs(plotNumber, durationMs) {
+    return applyAdvancedResearchTimeReduction(
+      durationMs,
+      this.getCompletedPlotGrowthLevel(plotNumber),
+    );
+  }
+
+  getCompletedAdvancedLevel({ getId, targetNumber }) {
+    let completedLevel = 0;
+
+    for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
+      if (!this.researchStateEntityManager.isCompleted(getId(targetNumber, level))) {
+        break;
+      }
+
+      completedLevel = level;
+    }
+
+    return completedLevel;
   }
 
   getSnapshot() {

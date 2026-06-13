@@ -11,7 +11,7 @@ const MAX_REPORTED_PLAYER_LEVEL = 20;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
 const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
 const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
-const ENABLE_CLIENT_POTION_DISCOVERY = false;
+const ENABLE_CLIENT_POTION_DISCOVERY = true;
 const ENABLE_PLAYER_SHOP_EXCHANGE = true;
 const ENABLE_NPC_MARKET_PRESSURE = true;
 const MAX_USERNAME_LENGTH = 24;
@@ -46,6 +46,7 @@ const MAX_PLAYER_SHOP_SLOTS = 5;
 const MAX_PLAYER_SHOP_LISTING_QUANTITY = 1_000;
 const MAX_PLAYER_SHOP_PRICE_GOLD = 1_000_000;
 const PLAYER_SHOP_MAX_PRICE_MULTIPLIER_BPS = 50_000;
+const POTION_DISCOVERY_PASSIVE_GOLD_BPS = 500;
 const MAX_PLAYER_SHOP_TRADE_TOTAL_GOLD = 10_000_000;
 const MAX_PLAYER_SHOP_PROCEEDS_GOLD = 50_000_000;
 const GOLD_PRICE_SCALE = 100;
@@ -80,6 +81,7 @@ const MAX_PLAYER_SAVE_MANA_CURRENT = 5_000;
 const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
 const MAX_PLAYER_SAVE_CURRENT_GOLD = 250_000;
 const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
+const MAX_PLAYER_SAVE_CURRENT_RUBY = 10_000;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
@@ -374,6 +376,31 @@ const researchDefaultCostCrystalById: Record<string, number> = {
   'automation:autoCollectCauldron:5': 5,
 };
 
+const ADVANCED_RESEARCH_MAX_LEVEL = 10;
+const advancedResearchCauldronNumbers = [1, 2, 3, 4, 5];
+const advancedResearchPlotNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+function getAdvancedResearchCostRubyById(): Record<string, number> {
+  const costs: Record<string, number> = {};
+
+  for (const cauldronNumber of advancedResearchCauldronNumbers) {
+    for (let level = 1; level <= ADVANCED_RESEARCH_MAX_LEVEL; level += 1) {
+      costs[`advanced:cauldronBrewing:${cauldronNumber}:${level}`] = level;
+    }
+  }
+
+  for (const plotNumber of advancedResearchPlotNumbers) {
+    for (let level = 1; level <= ADVANCED_RESEARCH_MAX_LEVEL; level += 1) {
+      costs[`advanced:plotGrowth:${plotNumber}:${level}`] = level;
+    }
+  }
+
+  return costs;
+}
+
+const researchDefaultCostRubyById: Record<string, number> =
+  getAdvancedResearchCostRubyById();
+
 const researchDefaultDurationOverrideSecondsById: Record<string, bigint> = {
   'unlockRecipe:manaTonic': 60n,
 };
@@ -388,6 +415,11 @@ const researchDefaultDurationSecondsById: Record<string, bigint> = {
       ...Object.keys(researchDefaultCostGoldById),
       ...Object.keys(researchDefaultCostCrystalById).filter(
         (researchId) => researchDefaultCostGoldById[researchId] === undefined,
+      ),
+      ...Object.keys(researchDefaultCostRubyById).filter(
+        (researchId) =>
+          researchDefaultCostGoldById[researchId] === undefined &&
+          researchDefaultCostCrystalById[researchId] === undefined,
       ),
     ].map((researchId, index) => [
       researchId,
@@ -724,6 +756,10 @@ const npcMarketCatalogByItemKey = new Map(
   npcMarketCatalog.map((item) => [item.itemKey, item]),
 );
 
+const potionRecipeCatalogByPotionKey = new Map(
+  potionRecipeCatalog.map((recipe) => [recipe.potionKey, recipe]),
+);
+
 const summonSeedResearchCatalog = [
   { id: 'summonSeedsX2', label: 'x2 summon' },
   { id: 'summonSeedsX3', label: 'x3 summon' },
@@ -766,6 +802,29 @@ const automationResearchCatalog = [
   })),
 ];
 
+const advancedResearchCatalog = [
+  ...advancedResearchCauldronNumbers.flatMap((cauldronNumber) =>
+    Array.from({ length: ADVANCED_RESEARCH_MAX_LEVEL }, (_value, index) => {
+      const level = index + 1;
+      return {
+        id: `advanced:cauldronBrewing:${cauldronNumber}:${level}`,
+        label: `cauldron ${cauldronNumber} brewing lvl ${level}`,
+        groupId: 'cauldronBrewing',
+      };
+    }),
+  ),
+  ...advancedResearchPlotNumbers.flatMap((plotNumber) =>
+    Array.from({ length: ADVANCED_RESEARCH_MAX_LEVEL }, (_value, index) => {
+      const level = index + 1;
+      return {
+        id: `advanced:plotGrowth:${plotNumber}:${level}`,
+        label: `plot ${plotNumber} growth lvl ${level}`,
+        groupId: 'plotGrowth',
+      };
+    }),
+  ),
+];
+
 const researchCatalog = [
   ...herbCatalog.map((herb) => {
     const id = `unlockSeed:${herb.key}Seed`;
@@ -796,6 +855,12 @@ const researchCatalog = [
     label: research.label,
     groupId: research.groupId,
     defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
+  })),
+  ...advancedResearchCatalog.map((research) => ({
+    researchId: research.id,
+    label: research.label,
+    groupId: research.groupId,
+    defaultCostGold: 0n,
   })),
 ];
 
@@ -875,6 +940,7 @@ const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
 const DEFAULT_RESEARCH_CONFIG_JSON = toGameConfigJson({
   researchCostsGold: toNumberRecord(researchDefaultCostGoldById),
   researchCostsCrystal: researchDefaultCostCrystalById,
+  researchCostsRuby: researchDefaultCostRubyById,
   researchDurationsSeconds: toNumberRecord(researchDefaultDurationSecondsById),
 });
 const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
@@ -1263,6 +1329,8 @@ const spacetimedb = schema({
       discoveredByIdentity: t.identity(),
       username: t.string(),
       discoveredAt: t.timestamp(),
+      royaltyGold: t.u64().default(0n),
+      royaltyGoldScale: t.u32().default(1),
     },
   ),
   playerShopListing: table(
@@ -1798,6 +1866,37 @@ function normalizeWorldChatMessage(body: string): string {
     .slice(0, MAX_WORLD_CHAT_MESSAGE_LENGTH);
 }
 
+function formatPotionDiscoveryRecipeText(potionKey: string): string {
+  const recipe = potionRecipeCatalogByPotionKey.get(potionKey);
+
+  if (!recipe) {
+    return '';
+  }
+
+  return recipe.ingredients
+    .map((ingredient) => {
+      const quantity = Math.floor(Number(ingredient.quantity));
+      const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+      const catalogItem = npcMarketCatalogByItemKey.get(ingredient.itemKey);
+      const label = catalogItem?.itemLabel ?? ingredient.itemKey;
+      return `${safeQuantity} ${label}`;
+    })
+    .join(', ');
+}
+
+function formatPotionDiscoveryAnnouncementBody(
+  username: string,
+  potionKey: string,
+  potionLabel: string,
+): string {
+  const recipeText = formatPotionDiscoveryRecipeText(potionKey);
+  const body = recipeText
+    ? `${username} unlocked the recipe of ${potionLabel}: ${recipeText}`
+    : `${username} unlocked the recipe of ${potionLabel}`;
+
+  return normalizeWorldChatMessage(body);
+}
+
 function normalizeFeedbackBody(body: string): string {
   return String(body ?? '')
     .replace(/\r\n?/g, '\n')
@@ -2079,6 +2178,95 @@ function getPlayerShopListingKey(ctx: IdleWizardReducerCtx, slotNumber: number):
 
 function getPlayerShopListingKeyForIdentity(identity: Identity, slotNumber: number): string {
   return `${identity.toHexString()}:${slotNumber}`;
+}
+
+function addClaimablePlayerShopGold(
+  ctx: IdleWizardReducerCtx,
+  recipientIdentity: Identity,
+  gold: number,
+  { clampToCap = false }: { clampToCap?: boolean } = {},
+): number {
+  const safeGold = normalizeGoldPrice(gold);
+
+  if (safeGold === null || safeGold <= 0) {
+    return 0;
+  }
+
+  const existingProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(recipientIdentity);
+  const currentProceedsGold = existingProceeds
+    ? decodeStoredGoldPrice(existingProceeds.gold, existingProceeds.goldScale) ?? 0
+    : 0;
+  let nextProceedsGold = roundGoldPrice(currentProceedsGold + safeGold);
+
+  if (nextProceedsGold > MAX_PLAYER_SHOP_PROCEEDS_GOLD) {
+    if (!clampToCap) {
+      throw new Error('Player shop proceeds are too high.');
+    }
+
+    nextProceedsGold = MAX_PLAYER_SHOP_PROCEEDS_GOLD;
+  }
+
+  if (nextProceedsGold <= currentProceedsGold) {
+    return 0;
+  }
+
+  if (existingProceeds) {
+    ctx.db.playerShopProceeds.sellerIdentity.update({
+      ...existingProceeds,
+      gold: toStoredGoldPrice(nextProceedsGold),
+      goldScale: GOLD_PRICE_SCALE,
+      updatedAt: ctx.timestamp,
+    });
+  } else {
+    ctx.db.playerShopProceeds.insert({
+      sellerIdentity: recipientIdentity,
+      gold: toStoredGoldPrice(nextProceedsGold),
+      goldScale: GOLD_PRICE_SCALE,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  return roundGoldPrice(nextProceedsGold - currentProceedsGold);
+}
+
+function grantPotionDiscoveryPassiveGold(
+  ctx: IdleWizardReducerCtx,
+  potionKey: string,
+  incomeGold: number,
+  sellerIdentity: Identity,
+): number {
+  const discovery = ctx.db.potionRecipeDiscovery.potionKey.find(normalizePotionKey(potionKey));
+
+  if (!discovery || discovery.discoveredByIdentity.isEqual(sellerIdentity)) {
+    return 0;
+  }
+
+  const passiveGold = roundGoldPrice(
+    (incomeGold * POTION_DISCOVERY_PASSIVE_GOLD_BPS) / 10_000,
+  );
+
+  const grantedGold = addClaimablePlayerShopGold(
+    ctx,
+    discovery.discoveredByIdentity,
+    passiveGold,
+    { clampToCap: true },
+  );
+
+  if (grantedGold <= 0) {
+    return 0;
+  }
+
+  const currentRoyaltyGold =
+    decodeStoredGoldPrice(discovery.royaltyGold, discovery.royaltyGoldScale) ?? 0;
+  const nextRoyaltyGold = roundGoldPrice(currentRoyaltyGold + grantedGold);
+
+  ctx.db.potionRecipeDiscovery.potionKey.update({
+    ...discovery,
+    royaltyGold: toStoredGoldPrice(nextRoyaltyGold),
+    royaltyGoldScale: GOLD_PRICE_SCALE,
+  });
+
+  return grantedGold;
 }
 
 function findTradeAllianceById(ctx: IdleWizardReducerCtx, allianceId: string) {
@@ -2604,14 +2792,51 @@ function normalizeGameConfigJson(
   }
 
   if (configKey === 'research' && isRecord(parsedConfig)) {
-    if (isRecord(parsedConfig.researchDurationsSeconds)) {
-      return originalJson;
+    const normalizedResearchConfig = { ...parsedConfig };
+    let changed = false;
+
+    if (isRecord(parsedConfig.researchCostsRuby)) {
+      const existingCostsRuby = parsedConfig.researchCostsRuby;
+      const missingRubyCost = Object.keys(researchDefaultCostRubyById).some(
+        (researchId) => existingCostsRuby[researchId] === undefined,
+      );
+
+      if (missingRubyCost) {
+        normalizedResearchConfig.researchCostsRuby = {
+          ...researchDefaultCostRubyById,
+          ...existingCostsRuby,
+        };
+        changed = true;
+      }
+    } else {
+      normalizedResearchConfig.researchCostsRuby = researchDefaultCostRubyById;
+      changed = true;
     }
 
-    return JSON.stringify({
-      ...parsedConfig,
-      researchDurationsSeconds: toNumberRecord(researchDefaultDurationSecondsById),
-    });
+    const defaultResearchDurationsSeconds = toNumberRecord(
+      researchDefaultDurationSecondsById,
+    );
+
+    if (isRecord(parsedConfig.researchDurationsSeconds)) {
+      const existingDurations = parsedConfig.researchDurationsSeconds;
+      const missingDuration = Object.keys(defaultResearchDurationsSeconds).some(
+        (researchId) => existingDurations[researchId] === undefined,
+      );
+
+      if (missingDuration) {
+        normalizedResearchConfig.researchDurationsSeconds = {
+          ...defaultResearchDurationsSeconds,
+          ...existingDurations,
+        };
+        changed = true;
+      }
+    } else {
+      normalizedResearchConfig.researchDurationsSeconds =
+        defaultResearchDurationsSeconds;
+      changed = true;
+    }
+
+    return changed ? JSON.stringify(normalizedResearchConfig) : originalJson;
   }
 
   if (configKey !== 'playerLevel' || !isRecord(parsedConfig)) {
@@ -2820,6 +3045,7 @@ function normalizePlayerGameplaySave(
     mana: normalizeSaveResource(save.mana),
     gold: normalizeSaveGold(save.gold),
     crystal: normalizeSaveCrystal(save.crystal, minimumCurrentCrystal),
+    ruby: normalizeSaveRuby(save.ruby),
     logs: normalizeSaveLogs(save.logs),
     inventory: normalizeSaveInventory(save.inventory, itemCatalog),
     research,
@@ -3126,6 +3352,14 @@ function normalizeSaveCrystal(value: unknown, minimumCurrent = 0) {
       0,
       MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
     ),
+  };
+}
+
+function normalizeSaveRuby(value: unknown) {
+  const ruby = isRecord(value) ? value : {};
+
+  return {
+    current: clampSaveInteger(ruby.current, 0, MAX_PLAYER_SAVE_CURRENT_RUBY, 0),
   };
 }
 
@@ -3486,12 +3720,21 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
   }
 
   const automationMatch = /^automation:([^:]+):(\d+)$/.exec(researchId);
-  if (!automationMatch) {
-    return [];
+  if (automationMatch) {
+    const targetNumber = Number(automationMatch[2]);
+    return targetNumber > 1 ? [`automation:${automationMatch[1]}:${targetNumber - 1}`] : [];
   }
 
-  const targetNumber = Number(automationMatch[2]);
-  return targetNumber > 1 ? [`automation:${automationMatch[1]}:${targetNumber - 1}`] : [];
+  const advancedMatch = /^advanced:([^:]+):(\d+):(\d+)$/.exec(researchId);
+  if (advancedMatch) {
+    const targetNumber = Number(advancedMatch[2]);
+    const level = Number(advancedMatch[3]);
+    return level > 1
+      ? [`advanced:${advancedMatch[1]}:${targetNumber}:${level - 1}`]
+      : [];
+  }
+
+  return [];
 }
 
 function normalizeSaveTasks(
@@ -4473,7 +4716,13 @@ function saveJsonHasReplayProgress(saveJson: string): boolean {
 
     const crystal = isRecord(save.crystal) ? save.crystal : {};
     const currentCrystal = Math.floor(Number(crystal.current));
-    return Number.isFinite(currentCrystal) && currentCrystal > 0;
+    if (Number.isFinite(currentCrystal) && currentCrystal > 0) {
+      return true;
+    }
+
+    const ruby = isRecord(save.ruby) ? save.ruby : {};
+    const currentRuby = Math.floor(Number(ruby.current));
+    return Number.isFinite(currentRuby) && currentRuby > 0;
   } catch {
     return false;
   }
@@ -5000,11 +5249,13 @@ function validateResearchGameConfig(value: unknown) {
   const config = value as {
     researchCostsGold?: unknown;
     researchCostsCrystal?: unknown;
+    researchCostsRuby?: unknown;
     researchDurationsSeconds?: unknown;
   };
 
   validateCostRecord(config.researchCostsGold, MAX_RESEARCH_COST_GOLD);
   validateCostRecord(config.researchCostsCrystal, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+  validateCostRecord(config.researchCostsRuby, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
 
   if (config.researchDurationsSeconds !== undefined) {
     validateCostRecord(config.researchDurationsSeconds, MAX_RESEARCH_DURATION_SECONDS);
@@ -8291,7 +8542,6 @@ export const discover_potion_recipe = spacetimedb.reducer(
 
     const player = ensurePlayer(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
-    assertWorldChatRateLimit(ctx);
 
     ctx.db.potionRecipeDiscovery.insert({
       potionKey: catalogItem.key,
@@ -8299,14 +8549,21 @@ export const discover_potion_recipe = spacetimedb.reducer(
       discoveredByIdentity: ctx.sender,
       username: player.username,
       discoveredAt: ctx.timestamp,
+      royaltyGold: 0n,
+      royaltyGoldScale: GOLD_PRICE_SCALE,
     });
 
+    // Discovery is the authoritative global unlock; chat throttling must not block it.
     ctx.db.worldChat.insert({
       messageId: ctx.newUuidV7(),
       senderIdentity: ctx.sender,
       username: 'system',
       playerLevel: 0,
-      body: `${player.username} discovered a new potion recipe!`,
+      body: formatPotionDiscoveryAnnouncementBody(
+        player.username,
+        catalogItem.key,
+        catalogItem.label,
+      ),
       sentAt: ctx.timestamp,
       allianceTag: '',
     });
@@ -8435,33 +8692,13 @@ export const buy_player_shop_listing = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    const existingProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(
+    addClaimablePlayerShopGold(ctx, listing.sellerIdentity, proceedsGold);
+    grantPotionDiscoveryPassiveGold(
+      ctx,
+      listing.itemKey,
+      proceedsGold,
       listing.sellerIdentity,
     );
-
-    if (existingProceeds) {
-      const currentProceedsGold =
-        decodeStoredGoldPrice(existingProceeds.gold, existingProceeds.goldScale) ?? 0;
-      const nextProceedsGold = roundGoldPrice(currentProceedsGold + proceedsGold);
-
-      if (nextProceedsGold > MAX_PLAYER_SHOP_PROCEEDS_GOLD) {
-        throw new Error('Player shop proceeds are too high.');
-      }
-
-      ctx.db.playerShopProceeds.sellerIdentity.update({
-        ...existingProceeds,
-        gold: toStoredGoldPrice(nextProceedsGold),
-        goldScale: GOLD_PRICE_SCALE,
-        updatedAt: ctx.timestamp,
-      });
-    } else {
-      ctx.db.playerShopProceeds.insert({
-        sellerIdentity: listing.sellerIdentity,
-        gold: toStoredGoldPrice(proceedsGold),
-        goldScale: GOLD_PRICE_SCALE,
-        updatedAt: ctx.timestamp,
-      });
-    }
 
     ctx.db.playerShopTrade.insert({
       tradeId: ctx.newUuidV7(),
@@ -8516,6 +8753,8 @@ export const sell_to_npc = spacetimedb.reducer(
     const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
     const supplyScore = toBigInt(row.supplyScore);
     const npcStock = getNpcMarketStock(row);
+    const currentNpcBuyPriceGold =
+      decodeStoredGoldPrice(row.npcBuyPriceGold, row.priceScale) ?? 0;
     const fulfilledQuantity = clampBigInt(tradeQuantity, 0n, needState.npcNeed);
 
     if (fulfilledQuantity < 1n) {
@@ -8544,6 +8783,12 @@ export const sell_to_npc = spacetimedb.reducer(
       supplyScore: supplyScore + fulfilledQuantity,
       updatedAt: ctx.timestamp,
     });
+    grantPotionDiscoveryPassiveGold(
+      ctx,
+      itemKey,
+      roundGoldPrice(currentNpcBuyPriceGold * Number(fulfilledQuantity)),
+      ctx.sender,
+    );
   },
 );
 

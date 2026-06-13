@@ -12,7 +12,13 @@ export class GardenFacade {
   static explain =
     'The garden turns planted seeds into herbs: tiles are opened with gold, then each tile grows and harvests over time.';
 
-  constructor({ goldFacade, itemsFacade, playerLevelFacade, onHarvestComplete }) {
+  constructor({
+    goldFacade,
+    itemsFacade,
+    playerLevelFacade,
+    onHarvestComplete,
+    researchFacade,
+  }) {
     this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;
     this.gardenBalanceManager = new GardenBalanceManager();
@@ -30,6 +36,7 @@ export class GardenFacade {
       gardenBalanceManager: this.gardenBalanceManager,
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
+      researchFacade,
     });
     this.gardenCancellationManager = new GardenCancellationManager({
       gardenTileEntityManager: this.gardenTileEntityManager,

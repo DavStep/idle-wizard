@@ -1,7 +1,7 @@
 import { WorkshopRoomViewManager } from './managers/WorkshopRoomViewManager.js';
 import { WorkshopManaSphereManager } from './managers/WorkshopManaSphereManager.js';
-import { WorkshopSeedInventoryManager } from './managers/WorkshopSeedInventoryManager.js';
-import { WorkshopSeedBlockManager } from './managers/WorkshopSeedBlockManager.js';
+import { WorkshopBagManager } from './managers/WorkshopBagManager.js';
+import { WorkshopActionBarManager } from './managers/WorkshopActionBarManager.js';
 import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManager.js';
 import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
 import { WorkshopLogDialogManager } from './managers/WorkshopLogDialogManager.js';
@@ -20,10 +20,10 @@ export class WorkshopPageFacade {
   } = {}) {
     this.roomViewManager = new WorkshopRoomViewManager();
     this.flyoutManager = new WorkshopFlyoutManager();
-    this.seedInventoryManager = new WorkshopSeedInventoryManager({ gameplayFacade });
-    this.seedBlockManager = new WorkshopSeedBlockManager({
+    this.bagManager = new WorkshopBagManager({ gameplayFacade });
+    this.actionBarManager = new WorkshopActionBarManager({
       gameplayFacade,
-      onSeedsClick: () => this.seedInventoryManager.toggle(),
+      onBagClick: () => this.bagManager.toggle(),
       onSummonNotice: (message) => this.flyoutManager.show(message),
     });
     this.leaderboardManager = new WorkshopLeaderboardManager({
@@ -47,23 +47,23 @@ export class WorkshopPageFacade {
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.taskManager.mount(uiLayer);
     this.manaSphereManager.mount(uiLayer);
-    this.seedBlockManager.mount(uiLayer);
+    this.actionBarManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.leaderboardManager.mount(uiLayer, popupLayer);
     this.tradeAllianceManager.mount(uiLayer, popupLayer);
     this.logDialogManager.mount(uiLayer, popupLayer);
     this.discoveriesManager.mount(uiLayer, popupLayer);
-    this.seedInventoryManager.mount(popupLayer);
+    this.bagManager.mount(popupLayer);
   }
 
   unmount() {
-    this.seedInventoryManager.unmount();
+    this.bagManager.unmount();
     this.discoveriesManager.unmount();
     this.logDialogManager.unmount();
     this.tradeAllianceManager.unmount();
     this.leaderboardManager.unmount();
     this.taskManager.unmount();
-    this.seedBlockManager.unmount();
+    this.actionBarManager.unmount();
     this.flyoutManager.unmount();
     this.manaSphereManager.unmount();
     this.roomViewManager.unmount();

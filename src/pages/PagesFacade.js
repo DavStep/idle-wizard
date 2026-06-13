@@ -38,6 +38,7 @@ export class PagesFacade {
       pageRegistryManager: this.registryManager,
       defaultPageId,
     });
+    this.researchTabId = 'regular';
     this.swipeNavigationManager = new PageSwipeNavigationManager({
       pageOrder: DEFAULT_PAGE_SWIPE_ORDER,
       getCurrentPageId: () => this.getCurrentPageId(),
@@ -94,6 +95,7 @@ export class PagesFacade {
       'research',
       new ResearchPageFacade({
         gameplayFacade,
+        onSelectedTabChange: (tabId) => this.setResearchTabId(tabId),
       }),
     );
     this.registryManager.register(
@@ -112,6 +114,7 @@ export class PagesFacade {
     this.notificationFacade.mount();
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
+    this.syncTopPanelResourceContext();
     this.tutorialFacade?.mount(stage);
     this.scrollCueManager.mount(stage);
   }
@@ -130,10 +133,36 @@ export class PagesFacade {
   show(pageId) {
     this.currentPageManager.show(pageId);
     this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
+    this.syncTopPanelResourceContext();
     this.tutorialFacade?.scheduleRefresh();
   }
 
   getCurrentPageId() {
     return this.currentPageManager.getCurrentPageId();
+  }
+
+  setResearchTabId(tabId) {
+    this.researchTabId = typeof tabId === 'string' ? tabId : 'regular';
+    this.syncTopPanelResourceContext();
+  }
+
+  syncTopPanelResourceContext() {
+    this.topPanelFacade.setResourceContext(this.getTopPanelResourceContext());
+  }
+
+  getTopPanelResourceContext() {
+    if (this.getCurrentPageId() !== 'research') {
+      return {};
+    }
+
+    if (this.researchTabId === 'automation') {
+      return { currency: 'crystal' };
+    }
+
+    if (this.researchTabId === 'advanced') {
+      return { currency: 'ruby' };
+    }
+
+    return {};
   }
 }

@@ -2,6 +2,7 @@ import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
 const DISCOVERY_TABS = [
   { id: 'seeds', label: 'seeds' },
@@ -235,7 +236,7 @@ export class WorkshopDiscoveriesManager {
     this.setPotionRecipeName(key, potion);
 
     if (potion.discovered) {
-      main.append(key);
+      main.append(key, this.createRoyaltyValue(potion));
     } else {
       const val = document.createElement('span');
       val.className = 'row_val workshop-page__discovery-byline';
@@ -260,6 +261,17 @@ export class WorkshopDiscoveriesManager {
     element.textContent = potion.label;
     setItemIconLabel(element, 'potion', potion.key);
     element.append(`: discovered by ${potion.discoveredByUsername || 'wizard'}`);
+  }
+
+  createRoyaltyValue(potion) {
+    const value = document.createElement('span');
+    value.className = 'row_val workshop-page__discovery-royalties';
+    const royaltyGold = Number(potion.royaltyGold);
+    setResourceIconText(
+      value,
+      `royalties ${formatGoldPriceText(Number.isFinite(royaltyGold) ? royaltyGold : 0)}`,
+    );
+    return value;
   }
 
   createIngredientsList(ingredients = [], { masked = false } = {}) {
@@ -344,6 +356,7 @@ export class WorkshopDiscoveriesManager {
             potion.key,
             potion.discovered,
             potion.discoveredByUsername,
+            potion.royaltyGold,
             potion.manaCost,
             potion.brewDurationMs,
             ingredientsSignature,

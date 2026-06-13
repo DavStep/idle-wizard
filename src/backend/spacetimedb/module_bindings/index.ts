@@ -36,6 +36,7 @@ import {
 // Import all reducer arg schemas
 import AcceptTradeAllianceApplicationReducer from "./accept_trade_alliance_application_reducer";
 import AdminDisbandTradeAllianceReducer from "./admin_disband_trade_alliance_reducer";
+import AdminMergePlayerAccountsReducer from "./admin_merge_player_accounts_reducer";
 import AdminMoveTradeAllianceMemberReducer from "./admin_move_trade_alliance_member_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
 import AnnounceLevelUpReducer from "./announce_level_up_reducer";
@@ -453,6 +454,7 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_trade_alliance_application", AcceptTradeAllianceApplicationReducer),
   __reducerSchema("admin_disband_trade_alliance", AdminDisbandTradeAllianceReducer),
+  __reducerSchema("admin_merge_player_accounts", AdminMergePlayerAccountsReducer),
   __reducerSchema("admin_move_trade_alliance_member", AdminMoveTradeAllianceMemberReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
   __reducerSchema("announce_level_up", AnnounceLevelUpReducer),

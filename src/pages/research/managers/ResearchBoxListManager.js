@@ -6,8 +6,9 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 const maxLockedResearchesPerBox = 3;
 
 export class ResearchBoxListManager {
-  constructor({ gameplayFacade, onShowResearchInfo } = {}) {
+  constructor({ gameplayFacade, onSelectedTabChange, onShowResearchInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.onSelectedTabChange = onSelectedTabChange;
     this.onShowResearchInfo = onShowResearchInfo;
     this.root = null;
     this.tabsRoot = null;
@@ -36,7 +37,7 @@ export class ResearchBoxListManager {
     this.tabsRoot.setAttribute('role', 'tablist');
     this.boxesRoot = document.createElement('div');
     this.boxesRoot.className = 'research-page__box-list';
-    this.root.append(this.tabsRoot, this.boxesRoot);
+    this.root.append(this.boxesRoot, this.tabsRoot);
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -107,8 +108,14 @@ export class ResearchBoxListManager {
   }
 
   getSelectedTab(tabs) {
+    const previousTabId = this.selectedTabId;
     const selectedTab = tabs.find((tab) => tab.id === this.selectedTabId) ?? tabs[0] ?? null;
     this.selectedTabId = selectedTab?.id ?? 'regular';
+
+    if (this.selectedTabId !== previousTabId) {
+      this.onSelectedTabChange?.(this.selectedTabId);
+    }
+
     return selectedTab;
   }
 
@@ -171,6 +178,7 @@ export class ResearchBoxListManager {
     }
 
     this.selectedTabId = tabId;
+    this.onSelectedTabChange?.(tabId);
     this.signature = '';
     this.render(this.gameplayFacade.getSnapshot());
   }

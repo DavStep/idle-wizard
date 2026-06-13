@@ -4,6 +4,7 @@ import { EcsFacade } from '../ecs/EcsFacade.js';
 import { automationResearchIds } from './automation/automationResearchIds.js';
 import { GameplayFacade } from './GameplayFacade.js';
 import { DEFAULT_PLAYER_LEVEL_BALANCE } from './playerLevel/managers/PlayerLevelBalanceManager.js';
+import { advancedResearchIds } from './research/advancedResearchIds.js';
 
 function createMemoryStorage() {
   const values = new Map();
@@ -974,7 +975,12 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay();
     const research = gameplayFacade.getSnapshot().research;
 
-    expect(research.tabs.map((tab) => tab.id)).toEqual(['regular', 'advanced']);
+    expect(research.tabs.map((tab) => tab.id)).toEqual([
+      'regular',
+      'automation',
+      'advanced',
+    ]);
+    expect(research.tabs[1].label).toBe('automation');
     expect(research.tabs[1].boxes.map((box) => box.id)).toEqual([
       'autoSeedSpawn',
       'autoPlantTiles',
@@ -1044,6 +1050,28 @@ describe('GameplayFacade', () => {
       costCrystal: 1,
       costCurrency: 'crystal',
     });
+    expect(research.tabs[2].boxes.map((box) => box.id)).toEqual([
+      'cauldronBrewing',
+      'plotGrowth',
+    ]);
+    expect(research.tabs[2].boxes[0].researches.map((research) => research.id)).toEqual([
+      advancedResearchIds.cauldronBrewing(1, 1),
+    ]);
+    expect(research.tabs[2].boxes[0].researches[0]).toMatchObject({
+      id: advancedResearchIds.cauldronBrewing(1, 1),
+      label: 'cauldron 1 brewing lvl 1',
+      value: '1 ruby',
+      effect: '-2% time',
+      showEffect: true,
+      requiredResearchIds: [],
+      costGold: 0,
+      costRuby: 1,
+      costCurrency: 'ruby',
+    });
+    expect(research.tabs[2].boxes[1].researches.map((research) => research.id)).toEqual([
+      advancedResearchIds.plotGrowth(1, 1),
+      advancedResearchIds.plotGrowth(2, 1),
+    ]);
     expect(research.boxes.map((box) => box.id)).toEqual([
       'seedUnlocks',
       'summonSeeds',
@@ -1123,28 +1151,28 @@ describe('GameplayFacade', () => {
 
   it('hides tile and cauldron automation research above current level caps', () => {
     const { gameplayFacade } = createGameplay();
-    const getAdvancedBoxResearchIds = (boxId) =>
+    const getAutomationBoxResearchIds = (boxId) =>
       gameplayFacade
         .getSnapshot()
-        .research.tabs.find((tab) => tab.id === 'advanced')
+        .research.tabs.find((tab) => tab.id === 'automation')
         ?.boxes.find((box) => box.id === boxId)
         ?.researches.map((research) => research.id) ?? [];
 
-    expect(getAdvancedBoxResearchIds('autoPlantTiles')).toEqual([
+    expect(getAutomationBoxResearchIds('autoPlantTiles')).toEqual([
       automationResearchIds.autoPlantTile(1),
       automationResearchIds.autoPlantTile(2),
     ]);
-    expect(getAdvancedBoxResearchIds('autoHarvestTiles')).toEqual([
+    expect(getAutomationBoxResearchIds('autoHarvestTiles')).toEqual([
       automationResearchIds.autoHarvestPlant(1),
       automationResearchIds.autoHarvestPlant(2),
     ]);
-    expect(getAdvancedBoxResearchIds('autoBrewCauldrons')).toEqual([
+    expect(getAutomationBoxResearchIds('autoBrewCauldrons')).toEqual([
       automationResearchIds.autoBrewCauldron(1),
     ]);
-    expect(getAdvancedBoxResearchIds('autoBottleCauldrons')).toEqual([
+    expect(getAutomationBoxResearchIds('autoBottleCauldrons')).toEqual([
       automationResearchIds.autoBottleCauldron(1),
     ]);
-    expect(getAdvancedBoxResearchIds('autoCollectCauldrons')).toEqual([
+    expect(getAutomationBoxResearchIds('autoCollectCauldrons')).toEqual([
       automationResearchIds.autoCollectCauldron(1),
     ]);
 
@@ -1154,31 +1182,31 @@ describe('GameplayFacade', () => {
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(5);
-    expect(getAdvancedBoxResearchIds('autoPlantTiles')).toEqual([
+    expect(getAutomationBoxResearchIds('autoPlantTiles')).toEqual([
       automationResearchIds.autoPlantTile(1),
       automationResearchIds.autoPlantTile(2),
       automationResearchIds.autoPlantTile(3),
       automationResearchIds.autoPlantTile(4),
       automationResearchIds.autoPlantTile(5),
     ]);
-    expect(getAdvancedBoxResearchIds('autoHarvestTiles')).toEqual([
+    expect(getAutomationBoxResearchIds('autoHarvestTiles')).toEqual([
       automationResearchIds.autoHarvestPlant(1),
       automationResearchIds.autoHarvestPlant(2),
       automationResearchIds.autoHarvestPlant(3),
       automationResearchIds.autoHarvestPlant(4),
       automationResearchIds.autoHarvestPlant(5),
     ]);
-    expect(getAdvancedBoxResearchIds('autoBrewCauldrons')).toEqual([
+    expect(getAutomationBoxResearchIds('autoBrewCauldrons')).toEqual([
       automationResearchIds.autoBrewCauldron(1),
       automationResearchIds.autoBrewCauldron(2),
       automationResearchIds.autoBrewCauldron(3),
     ]);
-    expect(getAdvancedBoxResearchIds('autoBottleCauldrons')).toEqual([
+    expect(getAutomationBoxResearchIds('autoBottleCauldrons')).toEqual([
       automationResearchIds.autoBottleCauldron(1),
       automationResearchIds.autoBottleCauldron(2),
       automationResearchIds.autoBottleCauldron(3),
     ]);
-    expect(getAdvancedBoxResearchIds('autoCollectCauldrons')).toEqual([
+    expect(getAutomationBoxResearchIds('autoCollectCauldrons')).toEqual([
       automationResearchIds.autoCollectCauldron(1),
       automationResearchIds.autoCollectCauldron(2),
       automationResearchIds.autoCollectCauldron(3),
@@ -1307,6 +1335,69 @@ describe('GameplayFacade', () => {
       label: 'sage seed',
       kind: 'seed',
       quantity: 1,
+    });
+  });
+
+  it('buys advanced speed research with ruby and reveals the next level', () => {
+    const { gameplayFacade } = createGameplay();
+    const researchId = advancedResearchIds.cauldronBrewing(1, 1);
+
+    expect(gameplayFacade.buyResearch(researchId)).toEqual({
+      ok: false,
+      reason: 'not_enough_ruby',
+      researchId,
+      cost: 1,
+      costCurrency: 'ruby',
+    });
+
+    gameplayFacade.rubyFacade.add(1);
+
+    expect(gameplayFacade.buyResearch(researchId)).toEqual({
+      ok: true,
+      researchId,
+      cost: 1,
+      costCurrency: 'ruby',
+    });
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(0);
+    expect(
+      gameplayFacade
+        .getSnapshot()
+        .research.tabs.find((tab) => tab.id === 'advanced')
+        ?.boxes.find((box) => box.id === 'cauldronBrewing')
+        ?.researches.map((research) => research.id),
+    ).toEqual([advancedResearchIds.cauldronBrewing(1, 2)]);
+  });
+
+  it('advanced speed research lowers plot growth and cauldron brewing timers', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.rubyFacade.add(2);
+    expect(gameplayFacade.buyResearch(advancedResearchIds.plotGrowth(1, 1))).toMatchObject({
+      ok: true,
+      costCurrency: 'ruby',
+    });
+    expect(gameplayFacade.buyResearch(advancedResearchIds.cauldronBrewing(1, 1))).toMatchObject({
+      ok: true,
+      costCurrency: 'ruby',
+    });
+
+    gameplayFacade.itemsFacade.addItem(1, 1);
+    expect(gameplayFacade.plantGardenSeed(1, 1)).toMatchObject({
+      ok: true,
+      durationMs: 19_600,
+    });
+
+    ecsFacade.update({ deltaSeconds: 12 });
+    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    expect(gameplayFacade.buyResearch('unlockRecipe:manaTonic')).toMatchObject({ ok: true });
+    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({ ok: true });
+    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({ ok: true });
+    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({ ok: true });
+
+    expect(gameplayFacade.brewCauldron()).toMatchObject({
+      ok: true,
+      durationMs: 29_400,
     });
   });
 
@@ -2496,14 +2587,10 @@ describe('GameplayFacade', () => {
     gameplayFacade.addBrewingIngredient(1010);
 
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      buttonLabel: 'brew',
+      manaCost: 5,
       canBrew: true,
-      match: {
-        key: 'ashenMemory',
-        label: 'unknown recipe',
-        realLabel: 'ashen memory',
-        unlocked: false,
-        discoverable: true,
-      },
+      match: null,
     });
 
     expect(gameplayFacade.brewCauldron()).toMatchObject({
@@ -2519,9 +2606,10 @@ describe('GameplayFacade', () => {
         potionKey: 'ashenMemory',
         potionLabel: 'ashen memory',
       },
-      manaCost: 36,
+      manaCost: 5,
       durationMs: 80_000,
     });
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(31);
 
     expect(discoveries.has('ashenMemory')).toBe(true);
     expect(
@@ -2538,6 +2626,29 @@ describe('GameplayFacade', () => {
         { key: 'lavenderHerb', quantity: 1 },
         { key: 'frostmossHerb', quantity: 1 },
       ],
+    });
+
+    const { ecsFacade: secondEcsFacade, gameplayFacade: secondGameplayFacade } = createGameplay();
+    secondGameplayFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
+    secondGameplayFacade.itemsFacade.addItem(1001, 1);
+    secondGameplayFacade.itemsFacade.addItem(1004, 1);
+    secondGameplayFacade.itemsFacade.addItem(1010, 1);
+    secondEcsFacade.update({ deltaSeconds: 36 });
+    secondGameplayFacade.addBrewingIngredient(1001);
+    secondGameplayFacade.addBrewingIngredient(1004);
+    secondGameplayFacade.addBrewingIngredient(1010);
+
+    expect(secondGameplayFacade.getSnapshot().brewing).toMatchObject({
+      buttonLabel: 'brew ashen memory',
+      manaCost: 36,
+      canBrew: true,
+      match: {
+        key: 'ashenMemory',
+        label: 'ashen memory',
+        realLabel: 'ashen memory',
+        unlocked: true,
+        discoverable: false,
+      },
     });
   });
 

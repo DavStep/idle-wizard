@@ -11,6 +11,7 @@ import { GameplayLogFacade } from './logs/GameplayLogFacade.js';
 import { GameplayPersistenceFacade } from './persistence/GameplayPersistenceFacade.js';
 import { PlayerLevelFacade } from './playerLevel/PlayerLevelFacade.js';
 import { ResearchFacade } from './research/ResearchFacade.js';
+import { RubyFacade } from './ruby/RubyFacade.js';
 import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
 import { ShopFacade } from './shop/ShopFacade.js';
 import { TasksFacade } from './tasks/TasksFacade.js';
@@ -26,6 +27,7 @@ export class GameplayFacade {
     this.manaFacade = new ManaFacade();
     this.goldFacade = new GoldFacade();
     this.crystalFacade = new CrystalFacade();
+    this.rubyFacade = new RubyFacade();
     this.visualSettingsFacade = new VisualSettingsFacade({
       crystalFacade: this.crystalFacade,
     });
@@ -43,6 +45,7 @@ export class GameplayFacade {
       manaFacade: this.manaFacade,
       onResearchComplete: (event) => this.handleResearchComplete(event),
       playerLevelFacade: this.playerLevelFacade,
+      rubyFacade: this.rubyFacade,
     });
     this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
       crystalFacade: this.crystalFacade,
@@ -74,6 +77,7 @@ export class GameplayFacade {
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
+      researchFacade: this.researchFacade,
       onHarvestComplete: (event) => this.gameplayLogFacade.logGardenHarvestCompleted(event),
     });
     this.automationFacade = new AutomationFacade({
@@ -90,6 +94,7 @@ export class GameplayFacade {
       manaFacade: this.manaFacade,
       goldFacade: this.goldFacade,
       crystalFacade: this.crystalFacade,
+      rubyFacade: this.rubyFacade,
       gameplayLogFacade: this.gameplayLogFacade,
       itemsFacade: this.itemsFacade,
       researchFacade: this.researchFacade,
@@ -175,6 +180,7 @@ export class GameplayFacade {
     this.manaFacade.initialize(ecsManagers);
     this.goldFacade.initialize(ecsManagers);
     this.crystalFacade.initialize(ecsManagers);
+    this.rubyFacade.initialize(ecsManagers);
     this.tasksFacade.initialize(ecsManagers);
     this.researchFacade.initialize(ecsManagers);
     this.brewingFacade.initialize(ecsManagers);
@@ -594,6 +600,7 @@ export class GameplayFacade {
       mana: this.manaFacade.getSnapshot(),
       gold: this.goldFacade.getSnapshot(),
       crystal: this.crystalFacade.getSnapshot(),
+      ruby: this.rubyFacade.getSnapshot(),
       inventory: this.itemsFacade.getInventorySnapshot(),
       seedInventory: this.itemsFacade.getSeedInventorySnapshot(),
       seedSummoning,

@@ -159,25 +159,35 @@ export class ResearchStateEntityManager {
   getCompletedResearchIds() {
     this.syncResearchEntities();
 
-    return [...this.entityIdsByResearchId.keys()].filter((researchId) =>
-      this.isCompleted(researchId),
-    );
+    const completedResearchIds = [];
+
+    for (const [researchId, entityId] of this.entityIdsByResearchId.entries()) {
+      if (PlayerResearch.isCompleted[entityId] === 1) {
+        completedResearchIds.push(researchId);
+      }
+    }
+
+    return completedResearchIds;
   }
 
   getInProgressResearches() {
     this.syncResearchEntities();
 
-    return [...this.entityIdsByResearchId.keys()]
-      .map((researchId) => ({
+    const inProgressResearches = [];
+
+    for (const [researchId, entityId] of this.entityIdsByResearchId.entries()) {
+      if (PlayerResearch.isInProgress[entityId] !== 1) {
+        continue;
+      }
+
+      inProgressResearches.push({
         researchId,
-        ...this.getProgressSnapshot(researchId),
-      }))
-      .filter((progress) => progress.inProgress)
-      .map((progress) => ({
-        researchId: progress.researchId,
-        totalSeconds: progress.totalSeconds,
-        remainingSeconds: progress.remainingSeconds,
-      }));
+        totalSeconds: Math.max(0, PlayerResearch.totalSeconds[entityId] ?? 0),
+        remainingSeconds: Math.max(0, PlayerResearch.remainingSeconds[entityId] ?? 0),
+      });
+    }
+
+    return inProgressResearches;
   }
 
   getProgressSnapshot(researchId) {

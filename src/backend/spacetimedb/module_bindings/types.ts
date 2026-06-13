@@ -260,6 +260,8 @@ export const PotionRecipeDiscovery = __t.object("PotionRecipeDiscovery", {
   discoveredByIdentity: __t.identity(),
   username: __t.string(),
   discoveredAt: __t.timestamp(),
+  royaltyGold: __t.u64(),
+  royaltyGoldScale: __t.u32(),
 });
 export type PotionRecipeDiscovery = __Infer<typeof PotionRecipeDiscovery>;
 

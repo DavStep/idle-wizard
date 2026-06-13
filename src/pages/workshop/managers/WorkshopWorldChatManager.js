@@ -345,8 +345,14 @@ export class WorkshopWorldChatManager {
   createMessage(message) {
     const row = document.createElement('div');
     row.className = 'workshop-page__world-chat-message';
-    if (this.isSystemMessage(message)) {
+    const isSystemMessage = this.isSystemMessage(message);
+    const isRecipeDiscoveryMessage = this.isRecipeDiscoveryMessage(message);
+
+    if (isSystemMessage) {
       row.classList.add('workshop-page__world-chat-message--system');
+    }
+    if (isRecipeDiscoveryMessage) {
+      row.classList.add('workshop-page__world-chat-message--recipe-discovery');
     }
 
     const name = document.createElement('span');
@@ -357,14 +363,18 @@ export class WorkshopWorldChatManager {
     body.className = 'workshop-page__world-chat-body';
     body.textContent = message.body;
 
-    row.append(name, body);
+    const content = document.createElement('span');
+    content.className = 'workshop-page__world-chat-content';
+    content.append(name, body);
+
+    row.append(content);
 
     const age = this.formatMessageAge(message);
     if (age) {
       const ageLabel = document.createElement('span');
       ageLabel.className = 'workshop-page__world-chat-age';
       ageLabel.dataset.sentAtMs = String(Number(message.sentAtMs));
-      ageLabel.textContent = ` ${age}`;
+      ageLabel.textContent = age;
       row.append(ageLabel);
     }
 
@@ -460,7 +470,7 @@ export class WorkshopWorldChatManager {
     for (const ageLabel of this.root?.querySelectorAll('.workshop-page__world-chat-age') ??
       []) {
       const age = this.formatMessageAge({ sentAtMs: ageLabel.dataset.sentAtMs });
-      ageLabel.textContent = age ? ` ${age}` : '';
+      ageLabel.textContent = age;
     }
 
     this.scheduleAgeRefresh(this.getSelectedSnapshot().messages);
@@ -521,6 +531,13 @@ export class WorkshopWorldChatManager {
 
   isSystemMessage(message) {
     return message?.username === 'system';
+  }
+
+  isRecipeDiscoveryMessage(message) {
+    return (
+      this.isSystemMessage(message) &&
+      /\bunlocked the recipe of\b/i.test(String(message?.body ?? ''))
+    );
   }
 
   normalizePlayerLevel(playerLevel, fallbackLevel = 1) {

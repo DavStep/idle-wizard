@@ -16,4 +16,6 @@ export default __t.row({
   discoveredByIdentity: __t.identity().name("discovered_by_identity"),
   username: __t.string(),
   discoveredAt: __t.timestamp().name("discovered_at"),
+  royaltyGold: __t.u64().name("royalty_gold"),
+  royaltyGoldScale: __t.u32().name("royalty_gold_scale"),
 });

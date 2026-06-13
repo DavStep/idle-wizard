@@ -1,10 +1,11 @@
 import { itemKinds } from '../../items/itemKinds.js';
 
 export class GardenPlantingManager {
-  constructor({ gardenBalanceManager, gardenTileEntityManager, itemsFacade }) {
+  constructor({ gardenBalanceManager, gardenTileEntityManager, itemsFacade, researchFacade }) {
     this.gardenBalanceManager = gardenBalanceManager;
     this.gardenTileEntityManager = gardenTileEntityManager;
     this.itemsFacade = itemsFacade;
+    this.researchFacade = researchFacade;
   }
 
   plantSeed(tileNumber, seedTypeId) {
@@ -133,7 +134,10 @@ export class GardenPlantingManager {
     }
 
     const herb = this.itemsFacade.getItemDefinition(seed.producesHerbTypeId);
-    const durationMs = herb.growthDurationMs ?? 60_000;
+    const baseDurationMs = herb.growthDurationMs ?? 60_000;
+    const durationMs =
+      this.researchFacade?.getReducedPlotGrowthDurationMs?.(tileNumber, baseDurationMs) ??
+      baseDurationMs;
     this.gardenTileEntityManager.startGrowth({
       tileNumber,
       seedItemTypeId: seed.id,

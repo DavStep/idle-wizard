@@ -18,6 +18,19 @@ describe('item icon labels', () => {
     expect(icon?.getAttribute('src')).toContain('potion-mana-tonic');
   });
 
+  it('marks herb labels with their herb icon while preserving text', () => {
+    const element = document.createElement('span');
+    element.textContent = 'sage (6)';
+
+    setItemIconLabel(element, 'herb', 'sageHerb');
+
+    const icon = element.querySelector('.style-herb-label__icon');
+    expect(element.textContent).toBe('sage (6)');
+    expect(element.classList.contains('style-herb-label')).toBe(true);
+    expect(icon).not.toBeNull();
+    expect(icon?.getAttribute('src')).toContain('herb-sage');
+  });
+
   it('adds potion and seed icons inside mixed text', () => {
     const element = document.createElement('span');
 

@@ -2,12 +2,14 @@ export class ResearchSnapshotManager {
   constructor({
     crystalFacade,
     goldFacade,
+    rubyFacade,
     researchBalanceManager,
     researchDefinitionManager,
     researchStateEntityManager,
   }) {
     this.crystalFacade = crystalFacade;
     this.goldFacade = goldFacade;
+    this.rubyFacade = rubyFacade;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
     this.researchStateEntityManager = researchStateEntityManager;
@@ -41,9 +43,11 @@ export class ResearchSnapshotManager {
     const cost = this.researchBalanceManager.getCost(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
-    const hasRequiredResearch = this.researchDefinitionManager
-      .getRequiredResearchIds(research.id)
-      .every((requiredResearchId) => this.researchStateEntityManager.isCompleted(requiredResearchId));
+    const requiredResearchIds =
+      research.requiredResearchIds ?? this.researchDefinitionManager.getRequiredResearchIds(research.id);
+    const hasRequiredResearch = requiredResearchIds.every((requiredResearchId) =>
+      this.researchStateEntityManager.isCompleted(requiredResearchId),
+    );
 
     return {
       ...research,
@@ -115,7 +119,15 @@ export class ResearchSnapshotManager {
   }
 
   getCurrencyFacade(currency) {
-    return currency === 'crystal' ? this.crystalFacade : this.goldFacade;
+    if (currency === 'crystal') {
+      return this.crystalFacade;
+    }
+
+    if (currency === 'ruby') {
+      return this.rubyFacade;
+    }
+
+    return this.goldFacade;
   }
 
   getCostSnapshot(cost) {
@@ -123,6 +135,14 @@ export class ResearchSnapshotManager {
       return {
         costGold: 0,
         costCrystal: cost.amount,
+        costCurrency: cost.currency,
+      };
+    }
+
+    if (cost.currency === 'ruby') {
+      return {
+        costGold: 0,
+        costRuby: cost.amount,
         costCurrency: cost.currency,
       };
     }

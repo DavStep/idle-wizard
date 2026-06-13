@@ -1,3 +1,4 @@
+import { getHerbIconUrl } from '../../assets/items/herbs/herbIcons.js';
 import {
   getPotionIconKeyByLabel,
   getPotionIconLabelEntries,
@@ -5,6 +6,7 @@ import {
 } from '../../assets/items/potions/potionIcons.js';
 
 export const SEED_ICON_LABEL_CLASS = 'style-seed-label';
+export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
 export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
 
 const SEED_NAME_PATTERN = /\b([a-z]+ seed)\b/g;
@@ -15,14 +17,34 @@ export function setItemIconLabel(element, kind, itemKey = null) {
     return;
   }
 
-  element.classList.toggle(SEED_ICON_LABEL_CLASS, kind === 'seed');
+  const normalizedKind = String(kind ?? '').trim();
+  element.classList.toggle(SEED_ICON_LABEL_CLASS, normalizedKind === 'seed');
 
-  if (kind === 'potion') {
-    setPotionIconLabel(element, element.textContent, itemKey);
+  if (normalizedKind === 'herb') {
+    setImageItemIconLabel({
+      element,
+      text: element.textContent,
+      itemKey,
+      kind: 'herb',
+      className: HERB_ICON_LABEL_CLASS,
+      getIconUrl: getHerbIconUrl,
+    });
     return;
   }
 
-  clearPotionIconLabel(element);
+  if (normalizedKind === 'potion') {
+    setImageItemIconLabel({
+      element,
+      text: element.textContent,
+      itemKey: normalizePotionIconKey(itemKey, element.textContent),
+      kind: 'potion',
+      className: POTION_ICON_LABEL_CLASS,
+      getIconUrl: getPotionIconUrl,
+    });
+    return;
+  }
+
+  clearImageItemIconLabel(element);
 }
 
 export function appendTextWithItemIcons(element, text) {
@@ -65,32 +87,56 @@ export function appendTextWithItemIcons(element, text) {
 
 export const appendTextWithSeedIcons = appendTextWithItemIcons;
 
-function setPotionIconLabel(element, text, itemKey = null) {
+function setImageItemIconLabel({
+  element,
+  text,
+  itemKey = null,
+  kind,
+  className,
+  getIconUrl,
+}) {
   const value = String(text ?? '');
-  const normalizedKey = normalizePotionIconKey(itemKey, value);
+  const normalizedKey = String(itemKey ?? '').trim();
+  const iconUrl = getIconUrl(normalizedKey);
 
-  element.classList.add(POTION_ICON_LABEL_CLASS);
-  element.dataset.itemIconKind = 'potion';
+  if (!iconUrl) {
+    clearImageItemIconLabel(element);
+    if (element.textContent !== value) {
+      element.textContent = value;
+    }
+    return;
+  }
+
+  element.classList.remove(HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
+  element.classList.add(className);
+  element.dataset.itemIconKind = kind;
   element.dataset.itemIconKey = normalizedKey;
 
   if (
     element.textContent === value &&
-    element.querySelector(`.${POTION_ICON_LABEL_CLASS}__icon`) &&
+    element.querySelector(`.${className}__icon`) &&
     element.dataset.itemIconKey === normalizedKey
   ) {
     return;
   }
 
-  element.replaceChildren(createPotionIconImage(normalizedKey), createPotionText(value));
+  element.replaceChildren(
+    createImageItemIconImage(className, iconUrl),
+    createImageItemText(className, value),
+  );
 }
 
-function clearPotionIconLabel(element) {
-  if (!element.classList.contains(POTION_ICON_LABEL_CLASS)) {
+function clearImageItemIconLabel(element) {
+  const hasImageLabel =
+    element.classList.contains(HERB_ICON_LABEL_CLASS) ||
+    element.classList.contains(POTION_ICON_LABEL_CLASS);
+
+  if (!hasImageLabel) {
     return;
   }
 
   const text = element.textContent;
-  element.classList.remove(POTION_ICON_LABEL_CLASS);
+  element.classList.remove(HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
   delete element.dataset.itemIconKind;
   delete element.dataset.itemIconKey;
   element.textContent = text;
@@ -159,17 +205,25 @@ function createPotionIconLabel(text, itemKey = null) {
 }
 
 function createPotionIconImage(itemKey) {
+  return createImageItemIconImage(POTION_ICON_LABEL_CLASS, getPotionIconUrl(itemKey));
+}
+
+function createImageItemIconImage(className, iconUrl) {
   const icon = document.createElement('img');
-  icon.className = `${POTION_ICON_LABEL_CLASS}__icon`;
-  icon.src = getPotionIconUrl(itemKey);
+  icon.className = `${className}__icon`;
+  icon.src = iconUrl;
   icon.alt = '';
   icon.setAttribute('aria-hidden', 'true');
   return icon;
 }
 
 function createPotionText(text) {
+  return createImageItemText(POTION_ICON_LABEL_CLASS, text);
+}
+
+function createImageItemText(className, text) {
   const label = document.createElement('span');
-  label.className = `${POTION_ICON_LABEL_CLASS}__text`;
+  label.className = `${className}__text`;
   label.textContent = text;
   return label;
 }

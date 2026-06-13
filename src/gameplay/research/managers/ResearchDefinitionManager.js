@@ -1,4 +1,9 @@
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
+import {
+  advancedResearchIds,
+  advancedResearchMaxLevel,
+  getAdvancedResearchLevelReductionPercent,
+} from '../advancedResearchIds.js';
 
 const summonSeedResearches = [
   {
@@ -48,9 +53,14 @@ export class ResearchDefinitionManager {
         boxes: this.getRegularResearchBoxes(),
       },
       {
+        id: 'automation',
+        label: 'automation',
+        boxes: this.getAutomationResearchBoxes({ includeLevelLockedAutomation }),
+      },
+      {
         id: 'advanced',
         label: 'advanced research',
-        boxes: this.getAutomationResearchBoxes({ includeLevelLockedAutomation }),
+        boxes: this.getAdvancedResearchBoxes({ includeLevelLockedAutomation }),
       },
     ];
   }
@@ -201,6 +211,57 @@ export class ResearchDefinitionManager {
         }),
       },
     ];
+  }
+
+  getAdvancedResearchBoxes({ includeLevelLockedAutomation = false } = {}) {
+    return [
+      {
+        id: 'cauldronBrewing',
+        label: 'cauldron brewing research',
+        researches: this.getAdvancedSlotResearches({
+          count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
+          getId: advancedResearchIds.cauldronBrewing,
+          seriesId: (cauldronNumber) => `advanced:cauldronBrewing:${cauldronNumber}`,
+          label: (cauldronNumber, level) =>
+            `cauldron ${cauldronNumber} brewing lvl ${level}`,
+          description: (cauldronNumber, level) =>
+            `cauldron ${cauldronNumber} brewing time is reduced by ${getAdvancedResearchLevelReductionPercent(level)}%.`,
+        }),
+      },
+      {
+        id: 'plotGrowth',
+        label: 'plot growth research',
+        researches: this.getAdvancedSlotResearches({
+          count: this.getAutomationGardenTileCount({ includeLevelLockedAutomation }),
+          getId: advancedResearchIds.plotGrowth,
+          seriesId: (plotNumber) => `advanced:plotGrowth:${plotNumber}`,
+          label: (plotNumber, level) => `plot ${plotNumber} growth lvl ${level}`,
+          description: (plotNumber, level) =>
+            `plot ${plotNumber} growth time is reduced by ${getAdvancedResearchLevelReductionPercent(level)}%.`,
+        }),
+      },
+    ];
+  }
+
+  getAdvancedSlotResearches({ count, getId, seriesId, label, description }) {
+    const researches = [];
+
+    for (let targetNumber = 1; targetNumber <= count; targetNumber += 1) {
+      for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
+        researches.push({
+          id: getId(targetNumber, level),
+          label: label(targetNumber, level),
+          value: `-${getAdvancedResearchLevelReductionPercent(level)}% time`,
+          showEffect: true,
+          seriesId: seriesId(targetNumber),
+          requiredResearchIds:
+            level > 1 ? [getId(targetNumber, level - 1)] : [],
+          description: description(targetNumber, level),
+        });
+      }
+    }
+
+    return researches;
   }
 
   getNumberedResearches({ count, getId, label, description }) {

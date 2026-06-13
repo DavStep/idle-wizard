@@ -47,4 +47,8 @@ export class TopPanelFacade {
     this.authManager.unmount();
     this.viewManager.unmount();
   }
+
+  setResourceContext(context = {}) {
+    this.resourceDisplayManager.setContextCurrency(context.currency);
+  }
 }

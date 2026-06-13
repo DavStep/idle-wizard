@@ -16,7 +16,7 @@ const BLOCKED_TARGET_SELECTOR = [
 ].join(',');
 
 const OPEN_POPUP_SELECTOR = [
-  '.workshop-page__seed-inventory:not([hidden])',
+  '.workshop-page__bag-popup:not([hidden])',
   '.workshop-page__leaderboard-popup:not([hidden])',
   '.workshop-page__world-chat-popup:not([hidden])',
   '.brewing-page__recipes-popup:not([hidden])',

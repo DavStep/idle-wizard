@@ -1,4 +1,4 @@
-const RESOURCE_COLORS = new Set(['mana', 'gold', 'crystal', 'seed', 'herb']);
+const RESOURCE_COLORS = new Set(['mana', 'gold', 'crystal', 'ruby', 'seed', 'herb']);
 
 export function setResourceColor(element, resource) {
   if (!element) {
@@ -23,6 +23,11 @@ export function setResourceColorFromText(element, text) {
 
   if (/\bcrystal\b/.test(normalizedText)) {
     setResourceColor(element, 'crystal');
+    return;
+  }
+
+  if (/\bruby\b|\brubies\b/.test(normalizedText)) {
+    setResourceColor(element, 'ruby');
     return;
   }
 

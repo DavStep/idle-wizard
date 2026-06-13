@@ -95,6 +95,8 @@ export class TopPanelViewManager {
 
     if (label === 'crystal') {
       this.refs.crystalValue = val;
+      this.refs.contextCurrency = resource;
+      this.refs.contextCurrencyValue = val;
     }
 
     if (label === 'gold') {
@@ -105,6 +107,11 @@ export class TopPanelViewManager {
     const key = document.createElement('span');
     key.className = 'room-top-panel__resource-key';
     setResourceIconText(key, `${label} `);
+
+    if (label === 'crystal') {
+      this.refs.contextCurrencyKey = key;
+      resource.hidden = true;
+    }
 
     resource.append(key, val);
     return resource;

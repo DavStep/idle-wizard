@@ -23,13 +23,15 @@ export class BrewingSnapshotManager {
     const ingredients = this.brewingCauldronEntityManager.getIngredientSnapshots();
     const ingredientItemTypeIds = ingredients.map((ingredient) => ingredient.itemTypeId);
     const recipe = this.brewingRecipeMatchManager.getMatch(ingredientItemTypeIds);
-    const recipeUnlocked = recipe
-      ? this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)
-      : false;
     const recipeDiscoverable = recipe
       ? this.brewingRecipeMatchManager.isRecipeDiscoverable(recipe)
       : false;
-    const manaCost = recipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
+    const visibleRecipe = recipeDiscoverable ? null : recipe;
+    const visibleRecipeUnlocked = visibleRecipe
+      ? this.brewingRecipeMatchManager.isRecipeUnlocked(visibleRecipe)
+      : false;
+    const manaCost =
+      visibleRecipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
     const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
     const hasEnoughIngredients = this.hasEnoughIngredients(ingredientItemTypeIds);
     const hasEnoughMana = this.manaFacade.canSpend(manaCost);
@@ -38,21 +40,21 @@ export class BrewingSnapshotManager {
       herbs: this.getHerbSnapshots(),
       recipes: this.brewingRecipeMatchManager.getRecipes(),
       ingredients,
-      match: recipe
+      match: visibleRecipe
         ? {
-            potionTypeId: recipe.potionTypeId,
-            key: recipe.key,
-            label: recipeDiscoverable ? 'unknown recipe' : recipe.label,
-            realLabel: recipe.label,
-            manaCost: recipe.manaCost,
-            brewDurationMs: recipe.brewDurationMs,
-            unlocked: recipeUnlocked,
-            discoverable: recipeDiscoverable,
-            unknown: recipe.unknown === true,
-            discoveryType: recipe.discoveryType ?? null,
+            potionTypeId: visibleRecipe.potionTypeId,
+            key: visibleRecipe.key,
+            label: visibleRecipe.label,
+            realLabel: visibleRecipe.label,
+            manaCost: visibleRecipe.manaCost,
+            brewDurationMs: visibleRecipe.brewDurationMs,
+            unlocked: visibleRecipeUnlocked,
+            discoverable: false,
+            unknown: visibleRecipe.unknown === true,
+            discoveryType: visibleRecipe.discoveryType ?? null,
           }
         : null,
-      buttonLabel: recipe && recipeUnlocked ? `brew ${recipe.label}` : 'brew',
+      buttonLabel: visibleRecipe && visibleRecipeUnlocked ? `brew ${visibleRecipe.label}` : 'brew',
       manaCost,
       canAddIngredient:
         !activeBrew &&

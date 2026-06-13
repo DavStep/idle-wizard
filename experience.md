@@ -73,6 +73,7 @@
 - When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.
 - Server weekly/monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly is 7 days, monthly is 30 days, and UTC midnight is Armenia 04:00.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
+- Large generated research catalogs should put prerequisite ids on row definitions; per-row snapshot rendering must not re-read full definitions.
 
 ## Gameplay Economy
 
@@ -87,6 +88,11 @@
 - Potion recipe ingredient order matters; expand grouped quantities in listed order for matching.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
 - Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
+- Player-visible discovery reducers must not silently return behind feature flags; client success with no table row makes recipes look undiscovered.
+- Potion discovery table inserts must not depend on world-chat announcement rate limits; chat is secondary to the global unlock.
+- Potion discovery chat announcements should include the player, potion name, and full ingredient recipe, with a distinct gold system-row style.
+- Potion discovery royalties are earned only from other players' sales, and discovery rows show lifetime royalty income per recipe.
+- Undiscovered hidden potion matches should preview like wasted mixes, including wasted mana cost; only global discovery reveals the real recipe UI.
 - Brewing herb controls are tap-first on mobile; drag should start only after movement crosses a small threshold.
 - Brewing herb list vertical pan must stay native; custom herb drag should cancel on vertical movement and use `touch-action: pan-y`.
 - Brewing overflow herb rows must not be native-draggable on touch/coarse pointers; tap-to-add should preserve native list scrolling.
@@ -108,11 +114,12 @@
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
-- Crystal is the hard currency; it starts at `0`, appears in the top panel, level-ups grant `playerLevel.crystal.perLevel`, and advanced research spends it.
+- Crystal is the hard currency; it starts at `0`, appears in the top panel only where usable, level-ups grant `playerLevel.crystal.perLevel`, and automation research spends it.
+- Ruby starts at `0`, has no source yet, appears in the top panel only where usable, and advanced research spends it on per-slot speed upgrades.
 - Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
 - Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
-- Advanced automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide advanced research currency.
+- Automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide automation research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
@@ -156,6 +163,7 @@
 
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
 - Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
+- Image-backed item labels such as herbs and potions need `setItemIconLabel` after label text is current; seed labels are CSS pseudo-icons and only need the class.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
 - Player-facing UI labels should stay lowercase, including seed, herb, potion, research, notice, and task labels; preserve user-entered names as typed.
@@ -174,14 +182,14 @@
 - Popup/dialog panels can use the thicker event-panel treatment: `2px` border and `5px 5px 5px #666` shadow in source UI units.
 - Popup/dialog shadow tokens must contrast with the active theme: dark shadow on white surfaces, light shadow on black surfaces.
 - The Workshop mana-only resource block is called `mana sphere`.
-- Workshop seed count and summon seed action live in a separate `seeds` block; title and count are border labels, with no inner seed summary row.
-- Clicking the `seeds` title or count in the seeds block opens the seed inventory as a popup, not an inline room block.
+- Workshop no longer has a separate `seeds` block; `summon` and `bag` sit above world chat.
+- Workshop `bag` opens a tabbed popup for currencies, seeds, herbs, and potions.
 - Do not add decorative visuals unless the user explicitly asks.
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
-- Research page uses `snapshot.research.tabs` for full-page regular/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
+- Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
 - Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`), not global per action type.
 - Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
 - Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
@@ -217,7 +225,8 @@
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Gold displays amount-first as `<compact amount> gold` everywhere, including top chrome; use `25 gold` and `123k gold`, never `25g` or `gold 25`.
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
-- Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
+- Top panel layout uses two rows: username full-width above mana/gold/context currency, so resource text does not squeeze names.
+- Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Top panel gold should keep amount and `gold` in the same fitted value span; a separate suffix can leave clipped values like `308... gold`.
 - Clicking the top-panel username opens settings; username editing and visual theme choices live there.
@@ -281,7 +290,7 @@
 - Workshop collapsed task summary should preview the first incomplete task in level order; expanded task display keeps incomplete rows before completed rows.
 - Reuse the Workshop-style box expansion pattern for future boxes: one summary row remains visible, top-right border label shows progress/count, bottom-center border label toggles `expand`/`collapse`, and expanded rows appear in normal flow inside the same box.
 - Workshop task border labels need higher-specificity or late CSS overrides because generic `.style-box` padding and `.style-box :where(button, ...)` font-size rules otherwise override component styles.
-- Workshop tasks should expand in normal flow above mana sphere/seeds; do not overlay action panels.
+- Workshop tasks should expand in normal flow above mana sphere/action bar; do not overlay action panels.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Workshop task action buttons use a 12px source font so `complete` fits the fixed 58px action slot.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.

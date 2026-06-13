@@ -8,6 +8,7 @@ export class BrewingStartManager {
     brewingRecipeMatchManager,
     itemsFacade,
     manaFacade,
+    researchFacade,
   }) {
     this.brewingBalanceManager = brewingBalanceManager;
     this.brewingCauldronEntityManager = brewingCauldronEntityManager;
@@ -15,6 +16,7 @@ export class BrewingStartManager {
     this.brewingRecipeMatchManager = brewingRecipeMatchManager;
     this.itemsFacade = itemsFacade;
     this.manaFacade = manaFacade;
+    this.researchFacade = researchFacade;
   }
 
   addIngredient(itemTypeId) {
@@ -143,7 +145,10 @@ export class BrewingStartManager {
       };
     }
 
-    const manaCost = recipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
+    const manaCost =
+      recipe && !recipeDiscoverable
+        ? recipe.manaCost
+        : this.brewingBalanceManager.getWastedBrewManaCost();
 
     if (!this.manaFacade.spend(manaCost)) {
       return {
@@ -160,7 +165,11 @@ export class BrewingStartManager {
       : this.itemsFacade.getItemDefinitionByKey(
           this.brewingBalanceManager.getWastedPotionKey(),
         );
-    const durationMs = recipe?.brewDurationMs ?? this.brewingBalanceManager.getWastedBrewDurationMs();
+    const baseDurationMs =
+      recipe?.brewDurationMs ?? this.brewingBalanceManager.getWastedBrewDurationMs();
+    const durationMs =
+      this.researchFacade?.getReducedCauldronBrewingDurationMs?.(1, baseDurationMs) ??
+      baseDurationMs;
 
     this.brewingProcessEntityManager.startBrew({
       resultItemTypeId: resultItem.id,

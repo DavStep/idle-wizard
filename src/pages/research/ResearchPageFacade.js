@@ -6,11 +6,12 @@ export class ResearchPageFacade {
   static explain =
     'Shows the research room, where the player can see studies for future upgrades and unlocks.';
 
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, onSelectedTabChange } = {}) {
     this.roomViewManager = new ResearchRoomViewManager();
     this.infoDialogManager = new ResearchInfoDialogManager();
     this.boxListManager = new ResearchBoxListManager({
       gameplayFacade,
+      onSelectedTabChange,
       onShowResearchInfo: (research) => this.infoDialogManager.show(research),
     });
   }

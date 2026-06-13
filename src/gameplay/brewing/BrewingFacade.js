@@ -33,6 +33,7 @@ export class BrewingFacade {
       brewingRecipeMatchManager: this.brewingRecipeMatchManager,
       itemsFacade,
       manaFacade,
+      researchFacade,
     });
     this.brewingProcessManager = new BrewingProcessManager({
       brewingProcessEntityManager: this.brewingProcessEntityManager,

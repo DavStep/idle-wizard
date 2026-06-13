@@ -3,6 +3,7 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
@@ -318,6 +319,7 @@ export class BrewingCauldronManager {
       refs.row.classList.toggle('is-empty', herb.availableQuantity <= 0);
       refs.row.classList.toggle('is-locked', false);
       this.setText(refs.label, herb.label);
+      setItemIconLabel(refs.label, 'herb', herb.key);
       this.setText(refs.quantity, String(herb.availableQuantity));
       this.setDisabled(refs.button, disabled);
       this.setDraggable(refs.button, !disabled && this.canUseNativeHerbDrag());

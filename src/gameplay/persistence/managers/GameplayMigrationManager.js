@@ -33,6 +33,7 @@ export class GameplayMigrationManager {
       'mana',
       'gold',
       'crystal',
+      'ruby',
       'logs',
       'inventory',
       'research',

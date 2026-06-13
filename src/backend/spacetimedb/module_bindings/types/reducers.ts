@@ -8,6 +8,7 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import AcceptTradeAllianceApplicationReducer from "../accept_trade_alliance_application_reducer";
 import AdminDisbandTradeAllianceReducer from "../admin_disband_trade_alliance_reducer";
+import AdminMergePlayerAccountsReducer from "../admin_merge_player_accounts_reducer";
 import AdminMoveTradeAllianceMemberReducer from "../admin_move_trade_alliance_member_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "../admin_set_trade_alliance_member_role_reducer";
 import AnnounceLevelUpReducer from "../announce_level_up_reducer";
@@ -55,6 +56,7 @@ import UpsertResearchConfigReducer from "../upsert_research_config_reducer";
 
 export type AcceptTradeAllianceApplicationParams = __Infer<typeof AcceptTradeAllianceApplicationReducer>;
 export type AdminDisbandTradeAllianceParams = __Infer<typeof AdminDisbandTradeAllianceReducer>;
+export type AdminMergePlayerAccountsParams = __Infer<typeof AdminMergePlayerAccountsReducer>;
 export type AdminMoveTradeAllianceMemberParams = __Infer<typeof AdminMoveTradeAllianceMemberReducer>;
 export type AdminSetTradeAllianceMemberRoleParams = __Infer<typeof AdminSetTradeAllianceMemberRoleReducer>;
 export type AnnounceLevelUpParams = __Infer<typeof AnnounceLevelUpReducer>;

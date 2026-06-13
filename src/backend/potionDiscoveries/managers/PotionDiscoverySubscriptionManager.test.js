@@ -84,6 +84,8 @@ describe('PotionDiscoverySubscriptionManager', () => {
         discoveredByIdentity: 'identity-b',
         username: 'Mira',
         discoveredAt: createTimestamp(2_000),
+        royaltyGold: 0n,
+        royaltyGoldScale: 100,
       },
       {
         potionKey: 'ashenMemory',
@@ -91,6 +93,8 @@ describe('PotionDiscoverySubscriptionManager', () => {
         discoveredByIdentity: 'identity-a',
         username: 'Ada',
         discoveredAt: createTimestamp(1_000),
+        royaltyGold: 1234n,
+        royaltyGoldScale: 100,
       },
     ]);
     const manager = new PotionDiscoverySubscriptionManager({
@@ -108,6 +112,7 @@ describe('PotionDiscoverySubscriptionManager', () => {
           discoveredByIdentity: 'identity-a',
           username: 'Ada',
           discoveredAtMs: 1_000,
+          royaltyGold: 12.34,
         },
         {
           potionKey: 'silverleafQuiet',
@@ -115,6 +120,7 @@ describe('PotionDiscoverySubscriptionManager', () => {
           discoveredByIdentity: 'identity-b',
           username: 'Mira',
           discoveredAtMs: 2_000,
+          royaltyGold: 0,
         },
       ],
     });

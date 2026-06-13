@@ -1,3 +1,5 @@
+import { advancedResearchIds, advancedResearchMaxLevel } from '../advancedResearchIds.js';
+
 const maxResearchDurationSeconds = 10 * 60;
 
 const DEFAULT_RESEARCH_BALANCE = {
@@ -112,17 +114,41 @@ const DEFAULT_RESEARCH_BALANCE = {
     'automation:autoCollectCauldron:4': 4,
     'automation:autoCollectCauldron:5': 5,
   },
+  researchCostsRuby: createDefaultAdvancedRubyCosts(),
 };
 
 DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDurations(
   DEFAULT_RESEARCH_BALANCE.researchCostsGold,
   DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
+  DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
 );
 
-function createDefaultResearchDurations(costsGold, costsCrystal = {}) {
+function createDefaultAdvancedRubyCosts() {
+  const costs = {};
+
+  for (let cauldronNumber = 1; cauldronNumber <= 5; cauldronNumber += 1) {
+    for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
+      costs[advancedResearchIds.cauldronBrewing(cauldronNumber, level)] = level;
+    }
+  }
+
+  for (let plotNumber = 1; plotNumber <= 10; plotNumber += 1) {
+    for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
+      costs[advancedResearchIds.plotGrowth(plotNumber, level)] = level;
+    }
+  }
+
+  return costs;
+}
+
+function createDefaultResearchDurations(costsGold, costsCrystal = {}, costsRuby = {}) {
   const researchIds = [
     ...Object.keys(costsGold),
     ...Object.keys(costsCrystal).filter((researchId) => costsGold[researchId] === undefined),
+    ...Object.keys(costsRuby).filter(
+      (researchId) =>
+        costsGold[researchId] === undefined && costsCrystal[researchId] === undefined,
+    ),
   ];
 
   return Object.fromEntries(
@@ -156,6 +182,7 @@ export class ResearchBalanceManager {
     this.balance = balance;
     this.costGoldByResearchId = this.readCostGoldByResearchId();
     this.costCrystalByResearchId = this.readCostCrystalByResearchId();
+    this.costRubyByResearchId = this.readCostRubyByResearchId();
     this.durationSecondsByResearchId = this.readDurationSecondsByResearchId();
   }
 
@@ -167,6 +194,15 @@ export class ResearchBalanceManager {
       return {
         amount: costCrystal,
         currency: 'crystal',
+      };
+    }
+
+    const costRuby = this.costRubyByResearchId[normalizedResearchId];
+
+    if (Number.isFinite(costRuby)) {
+      return {
+        amount: costRuby,
+        currency: 'ruby',
       };
     }
 
@@ -194,6 +230,12 @@ export class ResearchBalanceManager {
     const cost = this.getCost(researchId);
 
     return cost.currency === 'crystal' ? cost.amount : 0;
+  }
+
+  getCostRuby(researchId) {
+    const cost = this.getCost(researchId);
+
+    return cost.currency === 'ruby' ? cost.amount : 0;
   }
 
   getDurationSeconds(researchId) {
@@ -309,6 +351,29 @@ export class ResearchBalanceManager {
     return { ...costs };
   }
 
+  readCostRubyByResearchId() {
+    const costs = this.balance?.researchCostsRuby;
+
+    if (costs === undefined) {
+      return { ...DEFAULT_RESEARCH_BALANCE.researchCostsRuby };
+    }
+
+    if (!costs || typeof costs !== 'object' || Array.isArray(costs)) {
+      throw new Error('game_config.research researchCostsRuby must be an object.');
+    }
+
+    for (const cost of Object.values(costs)) {
+      if (!Number.isFinite(cost) || cost < 0) {
+        throw new Error('game_config.research ruby costs must be zero or positive numbers.');
+      }
+    }
+
+    return {
+      ...DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
+      ...costs,
+    };
+  }
+
   readDurationSecondsByResearchId() {
     const durations = this.balance?.researchDurationsSeconds;
 
@@ -326,6 +391,9 @@ export class ResearchBalanceManager {
       }
     }
 
-    return { ...durations };
+    return {
+      ...DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds,
+      ...durations,
+    };
   }
 }
