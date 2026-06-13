@@ -53,6 +53,12 @@ export class TopPanelAuthManager {
 
     const oidc = snapshot?.oidc ?? {};
     this.authenticated = Boolean(oidc.authenticated);
+
+    if (!this.authenticated && oidc.disabledReason === 'native') {
+      section.hidden = true;
+      return;
+    }
+
     section.hidden = false;
     button.disabled = !oidc.enabled;
     button.textContent = this.authenticated ? 'unlink account' : 'link account';

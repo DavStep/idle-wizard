@@ -2086,7 +2086,11 @@ function createPlayerFacadeFake(
   };
 }
 
-function createAuthFacadeFake({ enabled = true, authenticated = false } = {}) {
+function createAuthFacadeFake({
+  enabled = true,
+  authenticated = false,
+  disabledReason = null,
+} = {}) {
   let signInCount = 0;
   let signInPayload = null;
   const snapshot = {
@@ -2096,6 +2100,7 @@ function createAuthFacadeFake({ enabled = true, authenticated = false } = {}) {
       displayName: authenticated ? 'Dav' : '',
       email: authenticated ? 'dav@example.com' : '',
       error: null,
+      disabledReason,
     },
   };
 
@@ -3416,6 +3421,27 @@ describe('PagesFacade', () => {
         crystal: { current: 0 },
       },
     });
+  });
+
+  it('hides account linking in native settings when OIDC is disabled', () => {
+    const stage = document.createElement('section');
+    const authFacade = createAuthFacadeFake({
+      enabled: false,
+      disabledReason: 'native',
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin'),
+      authFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.room-top-panel__auth-section')?.hidden).toBe(true);
   });
 
   it('saves username from the mobile keyboard done action', () => {

@@ -27,6 +27,7 @@ describe('AuthOidcManager', () => {
     await expect(manager.prepare()).resolves.toMatchObject({
       enabled: false,
       authenticated: false,
+      disabledReason: 'config',
     });
   });
 
@@ -83,6 +84,7 @@ describe('AuthOidcManager', () => {
       authenticated: true,
       displayName: 'Dav',
       email: 'dav@example.com',
+      disabledReason: null,
     });
   });
 
@@ -151,6 +153,7 @@ describe('AuthOidcManager', () => {
     await expect(manager.prepare()).resolves.toMatchObject({
       enabled: false,
       authenticated: false,
+      disabledReason: 'native',
     });
     await expect(manager.getConnectionToken()).resolves.toBeUndefined();
     expect(addListener).not.toHaveBeenCalled();

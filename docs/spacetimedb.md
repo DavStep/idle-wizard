@@ -59,7 +59,8 @@ http://127.0.0.1:55173/
 Native Android builds keep SpacetimeAuth/OIDC disabled by default and enter the
 game through the normal SpacetimeDB anonymous session token. Keep
 `VITE_ENABLE_NATIVE_OIDC=false` unless mobile account linking is explicitly
-requested again.
+requested again. The native settings UI hides the account-linking row in this
+state so players do not see a dead `login unavailable` control.
 
 If native account linking is re-enabled later, Android should use
 `https://davstep.github.io/idle-wizard/` as the SpacetimeAuth redirect URI, then

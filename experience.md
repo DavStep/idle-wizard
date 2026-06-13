@@ -44,6 +44,7 @@
 - SpacetimeAuth client URI fields are list values; the dashboard form submits JSON fields `redirectUris` and `postLogoutRedirectUris`, and typing without adding list members leaves auth with `invalid_redirect_uri`.
 - Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` SpacetimeAuth redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail SpacetimeAuth validation.
 - Native Android builds should keep SpacetimeAuth/OIDC disabled by default; entering the game should use the normal anonymous SpacetimeDB session token unless mobile account linking is explicitly requested.
+- When native OIDC is disabled, hide the account-linking settings row instead of showing `login unavailable`; that label looks like a broken required login.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.

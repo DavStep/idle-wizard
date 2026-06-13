@@ -111,6 +111,7 @@ export class AuthOidcManager {
       displayName: this.getDisplayName(),
       email: this.user?.profile?.email ?? '',
       error: this.error,
+      disabledReason: this.getDisabledReason(),
     };
   }
 
@@ -135,6 +136,18 @@ export class AuthOidcManager {
       profile?.email ??
       ''
     );
+  }
+
+  getDisabledReason() {
+    if (!this.clientId || !this.windowRef) {
+      return 'config';
+    }
+
+    if (this.isNativePlatform() && !this.nativeOidcEnabled) {
+      return 'native';
+    }
+
+    return null;
   }
 
   async handleCallbackUrl(manager) {
