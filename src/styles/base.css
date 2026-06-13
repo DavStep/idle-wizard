@@ -23,7 +23,7 @@
   --style-scroll-fade-rgb: var(--style-log-fade-rgb);
   --style-scroll-fade-opacity: 72%;
   --style-scroll-cue-height: 64px;
-  --style-scroll-progress-gap: 6px;
+  --style-scroll-progress-gap: 10px;
   --style-scroll-progress-height: calc(var(--style-progress-height) + 2px);
   --style-scroll-progress-block-size: calc(
     var(--style-scroll-progress-gap) + var(--style-scroll-progress-height)

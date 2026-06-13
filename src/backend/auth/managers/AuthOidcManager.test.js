@@ -71,9 +71,9 @@ describe('AuthOidcManager', () => {
         location: {
           origin: 'https://davstep.github.io',
           pathname: '/idle-wizard/',
-          search: '?code=abc&state=def',
-          hash: '',
-          href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
+          search: '',
+          hash: '#id_token=abc&state=def',
+          href: 'https://davstep.github.io/idle-wizard/#id_token=abc&state=def',
         },
       },
       createUserManager: (settings) => {
@@ -86,7 +86,7 @@ describe('AuthOidcManager', () => {
 
     expect(capturedSettings.redirect_uri).toBe('https://davstep.github.io/idle-wizard/');
     expect(capturedSettings.authority).toBe('https://accounts.google.com');
-    expect(capturedSettings.response_type).toBe('code');
+    expect(capturedSettings.response_type).toBe('id_token');
     expect(capturedSettings.prompt).toBe('select_account');
     expect(capturedSettings.stateStore).toBeDefined();
     await capturedSettings.stateStore.set('callback-state', 'saved');
@@ -105,6 +105,35 @@ describe('AuthOidcManager', () => {
     });
   });
 
+  it('keeps code flow available when explicitly configured', async () => {
+    let capturedSettings = null;
+    const oidcClient = {
+      getUser: vi.fn(() => Promise.resolve(null)),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      responseType: 'code',
+      storage: createMemoryStorage(),
+      windowRef: {
+        location: {
+          origin: 'https://davstep.github.io',
+          pathname: '/idle-wizard/',
+          search: '',
+          hash: '',
+          href: 'https://davstep.github.io/idle-wizard/',
+        },
+      },
+      createUserManager: (settings) => {
+        capturedSettings = settings;
+        return oidcClient;
+      },
+    });
+
+    await manager.prepare();
+
+    expect(capturedSettings.response_type).toBe('code');
+  });
+
   it('cleans the redirect URL when callback handling fails', async () => {
     const replaceState = vi.fn();
     const oidcClient = {
@@ -121,9 +150,9 @@ describe('AuthOidcManager', () => {
         location: {
           origin: 'https://davstep.github.io',
           pathname: '/idle-wizard/',
-          search: '?code=abc&state=def',
-          hash: '',
-          href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
+          search: '',
+          hash: '#id_token=abc&state=def',
+          href: 'https://davstep.github.io/idle-wizard/#id_token=abc&state=def',
         },
       },
       createUserManager: () => oidcClient,
@@ -231,6 +260,7 @@ describe('AuthOidcManager', () => {
     expect(capturedSettings.redirect_uri).toBe(
       'https://davstep.github.io/idle-wizard/',
     );
+    expect(capturedSettings.response_type).toBe('code');
     expect(oidcClient.signinCallback).toHaveBeenCalledWith(
       'com.idlewizard.game://auth/callback?code=abc&state=def',
     );

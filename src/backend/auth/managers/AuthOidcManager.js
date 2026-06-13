@@ -5,7 +5,8 @@ import { NativeGoogleAuthPlugin } from '../nativeGoogleAuthPlugin.js';
 
 const DEFAULT_AUTHORITY = 'https://accounts.google.com';
 const DEFAULT_SCOPE = 'openid profile email';
-const DEFAULT_RESPONSE_TYPE = 'code';
+const DEFAULT_NATIVE_RESPONSE_TYPE = 'code';
+const DEFAULT_WEB_RESPONSE_TYPE = 'id_token';
 const DEFAULT_MOBILE_REDIRECT_URI = 'https://davstep.github.io/idle-wizard/?native_auth=1';
 const NATIVE_GOOGLE_USER_STORAGE_KEY = 'idle-wizard.native-google.user';
 const TOKEN_EXPIRY_SKEW_MS = 60 * 1000;
@@ -18,7 +19,7 @@ export class AuthOidcManager {
     postLogoutRedirectUri = import.meta.env.VITE_GOOGLE_AUTH_POST_LOGOUT_REDIRECT_URI,
     mobileRedirectUri = import.meta.env.VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI ??
       DEFAULT_MOBILE_REDIRECT_URI,
-    responseType = import.meta.env.VITE_GOOGLE_AUTH_RESPONSE_TYPE ?? DEFAULT_RESPONSE_TYPE,
+    responseType = import.meta.env.VITE_GOOGLE_AUTH_RESPONSE_TYPE,
     nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC !== 'false',
     nativeGoogleAuthEnabled = import.meta.env.VITE_ENABLE_NATIVE_GOOGLE_AUTH !== 'false',
     basePath = import.meta.env.BASE_URL ?? '/',
@@ -514,7 +515,7 @@ export class AuthOidcManager {
       client_id: this.clientId,
       redirect_uri: redirectUri,
       post_logout_redirect_uri: postLogoutRedirectUri,
-      response_type: this.responseType,
+      response_type: this.getResponseType(),
       scope: DEFAULT_SCOPE,
       prompt: 'select_account',
       automaticSilentRenew: false,
@@ -564,6 +565,12 @@ export class AuthOidcManager {
 
   getPostLogoutRedirectUri(appUrl) {
     return this.postLogoutRedirectUri ?? this.getRedirectUri(appUrl);
+  }
+
+  getResponseType() {
+    return this.responseType ?? (
+      this.isNativePlatform() ? DEFAULT_NATIVE_RESPONSE_TYPE : DEFAULT_WEB_RESPONSE_TYPE
+    );
   }
 
   isNativePlatform() {

@@ -304,6 +304,7 @@
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.
 - Optional Google login is controlled by `VITE_GOOGLE_AUTH_CLIENT_ID`; the Google OAuth client ID is public config and can live in `.env.production`.
+- Browser Google login should use an ID-token redirect (`response_type=id_token`) for SpacetimeDB auth; Google code-flow token exchange from the browser asks for a client secret.
 - OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 
