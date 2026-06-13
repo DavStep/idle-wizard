@@ -1,6 +1,7 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import summonCircleUrl from '../../../assets/ui/summon-circle.png';
 
 export class WorkshopActionBarManager {
   constructor({ gameplayFacade, onBagClick, onSummonNotice } = {}) {
@@ -51,6 +52,16 @@ export class WorkshopActionBarManager {
     button.type = 'button';
     button.dataset.tutorialId = 'workshop:summonSeed';
 
+    const circle = document.createElement('img');
+    circle.className = 'workshop-page__summon-circle';
+    circle.src = summonCircleUrl;
+    circle.alt = '';
+    circle.draggable = false;
+    circle.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('span');
+    text.className = 'workshop-page__summon-button-text';
+
     this.refs.summonButtonLabel = document.createElement('span');
     this.refs.summonButtonLabel.className = 'workshop-page__summon-button-label';
     this.refs.summonButtonLabel.textContent = 'summon seed';
@@ -59,7 +70,8 @@ export class WorkshopActionBarManager {
     this.refs.summonButtonCost.className = 'workshop-page__summon-button-cost';
     setResourceColor(this.refs.summonButtonCost, 'mana');
 
-    button.append(this.refs.summonButtonLabel, this.refs.summonButtonCost);
+    text.append(this.refs.summonButtonLabel, this.refs.summonButtonCost);
+    button.append(circle, text);
     button.addEventListener('click', () => this.onSummonSeed());
     return button;
   }
