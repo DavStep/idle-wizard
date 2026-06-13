@@ -45,6 +45,7 @@
 - Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` Google redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail provider validation.
 - Android Google account linking should open through Capacitor Browser/Chrome Custom Tab, not the game WebView, so Google shows the normal account picker.
 - `oidc-client-ts` supports Authorization Code with PKCE for redirect sign-in; implicit `id_token token` fails before Capacitor Browser opens.
+- Mobile auth redirects need an explicit native marker and Android `intent://` handoff; some custom-tab browsers can ignore bare custom-scheme redirects from a loaded page.
 - SpacetimeDB computes OIDC identities from `iss` + `sub`, so a direct Google ID token creates a stable account without a SpacetimeAuth hop.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.

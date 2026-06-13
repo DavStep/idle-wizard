@@ -64,12 +64,13 @@ Configure Google OAuth with these authorized redirect URIs:
 
 ```txt
 https://davstep.github.io/idle-wizard/
+https://davstep.github.io/idle-wizard/?native_auth=1
 http://127.0.0.1:55173/
 ```
 
-Native Android account linking uses `https://davstep.github.io/idle-wizard/` as
-the Google redirect URI, then the hosted page forwards OIDC callback params to
-the installed app with `com.idlewizard.game://auth/callback`. The native app
+Native Android account linking uses `https://davstep.github.io/idle-wizard/?native_auth=1`
+as the Google redirect URI, then the hosted page forwards OIDC callback params
+to the installed app with `com.idlewizard.game://auth/callback`. The native app
 opens Google through Capacitor Browser so players see the normal Chrome account
 picker instead of an embedded WebView login.
 
@@ -78,7 +79,7 @@ production builds read:
 
 ```txt
 VITE_GOOGLE_AUTH_CLIENT_ID=<google-client-id>
-VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI=https://davstep.github.io/idle-wizard/
+VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI=https://davstep.github.io/idle-wizard/?native_auth=1
 ```
 
 ## Auth Flow

@@ -3,35 +3,16 @@ import '@fontsource/lexend/latin-700.css';
 import './styles/base.css';
 
 import { AppFacade } from './app/AppFacade.js';
+import { AuthMobileRedirectBridgeManager } from './backend/auth/managers/AuthMobileRedirectBridgeManager.js';
 
 const mobileAuthCallbackUri =
   import.meta.env.VITE_GOOGLE_AUTH_MOBILE_CALLBACK_URI ??
   'com.idlewizard.game://auth/callback';
 
 function redirectMobileOidcCallbackToApp() {
-  if (globalThis.Capacitor?.isNativePlatform?.()) {
-    return false;
-  }
-
-  const { location, navigator } = globalThis;
-  const params = new URLSearchParams(location.search);
-  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
-  for (const [key, value] of hashParams) {
-    params.set(key, value);
-  }
-  const hasCallback =
-    params.has('state') &&
-    (params.has('code') ||
-      params.has('id_token') ||
-      params.has('access_token') ||
-      params.has('error'));
-  const isAndroidBrowser = /Android/i.test(navigator?.userAgent ?? '');
-  if (!hasCallback || !isAndroidBrowser) {
-    return false;
-  }
-
-  location.replace(`${mobileAuthCallbackUri}${location.search}${location.hash}`);
-  return true;
+  return new AuthMobileRedirectBridgeManager({
+    callbackUri: mobileAuthCallbackUri,
+  }).redirectIfNeeded();
 }
 
 if (!redirectMobileOidcCallbackToApp()) {
