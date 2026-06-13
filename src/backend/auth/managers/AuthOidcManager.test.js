@@ -119,6 +119,57 @@ describe('AuthOidcManager', () => {
     expect(replaceState).toHaveBeenCalledWith({}, 'Idle Wizard', '/idle-wizard/');
   });
 
+  it('uses the Android app callback URL on native builds', async () => {
+    let capturedSettings = null;
+    const user = {
+      id_token: 'id-token',
+      profile: {
+        email: 'dav@example.com',
+      },
+    };
+    const oidcClient = {
+      signinCallback: vi.fn(() => Promise.resolve(user)),
+      getUser: vi.fn(() => Promise.resolve(null)),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      mobileRedirectUri: 'https://davstep.github.io/idle-wizard/',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      appPlugin: {
+        addListener: vi.fn(() => Promise.resolve({ remove: vi.fn() })),
+        getLaunchUrl: vi.fn(() =>
+          Promise.resolve({
+            url: 'com.idlewizard.game://auth/callback?code=abc&state=def',
+          }),
+        ),
+      },
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+      createUserManager: (settings) => {
+        capturedSettings = settings;
+        return oidcClient;
+      },
+    });
+
+    await manager.prepare();
+
+    expect(capturedSettings.redirect_uri).toBe(
+      'https://davstep.github.io/idle-wizard/',
+    );
+    expect(oidcClient.signinCallback).toHaveBeenCalledWith(
+      'com.idlewizard.game://auth/callback?code=abc&state=def',
+    );
+    await expect(manager.getConnectionToken()).resolves.toBe('id-token');
+  });
+
   it('reports redirect start failures without leaving stale errors hidden', async () => {
     const oidcClient = {
       signinRedirect: vi.fn(() => Promise.reject(new Error('bad redirect'))),

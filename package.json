@@ -33,7 +33,9 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
     "@fontsource/lexend": "^5.2.11",
     "bitecs": "^0.4.0",
     "oidc-client-ts": "^3.5.0",

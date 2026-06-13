@@ -42,6 +42,7 @@
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
 - SpacetimeAuth client URI fields are list values; the dashboard form submits JSON fields `redirectUris` and `postLogoutRedirectUris`, and typing without adding list members leaves auth with `invalid_redirect_uri`.
+- Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` SpacetimeAuth redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail SpacetimeAuth validation.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
@@ -358,4 +359,6 @@
 - Android packaging uses Capacitor.
 - Capacitor 8 Android builds require JDK 21 here.
 - Capacitor Android serves bundled assets as `https://localhost` by default; local `ws://` SpacetimeDB is blocked as mixed content unless `server.androidScheme` is `http` and cleartext is allowed, then the app is rebuilt/synced.
+- Capacitor 8 iOS should use CocoaPods here (`npx cap add ios --packagemanager CocoaPods`); the SPM path can hide core APIs like `CAPPluginCall.reject`.
+- Xcode 15.4 on macOS 26 can fail `Assets.xcassets` with `AssetCatalogSimulatorAgent` FIFO handshakes; simulator builds can still verify code with `EXCLUDED_SOURCE_FILE_NAMES=Assets.xcassets`.
 - Localhost ports `5173` and `5174` were already shadowed; `55173` worked for this project.

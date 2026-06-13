@@ -49,12 +49,16 @@ The GitHub Pages workflow already sets those values before `npm run build -- --b
 
 Google login uses SpacetimeAuth as the OIDC provider. Keep the Google client secret only in the SpacetimeAuth dashboard; never commit it.
 
-Configure the SpacetimeAuth client with these redirect URIs:
+Configure the SpacetimeAuth client with these redirect URIs and post logout redirect URIs:
 
 ```txt
 https://davstep.github.io/idle-wizard/
 http://127.0.0.1:55173/
 ```
+
+Android account linking uses `https://davstep.github.io/idle-wizard/` as the
+SpacetimeAuth redirect URI, then the hosted page forwards OIDC callback params to
+the installed app with `com.idlewizard.game://auth/callback`.
 
 Configure Google OAuth with this authorized redirect URI:
 
