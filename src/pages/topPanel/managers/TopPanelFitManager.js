@@ -1,6 +1,6 @@
 const RESOURCE_FONT_SIZE_PROPERTY = '--room-top-panel-resource-font-size';
-const RESOURCE_FONT_MAX = 15;
-const RESOURCE_FONT_MIN = 11;
+const RESOURCE_FONT_MAX = 13;
+const RESOURCE_FONT_MIN = 10;
 const FIT_TOLERANCE = 1;
 
 export function fitTopPanelResourceFont(

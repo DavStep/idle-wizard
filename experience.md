@@ -165,11 +165,12 @@
 - Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
 - Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
+- For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
 - Player-facing UI labels should stay lowercase, including seed, herb, potion, research, notice, and task labels; preserve user-entered names as typed.
-- Project typography uses `Lexend` at `15px` source size with tabular lining numerals for values.
-- Keep popup/dialog titles at `16px`; ordinary block titles and body text share the source size.
+- Project typography uses `Lexend` at `13px` source size with tabular lining numerals for values.
+- Keep popup/dialog titles at `14px`; ordinary block titles and body text share the source size.
 - Box titles use bold weight.
 - Non-title labels that sit on a box border (counts, close/current controls, bottom-edge actions/tabs) use smaller text and a fixed line box centered on the border line.
 - Mobile readability comes from the room UI scale layer, not from changing the source font size upward.
@@ -293,7 +294,7 @@
 - Workshop task border labels need higher-specificity or late CSS overrides because generic `.style-box` padding and `.style-box :where(button, ...)` font-size rules otherwise override component styles.
 - Workshop tasks should expand in normal flow above mana sphere/action bar; do not overlay action panels.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
-- Workshop task action buttons use a 12px source font so `complete` fits the fixed 58px action slot.
+- Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
 - Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.

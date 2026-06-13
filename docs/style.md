@@ -15,8 +15,8 @@ This project should use the same kind of minimal text-game language, without cop
 ## Typography
 
 - Default font family: `Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
-- Source UI font size: `15px`.
-- Popup/dialog title font size stays `16px`.
+- Source UI font size: `13px`.
+- Popup/dialog title font size stays `14px`.
 - Mobile readability comes from the room UI scale layer, not from changing the source font size.
 - Normal font weight by default.
 - Normal line height and normal letter spacing.

@@ -4017,7 +4017,7 @@ describe('PagesFacade', () => {
     expect(bag.textContent).toContain('sage seed');
     expect(
       bag
-        .querySelector('.workshop-page__bag-item-row--seed .row_key')
+        .querySelector('.workshop-page__bag-item-row--seed .row_val .workshop-page__bag-value-icon')
         ?.classList.contains('style-seed-label'),
     ).toBe(true);
     expect(bag.textContent).toContain('0');
@@ -4183,6 +4183,11 @@ describe('PagesFacade', () => {
       '0',
       '0',
     ]);
+    expect(
+      rows
+        .find((row) => row.querySelector('.row_key')?.textContent === 'gold')
+        ?.querySelector('.row_val .style-resource-label--gold'),
+    ).not.toBeNull();
     expect(rows.every((row) => row.classList.contains('is-empty'))).toBe(true);
   });
 

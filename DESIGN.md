@@ -19,27 +19,27 @@ colors:
 typography:
   body:
     fontFamily: "Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
-    fontSize: "15px"
+    fontSize: "13px"
     fontWeight: 400
     lineHeight: "normal"
     letterSpacing: "normal"
   title:
     fontFamily: "Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
-    fontSize: "15px"
+    fontSize: "13px"
     fontWeight: 700
     lineHeight: "normal"
     letterSpacing: "normal"
   dialog-title:
     fontFamily: "Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
-    fontSize: "16px"
+    fontSize: "14px"
     fontWeight: 700
     lineHeight: "normal"
     letterSpacing: "normal"
   border-label:
     fontFamily: "Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
-    fontSize: "13px"
+    fontSize: "11px"
     fontWeight: 400
-    lineHeight: "16px"
+    lineHeight: "14px"
     letterSpacing: "normal"
 rounded:
   none: "0"
@@ -129,14 +129,14 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 **Character:** Text is calm, readable, and compact. Hierarchy comes from position, borders, underline state, and occasional bold labels, not from large type.
 
 ### Hierarchy
-- **Title** (bold, 15px, normal line-height): Embedded box titles and important row names.
-- **Dialog Title** (bold, 16px, normal line-height): Popup border titles only.
-- **Body** (regular, 15px, normal line-height): Room rows, button labels, resource values, and status text.
-- **Border Label** (regular, 13px, 16px line-height): Counts, close controls, popup tabs, bottom-border actions, and compact category controls.
+- **Title** (bold, 13px, normal line-height): Embedded box titles and important row names.
+- **Dialog Title** (bold, 14px, normal line-height): Popup border titles only.
+- **Body** (regular, 13px, normal line-height): Room rows, button labels, resource values, and status text.
+- **Border Label** (regular, 11px, 14px line-height): Counts, close controls, popup tabs, bottom-border actions, and compact category controls.
 
 ### Named Rules
 
-**The Source Scale Rule.** Keep source UI text at 15px and make mobile readable through the room UI scale layer.
+**The Source Scale Rule.** Keep source UI text at 13px and make mobile readable through the room UI scale layer.
 
 **The Lowercase Rule.** Player-facing labels stay lowercase unless they are user-entered names or external proper nouns.
 
@@ -170,7 +170,7 @@ Ordinary room UI is flat. Depth is communicated by 1px borders, title placement,
 - **Shadow Strategy:** No shadow for ordinary panels.
 - **Border:** 1px ink border for room boxes and panels.
 - **Internal Padding:** Compact source padding (5px 10px).
-- **Title:** Embedded on the top border over the same surface, bold 15px.
+- **Title:** Embedded on the top border over the same surface, bold 13px.
 
 ### Inputs / Fields
 - **Style:** Same surface, same source typography, 1px border, no radius.
@@ -178,7 +178,7 @@ Ordinary room UI is flat. Depth is communicated by 1px borders, title placement,
 - **Error / Disabled:** Error copy stays compact, disabled fields use disabled gray.
 
 ### Navigation
-- **Bottom Room Tabs:** Five equal tabs at the bottom center, source 13px, active tab underlined.
+- **Bottom Room Tabs:** Five equal tabs at the bottom center, source 11px, active tab underlined.
 - **Popup Tabs:** Sit below and outside the bordered dialog, use 2px stroke, and keep an 8px source gap.
 - **Page Names:** All five room page names stay visible in bottom chrome.
 
@@ -194,7 +194,7 @@ Ordinary room UI is flat. Depth is communicated by 1px borders, title placement,
 
 ### Do:
 - **Do** reuse `docs/ui-patterns.md` before creating any new row, box, popup, tab, or border-label treatment.
-- **Do** keep source typography at 15px body, 16px dialog title, and 13px border label.
+- **Do** keep source typography at 13px body, 14px dialog title, and 11px border label.
 - **Do** use 1px borders for ordinary boxes and 2px borders only for dialogs or popup tabs.
 - **Do** keep row actions inline and right-aligned with tabular numerals.
 - **Do** support reduced motion by removing nonessential transitions and animations.

@@ -196,6 +196,11 @@ describe('BrewingRecipeBookManager', () => {
       { required: '- 2 briar', owned: 'owned 7' },
       { required: '- 2 sage', owned: 'owned 1' },
     ]);
+    const required = parent.querySelector('.brewing-page__recipe-ingredient-required');
+
+    expect(required?.childNodes[0]?.textContent).toBe('- 2 ');
+    expect(required?.childNodes[1]?.classList.contains('style-herb-label')).toBe(true);
+    expect(required?.querySelector('.style-herb-label__icon')).not.toBeNull();
 
     snapshot.brewing.herbs[1].quantity = 8;
     manager.render(snapshot);

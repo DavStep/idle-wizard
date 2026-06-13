@@ -397,8 +397,7 @@ export class BrewingRecipeBookManager {
         const required = document.createElement('span');
         required.className = 'brewing-page__recipe-ingredient-required';
         setResourceColor(required, 'herb');
-        required.textContent = `- ${quantity} ${ingredient.label}`;
-        setItemIconLabel(required, 'herb', ingredient.key);
+        required.append(`- ${quantity} `, this.createIngredientIconLabel(ingredient));
 
         const owned = document.createElement('span');
         owned.className = 'brewing-page__recipe-ingredient-owned';
@@ -432,6 +431,13 @@ export class BrewingRecipeBookManager {
     }
 
     return quantities;
+  }
+
+  createIngredientIconLabel(ingredient) {
+    const label = document.createElement('span');
+    label.textContent = ingredient.label;
+    setItemIconLabel(label, 'herb', ingredient.key);
+    return label;
   }
 
   getOwnedIngredientQuantity(ingredient, ownedIngredientQuantities) {

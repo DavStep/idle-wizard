@@ -2,7 +2,7 @@ import { getItemDisplay, isItemResearched } from '../../shared/itemResearchStatu
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { applyMysteryText } from '../../shared/mysteryText.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
-import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { createResourceIconLabel } from '../../shared/resourceIconLabel.js';
 import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 
 const BAG_TABS = [
@@ -266,14 +266,27 @@ export class WorkshopBagManager {
 
     const key = document.createElement('span');
     key.className = 'row_key';
-    setResourceIconText(key, currency.label);
+    key.textContent = currency.label;
 
     const val = document.createElement('span');
-    val.className = 'row_val';
+    val.className = 'row_val workshop-page__bag-value';
     val.textContent = currency.value;
+    this.appendCurrencyIcon(val, currency.id);
 
     row.append(key, val);
     return row;
+  }
+
+  appendCurrencyIcon(element, currencyId) {
+    const icon = createResourceIconLabel(currencyId, '');
+
+    if (icon.nodeType !== 1) {
+      return;
+    }
+
+    icon.classList.add('workshop-page__bag-value-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    element.append(icon);
   }
 
   renderItemRows(snapshot, kind) {
@@ -400,14 +413,26 @@ export class WorkshopBagManager {
     key.className = 'row_key';
     key.textContent = display.label;
     applyMysteryText(key, item, display.unknown);
-    setItemIconLabel(key, display.unknown ? null : item.kind, item.key);
 
     const val = document.createElement('span');
-    val.className = 'row_val';
+    val.className = 'row_val workshop-page__bag-value';
     val.textContent = display.quantity;
+    this.appendItemIcon(val, item, display);
 
     row.append(key, val);
     return row;
+  }
+
+  appendItemIcon(element, item, display) {
+    if (display.unknown || display.locked) {
+      return;
+    }
+
+    const icon = document.createElement('span');
+    icon.className = 'workshop-page__bag-value-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    setItemIconLabel(icon, item.kind, item.key);
+    element.append(icon);
   }
 
   createEmptyRow(kind) {
