@@ -197,6 +197,7 @@ describe('AuthOidcManager', () => {
         ),
       },
       browserPlugin,
+      nativeGoogleAuthPlugin: null,
       windowRef: {
         location: {
           origin: 'http://localhost',
@@ -230,6 +231,122 @@ describe('AuthOidcManager', () => {
       presentationStyle: 'fullscreen',
     });
     await expect(manager.getConnectionToken()).resolves.toBe('id-token');
+  });
+
+  it('uses native Google auth on native builds', async () => {
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() =>
+        Promise.resolve({
+          idToken: 'native-id-token',
+          email: 'dav@example.com',
+          displayName: 'Dav',
+          uniqueId: 'google-sub',
+        }),
+      ),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+      createUserManager: () => {
+        throw new Error('native Google auth should not create OIDC manager');
+      },
+    });
+
+    await expect(manager.prepare()).resolves.toMatchObject({
+      enabled: true,
+      authenticated: false,
+    });
+    await expect(manager.signIn()).resolves.toEqual({ ok: true });
+
+    expect(nativeGoogleAuthPlugin.signIn).toHaveBeenCalledWith({
+      serverClientId: 'client-1',
+    });
+    await expect(manager.getConnectionToken()).resolves.toBe('native-id-token');
+    expect(manager.getSnapshot()).toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+      disabledReason: null,
+    });
+  });
+
+  it('reports native Google auth failures', async () => {
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() => Promise.reject(new Error('account picker failed'))),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: false,
+      reason: 'native_failed',
+    });
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      error: 'account picker failed',
+    });
+  });
+
+  it('clears native Google auth state on sign out', async () => {
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() =>
+        Promise.resolve({
+          idToken: 'native-id-token',
+          email: 'dav@example.com',
+        }),
+      ),
+      signOut: vi.fn(() => Promise.resolve()),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await manager.signIn();
+    await expect(manager.signOut()).resolves.toEqual({ ok: true });
+
+    expect(nativeGoogleAuthPlugin.signOut).toHaveBeenCalledTimes(1);
+    await expect(manager.getConnectionToken()).resolves.toBeUndefined();
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      error: null,
+    });
   });
 
   it('reports redirect start failures without leaving stale errors hidden', async () => {

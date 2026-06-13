@@ -2186,6 +2186,7 @@ function createAuthFacadeFake({
   enabled = true,
   authenticated = false,
   disabledReason = null,
+  error = null,
 } = {}) {
   let signInCount = 0;
   let signInPayload = null;
@@ -2195,7 +2196,7 @@ function createAuthFacadeFake({
       authenticated,
       displayName: authenticated ? 'Dav' : '',
       email: authenticated ? 'dav@example.com' : '',
-      error: null,
+      error,
       disabledReason,
     },
   };
@@ -3549,6 +3550,28 @@ describe('PagesFacade', () => {
         crystal: { current: 0 },
       },
     });
+  });
+
+  it('shows google account connect errors in settings', () => {
+    const stage = document.createElement('section');
+    const authFacade = createAuthFacadeFake({
+      error: 'NoCredentialException',
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin'),
+      authFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
+      'login error: NoCredentialException',
+    );
   });
 
   it('hides account linking in native settings when OIDC is disabled', () => {

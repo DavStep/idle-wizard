@@ -75,7 +75,7 @@ export class TopPanelAuthManager {
 
   getStatusText(oidc) {
     if (oidc.error) {
-      return 'login error';
+      return `login error: ${this.getErrorText(oidc.error)}`;
     }
 
     if (oidc.authenticated) {
@@ -87,5 +87,9 @@ export class TopPanelAuthManager {
     }
 
     return 'not connected';
+  }
+
+  getErrorText(error) {
+    return String(error).replace(/\s+/g, ' ').trim();
   }
 }

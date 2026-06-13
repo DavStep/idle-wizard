@@ -1,6 +1,7 @@
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser as CapacitorBrowser } from '@capacitor/browser';
+import { NativeGoogleAuthPlugin } from '../nativeGoogleAuthPlugin.js';
 
 const DEFAULT_AUTHORITY = 'https://accounts.google.com';
 const DEFAULT_SCOPE = 'openid profile email';
@@ -17,12 +18,14 @@ export class AuthOidcManager {
       DEFAULT_MOBILE_REDIRECT_URI,
     responseType = import.meta.env.VITE_GOOGLE_AUTH_RESPONSE_TYPE ?? DEFAULT_RESPONSE_TYPE,
     nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC !== 'false',
+    nativeGoogleAuthEnabled = import.meta.env.VITE_ENABLE_NATIVE_GOOGLE_AUTH !== 'false',
     basePath = import.meta.env.BASE_URL ?? '/',
     storage = globalThis.localStorage,
     windowRef = globalThis.window,
     capacitor = globalThis.Capacitor,
     appPlugin = CapacitorApp,
     browserPlugin = CapacitorBrowser,
+    nativeGoogleAuthPlugin = NativeGoogleAuthPlugin,
     createUserManager = (settings, redirectNavigator) =>
       new UserManager(settings, redirectNavigator),
   } = {}) {
@@ -33,12 +36,14 @@ export class AuthOidcManager {
     this.mobileRedirectUri = mobileRedirectUri;
     this.responseType = responseType;
     this.nativeOidcEnabled = nativeOidcEnabled;
+    this.nativeGoogleAuthEnabled = nativeGoogleAuthEnabled;
     this.basePath = basePath;
     this.storage = storage;
     this.windowRef = windowRef;
     this.capacitor = capacitor;
     this.appPlugin = appPlugin;
     this.browserPlugin = browserPlugin;
+    this.nativeGoogleAuthPlugin = nativeGoogleAuthPlugin;
     this.createUserManager = createUserManager;
     this.userManager = null;
     this.user = null;
@@ -61,6 +66,11 @@ export class AuthOidcManager {
       return this.getSnapshot();
     }
 
+    if (this.shouldUseNativeGoogleAuth()) {
+      this.publish();
+      return this.getSnapshot();
+    }
+
     const manager = this.getUserManager();
     this.watchNativeCallbackUrls();
     await this.handleNativeLaunchUrl(manager);
@@ -77,6 +87,10 @@ export class AuthOidcManager {
       return undefined;
     }
 
+    if (this.shouldUseNativeGoogleAuth()) {
+      return this.user?.id_token;
+    }
+
     this.user = this.user ?? (await this.getUserManager().getUser());
     return this.user?.id_token ?? this.user?.access_token;
   }
@@ -88,6 +102,10 @@ export class AuthOidcManager {
 
     this.error = null;
     this.publish();
+
+    if (this.shouldUseNativeGoogleAuth()) {
+      return this.signInNative();
+    }
 
     try {
       await this.getUserManager().signinRedirect();
@@ -102,6 +120,14 @@ export class AuthOidcManager {
   async signOut() {
     if (!this.isEnabled()) {
       return { ok: false, reason: 'disabled' };
+    }
+
+    if (this.shouldUseNativeGoogleAuth()) {
+      await this.nativeGoogleAuthPlugin?.signOut?.();
+      this.user = null;
+      this.error = null;
+      this.publish();
+      return { ok: true };
     }
 
     await this.getUserManager().removeUser();
@@ -155,6 +181,47 @@ export class AuthOidcManager {
     }
 
     return null;
+  }
+
+  async signInNative() {
+    try {
+      const result = await this.nativeGoogleAuthPlugin.signIn({
+        serverClientId: this.clientId,
+      });
+      if (!result?.idToken) {
+        throw new Error('Native Google sign-in returned no ID token');
+      }
+      this.user = this.createNativeUser(result);
+      this.error = null;
+      this.publish();
+      return { ok: true };
+    } catch (error) {
+      this.error = error?.message ?? String(error);
+      this.publish();
+      return { ok: false, reason: 'native_failed' };
+    }
+  }
+
+  createNativeUser(result = {}) {
+    return {
+      id_token: result.idToken,
+      profile: {
+        sub: result.uniqueId ?? '',
+        email: result.email ?? '',
+        name: result.displayName ?? '',
+        given_name: result.givenName ?? '',
+        family_name: result.familyName ?? '',
+        picture: result.profilePictureUri ?? '',
+      },
+    };
+  }
+
+  shouldUseNativeGoogleAuth() {
+    return Boolean(
+      this.getPlatform() === 'android' &&
+        this.nativeGoogleAuthEnabled &&
+        this.nativeGoogleAuthPlugin?.signIn,
+    );
   }
 
   async handleCallbackUrl(manager) {
@@ -321,13 +388,22 @@ export class AuthOidcManager {
   }
 
   isNativePlatform() {
-    const getPlatform = this.capacitor?.getPlatform;
-    if (typeof getPlatform === 'function') {
-      return ['android', 'ios'].includes(getPlatform());
+    const platform = this.getPlatform();
+    if (platform) {
+      return ['android', 'ios'].includes(platform);
     }
 
     const isNativePlatform = this.capacitor?.isNativePlatform;
     return typeof isNativePlatform === 'function' && isNativePlatform();
+  }
+
+  getPlatform() {
+    const getPlatform = this.capacitor?.getPlatform;
+    if (typeof getPlatform === 'function') {
+      return getPlatform();
+    }
+
+    return null;
   }
 }
 
