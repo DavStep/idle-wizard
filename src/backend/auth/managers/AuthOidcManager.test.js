@@ -119,7 +119,45 @@ describe('AuthOidcManager', () => {
     expect(replaceState).toHaveBeenCalledWith({}, 'Idle Wizard', '/idle-wizard/');
   });
 
-  it('uses the Android app callback URL on native builds', async () => {
+  it('stays disabled on native builds by default', async () => {
+    const addListener = vi.fn(() => Promise.resolve({ remove: vi.fn() }));
+    const getLaunchUrl = vi.fn(() =>
+      Promise.resolve({
+        url: 'com.idlewizard.game://auth/callback?code=abc&state=def',
+      }),
+    );
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      appPlugin: {
+        addListener,
+        getLaunchUrl,
+      },
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+      createUserManager: () => {
+        throw new Error('native OIDC should stay disabled');
+      },
+    });
+
+    await expect(manager.prepare()).resolves.toMatchObject({
+      enabled: false,
+      authenticated: false,
+    });
+    await expect(manager.getConnectionToken()).resolves.toBeUndefined();
+    expect(addListener).not.toHaveBeenCalled();
+    expect(getLaunchUrl).not.toHaveBeenCalled();
+  });
+
+  it('uses the Android app callback URL when native OIDC is explicitly enabled', async () => {
     let capturedSettings = null;
     const user = {
       id_token: 'id-token',
@@ -134,6 +172,7 @@ describe('AuthOidcManager', () => {
     const manager = new AuthOidcManager({
       clientId: 'client-1',
       mobileRedirectUri: 'https://davstep.github.io/idle-wizard/',
+      nativeOidcEnabled: true,
       storage: createMemoryStorage(),
       capacitor: {
         getPlatform: () => 'android',

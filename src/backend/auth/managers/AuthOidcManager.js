@@ -13,6 +13,7 @@ export class AuthOidcManager {
     postLogoutRedirectUri = import.meta.env.VITE_SPACETIME_AUTH_POST_LOGOUT_REDIRECT_URI,
     mobileRedirectUri = import.meta.env.VITE_SPACETIME_AUTH_MOBILE_REDIRECT_URI ??
       DEFAULT_MOBILE_REDIRECT_URI,
+    nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC === 'true',
     basePath = import.meta.env.BASE_URL ?? '/',
     storage = globalThis.localStorage,
     windowRef = globalThis.window,
@@ -25,6 +26,7 @@ export class AuthOidcManager {
     this.redirectUri = redirectUri;
     this.postLogoutRedirectUri = postLogoutRedirectUri;
     this.mobileRedirectUri = mobileRedirectUri;
+    this.nativeOidcEnabled = nativeOidcEnabled;
     this.basePath = basePath;
     this.storage = storage;
     this.windowRef = windowRef;
@@ -39,7 +41,11 @@ export class AuthOidcManager {
   }
 
   isEnabled() {
-    return Boolean(this.clientId && this.windowRef);
+    return Boolean(
+      this.clientId &&
+        this.windowRef &&
+        (!this.isNativePlatform() || this.nativeOidcEnabled),
+    );
   }
 
   async prepare() {

@@ -56,9 +56,15 @@ https://davstep.github.io/idle-wizard/
 http://127.0.0.1:55173/
 ```
 
-Android account linking uses `https://davstep.github.io/idle-wizard/` as the
-SpacetimeAuth redirect URI, then the hosted page forwards OIDC callback params to
-the installed app with `com.idlewizard.game://auth/callback`.
+Native Android builds keep SpacetimeAuth/OIDC disabled by default and enter the
+game through the normal SpacetimeDB anonymous session token. Keep
+`VITE_ENABLE_NATIVE_OIDC=false` unless mobile account linking is explicitly
+requested again.
+
+If native account linking is re-enabled later, Android should use
+`https://davstep.github.io/idle-wizard/` as the SpacetimeAuth redirect URI, then
+the hosted page can forward OIDC callback params to the installed app with
+`com.idlewizard.game://auth/callback`.
 
 Configure Google OAuth with this authorized redirect URI:
 
