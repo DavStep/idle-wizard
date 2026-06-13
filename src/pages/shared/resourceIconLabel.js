@@ -1,15 +1,13 @@
 import goldIconUrl from '../../assets/icons/icon-gold-coin.png';
-import manaIconUrl from '../../assets/icons/icon-mana-drop.png';
 
 export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
 
 const RESOURCE_ICON_URLS = Object.freeze({
   gold: goldIconUrl,
-  mana: manaIconUrl,
 });
 
-const RESOURCE_WORD_PATTERN = /\b(gold|mana)\b/;
-const RESOURCE_WORD_MATCH_PATTERN = /\b(gold|mana)\b/gi;
+const RESOURCE_WORD_PATTERN = /\bgold\b/;
+const RESOURCE_WORD_MATCH_PATTERN = /\bgold\b/gi;
 
 export function setResourceIconText(element, text) {
   if (!element) {

@@ -163,7 +163,8 @@
 
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
 - Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
-- Image-backed item labels such as herbs and potions need `setItemIconLabel` after label text is current; seed labels are CSS pseudo-icons and only need the class.
+- Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
+- Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
 - Player-facing UI labels should stay lowercase, including seed, herb, potion, research, notice, and task labels; preserve user-entered names as typed.

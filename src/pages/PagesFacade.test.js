@@ -2934,7 +2934,7 @@ describe('PagesFacade', () => {
     expect(gold?.querySelector('.room-top-panel__resource-key')).toBeNull();
   });
 
-  it('marks top panel mana and gold for icon mode', () => {
+  it('marks top panel gold but keeps mana plain for icon mode', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -2950,7 +2950,7 @@ describe('PagesFacade', () => {
 
     expect(manaKey?.textContent).toBe('mana ');
     expect(goldValue?.textContent).toBe('0 gold');
-    expect(manaKey?.querySelector('.style-resource-label--mana')).not.toBeNull();
+    expect(manaKey?.querySelector('.style-resource-label--mana')).toBeNull();
     expect(goldValue?.querySelector('.style-resource-label--gold')).not.toBeNull();
   });
 

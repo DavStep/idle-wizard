@@ -31,6 +31,19 @@ describe('item icon labels', () => {
     expect(icon?.getAttribute('src')).toContain('herb-sage');
   });
 
+  it('marks seed labels with the seed pack icon while preserving text', () => {
+    const element = document.createElement('span');
+    element.textContent = 'sage seed (3)';
+
+    setItemIconLabel(element, 'seed', 'sageSeed');
+
+    const icon = element.querySelector('.style-seed-label__icon');
+    expect(element.textContent).toBe('sage seed (3)');
+    expect(element.classList.contains('style-seed-label')).toBe(true);
+    expect(icon).not.toBeNull();
+    expect(icon?.getAttribute('src')).toContain('seed-pack-regular');
+  });
+
   it('adds potion and seed icons inside mixed text', () => {
     const element = document.createElement('span');
 
@@ -39,6 +52,7 @@ describe('item icon labels', () => {
     expect(element.textContent).toBe('brewed mana tonic and found sage seed');
     expect(element.querySelector('.style-potion-label')).not.toBeNull();
     expect(element.querySelector('.style-seed-label')).not.toBeNull();
+    expect(element.querySelector('.style-seed-label__icon')).not.toBeNull();
   });
 
   it('does not mark plural potion category labels as potion names', () => {

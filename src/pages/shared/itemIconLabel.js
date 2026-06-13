@@ -1,3 +1,4 @@
+import { getSeedIconUrl } from '../../assets/items/seeds/seedIcons.js';
 import { getHerbIconUrl } from '../../assets/items/herbs/herbIcons.js';
 import {
   getPotionIconKeyByLabel,
@@ -18,7 +19,18 @@ export function setItemIconLabel(element, kind, itemKey = null) {
   }
 
   const normalizedKind = String(kind ?? '').trim();
-  element.classList.toggle(SEED_ICON_LABEL_CLASS, normalizedKind === 'seed');
+
+  if (normalizedKind === 'seed') {
+    setImageItemIconLabel({
+      element,
+      text: element.textContent,
+      itemKey,
+      kind: 'seed',
+      className: SEED_ICON_LABEL_CLASS,
+      getIconUrl: getSeedIconUrl,
+    });
+    return;
+  }
 
   if (normalizedKind === 'herb') {
     setImageItemIconLabel({
@@ -107,7 +119,7 @@ function setImageItemIconLabel({
     return;
   }
 
-  element.classList.remove(HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
+  element.classList.remove(SEED_ICON_LABEL_CLASS, HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
   element.classList.add(className);
   element.dataset.itemIconKind = kind;
   element.dataset.itemIconKey = normalizedKey;
@@ -128,6 +140,7 @@ function setImageItemIconLabel({
 
 function clearImageItemIconLabel(element) {
   const hasImageLabel =
+    element.classList.contains(SEED_ICON_LABEL_CLASS) ||
     element.classList.contains(HERB_ICON_LABEL_CLASS) ||
     element.classList.contains(POTION_ICON_LABEL_CLASS);
 
@@ -136,7 +149,7 @@ function clearImageItemIconLabel(element) {
   }
 
   const text = element.textContent;
-  element.classList.remove(HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
+  element.classList.remove(SEED_ICON_LABEL_CLASS, HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
   delete element.dataset.itemIconKind;
   delete element.dataset.itemIconKey;
   element.textContent = text;
@@ -191,7 +204,11 @@ function getItemIconMatches(value) {
 function createSeedIconLabel(seedName) {
   const label = document.createElement('span');
   label.className = SEED_ICON_LABEL_CLASS;
-  label.textContent = seedName;
+  label.dataset.itemIconKind = 'seed';
+  label.append(
+    createImageItemIconImage(SEED_ICON_LABEL_CLASS, getSeedIconUrl()),
+    createImageItemText(SEED_ICON_LABEL_CLASS, seedName),
+  );
   return label;
 }
 
