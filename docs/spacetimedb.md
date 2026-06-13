@@ -51,6 +51,15 @@ Google login uses Google as the OIDC provider directly. Do not route players
 through SpacetimeAuth for account linking, because the player-facing flow should
 be `connect account` -> Google account picker -> return to game.
 
+The client uses Authorization Code with PKCE. Configure Google OAuth with these
+authorized JavaScript origins:
+
+```txt
+https://davstep.github.io
+http://127.0.0.1:55173
+http://localhost
+```
+
 Configure Google OAuth with these authorized redirect URIs:
 
 ```txt

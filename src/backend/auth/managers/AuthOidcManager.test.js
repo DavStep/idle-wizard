@@ -57,9 +57,9 @@ describe('AuthOidcManager', () => {
         location: {
           origin: 'https://davstep.github.io',
           pathname: '/idle-wizard/',
-          search: '',
-          hash: '#id_token=abc&state=def',
-          href: 'https://davstep.github.io/idle-wizard/#id_token=abc&state=def',
+          search: '?code=abc&state=def',
+          hash: '',
+          href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
         },
       },
       createUserManager: (settings) => {
@@ -72,7 +72,7 @@ describe('AuthOidcManager', () => {
 
     expect(capturedSettings.redirect_uri).toBe('https://davstep.github.io/idle-wizard/');
     expect(capturedSettings.authority).toBe('https://accounts.google.com');
-    expect(capturedSettings.response_type).toBe('id_token token');
+    expect(capturedSettings.response_type).toBe('code');
     expect(capturedSettings.prompt).toBe('select_account');
     expect(capturedSettings.stateStore).toBeDefined();
     await capturedSettings.stateStore.set('callback-state', 'saved');

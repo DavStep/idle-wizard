@@ -4,7 +4,7 @@ import { Browser as CapacitorBrowser } from '@capacitor/browser';
 
 const DEFAULT_AUTHORITY = 'https://accounts.google.com';
 const DEFAULT_SCOPE = 'openid profile email';
-const DEFAULT_RESPONSE_TYPE = 'id_token token';
+const DEFAULT_RESPONSE_TYPE = 'code';
 const DEFAULT_MOBILE_REDIRECT_URI = 'https://davstep.github.io/idle-wizard/';
 
 export class AuthOidcManager {
