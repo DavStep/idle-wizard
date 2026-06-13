@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SpacetimeConnectionManager } from './SpacetimeConnectionManager.js';
 
@@ -47,6 +47,7 @@ function createFakeDbConnection() {
       builders.push(this);
       return {
         id: builders.length,
+        disconnect: vi.fn(),
       };
     }
   }
@@ -58,6 +59,10 @@ function createFakeDbConnection() {
     },
   };
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('SpacetimeConnectionManager', () => {
   it('retries once without a stored token before surfacing connect errors', async () => {
@@ -142,5 +147,58 @@ describe('SpacetimeConnectionManager', () => {
 
     expect(builders).toHaveLength(1);
     expect(onConnectError).toHaveBeenCalledTimes(1);
+  });
+
+  it('surfaces a connection timeout instead of waiting forever', async () => {
+    vi.useFakeTimers();
+    const { DbConnection } = createFakeDbConnection();
+    const authSessionManager = {
+      getConnectionAuth: vi.fn(async () => ({
+        token: undefined,
+        canRetryWithoutToken: false,
+      })),
+      acceptConnection: vi.fn(),
+    };
+    const onConnectError = vi.fn();
+    const manager = new SpacetimeConnectionManager({
+      uri: 'https://maincloud.spacetimedb.com',
+      databaseName: 'idle-wizard',
+      authSessionManager,
+      connectTimeoutMs: 1_000,
+    });
+
+    await manager.connect(DbConnection, { onConnectError });
+    vi.advanceTimersByTime(1_000);
+
+    expect(onConnectError).toHaveBeenCalledTimes(1);
+    expect(onConnectError.mock.calls[0][0].message).toBe('connection timed out');
+    expect(manager.getConfigSnapshot().connected).toBe(false);
+  });
+
+  it('clears the connection timeout after connecting', async () => {
+    vi.useFakeTimers();
+    const { DbConnection, builders } = createFakeDbConnection();
+    const authSessionManager = {
+      getConnectionAuth: vi.fn(async () => ({
+        token: undefined,
+        canRetryWithoutToken: false,
+      })),
+      acceptConnection: vi.fn(),
+    };
+    const onConnect = vi.fn();
+    const onConnectError = vi.fn();
+    const manager = new SpacetimeConnectionManager({
+      uri: 'https://maincloud.spacetimedb.com',
+      databaseName: 'idle-wizard',
+      authSessionManager,
+      connectTimeoutMs: 1_000,
+    });
+
+    await manager.connect(DbConnection, { onConnect, onConnectError });
+    builders[0].callbacks.onConnect('connection-1', 'identity-1', 'token-1');
+    vi.advanceTimersByTime(1_000);
+
+    expect(onConnect).toHaveBeenCalledTimes(1);
+    expect(onConnectError).not.toHaveBeenCalled();
   });
 });

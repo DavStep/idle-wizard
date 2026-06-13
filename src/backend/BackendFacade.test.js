@@ -278,6 +278,7 @@ describe('BackendFacade', () => {
   it('reports paused and no-energy connection errors as non-transient reasons', async () => {
     const pausedError = new Error('database is paused');
     const noEnergyError = new Error('out of energy');
+    const timeoutError = new Error('connection timed out');
     const onOffline = vi.fn();
     const { backendFacade } = createBackendWithFakes({
       connectGeneratedBindings: vi
@@ -289,9 +290,14 @@ describe('BackendFacade', () => {
         .mockImplementationOnce(async ({ onConnectError }) => {
           onConnectError(noEnergyError);
           return { ok: true };
+        })
+        .mockImplementationOnce(async ({ onConnectError }) => {
+          onConnectError(timeoutError);
+          return { ok: true };
         }),
     });
 
+    await backendFacade.start({ onOffline });
     await backendFacade.start({ onOffline });
     await backendFacade.start({ onOffline });
 
@@ -302,6 +308,10 @@ describe('BackendFacade', () => {
     expect(onOffline).toHaveBeenNthCalledWith(2, {
       reason: 'server_no_energy',
       error: noEnergyError,
+    });
+    expect(onOffline).toHaveBeenNthCalledWith(3, {
+      reason: 'connect_timeout',
+      error: timeoutError,
     });
   });
 });

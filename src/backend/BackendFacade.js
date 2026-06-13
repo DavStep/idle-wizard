@@ -195,6 +195,10 @@ export class BackendFacade {
       return 'server_no_energy';
     }
 
+    if (message.includes('timed out') || message.includes('timeout')) {
+      return 'connect_timeout';
+    }
+
     return 'connect_error';
   }
 

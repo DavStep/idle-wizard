@@ -1,9 +1,12 @@
 export class SpacetimeConnectionManager {
-  constructor({ uri, databaseName, authSessionManager }) {
+  constructor({ uri, databaseName, authSessionManager, connectTimeoutMs = 15_000 }) {
     this.uri = uri;
     this.databaseName = databaseName;
     this.authSessionManager = authSessionManager;
+    this.connectTimeoutMs = connectTimeoutMs;
     this.connection = null;
+    this.connectTimeoutId = null;
+    this.connectAttemptId = 0;
   }
 
   async connect(DbConnection, { onConnect, onDisconnect, onConnectError } = {}) {
@@ -11,37 +14,63 @@ export class SpacetimeConnectionManager {
       throw new Error('SpacetimeConnectionManager requires generated DbConnection bindings.');
     }
 
+    this.disconnect();
+    const attemptId = this.connectAttemptId + 1;
+    this.connectAttemptId = attemptId;
     const auth = await this.getConnectionAuth();
     let retriedWithoutToken = false;
 
     const buildConnection = ({ token, canRetryWithoutToken }) => {
+      this.clearConnectTimeout();
+      let activeConnection = null;
+
+      const handleConnectFailure = (error) => {
+        if (attemptId !== this.connectAttemptId) {
+          return;
+        }
+
+        this.clearConnectTimeout();
+        activeConnection?.disconnect?.();
+        this.connection = null;
+
+        if (token && canRetryWithoutToken && !retriedWithoutToken) {
+          retriedWithoutToken = true;
+          this.connection = buildConnection({
+            token: undefined,
+            canRetryWithoutToken: false,
+          });
+          return;
+        }
+
+        if (retriedWithoutToken) {
+          this.authSessionManager.clearSession?.();
+        }
+
+        onConnectError?.(error);
+      };
+
       let builder = DbConnection.builder()
         .withUri(this.uri)
         .withDatabaseName(this.databaseName)
         .onConnect((connection, identity, token) => {
+          if (attemptId !== this.connectAttemptId) {
+            return;
+          }
+
+          this.clearConnectTimeout();
           this.connection = connection;
           this.authSessionManager.acceptConnection({ identity, token });
           onConnect?.(connection, identity, token);
         })
         .onConnectError((_context, error) => {
-          this.connection = null;
-
-          if (token && canRetryWithoutToken && !retriedWithoutToken) {
-            retriedWithoutToken = true;
-            this.connection = buildConnection({
-              token: undefined,
-              canRetryWithoutToken: false,
-            });
+          handleConnectFailure(error);
+        })
+        .onDisconnect((_context, error) => {
+          if (attemptId !== this.connectAttemptId) {
             return;
           }
 
-          if (retriedWithoutToken) {
-            this.authSessionManager.clearSession?.();
-          }
-
-          onConnectError?.(error);
-        })
-        .onDisconnect((_context, error) => {
+          this.clearConnectTimeout();
           this.connection = null;
           onDisconnect?.(error);
         });
@@ -50,7 +79,11 @@ export class SpacetimeConnectionManager {
         builder = builder.withToken(token);
       }
 
-      return builder.build();
+      activeConnection = builder.build();
+      this.armConnectTimeout(() => {
+        handleConnectFailure(new Error('connection timed out'));
+      });
+      return activeConnection;
     };
 
     this.connection = buildConnection(auth);
@@ -70,8 +103,27 @@ export class SpacetimeConnectionManager {
   }
 
   disconnect() {
+    this.connectAttemptId += 1;
+    this.clearConnectTimeout();
     this.connection?.disconnect();
     this.connection = null;
+  }
+
+  armConnectTimeout(callback) {
+    if (!Number.isFinite(this.connectTimeoutMs) || this.connectTimeoutMs <= 0) {
+      return;
+    }
+
+    this.connectTimeoutId = globalThis.setTimeout(callback, this.connectTimeoutMs);
+  }
+
+  clearConnectTimeout() {
+    if (!this.connectTimeoutId) {
+      return;
+    }
+
+    globalThis.clearTimeout(this.connectTimeoutId);
+    this.connectTimeoutId = null;
   }
 
   getConfigSnapshot() {
