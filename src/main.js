@@ -8,10 +8,16 @@ import { AuthMobileRedirectBridgeManager } from './backend/auth/managers/AuthMob
 const mobileAuthCallbackUri =
   import.meta.env.VITE_GOOGLE_AUTH_MOBILE_CALLBACK_URI ??
   'com.idlewizard.game://auth/callback';
+const mobileAuthAndroidPackage =
+  import.meta.env.VITE_ANDROID_APP_ID ?? 'com.idlewizard.game';
+const mobileAuthNativeMarkerParam =
+  import.meta.env.VITE_GOOGLE_AUTH_MOBILE_MARKER_PARAM ?? 'native_auth';
 
 function redirectMobileOidcCallbackToApp() {
   return new AuthMobileRedirectBridgeManager({
     callbackUri: mobileAuthCallbackUri,
+    androidPackage: mobileAuthAndroidPackage,
+    nativeMarkerParam: mobileAuthNativeMarkerParam,
   }).redirectIfNeeded();
 }
 

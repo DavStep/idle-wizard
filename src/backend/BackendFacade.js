@@ -150,7 +150,7 @@ export class BackendFacade {
       },
       onConnectError: (error) => {
         this.disconnectBackendFacades();
-        onOffline?.({ reason: 'connect_error', error });
+        onOffline?.({ reason: this.getConnectErrorReason(error), error });
       },
       onDisconnect: () => {
         if (this.accountSessionInactive) {
@@ -170,6 +170,7 @@ export class BackendFacade {
     this.leaderboardFacade.setGameplayFacade(null);
     this.tradeAllianceFacade.setGameplayFacade(null);
     this.playerSyncFacade.setGameplayFacade(null);
+    this.authFacade.stop();
     this.spacetimeDbFacade.disconnect();
   }
 
@@ -181,6 +182,20 @@ export class BackendFacade {
     this.disconnectBackendFacades();
     this.spacetimeDbFacade.disconnect();
     onOffline?.({ reason, error });
+  }
+
+  getConnectErrorReason(error) {
+    const message = String(error?.message ?? error ?? '').toLowerCase();
+
+    if (message.includes('database is paused') || message.includes('database paused')) {
+      return 'server_paused';
+    }
+
+    if (message.includes('out of energy') || message.includes('no energy')) {
+      return 'server_no_energy';
+    }
+
+    return 'connect_error';
   }
 
   disconnectBackendFacades() {

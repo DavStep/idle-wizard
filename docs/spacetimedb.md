@@ -47,12 +47,16 @@ The GitHub Pages workflow already sets those values before `npm run build -- --b
 
 ## Google Login
 
-Google login uses Google as the OIDC provider directly. Do not route players
+Google login uses Google as the identity provider directly. Do not route players
 through SpacetimeAuth for account linking, because the player-facing flow should
 be `connect account` -> Google account picker -> return to game.
 
-The client uses Authorization Code with PKCE. Configure Google OAuth with these
-authorized JavaScript origins:
+The web client uses Google Identity Services to receive a Google-signed ID token
+in a JavaScript callback, then passes that JWT to SpacetimeDB as the connection
+token. Do not use a browser OIDC redirect/code flow for web unless a backend
+token-exchange endpoint is added.
+
+Configure Google OAuth with these authorized JavaScript origins:
 
 ```txt
 https://davstep.github.io
@@ -60,19 +64,22 @@ http://127.0.0.1:55173
 http://localhost
 ```
 
-Configure Google OAuth with these authorized redirect URIs:
+The current Android app uses Google Credential Manager through the native
+`NativeGoogleAuth` Capacitor plugin. Keep the Android OAuth client package name
+and SHA-1 configured in Google Cloud. The hosted redirect remains as a fallback
+for the older native OIDC handoff flow.
+
+Configure Google OAuth with these authorized redirect URIs only if the fallback
+native/mobile handoff flow is enabled:
 
 ```txt
 https://davstep.github.io/idle-wizard/
 https://davstep.github.io/idle-wizard/?native_auth=1
-http://127.0.0.1:55173/
 ```
 
-Native Android account linking uses `https://davstep.github.io/idle-wizard/?native_auth=1`
+Fallback native OIDC account linking uses `https://davstep.github.io/idle-wizard/?native_auth=1`
 as the Google redirect URI, then the hosted page forwards OIDC callback params
-to the installed app with `com.idlewizard.game://auth/callback`. The native app
-opens Google through Capacitor Browser so players see the normal Chrome account
-picker instead of an embedded WebView login.
+to the installed app with `com.idlewizard.game://auth/callback`.
 
 The Google OAuth client ID is public configuration, not a secret. Hosted and
 production builds read:
@@ -80,6 +87,8 @@ production builds read:
 ```txt
 VITE_GOOGLE_AUTH_CLIENT_ID=<google-client-id>
 VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI=https://davstep.github.io/idle-wizard/?native_auth=1
+VITE_GOOGLE_AUTH_MOBILE_CALLBACK_URI=com.idlewizard.game://auth/callback
+VITE_ANDROID_APP_ID=com.idlewizard.game
 ```
 
 ## Auth Flow

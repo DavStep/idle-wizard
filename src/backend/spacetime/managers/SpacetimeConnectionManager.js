@@ -35,6 +35,10 @@ export class SpacetimeConnectionManager {
             return;
           }
 
+          if (retriedWithoutToken) {
+            this.authSessionManager.clearSession?.();
+          }
+
           onConnectError?.(error);
         })
         .onDisconnect((_context, error) => {

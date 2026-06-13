@@ -1,16 +1,16 @@
 const TOKEN_KEY = 'idle-wizard.spacetimedb.token';
 
 export class AuthTokenStorageManager {
-  constructor({ storage = localStorage } = {}) {
+  constructor({ storage = globalThis.localStorage } = {}) {
     this.storage = storage;
   }
 
   loadToken() {
-    return this.storage.getItem(TOKEN_KEY) || undefined;
+    return this.storage?.getItem?.(TOKEN_KEY) || undefined;
   }
 
   saveToken(token) {
-    if (!token) {
+    if (!token || !this.storage?.setItem) {
       return;
     }
 
@@ -18,6 +18,6 @@ export class AuthTokenStorageManager {
   }
 
   clearToken() {
-    this.storage.removeItem(TOKEN_KEY);
+    this.storage?.removeItem?.(TOKEN_KEY);
   }
 }

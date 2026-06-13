@@ -67,6 +67,10 @@ export class AppOnlineGateManager {
     const message =
       reason === 'bindings_missing'
         ? 'server bindings missing'
+        : reason === 'server_paused'
+          ? 'server paused. start the database to continue.'
+        : reason === 'server_no_energy'
+          ? 'server out of energy. add energy to continue.'
         : reason === 'account_in_use'
           ? 'account opened on another device. close this one to continue there.'
         : reason === 'connect_error' ||

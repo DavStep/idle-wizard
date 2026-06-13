@@ -10,6 +10,10 @@ export class AuthSessionManager {
     return this.getSnapshot();
   }
 
+  stop() {
+    this.oidcManager?.stop?.();
+  }
+
   async getConnectionToken() {
     return (await this.getConnectionAuth()).token;
   }
@@ -40,14 +44,18 @@ export class AuthSessionManager {
     this.tokenStorageManager.clearToken();
   }
 
-  async signInWithGoogle() {
-    return this.oidcManager?.signIn() ?? { ok: false, reason: 'disabled' };
+  async signInWithGoogle(options) {
+    return this.oidcManager?.signIn(options) ?? { ok: false, reason: 'disabled' };
   }
 
   async signOut() {
     await this.oidcManager?.signOut();
     this.clearSession();
     return { ok: true };
+  }
+
+  getAccountLinkAttemptId() {
+    return this.oidcManager?.getAccountLinkAttemptId?.() ?? null;
   }
 
   subscribe(listener) {

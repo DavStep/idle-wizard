@@ -31,6 +31,14 @@ describe('AppOnlineGateManager', () => {
     expect(gate.textContent).toContain('connecting to server...');
     expect(progress.hidden).toBe(false);
 
+    manager.showOffline('server_paused');
+    expect(gate.textContent).toContain('server paused');
+    expect(progress.hidden).toBe(true);
+
+    manager.showOffline('server_no_energy');
+    expect(gate.textContent).toContain('server out of energy');
+    expect(progress.hidden).toBe(true);
+
     manager.showOffline('gameplay_save_missing');
     expect(gate.textContent).toContain('server unavailable');
     expect(progress.hidden).toBe(true);

@@ -68,6 +68,7 @@ describe('SpacetimeConnectionManager', () => {
         canRetryWithoutToken: true,
       })),
       acceptConnection: vi.fn(),
+      clearSession: vi.fn(),
     };
     const onConnect = vi.fn();
     const onConnectError = vi.fn();
@@ -102,6 +103,7 @@ describe('SpacetimeConnectionManager', () => {
         canRetryWithoutToken: true,
       })),
       acceptConnection: vi.fn(),
+      clearSession: vi.fn(),
     };
     const onConnectError = vi.fn();
     const manager = new SpacetimeConnectionManager({
@@ -116,6 +118,7 @@ describe('SpacetimeConnectionManager', () => {
 
     expect(onConnectError).toHaveBeenCalledTimes(1);
     expect(onConnectError.mock.calls[0][0].message).toBe('server down');
+    expect(authSessionManager.clearSession).toHaveBeenCalledTimes(1);
   });
 
   it('does not retry OIDC connection tokens anonymously', async () => {

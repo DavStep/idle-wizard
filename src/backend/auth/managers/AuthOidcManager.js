@@ -2,14 +2,18 @@ import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser as CapacitorBrowser } from '@capacitor/browser';
 import { NativeGoogleAuthPlugin } from '../nativeGoogleAuthPlugin.js';
+import { AuthGoogleTokenManager } from './AuthGoogleTokenManager.js';
 
 const DEFAULT_AUTHORITY = 'https://accounts.google.com';
 const DEFAULT_SCOPE = 'openid profile email';
-const DEFAULT_NATIVE_RESPONSE_TYPE = 'code';
-const DEFAULT_WEB_RESPONSE_TYPE = 'id_token';
+const DEFAULT_RESPONSE_TYPE = 'code';
+const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 const DEFAULT_MOBILE_REDIRECT_URI = 'https://davstep.github.io/idle-wizard/?native_auth=1';
+const WEB_GOOGLE_USER_STORAGE_KEY = 'idle-wizard.web-google.user';
 const NATIVE_GOOGLE_USER_STORAGE_KEY = 'idle-wizard.native-google.user';
-const TOKEN_EXPIRY_SKEW_MS = 60 * 1000;
+const ACTIVE_ACCOUNT_LINK_ATTEMPT_KEY = 'idle-wizard.account-link.active-attempt';
+const DEFAULT_SCRIPT_LOAD_TIMEOUT_MS = 10_000;
+const DEFAULT_WEB_PROMPT_TIMEOUT_MS = 90_000;
 
 export class AuthOidcManager {
   constructor({
@@ -20,8 +24,12 @@ export class AuthOidcManager {
     mobileRedirectUri = import.meta.env.VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI ??
       DEFAULT_MOBILE_REDIRECT_URI,
     responseType = import.meta.env.VITE_GOOGLE_AUTH_RESPONSE_TYPE,
+    webGoogleIdentityEnabled = import.meta.env.VITE_ENABLE_WEB_GOOGLE_IDENTITY !== 'false',
     nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC !== 'false',
     nativeGoogleAuthEnabled = import.meta.env.VITE_ENABLE_NATIVE_GOOGLE_AUTH !== 'false',
+    googleIdentityScriptSrc = GOOGLE_IDENTITY_SCRIPT_SRC,
+    scriptLoadTimeoutMs = DEFAULT_SCRIPT_LOAD_TIMEOUT_MS,
+    webPromptTimeoutMs = DEFAULT_WEB_PROMPT_TIMEOUT_MS,
     basePath = import.meta.env.BASE_URL ?? '/',
     storage = globalThis.localStorage,
     windowRef = globalThis.window,
@@ -38,11 +46,19 @@ export class AuthOidcManager {
     this.postLogoutRedirectUri = postLogoutRedirectUri;
     this.mobileRedirectUri = mobileRedirectUri;
     this.responseType = responseType;
+    this.webGoogleIdentityEnabled = webGoogleIdentityEnabled;
     this.nativeOidcEnabled = nativeOidcEnabled;
     this.nativeGoogleAuthEnabled = nativeGoogleAuthEnabled;
+    this.googleIdentityScriptSrc = googleIdentityScriptSrc;
+    this.scriptLoadTimeoutMs = scriptLoadTimeoutMs;
+    this.webPromptTimeoutMs = webPromptTimeoutMs;
     this.basePath = basePath;
     this.storage = storage;
     this.windowRef = windowRef;
+    this.googleTokenManager = new AuthGoogleTokenManager({
+      clientId: this.clientId,
+      atob: this.windowRef?.atob ?? globalThis.atob,
+    });
     this.capacitor = capacitor;
     this.appPlugin = appPlugin;
     this.browserPlugin = browserPlugin;
@@ -53,15 +69,21 @@ export class AuthOidcManager {
     this.error = null;
     this.cancelled = false;
     this.urlOpenListener = null;
+    this.googleIdentityLoadPromise = null;
+    this.webSignInPromise = null;
     this.listeners = new Set();
   }
 
   isEnabled() {
-    return Boolean(
-      this.clientId &&
-        this.windowRef &&
-        (!this.isNativePlatform() || this.nativeOidcEnabled),
-    );
+    if (!this.clientId || !this.windowRef) {
+      return false;
+    }
+
+    if (!this.isNativePlatform()) {
+      return true;
+    }
+
+    return this.shouldUseNativeGoogleAuth() || this.nativeOidcEnabled;
   }
 
   async prepare() {
@@ -72,6 +94,12 @@ export class AuthOidcManager {
 
     if (this.shouldUseNativeGoogleAuth()) {
       this.user = (await this.consumePendingNativeUser()) ?? this.loadNativeUser();
+      this.publish();
+      return this.getSnapshot();
+    }
+
+    if (this.shouldUseWebGoogleIdentity()) {
+      this.user = this.loadWebGoogleUser();
       this.publish();
       return this.getSnapshot();
     }
@@ -87,6 +115,19 @@ export class AuthOidcManager {
     return this.getSnapshot();
   }
 
+  stop() {
+    const listener = this.urlOpenListener;
+    this.urlOpenListener = null;
+
+    if (!listener) {
+      return;
+    }
+
+    void Promise.resolve(listener)
+      .then((handle) => handle?.remove?.())
+      .catch(() => {});
+  }
+
   async getConnectionToken() {
     if (!this.isEnabled()) {
       return undefined;
@@ -96,27 +137,37 @@ export class AuthOidcManager {
       return this.getNativeConnectionToken();
     }
 
+    if (this.shouldUseWebGoogleIdentity()) {
+      return this.getWebConnectionToken();
+    }
+
     this.user = this.user ?? (await this.getUserManager().getUser());
-    return this.user?.id_token ?? this.user?.access_token;
+    return this.user?.id_token;
   }
 
-  async signIn() {
+  async signIn({ pendingAccountLinkAttemptId } = {}) {
     if (!this.isEnabled()) {
       return { ok: false, reason: 'disabled' };
     }
 
     this.error = null;
     this.cancelled = false;
+    this.saveActiveAccountLinkAttemptId(pendingAccountLinkAttemptId);
     this.publish();
 
     if (this.shouldUseNativeGoogleAuth()) {
-      return this.signInNative();
+      return this.signInNative({ pendingAccountLinkAttemptId });
+    }
+
+    if (this.shouldUseWebGoogleIdentity()) {
+      return this.signInWebGoogleIdentity({ pendingAccountLinkAttemptId });
     }
 
     try {
       await this.getUserManager().signinRedirect();
       return { ok: true };
     } catch (error) {
+      this.clearActiveAccountLinkAttemptId();
       this.error = error?.message ?? String(error);
       this.publish();
       return { ok: false, reason: 'redirect_failed' };
@@ -134,6 +185,18 @@ export class AuthOidcManager {
       this.error = null;
       this.cancelled = false;
       this.clearNativeUser();
+      this.clearActiveAccountLinkAttemptId();
+      this.publish();
+      return { ok: true };
+    }
+
+    if (this.shouldUseWebGoogleIdentity()) {
+      this.getGoogleIdentityClient()?.accounts?.id?.disableAutoSelect?.();
+      this.user = null;
+      this.error = null;
+      this.cancelled = false;
+      this.clearWebGoogleUser();
+      this.clearActiveAccountLinkAttemptId();
       this.publish();
       return { ok: true };
     }
@@ -142,6 +205,7 @@ export class AuthOidcManager {
     this.user = null;
     this.error = null;
     this.cancelled = false;
+    this.clearActiveAccountLinkAttemptId();
     this.publish();
     return { ok: true };
   }
@@ -149,7 +213,7 @@ export class AuthOidcManager {
   getSnapshot() {
     return {
       enabled: this.isEnabled(),
-      authenticated: Boolean(this.user),
+      authenticated: this.hasFreshUserToken(this.user),
       displayName: this.getDisplayName(),
       email: this.user?.profile?.email ?? '',
       error: this.error,
@@ -186,38 +250,48 @@ export class AuthOidcManager {
       return 'config';
     }
 
-    if (this.isNativePlatform() && !this.nativeOidcEnabled) {
+    if (
+      this.isNativePlatform() &&
+      !this.nativeOidcEnabled &&
+      !this.shouldUseNativeGoogleAuth()
+    ) {
       return 'native';
     }
 
     return null;
   }
 
-  async signInNative() {
+  async signInNative({ pendingAccountLinkAttemptId } = {}) {
     try {
       const result = await this.nativeGoogleAuthPlugin.signIn({
         serverClientId: this.clientId,
       });
       if (result?.cancelled) {
+        this.clearActiveAccountLinkAttemptId();
         this.error = null;
         this.cancelled = true;
         this.publish();
         return { ok: false, reason: 'native_cancelled' };
       }
       if (!result?.idToken) {
+        this.clearActiveAccountLinkAttemptId();
         this.error = null;
         this.cancelled = true;
         this.publish();
         return { ok: false, reason: 'native_cancelled' };
       }
-      this.user = this.createNativeUser(result);
+      this.user = this.createNativeUser(result, {
+        accountLinkAttemptId: pendingAccountLinkAttemptId,
+      });
       this.saveNativeUser(this.user);
+      this.clearActiveAccountLinkAttemptId();
       await this.clearPendingNativeUser();
       this.error = null;
       this.cancelled = false;
       this.publish();
       return { ok: true, reloadRequired: true };
     } catch (error) {
+      this.clearActiveAccountLinkAttemptId();
       if (this.isNativeGoogleAuthCancellation(error)) {
         this.error = null;
         this.cancelled = true;
@@ -231,19 +305,260 @@ export class AuthOidcManager {
     }
   }
 
-  createNativeUser(result = {}) {
-    return {
-      id_token: result.idToken,
-      expires_at: this.getJwtExpiresAt(result.idToken),
-      profile: {
-        sub: result.uniqueId ?? '',
-        email: result.email ?? '',
-        name: result.displayName ?? '',
-        given_name: result.givenName ?? '',
-        family_name: result.familyName ?? '',
-        picture: result.profilePictureUri ?? '',
+  async signInWebGoogleIdentity({ pendingAccountLinkAttemptId } = {}) {
+    if (this.webSignInPromise) {
+      return this.webSignInPromise;
+    }
+
+    this.webSignInPromise = this.runWebGoogleIdentitySignIn({
+      pendingAccountLinkAttemptId,
+    });
+    try {
+      return await this.webSignInPromise;
+    } finally {
+      this.webSignInPromise = null;
+    }
+  }
+
+  async runWebGoogleIdentitySignIn({ pendingAccountLinkAttemptId } = {}) {
+    try {
+      const google = await this.loadGoogleIdentityClient();
+      const identity = google?.accounts?.id;
+      if (!identity?.initialize || !identity?.prompt) {
+        throw new Error('Google Identity Services unavailable.');
+      }
+
+      return await new Promise((resolve) => {
+        let settled = false;
+        let timeoutId = null;
+
+        const finish = (result) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          if (result?.ok === false) {
+            this.clearActiveAccountLinkAttemptId();
+          }
+          if (timeoutId) {
+            this.clearTimer(timeoutId);
+          }
+          this.publish();
+          resolve(result);
+        };
+
+        timeoutId = this.setTimer(() => {
+          this.error = 'login timed out';
+          this.cancelled = false;
+          finish({ ok: false, reason: 'web_timeout' });
+        }, this.webPromptTimeoutMs);
+
+        try {
+          identity.initialize({
+            client_id: this.clientId,
+            callback: (response) => {
+              try {
+                if (!response?.credential) {
+                  this.error = null;
+                  this.cancelled = true;
+                  finish({ ok: false, reason: 'web_cancelled' });
+                  return;
+                }
+
+                this.user = this.createWebGoogleUser(response, {
+                  accountLinkAttemptId: pendingAccountLinkAttemptId,
+                });
+                this.saveWebGoogleUser(this.user);
+                this.clearActiveAccountLinkAttemptId();
+                this.error = null;
+                this.cancelled = false;
+                finish({ ok: true, reloadRequired: true });
+              } catch (error) {
+                this.clearActiveAccountLinkAttemptId();
+                this.error = error?.message ?? String(error);
+                this.cancelled = false;
+                finish({ ok: false, reason: 'web_failed' });
+              }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            context: 'signin',
+            itp_support: true,
+          });
+
+          identity.prompt((notification) => {
+            if (settled) {
+              return;
+            }
+
+            if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
+              this.error = this.getWebPromptError(notification);
+              this.cancelled = this.isWebPromptCancelled(notification);
+              finish({
+                ok: false,
+                reason: this.cancelled ? 'web_cancelled' : 'web_unavailable',
+              });
+              return;
+            }
+
+            if (
+              notification?.isDismissedMoment?.() &&
+              notification?.getDismissedReason?.() !== 'credential_returned'
+            ) {
+              this.error = null;
+              this.cancelled = true;
+              finish({ ok: false, reason: 'web_cancelled' });
+            }
+          });
+        } catch (error) {
+          this.clearActiveAccountLinkAttemptId();
+          this.error = error?.message ?? String(error);
+          this.cancelled = false;
+          finish({ ok: false, reason: 'web_failed' });
+        }
+      });
+    } catch (error) {
+      this.clearActiveAccountLinkAttemptId();
+      this.error = error?.message ?? String(error);
+      this.cancelled = false;
+      this.publish();
+      return { ok: false, reason: 'web_failed' };
+    }
+  }
+
+  getWebPromptError(notification) {
+    if (this.isWebPromptCancelled(notification)) {
+      return null;
+    }
+
+    const notDisplayedReason = notification?.getNotDisplayedReason?.();
+    const skippedReason = notification?.getSkippedReason?.();
+    return notDisplayedReason || skippedReason || 'google login unavailable';
+  }
+
+  isWebPromptCancelled(notification) {
+    return ['user_cancel', 'tap_outside', 'cancel_called'].includes(
+      notification?.getSkippedReason?.() ?? notification?.getDismissedReason?.(),
+    );
+  }
+
+  async loadGoogleIdentityClient() {
+    const existing = this.getGoogleIdentityClient();
+    if (existing?.accounts?.id) {
+      return existing;
+    }
+
+    if (this.googleIdentityLoadPromise) {
+      return this.googleIdentityLoadPromise;
+    }
+
+    this.googleIdentityLoadPromise = new Promise((resolve, reject) => {
+      const document = this.windowRef?.document;
+      if (!document?.createElement) {
+        reject(new Error('Google login needs a browser document.'));
+        return;
+      }
+
+      let settled = false;
+      let timeoutId = null;
+      const finish = (error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (timeoutId) {
+          this.clearTimer(timeoutId);
+        }
+        if (error) {
+          reject(error);
+          return;
+        }
+        const google = this.getGoogleIdentityClient();
+        if (google?.accounts?.id) {
+          resolve(google);
+          return;
+        }
+        reject(new Error('Google Identity Services did not initialize.'));
+      };
+
+      const script =
+        document.querySelector?.(`script[src="${this.googleIdentityScriptSrc}"]`) ??
+        document.createElement('script');
+
+      script.addEventListener?.('load', () => finish(), { once: true });
+      script.addEventListener?.(
+        'error',
+        () => finish(new Error('Google login script failed to load.')),
+        { once: true },
+      );
+
+      timeoutId = this.setTimer(
+        () => finish(new Error('Google login script timed out.')),
+        this.scriptLoadTimeoutMs,
+      );
+
+      if (!script.parentNode) {
+        script.src = this.googleIdentityScriptSrc;
+        script.async = true;
+        script.defer = true;
+        (document.head ?? document.body ?? document.documentElement).append(script);
+      }
+    });
+
+    try {
+      return await this.googleIdentityLoadPromise;
+    } finally {
+      this.googleIdentityLoadPromise = null;
+    }
+  }
+
+  getGoogleIdentityClient() {
+    return this.windowRef?.google;
+  }
+
+  createNativeUser(result = {}, { accountLinkAttemptId } = {}) {
+    const token = result.idToken;
+    const profile = this.validateGoogleIdToken(token, {
+      expectedNonce: result.nonce,
+    });
+
+    return this.withAccountLinkAttempt(
+      {
+        id_token: token,
+        expires_at: this.getJwtExpiresAt(token),
+        profile: {
+          sub: profile.sub ?? result.uniqueId ?? '',
+          email: profile.email ?? result.email ?? '',
+          name: profile.name ?? result.displayName ?? '',
+          given_name: profile.given_name ?? result.givenName ?? '',
+          family_name: profile.family_name ?? result.familyName ?? '',
+          picture: profile.picture ?? result.profilePictureUri ?? '',
+        },
       },
-    };
+      accountLinkAttemptId,
+    );
+  }
+
+  createWebGoogleUser(response = {}, { accountLinkAttemptId } = {}) {
+    const token = response.credential;
+    const profile = this.validateGoogleIdToken(token);
+
+    return this.withAccountLinkAttempt(
+      {
+        id_token: token,
+        expires_at: this.getJwtExpiresAt(token),
+        profile: {
+          sub: profile.sub ?? '',
+          email: profile.email ?? '',
+          name: profile.name ?? '',
+          given_name: profile.given_name ?? '',
+          family_name: profile.family_name ?? '',
+          picture: profile.picture ?? '',
+        },
+        select_by: response.select_by ?? '',
+      },
+      accountLinkAttemptId,
+    );
   }
 
   getNativeConnectionToken() {
@@ -254,6 +569,23 @@ export class AuthOidcManager {
     if (this.isTokenExpired(this.user.expires_at)) {
       this.user = this.stripNativeToken(this.user);
       this.saveNativeUser(this.user);
+      this.publish();
+      return undefined;
+    }
+
+    return this.user.id_token;
+  }
+
+  getWebConnectionToken() {
+    this.user = this.user ?? this.loadWebGoogleUser();
+    if (!this.user?.id_token) {
+      return undefined;
+    }
+
+    if (this.isTokenExpired(this.user.expires_at)) {
+      this.user = null;
+      this.clearWebGoogleUser();
+      this.publish();
       return undefined;
     }
 
@@ -271,8 +603,11 @@ export class AuthOidcManager {
         return null;
       }
 
-      const user = this.createNativeUser(result);
+      const user = this.createNativeUser(result, {
+        accountLinkAttemptId: this.loadActiveAccountLinkAttemptId(),
+      });
       this.saveNativeUser(user);
+      this.clearActiveAccountLinkAttemptId();
       this.error = null;
       this.cancelled = false;
       return user;
@@ -312,6 +647,7 @@ export class AuthOidcManager {
           family_name: parsed.profile.family_name ?? '',
           picture: parsed.profile.picture ?? '',
         },
+        accountLinkAttemptId: parsed.accountLinkAttemptId ?? null,
       };
 
       if (this.isTokenExpired(user.expires_at)) {
@@ -323,6 +659,39 @@ export class AuthOidcManager {
       return user;
     } catch {
       this.clearNativeUser();
+      return null;
+    }
+  }
+
+  loadWebGoogleUser() {
+    const raw = this.storage?.getItem?.(WEB_GOOGLE_USER_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed?.id_token || this.isTokenExpired(parsed.expires_at)) {
+        this.clearWebGoogleUser();
+        return null;
+      }
+
+      return {
+        id_token: parsed.id_token,
+        expires_at: parsed.expires_at,
+        profile: {
+          sub: parsed.profile?.sub ?? '',
+          email: parsed.profile?.email ?? '',
+          name: parsed.profile?.name ?? '',
+          given_name: parsed.profile?.given_name ?? '',
+          family_name: parsed.profile?.family_name ?? '',
+          picture: parsed.profile?.picture ?? '',
+        },
+        select_by: parsed.select_by ?? '',
+        accountLinkAttemptId: parsed.accountLinkAttemptId ?? null,
+      };
+    } catch {
+      this.clearWebGoogleUser();
       return null;
     }
   }
@@ -340,51 +709,99 @@ export class AuthOidcManager {
       persisted.id_token = user.id_token;
       persisted.expires_at = user.expires_at;
     }
+    if (user.accountLinkAttemptId) {
+      persisted.accountLinkAttemptId = user.accountLinkAttemptId;
+    }
 
     this.storage.setItem(NATIVE_GOOGLE_USER_STORAGE_KEY, JSON.stringify(persisted));
+  }
+
+  saveWebGoogleUser(user) {
+    if (!user?.id_token || this.isTokenExpired(user.expires_at) || !this.storage?.setItem) {
+      return;
+    }
+
+    this.storage.setItem(
+      WEB_GOOGLE_USER_STORAGE_KEY,
+      JSON.stringify({
+        id_token: user.id_token,
+        expires_at: user.expires_at,
+        profile: user.profile,
+        select_by: user.select_by ?? '',
+        accountLinkAttemptId: user.accountLinkAttemptId ?? null,
+      }),
+    );
   }
 
   clearNativeUser() {
     this.storage?.removeItem?.(NATIVE_GOOGLE_USER_STORAGE_KEY);
   }
 
+  clearWebGoogleUser() {
+    this.storage?.removeItem?.(WEB_GOOGLE_USER_STORAGE_KEY);
+  }
+
   stripNativeToken(user) {
     return {
       profile: user.profile,
+      accountLinkAttemptId: user.accountLinkAttemptId ?? null,
     };
   }
 
+  withAccountLinkAttempt(user, accountLinkAttemptId) {
+    if (!user || !accountLinkAttemptId) {
+      return user;
+    }
+
+    return {
+      ...user,
+      accountLinkAttemptId,
+    };
+  }
+
+  getAccountLinkAttemptId() {
+    return this.user?.accountLinkAttemptId ?? null;
+  }
+
+  saveActiveAccountLinkAttemptId(attemptId) {
+    if (!attemptId || !this.storage?.setItem) {
+      this.clearActiveAccountLinkAttemptId();
+      return;
+    }
+
+    this.storage.setItem(ACTIVE_ACCOUNT_LINK_ATTEMPT_KEY, attemptId);
+  }
+
+  loadActiveAccountLinkAttemptId() {
+    return this.storage?.getItem?.(ACTIVE_ACCOUNT_LINK_ATTEMPT_KEY) ?? null;
+  }
+
+  clearActiveAccountLinkAttemptId() {
+    this.storage?.removeItem?.(ACTIVE_ACCOUNT_LINK_ATTEMPT_KEY);
+  }
+
+  validateGoogleIdToken(token, { expectedNonce } = {}) {
+    return this.googleTokenManager.validateIdToken(token, { expectedNonce });
+  }
+
+  decodeJwtPayload(token) {
+    return this.googleTokenManager.decodeJwtPayload(token);
+  }
+
   getJwtExpiresAt(token) {
-    if (!token || typeof token !== 'string') {
-      return null;
-    }
-
-    const payload = token.split('.')[1];
-    if (!payload) {
-      return null;
-    }
-
-    try {
-      const decoded = this.decodeBase64Url(payload);
-      const parsed = JSON.parse(decoded);
-      const expiresAtSeconds = Number(parsed.exp);
-      return Number.isFinite(expiresAtSeconds) ? expiresAtSeconds * 1000 : null;
-    } catch {
-      return null;
-    }
+    return this.googleTokenManager.getJwtExpiresAt(token);
   }
 
   decodeBase64Url(value) {
-    const base64 = value
-      .replace(/-/g, '+')
-      .replace(/_/g, '/')
-      .padEnd(Math.ceil(value.length / 4) * 4, '=');
-    const decoder = this.windowRef?.atob ?? globalThis.atob;
-    return decoder(base64);
+    return this.googleTokenManager.decodeBase64Url(value);
   }
 
   isTokenExpired(expiresAt) {
-    return Number.isFinite(expiresAt) && Date.now() + TOKEN_EXPIRY_SKEW_MS >= expiresAt;
+    return this.googleTokenManager.isTokenExpired(expiresAt);
+  }
+
+  hasFreshUserToken(user) {
+    return this.googleTokenManager.hasFreshUserToken(user);
   }
 
   shouldUseNativeGoogleAuth() {
@@ -395,6 +812,15 @@ export class AuthOidcManager {
     );
   }
 
+  shouldUseWebGoogleIdentity() {
+    return Boolean(
+      this.webGoogleIdentityEnabled &&
+        !this.isNativePlatform() &&
+        (this.getGoogleIdentityClient()?.accounts?.id ||
+          this.windowRef?.document?.createElement),
+    );
+  }
+
   isNativeGoogleAuthCancellation(error) {
     const code = error?.code ?? '';
     const message = error?.message ?? String(error);
@@ -402,6 +828,14 @@ export class AuthOidcManager {
       code === 'cancelled' ||
       message.includes('GetCredentialCancellationException')
     );
+  }
+
+  setTimer(callback, delayMs) {
+    return (this.windowRef?.setTimeout ?? globalThis.setTimeout)(callback, delayMs);
+  }
+
+  clearTimer(timerId) {
+    (this.windowRef?.clearTimeout ?? globalThis.clearTimeout)(timerId);
   }
 
   async handleCallbackUrl(manager) {
@@ -468,7 +902,13 @@ export class AuthOidcManager {
 
     try {
       this.user = await manager.signinCallback(href);
+      this.user = this.withAccountLinkAttempt(
+        this.user,
+        this.loadActiveAccountLinkAttemptId(),
+      );
+      this.clearActiveAccountLinkAttemptId();
     } catch (error) {
+      this.clearActiveAccountLinkAttemptId();
       this.error = error?.message ?? String(error);
     }
 
@@ -568,9 +1008,10 @@ export class AuthOidcManager {
   }
 
   getResponseType() {
-    return this.responseType ?? (
-      this.isNativePlatform() ? DEFAULT_NATIVE_RESPONSE_TYPE : DEFAULT_WEB_RESPONSE_TYPE
-    );
+    const configuredResponseType = String(this.responseType ?? DEFAULT_RESPONSE_TYPE).trim();
+    return configuredResponseType === DEFAULT_RESPONSE_TYPE
+      ? configuredResponseType
+      : DEFAULT_RESPONSE_TYPE;
   }
 
   isNativePlatform() {

@@ -91,4 +91,12 @@ describe('AuthSessionManager', () => {
     expect(storage.getItem('idle-wizard.spacetimedb.token')).toBeNull();
     expect(storage.getItem('idle-wizard.unrelated')).toBe(unrelatedValue);
   });
+
+  it('can construct token storage without browser localStorage', async () => {
+    const tokenStorageManager = new AuthTokenStorageManager({ storage: undefined });
+    const sessionManager = new AuthSessionManager({ tokenStorageManager });
+
+    await expect(sessionManager.getConnectionToken()).resolves.toBeUndefined();
+    expect(() => sessionManager.clearSession()).not.toThrow();
+  });
 });

@@ -16,7 +16,7 @@ function createMemoryStorage() {
   };
 }
 
-function createFakeJwt({ expiresAtSeconds } = {}) {
+function createFakeJwt({ expiresAtSeconds, nonce, audience = 'client-1' } = {}) {
   const encode = (value) =>
     globalThis
       .btoa(JSON.stringify(value))
@@ -25,7 +25,14 @@ function createFakeJwt({ expiresAtSeconds } = {}) {
       .replace(/=+$/u, '');
   return [
     encode({ alg: 'none', typ: 'JWT' }),
-    encode({ exp: expiresAtSeconds }),
+    encode({
+      exp: expiresAtSeconds,
+      sub: 'google-sub',
+      aud: audience,
+      email: 'dav@example.com',
+      name: 'Dav',
+      nonce,
+    }),
     'signature',
   ].join('.');
 }
@@ -71,9 +78,9 @@ describe('AuthOidcManager', () => {
         location: {
           origin: 'https://davstep.github.io',
           pathname: '/idle-wizard/',
-          search: '',
-          hash: '#id_token=abc&state=def',
-          href: 'https://davstep.github.io/idle-wizard/#id_token=abc&state=def',
+          search: '?code=abc&state=def',
+          hash: '',
+          href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
         },
       },
       createUserManager: (settings) => {
@@ -86,7 +93,7 @@ describe('AuthOidcManager', () => {
 
     expect(capturedSettings.redirect_uri).toBe('https://davstep.github.io/idle-wizard/');
     expect(capturedSettings.authority).toBe('https://accounts.google.com');
-    expect(capturedSettings.response_type).toBe('id_token');
+    expect(capturedSettings.response_type).toBe('code');
     expect(capturedSettings.prompt).toBe('select_account');
     expect(capturedSettings.stateStore).toBeDefined();
     await capturedSettings.stateStore.set('callback-state', 'saved');
@@ -98,7 +105,7 @@ describe('AuthOidcManager', () => {
     await expect(manager.getConnectionToken()).resolves.toBe('id-token');
     expect(manager.getSnapshot()).toMatchObject({
       enabled: true,
-      authenticated: true,
+      authenticated: false,
       displayName: 'Dav',
       email: 'dav@example.com',
       disabledReason: null,
@@ -134,6 +141,145 @@ describe('AuthOidcManager', () => {
     expect(capturedSettings.response_type).toBe('code');
   });
 
+  it('normalizes legacy implicit OIDC response types to code flow', async () => {
+    let capturedSettings = null;
+    const oidcClient = {
+      getUser: vi.fn(() => Promise.resolve(null)),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      responseType: 'id_token',
+      storage: createMemoryStorage(),
+      windowRef: {
+        location: {
+          origin: 'https://davstep.github.io',
+          pathname: '/idle-wizard/',
+          search: '',
+          hash: '',
+          href: 'https://davstep.github.io/idle-wizard/',
+        },
+      },
+      createUserManager: (settings) => {
+        capturedSettings = settings;
+        return oidcClient;
+      },
+    });
+
+    await manager.prepare();
+
+    expect(capturedSettings.response_type).toBe('code');
+  });
+
+  it('uses Google Identity Services on web and stores the returned ID token', async () => {
+    const storage = createMemoryStorage();
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
+    let capturedConfig = null;
+    const google = {
+      accounts: {
+        id: {
+          initialize: vi.fn((config) => {
+            capturedConfig = config;
+          }),
+          prompt: vi.fn(() => {
+            capturedConfig.callback({
+              credential: idToken,
+              select_by: 'btn',
+            });
+          }),
+          disableAutoSelect: vi.fn(),
+        },
+      },
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      windowRef: {
+        atob: globalThis.atob,
+        document: {},
+        google,
+        setTimeout: vi.fn(() => 1),
+        clearTimeout: vi.fn(),
+      },
+      createUserManager: () => {
+        throw new Error('web Google Identity should not create OIDC manager');
+      },
+    });
+
+    await expect(manager.prepare()).resolves.toMatchObject({
+      enabled: true,
+      authenticated: false,
+    });
+    await expect(
+      manager.signIn({ pendingAccountLinkAttemptId: 'attempt-1' }),
+    ).resolves.toEqual({
+      ok: true,
+      reloadRequired: true,
+    });
+
+    expect(google.accounts.id.initialize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client_id: 'client-1',
+        callback: expect.any(Function),
+        itp_support: true,
+      }),
+    );
+    expect(google.accounts.id.prompt).toHaveBeenCalledTimes(1);
+    expect(storage.getItem('idle-wizard.web-google.user')).toContain(idToken);
+    expect(storage.getItem('idle-wizard.web-google.user')).toContain('attempt-1');
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBeNull();
+    expect(manager.getAccountLinkAttemptId()).toBe('attempt-1');
+    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
+    expect(manager.getSnapshot()).toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+
+    await expect(manager.signOut()).resolves.toEqual({ ok: true });
+    expect(google.accounts.id.disableAutoSelect).toHaveBeenCalledTimes(1);
+    expect(storage.getItem('idle-wizard.web-google.user')).toBeNull();
+  });
+
+  it('reports web Google Identity prompt failures', async () => {
+    const google = {
+      accounts: {
+        id: {
+          initialize: vi.fn(),
+          prompt: vi.fn((listener) => {
+            listener({
+              isNotDisplayed: () => true,
+              isSkippedMoment: () => false,
+              getNotDisplayedReason: () => 'unregistered_origin',
+            });
+          }),
+        },
+      },
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      windowRef: {
+        document: {},
+        google,
+        setTimeout: vi.fn(() => 1),
+        clearTimeout: vi.fn(),
+      },
+    });
+
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: false,
+      reason: 'web_unavailable',
+    });
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      error: 'unregistered_origin',
+      cancelled: false,
+    });
+  });
+
   it('cleans the redirect URL when callback handling fails', async () => {
     const replaceState = vi.fn();
     const oidcClient = {
@@ -150,9 +296,9 @@ describe('AuthOidcManager', () => {
         location: {
           origin: 'https://davstep.github.io',
           pathname: '/idle-wizard/',
-          search: '',
-          hash: '#id_token=abc&state=def',
-          href: 'https://davstep.github.io/idle-wizard/#id_token=abc&state=def',
+          search: '?code=abc&state=def',
+          hash: '',
+          href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
         },
       },
       createUserManager: () => oidcClient,
@@ -181,6 +327,7 @@ describe('AuthOidcManager', () => {
         getPlatform: () => 'android',
       },
       nativeOidcEnabled: false,
+      nativeGoogleAuthPlugin: null,
       appPlugin: {
         addListener,
         getLaunchUrl,
@@ -316,7 +463,9 @@ describe('AuthOidcManager', () => {
       enabled: true,
       authenticated: false,
     });
-    await expect(manager.signIn()).resolves.toEqual({
+    await expect(
+      manager.signIn({ pendingAccountLinkAttemptId: 'attempt-1' }),
+    ).resolves.toEqual({
       ok: true,
       reloadRequired: true,
     });
@@ -325,6 +474,9 @@ describe('AuthOidcManager', () => {
       serverClientId: 'client-1',
     });
     expect(nativeGoogleAuthPlugin.consumePendingSignInResult).toHaveBeenCalledTimes(2);
+    expect(storage.getItem('idle-wizard.native-google.user')).toContain('attempt-1');
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBeNull();
+    expect(manager.getAccountLinkAttemptId()).toBe('attempt-1');
     await expect(manager.getConnectionToken()).resolves.toBe(idToken);
     expect(manager.getSnapshot()).toMatchObject({
       enabled: true,
@@ -356,6 +508,7 @@ describe('AuthOidcManager', () => {
       displayName: 'Dav',
       email: 'dav@example.com',
     });
+    expect(reloadedManager.getAccountLinkAttemptId()).toBe('attempt-1');
     await expect(reloadedManager.getConnectionToken()).resolves.toBe(idToken);
   });
 
@@ -364,6 +517,7 @@ describe('AuthOidcManager', () => {
     const idToken = createFakeJwt({
       expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
     });
+    storage.setItem('idle-wizard.account-link.active-attempt', 'attempt-1');
     const nativeGoogleAuthPlugin = {
       signIn: vi.fn(),
       consumePendingSignInResult: vi.fn(() =>
@@ -402,6 +556,8 @@ describe('AuthOidcManager', () => {
     expect(nativeGoogleAuthPlugin.consumePendingSignInResult).toHaveBeenCalledTimes(1);
     await expect(manager.getConnectionToken()).resolves.toBe(idToken);
     expect(storage.getItem('idle-wizard.native-google.user')).toContain(idToken);
+    expect(storage.getItem('idle-wizard.native-google.user')).toContain('attempt-1');
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBeNull();
   });
 
   it('keeps native Google profile after the stored ID token expires', async () => {
@@ -441,7 +597,7 @@ describe('AuthOidcManager', () => {
     await manager.prepare();
 
     expect(manager.getSnapshot()).toMatchObject({
-      authenticated: true,
+      authenticated: false,
       displayName: 'Dav',
       email: 'dav@example.com',
     });
@@ -555,10 +711,13 @@ describe('AuthOidcManager', () => {
 
   it('clears native Google auth state on sign out', async () => {
     const storage = createMemoryStorage();
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
     const nativeGoogleAuthPlugin = {
       signIn: vi.fn(() =>
         Promise.resolve({
-          idToken: 'native-id-token',
+          idToken,
           email: 'dav@example.com',
         }),
       ),
@@ -591,6 +750,81 @@ describe('AuthOidcManager', () => {
       authenticated: false,
       error: null,
     });
+  });
+
+  it('rejects Google ID tokens without expiry', async () => {
+    const idToken = createFakeJwt();
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() =>
+        Promise.resolve({
+          idToken,
+          email: 'dav@example.com',
+        }),
+      ),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: false,
+      reason: 'native_failed',
+    });
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      error: 'Google login returned an expired identity token.',
+    });
+  });
+
+  it('rejects native Google tokens with a mismatched nonce', async () => {
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+      nonce: 'nonce-from-token',
+    });
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() =>
+        Promise.resolve({
+          idToken,
+          nonce: 'nonce-from-request',
+          email: 'dav@example.com',
+        }),
+      ),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(manager.signIn()).resolves.toMatchObject({
+      ok: false,
+      reason: 'native_failed',
+    });
+    expect(manager.getSnapshot().error).toBe(
+      'Google login returned a token with an invalid nonce.',
+    );
   });
 
   it('reports redirect start failures without leaving stale errors hidden', async () => {

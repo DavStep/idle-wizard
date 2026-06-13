@@ -7,7 +7,7 @@ async function flushPromises() {
   await Promise.resolve();
 }
 
-function createBackendWithFakes() {
+function createBackendWithFakes({ connectGeneratedBindings } = {}) {
   const backendFacade = new BackendFacade();
   const clearOwnProgress = vi.fn(() => Promise.resolve({ ok: true }));
   let syncUnhealthyHandler = null;
@@ -75,10 +75,13 @@ function createBackendWithFakes() {
     disconnect: vi.fn(),
   };
   backendFacade.spacetimeDbFacade = {
-    connectGeneratedBindings: vi.fn(async ({ onConnect }) => {
-      onConnect({}, 'identity-1');
-      return { ok: true };
-    }),
+    connectGeneratedBindings: vi.fn(
+      connectGeneratedBindings ??
+        (async ({ onConnect }) => {
+          onConnect({}, 'identity-1');
+          return { ok: true };
+        }),
+    ),
     disconnect: vi.fn(),
   };
 
@@ -270,5 +273,35 @@ describe('BackendFacade', () => {
     expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalled();
     expect(backendFacade.spacetimeDbFacade.disconnect).toHaveBeenCalledTimes(1);
     expect(onOffline).toHaveBeenCalledWith({ reason: 'account_in_use' });
+  });
+
+  it('reports paused and no-energy connection errors as non-transient reasons', async () => {
+    const pausedError = new Error('database is paused');
+    const noEnergyError = new Error('out of energy');
+    const onOffline = vi.fn();
+    const { backendFacade } = createBackendWithFakes({
+      connectGeneratedBindings: vi
+        .fn()
+        .mockImplementationOnce(async ({ onConnectError }) => {
+          onConnectError(pausedError);
+          return { ok: true };
+        })
+        .mockImplementationOnce(async ({ onConnectError }) => {
+          onConnectError(noEnergyError);
+          return { ok: true };
+        }),
+    });
+
+    await backendFacade.start({ onOffline });
+    await backendFacade.start({ onOffline });
+
+    expect(onOffline).toHaveBeenNthCalledWith(1, {
+      reason: 'server_paused',
+      error: pausedError,
+    });
+    expect(onOffline).toHaveBeenNthCalledWith(2, {
+      reason: 'server_no_energy',
+      error: noEnergyError,
+    });
   });
 });

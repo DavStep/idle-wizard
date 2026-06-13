@@ -83,4 +83,87 @@ describe('TopPanelAuthManager', () => {
     expect(authFacade.signInWithGoogle).toHaveBeenCalledTimes(1);
     expect(reload).not.toHaveBeenCalled();
   });
+
+  it('ignores duplicate clicks while login is already running', async () => {
+    const refs = createRefs();
+    let finishLogin = null;
+    const authFacade = {
+      getSnapshot: vi.fn(() => ({
+        oidc: {
+          enabled: true,
+          authenticated: false,
+        },
+      })),
+      subscribe: vi.fn((listener) => {
+        listener(authFacade.getSnapshot());
+        return vi.fn();
+      }),
+      signInWithGoogle: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            finishLogin = () => resolve({ ok: false, reason: 'web_cancelled' });
+          }),
+      ),
+    };
+    const manager = new TopPanelAuthManager({
+      authFacade,
+      gameplayFacade: {
+        createPersistenceSave: vi.fn(() => ({ tasks: { currentLevel: 1 } })),
+      },
+      reload: vi.fn(),
+    });
+
+    manager.mount(refs);
+    refs.authButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    refs.authButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+
+    expect(authFacade.signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(refs.authButton.disabled).toBe(true);
+
+    finishLogin();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(refs.authStatus.textContent).toBe('login cancelled');
+  });
+
+  it('shows pending-save failures without starting a redirect', async () => {
+    const refs = createRefs();
+    const authFacade = {
+      getSnapshot: vi.fn(() => ({
+        oidc: {
+          enabled: true,
+          authenticated: false,
+        },
+      })),
+      subscribe: vi.fn((listener) => {
+        listener(authFacade.getSnapshot());
+        return vi.fn();
+      }),
+      signInWithGoogle: vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          reason: 'pending_save_failed',
+          message: 'could not save device data',
+        }),
+      ),
+    };
+    const manager = new TopPanelAuthManager({
+      authFacade,
+      gameplayFacade: {
+        createPersistenceSave: vi.fn(() => ({ tasks: { currentLevel: 1 } })),
+      },
+      reload: vi.fn(),
+    });
+
+    manager.mount(refs);
+    refs.authButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(refs.authStatus.textContent).toBe(
+      'login error: could not save device data',
+    );
+  });
 });

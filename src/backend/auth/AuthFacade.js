@@ -21,6 +21,10 @@ export class AuthFacade {
     return this.sessionManager.prepare();
   }
 
+  stop() {
+    this.sessionManager.stop?.();
+  }
+
   getSessionManager() {
     return this.sessionManager;
   }
@@ -34,19 +38,41 @@ export class AuthFacade {
   }
 
   signInWithGoogle({ pendingGameplaySave } = {}) {
+    let pendingAccountLinkSave = null;
     if (pendingGameplaySave) {
-      this.accountLinkSaveManager.savePendingSave(pendingGameplaySave);
+      pendingAccountLinkSave =
+        this.accountLinkSaveManager.savePendingSave(pendingGameplaySave);
+      if (!pendingAccountLinkSave) {
+        return Promise.resolve({
+          ok: false,
+          reason: 'pending_save_failed',
+          message: 'could not save device data',
+        });
+      }
     }
 
-    return this.sessionManager.signInWithGoogle();
+    return Promise.resolve(
+      this.sessionManager.signInWithGoogle({
+        pendingAccountLinkAttemptId: pendingAccountLinkSave?.attemptId ?? null,
+      }),
+    ).then((result) => {
+      if (pendingAccountLinkSave && result?.ok === false) {
+        this.accountLinkSaveManager.clearPendingSave();
+      }
+
+      return result;
+    });
   }
 
   signOut() {
+    this.accountLinkSaveManager.clearPendingSave();
     return this.sessionManager.signOut();
   }
 
   getPendingAccountLinkSave() {
-    return this.accountLinkSaveManager.loadPendingSave();
+    return this.accountLinkSaveManager.loadPendingSave({
+      attemptId: this.sessionManager.getAccountLinkAttemptId?.() ?? null,
+    });
   }
 
   clearPendingAccountLinkSave() {
