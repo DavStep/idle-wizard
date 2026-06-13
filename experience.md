@@ -30,10 +30,12 @@
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
+- Release APK handoff files should be named `idle-wizard-release-<package-version>.apk`.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
+- Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
 - Keep gameplay rules separate from DOM/canvas rendering and SpacetimeDB transport.
 - bitECS 0.4 component calls use entity-first order: `addComponent(world, eid, component)`.
 - Player-facing event logs belong in gameplay/logs; page code should only render snapshot logs.
