@@ -152,7 +152,25 @@ export class TradeAllianceSubscriptionManager {
     const applications = this.readRows(this.tables.applications, (row) =>
       this.mapApplication(row),
     ).sort((left, right) => left.createdAtMs - right.createdAtMs);
-    const quests = this.readRows(this.tables.quests, (row) => this.mapQuest(row)).sort(
+    const rewardInbox = this.readRows(this.tables.rewards, (row) => this.mapReward(row)).sort(
+      (left, right) => {
+        if (left.claimedAtMs !== right.claimedAtMs) {
+          return left.claimedAtMs - right.claimedAtMs;
+        }
+
+        return left.rewardKey.localeCompare(right.rewardKey);
+      },
+    );
+    const claimedQuestKeys = new Set(
+      rewardInbox.map((reward) => this.getQuestClaimKey(reward.questId, reward.dayKey)),
+    );
+    const quests = this.readRows(this.tables.quests, (row) => {
+      const quest = this.mapQuest(row);
+      return {
+        ...quest,
+        claimed: claimedQuestKeys.has(this.getQuestClaimKey(quest.questId, quest.dayKey)),
+      };
+    }).sort(
       (left, right) => {
         if (left.dayKey !== right.dayKey) {
           return right.dayKey.localeCompare(left.dayKey);
@@ -174,15 +192,6 @@ export class TradeAllianceSubscriptionManager {
         return left.id.localeCompare(right.id);
       })
       .slice(-MESSAGE_LIMIT);
-    const rewardInbox = this.readRows(this.tables.rewards, (row) => this.mapReward(row)).sort(
-      (left, right) => {
-        if (left.claimedAtMs !== right.claimedAtMs) {
-          return left.claimedAtMs - right.claimedAtMs;
-        }
-
-        return left.rewardKey.localeCompare(right.rewardKey);
-      },
-    );
     const ownMember =
       members.find((member) => member.memberIdentity === this.identityKey) ?? null;
     const ownAlliance =
@@ -360,7 +369,12 @@ export class TradeAllianceSubscriptionManager {
       dayKey: String(row.dayKey ?? row.day_key ?? ''),
       crystalReward: this.toNumber(row.crystalReward ?? row.crystal_reward),
       claimedAtMs: this.toTimestampMs(row.claimedAt ?? row.claimed_at),
+      collected: Boolean(row.collected ?? false),
     };
+  }
+
+  getQuestClaimKey(questId, dayKey) {
+    return `${String(dayKey ?? '')}:${String(questId ?? '')}`;
   }
 
   rankAlliances(alliances, valueKey) {

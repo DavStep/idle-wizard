@@ -9,6 +9,7 @@ export default [
       '.cursor/**',
       'android/**',
       'dist/**',
+      'ios/App/App/public/**',
       'node_modules/**',
       'spacetimedb/dist/**',
       'src/backend/spacetimedb/module_bindings/**',

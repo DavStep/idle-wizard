@@ -2295,6 +2295,7 @@ function createTradeAllianceFacadeFake({
   members = [],
   quests = [],
   contributions = [],
+  rewardInbox = [],
   canManageRoles = true,
 } = {}) {
   const profileUpdates = [];
@@ -2335,6 +2336,7 @@ function createTradeAllianceFacadeFake({
     applications: [],
     quests,
     contributions,
+    rewardInbox,
   };
   const listeners = new Set();
 
@@ -2453,6 +2455,29 @@ function createTradeAllianceFacadeFake({
       }
 
       contribution.contribution += acceptedQuantity;
+      publish();
+      return { ok: true };
+    },
+    claimQuestReward: async (questId) => {
+      const quest = snapshot.quests.find((candidate) => candidate.questId === questId);
+
+      if (!quest) {
+        return { ok: false, reason: 'not_found' };
+      }
+
+      quest.claimed = true;
+      snapshot.rewardInbox.push({
+        rewardKey: `${quest.dayKey}:${quest.questId}:self`,
+        recipientIdentity: snapshot.ownMember.memberIdentity,
+        allianceId: quest.allianceId,
+        allianceName: snapshot.ownAlliance.name,
+        questId: quest.questId,
+        questLabel: quest.label,
+        dayKey: quest.dayKey,
+        crystalReward: quest.crystalReward,
+        claimedAtMs: 1,
+        collected: true,
+      });
       publish();
       return { ok: true };
     },
@@ -2755,6 +2780,25 @@ describe('PagesFacade', () => {
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain(
       'crystal 0',
     );
+  });
+
+  it('keeps top panel gold amount and unit in one fitted value', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    gameplayFacade.setGold(308.33);
+
+    const gold = stage.querySelector('.room-top-panel__resource[aria-label="gold"]');
+    const value = gold?.querySelector('.room-top-panel__resource-val');
+
+    expect(gold?.textContent).toBe('308.33 gold');
+    expect(value?.textContent).toBe('308.33 gold');
+    expect(gold?.querySelector('.room-top-panel__resource-key')).toBeNull();
   });
 
   it('keeps FTUE disabled for now', () => {
@@ -4200,6 +4244,68 @@ describe('PagesFacade', () => {
         (row) => row.textContent,
       ),
     ).toContain('your fill 8/25');
+  });
+
+  it('marks a trade alliance quest claimed after claiming reward', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const quest = {
+      allianceId: 'alliance-1',
+      dayKey: '2026-W24',
+      questId: 'allianceIncomeEasy',
+      label: 'small caravan',
+      questType: 'allianceIncome',
+      itemKey: '',
+      target: 500,
+      progress: 500,
+      progressRatio: 1,
+      minContribution: 25,
+      crystalReward: 1,
+    };
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [quest],
+      contributions: [
+        {
+          questId: 'allianceIncomeEasy',
+          dayKey: '2026-W24',
+          contributorIdentity: 'self',
+          contribution: 25,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+      .find((button) => button.textContent === 'quests');
+    questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const claimButton = popup.querySelector('.workshop-page__trade-alliance-quest-action');
+    expect(claimButton.textContent).toBe('claim');
+    expect(claimButton.disabled).toBe(false);
+
+    claimButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const claimedButton = popup.querySelector('.workshop-page__trade-alliance-quest-action');
+    expect(claimedButton.textContent).toBe('claimed');
+    expect(claimedButton.disabled).toBe(true);
+    expect(tradeAllianceFacade.getSnapshot().rewardInbox).toContainEqual(
+      expect.objectContaining({
+        questId: 'allianceIncomeEasy',
+        dayKey: '2026-W24',
+        collected: true,
+      }),
+    );
   });
 
   it('opens trade alliance member actions from a manageable member row', async () => {

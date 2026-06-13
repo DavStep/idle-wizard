@@ -28,6 +28,7 @@ const MAX_TRADE_ALLIANCE_WEEKLY_QUESTS = 8;
 const MAX_TRADE_ALLIANCE_QUEST_TARGET = 1_000_000_000n;
 const MAX_TRADE_ALLIANCE_QUEST_CRYSTAL_REWARD = 100;
 const TRADE_ALLIANCE_CHAT_HISTORY_LIMIT = 200;
+const TRADE_ALLIANCE_REWARD_HISTORY_LIMIT = 80;
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
@@ -1465,6 +1466,7 @@ const ownTradeAllianceRewardInboxResult = t.array(
     dayKey: t.string(),
     crystalReward: t.u32(),
     claimedAt: t.timestamp(),
+    collected: t.bool(),
   }),
 );
 
@@ -1574,7 +1576,7 @@ export const own_trade_alliance_reward_inbox = spacetimedb.view(
   ownTradeAllianceRewardInboxResult,
   (ctx) =>
     Array.from(ctx.db.tradeAllianceRewardInbox.iter())
-      .filter((reward) => reward.recipientIdentity.isEqual(ctx.sender) && !reward.collected)
+      .filter((reward) => reward.recipientIdentity.isEqual(ctx.sender))
       .sort((left, right) => {
         const leftClaimedAt = left.claimedAt.microsSinceUnixEpoch;
         const rightClaimedAt = right.claimedAt.microsSinceUnixEpoch;
@@ -1588,7 +1590,8 @@ export const own_trade_alliance_reward_inbox = spacetimedb.view(
         }
 
         return left.rewardKey.localeCompare(right.rewardKey);
-      }),
+      })
+      .slice(-TRADE_ALLIANCE_REWARD_HISTORY_LIMIT),
 );
 
 type IdleWizardSchema = InferSchema<typeof spacetimedb>;
@@ -6614,6 +6617,8 @@ export const set_total_generated_gold = spacetimedb.reducer(
 export const send_world_chat_message = spacetimedb.reducer(
   { body: t.string() },
   (ctx, { body }) => {
+    assertActivePlayerSession(ctx);
+
     const message = normalizeWorldChatMessage(body);
 
     if (!message) {
@@ -6646,6 +6651,8 @@ export const create_trade_alliance = spacetimedb.reducer(
     joinMode: t.string(),
   },
   (ctx, { name, tag, description, joinMode }) => {
+    assertActivePlayerSession(ctx);
+
     if (getTradeAllianceMember(ctx)) {
       throw new Error('Already in an alliance.');
     }
@@ -6708,6 +6715,8 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
     joinMode: t.string(),
   },
   (ctx, { name, tag, description, notice, joinMode }) => {
+    assertActivePlayerSession(ctx);
+
     const member = getTradeAllianceMember(ctx);
 
     if (!member || member.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
@@ -6739,6 +6748,8 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
 export const join_trade_alliance = spacetimedb.reducer(
   { allianceId: t.string() },
   (ctx, { allianceId }) => {
+    assertActivePlayerSession(ctx);
+
     if (getTradeAllianceMember(ctx)) {
       throw new Error('Already in an alliance.');
     }
@@ -6786,6 +6797,8 @@ export const join_trade_alliance = spacetimedb.reducer(
 export const apply_trade_alliance = spacetimedb.reducer(
   { allianceId: t.string() },
   (ctx, { allianceId }) => {
+    assertActivePlayerSession(ctx);
+
     if (getTradeAllianceMember(ctx)) {
       throw new Error('Already in an alliance.');
     }
@@ -6837,6 +6850,8 @@ export const apply_trade_alliance = spacetimedb.reducer(
 export const cancel_trade_alliance_application = spacetimedb.reducer(
   { applicationKey: t.string() },
   (ctx, { applicationKey }) => {
+    assertActivePlayerSession(ctx);
+
     const safeApplicationKey = String(applicationKey ?? '').trim();
     const application = ctx.db.tradeAllianceApplication.applicationKey.find(safeApplicationKey);
 
@@ -6851,6 +6866,8 @@ export const cancel_trade_alliance_application = spacetimedb.reducer(
 export const accept_trade_alliance_application = spacetimedb.reducer(
   { applicationKey: t.string() },
   (ctx, { applicationKey }) => {
+    assertActivePlayerSession(ctx);
+
     const application = ctx.db.tradeAllianceApplication.applicationKey.find(
       String(applicationKey ?? '').trim(),
     );
@@ -6904,6 +6921,8 @@ export const accept_trade_alliance_application = spacetimedb.reducer(
 export const reject_trade_alliance_application = spacetimedb.reducer(
   { applicationKey: t.string() },
   (ctx, { applicationKey }) => {
+    assertActivePlayerSession(ctx);
+
     const application = ctx.db.tradeAllianceApplication.applicationKey.find(
       String(applicationKey ?? '').trim(),
     );
@@ -6918,6 +6937,8 @@ export const reject_trade_alliance_application = spacetimedb.reducer(
 );
 
 export const leave_trade_alliance = spacetimedb.reducer({}, (ctx) => {
+  assertActivePlayerSession(ctx);
+
   const member = getTradeAllianceMember(ctx);
 
   if (!member) {
@@ -6947,6 +6968,8 @@ export const leave_trade_alliance = spacetimedb.reducer({}, (ctx) => {
 export const transfer_trade_alliance_leadership = spacetimedb.reducer(
   { memberIdentityHex: t.string() },
   (ctx, { memberIdentityHex }) => {
+    assertActivePlayerSession(ctx);
+
     const leader = getTradeAllianceMember(ctx);
 
     if (!leader || leader.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
@@ -6996,6 +7019,8 @@ export const set_trade_alliance_member_role = spacetimedb.reducer(
     role: t.string(),
   },
   (ctx, { memberIdentityHex, role }) => {
+    assertActivePlayerSession(ctx);
+
     const targetRole = validateTradeAllianceRole(role);
     if (targetRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
       throw new Error('Use leadership transfer.');
@@ -7030,6 +7055,8 @@ export const set_trade_alliance_member_role = spacetimedb.reducer(
 export const kick_trade_alliance_member = spacetimedb.reducer(
   { memberIdentityHex: t.string() },
   (ctx, { memberIdentityHex }) => {
+    assertActivePlayerSession(ctx);
+
     const actor = getTradeAllianceMember(ctx);
     if (!actor) {
       throw new Error('Alliance role required.');
@@ -7064,6 +7091,8 @@ export const kick_trade_alliance_member = spacetimedb.reducer(
 export const send_trade_alliance_chat_message = spacetimedb.reducer(
   { body: t.string() },
   (ctx, { body }) => {
+    assertActivePlayerSession(ctx);
+
     const message = normalizeWorldChatMessage(body);
 
     if (!message) {
@@ -7109,6 +7138,8 @@ export const fill_trade_alliance_item_quest = spacetimedb.reducer(
 export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
   { questId: t.string() },
   (ctx, { questId }) => {
+    assertActivePlayerSession(ctx);
+
     const member = getTradeAllianceMember(ctx);
     if (!member) {
       throw new Error('Alliance quest requires membership.');
@@ -7170,6 +7201,8 @@ export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
 export const collect_trade_alliance_reward = spacetimedb.reducer(
   { rewardKey: t.string() },
   (ctx, { rewardKey }) => {
+    assertActivePlayerSession(ctx);
+
     const reward = ctx.db.tradeAllianceRewardInbox.rewardKey.find(String(rewardKey ?? '').trim());
 
     if (!reward || !reward.recipientIdentity.isEqual(ctx.sender) || reward.collected) {
@@ -7347,6 +7380,8 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
 );
 
 export const submit_feedback = spacetimedb.reducer({ body: t.string() }, (ctx, { body }) => {
+  assertActivePlayerSession(ctx);
+
   const safeBody = normalizeFeedbackBody(body);
 
   if (!safeBody) {
@@ -7370,6 +7405,8 @@ export const submit_feedback = spacetimedb.reducer({ body: t.string() }, (ctx, {
 export const announce_research = spacetimedb.reducer(
   { researchName: t.string() },
   (ctx, { researchName }) => {
+    assertActivePlayerSession(ctx);
+
     if (!ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS) {
       return;
     }
@@ -7401,6 +7438,8 @@ export const announce_research = spacetimedb.reducer(
 export const discover_potion_recipe = spacetimedb.reducer(
   { potionKey: t.string() },
   (ctx, { potionKey }) => {
+    assertActivePlayerSession(ctx);
+
     if (!ENABLE_CLIENT_POTION_DISCOVERY) {
       return;
     }
@@ -7449,6 +7488,8 @@ export const set_player_shop_slot = spacetimedb.reducer(
     priceGold: t.f64(),
   },
   (ctx, { slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
+    assertActivePlayerSession(ctx);
+
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
       throw new Error('Player shop exchange requires server inventory.');
     }
@@ -7497,6 +7538,8 @@ export const set_player_shop_slot = spacetimedb.reducer(
 export const clear_player_shop_slot = spacetimedb.reducer(
   { slotNumber: t.u8() },
   (ctx, { slotNumber }) => {
+    assertActivePlayerSession(ctx);
+
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
     const listingKey = getPlayerShopListingKey(ctx, safeSlotNumber);
     const existingListing = ctx.db.playerShopListing.listingKey.find(listingKey);
@@ -7512,6 +7555,8 @@ export const clear_player_shop_slot = spacetimedb.reducer(
 export const buy_player_shop_listing = spacetimedb.reducer(
   { listingKey: t.string(), quantity: t.u32() },
   (ctx, { listingKey, quantity }) => {
+    assertActivePlayerSession(ctx);
+
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
       throw new Error('Player shop exchange requires server inventory.');
     }
@@ -7602,6 +7647,8 @@ export const buy_player_shop_listing = spacetimedb.reducer(
 );
 
 export const claim_player_shop_proceeds = spacetimedb.reducer({}, (ctx) => {
+  assertActivePlayerSession(ctx);
+
   if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
     throw new Error('Player shop exchange requires server inventory.');
   }
@@ -7618,6 +7665,8 @@ export const claim_player_shop_proceeds = spacetimedb.reducer({}, (ctx) => {
 export const sell_to_npc = spacetimedb.reducer(
   { itemKey: t.string(), quantity: t.u32() },
   (ctx, { itemKey, quantity }) => {
+    assertActivePlayerSession(ctx);
+
     if (!ENABLE_NPC_MARKET_PRESSURE) {
       return;
     }
@@ -7665,6 +7714,8 @@ export const sell_to_npc = spacetimedb.reducer(
 export const buy_from_npc = spacetimedb.reducer(
   { itemKey: t.string(), quantity: t.u32() },
   (ctx, { itemKey, quantity }) => {
+    assertActivePlayerSession(ctx);
+
     if (!ENABLE_NPC_MARKET_PRESSURE) {
       return;
     }

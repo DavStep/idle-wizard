@@ -138,6 +138,7 @@ export const OwnTradeAllianceRewardInboxResult = __t.object("OwnTradeAllianceRew
   dayKey: __t.string(),
   crystalReward: __t.u32(),
   claimedAt: __t.timestamp(),
+  collected: __t.bool(),
 });
 export type OwnTradeAllianceRewardInboxResult = __Infer<typeof OwnTradeAllianceRewardInboxResult>;
 

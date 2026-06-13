@@ -29,6 +29,7 @@
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
+- A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Keep gameplay rules separate from DOM/canvas rendering and SpacetimeDB transport.
@@ -41,6 +42,7 @@
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
+- Account-link pending saves need attempt scoping and visible failure handling; silent `localStorage` failure can drop device progress when linking into an existing account.
 - Account linking should use Google OIDC directly, not SpacetimeAuth, so the player sees only the Google account picker/consent before returning to the game.
 - Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` Google redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail provider validation.
 - Android Google account linking should open through Capacitor Browser/Chrome Custom Tab, not the game WebView, so Google shows the normal account picker.
@@ -48,9 +50,11 @@
 - Mobile auth redirects need an explicit native marker and Android `intent://` handoff; some custom-tab browsers can ignore bare custom-scheme redirects from a loaded page.
 - For mobile account linking, prefer native Google Credential Manager over browser OIDC; browser callbacks can reopen the app without restoring OIDC state/token into the game.
 - Android Credential Manager `GetCredentialCancellationException` is a neutral cancel for UI; if it happens after account selection, verify the Android OAuth client package and SHA-1.
+- Player-distributed Android prod APKs must be signed with a Google OAuth-registered cert; debug-signed prod builds can connect only if that debug SHA-1 is registered for `com.idlewizard.game`.
 - Native Google sign-in returns inside the same WebView, so persist the native user and reload/reconnect after success; web OIDC redirect handled that implicitly.
 - SpacetimeDB computes OIDC identities from `iss` + `sub`, so a direct Google ID token creates a stable account without a SpacetimeAuth hop.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
+- All player-owned SpacetimeDB write reducers should call `assertActivePlayerSession(ctx)` before mutating rows; the single-account lock is only as strong as its least-guarded reducer.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
@@ -208,6 +212,7 @@
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
 - Top panel layout uses two rows: username full-width above mana/gold/crystal, so resource text does not squeeze names.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
+- Top panel gold should keep amount and `gold` in the same fitted value span; a separate suffix can leave clipped values like `308... gold`.
 - Clicking the top-panel username opens settings; username editing and visual theme choices live there.
 - Settings use bottom tabs outside the popup border: `account`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
 - Settings account controls should stay visible: label the tab `account`, and keep `connect account` visible disabled with `login unavailable` when OIDC config is missing.
@@ -304,7 +309,7 @@
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.
 - Optional Google login is controlled by `VITE_GOOGLE_AUTH_CLIENT_ID`; the Google OAuth client ID is public config and can live in `.env.production`.
-- Browser Google login should use an ID-token redirect (`response_type=id_token`) for SpacetimeDB auth; Google code-flow token exchange from the browser asks for a client secret.
+- Browser Google login must use Google Identity Services to receive a Google-signed ID token in a JavaScript callback; Google code flow needs backend token exchange and `oidc-client-ts` rejects legacy implicit `id_token`.
 - OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 
@@ -329,6 +334,7 @@
 - Trade alliance member `dailyContribution` is a legacy column name; it now stores current weekly contribution and resets with weekly quest progress.
 - Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
 - Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
+- Trade alliance claimed quest UI needs collected own reward rows; hiding collected inbox rows makes claimed quests render as claimable again after auto-collect.
 - Trade alliance quest rewards must be capped per player/quest/week across all alliances; reward keys or guards that include alliance id allow clan hopping to claim again.
 - Trade alliance item-fill quest ids must be `itemFill:<itemKey>`; the server validates that key against the exact configured seed or potion item before accepting fills.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.

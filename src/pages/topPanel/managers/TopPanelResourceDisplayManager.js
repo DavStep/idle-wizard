@@ -1,4 +1,4 @@
-import { formatGoldAmount } from '../../../shared/goldPrice.js';
+import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
 export class TopPanelResourceDisplayManager {
   constructor({ gameplayFacade } = {}) {
@@ -34,7 +34,7 @@ export class TopPanelResourceDisplayManager {
     const level = snapshot.tasks?.currentLevel ?? 1;
 
     this.setText(this.refs.manaValue, `${Math.floor(mana.current ?? 0)}/${mana.cap ?? 0}`);
-    this.setText(this.refs.goldValue, formatGoldAmount(gold));
+    this.setText(this.refs.goldValue, formatGoldPriceText(gold));
     this.setText(this.refs.crystalValue, String(Math.floor(crystal)));
     this.setText(this.refs.levelValue, `level ${level}`);
   }

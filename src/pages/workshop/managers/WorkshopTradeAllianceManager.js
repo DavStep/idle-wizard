@@ -469,6 +469,7 @@ export class WorkshopTradeAllianceManager {
     const contribution = this.getOwnContribution(quest.questId, quest.dayKey);
     const itemFillQuest = this.isItemFillQuest(quest);
     const questComplete = quest.progress >= quest.target;
+    const questClaimed = Boolean(quest.claimed);
     const row = document.createElement('div');
     row.className = 'workshop-page__trade-alliance-quest-row';
 
@@ -493,9 +494,17 @@ export class WorkshopTradeAllianceManager {
     const action = document.createElement('button');
     action.className = 'style-button workshop-page__trade-alliance-quest-action';
     action.type = 'button';
-    action.textContent = itemFillQuest && !questComplete ? 'fill' : 'claim';
+    let actionText = 'claim';
+    if (questClaimed) {
+      actionText = 'claimed';
+    } else if (itemFillQuest && !questComplete) {
+      actionText = 'fill';
+    }
+    action.textContent = actionText;
 
-    if (itemFillQuest && !questComplete) {
+    if (questClaimed) {
+      action.disabled = true;
+    } else if (itemFillQuest && !questComplete) {
       action.disabled = !this.canFillItemQuest(quest);
       action.addEventListener('click', () => void this.runAction(() => this.fillItemQuest(quest)));
     } else {

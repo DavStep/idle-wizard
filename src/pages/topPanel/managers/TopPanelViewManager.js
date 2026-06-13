@@ -65,7 +65,7 @@ export class TopPanelViewManager {
     this.refs.resources.setAttribute('aria-label', 'resources');
     this.refs.resources.append(
       this.createResource('mana', '0/0'),
-      this.createResource('gold', '0'),
+      this.createResource('gold', '0 gold'),
       this.createResource('crystal', '0'),
     );
 
@@ -78,10 +78,6 @@ export class TopPanelViewManager {
     resource.className = 'room-top-panel__resource';
     resource.setAttribute('aria-label', label);
     setResourceColor(resource, label);
-
-    const key = document.createElement('span');
-    key.className = 'room-top-panel__resource-key';
-    key.textContent = label === 'gold' ? ' gold' : `${label} `;
 
     const val = document.createElement('span');
     val.className = 'room-top-panel__resource-val';
@@ -100,9 +96,13 @@ export class TopPanelViewManager {
     }
 
     if (label === 'gold') {
-      resource.append(val, key);
+      resource.append(val);
       return resource;
     }
+
+    const key = document.createElement('span');
+    key.className = 'room-top-panel__resource-key';
+    key.textContent = `${label} `;
 
     resource.append(key, val);
     return resource;

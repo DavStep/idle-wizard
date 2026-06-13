@@ -20,4 +20,5 @@ export default __t.row({
   dayKey: __t.string().name("day_key"),
   crystalReward: __t.u32().name("crystal_reward"),
   claimedAt: __t.timestamp().name("claimed_at"),
+  collected: __t.bool(),
 });
