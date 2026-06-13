@@ -309,6 +309,69 @@ describe('AuthOidcManager', () => {
     expect(manager.getSnapshot()).toMatchObject({
       authenticated: false,
       error: 'account picker failed',
+      cancelled: false,
+    });
+  });
+
+  it('treats native Google auth cancellation as a neutral cancel', async () => {
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() => Promise.resolve({ cancelled: true })),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: false,
+      reason: 'native_cancelled',
+    });
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      error: null,
+      cancelled: true,
+    });
+  });
+
+  it('treats empty native Google auth results as a neutral cancel', async () => {
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(() => Promise.resolve({})),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: false,
+      reason: 'native_cancelled',
+    });
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      error: null,
+      cancelled: true,
     });
   });
 

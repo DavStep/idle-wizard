@@ -10,6 +10,7 @@ import androidx.credentials.CustomCredential;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.ClearCredentialException;
+import androidx.credentials.exceptions.GetCredentialCancellationException;
 import androidx.credentials.exceptions.GetCredentialException;
 
 import com.getcapacitor.JSObject;
@@ -64,7 +65,11 @@ public class NativeGoogleAuthPlugin extends Plugin {
 
                 @Override
                 public void onError(GetCredentialException exception) {
-                    rejectOnUiThread(call, exception.getClass().getSimpleName(), exception);
+                    if (exception instanceof GetCredentialCancellationException) {
+                        resolveCancelled(call);
+                        return;
+                    }
+                    rejectOnUiThread(call, exception.getClass().getSimpleName(), "native_error", exception);
                 }
             }
         );
@@ -84,7 +89,7 @@ public class NativeGoogleAuthPlugin extends Plugin {
 
                 @Override
                 public void onError(ClearCredentialException exception) {
-                    rejectOnUiThread(call, exception.getClass().getSimpleName(), exception);
+                    rejectOnUiThread(call, exception.getClass().getSimpleName(), "native_error", exception);
                 }
             }
         );
@@ -93,7 +98,7 @@ public class NativeGoogleAuthPlugin extends Plugin {
     private void resolveSignIn(PluginCall call, GetCredentialResponse result, String nonce) {
         Credential credential = result.getCredential();
         if (!(credential instanceof CustomCredential)) {
-            rejectOnUiThread(call, "Unexpected credential type", null);
+            rejectOnUiThread(call, "Unexpected credential type", "native_error", null);
             return;
         }
 
@@ -102,7 +107,7 @@ public class NativeGoogleAuthPlugin extends Plugin {
             GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(customCredential.getType()) ||
             GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_SIWG_CREDENTIAL.equals(customCredential.getType());
         if (!isGoogleCredential) {
-            rejectOnUiThread(call, "Unexpected credential type", null);
+            rejectOnUiThread(call, "Unexpected credential type", "native_error", null);
             return;
         }
 
@@ -123,12 +128,18 @@ public class NativeGoogleAuthPlugin extends Plugin {
             }
             getActivity().runOnUiThread(() -> call.resolve(ret));
         } catch (RuntimeException exception) {
-            rejectOnUiThread(call, "Invalid Google ID token", exception);
+            rejectOnUiThread(call, "Invalid Google ID token", "native_error", exception);
         }
     }
 
-    private void rejectOnUiThread(PluginCall call, String message, Exception exception) {
-        getActivity().runOnUiThread(() -> call.reject(message, null, exception));
+    private void rejectOnUiThread(PluginCall call, String message, String code, Exception exception) {
+        getActivity().runOnUiThread(() -> call.reject(message, code, exception));
+    }
+
+    private void resolveCancelled(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("cancelled", true);
+        getActivity().runOnUiThread(() -> call.resolve(ret));
     }
 
     private String createNonce() {

@@ -47,6 +47,7 @@
 - `oidc-client-ts` supports Authorization Code with PKCE for redirect sign-in; implicit `id_token token` fails before Capacitor Browser opens.
 - Mobile auth redirects need an explicit native marker and Android `intent://` handoff; some custom-tab browsers can ignore bare custom-scheme redirects from a loaded page.
 - For mobile account linking, prefer native Google Credential Manager over browser OIDC; browser callbacks can reopen the app without restoring OIDC state/token into the game.
+- Android Credential Manager `GetCredentialCancellationException` is a neutral cancel for UI; if it happens after account selection, verify the Android OAuth client package and SHA-1.
 - SpacetimeDB computes OIDC identities from `iss` + `sub`, so a direct Google ID token creates a stable account without a SpacetimeAuth hop.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.

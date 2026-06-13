@@ -74,6 +74,10 @@ export class TopPanelAuthManager {
   }
 
   getStatusText(oidc) {
+    if (oidc.cancelled) {
+      return 'login cancelled';
+    }
+
     if (oidc.error) {
       return `login error: ${this.getErrorText(oidc.error)}`;
     }

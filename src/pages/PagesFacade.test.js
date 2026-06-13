@@ -2187,6 +2187,7 @@ function createAuthFacadeFake({
   authenticated = false,
   disabledReason = null,
   error = null,
+  cancelled = false,
 } = {}) {
   let signInCount = 0;
   let signInPayload = null;
@@ -2197,6 +2198,7 @@ function createAuthFacadeFake({
       displayName: authenticated ? 'Dav' : '',
       email: authenticated ? 'dav@example.com' : '',
       error,
+      cancelled,
       disabledReason,
     },
   };
@@ -3571,6 +3573,28 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
       'login error: NoCredentialException',
+    );
+  });
+
+  it('shows google account connect cancellation in settings', () => {
+    const stage = document.createElement('section');
+    const authFacade = createAuthFacadeFake({
+      cancelled: true,
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin'),
+      authFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
+      'login cancelled',
     );
   });
 

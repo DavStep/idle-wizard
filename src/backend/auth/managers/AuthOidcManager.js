@@ -48,6 +48,7 @@ export class AuthOidcManager {
     this.userManager = null;
     this.user = null;
     this.error = null;
+    this.cancelled = false;
     this.urlOpenListener = null;
     this.listeners = new Set();
   }
@@ -101,6 +102,7 @@ export class AuthOidcManager {
     }
 
     this.error = null;
+    this.cancelled = false;
     this.publish();
 
     if (this.shouldUseNativeGoogleAuth()) {
@@ -126,6 +128,7 @@ export class AuthOidcManager {
       await this.nativeGoogleAuthPlugin?.signOut?.();
       this.user = null;
       this.error = null;
+      this.cancelled = false;
       this.publish();
       return { ok: true };
     }
@@ -133,6 +136,7 @@ export class AuthOidcManager {
     await this.getUserManager().removeUser();
     this.user = null;
     this.error = null;
+    this.cancelled = false;
     this.publish();
     return { ok: true };
   }
@@ -144,6 +148,7 @@ export class AuthOidcManager {
       displayName: this.getDisplayName(),
       email: this.user?.profile?.email ?? '',
       error: this.error,
+      cancelled: this.cancelled,
       disabledReason: this.getDisabledReason(),
     };
   }
@@ -188,15 +193,32 @@ export class AuthOidcManager {
       const result = await this.nativeGoogleAuthPlugin.signIn({
         serverClientId: this.clientId,
       });
+      if (result?.cancelled) {
+        this.error = null;
+        this.cancelled = true;
+        this.publish();
+        return { ok: false, reason: 'native_cancelled' };
+      }
       if (!result?.idToken) {
-        throw new Error('Native Google sign-in returned no ID token');
+        this.error = null;
+        this.cancelled = true;
+        this.publish();
+        return { ok: false, reason: 'native_cancelled' };
       }
       this.user = this.createNativeUser(result);
       this.error = null;
+      this.cancelled = false;
       this.publish();
       return { ok: true };
     } catch (error) {
+      if (this.isNativeGoogleAuthCancellation(error)) {
+        this.error = null;
+        this.cancelled = true;
+        this.publish();
+        return { ok: false, reason: 'native_cancelled' };
+      }
       this.error = error?.message ?? String(error);
+      this.cancelled = false;
       this.publish();
       return { ok: false, reason: 'native_failed' };
     }
@@ -221,6 +243,15 @@ export class AuthOidcManager {
       this.getPlatform() === 'android' &&
         this.nativeGoogleAuthEnabled &&
         this.nativeGoogleAuthPlugin?.signIn,
+    );
+  }
+
+  isNativeGoogleAuthCancellation(error) {
+    const code = error?.code ?? '';
+    const message = error?.message ?? String(error);
+    return (
+      code === 'cancelled' ||
+      message.includes('GetCredentialCancellationException')
     );
   }
 
