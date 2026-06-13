@@ -1,4 +1,5 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 export class WorkshopSeedBlockManager {
@@ -133,7 +134,7 @@ export class WorkshopSeedBlockManager {
       `show seed inventory, ${seedCountText}`,
     );
     this.refs.summonButtonLabel.textContent = summonLabel;
-    this.refs.summonButtonCost.textContent = `${snapshot.seedSummoning.cost} mana`;
+    setResourceIconText(this.refs.summonButtonCost, `${snapshot.seedSummoning.cost} mana`);
     this.refs.button.setAttribute(
       'aria-label',
       `${summonLabel}, costs ${snapshot.seedSummoning.cost} mana`,

@@ -1,3 +1,5 @@
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColorFromText } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
@@ -250,6 +252,11 @@ export class ResearchBoxListManager {
     const name = document.createElement('span');
     name.className = 'research-page__research-name';
     name.textContent = research.label;
+    setItemIconLabel(
+      name,
+      this.getResearchItemKind(research),
+      this.getResearchItemKey(research),
+    );
 
     if (!research.showEffect) {
       return [name];
@@ -257,9 +264,27 @@ export class ResearchBoxListManager {
 
     const effect = document.createElement('span');
     effect.className = 'research-page__research-effect';
-    effect.textContent = research.effect;
+    setResourceIconText(effect, research.effect);
     setResourceColorFromText(effect, research.effect);
     return [name, effect];
+  }
+
+  getResearchItemKind(research) {
+    if (research.id?.startsWith('unlockSeed:')) {
+      return 'seed';
+    }
+
+    if (research.id?.startsWith('unlockRecipe:')) {
+      return 'potion';
+    }
+
+    return null;
+  }
+
+  getResearchItemKey(research) {
+    return research.id?.startsWith('unlockRecipe:')
+      ? research.id.slice('unlockRecipe:'.length)
+      : null;
   }
 
   createReadonlyValue(research) {
@@ -267,7 +292,7 @@ export class ResearchBoxListManager {
     val.className = 'row_val research-page__research-value';
 
     if (!research.inProgress) {
-      val.textContent = research.value;
+      setResourceIconText(val, research.value);
       setResourceColorFromText(val, research.value);
       return val;
     }
@@ -356,7 +381,7 @@ export class ResearchBoxListManager {
     button.className = 'style-button research-page__research-button';
     button.type = 'button';
     button.dataset.tutorialId = `research:${research.id}`;
-    button.textContent = research.value;
+    setResourceIconText(button, research.value);
     setResourceColorFromText(button, research.value);
     button.disabled = !research.canResearch;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
@@ -384,7 +409,7 @@ export class ResearchBoxListManager {
 
   setText(element, value) {
     if (element.textContent !== value) {
-      element.textContent = value;
+      setResourceIconText(element, value);
     }
   }
 

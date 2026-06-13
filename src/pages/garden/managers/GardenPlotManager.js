@@ -2,6 +2,8 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import {
   setResourceColor,
   setResourceColorFromText,
@@ -209,6 +211,7 @@ export class GardenPlotManager {
 
     const label = document.createElement('span');
     label.className = 'row_key';
+    setItemIconLabel(label, 'seed');
 
     const quantity = document.createElement('span');
     quantity.className = 'row_val';
@@ -309,6 +312,7 @@ export class GardenPlotManager {
       const lockedTileDisabled =
         !isNextLockedTile || plot.nextTileLockedByLevel || gold.current < plot.nextTileCost;
       refs.label.textContent = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
+      setItemIconLabel(refs.label, null);
       setResourceColor(refs.label, null);
       refs.state.textContent = '';
       this.setTileAction(refs, {
@@ -332,6 +336,7 @@ export class GardenPlotManager {
 
     if (tile.phase === 'empty') {
       refs.label.textContent = tile.selectedSeedLabel ?? 'empty';
+      setItemIconLabel(refs.label, hasSelectedSeed ? 'seed' : null);
       setResourceColor(refs.label, hasSelectedSeed ? 'seed' : null);
       refs.state.textContent = '';
       this.setTileAction(refs, {
@@ -348,6 +353,10 @@ export class GardenPlotManager {
     }
 
     refs.label.textContent = tile.selectedSeedLabel ?? 'empty';
+    setItemIconLabel(
+      refs.label,
+      tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
+    );
     setResourceColor(
       refs.label,
       tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
@@ -675,7 +684,7 @@ export class GardenPlotManager {
   }
 
   setTileAction(refs, { label, timer = '', colorResource = true }) {
-    this.setText(refs.actionLabel, label);
+    this.setResourceText(refs.actionLabel, label);
     this.setText(refs.actionGap, timer ? ' ' : '');
     this.setText(refs.actionTimer, timer);
     if (colorResource) {
@@ -710,6 +719,12 @@ export class GardenPlotManager {
   setText(node, value) {
     if (node.textContent !== value) {
       node.textContent = value;
+    }
+  }
+
+  setResourceText(node, value) {
+    if (node.textContent !== value) {
+      setResourceIconText(node, value);
     }
   }
 }

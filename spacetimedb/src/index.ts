@@ -2077,6 +2077,10 @@ function getPlayerShopListingKey(ctx: IdleWizardReducerCtx, slotNumber: number):
   return `${ctx.sender.toHexString()}:${slotNumber}`;
 }
 
+function getPlayerShopListingKeyForIdentity(identity: Identity, slotNumber: number): string {
+  return `${identity.toHexString()}:${slotNumber}`;
+}
+
 function findTradeAllianceById(ctx: IdleWizardReducerCtx, allianceId: string) {
   const safeAllianceId = String(allianceId ?? '').trim();
 
@@ -2969,6 +2973,74 @@ function upsertAdminPlayerGameplaySave(
   }
 
   ctx.db.playerGameplaySave.insert(nextSave);
+}
+
+function moveAdminPlayerGameplaySave(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+) {
+  const sourceSave = ctx.db.playerGameplaySave.identity.find(sourceIdentity);
+  if (!sourceSave) {
+    return;
+  }
+
+  const parsedSave = parsePlayerGameplaySaveJson(sourceSave.saveJson);
+  if (!parsedSave) {
+    throw new Error('Cannot merge invalid source player save JSON.');
+  }
+
+  const targetSave = ctx.db.playerGameplaySave.identity.find(targetIdentity) ?? undefined;
+  const safeSaveJson = JSON.stringify(
+    normalizePlayerGameplaySave(
+      ctx,
+      parsedSave,
+      sourceSave.saveJson,
+      targetIdentity,
+      { preserveSavedAt: true },
+    ),
+  );
+  upsertAdminPlayerGameplaySave(ctx, targetIdentity, safeSaveJson, targetSave);
+  ctx.db.playerGameplaySave.delete(sourceSave);
+}
+
+function moveAdminLeaderboardEntry(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+  targetPlayerLevel: number,
+) {
+  const sourceEntry = ctx.db.leaderboard.identity.find(sourceIdentity);
+  const targetEntry = ctx.db.leaderboard.identity.find(targetIdentity);
+
+  if (!sourceEntry) {
+    if (targetEntry) {
+      ctx.db.leaderboard.identity.update({
+        ...targetEntry,
+        username: targetUsername,
+        playerLevel: targetPlayerLevel,
+        updatedAt: ctx.timestamp,
+      });
+    }
+    return;
+  }
+
+  const nextEntry = {
+    ...sourceEntry,
+    identity: targetIdentity,
+    username: targetUsername,
+    playerLevel: normalizePlayerLevel(sourceEntry.playerLevel),
+    updatedAt: ctx.timestamp,
+  };
+
+  if (targetEntry) {
+    ctx.db.leaderboard.identity.update(nextEntry);
+  } else {
+    ctx.db.leaderboard.insert(nextEntry);
+  }
+
+  ctx.db.leaderboard.delete(sourceEntry);
 }
 
 function syncPlayerLevelFromGameplaySave(
@@ -6289,6 +6361,389 @@ function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function moveAdminTradeAllianceApplications(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+  targetPlayerLevel: number,
+) {
+  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+    if (!application.applicantIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    const targetKey = getTradeAllianceApplicationKey(application.allianceId, targetIdentity);
+    const existingTarget = ctx.db.tradeAllianceApplication.applicationKey.find(targetKey);
+    if (existingTarget) {
+      ctx.db.tradeAllianceApplication.delete(existingTarget);
+    }
+
+    ctx.db.tradeAllianceApplication.delete(application);
+    ctx.db.tradeAllianceApplication.insert({
+      ...application,
+      applicationKey: targetKey,
+      applicantIdentity: targetIdentity,
+      username: targetUsername,
+      playerLevel: targetPlayerLevel,
+    });
+  }
+}
+
+function moveAdminTradeAllianceContributions(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+) {
+  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+    if (!contribution.contributorIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    const targetKey = getTradeAllianceContributionKey(
+      contribution.allianceId,
+      contribution.dayKey,
+      contribution.questId,
+      targetIdentity,
+    );
+    const existingTarget = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
+      targetKey,
+    );
+    const targetContribution = existingTarget
+      ? toBigInt(existingTarget.contribution) + toBigInt(contribution.contribution)
+      : toBigInt(contribution.contribution);
+
+    if (existingTarget) {
+      ctx.db.tradeAllianceQuestContribution.delete(existingTarget);
+    }
+
+    ctx.db.tradeAllianceQuestContribution.delete(contribution);
+    ctx.db.tradeAllianceQuestContribution.insert({
+      ...contribution,
+      contributionKey: targetKey,
+      contributorIdentity: targetIdentity,
+      username: targetUsername,
+      contribution: targetContribution,
+      updatedAt: ctx.timestamp,
+    });
+  }
+}
+
+function moveAdminTradeAllianceRewards(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+) {
+  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
+    if (!reward.recipientIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    const targetKey = getTradeAllianceRewardKey(
+      reward.dayKey,
+      reward.questId,
+      targetIdentity,
+    );
+    const existingTarget = ctx.db.tradeAllianceRewardInbox.rewardKey.find(targetKey);
+    const collected = Boolean(reward.collected) || Boolean(existingTarget?.collected);
+
+    if (existingTarget) {
+      ctx.db.tradeAllianceRewardInbox.delete(existingTarget);
+    }
+
+    ctx.db.tradeAllianceRewardInbox.delete(reward);
+    ctx.db.tradeAllianceRewardInbox.insert({
+      ...reward,
+      rewardKey: targetKey,
+      recipientIdentity: targetIdentity,
+      collected,
+    });
+  }
+}
+
+function refreshAdminMergedAlliance(ctx: IdleWizardReducerCtx, allianceId: any) {
+  const alliance = ctx.db.tradeAlliance.allianceId.find(allianceId);
+  if (!alliance) {
+    return;
+  }
+
+  const members = getTradeAllianceMembers(ctx, alliance.allianceId);
+  if (members.length <= 0) {
+    deleteTradeAllianceState(ctx, alliance);
+    return;
+  }
+
+  const currentLeader = members.find((member) =>
+    member.memberIdentity.isEqual(alliance.leaderIdentity),
+  );
+  const nextLeader =
+    currentLeader ??
+    members.find((member) => member.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER) ??
+    members[0];
+
+  if (nextLeader.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
+    ctx.db.tradeAllianceMember.memberIdentity.update({
+      ...nextLeader,
+      role: TRADE_ALLIANCE_ROLE_TRADE_MASTER,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  for (const member of members) {
+    if (
+      !member.memberIdentity.isEqual(nextLeader.memberIdentity) &&
+      member.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER
+    ) {
+      ctx.db.tradeAllianceMember.memberIdentity.update({
+        ...member,
+        role: TRADE_ALLIANCE_ROLE_TRADER,
+        updatedAt: ctx.timestamp,
+      });
+    }
+  }
+
+  ctx.db.tradeAlliance.allianceId.update({
+    ...alliance,
+    leaderIdentity: nextLeader.memberIdentity,
+    memberCount: members.length,
+    updatedAt: ctx.timestamp,
+  });
+}
+
+function addAdminAffectedAllianceId(allianceIds: any[], allianceId: any) {
+  const allianceKey = getTradeAllianceIdKey(allianceId);
+  if (allianceIds.some((existingAllianceId) => getTradeAllianceIdKey(existingAllianceId) === allianceKey)) {
+    return;
+  }
+
+  allianceIds.push(allianceId);
+}
+
+function moveAdminTradeAllianceMember(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+  targetPlayerLevel: number,
+) {
+  const sourceMember = ctx.db.tradeAllianceMember.memberIdentity.find(sourceIdentity);
+  const targetMember = ctx.db.tradeAllianceMember.memberIdentity.find(targetIdentity);
+  const affectedAllianceIds: any[] = [];
+
+  if (sourceMember) {
+    addAdminAffectedAllianceId(affectedAllianceIds, sourceMember.allianceId);
+  }
+  if (targetMember) {
+    addAdminAffectedAllianceId(affectedAllianceIds, targetMember.allianceId);
+  }
+
+  if (sourceMember) {
+    const sameAlliance =
+      targetMember &&
+      getTradeAllianceIdKey(targetMember.allianceId) ===
+        getTradeAllianceIdKey(sourceMember.allianceId);
+    const totalContribution =
+      toBigInt(sourceMember.totalContribution) +
+      (sameAlliance ? toBigInt(targetMember.totalContribution) : 0n);
+    const dailyContribution =
+      toBigInt(sourceMember.dailyContribution) +
+      (sameAlliance && targetMember.dayKey === sourceMember.dayKey
+        ? toBigInt(targetMember.dailyContribution)
+        : 0n);
+
+    if (targetMember) {
+      ctx.db.tradeAllianceMember.delete(targetMember);
+    }
+
+    ctx.db.tradeAllianceMember.delete(sourceMember);
+    ctx.db.tradeAllianceMember.insert({
+      ...sourceMember,
+      memberIdentity: targetIdentity,
+      username: targetUsername,
+      playerLevel: targetPlayerLevel,
+      totalContribution,
+      dailyContribution,
+      updatedAt: ctx.timestamp,
+    });
+  } else if (targetMember) {
+    ctx.db.tradeAllianceMember.memberIdentity.update({
+      ...targetMember,
+      username: targetUsername,
+      playerLevel: targetPlayerLevel,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  for (const allianceId of affectedAllianceIds) {
+    refreshAdminMergedAlliance(ctx, allianceId);
+  }
+}
+
+function moveAdminPlayerShopRows(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+) {
+  for (const listing of Array.from(ctx.db.playerShopListing.iter())) {
+    if (!listing.sellerIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    const targetKey = getPlayerShopListingKeyForIdentity(targetIdentity, listing.slotNumber);
+    const existingTarget = ctx.db.playerShopListing.listingKey.find(targetKey);
+    if (existingTarget) {
+      ctx.db.playerShopListing.delete(existingTarget);
+    }
+
+    ctx.db.playerShopListing.delete(listing);
+    ctx.db.playerShopListing.insert({
+      ...listing,
+      listingKey: targetKey,
+      sellerIdentity: targetIdentity,
+      username: targetUsername,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  const sourceProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(sourceIdentity);
+  if (sourceProceeds) {
+    const targetProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(targetIdentity);
+    if (targetProceeds) {
+      ctx.db.playerShopProceeds.sellerIdentity.update({
+        ...sourceProceeds,
+        sellerIdentity: targetIdentity,
+        gold: toBigInt(sourceProceeds.gold) + toBigInt(targetProceeds.gold),
+        updatedAt: ctx.timestamp,
+      });
+    } else {
+      ctx.db.playerShopProceeds.insert({
+        ...sourceProceeds,
+        sellerIdentity: targetIdentity,
+        updatedAt: ctx.timestamp,
+      });
+    }
+    ctx.db.playerShopProceeds.delete(sourceProceeds);
+  }
+
+  for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
+    if (
+      !trade.buyerIdentity.isEqual(sourceIdentity) &&
+      !trade.sellerIdentity.isEqual(sourceIdentity)
+    ) {
+      continue;
+    }
+
+    ctx.db.playerShopTrade.tradeId.update({
+      ...trade,
+      buyerIdentity: trade.buyerIdentity.isEqual(sourceIdentity)
+        ? targetIdentity
+        : trade.buyerIdentity,
+      buyerUsername: trade.buyerIdentity.isEqual(sourceIdentity)
+        ? targetUsername
+        : trade.buyerUsername,
+      sellerIdentity: trade.sellerIdentity.isEqual(sourceIdentity)
+        ? targetIdentity
+        : trade.sellerIdentity,
+      sellerUsername: trade.sellerIdentity.isEqual(sourceIdentity)
+        ? targetUsername
+        : trade.sellerUsername,
+    });
+  }
+}
+
+function moveAdminMessageRows(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  sourceUsername: string,
+  targetUsername: string,
+  targetPlayerLevel: number,
+) {
+  for (const row of Array.from(ctx.db.worldChat.iter())) {
+    if (!row.senderIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    const isSystemMessage = row.username === 'system';
+    ctx.db.worldChat.messageId.update({
+      ...row,
+      senderIdentity: targetIdentity,
+      username: isSystemMessage ? row.username : targetUsername,
+      body: isSystemMessage
+        ? row.body.replace(`${sourceUsername} reached level `, `${targetUsername} reached level `)
+        : row.body,
+      playerLevel: isSystemMessage ? row.playerLevel : targetPlayerLevel,
+    });
+  }
+
+  for (const row of Array.from(ctx.db.tradeAllianceChat.iter())) {
+    if (!row.senderIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    ctx.db.tradeAllianceChat.messageId.update({
+      ...row,
+      senderIdentity: targetIdentity,
+      username: targetUsername,
+      playerLevel: targetPlayerLevel,
+    });
+  }
+
+  for (const row of Array.from(ctx.db.playerFeedback.iter())) {
+    if (!row.senderIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    ctx.db.playerFeedback.feedbackId.update({
+      ...row,
+      senderIdentity: targetIdentity,
+      username: targetUsername,
+      playerLevel: targetPlayerLevel,
+    });
+  }
+}
+
+function moveAdminPotionDiscoveries(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+) {
+  for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
+    if (!discovery.discoveredByIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    ctx.db.potionRecipeDiscovery.potionKey.update({
+      ...discovery,
+      discoveredByIdentity: targetIdentity,
+      username: targetUsername,
+    });
+  }
+}
+
+function deleteAdminPlayerSession(ctx: IdleWizardReducerCtx, identity: Identity) {
+  const session = ctx.db.playerSession.identity.find(identity);
+  if (session) {
+    ctx.db.playerSession.delete(session);
+  }
+}
+
+function assertAdminMergeAccountsInactive(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+) {
+  if (
+    ctx.db.playerSession.identity.find(sourceIdentity) ||
+    ctx.db.playerSession.identity.find(targetIdentity)
+  ) {
+    throw new Error('Cannot merge active player sessions.');
+  }
+}
+
 function pruneWorldChat(ctx: IdleWizardReducerCtx) {
   const rows = Array.from(ctx.db.worldChat.iter()).sort((left, right) => {
     const leftSentAt = left.sentAt.microsSinceUnixEpoch;
@@ -6585,7 +7040,7 @@ export const set_player_profile = spacetimedb.reducer(
     const safeTheme = normalizePlayerTheme(theme);
     const safeFont = normalizePlayerFont(font);
     const safeColorMode = normalizePlayerColorMode(colorMode);
-    const safeUsernamePromptSeen =
+    const incomingUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
     const existingPlayer = ctx.db.player.identity.find(ctx.sender);
     let player;
@@ -6598,7 +7053,8 @@ export const set_player_profile = spacetimedb.reducer(
         theme: safeTheme,
         font: safeFont,
         colorMode: safeColorMode,
-        usernamePromptSeen: safeUsernamePromptSeen,
+        usernamePromptSeen:
+          Boolean(existingPlayer.usernamePromptSeen) || incomingUsernamePromptSeen,
         lastSeenAt: ctx.timestamp,
       });
     } else {
@@ -6609,7 +7065,7 @@ export const set_player_profile = spacetimedb.reducer(
         theme: safeTheme,
         font: safeFont,
         colorMode: safeColorMode,
-        usernamePromptSeen: safeUsernamePromptSeen,
+        usernamePromptSeen: incomingUsernamePromptSeen,
         connected: true,
         createdAt: ctx.timestamp,
         lastSeenAt: ctx.timestamp,
@@ -6715,6 +7171,95 @@ export const set_admin_player_data = spacetimedb.reducer(
       ...getLeaderboardPeriodDefaults(ctx, safeTotalIncome),
       updatedAt: ctx.timestamp,
     });
+  },
+);
+
+export const admin_merge_player_accounts = spacetimedb.reducer(
+  {
+    sourceIdentityHex: t.string(),
+    targetIdentityHex: t.string(),
+  },
+  (ctx, { sourceIdentityHex, targetIdentityHex }) => {
+    assertGameConfigAdmin(ctx);
+    assertMaintenanceLocked(ctx);
+
+    const sourcePlayer = findPlayerByIdentityHex(ctx, sourceIdentityHex);
+    const targetPlayer = findPlayerByIdentityHex(ctx, targetIdentityHex);
+    if (sourcePlayer.identity.isEqual(targetPlayer.identity)) {
+      throw new Error('Source and target players must differ.');
+    }
+
+    assertAdminMergeAccountsInactive(ctx, sourcePlayer.identity, targetPlayer.identity);
+
+    const targetUsername = normalizeUsername(targetPlayer.username);
+    const sourceUsername = normalizeUsername(sourcePlayer.username);
+    const targetPlayerLevel = normalizePlayerLevel(sourcePlayer.playerLevel);
+    const nextTargetPlayer = ctx.db.player.identity.update({
+      ...targetPlayer,
+      playerLevel: targetPlayerLevel,
+      theme: normalizePlayerTheme(sourcePlayer.theme),
+      colorMode: normalizePlayerColorMode(sourcePlayer.colorMode),
+      font: normalizePlayerFont(sourcePlayer.font),
+      usernamePromptSeen:
+        Boolean(targetPlayer.usernamePromptSeen) ||
+        Boolean(sourcePlayer.usernamePromptSeen) ||
+        targetUsername !== DEFAULT_USERNAME,
+      connected: false,
+      lastSeenAt: ctx.timestamp,
+    });
+
+    moveAdminPlayerGameplaySave(ctx, sourcePlayer.identity, nextTargetPlayer.identity);
+    moveAdminLeaderboardEntry(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      targetUsername,
+      targetPlayerLevel,
+    );
+    moveAdminTradeAllianceApplications(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      targetUsername,
+      targetPlayerLevel,
+    );
+    moveAdminTradeAllianceContributions(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      targetUsername,
+    );
+    moveAdminTradeAllianceRewards(ctx, sourcePlayer.identity, nextTargetPlayer.identity);
+    moveAdminTradeAllianceMember(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      targetUsername,
+      targetPlayerLevel,
+    );
+    moveAdminPlayerShopRows(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      targetUsername,
+    );
+    moveAdminMessageRows(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      sourceUsername,
+      targetUsername,
+      targetPlayerLevel,
+    );
+    moveAdminPotionDiscoveries(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      targetUsername,
+    );
+
+    deleteAdminPlayerSession(ctx, sourcePlayer.identity);
+    ctx.db.player.delete(sourcePlayer);
   },
 );
 

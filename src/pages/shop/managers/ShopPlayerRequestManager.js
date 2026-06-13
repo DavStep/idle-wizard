@@ -6,6 +6,8 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import {
   setResourceColor,
   setResourceColorFromText,
@@ -264,7 +266,7 @@ export class ShopPlayerRequestManager {
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    label.textContent = labelText;
+    setResourceIconText(label, labelText);
 
     const input = document.createElement('input');
     input.className = 'style-input shop-page__request-input';
@@ -470,6 +472,7 @@ export class ShopPlayerRequestManager {
       refs.row.removeAttribute('aria-label');
       refs.row.removeAttribute('tabindex');
       refs.itemValue.textContent = EMPTY_LOCKED_REQUEST_LABEL;
+      setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
       refs.priceValue.textContent = this.getLockedRequestSlotText(shelf, slotNumber);
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
@@ -489,6 +492,7 @@ export class ShopPlayerRequestManager {
       }
 
       refs.itemValue.textContent = EMPTY_LOCKED_REQUEST_LABEL;
+      setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
       refs.priceValue.textContent = EMPTY_REQUEST_ACTION_LABEL;
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
@@ -505,8 +509,9 @@ export class ShopPlayerRequestManager {
     }
 
     refs.itemValue.textContent = itemText;
+    setItemIconLabel(refs.itemValue, request.itemKind, request.itemKey);
     setResourceColor(refs.itemValue, request.itemKind);
-    refs.priceValue.textContent = ` ${priceText}`;
+    setResourceIconText(refs.priceValue, ` ${priceText}`);
     setResourceColor(refs.priceValue, 'gold');
   }
 
@@ -577,7 +582,7 @@ export class ShopPlayerRequestManager {
       return;
     }
 
-    this.refs.status.textContent = status;
+    setResourceIconText(this.refs.status, status);
     this.refs.status.hidden = !status;
     setResourceColorFromText(this.refs.status, status);
   }
@@ -640,6 +645,7 @@ export class ShopPlayerRequestManager {
       row.classList.toggle('is-unknown', display.unknown);
       row.classList.toggle('is-empty', display.empty);
       label.textContent = `${display.label} `;
+      setItemIconLabel(label, item.kind, item.key);
       setResourceColor(label, item.kind);
       quantity.textContent = `(${display.quantity})`;
       button.disabled = !actionVisible;
@@ -665,6 +671,7 @@ export class ShopPlayerRequestManager {
 
     if (!item) {
       selectedValue.textContent = 'none';
+      setItemIconLabel(selectedValue, null);
       setResourceColorFromText(selectedValue, selectedValue.textContent);
     } else {
       selectedValue.textContent = getItemDisplay(
@@ -672,6 +679,7 @@ export class ShopPlayerRequestManager {
         item,
         item.quantity,
       ).label;
+      setItemIconLabel(selectedValue, item.kind, item.key);
       setResourceColor(selectedValue, item.kind);
     }
 

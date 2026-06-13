@@ -14,6 +14,9 @@ const CHAT_CHANNELS = [
   { id: 'alliance', label: 'alliance chat' },
 ];
 
+const CHAT_AGE_MINUTE_MS = 60_000;
+const CHAT_AGE_REFRESH_FUZZ_MS = 250;
+
 export class WorkshopWorldChatManager {
   constructor({ worldChatFacade, tradeAllianceFacade } = {}) {
     this.worldChatFacade = worldChatFacade;
@@ -28,6 +31,7 @@ export class WorkshopWorldChatManager {
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
     this.previousFocus = null;
+    this.ageRefreshTimer = null;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -277,6 +281,7 @@ export class WorkshopWorldChatManager {
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
     this.previousFocus = null;
+    this.clearAgeRefreshTimer();
   }
 
   render() {
@@ -306,6 +311,7 @@ export class WorkshopWorldChatManager {
 
     this.updateFormState();
     this.scrollMessagesToBottom();
+    this.scheduleAgeRefresh(messages);
   }
 
   renderMessages(messages, snapshot) {
@@ -352,6 +358,16 @@ export class WorkshopWorldChatManager {
     body.textContent = message.body;
 
     row.append(name, body);
+
+    const age = this.formatMessageAge(message);
+    if (age) {
+      const ageLabel = document.createElement('span');
+      ageLabel.className = 'workshop-page__world-chat-age';
+      ageLabel.dataset.sentAtMs = String(Number(message.sentAtMs));
+      ageLabel.textContent = ` ${age}`;
+      row.append(ageLabel);
+    }
+
     return row;
   }
 
@@ -383,8 +399,101 @@ export class WorkshopWorldChatManager {
     this.refs.button.setAttribute(
       'aria-label',
       `${channel.label}, latest messages: ${messages
-        .map((message) => `${this.formatSender(message)}: ${message.body}`)
+        .map((message) => {
+          const age = this.formatMessageAge(message);
+          return `${this.formatSender(message)}: ${message.body}${age ? `, ${age}` : ''}`;
+        })
         .join('; ')}`,
+    );
+  }
+
+  formatMessageAge(message, nowMs = Date.now()) {
+    const sentAtMs = Number(message?.sentAtMs);
+
+    if (!Number.isFinite(sentAtMs) || sentAtMs <= 0) {
+      return '';
+    }
+
+    const elapsedMs = Math.max(0, nowMs - sentAtMs);
+
+    if (elapsedMs < CHAT_AGE_MINUTE_MS) {
+      return 'now';
+    }
+
+    const totalMinutes = Math.floor(elapsedMs / CHAT_AGE_MINUTE_MS);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    const parts = [];
+
+    if (days > 0) {
+      parts.push(`${days}d`);
+    }
+
+    if (hours > 0) {
+      parts.push(`${hours}h`);
+    }
+
+    if (minutes > 0) {
+      parts.push(`${minutes}m`);
+    }
+
+    return `${parts.slice(0, 2).join(' ')} ago`;
+  }
+
+  scheduleAgeRefresh(messages) {
+    this.clearAgeRefreshTimer();
+
+    const delayMs = this.getNextAgeRefreshDelayMs(messages);
+    if (!delayMs) {
+      return;
+    }
+
+    this.ageRefreshTimer = globalThis.setTimeout(() => {
+      this.ageRefreshTimer = null;
+      this.refreshMessageAges();
+    }, delayMs);
+    this.ageRefreshTimer?.unref?.();
+  }
+
+  refreshMessageAges() {
+    for (const ageLabel of this.root?.querySelectorAll('.workshop-page__world-chat-age') ??
+      []) {
+      const age = this.formatMessageAge({ sentAtMs: ageLabel.dataset.sentAtMs });
+      ageLabel.textContent = age ? ` ${age}` : '';
+    }
+
+    this.scheduleAgeRefresh(this.getSelectedSnapshot().messages);
+  }
+
+  clearAgeRefreshTimer() {
+    if (!this.ageRefreshTimer) {
+      return;
+    }
+
+    globalThis.clearTimeout(this.ageRefreshTimer);
+    this.ageRefreshTimer = null;
+  }
+
+  getNextAgeRefreshDelayMs(messages, nowMs = Date.now()) {
+    const validSentTimes = this.getMessagesWithBody(messages)
+      .map((message) => Number(message?.sentAtMs))
+      .filter((sentAtMs) => Number.isFinite(sentAtMs) && sentAtMs > 0);
+
+    if (!validSentTimes.length) {
+      return null;
+    }
+
+    return Math.min(
+      ...validSentTimes.map((sentAtMs) => {
+        const elapsedMs = Math.max(0, nowMs - sentAtMs);
+        const untilNextMinuteMs =
+          elapsedMs < CHAT_AGE_MINUTE_MS
+            ? CHAT_AGE_MINUTE_MS - elapsedMs
+            : CHAT_AGE_MINUTE_MS - (elapsedMs % CHAT_AGE_MINUTE_MS);
+
+        return Math.max(1_000, untilNextMinuteMs + CHAT_AGE_REFRESH_FUZZ_MS);
+      }),
     );
   }
 

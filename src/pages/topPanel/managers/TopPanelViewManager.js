@@ -1,5 +1,6 @@
 import { getPlayerVisualSettingCategories } from '../../../player/playerVisualSettings.js';
 import { getClientReleaseVersion } from '../../../shared/clientReleaseVersion.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class TopPanelViewManager {
@@ -82,7 +83,7 @@ export class TopPanelViewManager {
 
     const val = document.createElement('span');
     val.className = 'room-top-panel__resource-val';
-    val.textContent = value;
+    setResourceIconText(val, value);
 
     if (label === 'mana') {
       this.refs.manaValue = val;
@@ -103,7 +104,7 @@ export class TopPanelViewManager {
 
     const key = document.createElement('span');
     key.className = 'room-top-panel__resource-key';
-    key.textContent = `${label} `;
+    setResourceIconText(key, `${label} `);
 
     resource.append(key, val);
     return resource;
@@ -185,6 +186,7 @@ export class TopPanelViewManager {
     const themeSection = this.createVisualSettingSection('theme');
     const fontSection = this.createVisualSettingSection('font');
     const colorSection = this.createVisualSettingSection('color');
+    const iconsSection = this.createVisualSettingSection('icons');
 
     this.refs.visualSettingStatus = document.createElement('div');
     this.refs.visualSettingStatus.className = 'room-top-panel__visual-status';
@@ -194,6 +196,7 @@ export class TopPanelViewManager {
       themeSection,
       fontSection,
       colorSection,
+      iconsSection,
       this.refs.visualSettingStatus,
     );
 
@@ -371,6 +374,10 @@ export class TopPanelViewManager {
       this.refs.colorModeButtons = [];
     }
 
+    if (categoryKey === 'icons') {
+      this.refs.iconModeButtons = [];
+    }
+
     for (const option of category.options) {
       const row = document.createElement('div');
       row.className = 'room-top-panel__visual-option';
@@ -399,10 +406,14 @@ export class TopPanelViewManager {
         name.classList.add('room-top-panel__font-button');
         name.dataset.font = option.key;
         this.refs.fontButtons.push(name);
-      } else {
+      } else if (categoryKey === 'color') {
         name.classList.add('room-top-panel__color-button');
         name.dataset.colorMode = option.key;
         this.refs.colorModeButtons.push(name);
+      } else {
+        name.classList.add('room-top-panel__icon-button');
+        name.dataset.iconMode = option.key;
+        this.refs.iconModeButtons.push(name);
       }
 
       row.append(name, price);

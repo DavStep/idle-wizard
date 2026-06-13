@@ -3,6 +3,7 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
@@ -791,7 +792,7 @@ export class BrewingCauldronManager {
       action.hasCost ? `${action.label} ` : action.label,
     );
     this.setHidden(this.refs.actions.actionButtonCost, !action.hasCost);
-    this.setText(
+    this.setResourceText(
       this.refs.actions.actionButtonCost,
       action.hasCost ? `(${brewing.manaCost} mana)` : '',
     );
@@ -1361,6 +1362,12 @@ export class BrewingCauldronManager {
   setText(element, text) {
     if (element.textContent !== text) {
       element.textContent = text;
+    }
+  }
+
+  setResourceText(element, text) {
+    if (element.textContent !== text) {
+      setResourceIconText(element, text);
     }
   }
 

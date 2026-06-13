@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import packageJson from '../../package.json';
+import { PlayerFacade } from '../player/PlayerFacade.js';
 import { PagesFacade } from './PagesFacade.js';
 
 function createGameplayFacadeFake() {
@@ -23,6 +24,7 @@ function createGameplayFacadeFake() {
         theme: { white: 0, black: 0, midnight: 0 },
         font: { lexend: 0, 'comic-sans-mono': 0 },
         color: { monochrome: 0, resources: 0 },
+        icons: { none: 0, icons: 0 },
       },
       researched: {
         theme: { white: true, black: false, midnight: false },
@@ -31,6 +33,7 @@ function createGameplayFacadeFake() {
           'comic-sans-mono': false,
         },
         color: { monochrome: true, resources: false },
+        icons: { none: true, icons: false },
       },
     },
     inventory: [],
@@ -2079,6 +2082,7 @@ function createPlayerFacadeFake(
     shouldPromptForUsername = false,
     initialColorMode = 'monochrome',
     initialFont = 'lexend',
+    initialIconMode = 'none',
   } = {},
 ) {
   let snapshot = {
@@ -2086,6 +2090,7 @@ function createPlayerFacadeFake(
     theme: initialTheme,
     font: initialFont,
     colorMode: initialColorMode,
+    iconMode: initialIconMode,
     shouldPromptForUsername,
   };
   const listeners = new Set();
@@ -2164,6 +2169,18 @@ function createPlayerFacadeFake(
       snapshot = {
         ...snapshot,
         colorMode: normalizedColorMode,
+      };
+
+      publish();
+      return snapshot;
+    },
+    setIconMode: (iconMode) => {
+      const normalizedIconMode = ['icons', 'icon', 'on', 'enabled'].includes(iconMode)
+        ? 'icons'
+        : 'none';
+      snapshot = {
+        ...snapshot,
+        iconMode: normalizedIconMode,
       };
 
       publish();
@@ -2802,6 +2819,26 @@ describe('PagesFacade', () => {
     expect(gold?.querySelector('.room-top-panel__resource-key')).toBeNull();
   });
 
+  it('marks top panel mana and gold for icon mode', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('wizard', 'white', { initialIconMode: 'icons' }),
+    });
+
+    pagesFacade.mount(stage);
+
+    const mana = stage.querySelector('.room-top-panel__resource[aria-label="mana"]');
+    const gold = stage.querySelector('.room-top-panel__resource[aria-label="gold"]');
+    const manaKey = mana?.querySelector('.room-top-panel__resource-key');
+    const goldValue = gold?.querySelector('.room-top-panel__resource-val');
+
+    expect(manaKey?.textContent).toBe('mana ');
+    expect(goldValue?.textContent).toBe('0 gold');
+    expect(manaKey?.querySelector('.style-resource-label--mana')).not.toBeNull();
+    expect(goldValue?.querySelector('.style-resource-label--gold')).not.toBeNull();
+  });
+
   it('keeps FTUE disabled for now', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
@@ -3172,12 +3209,19 @@ describe('PagesFacade', () => {
       ),
     ).toEqual(['monochrome', 'resources']);
     expect(
+      [...settings.querySelectorAll('.room-top-panel__icon-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['no icons', 'icons']);
+    expect(
       [...settings.querySelectorAll('.room-top-panel__visual-option-price')].map(
         (price) => price.textContent,
       ),
     ).toEqual([
       'researched',
       'free',
+      'free',
+      'researched',
       'free',
       'researched',
       'free',
@@ -3367,6 +3411,35 @@ describe('PagesFacade', () => {
     expect(settings.hidden).toBe(true);
   });
 
+  it('keeps the first username prompt closed after a stale unseen profile arrives', () => {
+    const stage = document.createElement('section');
+    const playerFacade = new PlayerFacade();
+    playerFacade.applyServerProfile({
+      username: 'wizard',
+      usernamePromptSeen: false,
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    const settings = stage.querySelector('.room-top-panel__settings');
+    const closeButton = stage.querySelector('.room-top-panel__settings-close');
+
+    expect(settings.hidden).toBe(false);
+    expect(settings.classList.contains('is-username-prompt')).toBe(true);
+
+    closeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    playerFacade.applyServerProfile({
+      username: 'wizard',
+      usernamePromptSeen: false,
+    });
+
+    expect(settings.hidden).toBe(true);
+  });
+
   it('changes the theme from settings', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -3508,6 +3581,52 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().colorMode).toBe('resources');
     expect(resourcesButton.getAttribute('aria-checked')).toBe('true');
     expect(monoButton.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('changes icon mode from settings', () => {
+    const stage = document.createElement('section');
+    const playerFacade = createPlayerFacadeFake('Merlin');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const noIconsButton = stage.querySelector(
+      '.room-top-panel__icon-button[data-icon-mode="none"]',
+    );
+    const iconsButton = stage.querySelector(
+      '.room-top-panel__icon-button[data-icon-mode="icons"]',
+    );
+    const iconsResearchButton = iconsButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
+
+    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(iconsButton.disabled).toBe(false);
+
+    iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(false);
+
+    iconsResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(true);
+    expect(iconsResearchButton?.textContent).toBe('researched');
+
+    iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().iconMode).toBe('icons');
+    expect(iconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(noIconsButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes font from settings', () => {
@@ -3780,6 +3899,11 @@ describe('PagesFacade', () => {
       'close',
     );
     expect(seedInventory.textContent).toContain('sage seed');
+    expect(
+      seedInventory
+        .querySelector('.workshop-page__seed-inventory-row .row_key')
+        ?.classList.contains('style-seed-label'),
+    ).toBe(true);
     expect(seedInventory.textContent).toContain('0');
     expect(
       seedInventory.querySelector('.workshop-page__seed-inventory-row')?.classList.contains(
@@ -4839,6 +4963,54 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(false);
   });
 
+  it('shows compact world chat message ages', () => {
+    const nowMs = 1_000 + 3 * 24 * 60 * 60 * 1000 + 60_000;
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
+    const stage = document.createElement('section');
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [
+        {
+          id: '1',
+          senderIdentity: 'sender-a',
+          username: 'Ada',
+          playerLevel: 3,
+          body: 'old hello',
+          sentAtMs: 1_000,
+        },
+        {
+          id: '2',
+          senderIdentity: 'sender-b',
+          username: 'Lin',
+          playerLevel: 4,
+          body: 'fresh hello',
+          sentAtMs: nowMs - 59_000,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+
+      const popup = stage.querySelector('.workshop-page__world-chat-popup');
+      const rows = popup.querySelectorAll('.workshop-page__world-chat-message');
+
+      expect(rows[0].querySelector('.workshop-page__world-chat-age')?.textContent).toBe(
+        ' 3d 1m ago',
+      );
+      expect(rows[1].querySelector('.workshop-page__world-chat-age')?.textContent).toBe(
+        ' now',
+      );
+    } finally {
+      pagesFacade.unmount();
+      nowSpy.mockRestore();
+    }
+  });
+
   it('marks system world chat messages and sender label', () => {
     const stage = document.createElement('section');
     const worldChatFacade = createWorldChatFacadeFake({
@@ -4867,7 +5039,8 @@ describe('PagesFacade', () => {
     expect(row?.querySelector('.workshop-page__world-chat-name')?.textContent).toBe(
       'system: ',
     );
-    expect(row?.textContent).toBe('system: Ada researched mana tonic');
+    expect(row?.textContent).toContain('system: Ada researched mana tonic');
+    expect(row?.querySelector('.workshop-page__world-chat-age')).not.toBeNull();
   });
 
   it('orders rooms as Brewing, Garden, Workshop, Research, Market with Workshop default', () => {
@@ -5259,6 +5432,14 @@ describe('PagesFacade', () => {
     const manaTonicRow = [...popup.querySelectorAll('.brewing-page__recipe-row')].find((row) =>
       row.textContent.includes('mana tonic'),
     );
+    expect(
+      manaTonicRow?.querySelector('.brewing-page__recipe-name')?.classList.contains(
+        'style-potion-label',
+      ),
+    ).toBe(true);
+    expect(
+      manaTonicRow?.querySelector('.brewing-page__recipe-name .style-potion-label__icon'),
+    ).not.toBeNull();
     expect(
       manaTonicRow?.querySelector('.brewing-page__recipe-meta')?.firstElementChild?.textContent,
     ).toBe('cost 12 mana');

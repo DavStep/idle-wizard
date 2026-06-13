@@ -40,7 +40,7 @@ export class AppAccountLinkChoiceManager {
 
     const message = document.createElement('p');
     message.className = 'app-account-link-choice__message';
-    message.textContent = 'choose which save should remain connected';
+    message.textContent = 'select the save to keep';
 
     const rows = document.createElement('div');
     rows.className = 'app-account-link-choice__rows';
@@ -51,43 +51,29 @@ export class AppAccountLinkChoiceManager {
 
     const warning = document.createElement('p');
     warning.className = 'app-account-link-choice__warning';
-    warning.textContent = 'overwrite account replaces the connected save';
+    warning.textContent = 'selecting this device replaces the account save';
 
-    const actions = document.createElement('div');
-    actions.className = 'app-account-link-choice__actions';
-
-    const forgetButton = document.createElement('button');
-    forgetButton.className = 'style-button app-account-link-choice__button';
-    forgetButton.type = 'button';
-    forgetButton.textContent = 'forget this data';
-
-    const overwriteButton = document.createElement('button');
-    overwriteButton.className = 'style-button app-account-link-choice__button';
-    overwriteButton.type = 'button';
-    overwriteButton.textContent = 'overwrite account';
-
-    actions.append(forgetButton, overwriteButton);
-    dialog.append(title, message, rows, warning, actions);
+    dialog.append(title, message, rows, warning);
     panel.append(dialog);
     root.append(panel);
     stage.append(root);
 
-    forgetButton.addEventListener('click', this.handleForgetDevice);
-    overwriteButton.addEventListener('click', this.handleOverwriteAccount);
+    deviceRow.button.addEventListener('click', this.handleOverwriteAccount);
+    accountRow.button.addEventListener('click', this.handleForgetDevice);
 
     this.root = root;
     this.refs = {
       panel,
       deviceSummary: deviceRow.summary,
       accountSummary: accountRow.summary,
-      forgetButton,
-      overwriteButton,
+      deviceButton: deviceRow.button,
+      accountButton: accountRow.button,
     };
 
     return root;
   }
 
-  choose({ deviceSave, accountSave } = {}) {
+  choose({ deviceSave, accountSave, accountUsername } = {}) {
     if (!this.root || !this.refs) {
       return Promise.resolve(ACCOUNT_LINK_CHOICE_FORGET_DEVICE);
     }
@@ -97,7 +83,10 @@ export class AppAccountLinkChoiceManager {
     }
 
     this.setText(this.refs.deviceSummary, this.describeSave(deviceSave));
-    this.setText(this.refs.accountSummary, this.describeSave(accountSave));
+    this.setText(
+      this.refs.accountSummary,
+      this.describeSave(accountSave, { username: accountUsername }),
+    );
     const activeElement = document.activeElement;
     this.previousFocus =
       typeof activeElement?.focus === 'function' ? activeElement : null;
@@ -111,8 +100,8 @@ export class AppAccountLinkChoiceManager {
 
   unmount() {
     this.resolve(ACCOUNT_LINK_CHOICE_FORGET_DEVICE);
-    this.refs?.forgetButton?.removeEventListener('click', this.handleForgetDevice);
-    this.refs?.overwriteButton?.removeEventListener(
+    this.refs?.accountButton?.removeEventListener('click', this.handleForgetDevice);
+    this.refs?.deviceButton?.removeEventListener(
       'click',
       this.handleOverwriteAccount,
     );
@@ -143,6 +132,9 @@ export class AppAccountLinkChoiceManager {
     const root = document.createElement('div');
     root.className = 'app-account-link-choice__row';
 
+    const main = document.createElement('div');
+    main.className = 'app-account-link-choice__main';
+
     const label = document.createElement('span');
     label.className = 'app-account-link-choice__label';
     label.textContent = labelText;
@@ -150,19 +142,34 @@ export class AppAccountLinkChoiceManager {
     const summary = document.createElement('span');
     summary.className = 'app-account-link-choice__summary';
 
-    root.append(label, summary);
-    return { root, summary };
+    const button = document.createElement('button');
+    button.className = 'style-button app-account-link-choice__button';
+    button.type = 'button';
+    button.textContent = 'select';
+    button.setAttribute('aria-label', `select ${labelText} save`);
+
+    main.append(label, summary);
+    root.append(main, button);
+    return { root, summary, button };
   }
 
-  describeSave(save) {
+  describeSave(save, { username } = {}) {
+    const usernameText = this.getUsernameText(username);
+
     if (!save || typeof save !== 'object') {
-      return 'new save';
+      return usernameText ? `${usernameText}, new save` : 'new save';
     }
 
     const level = this.getPositiveInteger(save.tasks?.currentLevel, 1);
     const gold = this.getNonNegativeInteger(save.gold?.current);
     const crystal = this.getNonNegativeInteger(save.crystal?.current);
-    return `level ${level}, ${gold} gold, ${crystal} crystal`;
+    const summary = `level ${level}, ${gold} gold, ${crystal} crystal`;
+    return usernameText ? `${usernameText}, ${summary}` : summary;
+  }
+
+  getUsernameText(username) {
+    const value = String(username ?? '').replace(/\s+/g, ' ').trim();
+    return value ? `username ${value}` : '';
   }
 
   getPositiveInteger(value, fallback) {

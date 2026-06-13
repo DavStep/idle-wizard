@@ -34,7 +34,8 @@ export class PlayerNameManager {
     this.username = this.normalizeUsername(profile.username);
     this.hasExplicitUsername =
       this.isExplicitUsername(profile.username) && this.username !== DEFAULT_USERNAME;
-    this.usernamePromptSeen = Boolean(profile.usernamePromptSeen) || this.hasExplicitUsername;
+    this.usernamePromptSeen =
+      this.usernamePromptSeen || Boolean(profile.usernamePromptSeen) || this.hasExplicitUsername;
 
     return this.username;
   }

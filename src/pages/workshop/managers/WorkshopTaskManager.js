@@ -1,3 +1,4 @@
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 export class WorkshopTaskManager {
@@ -259,6 +260,7 @@ export class WorkshopTaskManager {
     row.button.dataset.taskId = task.taskId;
     row.button.dataset.tutorialId = `task:${task.taskId}`;
     this.setText(row.label, task.itemLabel);
+    setItemIconLabel(row.label, task.itemKind, task.itemKey);
     this.setText(row.quantity, quantityText);
     this.setText(row.button, buttonText);
     row.button.disabled = disabled;

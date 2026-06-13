@@ -1,4 +1,5 @@
 import { getItemDisplay } from '../../shared/itemResearchStatus.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { applyMysteryText } from '../../shared/mysteryText.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
@@ -169,6 +170,7 @@ export class WorkshopSeedInventoryManager {
 
     const key = document.createElement('span');
     key.className = 'row_key';
+    setItemIconLabel(key, 'seed');
     key.textContent = display.label;
     applyMysteryText(key, seed, display.unknown);
 

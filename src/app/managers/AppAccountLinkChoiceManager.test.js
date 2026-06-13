@@ -25,14 +25,15 @@ describe('AppAccountLinkChoiceManager', () => {
         gold: { current: 3 },
         crystal: { current: 0 },
       },
+      accountUsername: 'Mira',
     });
 
     expect(stage.querySelector('.app-account-link-choice').hidden).toBe(false);
     expect(stage.textContent).toContain('level 5, 12 gold, 2 crystal');
-    expect(stage.textContent).toContain('level 2, 3 gold, 0 crystal');
+    expect(stage.textContent).toContain('username Mira, level 2, 3 gold, 0 crystal');
 
     stage
-      .querySelector('.app-account-link-choice__button:last-child')
+      .querySelectorAll('.app-account-link-choice__button')[0]
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     await expect(choicePromise).resolves.toBe(ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT);
@@ -50,7 +51,7 @@ describe('AppAccountLinkChoiceManager', () => {
     });
 
     stage
-      .querySelector('.app-account-link-choice__button:first-child')
+      .querySelectorAll('.app-account-link-choice__button')[1]
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     await expect(choicePromise).resolves.toBe(ACCOUNT_LINK_CHOICE_FORGET_DEVICE);

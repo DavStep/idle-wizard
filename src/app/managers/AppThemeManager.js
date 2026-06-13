@@ -10,6 +10,10 @@ import {
   DEFAULT_PLAYER_FONT,
   normalizePlayerFont,
 } from '../../player/playerFonts.js';
+import {
+  DEFAULT_PLAYER_ICON_MODE,
+  normalizePlayerIconMode,
+} from '../../player/playerIconModes.js';
 
 export class AppThemeManager {
   constructor({ rootElement = globalThis.document?.documentElement } = {}) {
@@ -36,12 +40,14 @@ export class AppThemeManager {
     this.applyTheme(DEFAULT_PLAYER_THEME);
     this.applyFont(DEFAULT_PLAYER_FONT);
     this.applyColorMode(DEFAULT_PLAYER_COLOR_MODE);
+    this.applyIconMode(DEFAULT_PLAYER_ICON_MODE);
   }
 
   applySettings(snapshot) {
     this.applyTheme(snapshot?.theme);
     this.applyFont(snapshot?.font);
     this.applyColorMode(snapshot?.colorMode);
+    this.applyIconMode(snapshot?.iconMode);
   }
 
   applyTheme(theme) {
@@ -66,5 +72,13 @@ export class AppThemeManager {
     }
 
     this.rootElement.dataset.styleColor = normalizePlayerColorMode(colorMode);
+  }
+
+  applyIconMode(iconMode) {
+    if (!this.rootElement) {
+      return;
+    }
+
+    this.rootElement.dataset.styleIcons = normalizePlayerIconMode(iconMode);
   }
 }

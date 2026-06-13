@@ -1,3 +1,5 @@
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+
 export class TopPanelLevelManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -213,7 +215,7 @@ export class TopPanelLevelManager {
 
     const key = document.createElement('span');
     key.className = 'room-top-panel__level-effect-label';
-    key.textContent = label;
+    setResourceIconText(key, label);
 
     const val = document.createElement('span');
     val.className = 'room-top-panel__level-effect-value';

@@ -1,4 +1,6 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { getCompletedResearchIds } from '../../shared/itemResearchStatus.js';
 
 const AUTO_BREW_CAULDRON_RESEARCH_ID = 'automation:autoBrewCauldron:1';
@@ -277,6 +279,7 @@ export class BrewingRecipeBookManager {
     const label = document.createElement('span');
     label.className = 'row_key brewing-page__recipe-name';
     label.textContent = recipe.label;
+    setItemIconLabel(label, 'potion', recipe.key);
 
     const selectButton = document.createElement('span');
     const selectAction = selected ? 'selected' : 'select';
@@ -294,7 +297,7 @@ export class BrewingRecipeBookManager {
     const cost = document.createElement('span');
     cost.className = 'brewing-page__recipe-cost';
     setResourceColor(cost, 'mana');
-    cost.textContent = `cost ${recipe.manaCost} mana`;
+    setResourceIconText(cost, `cost ${recipe.manaCost} mana`);
 
     const duration = document.createElement('span');
     duration.className = 'brewing-page__recipe-duration';

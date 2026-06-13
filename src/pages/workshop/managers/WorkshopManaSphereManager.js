@@ -1,3 +1,4 @@
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class WorkshopManaSphereManager {
@@ -57,7 +58,7 @@ export class WorkshopManaSphereManager {
 
     const key = document.createElement('span');
     key.className = 'row_key';
-    key.textContent = label;
+    setResourceIconText(key, label);
 
     const val = document.createElement('span');
     val.className = 'row_val';

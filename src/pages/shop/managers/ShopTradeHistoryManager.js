@@ -10,6 +10,8 @@ const EMPTY_PLAYER_SHOP_SNAPSHOT = {
 };
 
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { appendTextWithSeedIcons } from '../../shared/itemIconLabel.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 
 export class ShopTradeHistoryManager {
   constructor({ playerShopFacade } = {}) {
@@ -236,12 +238,13 @@ export class ShopTradeHistoryManager {
     seller.className = 'shop-page__trade-history-username';
     seller.textContent = sellerUsername;
 
-    row.append(
-      buyer,
-      ` bought ${itemText} from `,
-      seller,
-      ` for ${formatGoldPriceText(gold)}`,
-    );
+    const item = document.createElement('span');
+    appendTextWithSeedIcons(item, itemText);
+
+    const price = document.createElement('span');
+    setResourceIconText(price, formatGoldPriceText(gold));
+
+    row.append(buyer, ' bought ', item, ' from ', seller, ' for ', price);
     return row;
   }
 

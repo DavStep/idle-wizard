@@ -1,5 +1,6 @@
 import { PlayerColorModeManager } from './managers/PlayerColorModeManager.js';
 import { PlayerFontManager } from './managers/PlayerFontManager.js';
+import { PlayerIconModeManager } from './managers/PlayerIconModeManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
 import { PlayerStateObserverManager } from './managers/PlayerStateObserverManager.js';
 import { PlayerThemeManager } from './managers/PlayerThemeManager.js';
@@ -13,6 +14,7 @@ export class PlayerFacade {
     this.themeManager = new PlayerThemeManager();
     this.fontManager = new PlayerFontManager();
     this.colorModeManager = new PlayerColorModeManager();
+    this.iconModeManager = new PlayerIconModeManager();
     this.stateObserverManager = new PlayerStateObserverManager();
   }
 
@@ -33,6 +35,9 @@ export class PlayerFacade {
     this.themeManager.applyServerTheme(profile?.theme);
     this.fontManager.applyServerFont(profile?.font);
     this.colorModeManager.applyServerColorMode(profile?.colorMode);
+    if (Object.hasOwn(profile ?? {}, 'iconMode')) {
+      this.iconModeManager.applyServerIconMode(profile.iconMode);
+    }
     this.publishSnapshot();
     return this.getSnapshot();
   }
@@ -79,6 +84,16 @@ export class PlayerFacade {
     return this.colorModeManager.getColorModeOptions();
   }
 
+  setIconMode(iconMode) {
+    this.iconModeManager.setIconMode(iconMode);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  getIconModeOptions() {
+    return this.iconModeManager.getIconModeOptions();
+  }
+
   getSnapshot() {
     return {
       username: this.nameManager.getUsername(),
@@ -87,6 +102,7 @@ export class PlayerFacade {
       theme: this.themeManager.getTheme(),
       font: this.fontManager.getFont(),
       colorMode: this.colorModeManager.getColorMode(),
+      iconMode: this.iconModeManager.getIconMode(),
     };
   }
 
@@ -98,6 +114,7 @@ export class PlayerFacade {
       theme: snapshot.theme,
       font: snapshot.font,
       colorMode: snapshot.colorMode,
+      iconMode: snapshot.iconMode,
     };
   }
 

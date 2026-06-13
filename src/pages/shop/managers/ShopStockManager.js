@@ -2,6 +2,8 @@ import {
   getItemDisplay,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import {
   setResourceColor,
   setResourceColorFromText,
@@ -414,9 +416,10 @@ export class ShopStockManager {
     refs.row.classList.toggle('is-locked', display.locked);
     refs.row.classList.toggle('is-unknown', display.unknown);
     refs.label.textContent = `${display.label} (${stock === null ? '?' : stock})`;
+    setItemIconLabel(refs.label, item.kind, item.key);
     setResourceColor(refs.label, item.kind);
 
-    refs.button.textContent = buying ? 'buying' : this.getBuyButtonText(item);
+    setResourceIconText(refs.button, buying ? 'buying' : this.getBuyButtonText(item));
     refs.button.disabled = buying || !canBuy;
     refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
     setResourceColor(refs.button, refs.button.disabled ? null : 'gold');
@@ -462,14 +465,16 @@ export class ShopStockManager {
     }
 
     this.refs.buyItemValue.value.textContent = `${display.label} (${stock})`;
+    setItemIconLabel(this.refs.buyItemValue.value, item.kind, item.key);
     setResourceColor(this.refs.buyItemValue.value, item.kind);
 
-    this.refs.buyEachValue.value.textContent = formatGoldPriceText(item.buyGold);
+    setResourceIconText(this.refs.buyEachValue.value, formatGoldPriceText(item.buyGold));
     setResourceColor(this.refs.buyEachValue.value, 'gold');
 
-    this.refs.buyTotalValue.value.textContent = quote.ok
-      ? formatGoldPriceText(quote.totalPriceGold)
-      : '?';
+    setResourceIconText(
+      this.refs.buyTotalValue.value,
+      quote.ok ? formatGoldPriceText(quote.totalPriceGold) : '?',
+    );
     setResourceColor(this.refs.buyTotalValue.value, quote.ok ? 'gold' : null);
 
     this.refs.buyConfirmButton.textContent = buying ? 'buying' : 'buy';
@@ -480,7 +485,7 @@ export class ShopStockManager {
       this.buyStatusText ||
       (!quote.ok ? this.getBuyFailureText(quote.reason) : '') ||
       (!canAfford ? 'not enough gold' : '');
-    this.refs.buyDialogStatus.textContent = status;
+    setResourceIconText(this.refs.buyDialogStatus, status);
     this.refs.buyDialogStatus.hidden = !status;
     setResourceColorFromText(this.refs.buyDialogStatus, status);
   }

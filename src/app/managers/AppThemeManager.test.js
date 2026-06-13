@@ -8,11 +8,13 @@ function createPlayerFacade(
   initialTheme = 'white',
   initialColorMode = 'monochrome',
   initialFont = 'lexend',
+  initialIconMode = 'none',
 ) {
   let snapshot = {
     theme: initialTheme,
     font: initialFont,
     colorMode: initialColorMode,
+    iconMode: initialIconMode,
   };
   const listeners = new Set();
 
@@ -43,6 +45,13 @@ function createPlayerFacade(
         listener(snapshot);
       }
     },
+    setIconMode: (iconMode) => {
+      snapshot = { ...snapshot, iconMode };
+
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
   };
 }
 
@@ -51,10 +60,11 @@ describe('AppThemeManager', () => {
     delete document.documentElement.dataset.styleTheme;
     delete document.documentElement.dataset.styleFont;
     delete document.documentElement.dataset.styleColor;
+    delete document.documentElement.dataset.styleIcons;
   });
 
   it('applies current and changed player visual settings to the document root', () => {
-    const playerFacade = createPlayerFacade('black', 'resources', 'comic-sans-mono');
+    const playerFacade = createPlayerFacade('black', 'resources', 'comic-sans-mono', 'icons');
     const manager = new AppThemeManager();
 
     manager.mount(playerFacade);
@@ -62,12 +72,15 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleTheme).toBe('black');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
+    expect(document.documentElement.dataset.styleIcons).toBe('icons');
 
     playerFacade.setTheme('midnight');
     playerFacade.setFont('comic sans mono');
+    playerFacade.setIconMode('none');
 
     expect(document.documentElement.dataset.styleTheme).toBe('midnight');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
+    expect(document.documentElement.dataset.styleIcons).toBe('none');
 
     playerFacade.setFont('google-lexend');
 
@@ -89,5 +102,6 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleTheme).toBe('white');
     expect(document.documentElement.dataset.styleFont).toBe('lexend');
     expect(document.documentElement.dataset.styleColor).toBe('monochrome');
+    expect(document.documentElement.dataset.styleIcons).toBe('none');
   });
 });

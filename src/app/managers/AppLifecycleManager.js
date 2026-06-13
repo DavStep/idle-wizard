@@ -142,10 +142,16 @@ export class AppLifecycleManager {
         return;
       }
 
-      const choice = await this.accountLinkChoiceManager.choose({
+      const choiceOptions = {
         deviceSave: accountLinkSave,
         accountSave: save,
-      });
+      };
+      const accountUsername = this.getAccountUsername();
+      if (accountUsername) {
+        choiceOptions.accountUsername = accountUsername;
+      }
+
+      const choice = await this.accountLinkChoiceManager.choose(choiceOptions);
       this.clearPendingAccountLinkSave();
 
       if (choice === ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT) {
@@ -180,6 +186,22 @@ export class AppLifecycleManager {
 
   isAuthenticatedAccount() {
     return Boolean(this.backendFacade.getAuthFacade?.()?.getSnapshot?.()?.oidc?.authenticated);
+  }
+
+  getAccountUsername() {
+    const playerUsername = this.normalizeUsername(
+      this.playerFacade?.getSnapshot?.()?.username,
+    );
+    if (playerUsername) {
+      return playerUsername;
+    }
+
+    const oidc = this.backendFacade.getAuthFacade?.()?.getSnapshot?.()?.oidc ?? {};
+    return this.normalizeUsername(oidc.displayName) || this.normalizeUsername(oidc.email);
+  }
+
+  normalizeUsername(username) {
+    return String(username ?? '').replace(/\s+/g, ' ').trim();
   }
 
   handleOnline() {

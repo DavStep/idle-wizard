@@ -7,6 +7,10 @@ import {
   normalizePlayerFont,
 } from '../../../player/playerFonts.js';
 import {
+  DEFAULT_PLAYER_ICON_MODE,
+  normalizePlayerIconMode,
+} from '../../../player/playerIconModes.js';
+import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
@@ -107,6 +111,16 @@ export class TopPanelSettingsManager {
         event.currentTarget.dataset.colorMode,
       );
     };
+    this.handleIconModeClick = (event) => {
+      this.selectVisualSetting('icons', event.currentTarget.dataset.iconMode);
+    };
+    this.handleIconModePressStart = (event) => {
+      this.selectVisualSettingFromPressStart(
+        event,
+        'icons',
+        event.currentTarget.dataset.iconMode,
+      );
+    };
     this.handleVisualSettingResearchClick = (event) => {
       this.researchVisualSetting(
         event.currentTarget.dataset.visualCategory,
@@ -177,6 +191,11 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleColorModeClick);
     }
 
+    for (const button of this.refs.iconModeButtons) {
+      button.addEventListener('pointerdown', this.handleIconModePressStart);
+      button.addEventListener('click', this.handleIconModeClick);
+    }
+
     for (const button of this.refs.visualSettingResearchButtons ?? []) {
       button.addEventListener('click', this.handleVisualSettingResearchClick);
     }
@@ -194,6 +213,7 @@ export class TopPanelSettingsManager {
         theme: DEFAULT_PLAYER_THEME,
         font: DEFAULT_PLAYER_FONT,
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
+        iconMode: DEFAULT_PLAYER_ICON_MODE,
       });
     }
 
@@ -260,6 +280,11 @@ export class TopPanelSettingsManager {
       for (const button of this.refs.colorModeButtons) {
         button.removeEventListener('pointerdown', this.handleColorModePressStart);
         button.removeEventListener('click', this.handleColorModeClick);
+      }
+
+      for (const button of this.refs.iconModeButtons) {
+        button.removeEventListener('pointerdown', this.handleIconModePressStart);
+        button.removeEventListener('click', this.handleIconModeClick);
       }
 
       for (const button of this.refs.visualSettingResearchButtons ?? []) {
@@ -419,6 +444,7 @@ export class TopPanelSettingsManager {
     this.applyThemeSelection(snapshot.theme);
     this.applyFontSelection(snapshot.font);
     this.applyColorModeSelection(snapshot.colorMode);
+    this.applyIconModeSelection(snapshot.iconMode);
     this.renderVisualSettingPrices();
 
     if (
@@ -464,6 +490,16 @@ export class TopPanelSettingsManager {
 
     for (const button of this.refs.fontButtons) {
       const selected = button.dataset.font === selectedFont;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-checked', selected ? 'true' : 'false');
+    }
+  }
+
+  applyIconModeSelection(iconMode) {
+    const selectedIconMode = normalizePlayerIconMode(iconMode);
+
+    for (const button of this.refs.iconModeButtons) {
+      const selected = button.dataset.iconMode === selectedIconMode;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
     }
@@ -539,6 +575,11 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'color') {
       this.playerFacade?.setColorMode?.(optionKey);
+      return;
+    }
+
+    if (categoryKey === 'icons') {
+      this.playerFacade?.setIconMode?.(optionKey);
     }
   }
 
@@ -607,6 +648,10 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'color') {
       return normalizePlayerColorMode(this.playerSnapshot?.colorMode) === optionKey;
+    }
+
+    if (categoryKey === 'icons') {
+      return normalizePlayerIconMode(this.playerSnapshot?.iconMode) === optionKey;
     }
 
     return false;

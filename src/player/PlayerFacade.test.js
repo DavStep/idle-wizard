@@ -15,6 +15,7 @@ describe('PlayerFacade', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      iconMode: 'none',
     });
   });
 
@@ -30,6 +31,7 @@ describe('PlayerFacade', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      iconMode: 'none',
     });
   });
 
@@ -69,6 +71,26 @@ describe('PlayerFacade', () => {
     });
   });
 
+  it('does not ask again when a stale server profile says the prompt was not seen', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.applyServerProfile({
+      username: 'wizard',
+      usernamePromptSeen: false,
+    });
+    playerFacade.markUsernamePromptSeen();
+    playerFacade.applyServerProfile({
+      username: 'wizard',
+      usernamePromptSeen: false,
+    });
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'wizard',
+      usernamePromptSeen: true,
+      shouldPromptForUsername: false,
+    });
+  });
+
   it('normalizes theme', () => {
     const playerFacade = new PlayerFacade();
 
@@ -94,6 +116,17 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
   });
 
+  it('normalizes icon mode', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setIconMode('icons');
+
+    expect(playerFacade.getSnapshot().iconMode).toBe('icons');
+
+    playerFacade.setIconMode('unknown');
+    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+  });
+
   it('normalizes font', () => {
     const playerFacade = new PlayerFacade();
 
@@ -115,6 +148,7 @@ describe('PlayerFacade', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'resources',
+      iconMode: 'icons',
       usernamePromptSeen: true,
     });
 
@@ -124,6 +158,7 @@ describe('PlayerFacade', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'resources',
+      iconMode: 'icons',
     });
   });
 

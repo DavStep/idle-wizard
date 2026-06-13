@@ -3,6 +3,10 @@ import {
   PLAYER_COLOR_MODE_OPTIONS,
 } from './playerColorModes.js';
 import { DEFAULT_PLAYER_FONT, PLAYER_FONT_OPTIONS } from './playerFonts.js';
+import {
+  DEFAULT_PLAYER_ICON_MODE,
+  PLAYER_ICON_MODE_OPTIONS,
+} from './playerIconModes.js';
 import { DEFAULT_PLAYER_THEME, PLAYER_THEME_OPTIONS } from './playerThemes.js';
 
 export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
@@ -21,6 +25,11 @@ export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
     label: 'color',
     options: PLAYER_COLOR_MODE_OPTIONS,
   }),
+  Object.freeze({
+    key: 'icons',
+    label: 'icons',
+    options: PLAYER_ICON_MODE_OPTIONS,
+  }),
 ]);
 
 export const DEFAULT_PLAYER_VISUAL_SETTINGS_COSTS_CRYSTAL = Object.freeze(
@@ -36,6 +45,7 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
   theme: Object.freeze({ [DEFAULT_PLAYER_THEME]: true }),
   font: Object.freeze({ [DEFAULT_PLAYER_FONT]: true }),
   color: Object.freeze({ [DEFAULT_PLAYER_COLOR_MODE]: true }),
+  icons: Object.freeze({ [DEFAULT_PLAYER_ICON_MODE]: true }),
 });
 
 const CATEGORY_BY_KEY = new Map(

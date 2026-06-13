@@ -10,7 +10,12 @@ async function flushPromises() {
   await Promise.resolve();
 }
 
-function createLifecycle({ accountLinkChoiceManager, authFacade, maintenanceFacade } = {}) {
+function createLifecycle({
+  accountLinkChoiceManager,
+  authFacade,
+  maintenanceFacade,
+  playerFacade,
+} = {}) {
   const root = document.createElement('div');
   const shell = document.createElement('main');
   const stage = document.createElement('section');
@@ -83,7 +88,7 @@ function createLifecycle({ accountLinkChoiceManager, authFacade, maintenanceFaca
       stop: vi.fn(),
       getAuthFacade: vi.fn(() => authFacadeFake),
     },
-    playerFacade: {},
+    playerFacade: playerFacade ?? {},
     maintenanceFacade: maintenanceFacadeFake,
     onlineGateManager: {
       mount: vi.fn(() => stage.append(document.createElement('div'))),
@@ -327,7 +332,13 @@ describe('AppLifecycleManager', () => {
       clearPendingAccountLinkSave: vi.fn(),
       getSnapshot: vi.fn(() => ({ oidc: { authenticated: true } })),
     };
-    const { lifecycle } = createLifecycle({ accountLinkChoiceManager, authFacade });
+    const { lifecycle } = createLifecycle({
+      accountLinkChoiceManager,
+      authFacade,
+      playerFacade: {
+        getSnapshot: vi.fn(() => ({ username: 'Mira' })),
+      },
+    });
 
     await lifecycle.handleGameplaySaveReady({ save: accountSave });
 
@@ -335,6 +346,7 @@ describe('AppLifecycleManager', () => {
     expect(accountLinkChoiceManager.choose).toHaveBeenCalledWith({
       deviceSave,
       accountSave,
+      accountUsername: 'Mira',
     });
     expect(authFacade.clearPendingAccountLinkSave).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(

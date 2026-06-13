@@ -1,4 +1,5 @@
 import { getItemDisplay } from '../../shared/itemResearchStatus.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 
 const DEMAND_TABS = [
   { kind: 'seed', label: 'seed' },
@@ -212,6 +213,7 @@ export class ShopDemandManager {
       const display = getItemDisplay(snapshot, item, item.quantity);
       const demandItem = {
         label: display.label,
+        kind: item.kind,
         demand: this.formatDemand(item.sellNeed),
         locked: display.locked,
       };
@@ -234,6 +236,7 @@ export class ShopDemandManager {
     const label = document.createElement('span');
     label.className = 'row_key';
     label.textContent = item.label;
+    setItemIconLabel(label, item.kind, item.key);
 
     const value = document.createElement('span');
     value.className = 'row_val';

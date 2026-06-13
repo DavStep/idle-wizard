@@ -241,6 +241,61 @@
   color: var(--style-disabled);
 }
 
+.style-seed-label::before {
+  display: none;
+}
+
+.style-resource-label {
+  display: inline;
+}
+
+.style-resource-label__icon {
+  display: none;
+  width: 0.86em;
+  height: 0.86em;
+  object-fit: contain;
+  vertical-align: -0.12em;
+}
+
+.style-resource-label--mana .style-resource-label__icon {
+  width: 0.72em;
+  height: 0.9em;
+}
+
+.style-potion-label__icon {
+  display: none;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.28em;
+  object-fit: contain;
+  vertical-align: -0.14em;
+}
+
+:root[data-style-icons="icons"] .style-seed-label::before {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 0.52em;
+  height: 0.72em;
+  margin-right: 0.32em;
+  border: 1px solid currentColor;
+  border-radius: 60% 40% 60% 40%;
+  content: "";
+  transform: rotate(42deg);
+  vertical-align: -0.1em;
+}
+
+:root[data-style-icons="icons"] .style-resource-label__icon {
+  display: inline-block;
+}
+
+:root[data-style-icons="icons"] .style-resource-label__text {
+  display: none;
+}
+
+:root[data-style-icons="icons"] .style-potion-label__icon {
+  display: inline-block;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -393,10 +448,17 @@ body {
 
 .app-account-link-choice__row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+}
+
+.app-account-link-choice__main {
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
   row-gap: 1px;
-  align-items: baseline;
-  min-height: 0;
+  min-width: 0;
 }
 
 .app-account-link-choice__label,
@@ -417,15 +479,8 @@ body {
   color: var(--style-disabled);
 }
 
-.app-account-link-choice__actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
-  margin-top: var(--style-dialog-tab-gap);
-}
-
 .style-button.app-account-link-choice__button {
-  width: auto;
+  width: 72px;
   min-width: 0;
   margin-bottom: 0;
   overflow: hidden;
@@ -2066,6 +2121,12 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-message--system .workshop-page__world-chat-name {
   color: var(--style-system-text);
+}
+
+.workshop-page__world-chat-age {
+  color: var(--style-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .workshop-page__world-chat-preview {

@@ -4,7 +4,7 @@ import { VisualSettingsResearchManager } from './managers/VisualSettingsResearch
 
 export class VisualSettingsFacade {
   static explain =
-    'Researches player visual choices so themes, fonts, and color modes can unlock before selection.';
+    'Researches player visual choices so themes, fonts, colors, and icons can unlock before selection.';
 
   constructor({ crystalFacade } = {}) {
     this.crystalFacade = crystalFacade;

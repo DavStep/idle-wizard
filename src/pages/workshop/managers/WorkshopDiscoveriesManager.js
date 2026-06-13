@@ -1,4 +1,6 @@
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
 const DISCOVERY_TABS = [
@@ -230,9 +232,7 @@ export class WorkshopDiscoveriesManager {
 
     const key = document.createElement('span');
     key.className = 'row_key brewing-page__recipe-name';
-    key.textContent = potion.discovered
-      ? `${potion.label}: discovered by ${potion.discoveredByUsername || 'wizard'}`
-      : 'unknown potion';
+    this.setPotionRecipeName(key, potion);
 
     if (potion.discovered) {
       main.append(key);
@@ -248,6 +248,18 @@ export class WorkshopDiscoveriesManager {
       this.createRecipeMeta(potion),
     );
     return row;
+  }
+
+  setPotionRecipeName(element, potion) {
+    if (!potion.discovered) {
+      element.textContent = 'unknown potion';
+      setItemIconLabel(element, 'potion', 'unknownPotion');
+      return;
+    }
+
+    element.textContent = potion.label;
+    setItemIconLabel(element, 'potion', potion.key);
+    element.append(`: discovered by ${potion.discoveredByUsername || 'wizard'}`);
   }
 
   createIngredientsList(ingredients = [], { masked = false } = {}) {
@@ -293,10 +305,12 @@ export class WorkshopDiscoveriesManager {
     const cost = document.createElement('span');
     cost.className = 'brewing-page__recipe-cost';
     setResourceColor(cost, 'mana');
-    cost.textContent =
+    setResourceIconText(
+      cost,
       potion.discovered && Number.isFinite(potion.manaCost)
         ? `cost ${potion.manaCost} mana`
-        : 'cost ? mana';
+        : 'cost ? mana',
+    );
 
     const duration = document.createElement('span');
     duration.className = 'brewing-page__recipe-duration';

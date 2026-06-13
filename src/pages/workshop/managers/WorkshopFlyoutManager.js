@@ -1,3 +1,5 @@
+import { appendTextWithSeedIcons } from '../../shared/itemIconLabel.js';
+
 const FLYOUT_LIFETIME_MS = 1200;
 
 export class WorkshopFlyoutManager {
@@ -28,7 +30,7 @@ export class WorkshopFlyoutManager {
     const flyout = document.createElement('div');
     flyout.className = 'workshop-page__flyout';
     flyout.setAttribute('role', 'status');
-    flyout.textContent = message;
+    appendTextWithSeedIcons(flyout, message);
     this.root.append(flyout);
 
     const timeoutId = window.setTimeout(() => {

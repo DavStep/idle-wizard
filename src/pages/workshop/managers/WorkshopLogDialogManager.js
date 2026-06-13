@@ -1,3 +1,4 @@
+import { appendTextWithSeedIcons } from '../../shared/itemIconLabel.js';
 import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 
 export class WorkshopLogDialogManager {
@@ -190,7 +191,7 @@ export class WorkshopLogDialogManager {
   createEntry(entry) {
     const row = document.createElement('div');
     row.className = 'workshop-page__log-entry';
-    row.textContent = entry.message;
+    appendTextWithSeedIcons(row, entry.message);
     return row;
   }
 

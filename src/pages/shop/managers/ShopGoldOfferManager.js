@@ -1,5 +1,6 @@
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
 export class ShopGoldOfferManager {
@@ -73,7 +74,7 @@ export class ShopGoldOfferManager {
     }
 
     const rewardText = formatGoldPriceText(offer.rewardGold);
-    this.setText(this.refs.reward, rewardText);
+    this.setResourceText(this.refs.reward, rewardText);
     this.setText(
       this.refs.action,
       offer.canCollect ? 'collect' : this.formatTimer(offer.cooldownRemainingSeconds),
@@ -112,6 +113,12 @@ export class ShopGoldOfferManager {
   setText(element, text) {
     if (element && element.textContent !== text) {
       element.textContent = text;
+    }
+  }
+
+  setResourceText(element, text) {
+    if (element && element.textContent !== text) {
+      setResourceIconText(element, text);
     }
   }
 }
