@@ -3441,7 +3441,7 @@ describe('PagesFacade', () => {
       .querySelector('.room-top-panel__username')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.room-top-panel__auth-section')?.hidden).toBe(true);
+    expect(stage.querySelector('.room-top-panel__auth-section')).toBeNull();
   });
 
   it('saves username from the mobile keyboard done action', () => {

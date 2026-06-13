@@ -55,7 +55,7 @@ export class TopPanelAuthManager {
     this.authenticated = Boolean(oidc.authenticated);
 
     if (!this.authenticated && oidc.disabledReason === 'native') {
-      section.hidden = true;
+      section.remove();
       return;
     }
 
