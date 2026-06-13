@@ -121,6 +121,18 @@ export class TradeAllianceActionManager {
     );
   }
 
+  fillItemQuest({ questId, itemKey, quantity } = {}) {
+    return this.callReducer(
+      'fillTradeAllianceItemQuest',
+      'fill_trade_alliance_item_quest',
+      {
+        questId: this.normalizeId(questId),
+        itemKey: this.normalizeId(itemKey),
+        quantity: this.normalizeQuantity(quantity),
+      },
+    );
+  }
+
   collectReward(rewardKey) {
     return this.callReducer('collectTradeAllianceReward', 'collect_trade_alliance_reward', {
       rewardKey: this.normalizeId(rewardKey),
@@ -157,6 +169,10 @@ export class TradeAllianceActionManager {
 
   normalizeId(value) {
     return String(value ?? '').trim();
+  }
+
+  normalizeQuantity(value) {
+    return Math.max(0, Math.floor(Number(value) || 0));
   }
 
   normalizeName(value) {

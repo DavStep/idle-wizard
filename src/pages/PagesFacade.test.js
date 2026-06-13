@@ -930,9 +930,71 @@ function createGameplayFacadeFake() {
     garden.nextTileNumber = nextTileCost === null ? null : nextTileNumber;
     garden.nextTileCost = nextTileCost;
   };
+  const getKnownItemSnapshots = () => [
+    ...snapshot.inventory,
+    ...snapshot.seedInventory,
+    ...snapshot.brewing.herbs,
+    ...snapshot.brewing.recipes.map((recipe) => ({
+      itemTypeId: recipe.potionTypeId,
+      key: recipe.key,
+      label: recipe.label,
+      kind: 'potion',
+      quantity: 0,
+    })),
+    ...snapshot.shop.shelf.sellItems,
+  ];
+  const getItemDefinitionByKey = (itemKey) => {
+    const item = getKnownItemSnapshots().find((candidate) => candidate.key === itemKey);
+
+    if (!item) {
+      throw new Error('Unknown item.');
+    }
+
+    return {
+      id: item.itemTypeId,
+      key: item.key,
+      label: item.label,
+      kind: item.kind,
+    };
+  };
+  const getItemStack = (itemTypeId) =>
+    snapshot.inventory.find((item) => item.itemTypeId === itemTypeId) ??
+    snapshot.seedInventory.find((item) => item.itemTypeId === itemTypeId) ??
+    null;
+  const getItemQuantity = (itemTypeId) => getItemStack(itemTypeId)?.quantity ?? 0;
+  const addItemQuantity = (item, quantity) => {
+    const stack = getItemStack(item.itemTypeId);
+
+    if (stack) {
+      stack.quantity += quantity;
+      return;
+    }
+
+    snapshot.inventory.push({
+      itemTypeId: item.itemTypeId,
+      key: item.key,
+      label: item.label,
+      kind: item.kind,
+      quantity,
+    });
+  };
+  const removeItemQuantity = (itemTypeId, quantity) => {
+    const stack = getItemStack(itemTypeId);
+
+    if (!stack || stack.quantity < quantity) {
+      return false;
+    }
+
+    stack.quantity -= quantity;
+    return true;
+  };
 
   const gameplayFacade = {
     getSnapshot: () => snapshot,
+    itemsFacade: {
+      getItemDefinitionByKey,
+      getItemQuantity,
+    },
     createPersistenceSave: () => ({
       tasks: { currentLevel: snapshot.tasks.currentLevel },
       gold: { current: snapshot.gold.current },
@@ -1852,6 +1914,40 @@ function createGameplayFacadeFake() {
         cooldownSeconds: snapshot.shop.goldOffer.cooldownSeconds,
       };
     },
+    fillTradeAllianceItemQuest: (quest) => {
+      const item = getItemDefinitionByKey(quest.itemKey);
+      const remainingQuantity = Math.max(0, quest.target - quest.progress);
+      const quantity = Math.min(getItemQuantity(item.id), remainingQuantity);
+
+      if (quantity <= 0) {
+        return {
+          ok: false,
+          reason: 'not_enough_items',
+        };
+      }
+
+      removeItemQuantity(item.id, quantity);
+      publish();
+
+      return {
+        ok: true,
+        questId: quest.questId,
+        item: {
+          itemTypeId: item.id,
+          key: item.key,
+          label: item.label,
+          kind: item.kind,
+        },
+        quantity,
+      };
+    },
+    refundTradeAllianceItemQuestFill: (fill) => {
+      addItemQuantity(fill.item, fill.quantity);
+      publish();
+      return {
+        ok: true,
+      };
+    },
     setShopSellGold: (kind, sellGold) => {
       for (const sellKind of snapshot.shop.shelf.sellKinds) {
         if (sellKind.kind === kind) {
@@ -2194,6 +2290,8 @@ function createTradeAllianceFacadeFake({
   alliances = [],
   memberCount = 1,
   members = [],
+  quests = [],
+  contributions = [],
   canManageRoles = true,
 } = {}) {
   const profileUpdates = [];
@@ -2232,8 +2330,8 @@ function createTradeAllianceFacadeFake({
     canManageApplications: true,
     members,
     applications: [],
-    quests: [],
-    contributions: [],
+    quests,
+    contributions,
   };
   const listeners = new Set();
 
@@ -2322,6 +2420,36 @@ function createTradeAllianceFacadeFake({
         canManageRoles: false,
         canManageApplications: false,
       };
+      publish();
+      return { ok: true };
+    },
+    fillItemQuest: async ({ questId, quantity }) => {
+      const quest = snapshot.quests.find((candidate) => candidate.questId === questId);
+
+      if (!quest) {
+        return { ok: false, reason: 'not_found' };
+      }
+
+      const acceptedQuantity = Math.floor(Number(quantity) || 0);
+      quest.progress += acceptedQuantity;
+      let contribution = snapshot.contributions.find(
+        (candidate) =>
+          candidate.questId === questId &&
+          candidate.dayKey === quest.dayKey &&
+          candidate.contributorIdentity === snapshot.ownMember.memberIdentity,
+      );
+
+      if (!contribution) {
+        contribution = {
+          questId,
+          dayKey: quest.dayKey,
+          contributorIdentity: snapshot.ownMember.memberIdentity,
+          contribution: 0,
+        };
+        snapshot.contributions.push(contribution);
+      }
+
+      contribution.contribution += acceptedQuantity;
       publish();
       return { ok: true };
     },
@@ -3959,6 +4087,72 @@ describe('PagesFacade', () => {
     popup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(true);
+  });
+
+  it('fills a trade alliance item quest from owned inventory', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.getSnapshot().inventory.push({
+      itemTypeId: 2001,
+      key: 'manaTonic',
+      label: 'mana tonic',
+      kind: 'potion',
+      quantity: 12,
+    });
+    const quest = {
+      allianceId: 'alliance-1',
+      dayKey: '2026-W24',
+      questId: 'itemFill:manaTonic',
+      label: 'fill 500 mana tonic',
+      questType: 'itemFill',
+      itemKey: 'manaTonic',
+      target: 500,
+      progress: 492,
+      progressRatio: 0.984,
+      minContribution: 25,
+      crystalReward: 5,
+    };
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [quest],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+      .find((button) => button.textContent === 'quests');
+    questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const fillButton = popup.querySelector('.workshop-page__trade-alliance-quest-action');
+    expect(fillButton.textContent).toBe('fill');
+
+    fillButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(4);
+    expect(quest.progress).toBe(500);
+    expect(tradeAllianceFacade.getSnapshot().contributions).toContainEqual({
+      questId: 'itemFill:manaTonic',
+      dayKey: '2026-W24',
+      contributorIdentity: 'self',
+      contribution: 8,
+    });
+    expect(popup.querySelector('.workshop-page__trade-alliance-quest-action').textContent).toBe(
+      'claim',
+    );
+    expect(
+      [...popup.querySelectorAll('.workshop-page__trade-alliance-row .row_key')].map(
+        (row) => row.textContent,
+      ),
+    ).toContain('your fill 8/25');
   });
 
   it('opens trade alliance member actions from a manageable member row', async () => {

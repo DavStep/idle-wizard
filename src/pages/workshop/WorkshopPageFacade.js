@@ -31,7 +31,10 @@ export class WorkshopPageFacade {
       leaderboardFacade,
       tradeAllianceFacade,
     });
-    this.tradeAllianceManager = new WorkshopTradeAllianceManager({ tradeAllianceFacade });
+    this.tradeAllianceManager = new WorkshopTradeAllianceManager({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
     this.logDialogManager = new WorkshopLogDialogManager({ gameplayFacade });
     this.discoveriesManager = new WorkshopDiscoveriesManager({ gameplayFacade });
     this.manaSphereManager = new WorkshopManaSphereManager({ gameplayFacade });

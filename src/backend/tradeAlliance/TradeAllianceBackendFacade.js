@@ -99,4 +99,8 @@ export class TradeAllianceBackendFacade {
   claimQuestReward(questId) {
     return this.actionManager.claimQuestReward(questId);
   }
+
+  fillItemQuest(fill) {
+    return this.actionManager.fillItemQuest(fill);
+  }
 }

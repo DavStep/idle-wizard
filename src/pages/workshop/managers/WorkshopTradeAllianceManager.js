@@ -31,9 +31,11 @@ const MEMBER_TABS = [
   { id: 'members', label: 'members' },
   { id: 'settings', label: 'settings' },
 ];
+const ITEM_FILL_QUEST_TYPE = 'itemFill';
 
 export class WorkshopTradeAllianceManager {
-  constructor({ tradeAllianceFacade } = {}) {
+  constructor({ gameplayFacade, tradeAllianceFacade } = {}) {
+    this.gameplayFacade = gameplayFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.root = null;
     this.unsubscribe = null;
@@ -465,6 +467,8 @@ export class WorkshopTradeAllianceManager {
 
   createQuestRow(quest) {
     const contribution = this.getOwnContribution(quest.questId, quest.dayKey);
+    const itemFillQuest = this.isItemFillQuest(quest);
+    const questComplete = quest.progress >= quest.target;
     const row = document.createElement('div');
     row.className = 'workshop-page__trade-alliance-quest-row';
 
@@ -473,7 +477,7 @@ export class WorkshopTradeAllianceManager {
     main.append(
       this.createTextRow(quest.label, `${this.formatNumber(quest.progress)}/${this.formatNumber(quest.target)}`),
       this.createTextRow(
-        `your route ${this.formatNumber(contribution)}/${this.formatNumber(quest.minContribution)}`,
+        `${itemFillQuest ? 'your fill' : 'your route'} ${this.formatNumber(contribution)}/${this.formatNumber(quest.minContribution)}`,
         `${quest.crystalReward} crystal`,
         { muted: true },
       ),
@@ -489,11 +493,17 @@ export class WorkshopTradeAllianceManager {
     const action = document.createElement('button');
     action.className = 'style-button workshop-page__trade-alliance-quest-action';
     action.type = 'button';
-    action.textContent = 'claim';
-    action.disabled = quest.progress < quest.target || contribution < quest.minContribution;
-    action.addEventListener('click', () =>
-      void this.runAction(() => this.tradeAllianceFacade.claimQuestReward(quest.questId)),
-    );
+    action.textContent = itemFillQuest && !questComplete ? 'fill' : 'claim';
+
+    if (itemFillQuest && !questComplete) {
+      action.disabled = !this.canFillItemQuest(quest);
+      action.addEventListener('click', () => void this.runAction(() => this.fillItemQuest(quest)));
+    } else {
+      action.disabled = quest.progress < quest.target || contribution < quest.minContribution;
+      action.addEventListener('click', () =>
+        void this.runAction(() => this.tradeAllianceFacade.claimQuestReward(quest.questId)),
+      );
+    }
 
     main.append(progress);
     row.append(main, action);
@@ -899,6 +909,50 @@ export class WorkshopTradeAllianceManager {
     return contribution?.contribution ?? 0;
   }
 
+  isItemFillQuest(quest) {
+    return quest?.questType === ITEM_FILL_QUEST_TYPE && Boolean(quest.itemKey);
+  }
+
+  canFillItemQuest(quest) {
+    if (!this.gameplayFacade || !this.isItemFillQuest(quest)) {
+      return false;
+    }
+
+    try {
+      const item = this.gameplayFacade.itemsFacade?.getItemDefinitionByKey?.(quest.itemKey);
+      return item ? this.gameplayFacade.itemsFacade.getItemQuantity(item.id) > 0 : false;
+    } catch {
+      return false;
+    }
+  }
+
+  async fillItemQuest(quest) {
+    if (!this.gameplayFacade || !this.tradeAllianceFacade?.fillItemQuest) {
+      return {
+        ok: false,
+        reason: 'offline',
+      };
+    }
+
+    const fill = this.gameplayFacade.fillTradeAllianceItemQuest(quest);
+
+    if (!fill.ok) {
+      return fill;
+    }
+
+    const result = await this.tradeAllianceFacade.fillItemQuest({
+      questId: quest.questId,
+      itemKey: fill.item.key,
+      quantity: fill.quantity,
+    });
+
+    if (!result?.ok) {
+      this.gameplayFacade.refundTradeAllianceItemQuestFill(fill);
+    }
+
+    return result;
+  }
+
   getMemberWeeklyContribution(member) {
     return member.weeklyContribution ?? member.dailyContribution ?? 0;
   }
@@ -1000,6 +1054,10 @@ export class WorkshopTradeAllianceManager {
 
     if (reason === 'empty_message') {
       return '';
+    }
+
+    if (reason === 'not_enough_items') {
+      return 'not enough items';
     }
 
     return 'not saved';

@@ -139,6 +139,7 @@
 ## Style
 
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
+- Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
 - Player-facing UI labels should stay lowercase, including seed, herb, potion, research, notice, and task labels; preserve user-entered names as typed.
@@ -323,6 +324,7 @@
 - Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
 - Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
 - Trade alliance quest rewards must be capped per player/quest/week across all alliances; reward keys or guards that include alliance id allow clan hopping to claim again.
+- Trade alliance item-fill quest ids must be `itemFill:<itemKey>`; the server validates that key against the exact configured seed or potion item before accepting fills.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.

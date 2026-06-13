@@ -461,6 +461,83 @@ export class GameplayFacade {
     };
   }
 
+  fillTradeAllianceItemQuest(quest) {
+    const itemKey = String(quest?.itemKey ?? '').trim();
+    const target = Math.max(0, Math.floor(Number(quest?.target) || 0));
+    const progress = Math.max(0, Math.floor(Number(quest?.progress) || 0));
+    const remainingQuantity = Math.max(0, target - progress);
+
+    if (!itemKey || remainingQuantity <= 0) {
+      return {
+        ok: false,
+        reason: 'not_ready',
+      };
+    }
+
+    let itemDefinition;
+
+    try {
+      itemDefinition = this.itemsFacade.getItemDefinitionByKey(itemKey);
+    } catch {
+      return {
+        ok: false,
+        reason: 'unknown_item',
+      };
+    }
+
+    const ownedQuantity = this.itemsFacade.getItemQuantity(itemDefinition.id);
+    const fillQuantity = Math.min(ownedQuantity, remainingQuantity);
+
+    if (fillQuantity <= 0) {
+      return {
+        ok: false,
+        reason: 'not_enough_items',
+      };
+    }
+
+    const removed = this.itemsFacade.removeItem(itemDefinition.id, fillQuantity);
+
+    if (!removed) {
+      return {
+        ok: false,
+        reason: 'not_enough_items',
+      };
+    }
+
+    this.publishAndSaveSnapshot();
+
+    return {
+      ok: true,
+      questId: quest.questId,
+      item: {
+        itemTypeId: itemDefinition.id,
+        key: itemDefinition.key,
+        label: itemDefinition.label,
+        kind: itemDefinition.kind,
+      },
+      quantity: fillQuantity,
+    };
+  }
+
+  refundTradeAllianceItemQuestFill(fill) {
+    const itemTypeId = Number(fill?.item?.itemTypeId);
+    const quantity = Math.max(0, Math.floor(Number(fill?.quantity) || 0));
+
+    if (!Number.isInteger(itemTypeId) || itemTypeId <= 0 || quantity <= 0) {
+      return {
+        ok: false,
+        reason: 'invalid_fill',
+      };
+    }
+
+    this.itemsFacade.addItem(itemTypeId, quantity);
+    this.publishAndSaveSnapshot();
+
+    return {
+      ok: true,
+    };
+  }
+
   buyVisualSettingOption(categoryKey, optionKey) {
     const result = this.visualSettingsFacade.buyOption(categoryKey, optionKey);
     this.publishAndSaveSnapshot();

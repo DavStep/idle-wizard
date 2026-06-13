@@ -24,7 +24,7 @@ const MAX_TRADE_ALLIANCE_DESCRIPTION_LENGTH = 160;
 const MAX_TRADE_ALLIANCE_NOTICE_LENGTH = 160;
 const MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS = 50;
 const MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS_PER_PLAYER = 5;
-const MAX_TRADE_ALLIANCE_WEEKLY_QUESTS = 5;
+const MAX_TRADE_ALLIANCE_WEEKLY_QUESTS = 8;
 const MAX_TRADE_ALLIANCE_QUEST_TARGET = 1_000_000_000n;
 const MAX_TRADE_ALLIANCE_QUEST_CRYSTAL_REWARD = 100;
 const TRADE_ALLIANCE_CHAT_HISTORY_LIMIT = 200;
@@ -105,6 +105,10 @@ const PLAYER_FONT_ALIASES = new Map([
 ]);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
+const TRADE_ALLIANCE_QUEST_TYPE_INCOME = 'allianceIncome';
+const TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL = 'itemFill';
+const TRADE_ALLIANCE_ITEM_FILL_PREFIX = 'itemFill:';
+const MAX_TRADE_ALLIANCE_ITEM_FILL_QUANTITY = 10_000;
 const TRADE_ALLIANCE_ROLE_TRADE_MASTER = 'tradeMaster';
 const TRADE_ALLIANCE_ROLE_QUARTERMASTER = 'quartermaster';
 const TRADE_ALLIANCE_ROLE_FACTOR = 'factor';
@@ -874,7 +878,7 @@ const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
     {
       id: 'allianceIncomeEasy',
       label: 'hard route',
-      type: 'allianceIncome',
+      type: TRADE_ALLIANCE_QUEST_TYPE_INCOME,
       target: 10_000,
       minContribution: 500,
       crystalReward: 2,
@@ -882,7 +886,7 @@ const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
     {
       id: 'allianceIncomeMedium',
       label: 'bulk route',
-      type: 'allianceIncome',
+      type: TRADE_ALLIANCE_QUEST_TYPE_INCOME,
       target: 50_000,
       minContribution: 2_500,
       crystalReward: 5,
@@ -890,10 +894,55 @@ const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
     {
       id: 'allianceIncomeHard',
       label: 'grand route',
-      type: 'allianceIncome',
+      type: TRADE_ALLIANCE_QUEST_TYPE_INCOME,
       target: 250_000,
       minContribution: 12_500,
       crystalReward: 12,
+    },
+    {
+      id: `${TRADE_ALLIANCE_ITEM_FILL_PREFIX}manaTonic`,
+      label: 'fill 500 mana tonic',
+      type: TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL,
+      itemKey: 'manaTonic',
+      target: 500,
+      minContribution: 25,
+      crystalReward: 5,
+    },
+    {
+      id: `${TRADE_ALLIANCE_ITEM_FILL_PREFIX}healingPotion`,
+      label: 'fill 500 healing potion',
+      type: TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL,
+      itemKey: 'healingPotion',
+      target: 500,
+      minContribution: 25,
+      crystalReward: 5,
+    },
+    {
+      id: `${TRADE_ALLIANCE_ITEM_FILL_PREFIX}sageSeed`,
+      label: 'fill 5000 sage seed',
+      type: TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL,
+      itemKey: 'sageSeed',
+      target: 5_000,
+      minContribution: 250,
+      crystalReward: 5,
+    },
+    {
+      id: `${TRADE_ALLIANCE_ITEM_FILL_PREFIX}nettleSeed`,
+      label: 'fill 5000 nettle seed',
+      type: TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL,
+      itemKey: 'nettleSeed',
+      target: 5_000,
+      minContribution: 250,
+      crystalReward: 5,
+    },
+    {
+      id: `${TRADE_ALLIANCE_ITEM_FILL_PREFIX}moonflowerSeed`,
+      label: 'fill 5000 moonflower seed',
+      type: TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL,
+      itemKey: 'moonflowerSeed',
+      target: 5_000,
+      minContribution: 250,
+      crystalReward: 5,
     },
   ],
 });
@@ -2434,7 +2483,11 @@ function normalizeGameConfigJson(
   parsedConfig: unknown,
   originalJson: string,
 ): string {
-  if (configKey === 'tradeAlliance' && isLegacyTradeAllianceGameConfig(parsedConfig)) {
+  if (
+    configKey === 'tradeAlliance' &&
+    (isLegacyTradeAllianceGameConfig(parsedConfig) ||
+      isIncomeOnlyTradeAllianceGameConfig(parsedConfig))
+  ) {
     return DEFAULT_TRADE_ALLIANCE_CONFIG_JSON;
   }
 
@@ -2506,6 +2559,44 @@ function isLegacyTradeAllianceGameConfig(parsedConfig: unknown): boolean {
       8_000,
       400,
       3,
+    )
+  );
+}
+
+function isIncomeOnlyTradeAllianceGameConfig(parsedConfig: unknown): boolean {
+  if (!isRecord(parsedConfig)) {
+    return false;
+  }
+
+  const quests = parsedConfig.weeklyQuests ?? parsedConfig.dailyQuests;
+  if (!Array.isArray(quests) || quests.length !== 3) {
+    return false;
+  }
+
+  return (
+    isLegacyTradeAllianceQuestConfig(
+      quests[0],
+      'allianceIncomeEasy',
+      'hard route',
+      10_000,
+      500,
+      2,
+    ) &&
+    isLegacyTradeAllianceQuestConfig(
+      quests[1],
+      'allianceIncomeMedium',
+      'bulk route',
+      50_000,
+      2_500,
+      5,
+    ) &&
+    isLegacyTradeAllianceQuestConfig(
+      quests[2],
+      'allianceIncomeHard',
+      'grand route',
+      250_000,
+      12_500,
+      12,
     )
   );
 }
@@ -3653,6 +3744,9 @@ type TradeAllianceWeeklyQuestConfig = {
   id: string;
   label: string;
   type: string;
+  itemKey: string;
+  itemLabel: string;
+  itemKind: string;
   target: bigint;
   minContribution: bigint;
   crystalReward: number;
@@ -3691,15 +3785,25 @@ function normalizeTradeAllianceWeeklyQuestConfigs(value: unknown): TradeAlliance
       MAX_RESEARCH_LABEL_LENGTH,
     );
     const type = String(questConfig.type ?? '').trim();
+    const itemKey = normalizeNpcMarketItemKey(String(questConfig.itemKey ?? ''));
+    const item = itemKey ? npcMarketCatalogByItemKey.get(itemKey) : null;
+    const itemLabel = item?.itemLabel ?? '';
+    const itemKind = item?.itemKind ?? '';
     const target = toBigInt(Number(questConfig.target ?? 0));
     const minContribution = toBigInt(Number(questConfig.minContribution ?? 0));
     const crystalReward = Math.floor(Number(questConfig.crystalReward ?? 0));
+    const isIncomeQuest = type === TRADE_ALLIANCE_QUEST_TYPE_INCOME;
+    const isItemFillQuest =
+      type === TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL &&
+      item &&
+      (item.itemKind === 'seed' || item.itemKind === 'potion') &&
+      id === `${TRADE_ALLIANCE_ITEM_FILL_PREFIX}${itemKey}`;
 
     if (
       !id ||
       seenQuestIds.has(id) ||
       !label ||
-      type !== 'allianceIncome' ||
+      (!isIncomeQuest && !isItemFillQuest) ||
       target < 1n ||
       target > MAX_TRADE_ALLIANCE_QUEST_TARGET ||
       minContribution < 0n ||
@@ -3715,6 +3819,9 @@ function normalizeTradeAllianceWeeklyQuestConfigs(value: unknown): TradeAlliance
       id,
       label,
       type,
+      itemKey: isItemFillQuest ? itemKey : '',
+      itemLabel: isItemFillQuest ? itemLabel : '',
+      itemKind: isItemFillQuest ? itemKind : '',
       target,
       minContribution,
       crystalReward,
@@ -3775,7 +3882,8 @@ function ensureTradeAllianceWeeklyQuests(ctx: IdleWizardReducerCtx, alliance: an
   for (const quest of config.weeklyQuests) {
     const questKey = getTradeAllianceQuestKey(alliance.allianceId, questPeriodKey, quest.id);
     const existingQuest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
-    const baseProgress = quest.type === 'allianceIncome' ? toBigInt(alliance.seasonIncome) : 0n;
+    const baseProgress =
+      quest.type === TRADE_ALLIANCE_QUEST_TYPE_INCOME ? toBigInt(alliance.seasonIncome) : 0n;
     const nextProgress = clampBigInt(
       existingQuest && existingQuest.progress > baseProgress
         ? existingQuest.progress
@@ -3847,6 +3955,137 @@ function pruneTradeAllianceQuestRows(
   }
 }
 
+function getTradeAllianceQuestConfigById(
+  ctx: IdleWizardReducerCtx,
+  questId: string,
+): TradeAllianceWeeklyQuestConfig | null {
+  const safeQuestId = normalizeResearchId(questId);
+  return (
+    getTradeAllianceRuntimeConfig(ctx).weeklyQuests.find(
+      (quest) => quest.id === safeQuestId,
+    ) ?? null
+  );
+}
+
+function applyTradeAllianceQuestContributionDelta({
+  ctx,
+  alliance,
+  member,
+  player,
+  quest,
+  delta,
+}: {
+  ctx: IdleWizardReducerCtx;
+  alliance: any;
+  member: any;
+  player: { username: string };
+  quest: TradeAllianceWeeklyQuestConfig;
+  delta: bigint;
+}) {
+  const contributionKey = getTradeAllianceContributionKey(
+    alliance.allianceId,
+    alliance.seasonKey,
+    quest.id,
+    member.memberIdentity,
+  );
+  const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
+    contributionKey,
+  );
+  const nextContribution = {
+    contributionKey,
+    allianceId: alliance.allianceId,
+    dayKey: alliance.seasonKey,
+    questId: quest.id,
+    contributorIdentity: member.memberIdentity,
+    username: player.username,
+    contribution: (contribution?.contribution ?? 0n) + delta,
+    updatedAt: ctx.timestamp,
+  };
+
+  if (contribution) {
+    ctx.db.tradeAllianceQuestContribution.contributionKey.update({
+      ...contribution,
+      ...nextContribution,
+    });
+    return;
+  }
+
+  ctx.db.tradeAllianceQuestContribution.insert(nextContribution);
+}
+
+function applyTradeAllianceItemFillDelta(
+  ctx: IdleWizardReducerCtx,
+  player: { username: string; playerLevel: number },
+  questId: string,
+  itemKey: string,
+  quantity: number,
+) {
+  const existingMember = getTradeAllianceMember(ctx);
+
+  if (!existingMember) {
+    throw new Error('Alliance quest requires membership.');
+  }
+
+  const safeQuestId = normalizeResearchId(questId);
+  const safeItemKey = normalizeNpcMarketItemKey(itemKey);
+  const safeQuantity = Math.floor(Number(quantity));
+  const quest = getTradeAllianceQuestConfigById(ctx, safeQuestId);
+
+  if (
+    !quest ||
+    quest.type !== TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL ||
+    quest.itemKey !== safeItemKey
+  ) {
+    throw new Error('Alliance item quest not found.');
+  }
+
+  if (
+    !Number.isInteger(safeQuantity) ||
+    safeQuantity < 1 ||
+    safeQuantity > MAX_TRADE_ALLIANCE_ITEM_FILL_QUANTITY
+  ) {
+    throw new Error('Invalid alliance quest quantity.');
+  }
+
+  const delta = BigInt(safeQuantity);
+  let member = refreshTradeAllianceMemberQuestPeriod(ctx, existingMember);
+  const alliance = refreshTradeAllianceDay(
+    ctx,
+    findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId)),
+  );
+  const progress = ctx.db.tradeAllianceQuestProgress.questKey.find(
+    getTradeAllianceQuestKey(alliance.allianceId, alliance.seasonKey, quest.id),
+  );
+
+  if (!progress) {
+    throw new Error('Alliance quest not found.');
+  }
+
+  if (progress.progress + delta > progress.target) {
+    throw new Error('Alliance quest fill exceeds target.');
+  }
+
+  ctx.db.tradeAllianceQuestProgress.questKey.update({
+    ...progress,
+    progress: progress.progress + delta,
+    updatedAt: ctx.timestamp,
+  });
+  member = ctx.db.tradeAllianceMember.memberIdentity.update({
+    ...member,
+    username: player.username,
+    playerLevel: player.playerLevel,
+    updatedAt: ctx.timestamp,
+  });
+  applyTradeAllianceQuestContributionDelta({
+    ctx,
+    alliance,
+    member,
+    player,
+    quest,
+    delta,
+  });
+}
+
 function applyTradeAllianceIncomeDelta(
   ctx: IdleWizardReducerCtx,
   player: { username: string; playerLevel: number },
@@ -3886,7 +4125,7 @@ function applyTradeAllianceIncomeDelta(
   ensureTradeAllianceWeeklyQuests(ctx, alliance);
 
   for (const quest of getTradeAllianceRuntimeConfig(ctx).weeklyQuests) {
-    if (quest.type !== 'allianceIncome') {
+    if (quest.type !== TRADE_ALLIANCE_QUEST_TYPE_INCOME) {
       continue;
     }
 
@@ -3896,34 +4135,14 @@ function applyTradeAllianceIncomeDelta(
       continue;
     }
 
-    const contributionKey = getTradeAllianceContributionKey(
-      alliance.allianceId,
-      alliance.seasonKey,
-      quest.id,
-      member.memberIdentity,
-    );
-    const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
-      contributionKey,
-    );
-    const nextContribution = {
-      contributionKey,
-      allianceId: alliance.allianceId,
-      dayKey: alliance.seasonKey,
-      questId: quest.id,
-      contributorIdentity: member.memberIdentity,
-      username: player.username,
-      contribution: (contribution?.contribution ?? 0n) + delta,
-      updatedAt: ctx.timestamp,
-    };
-
-    if (contribution) {
-      ctx.db.tradeAllianceQuestContribution.contributionKey.update({
-        ...contribution,
-        ...nextContribution,
-      });
-    } else {
-      ctx.db.tradeAllianceQuestContribution.insert(nextContribution);
-    }
+    applyTradeAllianceQuestContributionDelta({
+      ctx,
+      alliance,
+      member,
+      player,
+      quest,
+      delta,
+    });
   }
 }
 
@@ -6873,6 +7092,17 @@ export const send_trade_alliance_chat_message = spacetimedb.reducer(
       sentAt: ctx.timestamp,
     });
     pruneTradeAllianceChat(ctx, alliance.allianceId);
+  },
+);
+
+export const fill_trade_alliance_item_quest = spacetimedb.reducer(
+  { questId: t.string(), itemKey: t.string(), quantity: t.u32() },
+  (ctx, { questId, itemKey, quantity }) => {
+    assertActivePlayerSession(ctx);
+
+    const player = ensurePlayer(ctx);
+
+    applyTradeAllianceItemFillDelta(ctx, player, questId, itemKey, quantity);
   },
 );
 

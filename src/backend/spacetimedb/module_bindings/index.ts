@@ -51,6 +51,7 @@ import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
 import CollectTradeAllianceRewardReducer from "./collect_trade_alliance_reward_reducer";
 import CreateTradeAllianceReducer from "./create_trade_alliance_reducer";
 import DiscoverPotionRecipeReducer from "./discover_potion_recipe_reducer";
+import FillTradeAllianceItemQuestReducer from "./fill_trade_alliance_item_quest_reducer";
 import JoinTradeAllianceReducer from "./join_trade_alliance_reducer";
 import KickTradeAllianceMemberReducer from "./kick_trade_alliance_member_reducer";
 import LeaveTradeAllianceReducer from "./leave_trade_alliance_reducer";
@@ -449,6 +450,7 @@ const reducersSchema = __reducers(
   __reducerSchema("collect_trade_alliance_reward", CollectTradeAllianceRewardReducer),
   __reducerSchema("create_trade_alliance", CreateTradeAllianceReducer),
   __reducerSchema("discover_potion_recipe", DiscoverPotionRecipeReducer),
+  __reducerSchema("fill_trade_alliance_item_quest", FillTradeAllianceItemQuestReducer),
   __reducerSchema("join_trade_alliance", JoinTradeAllianceReducer),
   __reducerSchema("kick_trade_alliance_member", KickTradeAllianceMemberReducer),
   __reducerSchema("leave_trade_alliance", LeaveTradeAllianceReducer),

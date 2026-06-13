@@ -23,6 +23,7 @@ import ClearPlayerShopSlotReducer from "../clear_player_shop_slot_reducer";
 import CollectTradeAllianceRewardReducer from "../collect_trade_alliance_reward_reducer";
 import CreateTradeAllianceReducer from "../create_trade_alliance_reducer";
 import DiscoverPotionRecipeReducer from "../discover_potion_recipe_reducer";
+import FillTradeAllianceItemQuestReducer from "../fill_trade_alliance_item_quest_reducer";
 import JoinTradeAllianceReducer from "../join_trade_alliance_reducer";
 import KickTradeAllianceMemberReducer from "../kick_trade_alliance_member_reducer";
 import LeaveTradeAllianceReducer from "../leave_trade_alliance_reducer";
@@ -67,6 +68,7 @@ export type ClearPlayerShopSlotParams = __Infer<typeof ClearPlayerShopSlotReduce
 export type CollectTradeAllianceRewardParams = __Infer<typeof CollectTradeAllianceRewardReducer>;
 export type CreateTradeAllianceParams = __Infer<typeof CreateTradeAllianceReducer>;
 export type DiscoverPotionRecipeParams = __Infer<typeof DiscoverPotionRecipeReducer>;
+export type FillTradeAllianceItemQuestParams = __Infer<typeof FillTradeAllianceItemQuestReducer>;
 export type JoinTradeAllianceParams = __Infer<typeof JoinTradeAllianceReducer>;
 export type KickTradeAllianceMemberParams = __Infer<typeof KickTradeAllianceMemberReducer>;
 export type LeaveTradeAllianceParams = __Infer<typeof LeaveTradeAllianceReducer>;

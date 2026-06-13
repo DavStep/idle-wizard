@@ -7,6 +7,8 @@ const CHAT_QUERY = 'SELECT * FROM own_trade_alliance_chat';
 const REWARDS_QUERY = 'SELECT * FROM own_trade_alliance_reward_inbox';
 const MESSAGE_LIMIT = 40;
 const TOP_ALLIANCE_LIMIT = 10;
+const ITEM_FILL_QUEST_TYPE = 'itemFill';
+const ITEM_FILL_QUEST_PREFIX = 'itemFill:';
 
 const EMPTY_SNAPSHOT = {
   connected: false,
@@ -289,14 +291,17 @@ export class TradeAllianceSubscriptionManager {
   mapQuest(row) {
     const target = this.toNumber(row.target);
     const progress = this.toNumber(row.progress);
+    const questId = String(row.questId ?? row.quest_id ?? '');
+    const questType = String(row.questType ?? row.quest_type ?? '');
 
     return {
       questKey: String(row.questKey ?? row.quest_key ?? ''),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
       dayKey: String(row.dayKey ?? row.day_key ?? ''),
-      questId: String(row.questId ?? row.quest_id ?? ''),
+      questId,
       label: String(row.label ?? ''),
-      questType: String(row.questType ?? row.quest_type ?? ''),
+      questType,
+      itemKey: this.getQuestItemKey(questId, questType),
       target,
       progress,
       progressRatio: target > 0 ? Math.min(progress / target, 1) : 0,
@@ -304,6 +309,14 @@ export class TradeAllianceSubscriptionManager {
       crystalReward: this.toNumber(row.crystalReward ?? row.crystal_reward),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
+  }
+
+  getQuestItemKey(questId, questType) {
+    if (questType !== ITEM_FILL_QUEST_TYPE || !questId.startsWith(ITEM_FILL_QUEST_PREFIX)) {
+      return '';
+    }
+
+    return questId.slice(ITEM_FILL_QUEST_PREFIX.length);
   }
 
   mapContribution(row) {
