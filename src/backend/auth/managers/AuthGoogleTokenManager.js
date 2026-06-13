@@ -3,7 +3,7 @@ const TOKEN_EXPIRY_SKEW_MS = 60 * 1000;
 export class AuthGoogleTokenManager {
   constructor({
     clientId,
-    atob = globalThis.atob,
+    atob = (value) => globalThis.atob(value),
     now = () => Date.now(),
     expirySkewMs = TOKEN_EXPIRY_SKEW_MS,
   } = {}) {
