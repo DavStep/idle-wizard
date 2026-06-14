@@ -18,13 +18,16 @@ export class WorkshopPageFacade {
     leaderboardFacade,
     tradeAllianceFacade,
   } = {}) {
+    this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new WorkshopRoomViewManager();
     this.flyoutManager = new WorkshopFlyoutManager();
+    this.rewardEventsUnsubscribe = null;
     this.bagManager = new WorkshopBagManager({ gameplayFacade });
     this.actionBarManager = new WorkshopActionBarManager({
       gameplayFacade,
       onBagClick: () => this.bagManager.toggle(),
       onSummonNotice: (message) => this.flyoutManager.show(message),
+      rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
     this.leaderboardManager = new WorkshopLeaderboardManager({
       gameplayFacade,
@@ -49,6 +52,10 @@ export class WorkshopPageFacade {
     this.manaSphereManager.mount(uiLayer);
     this.actionBarManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
+    this.rewardEventsUnsubscribe =
+      this.gameplayFacade?.subscribeRewardEvents?.((event) =>
+        this.flyoutManager.showReward(event),
+      ) ?? null;
     this.leaderboardManager.mount(uiLayer, popupLayer);
     this.tradeAllianceManager.mount(uiLayer, popupLayer);
     this.logDialogManager.mount(uiLayer, popupLayer);
@@ -57,6 +64,8 @@ export class WorkshopPageFacade {
   }
 
   unmount() {
+    this.rewardEventsUnsubscribe?.();
+    this.rewardEventsUnsubscribe = null;
     this.bagManager.unmount();
     this.discoveriesManager.unmount();
     this.logDialogManager.unmount();

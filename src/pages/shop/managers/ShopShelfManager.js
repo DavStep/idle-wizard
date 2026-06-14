@@ -91,6 +91,7 @@ export class ShopShelfManager {
   createSlotRow(slotNumber) {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
+    row.dataset.shopSlotNumber = String(slotNumber);
     row.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
     row.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') {
@@ -215,14 +216,26 @@ export class ShopShelfManager {
       return;
     }
 
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const shelf = snapshot.shop.shelf;
+    const slot = shelf.slots.find((candidate) => candidate.slotNumber === slotNumber);
+    const clickedItemValue = Boolean(
+      event.target?.closest?.('.shop-page__slot-item-value'),
+    );
+    const keyboardRowAction = event.type === 'keydown';
+
+    if (!slot?.unlocked || (!clickedItemValue && !keyboardRowAction)) {
+      return;
+    }
+
     const result = this.gameplayFacade.selectShopShelfSlot(slotNumber);
     if (!result.ok) {
       this.render(this.gameplayFacade.getSnapshot());
       return;
     }
 
-    const snapshot = this.gameplayFacade.getSnapshot();
-    const selectedSlot = snapshot.shop.shelf.slots.find(
+    const nextSnapshot = this.gameplayFacade.getSnapshot();
+    const selectedSlot = nextSnapshot.shop.shelf.slots.find(
       (slot) => slot.slotNumber === result.slotNumber,
     );
 
@@ -230,7 +243,7 @@ export class ShopShelfManager {
       this.selectedSellTab = selectedSlot.sellKind;
     }
 
-    this.render(snapshot);
+    this.render(nextSnapshot);
     this.showSellPopup();
   }
 

@@ -1,6 +1,7 @@
 import taskBalance from '../tasks.json';
 
 const TASKS_PER_LEVEL = 5;
+const LEVEL_COMPLETION_GOLD_COST_PER_LEVEL = 20;
 
 export class TaskBalanceManager {
   constructor({ balance = taskBalance, itemsFacade }) {
@@ -60,12 +61,24 @@ export class TaskBalanceManager {
     return this.levels.find((level) => level.level === levelNumber)?.tasks ?? [];
   }
 
+  getLevelCompletionCostGold(levelNumber) {
+    return this.clampLevelNumber(levelNumber) * LEVEL_COMPLETION_GOLD_COST_PER_LEVEL;
+  }
+
   getInitialLevel() {
     return this.levels[0]?.level ?? 1;
   }
 
   getMaxLevel() {
     return this.levels.at(-1)?.level ?? this.getInitialLevel();
+  }
+
+  clampLevelNumber(levelNumber) {
+    if (!Number.isInteger(levelNumber)) {
+      return this.getInitialLevel();
+    }
+
+    return Math.max(this.getInitialLevel(), Math.min(levelNumber, this.getMaxLevel()));
   }
 
   readLevels(balance = this.balance) {

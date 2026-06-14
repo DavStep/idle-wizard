@@ -88,13 +88,21 @@ export class TaskStateEntityManager {
   }
 
   completeTask(taskId) {
-    const task = this.taskBalanceManager.getTask(taskId);
     const levelBefore = this.getCurrentLevel();
     PlayerTaskProgress.isCompleted[this.getTaskEntityId(taskId)] = 1;
 
-    if (task.level === levelBefore && this.areLevelTasksCompleted(levelBefore)) {
-      this.setCurrentLevel(Math.min(levelBefore + 1, this.taskBalanceManager.getMaxLevel()));
-    }
+    return {
+      levelBefore,
+      levelAfter: this.getCurrentLevel(),
+      advanced: false,
+      completedAllLevels: this.areAllLevelsCompleted(),
+    };
+  }
+
+  advanceCurrentLevel() {
+    const levelBefore = this.getCurrentLevel();
+    const levelAfter = Math.min(levelBefore + 1, this.taskBalanceManager.getMaxLevel());
+    this.setCurrentLevel(levelAfter);
 
     return {
       levelBefore,

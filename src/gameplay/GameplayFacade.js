@@ -5,6 +5,7 @@ import { GoldFacade } from './gold/GoldFacade.js';
 import { GardenFacade } from './garden/GardenFacade.js';
 import { ItemsFacade } from './items/ItemsFacade.js';
 import { ManaFacade } from './mana/ManaFacade.js';
+import { GameplayRewardEventManager } from './managers/GameplayRewardEventManager.js';
 import { GameplayStateObserverManager } from './managers/GameplayStateObserverManager.js';
 import { LevelUpCrystalRewardManager } from './managers/LevelUpCrystalRewardManager.js';
 import { GameplayLogFacade } from './logs/GameplayLogFacade.js';
@@ -23,6 +24,7 @@ export class GameplayFacade {
 
   constructor({ persistenceStorage, persistenceNow } = {}) {
     this.stateObserverManager = new GameplayStateObserverManager();
+    this.rewardEventManager = new GameplayRewardEventManager();
     this.itemsFacade = new ItemsFacade();
     this.manaFacade = new ManaFacade();
     this.goldFacade = new GoldFacade();
@@ -57,7 +59,7 @@ export class GameplayFacade {
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
       researchFacade: this.researchFacade,
-      onBrewComplete: (event) => this.gameplayLogFacade.logBrewCompleted(event),
+      onBrewComplete: (event) => this.handleBrewComplete(event),
     });
     this.seedSummoningFacade = new SeedSummoningFacade({
       manaFacade: this.manaFacade,
@@ -71,19 +73,20 @@ export class GameplayFacade {
       researchFacade: this.researchFacade,
       getReservedItemQuantity: (itemTypeId) =>
         this.brewingFacade.getStagedIngredientQuantity(itemTypeId),
-      onItemSold: (event) => this.gameplayLogFacade.logItemSold(event),
+      onItemSold: (event) => this.handleItemSold(event),
     });
     this.gardenFacade = new GardenFacade({
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
-      onHarvestComplete: (event) => this.gameplayLogFacade.logGardenHarvestCompleted(event),
+      onHarvestComplete: (event) => this.handleGardenHarvestComplete(event),
     });
     this.automationFacade = new AutomationFacade({
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
       gameplayLogFacade: this.gameplayLogFacade,
+      onSeedSummoned: (result) => this.handleSeedSummoned(result),
       onPotionRecipeDiscovery: (potionKey) =>
         void this.potionDiscoveryFacade?.discoverPotionRecipe(potionKey),
       researchFacade: this.researchFacade,
@@ -209,6 +212,7 @@ export class GameplayFacade {
     this.gameConfigUnsubscribe?.();
     this.gameConfigUnsubscribe = null;
     this.stateObserverManager.clear();
+    this.rewardEventManager.clear();
     this.initialized = false;
   }
 
@@ -220,7 +224,7 @@ export class GameplayFacade {
   summonSeed() {
     const result = this.seedSummoningFacade.summonSeed();
     if (result.ok) {
-      this.gameplayLogFacade.logSeedSummoned(result);
+      this.handleSeedSummoned(result);
     }
     this.publishAndSaveSnapshot();
     return result;
@@ -267,6 +271,39 @@ export class GameplayFacade {
 
   completeTask(taskId) {
     const result = this.tasksFacade.completeTask(taskId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  completeTaskLevel() {
+    const completion = this.tasksFacade.getCurrentLevelCompletionSnapshot();
+
+    if (!completion.canComplete) {
+      this.publishAndSaveSnapshot();
+      return {
+        ok: false,
+        reason: completion.completedAllLevels
+          ? 'all_levels_completed'
+          : completion.atMaxLevel
+            ? 'max_level'
+            : 'tasks_incomplete',
+        ...completion,
+      };
+    }
+
+    if (!this.goldFacade.canSpend(completion.costGold)) {
+      this.publishAndSaveSnapshot();
+      return {
+        ok: false,
+        reason: 'not_enough_gold',
+        ...completion,
+        currentGold: this.goldFacade.getSnapshot().current,
+      };
+    }
+
+    this.goldFacade.spend(completion.costGold);
+    const result = this.tasksFacade.completeCurrentLevel();
+
     if (result.ok && result.advanced) {
       this.levelUpCrystalRewardManager.grantForLevelRange(
         result.levelBefore ?? result.level,
@@ -275,6 +312,7 @@ export class GameplayFacade {
       this.syncPlayerLevelManaEffects();
       void this.worldChatFacade?.announceLevelUp?.(result.currentLevel);
     }
+
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -296,6 +334,46 @@ export class GameplayFacade {
       label,
     });
     void this.worldChatFacade?.announceResearch(label);
+  }
+
+  handleSeedSummoned(result) {
+    this.gameplayLogFacade.logSeedSummoned(result);
+    this.rewardEventManager.publish({
+      type: 'seed_summoned',
+      seed: result.seed,
+      seedCounts: result.seedCounts,
+      quantity: result.quantity,
+    });
+  }
+
+  handleBrewComplete(event) {
+    this.gameplayLogFacade.logBrewCompleted(event);
+    this.rewardEventManager.publish({
+      type: 'potion_collected',
+      potion: event.potion,
+      quantity: event.quantity,
+    });
+  }
+
+  handleGardenHarvestComplete(event) {
+    this.gameplayLogFacade.logGardenHarvestCompleted(event);
+    this.rewardEventManager.publish({
+      type: 'herb_harvested',
+      herb: event.herb,
+      quantity: event.quantity,
+      tileNumber: event.tileNumber,
+    });
+  }
+
+  handleItemSold(event) {
+    this.gameplayLogFacade.logItemSold(event);
+    this.rewardEventManager.publish({
+      type: 'item_sold',
+      item: event.item,
+      gold: event.gold,
+      quantity: event.quantity ?? 1,
+      slotNumber: event.slotNumber,
+    });
   }
 
   addBrewingIngredient(itemTypeId) {
@@ -591,6 +669,10 @@ export class GameplayFacade {
 
   subscribe(listener) {
     return this.stateObserverManager.subscribe(listener);
+  }
+
+  subscribeRewardEvents(listener) {
+    return this.rewardEventManager.subscribe(listener);
   }
 
   getSnapshot() {

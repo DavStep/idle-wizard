@@ -144,6 +144,7 @@ export class GardenPlotManager {
     const button = document.createElement('button');
     button.className = 'garden-page__plot-row';
     button.type = 'button';
+    button.dataset.gardenTileNumber = String(tileNumber);
     button.dataset.tutorialId = `garden:plot:${tileNumber}`;
     button.addEventListener('click', (event) => this.onTileClick(tileNumber, event));
 
@@ -154,6 +155,7 @@ export class GardenPlotManager {
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';
     label.dataset.tutorialId = `garden:plot:${tileNumber}:label`;
+    label.addEventListener('click', (event) => this.onTileLabelClick(tileNumber, event));
 
     const state = document.createElement('span');
     state.className = 'garden-page__plot-state';
@@ -293,6 +295,10 @@ export class GardenPlotManager {
     refs.button.classList.toggle(
       'is-plantable',
       tile.unlocked && tile.phase === 'empty' && hasSelectedSeed && selectedSeedQuantity > 0,
+    );
+    refs.button.classList.toggle(
+      'is-selected-without-seeds',
+      tile.unlocked && tile.phase === 'empty' && hasSelectedSeed && selectedSeedQuantity <= 0,
     );
     refs.button.classList.toggle('is-ready', tile.phase === 'ready');
     refs.button.classList.toggle('is-processing', Boolean(tile.process));
@@ -508,6 +514,9 @@ export class GardenPlotManager {
     const garden = snapshot.garden;
     const tile = garden.plot.tiles.find((candidate) => candidate.tileNumber === tileNumber);
     const clickedLabel = Boolean(event?.target?.closest?.('.garden-page__plot-label'));
+    const clickedAction = Boolean(event?.target?.closest?.('.garden-page__plot-action'));
+    const keyboardRowAction =
+      event?.target === event?.currentTarget && event?.detail === 0;
 
     if (!tile) {
       return;
@@ -528,13 +537,18 @@ export class GardenPlotManager {
         return;
       }
 
+      if (!clickedAction && !keyboardRowAction) {
+        return;
+      }
+
       if (tile.selectedSeedItemTypeId) {
         const result = this.gameplayFacade.plantSelectedGardenSeed(tileNumber);
 
         if (result.ok) {
           this.render(this.gameplayFacade.getSnapshot());
-          return;
         }
+
+        return;
       }
 
       this.showSeedPopup(tileNumber);
@@ -550,6 +564,20 @@ export class GardenPlotManager {
       this.gameplayFacade.startGardenHarvest(tileNumber);
       this.render(this.gameplayFacade.getSnapshot());
     }
+  }
+
+  onTileLabelClick(tileNumber, event) {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+
+    if (!tile?.unlocked || tile.phase !== 'empty') {
+      return;
+    }
+
+    event.stopPropagation();
+    this.showSeedPopup(tileNumber);
   }
 
   onConfirmCancel(tileNumber) {

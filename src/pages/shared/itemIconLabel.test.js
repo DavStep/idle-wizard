@@ -44,15 +44,24 @@ describe('item icon labels', () => {
     expect(icon?.getAttribute('src')).toContain('seed-pack-regular');
   });
 
-  it('adds potion and seed icons inside mixed text', () => {
+  it('adds potion, herb, seed, and gold icons inside mixed text', () => {
     const element = document.createElement('span');
 
-    appendTextWithItemIcons(element, 'brewed mana tonic and found sage seed');
+    appendTextWithItemIcons(
+      element,
+      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 gold',
+    );
 
-    expect(element.textContent).toBe('brewed mana tonic and found sage seed');
+    expect(element.textContent).toBe(
+      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 gold',
+    );
     expect(element.querySelector('.style-potion-label')).not.toBeNull();
+    expect(element.querySelector('.style-herb-label')).not.toBeNull();
     expect(element.querySelector('.style-seed-label')).not.toBeNull();
+    expect(element.querySelector('.style-resource-label--gold')).not.toBeNull();
     expect(element.querySelector('.style-seed-label__icon')).not.toBeNull();
+    expect(element.querySelector('.style-herb-label')?.textContent).toBe('sage');
+    expect(element.querySelector('.style-seed-label')?.textContent).toBe('star anise seed');
   });
 
   it('does not mark plural potion category labels as potion names', () => {

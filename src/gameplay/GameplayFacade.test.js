@@ -69,6 +69,9 @@ function finishCurrentTaskLevel(gameplayFacade) {
     gameplayFacade.fillTask(task.taskId);
     gameplayFacade.completeTask(task.taskId);
   }
+
+  gameplayFacade.goldFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costGold);
+  gameplayFacade.completeTaskLevel();
 }
 
 describe('GameplayFacade', () => {
@@ -168,7 +171,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.shop.playerShelf.unlockedSlots).toBe(1);
   });
 
-  it('fills tasks from inventory and advances player level', () => {
+  it('fills tasks from inventory and advances player level after gold payment', () => {
     const { gameplayFacade } = createGameplay();
     const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
 
@@ -220,8 +223,28 @@ describe('GameplayFacade', () => {
       gameplayFacade.completeTask(remainingTask.taskId);
     }
 
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
+    expect(gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
+      level: 1,
+      costGold: 20,
+      canComplete: true,
+    });
+    expect(gameplayFacade.completeTaskLevel()).toMatchObject({
+      ok: false,
+      reason: 'not_enough_gold',
+      costGold: 20,
+    });
+
+    gameplayFacade.goldFacade.add(20);
+    expect(gameplayFacade.completeTaskLevel()).toMatchObject({
+      ok: true,
+      currentLevel: 2,
+      advanced: true,
+      costGold: 20,
+    });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(5);
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
   });
 
   it('persists task progress and player level', () => {
@@ -516,6 +539,10 @@ describe('GameplayFacade', () => {
 
   it('logs completed gameplay events', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
+    const rewardEvents = [];
+    const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
+      rewardEvents.push(event);
+    });
 
     unlockSageSeed(gameplayFacade);
     ecsFacade.update({ deltaSeconds: 10 });
@@ -549,6 +576,33 @@ describe('GameplayFacade', () => {
       'planted sage seed',
       'harvested sage',
     ]);
+    expect(rewardEvents.map((event) => event.type)).toEqual([
+      'seed_summoned',
+      'item_sold',
+      'potion_collected',
+      'herb_harvested',
+    ]);
+    expect(rewardEvents[0]).toMatchObject({
+      type: 'seed_summoned',
+      seed: { label: 'sage seed' },
+      quantity: 1,
+    });
+    expect(rewardEvents[1]).toMatchObject({
+      type: 'item_sold',
+      item: { label: 'sage seed' },
+      gold: 1,
+    });
+    expect(rewardEvents[2]).toMatchObject({
+      type: 'potion_collected',
+      potion: { label: 'wasted potion' },
+      quantity: 1,
+    });
+    expect(rewardEvents[3]).toMatchObject({
+      type: 'herb_harvested',
+      herb: { label: 'sage' },
+      quantity: 1,
+    });
+    unsubscribeRewardEvents();
   });
 
   it('ignores corrupt gameplay saves', () => {
@@ -790,7 +844,7 @@ describe('GameplayFacade', () => {
           configKey: 'visualSettings',
           configJson: JSON.stringify({
             costsCrystal: {
-              theme: { white: 0, black: 2, midnight: 0 },
+              theme: { white: 0, black: 2, midnight: 0, witchcraft: 0 },
               font: { lexend: 0, 'comic-sans-mono': 0 },
               color: { monochrome: 0, resources: 0 },
               icons: { none: 0, icons: 0 },
@@ -802,7 +856,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().visualSettings.costsCrystal.theme.black).toBe(2);
     expect(gameplayFacade.getSnapshot().visualSettings.researched).toMatchObject({
-      theme: { white: true, black: false, midnight: false },
+      theme: { white: true, black: false, midnight: false, witchcraft: false },
       font: {
         lexend: true,
         'comic-sans-mono': false,

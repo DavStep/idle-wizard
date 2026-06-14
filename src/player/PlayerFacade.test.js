@@ -101,6 +101,9 @@ describe('PlayerFacade', () => {
     playerFacade.setTheme('midnight');
     expect(playerFacade.getSnapshot().theme).toBe('midnight');
 
+    playerFacade.setTheme('witchcraft');
+    expect(playerFacade.getSnapshot().theme).toBe('witchcraft');
+
     playerFacade.setTheme('unknown');
     expect(playerFacade.getSnapshot().theme).toBe('white');
   });
@@ -179,5 +182,8 @@ describe('PlayerFacade', () => {
 
     playerFacade.setTheme('vs-code-midnight');
     expect(playerFacade.getSnapshot().theme).toBe('midnight');
+
+    playerFacade.setTheme('idle witch craft');
+    expect(playerFacade.getSnapshot().theme).toBe('witchcraft');
   });
 });

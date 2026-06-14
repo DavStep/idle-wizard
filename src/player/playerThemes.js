@@ -13,6 +13,10 @@ export const PLAYER_THEME_OPTIONS = Object.freeze([
     key: 'midnight',
     label: 'midnight',
   }),
+  Object.freeze({
+    key: 'witchcraft',
+    label: 'witchcraft',
+  }),
 ]);
 
 const THEME_KEYS = new Set(PLAYER_THEME_OPTIONS.map((theme) => theme.key));
@@ -23,6 +27,10 @@ const THEME_ALIASES = new Map([
   ['night-black', 'black'],
   ['vs-code-midnight', 'midnight'],
   ['vscode-midnight', 'midnight'],
+  ['idle-witch-craft', 'witchcraft'],
+  ['idle witch craft', 'witchcraft'],
+  ['idle-whitch-craft', 'witchcraft'],
+  ['idle whitch craft', 'witchcraft'],
 ]);
 
 export function normalizePlayerTheme(theme) {

@@ -92,7 +92,6 @@ export class ShopPlayerRequestManager {
     this.refs.popup?.remove();
     this.root = null;
     this.refs = {};
-    this.requests = new Map();
     this.selectedRequestSlotNumber = 1;
     this.selectedRequestItemTypeId = null;
     this.selectedRequestTab = 'seed';

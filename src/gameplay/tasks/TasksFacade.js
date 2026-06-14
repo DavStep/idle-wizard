@@ -1,12 +1,13 @@
 import { TaskBalanceManager } from './managers/TaskBalanceManager.js';
 import { TaskFillManager } from './managers/TaskFillManager.js';
+import { TaskLevelCompletionManager } from './managers/TaskLevelCompletionManager.js';
 import { TaskSnapshotManager } from './managers/TaskSnapshotManager.js';
 import { TaskStateEntityManager } from './managers/TaskStateEntityManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    'Tasks give the wizard level goals: drop requested items into a task, finish all five tasks, then the player level rises.';
+    'Tasks give the wizard level goals: drop requested items into tasks, finish all five, then pay gold to move up.';
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });
@@ -18,9 +19,14 @@ export class TasksFacade {
       taskBalanceManager: this.taskBalanceManager,
       taskStateEntityManager: this.taskStateEntityManager,
     });
+    this.taskLevelCompletionManager = new TaskLevelCompletionManager({
+      taskBalanceManager: this.taskBalanceManager,
+      taskStateEntityManager: this.taskStateEntityManager,
+    });
     this.taskSnapshotManager = new TaskSnapshotManager({
       itemsFacade,
       taskBalanceManager: this.taskBalanceManager,
+      taskLevelCompletionManager: this.taskLevelCompletionManager,
       taskStateEntityManager: this.taskStateEntityManager,
     });
   }
@@ -50,6 +56,14 @@ export class TasksFacade {
 
   completeTask(taskId) {
     return this.taskFillManager.completeTask(taskId);
+  }
+
+  getCurrentLevelCompletionSnapshot() {
+    return this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot();
+  }
+
+  completeCurrentLevel() {
+    return this.taskLevelCompletionManager.completeCurrentLevel();
   }
 
   getSnapshot() {

@@ -3,6 +3,7 @@ import { BrewingPotionInventoryManager } from './managers/BrewingPotionInventory
 import { BrewingRecipeBookManager } from './managers/BrewingRecipeBookManager.js';
 import { BrewingRecipeGuideManager } from './managers/BrewingRecipeGuideManager.js';
 import { BrewingRoomViewManager } from './managers/BrewingRoomViewManager.js';
+import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
 
 export class BrewingPageFacade {
   static explain =
@@ -11,11 +12,15 @@ export class BrewingPageFacade {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new BrewingRoomViewManager();
+    this.flyoutManager = new RewardFlyoutManager();
+    this.rewardEventsUnsubscribe = null;
     this.recipeGuideManager = new BrewingRecipeGuideManager({ gameplayFacade });
     this.cauldronManager = new BrewingCauldronManager({
       gameplayFacade,
       getSelectedRecipeKey: () => this.recipeGuideManager.getSelectedRecipeKey(),
       onOpenSelectRecipe: () => this.recipeBookManager.show(),
+      onRewardNotice: (event) => this.flyoutManager.showReward(event),
+      rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
     this.recipeBookManager = new BrewingRecipeBookManager({
       gameplayFacade,
@@ -30,14 +35,22 @@ export class BrewingPageFacade {
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.cauldronManager.mount(uiLayer);
+    this.flyoutManager.mount(uiLayer);
+    this.rewardEventsUnsubscribe =
+      this.gameplayFacade?.subscribeRewardEvents?.((event) =>
+        this.flyoutManager.showReward(event),
+      ) ?? null;
     this.recipeBookManager.mount(uiLayer, popupLayer);
     this.potionInventoryManager.mount(uiLayer, popupLayer);
   }
 
   unmount() {
+    this.rewardEventsUnsubscribe?.();
+    this.rewardEventsUnsubscribe = null;
     this.recipeGuideManager.unmount();
     this.potionInventoryManager.unmount();
     this.recipeBookManager.unmount();
+    this.flyoutManager.unmount();
     this.cauldronManager.unmount();
     this.roomViewManager.unmount();
   }

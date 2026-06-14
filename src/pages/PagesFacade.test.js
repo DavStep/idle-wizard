@@ -24,13 +24,13 @@ function createGameplayFacadeFake() {
     },
     visualSettings: {
       costsCrystal: {
-        theme: { white: 0, black: 0, midnight: 0 },
+        theme: { white: 0, black: 0, midnight: 0, witchcraft: 0 },
         font: { lexend: 0, 'comic-sans-mono': 0 },
         color: { monochrome: 0, resources: 0 },
         icons: { none: 0, icons: 0 },
       },
       researched: {
-        theme: { white: true, black: false, midnight: false },
+        theme: { white: true, black: false, midnight: false, witchcraft: false },
         font: {
           lexend: true,
           'comic-sans-mono': false,
@@ -62,6 +62,14 @@ function createGameplayFacadeFake() {
         level: 1,
         completedTasks: 1,
         totalTasks: 2,
+        completion: {
+          level: 1,
+          costGold: 20,
+          allTasksCompleted: false,
+          atMaxLevel: false,
+          completedAllLevels: false,
+          canComplete: false,
+        },
         tasks: [
           {
             taskId: 'level1-sage-seeds',
@@ -1134,6 +1142,41 @@ function createGameplayFacadeFake() {
         tileNumber,
       };
     },
+    completeTaskLevel: () => {
+      const completion = snapshot.tasks.level.completion;
+
+      if (!completion?.canComplete) {
+        return {
+          ok: false,
+          reason: 'tasks_incomplete',
+        };
+      }
+
+      if (snapshot.gold.current < completion.costGold) {
+        return {
+          ok: false,
+          reason: 'not_enough_gold',
+          costGold: completion.costGold,
+        };
+      }
+
+      snapshot.gold.current -= completion.costGold;
+      snapshot.tasks.currentLevel += 1;
+      snapshot.tasks.level.level = snapshot.tasks.currentLevel;
+      snapshot.tasks.level.completion = {
+        ...completion,
+        level: snapshot.tasks.currentLevel,
+        allTasksCompleted: false,
+        canComplete: false,
+      };
+      publish();
+
+      return {
+        ok: true,
+        currentLevel: snapshot.tasks.currentLevel,
+        costGold: completion.costGold,
+      };
+    },
     plantGardenSeed: (tileNumber, seedTypeId) => {
       const tile = snapshot.garden.plot.tiles[tileNumber - 1];
       const seed = snapshot.garden.seeds.find((candidate) => candidate.itemTypeId === seedTypeId);
@@ -2150,6 +2193,17 @@ function clickRoomTab(stage, pageId) {
   button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 }
 
+function clickNpcMarketStandLabel(stage, index = 0) {
+  const label = [
+    ...stage.querySelectorAll(
+      '.shop-page__shelf .shop-page__slot-row--interactive .shop-page__slot-item-value',
+    ),
+  ][index];
+  expect(label).not.toBeNull();
+  label.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  return label;
+}
+
 function createPlayerFacadeFake(
   initialUsername = 'wizard',
   initialTheme = 'white',
@@ -2206,8 +2260,10 @@ function createPlayerFacadeFake(
           'dark-gray',
           'night-black',
           'midnight',
+          'witchcraft',
           'vs-code-midnight',
           'vscode-midnight',
+          'idle witch craft',
         ].includes(theme)
           ? theme
               .replace('mild-white', 'white')
@@ -2216,6 +2272,7 @@ function createPlayerFacadeFake(
               .replace('night-black', 'black')
               .replace('vs-code-midnight', 'midnight')
               .replace('vscode-midnight', 'midnight')
+              .replace('idle witch craft', 'witchcraft')
           : 'white',
       };
 
@@ -3149,6 +3206,7 @@ describe('PagesFacade', () => {
     expect(list.hidden).toBe(false);
     expect(list.textContent).toContain('sage seed20/20done');
     expect(list.textContent).not.toContain('sage3/10fill');
+    expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
 
     toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -3183,6 +3241,55 @@ describe('PagesFacade', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(list?.hidden).toBe(false);
     expect(tasks?.classList.contains('is-expanded')).toBe(true);
+  });
+
+  it('shows Workshop level completion at the bottom of the expanded task list', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.gold.current = 20;
+    snapshot.tasks.level.completedTasks = 2;
+    snapshot.tasks.level.completion = {
+      level: 1,
+      costGold: 20,
+      allTasksCompleted: true,
+      atMaxLevel: false,
+      completedAllLevels: false,
+      canComplete: true,
+    };
+    snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) => ({
+      ...task,
+      progressQuantity: task.requiredQuantity,
+      remainingQuantity: 0,
+      progress: 1,
+      maxed: true,
+      completed: true,
+      canFill: false,
+      canComplete: false,
+    }));
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+    expect(toggle?.dataset.notification).toBe('true');
+
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const completion = stage.querySelector('.workshop-page__level-complete');
+    const button = stage.querySelector('.workshop-page__level-complete-button');
+
+    expect(completion?.hidden).toBe(false);
+    expect(completion?.textContent).toBe('level up20 goldcomplete');
+    expect(button?.disabled).toBe(false);
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
   });
 
   it('shows seed summon feedback as a flyout', () => {
@@ -3312,7 +3419,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__theme-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['white', 'black', 'midnight']);
+    ).toEqual(['white', 'black', 'midnight', 'witchcraft']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
         (button) => button.textContent,
@@ -3334,6 +3441,7 @@ describe('PagesFacade', () => {
       ),
     ).toEqual([
       'researched',
+      'free',
       'free',
       'free',
       'researched',
@@ -3584,10 +3692,16 @@ describe('PagesFacade', () => {
     const midnightButton = stage.querySelector(
       '.room-top-panel__theme-button[data-theme="midnight"]',
     );
+    const witchcraftButton = stage.querySelector(
+      '.room-top-panel__theme-button[data-theme="witchcraft"]',
+    );
     const blackResearchButton = blackButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
     const midnightResearchButton = midnightButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
+    const witchcraftResearchButton = witchcraftButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
 
@@ -3597,8 +3711,10 @@ describe('PagesFacade', () => {
     expect(darkGrayButton).toBeNull();
     expect(blackButton.disabled).toBe(false);
     expect(midnightButton.disabled).toBe(false);
+    expect(witchcraftButton.disabled).toBe(false);
     expect(blackResearchButton?.textContent).toBe('free');
     expect(midnightResearchButton?.textContent).toBe('free');
+    expect(witchcraftResearchButton?.textContent).toBe('free');
 
     blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -3650,6 +3766,13 @@ describe('PagesFacade', () => {
     expect(midnightSelectPointerDown.defaultPrevented).toBe(true);
     expect(midnightButton.getAttribute('aria-checked')).toBe('true');
     expect(blackButton.getAttribute('aria-checked')).toBe('false');
+
+    witchcraftResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    witchcraftButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().theme).toBe('witchcraft');
+    expect(witchcraftButton.getAttribute('aria-checked')).toBe('true');
+    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes resource color mode from settings', () => {
@@ -6207,7 +6330,9 @@ describe('PagesFacade', () => {
     expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
     expect(rows[0].classList.contains('is-plantable')).toBe(false);
     expect(rows[0].disabled).toBe(false);
-    rows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    rows[0]
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const seedPopup = stage.querySelector('.garden-page__seed-popup');
     const seedButtons = [...seedPopup.querySelectorAll('.garden-page__seed-button')];
@@ -6321,14 +6446,15 @@ describe('PagesFacade', () => {
     expect(pagesFacade.getCurrentPageId()).toBe('garden');
 
     const plotRow = stage.querySelector('.garden-page__plot-row');
+    const plotAction = plotRow.querySelector('.garden-page__plot-action');
     const seedPopup = stage.querySelector('.garden-page__seed-popup');
 
-    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    plotAction.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
 
     expect(seedPopup.hidden).toBe(true);
 
-    dispatchTouchTap(plotRow);
-    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    dispatchTouchTap(plotAction);
+    plotAction.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
 
     expect(seedPopup.hidden).toBe(false);
 
@@ -7008,9 +7134,7 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
 
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(false);
     expect(stage.querySelector('.shop-page__shelf-message')).toBeNull();
@@ -7068,9 +7192,7 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
 
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     [...stage.querySelectorAll('.shop-page__sell-tab-button')]
       .find((button) => button.textContent === 'potions')
@@ -7121,9 +7243,7 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
 
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.textContent === 'sage seed (0) 1 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -7132,9 +7252,7 @@ describe('PagesFacade', () => {
       '1.sage seed (0) 1 gold',
     );
 
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     const visibleRows = [...stage.querySelectorAll('.shop-page__sell-item-row')].filter(
       (row) => !row.hidden,
@@ -7160,9 +7278,7 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
       (button) => button.textContent === 'sage seed (0) 1 gold',
@@ -7182,9 +7298,7 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('need 4');
 
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
       'sage seed (0) 7 gold',
@@ -7200,9 +7314,7 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     gameplayFacade.setShopSellItems([
       {
@@ -7240,9 +7352,7 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.textContent === 'sage seed (0) 1 gold')
@@ -7265,9 +7375,7 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
-    stage
-      .querySelector('.shop-page__slot-row--interactive')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
 
     const tabButtons = [...stage.querySelectorAll('.shop-page__sell-tab-button')];
     const herbsButton = tabButtons.find((button) => button.textContent === 'herbs');
@@ -7298,14 +7406,12 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'shop');
 
     const popup = stage.querySelector('.shop-page__sell-popup');
-    const slot = stage.querySelector('.shop-page__slot-row--interactive');
-
-    slot.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     expect(popup.hidden).toBe(true);
 
-    slot.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    clickNpcMarketStandLabel(stage);
     popup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(true);

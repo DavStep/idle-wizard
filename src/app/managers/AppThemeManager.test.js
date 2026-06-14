@@ -86,6 +86,10 @@ describe('AppThemeManager', () => {
 
     expect(document.documentElement.dataset.styleFont).toBe('lexend');
 
+    playerFacade.setTheme('witchcraft');
+
+    expect(document.documentElement.dataset.styleTheme).toBe('witchcraft');
+
     playerFacade.setTheme('night-black');
     playerFacade.setFont('unknown');
     playerFacade.setColorMode('colored');

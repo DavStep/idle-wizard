@@ -1,9 +1,16 @@
 import { automationResearchIds } from '../automationResearchIds.js';
 
 export class SeedSummoningAutomationManager {
-  constructor({ brewingFacade, gameplayLogFacade, researchFacade, seedSummoningFacade } = {}) {
+  constructor({
+    brewingFacade,
+    gameplayLogFacade,
+    onSeedSummoned,
+    researchFacade,
+    seedSummoningFacade,
+  } = {}) {
     this.brewingFacade = brewingFacade;
     this.gameplayLogFacade = gameplayLogFacade;
+    this.onSeedSummoned = onSeedSummoned;
     this.researchFacade = researchFacade;
     this.seedSummoningFacade = seedSummoningFacade;
   }
@@ -22,7 +29,11 @@ export class SeedSummoningAutomationManager {
     const result = this.seedSummoningFacade.summonSeed();
 
     if (result.ok) {
-      this.gameplayLogFacade?.logSeedSummoned(result);
+      if (this.onSeedSummoned) {
+        this.onSeedSummoned(result);
+      } else {
+        this.gameplayLogFacade?.logSeedSummoned(result);
+      }
     }
   }
 

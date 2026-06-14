@@ -195,6 +195,45 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('keeps local player market requests across page remounts', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const manager = new ShopPlayerRequestManager({
+      gameplayFacade: createRequestGameplayFacadeFake(),
+    });
+
+    manager.mount(stage, popupLayer);
+    stage
+      .querySelector('.shop-page__player-request-row')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.shop-page__request-popup');
+    [...popup.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent === 'mint seed (4)')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const [quantityInput, goldInput] =
+      popup.querySelectorAll('.shop-page__request-input');
+    quantityInput.value = '3';
+    goldInput.value = '2.5';
+    popup
+      .querySelector('.shop-page__request-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      '1.mint seed (3) 2.5 gold',
+    );
+
+    manager.unmount();
+    manager.mount(stage, popupLayer);
+
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      '1.mint seed (3) 2.5 gold',
+    );
+
+    manager.unmount();
+  });
+
   it('deselects a player market request item when selected again', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -337,6 +376,83 @@ describe('ShopShelfManager', () => {
       ['5.', 'empty stand', 'locked'],
     ]);
     expect(rows[0].querySelector('.shop-page__slot-empty-rule')).not.toBeNull();
+
+    manager.unmount();
+  });
+
+  it('opens NPC market sell picker only from the stand item text', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    let selectCount = 0;
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 1,
+              sellGold: 8,
+              sellNeed: 12,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'sage seed',
+              sellQuantity: 1,
+              sellGold: 8,
+              sellNeed: 12,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      selectShopShelfSlot(slotNumber) {
+        selectCount += 1;
+        gameplaySnapshot.shop.shelf.selectedSlotNumber = slotNumber;
+        return { ok: true, slotNumber };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const row = stage.querySelector('.shop-page__slot-row');
+    const itemValue = row.querySelector('.shop-page__slot-item-value');
+    const priceValue = row.querySelector('.shop-page__slot-price-value');
+    const popup = popupLayer.querySelector('.shop-page__sell-popup');
+
+    row.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+    priceValue.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(true);
+    expect(selectCount).toBe(0);
+
+    itemValue.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
+    expect(selectCount).toBe(1);
 
     manager.unmount();
   });

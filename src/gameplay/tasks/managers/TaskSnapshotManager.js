@@ -1,7 +1,13 @@
 export class TaskSnapshotManager {
-  constructor({ itemsFacade, taskBalanceManager, taskStateEntityManager }) {
+  constructor({
+    itemsFacade,
+    taskBalanceManager,
+    taskLevelCompletionManager,
+    taskStateEntityManager,
+  }) {
     this.itemsFacade = itemsFacade;
     this.taskBalanceManager = taskBalanceManager;
+    this.taskLevelCompletionManager = taskLevelCompletionManager;
     this.taskStateEntityManager = taskStateEntityManager;
   }
 
@@ -11,6 +17,7 @@ export class TaskSnapshotManager {
     const tasks = this.taskBalanceManager
       .getLevelTasks(currentLevel)
       .map((task) => this.getTaskSnapshot(task));
+    const completedTasks = tasks.filter((task) => task.completed).length;
 
     return {
       currentLevel,
@@ -18,8 +25,9 @@ export class TaskSnapshotManager {
       completedAllLevels: this.taskStateEntityManager.areAllLevelsCompleted(),
       level: {
         level: currentLevel,
-        completedTasks: tasks.filter((task) => task.completed).length,
+        completedTasks,
         totalTasks: tasks.length,
+        completion: this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot(),
         tasks,
       },
     };

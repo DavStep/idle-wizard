@@ -4,10 +4,16 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import summonCircleUrl from '../../../assets/ui/summon-circle.png';
 
 export class WorkshopActionBarManager {
-  constructor({ gameplayFacade, onBagClick, onSummonNotice } = {}) {
+  constructor({
+    gameplayFacade,
+    onBagClick,
+    onSummonNotice,
+    rewardEventsAvailable = false,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onBagClick = onBagClick;
     this.onSummonNotice = onSummonNotice;
+    this.rewardEventsAvailable = rewardEventsAvailable;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -88,11 +94,16 @@ export class WorkshopActionBarManager {
 
   onSummonSeed() {
     const result = this.gameplayFacade.summonSeed();
-    const message = result.ok
-      ? this.getSuccessMessage(result)
-      : this.getFailureMessage(result.reason);
     this.render(this.gameplayFacade.getSnapshot());
-    this.onSummonNotice?.(message);
+
+    if (result.ok) {
+      if (!this.rewardEventsAvailable) {
+        this.onSummonNotice?.(this.getSuccessMessage(result));
+      }
+      return;
+    }
+
+    this.onSummonNotice?.(this.getFailureMessage(result.reason));
   }
 
   getSuccessMessage(result) {
@@ -104,7 +115,14 @@ export class WorkshopActionBarManager {
       return `${result.seedCounts[0].seed.label} x${result.quantity} found`;
     }
 
-    return `${result.quantity} seeds found`;
+    return `${result.seedCounts
+      .map((seedCount) => this.formatSeedCount(seedCount))
+      .join(', ')} found`;
+  }
+
+  formatSeedCount({ seed, quantity = 1 } = {}) {
+    const suffix = quantity > 1 ? ` x${quantity}` : '';
+    return `${seed?.label ?? 'seed'}${suffix}`;
   }
 
   getFailureMessage(reason) {

@@ -13,10 +13,18 @@ const TOUCH_DRAG_DISTANCE = 8;
 const NATIVE_HERB_DRAG_QUERY = '(hover: hover) and (pointer: fine)';
 
 export class BrewingCauldronManager {
-  constructor({ gameplayFacade, getSelectedRecipeKey, onOpenSelectRecipe } = {}) {
+  constructor({
+    gameplayFacade,
+    getSelectedRecipeKey,
+    onOpenSelectRecipe,
+    onRewardNotice,
+    rewardEventsAvailable = false,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSelectedRecipeKey = getSelectedRecipeKey;
     this.onOpenSelectRecipe = onOpenSelectRecipe;
+    this.onRewardNotice = onRewardNotice;
+    this.rewardEventsAvailable = rewardEventsAvailable;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -1002,6 +1010,13 @@ export class BrewingCauldronManager {
 
     if (result.ok) {
       this.message = `collected ${result.potion.label}`;
+      if (!this.rewardEventsAvailable) {
+        this.onRewardNotice?.({
+          type: 'potion_collected',
+          potion: result.potion,
+          quantity: result.quantity,
+        });
+      }
     } else {
       this.message = this.formatResultMessage(result);
     }

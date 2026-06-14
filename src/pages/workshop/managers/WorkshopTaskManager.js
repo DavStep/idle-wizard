@@ -1,5 +1,6 @@
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
 export class WorkshopTaskManager {
   constructor({ gameplayFacade } = {}) {
@@ -9,6 +10,8 @@ export class WorkshopTaskManager {
     this.refs = {};
     this.rowsByTaskId = new Map();
     this.currentTasksById = new Map();
+    this.currentLevelCompletion = null;
+    this.currentGold = 0;
     this.expanded = false;
   }
 
@@ -51,11 +54,14 @@ export class WorkshopTaskManager {
     this.refs.toggleButton.setAttribute('aria-controls', 'workshop-task-list');
     this.refs.toggleButton.addEventListener('click', () => this.toggleExpanded());
 
+    this.refs.levelComplete = this.createLevelCompleteRow();
+
     this.root.append(
       this.refs.title,
       this.refs.count,
       this.refs.summary,
       this.refs.list,
+      this.refs.levelComplete.root,
       this.refs.toggleButton,
     );
     parent.append(this.root);
@@ -75,6 +81,8 @@ export class WorkshopTaskManager {
     this.refs = {};
     this.rowsByTaskId.clear();
     this.currentTasksById.clear();
+    this.currentLevelCompletion = null;
+    this.currentGold = 0;
   }
 
   toggleExpanded() {
@@ -92,6 +100,8 @@ export class WorkshopTaskManager {
       this.refs.list.hidden = !expanded;
     }
 
+    this.renderLevelComplete();
+
     this.updateToggleNotification();
   }
 
@@ -106,6 +116,8 @@ export class WorkshopTaskManager {
     const displayTasks = this.getDisplayTasks(tasks);
     const [summaryTask, ...listTasks] = displayTasks;
     this.currentTasksById = new Map(tasks.map((task) => [task.taskId, task]));
+    this.currentLevelCompletion = taskSnapshot.level.completion ?? null;
+    this.currentGold = Number(snapshot?.gold?.current) || 0;
     this.ensureRows(listTasks);
 
     this.renderSummaryTask(summaryTask, taskSnapshot.completedAllLevels);
@@ -126,6 +138,8 @@ export class WorkshopTaskManager {
     for (const task of listTasks) {
       this.renderTask(task);
     }
+
+    this.renderLevelComplete();
   }
 
   getDisplayTasks(tasks) {
@@ -139,10 +153,11 @@ export class WorkshopTaskManager {
     setNotificationBadge(
       this.refs.toggleButton,
       !this.expanded &&
-        [...this.rowsByTaskId.keys()].some((taskId) => {
-          const task = this.currentTasksById.get(taskId);
-          return task?.canFill || task?.canComplete;
-        }),
+        (this.canAffordLevelCompletion() ||
+          [...this.rowsByTaskId.keys()].some((taskId) => {
+            const task = this.currentTasksById.get(taskId);
+            return task?.canFill || task?.canComplete;
+          })),
     );
   }
 
@@ -224,6 +239,34 @@ export class WorkshopTaskManager {
     };
   }
 
+  createLevelCompleteRow() {
+    const root = document.createElement('div');
+    root.className = 'workshop-page__level-complete';
+    root.hidden = true;
+
+    const label = document.createElement('span');
+    label.className = 'workshop-page__level-complete-label';
+    label.textContent = 'level up';
+
+    const cost = document.createElement('span');
+    cost.className = 'workshop-page__level-complete-cost';
+
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__level-complete-button';
+    button.type = 'button';
+    button.textContent = 'complete';
+    button.addEventListener('click', () => this.onLevelCompleteButton());
+
+    root.append(label, cost, button);
+
+    return {
+      root,
+      label,
+      cost,
+      button,
+    };
+  }
+
   onTaskButton(taskId) {
     const task = this.currentTasksById.get(taskId);
 
@@ -237,6 +280,11 @@ export class WorkshopTaskManager {
       this.gameplayFacade.fillTask(taskId);
     }
 
+    this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  onLevelCompleteButton() {
+    this.gameplayFacade.completeTaskLevel?.();
     this.render(this.gameplayFacade.getSnapshot());
   }
 
@@ -268,6 +316,44 @@ export class WorkshopTaskManager {
     row.button.setAttribute('aria-label', `${buttonText} ${task.itemLabel} task`);
     setNotificationBadge(row.button, !disabled);
     row.fill.style.width = `${Math.max(0, Math.min(1, task.progress)) * 100}%`;
+  }
+
+  renderLevelComplete() {
+    const row = this.refs.levelComplete;
+
+    if (!row) {
+      return;
+    }
+
+    const show = this.expanded && this.shouldShowLevelComplete();
+    row.root.hidden = !show;
+
+    if (!show) {
+      return;
+    }
+
+    const costText = formatGoldPriceText(this.currentLevelCompletion.costGold);
+    const disabled = !this.canAffordLevelCompletion();
+
+    this.setText(row.cost, costText);
+    row.button.disabled = disabled;
+    row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    row.button.setAttribute(
+      'aria-label',
+      `complete level ${this.currentLevelCompletion.level} for ${costText}`,
+    );
+    setNotificationBadge(row.button, !disabled);
+  }
+
+  shouldShowLevelComplete() {
+    return Boolean(this.currentLevelCompletion?.canComplete);
+  }
+
+  canAffordLevelCompletion() {
+    return (
+      this.shouldShowLevelComplete() &&
+      this.currentGold >= (this.currentLevelCompletion?.costGold ?? Infinity)
+    );
   }
 
   getButtonText(task) {

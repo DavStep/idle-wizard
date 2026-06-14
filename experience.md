@@ -31,6 +31,7 @@
 - Big features need facades with compact non-programmer explanations.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
 - Release APK handoff files should be named `idle-wizard-release-<package-version>.apk`.
+- Current Gradle release output is `app-release-unsigned.apk`; sign it before device install or APK handoff.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
@@ -46,6 +47,7 @@
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
+- If a level 1 device save links into a Google account with a save above level 1, keep the Google account automatically and skip the choice prompt.
 - Account-link pending saves need attempt scoping and visible failure handling; silent `localStorage` failure can drop device progress when linking into an existing account.
 - Account linking should use Google OIDC directly, not SpacetimeAuth, so the player sees only the Google account picker/consent before returning to the game.
 - Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` Google redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail provider validation.
@@ -80,6 +82,7 @@
 ## Gameplay Economy
 
 - Mana has generation and a cap; both upgrade through player level baseline plus research bonuses.
+- Cookie Clicker-like balance needs a compounding production spine; current Idle Wizard has broad conversion loops but still lacks prestige, random boost events, achievement multipliers, and producer-tier buy scaling.
 - Summoning seeds consumes mana.
 - Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper.
 - For now, all seed drops use equal weight; keep a weight field anyway so rarity can change later.
@@ -137,6 +140,7 @@
 - NPC market selected stands should keep need available from slot snapshots internally, because selected items may be hidden from picker rows.
 - NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
 - NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
+- NPC market blank stand row space is inert; item/select text opens the sell picker, and the buy button owns locked-stand purchases.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
 - Market sellable quantities must subtract Brewing cauldron-staged herbs; NPC and player market sales should use available quantities, not raw item stacks.
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
@@ -148,11 +152,13 @@
 - Player market request UI is local-only until backend request listings exist; do not fake server trades.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
 - Player market requests use local numbered slots that follow player market stand unlock state.
+- Player market request data is local session state, but page unmount/remount cleanup must not clear it.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
 - Garden plot number cells use the shared numbered-row label (`1.`, `2.`) and spacing, matching market stand/request rows.
 - Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.
+- Garden empty-plot blank row space is inert; use the seed/empty label to change selection and the right action to choose or plant.
 - Inventory-style seed/herb/potion rows should display `locked` instead of `0` when the matching research is incomplete.
 - Garden seed picker title is `choose seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
 - Garden tiles keep selected seed separate from active crop; harvest completion preserves selection but does not auto-replant. Player must press `plant`.
@@ -166,6 +172,9 @@
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
 - Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
 - Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
+- Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
+- Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
+- Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
@@ -192,6 +201,7 @@
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
+- Gate hover-only underlines with `@media (hover: hover) and (pointer: fine)` so touch taps do not leave sticky underline state.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
 - Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`), not global per action type.
@@ -204,9 +214,11 @@
 - Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
+- Reward flyouts that should show item icons need exact item labels/counts; generic text like `3 seeds found` cannot render item icons.
 - Brewing cauldron count lives as a normal-weight border-corner label like `0/5`; empty cauldron status stays blank and `empty` is centered in the box.
 - Brewing cauldron should show `unknown mix` for any non-empty no-match contents; do not wait for a full cauldron.
 - Brewing cauldron box should stay compact at partial fill, but leave action-row clearance for status plus five distinct ingredient rows.
+- Brewing cauldron top spacing must reserve the herb-list scroll progress rail so overflow herb rows do not touch the cauldron border.
 - Brewing cauldron should not show a separate `empty` clear button; ingredient rows own correction through their remove action.
 - Brewing action message should stay hidden; do not render helper/warning/result text under the brew button.
 - Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
@@ -228,6 +240,7 @@
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Gold displays amount-first as `<compact amount> gold` everywhere, including top chrome; use `25 gold` and `123k gold`, never `25g` or `gold 25`.
+- Task level-up is manual after all five tasks are done; the Workshop task list shows a bottom `complete` action that spends `current level * 20` gold.
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
 - Top panel layout uses two rows: username full-width above mana/gold/context currency, so resource text does not squeeze names.
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.

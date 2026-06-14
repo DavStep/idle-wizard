@@ -30,6 +30,37 @@ export const herbIconUrlsByKey = Object.freeze({
   sunrootHerb: sunrootHerbIconUrl,
 });
 
+const herbIconKeysByLabel = Object.freeze({
+  bloodrose: 'bloodroseHerb',
+  briar: 'briarHerb',
+  dragonpepper: 'dragonpepperHerb',
+  dreambell: 'dreambellHerb',
+  frostmoss: 'frostmossHerb',
+  glowcap: 'glowcapHerb',
+  lavender: 'lavenderHerb',
+  mandrake: 'mandrakeHerb',
+  mint: 'mintHerb',
+  moonflower: 'moonflowerHerb',
+  nettle: 'nettleHerb',
+  sage: 'sageHerb',
+  'star anise': 'starAniseHerb',
+  sunroot: 'sunrootHerb',
+});
+
+const herbIconLabelEntries = Object.freeze(
+  Object.entries(herbIconKeysByLabel)
+    .map(([label, key]) => Object.freeze({ label, key }))
+    .sort((first, second) => second.label.length - first.label.length),
+);
+
 export function getHerbIconUrl(itemKey) {
   return herbIconUrlsByKey[itemKey] ?? null;
+}
+
+export function getHerbIconKeyByLabel(label) {
+  return herbIconKeysByLabel[String(label ?? '').trim().toLowerCase()] ?? null;
+}
+
+export function getHerbIconLabelEntries() {
+  return herbIconLabelEntries.map((entry) => ({ ...entry }));
 }

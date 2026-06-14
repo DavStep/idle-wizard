@@ -8,13 +8,17 @@ import { ShopRoomViewManager } from './managers/ShopRoomViewManager.js';
 import { ShopShelfManager } from './managers/ShopShelfManager.js';
 import { ShopStockManager } from './managers/ShopStockManager.js';
 import { ShopTradeHistoryManager } from './managers/ShopTradeHistoryManager.js';
+import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
 
 export class ShopPageFacade {
   static explain =
     'Shows the market room, where players sell to NPC demand, trade with other players, and see crystal prices.';
 
   constructor({ gameplayFacade, playerShopFacade } = {}) {
+    this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new ShopRoomViewManager();
+    this.flyoutManager = new RewardFlyoutManager();
+    this.rewardEventsUnsubscribe = null;
     this.marketTabsManager = new ShopMarketTabsManager({ gameplayFacade });
     this.shelfManager = new ShopShelfManager({ gameplayFacade });
     this.demandManager = new ShopDemandManager({ gameplayFacade });
@@ -31,6 +35,11 @@ export class ShopPageFacade {
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.marketTabsManager.mount(uiLayer);
+    this.flyoutManager.mount(uiLayer);
+    this.rewardEventsUnsubscribe =
+      this.gameplayFacade?.subscribeRewardEvents?.((event) =>
+        this.flyoutManager.showReward(event),
+      ) ?? null;
     const npmMarketPanel = this.marketTabsManager.getPanel('npm');
     const playerMarketPanel = this.marketTabsManager.getPanel('player');
     const crystalsPanel = this.marketTabsManager.getPanel('crystals');
@@ -51,6 +60,8 @@ export class ShopPageFacade {
   }
 
   unmount() {
+    this.rewardEventsUnsubscribe?.();
+    this.rewardEventsUnsubscribe = null;
     this.crystalOfferManager.unmount();
     this.goldOfferManager.unmount();
     this.tradeHistoryManager.unmount();
@@ -59,6 +70,7 @@ export class ShopPageFacade {
     this.stockManager.unmount();
     this.demandManager.unmount();
     this.shelfManager.unmount();
+    this.flyoutManager.unmount();
     this.marketTabsManager.unmount();
     this.roomViewManager.unmount();
   }

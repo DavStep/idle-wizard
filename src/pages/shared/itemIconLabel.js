@@ -1,16 +1,21 @@
 import { getSeedIconUrl } from '../../assets/items/seeds/seedIcons.js';
-import { getHerbIconUrl } from '../../assets/items/herbs/herbIcons.js';
+import {
+  getHerbIconKeyByLabel,
+  getHerbIconLabelEntries,
+  getHerbIconUrl,
+} from '../../assets/items/herbs/herbIcons.js';
 import {
   getPotionIconKeyByLabel,
   getPotionIconLabelEntries,
   getPotionIconUrl,
 } from '../../assets/items/potions/potionIcons.js';
+import { createResourceIconLabel } from './resourceIconLabel.js';
 
 export const SEED_ICON_LABEL_CLASS = 'style-seed-label';
 export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
 export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
 
-const SEED_NAME_PATTERN = /\b([a-z]+ seed)\b/g;
+const GOLD_WORD_MATCH_PATTERN = /\bgold\b/gi;
 const GENERIC_SEED_LABELS = new Set(['choose seed', 'summon seed']);
 
 export function setItemIconLabel(element, kind, itemKey = null) {
@@ -78,8 +83,12 @@ export function appendTextWithItemIcons(element, text) {
 
     if (match.kind === 'seed') {
       parts.push(createSeedIconLabel(match.text));
-    } else {
+    } else if (match.kind === 'herb') {
+      parts.push(createHerbIconLabel(match.text, match.itemKey));
+    } else if (match.kind === 'potion') {
       parts.push(createPotionIconLabel(match.text, match.itemKey));
+    } else if (match.kind === 'resource') {
+      parts.push(createResourceIconLabel(match.resource, match.text));
     }
 
     lastIndex = index + match.text.length;
@@ -158,14 +167,21 @@ function clearImageItemIconLabel(element) {
 function getItemIconMatches(value) {
   const matches = [];
 
-  for (const match of value.matchAll(SEED_NAME_PATTERN)) {
-    const [seedName] = match;
+  for (const { label } of getHerbIconLabelEntries()) {
+    const seedName = `${label} seed`;
+    const pattern = new RegExp(`\\b${escapeRegExp(seedName)}\\b`, 'g');
 
-    if (!GENERIC_SEED_LABELS.has(seedName)) {
+    for (const match of value.matchAll(pattern)) {
+      const [matchedSeedName] = match;
+
+      if (GENERIC_SEED_LABELS.has(matchedSeedName)) {
+        continue;
+      }
+
       matches.push({
         index: match.index ?? 0,
         kind: 'seed',
-        text: seedName,
+        text: matchedSeedName,
       });
     }
   }
@@ -181,6 +197,28 @@ function getItemIconMatches(value) {
         text: match[0],
       });
     }
+  }
+
+  for (const { label, key } of getHerbIconLabelEntries()) {
+    const pattern = new RegExp(`\\b${escapeRegExp(label)}\\b`, 'g');
+
+    for (const match of value.matchAll(pattern)) {
+      matches.push({
+        index: match.index ?? 0,
+        itemKey: key,
+        kind: 'herb',
+        text: match[0],
+      });
+    }
+  }
+
+  for (const match of value.matchAll(GOLD_WORD_MATCH_PATTERN)) {
+    matches.push({
+      index: match.index ?? 0,
+      kind: 'resource',
+      resource: 'gold',
+      text: match[0],
+    });
   }
 
   const sortedMatches = matches.sort(
@@ -212,6 +250,15 @@ function createSeedIconLabel(seedName) {
   return label;
 }
 
+function createHerbIconLabel(text, itemKey = null) {
+  const label = document.createElement('span');
+  label.className = HERB_ICON_LABEL_CLASS;
+  label.dataset.itemIconKind = 'herb';
+  label.dataset.itemIconKey = normalizeHerbIconKey(itemKey, text);
+  label.append(createHerbIconImage(label.dataset.itemIconKey), createHerbText(text));
+  return label;
+}
+
 function createPotionIconLabel(text, itemKey = null) {
   const label = document.createElement('span');
   label.className = POTION_ICON_LABEL_CLASS;
@@ -219,6 +266,10 @@ function createPotionIconLabel(text, itemKey = null) {
   label.dataset.itemIconKey = normalizePotionIconKey(itemKey, text);
   label.append(createPotionIconImage(label.dataset.itemIconKey), createPotionText(text));
   return label;
+}
+
+function createHerbIconImage(itemKey) {
+  return createImageItemIconImage(HERB_ICON_LABEL_CLASS, getHerbIconUrl(itemKey));
 }
 
 function createPotionIconImage(itemKey) {
@@ -238,11 +289,25 @@ function createPotionText(text) {
   return createImageItemText(POTION_ICON_LABEL_CLASS, text);
 }
 
+function createHerbText(text) {
+  return createImageItemText(HERB_ICON_LABEL_CLASS, text);
+}
+
 function createImageItemText(className, text) {
   const label = document.createElement('span');
   label.className = `${className}__text`;
   label.textContent = text;
   return label;
+}
+
+function normalizeHerbIconKey(itemKey, text) {
+  const key = String(itemKey ?? '').trim();
+
+  if (key) {
+    return key;
+  }
+
+  return getHerbIconKeyByLabel(text) ?? '';
 }
 
 function normalizePotionIconKey(itemKey, text) {

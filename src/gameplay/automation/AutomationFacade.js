@@ -10,6 +10,7 @@ export class AutomationFacade {
     brewingFacade,
     gardenFacade,
     gameplayLogFacade,
+    onSeedSummoned,
     onPotionRecipeDiscovery,
     researchFacade,
     seedSummoningFacade,
@@ -17,6 +18,7 @@ export class AutomationFacade {
     this.seedSummoningAutomationManager = new SeedSummoningAutomationManager({
       brewingFacade,
       gameplayLogFacade,
+      onSeedSummoned,
       researchFacade,
       seedSummoningFacade,
     });

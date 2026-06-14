@@ -142,6 +142,17 @@ export class AppLifecycleManager {
         return;
       }
 
+      if (
+        this.shouldKeepLinkedAccountSave({
+          deviceSave: accountLinkSave,
+          accountSave: save,
+        })
+      ) {
+        this.clearPendingAccountLinkSave();
+        this.loadGameplaySave(save, { persistLoaded: true });
+        return;
+      }
+
       const choiceOptions = {
         deviceSave: accountLinkSave,
         accountSave: save,
@@ -164,6 +175,26 @@ export class AppLifecycleManager {
     }
 
     this.loadGameplaySave(save);
+  }
+
+  shouldKeepLinkedAccountSave({ deviceSave, accountSave } = {}) {
+    return (
+      this.getSaveCurrentLevel(deviceSave) === 1 &&
+      this.getSaveCurrentLevel(accountSave) > 1
+    );
+  }
+
+  getSaveCurrentLevel(save) {
+    if (!save || typeof save !== 'object') {
+      return 1;
+    }
+
+    return this.getPositiveInteger(save.tasks?.currentLevel, 1);
+  }
+
+  getPositiveInteger(value, fallback) {
+    const number = Number(value);
+    return Number.isInteger(number) && number > 0 ? number : fallback;
   }
 
   loadGameplaySave(save, { persistLoaded = false } = {}) {
