@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,7 @@
     "preview": "vite preview --host 0.0.0.0 --port 55174 --strictPort",
     "lint": "eslint .",
     "test": "vitest run",
+    "balance:sim": "node scripts/balance-sim.js",
     "mobile:sync": "npm run mobile:sync:prod",
     "mobile:sync:dev": "npm run build:dev && npx cap sync android",
     "mobile:sync:prod": "npm run build:prod && npx cap sync android",

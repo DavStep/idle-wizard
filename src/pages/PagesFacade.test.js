@@ -2568,6 +2568,8 @@ function createTradeAllianceFacadeFake({
       weeklyIncome: 0,
       monthlyIncome: 0,
       dailyIncome: 0,
+      seasonKey: '0',
+      dayKey: '20705',
     },
     ownMember: {
       allianceId: 'alliance-1',
@@ -2576,6 +2578,7 @@ function createTradeAllianceFacadeFake({
       playerLevel: 2,
       role: 'tradeMaster',
       dailyContribution: 0,
+      dayKey: '0',
     },
     ownRole: 'tradeMaster',
     canEditSettings: true,
@@ -2695,6 +2698,7 @@ function createTradeAllianceFacadeFake({
 
       if (!contribution) {
         contribution = {
+          allianceId: quest.allianceId,
           questId,
           dayKey: quest.dayKey,
           contributorIdentity: snapshot.ownMember.memberIdentity,
@@ -4963,6 +4967,7 @@ describe('PagesFacade', () => {
     expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(4);
     expect(quest.progress).toBe(500);
     expect(tradeAllianceFacade.getSnapshot().contributions).toContainEqual({
+      allianceId: 'alliance-1',
       questId: 'itemFill:manaTonic',
       dayKey: '2026-W24',
       contributorIdentity: 'self',
@@ -4976,6 +4981,132 @@ describe('PagesFacade', () => {
         (row) => row.textContent,
       ),
     ).toContain('your fill 8/25');
+  });
+
+  it('shows alliance quest reset timer', () => {
+    const now = Date.UTC(2026, 5, 14, 0, 0, 0);
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(now);
+    const stage = document.createElement('section');
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          dayKey: '0',
+          questId: 'allianceIncomeEasy',
+          label: 'hard route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 500,
+          progress: 0,
+          progressRatio: 0,
+          minContribution: 25,
+          crystalReward: 1,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      tradeAllianceFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__trade-alliance-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+      const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+        .find((button) => button.textContent === 'quests');
+      questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(
+        popup.querySelector('.workshop-page__trade-alliance-reset-row .row_key')?.textContent,
+      ).toBe('quests reset');
+      expect(
+        popup.querySelector('.workshop-page__trade-alliance-reset-row .row_val')?.textContent,
+      ).toBe('in 1d 0h');
+    } finally {
+      pagesFacade.unmount();
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('blocks current alliance quests when this week has progress in another alliance', () => {
+    const now = Date.UTC(2026, 5, 14, 0, 0, 0);
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(now);
+    const stage = document.createElement('section');
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      alliances: [
+        {
+          allianceId: 'alliance-old',
+          name: 'Old Lanterns',
+          tag: 'OLD',
+          totalIncome: 0,
+          seasonIncome: 0,
+          weeklyIncome: 0,
+          monthlyIncome: 0,
+          dailyIncome: 0,
+        },
+      ],
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          dayKey: '0',
+          questId: 'itemFill:manaTonic',
+          label: 'fill 500 mana tonic',
+          questType: 'itemFill',
+          itemKey: 'manaTonic',
+          target: 500,
+          progress: 100,
+          progressRatio: 0.2,
+          minContribution: 25,
+          crystalReward: 5,
+        },
+      ],
+      contributions: [
+        {
+          allianceId: 'alliance-old',
+          questId: 'itemFill:manaTonic',
+          dayKey: '0',
+          contributorIdentity: 'self',
+          contribution: 25,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      tradeAllianceFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__trade-alliance-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+      const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+        .find((button) => button.textContent === 'quests');
+      questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(
+        popup.querySelector('.workshop-page__trade-alliance-lock-message')?.textContent,
+      ).toBe(
+        'quest progress this week belongs to Old Lanterns. rejoin it to continue, or start quests here after reset in 1d 0h.',
+      );
+      const action = popup.querySelector('.workshop-page__trade-alliance-quest-action');
+      expect(action.textContent).toBe('locked');
+      expect(action.disabled).toBe(true);
+      expect(
+        [...popup.querySelectorAll('.workshop-page__trade-alliance-row .row_key')].map(
+          (row) => row.textContent,
+        ),
+      ).toContain('your fill 0/25');
+    } finally {
+      pagesFacade.unmount();
+      nowSpy.mockRestore();
+    }
   });
 
   it('marks a trade alliance quest claimed after claiming reward', async () => {
@@ -4998,6 +5129,7 @@ describe('PagesFacade', () => {
       quests: [quest],
       contributions: [
         {
+          allianceId: 'alliance-1',
           questId: 'allianceIncomeEasy',
           dayKey: '2026-W24',
           contributorIdentity: 'self',

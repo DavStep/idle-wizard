@@ -102,6 +102,11 @@
       12px
   );
   --brewing-page-guide-controls-gap: 8px;
+  --brewing-page-footer-controls-height: calc(var(--style-row-min-height) + 7px);
+  --brewing-page-footer-controls-clearance: calc(
+    var(--brewing-page-footer-controls-height) +
+      (var(--brewing-page-guide-controls-gap) * 2)
+  );
   --brewing-page-guide-controls-bottom: calc(
     var(--style-room-chat-clearance) + var(--brewing-page-guide-panel-height) +
       var(--style-room-chat-title-overhang) + var(--brewing-page-guide-controls-gap)
@@ -568,6 +573,76 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app-fresh-start-choice {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: var(--style-dialog-padding);
+  box-sizing: border-box;
+  background: rgb(var(--style-backdrop-rgb) / 68%);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.app-fresh-start-choice[hidden] {
+  display: none;
+}
+
+.app-fresh-start-choice:not([hidden]) {
+  animation: style-overlay-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.app-fresh-start-choice__panel {
+  width: calc(260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  max-width: 100%;
+  outline: none;
+}
+
+.app-fresh-start-choice:not([hidden]) .app-fresh-start-choice__panel {
+  animation: app-account-link-choice-dialog-enter var(--style-motion-normal)
+    var(--style-motion-ease) both;
+}
+
+.style-dialog.app-fresh-start-choice__dialog {
+  width: 260px;
+  max-width: calc(100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px);
+}
+
+.app-fresh-start-choice__message,
+.app-fresh-start-choice__status {
+  margin: 0;
+}
+
+.app-fresh-start-choice__status {
+  margin-top: 12px;
+  color: var(--style-disabled);
+}
+
+.app-fresh-start-choice__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.style-button.app-fresh-start-choice__button {
+  min-width: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-button.app-fresh-start-choice__button--connect {
+  width: 118px;
+}
+
+.style-button.app-fresh-start-choice__button--fresh {
+  width: 94px;
 }
 
 .app-deploy-refresh {
@@ -1868,7 +1943,9 @@ body {
   --style-scroll-padding-top: 6px;
   top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
-  bottom: var(--style-room-chat-clearance);
+  bottom: calc(
+    var(--style-room-chat-clearance) + var(--brewing-page-footer-controls-clearance)
+  );
   left: var(--style-room-content-edge);
   display: flex;
   flex-direction: column;
@@ -1989,9 +2066,10 @@ body {
   text-decoration: none;
 }
 
-.brewing-page__cauldron {
+.style-box.brewing-page__cauldron {
   position: relative;
   min-height: 96px;
+  padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
 
 .brewing-page__cauldron.is-current > .style-box__title {

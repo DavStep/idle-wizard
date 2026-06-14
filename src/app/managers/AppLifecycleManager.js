@@ -3,6 +3,10 @@ import {
   ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT,
   AppAccountLinkChoiceManager,
 } from './AppAccountLinkChoiceManager.js';
+import {
+  FRESH_START_CHOICE_CONNECT_ACCOUNT,
+  AppFreshStartChoiceManager,
+} from './AppFreshStartChoiceManager.js';
 
 export class AppLifecycleManager {
   constructor({
@@ -17,9 +21,11 @@ export class AppLifecycleManager {
     maintenanceFacade,
     onlineGateManager,
     accountLinkChoiceManager = new AppAccountLinkChoiceManager(),
+    freshStartChoiceManager = new AppFreshStartChoiceManager(),
     connectionRetryManager = new AppConnectionRetryManager(),
     deployRefreshManager,
     appThemeManager,
+    reload = () => window.location.reload(),
   }) {
     this.shellManager = shellManager;
     this.viewportFacade = viewportFacade;
@@ -32,9 +38,11 @@ export class AppLifecycleManager {
     this.maintenanceFacade = maintenanceFacade;
     this.onlineGateManager = onlineGateManager;
     this.accountLinkChoiceManager = accountLinkChoiceManager;
+    this.freshStartChoiceManager = freshStartChoiceManager;
     this.connectionRetryManager = connectionRetryManager;
     this.deployRefreshManager = deployRefreshManager;
     this.appThemeManager = appThemeManager;
+    this.reload = reload;
     this.started = false;
     this.frameLoopStarted = false;
     this.stopping = false;
@@ -59,6 +67,7 @@ export class AppLifecycleManager {
     const stage = this.viewportFacade.mount(shell);
     this.onlineGateManager.mount(stage);
     this.accountLinkChoiceManager.mount(stage);
+    this.freshStartChoiceManager.mount(stage);
     this.deployRefreshManager?.mount(stage);
     this.onlineGateManager.showConnecting();
     this.maintenanceUnsubscribe = this.maintenanceFacade?.subscribe?.((snapshot) => {
@@ -174,7 +183,80 @@ export class AppLifecycleManager {
       return;
     }
 
+    if (this.shouldPromptForFreshStart({ save, accountLinkSave })) {
+      await this.chooseFreshStart();
+      if (this.stopping) {
+        return;
+      }
+    }
+
     this.loadGameplaySave(save);
+  }
+
+  shouldPromptForFreshStart({ save, accountLinkSave } = {}) {
+    return !save && !accountLinkSave && !this.isAuthenticatedAccount();
+  }
+
+  async chooseFreshStart() {
+    let statusText = null;
+
+    while (!this.stopping) {
+      const choice = await this.freshStartChoiceManager.choose({
+        authSnapshot: this.getAuthSnapshot(),
+        statusText,
+      });
+
+      if (choice !== FRESH_START_CHOICE_CONNECT_ACCOUNT) {
+        return;
+      }
+
+      const result = await this.connectFreshStartAccount();
+      if (result?.ok) {
+        if (result.reloadRequired) {
+          this.reload();
+        }
+
+        await new Promise(() => {});
+      }
+
+      statusText = this.getFreshStartLoginStatusText(result);
+    }
+  }
+
+  connectFreshStartAccount() {
+    const authFacade = this.backendFacade.getAuthFacade?.();
+
+    if (typeof authFacade?.signInWithGoogle !== 'function') {
+      return Promise.resolve({ ok: false, reason: 'disabled' });
+    }
+
+    return Promise.resolve(authFacade.signInWithGoogle()).catch((error) => ({
+      ok: false,
+      reason: 'exception',
+      message: this.getErrorText(error),
+    }));
+  }
+
+  getFreshStartLoginStatusText(result = {}) {
+    if (result.reason === 'disabled') {
+      return 'login unavailable';
+    }
+
+    if (String(result.reason ?? '').includes('cancelled')) {
+      return 'login cancelled';
+    }
+
+    return `login error: ${this.getErrorText(
+      result.message ?? result.reason ?? 'unknown error',
+    )}`;
+  }
+
+  getAuthSnapshot() {
+    return this.backendFacade.getAuthFacade?.()?.getSnapshot?.() ?? null;
+  }
+
+  getErrorText(error) {
+    return String(error).replace(/\s+/g, ' ').trim();
   }
 
   shouldKeepLinkedAccountSave({ deviceSave, accountSave } = {}) {
@@ -413,6 +495,7 @@ export class AppLifecycleManager {
     this.gameplayFacade.shutdown();
     this.backendFacade.stop();
     this.deployRefreshManager?.unmount();
+    this.freshStartChoiceManager.unmount();
     this.accountLinkChoiceManager.unmount();
     this.onlineGateManager.unmount();
     this.appThemeManager?.unmount();

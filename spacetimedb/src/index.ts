@@ -4530,6 +4530,49 @@ function applyTradeAllianceQuestContributionDelta({
   ctx.db.tradeAllianceQuestContribution.insert(nextContribution);
 }
 
+function hasOtherTradeAllianceQuestParticipation(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+  allianceId: unknown,
+  dayKey: string,
+): boolean {
+  const allianceKey = getTradeAllianceIdKey(allianceId);
+
+  for (const contribution of ctx.db.tradeAllianceQuestContribution.iter()) {
+    if (
+      contribution.contributorIdentity.isEqual(identity) &&
+      contribution.dayKey === dayKey &&
+      toBigInt(contribution.contribution) > 0n &&
+      getTradeAllianceIdKey(contribution.allianceId) !== allianceKey
+    ) {
+      return true;
+    }
+  }
+
+  for (const reward of ctx.db.tradeAllianceRewardInbox.iter()) {
+    if (
+      reward.recipientIdentity.isEqual(identity) &&
+      reward.dayKey === dayKey &&
+      getTradeAllianceIdKey(reward.allianceId) !== allianceKey
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function assertTradeAllianceQuestParticipationAvailable(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+  allianceId: unknown,
+  dayKey: string,
+) {
+  if (hasOtherTradeAllianceQuestParticipation(ctx, identity, allianceId, dayKey)) {
+    throw new Error('Alliance quest progress belongs to another alliance this week.');
+  }
+}
+
 function applyTradeAllianceItemFillDelta(
   ctx: IdleWizardReducerCtx,
   player: { username: string; playerLevel: number },
@@ -4569,6 +4612,12 @@ function applyTradeAllianceItemFillDelta(
   const alliance = refreshTradeAllianceDay(
     ctx,
     findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId)),
+  );
+  assertTradeAllianceQuestParticipationAvailable(
+    ctx,
+    member.memberIdentity,
+    alliance.allianceId,
+    alliance.seasonKey,
   );
   const progress = ctx.db.tradeAllianceQuestProgress.questKey.find(
     getTradeAllianceQuestKey(alliance.allianceId, alliance.seasonKey, quest.id),
@@ -4623,6 +4672,18 @@ function applyTradeAllianceIncomeDelta(
     ctx,
     findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId)),
   );
+
+  if (
+    hasOtherTradeAllianceQuestParticipation(
+      ctx,
+      member.memberIdentity,
+      alliance.allianceId,
+      alliance.seasonKey,
+    )
+  ) {
+    return;
+  }
+
   alliance = ctx.db.tradeAlliance.allianceId.update({
     ...alliance,
     totalIncome: toBigInt(alliance.totalIncome) + delta,
@@ -8295,6 +8356,12 @@ export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
     );
     const dayKey = getTradeAllianceQuestPeriodKey(ctx);
     const safeQuestId = normalizeResearchId(questId);
+    assertTradeAllianceQuestParticipationAvailable(
+      ctx,
+      member.memberIdentity,
+      alliance.allianceId,
+      dayKey,
+    );
     const questKey = getTradeAllianceQuestKey(alliance.allianceId, dayKey, safeQuestId);
     const quest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
 

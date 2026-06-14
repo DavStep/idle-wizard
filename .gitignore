@@ -10,5 +10,6 @@ android/.gradle/
 android/app/build/
 android/build/
 android/captures/
+*.apk
 *.iml
 .idea/

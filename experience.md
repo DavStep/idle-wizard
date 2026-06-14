@@ -89,7 +89,7 @@
 ## Gameplay Economy
 
 - Mana has generation and a cap; both upgrade through player level baseline plus research bonuses.
-- Cookie Clicker-like balance needs a compounding production spine; current Idle Wizard has broad conversion loops but still lacks prestige, random boost events, achievement multipliers, and producer-tier buy scaling.
+- Cookie Clicker-like balance needs a compounding production spine; current Idle Wizard has prestige but still lacks random boost events, achievement multipliers, and producer-tier buy scaling.
 - Summoning seeds consumes mana.
 - Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper.
 - For now, all seed drops use equal weight; keep a weight field anyway so rarity can change later.
@@ -236,6 +236,7 @@
 - Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
 - Brewing cauldron staged ingredients display as adjacent quantity groups like `- 2 nettle`; do not show numbered slots.
 - Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
+- Brewing workbench must reserve bottom clearance for fixed `select recipe`/`potions` buttons so scroll content cannot render underneath them.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
 - Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
 - Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.
@@ -385,6 +386,7 @@
 - Trade alliance claimed quest UI needs collected own reward rows; hiding collected inbox rows makes claimed quests render as claimable again after auto-collect.
 - Trade alliance quest rewards must be capped per player/quest/week across all alliances; reward keys or guards that include alliance id allow clan hopping to claim again.
 - Trade alliance item-fill quest ids must be `itemFill:<itemKey>`; the server validates that key against the exact configured seed or potion item before accepting fills.
+- Trade alliance contribution lookups must include alliance id, quest id, period key, and contributor identity; same-week progress in another alliance locks quest participation until reset or rejoin.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.

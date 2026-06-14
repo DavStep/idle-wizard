@@ -32,6 +32,9 @@ const MEMBER_TABS = [
   { id: 'settings', label: 'settings' },
 ];
 const ITEM_FILL_QUEST_TYPE = 'itemFill';
+const QUEST_PERIOD_ANCHOR_MS = 1_780_876_800_000;
+const QUEST_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
+const QUEST_TIMER_INTERVAL_MS = 1000;
 
 export class WorkshopTradeAllianceManager {
   constructor({ gameplayFacade, tradeAllianceFacade } = {}) {
@@ -49,6 +52,7 @@ export class WorkshopTradeAllianceManager {
     this.previousFocus = null;
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
+    this.questTimer = null;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -228,6 +232,7 @@ export class WorkshopTradeAllianceManager {
   }
 
   unmount() {
+    this.stopQuestTimer();
     this.unsubscribe?.();
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
@@ -243,6 +248,7 @@ export class WorkshopTradeAllianceManager {
     this.previousFocus = null;
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
+    this.questTimer = null;
   }
 
   render(snapshot) {
@@ -258,6 +264,7 @@ export class WorkshopTradeAllianceManager {
       ? `${ownAlliance.name} [${ownAlliance.tag}]`
       : 'trade alliance';
     this.refs.status.textContent = this.status;
+    this.syncQuestTimer();
 
     if (ownAlliance) {
       this.renderTabs(MEMBER_TABS, this.selectedMemberTabId);
@@ -428,6 +435,7 @@ export class WorkshopTradeAllianceManager {
       this.createTextRow('members', `${alliance.memberCount}/50`),
       this.createTextRow('season income', this.formatNumber(alliance.seasonIncome)),
       this.createTextRow('daily income', this.formatNumber(alliance.dailyIncome)),
+      this.createQuestResetRow(),
     );
 
     if (alliance.notice) {
@@ -450,10 +458,18 @@ export class WorkshopTradeAllianceManager {
   renderQuestsView() {
     const rows = document.createElement('div');
     rows.className = 'workshop-page__trade-alliance-rows';
+    this.refs.questLockMessage = null;
     const allianceId = this.lastSnapshot.ownAlliance?.allianceId;
     const quests = (this.lastSnapshot.quests ?? []).filter(
       (quest) => quest.allianceId === allianceId,
     );
+    const questLock = this.getQuestParticipationLock();
+
+    rows.append(this.createQuestResetRow());
+
+    if (questLock) {
+      rows.append(this.createQuestLockMessage(questLock));
+    }
 
     if (!quests.length) {
       rows.append(this.createEmptyRow('no quests'));
@@ -461,12 +477,12 @@ export class WorkshopTradeAllianceManager {
       return;
     }
 
-    rows.append(...quests.map((quest) => this.createQuestRow(quest)));
+    rows.append(...quests.map((quest) => this.createQuestRow(quest, { locked: Boolean(questLock) })));
     this.refs.content.replaceChildren(rows);
   }
 
-  createQuestRow(quest) {
-    const contribution = this.getOwnContribution(quest.questId, quest.dayKey);
+  createQuestRow(quest, { locked = false } = {}) {
+    const contribution = this.getOwnContribution(quest);
     const itemFillQuest = this.isItemFillQuest(quest);
     const questComplete = quest.progress >= quest.target;
     const questClaimed = Boolean(quest.claimed);
@@ -497,12 +513,16 @@ export class WorkshopTradeAllianceManager {
     let actionText = 'claim';
     if (questClaimed) {
       actionText = 'claimed';
+    } else if (locked) {
+      actionText = 'locked';
     } else if (itemFillQuest && !questComplete) {
       actionText = 'fill';
     }
     action.textContent = actionText;
 
     if (questClaimed) {
+      action.disabled = true;
+    } else if (locked) {
       action.disabled = true;
     } else if (itemFillQuest && !questComplete) {
       action.disabled = !this.canFillItemQuest(quest);
@@ -873,6 +893,21 @@ export class WorkshopTradeAllianceManager {
     return paragraph;
   }
 
+  createQuestResetRow() {
+    const row = this.createTextRow('quests reset', this.getQuestResetLabel());
+    row.classList.add('workshop-page__trade-alliance-reset-row');
+    this.refs.questResetValue = row.querySelector('.row_val');
+    this.updateQuestResetTimerText();
+    return row;
+  }
+
+  createQuestLockMessage(questLock) {
+    const message = this.createParagraph(this.getQuestLockMessage(questLock));
+    message.classList.add('workshop-page__trade-alliance-lock-message');
+    this.refs.questLockMessage = message;
+    return message;
+  }
+
   createDivider() {
     const divider = document.createElement('div');
     divider.className = 'workshop-page__trade-alliance-divider';
@@ -907,15 +942,186 @@ export class WorkshopTradeAllianceManager {
       .slice(0, 20);
   }
 
-  getOwnContribution(questId, dayKey) {
+  getOwnContribution(quest) {
     const ownIdentity = this.lastSnapshot.ownMember?.memberIdentity;
+    const allianceId = quest?.allianceId;
+    const questId = quest?.questId;
+    const dayKey = quest?.dayKey;
     const contribution = (this.lastSnapshot.contributions ?? []).find(
       (row) =>
+        row.allianceId === allianceId &&
         row.contributorIdentity === ownIdentity &&
         row.questId === questId &&
         row.dayKey === dayKey,
     );
     return contribution?.contribution ?? 0;
+  }
+
+  getQuestParticipationLock() {
+    const ownIdentity = this.lastSnapshot.ownMember?.memberIdentity;
+    const currentAllianceId = this.lastSnapshot.ownAlliance?.allianceId;
+    const periodKey = this.getQuestPeriodKey();
+
+    if (!ownIdentity || !currentAllianceId || !periodKey) {
+      return null;
+    }
+
+    const otherContribution = (this.lastSnapshot.contributions ?? []).find(
+      (row) =>
+        row.contributorIdentity === ownIdentity &&
+        row.dayKey === periodKey &&
+        row.allianceId &&
+        row.allianceId !== currentAllianceId &&
+        Number(row.contribution ?? 0) > 0,
+    );
+
+    if (otherContribution) {
+      const alliance = (this.lastSnapshot.alliances ?? []).find(
+        (candidate) => candidate.allianceId === otherContribution.allianceId,
+      );
+
+      return {
+        allianceId: otherContribution.allianceId,
+        allianceName: alliance?.name || 'another alliance',
+      };
+    }
+
+    const otherReward = (this.lastSnapshot.rewardInbox ?? []).find(
+      (reward) =>
+        reward.recipientIdentity === ownIdentity &&
+        reward.dayKey === periodKey &&
+        reward.allianceId &&
+        reward.allianceId !== currentAllianceId,
+    );
+
+    if (!otherReward) {
+      return null;
+    }
+
+    return {
+      allianceId: otherReward.allianceId,
+      allianceName: otherReward.allianceName || 'another alliance',
+    };
+  }
+
+  getQuestLockMessage(questLock = this.getQuestParticipationLock()) {
+    if (!questLock) {
+      return '';
+    }
+
+    return `quest progress this week belongs to ${questLock.allianceName}. rejoin it to continue, or start quests here after reset in ${this.formatQuestResetDuration()}.`;
+  }
+
+  getQuestPeriodKey() {
+    return (
+      this.lastSnapshot.ownAlliance?.seasonKey ||
+      this.lastSnapshot.ownMember?.dayKey ||
+      (this.lastSnapshot.quests ?? [])[0]?.dayKey ||
+      ''
+    );
+  }
+
+  getQuestResetAtMs() {
+    const periodKey = String(this.getQuestPeriodKey() ?? '').trim();
+
+    if (!periodKey) {
+      return null;
+    }
+
+    if (/^-?\d+$/.test(periodKey)) {
+      return QUEST_PERIOD_ANCHOR_MS + (Number(periodKey) + 1) * QUEST_PERIOD_MS;
+    }
+
+    const isoWeekMatch = periodKey.match(/^(\d{4})-W(\d{1,2})$/);
+    if (isoWeekMatch) {
+      return this.getIsoWeekStartMs(Number(isoWeekMatch[1]), Number(isoWeekMatch[2]) + 1);
+    }
+
+    return null;
+  }
+
+  getIsoWeekStartMs(year, weekNumber) {
+    const januaryFourth = Date.UTC(year, 0, 4);
+    const januaryFourthDay = new Date(januaryFourth).getUTCDay() || 7;
+    const firstWeekStart = januaryFourth - (januaryFourthDay - 1) * 24 * 60 * 60 * 1000;
+    return firstWeekStart + (weekNumber - 1) * QUEST_PERIOD_MS;
+  }
+
+  getQuestResetLabel() {
+    return `in ${this.formatQuestResetDuration()}`;
+  }
+
+  formatQuestResetDuration() {
+    const resetAtMs = this.getQuestResetAtMs();
+
+    if (!resetAtMs) {
+      return 'unknown';
+    }
+
+    const remainingSeconds = Math.max(0, Math.floor((resetAtMs - Date.now()) / 1000));
+
+    if (remainingSeconds <= 0) {
+      return 'soon';
+    }
+
+    const days = Math.floor(remainingSeconds / 86_400);
+    const hours = Math.floor((remainingSeconds % 86_400) / 3600);
+    const minutes = Math.floor((remainingSeconds % 3600) / 60);
+    const seconds = remainingSeconds % 60;
+
+    if (days > 0) {
+      return `${days}d ${hours}h`;
+    }
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+
+    return `${seconds}s`;
+  }
+
+  updateQuestResetTimerText() {
+    if (this.refs.questResetValue) {
+      this.refs.questResetValue.textContent = this.getQuestResetLabel();
+    }
+
+    if (this.refs.questLockMessage) {
+      this.refs.questLockMessage.textContent = this.getQuestLockMessage();
+    }
+  }
+
+  startQuestTimer() {
+    if (this.questTimer || !this.getQuestResetAtMs()) {
+      return;
+    }
+
+    this.questTimer = window.setInterval(
+      () => this.updateQuestResetTimerText(),
+      QUEST_TIMER_INTERVAL_MS,
+    );
+  }
+
+  stopQuestTimer() {
+    if (!this.questTimer) {
+      return;
+    }
+
+    window.clearInterval(this.questTimer);
+    this.questTimer = null;
+  }
+
+  syncQuestTimer() {
+    if (!this.visible || !this.getQuestResetAtMs()) {
+      this.stopQuestTimer();
+      return;
+    }
+
+    this.startQuestTimer();
+    this.updateQuestResetTimerText();
   }
 
   isItemFillQuest(quest) {
@@ -1088,6 +1294,7 @@ export class WorkshopTradeAllianceManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+    this.syncQuestTimer();
   }
 
   applyMemberEditVisibility() {

@@ -3,6 +3,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT } from './AppAccountLinkChoiceManager.js';
+import {
+  FRESH_START_CHOICE_CONNECT_ACCOUNT,
+  FRESH_START_CHOICE_START_FRESH,
+} from './AppFreshStartChoiceManager.js';
 import { AppLifecycleManager } from './AppLifecycleManager.js';
 
 async function flushPromises() {
@@ -13,8 +17,10 @@ async function flushPromises() {
 function createLifecycle({
   accountLinkChoiceManager,
   authFacade,
+  freshStartChoiceManager,
   maintenanceFacade,
   playerFacade,
+  reload,
 } = {}) {
   const root = document.createElement('div');
   const shell = document.createElement('main');
@@ -26,6 +32,7 @@ function createLifecycle({
     getPendingAccountLinkSave: vi.fn(() => null),
     clearPendingAccountLinkSave: vi.fn(),
     getSnapshot: vi.fn(() => ({ oidc: { authenticated: false } })),
+    signInWithGoogle: vi.fn(() => Promise.resolve({ ok: false, reason: 'disabled' })),
   };
   const maintenanceFacadeFake = maintenanceFacade ?? {
     getSnapshot: vi.fn(() => ({
@@ -103,6 +110,11 @@ function createLifecycle({
       choose: vi.fn(() => Promise.resolve('forget_device')),
       unmount: vi.fn(),
     },
+    freshStartChoiceManager: freshStartChoiceManager ?? {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      unmount: vi.fn(),
+    },
     connectionRetryManager: {
       reset: vi.fn(),
       clear: vi.fn(),
@@ -115,6 +127,7 @@ function createLifecycle({
       mount: vi.fn(),
       unmount: vi.fn(),
     },
+    reload: reload ?? vi.fn(),
   });
 
   return {
@@ -243,6 +256,22 @@ describe('AppLifecycleManager', () => {
     expect(accountLinkChoiceManager.unmount).toHaveBeenCalledTimes(1);
   });
 
+  it('mounts and unmounts the fresh start choice gate with the stage', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      unmount: vi.fn(),
+    };
+    const { lifecycle, stage } = createLifecycle({ freshStartChoiceManager });
+
+    lifecycle.start();
+    await flushPromises();
+    lifecycle.stop();
+
+    expect(freshStartChoiceManager.mount).toHaveBeenCalledWith(stage);
+    expect(freshStartChoiceManager.unmount).toHaveBeenCalledTimes(1);
+  });
+
   it('pauses gameplay and flushes the last save when maintenance drains', async () => {
     const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
 
@@ -354,6 +383,101 @@ describe('AppLifecycleManager', () => {
       lifecycle.ecsFacade,
     );
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks before loading fresh gameplay data for an anonymous empty save', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      unmount: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager });
+    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
+
+    await lifecycle.handleGameplaySaveReady({ save: null });
+
+    expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
+      authSnapshot: { oidc: { authenticated: false } },
+      statusText: null,
+    });
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      null,
+      lifecycle.ecsFacade,
+    );
+    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('connects an account from the fresh start dialog before fresh data is saved', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi
+        .fn()
+        .mockResolvedValueOnce(FRESH_START_CHOICE_CONNECT_ACCOUNT)
+        .mockResolvedValueOnce(FRESH_START_CHOICE_START_FRESH),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({ oidc: { authenticated: false, enabled: true } })),
+      signInWithGoogle: vi.fn(() =>
+        Promise.resolve({ ok: false, reason: 'native_cancelled' }),
+      ),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+
+    await lifecycle.handleGameplaySaveReady({ save: null });
+
+    expect(authFacade.signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(freshStartChoiceManager.choose).toHaveBeenNthCalledWith(2, {
+      authSnapshot: { oidc: { authenticated: false, enabled: true } },
+      statusText: 'login cancelled',
+    });
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      null,
+      lifecycle.ecsFacade,
+    );
+  });
+
+  it('does not ask fresh start questions when the account has a save', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      unmount: vi.fn(),
+    };
+    const save = { tasks: { currentLevel: 3 } };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager });
+
+    await lifecycle.handleGameplaySaveReady({ save });
+
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      save,
+      lifecycle.ecsFacade,
+    );
+  });
+
+  it('does not ask fresh start questions for an authenticated account with no save', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({ oidc: { authenticated: true } })),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+
+    await lifecycle.handleGameplaySaveReady({ save: null });
+
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      null,
+      lifecycle.ecsFacade,
+    );
   });
 
   it('keeps the device save without prompting when a new Google account has no save', async () => {
