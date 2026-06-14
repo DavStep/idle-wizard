@@ -3292,10 +3292,16 @@ function syncPlayerLevelFromGameplaySave(
   ctx: IdleWizardReducerCtx,
   player: ReturnType<typeof ensurePlayer>,
   saveJson: string,
+  { allowDecrease = false } = {},
 ) {
   const savedPlayerLevel = readSavedCurrentLevel(saveJson);
 
-  if (savedPlayerLevel === null || savedPlayerLevel <= player.playerLevel) {
+  if (
+    savedPlayerLevel === null ||
+    (allowDecrease
+      ? savedPlayerLevel === player.playerLevel
+      : savedPlayerLevel <= player.playerLevel)
+  ) {
     return player;
   }
 
@@ -4789,6 +4795,39 @@ function readSavedResearchCount(saveJson?: string): number | null {
   }
 }
 
+function readSavedPrestigeCompletedLevels(saveJson?: string): number[] | null {
+  if (!saveJson) {
+    return null;
+  }
+
+  try {
+    const save = JSON.parse(saveJson);
+    return normalizeSavePrestige(save?.prestige).completedLevels;
+  } catch {
+    return null;
+  }
+}
+
+function hasSavedPrestigeProgression(
+  previousSaveJson: string | undefined,
+  nextSaveJson: string,
+): boolean {
+  const previousLevels = readSavedPrestigeCompletedLevels(previousSaveJson);
+  const nextLevels = readSavedPrestigeCompletedLevels(nextSaveJson);
+
+  if (!previousLevels || !nextLevels) {
+    return false;
+  }
+
+  const nextLevelSet = new Set(nextLevels);
+  const previousLevelSet = new Set(previousLevels);
+
+  return (
+    previousLevels.every((level) => nextLevelSet.has(level)) &&
+    nextLevels.some((level) => !previousLevelSet.has(level))
+  );
+}
+
 function saveJsonHasReplayProgress(saveJson: string): boolean {
   const currentLevel = readSavedCurrentLevel(saveJson);
   if (currentLevel !== null && currentLevel > DEFAULT_PLAYER_LEVEL) {
@@ -4949,9 +4988,27 @@ function assertActivePlayerSession(
 function assertClientSaveDoesNotDowngradeProgress(
   existingSave: PlayerGameplaySaveRowValue | undefined,
   safeSaveJson: string,
-) {
+): boolean {
   if (!existingSave) {
-    return;
+    return false;
+  }
+
+  const previousPrestigeLevels = readSavedPrestigeCompletedLevels(existingSave.saveJson);
+  const nextPrestigeLevels = readSavedPrestigeCompletedLevels(safeSaveJson);
+  if (
+    previousPrestigeLevels !== null &&
+    nextPrestigeLevels !== null &&
+    previousPrestigeLevels.some((level) => !nextPrestigeLevels.includes(level))
+  ) {
+    throw new Error('Refusing older player save: prestige would decrease.');
+  }
+
+  const allowsRunProgressReset = hasSavedPrestigeProgression(
+    existingSave.saveJson,
+    safeSaveJson,
+  );
+  if (allowsRunProgressReset) {
+    return true;
   }
 
   const previousLevel = readSavedCurrentLevel(existingSave.saveJson);
@@ -4981,6 +5038,8 @@ function assertClientSaveDoesNotDowngradeProgress(
   ) {
     throw new Error('Refusing older player save: research would decrease.');
   }
+
+  return false;
 }
 
 function getDefaultBrewingMaxIngredients(): number {
@@ -7649,7 +7708,10 @@ export const set_player_gameplay_save = spacetimedb.reducer(
       return;
     }
 
-    assertClientSaveDoesNotDowngradeProgress(existingSave, safeSaveJson);
+    const allowsRunProgressReset = assertClientSaveDoesNotDowngradeProgress(
+      existingSave,
+      safeSaveJson,
+    );
     const nextSave = {
       identity: ctx.sender,
       saveJson: safeSaveJson,
@@ -7658,7 +7720,9 @@ export const set_player_gameplay_save = spacetimedb.reducer(
 
     if (existingSave) {
       ctx.db.playerGameplaySave.identity.update(nextSave);
-      syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson);
+      syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson, {
+        allowDecrease: allowsRunProgressReset,
+      });
       return;
     }
 

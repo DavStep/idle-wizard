@@ -375,6 +375,39 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('persists prestige reset data with only settings and prestige progress kept', () => {
+    const persistenceStorage = createMemoryStorage();
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    gameplayFacade.crystalFacade.add(4);
+    gameplayFacade.goldFacade.add(99);
+    gameplayFacade.buyVisualSettingOption('theme', 'black');
+    gameplayFacade.buyResearch('unlockSeed:sageSeed');
+    advanceToLevel(gameplayFacade, 10);
+
+    gameplayFacade.completePrestigeMilestone(10);
+
+    const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
+    expect(saved).toMatchObject({
+      gold: { current: 0, totalGenerated: 0 },
+      crystal: { current: 0 },
+      ruby: { current: 1 },
+      inventory: [],
+      research: { completedIds: [] },
+      prestige: { completedLevels: [10] },
+      visualSettings: {
+        researched: {
+          theme: {
+            black: true,
+          },
+        },
+      },
+      tasks: {
+        currentLevel: 1,
+      },
+    });
+  });
+
   it('requires confirmation when a higher prestige milestone is available', () => {
     const { gameplayFacade } = createGameplay();
     advanceToLevel(gameplayFacade, 20);
