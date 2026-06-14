@@ -7,8 +7,9 @@ const MARKET_TABS = [
 ];
 
 export class ShopMarketTabsManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, onActiveTabChange } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.onActiveTabChange = onActiveTabChange;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {
@@ -84,6 +85,11 @@ export class ShopMarketTabsManager {
 
     this.activeTabId = tabId;
     this.render();
+    this.onActiveTabChange?.(tabId);
+  }
+
+  getActiveTabId() {
+    return this.activeTabId;
   }
 
   createTabButton(tab) {

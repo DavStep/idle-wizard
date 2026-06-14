@@ -1,11 +1,15 @@
-export const BrewingCauldron = {};
+export const BrewingCauldron = {
+  cauldronIndex: [],
+};
 
 export const BrewingCauldronIngredient = {
+  cauldronIndex: [],
   slotIndex: [],
   itemTypeId: [],
 };
 
 export const ActiveBrew = {
+  cauldronIndex: [],
   resultItemTypeId: [],
   resultQuantity: [],
   phase: [],

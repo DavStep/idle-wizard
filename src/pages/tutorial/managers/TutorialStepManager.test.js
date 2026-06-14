@@ -84,7 +84,7 @@ describe('TutorialStepManager', () => {
     expect(getStep()).toMatchObject({
       id: 'open-tasks',
       targetId: 'workshop:tasks',
-      text: 'tasks show what the room needs',
+      text: 'open tasks',
       stepLabel: '1/5',
     });
   });

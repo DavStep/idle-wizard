@@ -145,18 +145,28 @@ export class WorkshopActionBarManager {
   render(snapshot) {
     const quantity = snapshot.seedSummoning.quantity ?? 1;
     const summonLabel = quantity > 1 ? `summon x${quantity}` : 'summon seed';
+    const costLabel = `${snapshot.seedSummoning.cost} mana`;
+    const ariaLabel = `${summonLabel}, costs ${snapshot.seedSummoning.cost} mana`;
+    const ariaDisabled = snapshot.seedSummoning.canSummon ? 'false' : 'true';
+    const disabled = !snapshot.seedSummoning.canSummon;
 
-    this.refs.summonButtonLabel.textContent = summonLabel;
-    setResourceIconText(this.refs.summonButtonCost, `${snapshot.seedSummoning.cost} mana`);
-    this.refs.summonButton.setAttribute(
-      'aria-label',
-      `${summonLabel}, costs ${snapshot.seedSummoning.cost} mana`,
-    );
-    this.refs.summonButton.setAttribute(
-      'aria-disabled',
-      snapshot.seedSummoning.canSummon ? 'false' : 'true',
-    );
-    this.refs.summonButton.disabled = !snapshot.seedSummoning.canSummon;
+    this.setText(this.refs.summonButtonLabel, summonLabel);
+    setResourceIconText(this.refs.summonButtonCost, costLabel);
+    this.setAttribute(this.refs.summonButton, 'aria-label', ariaLabel);
+    this.setAttribute(this.refs.summonButton, 'aria-disabled', ariaDisabled);
+    this.refs.summonButton.disabled = disabled;
     setNotificationBadge(this.refs.summonButton, snapshot.seedSummoning.canSummon);
+  }
+
+  setText(element, text) {
+    if (element.textContent !== text) {
+      element.textContent = text;
+    }
+  }
+
+  setAttribute(element, name, value) {
+    if (element.getAttribute(name) !== value) {
+      element.setAttribute(name, value);
+    }
   }
 }

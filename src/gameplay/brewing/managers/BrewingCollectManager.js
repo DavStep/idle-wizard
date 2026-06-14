@@ -4,8 +4,8 @@ export class BrewingCollectManager {
     this.itemsFacade = itemsFacade;
   }
 
-  collect() {
-    const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
+  collect(cauldronIndex = 0) {
+    const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot(cauldronIndex);
 
     if (!activeBrew) {
       return {
@@ -21,7 +21,7 @@ export class BrewingCollectManager {
       };
     }
 
-    const collected = this.brewingProcessEntityManager.collectReadyBrew();
+    const collected = this.brewingProcessEntityManager.collectReadyBrew(cauldronIndex);
 
     if (!collected) {
       return {
@@ -36,6 +36,8 @@ export class BrewingCollectManager {
 
     return {
       ok: true,
+      cauldronIndex: activeBrew.cauldronIndex,
+      cauldronNumber: activeBrew.cauldronNumber,
       potion: {
         itemTypeId: potion.id,
         key: potion.key,

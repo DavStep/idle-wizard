@@ -19,7 +19,10 @@ export class ShopPageFacade {
     this.roomViewManager = new ShopRoomViewManager();
     this.flyoutManager = new RewardFlyoutManager();
     this.rewardEventsUnsubscribe = null;
-    this.marketTabsManager = new ShopMarketTabsManager({ gameplayFacade });
+    this.marketTabsManager = new ShopMarketTabsManager({
+      gameplayFacade,
+      onActiveTabChange: () => this.renderActiveMarketTab(),
+    });
     this.shelfManager = new ShopShelfManager({ gameplayFacade });
     this.demandManager = new ShopDemandManager({ gameplayFacade });
     this.stockManager = new ShopStockManager({ gameplayFacade });
@@ -73,5 +76,27 @@ export class ShopPageFacade {
     this.flyoutManager.unmount();
     this.marketTabsManager.unmount();
     this.roomViewManager.unmount();
+  }
+
+  renderActiveMarketTab() {
+    const activeTabId = this.marketTabsManager.getActiveTabId();
+
+    if (activeTabId === 'npm') {
+      const snapshot = this.gameplayFacade?.getSnapshot?.();
+      this.shelfManager.render(snapshot);
+      this.demandManager.render();
+      this.stockManager.render();
+      return;
+    }
+
+    if (activeTabId === 'player') {
+      this.playerRequestManager.render();
+      this.playerShelfManager.render();
+      return;
+    }
+
+    if (activeTabId === 'crystals') {
+      this.goldOfferManager.render(this.gameplayFacade?.getSnapshot?.());
+    }
   }
 }

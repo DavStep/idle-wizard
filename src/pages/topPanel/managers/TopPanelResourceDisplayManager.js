@@ -36,9 +36,10 @@ export class TopPanelResourceDisplayManager {
     const mana = snapshot.mana ?? {};
     const gold = snapshot.gold?.current ?? 0;
     const level = snapshot.tasks?.currentLevel ?? 1;
+    const goldText = formatGoldPriceText(gold);
 
     this.setText(this.refs.manaValue, `${Math.floor(mana.current ?? 0)}/${mana.cap ?? 0}`);
-    setResourceIconText(this.refs.goldValue, formatGoldPriceText(gold));
+    this.setResourceText(this.refs.goldValue, goldText);
     this.renderContextCurrency(snapshot);
     this.setText(this.refs.levelValue, `level ${level}`);
   }
@@ -72,15 +73,27 @@ export class TopPanelResourceDisplayManager {
     }
 
     const current = snapshot[currency]?.current ?? 0;
-    resource.setAttribute('aria-label', currency);
+    this.setAttribute(resource, 'aria-label', currency);
     setResourceColor(resource, currency);
-    setResourceIconText(this.refs.contextCurrencyKey, `${currency} `);
+    this.setResourceText(this.refs.contextCurrencyKey, `${currency} `);
     this.setText(this.refs.contextCurrencyValue, String(Math.floor(current)));
   }
 
   setText(element, text) {
     if (element.textContent !== text) {
       element.textContent = text;
+    }
+  }
+
+  setResourceText(element, text) {
+    if (element.textContent !== text) {
+      setResourceIconText(element, text);
+    }
+  }
+
+  setAttribute(element, name, value) {
+    if (element.getAttribute(name) !== value) {
+      element.setAttribute(name, value);
     }
   }
 }

@@ -3140,8 +3140,10 @@ describe('PagesFacade', () => {
     const layer = stage.querySelector('.tutorial-layer');
 
     expect(layer).not.toBeNull();
-    expect(layer?.querySelector('.tutorial-layer__witch')).not.toBeNull();
+    expect(layer?.querySelector('.tutorial-layer__portrait')).not.toBeNull();
+    expect(layer?.querySelector('.tutorial-layer__pointer')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__step-label')).not.toBeNull();
+    expect(layer?.querySelector('.tutorial-layer__skip')).toBeNull();
   });
 
   it('auto-completes FTUE for players already on level 2', () => {
@@ -5953,6 +5955,115 @@ describe('PagesFacade', () => {
 
     expect(pagesFacade.getCurrentPageId()).toBe('brewing');
     expect(stage.querySelector('.brewing-page')).not.toBeNull();
+  });
+
+  it('collapses Brewing herbs to five rows and expands to all rows', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+
+    gameplayFacade.getSnapshot().brewing.herbs.push(
+      {
+        itemTypeId: 1003,
+        key: 'nettleHerb',
+        label: 'nettle',
+        kind: 'herb',
+        quantity: 1,
+        stagedQuantity: 0,
+        availableQuantity: 1,
+      },
+      {
+        itemTypeId: 1004,
+        key: 'lavenderHerb',
+        label: 'lavender',
+        kind: 'herb',
+        quantity: 1,
+        stagedQuantity: 0,
+        availableQuantity: 1,
+      },
+      {
+        itemTypeId: 1005,
+        key: 'briarHerb',
+        label: 'briar',
+        kind: 'herb',
+        quantity: 1,
+        stagedQuantity: 0,
+        availableQuantity: 1,
+      },
+      {
+        itemTypeId: 1006,
+        key: 'glowcapHerb',
+        label: 'glowcap',
+        kind: 'herb',
+        quantity: 1,
+        stagedQuantity: 0,
+        availableQuantity: 1,
+      },
+    );
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    const visibleHerbRows = () =>
+      [...stage.querySelectorAll('.brewing-page__herb-row')].filter((row) => !row.hidden);
+
+    expect(stage.querySelectorAll('.brewing-page__herb-row')).toHaveLength(6);
+    expect(visibleHerbRows()).toHaveLength(5);
+    expect(stage.querySelector('.brewing-page__herbs-count')?.textContent).toBe('5/6');
+    expect(stage.querySelector('.brewing-page__herbs-toggle')?.textContent).toBe('expand');
+
+    stage
+      .querySelector('.brewing-page__herbs-toggle')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(visibleHerbRows()).toHaveLength(6);
+    expect(stage.querySelector('.brewing-page__herbs-count')?.textContent).toBe('6/6');
+    expect(stage.querySelector('.brewing-page__herbs-toggle')?.textContent).toBe('collapse');
+  });
+
+  it('shows each unlocked Brewing cauldron box from the snapshot', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const brewing = gameplayFacade.getSnapshot().brewing;
+    brewing.cauldrons = [
+      {
+        ...brewing,
+        cauldronIndex: 0,
+        cauldronNumber: 1,
+        ingredients: [],
+        activeBrew: null,
+      },
+      {
+        ...brewing,
+        cauldronIndex: 1,
+        cauldronNumber: 2,
+        ingredients: [],
+        activeBrew: null,
+      },
+      {
+        ...brewing,
+        cauldronIndex: 2,
+        cauldronNumber: 3,
+        ingredients: [],
+        activeBrew: null,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    expect(
+      [...stage.querySelectorAll('.brewing-page__cauldron .style-box__title')].map(
+        (title) => title.textContent,
+      ),
+    ).toEqual(['cauldron 1', 'cauldron 2', 'cauldron 3']);
   });
 
   it('shows select recipe control with auto state only after auto brew research', () => {

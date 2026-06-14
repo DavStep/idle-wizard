@@ -213,7 +213,6 @@ export class GardenPlotManager {
 
     const label = document.createElement('span');
     label.className = 'row_key';
-    setItemIconLabel(label, 'seed');
 
     const quantity = document.createElement('span');
     quantity.className = 'row_val';
@@ -429,6 +428,7 @@ export class GardenPlotManager {
       refs.row.classList.toggle('is-empty', seed.quantity <= 0);
       refs.row.classList.toggle('is-unresearched', false);
       this.setText(refs.label, seed.label);
+      setItemIconLabel(refs.label, 'seed', seed.key);
       this.setText(refs.quantity, String(seed.quantity));
       refs.button.disabled = false;
       refs.button.setAttribute('aria-disabled', 'false');

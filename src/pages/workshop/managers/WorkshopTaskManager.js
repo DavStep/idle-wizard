@@ -34,7 +34,6 @@ export class WorkshopTaskManager {
 
     this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'workshop-page__tasks-summary';
-    this.refs.summary.dataset.tutorialId = 'workshop:tasks';
     this.refs.summaryTask = this.createTaskRow();
     this.refs.summary.append(this.refs.summaryTask.root);
 
@@ -50,6 +49,7 @@ export class WorkshopTaskManager {
     this.refs.toggleButton = document.createElement('button');
     this.refs.toggleButton.className = 'workshop-page__tasks-toggle';
     this.refs.toggleButton.type = 'button';
+    this.refs.toggleButton.dataset.tutorialId = 'workshop:tasks';
     this.refs.toggleButton.setAttribute('aria-expanded', 'false');
     this.refs.toggleButton.setAttribute('aria-controls', 'workshop-task-list');
     this.refs.toggleButton.addEventListener('click', () => this.toggleExpanded());

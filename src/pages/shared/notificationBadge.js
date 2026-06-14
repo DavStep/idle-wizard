@@ -33,11 +33,24 @@ export function setNotificationBadge(element, active, tone) {
   }
 
   if (isNotificationActive(active)) {
-    element.dataset.notification = 'true';
-    element.dataset.notificationTone = getNotificationTone(active, tone);
+    const nextTone = getNotificationTone(active, tone);
+
+    if (element.dataset.notification !== 'true') {
+      element.dataset.notification = 'true';
+    }
+
+    if (element.dataset.notificationTone !== nextTone) {
+      element.dataset.notificationTone = nextTone;
+    }
+
     return;
   }
 
-  delete element.dataset.notification;
-  delete element.dataset.notificationTone;
+  if (element.dataset.notification !== undefined) {
+    delete element.dataset.notification;
+  }
+
+  if (element.dataset.notificationTone !== undefined) {
+    delete element.dataset.notificationTone;
+  }
 }

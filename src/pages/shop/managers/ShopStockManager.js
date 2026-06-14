@@ -375,7 +375,7 @@ export class ShopStockManager {
   }
 
   render() {
-    if (!this.root || !this.lastSnapshot) {
+    if (!this.root || !this.lastSnapshot || !this.isRenderVisible()) {
       return;
     }
 
@@ -400,6 +400,10 @@ export class ShopStockManager {
 
     this.renderStatus(items.length === 0 ? 'empty' : this.statusText);
     this.renderBuyDialog();
+  }
+
+  isRenderVisible() {
+    return this.buyPopupVisible || !this.root?.closest('[hidden]');
   }
 
   renderRow(refs, item) {

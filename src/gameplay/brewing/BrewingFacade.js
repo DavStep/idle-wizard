@@ -13,7 +13,7 @@ export class BrewingFacade {
   static explain =
     'Brewing lets the wizard place herbs into a cauldron, spend mana, bottle the result, and collect the potion.';
 
-  constructor({ itemsFacade, manaFacade, researchFacade, onBrewComplete }) {
+  constructor({ itemsFacade, manaFacade, playerLevelFacade, researchFacade, onBrewComplete }) {
     this.brewingBalanceManager = new BrewingBalanceManager();
     this.brewingCauldronEntityManager = new BrewingCauldronEntityManager({
       itemsFacade,
@@ -55,6 +55,7 @@ export class BrewingFacade {
       brewingRecipeMatchManager: this.brewingRecipeMatchManager,
       itemsFacade,
       manaFacade,
+      playerLevelFacade,
       getAutoBrewEnabled: () => this.autoBrewEnabled,
       getAutoBrewRecipeKey: () => this.autoBrewRecipeKey,
     });
@@ -133,7 +134,9 @@ export class BrewingFacade {
       return 0;
     }
 
-    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+    const targetCauldronIndex = this.getPendingAutoBrewCauldronIndex(recipe);
+
+    if (targetCauldronIndex === null) {
       return 0;
     }
 
@@ -147,14 +150,43 @@ export class BrewingFacade {
       return 0;
     }
 
-    if (!this.brewingStartManager.hasEnoughInventory(ingredientItemTypeIds)) {
+    if (
+      !this.brewingStartManager.hasEnoughInventoryForCauldron(
+        ingredientItemTypeIds,
+        targetCauldronIndex,
+      )
+    ) {
       return 0;
     }
 
     return Number.isFinite(recipe.manaCost) ? Math.max(0, recipe.manaCost) : 0;
   }
 
-  autoBrew() {
+  getPendingAutoBrewCauldronIndex(recipe) {
+    const maxCauldrons = this.brewingSnapshotManager.getMaxCauldrons();
+
+    for (let cauldronIndex = 0; cauldronIndex < maxCauldrons; cauldronIndex += 1) {
+      if (this.brewingProcessEntityManager.hasActiveBrew(cauldronIndex)) {
+        continue;
+      }
+
+      const ingredientItemTypeIds =
+        this.brewingStartManager.getRecipeIngredientItemTypeIds(recipe);
+
+      if (
+        this.brewingStartManager.hasEnoughInventoryForCauldron(
+          ingredientItemTypeIds,
+          cauldronIndex,
+        )
+      ) {
+        return cauldronIndex;
+      }
+    }
+
+    return null;
+  }
+
+  autoBrew(cauldronIndex = 0) {
     if (!this.autoBrewEnabled) {
       return {
         ok: false,
@@ -162,17 +194,20 @@ export class BrewingFacade {
       };
     }
 
-    const prepared = this.brewingStartManager.prepareRecipeForAutoBrew(this.autoBrewRecipeKey);
+    const prepared = this.brewingStartManager.prepareRecipeForAutoBrew(
+      this.autoBrewRecipeKey,
+      cauldronIndex,
+    );
 
     if (!prepared.ok) {
       return prepared;
     }
 
-    return this.brew();
+    return this.brew(cauldronIndex);
   }
 
-  prepareRecipeForSelection(recipeKey) {
-    return this.brewingStartManager.prepareRecipeForSelection(recipeKey);
+  prepareRecipeForSelection(recipeKey, cauldronIndex = 0) {
+    return this.brewingStartManager.prepareRecipeForSelection(recipeKey, cauldronIndex);
   }
 
   applyRuntimeConfig(snapshot = {}) {
@@ -186,38 +221,39 @@ export class BrewingFacade {
       this.brewingBalanceManager.setRuntimeBalance(balance);
       this.brewingCauldronEntityManager.configureCapacity({
         maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
+        maxCauldrons: this.brewingSnapshotManager.getMaxCauldrons(),
       });
     } catch {
       return;
     }
   }
 
-  addIngredient(itemTypeId) {
-    return this.brewingStartManager.addIngredient(itemTypeId);
+  addIngredient(itemTypeId, cauldronIndex = 0) {
+    return this.brewingStartManager.addIngredient(itemTypeId, cauldronIndex);
   }
 
-  removeIngredientAt(slotIndex) {
-    return this.brewingStartManager.removeIngredientAt(slotIndex);
+  removeIngredientAt(slotIndex, cauldronIndex = 0) {
+    return this.brewingStartManager.removeIngredientAt(slotIndex, cauldronIndex);
   }
 
-  clearCauldron() {
-    return this.brewingStartManager.clearCauldron();
+  clearCauldron(cauldronIndex = 0) {
+    return this.brewingStartManager.clearCauldron(cauldronIndex);
   }
 
   getStagedIngredientQuantity(itemTypeId) {
     return this.brewingCauldronEntityManager.getIngredientCountByItemTypeId(itemTypeId);
   }
 
-  brew() {
-    return this.brewingStartManager.brew();
+  brew(cauldronIndex = 0) {
+    return this.brewingStartManager.brew(cauldronIndex);
   }
 
-  startBottling() {
-    return this.brewingBottlingManager.startBottling();
+  startBottling(cauldronIndex = 0) {
+    return this.brewingBottlingManager.startBottling(cauldronIndex);
   }
 
-  collect() {
-    const result = this.brewingCollectManager.collect();
+  collect(cauldronIndex = 0) {
+    const result = this.brewingCollectManager.collect(cauldronIndex);
 
     if (result.ok) {
       this.onBrewComplete?.({
@@ -235,22 +271,40 @@ export class BrewingFacade {
 
   getPersistenceSnapshot() {
     const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
+    const maxCauldrons = this.brewingSnapshotManager.getMaxCauldrons();
+    const cauldrons = Array.from({ length: maxCauldrons }, (_unused, cauldronIndex) => {
+      const cauldronActiveBrew =
+        this.brewingProcessEntityManager.getActiveBrewSnapshot(cauldronIndex);
+
+      return {
+        cauldronNumber: cauldronIndex + 1,
+        cauldronItemKeys: this.brewingCauldronEntityManager
+          .getIngredientSnapshots(cauldronIndex)
+          .map((ingredient) => ingredient.key),
+        activeBrew: cauldronActiveBrew
+          ? this.formatActiveBrewPersistence(cauldronActiveBrew)
+          : null,
+      };
+    });
 
     return {
       autoBrewEnabled: this.autoBrewEnabled,
       autoBrewRecipeKey: this.autoBrewRecipeKey,
+      cauldrons,
       cauldronItemKeys: this.brewingCauldronEntityManager
         .getIngredientSnapshots()
         .map((ingredient) => ingredient.key),
-      activeBrew: activeBrew
-        ? {
-            resultItemKey: activeBrew.key,
-            phase: activeBrew.phase,
-            remainingMs: activeBrew.remainingMs,
-            totalMs: activeBrew.totalMs,
-            bottlingTotalMs: activeBrew.bottlingTotalMs,
-          }
-        : null,
+      activeBrew: activeBrew ? this.formatActiveBrewPersistence(activeBrew) : null,
+    };
+  }
+
+  formatActiveBrewPersistence(activeBrew) {
+    return {
+      resultItemKey: activeBrew.key,
+      phase: activeBrew.phase,
+      remainingMs: activeBrew.remainingMs,
+      totalMs: activeBrew.totalMs,
+      bottlingTotalMs: activeBrew.bottlingTotalMs,
     };
   }
 
@@ -264,54 +318,83 @@ export class BrewingFacade {
     );
     this.setAutoBrewEnabled(Boolean(snapshot.autoBrewEnabled));
 
-    this.brewingCauldronEntityManager.clearIngredients();
+    this.brewingCauldronEntityManager.clearAllIngredients();
+    this.brewingProcessEntityManager.clearAllActiveBrews();
 
-    if (Array.isArray(snapshot.cauldronItemKeys)) {
-      for (const itemKey of snapshot.cauldronItemKeys) {
-        const definition =
-          typeof itemKey === 'string' ? itemsFacade.safeGetDefinitionByKey(itemKey) : null;
+    const savedCauldrons = Array.isArray(snapshot.cauldrons)
+      ? snapshot.cauldrons
+      : [
+          {
+            cauldronNumber: 1,
+            cauldronItemKeys: snapshot.cauldronItemKeys,
+            activeBrew: snapshot.activeBrew,
+          },
+        ];
 
-        if (!definition) {
-          continue;
-        }
+    for (const [index, savedCauldron] of savedCauldrons.entries()) {
+      const cauldronIndex = this.normalizeCauldronIndex(
+        Number.isInteger(savedCauldron?.cauldronNumber)
+          ? savedCauldron.cauldronNumber - 1
+          : index,
+      );
+      this.restoreCauldronItems(savedCauldron?.cauldronItemKeys, itemsFacade, cauldronIndex);
+      this.restoreActiveBrew(savedCauldron?.activeBrew, itemsFacade, cauldronIndex);
+    }
+  }
 
-        if (definition.kind !== 'herb') {
-          continue;
-        }
-
-        this.brewingCauldronEntityManager.addIngredient(definition.id);
-      }
+  restoreCauldronItems(cauldronItemKeys, itemsFacade, cauldronIndex = 0) {
+    if (!Array.isArray(cauldronItemKeys)) {
+      return;
     }
 
-    if (!snapshot.activeBrew) {
-      this.brewingProcessEntityManager.clearActiveBrew();
+    for (const itemKey of cauldronItemKeys) {
+      const definition =
+        typeof itemKey === 'string' ? itemsFacade.safeGetDefinitionByKey(itemKey) : null;
+
+      if (!definition || definition.kind !== 'herb') {
+        continue;
+      }
+
+      this.brewingCauldronEntityManager.addIngredient(definition.id, cauldronIndex);
+    }
+  }
+
+  restoreActiveBrew(activeBrew, itemsFacade, cauldronIndex = 0) {
+    if (!activeBrew) {
       return;
     }
 
     const resultDefinition =
-      typeof snapshot.activeBrew.resultItemKey === 'string'
-        ? itemsFacade.safeGetDefinitionByKey(snapshot.activeBrew.resultItemKey)
+      typeof activeBrew.resultItemKey === 'string'
+        ? itemsFacade.safeGetDefinitionByKey(activeBrew.resultItemKey)
         : null;
 
     if (
       !resultDefinition ||
       resultDefinition.kind !== 'potion' ||
-      !Number.isFinite(snapshot.activeBrew.totalMs) ||
-      !Number.isFinite(snapshot.activeBrew.remainingMs)
+      !Number.isFinite(activeBrew.totalMs) ||
+      !Number.isFinite(activeBrew.remainingMs)
     ) {
-      this.brewingProcessEntityManager.clearActiveBrew();
       return;
     }
 
     this.brewingProcessEntityManager.restoreActiveBrew({
+      cauldronIndex,
       resultItemTypeId: resultDefinition.id,
-      phase: snapshot.activeBrew.phase,
-      totalSeconds: snapshot.activeBrew.totalMs / 1_000,
-      remainingSeconds: snapshot.activeBrew.remainingMs / 1_000,
+      phase: activeBrew.phase,
+      totalSeconds: activeBrew.totalMs / 1_000,
+      remainingSeconds: activeBrew.remainingMs / 1_000,
       bottlingTotalSeconds:
-        (Number.isFinite(snapshot.activeBrew.bottlingTotalMs)
-          ? snapshot.activeBrew.bottlingTotalMs
+        (Number.isFinite(activeBrew.bottlingTotalMs)
+          ? activeBrew.bottlingTotalMs
           : this.brewingBalanceManager.getBottlingDurationMs()) / 1_000,
     });
+  }
+
+  normalizeCauldronIndex(cauldronIndex) {
+    const safeCauldronIndex = Math.floor(Number(cauldronIndex));
+    return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
+      ? safeCauldronIndex
+      : 0;
   }
 }

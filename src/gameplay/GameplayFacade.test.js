@@ -1974,6 +1974,64 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('uses level-unlocked cauldrons as independent brewing slots', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 5);
+    gameplayFacade.syncPlayerLevelManaEffects();
+    gameplayFacade.manaFacade.fill();
+    gameplayFacade.itemsFacade.addItem(1001, 6);
+    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+
+    expect(gameplayFacade.getSnapshot().brewing.maxCauldrons).toBe(3);
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(3);
+
+    expect(gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
+      ok: true,
+      cauldronNumber: 2,
+    });
+    expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].ingredients).toHaveLength(3);
+    expect(gameplayFacade.getSnapshot().brewing.herbs[0]).toMatchObject({
+      stagedQuantity: 3,
+      availableQuantity: 3,
+    });
+
+    expect(gameplayFacade.prepareBrewingRecipe('manaTonic', 0)).toMatchObject({
+      ok: true,
+      cauldronNumber: 1,
+    });
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[0].ingredients).toHaveLength(3);
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].ingredients).toHaveLength(3);
+    expect(gameplayFacade.getSnapshot().brewing.herbs[0]).toMatchObject({
+      stagedQuantity: 6,
+      availableQuantity: 0,
+    });
+
+    expect(gameplayFacade.brewCauldron(1)).toMatchObject({
+      ok: true,
+      cauldronNumber: 2,
+      potion: {
+        key: 'manaTonic',
+      },
+    });
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[0].ingredients).toHaveLength(3);
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].ingredients).toEqual([]);
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].activeBrew).toMatchObject({
+      cauldronNumber: 2,
+      phase: 'brewing',
+    });
+
+    ecsFacade.update({ deltaSeconds: 30 });
+
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[0].activeBrew).toBeNull();
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].activeBrew).toMatchObject({
+      phase: 'brewed',
+      canStartBottling: true,
+    });
+  });
+
   it('clears the cauldron and reports missing herbs for selected recipes', () => {
     const { gameplayFacade } = createGameplay();
 

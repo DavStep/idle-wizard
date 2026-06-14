@@ -19,8 +19,10 @@ export class BrewingStartManager {
     this.researchFacade = researchFacade;
   }
 
-  addIngredient(itemTypeId) {
-    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+  addIngredient(itemTypeId, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (this.brewingProcessEntityManager.hasActiveBrew(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'brew_in_progress',
@@ -38,7 +40,7 @@ export class BrewingStartManager {
     }
 
     if (
-      this.brewingCauldronEntityManager.getIngredientCount() >=
+      this.brewingCauldronEntityManager.getIngredientCount(safeCauldronIndex) >=
       this.brewingBalanceManager.getMaxCauldronIngredients()
     ) {
       return {
@@ -59,53 +61,66 @@ export class BrewingStartManager {
       };
     }
 
-    this.brewingCauldronEntityManager.addIngredient(itemTypeId);
+    this.brewingCauldronEntityManager.addIngredient(itemTypeId, safeCauldronIndex);
 
     return {
       ok: true,
       item,
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
     };
   }
 
-  removeIngredientAt(slotIndex) {
-    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+  removeIngredientAt(slotIndex, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (this.brewingProcessEntityManager.hasActiveBrew(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'brew_in_progress',
       };
     }
 
-    if (!this.brewingCauldronEntityManager.removeIngredientAt(slotIndex)) {
+    if (!this.brewingCauldronEntityManager.removeIngredientAt(slotIndex, safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'unknown_ingredient',
         slotIndex,
+        cauldronIndex: safeCauldronIndex,
       };
     }
 
     return {
       ok: true,
       slotIndex,
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
     };
   }
 
-  clearCauldron() {
-    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+  clearCauldron(cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (this.brewingProcessEntityManager.hasActiveBrew(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'brew_in_progress',
       };
     }
 
-    this.brewingCauldronEntityManager.clearIngredients();
+    this.brewingCauldronEntityManager.clearIngredients(safeCauldronIndex);
 
     return {
       ok: true,
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
     };
   }
 
-  brew() {
-    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+  brew(cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (this.brewingProcessEntityManager.hasActiveBrew(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'brew_in_progress',
@@ -113,7 +128,7 @@ export class BrewingStartManager {
     }
 
     const ingredientItemTypeIds =
-      this.brewingCauldronEntityManager.getIngredientItemTypeIds();
+      this.brewingCauldronEntityManager.getIngredientItemTypeIds(safeCauldronIndex);
 
     if (ingredientItemTypeIds.length === 0) {
       return {
@@ -168,18 +183,24 @@ export class BrewingStartManager {
     const baseDurationMs =
       recipe?.brewDurationMs ?? this.brewingBalanceManager.getWastedBrewDurationMs();
     const durationMs =
-      this.researchFacade?.getReducedCauldronBrewingDurationMs?.(1, baseDurationMs) ??
+      this.researchFacade?.getReducedCauldronBrewingDurationMs?.(
+        safeCauldronIndex + 1,
+        baseDurationMs,
+      ) ??
       baseDurationMs;
 
     this.brewingProcessEntityManager.startBrew({
+      cauldronIndex: safeCauldronIndex,
       resultItemTypeId: resultItem.id,
       totalSeconds: durationMs / 1_000,
       bottlingTotalSeconds: this.brewingBalanceManager.getBottlingDurationMs() / 1_000,
     });
-    this.brewingCauldronEntityManager.clearIngredients();
+    this.brewingCauldronEntityManager.clearIngredients(safeCauldronIndex);
 
     return {
       ok: true,
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
       potion: {
         itemTypeId: resultItem.id,
         key: resultItem.key,
@@ -200,15 +221,16 @@ export class BrewingStartManager {
     };
   }
 
-  prepareRecipeForAutoBrew(recipeKey) {
-    return this.prepareRecipe(recipeKey, { clearOnMissing: false });
+  prepareRecipeForAutoBrew(recipeKey, cauldronIndex = 0) {
+    return this.prepareRecipe(recipeKey, { clearOnMissing: false, cauldronIndex });
   }
 
-  prepareRecipeForSelection(recipeKey) {
-    return this.prepareRecipe(recipeKey, { clearOnMissing: true });
+  prepareRecipeForSelection(recipeKey, cauldronIndex = 0) {
+    return this.prepareRecipe(recipeKey, { clearOnMissing: true, cauldronIndex });
   }
 
-  prepareRecipe(recipeKey, { clearOnMissing = false } = {}) {
+  prepareRecipe(recipeKey, { clearOnMissing = false, cauldronIndex = 0 } = {}) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const recipe = this.brewingRecipeMatchManager.getRecipeByKey(recipeKey);
 
     if (!recipe) {
@@ -218,7 +240,7 @@ export class BrewingStartManager {
       };
     }
 
-    if (this.brewingProcessEntityManager.hasActiveBrew()) {
+    if (this.brewingProcessEntityManager.hasActiveBrew(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'brew_in_progress',
@@ -236,26 +258,32 @@ export class BrewingStartManager {
       };
     }
 
-    if (!this.hasEnoughInventory(ingredientItemTypeIds)) {
+    if (!this.hasEnoughInventoryForCauldron(ingredientItemTypeIds, safeCauldronIndex)) {
       if (clearOnMissing) {
-        this.brewingCauldronEntityManager.clearIngredients();
+        this.brewingCauldronEntityManager.clearIngredients(safeCauldronIndex);
       }
 
       return {
         ok: false,
         reason: 'not_enough_ingredients',
         recipe,
-        missingIngredients: this.getMissingInventory(ingredientItemTypeIds),
+        missingIngredients: this.getMissingInventoryForCauldron(
+          ingredientItemTypeIds,
+          safeCauldronIndex,
+        ),
       };
     }
 
-    this.brewingCauldronEntityManager.clearIngredients();
+    this.brewingCauldronEntityManager.clearIngredients(safeCauldronIndex);
 
     for (const itemTypeId of ingredientItemTypeIds) {
-      const added = this.brewingCauldronEntityManager.addIngredient(itemTypeId);
+      const added = this.brewingCauldronEntityManager.addIngredient(
+        itemTypeId,
+        safeCauldronIndex,
+      );
 
       if (!added) {
-        this.brewingCauldronEntityManager.clearIngredients();
+        this.brewingCauldronEntityManager.clearIngredients(safeCauldronIndex);
 
         return {
           ok: false,
@@ -269,6 +297,8 @@ export class BrewingStartManager {
       ok: true,
       recipe,
       ingredientItemTypeIds,
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
     };
   }
 
@@ -297,11 +327,62 @@ export class BrewingStartManager {
       .filter(Boolean);
   }
 
+  getMissingInventoryForCauldron(itemTypeIds, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    return [...this.getCounts(itemTypeIds)]
+      .map(([itemTypeId, requiredQuantity]) => {
+        const ownedQuantity = this.itemsFacade.getItemQuantity(itemTypeId);
+        const stagedInOtherCauldrons = this.getStagedInOtherCauldrons(
+          itemTypeId,
+          safeCauldronIndex,
+        );
+        const availableQuantity = Math.max(0, ownedQuantity - stagedInOtherCauldrons);
+        const missingQuantity = requiredQuantity - availableQuantity;
+
+        if (missingQuantity <= 0) {
+          return null;
+        }
+
+        const item = this.itemsFacade.getItemDefinition(itemTypeId);
+
+        return {
+          itemTypeId,
+          key: item.key,
+          label: item.label,
+          kind: item.kind,
+          requiredQuantity,
+          ownedQuantity: availableQuantity,
+          missingQuantity,
+        };
+      })
+      .filter(Boolean);
+  }
+
   hasEnoughInventory(itemTypeIds) {
     const counts = this.getCounts(itemTypeIds);
 
     for (const [itemTypeId, quantity] of counts) {
       if (this.itemsFacade.getItemQuantity(itemTypeId) < quantity) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  hasEnoughInventoryForCauldron(itemTypeIds, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const counts = this.getCounts(itemTypeIds);
+
+    for (const [itemTypeId, quantity] of counts) {
+      const ownedQuantity = this.itemsFacade.getItemQuantity(itemTypeId);
+      const stagedInOtherCauldrons = this.getStagedInOtherCauldrons(
+        itemTypeId,
+        safeCauldronIndex,
+      );
+
+      if (ownedQuantity - stagedInOtherCauldrons < quantity) {
         return false;
       }
     }
@@ -325,6 +406,17 @@ export class BrewingStartManager {
     return counts;
   }
 
+  getStagedInOtherCauldrons(itemTypeId, cauldronIndex = 0) {
+    const totalStaged =
+      this.brewingCauldronEntityManager.getIngredientCountByItemTypeId(itemTypeId);
+    const stagedInTarget =
+      this.brewingCauldronEntityManager.getIngredientCountByItemTypeId(
+        itemTypeId,
+        cauldronIndex,
+      );
+    return Math.max(0, totalStaged - stagedInTarget);
+  }
+
   getRecipeIngredientItemTypeIds(recipe) {
     if (!recipe || !Array.isArray(recipe.ingredients)) {
       return [];
@@ -335,5 +427,12 @@ export class BrewingStartManager {
       const normalizedQuantity = Math.max(1, quantity);
       return Array.from({ length: normalizedQuantity }, () => ingredient.itemTypeId);
     });
+  }
+
+  normalizeCauldronIndex(cauldronIndex) {
+    const safeCauldronIndex = Math.floor(Number(cauldronIndex));
+    return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
+      ? safeCauldronIndex
+      : 0;
   }
 }

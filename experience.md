@@ -24,6 +24,9 @@
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - FTUE guide should hide while top-panel username/settings dialog is open, then resume after it closes.
+- FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
+- FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
+- FTUE guide has no skip control; players should finish or auto-complete it through progress.
 
 ## Architecture
 
@@ -81,6 +84,7 @@
 - Server weekly/monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly is 7 days, monthly is 30 days, and UTC midnight is Armenia 04:00.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
 - Large generated research catalogs should put prerequisite ids on row definitions; per-row snapshot rendering must not re-read full definitions.
+- Research entity sync is hot-path sensitive; create catalog entities once, then answer per-row state from ECS components without rebuilding definitions.
 
 ## Gameplay Economy
 
@@ -206,6 +210,7 @@
 - Do not add decorative visuals unless the user explicitly asks.
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
+- Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
 - Gate hover-only underlines with `@media (hover: hover) and (pointer: fine)` so touch taps do not leave sticky underline state.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
@@ -230,6 +235,7 @@
 - Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
 - Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
 - Brewing cauldron staged ingredients display as adjacent quantity groups like `- 2 nettle`; do not show numbered slots.
+- Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
 - Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
 - Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.

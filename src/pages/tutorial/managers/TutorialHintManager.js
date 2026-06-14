@@ -1,19 +1,30 @@
-const HINT_WIDTH = 184;
+const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
+const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
+const HINT_WIDTH = 144;
+const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 72;
 const HINT_GAP = 8;
 const HIGHLIGHT_PAD = 3;
+const PORTRAIT_WIDTH = 78;
+const PORTRAIT_HEIGHT = 98;
+const POINTER_WIDTH = 46;
+const POINTER_HALF_HEIGHT = 12;
+const GUIDE_LEFT_BIAS = 22;
+const GUIDE_TOP_FRACTION = 0.18;
+const GUIDE_BOTTOM_FRACTION = 0.44;
 
 export class TutorialHintManager {
-  constructor({ onSkip } = {}) {
-    this.onSkip = onSkip;
+  constructor() {
     this.stage = null;
     this.root = null;
+    this.backdrop = null;
     this.highlight = null;
+    this.focusClone = null;
+    this.pointer = null;
+    this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
-    this.witch = null;
     this.text = null;
-    this.skipButton = null;
   }
 
   mount(stage) {
@@ -27,9 +38,30 @@ export class TutorialHintManager {
     this.root.hidden = true;
     this.root.setAttribute('aria-label', 'Guide');
 
+    this.backdrop = document.createElement('div');
+    this.backdrop.className = 'tutorial-layer__backdrop';
+    this.backdrop.setAttribute('aria-hidden', 'true');
+
     this.highlight = document.createElement('div');
     this.highlight.className = 'tutorial-layer__highlight';
     this.highlight.setAttribute('aria-hidden', 'true');
+
+    this.focusClone = document.createElement('div');
+    this.focusClone.className = 'tutorial-layer__focus-clone';
+    this.focusClone.setAttribute('aria-hidden', 'true');
+
+    this.pointer = document.createElement('img');
+    this.pointer.className = 'tutorial-layer__pointer';
+    this.pointer.src = POINTING_HAND_URL;
+    this.pointer.alt = '';
+    this.pointer.hidden = true;
+    this.pointer.setAttribute('aria-hidden', 'true');
+
+    this.portrait = document.createElement('img');
+    this.portrait.className = 'tutorial-layer__portrait';
+    this.portrait.src = WITCH_GUIDE_URL;
+    this.portrait.alt = '';
+    this.portrait.setAttribute('aria-hidden', 'true');
 
     this.hint = document.createElement('section');
     this.hint.className = 'tutorial-layer__hint style-box';
@@ -42,36 +74,22 @@ export class TutorialHintManager {
     this.stepLabel = document.createElement('div');
     this.stepLabel.className = 'tutorial-layer__step-label';
 
-    this.witch = document.createElement('div');
-    this.witch.className = 'tutorial-layer__witch';
-    this.witch.setAttribute('aria-hidden', 'true');
-
-    for (const className of [
-      'tutorial-layer__witch-hat',
-      'tutorial-layer__witch-face',
-      'tutorial-layer__witch-body',
-      'tutorial-layer__witch-broom',
-    ]) {
-      const part = document.createElement('span');
-      part.className = className;
-      this.witch.append(part);
-    }
-
     const copy = document.createElement('div');
     copy.className = 'tutorial-layer__copy';
 
     this.text = document.createElement('p');
     this.text.className = 'tutorial-layer__text';
 
-    this.skipButton = document.createElement('button');
-    this.skipButton.className = 'tutorial-layer__skip';
-    this.skipButton.type = 'button';
-    this.skipButton.textContent = 'skip';
-    this.skipButton.addEventListener('click', () => this.onSkip?.());
-
-    copy.append(this.text, this.skipButton);
-    this.hint.append(title, this.stepLabel, this.witch, copy);
-    this.root.append(this.highlight, this.hint);
+    copy.append(this.text);
+    this.hint.append(title, this.stepLabel, copy);
+    this.root.append(
+      this.backdrop,
+      this.highlight,
+      this.focusClone,
+      this.pointer,
+      this.portrait,
+      this.hint,
+    );
     stage.append(this.root);
 
     return this.root;
@@ -81,15 +99,17 @@ export class TutorialHintManager {
     this.root?.remove();
     this.stage = null;
     this.root = null;
+    this.backdrop = null;
     this.highlight = null;
+    this.focusClone = null;
+    this.pointer = null;
+    this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
-    this.witch = null;
     this.text = null;
-    this.skipButton = null;
   }
 
-  show({ target, text, stepLabel }) {
+  show({ target, text, stepLabel, showPointer = true }) {
     if (!this.root || !this.stage || !target) {
       this.hide();
       return;
@@ -106,7 +126,9 @@ export class TutorialHintManager {
     this.text.textContent = text ?? '';
     this.stepLabel.textContent = stepLabel ?? '';
     this.positionHighlight(rect);
-    this.positionHint(rect);
+    this.positionFocusClone(target, rect);
+    this.positionPointer(rect, showPointer);
+    this.positionGuide(rect);
   }
 
   hide() {
@@ -153,18 +175,74 @@ export class TutorialHintManager {
     this.highlight.style.height = `${height}px`;
   }
 
-  positionHint(rect) {
+  positionFocusClone(target, rect) {
+    this.focusClone.replaceChildren();
+
+    const clone = target.cloneNode(true);
+    stripClonedTargetAttrs(clone);
+    clone.classList.add('tutorial-layer__focus-copy');
+    this.focusClone.append(clone);
+
+    this.focusClone.style.left = `${rect.left}px`;
+    this.focusClone.style.top = `${rect.top}px`;
+    this.focusClone.style.width = `${rect.width}px`;
+    this.focusClone.style.height = `${rect.height}px`;
+  }
+
+  positionPointer(rect, showPointer) {
+    if (!this.pointer || !showPointer) {
+      this.pointer.hidden = true;
+      return;
+    }
+
     const bounds = this.getSourceBounds();
-    const left = clamp(rect.left, HINT_GAP, Math.max(HINT_GAP, bounds.width - HINT_WIDTH));
-    const below = rect.top + rect.height + HINT_GAP;
-    const above = rect.top - HINT_HEIGHT - HINT_GAP;
-    const top =
-      below + HINT_HEIGHT <= bounds.height - HINT_GAP
-        ? below
-        : Math.max(HINT_GAP, above);
+    const hasLeftRoom = rect.left > POINTER_WIDTH + HINT_GAP * 2;
+    const targetX = hasLeftRoom
+      ? rect.left - HINT_GAP - POINTER_WIDTH / 2
+      : rect.left + rect.width + HINT_GAP + POINTER_WIDTH / 2;
+    const x = clamp(
+      targetX,
+      HINT_GAP + POINTER_WIDTH / 2,
+      bounds.width - HINT_GAP - POINTER_WIDTH / 2,
+    );
+    const y = clamp(
+      rect.top + rect.height / 2,
+      HINT_GAP + POINTER_HALF_HEIGHT,
+      bounds.height - HINT_GAP - POINTER_HALF_HEIGHT,
+    );
+
+    this.pointer.hidden = false;
+    this.pointer.style.left = `${x}px`;
+    this.pointer.style.top = `${y}px`;
+    this.pointer.style.setProperty('--tutorial-pointer-scale-x', hasLeftRoom ? '1' : '-1');
+  }
+
+  positionGuide(rect) {
+    const bounds = this.getSourceBounds();
+    const left = clamp(
+      (bounds.width - HINT_PADDED_WIDTH) / 2 - GUIDE_LEFT_BIAS,
+      HINT_GAP + PORTRAIT_WIDTH - 4,
+      Math.max(HINT_GAP + PORTRAIT_WIDTH - 4, bounds.width - HINT_PADDED_WIDTH - HINT_GAP),
+    );
+    const targetMiddle = rect.top + rect.height / 2;
+    const topFraction =
+      targetMiddle < bounds.height / 2 ? GUIDE_BOTTOM_FRACTION : GUIDE_TOP_FRACTION;
+    const top = clamp(
+      Math.round(bounds.height * topFraction),
+      HINT_GAP,
+      bounds.height - HINT_HEIGHT - HINT_GAP,
+    );
+    const portraitLeft = left - PORTRAIT_WIDTH + 4;
+    const portraitTop = clamp(
+      top + HINT_HEIGHT - PORTRAIT_HEIGHT + 9,
+      HINT_GAP,
+      bounds.height - PORTRAIT_HEIGHT - HINT_GAP,
+    );
 
     this.hint.style.left = `${left}px`;
     this.hint.style.top = `${top}px`;
+    this.portrait.style.left = `${portraitLeft}px`;
+    this.portrait.style.top = `${portraitTop}px`;
   }
 
   getSourceBounds() {
@@ -180,4 +258,12 @@ export class TutorialHintManager {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function stripClonedTargetAttrs(root) {
+  for (const element of [root, ...root.querySelectorAll('*')]) {
+    element.removeAttribute('id');
+    element.removeAttribute('data-tutorial-id');
+    element.setAttribute('aria-hidden', 'true');
+  }
 }

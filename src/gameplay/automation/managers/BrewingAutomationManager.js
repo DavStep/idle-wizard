@@ -8,10 +8,19 @@ export class BrewingAutomationManager {
   }
 
   update() {
-    const cauldronNumber = this.getCauldronNumber();
-    this.autoCollectReadyPotion(cauldronNumber);
-    this.autoBottleBrewedPotion(cauldronNumber);
-    this.autoBrewCauldron(cauldronNumber);
+    const cauldronNumbers = this.getCauldronNumbers();
+
+    for (const cauldronNumber of cauldronNumbers) {
+      this.autoCollectReadyPotion(cauldronNumber);
+    }
+
+    for (const cauldronNumber of cauldronNumbers) {
+      this.autoBottleBrewedPotion(cauldronNumber);
+    }
+
+    for (const cauldronNumber of cauldronNumbers) {
+      this.autoBrewCauldron(cauldronNumber);
+    }
   }
 
   autoCollectReadyPotion(cauldronNumber) {
@@ -19,11 +28,11 @@ export class BrewingAutomationManager {
       return;
     }
 
-    if (!this.brewingFacade.getSnapshot().canCollectPotion) {
+    if (!this.getCauldronSnapshot(cauldronNumber)?.canCollectPotion) {
       return;
     }
 
-    this.brewingFacade.collect();
+    this.brewingFacade.collect(cauldronNumber - 1);
   }
 
   autoBottleBrewedPotion(cauldronNumber) {
@@ -31,11 +40,11 @@ export class BrewingAutomationManager {
       return;
     }
 
-    if (!this.brewingFacade.getSnapshot().canStartBottling) {
+    if (!this.getCauldronSnapshot(cauldronNumber)?.canStartBottling) {
       return;
     }
 
-    this.brewingFacade.startBottling();
+    this.brewingFacade.startBottling(cauldronNumber - 1);
   }
 
   autoBrewCauldron(cauldronNumber) {
@@ -49,7 +58,7 @@ export class BrewingAutomationManager {
       return;
     }
 
-    const result = this.brewingFacade.autoBrew();
+    const result = this.brewingFacade.autoBrew(cauldronNumber - 1);
 
     if (result.ok && result.discovery?.potionKey) {
       this.onPotionRecipeDiscovery?.(result.discovery.potionKey);
@@ -60,7 +69,23 @@ export class BrewingAutomationManager {
     return this.researchFacade?.hasCompletedResearch(researchId) === true;
   }
 
-  getCauldronNumber() {
-    return this.brewingFacade.getSnapshot().cauldronNumber ?? 1;
+  getCauldronSnapshot(cauldronNumber) {
+    const snapshot = this.brewingFacade.getSnapshot();
+    return (
+      (snapshot.cauldrons ?? []).find(
+        (cauldron) => cauldron.cauldronNumber === cauldronNumber,
+      ) ?? (cauldronNumber === 1 ? snapshot : null)
+    );
+  }
+
+  getCauldronNumbers() {
+    const snapshot = this.brewingFacade.getSnapshot();
+    const cauldrons = snapshot.cauldrons ?? [];
+
+    if (cauldrons.length > 0) {
+      return cauldrons.map((cauldron) => cauldron.cauldronNumber ?? 1);
+    }
+
+    return [snapshot.cauldronNumber ?? 1];
   }
 }

@@ -663,6 +663,7 @@ describe('ShopShelfManager', () => {
     const manager = new ShopShelfManager({ gameplayFacade });
 
     manager.mount(stage, popupLayer);
+    manager.showSellPopup();
 
     const standValue = stage.querySelector('.shop-page__slot-row .row_val');
     const itemButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')].find(

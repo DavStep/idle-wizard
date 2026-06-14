@@ -6,6 +6,7 @@ export class BrewingSnapshotManager {
     brewingRecipeMatchManager,
     itemsFacade,
     manaFacade,
+    playerLevelFacade,
     getAutoBrewEnabled,
     getAutoBrewRecipeKey,
   }) {
@@ -15,12 +16,46 @@ export class BrewingSnapshotManager {
     this.brewingRecipeMatchManager = brewingRecipeMatchManager;
     this.itemsFacade = itemsFacade;
     this.manaFacade = manaFacade;
+    this.playerLevelFacade = playerLevelFacade;
     this.getAutoBrewEnabled = getAutoBrewEnabled;
     this.getAutoBrewRecipeKey = getAutoBrewRecipeKey;
   }
 
   getSnapshot() {
-    const ingredients = this.brewingCauldronEntityManager.getIngredientSnapshots();
+    const herbs = this.getHerbSnapshots();
+    const recipes = this.brewingRecipeMatchManager.getRecipes();
+    const maxCauldrons = this.getMaxCauldrons();
+    this.brewingCauldronEntityManager.ensureCauldrons(maxCauldrons);
+    const cauldrons = Array.from({ length: maxCauldrons }, (_unused, index) =>
+      this.getCauldronSnapshot(index, herbs),
+    );
+    const primaryCauldron = cauldrons[0] ?? this.getCauldronSnapshot(0, herbs);
+    const legacyPrimaryCauldron = {
+      ...primaryCauldron,
+      ingredients: primaryCauldron.ingredients.map((ingredient) => ({
+        slotIndex: ingredient.slotIndex,
+        itemTypeId: ingredient.itemTypeId,
+        key: ingredient.key,
+        label: ingredient.label,
+        kind: ingredient.kind,
+      })),
+    };
+
+    return {
+      ...legacyPrimaryCauldron,
+      herbs,
+      recipes,
+      cauldrons,
+      maxCauldrons,
+      autoBrewEnabled: this.getAutoBrewEnabled?.() === true,
+      autoBrewRecipeKey: this.getAutoBrewRecipeKey?.() ?? null,
+    };
+  }
+
+  getCauldronSnapshot(cauldronIndex = 0, herbs = this.getHerbSnapshots()) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const ingredients =
+      this.brewingCauldronEntityManager.getIngredientSnapshots(safeCauldronIndex);
     const ingredientItemTypeIds = ingredients.map((ingredient) => ingredient.itemTypeId);
     const recipe = this.brewingRecipeMatchManager.getMatch(ingredientItemTypeIds);
     const recipeDiscoverable = recipe
@@ -32,13 +67,14 @@ export class BrewingSnapshotManager {
       : false;
     const manaCost =
       visibleRecipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
-    const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
+    const activeBrew =
+      this.brewingProcessEntityManager.getActiveBrewSnapshot(safeCauldronIndex);
     const hasEnoughIngredients = this.hasEnoughIngredients(ingredientItemTypeIds);
     const hasEnoughMana = this.manaFacade.canSpend(manaCost);
 
     return {
-      herbs: this.getHerbSnapshots(),
-      recipes: this.brewingRecipeMatchManager.getRecipes(),
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
       ingredients,
       match: visibleRecipe
         ? {
@@ -70,8 +106,7 @@ export class BrewingSnapshotManager {
       canStartBottling: Boolean(activeBrew?.canStartBottling),
       canCollectPotion: Boolean(activeBrew?.canCollect),
       maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
-      autoBrewEnabled: this.getAutoBrewEnabled?.() === true,
-      autoBrewRecipeKey: this.getAutoBrewRecipeKey?.() ?? null,
+      herbs,
     };
   }
 
@@ -93,6 +128,14 @@ export class BrewingSnapshotManager {
     });
   }
 
+  getMaxCauldrons() {
+    const maxCauldrons = this.playerLevelFacade?.getMaxCauldrons?.();
+    const safeMaxCauldrons = Math.floor(Number(maxCauldrons));
+    return Number.isInteger(safeMaxCauldrons) && safeMaxCauldrons > 0
+      ? safeMaxCauldrons
+      : 1;
+  }
+
   hasEnoughIngredients(itemTypeIds) {
     const counts = new Map();
 
@@ -107,5 +150,12 @@ export class BrewingSnapshotManager {
     }
 
     return true;
+  }
+
+  normalizeCauldronIndex(cauldronIndex) {
+    const safeCauldronIndex = Math.floor(Number(cauldronIndex));
+    return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
+      ? safeCauldronIndex
+      : 0;
   }
 }

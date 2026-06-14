@@ -3,8 +3,8 @@ export class BrewingBottlingManager {
     this.brewingProcessEntityManager = brewingProcessEntityManager;
   }
 
-  startBottling() {
-    const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
+  startBottling(cauldronIndex = 0) {
+    const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot(cauldronIndex);
 
     if (!activeBrew) {
       return {
@@ -34,7 +34,7 @@ export class BrewingBottlingManager {
       };
     }
 
-    const startedBrew = this.brewingProcessEntityManager.startBottling();
+    const startedBrew = this.brewingProcessEntityManager.startBottling(cauldronIndex);
 
     if (!startedBrew) {
       return {
@@ -45,6 +45,8 @@ export class BrewingBottlingManager {
 
     return {
       ok: true,
+      cauldronIndex: startedBrew.cauldronIndex,
+      cauldronNumber: startedBrew.cauldronNumber,
       potion: {
         itemTypeId: startedBrew.resultItemTypeId,
         key: startedBrew.key,

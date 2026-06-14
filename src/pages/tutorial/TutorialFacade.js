@@ -17,9 +17,7 @@ export class TutorialFacade {
       progressManager: this.progressManager,
       getCurrentPageId,
     });
-    this.hintManager = new TutorialHintManager({
-      onSkip: () => this.skip(),
-    });
+    this.hintManager = new TutorialHintManager();
     this.animationFrame = null;
     this.handleClick = () => this.scheduleRefresh();
     this.handleResize = () => this.scheduleRefresh();
@@ -73,6 +71,7 @@ export class TutorialFacade {
       target,
       text: step.text,
       stepLabel: step.stepLabel,
+      showPointer: step.targetId !== 'workshop:manaSphere',
     });
   }
 
@@ -99,8 +98,4 @@ export class TutorialFacade {
     this.animationFrame = null;
   }
 
-  skip() {
-    this.progressManager.skip();
-    this.hintManager.hide();
-  }
 }

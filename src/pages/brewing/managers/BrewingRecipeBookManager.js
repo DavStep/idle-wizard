@@ -154,6 +154,7 @@ export class BrewingRecipeBookManager {
   show() {
     this.previousFocus = document.activeElement;
     this.visible = true;
+    this.render(this.gameplayFacade.getSnapshot());
     this.applyVisibility();
     this.refs.dialog?.focus();
   }

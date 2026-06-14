@@ -15,7 +15,7 @@ const STEPS = [
     id: 'open-tasks',
     pageId: 'workshop',
     targetId: 'workshop:tasks',
-    text: 'tasks show what the room needs',
+    text: 'open tasks',
     isAvailable: ({ dom }) => !dom.isTasksExpanded(),
     isComplete: ({ dom }) => dom.isTasksExpanded(),
   },

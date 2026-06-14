@@ -9,6 +9,8 @@ export class BrewingRecipeGuideManager {
     this.stepRows = [];
     this.emptyStep = null;
     this.selectedRecipeKey = null;
+    this.selectedRecipeKeys = new Map();
+    this.currentCauldronIndex = 0;
     this.latestSnapshot = null;
   }
 
@@ -56,6 +58,8 @@ export class BrewingRecipeGuideManager {
     this.refs = {};
     this.stepRows = [];
     this.emptyStep = null;
+    this.selectedRecipeKeys.clear();
+    this.currentCauldronIndex = 0;
     this.latestSnapshot = null;
   }
 
@@ -74,34 +78,54 @@ export class BrewingRecipeGuideManager {
     return { row, value };
   }
 
-  selectRecipe(recipeKey) {
+  selectRecipe(recipeKey, cauldronIndex = this.currentCauldronIndex) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const targetRecipeKey =
       typeof recipeKey === 'string' ? recipeKey : recipeKey?.key ?? null;
 
     if (!targetRecipeKey) {
       if (this.onSelectRecipe) {
-        this.onSelectRecipe(null);
+        this.onSelectRecipe(null, safeCauldronIndex);
         this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
         return;
       }
 
-      this.selectedRecipeKey = null;
+      this.selectedRecipeKeys.delete(safeCauldronIndex);
+      if (safeCauldronIndex === 0) {
+        this.selectedRecipeKey = null;
+      }
       this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
       return;
     }
 
     if (this.onSelectRecipe) {
-      this.onSelectRecipe(targetRecipeKey);
+      this.onSelectRecipe(targetRecipeKey, safeCauldronIndex);
       this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
       return;
     }
 
-    this.selectedRecipeKey = targetRecipeKey;
+    this.selectedRecipeKeys.set(safeCauldronIndex, targetRecipeKey);
+    if (safeCauldronIndex === 0) {
+      this.selectedRecipeKey = targetRecipeKey;
+    }
     this.render(this.latestSnapshot ?? this.gameplayFacade?.getSnapshot());
   }
 
-  getSelectedRecipeKey() {
-    return this.getSelectedRecipeKeyCallback?.() ?? this.selectedRecipeKey;
+  getSelectedRecipeKey(cauldronIndex = this.currentCauldronIndex) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    return (
+      this.getSelectedRecipeKeyCallback?.(safeCauldronIndex) ??
+      this.selectedRecipeKeys.get(safeCauldronIndex) ??
+      (safeCauldronIndex === 0 ? this.selectedRecipeKey : null)
+    );
+  }
+
+  setCurrentCauldronIndex(cauldronIndex = 0) {
+    this.currentCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+  }
+
+  getCurrentCauldronIndex() {
+    return this.currentCauldronIndex;
   }
 
   render(snapshot) {
@@ -141,6 +165,13 @@ export class BrewingRecipeGuideManager {
     }
 
     return recipes.find((recipe) => recipe.key === selectedRecipeKey) ?? null;
+  }
+
+  normalizeCauldronIndex(cauldronIndex) {
+    const safeCauldronIndex = Math.floor(Number(cauldronIndex));
+    return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
+      ? safeCauldronIndex
+      : 0;
   }
 
   expandIngredientSequence(ingredients = []) {

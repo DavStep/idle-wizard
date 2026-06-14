@@ -19,6 +19,8 @@ import { ShopFacade } from './shop/ShopFacade.js';
 import { TasksFacade } from './tasks/TasksFacade.js';
 import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
 
+export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
+
 export class GameplayFacade {
   static explain =
     'Runs the player resources and actions: mana fills up, actions spend it, and owned things change.';
@@ -62,6 +64,7 @@ export class GameplayFacade {
     this.brewingFacade = new BrewingFacade({
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
+      playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
       onBrewComplete: (event) => this.handleBrewComplete(event),
     });
@@ -118,6 +121,7 @@ export class GameplayFacade {
     this.gameConfigFacade = null;
     this.gameConfigUnsubscribe = null;
     this.initialized = false;
+    this.lastFrameSnapshotPublishTime = Number.NEGATIVE_INFINITY;
   }
 
   setPersistenceStorage(storageManager) {
@@ -223,8 +227,8 @@ export class GameplayFacade {
     this.initialized = false;
   }
 
-  afterUpdate(frame) {
-    this.publishSnapshot();
+  afterUpdate(frame = {}) {
+    this.publishFrameSnapshot(frame);
     this.persistenceFacade.afterUpdate(frame);
   }
 
@@ -479,26 +483,26 @@ export class GameplayFacade {
     });
   }
 
-  addBrewingIngredient(itemTypeId) {
-    const result = this.brewingFacade.addIngredient(itemTypeId);
+  addBrewingIngredient(itemTypeId, cauldronIndex = 0) {
+    const result = this.brewingFacade.addIngredient(itemTypeId, cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  removeBrewingIngredientAt(slotIndex) {
-    const result = this.brewingFacade.removeIngredientAt(slotIndex);
+  removeBrewingIngredientAt(slotIndex, cauldronIndex = 0) {
+    const result = this.brewingFacade.removeIngredientAt(slotIndex, cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  clearBrewingCauldron() {
-    const result = this.brewingFacade.clearCauldron();
+  clearBrewingCauldron(cauldronIndex = 0) {
+    const result = this.brewingFacade.clearCauldron(cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  prepareBrewingRecipe(recipeKey) {
-    const result = this.brewingFacade.prepareRecipeForSelection(recipeKey);
+  prepareBrewingRecipe(recipeKey, cauldronIndex = 0) {
+    const result = this.brewingFacade.prepareRecipeForSelection(recipeKey, cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -525,8 +529,8 @@ export class GameplayFacade {
     return this.brewingFacade.getAutoBrewRecipeKey();
   }
 
-  brewCauldron() {
-    const result = this.brewingFacade.brew();
+  brewCauldron(cauldronIndex = 0) {
+    const result = this.brewingFacade.brew(cauldronIndex);
     if (result.ok && result.discovery?.potionKey) {
       void this.potionDiscoveryFacade?.discoverPotionRecipe(result.discovery.potionKey);
     }
@@ -534,14 +538,14 @@ export class GameplayFacade {
     return result;
   }
 
-  startBrewingBottling() {
-    const result = this.brewingFacade.startBottling();
+  startBrewingBottling(cauldronIndex = 0) {
+    const result = this.brewingFacade.startBottling(cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  collectBrewingPotion() {
-    const result = this.brewingFacade.collect();
+  collectBrewingPotion(cauldronIndex = 0) {
+    const result = this.brewingFacade.collect(cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -807,6 +811,26 @@ export class GameplayFacade {
 
   publishSnapshot() {
     this.stateObserverManager.publish(this.getSnapshot());
+  }
+
+  publishFrameSnapshot(frame = {}) {
+    const time = Number(frame.time);
+
+    if (!Number.isFinite(time)) {
+      this.publishSnapshot();
+      return true;
+    }
+
+    if (
+      time >= this.lastFrameSnapshotPublishTime &&
+      time - this.lastFrameSnapshotPublishTime < GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS
+    ) {
+      return false;
+    }
+
+    this.lastFrameSnapshotPublishTime = time;
+    this.publishSnapshot();
+    return true;
   }
 
   publishAndSaveSnapshot() {

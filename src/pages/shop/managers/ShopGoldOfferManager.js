@@ -69,7 +69,7 @@ export class ShopGoldOfferManager {
   render(snapshot) {
     const offer = snapshot?.shop?.goldOffer;
 
-    if (!offer || !this.root) {
+    if (!offer || !this.root || this.root.closest('[hidden]')) {
       return;
     }
 

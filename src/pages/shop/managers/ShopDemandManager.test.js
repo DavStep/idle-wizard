@@ -101,6 +101,7 @@ describe('ShopDemandManager', () => {
     const manager = new ShopDemandManager({ gameplayFacade });
 
     manager.mount({ buttonParent, popupParent });
+    buttonParent.querySelector('.shop-page__demand-button')?.click();
     const herbTab = [...popupParent.querySelectorAll('.shop-page__demand-tab-button')]
       .find((tab) => tab.textContent === 'herb');
     herbTab.click();

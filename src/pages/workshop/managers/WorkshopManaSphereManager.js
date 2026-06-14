@@ -69,7 +69,16 @@ export class WorkshopManaSphereManager {
   }
 
   render(snapshot) {
-    this.refs.mana.val.textContent = `${Math.floor(snapshot.mana.current)}/${snapshot.mana.cap}`;
-    this.refs.generation.val.textContent = `${snapshot.mana.perSecond} / second`;
+    this.setText(
+      this.refs.mana.val,
+      `${Math.floor(snapshot.mana.current)}/${snapshot.mana.cap}`,
+    );
+    this.setText(this.refs.generation.val, `${snapshot.mana.perSecond} / second`);
+  }
+
+  setText(element, text) {
+    if (element.textContent !== text) {
+      element.textContent = text;
+    }
   }
 }

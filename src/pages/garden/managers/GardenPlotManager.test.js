@@ -291,6 +291,10 @@ describe('GardenPlotManager', () => {
 
     expect(mintButton).not.toBeNull();
     expect(mintButton.dataset.resourceColor).toBe('seed');
+    expect(mintButton.querySelector('.row_key')?.classList.contains('style-seed-label')).toBe(
+      true,
+    );
+    expect(mintButton.querySelector('.style-seed-label__icon')).not.toBeNull();
 
     gameplayFacade.publish();
 

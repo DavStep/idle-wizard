@@ -16,14 +16,17 @@ export class BrewingProcessEntityManager {
     this.ecsManagers = ecsManagers;
   }
 
-  startBrew({ resultItemTypeId, totalSeconds, bottlingTotalSeconds }) {
-    if (this.hasActiveBrew()) {
+  startBrew({ resultItemTypeId, totalSeconds, bottlingTotalSeconds, cauldronIndex = 0 }) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (this.hasActiveBrew(safeCauldronIndex)) {
       return false;
     }
 
     const entityId = this.ecsManagers.entities.createEntity();
     const safeTotalSeconds = this.toNonNegativeSeconds(totalSeconds);
     this.ecsManagers.components.add(entityId, ActiveBrew);
+    ActiveBrew.cauldronIndex[entityId] = safeCauldronIndex;
     ActiveBrew.resultItemTypeId[entityId] = resultItemTypeId;
     ActiveBrew.resultQuantity[entityId] = 1;
     ActiveBrew.phase[entityId] =
@@ -36,13 +39,15 @@ export class BrewingProcessEntityManager {
   }
 
   restoreActiveBrew({
+    cauldronIndex = 0,
     resultItemTypeId,
     phase = 'brewing',
     totalSeconds,
     remainingSeconds,
     bottlingTotalSeconds = 0,
   }) {
-    this.clearActiveBrew();
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    this.clearActiveBrew(safeCauldronIndex);
 
     const safeTotalSeconds = this.toNonNegativeSeconds(totalSeconds);
     const safeRemainingSeconds = Math.max(
@@ -51,6 +56,7 @@ export class BrewingProcessEntityManager {
     );
     const entityId = this.ecsManagers.entities.createEntity();
     this.ecsManagers.components.add(entityId, ActiveBrew);
+    ActiveBrew.cauldronIndex[entityId] = safeCauldronIndex;
     ActiveBrew.resultItemTypeId[entityId] = resultItemTypeId;
     ActiveBrew.resultQuantity[entityId] = 1;
     const normalizedPhase = this.normalizePhase(phase);
@@ -65,20 +71,26 @@ export class BrewingProcessEntityManager {
     return true;
   }
 
-  clearActiveBrew() {
-    const entityId = this.getActiveBrewEntityId();
+  clearActiveBrew(cauldronIndex = 0) {
+    const entityId = this.getActiveBrewEntityId(cauldronIndex);
 
     if (entityId !== null) {
       this.ecsManagers.entities.removeEntity(entityId);
     }
   }
 
-  hasActiveBrew() {
-    return this.getActiveBrewEntityId() !== null;
+  clearAllActiveBrews() {
+    for (const entityId of this.getActiveBrewEntityIds()) {
+      this.ecsManagers.entities.removeEntity(entityId);
+    }
   }
 
-  reduceRemainingSeconds(deltaSeconds) {
-    const entityId = this.getActiveBrewEntityId();
+  hasActiveBrew(cauldronIndex = 0) {
+    return this.getActiveBrewEntityId(cauldronIndex) !== null;
+  }
+
+  reduceRemainingSeconds(deltaSeconds, cauldronIndex = 0) {
+    const entityId = this.getActiveBrewEntityId(cauldronIndex);
 
     if (entityId === null) {
       return null;
@@ -88,11 +100,11 @@ export class BrewingProcessEntityManager {
       ActiveBrew.phase[entityId] === activeBrewPhases.brewed ||
       ActiveBrew.phase[entityId] === activeBrewPhases.ready
     ) {
-      return this.getActiveBrewSnapshot();
+      return this.getActiveBrewSnapshot(cauldronIndex);
     }
 
     if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) {
-      return this.getActiveBrewSnapshot();
+      return this.getActiveBrewSnapshot(cauldronIndex);
     }
 
     ActiveBrew.remainingSeconds[entityId] = Math.max(
@@ -100,7 +112,7 @@ export class BrewingProcessEntityManager {
       (ActiveBrew.remainingSeconds[entityId] ?? 0) - deltaSeconds,
     );
 
-    return this.getActiveBrewSnapshot();
+    return this.getActiveBrewSnapshot(cauldronIndex);
   }
 
   advanceTime(deltaSeconds) {
@@ -108,20 +120,22 @@ export class BrewingProcessEntityManager {
       return this.getActiveBrewSnapshot();
     }
 
+    for (const entityId of this.getActiveBrewEntityIds()) {
+      this.advanceTimeForEntity(entityId, deltaSeconds);
+    }
+
+    return this.getActiveBrewSnapshot();
+  }
+
+  advanceTimeForEntity(entityId, deltaSeconds) {
     let remainingDeltaSeconds = deltaSeconds;
 
     while (remainingDeltaSeconds >= 0) {
-      const entityId = this.getActiveBrewEntityId();
-
-      if (entityId === null) {
-        return null;
-      }
-
       if (
         ActiveBrew.phase[entityId] === activeBrewPhases.brewed ||
         ActiveBrew.phase[entityId] === activeBrewPhases.ready
       ) {
-        return this.getActiveBrewSnapshot();
+        return this.getActiveBrewSnapshotForEntity(entityId);
       }
 
       const phaseRemainingSeconds = Math.max(
@@ -131,51 +145,61 @@ export class BrewingProcessEntityManager {
 
       if (remainingDeltaSeconds < phaseRemainingSeconds) {
         ActiveBrew.remainingSeconds[entityId] = phaseRemainingSeconds - remainingDeltaSeconds;
-        return this.getActiveBrewSnapshot();
+        return this.getActiveBrewSnapshotForEntity(entityId);
       }
 
       ActiveBrew.remainingSeconds[entityId] = 0;
       remainingDeltaSeconds -= phaseRemainingSeconds;
 
-      const advanced = this.advanceCompletedPhase();
+      const advanced = this.advanceCompletedPhaseForEntity(entityId);
 
       if (!advanced || advanced.canStartBottling || advanced.canCollect) {
         return advanced;
       }
     }
 
-    return this.getActiveBrewSnapshot();
+    return this.getActiveBrewSnapshotForEntity(entityId);
   }
 
-  advanceCompletedPhase() {
-    const entityId = this.getActiveBrewEntityId();
+  advanceCompletedPhase(cauldronIndex = 0) {
+    const entityId = this.getActiveBrewEntityId(cauldronIndex);
 
-    if (entityId === null || (ActiveBrew.remainingSeconds[entityId] ?? 0) > 0) {
+    if (entityId === null) {
+      return null;
+    }
+
+    return this.advanceCompletedPhaseForEntity(entityId);
+  }
+
+  advanceCompletedPhaseForEntity(entityId) {
+    const cauldronIndex = ActiveBrew.cauldronIndex[entityId] ?? 0;
+
+    if ((ActiveBrew.remainingSeconds[entityId] ?? 0) > 0) {
       return null;
     }
 
     if (ActiveBrew.phase[entityId] === activeBrewPhases.brewing) {
       ActiveBrew.phase[entityId] = activeBrewPhases.brewed;
       ActiveBrew.remainingSeconds[entityId] = 0;
-      return this.getActiveBrewSnapshot();
+      return this.getActiveBrewSnapshot(cauldronIndex);
     }
 
     if (ActiveBrew.phase[entityId] === activeBrewPhases.brewed) {
-      return this.getActiveBrewSnapshot();
+      return this.getActiveBrewSnapshot(cauldronIndex);
     }
 
     if (ActiveBrew.phase[entityId] === activeBrewPhases.bottling) {
       ActiveBrew.phase[entityId] = activeBrewPhases.ready;
       ActiveBrew.totalSeconds[entityId] = 0;
       ActiveBrew.remainingSeconds[entityId] = 0;
-      return this.getActiveBrewSnapshot();
+      return this.getActiveBrewSnapshot(cauldronIndex);
     }
 
     return null;
   }
 
-  startBottling() {
-    const entityId = this.getActiveBrewEntityId();
+  startBottling(cauldronIndex = 0) {
+    const entityId = this.getActiveBrewEntityId(cauldronIndex);
 
     if (entityId === null || ActiveBrew.phase[entityId] !== activeBrewPhases.brewed) {
       return null;
@@ -185,11 +209,11 @@ export class BrewingProcessEntityManager {
     ActiveBrew.phase[entityId] = activeBrewPhases.bottling;
     ActiveBrew.totalSeconds[entityId] = bottlingTotalSeconds;
     ActiveBrew.remainingSeconds[entityId] = bottlingTotalSeconds;
-    return this.getActiveBrewSnapshot();
+    return this.getActiveBrewSnapshot(cauldronIndex);
   }
 
-  collectReadyBrew() {
-    const entityId = this.getActiveBrewEntityId();
+  collectReadyBrew(cauldronIndex = 0) {
+    const entityId = this.getActiveBrewEntityId(cauldronIndex);
 
     if (entityId === null || ActiveBrew.phase[entityId] !== activeBrewPhases.ready) {
       return null;
@@ -203,20 +227,33 @@ export class BrewingProcessEntityManager {
     return result;
   }
 
-  getActiveBrewSnapshot() {
-    const entityId = this.getActiveBrewEntityId();
+  getActiveBrewSnapshot(cauldronIndex = 0) {
+    const entityId = this.getActiveBrewEntityId(cauldronIndex);
 
     if (entityId === null) {
       return null;
     }
 
+    return this.getActiveBrewSnapshotForEntity(entityId);
+  }
+
+  getActiveBrewSnapshots() {
+    return this.getActiveBrewEntityIds().map((entityId) =>
+      this.getActiveBrewSnapshotForEntity(entityId),
+    );
+  }
+
+  getActiveBrewSnapshotForEntity(entityId) {
     const resultItemTypeId = ActiveBrew.resultItemTypeId[entityId];
     const definition = this.itemsFacade.getItemDefinition(resultItemTypeId);
     const phase = ActiveBrew.phase[entityId] ?? activeBrewPhases.brewing;
     const totalSeconds = ActiveBrew.totalSeconds[entityId] ?? 0;
     const remainingSeconds = ActiveBrew.remainingSeconds[entityId] ?? 0;
+    const cauldronIndex = ActiveBrew.cauldronIndex[entityId] ?? 0;
 
     return {
+      cauldronIndex,
+      cauldronNumber: cauldronIndex + 1,
       resultItemTypeId,
       key: definition.key,
       label: definition.label,
@@ -231,8 +268,23 @@ export class BrewingProcessEntityManager {
     };
   }
 
-  getActiveBrewEntityId() {
-    return query(this.ecsManagers.world.getWorld(), [ActiveBrew])[0] ?? null;
+  getActiveBrewEntityId(cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    return (
+      query(this.ecsManagers.world.getWorld(), [ActiveBrew]).find(
+        (entityId) => (ActiveBrew.cauldronIndex[entityId] ?? 0) === safeCauldronIndex,
+      ) ?? null
+    );
+  }
+
+  getActiveBrewEntityIds() {
+    return query(this.ecsManagers.world.getWorld(), [ActiveBrew])
+      .slice()
+      .sort(
+        (left, right) =>
+          (ActiveBrew.cauldronIndex[left] ?? 0) -
+          (ActiveBrew.cauldronIndex[right] ?? 0),
+      );
   }
 
   normalizePhase(phase) {
@@ -257,5 +309,12 @@ export class BrewingProcessEntityManager {
 
   toNonNegativeSeconds(value) {
     return Number.isFinite(value) ? Math.max(0, value) : 0;
+  }
+
+  normalizeCauldronIndex(cauldronIndex) {
+    const safeCauldronIndex = Math.floor(Number(cauldronIndex));
+    return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
+      ? safeCauldronIndex
+      : 0;
   }
 }

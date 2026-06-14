@@ -17,15 +17,28 @@ export class BrewingPageFacade {
     this.recipeGuideManager = new BrewingRecipeGuideManager({ gameplayFacade });
     this.cauldronManager = new BrewingCauldronManager({
       gameplayFacade,
-      getSelectedRecipeKey: () => this.recipeGuideManager.getSelectedRecipeKey(),
-      onOpenSelectRecipe: () => this.recipeBookManager.show(),
+      getSelectedRecipeKey: (cauldronIndex) =>
+        this.recipeGuideManager.getSelectedRecipeKey(cauldronIndex),
+      onCurrentCauldronChange: (cauldronIndex) =>
+        this.recipeGuideManager.setCurrentCauldronIndex(cauldronIndex),
+      onOpenSelectRecipe: (cauldronIndex) => {
+        this.recipeGuideManager.setCurrentCauldronIndex(cauldronIndex);
+        this.recipeBookManager.show();
+      },
       onRewardNotice: (event) => this.flyoutManager.showReward(event),
       rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
     this.recipeBookManager = new BrewingRecipeBookManager({
       gameplayFacade,
-      getSelectedRecipeKey: () => this.recipeGuideManager.getSelectedRecipeKey(),
-      onSelectRecipe: (recipe) => this.selectRecipe(recipe?.key ?? null),
+      getSelectedRecipeKey: () =>
+        this.recipeGuideManager.getSelectedRecipeKey(
+          this.recipeGuideManager.getCurrentCauldronIndex(),
+        ),
+      onSelectRecipe: (recipe) =>
+        this.selectRecipe(
+          recipe?.key ?? null,
+          this.recipeGuideManager.getCurrentCauldronIndex(),
+        ),
     });
     this.potionInventoryManager = new BrewingPotionInventoryManager({ gameplayFacade });
   }
@@ -55,16 +68,17 @@ export class BrewingPageFacade {
     this.roomViewManager.unmount();
   }
 
-  selectRecipe(recipeKey) {
+  selectRecipe(recipeKey, cauldronIndex = 0) {
     if (!recipeKey) {
-      this.recipeGuideManager.selectRecipe(null);
+      this.recipeGuideManager.selectRecipe(null, cauldronIndex);
       const result = this.gameplayFacade?.setBrewingAutoBrewRecipe?.(null) ?? null;
       this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
       return result;
     }
 
-    this.recipeGuideManager.selectRecipe(recipeKey);
-    const result = this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey) ?? null;
+    this.recipeGuideManager.selectRecipe(recipeKey, cauldronIndex);
+    const result =
+      this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey, cauldronIndex) ?? null;
     const snapshot = this.gameplayFacade?.getSnapshot();
 
     if (snapshot?.brewing?.autoBrewEnabled === true) {

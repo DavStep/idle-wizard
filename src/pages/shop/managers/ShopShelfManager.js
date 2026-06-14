@@ -282,6 +282,7 @@ export class ShopShelfManager {
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyPopupVisibility();
+    this.render(this.gameplayFacade.getSnapshot());
     this.refs.dialog?.focus();
   }
 
@@ -298,12 +299,19 @@ export class ShopShelfManager {
   }
 
   render(snapshot) {
+    if (!this.root || !snapshot?.shop?.shelf || !this.isRenderVisible()) {
+      return;
+    }
+
     const shelf = snapshot.shop.shelf;
     this.ensureRows(shelf.maxSlots);
-    this.ensureSellTabButtons(shelf.sellKinds);
-    this.ensureSellItemButtons(shelf.sellItems);
 
-    this.renderSellControls(snapshot, shelf);
+    if (this.visible) {
+      this.ensureSellTabButtons(shelf.sellKinds);
+      this.ensureSellItemButtons(shelf.sellItems);
+      this.renderSellControls(snapshot, shelf);
+    }
+
     const hasSellableItem = shelf.sellItems.some(
       (item) => item.quantity > 0 && this.canSelectSellItem(snapshot, item),
     );
@@ -369,6 +377,10 @@ export class ShopShelfManager {
         value.replaceChildren(refs.itemValue, refs.priceValue);
       }
     });
+  }
+
+  isRenderVisible() {
+    return this.visible || !this.root?.closest('[hidden]');
   }
 
   renderSlotSellValue(refs, slot, shelf, snapshot) {

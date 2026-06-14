@@ -145,6 +145,7 @@ export class ShopDemandManager {
   show() {
     this.previousFocus = document.activeElement;
     this.visible = true;
+    this.render();
     this.applyVisibility();
     this.refs.dialog?.focus();
   }
@@ -162,7 +163,7 @@ export class ShopDemandManager {
   }
 
   render() {
-    if (!this.refs.rows) {
+    if (!this.refs.rows || !this.visible) {
       return;
     }
 

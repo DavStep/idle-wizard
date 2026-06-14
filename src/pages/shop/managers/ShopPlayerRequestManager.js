@@ -400,7 +400,7 @@ export class ShopPlayerRequestManager {
   }
 
   render() {
-    if (!this.root) {
+    if (!this.root || !this.isRenderVisible()) {
       return;
     }
 
@@ -410,7 +410,14 @@ export class ShopPlayerRequestManager {
     this.ensureSelectedRequestSlot(shelf);
     this.renderRows(shelf, rowCount);
     this.renderActions();
-    this.renderItemPicker();
+
+    if (this.visible) {
+      this.renderItemPicker();
+    }
+  }
+
+  isRenderVisible() {
+    return this.visible || !this.root?.closest('[hidden]');
   }
 
   ensureRows(rowCount) {

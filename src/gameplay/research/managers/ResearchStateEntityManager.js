@@ -5,6 +5,7 @@ export class ResearchStateEntityManager {
     this.researchDefinitionManager = researchDefinitionManager;
     this.entityIdsByResearchId = new Map();
     this.ecsManagers = null;
+    this.researchEntitiesSynced = false;
   }
 
   initialize(ecsManagers) {
@@ -14,6 +15,10 @@ export class ResearchStateEntityManager {
 
   syncResearchEntities() {
     if (!this.ecsManagers) {
+      return;
+    }
+
+    if (this.researchEntitiesSynced) {
       return;
     }
 
@@ -33,6 +38,8 @@ export class ResearchStateEntityManager {
       PlayerResearch.remainingSeconds[entityId] = 0;
       this.entityIdsByResearchId.set(research.id, entityId);
     }
+
+    this.researchEntitiesSynced = true;
   }
 
   isCompleted(researchId) {

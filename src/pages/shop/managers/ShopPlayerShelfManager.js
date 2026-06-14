@@ -617,6 +617,7 @@ export class ShopPlayerShelfManager {
     this.previousFocus = document.activeElement;
     this.listingPopupVisible = true;
     this.applyPopupVisibility();
+    this.render();
     this.refs.listingDialog?.focus();
   }
 
@@ -637,6 +638,7 @@ export class ShopPlayerShelfManager {
     this.previousFocus = document.activeElement;
     this.marketPopupVisible = true;
     this.applyPopupVisibility();
+    this.render();
     this.refs.marketDialog?.focus();
   }
 
@@ -656,18 +658,33 @@ export class ShopPlayerShelfManager {
   render() {
     const shelf = this.lastGameplaySnapshot?.shop?.playerShelf;
 
-    if (!this.root || !shelf) {
+    if (!this.root || !shelf || !this.isRenderVisible()) {
       return;
     }
 
     this.ensureRows(shelf.maxSlots);
-    this.ensureSellTabButtons(shelf.sellKinds);
-    this.ensureSellItemButtons(shelf.sellItems);
     this.renderRows(shelf);
-    this.renderListingControls(shelf, this.lastGameplaySnapshot);
+
+    if (this.listingPopupVisible) {
+      this.ensureSellTabButtons(shelf.sellKinds);
+      this.ensureSellItemButtons(shelf.sellItems);
+      this.renderListingControls(shelf, this.lastGameplaySnapshot);
+    }
+
     this.renderProceeds();
-    this.renderMarketRows();
+    if (this.marketPopupVisible) {
+      this.renderMarketRows();
+    }
+
     setNotificationBadge(this.refs.otherShopsButton, this.hasAffordableMarketListing());
+  }
+
+  isRenderVisible() {
+    return (
+      this.listingPopupVisible ||
+      this.marketPopupVisible ||
+      !this.root?.closest('[hidden]')
+    );
   }
 
   renderRows(shelf) {
