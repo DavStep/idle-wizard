@@ -193,6 +193,7 @@ export class TopPanelViewManager {
     const themeSection = this.createVisualSettingSection('theme');
     const fontSection = this.createVisualSettingSection('font');
     const colorSection = this.createVisualSettingSection('color');
+    const progressBarSection = this.createVisualSettingSection('progressBar');
     const iconsSection = this.createVisualSettingSection('icons');
 
     this.refs.visualSettingStatus = document.createElement('div');
@@ -203,6 +204,7 @@ export class TopPanelViewManager {
       themeSection,
       fontSection,
       colorSection,
+      progressBarSection,
       iconsSection,
       this.refs.visualSettingStatus,
     );
@@ -381,6 +383,10 @@ export class TopPanelViewManager {
       this.refs.colorModeButtons = [];
     }
 
+    if (categoryKey === 'progressBar') {
+      this.refs.progressBarButtons = [];
+    }
+
     if (categoryKey === 'icons') {
       this.refs.iconModeButtons = [];
     }
@@ -417,6 +423,10 @@ export class TopPanelViewManager {
         name.classList.add('room-top-panel__color-button');
         name.dataset.colorMode = option.key;
         this.refs.colorModeButtons.push(name);
+      } else if (categoryKey === 'progressBar') {
+        name.classList.add('room-top-panel__progress-bar-button');
+        name.dataset.progressBar = option.key;
+        this.refs.progressBarButtons.push(name);
       } else {
         name.classList.add('room-top-panel__icon-button');
         name.dataset.iconMode = option.key;

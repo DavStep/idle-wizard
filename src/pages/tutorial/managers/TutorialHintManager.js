@@ -1,5 +1,5 @@
-const HINT_WIDTH = 150;
-const HINT_HEIGHT = 56;
+const HINT_WIDTH = 184;
+const HINT_HEIGHT = 72;
 const HINT_GAP = 8;
 const HIGHLIGHT_PAD = 3;
 
@@ -10,6 +10,8 @@ export class TutorialHintManager {
     this.root = null;
     this.highlight = null;
     this.hint = null;
+    this.stepLabel = null;
+    this.witch = null;
     this.text = null;
     this.skipButton = null;
   }
@@ -37,6 +39,27 @@ export class TutorialHintManager {
     title.className = 'style-box__title';
     title.textContent = 'guide';
 
+    this.stepLabel = document.createElement('div');
+    this.stepLabel.className = 'tutorial-layer__step-label';
+
+    this.witch = document.createElement('div');
+    this.witch.className = 'tutorial-layer__witch';
+    this.witch.setAttribute('aria-hidden', 'true');
+
+    for (const className of [
+      'tutorial-layer__witch-hat',
+      'tutorial-layer__witch-face',
+      'tutorial-layer__witch-body',
+      'tutorial-layer__witch-broom',
+    ]) {
+      const part = document.createElement('span');
+      part.className = className;
+      this.witch.append(part);
+    }
+
+    const copy = document.createElement('div');
+    copy.className = 'tutorial-layer__copy';
+
     this.text = document.createElement('p');
     this.text.className = 'tutorial-layer__text';
 
@@ -46,7 +69,8 @@ export class TutorialHintManager {
     this.skipButton.textContent = 'skip';
     this.skipButton.addEventListener('click', () => this.onSkip?.());
 
-    this.hint.append(title, this.text, this.skipButton);
+    copy.append(this.text, this.skipButton);
+    this.hint.append(title, this.stepLabel, this.witch, copy);
     this.root.append(this.highlight, this.hint);
     stage.append(this.root);
 
@@ -59,11 +83,13 @@ export class TutorialHintManager {
     this.root = null;
     this.highlight = null;
     this.hint = null;
+    this.stepLabel = null;
+    this.witch = null;
     this.text = null;
     this.skipButton = null;
   }
 
-  show({ target, text }) {
+  show({ target, text, stepLabel }) {
     if (!this.root || !this.stage || !target) {
       this.hide();
       return;
@@ -78,6 +104,7 @@ export class TutorialHintManager {
 
     this.root.hidden = false;
     this.text.textContent = text ?? '';
+    this.stepLabel.textContent = stepLabel ?? '';
     this.positionHighlight(rect);
     this.positionHint(rect);
   }

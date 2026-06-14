@@ -14,6 +14,10 @@ import {
   DEFAULT_PLAYER_ICON_MODE,
   normalizePlayerIconMode,
 } from '../../player/playerIconModes.js';
+import {
+  DEFAULT_PLAYER_PROGRESS_BAR,
+  normalizePlayerProgressBar,
+} from '../../player/playerProgressBars.js';
 
 export class AppThemeManager {
   constructor({ rootElement = globalThis.document?.documentElement } = {}) {
@@ -41,6 +45,7 @@ export class AppThemeManager {
     this.applyFont(DEFAULT_PLAYER_FONT);
     this.applyColorMode(DEFAULT_PLAYER_COLOR_MODE);
     this.applyIconMode(DEFAULT_PLAYER_ICON_MODE);
+    this.applyProgressBar(DEFAULT_PLAYER_PROGRESS_BAR);
   }
 
   applySettings(snapshot) {
@@ -48,6 +53,7 @@ export class AppThemeManager {
     this.applyFont(snapshot?.font);
     this.applyColorMode(snapshot?.colorMode);
     this.applyIconMode(snapshot?.iconMode);
+    this.applyProgressBar(snapshot?.progressBar);
   }
 
   applyTheme(theme) {
@@ -80,5 +86,13 @@ export class AppThemeManager {
     }
 
     this.rootElement.dataset.styleIcons = normalizePlayerIconMode(iconMode);
+  }
+
+  applyProgressBar(progressBar) {
+    if (!this.rootElement) {
+      return;
+    }
+
+    this.rootElement.dataset.styleProgress = normalizePlayerProgressBar(progressBar);
   }
 }

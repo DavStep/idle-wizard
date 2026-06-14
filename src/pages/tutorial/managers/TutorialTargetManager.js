@@ -21,6 +21,8 @@ export class TutorialTargetManager {
 
   getDomState() {
     return {
+      isBlockingDialogOpen: () =>
+        Boolean(this.stage?.querySelector('.room-top-panel__settings:not([hidden])')),
       isGardenSeedPopupOpen: () =>
         Boolean(this.stage?.querySelector('.garden-page__seed-popup:not([hidden])')),
       isTasksExpanded: () => {

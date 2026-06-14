@@ -11,6 +11,10 @@ import {
   normalizePlayerIconMode,
 } from '../../../player/playerIconModes.js';
 import {
+  DEFAULT_PLAYER_PROGRESS_BAR,
+  normalizePlayerProgressBar,
+} from '../../../player/playerProgressBars.js';
+import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
@@ -121,6 +125,16 @@ export class TopPanelSettingsManager {
         event.currentTarget.dataset.iconMode,
       );
     };
+    this.handleProgressBarClick = (event) => {
+      this.selectVisualSetting('progressBar', event.currentTarget.dataset.progressBar);
+    };
+    this.handleProgressBarPressStart = (event) => {
+      this.selectVisualSettingFromPressStart(
+        event,
+        'progressBar',
+        event.currentTarget.dataset.progressBar,
+      );
+    };
     this.handleVisualSettingResearchClick = (event) => {
       this.researchVisualSetting(
         event.currentTarget.dataset.visualCategory,
@@ -191,6 +205,11 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleColorModeClick);
     }
 
+    for (const button of this.refs.progressBarButtons) {
+      button.addEventListener('pointerdown', this.handleProgressBarPressStart);
+      button.addEventListener('click', this.handleProgressBarClick);
+    }
+
     for (const button of this.refs.iconModeButtons) {
       button.addEventListener('pointerdown', this.handleIconModePressStart);
       button.addEventListener('click', this.handleIconModeClick);
@@ -214,6 +233,7 @@ export class TopPanelSettingsManager {
         font: DEFAULT_PLAYER_FONT,
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
         iconMode: DEFAULT_PLAYER_ICON_MODE,
+        progressBar: DEFAULT_PLAYER_PROGRESS_BAR,
       });
     }
 
@@ -280,6 +300,11 @@ export class TopPanelSettingsManager {
       for (const button of this.refs.colorModeButtons) {
         button.removeEventListener('pointerdown', this.handleColorModePressStart);
         button.removeEventListener('click', this.handleColorModeClick);
+      }
+
+      for (const button of this.refs.progressBarButtons) {
+        button.removeEventListener('pointerdown', this.handleProgressBarPressStart);
+        button.removeEventListener('click', this.handleProgressBarClick);
       }
 
       for (const button of this.refs.iconModeButtons) {
@@ -445,6 +470,7 @@ export class TopPanelSettingsManager {
     this.applyFontSelection(snapshot.font);
     this.applyColorModeSelection(snapshot.colorMode);
     this.applyIconModeSelection(snapshot.iconMode);
+    this.applyProgressBarSelection(snapshot.progressBar);
     this.renderVisualSettingPrices();
 
     if (
@@ -500,6 +526,16 @@ export class TopPanelSettingsManager {
 
     for (const button of this.refs.iconModeButtons) {
       const selected = button.dataset.iconMode === selectedIconMode;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-checked', selected ? 'true' : 'false');
+    }
+  }
+
+  applyProgressBarSelection(progressBar) {
+    const selectedProgressBar = normalizePlayerProgressBar(progressBar);
+
+    for (const button of this.refs.progressBarButtons) {
+      const selected = button.dataset.progressBar === selectedProgressBar;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
     }
@@ -578,6 +614,11 @@ export class TopPanelSettingsManager {
       return;
     }
 
+    if (categoryKey === 'progressBar') {
+      this.playerFacade?.setProgressBar?.(optionKey);
+      return;
+    }
+
     if (categoryKey === 'icons') {
       this.playerFacade?.setIconMode?.(optionKey);
     }
@@ -648,6 +689,10 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'color') {
       return normalizePlayerColorMode(this.playerSnapshot?.colorMode) === optionKey;
+    }
+
+    if (categoryKey === 'progressBar') {
+      return normalizePlayerProgressBar(this.playerSnapshot?.progressBar) === optionKey;
     }
 
     if (categoryKey === 'icons') {

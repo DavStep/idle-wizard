@@ -32,6 +32,7 @@ export class WorkshopWorldChatManager {
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
     this.previousFocus = null;
     this.ageRefreshTimer = null;
+    this.scrollFrame = 0;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -251,7 +252,7 @@ export class WorkshopWorldChatManager {
     this.visible = true;
     this.applyVisibility();
     this.refs.dialog?.focus();
-    this.scrollMessagesToBottom();
+    this.scrollMessagesToBottom({ afterLayout: true });
   }
 
   hide() {
@@ -264,6 +265,7 @@ export class WorkshopWorldChatManager {
     }
 
     this.previousFocus = null;
+    this.cancelScheduledScroll();
   }
 
   unmount() {
@@ -282,6 +284,7 @@ export class WorkshopWorldChatManager {
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
     this.previousFocus = null;
     this.clearAgeRefreshTimer();
+    this.cancelScheduledScroll();
   }
 
   render() {
@@ -310,7 +313,7 @@ export class WorkshopWorldChatManager {
     }
 
     this.updateFormState();
-    this.scrollMessagesToBottom();
+    this.scrollMessagesToBottom({ afterLayout: this.visible });
     this.scheduleAgeRefresh(messages);
   }
 
@@ -589,12 +592,48 @@ export class WorkshopWorldChatManager {
     return 'could not send';
   }
 
-  scrollMessagesToBottom() {
+  scrollMessagesToBottom({ afterLayout = false } = {}) {
     if (!this.refs.messages) {
       return;
     }
 
     this.refs.messages.scrollTop = this.refs.messages.scrollHeight;
+    const EventConstructor = this.refs.messages.ownerDocument?.defaultView?.Event;
+    if (typeof EventConstructor === 'function') {
+      this.refs.messages.dispatchEvent(new EventConstructor('scroll'));
+    }
+
+    if (afterLayout) {
+      this.scheduleScrollMessagesToBottom();
+    }
+  }
+
+  scheduleScrollMessagesToBottom() {
+    this.cancelScheduledScroll();
+
+    const run = () => {
+      this.scrollFrame = 0;
+      this.scrollMessagesToBottom();
+    };
+
+    if (typeof requestAnimationFrame !== 'function') {
+      run();
+      return;
+    }
+
+    this.scrollFrame = requestAnimationFrame(run);
+  }
+
+  cancelScheduledScroll() {
+    if (!this.scrollFrame) {
+      return;
+    }
+
+    if (typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this.scrollFrame);
+    }
+
+    this.scrollFrame = 0;
   }
 
   applyVisibility() {

@@ -2,6 +2,7 @@ import { PlayerColorModeManager } from './managers/PlayerColorModeManager.js';
 import { PlayerFontManager } from './managers/PlayerFontManager.js';
 import { PlayerIconModeManager } from './managers/PlayerIconModeManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
+import { PlayerProgressBarManager } from './managers/PlayerProgressBarManager.js';
 import { PlayerStateObserverManager } from './managers/PlayerStateObserverManager.js';
 import { PlayerThemeManager } from './managers/PlayerThemeManager.js';
 
@@ -15,6 +16,7 @@ export class PlayerFacade {
     this.fontManager = new PlayerFontManager();
     this.colorModeManager = new PlayerColorModeManager();
     this.iconModeManager = new PlayerIconModeManager();
+    this.progressBarManager = new PlayerProgressBarManager();
     this.stateObserverManager = new PlayerStateObserverManager();
   }
 
@@ -37,6 +39,9 @@ export class PlayerFacade {
     this.colorModeManager.applyServerColorMode(profile?.colorMode);
     if (Object.hasOwn(profile ?? {}, 'iconMode')) {
       this.iconModeManager.applyServerIconMode(profile.iconMode);
+    }
+    if (Object.hasOwn(profile ?? {}, 'progressBar')) {
+      this.progressBarManager.applyServerProgressBar(profile.progressBar);
     }
     this.publishSnapshot();
     return this.getSnapshot();
@@ -94,6 +99,16 @@ export class PlayerFacade {
     return this.iconModeManager.getIconModeOptions();
   }
 
+  setProgressBar(progressBar) {
+    this.progressBarManager.setProgressBar(progressBar);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  getProgressBarOptions() {
+    return this.progressBarManager.getProgressBarOptions();
+  }
+
   getSnapshot() {
     return {
       username: this.nameManager.getUsername(),
@@ -103,6 +118,7 @@ export class PlayerFacade {
       font: this.fontManager.getFont(),
       colorMode: this.colorModeManager.getColorMode(),
       iconMode: this.iconModeManager.getIconMode(),
+      progressBar: this.progressBarManager.getProgressBar(),
     };
   }
 
@@ -115,6 +131,7 @@ export class PlayerFacade {
       font: snapshot.font,
       colorMode: snapshot.colorMode,
       iconMode: snapshot.iconMode,
+      progressBar: snapshot.progressBar,
     };
   }
 

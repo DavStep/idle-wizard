@@ -42,6 +42,7 @@
     260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
   );
   --style-tabbed-dialog-content-height: 320px;
+  --room-top-panel-settings-content-height: 410px;
   --style-discoveries-dialog-width: calc(
     286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
   );
@@ -80,7 +81,7 @@
   --style-room-content-edge: 16px;
   --style-room-content-top: 88px;
   --style-reward-flyout-top: calc(var(--style-room-content-top) + 150px);
-  --style-item-drop-size: clamp(8.5px, 1.8vw, 19.5px);
+  --style-item-drop-size: clamp(25.5px, 5.4vw, 58.5px);
   --style-seed-drop-offset: 4px;
   --style-room-chat-bottom: 50px;
   --style-room-chat-source-height: calc(
@@ -188,6 +189,24 @@
 }
 
 :root[data-style-theme="witchcraft"] {
+  --style-bg: #07040e;
+  --style-surface: #1a1028;
+  --style-text: #f2e4bc;
+  --style-stroke: #674579;
+  --style-muted: #d1bd86;
+  --style-disabled: #8f805c;
+  --style-active-surface: #322047;
+  --style-system-text: #ffd76a;
+  --style-announcement-gold: #ffd76a;
+  --style-backdrop-rgb: 7 4 14;
+  --style-log-fade-rgb: 26 16 40;
+  --style-block-shadow: 5px 5px 5px #05030a;
+  --style-overlay-shadow: 5px 5px 5px #05030a;
+  --style-tooltip-shadow: -1px 3px 2px #05030a;
+  color-scheme: dark;
+}
+
+:root[data-style-progress="gradient"] {
   --style-progress-rail-background: #080611;
   --style-progress-rail-border: 1px solid #07030c;
   --style-progress-rail-shadow:
@@ -231,6 +250,16 @@
   --style-resource-ruby: oklch(78% 0.14 25);
   --style-resource-seed: oklch(79% 0.08 58);
   --style-resource-herb: oklch(77% 0.11 145);
+}
+
+:root[data-style-theme="witchcraft"][data-style-color="resources"] {
+  --style-system-text: #ffd76a;
+  --style-resource-mana: #64caff;
+  --style-resource-gold: #ffd76a;
+  --style-resource-crystal: #a96af0;
+  --style-resource-ruby: #df7653;
+  --style-resource-seed: #e8c878;
+  --style-resource-herb: #8fce48;
 }
 
 :root [data-resource-color="mana"] {
@@ -890,13 +919,114 @@ body {
 .tutorial-layer__hint {
   position: absolute;
   z-index: 1;
-  width: 150px;
+  width: 184px;
+  min-height: 52px;
   pointer-events: auto;
+}
+
+.tutorial-layer__step-label {
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  right: var(--style-box-title-left);
+  display: inline-block;
+  padding: 0 var(--style-box-border-label-padding-x);
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+}
+
+.tutorial-layer__copy {
+  min-height: 45px;
+  margin-left: 48px;
 }
 
 .tutorial-layer__text {
   min-height: var(--style-row-min-height);
   margin: 0 0 5px;
+}
+
+.tutorial-layer__witch {
+  position: absolute;
+  top: 14px;
+  left: 10px;
+  width: 34px;
+  height: 42px;
+  color: var(--style-text);
+}
+
+.tutorial-layer__witch-hat,
+.tutorial-layer__witch-face,
+.tutorial-layer__witch-body,
+.tutorial-layer__witch-broom {
+  position: absolute;
+  display: block;
+}
+
+.tutorial-layer__witch-hat {
+  top: 0;
+  left: 6px;
+  width: 0;
+  height: 0;
+  border-right: 11px solid transparent;
+  border-bottom: 17px solid currentColor;
+  border-left: 11px solid transparent;
+}
+
+.tutorial-layer__witch-hat::after {
+  position: absolute;
+  top: 14px;
+  left: -15px;
+  width: 30px;
+  height: 1px;
+  content: "";
+  background: currentColor;
+}
+
+.tutorial-layer__witch-face {
+  top: 17px;
+  left: 11px;
+  width: 12px;
+  height: 11px;
+  background: var(--style-surface);
+  border: var(--style-border);
+}
+
+.tutorial-layer__witch-face::before,
+.tutorial-layer__witch-face::after {
+  position: absolute;
+  top: 4px;
+  width: 1px;
+  height: 1px;
+  content: "";
+  background: currentColor;
+}
+
+.tutorial-layer__witch-face::before {
+  left: 3px;
+}
+
+.tutorial-layer__witch-face::after {
+  right: 3px;
+}
+
+.tutorial-layer__witch-body {
+  top: 30px;
+  left: 8px;
+  width: 18px;
+  height: 10px;
+  background: var(--style-surface);
+  border: var(--style-border);
+}
+
+.tutorial-layer__witch-broom {
+  top: 33px;
+  left: 24px;
+  width: 12px;
+  height: 1px;
+  background: currentColor;
+  transform: rotate(-18deg);
+  transform-origin: left center;
 }
 
 .tutorial-layer__skip {
@@ -3043,6 +3173,16 @@ div.workshop-page__discovery-row {
   cursor: default;
 }
 
+.garden-page__plot-row.is-processing,
+.garden-page__plot-row.is-ready {
+  cursor: default;
+}
+
+.garden-page__plot-row.is-processing .garden-page__plot-action,
+.garden-page__plot-row.is-ready .garden-page__plot-action {
+  cursor: pointer;
+}
+
 .garden-page__plot-row:hover,
 .garden-page__plot-row:focus-visible {
   outline: none;
@@ -3052,17 +3192,17 @@ div.workshop-page__discovery-row {
   text-decoration: underline;
 }
 
-.garden-page__plot-row:focus-visible .garden-page__plot-label {
-  text-decoration: underline;
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .garden-page__plot-row:not(.is-empty):hover .garden-page__plot-action,
+  .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
+    .garden-page__plot-action,
+  .garden-page__plot-row.is-processing .garden-page__plot-action:hover,
+  .garden-page__plot-row.is-ready .garden-page__plot-action:hover,
   .garden-page__plot-row.is-empty .garden-page__plot-action:hover {
     text-decoration: underline;
   }
 
-  .garden-page__plot-row:not(.is-empty):hover .garden-page__plot-label,
+  .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
+    .garden-page__plot-label,
   .garden-page__plot-row.is-empty .garden-page__plot-label:hover {
     text-decoration: underline;
   }
@@ -3141,8 +3281,12 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot-action {
-  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: stretch;
   min-width: var(--style-row-right-slot-width);
+  min-height: var(--style-row-min-height);
   font-size: var(--style-box-border-label-font-size);
   line-height: normal;
   text-align: right;
@@ -3155,10 +3299,6 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-state {
   display: none;
-}
-
-.garden-page__plot-action {
-  min-height: var(--style-row-min-height);
 }
 
 .garden-page__plot-progress {
@@ -4645,7 +4785,7 @@ div.workshop-page__discovery-row {
 .room-top-panel__settings:not(.is-username-prompt)
   .style-dialog.room-top-panel__settings-dialog {
   width: 310px;
-  height: var(--style-tabbed-dialog-content-height);
+  height: var(--room-top-panel-settings-content-height);
 }
 
 .room-top-panel__level-panel {
@@ -4801,7 +4941,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__settings:not(.is-username-prompt) .room-top-panel__settings-pane {
   height: calc(
-    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+    var(--room-top-panel-settings-content-height) - var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -5681,7 +5821,7 @@ div.workshop-page__discovery-row {
 
 .style-scroll-cue-progress {
   box-sizing: border-box;
-  height: var(--style-scroll-progress-height);
+  height: var(--style-progress-height);
   margin-top: var(--style-scroll-progress-gap);
 }
 

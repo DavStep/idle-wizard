@@ -9,12 +9,14 @@ function createPlayerFacade(
   initialColorMode = 'monochrome',
   initialFont = 'lexend',
   initialIconMode = 'none',
+  initialProgressBar = 'regular',
 ) {
   let snapshot = {
     theme: initialTheme,
     font: initialFont,
     colorMode: initialColorMode,
     iconMode: initialIconMode,
+    progressBar: initialProgressBar,
   };
   const listeners = new Set();
 
@@ -52,6 +54,13 @@ function createPlayerFacade(
         listener(snapshot);
       }
     },
+    setProgressBar: (progressBar) => {
+      snapshot = { ...snapshot, progressBar };
+
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
   };
 }
 
@@ -61,10 +70,17 @@ describe('AppThemeManager', () => {
     delete document.documentElement.dataset.styleFont;
     delete document.documentElement.dataset.styleColor;
     delete document.documentElement.dataset.styleIcons;
+    delete document.documentElement.dataset.styleProgress;
   });
 
   it('applies current and changed player visual settings to the document root', () => {
-    const playerFacade = createPlayerFacade('black', 'resources', 'comic-sans-mono', 'icons');
+    const playerFacade = createPlayerFacade(
+      'black',
+      'resources',
+      'comic-sans-mono',
+      'icons',
+      'gradient',
+    );
     const manager = new AppThemeManager();
 
     manager.mount(playerFacade);
@@ -73,14 +89,17 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
+    expect(document.documentElement.dataset.styleProgress).toBe('gradient');
 
     playerFacade.setTheme('midnight');
     playerFacade.setFont('comic sans mono');
     playerFacade.setIconMode('none');
+    playerFacade.setProgressBar('regular');
 
     expect(document.documentElement.dataset.styleTheme).toBe('midnight');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleIcons).toBe('none');
+    expect(document.documentElement.dataset.styleProgress).toBe('regular');
 
     playerFacade.setFont('google-lexend');
 
@@ -107,5 +126,6 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleFont).toBe('lexend');
     expect(document.documentElement.dataset.styleColor).toBe('monochrome');
     expect(document.documentElement.dataset.styleIcons).toBe('none');
+    expect(document.documentElement.dataset.styleProgress).toBe('regular');
   });
 });

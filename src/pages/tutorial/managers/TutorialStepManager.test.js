@@ -13,6 +13,7 @@ function createProgressFake(completedStepIds = []) {
     hasCompleted: (stepId) => completed.has(stepId),
     isSkipped: () => false,
     complete: (stepId) => completed.add(stepId),
+    completeMany: (stepIds) => stepIds.forEach((stepId) => completed.add(stepId)),
   };
 }
 
@@ -42,6 +43,7 @@ function createSnapshot(overrides = {}) {
       },
     },
     tasks: {
+      currentLevel: 1,
       level: {
         tasks: [
           {
@@ -82,7 +84,8 @@ describe('TutorialStepManager', () => {
     expect(getStep()).toMatchObject({
       id: 'open-tasks',
       targetId: 'workshop:tasks',
-      text: 'open tasks',
+      text: 'tasks show what the room needs',
+      stepLabel: '1/5',
     });
   });
 
@@ -175,9 +178,68 @@ describe('TutorialStepManager', () => {
     });
 
     expect(step).toMatchObject({
-      id: 'plant-sage-seed',
+      id: 'grow-sage',
       targetId: 'garden:seed:sageSeed',
       text: 'choose sage seed',
+      stepLabel: '4/5',
+    });
+  });
+
+  it('hides the grow lesson while sage is still growing', () => {
+    const snapshot = createSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 0 }],
+        plot: {
+          tiles: [
+            {
+              tileNumber: 1,
+              unlocked: true,
+              phase: 'growing',
+              selectedSeedItemTypeId: 1,
+            },
+          ],
+        },
+      },
+    });
+    const step = getStep({
+      pageId: 'garden',
+      snapshot,
+      completed: ['open-tasks', 'research-sage-seed', 'summon-first-seed'],
+    });
+
+    expect(step).toBeNull();
+  });
+
+  it('targets ready sage for harvest inside the combined grow lesson', () => {
+    const snapshot = createSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 0 }],
+        plot: {
+          tiles: [
+            {
+              tileNumber: 1,
+              unlocked: true,
+              phase: 'ready',
+              selectedSeedItemTypeId: 1,
+            },
+          ],
+        },
+      },
+    });
+    const step = getStep({
+      pageId: 'garden',
+      snapshot,
+      completed: ['open-tasks', 'research-sage-seed', 'summon-first-seed'],
+    });
+
+    expect(step).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'garden:plot:1',
+      text: 'harvest sage',
     });
   });
 
@@ -214,19 +276,78 @@ describe('TutorialStepManager', () => {
     });
     const step = getStep({
       snapshot,
-      completed: [
-        'open-tasks',
-        'research-sage-seed',
-        'summon-first-seed',
-        'plant-sage-seed',
-        'harvest-sage',
-      ],
+      dom: createDomFake({ tasksExpanded: true }),
+      completed: ['open-tasks', 'research-sage-seed', 'summon-first-seed', 'grow-sage'],
     });
 
     expect(step).toMatchObject({
-      id: 'fill-first-task',
+      id: 'finish-first-task',
       targetId: 'task:level1-sage-herb',
       text: 'fill task',
+      stepLabel: '5/5',
+    });
+  });
+
+  it('auto-completes for players already on level 2', () => {
+    const progress = createProgressFake();
+    const manager = new TutorialStepManager({
+      progressManager: progress,
+      getCurrentPageId: () => 'workshop',
+    });
+    const step = manager.getActiveStep({
+      snapshot: createSnapshot({
+        tasks: {
+          currentLevel: 2,
+          level: {
+            tasks: [],
+          },
+        },
+      }),
+      dom: createDomFake(),
+    });
+
+    expect(step).toBeNull();
+    expect(progress.completedStepIds).toEqual(
+      new Set([
+        'open-tasks',
+        'research-sage-seed',
+        'summon-first-seed',
+        'grow-sage',
+        'finish-first-task',
+      ]),
+    );
+  });
+
+  it('keeps level 1 old completed tasks from ending the whole tutorial', () => {
+    const snapshot = createSnapshot({
+      tasks: {
+        currentLevel: 1,
+        level: {
+          tasks: [
+            {
+              taskId: 'level1-sage-seeds',
+              progressQuantity: 20,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+            {
+              taskId: 'level1-sage-herb',
+              progressQuantity: 0,
+              canFill: true,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+    const step = getStep({ snapshot });
+
+    expect(step).toMatchObject({
+      id: 'finish-first-task',
+      targetId: 'workshop:tasks',
+      text: 'open tasks',
     });
   });
 });

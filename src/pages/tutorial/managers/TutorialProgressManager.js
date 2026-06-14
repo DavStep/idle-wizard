@@ -25,6 +25,22 @@ export class TutorialProgressManager {
     this.save();
   }
 
+  completeMany(stepIds) {
+    const nextStepIds = stepIds.filter(
+      (stepId) => stepId && !this.completedStepIds.has(stepId),
+    );
+
+    if (nextStepIds.length === 0) {
+      return;
+    }
+
+    for (const stepId of nextStepIds) {
+      this.completedStepIds.add(stepId);
+    }
+
+    this.save();
+  }
+
   skip() {
     if (this.skipped) {
       return;

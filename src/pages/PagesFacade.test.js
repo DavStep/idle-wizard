@@ -64,6 +64,7 @@ function createGameplayFacadeFake() {
         theme: { white: 0, black: 0, midnight: 0, witchcraft: 0 },
         font: { lexend: 0, 'comic-sans-mono': 0 },
         color: { monochrome: 0, resources: 0 },
+        progressBar: { regular: 0, gradient: 0 },
         icons: { none: 0, icons: 0 },
       },
       researched: {
@@ -73,6 +74,7 @@ function createGameplayFacadeFake() {
           'comic-sans-mono': false,
         },
         color: { monochrome: true, resources: false },
+        progressBar: { regular: true, gradient: false },
         icons: { none: true, icons: false },
       },
     },
@@ -2249,6 +2251,16 @@ function createGameplayFacadeFake() {
   return gameplayFacade;
 }
 
+function createMemoryStorage(initial = {}) {
+  const values = new Map(Object.entries(initial));
+
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+  };
+}
+
 function markSeedResearchComplete(gameplayFacade, ...seedKeys) {
   const research = gameplayFacade.getSnapshot().research;
   const completedResearchIds = new Set(research.completedResearchIds ?? []);
@@ -2285,6 +2297,7 @@ function createPlayerFacadeFake(
     initialColorMode = 'monochrome',
     initialFont = 'lexend',
     initialIconMode = 'none',
+    initialProgressBar = 'regular',
   } = {},
 ) {
   let snapshot = {
@@ -2293,6 +2306,7 @@ function createPlayerFacadeFake(
     font: initialFont,
     colorMode: initialColorMode,
     iconMode: initialIconMode,
+    progressBar: initialProgressBar,
     shouldPromptForUsername,
   };
   const listeners = new Set();
@@ -2386,6 +2400,18 @@ function createPlayerFacadeFake(
       snapshot = {
         ...snapshot,
         iconMode: normalizedIconMode,
+      };
+
+      publish();
+      return snapshot;
+    },
+    setProgressBar: (progressBar) => {
+      const normalizedProgressBar = ['gradient', 'gradinet', 'grad'].includes(progressBar)
+        ? 'gradient'
+        : 'regular';
+      snapshot = {
+        ...snapshot,
+        progressBar: normalizedProgressBar,
       };
 
       publish();
@@ -3088,17 +3114,60 @@ describe('PagesFacade', () => {
     expect(goldValue?.querySelector('.style-resource-label--gold')).not.toBeNull();
   });
 
-  it('keeps FTUE disabled for now', () => {
+  it('mounts the FTUE guide shell for fresh level 1 players', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.tasks.level.completedTasks = 0;
+    snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) => ({
+      ...task,
+      progressQuantity: 0,
+      remainingQuantity: task.requiredQuantity,
+      progress: 0,
+      maxed: false,
+      completed: false,
+      canFill: false,
+      canComplete: false,
+    }));
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createMemoryStorage(),
     });
 
     pagesFacade.mount(stage);
-    pagesFacade.show('research');
 
-    expect(stage.querySelector('.tutorial-layer')).toBeNull();
+    const layer = stage.querySelector('.tutorial-layer');
+
+    expect(layer).not.toBeNull();
+    expect(layer?.querySelector('.tutorial-layer__witch')).not.toBeNull();
+    expect(layer?.querySelector('.tutorial-layer__step-label')).not.toBeNull();
+  });
+
+  it('auto-completes FTUE for players already on level 2', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const storage = createMemoryStorage();
+    gameplayFacade.getSnapshot().tasks.currentLevel = 2;
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: storage,
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+    expect(
+      JSON.parse(storage.getItem('idle-wizard.tutorial.v1'))?.completedStepIds,
+    ).toEqual([
+      'open-tasks',
+      'research-sage-seed',
+      'summon-first-seed',
+      'grow-sage',
+      'finish-first-task',
+    ]);
   });
 
   it('shows a garden tab notification when garden work is ready outside Workshop', () => {
@@ -3508,6 +3577,11 @@ describe('PagesFacade', () => {
       ),
     ).toEqual(['monochrome', 'resources']);
     expect(
+      [...settings.querySelectorAll('.room-top-panel__progress-bar-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['regular', 'gradient']);
+    expect(
       [...settings.querySelectorAll('.room-top-panel__icon-button')].map(
         (button) => button.textContent,
       ),
@@ -3520,6 +3594,8 @@ describe('PagesFacade', () => {
       'researched',
       'free',
       'free',
+      'free',
+      'researched',
       'free',
       'researched',
       'free',
@@ -3896,6 +3972,56 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().colorMode).toBe('resources');
     expect(resourcesButton.getAttribute('aria-checked')).toBe('true');
     expect(monoButton.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('changes progress bar mode from settings', () => {
+    const stage = document.createElement('section');
+    const playerFacade = createPlayerFacadeFake('Merlin');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const regularButton = stage.querySelector(
+      '.room-top-panel__progress-bar-button[data-progress-bar="regular"]',
+    );
+    const gradientButton = stage.querySelector(
+      '.room-top-panel__progress-bar-button[data-progress-bar="gradient"]',
+    );
+    const gradientResearchButton = gradientButton
+      ?.closest('.room-top-panel__visual-option')
+      ?.querySelector('.room-top-panel__visual-option-price');
+
+    expect(regularButton.getAttribute('aria-checked')).toBe('true');
+    expect(gradientButton.disabled).toBe(false);
+
+    gradientButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().progressBar).toBe('regular');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.progressBar.gradient).toBe(
+      false,
+    );
+
+    gradientResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().progressBar).toBe('regular');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.progressBar.gradient).toBe(
+      true,
+    );
+    expect(gradientResearchButton?.textContent).toBe('researched');
+
+    gradientButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().progressBar).toBe('gradient');
+    expect(gradientButton.getAttribute('aria-checked')).toBe('true');
+    expect(regularButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes icon mode from settings', () => {
@@ -5416,6 +5542,65 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
+  it('scrolls world chat popup to the newest message after opening', () => {
+    const stage = document.createElement('section');
+    const callbacks = [];
+    const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
+
+    globalThis.requestAnimationFrame = (callback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    };
+    globalThis.cancelAnimationFrame = () => {};
+
+    try {
+      const worldChatFacade = createWorldChatFacadeFake({
+        messages: Array.from({ length: 12 }, (_, index) => ({
+          id: String(index + 1),
+          senderIdentity: `sender-${index}`,
+          username: `wizard${index + 1}`,
+          playerLevel: 1,
+          body: `message ${index + 1}`,
+          sentAtMs: (index + 1) * 1_000,
+        })),
+      });
+      const pagesFacade = new PagesFacade({
+        gameplayFacade: createGameplayFacadeFake(),
+        playerFacade: createPlayerFacadeFake(),
+        worldChatFacade,
+      });
+
+      pagesFacade.mount(stage);
+
+      const popup = stage.querySelector('.workshop-page__world-chat-popup');
+      const button = stage.querySelector('.workshop-page__world-chat-button');
+      const messages = stage.querySelector('.workshop-page__world-chat-messages');
+      let laidOut = false;
+
+      Object.defineProperty(messages, 'clientHeight', { value: 90, configurable: true });
+      Object.defineProperty(messages, 'scrollHeight', {
+        configurable: true,
+        get: () => (laidOut ? 360 : 0),
+      });
+
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(popup.hidden).toBe(false);
+      expect(messages.scrollTop).toBe(0);
+
+      laidOut = true;
+      while (callbacks.length) {
+        callbacks.shift()?.();
+      }
+
+      expect(messages.scrollTop).toBe(360);
+    } finally {
+      globalThis.requestAnimationFrame = originalRequestAnimationFrame;
+      globalThis.cancelAnimationFrame = originalCancelAnimationFrame;
+    }
+  });
+
   it('keeps empty world chat preview static', () => {
     const stage = document.createElement('section');
     const worldChatFacade = createWorldChatFacadeFake({ messages: [] });
@@ -6510,6 +6695,12 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(seedPopup.hidden).toBe(true);
+    expect(stage.querySelector('.garden-page__cancel-popup')?.hidden).toBe(true);
+
+    rows[0]
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     expect(stage.querySelector('.garden-page__cancel-popup')?.hidden).toBe(false);
     expect(stage.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
       'cancel progress?',

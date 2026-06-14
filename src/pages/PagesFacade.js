@@ -16,7 +16,7 @@ import {
 } from './managers/PageSwipeNavigationManager.js';
 import { ScrollCueManager } from './managers/ScrollCueManager.js';
 
-const FTUE_ENABLED = false;
+const FTUE_ENABLED = true;
 
 export class PagesFacade {
   static explain =
@@ -31,6 +31,7 @@ export class PagesFacade {
     feedbackFacade,
     playerShopFacade,
     authFacade,
+    tutorialStorage,
     defaultPageId = 'workshop',
   } = {}) {
     this.registryManager = new PageRegistryManager();
@@ -68,6 +69,7 @@ export class PagesFacade {
       ? new TutorialFacade({
           gameplayFacade,
           getCurrentPageId: () => this.getCurrentPageId(),
+          storage: tutorialStorage,
         })
       : null;
 

@@ -340,7 +340,7 @@ export class ShopShelfManager {
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
         setNotificationBadge(row, false);
         setNotificationBadge(button, !button.disabled);
-        refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+        this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
         setItemIconLabel(refs.itemValue, null);
         setResourceColor(refs.itemValue, null);
 
@@ -360,10 +360,10 @@ export class ShopShelfManager {
       row.removeAttribute('tabindex');
       setNotificationBadge(row, false);
       setNotificationBadge(button, false);
-      refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+      this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
-      refs.priceValue.textContent = 'locked';
+      this.setText(refs.priceValue, 'locked');
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       if (refs.priceValue.parentElement !== value) {
         value.replaceChildren(refs.itemValue, refs.priceValue);
@@ -382,7 +382,7 @@ export class ShopShelfManager {
         refs.value.replaceChildren(refs.itemValue, refs.priceValue);
       }
 
-      refs.itemValue.textContent = EMPTY_UNLOCKED_STAND_LABEL;
+      this.setText(refs.itemValue, EMPTY_UNLOCKED_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColorFromText(refs.itemValue, refs.itemValue.textContent);
       setResourceColor(refs.priceValue, null);
@@ -399,7 +399,7 @@ export class ShopShelfManager {
       refs.value.replaceChildren(refs.itemValue, refs.priceValue);
     }
 
-    refs.itemValue.textContent = parts.itemText;
+    this.setText(refs.itemValue, parts.itemText);
     setItemIconLabel(refs.itemValue, parts.itemKind, parts.itemKey);
     this.applySlotItemColor(refs.itemValue, parts);
 
@@ -467,7 +467,7 @@ export class ShopShelfManager {
       row.classList.toggle('is-locked', display.locked);
       row.classList.toggle('is-unknown', display.unknown);
       row.classList.toggle('is-empty', display.empty);
-      label.textContent = `${display.label} (${display.quantity}) `;
+      this.setText(label, `${display.label} (${display.quantity}) `);
       setItemIconLabel(label, item.kind, item.key);
       setResourceColor(label, item.kind);
       setResourceIconText(quantity, this.formatSellGold(item.sellGold));
@@ -635,5 +635,11 @@ export class ShopShelfManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  setText(node, value) {
+    if (node && node.textContent !== value) {
+      node.textContent = value;
+    }
   }
 }

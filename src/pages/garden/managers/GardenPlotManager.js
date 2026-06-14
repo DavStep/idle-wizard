@@ -317,10 +317,10 @@ export class GardenPlotManager {
       const lockedTileAction = isNextLockedTile ? this.formatLockedTileAction(plot) : '';
       const lockedTileDisabled =
         !isNextLockedTile || plot.nextTileLockedByLevel || gold.current < plot.nextTileCost;
-      refs.label.textContent = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
+      this.setText(refs.label, isNextLockedTile ? `plot ${tile.tileNumber}` : '');
       setItemIconLabel(refs.label, null);
       setResourceColor(refs.label, null);
-      refs.state.textContent = '';
+      this.setText(refs.state, '');
       this.setTileAction(refs, {
         label: lockedTileAction,
         colorResource: !lockedTileDisabled,
@@ -341,10 +341,10 @@ export class GardenPlotManager {
     refs.button.setAttribute('aria-disabled', 'false');
 
     if (tile.phase === 'empty') {
-      refs.label.textContent = tile.selectedSeedLabel ?? 'empty';
+      this.setText(refs.label, tile.selectedSeedLabel ?? 'empty');
       setItemIconLabel(refs.label, hasSelectedSeed ? 'seed' : null);
       setResourceColor(refs.label, hasSelectedSeed ? 'seed' : null);
-      refs.state.textContent = '';
+      this.setText(refs.state, '');
       this.setTileAction(refs, {
         label: hasSelectedSeed ? (selectedSeedQuantity > 0 ? 'plant' : 'no seeds') : 'choose',
       });
@@ -358,7 +358,7 @@ export class GardenPlotManager {
       return;
     }
 
-    refs.label.textContent = tile.selectedSeedLabel ?? 'empty';
+    this.setText(refs.label, tile.selectedSeedLabel ?? 'empty');
     setItemIconLabel(
       refs.label,
       tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
@@ -367,7 +367,7 @@ export class GardenPlotManager {
       refs.label,
       tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
     );
-    refs.state.textContent = '';
+    this.setText(refs.state, '');
     this.setTileAction(refs, this.formatTileAction(tile));
     const activeSeedLabel = tile.seedLabel ?? tile.selectedSeedLabel ?? 'seed';
     refs.button.setAttribute(
@@ -428,8 +428,8 @@ export class GardenPlotManager {
       const refs = this.seedRefs.get(seed.itemTypeId);
       refs.row.classList.toggle('is-empty', seed.quantity <= 0);
       refs.row.classList.toggle('is-unresearched', false);
-      refs.label.textContent = seed.label;
-      refs.quantity.textContent = String(seed.quantity);
+      this.setText(refs.label, seed.label);
+      this.setText(refs.quantity, String(seed.quantity));
       refs.button.disabled = false;
       refs.button.setAttribute('aria-disabled', 'false');
       refs.button.setAttribute('aria-label', `select ${seed.label}, owned ${seed.quantity}`);
@@ -513,8 +513,9 @@ export class GardenPlotManager {
     const snapshot = this.gameplayFacade.getSnapshot();
     const garden = snapshot.garden;
     const tile = garden.plot.tiles.find((candidate) => candidate.tileNumber === tileNumber);
+    const refs = this.tileRefs.get(tileNumber);
     const clickedLabel = Boolean(event?.target?.closest?.('.garden-page__plot-label'));
-    const clickedAction = Boolean(event?.target?.closest?.('.garden-page__plot-action'));
+    const clickedAction = this.isTileActionClick(event, refs);
     const keyboardRowAction =
       event?.target === event?.currentTarget && event?.detail === 0;
 
@@ -556,14 +557,45 @@ export class GardenPlotManager {
     }
 
     if (tile.process) {
-      this.cancelDialogManager.show(tile);
+      if (clickedAction || keyboardRowAction) {
+        this.cancelDialogManager.show(tile);
+      }
+
       return;
     }
 
     if (tile.phase === 'ready') {
-      this.gameplayFacade.startGardenHarvest(tileNumber);
-      this.render(this.gameplayFacade.getSnapshot());
+      if (clickedAction || keyboardRowAction) {
+        this.gameplayFacade.startGardenHarvest(tileNumber);
+        this.render(this.gameplayFacade.getSnapshot());
+      }
     }
+  }
+
+  isTileActionClick(event, refs) {
+    if (event?.target?.closest?.('.garden-page__plot-action')) {
+      return true;
+    }
+
+    const clientX = event?.clientX;
+    const clientY = event?.clientY;
+
+    if (!refs?.action || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+      return false;
+    }
+
+    const rect = refs.action.getBoundingClientRect();
+
+    if (rect.width <= 0 || rect.height <= 0) {
+      return false;
+    }
+
+    return (
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom
+    );
   }
 
   onTileLabelClick(tileNumber, event) {

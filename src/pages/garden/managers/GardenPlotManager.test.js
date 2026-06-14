@@ -215,6 +215,17 @@ function createGameplayFacadeFake() {
   return gameplayFacade;
 }
 
+function setPlotActionHitBox(plotRow) {
+  plotRow.querySelector('.garden-page__plot-action').getBoundingClientRect = () => ({
+    left: 100,
+    right: 220,
+    top: 0,
+    bottom: 24,
+    width: 120,
+    height: 24,
+  });
+}
+
 describe('GardenPlotManager', () => {
   it('shows zero-cost plot buys as free', () => {
     const parent = document.createElement('section');
@@ -339,6 +350,73 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
   });
 
+  it('keeps selected seed text stable across renders so taps can open choices', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const tile = snapshot.garden.plot.tiles[0];
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 2,
+      selectedSeedKey: 'mintSeed',
+      selectedSeedLabel: 'mint seed',
+      phase: 'empty',
+    });
+
+    manager.mount(parent);
+
+    const labelText = parent.querySelector(
+      '.garden-page__plot-label .style-seed-label__text',
+    );
+
+    expect(labelText).not.toBeNull();
+
+    gameplayFacade.publish();
+
+    expect(parent.querySelector('.garden-page__plot-label .style-seed-label__text')).toBe(
+      labelText,
+    );
+
+    labelText.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
+    expect(tile.phase).toBe('empty');
+  });
+
+  it('plants from the full right action slot when a tap misses the text', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const tile = snapshot.garden.plot.tiles[0];
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 2,
+      selectedSeedKey: 'mintSeed',
+      selectedSeedLabel: 'mint seed',
+      phase: 'empty',
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    setPlotActionHitBox(plotRow);
+
+    plotRow.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        detail: 1,
+        clientX: 116,
+        clientY: 10,
+      }),
+    );
+
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
+    expect(tile.phase).toBe('growing');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
+  });
+
   it('keeps blank row space inert when the selected seed count is empty', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -376,14 +454,24 @@ describe('GardenPlotManager', () => {
     manager.mount(parent);
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
-    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     parent
       .querySelector('[aria-label="select mint seed, owned 1"]')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
     const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
+
+    plotRow
+      .querySelector('.garden-page__plot-label')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+
+    expect(cancelPopup.hidden).toBe(true);
+
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(cancelPopup.hidden).toBe(false);
     expect(cancelPopup.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
@@ -400,7 +488,9 @@ describe('GardenPlotManager', () => {
     expect(cancelPopup.hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint seed');
 
-    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(cancelPopup.querySelector('.garden-page__cancel-confirm')?.textContent).toBe('yes');
     cancelPopup
       .querySelector('.garden-page__cancel-confirm')
@@ -500,7 +590,9 @@ describe('GardenPlotManager', () => {
     manager.mount(parent);
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
-    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 10s');
     expect(plotRow.querySelector('.garden-page__plot-action-label')?.textContent).toBe(

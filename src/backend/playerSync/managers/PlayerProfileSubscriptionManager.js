@@ -40,7 +40,7 @@ export class PlayerProfileSubscriptionManager {
         this.publishFromTable();
       })
       .onError(() => this.publish(null))
-      .subscribe(PLAYER_QUERY);
+      .subscribe(this.getPlayerQuery());
   }
 
   disconnect() {
@@ -120,5 +120,17 @@ export class PlayerProfileSubscriptionManager {
     }
 
     return String(identity);
+  }
+
+  getPlayerQuery() {
+    const identitySql = this.toIdentitySqlLiteral(this.identity);
+    return identitySql
+      ? `SELECT * FROM player WHERE identity = ${identitySql}`
+      : PLAYER_QUERY;
+  }
+
+  toIdentitySqlLiteral(identity) {
+    const identityKey = this.toIdentityKey(identity).replace(/^0x/i, '');
+    return /^[0-9a-f]{64}$/i.test(identityKey) ? `0x${identityKey}` : '';
   }
 }

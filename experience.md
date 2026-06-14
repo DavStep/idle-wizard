@@ -23,6 +23,7 @@
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
+- FTUE guide should hide while top-panel username/settings dialog is open, then resume after it closes.
 
 ## Architecture
 
@@ -71,6 +72,7 @@
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
 - SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
+- SpacetimeDB identity subscription filters use `0x${identity.toHexString()}` literals; quote camel-case column names such as `"sellerIdentity"` in raw SQL strings.
 - Global background work like NPC market ticks should be scheduled or single-owner server work, not one reducer interval per connected client.
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
@@ -161,6 +163,7 @@
 - Garden plot number cells use the shared numbered-row label (`1.`, `2.`) and spacing, matching market stand/request rows.
 - Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.
 - Garden empty-plot blank row space is inert; use the seed/empty label to change selection and the right action to choose or plant.
+- Garden plot right-action hit areas must be real block/flex boxes; inline spans ignore min-size and make mobile taps land on label/blank row behavior.
 - Inventory-style seed/herb/potion rows should display `locked` instead of `0` when the matching research is incomplete.
 - Garden seed picker title is `choose seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
 - Garden tiles keep selected seed separate from active crop; harvest completion preserves selection but does not auto-replant. Player must press `plant`.
@@ -177,6 +180,7 @@
 - Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
 - Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
+- Progress bar style is a separate visual setting (`regular`/`gradient`), not part of a theme.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
@@ -285,6 +289,7 @@
 - Scrollable room and dialog lists should use the shared scroll cue: transparent bottom fade plus scroll progress, matching the logs popup math.
 - Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
 - Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
+- Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.

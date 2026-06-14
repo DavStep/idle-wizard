@@ -211,6 +211,9 @@ const tablesSchema = __schema({
       { accessor: 'listingKey', name: 'player_shop_listing_listing_key_idx_btree', algorithm: 'btree', columns: [
         'listingKey',
       ] },
+      { accessor: 'byQuantity', name: 'player_shop_listing_quantity_idx_btree', algorithm: 'btree', columns: [
+        'quantity',
+      ] },
       { accessor: 'bySellerIdentity', name: 'player_shop_listing_seller_identity_idx_btree', algorithm: 'btree', columns: [
         'sellerIdentity',
       ] },

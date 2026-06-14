@@ -7,6 +7,10 @@ import {
   DEFAULT_PLAYER_ICON_MODE,
   PLAYER_ICON_MODE_OPTIONS,
 } from './playerIconModes.js';
+import {
+  DEFAULT_PLAYER_PROGRESS_BAR,
+  PLAYER_PROGRESS_BAR_OPTIONS,
+} from './playerProgressBars.js';
 import { DEFAULT_PLAYER_THEME, PLAYER_THEME_OPTIONS } from './playerThemes.js';
 
 export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
@@ -24,6 +28,11 @@ export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
     key: 'color',
     label: 'color',
     options: PLAYER_COLOR_MODE_OPTIONS,
+  }),
+  Object.freeze({
+    key: 'progressBar',
+    label: 'progress bar',
+    options: PLAYER_PROGRESS_BAR_OPTIONS,
   }),
   Object.freeze({
     key: 'icons',
@@ -45,6 +54,7 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
   theme: Object.freeze({ [DEFAULT_PLAYER_THEME]: true }),
   font: Object.freeze({ [DEFAULT_PLAYER_FONT]: true }),
   color: Object.freeze({ [DEFAULT_PLAYER_COLOR_MODE]: true }),
+  progressBar: Object.freeze({ [DEFAULT_PLAYER_PROGRESS_BAR]: true }),
   icons: Object.freeze({ [DEFAULT_PLAYER_ICON_MODE]: true }),
 });
 

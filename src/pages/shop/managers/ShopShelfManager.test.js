@@ -457,6 +457,88 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('keeps NPC market stand item text stable across renders so taps can open picker', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const listeners = new Set();
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 1,
+              sellGold: 8,
+              sellNeed: 12,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'sage seed',
+              sellQuantity: 1,
+              sellGold: 8,
+              sellNeed: 12,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        listeners.add(callback);
+        callback(gameplaySnapshot);
+        return () => listeners.delete(callback);
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      publish() {
+        for (const listener of listeners) {
+          listener(gameplaySnapshot);
+        }
+      },
+      selectShopShelfSlot(slotNumber) {
+        gameplaySnapshot.shop.shelf.selectedSlotNumber = slotNumber;
+        return { ok: true, slotNumber };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const labelText = stage.querySelector(
+      '.shop-page__slot-item-value .style-seed-label__text',
+    );
+
+    expect(labelText).not.toBeNull();
+
+    gameplayFacade.publish();
+
+    expect(
+      stage.querySelector('.shop-page__slot-item-value .style-seed-label__text'),
+    ).toBe(labelText);
+
+    labelText.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(false);
+
+    manager.unmount();
+  });
+
   it('shows zero-cost player market stand buys as free', () => {
     const manager = new ShopPlayerShelfManager();
 

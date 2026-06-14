@@ -1,3 +1,3 @@
 # Visual Settings
 
-Visual settings prices turn profile-only choices into researchable options. White, Lexend, and monochrome start researched. Unresearched choices, including zero-cost `free` choices, must be researched from the price label before their name can select them.
+Visual settings prices turn profile-only choices into researchable options. White, Lexend, monochrome, and regular progress bars start researched. Unresearched choices, including zero-cost `free` choices, must be researched from the price label before their name can select them.

@@ -713,7 +713,7 @@ export class ShopPlayerShelfManager {
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
         setNotificationBadge(row, false);
         setNotificationBadge(button, !button.disabled);
-        refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+        this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
         setItemIconLabel(refs.itemValue, null);
         setResourceColor(refs.itemValue, null);
 
@@ -733,10 +733,10 @@ export class ShopPlayerShelfManager {
       row.removeAttribute('tabindex');
       setNotificationBadge(row, false);
       setNotificationBadge(button, false);
-      refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+      this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
-      refs.priceValue.textContent = 'locked';
+      this.setText(refs.priceValue, 'locked');
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       if (refs.priceValue.parentElement !== value) {
         value.replaceChildren(refs.itemValue, refs.priceValue);
@@ -755,10 +755,10 @@ export class ShopPlayerShelfManager {
         refs.value.replaceChildren(refs.itemValue, refs.priceValue);
       }
 
-      refs.itemValue.textContent = EMPTY_LOCKED_STAND_LABEL;
+      this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
-      refs.priceValue.textContent = EMPTY_STAND_ACTION_LABEL;
+      this.setText(refs.priceValue, EMPTY_STAND_ACTION_LABEL);
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       return;
     }
@@ -770,7 +770,7 @@ export class ShopPlayerShelfManager {
       refs.value.replaceChildren(refs.itemValue, refs.priceValue);
     }
 
-    refs.itemValue.textContent = parts.itemText;
+    this.setText(refs.itemValue, parts.itemText);
     setItemIconLabel(refs.itemValue, parts.itemKind, parts.itemKey);
     this.applyPlayerSlotItemColor(refs.itemValue, parts);
 
@@ -820,9 +820,10 @@ export class ShopPlayerShelfManager {
       (item) => item.itemTypeId === this.draftListingItemTypeId,
     );
 
-    this.refs.listingControls.selectedItem.textContent = draftItem
-      ? getItemDisplay(snapshot, draftItem, draftItem.quantity).label
-      : 'none';
+    this.setText(
+      this.refs.listingControls.selectedItem,
+      draftItem ? getItemDisplay(snapshot, draftItem, draftItem.quantity).label : 'none',
+    );
     setResourceColor(this.refs.listingControls.selectedItem, draftItem?.kind);
 
     const canPlace = Boolean(draftItem) && this.lastPlayerShopSnapshot.connected;
@@ -850,10 +851,10 @@ export class ShopPlayerShelfManager {
       row.classList.toggle('is-locked', display.locked);
       row.classList.toggle('is-unknown', display.unknown);
       row.classList.toggle('is-empty', display.empty);
-      label.textContent = `${display.label} `;
+      this.setText(label, `${display.label} `);
       setItemIconLabel(label, item.kind, item.key);
       setResourceColor(label, item.kind);
-      quantity.textContent = `(${display.quantity})`;
+      this.setText(quantity, `(${display.quantity})`);
       button.disabled = !actionVisible;
       button.setAttribute('aria-disabled', actionVisible ? 'false' : 'true');
       button.setAttribute(
@@ -1269,6 +1270,12 @@ export class ShopPlayerShelfManager {
   setMarketStatus(status) {
     if (this.refs.marketStatus) {
       setResourceIconText(this.refs.marketStatus, status);
+    }
+  }
+
+  setText(node, value) {
+    if (node && node.textContent !== value) {
+      node.textContent = value;
     }
   }
 

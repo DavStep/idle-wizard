@@ -204,6 +204,22 @@ describe('PlayerShopSubscriptionManager', () => {
     ]);
   });
 
+  it('subscribes public listings and own seller rows with indexes when identity hex is available', () => {
+    const identityHex = 'b'.repeat(64);
+    const listingsTable = createTable([]);
+    const proceedsTable = createTable([]);
+    const connection = createConnection({ listingsTable, proceedsTable });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.connect(connection, { toHexString: () => identityHex });
+
+    expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
+      'SELECT * FROM player_shop_listing WHERE quantity > 0',
+      `SELECT * FROM player_shop_listing WHERE "sellerIdentity" = 0x${identityHex}`,
+      `SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" = 0x${identityHex}`,
+    ]);
+  });
+
   it('keeps listings online when optional trade history query fails', () => {
     const listingsTable = createTable([
       {

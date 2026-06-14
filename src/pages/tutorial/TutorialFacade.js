@@ -51,9 +51,16 @@ export class TutorialFacade {
   }
 
   refresh() {
+    const dom = this.targetManager.getDomState();
+
+    if (dom.isBlockingDialogOpen()) {
+      this.hintManager.hide();
+      return;
+    }
+
     const step = this.stepManager.getActiveStep({
       snapshot: this.gameplayFacade?.getSnapshot?.(),
-      dom: this.targetManager.getDomState(),
+      dom,
     });
     const target = this.targetManager.getTarget(step?.targetId);
 
@@ -65,6 +72,7 @@ export class TutorialFacade {
     this.hintManager.show({
       target,
       text: step.text,
+      stepLabel: step.stepLabel,
     });
   }
 

@@ -1,5 +1,5 @@
 import { Timestamp, type Identity } from 'spacetimedb';
-import { schema, table, t, type ReducerCtx, type InferSchema } from 'spacetimedb/server';
+import { schema, table, t, Range, type ReducerCtx, type InferSchema } from 'spacetimedb/server';
 
 const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
@@ -7,6 +7,8 @@ const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
 const DEFAULT_PLAYER_FONT = 'lexend';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
+const DEFAULT_PLAYER_ICON_MODE = 'none';
+const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
 const MAX_REPORTED_PLAYER_LEVEL = 20;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
 const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
@@ -101,7 +103,7 @@ const MAINTENANCE_MODES = new Set([
   MAINTENANCE_MODE_DRAIN,
   MAINTENANCE_MODE_LOCKED,
 ]);
-const PLAYER_THEMES = new Set(['white', 'black', 'midnight']);
+const PLAYER_THEMES = new Set(['white', 'black', 'midnight', 'witchcraft']);
 const PLAYER_THEME_ALIASES = new Map([
   ['mild-white', 'white'],
   ['mild-black', 'black'],
@@ -109,6 +111,10 @@ const PLAYER_THEME_ALIASES = new Map([
   ['night-black', 'black'],
   ['vs-code-midnight', 'midnight'],
   ['vscode-midnight', 'midnight'],
+  ['idle-witch-craft', 'witchcraft'],
+  ['idle witch craft', 'witchcraft'],
+  ['idle-whitch-craft', 'witchcraft'],
+  ['idle whitch craft', 'witchcraft'],
 ]);
 const PLAYER_FONTS = new Set(['lexend', 'comic-sans-mono']);
 const PLAYER_FONT_ALIASES = new Map([
@@ -117,6 +123,8 @@ const PLAYER_FONT_ALIASES = new Map([
   ['google-lexend', 'lexend'],
 ]);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
+const PLAYER_ICON_MODES = new Set(['none', 'icons']);
+const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
 const TRADE_ALLIANCE_QUEST_TYPE_INCOME = 'allianceIncome';
 const TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL = 'itemFill';
@@ -1029,6 +1037,7 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       white: 0,
       black: 0,
       midnight: 0,
+      witchcraft: 0,
     },
     font: {
       lexend: 0,
@@ -1037,6 +1046,14 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
     color: {
       monochrome: 0,
       resources: 0,
+    },
+    progressBar: {
+      regular: 0,
+      gradient: 0,
+    },
+    icons: {
+      none: 0,
+      icons: 0,
     },
   },
 });
@@ -1339,6 +1356,7 @@ const spacetimedb = schema({
       public: true,
       indexes: [
         { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
+        { accessor: 'byQuantity', algorithm: 'btree', columns: ['quantity'] },
         { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
       ],
     },
@@ -1692,7 +1710,7 @@ export const world_chat_recent = spacetimedb.view(
   { name: 'world_chat_recent', public: true },
   worldChatRecentResult,
   (ctx) =>
-    Array.from(ctx.db.worldChat.iter())
+    Array.from(ctx.db.worldChat.bySentAt.filter(new Range()))
       .sort((left, right) => {
         const leftSentAt = left.sentAt.microsSinceUnixEpoch;
         const rightSentAt = right.sentAt.microsSinceUnixEpoch;
@@ -3411,6 +3429,18 @@ function normalizeSaveVisualSettings(
         PLAYER_COLOR_MODES,
         DEFAULT_PLAYER_COLOR_MODE,
         player ? normalizePlayerColorMode(player.colorMode) : null,
+      ),
+      progressBar: normalizeSaveVisualSettingCategory(
+        researched.progressBar,
+        PLAYER_PROGRESS_BARS,
+        DEFAULT_PLAYER_PROGRESS_BAR,
+        null,
+      ),
+      icons: normalizeSaveVisualSettingCategory(
+        researched.icons,
+        PLAYER_ICON_MODES,
+        DEFAULT_PLAYER_ICON_MODE,
+        null,
       ),
     },
   };
@@ -6585,12 +6615,11 @@ function assertWorldChatRateLimit(ctx: IdleWizardReducerCtx) {
     ctx.timestamp.microsSinceUnixEpoch - WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS;
   let sentInWindow = 0;
   let globalSentInWindow = 0;
+  const windowStart = new Timestamp(windowStartMicros);
 
-  for (const row of ctx.db.worldChat.iter()) {
-    if (row.sentAt.microsSinceUnixEpoch < windowStartMicros) {
-      continue;
-    }
-
+  for (const row of ctx.db.worldChat.bySentAt.filter(
+    new Range({ tag: 'included', value: windowStart }),
+  )) {
     globalSentInWindow += 1;
 
     if (row.senderIdentity.isEqual(ctx.sender)) {

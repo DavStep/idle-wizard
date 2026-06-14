@@ -1,6 +1,7 @@
 import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
 const LISTINGS_QUERY = 'SELECT * FROM player_shop_listing';
+const PUBLIC_LISTINGS_QUERY = 'SELECT * FROM player_shop_listing WHERE quantity > 0';
 const PROCEEDS_QUERY = 'SELECT * FROM player_shop_proceeds';
 const TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade';
 const EMPTY_SNAPSHOT = {
@@ -45,8 +46,8 @@ export class PlayerShopSubscriptionManager {
     this.bindTable(this.proceedsTable);
     this.bindTable(this.tradeHistoryTable);
     this.subscriptions = [
-      this.subscribeQuery(LISTINGS_QUERY),
-      this.subscribeQuery(PROCEEDS_QUERY),
+      ...this.getListingQueries().map((query) => this.subscribeQuery(query)),
+      this.subscribeQuery(this.getProceedsQuery()),
       this.tradeHistoryTable ? this.subscribeTradeHistoryQuery() : null,
     ].filter(Boolean);
     this.publishFromTables();
@@ -106,6 +107,23 @@ export class PlayerShopSubscriptionManager {
         this.publishFromTables();
       })
       .subscribe(TRADE_HISTORY_QUERY);
+  }
+
+  getListingQueries() {
+    const identitySql = this.toIdentitySqlLiteral(this.identity);
+    return identitySql
+      ? [
+          PUBLIC_LISTINGS_QUERY,
+          `SELECT * FROM player_shop_listing WHERE "sellerIdentity" = ${identitySql}`,
+        ]
+      : [LISTINGS_QUERY];
+  }
+
+  getProceedsQuery() {
+    const identitySql = this.toIdentitySqlLiteral(this.identity);
+    return identitySql
+      ? `SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" = ${identitySql}`
+      : PROCEEDS_QUERY;
   }
 
   publishFromTables() {
@@ -239,6 +257,11 @@ export class PlayerShopSubscriptionManager {
     }
 
     return String(identity);
+  }
+
+  toIdentitySqlLiteral(identity) {
+    const identityKey = this.toIdentityKey(identity).replace(/^0x/i, '');
+    return /^[0-9a-f]{64}$/i.test(identityKey) ? `0x${identityKey}` : '';
   }
 
   toId(value) {

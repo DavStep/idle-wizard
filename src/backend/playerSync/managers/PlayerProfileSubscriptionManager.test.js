@@ -60,7 +60,7 @@ function createConnection(table) {
         return this;
       },
       subscribe(query) {
-        this.query = query;
+        subscription.query = query;
         this.applied();
         return subscription;
       },
@@ -118,6 +118,24 @@ describe('PlayerProfileSubscriptionManager', () => {
       colorMode: 'monochrome',
       usernamePromptSeen: false,
     });
+  });
+
+  it('subscribes only to the connected player row when identity hex is available', () => {
+    const identityHex = 'a'.repeat(64);
+    const table = createPlayerTable([
+      {
+        identity: { toHexString: () => identityHex },
+        username: 'Hex Mage',
+      },
+    ]);
+    const connection = createConnection(table);
+    const manager = new PlayerProfileSubscriptionManager();
+
+    manager.connect(connection, { toHexString: () => identityHex });
+
+    expect(connection.subscription.query).toBe(
+      `SELECT * FROM player WHERE identity = 0x${identityHex}`,
+    );
   });
 
   it('publishes the updated row from table callbacks even when the table cache is stale', () => {

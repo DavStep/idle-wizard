@@ -16,6 +16,7 @@ describe('PlayerFacade', () => {
       font: 'lexend',
       colorMode: 'monochrome',
       iconMode: 'none',
+      progressBar: 'regular',
     });
   });
 
@@ -32,6 +33,7 @@ describe('PlayerFacade', () => {
       font: 'lexend',
       colorMode: 'monochrome',
       iconMode: 'none',
+      progressBar: 'regular',
     });
   });
 
@@ -130,6 +132,19 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().iconMode).toBe('none');
   });
 
+  it('normalizes progress bar', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setProgressBar('gradient');
+    expect(playerFacade.getSnapshot().progressBar).toBe('gradient');
+
+    playerFacade.setProgressBar('gradinet');
+    expect(playerFacade.getSnapshot().progressBar).toBe('gradient');
+
+    playerFacade.setProgressBar('unknown');
+    expect(playerFacade.getSnapshot().progressBar).toBe('regular');
+  });
+
   it('normalizes font', () => {
     const playerFacade = new PlayerFacade();
 
@@ -152,6 +167,7 @@ describe('PlayerFacade', () => {
       font: 'comic-sans-mono',
       colorMode: 'resources',
       iconMode: 'icons',
+      progressBar: 'gradient',
       usernamePromptSeen: true,
     });
 
@@ -162,6 +178,7 @@ describe('PlayerFacade', () => {
       font: 'comic-sans-mono',
       colorMode: 'resources',
       iconMode: 'icons',
+      progressBar: 'gradient',
     });
   });
 
