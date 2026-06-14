@@ -20,6 +20,10 @@ export class RubyFacade {
     this.rubyEntityManager.addCurrent(amount);
   }
 
+  setCurrent(amount) {
+    this.rubyEntityManager.setCurrent(amount);
+  }
+
   spend(amount) {
     return this.rubySpendManager.spend(amount);
   }

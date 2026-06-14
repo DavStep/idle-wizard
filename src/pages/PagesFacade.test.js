@@ -22,6 +22,43 @@ function createGameplayFacadeFake() {
     ruby: {
       current: 0,
     },
+    prestige: {
+      currentLevel: 1,
+      maxLevel: 20,
+      completedLevels: [],
+      earnedRuby: 0,
+      nextRuby: 1,
+      highestAvailableLevel: null,
+      milestones: [
+        {
+          level: 10,
+          rewardRuby: 1,
+          completed: false,
+          unlocked: false,
+          canComplete: false,
+          currentLevel: 1,
+          lowerThanHighestAvailable: false,
+        },
+        {
+          level: 20,
+          rewardRuby: 1,
+          completed: false,
+          unlocked: false,
+          canComplete: false,
+          currentLevel: 1,
+          lowerThanHighestAvailable: false,
+        },
+        {
+          level: 30,
+          rewardRuby: 1,
+          completed: false,
+          unlocked: false,
+          canComplete: false,
+          currentLevel: 1,
+          lowerThanHighestAvailable: false,
+        },
+      ],
+    },
     visualSettings: {
       costsCrystal: {
         theme: { white: 0, black: 0, midnight: 0, witchcraft: 0 },
@@ -1175,6 +1212,42 @@ function createGameplayFacadeFake() {
         ok: true,
         currentLevel: snapshot.tasks.currentLevel,
         costGold: completion.costGold,
+      };
+    },
+    completePrestigeMilestone: (level, { confirmedLower = false } = {}) => {
+      const milestone = snapshot.prestige.milestones.find((candidate) => candidate.level === level);
+
+      if (!milestone) {
+        return {
+          ok: false,
+          reason: 'unknown_milestone',
+        };
+      }
+
+      if (milestone.lowerThanHighestAvailable && !confirmedLower) {
+        return {
+          ok: false,
+          reason: 'higher_prestige_available',
+          milestone,
+          highestAvailableLevel: snapshot.prestige.highestAvailableLevel,
+        };
+      }
+
+      milestone.completed = true;
+      milestone.canComplete = false;
+      milestone.lowerThanHighestAvailable = false;
+      snapshot.prestige.completedLevels.push(level);
+      snapshot.prestige.earnedRuby += milestone.rewardRuby;
+      snapshot.ruby.current = snapshot.prestige.earnedRuby;
+      snapshot.tasks.currentLevel = 1;
+      snapshot.playerLevel.currentLevel = 1;
+      snapshot.prestige.currentLevel = 1;
+      publish();
+
+      return {
+        ok: true,
+        milestone,
+        currentRuby: snapshot.ruby.current,
       };
     },
     plantGardenSeed: (tileNumber, seedTypeId) => {
@@ -2880,6 +2953,9 @@ describe('PagesFacade', () => {
       'summon seed, costs 10 mana',
     );
     expect(stage.querySelector('.workshop-page__bag-button')?.textContent).toBe('bag');
+    expect(stage.querySelector('.workshop-page__prestige-button')?.textContent).toBe(
+      'prestige',
+    );
     expect(stage.querySelector('.workshop-page__leaderboard-button')?.textContent).toBe(
       'leaderboard',
     );
@@ -2899,6 +2975,7 @@ describe('PagesFacade', () => {
       stage.querySelector('.workshop-page__mana-sphere .workshop-page__summon-button'),
     ).toBeNull();
     expect(stage.querySelector('.workshop-page__bag-popup')).not.toBeNull();
+    expect(stage.querySelector('.workshop-page__prestige-popup')).not.toBeNull();
     expect(stage.querySelector('.workshop-page__flyouts')).not.toBeNull();
     expect(stage.querySelector('.workshop-page__summon-message')).toBeNull();
     expect(
@@ -4151,6 +4228,58 @@ describe('PagesFacade', () => {
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     bagButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(bag.hidden).toBe(false);
+  });
+
+  it('shows prestige milestones and confirms lower milestone prestige', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.tasks.currentLevel = 40;
+    snapshot.playerLevel.currentLevel = 40;
+    snapshot.prestige.currentLevel = 40;
+    snapshot.prestige.highestAvailableLevel = 40;
+    snapshot.prestige.milestones = [10, 20, 30, 40].map((level) => ({
+      level,
+      rewardRuby: 1,
+      completed: false,
+      unlocked: true,
+      canComplete: true,
+      currentLevel: 40,
+      lowerThanHighestAvailable: level < 40,
+    }));
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const popup = stage.querySelector('.workshop-page__prestige-popup');
+    stage
+      .querySelector('.workshop-page__prestige-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
+    expect(popup.querySelector('.style-dialog')).not.toBeNull();
+    expect(popup.querySelector('.workshop-page__prestige-close')?.textContent).toBe('close');
+    expect(popup.textContent).toContain('level 10');
+    expect(popup.textContent).toContain('level 40');
+
+    popup
+      .querySelector('.workshop-page__prestige-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.querySelector('.workshop-page__prestige-confirm').hidden).toBe(false);
+    expect(popup.textContent).toContain('higher level prestige available level 40');
+
+    popup
+      .querySelector('.workshop-page__prestige-confirm-proceed')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(true);
+    expect(snapshot.prestige.completedLevels).toEqual([10]);
+    expect(snapshot.ruby.current).toBe(1);
+    expect(snapshot.tasks.currentLevel).toBe(1);
   });
 
   it('separates researched seed inventory rows from unresearched rows', () => {

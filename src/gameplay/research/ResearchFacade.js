@@ -110,6 +110,29 @@ export class ResearchFacade {
       );
   }
 
+  getCompletedRubyCostTotal() {
+    return this.researchStateEntityManager
+      .getCompletedResearchIds()
+      .reduce(
+        (total, researchId) => total + this.researchBalanceManager.getCostRuby(researchId),
+        0,
+      );
+  }
+
+  getCommittedRubyCostTotal() {
+    const researchIds = new Set([
+      ...this.researchStateEntityManager.getCompletedResearchIds(),
+      ...this.researchStateEntityManager
+        .getInProgressResearches()
+        .map((research) => research.researchId),
+    ]);
+
+    return [...researchIds].reduce(
+      (total, researchId) => total + this.researchBalanceManager.getCostRuby(researchId),
+      0,
+    );
+  }
+
   getCompletedCauldronBrewingLevel(cauldronNumber) {
     return this.getCompletedAdvancedLevel({
       getId: advancedResearchIds.cauldronBrewing,

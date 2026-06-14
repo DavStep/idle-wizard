@@ -74,6 +74,12 @@ function finishCurrentTaskLevel(gameplayFacade) {
   gameplayFacade.completeTaskLevel();
 }
 
+function advanceToLevel(gameplayFacade, targetLevel) {
+  while (gameplayFacade.getSnapshot().tasks.currentLevel < targetLevel) {
+    finishCurrentTaskLevel(gameplayFacade);
+  }
+}
+
 describe('GameplayFacade', () => {
   it('persists gameplay progress across a new app instance', () => {
     const persistenceStorage = createMemoryStorage();
@@ -304,6 +310,118 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
+  });
+
+  it('shows prestige milestones through level 100 with special ruby rewards', () => {
+    const { gameplayFacade } = createGameplay();
+    const milestones = gameplayFacade.getSnapshot().prestige.milestones;
+
+    expect(milestones.slice(0, 3).map((milestone) => milestone.level)).toEqual([
+      10,
+      20,
+      30,
+    ]);
+    expect(milestones.find((milestone) => milestone.level === 10)).toMatchObject({
+      rewardRuby: 1,
+      canComplete: false,
+      completed: false,
+    });
+    expect(milestones.find((milestone) => milestone.level === 50)?.rewardRuby).toBe(2);
+    expect(milestones.find((milestone) => milestone.level === 100)?.rewardRuby).toBe(5);
+  });
+
+  it('completes prestige, resets run data, and keeps visual unlocks plus prestige rubies', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.crystalFacade.add(4);
+    gameplayFacade.goldFacade.add(99);
+    gameplayFacade.itemsFacade.addItem(1, 5);
+    gameplayFacade.buyVisualSettingOption('theme', 'black');
+    gameplayFacade.buyResearch('unlockSeed:sageSeed');
+    gameplayFacade.addBrewingIngredient(1001);
+    gameplayFacade.setSelectedShopShelfSlotSellItem(1);
+    advanceToLevel(gameplayFacade, 10);
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(10);
+    expect(gameplayFacade.getSnapshot().prestige.highestAvailableLevel).toBe(10);
+
+    const result = gameplayFacade.completePrestigeMilestone(10);
+    const snapshot = gameplayFacade.getSnapshot();
+
+    expect(result).toMatchObject({
+      ok: true,
+      milestone: {
+        level: 10,
+        rewardRuby: 1,
+      },
+      currentRuby: 1,
+    });
+    expect(snapshot.tasks.currentLevel).toBe(1);
+    expect(snapshot.prestige.completedLevels).toEqual([10]);
+    expect(snapshot.prestige.earnedRuby).toBe(1);
+    expect(snapshot.ruby.current).toBe(1);
+    expect(snapshot.gold).toMatchObject({ current: 0, totalGenerated: 0 });
+    expect(snapshot.crystal.current).toBe(0);
+    expect(snapshot.inventory).toEqual([]);
+    expect(snapshot.research.completedResearchIds).toEqual([]);
+    expect(snapshot.brewing.ingredients).toEqual([]);
+    expect(snapshot.shop.shelf.selectedSlotNumber).toBe(1);
+    expect(snapshot.logs.entries).toEqual([]);
+    expect(snapshot.visualSettings.researched.theme.black).toBe(true);
+    expect(snapshot.mana).toMatchObject({
+      current: 0,
+      cap: 50,
+      perSecond: 1,
+    });
+  });
+
+  it('requires confirmation when a higher prestige milestone is available', () => {
+    const { gameplayFacade } = createGameplay();
+    advanceToLevel(gameplayFacade, 20);
+
+    expect(gameplayFacade.completePrestigeMilestone(10)).toMatchObject({
+      ok: false,
+      reason: 'higher_prestige_available',
+      highestAvailableLevel: 20,
+    });
+
+    expect(gameplayFacade.completePrestigeMilestone(10, { confirmedLower: true })).toMatchObject({
+      ok: true,
+      milestone: {
+        level: 10,
+      },
+    });
+    expect(gameplayFacade.getSnapshot().prestige.completedLevels).toEqual([10]);
+  });
+
+  it('derives loaded ruby from completed prestiges minus completed ruby research cost', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 3,
+        mana: {},
+        gold: {},
+        crystal: { current: 0 },
+        ruby: { current: 9 },
+        inventory: [],
+        prestige: {
+          completedLevels: [10, 20],
+        },
+        research: {
+          completedIds: [advancedResearchIds.cauldronBrewing(1, 1)],
+        },
+        tasks: {
+          currentLevel: 3,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    expect(gameplayFacade.getSnapshot().prestige.earnedRuby).toBe(2);
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(1);
   });
 
   it('backfills missed level crystals when loading old saves', () => {

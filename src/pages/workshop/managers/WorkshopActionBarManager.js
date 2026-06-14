@@ -7,11 +7,13 @@ export class WorkshopActionBarManager {
   constructor({
     gameplayFacade,
     onBagClick,
+    onPrestigeClick,
     onSummonNotice,
     rewardEventsAvailable = false,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onBagClick = onBagClick;
+    this.onPrestigeClick = onPrestigeClick;
     this.onSummonNotice = onSummonNotice;
     this.rewardEventsAvailable = rewardEventsAvailable;
     this.root = null;
@@ -33,9 +35,10 @@ export class WorkshopActionBarManager {
     this.root.setAttribute('aria-label', 'Workshop actions');
 
     this.refs.summonButton = this.createSummonButton();
+    this.refs.prestigeButton = this.createPrestigeButton();
     this.refs.bagButton = this.createBagButton();
 
-    this.root.append(this.refs.summonButton, this.refs.bagButton);
+    this.root.append(this.refs.summonButton, this.refs.prestigeButton, this.refs.bagButton);
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -89,6 +92,16 @@ export class WorkshopActionBarManager {
     button.textContent = 'bag';
     button.setAttribute('aria-label', 'open bag');
     button.addEventListener('click', () => this.onBagClick?.());
+    return button;
+  }
+
+  createPrestigeButton() {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__prestige-button';
+    button.type = 'button';
+    button.textContent = 'prestige';
+    button.setAttribute('aria-label', 'open prestige');
+    button.addEventListener('click', () => this.onPrestigeClick?.());
     return button;
   }
 

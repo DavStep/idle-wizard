@@ -19,6 +19,7 @@ export class GameplayPersistenceFacade {
     gameplayLogFacade,
     itemsFacade,
     researchFacade,
+    prestigeFacade,
     visualSettingsFacade,
     shopFacade,
     brewingFacade,
@@ -36,6 +37,7 @@ export class GameplayPersistenceFacade {
       gameplayLogFacade,
       itemsFacade,
       researchFacade,
+      prestigeFacade,
       visualSettingsFacade,
       shopFacade,
       brewingFacade,
@@ -51,6 +53,7 @@ export class GameplayPersistenceFacade {
       gameplayLogFacade,
       itemsFacade,
       researchFacade,
+      prestigeFacade,
       visualSettingsFacade,
       shopFacade,
       brewingFacade,
@@ -77,6 +80,13 @@ export class GameplayPersistenceFacade {
 
     const loaded = this.loadManager.applySave(migratedSave);
     this.offlineDeltaSeconds = loaded ? this.getOfflineDeltaSeconds(migratedSave) : 0;
+    return loaded;
+  }
+
+  applyRuntimeSave(save) {
+    const loaded = this.loadManager.applySave(save);
+    this.offlineDeltaSeconds = 0;
+    this.autosaveElapsedSeconds = 0;
     return loaded;
   }
 

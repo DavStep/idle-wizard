@@ -3038,7 +3038,7 @@ function normalizePlayerGameplaySave(
   );
 
   return {
-    version: 2,
+    version: 3,
     savedAt: preserveSavedAt
       ? normalizeSaveExistingTimestamp(save.savedAt, ctx)
       : normalizeSaveTimestamp(ctx),
@@ -3049,6 +3049,7 @@ function normalizePlayerGameplaySave(
     logs: normalizeSaveLogs(save.logs),
     inventory: normalizeSaveInventory(save.inventory, itemCatalog),
     research,
+    prestige: normalizeSavePrestige(save.prestige),
     visualSettings: normalizeSaveVisualSettings(ctx, save.visualSettings, identity),
     shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
     brewing: normalizeSaveBrewing(save.brewing, itemCatalog),
@@ -3360,6 +3361,25 @@ function normalizeSaveRuby(value: unknown) {
 
   return {
     current: clampSaveInteger(ruby.current, 0, MAX_PLAYER_SAVE_CURRENT_RUBY, 0),
+  };
+}
+
+function normalizeSavePrestige(value: unknown) {
+  const prestige = isRecord(value) ? value : {};
+  const completedLevels = Array.isArray(prestige.completedLevels)
+    ? prestige.completedLevels
+        .map((level) => Math.floor(Number(level)))
+        .filter(
+          (level) =>
+            Number.isFinite(level) &&
+            level >= 10 &&
+            level <= MAX_GAME_CONFIG_RESOURCE_LIMIT &&
+            level % 10 === 0,
+        )
+    : [];
+
+  return {
+    completedLevels: [...new Set(completedLevels)].sort((left, right) => left - right),
   };
 }
 
@@ -4711,6 +4731,14 @@ function saveJsonHasReplayProgress(saveJson: string): boolean {
         return Number.isFinite(quantity) && quantity > 0;
       })
     ) {
+      return true;
+    }
+
+    const prestige = isRecord(save.prestige) ? save.prestige : {};
+    const completedPrestige = Array.isArray(prestige.completedLevels)
+      ? prestige.completedLevels
+      : [];
+    if (completedPrestige.length > 0) {
       return true;
     }
 

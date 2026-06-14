@@ -987,6 +987,13 @@ body {
   width: var(--style-button-width);
 }
 
+.workshop-page__action-bar > .style-button.workshop-page__prestige-button {
+  position: absolute;
+  bottom: var(--style-room-chat-clearance);
+  left: 0;
+  width: var(--style-button-width);
+}
+
 .room-reward-flyouts,
 .workshop-page__flyouts {
   position: absolute;
@@ -1455,7 +1462,8 @@ body {
 
 .workshop-page__bag-row.is-empty,
 .workshop-page__bag-row.is-locked,
-.workshop-page__bag-row.is-unknown {
+.workshop-page__bag-row.is-unknown,
+.workshop-page__prestige-row.is-locked {
   color: var(--style-disabled);
 }
 
@@ -1493,6 +1501,71 @@ body {
   margin: 5px 0;
   clear: both;
   border-top: 1px solid var(--style-disabled);
+}
+
+.workshop-page__prestige-summary {
+  min-height: var(--style-row-min-height);
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__prestige-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px 74px;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+  column-gap: var(--style-row-column-gap);
+}
+
+.workshop-page__prestige-level,
+.workshop-page__prestige-reward,
+.workshop-page__prestige-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__prestige-reward,
+.workshop-page__prestige-status {
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+}
+
+.style-button.workshop-page__prestige-action {
+  width: 66px;
+  padding: 1px 4px;
+  margin-bottom: 0;
+  font-size: var(--style-tiny-font-size);
+}
+
+.workshop-page__prestige-confirm {
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.workshop-page__prestige-confirm[hidden] {
+  display: none;
+}
+
+.workshop-page__prestige-confirm-message {
+  margin: 0;
+}
+
+.workshop-page__prestige-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.style-button.workshop-page__prestige-confirm-cancel,
+.style-button.workshop-page__prestige-confirm-proceed {
+  width: auto;
+  min-width: 0;
+  padding: 1px 5px;
+  margin-bottom: 0;
 }
 
 .style-box.workshop-page__tasks {
@@ -2147,13 +2220,20 @@ body {
   z-index: 30;
 }
 
+.workshop-page__prestige-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
 .workshop-page__leaderboard-popup[hidden],
 .workshop-page__trade-alliance-popup[hidden],
 .workshop-page__trade-alliance-member-popup[hidden],
 .workshop-page__world-chat-popup[hidden],
 .workshop-page__bag-popup[hidden],
 .workshop-page__logs-popup[hidden],
-.workshop-page__discoveries-popup[hidden] {
+.workshop-page__discoveries-popup[hidden],
+.workshop-page__prestige-popup[hidden] {
   display: none;
 }
 
@@ -2193,6 +2273,16 @@ body {
   display: flex;
   gap: 3px;
   margin-top: var(--style-dialog-tab-gap);
+}
+
+.workshop-page__prestige-rows {
+  height: calc(
+    var(--style-tabbed-dialog-content-height) - 26px -
+      var(--style-scroll-progress-height) - 6px
+  );
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
 }
 
 .workshop-page__leaderboard-empty {
@@ -2236,7 +2326,8 @@ body {
 }
 
 .workshop-page__discoveries-rows::-webkit-scrollbar,
-.workshop-page__bag-rows::-webkit-scrollbar {
+.workshop-page__bag-rows::-webkit-scrollbar,
+.workshop-page__prestige-rows::-webkit-scrollbar {
   display: none;
 }
 
@@ -3443,6 +3534,7 @@ div.workshop-page__discovery-row {
 .style-button.brewing-page__recipes-close,
 .style-button.brewing-page__potions-close,
 .style-button.workshop-page__bag-close,
+.style-button.workshop-page__prestige-close,
 .style-button.workshop-page__world-chat-close,
 .style-button.workshop-page__trade-alliance-close,
 .style-button.shop-page__request-close,
@@ -3464,6 +3556,7 @@ div.workshop-page__discovery-row {
 .style-button.brewing-page__recipes-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.brewing-page__potions-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__bag-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.workshop-page__prestige-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.workshop-page__trade-alliance-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.shop-page__request-close:active:not(:disabled):not([aria-disabled="true"]),
@@ -3762,6 +3855,16 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__bag-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 20;
+  width: var(--style-discoveries-dialog-width);
+  outline: none;
+  transform: translate(-50%, -50%);
+}
+
+.workshop-page__prestige-panel {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -5060,6 +5163,12 @@ div.workshop-page__discovery-row {
   height: var(--style-tabbed-dialog-content-height);
 }
 
+.style-dialog.workshop-page__prestige-dialog {
+  position: relative;
+  width: 286px;
+  height: var(--style-tabbed-dialog-content-height);
+}
+
 .style-dialog.workshop-page__world-chat-dialog {
   display: flex;
   flex-direction: column;
@@ -5652,6 +5761,7 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-popup:not([hidden]),
 .workshop-page__logs-popup:not([hidden]),
 .workshop-page__discoveries-popup:not([hidden]),
+.workshop-page__prestige-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
 .garden-page__seed-popup:not([hidden]),
@@ -5676,6 +5786,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__prestige-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
@@ -5715,6 +5826,7 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-popup:not([hidden]) .workshop-page__world-chat-panel,
 .workshop-page__bag-popup:not([hidden]) .workshop-page__bag-panel,
 .workshop-page__discoveries-popup:not([hidden]) .workshop-page__discoveries-panel,
+.workshop-page__prestige-popup:not([hidden]) .workshop-page__prestige-panel,
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
 .shop-page__request-popup:not([hidden]) .shop-page__request-panel,

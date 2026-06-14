@@ -302,6 +302,9 @@ export class DevCheatCommandManager {
       crystal: {
         current: 0,
       },
+      ruby: {
+        current: 0,
+      },
       logs: {
         nextId: 1,
         entries: [],
@@ -310,6 +313,9 @@ export class DevCheatCommandManager {
       research: {
         completedIds: [],
         inProgress: [],
+      },
+      prestige: {
+        completedLevels: [],
       },
       visualSettings: {},
       shop: {

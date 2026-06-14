@@ -11,6 +11,7 @@ import { LevelUpCrystalRewardManager } from './managers/LevelUpCrystalRewardMana
 import { GameplayLogFacade } from './logs/GameplayLogFacade.js';
 import { GameplayPersistenceFacade } from './persistence/GameplayPersistenceFacade.js';
 import { PlayerLevelFacade } from './playerLevel/PlayerLevelFacade.js';
+import { PrestigeFacade } from './prestige/PrestigeFacade.js';
 import { ResearchFacade } from './research/ResearchFacade.js';
 import { RubyFacade } from './ruby/RubyFacade.js';
 import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
@@ -39,6 +40,9 @@ export class GameplayFacade {
     });
     this.playerLevelFacade = new PlayerLevelFacade({
       tasksFacade: this.tasksFacade,
+    });
+    this.prestigeFacade = new PrestigeFacade({
+      playerLevelFacade: this.playerLevelFacade,
     });
     this.researchFacade = new ResearchFacade({
       crystalFacade: this.crystalFacade,
@@ -101,6 +105,7 @@ export class GameplayFacade {
       gameplayLogFacade: this.gameplayLogFacade,
       itemsFacade: this.itemsFacade,
       researchFacade: this.researchFacade,
+      prestigeFacade: this.prestigeFacade,
       visualSettingsFacade: this.visualSettingsFacade,
       shopFacade: this.shopFacade,
       brewingFacade: this.brewingFacade,
@@ -185,6 +190,7 @@ export class GameplayFacade {
     this.crystalFacade.initialize(ecsManagers);
     this.rubyFacade.initialize(ecsManagers);
     this.tasksFacade.initialize(ecsManagers);
+    this.prestigeFacade.initialize(ecsManagers);
     this.researchFacade.initialize(ecsManagers);
     this.brewingFacade.initialize(ecsManagers);
     this.seedSummoningFacade.initialize(ecsManagers);
@@ -192,6 +198,7 @@ export class GameplayFacade {
     this.gardenFacade.initialize(ecsManagers);
     this.automationFacade.initialize(ecsManagers);
     const loaded = this.persistenceFacade.load();
+    this.syncRubyFromPrestige();
     const backfilledCrystal = loaded
       ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
       : 0;
@@ -317,6 +324,50 @@ export class GameplayFacade {
     return result;
   }
 
+  completePrestigeMilestone(level, { confirmedLower = false } = {}) {
+    const prestigeSnapshot = this.prestigeFacade.getSnapshot();
+    const milestone = prestigeSnapshot.milestones.find(
+      (candidate) => candidate.level === Math.floor(Number(level)),
+    );
+
+    if (!milestone) {
+      this.publishAndSaveSnapshot();
+      return {
+        ok: false,
+        reason: 'unknown_milestone',
+      };
+    }
+
+    if (
+      milestone.lowerThanHighestAvailable &&
+      !confirmedLower &&
+      prestigeSnapshot.highestAvailableLevel
+    ) {
+      return {
+        ok: false,
+        reason: 'higher_prestige_available',
+        milestone,
+        highestAvailableLevel: prestigeSnapshot.highestAvailableLevel,
+      };
+    }
+
+    const result = this.prestigeFacade.completeMilestone(milestone.level);
+
+    if (!result.ok) {
+      this.publishAndSaveSnapshot();
+      return result;
+    }
+
+    this.resetRunAfterPrestige();
+    this.publishAndSaveSnapshot();
+
+    return {
+      ...result,
+      earnedRuby: this.prestigeFacade.getEarnedRuby(),
+      currentRuby: this.rubyFacade.getSnapshot().current,
+    };
+  }
+
   buyResearch(researchId) {
     const result = this.researchFacade.buyResearch(researchId);
     if (result.ok && this.researchFacade.hasCompletedResearch(result.researchId)) {
@@ -327,6 +378,58 @@ export class GameplayFacade {
     }
     this.publishAndSaveSnapshot();
     return result;
+  }
+
+  resetRunAfterPrestige() {
+    const prestige = this.prestigeFacade.getPersistenceSnapshot();
+    const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
+
+    this.persistenceFacade.applyRuntimeSave({
+      mana: {
+        current: 0,
+        cap: 50,
+        perSecond: 1,
+      },
+      gold: {
+        current: 0,
+        totalGenerated: 0,
+      },
+      crystal: {
+        current: 0,
+      },
+      ruby: {
+        current: 0,
+      },
+      logs: {
+        nextId: 1,
+        entries: [],
+      },
+      inventory: [],
+      research: {
+        completedIds: [],
+        inProgress: [],
+      },
+      prestige,
+      visualSettings,
+      shop: {},
+      brewing: {},
+      garden: {},
+      tasks: {
+        currentLevel: 1,
+        tasks: [],
+      },
+    });
+    this.syncPlayerLevelManaEffects();
+    this.syncRubyFromPrestige();
+  }
+
+  syncRubyFromPrestige() {
+    const earnedRuby = this.prestigeFacade.getEarnedRuby();
+    const spentRuby = Math.max(
+      0,
+      Math.floor(Number(this.researchFacade.getCommittedRubyCostTotal()) || 0),
+    );
+    this.rubyFacade.setCurrent(Math.max(0, earnedRuby - spentRuby));
   }
 
   handleResearchComplete({ label }) {
@@ -694,6 +797,7 @@ export class GameplayFacade {
       logs: this.gameplayLogFacade.getSnapshot(),
       playerLevel: this.playerLevelFacade.getSnapshot(),
       tasks: this.tasksFacade.getSnapshot(),
+      prestige: this.prestigeFacade.getSnapshot(),
       research: this.researchFacade.getSnapshot(),
       visualSettings: this.visualSettingsFacade.getSnapshot(),
       shop: this.shopFacade.getSnapshot(),
@@ -712,6 +816,7 @@ export class GameplayFacade {
 
   loadPersistenceSave(save, ecsFacade) {
     const loaded = this.persistenceFacade.loadSave(save);
+    this.syncRubyFromPrestige();
     const backfilledCrystal = loaded
       ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
       : 0;

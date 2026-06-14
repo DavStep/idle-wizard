@@ -32,6 +32,7 @@
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
 - Release APK handoff files should be named `idle-wizard-release-<package-version>.apk`.
 - Current Gradle release output is `app-release-unsigned.apk`; sign it before device install or APK handoff.
+- `spacetime publish --server maincloud` still prompts for `y` after maintenance `--confirm-live`; pipe confirmation for non-interactive deploys.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
@@ -121,6 +122,7 @@
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel only where usable, level-ups grant `playerLevel.crystal.perLevel`, and automation research spends it.
 - Ruby starts at `0`, has no source yet, appears in the top panel only where usable, and advanced research spends it on per-slot speed upgrades.
+- Prestige ruby is derived from completed prestige milestones minus committed ruby research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
 - Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
 - Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.

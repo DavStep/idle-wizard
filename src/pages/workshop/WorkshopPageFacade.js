@@ -6,6 +6,7 @@ import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManage
 import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
 import { WorkshopLogDialogManager } from './managers/WorkshopLogDialogManager.js';
 import { WorkshopDiscoveriesManager } from './managers/WorkshopDiscoveriesManager.js';
+import { WorkshopPrestigeManager } from './managers/WorkshopPrestigeManager.js';
 import { WorkshopTaskManager } from './managers/WorkshopTaskManager.js';
 import { WorkshopTradeAllianceManager } from './managers/WorkshopTradeAllianceManager.js';
 
@@ -23,9 +24,11 @@ export class WorkshopPageFacade {
     this.flyoutManager = new WorkshopFlyoutManager();
     this.rewardEventsUnsubscribe = null;
     this.bagManager = new WorkshopBagManager({ gameplayFacade });
+    this.prestigeManager = new WorkshopPrestigeManager({ gameplayFacade });
     this.actionBarManager = new WorkshopActionBarManager({
       gameplayFacade,
       onBagClick: () => this.bagManager.toggle(),
+      onPrestigeClick: () => this.prestigeManager.toggle(),
       onSummonNotice: (message) => this.flyoutManager.show(message),
       rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
@@ -61,11 +64,13 @@ export class WorkshopPageFacade {
     this.logDialogManager.mount(uiLayer, popupLayer);
     this.discoveriesManager.mount(uiLayer, popupLayer);
     this.bagManager.mount(popupLayer);
+    this.prestigeManager.mount(popupLayer);
   }
 
   unmount() {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
+    this.prestigeManager.unmount();
     this.bagManager.unmount();
     this.discoveriesManager.unmount();
     this.logDialogManager.unmount();
