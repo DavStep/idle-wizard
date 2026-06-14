@@ -255,6 +255,7 @@ export class WorkshopTaskManager {
     button.className = 'style-button workshop-page__level-complete-button';
     button.type = 'button';
     button.textContent = 'complete';
+    button.dataset.tutorialId = 'workshop:levelUp';
     button.addEventListener('click', () => this.onLevelCompleteButton());
 
     root.append(label, cost, button);

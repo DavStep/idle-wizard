@@ -2,22 +2,18 @@
   "levels": [
     {
       "level": 1,
+      "completionCostGold": 10,
       "tasks": [
-        { "id": "level1-sage-seeds", "itemKey": "sageSeed", "quantity": 20 },
-        { "id": "level1-sage-herb", "itemKey": "sageHerb", "quantity": 10 },
-        { "id": "level1-mana-tonic", "itemKey": "manaTonic", "quantity": 2 },
-        { "id": "level1-mint-seeds", "itemKey": "mintSeed", "quantity": 15 },
-        { "id": "level1-mint-herb", "itemKey": "mintHerb", "quantity": 8 }
+        { "id": "level1-sage-seeds", "itemKey": "sageSeed", "quantity": 10 }
       ]
     },
     {
       "level": 2,
       "tasks": [
-        { "id": "level2-nettle-seeds", "itemKey": "nettleSeed", "quantity": 35 },
-        { "id": "level2-nettle-herb", "itemKey": "nettleHerb", "quantity": 18 },
-        { "id": "level2-nettle-vigor", "itemKey": "nettleVigor", "quantity": 4 },
-        { "id": "level2-lavender-seeds", "itemKey": "lavenderSeed", "quantity": 30 },
-        { "id": "level2-calming-draught", "itemKey": "calmingDraught", "quantity": 3 }
+        { "id": "level2-sage-seeds", "itemKey": "sageSeed", "quantity": 10 },
+        { "id": "level2-mint-seeds", "itemKey": "mintSeed", "quantity": 10 },
+        { "id": "level2-sage-herb", "itemKey": "sageHerb", "quantity": 6 },
+        { "id": "level2-mint-herb", "itemKey": "mintHerb", "quantity": 6 }
       ]
     },
     {

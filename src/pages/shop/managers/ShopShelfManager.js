@@ -92,15 +92,7 @@ export class ShopShelfManager {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
     row.dataset.shopSlotNumber = String(slotNumber);
-    row.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
-    row.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') {
-        return;
-      }
-
-      event.preventDefault();
-      this.onSelectSlot(event, slotNumber);
-    });
+    row.dataset.tutorialId = `shop:stand:${slotNumber}`;
 
     const label = document.createElement('span');
     label.className = 'row_key';
@@ -111,6 +103,15 @@ export class ShopShelfManager {
 
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
+    itemValue.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
+    itemValue.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      event.preventDefault();
+      this.onSelectSlot(event, slotNumber);
+    });
 
     const priceValue = document.createElement('span');
     priceValue.className = 'shop-page__slot-price-value';
@@ -219,12 +220,7 @@ export class ShopShelfManager {
     const snapshot = this.gameplayFacade.getSnapshot();
     const shelf = snapshot.shop.shelf;
     const slot = shelf.slots.find((candidate) => candidate.slotNumber === slotNumber);
-    const clickedItemValue = Boolean(
-      event.target?.closest?.('.shop-page__slot-item-value'),
-    );
-    const keyboardRowAction = event.type === 'keydown';
-
-    if (!slot?.unlocked || (!clickedItemValue && !keyboardRowAction)) {
+    if (!slot?.unlocked) {
       return;
     }
 
@@ -328,9 +324,12 @@ export class ShopShelfManager {
 
       if (slot.unlocked) {
         row.classList.add('shop-page__slot-row--interactive');
-        row.setAttribute('role', 'button');
-        row.tabIndex = 0;
-        row.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
+        row.removeAttribute('role');
+        row.removeAttribute('aria-label');
+        row.removeAttribute('tabindex');
+        refs.itemValue.setAttribute('role', 'button');
+        refs.itemValue.tabIndex = 0;
+        refs.itemValue.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
         setNotificationBadge(row, !slot.sellItemTypeId && hasSellableItem);
         setNotificationBadge(button, false);
         this.renderSlotSellValue(refs, slot, shelf, snapshot);
@@ -342,6 +341,9 @@ export class ShopShelfManager {
         row.removeAttribute('role');
         row.removeAttribute('aria-label');
         row.removeAttribute('tabindex');
+        refs.itemValue.removeAttribute('role');
+        refs.itemValue.removeAttribute('aria-label');
+        refs.itemValue.removeAttribute('tabindex');
         setResourceIconText(button, this.formatLockedSlotAction(shelf, cost));
         setResourceColorFromText(button, button.textContent);
         button.disabled = shelf.nextSlotLockedByLevel || snapshot.gold.current < cost;
@@ -366,6 +368,9 @@ export class ShopShelfManager {
       row.removeAttribute('role');
       row.removeAttribute('aria-label');
       row.removeAttribute('tabindex');
+      refs.itemValue.removeAttribute('role');
+      refs.itemValue.removeAttribute('aria-label');
+      refs.itemValue.removeAttribute('tabindex');
       setNotificationBadge(row, false);
       setNotificationBadge(button, false);
       this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
@@ -533,6 +538,7 @@ export class ShopShelfManager {
       const button = document.createElement('button');
       button.className = 'shop-page__sell-item-button';
       button.type = 'button';
+      button.dataset.tutorialId = `shop:sell:${item.key}`;
       button.addEventListener('click', () => this.onSetSellItem(item.itemTypeId));
 
       const label = document.createElement('span');

@@ -1,8 +1,14 @@
 import { PlayerResearch } from '../components/ResearchComponents.js';
 
+const DEFAULT_COMPLETED_RESEARCH_IDS = ['unlockSeed:sageSeed'];
+
 export class ResearchStateEntityManager {
-  constructor({ researchDefinitionManager }) {
+  constructor({
+    defaultCompletedResearchIds = DEFAULT_COMPLETED_RESEARCH_IDS,
+    researchDefinitionManager,
+  }) {
     this.researchDefinitionManager = researchDefinitionManager;
+    this.defaultCompletedResearchIds = defaultCompletedResearchIds;
     this.entityIdsByResearchId = new Map();
     this.ecsManagers = null;
     this.researchEntitiesSynced = false;
@@ -40,6 +46,7 @@ export class ResearchStateEntityManager {
     }
 
     this.researchEntitiesSynced = true;
+    this.applyDefaultCompletedResearch();
   }
 
   isCompleted(researchId) {
@@ -124,7 +131,7 @@ export class ResearchStateEntityManager {
       PlayerResearch.remainingSeconds[entityId] = 0;
     }
 
-    for (const researchId of researchIds) {
+    for (const researchId of this.withDefaultCompletedResearchIds(researchIds)) {
       const normalizedResearchId = this.normalizeResearchId(researchId);
 
       if (!this.researchDefinitionManager.hasConfiguredResearch(normalizedResearchId)) {
@@ -133,6 +140,25 @@ export class ResearchStateEntityManager {
 
       PlayerResearch.isCompleted[this.getEntityId(normalizedResearchId)] = 1;
     }
+  }
+
+  applyDefaultCompletedResearch() {
+    for (const researchId of this.defaultCompletedResearchIds) {
+      const normalizedResearchId = this.normalizeResearchId(researchId);
+
+      if (!this.researchDefinitionManager.hasConfiguredResearch(normalizedResearchId)) {
+        continue;
+      }
+
+      PlayerResearch.isCompleted[this.getEntityId(normalizedResearchId)] = 1;
+      PlayerResearch.isInProgress[this.getEntityId(normalizedResearchId)] = 0;
+      PlayerResearch.totalSeconds[this.getEntityId(normalizedResearchId)] = 0;
+      PlayerResearch.remainingSeconds[this.getEntityId(normalizedResearchId)] = 0;
+    }
+  }
+
+  withDefaultCompletedResearchIds(researchIds = []) {
+    return [...new Set([...this.defaultCompletedResearchIds, ...researchIds])];
   }
 
   setInProgressResearches(researches = []) {

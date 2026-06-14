@@ -20,6 +20,7 @@ export class BottomPanelViewManager {
     this.root = null;
     this.tabButtons = new Map();
     this.notifications = {};
+    this.visiblePageIds = new Set(tabs.map((tab) => tab.id));
   }
 
   mount(stage) {
@@ -62,6 +63,20 @@ export class BottomPanelViewManager {
     }
   }
 
+  setVisiblePageIds(pageIds = []) {
+    this.visiblePageIds = new Set(
+      Array.isArray(pageIds) ? pageIds.filter((pageId) => typeof pageId === 'string') : [],
+    );
+
+    for (const tab of this.tabs) {
+      const button = this.tabButtons.get(tab.id);
+
+      if (button) {
+        button.hidden = !this.visiblePageIds.has(tab.id);
+      }
+    }
+  }
+
   setNotifications(notifications = {}) {
     this.notifications = notifications ?? {};
 
@@ -93,6 +108,7 @@ export class BottomPanelViewManager {
     button.textContent = tab.label;
     button.dataset.pageId = tab.id;
     button.dataset.tutorialId = `page:${tab.id}`;
+    button.hidden = !this.visiblePageIds.has(tab.id);
     button.setAttribute('aria-label', `show ${tab.label}`);
     button.setAttribute('aria-selected', 'false');
     button.addEventListener('click', () => this.onShowPage?.(tab.id));

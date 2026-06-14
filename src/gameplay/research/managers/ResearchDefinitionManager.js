@@ -50,7 +50,9 @@ export class ResearchDefinitionManager {
       {
         id: 'regular',
         label: 'regular research',
-        boxes: this.getRegularResearchBoxes(),
+        boxes: this.getRegularResearchBoxes({
+          includeHiddenRecipeUnlocks: includeLevelLockedAutomation,
+        }),
       },
       {
         id: 'automation',
@@ -65,8 +67,8 @@ export class ResearchDefinitionManager {
     ];
   }
 
-  getRegularResearchBoxes() {
-    return [
+  getRegularResearchBoxes({ includeHiddenRecipeUnlocks = false } = {}) {
+    const boxes = [
       {
         id: 'seedUnlocks',
         label: 'seed unlock researches',
@@ -77,12 +79,21 @@ export class ResearchDefinitionManager {
         label: 'summon seeds unlock',
         researches: summonSeedResearches,
       },
-      {
+    ];
+
+    if (includeHiddenRecipeUnlocks || this.areRecipeUnlocksVisible()) {
+      boxes.push({
         id: 'recipeUnlocks',
         label: 'recipe unlocks research',
         researches: this.getRecipeUnlockResearches(),
-      },
-    ];
+      });
+    }
+
+    return boxes;
+  }
+
+  areRecipeUnlocksVisible() {
+    return (this.playerLevelFacade?.getSnapshot?.().currentLevel ?? 1) >= 3;
   }
 
   getResearchBoxes(options) {

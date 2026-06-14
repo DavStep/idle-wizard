@@ -3169,10 +3169,12 @@ describe('PagesFacade', () => {
       JSON.parse(storage.getItem('idle-wizard.tutorial.v1'))?.completedStepIds,
     ).toEqual([
       'open-tasks',
-      'research-sage-seed',
-      'summon-first-seed',
+      'fill-sage-seed-task',
+      'open-market',
+      'select-sage-seed-sale',
+      'earn-level-one-gold',
+      'level-up-one',
       'grow-sage',
-      'finish-first-task',
     ]);
   });
 

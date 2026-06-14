@@ -1,6 +1,6 @@
 import taskBalance from '../tasks.json';
 
-const TASKS_PER_LEVEL = 5;
+const MAX_TASKS_PER_LEVEL = 5;
 const LEVEL_COMPLETION_GOLD_COST_PER_LEVEL = 20;
 
 export class TaskBalanceManager {
@@ -62,7 +62,14 @@ export class TaskBalanceManager {
   }
 
   getLevelCompletionCostGold(levelNumber) {
-    return this.clampLevelNumber(levelNumber) * LEVEL_COMPLETION_GOLD_COST_PER_LEVEL;
+    const clampedLevel = this.clampLevelNumber(levelNumber);
+    const configuredCost = this.levels.find((level) => level.level === clampedLevel)?.completionCostGold;
+
+    if (Number.isInteger(configuredCost) && configuredCost >= 0) {
+      return configuredCost;
+    }
+
+    return clampedLevel * LEVEL_COMPLETION_GOLD_COST_PER_LEVEL;
   }
 
   getInitialLevel() {
@@ -98,12 +105,22 @@ export class TaskBalanceManager {
         throw new Error('game_config.tasks levels must be sequential starting at 1.');
       }
 
-      if (!Array.isArray(level.tasks) || level.tasks.length !== TASKS_PER_LEVEL) {
-        throw new Error('game_config.tasks requires exactly 5 tasks per level.');
+      if (
+        !Array.isArray(level.tasks) ||
+        level.tasks.length < 1 ||
+        level.tasks.length > MAX_TASKS_PER_LEVEL
+      ) {
+        throw new Error('game_config.tasks requires 1 to 5 tasks per level.');
       }
+
+      const completionCostGold =
+        level.completionCostGold === undefined
+          ? undefined
+          : Math.max(0, Math.floor(Number(level.completionCostGold)));
 
       return {
         level: levelNumber,
+        ...(Number.isInteger(completionCostGold) ? { completionCostGold } : {}),
         tasks: level.tasks.map((task) => {
           if (!task || typeof task.id !== 'string' || task.id.length <= 0) {
             throw new Error('game_config.tasks task id must be a non-empty string.');

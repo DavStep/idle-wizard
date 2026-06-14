@@ -11,11 +11,36 @@ npm run build
 npm run build:dev
 npm run build:prod
 npm run lint
+npm run release
 npm run android:assembleDebug
+npm run android:assembleProdDebug
 npm run android:assembleRelease
+npm run android:postDebugDiscord
 ```
 
 `npm run dev`, `npm run build:dev`, and `npm run android:assembleDebug` load development env and enable console cheats. Production builds use `VITE_ENABLE_CHEATS=false`.
+
+To post a debug APK to Discord after building, add a Discord channel webhook URL to ignored `.env.local`:
+
+```sh
+DISCORD_APK_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+Then run:
+
+```sh
+npm run android:postDebugDiscord
+```
+
+Full release automation is:
+
+```sh
+npm run release
+```
+
+It runs lint, tests, production web build, production debug-signed APK build, optional SpacetimeDB Maincloud publish when `spacetimedb/` changed, git commit/push from `main`, and Discord APK upload. Use `RELEASE_BACKEND=always` to force backend publish or `RELEASE_BACKEND=skip` to skip it.
+
+For a manually signed APK, run `npm run discord:postApk -- path/to/app.apk`. The script refuses `unsigned` APK filenames unless `DISCORD_APK_ALLOW_UNSIGNED=1` is set.
 
 In a dev build, open the browser console:
 

@@ -147,7 +147,7 @@ describe('DevCheatsFacade', () => {
         gold: { current: 0, totalGenerated: 0 },
         crystal: { current: 0 },
         inventory: [],
-        research: { completedResearchIds: [] },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       },
     });
     expect(clearOwnProgress).toHaveBeenCalledTimes(1);
@@ -159,7 +159,7 @@ describe('DevCheatsFacade', () => {
       crystal: { current: 0 },
       ruby: { current: 0 },
       inventory: [],
-      research: { completedIds: [] },
+      research: { completedIds: ['unlockSeed:sageSeed'] },
       prestige: { completedLevels: [] },
     });
   });

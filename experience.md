@@ -36,6 +36,8 @@
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
 - Release APK handoff files should be named `idle-wizard-release-<package-version>.apk`.
 - Current Gradle release output is `app-release-unsigned.apk`; sign it before device install or APK handoff.
+- Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
+- User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
 - `spacetime publish --server maincloud` still prompts for `y` after maintenance `--confirm-live`; pipe confirmation for non-interactive deploys.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
@@ -137,6 +139,7 @@
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
+- If level 1 costs 10 gold and level 2 mint research costs 5 gold, FTUE should guide players to bank 15 gold before level-up so research is not immediately blocked.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.

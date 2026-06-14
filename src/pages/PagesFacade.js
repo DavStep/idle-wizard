@@ -9,6 +9,7 @@ import { TutorialFacade } from './tutorial/TutorialFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
+import { PageUnlockManager } from './managers/PageUnlockManager.js';
 import { PageRegistryManager } from './managers/PageRegistryManager.js';
 import {
   DEFAULT_PAGE_SWIPE_ORDER,
@@ -34,7 +35,13 @@ export class PagesFacade {
     tutorialStorage,
     defaultPageId = 'workshop',
   } = {}) {
+    this.gameplayFacade = gameplayFacade;
     this.registryManager = new PageRegistryManager();
+    this.pageUnlockManager = new PageUnlockManager({
+      pageOrder: DEFAULT_PAGE_SWIPE_ORDER,
+    });
+    this.unlockedPageIds = this.pageUnlockManager.getUnlockedPageIds();
+    this.pageUnlockUnsubscribe = null;
     this.currentPageManager = new CurrentPageManager({
       pageRegistryManager: this.registryManager,
       defaultPageId,
@@ -117,6 +124,9 @@ export class PagesFacade {
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
     this.syncTopPanelResourceContext();
+    this.syncPageUnlocks(this.getGameplaySnapshot());
+    this.pageUnlockUnsubscribe =
+      this.gameplayFacade?.subscribe?.((snapshot) => this.syncPageUnlocks(snapshot)) ?? null;
     this.tutorialFacade?.mount(stage);
     this.scrollCueManager.mount(stage);
   }
@@ -124,6 +134,8 @@ export class PagesFacade {
   unmount() {
     this.scrollCueManager.unmount();
     this.tutorialFacade?.unmount();
+    this.pageUnlockUnsubscribe?.();
+    this.pageUnlockUnsubscribe = null;
     this.topPanelFacade.unmount();
     this.worldChatManager.unmount();
     this.notificationFacade.unmount();
@@ -133,7 +145,7 @@ export class PagesFacade {
   }
 
   show(pageId) {
-    this.currentPageManager.show(pageId);
+    this.currentPageManager.show(this.getUnlockedPageId(pageId));
     this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
     this.syncTopPanelResourceContext();
     this.tutorialFacade?.scheduleRefresh();
@@ -146,6 +158,37 @@ export class PagesFacade {
   setResearchTabId(tabId) {
     this.researchTabId = typeof tabId === 'string' ? tabId : 'regular';
     this.syncTopPanelResourceContext();
+  }
+
+  syncPageUnlocks(snapshot = {}) {
+    this.unlockedPageIds = this.pageUnlockManager.getUnlockedPageIds(snapshot);
+    this.bottomPanelFacade.setVisiblePageIds(this.unlockedPageIds);
+    this.swipeNavigationManager.setPageOrder(this.unlockedPageIds);
+
+    if (this.unlockedPageIds.includes(this.getCurrentPageId())) {
+      return;
+    }
+
+    this.currentPageManager.show(this.getFallbackPageId());
+    this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
+    this.syncTopPanelResourceContext();
+    this.tutorialFacade?.scheduleRefresh();
+  }
+
+  getUnlockedPageId(pageId) {
+    if (this.unlockedPageIds.includes(pageId)) {
+      return pageId;
+    }
+
+    return this.getFallbackPageId();
+  }
+
+  getFallbackPageId() {
+    return this.unlockedPageIds.includes('workshop') ? 'workshop' : (this.unlockedPageIds[0] ?? 'workshop');
+  }
+
+  getGameplaySnapshot() {
+    return this.gameplayFacade?.getSnapshot?.() ?? {};
   }
 
   syncTopPanelResourceContext() {

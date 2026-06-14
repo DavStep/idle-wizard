@@ -19,6 +19,7 @@ const DEFAULT_DAYS = 7;
 const DEFAULT_STEP_SECONDS = 5;
 const RNG_SEED = 0x1d1e12d;
 const LEVEL_COMPLETION_GOLD_COST_PER_LEVEL = 20;
+const DEFAULT_COMPLETED_RESEARCH_IDS = ['unlockSeed:sageSeed'];
 const PRESTIGE_STEP = 10;
 
 function main() {
@@ -89,7 +90,7 @@ class BalanceSimulator {
       inventory: new Map(),
       taskProgress: new Map(),
       completedTasks: new Set(),
-      completedResearch: new Set(),
+      completedResearch: new Set(DEFAULT_COMPLETED_RESEARCH_IDS),
       inProgressResearch: new Map(),
       completedPrestigeLevels: new Set(),
       gardenTiles: Array.from(
@@ -141,12 +142,18 @@ class BalanceSimulator {
   }
 
   run() {
-    for (
-      this.timeSeconds = 0;
-      this.timeSeconds <= this.totalSeconds;
-      this.timeSeconds += this.stepSeconds
-    ) {
-      this.advance(this.stepSeconds);
+    this.runPolicy();
+    this.recordFirsts();
+    this.recordSamples();
+
+    while (this.timeSeconds < this.totalSeconds) {
+      const deltaSeconds = Math.min(
+        this.stepSeconds,
+        this.totalSeconds - this.timeSeconds,
+      );
+
+      this.timeSeconds += deltaSeconds;
+      this.advance(deltaSeconds);
       this.runPolicy();
       this.recordFirsts();
       this.recordSamples();
@@ -204,6 +211,7 @@ class BalanceSimulator {
       }
 
       this.addItem(tile.herbKey, 1);
+      this.recordFirst('first herb harvest', true);
       tile.phase = 'empty';
       tile.seedKey = null;
       tile.herbKey = null;
@@ -231,6 +239,7 @@ class BalanceSimulator {
       }
 
       this.addItem(cauldron.potionKey, 1);
+      this.recordFirst('first potion brewed', true);
       cauldron.phase = 'empty';
       cauldron.potionKey = null;
     }
@@ -245,7 +254,7 @@ class BalanceSimulator {
       stand.progressSeconds += deltaSeconds;
 
       while (stand.progressSeconds >= shopBalance.shopShelf.autoSellSeconds) {
-        if (this.getItemQuantity(stand.itemKey) <= 0) {
+        if (this.getSellableItemQuantity(stand.itemKey) <= 0) {
           stand.itemKey = null;
           stand.progressSeconds = 0;
           break;
@@ -268,12 +277,12 @@ class BalanceSimulator {
       guard += 1;
       changed = false;
       changed = this.buyResearch() || changed;
-      changed = this.fillTasks() || changed;
-      changed = this.completePrestige() || changed;
       changed = this.buySlots() || changed;
-      changed = this.runGarden() || changed;
       changed = this.runBrewing() || changed;
       changed = this.summonSeeds() || changed;
+      changed = this.runGarden() || changed;
+      changed = this.fillTasks() || changed;
+      changed = this.completePrestige() || changed;
       changed = this.assignMarket() || changed;
     }
   }
@@ -320,6 +329,10 @@ class BalanceSimulator {
   }
 
   canBuyResearch(research) {
+    if (!this.isResearchUnlockedForLevel(research.id)) {
+      return false;
+    }
+
     if (
       this.state.completedResearch.has(research.id) ||
       this.state.inProgressResearch.has(research.id)
@@ -337,6 +350,18 @@ class BalanceSimulator {
 
     const cost = this.getResearchCost(research.id);
     return this.canSpendCurrency(cost.currency, cost.amount);
+  }
+
+  isResearchUnlockedForLevel(researchId) {
+    if (this.state.level < 2) {
+      return false;
+    }
+
+    if (researchId.startsWith('unlockRecipe:') && this.state.level < 3) {
+      return false;
+    }
+
+    return true;
   }
 
   getResearchPriority(researchId) {
@@ -427,7 +452,7 @@ class BalanceSimulator {
       this.getCurrentTasks().every((task) => this.state.completedTasks.has(task.id)) &&
       this.state.level < tasksBalance.levels.length
     ) {
-      const cost = this.state.level * LEVEL_COMPLETION_GOLD_COST_PER_LEVEL;
+      const cost = this.getCurrentLevelCompletionGoldCost();
 
       if (this.state.gold.current >= cost) {
         this.state.gold.current -= cost;
@@ -504,6 +529,10 @@ class BalanceSimulator {
   }
 
   runGarden() {
+    if (this.state.level < 2) {
+      return false;
+    }
+
     let changed = false;
 
     for (const tile of this.state.gardenTiles) {
@@ -584,6 +613,10 @@ class BalanceSimulator {
   }
 
   runBrewing() {
+    if (this.state.level < 3) {
+      return false;
+    }
+
     let changed = false;
 
     for (const cauldron of this.state.cauldrons) {
@@ -691,7 +724,7 @@ class BalanceSimulator {
     let changed = false;
     let guard = 0;
     const quantity = this.getSummonQuantity();
-    const cost = 10 * quantity;
+    const cost = this.itemDefinitionManager.getVisibleSummonCost() * quantity;
 
     while (guard < 1000 && this.state.mana.current >= cost) {
       guard += 1;
@@ -701,6 +734,7 @@ class BalanceSimulator {
         this.addItem(this.pickWeightedSeed(pool).key, 1);
       }
 
+      this.recordFirst('first seed summon', true);
       changed = true;
     }
 
@@ -737,6 +771,10 @@ class BalanceSimulator {
   }
 
   assignMarket() {
+    if (!this.isMarketUnlocked()) {
+      return false;
+    }
+
     const sellable = this.getSellableItemsByValue();
     let changed = false;
 
@@ -748,7 +786,7 @@ class BalanceSimulator {
       const item = sellable.find(
         (candidate) =>
           this.getItemQuantity(candidate.key) > 0 &&
-          !this.isNeededForCurrentTask(candidate.key),
+          this.getSellableItemQuantity(candidate.key) > 0,
       );
 
       if (!item) {
@@ -782,6 +820,13 @@ class BalanceSimulator {
       .sort((left, right) => this.getItemValue(right.key) - this.getItemValue(left.key));
   }
 
+  isMarketUnlocked() {
+    return (
+      this.state.level >= 2 ||
+      this.state.completedTasks.has('level1-sage-seeds')
+    );
+  }
+
   isNeededForCurrentTask(itemKey) {
     if (
       this.getCurrentTasks().some(
@@ -795,6 +840,23 @@ class BalanceSimulator {
     }
 
     return this.getNeededPotionIngredientKeys().includes(itemKey);
+  }
+
+  getSellableItemQuantity(itemKey) {
+    return Math.max(0, this.getItemQuantity(itemKey) - this.getReservedItemQuantity(itemKey));
+  }
+
+  getReservedItemQuantity(itemKey) {
+    const taskReserve = this.getCurrentTasks().reduce((total, task) => {
+      if (this.state.completedTasks.has(task.id) || task.itemKey !== itemKey) {
+        return total;
+      }
+
+      const progress = this.state.taskProgress.get(task.id) ?? 0;
+      return total + Math.max(0, task.quantity - progress);
+    }, 0);
+
+    return taskReserve + this.getNeededPotionIngredientKeys().filter((key) => key === itemKey).length;
   }
 
   getNeededPotionIngredientKeys() {
@@ -854,6 +916,12 @@ class BalanceSimulator {
 
   getCurrentTasks() {
     return tasksBalance.levels[this.state.level - 1]?.tasks ?? [];
+  }
+
+  getCurrentLevelCompletionGoldCost() {
+    const level = tasksBalance.levels[this.state.level - 1];
+
+    return level?.completionCostGold ?? this.state.level * LEVEL_COMPLETION_GOLD_COST_PER_LEVEL;
   }
 
   syncLevelEffects() {
@@ -982,15 +1050,15 @@ class BalanceSimulator {
 
   recordFirsts() {
     this.recordFirst(
-      'first seed',
+      'first spare seed',
       this.sumInventoryByKind(itemKinds.seed) > 0,
     );
     this.recordFirst(
-      'first herb',
+      'first spare herb',
       this.sumInventoryByKind(itemKinds.herb) > 0,
     );
     this.recordFirst(
-      'first potion',
+      'first spare potion',
       this.sumInventoryByKind(itemKinds.potion) > 0,
     );
     this.recordFirst('first gold', this.state.gold.totalGenerated > 0);
@@ -1161,7 +1229,10 @@ function createResearchDurations() {
   ];
 
   return new Map(
-    ids.map((id, index) => [id, getDefaultResearchDurationSeconds(index)]),
+    ids.map((id, index) => [
+      id,
+      researchBalance.researchDurationsSeconds?.[id] ?? getDefaultResearchDurationSeconds(index),
+    ]),
   );
 }
 

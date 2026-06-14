@@ -20,6 +20,10 @@ export class BottomPanelFacade {
     this.viewManager.setCurrentPageId(pageId);
   }
 
+  setVisiblePageIds(pageIds) {
+    this.viewManager.setVisiblePageIds(pageIds);
+  }
+
   setNotifications(notifications) {
     this.viewManager.setNotifications(notifications);
   }

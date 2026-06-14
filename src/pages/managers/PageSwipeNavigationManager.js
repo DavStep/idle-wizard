@@ -101,6 +101,15 @@ export class PageSwipeNavigationManager {
     this.resetGesture();
   }
 
+  setPageOrder(pageOrder = []) {
+    if (!Array.isArray(pageOrder) || pageOrder.length <= 0) {
+      return;
+    }
+
+    this.pageOrder = pageOrder.filter((pageId) => typeof pageId === 'string');
+    this.resetGesture();
+  }
+
   onPointerDown(event) {
     if ((event.pointerType && event.pointerType !== 'touch') || event.isPrimary === false) {
       return;

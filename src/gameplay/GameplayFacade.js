@@ -78,8 +78,7 @@ export class GameplayFacade {
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
-      getReservedItemQuantity: (itemTypeId) =>
-        this.brewingFacade.getStagedIngredientQuantity(itemTypeId),
+      getReservedItemQuantity: (itemTypeId) => this.getReservedShopItemQuantity(itemTypeId),
       onItemSold: (event) => this.handleItemSold(event),
     });
     this.gardenFacade = new GardenFacade({
@@ -772,6 +771,29 @@ export class GameplayFacade {
     const result = this.gardenFacade.cancelProgress(tileNumber);
     this.publishAndSaveSnapshot();
     return result;
+  }
+
+  getReservedShopItemQuantity(itemTypeId) {
+    return (
+      this.brewingFacade.getStagedIngredientQuantity(itemTypeId) +
+      this.getCurrentTaskReservedItemQuantity(itemTypeId) +
+      this.getGardenSelectedSeedReservedQuantity(itemTypeId)
+    );
+  }
+
+  getCurrentTaskReservedItemQuantity(itemTypeId) {
+    return (this.tasksFacade.getSnapshot().level?.tasks ?? [])
+      .filter((task) => task.itemTypeId === itemTypeId && !task.completed)
+      .reduce((total, task) => total + task.remainingQuantity, 0);
+  }
+
+  getGardenSelectedSeedReservedQuantity(itemTypeId) {
+    return (this.gardenFacade.getSnapshot().plot?.tiles ?? []).filter(
+      (tile) =>
+        tile.unlocked &&
+        tile.phase === 'empty' &&
+        tile.selectedSeedItemTypeId === itemTypeId,
+    ).length;
   }
 
   subscribe(listener) {

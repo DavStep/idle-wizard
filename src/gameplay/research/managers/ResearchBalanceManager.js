@@ -5,7 +5,7 @@ const maxResearchDurationSeconds = 10 * 60;
 const DEFAULT_RESEARCH_BALANCE = {
   researchCostsGold: {
     'unlockSeed:sageSeed': 0,
-    'unlockSeed:mintSeed': 25,
+    'unlockSeed:mintSeed': 5,
     'unlockSeed:nettleSeed': 50,
     'unlockSeed:lavenderSeed': 90,
     'unlockSeed:briarSeed': 150,
@@ -122,6 +122,8 @@ DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDuratio
   DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
   DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
 );
+DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds['unlockSeed:mintSeed'] = 15;
+DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds['unlockRecipe:manaTonic'] = 60;
 
 function createDefaultAdvancedRubyCosts() {
   const costs = {};
