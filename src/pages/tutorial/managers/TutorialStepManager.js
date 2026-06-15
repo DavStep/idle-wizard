@@ -548,6 +548,7 @@ const STEPS = [
   {
     id: 'research-mint-seed',
     kind: 'objective',
+    cueMode: 'passive',
     pageId: 'research',
     targetId: `research:${MINT_SEED_RESEARCH_ID}`,
     objectiveText: 'research mint seed',
@@ -565,6 +566,7 @@ const STEPS = [
   {
     id: 'fill-mint-seed-task',
     kind: 'objective',
+    cueMode: 'passive',
     objectiveText: 'fill the mint seed task',
     getTargetId: ({ currentPageId, dom, snapshot }) =>
       getSeedTaskTargetId({ currentPageId, dom, snapshot, itemKey: MINT_SEED_KEY }),
@@ -584,6 +586,7 @@ const STEPS = [
   {
     id: 'fill-mint-herb-task',
     kind: 'objective',
+    cueMode: 'passive',
     objectiveText: 'fill the mint level task',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       const task = getCurrentTaskForItem(snapshot, MINT_HERB_KEY);
@@ -656,6 +659,7 @@ const STEPS = [
   {
     id: 'level-up-three',
     kind: 'objective',
+    cueMode: 'passive',
     getObjectiveText: ({ snapshot }) =>
       hasLevelCompletionGold(snapshot) ? 'level up again' : 'earn level-up gold in market',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
@@ -1024,6 +1028,7 @@ export class TutorialStepManager {
         progressLabel: step.getProgressLabel?.(context) ?? '',
         stepLabel,
         reminderKey: step.getReminderKey?.(context) ?? null,
+        cueMode: step.cueMode ?? 'active',
         effect: step.effect,
         sale: step.sale,
       };
@@ -1046,6 +1051,7 @@ export class TutorialStepManager {
       advanceOnClick: step.advanceOnClick === true,
       showPointer: step.showPointer !== false,
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
+      cueMode: step.cueMode ?? 'active',
       effect: step.effect,
       sale: step.sale,
     };

@@ -5526,6 +5526,10 @@ function readSavedTotalGeneratedGold(saveJson?: string): bigint | null {
 }
 
 function readSavedResearchCount(saveJson?: string): number | null {
+  return readSavedCompletedResearchIds(saveJson)?.length ?? null;
+}
+
+function readSavedCompletedResearchIds(saveJson?: string): string[] | null {
   if (!saveJson) {
     return null;
   }
@@ -5533,18 +5537,26 @@ function readSavedResearchCount(saveJson?: string): number | null {
   try {
     const save = JSON.parse(saveJson);
     const research = isRecord(save?.research) ? save.research : {};
-    if (!Array.isArray(research.completedIds)) {
-      return null;
-    }
-
-    return new Set(
-      research.completedIds
-        .map((researchId: unknown) => normalizeResearchId(String(researchId ?? '')))
-        .filter((researchId: string) => researchCatalogById.has(researchId)),
-    ).size;
+    return normalizeSaveCompletedResearchIds(research.completedIds);
   } catch {
     return null;
   }
+}
+
+function normalizeSaveCompletedResearchIds(completedIds: unknown): string[] | null {
+  if (!Array.isArray(completedIds)) {
+    return null;
+  }
+
+  const requested = new Set(
+    completedIds
+      .map((researchId: unknown) => normalizeResearchId(String(researchId ?? '')))
+      .filter((researchId: string) => researchCatalogById.has(researchId)),
+  );
+
+  return researchCatalog
+    .map((research) => research.researchId)
+    .filter((researchId) => requested.has(researchId));
 }
 
 function readSavedNonDefaultResearchCount(saveJson?: string): number | null {
@@ -5823,6 +5835,81 @@ function assertClientSaveDoesNotDowngradeProgress(
   }
 
   return false;
+}
+
+function mergePreviousResearchProgressIntoSaveJson(
+  ctx: IdleWizardReducerCtx,
+  safeSaveJson: string,
+  previousSaveJson?: string,
+): string {
+  if (!previousSaveJson || hasSavedPrestigeProgression(previousSaveJson, safeSaveJson)) {
+    return safeSaveJson;
+  }
+
+  const safeSave = parsePlayerGameplaySaveJson(safeSaveJson);
+  const previousSave = parsePlayerGameplaySaveJson(previousSaveJson);
+
+  if (!safeSave || !previousSave) {
+    return safeSaveJson;
+  }
+
+  const safeResearch = normalizeSaveResearch(safeSave.research);
+  const previousResearch = normalizeSaveResearch(previousSave.research);
+  const previousRawResearch = isRecord(previousSave.research)
+    ? previousSave.research
+    : {};
+  const previousCompletedIds = normalizeSaveCompletedResearchIds(
+    previousRawResearch.completedIds,
+  ) ?? [];
+  const mergedCompletedIdSet = new Set([
+    ...safeResearch.completedIds,
+    ...previousCompletedIds,
+  ]);
+  const mergedCompletedIds = researchCatalog
+    .map((research) => research.researchId)
+    .filter((researchId) => mergedCompletedIdSet.has(researchId));
+  const mergedCompletedSet = new Set(mergedCompletedIds);
+  const mergedInProgress = normalizeSaveInProgressResearches(
+    {
+      inProgress: [
+        ...safeResearch.inProgress,
+        ...previousResearch.inProgress,
+      ],
+    },
+    mergedCompletedSet,
+  );
+  const mergedResearch = {
+    completedIds: mergedCompletedIds,
+    inProgress: mergedInProgress,
+  };
+
+  if (mergedResearch.completedIds.length <= safeResearch.completedIds.length) {
+    return safeSaveJson;
+  }
+
+  const tasks = isRecord(safeSave.tasks) ? safeSave.tasks : {};
+  const currentLevel = clampSaveInteger(
+    tasks.currentLevel,
+    DEFAULT_PLAYER_LEVEL,
+    MAX_REPORTED_PLAYER_LEVEL,
+    DEFAULT_PLAYER_LEVEL,
+  );
+  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(
+    ctx,
+    currentLevel,
+    mergedResearch.completedIds,
+  );
+  const mergedSaveJson = JSON.stringify({
+    ...safeSave,
+    research: mergedResearch,
+    crystal: normalizeSaveCrystal(safeSave.crystal, minimumCurrentCrystal),
+  });
+
+  if (mergedSaveJson.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
+    throw new Error('Invalid player save JSON length.');
+  }
+
+  return mergedSaveJson;
 }
 
 function getDefaultBrewingMaxIngredients(): number {
@@ -8690,9 +8777,13 @@ export const set_player_gameplay_save = spacetimedb.reducer(
     const player = ensurePlayer(ctx);
 
     const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined;
-    const safeSaveJson = validatePlayerGameplaySaveJson(
+    const safeSaveJson = mergePreviousResearchProgressIntoSaveJson(
       ctx,
-      saveJson,
+      validatePlayerGameplaySaveJson(
+        ctx,
+        saveJson,
+        existingSave?.saveJson,
+      ),
       existingSave?.saveJson,
     );
     if (shouldIgnorePostResetFirstSave(ctx, player, existingSave, safeSaveJson)) {

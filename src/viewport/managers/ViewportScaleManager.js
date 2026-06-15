@@ -43,6 +43,8 @@ export class ViewportScaleManager {
     document.documentElement.style.removeProperty('--app-viewport-height');
     document.documentElement.style.removeProperty('--app-stage-width');
     document.documentElement.style.removeProperty('--app-stage-height');
+    document.documentElement.style.removeProperty('--app-visible-stage-height');
+    document.documentElement.style.removeProperty('--app-keyboard-inset');
     this.layoutViewport = null;
     this.textEntryViewportLocked = false;
     this.stage = null;
@@ -79,6 +81,42 @@ export class ViewportScaleManager {
     );
     this.stage.style.setProperty('--viewport-scale', String(scale));
     this.stage.style.setProperty('--style-ui-scale', String(uiScale));
+    this.updateVisibleStageMetrics({ viewportSize, scale });
+  }
+
+  updateVisibleStageMetrics({ viewportSize, scale }) {
+    const stageHeight = this.viewport.height * scale;
+    const stageRect = this.stage.getBoundingClientRect();
+    const fallbackStageTop = Math.max(0, (viewportSize.height - stageHeight) / 2);
+    const stageTop =
+      Number.isFinite(stageRect.top) && stageRect.height > 0
+        ? stageRect.top
+        : fallbackStageTop;
+    const visibleViewportBottom = this.getVisibleViewportBottom();
+    const visibleStageHeight = Math.max(
+      0,
+      Math.min(stageHeight, visibleViewportBottom - stageTop),
+    );
+    const keyboardInset = Math.max(0, stageHeight - visibleStageHeight);
+
+    document.documentElement.style.setProperty(
+      '--app-visible-stage-height',
+      `${visibleStageHeight}px`,
+    );
+    document.documentElement.style.setProperty(
+      '--app-keyboard-inset',
+      `${keyboardInset}px`,
+    );
+  }
+
+  getVisibleViewportBottom() {
+    const visualViewport = window.visualViewport;
+
+    if (visualViewport) {
+      return Math.round((visualViewport.offsetTop ?? 0) + visualViewport.height);
+    }
+
+    return Math.round(window.innerHeight);
   }
 
   getLayoutViewportSize() {

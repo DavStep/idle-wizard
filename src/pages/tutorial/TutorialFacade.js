@@ -116,6 +116,8 @@ export class TutorialFacade {
         stepLabel: step.stepLabel,
         progress: step.progress,
         progressLabel: step.progressLabel,
+        attention: step.cueMode !== 'passive',
+        autoOpen: step.cueMode !== 'passive',
       });
       this.saleManager.update({
         step,
@@ -138,11 +140,13 @@ export class TutorialFacade {
     if (!target) {
       this.reminderManager.clearVisible();
       this.hintManager.hidePrompt();
+      this.hintManager.setObjectiveAttention(false);
       return;
     }
 
     if (step.advanceOnClick) {
       this.reminderManager.clearVisible();
+      this.hintManager.setObjectiveAttention(true);
       this.hintManager.show({
         target,
         text: step.hintText ?? step.text,
@@ -155,8 +159,18 @@ export class TutorialFacade {
     }
 
     const now = this.getNow();
+
+    if (step.cueMode === 'passive') {
+      const attentionState = this.reminderManager.getAttentionState({ step, now });
+      this.scheduleReminderRefresh(attentionState.nextRefreshAt, now);
+      this.hintManager.hidePrompt();
+      this.hintManager.setObjectiveAttention(attentionState.shouldNotify);
+      return;
+    }
+
     const hintState = this.reminderManager.getHintState({ step, now });
     this.scheduleReminderRefresh(hintState.nextRefreshAt, now);
+    this.hintManager.setObjectiveAttention(hintState.shouldShow);
 
     if (!hintState.shouldShow) {
       this.hintManager.hidePrompt();
@@ -229,6 +243,7 @@ export class TutorialFacade {
     this.cancelReminderRefresh();
     this.reminderManager.discardActivePrompt();
     this.hintManager.closeObjectivePanel();
+    this.hintManager.setObjectiveAttention(false);
     this.hintManager.show({
       target,
       text: step.hintText ?? step.text,

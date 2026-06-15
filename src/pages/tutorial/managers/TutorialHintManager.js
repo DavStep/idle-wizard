@@ -6,6 +6,9 @@ const HINT_WIDTH = 136;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 56;
 const HINT_GAP = 8;
+const TYPEWRITER_CHARACTER_MS = 18;
+const OBJECTIVE_AUTO_CLOSE_MS = 5200;
+const POINTER_HIDE_MS = 180;
 const HIGHLIGHT_PAD = 4;
 const HIGHLIGHT_UNDERLINE_HEIGHT = 4;
 const HIGHLIGHT_UNDERLINE_OFFSET = 2;
@@ -19,12 +22,12 @@ const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
 const DIALOG_TOP = 218;
-const OBJECTIVE_LEFT = 76;
-const OBJECTIVE_TOP = 504;
+const OBJECTIVE_LEFT = 92;
+const OBJECTIVE_TOP = 500;
 const OBJECTIVE_BUTTON_LEFT = 0;
-const OBJECTIVE_BUTTON_TOP = 551;
-const OBJECTIVE_BUTTON_WIDTH = 63;
-const OBJECTIVE_BUTTON_HEIGHT = 81;
+const OBJECTIVE_BUTTON_TOP = 506;
+const OBJECTIVE_BUTTON_WIDTH = 96;
+const OBJECTIVE_BUTTON_HEIGHT = 118;
 const OBJECTIVE_PROTECTED_SELECTORS = [
   '.workshop-page__leaderboard-button',
   '.workshop-page__trade-alliance-button',
@@ -40,15 +43,15 @@ const OBJECTIVE_PLACEMENTS = [
   },
   {
     objectiveLeft: OBJECTIVE_LEFT,
-    objectiveTop: 404,
+    objectiveTop: 286,
     buttonLeft: OBJECTIVE_BUTTON_LEFT,
-    buttonTop: 451,
+    buttonTop: 292,
   },
   {
     objectiveLeft: OBJECTIVE_LEFT,
-    objectiveTop: 286,
+    objectiveTop: 166,
     buttonLeft: OBJECTIVE_BUTTON_LEFT,
-    buttonTop: 333,
+    buttonTop: 172,
   },
 ];
 
@@ -75,6 +78,10 @@ export class TutorialHintManager {
     this.objectiveProgressLabel = null;
     this.objectivePanelOpen = false;
     this.objectiveStepId = null;
+    this.objectiveCopyText = '';
+    this.objectiveAutoCloseTimeout = null;
+    this.pointerHideTimeout = null;
+    this.typewriterTimers = new Map();
     this.onAdvance = null;
     this.onObjectivePress = null;
   }
@@ -186,7 +193,7 @@ export class TutorialHintManager {
 
     const objectiveTitle = document.createElement('div');
     objectiveTitle.className = 'style-box__title';
-    objectiveTitle.textContent = 'objective';
+    objectiveTitle.textContent = 'mira';
 
     this.objectiveCloseButton = document.createElement('button');
     this.objectiveCloseButton.className = 'tutorial-layer__objective-close';
@@ -262,6 +269,10 @@ export class TutorialHintManager {
     this.objectiveProgressLabel = null;
     this.objectivePanelOpen = false;
     this.objectiveStepId = null;
+    this.objectiveCopyText = '';
+    this.clearObjectiveAutoClose();
+    this.clearPointerHideTimeout();
+    this.clearAllTypewriterTimers();
     this.onAdvance = null;
     this.onObjectivePress = null;
   }
@@ -287,11 +298,6 @@ export class TutorialHintManager {
       return;
     }
 
-    if (this.objectivePanelOpen) {
-      this.hidePrompt();
-      return;
-    }
-
     const rect = this.getSourceRect(target);
 
     if (!rect) {
@@ -302,9 +308,17 @@ export class TutorialHintManager {
     this.root.hidden = false;
     this.hint.hidden = false;
     this.hint.classList.remove('is-dialog');
-    this.text.textContent = text ?? '';
+    this.setTypedText(this.text, text ?? '', {
+      onComplete: () => this.typeAdvanceLabel(advanceOnClick),
+    });
     this.stepLabel.textContent = stepLabel ?? '';
     this.advanceButton.hidden = !advanceOnClick;
+    if (advanceOnClick) {
+      this.advanceButton.textContent = '';
+      this.advanceButton.setAttribute('aria-label', 'next');
+    } else {
+      this.setPlainText(this.advanceButton, '');
+    }
     this.positionHighlight(rect);
     const guidePlacement = this.positionGuide(rect, showPortrait);
     this.positionPointer(rect, showPointer, guidePlacement);
@@ -319,25 +333,44 @@ export class TutorialHintManager {
     this.root.hidden = false;
     this.hint.hidden = false;
     this.hint.classList.add('is-dialog');
-    this.text.textContent = text ?? '';
+    this.setTypedText(this.text, text ?? '', {
+      onComplete: () => this.typeAdvanceLabel(advanceOnClick),
+    });
     this.stepLabel.textContent = stepLabel ?? '';
     this.advanceButton.hidden = !advanceOnClick;
+    if (advanceOnClick) {
+      this.advanceButton.textContent = '';
+      this.advanceButton.setAttribute('aria-label', 'next');
+    } else {
+      this.setPlainText(this.advanceButton, '');
+    }
     this.hideTargetCue();
     this.positionDialog();
     this.syncRootVisibility();
   }
 
-  showObjective({ id, text, stepLabel, progress, progressLabel }) {
+  showObjective({
+    id,
+    text,
+    stepLabel,
+    progress,
+    progressLabel,
+    attention = true,
+    autoOpen = true,
+  }) {
     if (!this.root || !this.stage || !this.objective || !this.objectiveButton) {
       return;
     }
 
     if (id && id !== this.objectiveStepId) {
       this.objectiveStepId = id;
-      this.objectivePanelOpen = false;
+      this.objectivePanelOpen = Boolean(autoOpen);
+      this.resetTypedText(this.objectiveText);
+      this.clearObjectiveAutoClose();
     }
 
     const normalizedProgress = this.normalizeProgress(progress);
+    this.objectiveCopyText = text ?? '';
     this.root.hidden = false;
     this.objectiveButton.hidden = false;
     this.objective.hidden = !this.objectivePanelOpen;
@@ -349,8 +382,8 @@ export class TutorialHintManager {
       'aria-label',
       this.objectivePanelOpen ? 'close mira objective' : 'open mira objective',
     );
-    setNotificationBadge(this.objectiveButton, true);
-    this.objectiveText.textContent = text ?? '';
+    this.setObjectiveAttention(attention);
+    this.updateObjectiveCopy();
     this.objectiveStepLabel.textContent = stepLabel ?? '';
     this.objectiveProgress.hidden = !normalizedProgress;
     this.objectiveProgressLabel.hidden = !normalizedProgress && !progressLabel;
@@ -364,6 +397,15 @@ export class TutorialHintManager {
     this.syncRootVisibility();
   }
 
+  setObjectiveAttention(active) {
+    if (!this.objectiveButton) {
+      return;
+    }
+
+    setNotificationBadge(this.objectiveButton, active);
+    this.objectiveButton.toggleAttribute('data-attention', Boolean(active));
+  }
+
   openObjectivePanel() {
     if (!this.objective || !this.objectiveButton) {
       return;
@@ -373,7 +415,11 @@ export class TutorialHintManager {
     this.objective.hidden = false;
     this.objectiveButton.setAttribute('aria-expanded', 'true');
     this.objectiveButton.setAttribute('aria-label', 'close mira objective');
+    this.setObjectiveAttention(false);
     this.hidePrompt();
+    this.resetTypedText(this.objectiveText);
+    this.clearObjectiveAutoClose();
+    this.updateObjectiveCopy();
     this.positionObjective();
     this.syncRootVisibility();
   }
@@ -385,6 +431,8 @@ export class TutorialHintManager {
 
     this.objectivePanelOpen = false;
     this.objective.hidden = true;
+    this.clearObjectiveAutoClose();
+    this.resetTypedText(this.objectiveText);
     this.objectiveButton.setAttribute('aria-expanded', 'false');
     this.objectiveButton.setAttribute('aria-label', 'open mira objective');
     this.syncRootVisibility();
@@ -395,7 +443,7 @@ export class TutorialHintManager {
       this.hint.hidden = true;
     }
 
-    this.hideTargetCue();
+    this.hideTargetCue({ immediate: true });
 
     if (this.objective) {
       this.objective.hidden = true;
@@ -405,11 +453,17 @@ export class TutorialHintManager {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
       this.objectiveButton.setAttribute('aria-label', 'open mira objective');
-      setNotificationBadge(this.objectiveButton, false);
+      this.setObjectiveAttention(false);
     }
 
     this.objectivePanelOpen = false;
     this.objectiveStepId = null;
+    this.objectiveCopyText = '';
+    this.clearObjectiveAutoClose();
+    this.clearAllTypewriterTimers();
+    this.resetTypedText(this.text);
+    this.resetTypedText(this.advanceButton);
+    this.resetTypedText(this.objectiveText);
     this.syncRootVisibility();
   }
 
@@ -419,6 +473,8 @@ export class TutorialHintManager {
     }
 
     this.hint.hidden = true;
+    this.resetTypedText(this.text);
+    this.resetTypedText(this.advanceButton);
     this.hideTargetCue();
     this.syncRootVisibility();
   }
@@ -432,20 +488,23 @@ export class TutorialHintManager {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
       this.objectiveButton.setAttribute('aria-label', 'open mira objective');
-      setNotificationBadge(this.objectiveButton, false);
+      this.setObjectiveAttention(false);
     }
 
     this.objectivePanelOpen = false;
     this.objectiveStepId = null;
+    this.objectiveCopyText = '';
+    this.clearObjectiveAutoClose();
+    this.resetTypedText(this.objectiveText);
     this.syncRootVisibility();
   }
 
-  hideTargetCue() {
+  hideTargetCue({ immediate = false } = {}) {
     if (this.highlight) {
       this.highlight.hidden = true;
     }
 
-    this.hidePointer();
+    this.hidePointer({ immediate });
 
     if (this.portrait) {
       this.portrait.hidden = true;
@@ -509,6 +568,9 @@ export class TutorialHintManager {
     const placement = this.resolvePointerPlacement({ rect, bounds, protectedRects });
 
     this.pointer.hidden = false;
+    this.clearPointerHideTimeout();
+    this.pointer.classList.remove('is-hiding');
+    this.showPointerWithAnimation();
     this.pointer.dataset.placement = placement.id;
     this.pointer.style.left = `${placement.x}px`;
     this.pointer.style.top = `${placement.y}px`;
@@ -630,11 +692,66 @@ export class TutorialHintManager {
     };
   }
 
-  hidePointer() {
+  hidePointer({ immediate = false } = {}) {
     if (!this.pointer) {
       return;
     }
 
+    this.clearPointerHideTimeout();
+
+    if (this.pointer.hidden) {
+      this.cleanupPointerState();
+      return;
+    }
+
+    if (immediate || this.prefersReducedMotion()) {
+      this.pointer.hidden = true;
+      this.cleanupPointerState();
+      return;
+    }
+
+    this.pointer.classList.remove('is-visible');
+    this.pointer.classList.add('is-hiding');
+    this.pointerHideTimeout = window.setTimeout(() => {
+      this.pointerHideTimeout = null;
+      if (!this.pointer) {
+        return;
+      }
+
+      this.pointer.hidden = true;
+      this.cleanupPointerState();
+      this.syncRootVisibility();
+    }, POINTER_HIDE_MS);
+  }
+
+  showPointerWithAnimation() {
+    if (!this.pointer) {
+      return;
+    }
+
+    if (this.prefersReducedMotion()) {
+      this.pointer.classList.add('is-visible');
+      return;
+    }
+
+    const view = this.pointer.ownerDocument?.defaultView ?? globalThis.window;
+
+    if (typeof view?.requestAnimationFrame !== 'function') {
+      this.pointer.classList.add('is-visible');
+      return;
+    }
+
+    view.requestAnimationFrame(() => {
+      this.pointer?.classList.add('is-visible');
+    });
+  }
+
+  cleanupPointerState() {
+    if (!this.pointer) {
+      return;
+    }
+
+    this.pointer.classList.remove('is-visible', 'is-hiding');
     this.pointer.hidden = true;
     delete this.pointer.dataset.placement;
     this.pointer.style.removeProperty('--tutorial-pointer-scale-x');
@@ -773,10 +890,195 @@ export class TutorialHintManager {
       return;
     }
 
+    const hasTargetCue =
+      Boolean(this.highlight && !this.highlight.hidden) ||
+      Boolean(this.pointer && !this.pointer.hidden) ||
+      Boolean(this.portrait && !this.portrait.hidden);
+
     this.root.hidden =
       Boolean(this.hint?.hidden) &&
       Boolean(this.objective?.hidden) &&
-      Boolean(this.objectiveButton?.hidden);
+      Boolean(this.objectiveButton?.hidden) &&
+      !hasTargetCue;
+  }
+
+  updateObjectiveCopy() {
+    if (!this.objectiveText) {
+      return;
+    }
+
+    if (!this.objectivePanelOpen) {
+      this.setPlainText(this.objectiveText, this.objectiveCopyText);
+      return;
+    }
+
+    this.setTypedText(this.objectiveText, this.objectiveCopyText, {
+      onComplete: () => this.scheduleObjectiveAutoClose(),
+    });
+  }
+
+  typeAdvanceLabel(show) {
+    if (!this.advanceButton || !show || this.advanceButton.hidden) {
+      return;
+    }
+
+    this.setTypedText(this.advanceButton, 'next');
+  }
+
+  setPlainText(element, text) {
+    if (!element) {
+      return;
+    }
+
+    this.clearTypedText(element);
+    element.textContent = text;
+
+    if (text) {
+      element.setAttribute('aria-label', text);
+      element.dataset.tutorialFullText = text;
+      return;
+    }
+
+    element.removeAttribute('aria-label');
+    delete element.dataset.tutorialFullText;
+  }
+
+  setTypedText(element, text, { onComplete } = {}) {
+    if (!element) {
+      return;
+    }
+
+    const nextText = text ?? '';
+    const existing = this.typewriterTimers.get(element);
+
+    if (
+      element.dataset.tutorialFullText === nextText &&
+      existing?.isTyping &&
+      element.textContent !== nextText
+    ) {
+      existing.onComplete = onComplete;
+      return;
+    }
+
+    if (element.dataset.tutorialFullText === nextText && element.textContent === nextText) {
+      onComplete?.();
+      return;
+    }
+
+    this.clearTypedText(element);
+    element.dataset.tutorialFullText = nextText;
+
+    if (!nextText) {
+      element.textContent = '';
+      element.removeAttribute('aria-label');
+      onComplete?.();
+      return;
+    }
+
+    element.setAttribute('aria-label', nextText);
+
+    if (this.prefersReducedMotion()) {
+      element.textContent = nextText;
+      onComplete?.();
+      return;
+    }
+
+    const timerState = {
+      isTyping: true,
+      timeout: null,
+      onComplete,
+    };
+    this.typewriterTimers.set(element, timerState);
+    let index = 0;
+
+    const tick = () => {
+      if (!this.typewriterTimers.has(element)) {
+        return;
+      }
+
+      index += 1;
+      element.textContent = nextText.slice(0, index);
+
+      if (index >= nextText.length) {
+        this.typewriterTimers.delete(element);
+        timerState.onComplete?.();
+        return;
+      }
+
+      timerState.timeout = window.setTimeout(tick, TYPEWRITER_CHARACTER_MS);
+    };
+
+    element.textContent = '';
+    timerState.timeout = window.setTimeout(tick, TYPEWRITER_CHARACTER_MS);
+  }
+
+  clearTypedText(element) {
+    if (!element) {
+      return;
+    }
+
+    const timerState = this.typewriterTimers.get(element);
+
+    if (timerState?.timeout) {
+      window.clearTimeout(timerState.timeout);
+    }
+
+    this.typewriterTimers.delete(element);
+  }
+
+  resetTypedText(element) {
+    if (!element) {
+      return;
+    }
+
+    this.clearTypedText(element);
+    element.textContent = '';
+    element.removeAttribute('aria-label');
+    delete element.dataset.tutorialFullText;
+  }
+
+  clearAllTypewriterTimers() {
+    this.typewriterTimers.forEach((timerState) => {
+      if (timerState?.timeout) {
+        window.clearTimeout(timerState.timeout);
+      }
+    });
+    this.typewriterTimers.clear();
+  }
+
+  scheduleObjectiveAutoClose() {
+    if (!this.objectivePanelOpen || this.objectiveAutoCloseTimeout) {
+      return;
+    }
+
+    this.objectiveAutoCloseTimeout = window.setTimeout(() => {
+      this.objectiveAutoCloseTimeout = null;
+      this.closeObjectivePanel();
+    }, OBJECTIVE_AUTO_CLOSE_MS);
+  }
+
+  clearObjectiveAutoClose() {
+    if (!this.objectiveAutoCloseTimeout) {
+      return;
+    }
+
+    window.clearTimeout(this.objectiveAutoCloseTimeout);
+    this.objectiveAutoCloseTimeout = null;
+  }
+
+  clearPointerHideTimeout() {
+    if (!this.pointerHideTimeout) {
+      return;
+    }
+
+    window.clearTimeout(this.pointerHideTimeout);
+    this.pointerHideTimeout = null;
+  }
+
+  prefersReducedMotion() {
+    const view = this.stage?.ownerDocument?.defaultView ?? globalThis.window;
+
+    return Boolean(view?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
   }
 }
 

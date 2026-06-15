@@ -4,7 +4,10 @@ import {
   getTradeAllianceTagColorCssValue,
   normalizeTradeAllianceTagColor,
 } from '../../../shared/tradeAllianceTagColors.js';
+import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 import { createAllianceTagSpan } from '../../shared/allianceTagLabel.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 
 const ROLE_LABELS = {
   tradeMaster: 'trade master',
@@ -328,8 +331,8 @@ export class WorkshopTradeAllianceManager {
 
     const tag = this.createTagSpan(ownAlliance.tag, ownAlliance.tagColor);
     this.refs.title.replaceChildren(
+      ...(tag ? [tag, document.createTextNode(' ')] : []),
       document.createTextNode(ownAlliance.name),
-      ...(tag ? [document.createTextNode(' '), tag] : []),
     );
   }
 
@@ -390,8 +393,8 @@ export class WorkshopTradeAllianceManager {
       ),
       this.createTextRow(
         'season income',
-        this.formatNumber(alliance.seasonIncome),
-        { muted: true, compact: true },
+        this.formatGoldText(alliance.seasonIncome),
+        { muted: true, compact: true, resource: 'gold' },
       ),
     );
 
@@ -473,8 +476,12 @@ export class WorkshopTradeAllianceManager {
     root.append(
       this.createTextRow('role', this.formatRole(member?.role)),
       this.createTextRow('members', `${alliance.memberCount}/50`),
-      this.createTextRow('season income', this.formatNumber(alliance.seasonIncome)),
-      this.createTextRow('daily income', this.formatNumber(alliance.dailyIncome)),
+      this.createTextRow('season income', this.formatGoldText(alliance.seasonIncome), {
+        resource: 'gold',
+      }),
+      this.createTextRow('daily income', this.formatGoldText(alliance.dailyIncome), {
+        resource: 'gold',
+      }),
       this.createQuestResetRow(),
     );
 
@@ -956,7 +963,7 @@ export class WorkshopTradeAllianceManager {
     return button;
   }
 
-  createTextRow(label, value, { muted = false, compact = false } = {}) {
+  createTextRow(label, value, { muted = false, compact = false, resource = null } = {}) {
     const row = document.createElement('div');
     row.className = 'workshop-page__row workshop-page__trade-alliance-row';
     if (muted) {
@@ -973,6 +980,7 @@ export class WorkshopTradeAllianceManager {
     const val = document.createElement('span');
     val.className = 'row_val';
     this.appendCellContent(val, value);
+    this.applyResourceValue(val, value, resource);
 
     row.append(key, val);
     return row;
@@ -981,8 +989,8 @@ export class WorkshopTradeAllianceManager {
   createAllianceNameTagLabel(alliance) {
     const tag = this.createTagSpan(alliance?.tag, alliance?.tagColor);
     return [
+      ...(tag ? [tag, document.createTextNode(' ')] : []),
       document.createTextNode(String(alliance?.name ?? '')),
-      ...(tag ? [document.createTextNode(' '), tag] : []),
     ];
   }
 
@@ -1002,6 +1010,13 @@ export class WorkshopTradeAllianceManager {
     }
 
     element.textContent = String(content ?? '');
+  }
+
+  applyResourceValue(element, value, resource) {
+    setResourceColor(element, resource);
+    if (resource === 'gold') {
+      setResourceIconText(element, value);
+    }
   }
 
   createAllianceInfoRow(text) {
@@ -1417,6 +1432,10 @@ export class WorkshopTradeAllianceManager {
   formatNumber(value) {
     const safeValue = Math.floor(Number(value) || 0);
     return safeValue.toLocaleString('en-US');
+  }
+
+  formatGoldText(value) {
+    return formatGoldPriceText(Math.floor(Number(value) || 0));
   }
 
   applyVisibility() {

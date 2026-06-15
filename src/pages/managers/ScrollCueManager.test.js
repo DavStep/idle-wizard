@@ -88,7 +88,7 @@ describe('ScrollCueManager', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const progressRule = baseCss.match(/\.style-progress\s*\{(?<body>[^}]*)\}/)
       ?.groups?.body;
-    const rule = baseCss.match(/\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/)
+    const rule = baseCss.match(/(?:^|\n)\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/)
       ?.groups?.body;
 
     expect(progressRule).toBeDefined();
@@ -96,6 +96,17 @@ describe('ScrollCueManager', () => {
     expect(rule).toBeDefined();
     expect(rule).not.toMatch(/\bheight\s*:/);
     expect(rule).not.toMatch(/\bbox-sizing\s*:/);
+  });
+
+  it('uses a thicker managed scroll progress rail for chat messages', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rule = baseCss.match(
+      /\.workshop-page__world-chat-messages \+ \.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(baseCss).toMatch(/--style-world-chat-scroll-progress-height:\s*5px;/);
+    expect(rule).toBeDefined();
+    expect(rule).toMatch(/\bheight:\s*var\(--style-world-chat-scroll-progress-height\);/);
   });
 
   it('shares progress math with framed scroll views', () => {

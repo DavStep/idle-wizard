@@ -23,12 +23,14 @@ describe('RewardFlyoutManager', () => {
     vi.useFakeTimers();
     document.body.replaceChildren();
     delete document.documentElement.dataset.styleIcons;
+    vi.unstubAllGlobals();
   });
 
   afterEach(() => {
     vi.useRealTimers();
     document.body.replaceChildren();
     delete document.documentElement.dataset.styleIcons;
+    vi.unstubAllGlobals();
   });
 
   it('plays Idle Witch Craft-style item drops and coin flyout when icons are enabled', () => {
@@ -75,6 +77,9 @@ describe('RewardFlyoutManager', () => {
 
     expect(document.querySelectorAll('.room-item-drop.is-seed-burst')).toHaveLength(3);
     expect(document.querySelectorAll('.room-seed-pack-composite')).toHaveLength(3);
+    expect(document.querySelector('.room-reward-flyout')?.classList).toContain(
+      'is-visual-only',
+    );
     expect(document.querySelectorAll('.room-coin-particle').length).toBeGreaterThanOrEqual(3);
     expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+1000G');
     expect(document.querySelector('.room-coin-particle')?.style.left).toBe('465px');
@@ -106,6 +111,41 @@ describe('RewardFlyoutManager', () => {
     });
 
     expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('sage seed found');
+    expect(document.querySelector('.room-reward-flyout')?.classList).not.toContain(
+      'is-visual-only',
+    );
+    expect(document.querySelector('.room-item-drop')).toBeNull();
+  });
+
+  it('keeps seed summon text visible in icon mode when reduced motion disables drops', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    document.documentElement.dataset.styleIcons = 'icons';
+    const host = document.createElement('section');
+    const summonCircle = document.createElement('span');
+    summonCircle.className = 'workshop-page__summon-circle';
+    setRect(summonCircle, { left: 100, top: 200, width: 80, height: 80 });
+    host.append(summonCircle);
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'seed_summoned',
+      seed: { key: 'sageSeed', label: 'sage seed', kind: 'seed' },
+      quantity: 1,
+    });
+
+    expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('sage seed found');
+    expect(document.querySelector('.room-reward-flyout')?.classList).not.toContain(
+      'is-visual-only',
+    );
     expect(document.querySelector('.room-item-drop')).toBeNull();
   });
 

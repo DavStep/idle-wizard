@@ -19,6 +19,7 @@
 
 - This is an Android-first mobile JavaScript game.
 - The authored game viewport is `1080x2170`.
+- Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
@@ -46,6 +47,7 @@
 - Mira objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Mira disappears while tasks remain.
+- Level-3 FTUE should be passive: no automatic target popups; show Mira attention only after idle/stuck time, then reveal target guidance on player request.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
 
@@ -98,6 +100,7 @@
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
+- Server save sanitation must merge previous completed research into non-prestige saves; stale clients can omit newer research ids and otherwise get stuck behind the anti-downgrade guard.
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
 - Prestige reset saves intentionally lower run level, gold, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
@@ -232,6 +235,7 @@
 - Shared progress rails should keep `.style-progress` as `content-box`; global/dialog `border-box` shrinks the 3px fill area.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
+- Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.

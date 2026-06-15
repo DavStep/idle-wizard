@@ -5464,8 +5464,13 @@ describe('PagesFacade', () => {
     const incomeRow = browseRow.querySelector('.workshop-page__trade-alliance-row.is-compact');
 
     expect(infoRow.textContent).toBe(description);
+    expect(
+      browseRow.querySelector('.workshop-page__trade-alliance-row .row_key')?.textContent,
+    ).toBe('[BG] BustinGame');
     expect(incomeRow.querySelector('.row_key')?.textContent).toBe('season income');
-    expect(incomeRow.querySelector('.row_val')?.textContent).toBe('6,367');
+    expect(incomeRow.querySelector('.row_val')?.textContent).toBe('6.36k gold');
+    expect(incomeRow.querySelector('.row_val')?.getAttribute('data-resource-color')).toBe('gold');
+    expect(incomeRow.querySelector('.row_val .style-resource-label--gold')).not.toBeNull();
   });
 
   it('fills a trade alliance item quest from owned inventory', async () => {
@@ -5870,7 +5875,7 @@ describe('PagesFacade', () => {
         joinMode: 'closed',
       },
     ]);
-    expect(popup.querySelector('.style-box__title').textContent).toBe('Tap Void [TAP]');
+    expect(popup.querySelector('.style-box__title').textContent).toBe('[TAP] Tap Void');
   });
 
   it('disbands a solo trade alliance from settings', async () => {

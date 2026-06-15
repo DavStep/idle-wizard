@@ -80,6 +80,43 @@ export class TutorialReminderManager {
     };
   }
 
+  getAttentionState({ step, now = this.now() } = {}) {
+    if (!step) {
+      this.clearVisible();
+      return { shouldNotify: false, nextRefreshAt: null };
+    }
+
+    const promptKey = this.getPromptKey(step);
+    const reminderKey = this.getReminderKey(step, promptKey);
+    const lastPromptKey = this.lastPromptKeyByReminder.get(reminderKey);
+    this.activePromptKey = promptKey;
+    this.activeReminderKey = reminderKey;
+
+    if (lastPromptKey !== promptKey) {
+      this.lastPromptKeyByReminder.set(reminderKey, promptKey);
+      this.lastActivityAtByReminder.set(reminderKey, now);
+      return { shouldNotify: false, nextRefreshAt: now + this.reminderMs };
+    }
+
+    const lastActivityAt = this.lastActivityAtByReminder.get(reminderKey);
+
+    if (!Number.isFinite(lastActivityAt)) {
+      this.lastActivityAtByReminder.set(reminderKey, now);
+      return { shouldNotify: false, nextRefreshAt: now + this.reminderMs };
+    }
+
+    const activityElapsedMs = Math.max(0, now - lastActivityAt);
+
+    if (activityElapsedMs < this.reminderMs) {
+      return {
+        shouldNotify: false,
+        nextRefreshAt: now + this.reminderMs - activityElapsedMs,
+      };
+    }
+
+    return { shouldNotify: true, nextRefreshAt: null };
+  }
+
   recordActivity(now = this.now()) {
     if (!this.activeReminderKey) {
       return;

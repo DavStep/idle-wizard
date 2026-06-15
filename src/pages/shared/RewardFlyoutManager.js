@@ -32,13 +32,14 @@ export class RewardFlyoutManager {
     return this.root;
   }
 
-  show(message) {
+  show(message, { visualOnly = false } = {}) {
     if (!this.root || !message) {
       return null;
     }
 
     const flyout = document.createElement('div');
     flyout.className = this.flyoutClassName;
+    flyout.classList.toggle('is-visual-only', visualOnly);
     flyout.setAttribute('role', 'status');
     appendTextWithItemIcons(flyout, message);
     this.root.append(flyout);
@@ -53,11 +54,12 @@ export class RewardFlyoutManager {
   }
 
   showReward(event) {
-    const flyout = this.show(this.formatRewardMessage(event));
-
-    if (this.shouldPlayVisualDrops()) {
-      this.playRewardVisual(event);
-    }
+    const visualPlayed = this.shouldPlayVisualDrops()
+      ? this.playRewardVisual(event) > 0
+      : false;
+    const flyout = this.show(this.formatRewardMessage(event), {
+      visualOnly: visualPlayed,
+    });
 
     return flyout;
   }
@@ -72,43 +74,59 @@ export class RewardFlyoutManager {
 
   playRewardVisual(event) {
     if (!event) {
-      return;
+      return 0;
     }
 
     if (event.type === 'seed_summoned') {
-      this.playItemDrop(this.getSeedDropSources(event), this.getAnchorForEvent(event), 'seed');
-      return;
+      return this.playItemDrop(
+        this.getSeedDropSources(event),
+        this.getAnchorForEvent(event),
+        'seed',
+      );
     }
 
     if (event.type === 'herb_harvested') {
-      this.playItemDrop(this.getItemDropSource(event.herb, 'herb'), this.getAnchorForEvent(event), 'herb');
-      return;
+      return this.playItemDrop(
+        this.getItemDropSource(event.herb, 'herb'),
+        this.getAnchorForEvent(event),
+        'herb',
+      );
     }
 
     if (event.type === 'potion_collected') {
-      this.playItemDrop(
+      return this.playItemDrop(
         this.getItemDropSource(event.potion, 'potion'),
         this.getAnchorForEvent(event),
         'potion',
       );
-      return;
     }
 
     if (event.type === 'item_sold') {
       const itemAnchor = this.getAnchorForEvent(event);
       const goldAnchor = this.getShopSlotGoldAnchor(event.slotNumber) ?? itemAnchor;
-      this.playItemDrop(
+      const itemDropCount = this.playItemDrop(
         this.getItemDropSource(event.item, event.item?.kind),
         itemAnchor,
         event.item?.kind,
       );
-      this.animateCoinsToGold(goldAnchor, event.gold ?? 0, this.formatRewardMessage(event));
+      const coinCount = this.animateCoinsToGold(
+        goldAnchor,
+        event.gold ?? 0,
+        this.formatRewardMessage(event),
+      );
+      return itemDropCount + coinCount;
     }
 
     if (event.type === 'gold_collected') {
       const anchor = this.getAnchorForEvent(event);
-      this.animateCoinsToGold(anchor, event.gold ?? 0, this.formatRewardMessage(event));
+      return this.animateCoinsToGold(
+        anchor,
+        event.gold ?? 0,
+        this.formatRewardMessage(event),
+      );
     }
+
+    return 0;
   }
 
   getAnchorForEvent(event) {
@@ -279,7 +297,7 @@ export class RewardFlyoutManager {
 
   playItemDrop(src, anchor, kind) {
     if (!src || !anchor) {
-      return;
+      return 0;
     }
 
     const rawSources = Array.isArray(src) ? src : [src];
@@ -292,12 +310,12 @@ export class RewardFlyoutManager {
     });
 
     if (sources.length === 0) {
-      return;
+      return 0;
     }
 
     const anchorPoint = this.getAnchorPoint(anchor);
     if (!anchorPoint) {
-      return;
+      return 0;
     }
 
     const normalizedKind = ['seed', 'herb', 'potion'].includes(kind) ? kind : 'seed';
@@ -335,6 +353,8 @@ export class RewardFlyoutManager {
       drop.addEventListener('animationend', remove, { once: true });
       this.setManagedTimeout(remove, ITEM_DROP_LIFETIME_MS + delay);
     }
+
+    return sources.length;
   }
 
   getAnchorPoint(anchor) {
@@ -415,7 +435,7 @@ export class RewardFlyoutManager {
   animateCoinsToGold(source, amount, title) {
     const safeAmount = Math.max(0, Number(amount) || 0);
     if (safeAmount <= 0) {
-      return;
+      return 0;
     }
 
     const target =
@@ -423,7 +443,7 @@ export class RewardFlyoutManager {
       document.querySelector('.room-top-panel__resource-val');
 
     if (!target) {
-      return;
+      return 0;
     }
 
     const targetRect = target.getBoundingClientRect();
@@ -500,6 +520,7 @@ export class RewardFlyoutManager {
     this.setManagedTimeout(removeAmount, 1200);
 
     this.setManagedTimeout(() => this.pulseGoldTarget(target), Math.max(0, maxLife - 210));
+    return coinCount + 1;
   }
 
   buildCoinFlyKeyframes(name, bx, by, ctrlX, ctrlY, dx, dy, rot) {

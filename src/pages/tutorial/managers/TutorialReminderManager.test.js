@@ -109,6 +109,44 @@ describe('TutorialReminderManager', () => {
     expect(manager.getCue(prompt)).toEqual({ shouldShow: true, nextDelayMs: 100 });
   });
 
+  it('turns on passive attention only after idle time', () => {
+    const clock = createClock();
+    const manager = new TutorialReminderManager({
+      now: clock.now,
+      visibleMs: 100,
+      reminderMs: 500,
+    });
+    const prompt = {
+      id: 'research-mint-seed',
+      targetId: 'research:unlockSeed:mintSeed',
+      text: 'research mint seed',
+    };
+
+    expect(manager.getAttentionState({ step: prompt })).toEqual({
+      shouldNotify: false,
+      nextRefreshAt: 500,
+    });
+
+    clock.tick(499);
+    expect(manager.getAttentionState({ step: prompt })).toEqual({
+      shouldNotify: false,
+      nextRefreshAt: 500,
+    });
+
+    clock.tick(1);
+    expect(manager.getAttentionState({ step: prompt })).toEqual({
+      shouldNotify: true,
+      nextRefreshAt: null,
+    });
+
+    manager.recordActivity();
+
+    expect(manager.getAttentionState({ step: prompt })).toEqual({
+      shouldNotify: false,
+      nextRefreshAt: 1000,
+    });
+  });
+
   it('can discard an interrupted prompt so it shows again after a blocking dialog closes', () => {
     const clock = createClock();
     const manager = new TutorialReminderManager({
