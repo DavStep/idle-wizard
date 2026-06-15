@@ -12,6 +12,11 @@ const POINTER_HALF_HEIGHT = 10;
 const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
+const DIALOG_TOP = 218;
+const OBJECTIVE_LEFT = 184;
+const OBJECTIVE_TOP = 504;
+const OBJECTIVE_PORTRAIT_LEFT = 148;
+const OBJECTIVE_PORTRAIT_TOP = 507;
 
 export class TutorialHintManager {
   constructor() {
@@ -24,6 +29,15 @@ export class TutorialHintManager {
     this.hint = null;
     this.stepLabel = null;
     this.text = null;
+    this.advanceButton = null;
+    this.objectivePortrait = null;
+    this.objective = null;
+    this.objectiveText = null;
+    this.objectiveStepLabel = null;
+    this.objectiveProgress = null;
+    this.objectiveProgressFill = null;
+    this.objectiveProgressLabel = null;
+    this.onAdvance = null;
   }
 
   mount(stage) {
@@ -56,15 +70,17 @@ export class TutorialHintManager {
     this.portrait.className = 'tutorial-layer__portrait';
     this.portrait.src = WITCH_GUIDE_URL;
     this.portrait.alt = '';
+    this.portrait.hidden = true;
     this.portrait.setAttribute('aria-hidden', 'true');
 
     this.hint = document.createElement('section');
     this.hint.className = 'tutorial-layer__hint style-box';
+    this.hint.hidden = true;
     this.hint.setAttribute('aria-live', 'polite');
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'guide';
+    title.textContent = 'mira';
 
     this.stepLabel = document.createElement('div');
     this.stepLabel.className = 'tutorial-layer__step-label';
@@ -75,13 +91,67 @@ export class TutorialHintManager {
     this.text = document.createElement('p');
     this.text.className = 'tutorial-layer__text';
 
+    this.advanceButton = document.createElement('button');
+    this.advanceButton.className = 'tutorial-layer__advance';
+    this.advanceButton.type = 'button';
+    this.advanceButton.textContent = 'next';
+    this.advanceButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.onAdvance?.();
+    });
+
     copy.append(this.text);
-    this.hint.append(title, this.stepLabel, copy);
+    this.hint.append(title, this.stepLabel, copy, this.advanceButton);
+
+    this.objectivePortrait = document.createElement('img');
+    this.objectivePortrait.className = 'tutorial-layer__objective-portrait';
+    this.objectivePortrait.src = WITCH_GUIDE_URL;
+    this.objectivePortrait.alt = '';
+    this.objectivePortrait.hidden = true;
+    this.objectivePortrait.setAttribute('aria-hidden', 'true');
+
+    this.objective = document.createElement('section');
+    this.objective.className = 'tutorial-layer__objective style-box';
+    this.objective.hidden = true;
+    this.objective.setAttribute('aria-live', 'polite');
+
+    const objectiveTitle = document.createElement('div');
+    objectiveTitle.className = 'style-box__title';
+    objectiveTitle.textContent = 'objective';
+
+    this.objectiveStepLabel = document.createElement('div');
+    this.objectiveStepLabel.className = 'tutorial-layer__objective-step-label';
+
+    this.objectiveText = document.createElement('p');
+    this.objectiveText.className = 'tutorial-layer__objective-text';
+
+    this.objectiveProgress = document.createElement('div');
+    this.objectiveProgress.className = 'style-progress tutorial-layer__objective-progress';
+    this.objectiveProgress.setAttribute('aria-hidden', 'true');
+
+    this.objectiveProgressFill = document.createElement('span');
+    this.objectiveProgressFill.className = 'style-progress__fill tutorial-layer__objective-fill';
+    this.objectiveProgress.append(this.objectiveProgressFill);
+
+    this.objectiveProgressLabel = document.createElement('div');
+    this.objectiveProgressLabel.className = 'tutorial-layer__objective-progress-label';
+
+    this.objective.append(
+      objectiveTitle,
+      this.objectiveStepLabel,
+      this.objectiveText,
+      this.objectiveProgress,
+      this.objectiveProgressLabel,
+    );
+
     this.root.append(
       this.backdrop,
       this.highlight,
       this.pointer,
       this.portrait,
+      this.objectivePortrait,
+      this.objective,
       this.hint,
     );
     stage.append(this.root);
@@ -100,32 +170,124 @@ export class TutorialHintManager {
     this.hint = null;
     this.stepLabel = null;
     this.text = null;
+    this.advanceButton = null;
+    this.objectivePortrait = null;
+    this.objective = null;
+    this.objectiveText = null;
+    this.objectiveStepLabel = null;
+    this.objectiveProgress = null;
+    this.objectiveProgressFill = null;
+    this.objectiveProgressLabel = null;
+    this.onAdvance = null;
   }
 
-  show({ target, text, stepLabel, showPointer = true }) {
+  setAdvanceHandler(onAdvance) {
+    this.onAdvance = typeof onAdvance === 'function' ? onAdvance : null;
+  }
+
+  show({ target, text, stepLabel, showPointer = true, advanceOnClick = false }) {
     if (!this.root || !this.stage || !target) {
-      this.hide();
+      this.hidePrompt();
       return;
     }
 
     const rect = this.getSourceRect(target);
 
     if (!rect) {
-      this.hide();
+      this.hidePrompt();
       return;
     }
 
     this.root.hidden = false;
+    this.hint.hidden = false;
+    this.hint.classList.remove('is-dialog');
     this.text.textContent = text ?? '';
     this.stepLabel.textContent = stepLabel ?? '';
+    this.advanceButton.hidden = !advanceOnClick;
     this.positionHighlight(rect);
     this.positionPointer(rect, showPointer);
     this.positionGuide(rect);
+    this.syncRootVisibility();
+  }
+
+  showDialog({ text, stepLabel, advanceOnClick = true }) {
+    if (!this.root || !this.stage) {
+      return;
+    }
+
+    this.root.hidden = false;
+    this.hint.hidden = false;
+    this.hint.classList.add('is-dialog');
+    this.text.textContent = text ?? '';
+    this.stepLabel.textContent = stepLabel ?? '';
+    this.advanceButton.hidden = !advanceOnClick;
+    this.hideTargetCue();
+    this.positionDialog();
+    this.syncRootVisibility();
+  }
+
+  showObjective({ text, stepLabel, progress, progressLabel }) {
+    if (!this.root || !this.stage || !this.objective) {
+      return;
+    }
+
+    const normalizedProgress = this.normalizeProgress(progress);
+    this.root.hidden = false;
+    this.objective.hidden = false;
+    this.objectivePortrait.hidden = false;
+    this.objectiveText.textContent = text ?? '';
+    this.objectiveStepLabel.textContent = stepLabel ?? '';
+    this.objectiveProgress.hidden = !normalizedProgress;
+    this.objectiveProgressLabel.hidden = !normalizedProgress && !progressLabel;
+    this.objectiveProgressLabel.textContent = progressLabel ?? '';
+
+    if (normalizedProgress !== null) {
+      this.objectiveProgressFill.style.width = `${normalizedProgress * 100}%`;
+    }
+
+    this.positionObjective();
+    this.syncRootVisibility();
   }
 
   hide() {
     if (this.root) {
       this.root.hidden = true;
+    }
+  }
+
+  hidePrompt() {
+    if (!this.hint) {
+      return;
+    }
+
+    this.hint.hidden = true;
+    this.hideTargetCue();
+    this.syncRootVisibility();
+  }
+
+  hideObjective() {
+    if (this.objective) {
+      this.objective.hidden = true;
+    }
+
+    if (this.objectivePortrait) {
+      this.objectivePortrait.hidden = true;
+    }
+
+    this.syncRootVisibility();
+  }
+
+  hideTargetCue() {
+    if (this.highlight) {
+      this.highlight.hidden = true;
+    }
+
+    if (this.pointer) {
+      this.pointer.hidden = true;
+    }
+
+    if (this.portrait) {
+      this.portrait.hidden = true;
     }
   }
 
@@ -161,6 +323,7 @@ export class TutorialHintManager {
     const width = rect.width + HIGHLIGHT_PAD * 2;
     const height = rect.height + HIGHLIGHT_PAD * 2;
 
+    this.highlight.hidden = false;
     this.highlight.style.left = `${left}px`;
     this.highlight.style.top = `${top}px`;
     this.highlight.style.width = `${width}px`;
@@ -221,6 +384,46 @@ export class TutorialHintManager {
     this.hint.style.top = `${top}px`;
     this.portrait.style.left = `${portraitLeft}px`;
     this.portrait.style.top = `${portraitTop}px`;
+    this.portrait.hidden = false;
+  }
+
+  positionDialog() {
+    const bounds = this.getSourceBounds();
+    const left = clamp(
+      (bounds.width - HINT_PADDED_WIDTH) / 2 - GUIDE_LEFT_BIAS,
+      HINT_GAP + PORTRAIT_WIDTH - 4,
+      Math.max(HINT_GAP + PORTRAIT_WIDTH - 4, bounds.width - HINT_PADDED_WIDTH - HINT_GAP),
+    );
+    const top = clamp(DIALOG_TOP, HINT_GAP, bounds.height - HINT_HEIGHT - HINT_GAP);
+    const portraitLeft = left - PORTRAIT_WIDTH + 4;
+    const portraitTop = clamp(
+      top + HINT_HEIGHT - PORTRAIT_HEIGHT + 9,
+      HINT_GAP,
+      bounds.height - PORTRAIT_HEIGHT - HINT_GAP,
+    );
+
+    this.hint.style.left = `${left}px`;
+    this.hint.style.top = `${top}px`;
+    this.portrait.style.left = `${portraitLeft}px`;
+    this.portrait.style.top = `${portraitTop}px`;
+    this.portrait.hidden = false;
+  }
+
+  positionObjective() {
+    const bounds = this.getSourceBounds();
+    const objectiveLeft = clamp(
+      OBJECTIVE_LEFT,
+      HINT_GAP,
+      bounds.width - HINT_PADDED_WIDTH - HINT_GAP,
+    );
+    const objectiveTop = clamp(OBJECTIVE_TOP, HINT_GAP, bounds.height - HINT_HEIGHT - HINT_GAP);
+    const portraitLeft = clamp(OBJECTIVE_PORTRAIT_LEFT, HINT_GAP, bounds.width - PORTRAIT_WIDTH);
+    const portraitTop = clamp(OBJECTIVE_PORTRAIT_TOP, HINT_GAP, bounds.height - PORTRAIT_HEIGHT);
+
+    this.objective.style.left = `${objectiveLeft}px`;
+    this.objective.style.top = `${objectiveTop}px`;
+    this.objectivePortrait.style.left = `${portraitLeft}px`;
+    this.objectivePortrait.style.top = `${portraitTop}px`;
   }
 
   getSourceBounds() {
@@ -231,6 +434,26 @@ export class TutorialHintManager {
       width: rect.width > 0 ? rect.width / scale : 360,
       height: rect.height > 0 ? rect.height / scale : 720,
     };
+  }
+
+  normalizeProgress(progress) {
+    if (!progress || !Number.isFinite(progress.value) || !Number.isFinite(progress.max)) {
+      return null;
+    }
+
+    if (progress.max <= 0) {
+      return null;
+    }
+
+    return clamp(progress.value / progress.max, 0, 1);
+  }
+
+  syncRootVisibility() {
+    if (!this.root) {
+      return;
+    }
+
+    this.root.hidden = Boolean(this.hint?.hidden) && Boolean(this.objective?.hidden);
   }
 }
 

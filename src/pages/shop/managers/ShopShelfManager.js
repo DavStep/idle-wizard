@@ -146,6 +146,7 @@ export class ShopShelfManager {
     const emptyButton = document.createElement('button');
     emptyButton.className = 'shop-page__sell-item-button';
     emptyButton.type = 'button';
+    emptyButton.dataset.tutorialId = 'shop:sell:empty';
     emptyButton.addEventListener('click', () => this.onClearSellItem());
 
     const emptyLabel = document.createElement('span');

@@ -1,4 +1,4 @@
-export const TUTORIAL_STORAGE_KEY = 'idle-wizard.tutorial.v3';
+export const TUTORIAL_STORAGE_KEY = 'idle-wizard.tutorial.v4';
 
 export class TutorialProgressManager {
   constructor({ storage = globalThis.localStorage } = {}) {

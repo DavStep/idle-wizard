@@ -998,6 +998,10 @@ body {
   pointer-events: none;
 }
 
+.tutorial-layer__highlight[hidden] {
+  display: none;
+}
+
 .tutorial-layer__pointer {
   position: absolute;
   z-index: 3;
@@ -1032,6 +1036,18 @@ body {
   filter: drop-shadow(0 1px 0 var(--style-surface));
 }
 
+.tutorial-layer__objective-portrait {
+  position: absolute;
+  z-index: 4;
+  width: 30px;
+  height: 38px;
+  object-fit: contain;
+  object-position: center bottom;
+  image-rendering: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0 var(--style-surface));
+}
+
 .style-box.tutorial-layer__hint {
   position: absolute;
   z-index: 6;
@@ -1044,11 +1060,31 @@ body {
   pointer-events: auto;
 }
 
+.style-box.tutorial-layer__hint.is-dialog {
+  min-height: 48px;
+}
+
 .tutorial-layer__hint > .style-box__title {
   background: var(--style-surface);
 }
 
+.tutorial-layer__objective > .style-box__title {
+  background: var(--style-surface);
+}
+
 .tutorial-layer__step-label {
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  right: var(--style-box-title-left);
+  display: inline-block;
+  padding: 0 var(--style-box-border-label-padding-x);
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+}
+
+.tutorial-layer__objective-step-label {
   position: absolute;
   top: var(--style-box-border-label-offset);
   right: var(--style-box-title-left);
@@ -1066,6 +1102,77 @@ body {
 
 .tutorial-layer__text {
   margin: 0;
+}
+
+.tutorial-layer__advance {
+  position: absolute;
+  right: var(--style-box-title-left);
+  bottom: var(--style-box-border-label-offset);
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+}
+
+.tutorial-layer__advance:hover,
+.tutorial-layer__advance:focus-visible {
+  text-decoration: underline;
+}
+
+.tutorial-layer__advance:focus {
+  outline: none;
+}
+
+.tutorial-layer__advance[hidden] {
+  display: none;
+}
+
+.style-box.tutorial-layer__objective {
+  position: absolute;
+  z-index: 3;
+  width: 136px;
+  min-height: 44px;
+  padding: 7px 10px 6px;
+  background: var(--style-surface);
+  border: var(--style-border);
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.tutorial-layer__objective[hidden],
+.tutorial-layer__objective-portrait[hidden] {
+  display: none;
+}
+
+.tutorial-layer__objective-text {
+  min-height: var(--style-row-min-height);
+  margin: 0;
+}
+
+.tutorial-layer__objective-progress {
+  margin-top: 5px;
+}
+
+.tutorial-layer__objective-progress[hidden],
+.tutorial-layer__objective-progress-label[hidden] {
+  display: none;
+}
+
+.tutorial-layer__objective-progress-label {
+  margin-top: 2px;
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  text-align: right;
 }
 
 @keyframes tutorial-pointer-press {

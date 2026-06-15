@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { TutorialStepManager } from './TutorialStepManager.js';
+import { TutorialStepManager, TUTORIAL_STEP_IDS } from './TutorialStepManager.js';
 
 function createProgressFake(completedStepIds = []) {
   const completed = new Set(completedStepIds);
@@ -33,6 +33,7 @@ function createSnapshot(overrides = {}) {
     },
     shop: {
       shelf: {
+        selectedSlotNumber: null,
         slots: [],
       },
     },
@@ -53,11 +54,17 @@ function createSnapshot(overrides = {}) {
     tasks: {
       currentLevel: 1,
       level: {
+        completion: {
+          canComplete: false,
+          costGold: 10,
+        },
         tasks: [
           {
             taskId: 'level1-sage-seeds',
+            itemKey: 'sageSeed',
             requiredQuantity: 10,
             progressQuantity: 0,
+            remainingQuantity: 10,
             canFill: false,
             canComplete: false,
             completed: false,
@@ -83,9 +90,10 @@ function createDomFake({
   };
 }
 
-function getStep({ pageId = 'workshop', snapshot, dom, completed = [] } = {}) {
+function getStep({ pageId = 'workshop', snapshot, dom, completed = [], progress } = {}) {
+  const progressManager = progress ?? createProgressFake(completed);
   const manager = new TutorialStepManager({
-    progressManager: createProgressFake(completed),
+    progressManager,
     getCurrentPageId: () => pageId,
   });
 
@@ -95,75 +103,119 @@ function getStep({ pageId = 'workshop', snapshot, dom, completed = [] } = {}) {
   });
 }
 
+function completedThrough(stepId) {
+  const index = TUTORIAL_STEP_IDS.indexOf(stepId);
+  return index >= 0 ? TUTORIAL_STEP_IDS.slice(0, index + 1) : [];
+}
+
+function createLevelOneTaskCompleteSnapshot(overrides = {}) {
+  return createSnapshot({
+    tasks: {
+      currentLevel: 1,
+      level: {
+        completion: {
+          canComplete: false,
+          costGold: 10,
+        },
+        tasks: [
+          {
+            taskId: 'level1-sage-seeds',
+            itemKey: 'sageSeed',
+            requiredQuantity: 10,
+            progressQuantity: 10,
+            remainingQuantity: 0,
+            canFill: false,
+            canComplete: false,
+            completed: true,
+          },
+        ],
+      },
+    },
+    ...overrides,
+  });
+}
+
 describe('TutorialStepManager', () => {
-  it('starts by pointing at collapsed workshop tasks', () => {
+  it('starts with Mira intro dialog', () => {
     expect(getStep()).toMatchObject({
-      id: 'open-tasks',
-      targetId: 'workshop:tasks',
-      text: 'open tasks',
-      stepLabel: '1/12',
+      id: 'intro-welcome',
+      kind: 'dialog',
+      advanceOnClick: true,
+      stepLabel: '1/19',
     });
   });
 
   it('does not suppress the guide for legacy skipped progress', () => {
     const progress = createProgressFake();
     progress.isSkipped = () => true;
-    const manager = new TutorialStepManager({
-      progressManager: progress,
-      getCurrentPageId: () => 'workshop',
-    });
 
-    const step = manager.getActiveStep({
-      snapshot: createSnapshot(),
-      dom: createDomFake(),
-    });
+    const step = getStep({ progress });
 
     expect(step).toMatchObject({
-      id: 'open-tasks',
-      targetId: 'workshop:tasks',
+      id: 'intro-welcome',
+      kind: 'dialog',
     });
   });
 
-  it('hides while waiting for mana before seed task can be filled', () => {
-    const step = getStep({
-      dom: createDomFake({ tasksExpanded: true }),
-      completed: ['open-tasks'],
+  it('highlights mana sphere after the welcome', () => {
+    expect(
+      getStep({
+        completed: ['intro-welcome'],
+      }),
+    ).toMatchObject({
+      id: 'intro-mana-sphere',
+      kind: 'prompt',
+      targetId: 'workshop:manaSphere',
+      advanceOnClick: true,
+      showPointer: false,
+      stepLabel: '2/19',
     });
-
-    expect(step).toBeNull();
   });
 
-  it('targets summon seed once mana is ready for seed task', () => {
+  it('hides first summon prompt while waiting for mana', () => {
+    expect(
+      getStep({
+        completed: ['intro-welcome', 'intro-mana-sphere'],
+      }),
+    ).toBeNull();
+  });
+
+  it('points at summon once mana is ready', () => {
     const snapshot = createSnapshot({
       seedSummoning: {
         canSummon: true,
         cost: 10,
       },
     });
-    const step = getStep({
-      snapshot,
-      dom: createDomFake({ tasksExpanded: true }),
-      completed: ['open-tasks'],
-    });
 
-    expect(step).toMatchObject({
-      id: 'fill-sage-seed-task',
+    expect(
+      getStep({
+        snapshot,
+        completed: ['intro-welcome', 'intro-mana-sphere'],
+      }),
+    ).toMatchObject({
+      id: 'first-summon-seed',
+      kind: 'prompt',
       targetId: 'workshop:summonSeed',
-      text: 'summon seed',
-      reminderKey: 'fill-sage-seed-task-actions',
+      text: 'use your mana to summon seeds.',
+      stepLabel: '3/19',
     });
   });
 
-  it('targets the level-one seed task when it can be filled', () => {
+  it('teaches the first fill before switching to objective mode', () => {
     const snapshot = createSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
       tasks: {
         currentLevel: 1,
         level: {
+          completion: { canComplete: false, costGold: 10 },
           tasks: [
             {
               taskId: 'level1-sage-seeds',
+              itemKey: 'sageSeed',
               requiredQuantity: 10,
               progressQuantity: 0,
+              remainingQuantity: 10,
               canFill: true,
               canComplete: false,
               completed: false,
@@ -172,91 +224,219 @@ describe('TutorialStepManager', () => {
         },
       },
     });
-    const step = getStep({
-      snapshot,
-      dom: createDomFake({ tasksExpanded: true }),
-      completed: ['open-tasks'],
-    });
 
-    expect(step).toMatchObject({
-      id: 'fill-sage-seed-task',
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: ['intro-welcome', 'intro-mana-sphere', 'first-summon-seed'],
+      }),
+    ).toMatchObject({
+      id: 'first-fill-seed-task',
+      kind: 'prompt',
       targetId: 'task:level1-sage-seeds',
       text: 'fill task',
-      reminderKey: 'fill-sage-seed-task-actions',
+      stepLabel: '4/19',
     });
   });
 
-  it('points at market after the seed task is complete', () => {
+  it('uses objective progress for the rest of the seed task', () => {
     const snapshot = createSnapshot({
+      seedSummoning: {
+        canSummon: true,
+        cost: 10,
+      },
       tasks: {
         currentLevel: 1,
         level: {
+          completion: { canComplete: false, costGold: 10 },
           tasks: [
             {
               taskId: 'level1-sage-seeds',
+              itemKey: 'sageSeed',
               requiredQuantity: 10,
-              progressQuantity: 10,
+              progressQuantity: 1,
+              remainingQuantity: 9,
               canFill: false,
               canComplete: false,
-              completed: true,
+              completed: false,
             },
           ],
         },
       },
     });
-    const step = getStep({ snapshot });
 
-    expect(step).toMatchObject({
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('first-fill-seed-task'),
+      }),
+    ).toMatchObject({
+      id: 'finish-seed-task',
+      kind: 'objective',
+      targetId: 'workshop:summonSeed',
+      objectiveText: 'summon seeds and fill the level task',
+      progress: { value: 1, max: 10 },
+      progressLabel: '1/10 seeds',
+      stepLabel: '5/19',
+    });
+  });
+
+  it('introduces the market after the seed task is complete', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot();
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'intro-market',
+      kind: 'dialog',
+      advanceOnClick: true,
+      stepLabel: '6/19',
+    });
+  });
+
+  it('asks for one seed to sell before opening market when inventory is empty', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      seedSummoning: {
+        canSummon: true,
+        cost: 10,
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        completed: completedThrough('intro-market'),
+      }),
+    ).toMatchObject({
+      id: 'prepare-seed-sale',
+      kind: 'objective',
+      targetId: 'workshop:summonSeed',
+      objectiveText: 'summon one seed to sell',
+      progressLabel: '0/1 seed',
+    });
+  });
+
+  it('points at market after a seed exists for sale', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        completed: completedThrough('prepare-seed-sale'),
+      }),
+    ).toMatchObject({
       id: 'open-market',
+      kind: 'objective',
       targetId: 'page:shop',
-      text: 'open market',
-      stepLabel: '3/12',
+      hintText: 'open market',
+      objectiveText: 'start selling sage seeds in market',
     });
   });
 
-  it('targets the sage seed sale row inside market picker', () => {
-    const snapshot = createSnapshot({
-      tasks: {
-        currentLevel: 1,
-        level: {
-          tasks: [
-            {
-              taskId: 'level1-sage-seeds',
-              requiredQuantity: 10,
-              progressQuantity: 10,
-              canFill: false,
-              canComplete: false,
-              completed: true,
-            },
-          ],
+  it('targets sage seed inside the market picker', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+      shop: {
+        shelf: {
+          selectedSlotNumber: 1,
+          slots: [{ slotNumber: 1, unlocked: true, sellKey: null }],
         },
       },
     });
-    const step = getStep({
-      pageId: 'shop',
-      snapshot,
-      dom: createDomFake({ shopSellPopupOpen: true }),
-      completed: ['open-tasks', 'fill-sage-seed-task', 'open-market'],
-    });
 
-    expect(step).toMatchObject({
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({ shopSellPopupOpen: true }),
+        completed: completedThrough('select-market-stand'),
+      }),
+    ).toMatchObject({
       id: 'select-sage-seed-sale',
+      kind: 'objective',
       targetId: 'shop:sell:sageSeed',
-      text: 'choose sage seed',
-      stepLabel: '4/12',
+      hintText: 'choose sage seed',
+      stepLabel: '10/19',
     });
   });
 
-  it('waits for level-one gold after sage seed sale is selected', () => {
-    const snapshot = createSnapshot({
+  it('runs tutorial sale objective after sage seed sale is selected', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+      shop: {
+        shelf: {
+          selectedSlotNumber: 1,
+          slots: [{ slotNumber: 1, unlocked: true, sellKey: 'sageSeed' }],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        completed: completedThrough('select-sage-seed-sale'),
+      }),
+    ).toMatchObject({
+      id: 'earn-tutorial-gold',
+      kind: 'objective',
+      effect: 'tutorial-sale',
+      sale: {
+        itemKey: 'sageSeed',
+        goldEach: 10,
+        goldTarget: 10,
+      },
+      progressLabel: '0/10 gold',
+      stepLabel: '11/19',
+    });
+  });
+
+  it('requires unselecting seed sale after tutorial gold is earned', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      gold: { current: 10 },
+      shop: {
+        shelf: {
+          selectedSlotNumber: 1,
+          slots: [{ slotNumber: 1, unlocked: true, sellKey: 'sageSeed' }],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({ shopSellPopupOpen: true }),
+        completed: completedThrough('earn-tutorial-gold'),
+      }),
+    ).toMatchObject({
+      id: 'unselect-sage-seed-sale',
+      kind: 'objective',
+      targetId: 'shop:sell:empty',
+      hintText: 'choose empty',
+      progressLabel: '0/1 unselected',
+    });
+  });
+
+  it('targets level up after gold is earned and sale is unselected', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      gold: { current: 10 },
       tasks: {
         currentLevel: 1,
         level: {
+          completion: {
+            canComplete: true,
+            costGold: 10,
+          },
           tasks: [
             {
               taskId: 'level1-sage-seeds',
+              itemKey: 'sageSeed',
               requiredQuantity: 10,
               progressQuantity: 10,
+              remainingQuantity: 0,
               canFill: false,
               canComplete: false,
               completed: true,
@@ -266,67 +446,28 @@ describe('TutorialStepManager', () => {
       },
       shop: {
         shelf: {
-          slots: [{ unlocked: true, sellKey: 'sageSeed' }],
+          selectedSlotNumber: 1,
+          slots: [{ slotNumber: 1, unlocked: true, sellKey: null }],
         },
       },
     });
-    const step = getStep({
-      pageId: 'shop',
-      snapshot,
-      completed: ['open-tasks', 'fill-sage-seed-task', 'open-market', 'select-sage-seed-sale'],
-    });
 
-    expect(step).toMatchObject({
-      id: 'earn-level-one-gold',
-      targetId: 'shop:stand:1',
-      text: 'sell sage seeds',
-      stepLabel: '5/12',
-    });
-  });
-
-  it('targets level up after enough gold is earned', () => {
-    const snapshot = createSnapshot({
-      gold: { current: 10 },
-      tasks: {
-        currentLevel: 1,
-        level: {
-          completion: {
-            canComplete: true,
-          },
-          tasks: [
-            {
-              taskId: 'level1-sage-seeds',
-              requiredQuantity: 10,
-              progressQuantity: 10,
-              canFill: false,
-              canComplete: false,
-              completed: true,
-            },
-          ],
-        },
-      },
-    });
-    const step = getStep({
-      snapshot,
-      dom: createDomFake({ tasksExpanded: true }),
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-      ],
-    });
-
-    expect(step).toMatchObject({
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('unselect-sage-seed-sale'),
+      }),
+    ).toMatchObject({
       id: 'level-up-one',
+      kind: 'objective',
       targetId: 'workshop:levelUp',
-      text: 'level up',
-      stepLabel: '6/12',
+      objectiveText: 'return to workshop and level up',
+      stepLabel: '13/19',
     });
   });
 
-  it('targets the garden seed popup row when choosing sage seed', () => {
+  it('continues the same objective style for garden', () => {
     const snapshot = createSnapshot({
       tasks: { currentLevel: 2, level: { tasks: [] } },
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],
@@ -345,190 +486,14 @@ describe('TutorialStepManager', () => {
         },
       },
     });
-    const step = getStep({
-      pageId: 'garden',
-      snapshot,
-      dom: createDomFake({ seedPopupOpen: true, tasksExpanded: true }),
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-      ],
-    });
 
-    expect(step).toMatchObject({
+    expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
       id: 'grow-sage',
-      targetId: 'garden:seed:sageSeed',
-      text: 'choose sage seed',
-      stepLabel: '7/12',
-    });
-  });
-
-  it('hides the grow lesson while sage is still growing', () => {
-    const snapshot = createSnapshot({
-      tasks: { currentLevel: 2, level: { tasks: [] } },
-      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
-      garden: {
-        seeds: [{ key: 'sageSeed', quantity: 0 }],
-        herbs: [{ key: 'sageHerb', quantity: 0 }],
-        plot: {
-          tiles: [
-            {
-              tileNumber: 1,
-              unlocked: true,
-              phase: 'growing',
-              selectedSeedItemTypeId: 1,
-            },
-          ],
-        },
-      },
-    });
-    const step = getStep({
-      pageId: 'garden',
-      snapshot,
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-      ],
-    });
-
-    expect(step).toBeNull();
-  });
-
-  it('targets ready sage for harvest inside the combined grow lesson', () => {
-    const snapshot = createSnapshot({
-      tasks: { currentLevel: 2, level: { tasks: [] } },
-      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
-      garden: {
-        seeds: [{ key: 'sageSeed', quantity: 0 }],
-        herbs: [{ key: 'sageHerb', quantity: 0 }],
-        plot: {
-          tiles: [
-            {
-              tileNumber: 1,
-              unlocked: true,
-              phase: 'ready',
-              selectedSeedItemTypeId: 1,
-            },
-          ],
-        },
-      },
-    });
-    const step = getStep({
-      pageId: 'garden',
-      snapshot,
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-      ],
-    });
-
-    expect(step).toMatchObject({
-      id: 'grow-sage',
-      targetId: 'garden:plot:1',
-      text: 'harvest sage',
-    });
-  });
-
-  it('points at the sage herb task after sage has been grown', () => {
-    const snapshot = createSnapshot({
-      tasks: {
-        currentLevel: 2,
-        level: {
-          tasks: [
-            {
-              taskId: 'level2-sage-herb',
-              itemKey: 'sageHerb',
-              requiredQuantity: 6,
-              progressQuantity: 0,
-              canFill: true,
-              canComplete: false,
-              completed: false,
-            },
-          ],
-        },
-      },
-      garden: {
-        herbs: [{ key: 'sageHerb', quantity: 1 }],
-      },
-    });
-    const step = getStep({
-      pageId: 'workshop',
-      snapshot,
-      dom: createDomFake({ tasksExpanded: true }),
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-        'grow-sage',
-      ],
-    });
-
-    expect(step).toMatchObject({
-      id: 'fill-sage-herb-task',
-      targetId: 'task:level2-sage-herb',
-      text: 'fill sage task',
-      stepLabel: '8/12',
-    });
-  });
-
-  it('points at level two completion once garden tasks are complete', () => {
-    const snapshot = createSnapshot({
-      tasks: {
-        currentLevel: 2,
-        level: {
-          completion: {
-            canComplete: true,
-          },
-          tasks: [
-            {
-              taskId: 'level2-sage-herb',
-              itemKey: 'sageHerb',
-              requiredQuantity: 6,
-              progressQuantity: 6,
-              canFill: false,
-              canComplete: false,
-              completed: true,
-            },
-          ],
-        },
-      },
-    });
-    const step = getStep({
-      pageId: 'workshop',
-      snapshot,
-      dom: createDomFake({ tasksExpanded: true }),
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-        'grow-sage',
-        'fill-sage-herb-task',
-      ],
-    });
-
-    expect(step).toMatchObject({
-      id: 'level-up-two',
-      targetId: 'workshop:levelUp',
-      text: 'level up',
-      stepLabel: '9/12',
+      kind: 'objective',
+      targetId: 'garden:plot:1:label',
+      objectiveText: 'grow sage in garden',
+      progressLabel: '0/1 sage',
+      stepLabel: '14/19',
     });
   });
 
@@ -536,56 +501,13 @@ describe('TutorialStepManager', () => {
     const snapshot = createSnapshot({
       tasks: { currentLevel: 3, level: { tasks: [] } },
     });
-    const step = getStep({
-      pageId: 'research',
-      snapshot,
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-        'grow-sage',
-        'fill-sage-herb-task',
-        'level-up-two',
-      ],
-    });
 
-    expect(step).toMatchObject({
+    expect(getStep({ pageId: 'research', snapshot })).toMatchObject({
       id: 'research-mint-seed',
+      kind: 'objective',
       targetId: 'research:unlockSeed:mintSeed',
-      text: 'research mint seed',
-      stepLabel: '10/12',
-    });
-  });
-
-  it('points at mana tonic research on level 4', () => {
-    const snapshot = createSnapshot({
-      tasks: { currentLevel: 4, level: { tasks: [] } },
-    });
-    const step = getStep({
-      pageId: 'research',
-      snapshot,
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-        'grow-sage',
-        'fill-sage-herb-task',
-        'level-up-two',
-        'research-mint-seed',
-      ],
-    });
-
-    expect(step).toMatchObject({
-      id: 'research-mana-tonic',
-      targetId: 'research:unlockRecipe:manaTonic',
-      text: 'research mana tonic',
-      stepLabel: '11/12',
+      objectiveText: 'research mint seed',
+      stepLabel: '17/19',
     });
   });
 
@@ -600,93 +522,27 @@ describe('TutorialStepManager', () => {
         canBrew: false,
       },
     });
-    const step = getStep({
-      pageId: 'brewing',
-      snapshot,
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-        'grow-sage',
-        'fill-sage-herb-task',
-        'level-up-two',
-        'research-mint-seed',
-        'research-mana-tonic',
-      ],
-    });
 
-    expect(step).toMatchObject({
+    expect(getStep({ pageId: 'brewing', snapshot })).toMatchObject({
       id: 'brew-mana-tonic',
+      kind: 'objective',
       targetId: 'brewing:recipes',
-      text: 'select recipe',
-      stepLabel: '12/12',
+      hintText: 'select recipe',
+      stepLabel: '19/19',
     });
   });
 
-  it('points at brew action after mana tonic ingredients are staged', () => {
-    const snapshot = createSnapshot({
-      tasks: { currentLevel: 4, level: { tasks: [] } },
-      research: {
-        completedResearchIds: ['unlockRecipe:manaTonic'],
-      },
-      brewing: {
-        ingredients: [{ key: 'sageHerb' }],
-        canBrew: true,
-      },
-    });
-    const step = getStep({
-      pageId: 'brewing',
-      snapshot,
-      completed: [
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-        'grow-sage',
-        'fill-sage-herb-task',
-        'level-up-two',
-        'research-mint-seed',
-        'research-mana-tonic',
-      ],
-    });
-
-    expect(step).toMatchObject({
-      id: 'brew-mana-tonic',
-      targetId: 'brewing:action',
-      text: 'brew mana tonic',
-    });
-  });
-
-  it('auto-completes level-one steps for players already on level 2', () => {
+  it('auto-completes all steps for players already past brewing introduction', () => {
     const progress = createProgressFake();
     const manager = new TutorialStepManager({
       progressManager: progress,
       getCurrentPageId: () => 'workshop',
     });
+
     const step = manager.getActiveStep({
       snapshot: createSnapshot({
-        seedInventory: [{ key: 'sageSeed', quantity: 1 }],
-        garden: {
-          seeds: [{ key: 'sageSeed', quantity: 1 }],
-          herbs: [{ key: 'sageHerb', quantity: 0 }],
-          plot: {
-            tiles: [
-              {
-                tileNumber: 1,
-                unlocked: true,
-                phase: 'empty',
-                selectedSeedItemTypeId: null,
-              },
-            ],
-          },
-        },
         tasks: {
-          currentLevel: 2,
+          currentLevel: 5,
           level: {
             tasks: [],
           },
@@ -695,47 +551,7 @@ describe('TutorialStepManager', () => {
       dom: createDomFake(),
     });
 
-    expect(step).toMatchObject({
-      id: 'grow-sage',
-      targetId: 'page:garden',
-      text: 'open garden',
-    });
-    expect(progress.completedStepIds).toEqual(
-      new Set([
-        'open-tasks',
-        'fill-sage-seed-task',
-        'open-market',
-        'select-sage-seed-sale',
-        'earn-level-one-gold',
-        'level-up-one',
-      ]),
-    );
-  });
-
-  it('keeps level 1 old completed tasks from ending the whole tutorial', () => {
-    const snapshot = createSnapshot({
-      tasks: {
-        currentLevel: 1,
-        level: {
-          tasks: [
-            {
-              taskId: 'level1-sage-seeds',
-              requiredQuantity: 10,
-              progressQuantity: 10,
-              canFill: false,
-              canComplete: false,
-              completed: true,
-            },
-          ],
-        },
-      },
-    });
-    const step = getStep({ snapshot });
-
-    expect(step).toMatchObject({
-      id: 'open-market',
-      targetId: 'page:shop',
-      text: 'open market',
-    });
+    expect(step).toBeNull();
+    expect(progress.completedStepIds).toEqual(new Set(TUTORIAL_STEP_IDS));
   });
 });

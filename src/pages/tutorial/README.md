@@ -1,9 +1,9 @@
 # Tutorial
 
-The tutorial points at real room controls through the first unlock ladder: level 1 finishes the sage seed task, level 2 introduces Garden and sage herbs, level 3 introduces seed research, and level 4 unlocks Brewing plus recipe research.
+Mira introduces the first loop with a few press-to-advance prompts, then stays in a small objective box with progress. Target hints still point at real controls, hide during waits, and reappear only after inactivity.
 
-It does not grant items, unlock rooms, change gameplay rules, hide systems, or offer a skip state. The guide ends by real progress or snapshot-based auto-complete.
+The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage, level 3 seed research, and level 4 Brewing recipe research. It has no skip state.
 
-Hints hide during timer waits. Repeated action hints are brief reminders, not persistent overlays: they show once, hide after a few seconds, then repeat only after player inactivity.
+The level 1 market lesson is the only tutorial-only gameplay effect: after the player selects sage seed on the NPC stand, the tutorial locally sells one sage seed for fixed tutorial gold. It updates real local inventory/gold and save data, but it does not call the NPC market backend or change normal market pricing/demand.
 
-Players already past level 4 auto-complete the tutorial. Earlier snapshots that already show later progress skip earlier lessons instead of replaying stale guidance.
+Players already past level 4 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.

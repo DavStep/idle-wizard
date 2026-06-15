@@ -628,6 +628,86 @@ export class GameplayFacade {
     return result;
   }
 
+  sellTutorialItemForGold({ itemKey, quantity = 1, goldEach = 1, goldTarget = null } = {}) {
+    let item;
+
+    try {
+      item = this.itemsFacade.getItemDefinitionByKey(itemKey);
+    } catch {
+      return {
+        ok: false,
+        reason: 'unknown_item',
+        itemKey,
+      };
+    }
+
+    const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
+    const unitGold = Math.max(0, Number(goldEach) || 0);
+
+    if (unitGold <= 0) {
+      return {
+        ok: false,
+        reason: 'invalid_gold',
+      };
+    }
+
+    const currentGold = this.goldFacade.getSnapshot().current;
+    const remainingGold = Number.isFinite(goldTarget)
+      ? Math.max(0, Math.floor(Number(goldTarget)) - currentGold)
+      : Number.POSITIVE_INFINITY;
+
+    if (remainingGold <= 0) {
+      return {
+        ok: false,
+        reason: 'gold_target_met',
+        currentGold,
+      };
+    }
+
+    const targetQuantity = Number.isFinite(remainingGold)
+      ? Math.min(requestedQuantity, Math.ceil(remainingGold / unitGold))
+      : requestedQuantity;
+    const ownedQuantity = this.itemsFacade.getItemQuantity(item.id);
+    const sellQuantity = Math.min(targetQuantity, ownedQuantity);
+
+    if (sellQuantity <= 0) {
+      return {
+        ok: false,
+        reason: 'not_enough_items',
+        item,
+      };
+    }
+
+    const soldItem = this.itemsFacade.removeItem(item.id, sellQuantity);
+
+    if (!soldItem) {
+      return {
+        ok: false,
+        reason: 'not_enough_items',
+        item,
+      };
+    }
+
+    const gold = Math.min(remainingGold, sellQuantity * unitGold);
+    this.goldFacade.add(gold);
+    this.handleItemSold({
+      item,
+      gold,
+      quantity: sellQuantity,
+      tutorial: true,
+    });
+    this.publishAndSaveSnapshot();
+
+    return {
+      ok: true,
+      item,
+      quantity: sellQuantity,
+      gold,
+      currentGold: this.goldFacade.getSnapshot().current,
+      tutorial: true,
+    };
+  }
+
   claimTradeAllianceCrystalReward(reward) {
     const crystalReward = Math.max(0, Math.floor(Number(reward?.crystalReward) || 0));
 

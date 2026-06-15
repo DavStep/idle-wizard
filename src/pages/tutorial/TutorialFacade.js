@@ -1,12 +1,13 @@
 import { TutorialHintManager } from './managers/TutorialHintManager.js';
 import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialReminderManager } from './managers/TutorialReminderManager.js';
+import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
 import { TutorialStepManager } from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 
 export class TutorialFacade {
   static explain =
-    'Points new players at the next real button so they learn the first loop without fake tutorial state.';
+    'Mira gives new players short prompts, then keeps a small objective box visible while they learn the first loop.';
 
   constructor({ gameplayFacade, getCurrentPageId, storage, now } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -21,13 +22,20 @@ export class TutorialFacade {
     });
     this.hintManager = new TutorialHintManager();
     this.reminderManager = new TutorialReminderManager();
+    this.saleManager = new TutorialSaleManager();
     this.animationFrame = null;
     this.reminderTimeout = null;
-    this.handleClick = () => {
+    this.activeStep = null;
+    this.handleClick = (event) => {
+      if (event.target?.closest?.('.tutorial-layer__advance')) {
+        return;
+      }
+
       this.reminderManager.recordActivity(this.getNow());
-      this.hintManager.hide();
+      this.hintManager.hidePrompt();
       this.scheduleRefresh();
     };
+    this.handleAdvance = () => this.advanceActiveStep();
     this.handleResize = () => this.scheduleRefresh();
   }
 
@@ -39,6 +47,7 @@ export class TutorialFacade {
     this.stage = stage;
     this.targetManager.setStage(stage);
     this.hintManager.mount(stage);
+    this.hintManager.setAdvanceHandler(this.handleAdvance);
     this.unsubscribe = this.gameplayFacade.subscribe(() => this.scheduleRefresh());
     stage.addEventListener('click', this.handleClick, true);
     window.addEventListener('resize', this.handleResize);
@@ -50,8 +59,10 @@ export class TutorialFacade {
     this.unsubscribe = null;
     this.cancelRefresh();
     this.cancelReminderRefresh();
+    this.saleManager.cancel();
     this.stage?.removeEventListener('click', this.handleClick, true);
     window.removeEventListener('resize', this.handleResize);
+    this.hintManager.setAdvanceHandler(null);
     this.hintManager.unmount();
     this.targetManager.setStage(null);
     this.stage = null;
@@ -62,20 +73,79 @@ export class TutorialFacade {
     const dom = this.targetManager.getDomState();
 
     if (dom.isBlockingDialogOpen()) {
+      this.activeStep = null;
+      this.saleManager.cancel();
       this.reminderManager.discardActivePrompt();
       this.hintManager.hide();
       return;
     }
 
+    const snapshot = this.gameplayFacade?.getSnapshot?.();
     const step = this.stepManager.getActiveStep({
-      snapshot: this.gameplayFacade?.getSnapshot?.(),
+      snapshot,
       dom,
     });
-    const target = this.targetManager.getTarget(step?.targetId);
+    this.activeStep = step;
 
-    if (!step || !target) {
+    if (!step) {
+      this.saleManager.cancel();
       this.reminderManager.clearVisible();
       this.hintManager.hide();
+      return;
+    }
+
+    if (step.kind === 'dialog') {
+      this.saleManager.cancel();
+      this.reminderManager.clearVisible();
+      this.hintManager.hideObjective();
+      this.hintManager.showDialog({
+        text: step.text,
+        stepLabel: step.stepLabel,
+        advanceOnClick: step.advanceOnClick,
+      });
+      return;
+    }
+
+    if (step.kind === 'objective') {
+      this.hintManager.showObjective({
+        text: step.objectiveText,
+        stepLabel: step.stepLabel,
+        progress: step.progress,
+        progressLabel: step.progressLabel,
+      });
+      this.saleManager.update({
+        step,
+        snapshot,
+        gameplayFacade: this.gameplayFacade,
+        onChange: () => this.scheduleRefresh(),
+      });
+      this.refreshPrompt(step);
+      return;
+    }
+
+    this.saleManager.cancel();
+    this.hintManager.hideObjective();
+    this.refreshPrompt(step);
+  }
+
+  refreshPrompt(step) {
+    const target = this.targetManager.getTarget(step?.targetId);
+
+    if (!target) {
+      this.reminderManager.clearVisible();
+      this.hintManager.hidePrompt();
+      return;
+    }
+
+    if (step.advanceOnClick) {
+      this.reminderManager.clearVisible();
+      this.hintManager.show({
+        target,
+        text: step.hintText ?? step.text,
+        stepLabel: step.stepLabel,
+        showPointer: step.showPointer !== false && step.targetId !== 'workshop:manaSphere',
+        advanceOnClick: true,
+      });
       return;
     }
 
@@ -84,16 +154,29 @@ export class TutorialFacade {
     this.scheduleReminderRefresh(hintState.nextRefreshAt, now);
 
     if (!hintState.shouldShow) {
-      this.hintManager.hide();
+      this.hintManager.hidePrompt();
       return;
     }
 
     this.hintManager.show({
       target,
-      text: step.text,
+      text: step.hintText ?? step.text,
       stepLabel: step.stepLabel,
-      showPointer: step.targetId !== 'workshop:manaSphere',
+      showPointer: step.showPointer !== false && step.targetId !== 'workshop:manaSphere',
+      advanceOnClick: step.advanceOnClick,
     });
+  }
+
+  advanceActiveStep() {
+    if (!this.activeStep?.advanceOnClick) {
+      return;
+    }
+
+    this.stepManager.advanceStep(this.activeStep.id);
+    this.activeStep = null;
+    this.reminderManager.discardActivePrompt();
+    this.hintManager.hidePrompt();
+    this.scheduleRefresh();
   }
 
   scheduleRefresh() {

@@ -6,6 +6,7 @@ import packageJson from '../../package.json';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { PagesFacade } from './PagesFacade.js';
 import { TUTORIAL_STORAGE_KEY } from './tutorial/managers/TutorialProgressManager.js';
+import { TUTORIAL_STEP_IDS } from './tutorial/managers/TutorialStepManager.js';
 
 function createGameplayFacadeFake() {
   const snapshot = {
@@ -2094,6 +2095,45 @@ function createGameplayFacadeFake() {
         cooldownSeconds: snapshot.shop.goldOffer.cooldownSeconds,
       };
     },
+    sellTutorialItemForGold: ({ itemKey, quantity = 1, goldEach = 1, goldTarget = null } = {}) => {
+      const item = getItemDefinitionByKey(itemKey);
+      const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
+      const remainingGold = Number.isFinite(goldTarget)
+        ? Math.max(0, Math.floor(Number(goldTarget)) - snapshot.gold.current)
+        : Number.POSITIVE_INFINITY;
+
+      if (remainingGold <= 0) {
+        return {
+          ok: false,
+          reason: 'gold_target_met',
+        };
+      }
+
+      const targetQuantity = Number.isFinite(remainingGold)
+        ? Math.min(requestedQuantity, Math.ceil(remainingGold / goldEach))
+        : requestedQuantity;
+      const sellQuantity = Math.min(targetQuantity, getItemQuantity(item.id));
+
+      if (sellQuantity <= 0 || !removeItemQuantity(item.id, sellQuantity)) {
+        return {
+          ok: false,
+          reason: 'not_enough_items',
+        };
+      }
+
+      const gold = Math.min(remainingGold, sellQuantity * goldEach);
+      snapshot.gold.current += gold;
+      publish();
+
+      return {
+        ok: true,
+        item,
+        quantity: sellQuantity,
+        gold,
+        currentGold: snapshot.gold.current,
+        tutorial: true,
+      };
+    },
     fillTradeAllianceItemQuest: (quest) => {
       const item = getItemDefinitionByKey(quest.itemKey);
       const remainingQuantity = Math.max(0, quest.target - quest.progress);
@@ -3218,6 +3258,7 @@ describe('PagesFacade', () => {
     expect(layer?.querySelector('.tutorial-layer__portrait')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__pointer')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__step-label')).not.toBeNull();
+    expect(layer?.querySelector('.tutorial-layer__objective')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__skip')).toBeNull();
   });
 
@@ -3238,20 +3279,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
     expect(
       JSON.parse(storage.getItem(TUTORIAL_STORAGE_KEY))?.completedStepIds,
-    ).toEqual([
-      'open-tasks',
-      'fill-sage-seed-task',
-      'open-market',
-      'select-sage-seed-sale',
-      'earn-level-one-gold',
-      'level-up-one',
-      'grow-sage',
-      'fill-sage-herb-task',
-      'level-up-two',
-      'research-mint-seed',
-      'research-mana-tonic',
-      'brew-mana-tonic',
-    ]);
+    ).toEqual(TUTORIAL_STEP_IDS);
   });
 
   it('shows a garden tab notification when garden work is ready outside Workshop', () => {

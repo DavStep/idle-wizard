@@ -86,6 +86,31 @@ function advanceToLevel(gameplayFacade, targetLevel) {
 }
 
 describe('GameplayFacade', () => {
+  it('sells tutorial items locally for fixed gold', () => {
+    const { gameplayFacade } = createGameplay();
+    unlockSageSeed(gameplayFacade);
+    gameplayFacade.itemsFacade.addItem(1, 1);
+
+    const result = gameplayFacade.sellTutorialItemForGold({
+      itemKey: 'sageSeed',
+      quantity: 1,
+      goldEach: 10,
+      goldTarget: 10,
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      quantity: 1,
+      gold: 10,
+      tutorial: true,
+    });
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(10);
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
+    expect(gameplayFacade.getSnapshot().logs.entries[0]?.message).toBe(
+      'sold sage seed for 10 gold',
+    );
+  });
+
   it('persists gameplay progress across a new app instance', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });

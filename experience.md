@@ -34,6 +34,8 @@
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE highlights should not clone the target DOM; cloned rows can duplicate/mislay out text. Use a crisp outline and light veil.
+- FTUE press-to-advance prompts must stay visible until pressed; only action reminders should auto-hide.
+- FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - Workshop secondary buttons (`prestige`, `leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3 so FTUE starts with only core loop controls.
 
