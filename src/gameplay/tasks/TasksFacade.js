@@ -7,7 +7,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    'Tasks give the wizard level goals: drop requested items into tasks, finish all five, then pay gold to move up.';
+    'Tasks give the wizard level goals: drop requested items into each task, finish the level list, then pay gold to move up.';
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });

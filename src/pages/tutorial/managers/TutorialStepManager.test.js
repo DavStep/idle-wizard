@@ -72,9 +72,11 @@ function createSnapshot(overrides = {}) {
 function createDomFake({
   tasksExpanded = false,
   seedPopupOpen = false,
+  recipePopupOpen = false,
   shopSellPopupOpen = false,
 } = {}) {
   return {
+    isBrewingRecipePopupOpen: () => recipePopupOpen,
     isGardenSeedPopupOpen: () => seedPopupOpen,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isTasksExpanded: () => tasksExpanded,
@@ -99,22 +101,36 @@ describe('TutorialStepManager', () => {
       id: 'open-tasks',
       targetId: 'workshop:tasks',
       text: 'open tasks',
-      stepLabel: '1/8',
+      stepLabel: '1/12',
     });
   });
 
-  it('waits on mana sphere before seed task can be filled', () => {
+  it('does not suppress the guide for legacy skipped progress', () => {
+    const progress = createProgressFake();
+    progress.isSkipped = () => true;
+    const manager = new TutorialStepManager({
+      progressManager: progress,
+      getCurrentPageId: () => 'workshop',
+    });
+
+    const step = manager.getActiveStep({
+      snapshot: createSnapshot(),
+      dom: createDomFake(),
+    });
+
+    expect(step).toMatchObject({
+      id: 'open-tasks',
+      targetId: 'workshop:tasks',
+    });
+  });
+
+  it('hides while waiting for mana before seed task can be filled', () => {
     const step = getStep({
       dom: createDomFake({ tasksExpanded: true }),
       completed: ['open-tasks'],
     });
 
-    expect(step).toMatchObject({
-      id: 'fill-sage-seed-task',
-      targetId: 'workshop:manaSphere',
-      text: 'wait for mana',
-      stepLabel: '2/8',
-    });
+    expect(step).toBeNull();
   });
 
   it('targets summon seed once mana is ready for seed task', () => {
@@ -134,6 +150,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-sage-seed-task',
       targetId: 'workshop:summonSeed',
       text: 'summon seed',
+      reminderKey: 'fill-sage-seed-task-actions',
     });
   });
 
@@ -165,6 +182,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-sage-seed-task',
       targetId: 'task:level1-sage-seeds',
       text: 'fill task',
+      reminderKey: 'fill-sage-seed-task-actions',
     });
   });
 
@@ -192,7 +210,7 @@ describe('TutorialStepManager', () => {
       id: 'open-market',
       targetId: 'page:shop',
       text: 'open market',
-      stepLabel: '3/8',
+      stepLabel: '3/12',
     });
   });
 
@@ -225,7 +243,7 @@ describe('TutorialStepManager', () => {
       id: 'select-sage-seed-sale',
       targetId: 'shop:sell:sageSeed',
       text: 'choose sage seed',
-      stepLabel: '4/8',
+      stepLabel: '4/12',
     });
   });
 
@@ -262,13 +280,13 @@ describe('TutorialStepManager', () => {
       id: 'earn-level-one-gold',
       targetId: 'shop:stand:1',
       text: 'sell sage seeds',
-      stepLabel: '5/8',
+      stepLabel: '5/12',
     });
   });
 
   it('targets level up after enough gold is earned', () => {
     const snapshot = createSnapshot({
-      gold: { current: 15 },
+      gold: { current: 10 },
       tasks: {
         currentLevel: 1,
         level: {
@@ -304,7 +322,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-one',
       targetId: 'workshop:levelUp',
       text: 'level up',
-      stepLabel: '6/8',
+      stepLabel: '6/12',
     });
   });
 
@@ -345,7 +363,7 @@ describe('TutorialStepManager', () => {
       id: 'grow-sage',
       targetId: 'garden:seed:sageSeed',
       text: 'choose sage seed',
-      stepLabel: '7/8',
+      stepLabel: '7/12',
     });
   });
 
@@ -423,16 +441,32 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('points at mint seed research after sage has been grown', () => {
+  it('points at the sage herb task after sage has been grown', () => {
     const snapshot = createSnapshot({
-      tasks: { currentLevel: 2, level: { tasks: [] } },
+      tasks: {
+        currentLevel: 2,
+        level: {
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 6,
+              progressQuantity: 0,
+              canFill: true,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
       garden: {
         herbs: [{ key: 'sageHerb', quantity: 1 }],
       },
     });
     const step = getStep({
-      pageId: 'research',
+      pageId: 'workshop',
       snapshot,
+      dom: createDomFake({ tasksExpanded: true }),
       completed: [
         'open-tasks',
         'fill-sage-seed-task',
@@ -445,10 +479,186 @@ describe('TutorialStepManager', () => {
     });
 
     expect(step).toMatchObject({
+      id: 'fill-sage-herb-task',
+      targetId: 'task:level2-sage-herb',
+      text: 'fill sage task',
+      stepLabel: '8/12',
+    });
+  });
+
+  it('points at level two completion once garden tasks are complete', () => {
+    const snapshot = createSnapshot({
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: {
+            canComplete: true,
+          },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 6,
+              progressQuantity: 6,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+          ],
+        },
+      },
+    });
+    const step = getStep({
+      pageId: 'workshop',
+      snapshot,
+      dom: createDomFake({ tasksExpanded: true }),
+      completed: [
+        'open-tasks',
+        'fill-sage-seed-task',
+        'open-market',
+        'select-sage-seed-sale',
+        'earn-level-one-gold',
+        'level-up-one',
+        'grow-sage',
+        'fill-sage-herb-task',
+      ],
+    });
+
+    expect(step).toMatchObject({
+      id: 'level-up-two',
+      targetId: 'workshop:levelUp',
+      text: 'level up',
+      stepLabel: '9/12',
+    });
+  });
+
+  it('points at mint seed research on level 3', () => {
+    const snapshot = createSnapshot({
+      tasks: { currentLevel: 3, level: { tasks: [] } },
+    });
+    const step = getStep({
+      pageId: 'research',
+      snapshot,
+      completed: [
+        'open-tasks',
+        'fill-sage-seed-task',
+        'open-market',
+        'select-sage-seed-sale',
+        'earn-level-one-gold',
+        'level-up-one',
+        'grow-sage',
+        'fill-sage-herb-task',
+        'level-up-two',
+      ],
+    });
+
+    expect(step).toMatchObject({
       id: 'research-mint-seed',
       targetId: 'research:unlockSeed:mintSeed',
       text: 'research mint seed',
-      stepLabel: '8/8',
+      stepLabel: '10/12',
+    });
+  });
+
+  it('points at mana tonic research on level 4', () => {
+    const snapshot = createSnapshot({
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+    });
+    const step = getStep({
+      pageId: 'research',
+      snapshot,
+      completed: [
+        'open-tasks',
+        'fill-sage-seed-task',
+        'open-market',
+        'select-sage-seed-sale',
+        'earn-level-one-gold',
+        'level-up-one',
+        'grow-sage',
+        'fill-sage-herb-task',
+        'level-up-two',
+        'research-mint-seed',
+      ],
+    });
+
+    expect(step).toMatchObject({
+      id: 'research-mana-tonic',
+      targetId: 'research:unlockRecipe:manaTonic',
+      text: 'research mana tonic',
+      stepLabel: '11/12',
+    });
+  });
+
+  it('points at mana tonic recipe selection before brewing', () => {
+    const snapshot = createSnapshot({
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        ingredients: [],
+        canBrew: false,
+      },
+    });
+    const step = getStep({
+      pageId: 'brewing',
+      snapshot,
+      completed: [
+        'open-tasks',
+        'fill-sage-seed-task',
+        'open-market',
+        'select-sage-seed-sale',
+        'earn-level-one-gold',
+        'level-up-one',
+        'grow-sage',
+        'fill-sage-herb-task',
+        'level-up-two',
+        'research-mint-seed',
+        'research-mana-tonic',
+      ],
+    });
+
+    expect(step).toMatchObject({
+      id: 'brew-mana-tonic',
+      targetId: 'brewing:recipes',
+      text: 'select recipe',
+      stepLabel: '12/12',
+    });
+  });
+
+  it('points at brew action after mana tonic ingredients are staged', () => {
+    const snapshot = createSnapshot({
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        ingredients: [{ key: 'sageHerb' }],
+        canBrew: true,
+      },
+    });
+    const step = getStep({
+      pageId: 'brewing',
+      snapshot,
+      completed: [
+        'open-tasks',
+        'fill-sage-seed-task',
+        'open-market',
+        'select-sage-seed-sale',
+        'earn-level-one-gold',
+        'level-up-one',
+        'grow-sage',
+        'fill-sage-herb-task',
+        'level-up-two',
+        'research-mint-seed',
+        'research-mana-tonic',
+      ],
+    });
+
+    expect(step).toMatchObject({
+      id: 'brew-mana-tonic',
+      targetId: 'brewing:action',
+      text: 'brew mana tonic',
     });
   });
 
@@ -460,6 +670,21 @@ describe('TutorialStepManager', () => {
     });
     const step = manager.getActiveStep({
       snapshot: createSnapshot({
+        seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+        garden: {
+          seeds: [{ key: 'sageSeed', quantity: 1 }],
+          herbs: [{ key: 'sageHerb', quantity: 0 }],
+          plot: {
+            tiles: [
+              {
+                tileNumber: 1,
+                unlocked: true,
+                phase: 'empty',
+                selectedSeedItemTypeId: null,
+              },
+            ],
+          },
+        },
         tasks: {
           currentLevel: 2,
           level: {
@@ -471,9 +696,9 @@ describe('TutorialStepManager', () => {
     });
 
     expect(step).toMatchObject({
-      id: 'research-mint-seed',
-      targetId: 'page:research',
-      text: 'open research',
+      id: 'grow-sage',
+      targetId: 'page:garden',
+      text: 'open garden',
     });
     expect(progress.completedStepIds).toEqual(
       new Set([

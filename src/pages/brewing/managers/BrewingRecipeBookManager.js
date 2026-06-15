@@ -72,6 +72,7 @@ export class BrewingRecipeBookManager {
     button.className = 'style-button brewing-page__recipes-button';
     button.type = 'button';
     button.textContent = 'select recipe';
+    button.dataset.tutorialId = 'brewing:recipes';
     button.setAttribute('aria-label', 'open select recipe');
     button.addEventListener('click', () => this.show());
     return button;
@@ -264,6 +265,7 @@ export class BrewingRecipeBookManager {
     const row = document.createElement('button');
     row.className = 'brewing-page__recipe-row';
     row.type = 'button';
+    row.dataset.tutorialId = `brewing:recipe:${recipe.key}`;
     const selected = recipe.key === this.getSelectedRecipeKey?.();
     row.classList.toggle('is-locked', !recipe.unlocked);
     row.classList.toggle('is-selected', selected);

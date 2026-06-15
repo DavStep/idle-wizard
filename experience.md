@@ -12,6 +12,7 @@
 - Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
 - Full progression resets should post a human Discord notice before the reducer runs, using the reset/maintenance webhook rather than the APK upload webhook.
 - Server progression resets do not clear browser tutorial `localStorage`; bump the FTUE storage key when old clients must see the guide again after reset.
+- Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
 
 ## Product Shape
@@ -20,6 +21,7 @@
 - The authored game viewport is `1080x2170`.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
+- FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
@@ -32,6 +34,7 @@
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE highlights should not clone the target DOM; cloned rows can duplicate/mislay out text. Use a crisp outline and light veil.
+- FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - Workshop secondary buttons (`prestige`, `leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3 so FTUE starts with only core loop controls.
 
 ## Architecture
@@ -149,7 +152,7 @@
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
-- If level 1 costs 10 gold and level 2 mint research costs 5 gold, FTUE should guide players to bank 15 gold before level-up so research is not immediately blocked.
+- With Research moved to level 3, level-one FTUE should bank only the 10 gold needed for level 2; do not hold players for mint research before Garden.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
@@ -165,6 +168,7 @@
 - NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
 - NPC market blank stand row space is inert; item/select text opens the sell picker, and the buy button owns locked-stand purchases.
 - NPC market prices should follow uncapped `npcNeed / targetNeed` pressure; avoid hard price caps that hide real scarcity.
+- NPC market tick logic must not clamp `npcNeed` against a zero `maxNeed`; that drains all demand to `0` on the first due tick.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
 - Market sellable quantities must subtract Brewing cauldron-staged herbs; NPC and player market sales should use available quantities, not raw item stacks.
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
@@ -274,7 +278,7 @@
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
 - Gold displays amount-first as `<compact amount> gold` everywhere, including top chrome; use `25 gold` and `123k gold`, never `25g` or `gold 25`.
-- Task level-up is manual after all five tasks are done; the Workshop task list shows a bottom `complete` action that spends `current level * 20` gold.
+- Task level-up is manual after every task in the current level is done; the Workshop task list shows a bottom `complete` action that spends the configured level completion gold.
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
 - Top panel layout uses two rows: username full-width above mana/gold/context currency, so resource text does not squeeze names.
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.

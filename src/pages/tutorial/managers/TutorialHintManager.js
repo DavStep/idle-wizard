@@ -1,15 +1,15 @@
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
 const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
-const HINT_WIDTH = 156;
+const HINT_WIDTH = 136;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
-const HINT_HEIGHT = 72;
+const HINT_HEIGHT = 56;
 const HINT_GAP = 8;
 const HIGHLIGHT_PAD = 4;
-const PORTRAIT_WIDTH = 78;
-const PORTRAIT_HEIGHT = 98;
+const PORTRAIT_WIDTH = 42;
+const PORTRAIT_HEIGHT = 54;
 const POINTER_WIDTH = 38;
 const POINTER_HALF_HEIGHT = 10;
-const GUIDE_LEFT_BIAS = 22;
+const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
 
@@ -35,7 +35,7 @@ export class TutorialHintManager {
     this.root = document.createElement('section');
     this.root.className = 'tutorial-layer';
     this.root.hidden = true;
-    this.root.setAttribute('aria-label', 'Guide');
+    this.root.setAttribute('aria-label', 'guide');
 
     this.backdrop = document.createElement('div');
     this.backdrop.className = 'tutorial-layer__backdrop';

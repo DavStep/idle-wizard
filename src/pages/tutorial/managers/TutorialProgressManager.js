@@ -1,15 +1,14 @@
-const STORAGE_KEY = 'idle-wizard.tutorial.v2';
+export const TUTORIAL_STORAGE_KEY = 'idle-wizard.tutorial.v3';
 
 export class TutorialProgressManager {
   constructor({ storage = globalThis.localStorage } = {}) {
     this.storage = storage;
     this.completedStepIds = new Set();
-    this.skipped = false;
     this.load();
   }
 
   isSkipped() {
-    return this.skipped;
+    return false;
   }
 
   hasCompleted(stepId) {
@@ -42,25 +41,18 @@ export class TutorialProgressManager {
   }
 
   skip() {
-    if (this.skipped) {
-      return;
-    }
-
-    this.skipped = true;
     this.save();
   }
 
   reset() {
     this.completedStepIds.clear();
-    this.skipped = false;
     this.save();
   }
 
   load() {
     try {
-      const raw = this.storage?.getItem?.(STORAGE_KEY);
+      const raw = this.storage?.getItem?.(TUTORIAL_STORAGE_KEY);
       const parsed = raw ? JSON.parse(raw) : null;
-      this.skipped = parsed?.skipped === true;
       this.completedStepIds = new Set(
         Array.isArray(parsed?.completedStepIds)
           ? parsed.completedStepIds.filter((stepId) => typeof stepId === 'string')
@@ -68,16 +60,14 @@ export class TutorialProgressManager {
       );
     } catch {
       this.completedStepIds = new Set();
-      this.skipped = false;
     }
   }
 
   save() {
     try {
       this.storage?.setItem?.(
-        STORAGE_KEY,
+        TUTORIAL_STORAGE_KEY,
         JSON.stringify({
-          skipped: this.skipped,
           completedStepIds: [...this.completedStepIds],
         }),
       );

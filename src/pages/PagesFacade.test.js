@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import packageJson from '../../package.json';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { PagesFacade } from './PagesFacade.js';
+import { TUTORIAL_STORAGE_KEY } from './tutorial/managers/TutorialProgressManager.js';
 
 function createGameplayFacadeFake() {
   const snapshot = {
@@ -99,11 +100,11 @@ function createGameplayFacadeFake() {
       completedAllLevels: false,
       level: {
         level: 1,
-        completedTasks: 1,
-        totalTasks: 2,
+        completedTasks: 0,
+        totalTasks: 1,
         completion: {
           level: 1,
-          costGold: 20,
+          costGold: 10,
           allTasksCompleted: false,
           atMaxLevel: false,
           completedAllLevels: false,
@@ -118,32 +119,14 @@ function createGameplayFacadeFake() {
             itemKey: 'sageSeed',
             itemLabel: 'sage seed',
             itemKind: 'seed',
-            requiredQuantity: 20,
-            progressQuantity: 20,
-            remainingQuantity: 0,
-            ownedQuantity: 0,
-            progress: 1,
-            maxed: true,
-            completed: true,
-            canFill: false,
-            canComplete: false,
-          },
-          {
-            taskId: 'level1-sage-herb',
-            level: 1,
-            action: 'drop',
-            itemTypeId: 1001,
-            itemKey: 'sageHerb',
-            itemLabel: 'sage',
-            itemKind: 'herb',
             requiredQuantity: 10,
-            progressQuantity: 3,
-            remainingQuantity: 7,
-            ownedQuantity: 3,
-            progress: 0.3,
+            progressQuantity: 0,
+            remainingQuantity: 10,
+            ownedQuantity: 0,
+            progress: 0,
             maxed: false,
             completed: false,
-            canFill: true,
+            canFill: false,
             canComplete: false,
           },
         ],
@@ -2261,7 +2244,7 @@ function createMemoryStorage(initial = {}) {
   };
 }
 
-function unlockWorkshopSecondaryActions(gameplayFacade, level = 3) {
+function unlockWorkshopSecondaryActions(gameplayFacade, level = 4) {
   const snapshot = gameplayFacade.getSnapshot();
   snapshot.tasks.currentLevel = level;
   snapshot.tasks.level.level = level;
@@ -3064,7 +3047,7 @@ describe('PagesFacade', () => {
     );
   });
 
-  it('keeps Brewing locked at level 1 and explains the unlock level', () => {
+  it('keeps gated rooms locked at level 1 and explains the unlock levels', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const pagesFacade = new PagesFacade({
@@ -3073,15 +3056,32 @@ describe('PagesFacade', () => {
     });
 
     pagesFacade.mount(stage);
-    clickRoomTab(stage, 'brewing');
+    clickRoomTab(stage, 'garden');
 
     const popup = stage.querySelector('.room-bottom-panel__lock-popup');
+
+    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
+    expect(stage.querySelector('.garden-page')).toBeNull();
+    expect(popup?.hidden).toBe(false);
+    expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
+      'garden unlocks at level 2',
+    );
+
+    clickRoomTab(stage, 'research');
+
+    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
+    expect(stage.querySelector('.research-page')).toBeNull();
+    expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
+      'research unlocks at level 3',
+    );
+
+    clickRoomTab(stage, 'brewing');
 
     expect(pagesFacade.getCurrentPageId()).toBe('workshop');
     expect(stage.querySelector('.brewing-page')).toBeNull();
     expect(popup?.hidden).toBe(false);
     expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
-      'brewing unlocks at level 3',
+      'brewing unlocks at level 4',
     );
 
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -3095,7 +3095,7 @@ describe('PagesFacade', () => {
   it('reveals Workshop secondary buttons at level 3', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
-    unlockWorkshopSecondaryActions(gameplayFacade);
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -3112,8 +3112,10 @@ describe('PagesFacade', () => {
 
   it('shows crystal or ruby in the top panel only on matching research tabs', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
 
@@ -3219,11 +3221,11 @@ describe('PagesFacade', () => {
     expect(layer?.querySelector('.tutorial-layer__skip')).toBeNull();
   });
 
-  it('auto-completes FTUE for players already on level 2', () => {
+  it('auto-completes FTUE for players already past brewing introduction', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const storage = createMemoryStorage();
-    gameplayFacade.getSnapshot().tasks.currentLevel = 2;
+    gameplayFacade.getSnapshot().tasks.currentLevel = 5;
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -3235,7 +3237,7 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
     expect(
-      JSON.parse(storage.getItem('idle-wizard.tutorial.v2'))?.completedStepIds,
+      JSON.parse(storage.getItem(TUTORIAL_STORAGE_KEY))?.completedStepIds,
     ).toEqual([
       'open-tasks',
       'fill-sage-seed-task',
@@ -3244,12 +3246,18 @@ describe('PagesFacade', () => {
       'earn-level-one-gold',
       'level-up-one',
       'grow-sage',
+      'fill-sage-herb-task',
+      'level-up-two',
+      'research-mint-seed',
+      'research-mana-tonic',
+      'brew-mana-tonic',
     ]);
   });
 
   it('shows a garden tab notification when garden work is ready outside Workshop', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 2);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -3404,17 +3412,17 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summaryRow?.textContent).toBe('sage3/10fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/10fill');
     expect(
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
-    ).toBe('30%');
+    ).toBe('0%');
     expect(stage.querySelector('.workshop-page__tasks-level')).toBeNull();
-    expect(count?.textContent).toBe('1/2');
+    expect(count?.textContent).toBe('0/1');
     expect(toggle?.textContent).toBe('expand');
     expect(toggle?.dataset.notification).toBeUndefined();
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(list?.hidden).toBe(true);
-    expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(1);
+    expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(0);
 
     summary.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -3427,8 +3435,8 @@ describe('PagesFacade', () => {
     expect(toggle.textContent).toBe('collapse');
     expect(toggle.dataset.notification).toBeUndefined();
     expect(list.hidden).toBe(false);
-    expect(list.textContent).toContain('sage seed20/20done');
-    expect(list.textContent).not.toContain('sage3/10fill');
+    expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(0);
+    expect(summaryRow?.textContent).toBe('sage seed0/10fill');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
 
@@ -6386,6 +6394,7 @@ describe('PagesFacade', () => {
   it('switches the research page between regular, automation, and advanced research', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -6837,6 +6846,7 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
+    unlockWorkshopSecondaryActions(gameplayFacade, 2);
     snapshot.garden.herbs = [
       {
         itemTypeId: 1001,
@@ -6948,6 +6958,7 @@ describe('PagesFacade', () => {
   it('shows garden plots as text rows and keeps planting as a popup choice', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 2);
     const seedUnlockBox = gameplayFacade
       .getSnapshot()
       .research.boxes.find((box) => box.id === 'seedUnlocks');
@@ -7068,8 +7079,10 @@ describe('PagesFacade', () => {
 
   it('changes room pages with horizontal touch swipes', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
     const dispatchAllowedSwipe = (target, options) => {
@@ -7107,6 +7120,7 @@ describe('PagesFacade', () => {
   it('allows planting after swiping into the Garden', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 2);
     const seedUnlockBox = gameplayFacade
       .getSnapshot()
       .research.boxes.find((box) => box.id === 'seedUnlocks');
@@ -7149,8 +7163,10 @@ describe('PagesFacade', () => {
 
   it('changes room pages from Research controls with horizontal touch swipes', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
 
@@ -7577,6 +7593,7 @@ describe('PagesFacade', () => {
   it('buys research from the research page', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -7603,6 +7620,7 @@ describe('PagesFacade', () => {
   it('shows active research as researching with a progress bar', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const research = gameplayFacade
       .getSnapshot()
       .research.boxes.find((box) => box.id === 'seedUnlocks').researches[0];
@@ -7662,6 +7680,7 @@ describe('PagesFacade', () => {
   it('marks unaffordable and locked research rows unavailable', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const seedBox = gameplayFacade
       .getSnapshot()
       .research.boxes.find((box) => box.id === 'seedUnlocks');
@@ -7706,6 +7725,7 @@ describe('PagesFacade', () => {
   it('shows at most three locked research rows in each block', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const seedBox = gameplayFacade
       .getSnapshot()
       .research.boxes.find((box) => box.id === 'seedUnlocks');
@@ -7777,8 +7797,10 @@ describe('PagesFacade', () => {
 
   it('shows research info dialog when a research name is clicked', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
 

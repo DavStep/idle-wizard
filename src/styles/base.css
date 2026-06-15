@@ -983,15 +983,16 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: rgb(255 255 255 / 30%);
+  background: transparent;
   pointer-events: none;
 }
 
 .tutorial-layer__highlight {
   position: absolute;
   z-index: 1;
-  border: var(--style-border);
-  outline: 2px solid var(--style-surface);
+  border: var(--style-border-strong);
+  outline: 1px solid var(--style-surface);
+  outline-offset: 0;
   background: transparent;
   box-shadow: none;
   pointer-events: none;
@@ -1022,22 +1023,24 @@ body {
 .tutorial-layer__portrait {
   position: absolute;
   z-index: 5;
-  width: 78px;
-  height: 98px;
+  width: 42px;
+  height: 54px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: auto;
   pointer-events: none;
-  filter:
-    drop-shadow(0 1px 0 rgb(0 0 0 / 72%))
-    drop-shadow(0 3px 4px rgb(0 0 0 / 28%));
+  filter: drop-shadow(0 1px 0 var(--style-surface));
 }
 
-.tutorial-layer__hint {
+.style-box.tutorial-layer__hint {
   position: absolute;
   z-index: 6;
-  width: 156px;
-  min-height: 52px;
+  width: 136px;
+  min-height: 34px;
+  padding: 7px 10px 5px;
+  border: var(--style-border-strong);
+  background: var(--style-surface);
+  box-shadow: var(--style-overlay-shadow);
   pointer-events: auto;
 }
 
@@ -1058,12 +1061,11 @@ body {
 }
 
 .tutorial-layer__copy {
-  min-height: 45px;
+  min-height: var(--style-row-min-height);
 }
 
 .tutorial-layer__text {
-  min-height: var(--style-row-min-height);
-  margin: 0 0 5px;
+  margin: 0;
 }
 
 @keyframes tutorial-pointer-press {

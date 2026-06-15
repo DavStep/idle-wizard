@@ -1,9 +1,17 @@
 import { DEFAULT_PAGE_SWIPE_ORDER } from './PageSwipeNavigationManager.js';
 
 const PAGE_UNLOCK_REQUIREMENTS = {
-  brewing: {
+  garden: {
+    requiredLevel: 2,
+    message: 'garden unlocks at level 2',
+  },
+  research: {
     requiredLevel: 3,
-    message: 'brewing unlocks at level 3',
+    message: 'research unlocks at level 3',
+  },
+  brewing: {
+    requiredLevel: 4,
+    message: 'brewing unlocks at level 4',
   },
 };
 

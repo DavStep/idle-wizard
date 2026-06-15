@@ -46,8 +46,8 @@ describe('BottomPanelViewManager', () => {
       {
         id: 'brewing',
         unlocked: false,
-        requiredLevel: 3,
-        lockedMessage: 'brewing unlocks at level 3',
+        requiredLevel: 4,
+        lockedMessage: 'brewing unlocks at level 4',
       },
     ]);
 
@@ -65,7 +65,7 @@ describe('BottomPanelViewManager', () => {
     expect(onShowPage).not.toHaveBeenCalled();
     expect(stage.querySelector('.room-bottom-panel__lock-popup')?.hidden).toBe(false);
     expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
-      'brewing unlocks at level 3',
+      'brewing unlocks at level 4',
     );
 
     stage

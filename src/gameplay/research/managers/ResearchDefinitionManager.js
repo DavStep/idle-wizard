@@ -93,7 +93,7 @@ export class ResearchDefinitionManager {
   }
 
   areRecipeUnlocksVisible() {
-    return (this.playerLevelFacade?.getSnapshot?.().currentLevel ?? 1) >= 3;
+    return (this.playerLevelFacade?.getSnapshot?.().currentLevel ?? 1) >= 4;
   }
 
   getResearchBoxes(options) {

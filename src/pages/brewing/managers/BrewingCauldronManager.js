@@ -427,6 +427,7 @@ export class BrewingCauldronManager {
       button.className = 'brewing-page__herb-button';
       button.type = 'button';
       button.draggable = false;
+      button.dataset.tutorialId = `brewing:herb:${herb.key}`;
       setResourceColor(button, 'herb');
       button.addEventListener('click', (event) => this.onHerbButtonClick(event, herb.itemTypeId));
       button.addEventListener('dragstart', (event) =>
@@ -989,6 +990,7 @@ export class BrewingCauldronManager {
     );
     this.setDisabled(refs.actions.actionButton, action.disabled);
     this.setAttribute(refs.actions.actionButton, 'data-action', action.id);
+    this.setAttribute(refs.actions.actionButton, 'data-tutorial-id', 'brewing:action');
     this.setAttribute(
       refs.actions.actionButton,
       'aria-disabled',

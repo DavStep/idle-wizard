@@ -62,7 +62,7 @@ function unlockSageSeed(gameplayFacade) {
 }
 
 function unlockRecipeResearch(gameplayFacade, researchId = 'unlockRecipe:manaTonic') {
-  advanceToLevel(gameplayFacade, 3);
+  advanceToLevel(gameplayFacade, 4);
   return gameplayFacade.buyResearch(researchId);
 }
 
@@ -249,7 +249,7 @@ describe('GameplayFacade', () => {
       costGold: 10,
     });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(4);
+    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(2);
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
   });
 
@@ -1336,10 +1336,17 @@ describe('GameplayFacade', () => {
     expect(levelThreeResearch.boxes.map((box) => box.id)).toEqual([
       'seedUnlocks',
       'summonSeeds',
+    ]);
+
+    advanceToLevel(gameplayFacade, 4);
+    const levelFourResearch = gameplayFacade.getSnapshot().research;
+    expect(levelFourResearch.boxes.map((box) => box.id)).toEqual([
+      'seedUnlocks',
+      'summonSeeds',
       'recipeUnlocks',
     ]);
-    expect(levelThreeResearch.boxes[2].researches).toHaveLength(18);
-    expect(levelThreeResearch.boxes[2].researches[0]).toEqual({
+    expect(levelFourResearch.boxes[2].researches).toHaveLength(18);
+    expect(levelFourResearch.boxes[2].researches[0]).toEqual({
       id: 'unlockRecipe:manaTonic',
       label: 'mana tonic',
       value: '80 gold',
@@ -1632,7 +1639,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 10 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(8);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(18);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
@@ -1648,7 +1655,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 2 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(4);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(16);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
@@ -1793,7 +1800,7 @@ describe('GameplayFacade', () => {
       cost: 2200,
     });
 
-    advanceToLevel(gameplayFacade, 3);
+    advanceToLevel(gameplayFacade, 4);
 
     expect(getResearch('unlockRecipe:minorHealingPotion')).toMatchObject({
       value: 'locked',
@@ -1896,7 +1903,7 @@ describe('GameplayFacade', () => {
       manaCost: 12,
       durationMs: 30_000,
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(24);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
@@ -2101,7 +2108,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 0 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(24);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
@@ -2915,9 +2922,9 @@ describe('GameplayFacade', () => {
       sellGold: 55,
     });
 
-    gameplayFacade.itemsFacade.addItem(2, 2);
     gameplayFacade.goldFacade.add(80);
     unlockRecipeResearch(gameplayFacade);
+    gameplayFacade.itemsFacade.addItem(2, 2);
 
     const sellItems = gameplayFacade.getSnapshot().shop.shelf.sellItems;
 

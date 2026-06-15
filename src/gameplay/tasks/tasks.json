@@ -10,30 +10,23 @@
     {
       "level": 2,
       "tasks": [
-        { "id": "level2-sage-seeds", "itemKey": "sageSeed", "quantity": 10 },
-        { "id": "level2-mint-seeds", "itemKey": "mintSeed", "quantity": 10 },
-        { "id": "level2-sage-herb", "itemKey": "sageHerb", "quantity": 6 },
-        { "id": "level2-mint-herb", "itemKey": "mintHerb", "quantity": 6 }
+        { "id": "level2-sage-seeds", "itemKey": "sageSeed", "quantity": 20 },
+        { "id": "level2-sage-herb", "itemKey": "sageHerb", "quantity": 6 }
       ]
     },
     {
       "level": 3,
       "tasks": [
-        { "id": "level3-sage-seeds", "itemKey": "sageSeed", "quantity": 60 },
-        { "id": "level3-mint-herb", "itemKey": "mintHerb", "quantity": 30 },
-        { "id": "level3-minor-healing-potion", "itemKey": "minorHealingPotion", "quantity": 6 },
-        { "id": "level3-briar-seeds", "itemKey": "briarSeed", "quantity": 45 },
-        { "id": "level3-simple-antidote", "itemKey": "simpleAntidote", "quantity": 5 }
+        { "id": "level3-sage-seeds", "itemKey": "sageSeed", "quantity": 40 },
+        { "id": "level3-mint-seeds", "itemKey": "mintSeed", "quantity": 10 },
+        { "id": "level3-mint-herb", "itemKey": "mintHerb", "quantity": 18 }
       ]
     },
     {
       "level": 4,
       "tasks": [
-        { "id": "level4-lavender-herb", "itemKey": "lavenderHerb", "quantity": 42 },
-        { "id": "level4-briar-herb", "itemKey": "briarHerb", "quantity": 38 },
-        { "id": "level4-venom-draught", "itemKey": "venomDraught", "quantity": 7 },
-        { "id": "level4-glowcap-seeds", "itemKey": "glowcapSeed", "quantity": 65 },
-        { "id": "level4-briar-ward", "itemKey": "briarWard", "quantity": 6 }
+        { "id": "level4-sage-herb", "itemKey": "sageHerb", "quantity": 24 },
+        { "id": "level4-mana-tonic", "itemKey": "manaTonic", "quantity": 4 }
       ]
     },
     {
