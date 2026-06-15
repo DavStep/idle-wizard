@@ -96,6 +96,7 @@ export class LeaderboardSubscriptionManager {
       .map((row) => ({
         identity: this.toIdentityKey(row.identity),
         name: row.username,
+        allianceTag: this.toAllianceTag(row.allianceTag ?? row.alliance_tag),
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
         dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
@@ -186,6 +187,10 @@ export class LeaderboardSubscriptionManager {
       totalIncome: user.totalIncome,
     };
 
+    if (user.allianceTag) {
+      snapshotUser.allianceTag = user.allianceTag;
+    }
+
     if (includeRank) {
       snapshotUser.rank = user.rank;
     }
@@ -214,6 +219,14 @@ export class LeaderboardSubscriptionManager {
     }
 
     return Math.floor(rank);
+  }
+
+  toAllianceTag(value) {
+    const tag = String(value ?? '')
+      .trim()
+      .toUpperCase();
+
+    return /^[A-Z]{2,5}$/.test(tag) ? tag : '';
   }
 
   toPlayerLevel(value, fallback = 1) {

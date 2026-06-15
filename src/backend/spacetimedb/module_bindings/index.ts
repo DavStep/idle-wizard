@@ -38,6 +38,7 @@ import AcceptTradeAllianceApplicationReducer from "./accept_trade_alliance_appli
 import AdminDisbandTradeAllianceReducer from "./admin_disband_trade_alliance_reducer";
 import AdminMergePlayerAccountsReducer from "./admin_merge_player_accounts_reducer";
 import AdminMoveTradeAllianceMemberReducer from "./admin_move_trade_alliance_member_reducer";
+import AdminResetPlayerProgressionByIdentityReducer from "./admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progression_data_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
 import AnnounceLevelUpReducer from "./announce_level_up_reducer";
@@ -580,6 +581,7 @@ const reducersSchema = __reducers(
   __reducerSchema("admin_disband_trade_alliance", AdminDisbandTradeAllianceReducer),
   __reducerSchema("admin_merge_player_accounts", AdminMergePlayerAccountsReducer),
   __reducerSchema("admin_move_trade_alliance_member", AdminMoveTradeAllianceMemberReducer),
+  __reducerSchema("admin_reset_player_progression_by_identity", AdminResetPlayerProgressionByIdentityReducer),
   __reducerSchema("admin_reset_player_progression_data", AdminResetPlayerProgressionDataReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
   __reducerSchema("announce_level_up", AnnounceLevelUpReducer),

@@ -21,6 +21,26 @@ const RNG_SEED = 0x1d1e12d;
 const LEVEL_COMPLETION_GOLD_COST_PER_LEVEL = 20;
 const DEFAULT_COMPLETED_RESEARCH_IDS = ['unlockSeed:sageSeed'];
 const PRESTIGE_STEP = 10;
+const RECIPE_UNLOCK_ORDER = [
+  'manaTonic',
+  'minorHealingPotion',
+  'nettleVigor',
+  'calmingDraught',
+  'briarWard',
+  'lanternTonic',
+  'simpleAntidote',
+  'venomDraught',
+  'healingPotion',
+  'sunrootStamina',
+  'moonlitFocus',
+  'frostmossCleanse',
+  'sleepDraught',
+  'elixirOfLife',
+  'starLuckPhiltre',
+  'deepDreamVision',
+  'pactWard',
+  'dragonCourage',
+];
 
 function main() {
   const simulator = new BalanceSimulator(parseArgs(process.argv.slice(2)));
@@ -56,6 +76,10 @@ class BalanceSimulator {
     this.recipes = this.potionRecipeManager
       .getPotionRecipes()
       .filter((recipe) => recipe.researchable !== false && !recipe.unknown);
+    this.recipes.sort(
+      (left, right) =>
+        getRecipeUnlockOrderIndex(left.key) - getRecipeUnlockOrderIndex(right.key),
+    );
 
     this.researchCatalog = createResearchCatalog({
       recipes: this.recipes,
@@ -1165,6 +1189,11 @@ class BalanceSimulator {
       label,
     });
   }
+}
+
+function getRecipeUnlockOrderIndex(potionKey) {
+  const index = RECIPE_UNLOCK_ORDER.indexOf(potionKey);
+  return index >= 0 ? index : RECIPE_UNLOCK_ORDER.length;
 }
 
 function createResearchCatalog({ recipes, seedDefinitions }) {

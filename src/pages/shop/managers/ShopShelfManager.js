@@ -92,7 +92,6 @@ export class ShopShelfManager {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
     row.dataset.shopSlotNumber = String(slotNumber);
-    row.dataset.tutorialId = `shop:stand:${slotNumber}`;
 
     const label = document.createElement('span');
     label.className = 'row_key';
@@ -103,6 +102,7 @@ export class ShopShelfManager {
 
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
+    itemValue.dataset.tutorialId = `shop:stand:${slotNumber}`;
     itemValue.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
     itemValue.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') {
@@ -146,11 +146,11 @@ export class ShopShelfManager {
     const emptyButton = document.createElement('button');
     emptyButton.className = 'shop-page__sell-item-button';
     emptyButton.type = 'button';
-    emptyButton.dataset.tutorialId = 'shop:sell:empty';
     emptyButton.addEventListener('click', () => this.onClearSellItem());
 
     const emptyLabel = document.createElement('span');
     emptyLabel.className = 'row_key';
+    emptyLabel.dataset.tutorialId = 'shop:sell:empty';
     emptyLabel.textContent = 'empty';
 
     emptyButton.append(emptyLabel);
@@ -539,11 +539,11 @@ export class ShopShelfManager {
       const button = document.createElement('button');
       button.className = 'shop-page__sell-item-button';
       button.type = 'button';
-      button.dataset.tutorialId = `shop:sell:${item.key}`;
       button.addEventListener('click', () => this.onSetSellItem(item.itemTypeId));
 
       const label = document.createElement('span');
       label.className = 'row_key';
+      label.dataset.tutorialId = `shop:sell:${item.key}`;
 
       const quantity = document.createElement('span');
       quantity.className = 'row_val';

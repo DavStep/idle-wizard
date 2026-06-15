@@ -585,6 +585,18 @@ export class GameplayFacade {
     return result;
   }
 
+  setPlayerShopRequest(slotNumber, request) {
+    const result = this.shopFacade.setPlayerShopRequest(slotNumber, request);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  clearPlayerShopRequest(slotNumber) {
+    const result = this.shopFacade.clearPlayerShopRequest(slotNumber);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   applyPlayerShopMarketSlotQuantity(slotNumber, quantity) {
     const result = this.shopFacade.applyPlayerShopMarketSlotQuantity(slotNumber, quantity);
     this.publishAndSaveSnapshot();

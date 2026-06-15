@@ -110,7 +110,7 @@ The server module defines:
 - `player`: one row per SpacetimeDB identity, with `username`, visual preferences, player level, connection state, and timestamps.
 - `player_gameplay_save`: one row per identity, with the full gameplay save JSON and update time.
 - `leaderboard`: one row per identity, with `username`, player level, all-time `totalIncome`, current daily/weekly/monthly income counters, and period keys.
-- `leaderboard_summary`: public indexed view returning each period top ten plus the subscribing player's own row and rank fields.
+- `leaderboard_summary`: public indexed view returning each period top ten plus the subscribing player's own row, alliance tag, and rank fields.
 - `world_chat`: one row per chat message, with sender identity, username, sender player level, alliance tag, body, and timestamp. `world_chat_recent` exposes only the latest 40 messages for the client.
 - `trade_alliance`: one row per alliance, with unique tag, leader identity, join mode, member count, all-time/daily/weekly/monthly income totals, and period keys.
 - `trade_alliance_member`: one row per member identity, with alliance id, username/player-level snapshot, role, lifetime contribution, and current weekly contribution in the legacy `dailyContribution` column.

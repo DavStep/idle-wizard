@@ -8,6 +8,7 @@ import { ShopPlayerRequestManager } from './ShopPlayerRequestManager.js';
 import { ShopShelfManager } from './ShopShelfManager.js';
 
 function createRequestGameplayFacadeFake() {
+  const listeners = new Set();
   const snapshot = {
     research: {
       completedResearchIds: [
@@ -65,16 +66,75 @@ function createRequestGameplayFacadeFake() {
           { slotNumber: 5, unlocked: false },
         ],
       },
+      playerRequests: {
+        maxSlots: 5,
+        nextSlotNumber: 3,
+        nextSlotLockedByLevel: true,
+        nextSlotRequiresLevel: 5,
+        slots: [
+          { slotNumber: 1, unlocked: true },
+          { slotNumber: 2, unlocked: true },
+          { slotNumber: 3, unlocked: false },
+          { slotNumber: 4, unlocked: false },
+          { slotNumber: 5, unlocked: false },
+        ],
+      },
     },
   };
 
+  const publish = () => {
+    for (const listener of listeners) {
+      listener(snapshot);
+    }
+  };
+  const getRequestItem = (itemTypeId) =>
+    snapshot.shop.playerShelf.sellItems.find((item) => item.itemTypeId === itemTypeId);
+  const getRequestSlot = (slotNumber) =>
+    snapshot.shop.playerRequests.slots.find((slot) => slot.slotNumber === slotNumber);
+
   return {
     subscribe(callback) {
+      listeners.add(callback);
       callback(snapshot);
-      return () => {};
+      return () => listeners.delete(callback);
     },
     getSnapshot() {
       return snapshot;
+    },
+    setPlayerShopRequest(slotNumber, { itemTypeId, quantity, priceGold }) {
+      const slot = getRequestSlot(slotNumber);
+      const item = getRequestItem(itemTypeId);
+
+      if (!slot?.unlocked || !item) {
+        return { ok: false, reason: 'slot_locked' };
+      }
+
+      Object.assign(slot, {
+        itemTypeId: item.itemTypeId,
+        itemKey: item.key,
+        itemKind: item.kind,
+        itemLabel: item.label,
+        quantity,
+        priceGold,
+      });
+      publish();
+      return { ok: true, slotNumber, item, quantity, priceGold };
+    },
+    clearPlayerShopRequest(slotNumber) {
+      const slot = getRequestSlot(slotNumber);
+
+      if (!slot?.unlocked) {
+        return { ok: false, reason: 'slot_locked' };
+      }
+
+      delete slot.itemTypeId;
+      delete slot.itemKey;
+      delete slot.itemKind;
+      delete slot.itemLabel;
+      delete slot.quantity;
+      delete slot.priceGold;
+      publish();
+      return { ok: true, slotNumber };
     },
   };
 }
@@ -457,6 +517,76 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('keeps NPC market tutorial targets on item names, not prices', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 1,
+              sellGold: 8,
+              sellNeed: 12,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: null,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+    manager.showSellPopup();
+
+    const row = stage.querySelector('.shop-page__slot-row');
+    const standTarget = stage.querySelector('[data-tutorial-id="shop:stand:1"]');
+    const sellTarget = popupLayer.querySelector('[data-tutorial-id="shop:sell:sageSeed"]');
+    const emptyTarget = popupLayer.querySelector('[data-tutorial-id="shop:sell:empty"]');
+
+    expect(row?.dataset.tutorialId).toBeUndefined();
+    expect(standTarget?.classList.contains('shop-page__slot-item-value')).toBe(true);
+    expect(
+      stage.querySelector('.shop-page__slot-price-value')?.dataset.tutorialId,
+    ).toBeUndefined();
+    expect(sellTarget?.classList.contains('row_key')).toBe(true);
+    expect(sellTarget?.closest('.shop-page__sell-item-button')?.textContent).toBe(
+      'sage seed (1) 8 gold',
+    );
+    expect(emptyTarget?.classList.contains('row_key')).toBe(true);
+    expect(
+      popupLayer.querySelector('.shop-page__sell-item-button > .row_val')?.dataset
+        .tutorialId,
+    ).toBeUndefined();
+
+    manager.unmount();
+  });
+
   it('keeps NPC market stand item text stable across renders so taps can open picker', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -553,6 +683,86 @@ describe('ShopShelfManager', () => {
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 1000)).toBe(
       'buy (1k gold)',
     );
+  });
+
+  it('uses selling and buying tabs in browse market popup', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 10 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        playerShelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [],
+          slots: [{ slotNumber: 1, unlocked: true }],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      applyPlayerShopMarketSlotQuantity() {},
+    };
+    const playerShopSnapshot = {
+      connected: true,
+      listings: [
+        {
+          listingKey: 'seller:1',
+          sellerIdentity: 'seller',
+          username: 'Merlin',
+          slotNumber: 1,
+          itemKey: 'sageSeed',
+          itemLabel: 'sage seed',
+          itemKind: 'seed',
+          quantity: 3,
+          priceGold: 2,
+        },
+      ],
+      ownListings: [],
+      proceedsGold: 0,
+    };
+    const playerShopFacade = {
+      subscribe(callback) {
+        callback(playerShopSnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return playerShopSnapshot;
+      },
+    };
+    const manager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
+
+    manager.mount(stage, popupLayer);
+    stage
+      .querySelector('.shop-page__other-shops-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.shop-page__market-popup');
+    const tabButtons = [...popup.querySelectorAll('.shop-page__market-popup-tab-button')];
+
+    expect(tabButtons.map((button) => button.textContent)).toEqual(['selling', 'buying']);
+    expect(tabButtons[0].getAttribute('aria-selected')).toBe('true');
+    expect(popup.querySelector('.shop-page__market-seller-name')?.textContent).toBe('Merlin');
+    expect(popup.querySelector('.shop-page__market-message')?.hidden).toBe(true);
+
+    tabButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(tabButtons[1].getAttribute('aria-selected')).toBe('true');
+    expect(popup.querySelector('.shop-page__market-seller')).toBeNull();
+    expect(popup.querySelector('.shop-page__market-message')?.textContent).toBe(
+      'no buy requests',
+    );
+
+    manager.unmount();
   });
 
   it('labels empty player market stands by lock state', () => {

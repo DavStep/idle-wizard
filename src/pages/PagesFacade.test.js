@@ -663,6 +663,65 @@ function createGameplayFacadeFake() {
           },
         ],
       },
+      playerRequests: {
+        unlockedSlots: 1,
+        maxSlots: 5,
+        nextSlotNumber: 2,
+        nextSlotLockedByLevel: false,
+        nextSlotRequiresLevel: null,
+        slots: [
+          {
+            slotNumber: 1,
+            unlocked: true,
+            itemTypeId: null,
+            itemKey: null,
+            itemKind: null,
+            itemLabel: null,
+            quantity: 0,
+            priceGold: 0,
+          },
+          {
+            slotNumber: 2,
+            unlocked: false,
+            itemTypeId: null,
+            itemKey: null,
+            itemKind: null,
+            itemLabel: null,
+            quantity: 0,
+            priceGold: 0,
+          },
+          {
+            slotNumber: 3,
+            unlocked: false,
+            itemTypeId: null,
+            itemKey: null,
+            itemKind: null,
+            itemLabel: null,
+            quantity: 0,
+            priceGold: 0,
+          },
+          {
+            slotNumber: 4,
+            unlocked: false,
+            itemTypeId: null,
+            itemKey: null,
+            itemKind: null,
+            itemLabel: null,
+            quantity: 0,
+            priceGold: 0,
+          },
+          {
+            slotNumber: 5,
+            unlocked: false,
+            itemTypeId: null,
+            itemKey: null,
+            itemKind: null,
+            itemLabel: null,
+            quantity: 0,
+            priceGold: 0,
+          },
+        ],
+      },
     },
     garden: {
       plot: {
@@ -722,6 +781,7 @@ function createGameplayFacadeFake() {
       topUsers: [
         {
           name: 'Ada',
+          allianceTag: 'VOID',
           playerLevel: 2,
           income: 3,
           totalGeneratedGold: 0,
@@ -2064,6 +2124,62 @@ function createGameplayFacadeFake() {
 
       if (item) {
         item.quantity += slot.quantity;
+      }
+
+      slot.itemTypeId = null;
+      slot.itemKey = null;
+      slot.itemKind = null;
+      slot.itemLabel = null;
+      slot.quantity = 0;
+      slot.priceGold = 0;
+      publish();
+
+      return {
+        ok: true,
+        slotNumber,
+      };
+    },
+    setPlayerShopRequest: (slotNumber, { itemTypeId, quantity, priceGold }) => {
+      const slot = snapshot.shop.playerRequests.slots.find(
+        (requestSlot) => requestSlot.slotNumber === slotNumber,
+      );
+      const item = snapshot.shop.playerShelf.sellItems.find(
+        (sellItem) => sellItem.itemTypeId === itemTypeId,
+      );
+
+      if (!slot?.unlocked || !item) {
+        return {
+          ok: false,
+          reason: 'slot_locked',
+        };
+      }
+
+      slot.itemTypeId = item.itemTypeId;
+      slot.itemKey = item.key;
+      slot.itemKind = item.kind;
+      slot.itemLabel = item.label;
+      slot.quantity = quantity;
+      slot.priceGold = priceGold;
+      publish();
+
+      return {
+        ok: true,
+        slotNumber,
+        item,
+        quantity,
+        priceGold,
+      };
+    },
+    clearPlayerShopRequest: (slotNumber) => {
+      const slot = snapshot.shop.playerRequests.slots.find(
+        (requestSlot) => requestSlot.slotNumber === slotNumber,
+      );
+
+      if (!slot?.unlocked) {
+        return {
+          ok: false,
+          reason: 'slot_locked',
+        };
       }
 
       slot.itemTypeId = null;
@@ -5078,6 +5194,7 @@ describe('PagesFacade', () => {
     gameplayFacade.getSnapshot().leaderboard.topDailyUsers = [
       {
         name: 'Daily Ada',
+        allianceTag: 'DAY',
         playerLevel: 3,
         dailyIncome: 17,
         weeklyIncome: 18,
@@ -5146,7 +5263,7 @@ describe('PagesFacade', () => {
     const rowValues = [
       ...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val'),
     ].map((row) => row.textContent);
-    expect(rowLabels).toEqual(['user', '1. Ada(2)', '2. Merlin(10)']);
+    expect(rowLabels).toEqual(['user', '1. [VOID] Ada (2)', '2. Merlin (10)']);
     expect(rowValues).toEqual(['all time', '120', '75']);
 
     const dailyButton = periodButtons.find((tabButton) => tabButton.textContent === 'daily');
@@ -5158,7 +5275,7 @@ describe('PagesFacade', () => {
       [...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_key')].map(
         (row) => row.textContent,
       ),
-    ).toEqual(['user', '1. Daily Ada(3)']);
+    ).toEqual(['user', '1. [DAY] Daily Ada (3)']);
     expect(
       [...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val')].map(
         (row) => row.textContent,
@@ -5200,6 +5317,7 @@ describe('PagesFacade', () => {
       topIncomeUsers: [],
       currentGeneratedGoldUser: {
         name: 'Mine',
+        allianceTag: 'SELF',
         playerLevel: 4,
         income: 0,
         totalGeneratedGold: 1,
@@ -5223,17 +5341,17 @@ describe('PagesFacade', () => {
 
     expect(rowLabels).toEqual([
       'user',
-      '1. Player 1(1)',
-      '2. Player 2(2)',
-      '3. Player 3(3)',
-      '4. Player 4(4)',
-      '5. Player 5(5)',
-      '6. Player 6(6)',
-      '7. Player 7(7)',
-      '8. Player 8(8)',
-      '9. Player 9(9)',
-      '10. Player 10(10)',
-      '12. Mine(4)',
+      '1. Player 1 (1)',
+      '2. Player 2 (2)',
+      '3. Player 3 (3)',
+      '4. Player 4 (4)',
+      '5. Player 5 (5)',
+      '6. Player 6 (6)',
+      '7. Player 7 (7)',
+      '8. Player 8 (8)',
+      '9. Player 9 (9)',
+      '10. Player 10 (10)',
+      '12. [SELF] Mine (4)',
     ]);
     expect(rowValues.at(-1)).toBe('1');
   });
@@ -5269,7 +5387,7 @@ describe('PagesFacade', () => {
 
     const mineRows = [
       ...stage.querySelectorAll('.workshop-page__leaderboard-rows .row_key'),
-    ].filter((row) => row.textContent === '3. Mine(3)');
+    ].filter((row) => row.textContent === '3. Mine (3)');
 
     expect(mineRows).toHaveLength(1);
   });
@@ -8555,7 +8673,7 @@ describe('PagesFacade', () => {
     buyQuantityInput.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     marketPopup
-      .querySelector('.shop-page__market-row button')
+      .querySelector('.shop-page__market-buy-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 

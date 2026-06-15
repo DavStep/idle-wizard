@@ -369,8 +369,7 @@ export class ShopStockManager {
     this.buyPopupVisible = true;
     this.applyBuyPopupVisibility();
     this.renderBuyDialog();
-    this.refs.buyQuantityField?.input.focus({ preventScroll: true });
-    this.refs.buyQuantityField?.input.select();
+    this.refs.buyQuantityField?.hideInput();
   }
 
   hideBuyPopup() {
@@ -516,9 +515,7 @@ export class ShopStockManager {
     this.buyQuantity = quantity;
     this.refs.buyQuantityField.input.max = String(maxQuantity);
 
-    if (this.refs.buyQuantityField.input.value !== String(quantity)) {
-      this.refs.buyQuantityField.input.value = String(quantity);
-    }
+    this.refs.buyQuantityField.setValue(quantity);
 
     for (const [delta, button] of this.refs.buyQuantityField.stepButtons) {
       const nextQuantity = this.clampSteppedBuyQuantity(quantity + delta, item);

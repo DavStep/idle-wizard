@@ -33,6 +33,24 @@ const recipeCatalog = [
     ],
   },
   {
+    potionKey: 'briarWard',
+    manaCost: 24,
+    brewDurationMs: 60_000,
+    ingredients: [
+      { itemKey: 'briarHerb', quantity: 2 },
+      { itemKey: 'sageHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'lanternTonic',
+    manaCost: 22,
+    brewDurationMs: 55_000,
+    ingredients: [
+      { itemKey: 'glowcapHerb', quantity: 2 },
+      { itemKey: 'mintHerb', quantity: 1 },
+    ],
+  },
+  {
     potionKey: 'simpleAntidote',
     manaCost: 22,
     brewDurationMs: 50_000,
@@ -53,24 +71,6 @@ const recipeCatalog = [
     ],
   },
   {
-    potionKey: 'briarWard',
-    manaCost: 24,
-    brewDurationMs: 60_000,
-    ingredients: [
-      { itemKey: 'briarHerb', quantity: 2 },
-      { itemKey: 'sageHerb', quantity: 2 },
-    ],
-  },
-  {
-    potionKey: 'lanternTonic',
-    manaCost: 22,
-    brewDurationMs: 55_000,
-    ingredients: [
-      { itemKey: 'glowcapHerb', quantity: 2 },
-      { itemKey: 'mintHerb', quantity: 1 },
-    ],
-  },
-  {
     potionKey: 'healingPotion',
     manaCost: 26,
     brewDurationMs: 65_000,
@@ -80,21 +80,21 @@ const recipeCatalog = [
     ],
   },
   {
-    potionKey: 'moonlitFocus',
-    manaCost: 30,
-    brewDurationMs: 70_000,
-    ingredients: [
-      { itemKey: 'moonflowerHerb', quantity: 1 },
-      { itemKey: 'lavenderHerb', quantity: 2 },
-    ],
-  },
-  {
     potionKey: 'sunrootStamina',
     manaCost: 34,
     brewDurationMs: 75_000,
     ingredients: [
       { itemKey: 'sunrootHerb', quantity: 2 },
       { itemKey: 'nettleHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'moonlitFocus',
+    manaCost: 30,
+    brewDurationMs: 70_000,
+    ingredients: [
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 2 },
     ],
   },
   {
@@ -136,16 +136,6 @@ const recipeCatalog = [
     ],
   },
   {
-    potionKey: 'dragonCourage',
-    manaCost: 58,
-    brewDurationMs: 125_000,
-    ingredients: [
-      { itemKey: 'dragonpepperHerb', quantity: 1 },
-      { itemKey: 'sunrootHerb', quantity: 2 },
-      { itemKey: 'nettleHerb', quantity: 2 },
-    ],
-  },
-  {
     potionKey: 'deepDreamVision',
     manaCost: 62,
     brewDurationMs: 135_000,
@@ -163,6 +153,16 @@ const recipeCatalog = [
       { itemKey: 'bloodroseHerb', quantity: 1 },
       { itemKey: 'briarHerb', quantity: 2 },
       { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'dragonCourage',
+    manaCost: 58,
+    brewDurationMs: 125_000,
+    ingredients: [
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'sunrootHerb', quantity: 2 },
+      { itemKey: 'nettleHerb', quantity: 2 },
     ],
   },
   {

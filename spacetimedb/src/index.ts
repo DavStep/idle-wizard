@@ -79,6 +79,7 @@ const MAX_PLAYER_SAVE_LOG_ENTRIES = 100;
 const MAX_PLAYER_SAVE_LOG_MESSAGE_LENGTH = 240;
 const MAX_PLAYER_SAVE_ITEM_STACKS = 400;
 const MAX_PLAYER_SAVE_ITEM_QUANTITY = 10_000;
+const MAX_PLAYER_SAVE_CAULDRONS = 20;
 const MAX_PLAYER_SAVE_MANA_CURRENT = 5_000;
 const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
 const MAX_PLAYER_SAVE_CURRENT_GOLD = 250_000;
@@ -172,6 +173,197 @@ const npcMarketAdminIdentityAllowlist = new Set(
 );
 
 const DEFAULT_TASKS_CONFIG_JSON = "{\"levels\":[{\"level\":1,\"completionCostGold\":10,\"tasks\":[{\"id\":\"level1-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":10}]},{\"level\":2,\"tasks\":[{\"id\":\"level2-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":20},{\"id\":\"level2-sage-herb\",\"itemKey\":\"sageHerb\",\"quantity\":6}]},{\"level\":3,\"tasks\":[{\"id\":\"level3-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":40},{\"id\":\"level3-mint-seeds\",\"itemKey\":\"mintSeed\",\"quantity\":10},{\"id\":\"level3-mint-herb\",\"itemKey\":\"mintHerb\",\"quantity\":18}]},{\"level\":4,\"tasks\":[{\"id\":\"level4-sage-herb\",\"itemKey\":\"sageHerb\",\"quantity\":24},{\"id\":\"level4-mana-tonic\",\"itemKey\":\"manaTonic\",\"quantity\":4}]},{\"level\":5,\"tasks\":[{\"id\":\"level5-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":120},{\"id\":\"level5-mint-seeds\",\"itemKey\":\"mintSeed\",\"quantity\":90},{\"id\":\"level5-sage-herb\",\"itemKey\":\"sageHerb\",\"quantity\":80},{\"id\":\"level5-mint-herb\",\"itemKey\":\"mintHerb\",\"quantity\":60},{\"id\":\"level5-mana-tonic\",\"itemKey\":\"manaTonic\",\"quantity\":12}]},{\"level\":6,\"tasks\":[{\"id\":\"level6-nettle-seeds\",\"itemKey\":\"nettleSeed\",\"quantity\":110},{\"id\":\"level6-mandrake-herb\",\"itemKey\":\"mandrakeHerb\",\"quantity\":65},{\"id\":\"level6-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":12},{\"id\":\"level6-sunroot-seeds\",\"itemKey\":\"sunrootSeed\",\"quantity\":90},{\"id\":\"level6-sunroot-stamina\",\"itemKey\":\"sunrootStamina\",\"quantity\":10}]},{\"level\":7,\"tasks\":[{\"id\":\"level7-moonflower-seeds\",\"itemKey\":\"moonflowerSeed\",\"quantity\":105},{\"id\":\"level7-moonflower-herb\",\"itemKey\":\"moonflowerHerb\",\"quantity\":75},{\"id\":\"level7-moonlit-focus\",\"itemKey\":\"moonlitFocus\",\"quantity\":12},{\"id\":\"level7-lavender-herb\",\"itemKey\":\"lavenderHerb\",\"quantity\":80},{\"id\":\"level7-calming-draught\",\"itemKey\":\"calmingDraught\",\"quantity\":14}]},{\"level\":8,\"tasks\":[{\"id\":\"level8-frostmoss-seeds\",\"itemKey\":\"frostmossSeed\",\"quantity\":125},{\"id\":\"level8-frostmoss-herb\",\"itemKey\":\"frostmossHerb\",\"quantity\":90},{\"id\":\"level8-frostmoss-cleanse\",\"itemKey\":\"frostmossCleanse\",\"quantity\":16},{\"id\":\"level8-briar-herb\",\"itemKey\":\"briarHerb\",\"quantity\":95},{\"id\":\"level8-briar-ward\",\"itemKey\":\"briarWard\",\"quantity\":15}]},{\"level\":9,\"tasks\":[{\"id\":\"level9-dreambell-seeds\",\"itemKey\":\"dreambellSeed\",\"quantity\":145},{\"id\":\"level9-dreambell-herb\",\"itemKey\":\"dreambellHerb\",\"quantity\":105},{\"id\":\"level9-sleep-draught\",\"itemKey\":\"sleepDraught\",\"quantity\":18},{\"id\":\"level9-mana-tonic\",\"itemKey\":\"manaTonic\",\"quantity\":25},{\"id\":\"level9-healing-potion\",\"itemKey\":\"healingPotion\",\"quantity\":18}]},{\"level\":10,\"tasks\":[{\"id\":\"level10-star-anise-seeds\",\"itemKey\":\"starAniseSeed\",\"quantity\":165},{\"id\":\"level10-star-anise-herb\",\"itemKey\":\"starAniseHerb\",\"quantity\":120},{\"id\":\"level10-star-luck-philtre\",\"itemKey\":\"starLuckPhiltre\",\"quantity\":20},{\"id\":\"level10-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":200},{\"id\":\"level10-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":24}]},{\"level\":11,\"tasks\":[{\"id\":\"level11-bloodrose-seeds\",\"itemKey\":\"bloodroseSeed\",\"quantity\":185},{\"id\":\"level11-bloodrose-herb\",\"itemKey\":\"bloodroseHerb\",\"quantity\":135},{\"id\":\"level11-elixir-of-life\",\"itemKey\":\"elixirOfLife\",\"quantity\":22},{\"id\":\"level11-moonlit-focus\",\"itemKey\":\"moonlitFocus\",\"quantity\":25},{\"id\":\"level11-simple-antidote\",\"itemKey\":\"simpleAntidote\",\"quantity\":28}]},{\"level\":12,\"tasks\":[{\"id\":\"level12-dragonpepper-seeds\",\"itemKey\":\"dragonpepperSeed\",\"quantity\":205},{\"id\":\"level12-dragonpepper-herb\",\"itemKey\":\"dragonpepperHerb\",\"quantity\":150},{\"id\":\"level12-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":24},{\"id\":\"level12-sunroot-stamina\",\"itemKey\":\"sunrootStamina\",\"quantity\":28},{\"id\":\"level12-frostmoss-cleanse\",\"itemKey\":\"frostmossCleanse\",\"quantity\":26}]},{\"level\":13,\"tasks\":[{\"id\":\"level13-glowcap-seeds\",\"itemKey\":\"glowcapSeed\",\"quantity\":230},{\"id\":\"level13-mandrake-herb\",\"itemKey\":\"mandrakeHerb\",\"quantity\":165},{\"id\":\"level13-deep-dream-vision\",\"itemKey\":\"deepDreamVision\",\"quantity\":26},{\"id\":\"level13-star-anise-herb\",\"itemKey\":\"starAniseHerb\",\"quantity\":160},{\"id\":\"level13-star-luck-philtre\",\"itemKey\":\"starLuckPhiltre\",\"quantity\":30}]},{\"level\":14,\"tasks\":[{\"id\":\"level14-briar-seeds\",\"itemKey\":\"briarSeed\",\"quantity\":250},{\"id\":\"level14-bloodrose-herb\",\"itemKey\":\"bloodroseHerb\",\"quantity\":180},{\"id\":\"level14-pact-ward\",\"itemKey\":\"pactWard\",\"quantity\":28},{\"id\":\"level14-venom-draught\",\"itemKey\":\"venomDraught\",\"quantity\":34},{\"id\":\"level14-briar-ward\",\"itemKey\":\"briarWard\",\"quantity\":32}]},{\"level\":15,\"tasks\":[{\"id\":\"level15-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":300},{\"id\":\"level15-mint-herb\",\"itemKey\":\"mintHerb\",\"quantity\":220},{\"id\":\"level15-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":40},{\"id\":\"level15-healing-potion\",\"itemKey\":\"healingPotion\",\"quantity\":38},{\"id\":\"level15-elixir-of-life\",\"itemKey\":\"elixirOfLife\",\"quantity\":34}]},{\"level\":16,\"tasks\":[{\"id\":\"level16-nettle-seeds\",\"itemKey\":\"nettleSeed\",\"quantity\":330},{\"id\":\"level16-lavender-herb\",\"itemKey\":\"lavenderHerb\",\"quantity\":240},{\"id\":\"level16-calming-draught\",\"itemKey\":\"calmingDraught\",\"quantity\":44},{\"id\":\"level16-sleep-draught\",\"itemKey\":\"sleepDraught\",\"quantity\":38},{\"id\":\"level16-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":36}]},{\"level\":17,\"tasks\":[{\"id\":\"level17-moonflower-seeds\",\"itemKey\":\"moonflowerSeed\",\"quantity\":360},{\"id\":\"level17-frostmoss-herb\",\"itemKey\":\"frostmossHerb\",\"quantity\":260},{\"id\":\"level17-moonlit-focus\",\"itemKey\":\"moonlitFocus\",\"quantity\":46},{\"id\":\"level17-frostmoss-cleanse\",\"itemKey\":\"frostmossCleanse\",\"quantity\":42},{\"id\":\"level17-deep-dream-vision\",\"itemKey\":\"deepDreamVision\",\"quantity\":38}]},{\"level\":18,\"tasks\":[{\"id\":\"level18-star-anise-seeds\",\"itemKey\":\"starAniseSeed\",\"quantity\":390},{\"id\":\"level18-dragonpepper-herb\",\"itemKey\":\"dragonpepperHerb\",\"quantity\":280},{\"id\":\"level18-star-luck-philtre\",\"itemKey\":\"starLuckPhiltre\",\"quantity\":48},{\"id\":\"level18-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":44},{\"id\":\"level18-pact-ward\",\"itemKey\":\"pactWard\",\"quantity\":40}]},{\"level\":19,\"tasks\":[{\"id\":\"level19-bloodrose-seeds\",\"itemKey\":\"bloodroseSeed\",\"quantity\":430},{\"id\":\"level19-bloodrose-herb\",\"itemKey\":\"bloodroseHerb\",\"quantity\":310},{\"id\":\"level19-elixir-of-life\",\"itemKey\":\"elixirOfLife\",\"quantity\":52},{\"id\":\"level19-deep-dream-vision\",\"itemKey\":\"deepDreamVision\",\"quantity\":46},{\"id\":\"level19-pact-ward\",\"itemKey\":\"pactWard\",\"quantity\":44}]},{\"level\":20,\"tasks\":[{\"id\":\"level20-sage-seeds\",\"itemKey\":\"sageSeed\",\"quantity\":500},{\"id\":\"level20-nettle-vigor\",\"itemKey\":\"nettleVigor\",\"quantity\":140},{\"id\":\"level20-dragonpepper-seeds\",\"itemKey\":\"dragonpepperSeed\",\"quantity\":460},{\"id\":\"level20-dragonpepper-herb\",\"itemKey\":\"dragonpepperHerb\",\"quantity\":340},{\"id\":\"level20-dragon-courage\",\"itemKey\":\"dragonCourage\",\"quantity\":60}]}]}";
+const DEFAULT_CURRENT_TASKS_CONFIG_JSON = JSON.stringify({
+  levels: [
+    {
+      level: 1,
+      completionCostGold: 10,
+      tasks: [{ id: 'level1-sage-seeds', itemKey: 'sageSeed', quantity: 10 }],
+    },
+    {
+      level: 2,
+      tasks: [
+        { id: 'level2-sage-seeds', itemKey: 'sageSeed', quantity: 20 },
+        { id: 'level2-sage-herb', itemKey: 'sageHerb', quantity: 6 },
+      ],
+    },
+    {
+      level: 3,
+      tasks: [
+        { id: 'level3-sage-seeds', itemKey: 'sageSeed', quantity: 40 },
+        { id: 'level3-mint-seeds', itemKey: 'mintSeed', quantity: 10 },
+        { id: 'level3-mint-herb', itemKey: 'mintHerb', quantity: 18 },
+      ],
+    },
+    {
+      level: 4,
+      tasks: [
+        { id: 'level4-sage-herb', itemKey: 'sageHerb', quantity: 24 },
+        { id: 'level4-mana-tonic', itemKey: 'manaTonic', quantity: 4 },
+      ],
+    },
+    {
+      level: 5,
+      tasks: [
+        { id: 'level5-sage-seeds', itemKey: 'sageSeed', quantity: 120 },
+        { id: 'level5-mint-seeds', itemKey: 'mintSeed', quantity: 90 },
+        { id: 'level5-sage-herb', itemKey: 'sageHerb', quantity: 80 },
+        { id: 'level5-mint-herb', itemKey: 'mintHerb', quantity: 60 },
+        { id: 'level5-mana-tonic', itemKey: 'manaTonic', quantity: 12 },
+      ],
+    },
+    {
+      level: 6,
+      tasks: [
+        { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', quantity: 130 },
+        { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', quantity: 70 },
+        { id: 'level6-briar-seeds', itemKey: 'briarSeed', quantity: 80 },
+        { id: 'level6-calming-draught', itemKey: 'calmingDraught', quantity: 12 },
+        { id: 'level6-briar-ward', itemKey: 'briarWard', quantity: 8 },
+      ],
+    },
+    {
+      level: 7,
+      tasks: [
+        { id: 'level7-glowcap-seeds', itemKey: 'glowcapSeed', quantity: 120 },
+        { id: 'level7-glowcap-herb', itemKey: 'glowcapHerb', quantity: 80 },
+        { id: 'level7-simple-antidote', itemKey: 'simpleAntidote', quantity: 12 },
+        { id: 'level7-lantern-tonic', itemKey: 'lanternTonic', quantity: 14 },
+        { id: 'level7-nettle-vigor', itemKey: 'nettleVigor', quantity: 16 },
+      ],
+    },
+    {
+      level: 8,
+      tasks: [
+        { id: 'level8-mandrake-seeds', itemKey: 'mandrakeSeed', quantity: 135 },
+        { id: 'level8-mandrake-herb', itemKey: 'mandrakeHerb', quantity: 90 },
+        { id: 'level8-healing-potion', itemKey: 'healingPotion', quantity: 14 },
+        { id: 'level8-sunroot-seeds', itemKey: 'sunrootSeed', quantity: 115 },
+        { id: 'level8-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 10 },
+      ],
+    },
+    {
+      level: 9,
+      tasks: [
+        { id: 'level9-moonflower-seeds', itemKey: 'moonflowerSeed', quantity: 150 },
+        { id: 'level9-moonflower-herb', itemKey: 'moonflowerHerb', quantity: 100 },
+        { id: 'level9-moonlit-focus', itemKey: 'moonlitFocus', quantity: 14 },
+        { id: 'level9-frostmoss-seeds', itemKey: 'frostmossSeed', quantity: 125 },
+        { id: 'level9-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 12 },
+      ],
+    },
+    {
+      level: 10,
+      tasks: [
+        { id: 'level10-dreambell-seeds', itemKey: 'dreambellSeed', quantity: 170 },
+        { id: 'level10-dreambell-herb', itemKey: 'dreambellHerb', quantity: 115 },
+        { id: 'level10-sleep-draught', itemKey: 'sleepDraught', quantity: 16 },
+        { id: 'level10-star-anise-seeds', itemKey: 'starAniseSeed', quantity: 135 },
+        { id: 'level10-star-luck-philtre', itemKey: 'starLuckPhiltre', quantity: 12 },
+      ],
+    },
+    {
+      level: 11,
+      tasks: [
+        { id: 'level11-bloodrose-seeds', itemKey: 'bloodroseSeed', quantity: 185 },
+        { id: 'level11-bloodrose-herb', itemKey: 'bloodroseHerb', quantity: 130 },
+        { id: 'level11-pact-ward', itemKey: 'pactWard', quantity: 16 },
+        { id: 'level11-elixir-of-life', itemKey: 'elixirOfLife', quantity: 20 },
+        { id: 'level11-moonlit-focus', itemKey: 'moonlitFocus', quantity: 22 },
+      ],
+    },
+    {
+      level: 12,
+      tasks: [
+        { id: 'level12-dragonpepper-seeds', itemKey: 'dragonpepperSeed', quantity: 205 },
+        { id: 'level12-dragonpepper-herb', itemKey: 'dragonpepperHerb', quantity: 150 },
+        { id: 'level12-dragon-courage', itemKey: 'dragonCourage', quantity: 20 },
+        { id: 'level12-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 24 },
+        { id: 'level12-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 22 },
+      ],
+    },
+    {
+      level: 13,
+      tasks: [
+        { id: 'level13-glowcap-seeds', itemKey: 'glowcapSeed', quantity: 260 },
+        { id: 'level13-mandrake-herb', itemKey: 'mandrakeHerb', quantity: 180 },
+        { id: 'level13-venom-draught', itemKey: 'venomDraught', quantity: 32 },
+        { id: 'level13-healing-potion', itemKey: 'healingPotion', quantity: 34 },
+        { id: 'level13-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 32 },
+      ],
+    },
+    {
+      level: 14,
+      tasks: [
+        { id: 'level14-moonflower-seeds', itemKey: 'moonflowerSeed', quantity: 290 },
+        { id: 'level14-frostmoss-herb', itemKey: 'frostmossHerb', quantity: 200 },
+        { id: 'level14-moonlit-focus', itemKey: 'moonlitFocus', quantity: 36 },
+        { id: 'level14-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 34 },
+        { id: 'level14-sleep-draught', itemKey: 'sleepDraught', quantity: 30 },
+      ],
+    },
+    {
+      level: 15,
+      tasks: [
+        { id: 'level15-star-anise-seeds', itemKey: 'starAniseSeed', quantity: 320 },
+        { id: 'level15-bloodrose-herb', itemKey: 'bloodroseHerb', quantity: 220 },
+        { id: 'level15-star-luck-philtre', itemKey: 'starLuckPhiltre', quantity: 36 },
+        { id: 'level15-pact-ward', itemKey: 'pactWard', quantity: 32 },
+        { id: 'level15-elixir-of-life', itemKey: 'elixirOfLife', quantity: 36 },
+      ],
+    },
+    {
+      level: 16,
+      tasks: [
+        { id: 'level16-dragonpepper-seeds', itemKey: 'dragonpepperSeed', quantity: 350 },
+        { id: 'level16-dragonpepper-herb', itemKey: 'dragonpepperHerb', quantity: 240 },
+        { id: 'level16-dragon-courage', itemKey: 'dragonCourage', quantity: 34 },
+        { id: 'level16-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 40 },
+        { id: 'level16-pact-ward', itemKey: 'pactWard', quantity: 36 },
+      ],
+    },
+    {
+      level: 17,
+      tasks: [
+        { id: 'level17-lavender-herb', itemKey: 'lavenderHerb', quantity: 280 },
+        { id: 'level17-briar-herb', itemKey: 'briarHerb', quantity: 260 },
+        { id: 'level17-calming-draught', itemKey: 'calmingDraught', quantity: 52 },
+        { id: 'level17-briar-ward', itemKey: 'briarWard', quantity: 50 },
+        { id: 'level17-simple-antidote', itemKey: 'simpleAntidote', quantity: 48 },
+      ],
+    },
+    {
+      level: 18,
+      tasks: [
+        { id: 'level18-moonflower-herb', itemKey: 'moonflowerHerb', quantity: 290 },
+        { id: 'level18-frostmoss-herb', itemKey: 'frostmossHerb', quantity: 280 },
+        { id: 'level18-sleep-draught', itemKey: 'sleepDraught', quantity: 46 },
+        { id: 'level18-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 48 },
+        { id: 'level18-deep-dream-vision', itemKey: 'deepDreamVision', quantity: 36 },
+      ],
+    },
+    {
+      level: 19,
+      tasks: [
+        { id: 'level19-bloodrose-seeds', itemKey: 'bloodroseSeed', quantity: 430 },
+        { id: 'level19-star-anise-herb', itemKey: 'starAniseHerb', quantity: 310 },
+        { id: 'level19-dragon-courage', itemKey: 'dragonCourage', quantity: 46 },
+        { id: 'level19-deep-dream-vision', itemKey: 'deepDreamVision', quantity: 44 },
+        { id: 'level19-pact-ward', itemKey: 'pactWard', quantity: 46 },
+      ],
+    },
+    {
+      level: 20,
+      tasks: [
+        { id: 'level20-dragonpepper-seeds', itemKey: 'dragonpepperSeed', quantity: 500 },
+        { id: 'level20-dragonpepper-herb', itemKey: 'dragonpepperHerb', quantity: 360 },
+        { id: 'level20-dragon-courage', itemKey: 'dragonCourage', quantity: 60 },
+        { id: 'level20-pact-ward', itemKey: 'pactWard', quantity: 52 },
+        { id: 'level20-deep-dream-vision', itemKey: 'deepDreamVision', quantity: 52 },
+      ],
+    },
+  ],
+});
 const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = "{\"maxLevel\":20,\"mana\":{\"baseMaxManaCap\":50,\"maxManaCapPerLevel\":50,\"baseManaPerSecond\":1,\"manaPerSecondPerLevel\":1},\"crystal\":{\"perLevel\":1},\"milestones\":[{\"level\":1,\"maxGardenTiles\":2,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":2,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":1,\"maxPlayerMarketStands\":1},{\"level\":3,\"maxGardenTiles\":3,\"maxCauldrons\":1,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":5,\"maxGardenTiles\":5,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":8,\"maxGardenTiles\":7,\"maxCauldrons\":3,\"maxNpcMarketStands\":2,\"maxPlayerMarketStands\":2},{\"level\":10,\"maxGardenTiles\":8,\"maxCauldrons\":4,\"maxNpcMarketStands\":3,\"maxPlayerMarketStands\":3},{\"level\":13,\"maxGardenTiles\":9,\"maxCauldrons\":4,\"maxNpcMarketStands\":4,\"maxPlayerMarketStands\":4},{\"level\":17,\"maxGardenTiles\":10,\"maxCauldrons\":5,\"maxNpcMarketStands\":5,\"maxPlayerMarketStands\":5}]}";
 
 const herbCatalog = [
@@ -211,6 +403,35 @@ const knownPotionCatalog = [
   { key: 'deepDreamVision', label: 'deep dream vision' },
   { key: 'pactWard', label: 'pact ward' },
 ];
+
+const knownPotionResearchOrder = [
+  'manaTonic',
+  'minorHealingPotion',
+  'nettleVigor',
+  'calmingDraught',
+  'briarWard',
+  'lanternTonic',
+  'simpleAntidote',
+  'venomDraught',
+  'healingPotion',
+  'sunrootStamina',
+  'moonlitFocus',
+  'frostmossCleanse',
+  'sleepDraught',
+  'elixirOfLife',
+  'starLuckPhiltre',
+  'deepDreamVision',
+  'pactWard',
+  'dragonCourage',
+];
+
+const knownPotionCatalogByKey = new Map(
+  knownPotionCatalog.map((potion) => [potion.key, potion]),
+);
+const knownPotionResearchCatalog = knownPotionResearchOrder.flatMap((potionKey) => {
+  const potion = knownPotionCatalogByKey.get(potionKey);
+  return potion ? [potion] : [];
+});
 
 const unknownPotionCatalog = [
   { key: 'ashenMemory', label: 'ashen memory' },
@@ -276,40 +497,40 @@ const potionMarketBasePriceGoldByKey: Record<string, number> = {
 const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockSeed:sageSeed': 0n,
   'unlockSeed:mintSeed': 5n,
-  'unlockSeed:nettleSeed': 50n,
-  'unlockSeed:lavenderSeed': 90n,
-  'unlockSeed:briarSeed': 150n,
-  'unlockSeed:glowcapSeed': 240n,
-  'unlockSeed:mandrakeSeed': 360n,
-  'unlockSeed:sunrootSeed': 520n,
-  'unlockSeed:moonflowerSeed': 720n,
-  'unlockSeed:frostmossSeed': 980n,
-  'unlockSeed:dreambellSeed': 1_300n,
-  'unlockSeed:starAniseSeed': 1_700n,
-  'unlockSeed:bloodroseSeed': 2_200n,
-  'unlockSeed:dragonpepperSeed': 2_800n,
+  'unlockSeed:nettleSeed': 80n,
+  'unlockSeed:lavenderSeed': 140n,
+  'unlockSeed:briarSeed': 230n,
+  'unlockSeed:glowcapSeed': 360n,
+  'unlockSeed:mandrakeSeed': 540n,
+  'unlockSeed:sunrootSeed': 780n,
+  'unlockSeed:moonflowerSeed': 1_100n,
+  'unlockSeed:frostmossSeed': 1_500n,
+  'unlockSeed:dreambellSeed': 2_000n,
+  'unlockSeed:starAniseSeed': 2_600n,
+  'unlockSeed:bloodroseSeed': 3_400n,
+  'unlockSeed:dragonpepperSeed': 4_400n,
   'summonSeedsX2': 300n,
   'summonSeedsX3': 900n,
   'summonSeedsX4': 2_200n,
   'summonSeedsX5': 5_000n,
   'unlockRecipe:manaTonic': 80n,
-  'unlockRecipe:minorHealingPotion': 120n,
-  'unlockRecipe:nettleVigor': 170n,
-  'unlockRecipe:calmingDraught': 240n,
-  'unlockRecipe:simpleAntidote': 330n,
-  'unlockRecipe:venomDraught': 450n,
-  'unlockRecipe:briarWard': 600n,
-  'unlockRecipe:lanternTonic': 780n,
-  'unlockRecipe:healingPotion': 1_000n,
-  'unlockRecipe:moonlitFocus': 1_260n,
-  'unlockRecipe:sunrootStamina': 1_580n,
-  'unlockRecipe:frostmossCleanse': 1_950n,
-  'unlockRecipe:sleepDraught': 2_380n,
-  'unlockRecipe:elixirOfLife': 2_880n,
+  'unlockRecipe:minorHealingPotion': 140n,
+  'unlockRecipe:nettleVigor': 220n,
+  'unlockRecipe:calmingDraught': 330n,
+  'unlockRecipe:briarWard': 460n,
+  'unlockRecipe:lanternTonic': 620n,
+  'unlockRecipe:simpleAntidote': 760n,
+  'unlockRecipe:venomDraught': 950n,
+  'unlockRecipe:healingPotion': 1_180n,
+  'unlockRecipe:sunrootStamina': 1_450n,
+  'unlockRecipe:moonlitFocus': 1_750n,
+  'unlockRecipe:frostmossCleanse': 2_100n,
+  'unlockRecipe:sleepDraught': 2_500n,
+  'unlockRecipe:elixirOfLife': 2_950n,
   'unlockRecipe:starLuckPhiltre': 3_450n,
-  'unlockRecipe:dragonCourage': 4_100n,
-  'unlockRecipe:deepDreamVision': 4_850n,
-  'unlockRecipe:pactWard': 5_700n,
+  'unlockRecipe:deepDreamVision': 4_100n,
+  'unlockRecipe:pactWard': 4_850n,
+  'unlockRecipe:dragonCourage': 5_700n,
   'automation:autoPlantTile:1': 1n,
   'automation:autoPlantTile:2': 2n,
   'automation:autoPlantTile:3': 3n,
@@ -493,6 +714,24 @@ const potionRecipeCatalog = [
     ],
   },
   {
+    potionKey: 'briarWard',
+    manaCost: 24,
+    brewDurationMs: 60_000,
+    ingredients: [
+      { itemKey: 'briarHerb', quantity: 2 },
+      { itemKey: 'sageHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'lanternTonic',
+    manaCost: 22,
+    brewDurationMs: 55_000,
+    ingredients: [
+      { itemKey: 'glowcapHerb', quantity: 2 },
+      { itemKey: 'mintHerb', quantity: 1 },
+    ],
+  },
+  {
     potionKey: 'simpleAntidote',
     manaCost: 22,
     brewDurationMs: 50_000,
@@ -513,24 +752,6 @@ const potionRecipeCatalog = [
     ],
   },
   {
-    potionKey: 'briarWard',
-    manaCost: 24,
-    brewDurationMs: 60_000,
-    ingredients: [
-      { itemKey: 'briarHerb', quantity: 2 },
-      { itemKey: 'sageHerb', quantity: 2 },
-    ],
-  },
-  {
-    potionKey: 'lanternTonic',
-    manaCost: 22,
-    brewDurationMs: 55_000,
-    ingredients: [
-      { itemKey: 'glowcapHerb', quantity: 2 },
-      { itemKey: 'mintHerb', quantity: 1 },
-    ],
-  },
-  {
     potionKey: 'healingPotion',
     manaCost: 26,
     brewDurationMs: 65_000,
@@ -540,21 +761,21 @@ const potionRecipeCatalog = [
     ],
   },
   {
-    potionKey: 'moonlitFocus',
-    manaCost: 30,
-    brewDurationMs: 70_000,
-    ingredients: [
-      { itemKey: 'moonflowerHerb', quantity: 1 },
-      { itemKey: 'lavenderHerb', quantity: 2 },
-    ],
-  },
-  {
     potionKey: 'sunrootStamina',
     manaCost: 34,
     brewDurationMs: 75_000,
     ingredients: [
       { itemKey: 'sunrootHerb', quantity: 2 },
       { itemKey: 'nettleHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'moonlitFocus',
+    manaCost: 30,
+    brewDurationMs: 70_000,
+    ingredients: [
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 2 },
     ],
   },
   {
@@ -596,16 +817,6 @@ const potionRecipeCatalog = [
     ],
   },
   {
-    potionKey: 'dragonCourage',
-    manaCost: 58,
-    brewDurationMs: 125_000,
-    ingredients: [
-      { itemKey: 'dragonpepperHerb', quantity: 1 },
-      { itemKey: 'sunrootHerb', quantity: 2 },
-      { itemKey: 'nettleHerb', quantity: 2 },
-    ],
-  },
-  {
     potionKey: 'deepDreamVision',
     manaCost: 62,
     brewDurationMs: 135_000,
@@ -623,6 +834,16 @@ const potionRecipeCatalog = [
       { itemKey: 'bloodroseHerb', quantity: 1 },
       { itemKey: 'briarHerb', quantity: 2 },
       { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'dragonCourage',
+    manaCost: 58,
+    brewDurationMs: 125_000,
+    ingredients: [
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'sunrootHerb', quantity: 2 },
+      { itemKey: 'nettleHerb', quantity: 2 },
     ],
   },
   {
@@ -852,7 +1073,7 @@ const researchCatalog = [
     groupId: 'summonSeeds',
     defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
   })),
-  ...knownPotionCatalog.map((potion) => {
+  ...knownPotionResearchCatalog.map((potion) => {
     const id = `unlockRecipe:${potion.key}`;
     return {
       researchId: id,
@@ -1070,7 +1291,7 @@ const DEFAULT_MAINTENANCE_CONFIG_JSON = toGameConfigJson({
 });
 
 const gameConfigCatalog = [
-  { configKey: 'tasks', configJson: DEFAULT_TASKS_CONFIG_JSON },
+  { configKey: 'tasks', configJson: DEFAULT_CURRENT_TASKS_CONFIG_JSON },
   { configKey: 'playerLevel', configJson: DEFAULT_PLAYER_LEVEL_CONFIG_JSON },
   { configKey: 'garden', configJson: DEFAULT_GARDEN_CONFIG_JSON },
   { configKey: 'shop', configJson: DEFAULT_SHOP_CONFIG_JSON },
@@ -1562,6 +1783,7 @@ const leaderboardSummaryResult = t.array(
   t.row('LeaderboardSummaryResult', {
     identity: t.identity().primaryKey(),
     username: t.string(),
+    allianceTag: t.string(),
     totalIncome: t.u64(),
     income: t.u64(),
     dailyIncome: t.u64(),
@@ -3095,6 +3317,10 @@ function normalizeGameConfigJson(
     return normalizePotionRecipesGameConfigJson(parsedConfig, originalJson);
   }
 
+  if (configKey === 'items' && isRecord(parsedConfig)) {
+    return normalizeItemsGameConfigJson(parsedConfig, originalJson);
+  }
+
   if (configKey === 'tasks' && isRecord(parsedConfig)) {
     return normalizeTasksGameConfigJson(parsedConfig, originalJson);
   }
@@ -3344,6 +3570,48 @@ function normalizePotionRecipesGameConfigJson(
   });
 }
 
+function normalizeItemsGameConfigJson(
+  parsedConfig: Record<string, unknown>,
+  originalJson: string,
+): string {
+  const defaultConfig = JSON.parse(DEFAULT_ITEMS_CONFIG_JSON) as Record<string, unknown>;
+  const normalizedConfig = { ...parsedConfig };
+  let changed = false;
+
+  for (const key of ['seeds', 'herbs', 'potions']) {
+    const normalizedList = appendMissingItemConfigRows(
+      parsedConfig[key],
+      defaultConfig[key],
+    );
+
+    if (normalizedList !== parsedConfig[key]) {
+      normalizedConfig[key] = normalizedList;
+      changed = true;
+    }
+  }
+
+  return changed ? JSON.stringify(normalizedConfig) : originalJson;
+}
+
+function appendMissingItemConfigRows(existingRows: unknown, defaultRows: unknown) {
+  if (!Array.isArray(existingRows) || !Array.isArray(defaultRows)) {
+    return existingRows;
+  }
+
+  const seenKeys = new Set(
+    existingRows
+      .filter((row): row is Record<string, unknown> => isRecord(row))
+      .map((row) => normalizeNpcMarketItemKey(String(row.key ?? ''))),
+  );
+  const missingRows = defaultRows.filter((row) =>
+    isRecord(row)
+      ? !seenKeys.has(normalizeNpcMarketItemKey(String(row.key ?? '')))
+      : false,
+  );
+
+  return missingRows.length > 0 ? [...existingRows, ...missingRows] : existingRows;
+}
+
 function validatePlayerGameplaySaveJson(
   ctx: IdleWizardReducerCtx,
   saveJson: string,
@@ -3411,7 +3679,7 @@ function normalizePlayerGameplaySave(
     prestige: normalizeSavePrestige(save.prestige),
     visualSettings: normalizeSaveVisualSettings(ctx, save.visualSettings, identity),
     shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
-    brewing: normalizeSaveBrewing(save.brewing, itemCatalog),
+    brewing: normalizeSaveBrewing(save.brewing, itemCatalog, levelLimits.maxCauldrons),
     garden: normalizeSaveGarden(save.garden, itemCatalog, levelLimits),
     tasks,
   };
@@ -4105,8 +4373,8 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
 
   if (researchId.startsWith('unlockRecipe:')) {
     const potionKey = researchId.slice('unlockRecipe:'.length);
-    const index = knownPotionCatalog.findIndex((potion) => potion.key === potionKey);
-    return index > 0 ? [`unlockRecipe:${knownPotionCatalog[index - 1].key}`] : [];
+    const index = knownPotionResearchCatalog.findIndex((potion) => potion.key === potionKey);
+    return index > 0 ? [`unlockRecipe:${knownPotionResearchCatalog[index - 1].key}`] : [];
   }
 
   const summonIndex = summonSeedResearchCatalog.findIndex(
@@ -4233,10 +4501,16 @@ function normalizeSaveShop(
     itemCatalog,
     levelLimits.maxPlayerMarketStands,
   );
+  const playerRequests = normalizeSavePlayerShopRequests(
+    shop.playerRequests,
+    itemCatalog,
+    playerShelf.unlockedSlots,
+  );
 
   return {
     shelf,
     playerShelf,
+    playerRequests,
     goldOffer: normalizeSaveShopGoldOffer(shop.goldOffer),
   };
 }
@@ -4313,6 +4587,33 @@ function normalizeSavePlayerShopShelf(
   };
 }
 
+function normalizeSavePlayerShopRequests(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+  unlockedSlots: number,
+) {
+  const requests = isRecord(value) ? value : {};
+
+  return {
+    slots: normalizeSaveSlotRows(requests.slots, unlockedSlots, (slot) => {
+      const itemKey = normalizeSaveItemKey(slot.itemKey);
+      const itemKind = itemCatalog.get(itemKey);
+      const quantity = clampSaveInteger(slot.quantity, 0, MAX_PLAYER_SHOP_LISTING_QUANTITY, 0);
+      const priceGold = clampSaveGoldPrice(
+        slot.priceGold,
+        BigInt(MAX_PLAYER_SHOP_PRICE_GOLD),
+      );
+
+      return {
+        slotNumber: clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1),
+        itemKey: itemKind && quantity > 0 && priceGold > 0 ? itemKey : null,
+        quantity,
+        priceGold,
+      };
+    }),
+  };
+}
+
 function normalizeSaveSlotRows<T>(
   value: unknown,
   unlockedSlots: number,
@@ -4347,20 +4648,95 @@ function normalizeSaveSelectedNumber(value: unknown, max: number): number | null
   return selected > 0 ? selected : null;
 }
 
-function normalizeSaveBrewing(value: unknown, itemCatalog: Map<string, string>) {
+function normalizeSaveBrewing(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+  maxUnlockedCauldrons: number,
+) {
   const brewing = isRecord(value) ? value : {};
+  const maxCauldrons = clampSaveInteger(
+    maxUnlockedCauldrons,
+    1,
+    MAX_PLAYER_SAVE_CAULDRONS,
+    1,
+  );
+  const sourceCauldrons = Array.isArray(brewing.cauldrons)
+    ? brewing.cauldrons
+    : [
+        {
+          cauldronNumber: 1,
+          cauldronItemKeys: brewing.cauldronItemKeys,
+          activeBrew: brewing.activeBrew,
+        },
+      ];
+  const cauldronsByNumber = new Map<
+    number,
+    {
+      cauldronNumber: number;
+      cauldronItemKeys: string[];
+      activeBrew: ReturnType<typeof normalizeSaveActiveBrew>;
+    }
+  >();
+
+  for (const [index, sourceCauldron] of sourceCauldrons.entries()) {
+    if (!isRecord(sourceCauldron)) {
+      continue;
+    }
+
+    const fallbackCauldronNumber = index + 1;
+    const savedCauldronNumber = Math.floor(Number(sourceCauldron.cauldronNumber));
+    const cauldronNumber = Number.isInteger(savedCauldronNumber)
+      ? savedCauldronNumber
+      : fallbackCauldronNumber;
+
+    if (cauldronNumber < 1 || cauldronNumber > maxCauldrons) {
+      continue;
+    }
+
+    cauldronsByNumber.set(cauldronNumber, {
+      cauldronNumber,
+      cauldronItemKeys: normalizeSaveCauldronItemKeys(
+        sourceCauldron.cauldronItemKeys,
+        itemCatalog,
+      ),
+      activeBrew: normalizeSaveActiveBrew(sourceCauldron.activeBrew, itemCatalog),
+    });
+  }
+
+  const cauldrons = [...cauldronsByNumber.values()].sort(
+    (left, right) => left.cauldronNumber - right.cauldronNumber,
+  );
+  const primaryCauldron =
+    cauldrons.find((cauldron) => cauldron.cauldronNumber === 1) ?? {
+      cauldronNumber: 1,
+      cauldronItemKeys: [],
+      activeBrew: null,
+    };
+  const autoBrewRecipeKey = normalizeSaveItemKey(brewing.autoBrewRecipeKey);
+  const safeAutoBrewRecipeKey =
+    itemCatalog.get(autoBrewRecipeKey) === 'potion' ? autoBrewRecipeKey : null;
+
+  return {
+    autoBrewEnabled: Boolean(safeAutoBrewRecipeKey && brewing.autoBrewEnabled),
+    autoBrewRecipeKey: safeAutoBrewRecipeKey,
+    cauldrons,
+    cauldronItemKeys: primaryCauldron.cauldronItemKeys,
+    activeBrew: primaryCauldron.activeBrew,
+  };
+}
+
+function normalizeSaveCauldronItemKeys(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+) {
   const maxIngredients = getDefaultBrewingMaxIngredients();
-  const cauldronItemKeys = Array.isArray(brewing.cauldronItemKeys)
-    ? brewing.cauldronItemKeys
+
+  return Array.isArray(value)
+    ? value
         .map((itemKey) => normalizeSaveItemKey(itemKey))
         .filter((itemKey) => itemCatalog.get(itemKey) === 'herb')
         .slice(0, maxIngredients)
     : [];
-
-  return {
-    cauldronItemKeys,
-    activeBrew: normalizeSaveActiveBrew(brewing.activeBrew, itemCatalog),
-  };
 }
 
 function normalizeSaveActiveBrew(value: unknown, itemCatalog: Map<string, string>) {
@@ -4494,7 +4870,7 @@ function addSaveItemCatalogRows(
 }
 
 function getSaveTaskCatalog(ctx: IdleWizardReducerCtx) {
-  const config = getParsedGameConfig(ctx, 'tasks', DEFAULT_TASKS_CONFIG_JSON) as {
+  const config = getParsedGameConfig(ctx, 'tasks', DEFAULT_CURRENT_TASKS_CONFIG_JSON) as {
     levels?: Array<{ level?: number; tasks?: Array<{ id?: string; quantity?: number }> }>;
   };
   const levels = Array.isArray(config.levels)
@@ -4538,6 +4914,7 @@ function getSaveLevelLimits(ctx: IdleWizardReducerCtx, currentLevel: number) {
       : [];
   const limits = {
     maxGardenTiles: 0,
+    maxCauldrons: 1,
     maxNpcMarketStands: 0,
     maxPlayerMarketStands: 0,
   };
@@ -4557,6 +4934,12 @@ function getSaveLevelLimits(ctx: IdleWizardReducerCtx, currentLevel: number) {
       limits.maxGardenTiles,
       MAX_GAME_CONFIG_RESOURCE_LIMIT,
       limits.maxGardenTiles,
+    );
+    limits.maxCauldrons = clampSaveInteger(
+      milestone.maxCauldrons,
+      limits.maxCauldrons,
+      MAX_PLAYER_SAVE_CAULDRONS,
+      limits.maxCauldrons,
     );
     limits.maxNpcMarketStands = clampSaveInteger(
       milestone.maxNpcMarketStands ?? milestone.maxShopSlots,
@@ -6257,6 +6640,7 @@ function getLeaderboardSummaryRows(ctx: any) {
     return {
       identity: entry.identity,
       username: entry.username,
+      allianceTag: getSenderTradeAllianceTag(ctx, entry.identity),
       totalIncome: toBigInt(entry.totalIncome),
       income: toBigInt(entry.totalIncome),
       dailyIncome: toBigInt(entry.dailyIncome),

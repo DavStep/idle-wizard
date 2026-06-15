@@ -48,7 +48,7 @@ if (apkPath.buildScript) {
 
 if (shouldPublishBackend(backendMode)) {
   step('spacetimedb maincloud publish');
-  run('npm', ['run', 'stdb:publish:maincloud'], { input: 'y\n' });
+  run('npm', ['run', 'stdb:publish:maincloud'], { input: 'y\ny\n' });
 }
 
 if (!skipGit) {

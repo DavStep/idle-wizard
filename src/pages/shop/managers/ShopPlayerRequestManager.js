@@ -2,6 +2,7 @@ import {
   formatGoldPriceText,
   parsePositiveGoldPrice,
 } from '../../../shared/goldPrice.js';
+import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import {
   getItemDisplay,
   shouldShowItemInActionList,
@@ -22,7 +23,6 @@ export class ShopPlayerRequestManager {
     this.root = null;
     this.unsubscribeGameplay = null;
     this.refs = {};
-    this.requests = new Map();
     this.selectedRequestSlotNumber = 1;
     this.selectedRequestItemTypeId = null;
     this.selectedRequestTab = 'seed';
@@ -171,7 +171,7 @@ export class ShopPlayerRequestManager {
     closeButton.textContent = 'close';
     closeButton.addEventListener('click', () => this.hidePopup());
 
-    this.refs.quantityField = this.createNumberField('quantity', 'Request quantity');
+    this.refs.quantityField = this.createQuantityField();
     this.refs.goldField = this.createNumberField('gold each', 'Gold offered per item');
     this.refs.goldField.input.inputMode = 'decimal';
     this.refs.goldField.input.min = '0.01';
@@ -281,6 +281,28 @@ export class ShopPlayerRequestManager {
     return { field, input };
   }
 
+  createQuantityField() {
+    const field = document.createElement('div');
+    field.className = 'shop-page__request-field shop-page__request-quantity-field';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+    setResourceIconText(label, 'quantity');
+
+    const amountField = createAmountSelectionRow({
+      ariaLabel: 'request quantity',
+      className: 'shop-page__request-amount-field',
+      inputClassName: 'shop-page__request-input shop-page__request-quantity-input',
+      stepClassName: 'shop-page__request-quantity-step',
+      valueClassName: 'shop-page__request-quantity-value',
+      onInput: () => this.onRequestQuantityInput(),
+      onStep: (delta) => this.onRequestQuantityStep(delta),
+    });
+
+    field.append(label, amountField.field);
+    return { ...amountField, field, label };
+  }
+
   createItemTabs() {
     const tabs = document.createElement('div');
     tabs.className = 'shop-page__request-tabs';
@@ -328,6 +350,8 @@ export class ShopPlayerRequestManager {
     this.refs.quantityField.input.value = request
       ? String(request.quantity)
       : '1';
+    this.refs.quantityField.setValue(this.refs.quantityField.input.value);
+    this.refs.quantityField.hideInput();
     this.refs.goldField.input.value = request
       ? String(request.priceGold)
       : '1';
@@ -362,6 +386,24 @@ export class ShopPlayerRequestManager {
     this.render();
   }
 
+  onRequestQuantityInput() {
+    this.setStatus('');
+  }
+
+  onRequestQuantityStep(delta) {
+    const quantity = this.readPositiveInteger(this.refs.quantityField?.input.value) ?? 1;
+    const nextQuantity = Math.max(1, quantity + delta);
+
+    if (nextQuantity === quantity) {
+      return;
+    }
+
+    this.refs.quantityField.setValue(nextQuantity);
+    this.refs.quantityField.hideInput();
+    this.setStatus('');
+    this.renderRequestQuantityField();
+  }
+
   onPlaceRequest() {
     const item = this.getSelectedRequestItem();
     const quantity = this.readPositiveInteger(this.refs.quantityField?.input.value);
@@ -382,20 +424,33 @@ export class ShopPlayerRequestManager {
       return;
     }
 
-    this.requests.set(this.selectedRequestSlotNumber, {
+    const result = this.gameplayFacade?.setPlayerShopRequest?.(this.selectedRequestSlotNumber, {
       itemTypeId: item.itemTypeId,
-      itemKey: item.key,
-      itemKind: item.kind,
-      itemLabel: item.label,
       quantity,
       priceGold,
     });
+
+    if (!result?.ok) {
+      this.setStatus(this.getRequestResultStatus(result));
+      return;
+    }
+
+    this.lastGameplaySnapshot = this.gameplayFacade?.getSnapshot?.() ?? this.lastGameplaySnapshot;
     this.hidePopup();
     this.render();
   }
 
   clearRequest() {
-    this.requests.delete(this.selectedRequestSlotNumber);
+    const result = this.gameplayFacade?.clearPlayerShopRequest?.(
+      this.selectedRequestSlotNumber,
+    );
+
+    if (!result?.ok) {
+      this.setStatus(this.getRequestResultStatus(result));
+      return;
+    }
+
+    this.lastGameplaySnapshot = this.gameplayFacade?.getSnapshot?.() ?? this.lastGameplaySnapshot;
     this.render();
   }
 
@@ -412,6 +467,7 @@ export class ShopPlayerRequestManager {
     this.renderActions();
 
     if (this.visible) {
+      this.renderRequestQuantityField();
       this.renderItemPicker();
     }
   }
@@ -457,7 +513,7 @@ export class ShopPlayerRequestManager {
       }
 
       const slot = this.getRequestSlotSnapshot(shelf, slotNumber);
-      const request = this.requests.get(slotNumber) ?? null;
+      const request = this.getRequestFromSlot(slot);
       const unlocked = Boolean(slot.unlocked);
 
       refs.row.classList.toggle('is-selected', slotNumber === this.selectedRequestSlotNumber);
@@ -535,7 +591,25 @@ export class ShopPlayerRequestManager {
   }
 
   getRequestShelf() {
-    return this.lastGameplaySnapshot?.shop?.playerShelf ?? null;
+    const requestShelf = this.lastGameplaySnapshot?.shop?.playerRequests;
+
+    if (requestShelf) {
+      return requestShelf;
+    }
+
+    const playerShelf = this.lastGameplaySnapshot?.shop?.playerShelf;
+
+    if (!playerShelf) {
+      return null;
+    }
+
+    return {
+      ...playerShelf,
+      slots: playerShelf.slots?.map((slot) => ({
+        slotNumber: slot.slotNumber,
+        unlocked: slot.unlocked,
+      })),
+    };
   }
 
   getRequestSlotCount(shelf = this.getRequestShelf()) {
@@ -580,7 +654,44 @@ export class ShopPlayerRequestManager {
   }
 
   getSelectedRequest() {
-    return this.requests.get(this.selectedRequestSlotNumber) ?? null;
+    return this.getRequestFromSlot(
+      this.getRequestSlotSnapshot(this.getRequestShelf(), this.selectedRequestSlotNumber),
+    );
+  }
+
+  getRequestFromSlot(slot) {
+    if (!slot?.unlocked || !slot.itemTypeId || slot.quantity <= 0 || slot.priceGold <= 0) {
+      return null;
+    }
+
+    return {
+      itemTypeId: slot.itemTypeId,
+      itemKey: slot.itemKey,
+      itemKind: slot.itemKind,
+      itemLabel: slot.itemLabel,
+      quantity: slot.quantity,
+      priceGold: slot.priceGold,
+    };
+  }
+
+  getRequestResultStatus(result) {
+    if (result?.reason === 'slot_locked') {
+      return 'locked';
+    }
+
+    if (result?.reason === 'invalid_quantity') {
+      return 'bad quantity';
+    }
+
+    if (result?.reason === 'invalid_price') {
+      return 'bad value';
+    }
+
+    if (result?.reason === 'item_not_requestable') {
+      return 'bad item';
+    }
+
+    return 'request failed';
   }
 
   setStatus(status) {
@@ -591,6 +702,27 @@ export class ShopPlayerRequestManager {
     setResourceIconText(this.refs.status, status);
     this.refs.status.hidden = !status;
     setResourceColorFromText(this.refs.status, status);
+  }
+
+  renderRequestQuantityField() {
+    const field = this.refs.quantityField;
+
+    if (!field) {
+      return;
+    }
+
+    const quantity = this.readPositiveInteger(field.input.value) ?? 1;
+
+    if (document.activeElement !== field.input) {
+      field.setValue(quantity);
+    }
+
+    for (const [delta, button] of field.stepButtons) {
+      const nextQuantity = quantity + delta;
+      const disabled = nextQuantity < 1;
+      button.disabled = disabled;
+      button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    }
   }
 
   readPositiveInteger(value) {

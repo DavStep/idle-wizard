@@ -114,6 +114,78 @@ describe('TutorialHintManager', () => {
     expect(highlight?.style.height).toBe('4px');
   });
 
+  it('angles the pointer from the best fitting diagonal corner', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 4,
+        top: 4,
+        width: 60,
+        height: 30,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.show({
+      target,
+      text: 'summon seeds',
+      stepLabel: '2/19',
+    });
+
+    const pointer = stage.querySelector('.tutorial-layer__pointer');
+
+    expect(pointer?.hidden).toBe(false);
+    expect(pointer?.dataset.placement).toBe('bottom-right');
+    expect(pointer?.style.left).toBe('83px');
+    expect(pointer?.style.top).toBe('53px');
+    expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('-1');
+    expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
+  });
+
+  it('moves the angled pointer when another corner has more room', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 300,
+        top: 650,
+        width: 52,
+        height: 34,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.show({
+      target,
+      text: 'open market',
+      stepLabel: '7/19',
+    });
+
+    const pointer = stage.querySelector('.tutorial-layer__pointer');
+
+    expect(pointer?.hidden).toBe(false);
+    expect(pointer?.dataset.placement).toBe('top-left');
+    expect(pointer?.style.left).toBe('281px');
+    expect(pointer?.style.top).toBe('631px');
+    expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('1');
+    expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
+  });
+
   it('keeps objective text behind a Mira button until opened', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();

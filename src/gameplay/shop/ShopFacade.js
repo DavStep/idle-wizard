@@ -7,6 +7,8 @@ import { ShopSellKindManager } from './managers/ShopSellKindManager.js';
 import { ShopSlotPurchaseManager } from './managers/ShopSlotPurchaseManager.js';
 import { ShopPlayerShelfEntityManager } from './managers/ShopPlayerShelfEntityManager.js';
 import { ShopPlayerShelfListingManager } from './managers/ShopPlayerShelfListingManager.js';
+import { ShopPlayerRequestEntityManager } from './managers/ShopPlayerRequestEntityManager.js';
+import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js';
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
 import { ShopGoldOfferManager } from './managers/ShopGoldOfferManager.js';
@@ -54,6 +56,9 @@ export class ShopFacade {
       initialUnlockedSlots: this.shopBalanceManager.getInitialUnlockedSlots(),
       maxSlots: this.shopBalanceManager.getMaxShelfSlots(),
     });
+    this.shopPlayerRequestEntityManager = new ShopPlayerRequestEntityManager({
+      maxSlots: this.shopBalanceManager.getMaxShelfSlots(),
+    });
     this.shopSlotPurchaseManager = new ShopSlotPurchaseManager({
       goldFacade,
       playerLevelFacade,
@@ -83,6 +88,13 @@ export class ShopFacade {
       shopSellKindManager: this.shopSellKindManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopPlayerShelfEntityManager: this.shopPlayerShelfEntityManager,
+    });
+    this.shopPlayerRequestManager = new ShopPlayerRequestManager({
+      itemsFacade,
+      shopSellKindManager: this.shopSellKindManager,
+      shopPlayerRequestEntityManager: this.shopPlayerRequestEntityManager,
+      isRequestSlotUnlocked: (slotNumber) =>
+        this.shopPlayerShelfEntityManager.isSlotUnlocked(slotNumber),
     });
     this.shopStockPurchaseManager = new ShopStockPurchaseManager({
       goldFacade,
@@ -122,6 +134,7 @@ export class ShopFacade {
       };
       this.shopShelfEntityManager.configureCapacity(capacity);
       this.shopPlayerShelfEntityManager.configureCapacity(capacity);
+      this.shopPlayerRequestEntityManager.configureCapacity(capacity);
     } catch {
       return;
     }
@@ -134,6 +147,7 @@ export class ShopFacade {
   initialize(ecsManagers) {
     this.shopShelfEntityManager.initialize(ecsManagers);
     this.shopPlayerShelfEntityManager.initialize(ecsManagers);
+    this.shopPlayerRequestEntityManager.initialize(ecsManagers);
     this.shopGoldOfferManager.initialize(ecsManagers);
     this.shopAutoSellManager.register(ecsManagers.systems);
     this.shopGoldOfferManager.register(ecsManagers.systems);
@@ -169,6 +183,14 @@ export class ShopFacade {
 
   clearSelectedPlayerShelfSlotListing() {
     return this.shopPlayerShelfListingManager.clearSelectedSlotListing();
+  }
+
+  setPlayerShopRequest(slotNumber, request) {
+    return this.shopPlayerRequestManager.setRequest(slotNumber, request);
+  }
+
+  clearPlayerShopRequest(slotNumber) {
+    return this.shopPlayerRequestManager.clearRequest(slotNumber);
   }
 
   applyPlayerShopMarketSlotQuantity(slotNumber, quantity) {
@@ -251,6 +273,17 @@ export class ShopFacade {
         sellKinds,
         sellItems: visibleSellItems,
         slots: this.getPlayerSlotSnapshots(),
+      },
+      playerRequests: {
+        unlockedSlots: playerUnlockedSlots,
+        maxSlots,
+        maxUnlockedSlotsByLevel: maxPlayerUnlockedSlotsByLevel,
+        nextSlotNumber: nextPlayerSlotCost === null ? null : nextPlayerSlotNumber,
+        nextSlotLockedByLevel: nextPlayerSlotLockedByLevel,
+        nextSlotRequiresLevel: nextPlayerSlotLockedByLevel
+          ? this.playerLevelFacade?.getRequiredLevelForPlayerMarketStand(nextPlayerSlotNumber) ?? null
+          : null,
+        slots: this.getPlayerRequestSlotSnapshots(playerUnlockedSlots),
       },
       stock: {
         sellKinds,
@@ -365,10 +398,40 @@ export class ShopFacade {
     });
   }
 
+  getPlayerRequestSlotSnapshots(unlockedSlots = this.shopPlayerShelfEntityManager.getUnlockedSlots()) {
+    return this.shopPlayerRequestEntityManager.getSlotSnapshots().map((slot) => {
+      const unlocked = slot.slotNumber <= unlockedSlots;
+
+      if (!unlocked || !slot.itemTypeId) {
+        return {
+          slotNumber: slot.slotNumber,
+          unlocked,
+          itemTypeId: null,
+          itemKey: null,
+          itemKind: null,
+          itemLabel: null,
+          quantity: 0,
+          priceGold: 0,
+        };
+      }
+
+      const item = this.itemsFacade.getItemDefinition(slot.itemTypeId);
+
+      return {
+        ...slot,
+        unlocked,
+        itemKey: item.key,
+        itemKind: item.kind,
+        itemLabel: item.label,
+      };
+    });
+  }
+
   getPersistenceSnapshot() {
     const snapshot = this.getSnapshot();
     const shelf = snapshot.shelf;
     const playerShelf = snapshot.playerShelf;
+    const playerRequests = snapshot.playerRequests;
 
     return {
       shelf: {
@@ -391,6 +454,16 @@ export class ShopFacade {
           quantity: slot.quantity,
           priceGold: slot.priceGold,
         })),
+      },
+      playerRequests: {
+        slots: playerRequests.slots
+          .filter((slot) => slot.unlocked && slot.itemTypeId)
+          .map((slot) => ({
+            slotNumber: slot.slotNumber,
+            itemKey: slot.itemKey,
+            quantity: slot.quantity,
+            priceGold: slot.priceGold,
+          })),
       },
       goldOffer: this.shopGoldOfferManager.getPersistenceSnapshot(),
     };
@@ -436,6 +509,23 @@ export class ShopFacade {
       unlockedSlots: this.clampPlayerUnlockedSlotsByLevel(playerShelfSnapshot?.unlockedSlots),
       selectedSlotNumber: playerShelfSnapshot?.selectedSlotNumber,
       slots: playerSlots,
+    });
+    const playerUnlockedSlots = this.shopPlayerShelfEntityManager.getUnlockedSlots();
+    const playerRequestSlots = Array.isArray(snapshot.playerRequests?.slots)
+      ? snapshot.playerRequests.slots.map((slot) => ({
+          slotNumber: slot.slotNumber,
+          itemTypeId:
+            typeof slot.itemKey === 'string'
+              ? this.itemsFacade.safeGetDefinitionByKey(slot.itemKey)?.id
+              : 0,
+          quantity: slot.quantity,
+          priceGold: slot.priceGold,
+        }))
+      : [];
+
+    this.shopPlayerRequestEntityManager.applySnapshot({
+      unlockedSlots: playerUnlockedSlots,
+      slots: playerRequestSlots,
     });
     this.shopGoldOfferManager.applyPersistenceSnapshot(snapshot.goldOffer);
   }

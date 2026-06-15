@@ -114,9 +114,7 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'herb_harvested' && Number.isInteger(event.tileNumber)) {
-      return this.root.parentElement?.querySelector(
-        `.garden-page__plot-row[data-garden-tile-number="${event.tileNumber}"]`,
-      );
+      return this.getGardenHarvestAnchor(event.tileNumber);
     }
 
     if (event.type === 'potion_collected') {
@@ -133,6 +131,24 @@ export class RewardFlyoutManager {
     }
 
     return this.root.parentElement;
+  }
+
+  getGardenHarvestAnchor(tileNumber) {
+    const row = this.root?.parentElement?.querySelector(
+      `.garden-page__plot-row[data-garden-tile-number="${tileNumber}"]`,
+    );
+    const progress = row?.querySelector('.garden-page__plot-progress');
+    const progressRect =
+      progress && !progress.hidden ? this.getElementRect(progress) : null;
+
+    if (progressRect) {
+      return {
+        x: progressRect.right,
+        y: progressRect.top + progressRect.height / 2,
+      };
+    }
+
+    return row;
   }
 
   getSeedDropSources(event) {
@@ -232,14 +248,14 @@ export class RewardFlyoutManager {
       return;
     }
 
-    const rect = anchor.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) {
+    const anchorPoint = this.getAnchorPoint(anchor);
+    if (!anchorPoint) {
       return;
     }
 
     const normalizedKind = ['seed', 'herb', 'potion'].includes(kind) ? kind : 'seed';
-    const baseX = rect.left + rect.width / 2;
-    const baseY = rect.top + rect.height / 2;
+    const baseX = anchorPoint.x;
+    const baseY = anchorPoint.y;
     const count = sources.length;
 
     for (const [index, source] of sources.entries()) {
@@ -272,6 +288,36 @@ export class RewardFlyoutManager {
       drop.addEventListener('animationend', remove, { once: true });
       this.setManagedTimeout(remove, ITEM_DROP_LIFETIME_MS + delay);
     }
+  }
+
+  getAnchorPoint(anchor) {
+    if (Number.isFinite(anchor?.x) && Number.isFinite(anchor?.y)) {
+      return {
+        x: anchor.x,
+        y: anchor.y,
+      };
+    }
+
+    const rect = this.getElementRect(anchor);
+
+    if (!rect) {
+      return null;
+    }
+
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  }
+
+  getElementRect(element) {
+    const rect = element?.getBoundingClientRect?.();
+
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+
+    return rect;
   }
 
   createItemDropElement({ source, seedBurst }) {

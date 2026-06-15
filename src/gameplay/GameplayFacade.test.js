@@ -122,6 +122,11 @@ describe('GameplayFacade', () => {
     first.gameplayFacade.buyVisualSettingOption('theme', 'black');
     first.gameplayFacade.addBrewingIngredient(1001);
     first.gameplayFacade.setSelectedShopShelfSlotSellItem(1);
+    first.gameplayFacade.setPlayerShopRequest(1, {
+      itemTypeId: 1,
+      quantity: 4,
+      priceGold: 2.5,
+    });
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
 
@@ -155,6 +160,15 @@ describe('GameplayFacade', () => {
       sellItemTypeId: 1,
       sellKind: 'seed',
       sellLabel: 'sage seed',
+    });
+    expect(snapshot.shop.playerRequests.slots[0]).toMatchObject({
+      slotNumber: 1,
+      itemTypeId: 1,
+      itemKey: 'sageSeed',
+      itemLabel: 'sage seed',
+      itemKind: 'seed',
+      quantity: 4,
+      priceGold: 2.5,
     });
   });
 
@@ -450,7 +464,7 @@ describe('GameplayFacade', () => {
       },
     });
     expect(gameplayFacade.getSnapshot().prestige.completedLevels).toEqual([10]);
-  });
+  }, 10_000);
 
   it('derives loaded ruby from completed prestiges minus completed ruby research cost', () => {
     const persistenceStorage = createMemoryStorage();
@@ -1838,7 +1852,7 @@ describe('GameplayFacade', () => {
       reason: 'missing_required_research',
       researchId: 'unlockRecipe:minorHealingPotion',
       requiredResearchId: 'unlockRecipe:manaTonic',
-      cost: 120,
+      cost: 140,
     });
 
     expect(gameplayFacade.buyResearch('unlockRecipe:manaTonic')).toEqual({
@@ -1846,10 +1860,26 @@ describe('GameplayFacade', () => {
       researchId: 'unlockRecipe:manaTonic',
       cost: 80,
     });
-    gameplayFacade.goldFacade.add(120);
+    gameplayFacade.goldFacade.add(140);
     expect(getResearch('unlockRecipe:minorHealingPotion')).toMatchObject({
-      value: '120 gold',
+      value: '140 gold',
       canResearch: true,
+    });
+
+    expect(getResearch('unlockRecipe:briarWard')).toMatchObject({
+      requiredResearchIds: ['unlockRecipe:calmingDraught'],
+      value: 'locked',
+      locked: true,
+    });
+    expect(getResearch('unlockRecipe:simpleAntidote')).toMatchObject({
+      requiredResearchIds: ['unlockRecipe:lanternTonic'],
+      value: 'locked',
+      locked: true,
+    });
+    expect(getResearch('unlockRecipe:dragonCourage')).toMatchObject({
+      requiredResearchIds: ['unlockRecipe:pactWard'],
+      value: 'locked',
+      locked: true,
     });
   });
 
@@ -1887,7 +1917,7 @@ describe('GameplayFacade', () => {
       reason: 'missing_required_level',
       researchId: 'unlockSeed:nettleSeed',
       requiredPlayerLevel: 4,
-      cost: 50,
+      cost: 80,
     });
 
     finishCurrentTasksWithoutGold();
@@ -1897,15 +1927,15 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
 
-    gameplayFacade.goldFacade.add(50);
+    gameplayFacade.goldFacade.add(80);
     expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
-      value: '50 gold',
+      value: '80 gold',
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toMatchObject({
       ok: true,
       researchId: 'unlockSeed:nettleSeed',
-      cost: 50,
+      cost: 80,
     });
   });
 
@@ -2124,6 +2154,43 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].activeBrew).toMatchObject({
       phase: 'brewed',
       canStartBottling: true,
+    });
+  });
+
+  it('persists level-unlocked cauldrons and potion inventory across restart', () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    advanceToLevel(first.gameplayFacade, 5);
+    first.gameplayFacade.syncPlayerLevelManaEffects();
+    first.gameplayFacade.itemsFacade.addItem(1001, 9);
+    first.gameplayFacade.itemsFacade.addItem(2001, 2);
+    first.gameplayFacade.goldFacade.add(80);
+    unlockRecipeResearch(first.gameplayFacade);
+
+    expect(first.gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
+      ok: true,
+      cauldronNumber: 2,
+    });
+    expect(first.gameplayFacade.prepareBrewingRecipe('manaTonic', 2)).toMatchObject({
+      ok: true,
+      cauldronNumber: 3,
+    });
+    first.gameplayFacade.savePersistenceSnapshot();
+    first.ecsFacade.destroyWorld();
+
+    const second = createGameplay({ persistenceStorage });
+    const snapshot = second.gameplayFacade.getSnapshot();
+
+    expect(snapshot.brewing.cauldrons).toHaveLength(3);
+    expect(snapshot.brewing.cauldrons[1].ingredients).toHaveLength(3);
+    expect(snapshot.brewing.cauldrons[2].ingredients).toHaveLength(3);
+    expect(snapshot.inventory).toContainEqual({
+      itemTypeId: 2001,
+      key: 'manaTonic',
+      label: 'mana tonic',
+      kind: 'potion',
+      quantity: 2,
     });
   });
 

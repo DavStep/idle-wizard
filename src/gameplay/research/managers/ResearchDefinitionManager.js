@@ -39,6 +39,27 @@ const seedUnlockRequiredPlayerLevels = {
   nettleSeed: 4,
 };
 
+const recipeUnlockOrder = [
+  'manaTonic',
+  'minorHealingPotion',
+  'nettleVigor',
+  'calmingDraught',
+  'briarWard',
+  'lanternTonic',
+  'simpleAntidote',
+  'venomDraught',
+  'healingPotion',
+  'sunrootStamina',
+  'moonlitFocus',
+  'frostmossCleanse',
+  'sleepDraught',
+  'elixirOfLife',
+  'starLuckPhiltre',
+  'deepDreamVision',
+  'pactWard',
+  'dragonCourage',
+];
+
 const maxAutomationGardenTiles = 10;
 const maxAutomationCauldrons = 5;
 
@@ -144,7 +165,7 @@ export class ResearchDefinitionManager {
   }
 
   getRecipeUnlockResearches() {
-    return this.itemsFacade.getRecipePotionDefinitions().map((potion, index, potions) => {
+    return this.getRecipePotionDefinitionsInResearchOrder().map((potion, index, potions) => {
       const previousPotion = potions[index - 1];
 
       return {
@@ -157,6 +178,19 @@ export class ResearchDefinitionManager {
         description: `allows valid cauldron ingredients to brew ${potion.label}.`,
       };
     });
+  }
+
+  getRecipePotionDefinitionsInResearchOrder() {
+    const potionsByKey = new Map(
+      this.itemsFacade.getRecipePotionDefinitions().map((potion) => [potion.key, potion]),
+    );
+    const orderedPotions = recipeUnlockOrder
+      .map((potionKey) => potionsByKey.get(potionKey))
+      .filter(Boolean);
+    const orderedKeys = new Set(orderedPotions.map((potion) => potion.key));
+    const extraPotions = [...potionsByKey.values()].filter((potion) => !orderedKeys.has(potion.key));
+
+    return [...orderedPotions, ...extraPotions];
   }
 
   getAutomationResearchBoxes({ includeLevelLockedAutomation = false } = {}) {

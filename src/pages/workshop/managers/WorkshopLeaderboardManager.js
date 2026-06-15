@@ -432,8 +432,9 @@ export class WorkshopLeaderboardManager {
 
   formatUserLabel(user, index) {
     const rank = this.normalizeRank(user?.rank) ?? index + 1;
+    const allianceTag = user.allianceTag ? `[${user.allianceTag}] ` : '';
 
-    return `${rank}. ${user.name}(${this.normalizePlayerLevel(user.playerLevel)})`;
+    return `${rank}. ${allianceTag}${user.name} (${this.normalizePlayerLevel(user.playerLevel)})`;
   }
 
   formatAllianceLabel(alliance, index) {
@@ -449,6 +450,7 @@ export class WorkshopLeaderboardManager {
 
     const normalizedUser = {
       name: user.name,
+      allianceTag: this.normalizeAllianceTag(user.allianceTag ?? user.alliance_tag),
       playerLevel: this.normalizePlayerLevel(user.playerLevel),
       income: this.normalizeMetric(user.income),
       dailyIncome: this.normalizeMetric(user.dailyIncome),
@@ -504,6 +506,14 @@ export class WorkshopLeaderboardManager {
     }
 
     return safeRank;
+  }
+
+  normalizeAllianceTag(tag) {
+    const normalized = String(tag ?? '')
+      .trim()
+      .toUpperCase();
+
+    return /^[A-Z]{2,5}$/.test(normalized) ? normalized : '';
   }
 
   shouldShowCurrentUser(users, currentUser) {

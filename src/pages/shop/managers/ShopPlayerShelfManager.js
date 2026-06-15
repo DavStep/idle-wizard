@@ -15,6 +15,7 @@ import {
   NOTIFICATION_TONE_ORANGE,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
+import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import {
   formatGoldPrice,
   formatGoldPriceText,
@@ -24,6 +25,10 @@ import {
 
 const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
 const EMPTY_STAND_ACTION_LABEL = 'select';
+const MARKET_BROWSE_TABS = [
+  { id: 'selling', label: 'selling' },
+  { id: 'buying', label: 'buying' },
+];
 
 export class ShopPlayerShelfManager {
   constructor({ gameplayFacade, playerShopFacade } = {}) {
@@ -36,6 +41,7 @@ export class ShopPlayerShelfManager {
     this.selectedSellTab = 'seed';
     this.listingPopupVisible = false;
     this.marketPopupVisible = false;
+    this.selectedMarketBrowseTab = 'selling';
     this.draftListingItemTypeId = null;
     this.draftListingSlotNumber = null;
     this.previousFocus = null;
@@ -137,6 +143,7 @@ export class ShopPlayerShelfManager {
     this.selectedSellTab = 'seed';
     this.listingPopupVisible = false;
     this.marketPopupVisible = false;
+    this.selectedMarketBrowseTab = 'selling';
     this.draftListingItemTypeId = null;
     this.draftListingSlotNumber = null;
     this.previousFocus = null;
@@ -356,12 +363,15 @@ export class ShopPlayerShelfManager {
     popup.className = 'shop-page__market-popup';
     popup.addEventListener('click', this.handlePopupClick);
 
+    const panel = document.createElement('section');
+    panel.className = 'shop-page__market-popup-panel';
+    panel.setAttribute('aria-label', 'Browse player market');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('role', 'dialog');
+    panel.tabIndex = -1;
+
     const dialog = document.createElement('section');
     dialog.className = 'shop-page__market-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Player market');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('role', 'dialog');
-    dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
@@ -377,16 +387,40 @@ export class ShopPlayerShelfManager {
     const status = document.createElement('div');
     status.className = 'shop-page__player-shop-status';
 
+    this.refs.marketBrowseTabButtons = new Map();
+    const tabs = this.createMarketBrowseTabs();
     dialog.append(title, rows, status);
-    popup.append(dialog);
+    panel.append(dialog, tabs);
+    popup.append(panel);
     this.refs.marketRows = rows;
     this.refs.marketMessage = message;
     this.refs.marketStatus = status;
-    this.refs.marketDialog = dialog;
+    this.refs.marketDialog = panel;
+    this.refs.marketBrowseTabs = tabs;
     this.refs.marketGroupBySellerKey = new Map();
     this.refs.marketRowByListingKey = new Map();
 
     return popup;
+  }
+
+  createMarketBrowseTabs() {
+    const tabs = document.createElement('div');
+    tabs.className = 'shop-page__market-popup-tabs';
+    tabs.setAttribute('aria-label', 'Browse market type');
+    tabs.setAttribute('role', 'tablist');
+
+    for (const tab of MARKET_BROWSE_TABS) {
+      const button = document.createElement('button');
+      button.className = 'style-button shop-page__market-popup-tab-button';
+      button.type = 'button';
+      button.textContent = tab.label;
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => this.onSelectMarketBrowseTab(tab.id));
+      this.refs.marketBrowseTabButtons.set(tab.id, button);
+      tabs.append(button);
+    }
+
+    return tabs;
   }
 
   onSelectSlot(event, slotNumber) {
@@ -424,6 +458,19 @@ export class ShopPlayerShelfManager {
   onSelectSellTab(kind) {
     this.selectedSellTab = kind;
     this.render();
+  }
+
+  onSelectMarketBrowseTab(tabId) {
+    if (
+      this.selectedMarketBrowseTab === tabId ||
+      !MARKET_BROWSE_TABS.some((tab) => tab.id === tabId)
+    ) {
+      return;
+    }
+
+    this.selectedMarketBrowseTab = tabId;
+    this.setMarketStatus('');
+    this.renderMarketRows();
   }
 
   onSelectListingItem(itemTypeId) {
@@ -611,6 +658,25 @@ export class ShopPlayerShelfManager {
 
     this.setMarketStatus('');
     this.render();
+  }
+
+  onMarketQuantityInput(row, listing) {
+    this.setMarketStatus('');
+    this.renderMarketRowBuyState(row, listing);
+  }
+
+  onMarketQuantityStep(row, listing, delta) {
+    const quantity = this.clampListingQuantity(row.quantityInput.value, listing.quantity) ?? 1;
+    const nextQuantity = this.clampSteppedListingQuantity(quantity + delta, listing.quantity);
+
+    if (!nextQuantity || nextQuantity === quantity) {
+      return;
+    }
+
+    row.quantityField.setValue(nextQuantity);
+    row.quantityField.hideInput();
+    this.setMarketStatus('');
+    this.renderMarketRowBuyState(row, listing);
   }
 
   showListingPopup() {
@@ -903,7 +969,10 @@ export class ShopPlayerShelfManager {
   }
 
   renderMarketRows() {
-    const rows = this.lastPlayerShopSnapshot.listings ?? [];
+    this.renderMarketBrowseTabs();
+    const rows = this.selectedMarketBrowseTab === 'selling'
+      ? this.lastPlayerShopSnapshot.listings ?? []
+      : [];
     const rowKeys = new Set(rows.map((listing) => listing.listingKey));
     const groupKeys = new Set(rows.map((listing) => this.getMarketSellerKey(listing)));
 
@@ -927,7 +996,7 @@ export class ShopPlayerShelfManager {
     }
 
     if (rows.length === 0) {
-      this.setMarketMessage('empty');
+      this.setMarketMessage(this.selectedMarketBrowseTab === 'buying' ? 'no buy requests' : 'empty');
       return;
     }
 
@@ -945,6 +1014,19 @@ export class ShopPlayerShelfManager {
 
       this.renderMarketGroupRows(groupNode, group.listings);
       previousGroupNode = groupNode.root;
+    }
+  }
+
+  renderMarketBrowseTabs() {
+    if (!this.refs.marketBrowseTabs) {
+      return;
+    }
+
+    for (const tab of MARKET_BROWSE_TABS) {
+      const button = this.refs.marketBrowseTabButtons.get(tab.id);
+      const selected = this.selectedMarketBrowseTab === tab.id;
+      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button?.setAttribute('tabindex', selected ? '0' : '-1');
     }
   }
 
@@ -1016,29 +1098,33 @@ export class ShopPlayerShelfManager {
     const controls = document.createElement('span');
     controls.className = 'row_val shop-page__market-row-controls';
 
-    const quantityInput = document.createElement('input');
-    quantityInput.className = 'style-input shop-page__market-quantity-input';
-    quantityInput.type = 'number';
-    quantityInput.inputMode = 'numeric';
-    quantityInput.min = '1';
-    quantityInput.step = '1';
-    quantityInput.value = '1';
-    quantityInput.autocomplete = 'off';
-    quantityInput.setAttribute('aria-label', 'Buy quantity');
-    quantityInput.addEventListener('input', () => {
-      if (row._marketListing) {
-        this.renderMarketRowBuyState(row._marketRow, row._marketListing);
-      }
+    let rowState = null;
+    const quantityField = createAmountSelectionRow({
+      ariaLabel: 'buy quantity',
+      className: 'shop-page__market-amount-field',
+      inputClassName: 'shop-page__market-quantity-input',
+      stepClassName: 'shop-page__market-quantity-step',
+      valueClassName: 'shop-page__market-quantity-value',
+      onInput: () => {
+        if (row._marketListing && rowState) {
+          this.onMarketQuantityInput(rowState, row._marketListing);
+        }
+      },
+      onStep: (delta) => {
+        if (row._marketListing && rowState) {
+          this.onMarketQuantityStep(rowState, row._marketListing, delta);
+        }
+      },
     });
 
     const button = document.createElement('button');
     button.className = 'style-button shop-page__market-buy-button';
     button.type = 'button';
 
-    controls.append(quantityInput, button);
+    controls.append(quantityField.field, button);
     row.append(label, controls);
 
-    const rowState = { row, label, quantityInput, button };
+    rowState = { row, label, quantityField, quantityInput: quantityField.input, button };
     row._marketRow = rowState;
     return rowState;
   }
@@ -1057,11 +1143,7 @@ export class ShopPlayerShelfManager {
 
     if (document.activeElement !== row.quantityInput) {
       const currentQuantity = this.clampListingQuantity(row.quantityInput.value, quantity) || 1;
-      const inputValue = String(currentQuantity);
-
-      if (row.quantityInput.value !== inputValue) {
-        row.quantityInput.value = inputValue;
-      }
+      row.quantityField.setValue(currentQuantity);
     }
 
     this.renderMarketRowBuyState(row, listing);
@@ -1087,6 +1169,17 @@ export class ShopPlayerShelfManager {
     row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     setNotificationBadge(row.button, !disabled);
     row.button.onclick = () => this.onBuyListing(listing, row.quantityInput.value);
+
+    const currentQuantity = quantity ?? 1;
+    for (const [delta, stepButton] of row.quantityField.stepButtons) {
+      const nextQuantity = this.clampSteppedListingQuantity(
+        currentQuantity + delta,
+        listing.quantity,
+      );
+      const stepDisabled = !nextQuantity || nextQuantity === currentQuantity;
+      stepButton.disabled = stepDisabled;
+      stepButton.setAttribute('aria-disabled', stepDisabled ? 'true' : 'false');
+    }
   }
 
   hasAffordableMarketListing() {
@@ -1147,6 +1240,17 @@ export class ShopPlayerShelfManager {
     }
 
     return Math.min(parsed, max);
+  }
+
+  clampSteppedListingQuantity(value, maxQuantity) {
+    const integer = Math.floor(Number(value));
+    const max = Math.max(0, Math.floor(Number(maxQuantity) || 0));
+
+    if (!Number.isInteger(integer) || max <= 0) {
+      return null;
+    }
+
+    return Math.min(Math.max(1, integer), max);
   }
 
   ensureRows(rowCount) {

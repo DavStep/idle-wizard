@@ -100,4 +100,34 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('sage seed found');
     expect(document.querySelector('.room-item-drop')).toBeNull();
   });
+
+  it('starts herb drops from the end of the garden progress bar', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const host = document.createElement('section');
+    const row = document.createElement('button');
+    row.className = 'garden-page__plot-row';
+    row.dataset.gardenTileNumber = '1';
+    setRect(row, { left: 100, top: 280, width: 360, height: 40 });
+
+    const progress = document.createElement('span');
+    progress.className = 'garden-page__plot-progress';
+    setRect(progress, { left: 160, top: 318, width: 280, height: 5 });
+
+    row.append(progress);
+    host.append(row);
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'herb_harvested',
+      herb: { key: 'sageHerb', label: 'sage', kind: 'herb' },
+      quantity: 1,
+      tileNumber: 1,
+    });
+
+    const anchor = document.querySelector('.room-item-drop-anchor.is-herb');
+    expect(anchor?.style.left).toBe('440px');
+    expect(anchor?.style.top).toBe('320.5px');
+  });
 });

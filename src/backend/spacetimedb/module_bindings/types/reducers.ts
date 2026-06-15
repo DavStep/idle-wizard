@@ -10,6 +10,7 @@ import AcceptTradeAllianceApplicationReducer from "../accept_trade_alliance_appl
 import AdminDisbandTradeAllianceReducer from "../admin_disband_trade_alliance_reducer";
 import AdminMergePlayerAccountsReducer from "../admin_merge_player_accounts_reducer";
 import AdminMoveTradeAllianceMemberReducer from "../admin_move_trade_alliance_member_reducer";
+import AdminResetPlayerProgressionByIdentityReducer from "../admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "../admin_reset_player_progression_data_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "../admin_set_trade_alliance_member_role_reducer";
 import AnnounceLevelUpReducer from "../announce_level_up_reducer";
@@ -59,6 +60,7 @@ export type AcceptTradeAllianceApplicationParams = __Infer<typeof AcceptTradeAll
 export type AdminDisbandTradeAllianceParams = __Infer<typeof AdminDisbandTradeAllianceReducer>;
 export type AdminMergePlayerAccountsParams = __Infer<typeof AdminMergePlayerAccountsReducer>;
 export type AdminMoveTradeAllianceMemberParams = __Infer<typeof AdminMoveTradeAllianceMemberReducer>;
+export type AdminResetPlayerProgressionByIdentityParams = __Infer<typeof AdminResetPlayerProgressionByIdentityReducer>;
 export type AdminResetPlayerProgressionDataParams = __Infer<typeof AdminResetPlayerProgressionDataReducer>;
 export type AdminSetTradeAllianceMemberRoleParams = __Infer<typeof AdminSetTradeAllianceMemberRoleReducer>;
 export type AnnounceLevelUpParams = __Infer<typeof AnnounceLevelUpReducer>;

@@ -21,4 +21,22 @@ describe('TaskBalanceManager', () => {
       { id: 'level5-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 12 },
     ]);
   });
+
+  it('keeps level 6 on nettle, lavender, and briar progression', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(
+      taskBalanceManager.getLevelTasks(6).map((task) => ({
+        id: task.id,
+        itemKey: task.itemKey,
+        requiredQuantity: task.requiredQuantity,
+      })),
+    ).toEqual([
+      { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 130 },
+      { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 70 },
+      { id: 'level6-briar-seeds', itemKey: 'briarSeed', requiredQuantity: 80 },
+      { id: 'level6-calming-draught', itemKey: 'calmingDraught', requiredQuantity: 12 },
+      { id: 'level6-briar-ward', itemKey: 'briarWard', requiredQuantity: 8 },
+    ]);
+  });
 });

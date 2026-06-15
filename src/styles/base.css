@@ -340,8 +340,8 @@
 .style-herb-label__icon,
 .style-potion-label__icon {
   display: none;
-  width: 0.9em;
-  height: 0.9em;
+  width: 0.99em;
+  height: 0.99em;
   margin-right: 0.28em;
   object-fit: contain;
   object-position: center;
@@ -349,13 +349,13 @@
 }
 
 .style-seed-label__icon {
-  width: 0.78em;
-  height: 1.05em;
+  width: 0.858em;
+  height: 1.155em;
   vertical-align: -0.24em;
 }
 
 .style-herb-label__icon {
-  width: 0.98em;
+  width: 1.078em;
 }
 
 :root[data-style-icons="icons"] .style-resource-label__icon {
@@ -524,6 +524,7 @@ body {
 .style-dialog.app-account-link-choice__dialog {
   width: 260px;
   max-width: calc(100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px);
+  margin-inline: auto;
 }
 
 .app-account-link-choice__message,
@@ -615,6 +616,7 @@ body {
 .style-dialog.app-fresh-start-choice__dialog {
   width: 300px;
   max-width: calc(100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px);
+  margin-inline: auto;
 }
 
 .app-fresh-start-choice__message,
@@ -1015,6 +1017,7 @@ body {
     drop-shadow(0 2px 1px rgb(0 0 0 / 34%));
   transform:
     translate(-50%, -50%)
+    rotate(var(--tutorial-pointer-rotation, 0deg))
     scaleX(var(--tutorial-pointer-scale-x, 1))
     translateX(0);
   transform-origin: 50% 50%;
@@ -1076,8 +1079,8 @@ body {
 }
 
 .tutorial-layer__objective-button[data-notification="true"]::before {
-  top: 8px;
-  right: 5px;
+  top: 12px;
+  right: 9px;
 }
 
 .style-box.tutorial-layer__hint {
@@ -1253,6 +1256,7 @@ body {
   100% {
     transform:
       translate(-50%, -50%)
+      rotate(var(--tutorial-pointer-rotation, 0deg))
       scaleX(var(--tutorial-pointer-scale-x, 1))
       translateX(0);
   }
@@ -1260,6 +1264,7 @@ body {
   52% {
     transform:
       translate(-50%, -50%)
+      rotate(var(--tutorial-pointer-rotation, 0deg))
       scaleX(var(--tutorial-pointer-scale-x, 1))
       translateX(3px);
   }
@@ -4257,6 +4262,7 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-panel,
 .workshop-page__world-chat-panel,
 .shop-page__sell-panel,
+.shop-page__market-popup-panel,
 .shop-page__request-panel,
 .shop-page__trade-history-panel,
 .shop-page__demand-panel {
@@ -4321,7 +4327,8 @@ div.workshop-page__discovery-row {
   margin-top: var(--style-dialog-tab-gap);
 }
 
-.shop-page__request-tabs {
+.shop-page__request-tabs,
+.shop-page__market-popup-tabs {
   position: relative;
   z-index: 21;
   display: flex;
@@ -4361,12 +4368,8 @@ div.workshop-page__discovery-row {
 }
 
 .style-dialog.shop-page__market-dialog {
-  position: absolute;
-  top: 50%;
-  left: 50%;
   width: 300px;
   overflow: visible;
-  transform: translate(-50%, -50%);
 }
 
 .style-dialog.shop-page__crystal-support-dialog {
@@ -4428,9 +4431,9 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  align-items: stretch;
   min-height: var(--style-row-min-height);
   padding: 2px 0;
 }
@@ -4447,10 +4450,16 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__market-row-controls {
-  display: flex;
-  gap: 5px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 6px;
   align-items: center;
+  width: 100%;
   white-space: nowrap;
+}
+
+.shop-page__market-amount-field {
+  min-width: 0;
 }
 
 .style-input.shop-page__market-quantity-input {
@@ -4633,17 +4642,32 @@ div.workshop-page__discovery-row {
 .amount-selection-row {
   display: grid;
   grid-template-columns:
-    repeat(3, minmax(27px, auto))
+    repeat(3, max-content)
     minmax(42px, 1fr)
-    repeat(3, minmax(27px, auto));
-  gap: 2px;
+    repeat(3, max-content);
+  gap: 5px;
   align-items: center;
 }
 
 .style-button.amount-selection-row__step {
   width: auto;
-  min-width: 27px;
+  min-width: 0;
   padding: 1px 2px;
+  margin: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: normal;
+  background: transparent;
+  border-color: transparent;
+}
+
+.style-button.amount-selection-row__step:active:not(:disabled):not([aria-disabled="true"]) {
+  background: transparent;
+}
+
+.style-button.amount-selection-row__value {
+  width: 100%;
+  min-width: 42px;
+  padding: 1px 3px;
   margin: 0;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: normal;
@@ -4657,6 +4681,11 @@ div.workshop-page__discovery-row {
   margin: 0;
   font-variant-numeric: tabular-nums lining-nums;
   text-align: center;
+}
+
+.style-button.amount-selection-row__value[hidden],
+.style-input.amount-selection-row__input[hidden] {
+  display: none;
 }
 
 .style-input.amount-selection-row__input::-webkit-inner-spin-button,
@@ -4761,6 +4790,17 @@ div.workshop-page__discovery-row {
   margin-bottom: 5px;
 }
 
+.shop-page__request-quantity-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+}
+
+.shop-page__request-amount-field {
+  min-width: 0;
+}
+
 .shop-page__request-selected-row {
   margin-bottom: 5px;
 }
@@ -4778,6 +4818,12 @@ div.workshop-page__discovery-row {
   width: 142px;
   padding: 1px 4px;
   margin: 0;
+}
+
+.style-input.amount-selection-row__input.shop-page__request-quantity-input {
+  float: none;
+  width: 100%;
+  min-width: 42px;
 }
 
 .shop-page__request-action-row {
@@ -4860,7 +4906,6 @@ div.workshop-page__discovery-row {
 .research-page__info-dialog,
 .tutorial-layer__hint,
 .shop-page__sell-dialog,
-.shop-page__market-dialog,
 .shop-page__trade-history-dialog,
 .shop-page__demand-dialog,
 .shop-page__gold-offer,
@@ -5967,6 +6012,7 @@ div.workshop-page__discovery-row {
 
 .style-button.shop-page__sell-tab-button,
 .style-button.shop-page__request-tab-button,
+.style-button.shop-page__market-popup-tab-button,
 .style-button.shop-page__market-tab-button,
 .style-button.shop-page__stock-type-button,
 .style-button.shop-page__trade-history-tab-button,
@@ -6014,6 +6060,7 @@ div.workshop-page__discovery-row {
 
 .style-button.shop-page__sell-tab-button,
 .style-button.shop-page__request-tab-button,
+.style-button.shop-page__market-popup-tab-button,
 .style-button.shop-page__trade-history-tab-button,
 .style-button.shop-page__demand-tab-button,
 .style-button.room-top-panel__settings-tab-button,
@@ -6096,6 +6143,7 @@ div.workshop-page__discovery-row {
 
 .style-button.shop-page__sell-tab-button[aria-selected="true"],
 .style-button.shop-page__request-tab-button[aria-selected="true"],
+.style-button.shop-page__market-popup-tab-button[aria-selected="true"],
 .style-button.shop-page__market-tab-button[aria-selected="true"],
 .style-button.shop-page__stock-type-button[aria-selected="true"],
 .style-button.shop-page__trade-history-tab-button[aria-selected="true"],
@@ -6135,7 +6183,9 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__buy-slot-button[aria-disabled="true"],
 .style-button.shop-page__buy-slot-button:disabled,
 .style-button.shop-page__stock-buy-button[aria-disabled="true"],
-.style-button.shop-page__stock-buy-button:disabled {
+.style-button.shop-page__stock-buy-button:disabled,
+.style-button.amount-selection-row__step[aria-disabled="true"],
+.style-button.amount-selection-row__step:disabled {
   border-color: transparent;
 }
 

@@ -12,7 +12,9 @@ const HIGHLIGHT_UNDERLINE_OFFSET = 2;
 const PORTRAIT_WIDTH = 42;
 const PORTRAIT_HEIGHT = 54;
 const POINTER_WIDTH = 38;
-const POINTER_HALF_HEIGHT = 10;
+const POINTER_HEIGHT = 17;
+const POINTER_HALF_EXTENT = Math.ceil((POINTER_WIDTH + POINTER_HEIGHT) * Math.SQRT1_2 * 0.5);
+const POINTER_TARGET_GAP = HINT_GAP;
 const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
@@ -278,8 +280,8 @@ export class TutorialHintManager {
     this.stepLabel.textContent = stepLabel ?? '';
     this.advanceButton.hidden = !advanceOnClick;
     this.positionHighlight(rect);
-    this.positionPointer(rect, showPointer);
-    this.positionGuide(rect, showPortrait);
+    const guidePlacement = this.positionGuide(rect, showPortrait);
+    this.positionPointer(rect, showPointer, guidePlacement);
     this.syncRootVisibility();
   }
 
@@ -417,9 +419,7 @@ export class TutorialHintManager {
       this.highlight.hidden = true;
     }
 
-    if (this.pointer) {
-      this.pointer.hidden = true;
-    }
+    this.hidePointer();
 
     if (this.portrait) {
       this.portrait.hidden = true;
@@ -469,32 +469,25 @@ export class TutorialHintManager {
     this.highlight.style.height = `${HIGHLIGHT_UNDERLINE_HEIGHT}px`;
   }
 
-  positionPointer(rect, showPointer) {
+  positionPointer(rect, showPointer, guidePlacement) {
     if (!this.pointer || !showPointer) {
-      this.pointer.hidden = true;
+      this.hidePointer();
       return;
     }
 
     const bounds = this.getSourceBounds();
-    const hasLeftRoom = rect.left > POINTER_WIDTH + HINT_GAP * 2;
-    const targetX = hasLeftRoom
-      ? rect.left - HINT_GAP - POINTER_WIDTH / 2
-      : rect.left + rect.width + HINT_GAP + POINTER_WIDTH / 2;
-    const x = clamp(
-      targetX,
-      HINT_GAP + POINTER_WIDTH / 2,
-      bounds.width - HINT_GAP - POINTER_WIDTH / 2,
-    );
-    const y = clamp(
-      rect.top + rect.height / 2,
-      HINT_GAP + POINTER_HALF_HEIGHT,
-      bounds.height - HINT_GAP - POINTER_HALF_HEIGHT,
-    );
+    const protectedRects = [
+      guidePlacement?.hint,
+      guidePlacement?.portrait,
+    ].filter(Boolean);
+    const placement = this.resolvePointerPlacement({ rect, bounds, protectedRects });
 
     this.pointer.hidden = false;
-    this.pointer.style.left = `${x}px`;
-    this.pointer.style.top = `${y}px`;
-    this.pointer.style.setProperty('--tutorial-pointer-scale-x', hasLeftRoom ? '1' : '-1');
+    this.pointer.dataset.placement = placement.id;
+    this.pointer.style.left = `${placement.x}px`;
+    this.pointer.style.top = `${placement.y}px`;
+    this.pointer.style.setProperty('--tutorial-pointer-scale-x', placement.scaleX);
+    this.pointer.style.setProperty('--tutorial-pointer-rotation', placement.rotation);
   }
 
   positionGuide(rect, showPortrait = true) {
@@ -531,6 +524,18 @@ export class TutorialHintManager {
     this.portrait.style.left = `${portraitLeft}px`;
     this.portrait.style.top = `${portraitTop}px`;
     this.portrait.hidden = !showPortrait;
+
+    return {
+      hint: toGuideRect({ left, top }),
+      portrait: showPortrait
+        ? {
+            left: portraitLeft,
+            top: portraitTop,
+            right: portraitLeft + PORTRAIT_WIDTH,
+            bottom: portraitTop + PORTRAIT_HEIGHT,
+          }
+        : null,
+    };
   }
 
   resolveGuidePlacement({ rect, bounds, baseLeft, baseTop }) {
@@ -562,6 +567,52 @@ export class TutorialHintManager {
       .filter((candidate) => !rectsOverlap(toGuideRect(candidate), toPaddedRect(rect, 0)));
 
     return candidates[0] ?? base;
+  }
+
+  resolvePointerPlacement({ rect, bounds, protectedRects }) {
+    const candidates = createPointerCandidates(rect).map((candidate, index) => {
+      const pointerRect = toPointerRect(candidate);
+      const overflow = getOverflowAmount(pointerRect, bounds);
+      const protectedOverlap = protectedRects.reduce(
+        (total, protectedRect) => total + getOverlapArea(pointerRect, protectedRect),
+        0,
+      );
+      const sideSpace = getPointerSideSpace(candidate.id, rect, bounds);
+
+      return {
+        ...candidate,
+        index,
+        score: overflow * 1000 + protectedOverlap * 3 - sideSpace,
+      };
+    });
+    const best = candidates.sort((a, b) => a.score - b.score || a.index - b.index)[0];
+    const x = clamp(
+      Math.round(best.x),
+      HINT_GAP + POINTER_HALF_EXTENT,
+      bounds.width - HINT_GAP - POINTER_HALF_EXTENT,
+    );
+    const y = clamp(
+      Math.round(best.y),
+      HINT_GAP + POINTER_HALF_EXTENT,
+      bounds.height - HINT_GAP - POINTER_HALF_EXTENT,
+    );
+
+    return {
+      ...best,
+      x,
+      y,
+    };
+  }
+
+  hidePointer() {
+    if (!this.pointer) {
+      return;
+    }
+
+    this.pointer.hidden = true;
+    delete this.pointer.dataset.placement;
+    this.pointer.style.removeProperty('--tutorial-pointer-scale-x');
+    this.pointer.style.removeProperty('--tutorial-pointer-rotation');
   }
 
   positionDialog() {
@@ -669,4 +720,79 @@ function toPaddedRect(rect, padding) {
 
 function rectsOverlap(a, b) {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function createPointerCandidates(rect) {
+  const right = rect.left + rect.width;
+  const bottom = rect.top + rect.height;
+  const diagonalOffset = (POINTER_WIDTH / 2 + POINTER_TARGET_GAP) * Math.SQRT1_2;
+
+  return [
+    {
+      id: 'top-left',
+      x: rect.left - diagonalOffset,
+      y: rect.top - diagonalOffset,
+      scaleX: '1',
+      rotation: '45deg',
+    },
+    {
+      id: 'top-right',
+      x: right + diagonalOffset,
+      y: rect.top - diagonalOffset,
+      scaleX: '-1',
+      rotation: '-45deg',
+    },
+    {
+      id: 'bottom-left',
+      x: rect.left - diagonalOffset,
+      y: bottom + diagonalOffset,
+      scaleX: '1',
+      rotation: '-45deg',
+    },
+    {
+      id: 'bottom-right',
+      x: right + diagonalOffset,
+      y: bottom + diagonalOffset,
+      scaleX: '-1',
+      rotation: '45deg',
+    },
+  ];
+}
+
+function toPointerRect({ x, y }) {
+  return {
+    left: x - POINTER_HALF_EXTENT,
+    top: y - POINTER_HALF_EXTENT,
+    right: x + POINTER_HALF_EXTENT,
+    bottom: y + POINTER_HALF_EXTENT,
+  };
+}
+
+function getOverflowAmount(rect, bounds) {
+  return (
+    Math.max(0, HINT_GAP - rect.left) +
+    Math.max(0, HINT_GAP - rect.top) +
+    Math.max(0, rect.right - (bounds.width - HINT_GAP)) +
+    Math.max(0, rect.bottom - (bounds.height - HINT_GAP))
+  );
+}
+
+function getOverlapArea(a, b) {
+  const width = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+  const height = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+
+  return width * height;
+}
+
+function getPointerSideSpace(id, rect, bounds) {
+  const rightSpace = bounds.width - rect.left - rect.width;
+  const bottomSpace = bounds.height - rect.top - rect.height;
+  const spaces = {
+    'top-left': Math.min(rect.left, rect.top),
+    'top-right': Math.min(rightSpace, rect.top),
+    'bottom-left': Math.min(rect.left, bottomSpace),
+    'bottom-right': Math.min(rightSpace, bottomSpace),
+  };
+
+  return Math.max(0, spaces[id] ?? 0);
 }

@@ -72,6 +72,7 @@ export type LeaderboardSummary = __Infer<typeof LeaderboardSummary>;
 export const LeaderboardSummaryResult = __t.object("LeaderboardSummaryResult", {
   identity: __t.identity(),
   username: __t.string(),
+  allianceTag: __t.string(),
   totalIncome: __t.u64(),
   income: __t.u64(),
   dailyIncome: __t.u64(),

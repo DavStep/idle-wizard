@@ -280,6 +280,25 @@ describe('LeaderboardSubscriptionManager', () => {
     ]);
   });
 
+  it('publishes alliance tags for leaderboard users', () => {
+    const rows = [
+      {
+        username: 'Tagged',
+        playerLevel: 2,
+        totalIncome: 12n,
+        alliance_tag: 'tap',
+      },
+    ];
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)));
+
+    expect(manager.getSnapshot().topUsers[0]).toMatchObject({
+      name: 'Tagged',
+      allianceTag: 'TAP',
+    });
+  });
+
   it('publishes the connected player rank when they are outside a top list', () => {
     const rows = Array.from({ length: 11 }, (_value, index) => ({
       identity: `other-${index + 1}`,
