@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.18
+
+- Renamed the first-time guide to Elara Starbrew across prompts and objective labels.
+- Made Elara's guide text faster while keeping action labels readable immediately.
+- Added subtle Elara speaking motion and a softer control reveal when the game surface loads.
+- Reset first-time guide progress correctly for fresh empty saves after progression resets.
+- Improved tutorial pointer and timer cleanup for steadier guide behavior.
+
 ## 0.1.17
 
 - Rebuilt the latest APK under version 0.1.17 so devices can identify the newest build.
