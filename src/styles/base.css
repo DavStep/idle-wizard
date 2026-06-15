@@ -3773,7 +3773,8 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__trade-alliance-close,
 .style-button.shop-page__request-close,
 .style-button.shop-page__crystal-support-close,
-.style-button.shop-page__stock-buy-close {
+.style-button.shop-page__stock-buy-close,
+.style-button.room-bottom-panel__lock-close {
   position: absolute;
   top: var(--style-box-border-label-offset);
   right: var(--style-box-title-left);
@@ -3797,7 +3798,8 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__crystal-support-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
-.style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.room-bottom-panel__lock-close:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
 }
 
@@ -4791,6 +4793,44 @@ div.workshop-page__discovery-row {
 .room-bottom-panel__tab.is-selected {
   text-decoration: underline;
   cursor: default;
+}
+
+.room-bottom-panel__tab.is-locked {
+  color: var(--style-disabled);
+}
+
+.room-bottom-panel__tab.is-locked:hover,
+.room-bottom-panel__tab.is-locked:focus-visible {
+  text-decoration: none;
+}
+
+.room-bottom-panel__lock-popup {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: auto;
+}
+
+.room-bottom-panel__lock-popup[hidden] {
+  display: none;
+}
+
+.room-bottom-panel__lock-panel {
+  position: absolute;
+  right: var(--style-room-chrome-edge);
+  bottom: 46px;
+  left: var(--style-room-chrome-edge);
+  display: flex;
+  justify-content: center;
+  outline: none;
+}
+
+.style-dialog.room-bottom-panel__lock-dialog {
+  width: 190px;
+}
+
+.room-bottom-panel__lock-message {
+  margin: 0;
 }
 
 .room-top-panel__identity-row {

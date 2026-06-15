@@ -24,6 +24,10 @@ export class BottomPanelFacade {
     this.viewManager.setVisiblePageIds(pageIds);
   }
 
+  setPageStates(pageStates) {
+    this.viewManager.setPageStates(pageStates);
+  }
+
   setNotifications(notifications) {
     this.viewManager.setNotifications(notifications);
   }

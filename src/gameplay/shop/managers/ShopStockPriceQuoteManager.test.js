@@ -34,6 +34,27 @@ describe('ShopStockPriceQuoteManager', () => {
     expect(quote.totalPriceGold).toBeGreaterThan(1.2 * 1000);
   });
 
+  it('does not cap prices at the old max need boundary', () => {
+    const manager = new ShopStockPriceQuoteManager({
+      shopNpcPriceManager: {
+        getNpcSellPriceGold: () => 6,
+        getNpcStock: () => 1,
+        getNpcPrice: () => ({
+          basePriceGold: 1,
+          npcNeed: 5000,
+          targetNeed: 1000,
+          maxNeed: 2000,
+        }),
+      },
+    });
+
+    expect(manager.quoteItem({ item: sageSeed, quantity: 1 })).toMatchObject({
+      ok: true,
+      priceGold: 6,
+      totalPriceGold: 6,
+    });
+  });
+
   it('falls back to simple multiplication when the market curve is unavailable', () => {
     const manager = new ShopStockPriceQuoteManager({
       shopNpcPriceManager: {

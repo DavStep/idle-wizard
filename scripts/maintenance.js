@@ -5,15 +5,34 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const MUTATING_ACTIONS = new Set(['drain', 'locked', 'off', 'migrate', 'publish']);
+const MUTATING_ACTIONS = new Set(['drain', 'locked', 'off', 'migrate', 'publish', 'reset-progress']);
 const SCHEMA_NAMES = [
   'set_maintenance_mode',
   'migrate_player_gameplay_saves',
+  'admin_reset_player_progression_data',
   'leaderboard_summary',
   'world_chat_recent',
 ];
 const DEFAULT_DATABASE = 'idle-wizard';
 const DEFAULT_MESSAGE = 'maintenance in progress';
+const PLAYER_PROGRESSION_RESET_TABLES = [
+  'player',
+  'player_gameplay_save',
+  'leaderboard',
+  'world_chat',
+  'trade_alliance',
+  'trade_alliance_member',
+  'trade_alliance_application',
+  'trade_alliance_chat',
+  'trade_alliance_quest_progress',
+  'trade_alliance_quest_contribution',
+  'trade_alliance_reward_inbox',
+  'player_shop_listing',
+  'player_shop_proceeds',
+  'player_shop_trade',
+  'potion_recipe_discovery',
+  'npc_market_price',
+];
 
 const args = process.argv.slice(2);
 const action = args[0] ?? 'help';
@@ -57,11 +76,20 @@ switch (action) {
   case 'backup':
     backupPlayerGameplaySave();
     break;
+  case 'backup-reset':
+    backupPlayerProgressionResetData();
+    break;
   case 'verify':
     verifyPlayerGameplaySave();
     break;
+  case 'verify-reset':
+    verifyPlayerProgressionReset();
+    break;
   case 'migrate':
     migratePlayerGameplaySaves();
+    break;
+  case 'reset-progress':
+    resetPlayerProgressionData();
     break;
   case 'publish':
     runSpacetime(['publish', database, '--server', server, '--module-path', './spacetimedb']);
@@ -104,8 +132,11 @@ function printHelp() {
   node scripts/maintenance.js drain --confirm-live [--message "..."]
   node scripts/maintenance.js locked --confirm-live
   node scripts/maintenance.js backup
+  node scripts/maintenance.js backup-reset
   node scripts/maintenance.js verify
+  node scripts/maintenance.js verify-reset
   node scripts/maintenance.js migrate --key YYYY-MM-DD-maintenance --confirm-live
+  node scripts/maintenance.js reset-progress --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js publish --confirm-live
   node scripts/maintenance.js off --confirm-live
 
@@ -131,7 +162,17 @@ function printPlan() {
 8. node scripts/maintenance.js migrate --server maincloud --database idle-wizard --key YYYY-MM-DD-maintenance --confirm-live
 9. node scripts/maintenance.js verify --server maincloud --database idle-wizard
 10. node scripts/maintenance.js publish --server maincloud --database idle-wizard --confirm-live
-11. node scripts/maintenance.js off --server maincloud --database idle-wizard --confirm-live`);
+11. node scripts/maintenance.js off --server maincloud --database idle-wizard --confirm-live
+
+Full progression reset order after schema has admin_reset_player_progression_data:
+0. Close/navigate away active game clients where possible.
+1. node scripts/maintenance.js drain --server maincloud --database idle-wizard --confirm-live
+2. Wait 2-3 minutes.
+3. node scripts/maintenance.js locked --server maincloud --database idle-wizard --confirm-live
+4. node scripts/maintenance.js backup-reset --server maincloud --database idle-wizard
+5. node scripts/maintenance.js reset-progress --server maincloud --database idle-wizard --key YYYY-MM-DD-reset --confirm-live
+6. node scripts/maintenance.js verify-reset --server maincloud --database idle-wizard
+7. node scripts/maintenance.js off --server maincloud --database idle-wizard --confirm-live`);
 }
 
 function assertLiveConfirmation() {
@@ -174,11 +215,55 @@ function backupPlayerGameplaySave() {
   console.log(`Backup written: ${path}`);
 }
 
+function backupPlayerProgressionResetData() {
+  mkdirSync(join('backups', 'maintenance'), { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const path = join(
+    'backups',
+    'maintenance',
+    `player_progression_reset_${server}_${database}_${timestamp}.sql.txt`,
+  );
+  const sections = [];
+
+  for (const tableName of PLAYER_PROGRESSION_RESET_TABLES) {
+    const result = runSpacetime(
+      ['sql', '-s', server, database, `SELECT * FROM ${tableName}`],
+      { capture: true },
+    );
+    sections.push(`-- ${tableName}\n${result.stdout.trimEnd()}`);
+  }
+
+  writeFileSync(path, `${sections.join('\n\n')}\n`);
+  console.log(`Backup written: ${path}`);
+}
+
 function verifyPlayerGameplaySave() {
   runSql('SELECT COUNT(*) AS row_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS parseable_count FROM admin_player_gameplay_save');
   runSql(
     'SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10',
+  );
+}
+
+function verifyPlayerProgressionReset() {
+  runSql('SELECT COUNT(*) AS player_count FROM player');
+  runSql('SELECT COUNT(*) AS above_level_1 FROM player WHERE player_level > 1');
+  runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
+  runSql('SELECT COUNT(*) AS leaderboard_count FROM leaderboard');
+  runSql('SELECT COUNT(*) AS world_chat_count FROM world_chat');
+  runSql('SELECT COUNT(*) AS alliance_count FROM trade_alliance');
+  runSql('SELECT COUNT(*) AS alliance_member_count FROM trade_alliance_member');
+  runSql('SELECT COUNT(*) AS alliance_application_count FROM trade_alliance_application');
+  runSql('SELECT COUNT(*) AS alliance_chat_count FROM trade_alliance_chat');
+  runSql('SELECT COUNT(*) AS alliance_quest_count FROM trade_alliance_quest_progress');
+  runSql('SELECT COUNT(*) AS alliance_contribution_count FROM trade_alliance_quest_contribution');
+  runSql('SELECT COUNT(*) AS alliance_reward_count FROM trade_alliance_reward_inbox');
+  runSql('SELECT COUNT(*) AS player_shop_listing_count FROM player_shop_listing');
+  runSql('SELECT COUNT(*) AS player_shop_proceeds_count FROM player_shop_proceeds');
+  runSql('SELECT COUNT(*) AS player_shop_trade_count FROM player_shop_trade');
+  runSql('SELECT COUNT(*) AS potion_discovery_count FROM potion_recipe_discovery');
+  runSql(
+    'SELECT item_key, npc_need, npc_stock, demand_score, supply_score FROM npc_market_price LIMIT 10',
   );
 }
 
@@ -191,6 +276,17 @@ function migratePlayerGameplaySaves() {
   }
 
   callReducer('migrate_player_gameplay_saves', [migrationKey]);
+}
+
+function resetPlayerProgressionData() {
+  const resetKey = options.key ?? options._?.[0];
+
+  if (!resetKey) {
+    console.error('Missing reset key. Pass --key YYYY-MM-DD-reset.');
+    process.exit(1);
+  }
+
+  callReducer('admin_reset_player_progression_data', [resetKey]);
 }
 
 function checkSchema() {
@@ -218,6 +314,7 @@ function runSpacetime(spacetimeArgs, { capture = false } = {}) {
       PATH: `${pathPrefix}${process.env.PATH ?? ''}`,
     },
     encoding: 'utf8',
+    maxBuffer: 512 * 1024 * 1024,
     stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
   });
 

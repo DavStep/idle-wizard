@@ -84,15 +84,12 @@ export class ShopStockPriceQuoteManager {
     const targetNeed =
       this.normalizeCount(priceState?.targetNeed) ??
       this.normalizeCount(priceState?.targetStock);
-    const maxNeed = this.normalizeCount(priceState?.maxNeed) ?? targetNeed * 2;
 
     if (
       basePriceGold === null ||
       npcNeed === null ||
       targetNeed === null ||
-      maxNeed === null ||
-      targetNeed <= 0 ||
-      maxNeed <= targetNeed
+      targetNeed <= 0
     ) {
       return multiplyGoldPrice(fallbackPriceGold, quantity);
     }
@@ -104,7 +101,6 @@ export class ShopStockPriceQuoteManager {
         basePriceGold,
         npcNeed: npcNeed + offset,
         targetNeed,
-        maxNeed,
       });
       const unitPriceGold = this.getNpcSellPriceGold(marketPriceGold);
       totalCents += Math.round(unitPriceGold * 100);
@@ -123,27 +119,12 @@ export class ShopStockPriceQuoteManager {
     return count;
   }
 
-  getNpcMarketPriceFromNeed({ basePriceGold, npcNeed, targetNeed, maxNeed }) {
-    const floorGold = this.getNpcMarketFloorGold(basePriceGold);
-    const ceilingGold = this.getNpcMarketCeilingGold(basePriceGold);
-    const safeNeed = this.clampNumber(npcNeed, 0, maxNeed);
+  getNpcMarketPriceFromNeed({ basePriceGold, npcNeed, targetNeed }) {
+    const safeNeed = Math.max(0, npcNeed);
+    const pressure = safeNeed / targetNeed;
+    const marketPriceGold = basePriceGold * pressure;
 
-    if (safeNeed <= targetNeed) {
-      const lowerRange = basePriceGold - floorGold;
-      return this.clampNpcMarketPrice(
-        basePriceGold,
-        floorGold + lowerRange * (safeNeed / targetNeed),
-      );
-    }
-
-    const upperRange = ceilingGold - basePriceGold;
-    const upperNeed = maxNeed - targetNeed;
-    const extraNeed = safeNeed - targetNeed;
-
-    return this.clampNpcMarketPrice(
-      basePriceGold,
-      basePriceGold + upperRange * (extraNeed / upperNeed),
-    );
+    return this.roundGoldPrice(Math.max(0.01, marketPriceGold));
   }
 
   getNpcSellPriceGold(marketPriceGold) {
@@ -158,44 +139,16 @@ export class ShopStockPriceQuoteManager {
   }
 
   getNpcBuyPriceGold(marketPriceGold) {
-    return this.clampNumber(
-      this.roundGoldPrice((marketPriceGold * NPC_MARKET_BUY_BPS) / 10_000),
-      0.01,
-      marketPriceGold,
-    );
-  }
-
-  getNpcMarketFloorGold(basePriceGold) {
-    return Math.max(0.01, this.roundGoldPrice(basePriceGold / 4));
-  }
-
-  getNpcMarketCeilingGold(basePriceGold) {
-    return this.roundGoldPrice(basePriceGold * 4);
-  }
-
-  clampNpcMarketPrice(basePriceGold, priceGold) {
-    return this.roundGoldPrice(
-      this.clampNumber(
-        priceGold,
-        this.getNpcMarketFloorGold(basePriceGold),
-        this.getNpcMarketCeilingGold(basePriceGold),
+    return Math.min(
+      Math.max(
+        this.roundGoldPrice((marketPriceGold * NPC_MARKET_BUY_BPS) / 10_000),
+        0.01,
       ),
+      marketPriceGold,
     );
   }
 
   roundGoldPrice(value) {
     return Math.round((value + Number.EPSILON) * 100) / 100;
-  }
-
-  clampNumber(value, min, max) {
-    if (value < min) {
-      return min;
-    }
-
-    if (value > max) {
-      return max;
-    }
-
-    return value;
   }
 }

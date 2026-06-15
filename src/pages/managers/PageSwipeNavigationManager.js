@@ -29,6 +29,7 @@ const OPEN_POPUP_SELECTOR = [
   '.shop-page__market-popup:not([hidden])',
   '.shop-page__request-popup:not([hidden])',
   '.shop-page__crystal-support-popup:not([hidden])',
+  '.room-bottom-panel__lock-popup:not([hidden])',
   '.room-top-panel__settings:not([hidden])',
 ].join(',');
 

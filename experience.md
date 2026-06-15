@@ -9,6 +9,7 @@
 - Persistent save/schema/config shape changes need explicit migration code or scripts before deploy; never rely on wiping rows, startup defaults, or page reloads to move users forward.
 - Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
+- Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
 
 ## Product Shape
 
@@ -159,7 +160,7 @@
 - NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
 - NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
 - NPC market blank stand row space is inert; item/select text opens the sell picker, and the buy button owns locked-stand purchases.
-- NPC market sell price is capped by item base price and `npcNeed` max; empty NPC stock alone does not raise the quote beyond that cap.
+- NPC market prices should follow uncapped `npcNeed / targetNeed` pressure; avoid hard price caps that hide real scarcity.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
 - Market sellable quantities must subtract Brewing cauldron-staged herbs; NPC and player market sales should use available quantities, not raw item stacks.
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
@@ -227,6 +228,7 @@
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
 - Gate hover-only underlines with `@media (hover: hover) and (pointer: fine)` so touch taps do not leave sticky underline state.
+- Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
 - Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`), not global per action type.

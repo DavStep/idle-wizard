@@ -40,7 +40,10 @@ export class PagesFacade {
     this.pageUnlockManager = new PageUnlockManager({
       pageOrder: DEFAULT_PAGE_SWIPE_ORDER,
     });
-    this.unlockedPageIds = this.pageUnlockManager.getUnlockedPageIds();
+    this.pageStates = this.pageUnlockManager.getPageStates();
+    this.unlockedPageIds = this.pageStates
+      .filter((page) => page.unlocked)
+      .map((page) => page.id);
     this.pageUnlockUnsubscribe = null;
     this.currentPageManager = new CurrentPageManager({
       pageRegistryManager: this.registryManager,
@@ -161,8 +164,11 @@ export class PagesFacade {
   }
 
   syncPageUnlocks(snapshot = {}) {
-    this.unlockedPageIds = this.pageUnlockManager.getUnlockedPageIds(snapshot);
-    this.bottomPanelFacade.setVisiblePageIds(this.unlockedPageIds);
+    this.pageStates = this.pageUnlockManager.getPageStates(snapshot);
+    this.unlockedPageIds = this.pageStates
+      .filter((page) => page.unlocked)
+      .map((page) => page.id);
+    this.bottomPanelFacade.setPageStates(this.pageStates);
     this.swipeNavigationManager.setPageOrder(this.unlockedPageIds);
 
     if (this.unlockedPageIds.includes(this.getCurrentPageId())) {

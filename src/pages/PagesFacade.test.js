@@ -3028,6 +3028,16 @@ describe('PagesFacade', () => {
       'workshop',
     );
     expect(
+      stage
+        .querySelector('.room-bottom-panel__tab[data-page-id="brewing"]')
+        ?.classList.contains('is-locked'),
+    ).toBe(true);
+    expect(
+      stage
+        .querySelector('.room-bottom-panel__tab[data-page-id="brewing"]')
+        ?.getAttribute('aria-disabled'),
+    ).toBeNull();
+    expect(
       stage.querySelector('.room-bottom-panel__tab[aria-current="page"]')?.textContent,
     ).toBe('workshop');
     expect(stage.querySelector('.workshop-page__name')).toBeNull();
@@ -3052,6 +3062,34 @@ describe('PagesFacade', () => {
     expect(topPanel.querySelector('.room-top-panel__resource[aria-label="crystal"]')?.hidden).toBe(
       true,
     );
+  });
+
+  it('keeps Brewing locked at level 1 and explains the unlock level', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    const popup = stage.querySelector('.room-bottom-panel__lock-popup');
+
+    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
+    expect(stage.querySelector('.brewing-page')).toBeNull();
+    expect(popup?.hidden).toBe(false);
+    expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
+      'brewing unlocks at level 3',
+    );
+
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    gameplayFacade.publishSnapshot();
+    clickRoomTab(stage, 'brewing');
+
+    expect(pagesFacade.getCurrentPageId()).toBe('brewing');
+    expect(stage.querySelector('.brewing-page')).not.toBeNull();
   });
 
   it('reveals Workshop secondary buttons at level 3', () => {
@@ -5946,6 +5984,7 @@ describe('PagesFacade', () => {
   it('orders rooms as Brewing, Garden, Workshop, Research, Market with Workshop default', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     markSeedResearchComplete(gameplayFacade, 'sageSeed', 'mintSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -6160,6 +6199,7 @@ describe('PagesFacade', () => {
   it('collapses Brewing herbs to five rows and expands to all rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
 
     gameplayFacade.getSnapshot().brewing.herbs.push(
       {
@@ -6227,6 +6267,7 @@ describe('PagesFacade', () => {
   it('shows each unlocked Brewing cauldron box from the snapshot', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const brewing = gameplayFacade.getSnapshot().brewing;
     brewing.cauldrons = [
       {
@@ -6269,6 +6310,7 @@ describe('PagesFacade', () => {
   it('shows select recipe control with auto state only after auto brew research', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -6399,6 +6441,7 @@ describe('PagesFacade', () => {
   it('shows Brewing recipes popup with unlocked recipes only', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -6573,6 +6616,7 @@ describe('PagesFacade', () => {
   it('shows missing resources when selected Brewing recipe cannot be staged', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -6605,6 +6649,7 @@ describe('PagesFacade', () => {
   it('keeps the selected Brewing recipe after switching room tabs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -6646,6 +6691,7 @@ describe('PagesFacade', () => {
   it('keeps Brewing cauldron guide step DOM stable across snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -6717,6 +6763,7 @@ describe('PagesFacade', () => {
   it('keeps Brewing text DOM stable across unchanged snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -6765,6 +6812,7 @@ describe('PagesFacade', () => {
   it('keeps Brewing potion rows stable across unchanged snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -7156,6 +7204,7 @@ describe('PagesFacade', () => {
   it('adds herbs to the Brewing cauldron and names unlocked matching recipes', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -7319,6 +7368,7 @@ describe('PagesFacade', () => {
   it('keeps vertical touch movement on Brewing herbs available for scrolling', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -7354,6 +7404,7 @@ describe('PagesFacade', () => {
     try {
       const stage = document.createElement('section');
       const gameplayFacade = createGameplayFacadeFake();
+      unlockWorkshopSecondaryActions(gameplayFacade);
       const snapshot = gameplayFacade.getSnapshot();
       snapshot.brewing.herbs.push(
         {
@@ -7443,6 +7494,7 @@ describe('PagesFacade', () => {
   it('keeps Brewing cauldron remove rows stable through snapshot renders', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -7478,6 +7530,7 @@ describe('PagesFacade', () => {
   it('groups adjacent Brewing cauldron herbs without numbered rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),

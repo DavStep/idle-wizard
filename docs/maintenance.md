@@ -113,6 +113,61 @@ PATH="$HOME/.local/bin:$PATH" spacetime sql \
   "SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10"
 ```
 
+## Full Player Progression Reset
+
+Use this only when intentionally wiping player progression while keeping account
+identity/profile rows. This preserves `player` rows (`identity`, username, theme,
+font, color mode, username prompt state, Google-derived identity), but resets
+shared player level to 1 and deletes gameplay/progression state.
+
+The reset requires `locked` maintenance mode and a one-time reset key. Before
+running it, drain active clients, lock writes, and take a progression backup:
+
+```sh
+node scripts/maintenance.js backup-reset \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+This backs up:
+
+```txt
+player
+player_gameplay_save
+leaderboard
+world_chat
+trade_alliance*
+player_shop*
+potion_recipe_discovery
+npc_market_price
+```
+
+Run the reset while still locked:
+
+```sh
+node scripts/maintenance.js reset-progress \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --key YYYY-MM-DD-reset --confirm-live
+```
+
+Then verify the reset:
+
+```sh
+node scripts/maintenance.js verify-reset \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+Expected post-reset counts:
+
+- `player_count` remains nonzero if accounts exist.
+- `above_level_1` is `0`.
+- gameplay saves, leaderboard, world chat, alliance rows, player shop rows, and
+  potion discovery rows are `0`.
+- NPC market rows remain, but `npc_need`, `npc_stock`, `demand_score`, and
+  `supply_score` should be neutral/reset values.
+
+After verification, publish if the reset reducer was newly added, then reopen
+play with maintenance `off`.
+
 Run the idempotent player-save migration while still locked:
 
 ```sh

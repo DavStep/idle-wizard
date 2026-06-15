@@ -5175,9 +5175,14 @@ function isPostResetPlayerWithoutAcceptedSave(
   ctx: IdleWizardReducerCtx,
   player: ReturnType<typeof ensurePlayer>,
 ): boolean {
+  const resetGuardMicros =
+    player.lastSeenAt.microsSinceUnixEpoch > player.createdAt.microsSinceUnixEpoch
+      ? player.lastSeenAt.microsSinceUnixEpoch
+      : player.createdAt.microsSinceUnixEpoch;
+
   return (
     PLAYER_DATA_RESET_GUARD_MICROS > 0n &&
-    player.createdAt.microsSinceUnixEpoch >= PLAYER_DATA_RESET_GUARD_MICROS &&
+    resetGuardMicros >= PLAYER_DATA_RESET_GUARD_MICROS &&
     !ctx.db.playerGameplaySave.identity.find(player.identity)
   );
 }
@@ -6278,24 +6283,8 @@ function getNpcSellPriceGold(marketPriceGold: number): number {
     : roundGoldPrice(buyPriceGold + 0.01);
 }
 
-function getNpcMarketFloorGold(basePriceGold: number): number {
-  return Math.max(0.01, roundGoldPrice(basePriceGold / 4));
-}
-
-function getNpcMarketCeilingGold(basePriceGold: number): number {
-  return roundGoldPrice(basePriceGold * 4);
-}
-
-function clampNpcMarketPrice(basePriceGold: number, priceGold: number) {
-  return roundGoldPrice(clampNumber(
-    priceGold,
-    getNpcMarketFloorGold(basePriceGold),
-    getNpcMarketCeilingGold(basePriceGold),
-  ));
-}
-
-function getNpcMarketMaxNeed(targetNeed: bigint): bigint {
-  return targetNeed * 2n > targetNeed ? targetNeed * 2n : targetNeed + 1n;
+function getNpcMarketMaxNeed(_targetNeed: bigint): bigint {
+  return 0n;
 }
 
 function getNpcMarketNeedState(row: any, targetNeed: bigint) {
@@ -6308,7 +6297,7 @@ function getNpcMarketNeedState(row: any, targetNeed: bigint) {
       : safeTargetNeed;
 
   return {
-    npcNeed: clampBigInt(rawNeed, 0n, maxNeed),
+    npcNeed: rawNeed > 0n ? rawNeed : 0n,
     targetNeed: safeTargetNeed,
     maxNeed,
   };
@@ -6322,31 +6311,15 @@ function getNpcMarketPriceFromNeed(
   marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold'>,
   npcNeed: bigint,
   targetNeed: bigint,
-  maxNeed: bigint,
+  _maxNeed: bigint,
 ): number {
   const basePriceGold = marketConfig.basePriceGold;
-  const floorGold = getNpcMarketFloorGold(basePriceGold);
-  const ceilingGold = getNpcMarketCeilingGold(basePriceGold);
   const safeTargetNeed = targetNeed > 0n ? targetNeed : 1n;
-  const safeMaxNeed = maxNeed > safeTargetNeed ? maxNeed : safeTargetNeed + 1n;
-  const safeNeed = clampBigInt(npcNeed, 0n, safeMaxNeed);
+  const safeNeed = npcNeed > 0n ? npcNeed : 0n;
+  const pressure = Number(safeNeed) / Number(safeTargetNeed);
+  const marketPriceGold = basePriceGold * pressure;
 
-  if (safeNeed <= safeTargetNeed) {
-    const lowerRange = basePriceGold - floorGold;
-    return clampNpcMarketPrice(
-      basePriceGold,
-      floorGold + lowerRange * (Number(safeNeed) / Number(safeTargetNeed)),
-    );
-  }
-
-  const upperRange = ceilingGold - basePriceGold;
-  const upperNeed = safeMaxNeed - safeTargetNeed;
-  const extraNeed = safeNeed - safeTargetNeed;
-
-  return clampNpcMarketPrice(
-    basePriceGold,
-    basePriceGold + upperRange * (Number(extraNeed) / Number(upperNeed)),
-  );
+  return roundGoldPrice(Math.max(0.01, marketPriceGold));
 }
 
 function getNpcMarketRowWithQuotes(row: any, marketPriceGold: number) {
@@ -7106,6 +7079,69 @@ function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
 
   for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
     ctx.db.playerShopTrade.delete(trade);
+  }
+}
+
+function deleteAllPlayerGameplaySaves(ctx: IdleWizardReducerCtx) {
+  for (const save of Array.from(ctx.db.playerGameplaySave.iter())) {
+    ctx.db.playerGameplaySave.delete(save);
+  }
+}
+
+function deleteAllLeaderboardState(ctx: IdleWizardReducerCtx) {
+  for (const entry of Array.from(ctx.db.leaderboard.iter())) {
+    ctx.db.leaderboard.delete(entry);
+  }
+}
+
+function deleteAllWorldChatMessages(ctx: IdleWizardReducerCtx) {
+  for (const row of Array.from(ctx.db.worldChat.iter())) {
+    ctx.db.worldChat.delete(row);
+  }
+}
+
+function deleteAllTradeAllianceState(ctx: IdleWizardReducerCtx) {
+  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
+    ctx.db.tradeAllianceRewardInbox.delete(reward);
+  }
+
+  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+    ctx.db.tradeAllianceQuestContribution.delete(contribution);
+  }
+
+  for (const quest of Array.from(ctx.db.tradeAllianceQuestProgress.iter())) {
+    ctx.db.tradeAllianceQuestProgress.delete(quest);
+  }
+
+  for (const chat of Array.from(ctx.db.tradeAllianceChat.iter())) {
+    ctx.db.tradeAllianceChat.delete(chat);
+  }
+
+  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+    ctx.db.tradeAllianceApplication.delete(application);
+  }
+
+  for (const member of Array.from(ctx.db.tradeAllianceMember.iter())) {
+    ctx.db.tradeAllianceMember.delete(member);
+  }
+
+  for (const alliance of Array.from(ctx.db.tradeAlliance.iter())) {
+    ctx.db.tradeAlliance.delete(alliance);
+  }
+}
+
+function resetAllPlayerSharedProgress(ctx: IdleWizardReducerCtx) {
+  for (const player of Array.from(ctx.db.player.iter())) {
+    ctx.db.player.identity.update({
+      ...player,
+      username: normalizeUsername(player.username),
+      playerLevel: DEFAULT_PLAYER_LEVEL,
+      theme: normalizePlayerTheme(player.theme),
+      font: normalizePlayerFont(player.font),
+      colorMode: normalizePlayerColorMode(player.colorMode),
+      usernamePromptSeen: Boolean(player.usernamePromptSeen),
+      lastSeenAt: ctx.timestamp,
+    });
   }
 }
 
@@ -9351,11 +9387,7 @@ export const buy_from_npc = spacetimedb.reducer(
     }
 
     const nextNpcStock = npcStock - tradeQuantity;
-    const nextNpcNeed = clampBigInt(
-      needState.npcNeed + tradeQuantity,
-      0n,
-      needState.maxNeed,
-    );
+    const nextNpcNeed = needState.npcNeed + tradeQuantity;
     const nextMarketPriceGold = getNpcMarketPriceFromNeed(
       marketConfig,
       nextNpcNeed,
@@ -9747,6 +9779,33 @@ export const migrate_player_gameplay_saves = spacetimedb.reducer(
         updatedAt: ctx.timestamp,
       });
     }
+
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_reset_player_progression_data = spacetimedb.reducer(
+  { resetKey: t.string() },
+  (ctx, { resetKey }) => {
+    assertGameConfigAdmin(ctx);
+    assertMaintenanceLocked(ctx);
+
+    const stateKey = `player-progression-reset:${normalizeMaintenanceKey(resetKey)}`;
+    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+      return;
+    }
+
+    deleteAllPlayerGameplaySaves(ctx);
+    deleteAllLeaderboardState(ctx);
+    deleteAllWorldChatMessages(ctx);
+    deleteAllTradeAllianceState(ctx);
+    deleteAllPlayerShopState(ctx);
+    deleteAllPotionDiscoveries(ctx);
+    resetNpcMarketRows(ctx, { resetStock: true });
+    resetAllPlayerSharedProgress(ctx);
 
     ctx.db.maintenanceState.insert({
       stateKey,
