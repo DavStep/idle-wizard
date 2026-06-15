@@ -41,6 +41,7 @@
 - FTUE objective steps use the left Mira objective button as the only Mira; suppress the prompt portrait and make the Mira button toggle the objective open/closed.
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
+- Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
