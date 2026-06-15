@@ -10,6 +10,8 @@
 - Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
 - Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
+- Full progression resets should post a human Discord notice before the reducer runs, using the reset/maintenance webhook rather than the APK upload webhook.
+- Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
 
 ## Product Shape
 
@@ -218,6 +220,7 @@
 - For Android safe areas, let chrome backgrounds visually extend behind status/gesture areas and inset only interactive content; avoid black gutter padding.
 - Non-dialog boxes stay simple: `1px` border, compact padding, no shadow.
 - Popup/dialog panels can use the thicker event-panel treatment: `2px` border and `5px 5px 5px #666` shadow in source UI units.
+- Shared chrome overlays with the same z-index paint by DOM order; visible bottom-panel lock notices must raise the bottom panel layer above the passive chat preview.
 - Popup/dialog shadow tokens must contrast with the active theme: dark shadow on white surfaces, light shadow on black surfaces.
 - The Workshop mana-only resource block is called `mana sphere`.
 - Workshop no longer has a separate `seeds` block; `summon` and `bag` sit above world chat.

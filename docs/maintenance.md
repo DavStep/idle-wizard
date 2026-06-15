@@ -25,6 +25,8 @@ Set the shared shell vars first:
 ```sh
 export SPACETIME_SERVER=maincloud
 export SPACETIME_DATABASE=idle-wizard
+# Prefer a reset/maintenance-specific channel webhook.
+export DISCORD_RESET_WEBHOOK_URL="https://discord.com/api/webhooks/..."
 ```
 
 Preflight the live schema:
@@ -146,8 +148,29 @@ Run the reset while still locked:
 ```sh
 node scripts/maintenance.js reset-progress \
   --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --key YYYY-MM-DD-reset --post-discord --confirm-live
+```
+
+`--post-discord` posts a long human reset notice before the reducer runs. It uses
+`DISCORD_RESET_WEBHOOK_URL`, `DISCORD_MAINTENANCE_WEBHOOK_URL`, or
+`DISCORD_WEBHOOK_URL`. Preview the exact text without posting:
+
+```sh
+node scripts/maintenance.js reset-discord-post \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --key YYYY-MM-DD-reset --dry-run
+```
+
+Post only the Discord notice, for example if the reset must be delayed:
+
+```sh
+node scripts/maintenance.js reset-discord-post \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
   --key YYYY-MM-DD-reset --confirm-live
 ```
+
+Use `--discord-message "..."` or `DISCORD_RESET_MESSAGE` when the announcement
+needs a custom human-written changelog-style note.
 
 Then verify the reset:
 

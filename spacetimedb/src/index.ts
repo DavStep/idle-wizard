@@ -126,6 +126,7 @@ const PLAYER_FONT_ALIASES = new Map([
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
 const PLAYER_ICON_MODES = new Set(['none', 'icons']);
 const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient']);
+const DEFAULT_SAVE_COMPLETED_RESEARCH_IDS = new Set(['unlockSeed:sageSeed']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
 const TRADE_ALLIANCE_QUEST_TYPE_INCOME = 'allianceIncome';
 const TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL = 'itemFill';
@@ -5080,6 +5081,32 @@ function readSavedResearchCount(saveJson?: string): number | null {
   }
 }
 
+function readSavedNonDefaultResearchCount(saveJson?: string): number | null {
+  if (!saveJson) {
+    return null;
+  }
+
+  try {
+    const save = JSON.parse(saveJson);
+    const research = isRecord(save?.research) ? save.research : {};
+    if (!Array.isArray(research.completedIds)) {
+      return null;
+    }
+
+    return new Set(
+      research.completedIds
+        .map((researchId: unknown) => normalizeResearchId(String(researchId ?? '')))
+        .filter(
+          (researchId: string) =>
+            researchCatalogById.has(researchId) &&
+            !DEFAULT_SAVE_COMPLETED_RESEARCH_IDS.has(researchId),
+        ),
+    ).size;
+  } catch {
+    return null;
+  }
+}
+
 function readSavedPrestigeCompletedLevels(saveJson?: string): number[] | null {
   if (!saveJson) {
     return null;
@@ -5124,7 +5151,7 @@ function saveJsonHasReplayProgress(saveJson: string): boolean {
     return true;
   }
 
-  const researchCount = readSavedResearchCount(saveJson);
+  const researchCount = readSavedNonDefaultResearchCount(saveJson);
   if (researchCount !== null && researchCount > 0) {
     return true;
   }

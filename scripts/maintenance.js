@@ -1,11 +1,19 @@
 #!/usr/bin/env node
-/* global console, process */
+/* global console, fetch, process */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const MUTATING_ACTIONS = new Set(['drain', 'locked', 'off', 'migrate', 'publish', 'reset-progress']);
+const MUTATING_ACTIONS = new Set([
+  'drain',
+  'locked',
+  'off',
+  'migrate',
+  'publish',
+  'reset-progress',
+  'reset-discord-post',
+]);
 const SCHEMA_NAMES = [
   'set_maintenance_mode',
   'migrate_player_gameplay_saves',
@@ -37,6 +45,8 @@ const PLAYER_PROGRESSION_RESET_TABLES = [
 const args = process.argv.slice(2);
 const action = args[0] ?? 'help';
 const options = parseOptions(args.slice(1));
+loadEnvFile('.env.local');
+loadEnvFile('.env');
 const server = options.server ?? process.env.SPACETIME_SERVER ?? 'local';
 const database = options.database ?? process.env.SPACETIME_DATABASE ?? DEFAULT_DATABASE;
 const message = options.message ?? process.env.MAINTENANCE_MESSAGE ?? DEFAULT_MESSAGE;
@@ -53,7 +63,7 @@ if (action === 'plan') {
   process.exit(0);
 }
 
-if (MUTATING_ACTIONS.has(action)) {
+if (MUTATING_ACTIONS.has(action) && !options['dry-run']) {
   assertLiveConfirmation();
 }
 
@@ -88,8 +98,11 @@ switch (action) {
   case 'migrate':
     migratePlayerGameplaySaves();
     break;
+  case 'reset-discord-post':
+    await postResetDiscordNotice(getResetKey());
+    break;
   case 'reset-progress':
-    resetPlayerProgressionData();
+    await resetPlayerProgressionData();
     break;
   case 'publish':
     runSpacetime(['publish', database, '--server', server, '--module-path', './spacetimedb']);
@@ -136,7 +149,8 @@ function printHelp() {
   node scripts/maintenance.js verify
   node scripts/maintenance.js verify-reset
   node scripts/maintenance.js migrate --key YYYY-MM-DD-maintenance --confirm-live
-  node scripts/maintenance.js reset-progress --key YYYY-MM-DD-reset --confirm-live
+  node scripts/maintenance.js reset-discord-post --key YYYY-MM-DD-reset --confirm-live
+  node scripts/maintenance.js reset-progress --key YYYY-MM-DD-reset --post-discord --confirm-live
   node scripts/maintenance.js publish --confirm-live
   node scripts/maintenance.js off --confirm-live
 
@@ -170,7 +184,7 @@ Full progression reset order after schema has admin_reset_player_progression_dat
 2. Wait 2-3 minutes.
 3. node scripts/maintenance.js locked --server maincloud --database idle-wizard --confirm-live
 4. node scripts/maintenance.js backup-reset --server maincloud --database idle-wizard
-5. node scripts/maintenance.js reset-progress --server maincloud --database idle-wizard --key YYYY-MM-DD-reset --confirm-live
+5. node scripts/maintenance.js reset-progress --server maincloud --database idle-wizard --key YYYY-MM-DD-reset --post-discord --confirm-live
 6. node scripts/maintenance.js verify-reset --server maincloud --database idle-wizard
 7. node scripts/maintenance.js off --server maincloud --database idle-wizard --confirm-live`);
 }
@@ -278,7 +292,17 @@ function migratePlayerGameplaySaves() {
   callReducer('migrate_player_gameplay_saves', [migrationKey]);
 }
 
-function resetPlayerProgressionData() {
+async function resetPlayerProgressionData() {
+  const resetKey = getResetKey();
+
+  if (options['post-discord']) {
+    await postResetDiscordNotice(resetKey);
+  }
+
+  callReducer('admin_reset_player_progression_data', [resetKey]);
+}
+
+function getResetKey() {
   const resetKey = options.key ?? options._?.[0];
 
   if (!resetKey) {
@@ -286,7 +310,75 @@ function resetPlayerProgressionData() {
     process.exit(1);
   }
 
-  callReducer('admin_reset_player_progression_data', [resetKey]);
+  return resetKey;
+}
+
+async function postResetDiscordNotice(resetKey) {
+  const content =
+    options['discord-message'] ??
+    process.env.DISCORD_RESET_MESSAGE ??
+    buildDefaultResetDiscordMessage(resetKey);
+
+  if (content.length > 2000) {
+    console.error(`Discord reset post is ${content.length} characters; Discord limit is 2000.`);
+    process.exit(1);
+  }
+
+  if (options['dry-run']) {
+    console.log(content);
+    return;
+  }
+
+  const webhookUrl =
+    process.env.DISCORD_RESET_WEBHOOK_URL ??
+    process.env.DISCORD_MAINTENANCE_WEBHOOK_URL ??
+    process.env.DISCORD_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.error(
+      'Missing DISCORD_RESET_WEBHOOK_URL, DISCORD_MAINTENANCE_WEBHOOK_URL, or DISCORD_WEBHOOK_URL.',
+    );
+    process.exit(1);
+  }
+
+  if (!isDiscordWebhookUrl(webhookUrl)) {
+    console.error('Discord reset webhook URL does not look like a Discord webhook URL.');
+    process.exit(1);
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  const responseBody = await response.text();
+
+  if (!response.ok) {
+    console.error(
+      `Discord reset post failed: ${response.status} ${response.statusText}${
+        responseBody ? `\n${responseBody}` : ''
+      }`,
+    );
+    process.exit(1);
+  }
+
+  console.log('Posted reset notice to Discord.');
+}
+
+function buildDefaultResetDiscordMessage(resetKey) {
+  return [
+    '**Idle Wizard reset notice**',
+    '',
+    'Hey everyone. We are doing a full progression reset for Idle Wizard.',
+    '',
+    'This keeps your account, name, and profile settings, but clears gameplay progress: saves, leaderboards, world chat history, alliances, player market listings, potion discoveries, and shared market pressure. Everyone starts fresh at level 1 after maintenance ends.',
+    '',
+    'Why this is happening: the game is still in early testing, and the economy/server systems have changed enough that old progress can leave players in unfair or broken states. A clean reset gives the next build a fair baseline and helps us tune the game properly.',
+    '',
+    'What to do: if you are in the game now, close it during maintenance. When maintenance is over, open the newest build and start fresh. Thank you for testing through the rough parts.',
+    '',
+    `Reset key: ${resetKey}`,
+  ].join('\n');
 }
 
 function checkSchema() {
@@ -328,6 +420,48 @@ function runSpacetime(spacetimeArgs, { capture = false } = {}) {
   }
 
   return result;
+}
+
+function loadEnvFile(fileName) {
+  if (!existsSync(fileName)) {
+    return;
+  }
+
+  const content = readFileSync(fileName, 'utf8');
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const rawValue = trimmed.slice(separatorIndex + 1).trim();
+    if (!key || process.env[key] !== undefined) {
+      continue;
+    }
+
+    process.env[key] = stripEnvQuotes(rawValue);
+  }
+}
+
+function stripEnvQuotes(value) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+
+  return value;
+}
+
+function isDiscordWebhookUrl(value) {
+  return /^https:\/\/(?:discord(?:app)?\.com)\/api\/webhooks\/\d+\/[\w-]+/.test(value);
 }
 
 function shellQuote(value) {

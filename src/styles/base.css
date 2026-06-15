@@ -938,6 +938,10 @@ body {
   transform-origin: top left;
 }
 
+.room-bottom-panel-layer:has(.room-bottom-panel__lock-popup:not([hidden])) {
+  z-index: 6;
+}
+
 .room-world-chat-layer {
   position: absolute;
   inset: 0;
