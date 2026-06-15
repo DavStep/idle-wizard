@@ -3235,7 +3235,7 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
     expect(
-      JSON.parse(storage.getItem('idle-wizard.tutorial.v1'))?.completedStepIds,
+      JSON.parse(storage.getItem('idle-wizard.tutorial.v2'))?.completedStepIds,
     ).toEqual([
       'open-tasks',
       'fill-sage-seed-task',
