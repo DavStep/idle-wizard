@@ -1,9 +1,14 @@
 import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
-const LISTINGS_QUERY = 'SELECT * FROM player_shop_listing';
-const PUBLIC_LISTINGS_QUERY = 'SELECT * FROM player_shop_listing WHERE quantity > 0';
-const PROCEEDS_QUERY = 'SELECT * FROM player_shop_proceeds';
-const TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade';
+const PUBLIC_LISTINGS_QUERY = 'SELECT * FROM public_player_shop_listing';
+const OWN_LISTINGS_QUERY = 'SELECT * FROM own_player_shop_listing';
+const PROCEEDS_QUERY = 'SELECT * FROM own_player_shop_proceeds';
+const TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade_recent';
+const OWN_TRADE_HISTORY_QUERY = 'SELECT * FROM own_player_shop_trade_history';
+const LEGACY_PUBLIC_LISTINGS_QUERY = 'SELECT * FROM player_shop_listing WHERE quantity > 0';
+const LEGACY_OWN_LISTINGS_QUERY = 'SELECT * FROM player_shop_listing WHERE "sellerIdentity" =';
+const LEGACY_PROCEEDS_QUERY = 'SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" =';
+const LEGACY_TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade';
 const EMPTY_SNAPSHOT = {
   connected: false,
   listings: [],
@@ -18,9 +23,12 @@ export class PlayerShopSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.identity = null;
-    this.listingsTable = null;
+    this.publicListingsTable = null;
+    this.ownListingsTable = null;
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
+    this.ownTradeHistoryTable = null;
+    this.querySources = {};
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
@@ -30,33 +38,90 @@ export class PlayerShopSubscriptionManager {
     this.disconnect();
     this.connection = connection;
     this.identity = identity;
-    this.listingsTable =
-      connection?.db?.playerShopListing ?? connection?.db?.player_shop_listing ?? null;
+    const publicListings = this.findTableSource({
+      camelName: 'publicPlayerShopListing',
+      snakeName: 'public_player_shop_listing',
+      query: PUBLIC_LISTINGS_QUERY,
+      legacyCamelName: 'playerShopListing',
+      legacySnakeName: 'player_shop_listing',
+      legacyQuery: this.getLegacyPublicListingsQuery(),
+    });
+    const ownListings = this.findTableSource({
+      camelName: 'ownPlayerShopListing',
+      snakeName: 'own_player_shop_listing',
+      query: OWN_LISTINGS_QUERY,
+      legacyCamelName: 'playerShopListing',
+      legacySnakeName: 'player_shop_listing',
+      legacyQuery: this.getLegacyOwnListingsQuery(),
+    });
+    const proceeds = this.findTableSource({
+      camelName: 'ownPlayerShopProceeds',
+      snakeName: 'own_player_shop_proceeds',
+      query: PROCEEDS_QUERY,
+      legacyCamelName: 'playerShopProceeds',
+      legacySnakeName: 'player_shop_proceeds',
+      legacyQuery: this.getLegacyProceedsQuery(),
+    });
+    const tradeHistory = this.findTableSource({
+      camelName: 'playerShopTradeRecent',
+      snakeName: 'player_shop_trade_recent',
+      query: TRADE_HISTORY_QUERY,
+      legacyCamelName: 'playerShopTrade',
+      legacySnakeName: 'player_shop_trade',
+      legacyQuery: LEGACY_TRADE_HISTORY_QUERY,
+    });
+    const ownTradeHistory = this.findTableSource({
+      camelName: 'ownPlayerShopTradeHistory',
+      snakeName: 'own_player_shop_trade_history',
+      query: OWN_TRADE_HISTORY_QUERY,
+      legacyCamelName: null,
+      legacySnakeName: null,
+      legacyQuery: null,
+    });
+    this.publicListingsTable = publicListings.table;
+    this.ownListingsTable = ownListings.table;
     this.proceedsTable =
-      connection?.db?.playerShopProceeds ?? connection?.db?.player_shop_proceeds ?? null;
-    this.tradeHistoryTable =
-      connection?.db?.playerShopTrade ?? connection?.db?.player_shop_trade ?? null;
+      proceeds.query ? proceeds.table : null;
+    this.tradeHistoryTable = tradeHistory.table;
+    this.ownTradeHistoryTable = ownTradeHistory.table;
+    this.querySources = { publicListings, ownListings, proceeds, tradeHistory, ownTradeHistory };
 
-    if (!this.listingsTable || !this.proceedsTable) {
+    if (!this.publicListingsTable || !this.ownListingsTable || !this.proceedsTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
-    this.bindTable(this.listingsTable);
+    this.bindTable(this.publicListingsTable);
+    this.bindTable(this.ownListingsTable);
     this.bindTable(this.proceedsTable);
     this.bindTable(this.tradeHistoryTable);
+    this.bindTable(this.ownTradeHistoryTable);
     this.subscriptions = [
-      ...this.getListingQueries().map((query) => this.subscribeQuery(query)),
-      this.subscribeQuery(this.getProceedsQuery()),
-      this.tradeHistoryTable ? this.subscribeTradeHistoryQuery() : null,
+      this.subscribeQuery(publicListings.query),
+      this.subscribeQuery(ownListings.query),
+      this.subscribeQuery(proceeds.query),
+      this.tradeHistoryTable && tradeHistory.query
+        ? this.subscribeOptionalQuery(tradeHistory.query, () => {
+            this.unbindTable(this.tradeHistoryTable);
+            this.tradeHistoryTable = null;
+          })
+        : null,
+      this.ownTradeHistoryTable && ownTradeHistory.query
+        ? this.subscribeOptionalQuery(ownTradeHistory.query, () => {
+            this.unbindTable(this.ownTradeHistoryTable);
+            this.ownTradeHistoryTable = null;
+          })
+        : null,
     ].filter(Boolean);
     this.publishFromTables();
   }
 
   disconnect() {
-    this.unbindTable(this.listingsTable);
+    this.unbindTable(this.publicListingsTable);
+    this.unbindTable(this.ownListingsTable);
     this.unbindTable(this.proceedsTable);
     this.unbindTable(this.tradeHistoryTable);
+    this.unbindTable(this.ownTradeHistoryTable);
 
     for (const subscription of this.subscriptions) {
       if (!subscription.isEnded?.()) {
@@ -66,9 +131,12 @@ export class PlayerShopSubscriptionManager {
 
     this.connection = null;
     this.identity = null;
-    this.listingsTable = null;
+    this.publicListingsTable = null;
+    this.ownListingsTable = null;
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
+    this.ownTradeHistoryTable = null;
+    this.querySources = {};
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
@@ -97,43 +165,39 @@ export class PlayerShopSubscriptionManager {
       .subscribe(query);
   }
 
-  subscribeTradeHistoryQuery() {
+  subscribeOptionalQuery(query, onError) {
     return this.connection
       ?.subscriptionBuilder()
       .onApplied(() => this.publishFromTables())
       .onError(() => {
-        this.unbindTable(this.tradeHistoryTable);
-        this.tradeHistoryTable = null;
+        onError?.();
         this.publishFromTables();
       })
-      .subscribe(TRADE_HISTORY_QUERY);
+      .subscribe(query);
   }
 
-  getListingQueries() {
-    const identitySql = this.toIdentitySqlLiteral(this.identity);
-    return identitySql
-      ? [
-          PUBLIC_LISTINGS_QUERY,
-          `SELECT * FROM player_shop_listing WHERE "sellerIdentity" = ${identitySql}`,
-        ]
-      : [LISTINGS_QUERY];
+  getLegacyPublicListingsQuery() {
+    return LEGACY_PUBLIC_LISTINGS_QUERY;
   }
 
-  getProceedsQuery() {
+  getLegacyOwnListingsQuery() {
     const identitySql = this.toIdentitySqlLiteral(this.identity);
-    return identitySql
-      ? `SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" = ${identitySql}`
-      : PROCEEDS_QUERY;
+    return identitySql ? `${LEGACY_OWN_LISTINGS_QUERY} ${identitySql}` : null;
+  }
+
+  getLegacyProceedsQuery() {
+    const identitySql = this.toIdentitySqlLiteral(this.identity);
+    return identitySql ? `${LEGACY_PROCEEDS_QUERY} ${identitySql}` : null;
   }
 
   publishFromTables() {
-    if (!this.listingsTable || !this.proceedsTable) {
+    if (!this.publicListingsTable || !this.ownListingsTable || !this.proceedsTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
     const identityKey = this.toIdentityKey(this.identity);
-    const allListings = Array.from(this.listingsTable.iter())
+    const publicListings = Array.from(this.publicListingsTable.iter())
       .map((row) => this.mapListing(row))
       .sort((left, right) => {
         const nameCompare = left.username.localeCompare(right.username);
@@ -144,20 +208,22 @@ export class PlayerShopSubscriptionManager {
 
         return left.slotNumber - right.slotNumber;
       });
-    const ownListings = allListings.filter(
+    const ownListingSource =
+      this.ownListingsTable === this.publicListingsTable
+        ? publicListings
+        : Array.from(this.ownListingsTable.iter()).map((row) => this.mapListing(row));
+    const ownListings = ownListingSource.filter(
       (listing) => listing.sellerIdentity === identityKey,
     );
-    const listings = allListings.filter(
+    const listings = publicListings.filter(
       (listing) =>
         listing.sellerIdentity !== identityKey && listing.quantity > 0 && listing.priceGold > 0,
     );
     const proceedsRow = Array.from(this.proceedsTable.iter()).find(
       (row) => this.toIdentityKey(row.sellerIdentity ?? row.seller_identity) === identityKey,
-    );
+    ) ?? null;
     const tradeHistory = this.getTradeHistoryRows();
-    const ownTradeHistory = tradeHistory.filter(
-      (trade) => trade.buyerIdentity === identityKey || trade.sellerIdentity === identityKey,
-    );
+    const ownTradeHistory = this.getOwnTradeHistoryRows(tradeHistory, identityKey);
 
     this.publish({
       connected: true,
@@ -211,6 +277,51 @@ export class PlayerShopSubscriptionManager {
       this.tradeHistoryTable = null;
       return [];
     }
+  }
+
+  getOwnTradeHistoryRows(tradeHistory, identityKey) {
+    if (!this.ownTradeHistoryTable) {
+      return tradeHistory.filter(
+        (trade) => trade.buyerIdentity === identityKey || trade.sellerIdentity === identityKey,
+      );
+    }
+
+    try {
+      return Array.from(this.ownTradeHistoryTable.iter())
+        .map((row) => this.mapTrade(row))
+        .sort((left, right) => {
+          if (left.tradedAtMs !== right.tradedAtMs) {
+            return right.tradedAtMs - left.tradedAtMs;
+          }
+
+          return right.tradeId.localeCompare(left.tradeId);
+        });
+    } catch {
+      this.unbindTable(this.ownTradeHistoryTable);
+      this.ownTradeHistoryTable = null;
+      return [];
+    }
+  }
+
+  findTableSource({
+    camelName,
+    snakeName,
+    query,
+    legacyCamelName,
+    legacySnakeName,
+    legacyQuery,
+  }) {
+    const table = this.connection?.db?.[camelName] ?? this.connection?.db?.[snakeName] ?? null;
+    if (table) {
+      return { table, query };
+    }
+
+    return {
+      table: legacyCamelName
+        ? this.connection?.db?.[legacyCamelName] ?? this.connection?.db?.[legacySnakeName] ?? null
+        : null,
+      query: legacyQuery,
+    };
   }
 
   mapTrade(row) {

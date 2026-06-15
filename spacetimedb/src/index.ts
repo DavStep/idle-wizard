@@ -94,6 +94,7 @@ const PERIOD_MONTH_DAYS = 30n;
 const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UTC, Armenia 04:00.
 const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const NPC_MARKET_DATA_RESET_STATE_KEY = `npc-market-data-reset:${PLAYER_DATA_RESET_GUARD_MICROS}`;
+const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:indexed-subscriptions-v1';
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const MAINTENANCE_MODE_OFF = 'off';
 const MAINTENANCE_MODE_DRAIN = 'drain';
@@ -1527,6 +1528,17 @@ const playerSessionResult = t.option(
     updatedAt: t.timestamp(),
   }),
 );
+const playerProfileResult = t.option(
+  t.row('PlayerProfileResult', {
+    identity: t.identity().primaryKey(),
+    username: t.string(),
+    playerLevel: t.u32(),
+    theme: t.string(),
+    colorMode: t.string(),
+    usernamePromptSeen: t.bool(),
+    font: t.string(),
+  }),
+);
 const adminPlayerGameplaySaveResult = t.array(
   t.row('AdminPlayerGameplaySaveResult', {
     identity: t.identity().primaryKey(),
@@ -1599,6 +1611,170 @@ const worldChatRecentResult = t.array(
     allianceTag: t.string(),
   }),
 );
+const potionRecipeDiscoverySnapshotResult = t.array(
+  t.row('PotionRecipeDiscoverySnapshotResult', {
+    potionKey: t.string().primaryKey(),
+    potionLabel: t.string(),
+    discoveredByIdentity: t.identity(),
+    username: t.string(),
+    discoveredAt: t.timestamp(),
+    royaltyGold: t.u64(),
+    royaltyGoldScale: t.u32(),
+  }),
+);
+const gameConfigSnapshotResult = t.array(
+  t.row('GameConfigSnapshotResult', {
+    configKey: t.string().primaryKey(),
+    configJson: t.string(),
+    updatedAt: t.timestamp(),
+  }),
+);
+const researchConfigSnapshotResult = t.array(
+  t.row('ResearchConfigSnapshotResult', {
+    researchId: t.string().primaryKey(),
+    label: t.string(),
+    groupId: t.string(),
+    defaultCostGold: t.u64(),
+    costGold: t.u64(),
+    enabled: t.bool(),
+    updatedAt: t.timestamp(),
+    durationSeconds: t.u64(),
+  }),
+);
+const npcMarketPriceSnapshotResult = t.array(
+  t.row('NpcMarketPriceSnapshotResult', {
+    itemKey: t.string().primaryKey(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    basePriceGold: t.u64(),
+    marketPriceGold: t.u64(),
+    npcBuyPriceGold: t.u64(),
+    npcSellPriceGold: t.u64(),
+    npcStock: t.u64(),
+    targetStock: t.u64(),
+    demandScore: t.u64(),
+    supplyScore: t.u64(),
+    updatedAt: t.timestamp(),
+    lastTickAt: t.timestamp(),
+    npcNeed: t.u64(),
+    targetNeed: t.u64(),
+    maxNeed: t.u64(),
+    priceScale: t.u32(),
+  }),
+);
+const tradeAllianceSnapshotResult = t.array(
+  t.row('TradeAllianceSnapshotResult', {
+    allianceId: t.uuid().primaryKey(),
+    name: t.string(),
+    normalizedName: t.string(),
+    tag: t.string(),
+    description: t.string(),
+    notice: t.string(),
+    joinMode: t.string(),
+    leaderIdentity: t.identity(),
+    memberCount: t.u32(),
+    totalIncome: t.u64(),
+    seasonIncome: t.u64(),
+    createdAt: t.timestamp(),
+    updatedAt: t.timestamp(),
+    seasonKey: t.string(),
+    dayKey: t.string(),
+    dailyIncome: t.u64(),
+    monthlyIncome: t.u64(),
+    monthKey: t.string(),
+  }),
+);
+const tradeAllianceMemberSnapshotResult = t.array(
+  t.row('TradeAllianceMemberSnapshotResult', {
+    memberIdentity: t.identity().primaryKey(),
+    allianceId: t.uuid(),
+    username: t.string(),
+    playerLevel: t.u32(),
+    role: t.string(),
+    joinedAt: t.timestamp(),
+    updatedAt: t.timestamp(),
+    totalContribution: t.u64(),
+    dailyContribution: t.u64(),
+    dayKey: t.string(),
+  }),
+);
+const tradeAllianceApplicationSnapshotResult = t.array(
+  t.row('TradeAllianceApplicationSnapshotResult', {
+    applicationKey: t.string().primaryKey(),
+    allianceId: t.uuid(),
+    applicantIdentity: t.identity(),
+    username: t.string(),
+    playerLevel: t.u32(),
+    createdAt: t.timestamp(),
+  }),
+);
+const tradeAllianceQuestProgressSnapshotResult = t.array(
+  t.row('TradeAllianceQuestProgressSnapshotResult', {
+    questKey: t.string().primaryKey(),
+    allianceId: t.uuid(),
+    dayKey: t.string(),
+    questId: t.string(),
+    label: t.string(),
+    questType: t.string(),
+    target: t.u64(),
+    progress: t.u64(),
+    minContribution: t.u64(),
+    crystalReward: t.u32(),
+    updatedAt: t.timestamp(),
+  }),
+);
+const tradeAllianceQuestContributionSnapshotResult = t.array(
+  t.row('TradeAllianceQuestContributionSnapshotResult', {
+    contributionKey: t.string().primaryKey(),
+    allianceId: t.uuid(),
+    dayKey: t.string(),
+    questId: t.string(),
+    contributorIdentity: t.identity(),
+    username: t.string(),
+    contribution: t.u64(),
+    updatedAt: t.timestamp(),
+  }),
+);
+const publicPlayerShopListingResult = t.array(
+  t.row('PublicPlayerShopListingResult', {
+    listingKey: t.string().primaryKey(),
+    sellerIdentity: t.identity(),
+    username: t.string(),
+    slotNumber: t.u8(),
+    itemKey: t.string(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    quantity: t.u32(),
+    priceGold: t.u64(),
+    updatedAt: t.timestamp(),
+    priceScale: t.u32(),
+  }),
+);
+const ownPlayerShopProceedsResult = t.option(
+  t.row('OwnPlayerShopProceedsResult', {
+    sellerIdentity: t.identity().primaryKey(),
+    gold: t.u64(),
+    updatedAt: t.timestamp(),
+    goldScale: t.u32(),
+  }),
+);
+const playerShopTradeHistoryResult = t.array(
+  t.row('PlayerShopTradeHistoryResult', {
+    tradeId: t.uuid().primaryKey(),
+    buyerIdentity: t.identity(),
+    buyerUsername: t.string(),
+    sellerIdentity: t.identity(),
+    sellerUsername: t.string(),
+    itemKey: t.string(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    quantity: t.u32(),
+    priceGold: t.u64(),
+    totalPriceGold: t.u64(),
+    tradedAt: t.timestamp(),
+    priceScale: t.u32(),
+  }),
+);
 
 export const own_player_gameplay_save = spacetimedb.view(
   { name: 'own_player_gameplay_save', public: true },
@@ -1610,6 +1786,110 @@ export const own_player_session = spacetimedb.view(
   { name: 'own_player_session', public: true },
   playerSessionResult,
   (ctx) => ctx.db.playerSession.identity.find(ctx.sender) ?? undefined,
+);
+
+export const own_player_profile = spacetimedb.view(
+  { name: 'own_player_profile', public: true },
+  playerProfileResult,
+  (ctx) => {
+    const player = ctx.db.player.identity.find(ctx.sender);
+    if (!player) {
+      return undefined;
+    }
+
+    return {
+      identity: player.identity,
+      username: player.username,
+      playerLevel: normalizePlayerLevel(player.playerLevel),
+      theme: normalizePlayerTheme(player.theme),
+      colorMode: normalizePlayerColorMode(player.colorMode),
+      usernamePromptSeen: Boolean(player.usernamePromptSeen),
+      font: normalizePlayerFont(player.font),
+    };
+  },
+);
+
+export const game_config_snapshot = spacetimedb.view(
+  { name: 'game_config_snapshot', public: true },
+  gameConfigSnapshotResult,
+  (ctx) => Array.from(ctx.db.gameConfig.byUpdatedAt.filter(new Range())),
+);
+
+export const research_config_snapshot = spacetimedb.view(
+  { name: 'research_config_snapshot', public: true },
+  researchConfigSnapshotResult,
+  (ctx) => Array.from(ctx.db.researchConfig.byGroupId.filter(new Range())),
+);
+
+export const npc_market_price_snapshot = spacetimedb.view(
+  { name: 'npc_market_price_snapshot', public: true },
+  npcMarketPriceSnapshotResult,
+  (ctx) => Array.from(ctx.db.npcMarketPrice.byItemKind.filter(new Range())),
+);
+
+export const trade_alliance_snapshot = spacetimedb.view(
+  { name: 'trade_alliance_snapshot', public: true },
+  tradeAllianceSnapshotResult,
+  (ctx) => Array.from(ctx.db.tradeAlliance.byTag.filter(new Range())),
+);
+
+export const trade_alliance_member_snapshot = spacetimedb.view(
+  { name: 'trade_alliance_member_snapshot', public: true },
+  tradeAllianceMemberSnapshotResult,
+  (ctx) => Array.from(ctx.db.tradeAllianceMember.byJoinedAt.filter(new Range())),
+);
+
+export const trade_alliance_application_snapshot = spacetimedb.view(
+  { name: 'trade_alliance_application_snapshot', public: true },
+  tradeAllianceApplicationSnapshotResult,
+  (ctx) => Array.from(ctx.db.tradeAllianceApplication.byCreatedAt.filter(new Range())),
+);
+
+export const trade_alliance_quest_progress_snapshot = spacetimedb.view(
+  { name: 'trade_alliance_quest_progress_snapshot', public: true },
+  tradeAllianceQuestProgressSnapshotResult,
+  (ctx) => Array.from(ctx.db.tradeAllianceQuestProgress.byDayKey.filter(new Range())),
+);
+
+export const trade_alliance_quest_contribution_snapshot = spacetimedb.view(
+  { name: 'trade_alliance_quest_contribution_snapshot', public: true },
+  tradeAllianceQuestContributionSnapshotResult,
+  (ctx) => Array.from(ctx.db.tradeAllianceQuestContribution.byAllianceId.filter(new Range())),
+);
+
+export const public_player_shop_listing = spacetimedb.view(
+  { name: 'public_player_shop_listing', public: true },
+  publicPlayerShopListingResult,
+  (ctx) =>
+    Array.from(
+      ctx.db.playerShopListing.byQuantity.filter(
+        new Range({ tag: 'excluded', value: 0 }),
+      ),
+    ),
+);
+
+export const own_player_shop_listing = spacetimedb.view(
+  { name: 'own_player_shop_listing', public: true },
+  publicPlayerShopListingResult,
+  (ctx) => Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(ctx.sender)),
+);
+
+export const own_player_shop_proceeds = spacetimedb.view(
+  { name: 'own_player_shop_proceeds', public: true },
+  ownPlayerShopProceedsResult,
+  (ctx) => ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender) ?? undefined,
+);
+
+export const player_shop_trade_recent = spacetimedb.view(
+  { name: 'player_shop_trade_recent', public: true },
+  playerShopTradeHistoryResult,
+  (ctx) => getRecentPlayerShopTrades(ctx),
+);
+
+export const own_player_shop_trade_history = spacetimedb.view(
+  { name: 'own_player_shop_trade_history', public: true },
+  playerShopTradeHistoryResult,
+  (ctx) => getOwnPlayerShopTrades(ctx),
 );
 
 export const admin_player_gameplay_save = spacetimedb.view(
@@ -1683,12 +1963,7 @@ export const own_trade_alliance_chat = spacetimedb.view(
       return [];
     }
 
-    return Array.from(ctx.db.tradeAllianceChat.iter())
-      .filter(
-        (message) =>
-          getTradeAllianceIdKey(message.allianceId) ===
-          getTradeAllianceIdKey(member.allianceId),
-      )
+    return Array.from(ctx.db.tradeAllianceChat.byAllianceId.filter(member.allianceId))
       .sort((left, right) => {
         const leftSentAt = left.sentAt.microsSinceUnixEpoch;
         const rightSentAt = right.sentAt.microsSinceUnixEpoch;
@@ -1729,12 +2004,17 @@ export const world_chat_recent = spacetimedb.view(
       .slice(-40),
 );
 
+export const potion_recipe_discovery_snapshot = spacetimedb.view(
+  { name: 'potion_recipe_discovery_snapshot', public: true },
+  potionRecipeDiscoverySnapshotResult,
+  (ctx) => Array.from(ctx.db.potionRecipeDiscovery.byDiscoveredAt.filter(new Range())),
+);
+
 export const own_trade_alliance_reward_inbox = spacetimedb.view(
   { name: 'own_trade_alliance_reward_inbox', public: true },
   ownTradeAllianceRewardInboxResult,
   (ctx) =>
-    Array.from(ctx.db.tradeAllianceRewardInbox.iter())
-      .filter((reward) => reward.recipientIdentity.isEqual(ctx.sender))
+    Array.from(ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(ctx.sender))
       .sort((left, right) => {
         const leftClaimedAt = left.claimedAt.microsSinceUnixEpoch;
         const rightClaimedAt = right.claimedAt.microsSinceUnixEpoch;
@@ -2022,17 +2302,21 @@ function floorDivBigInt(value: bigint, divisor: bigint): bigint {
   return -((-value + divisor - 1n) / divisor);
 }
 
+function getContextTimestampMicros(ctx: { timestamp?: Timestamp }): bigint {
+  return ctx.timestamp?.microsSinceUnixEpoch ?? Timestamp.now().microsSinceUnixEpoch;
+}
+
 function getAnchoredPeriodKey(ctx: IdleWizardReducerCtx, daySpan: bigint): string {
   return String(
     floorDivBigInt(
-      ctx.timestamp.microsSinceUnixEpoch - PERIOD_LOOP_ANCHOR_MICROS,
+      getContextTimestampMicros(ctx) - PERIOD_LOOP_ANCHOR_MICROS,
       daySpan * PERIOD_DAY_MICROS,
     ),
   );
 }
 
 function getDailyPeriodKey(ctx: IdleWizardReducerCtx): string {
-  return String(ctx.timestamp.microsSinceUnixEpoch / PERIOD_DAY_MICROS);
+  return String(getContextTimestampMicros(ctx) / PERIOD_DAY_MICROS);
 }
 
 function getWeeklyPeriodKey(ctx: IdleWizardReducerCtx): string {
@@ -5826,18 +6110,8 @@ function getLeaderboardPeriodValues(
   };
 }
 
-function getLeaderboardSummaryRows(ctx: { sender: Identity; db: any }) {
-  const entries = Array.from<any>(ctx.db.leaderboard.iter()).map((entry: any) => {
-    const totalIncome = toBigInt(entry.totalIncome);
-
-    return {
-      ...entry,
-      totalIncome,
-      dailyIncome: toBigInt(entry.dailyIncome),
-      weeklyIncome: toBigInt(entry.weeklyIncome),
-      monthlyIncome: toBigInt(entry.monthlyIncome),
-    };
-  });
+function getLeaderboardSummaryRows(ctx: any) {
+  const entries = getLeaderboardEntriesFromIndex(ctx, ctx.db.leaderboard.byTotalIncome);
   const allTimeRanked = getRankedLeaderboardEntries(entries, 'totalIncome');
   const dailyRanked = getRankedLeaderboardEntries(entries, 'dailyIncome');
   const weeklyRanked = getRankedLeaderboardEntries(entries, 'weeklyIncome');
@@ -5882,14 +6156,7 @@ function getLeaderboardSummaryRows(ctx: { sender: Identity; db: any }) {
 
   const ownEntry = ctx.db.leaderboard.identity.find(ctx.sender) as any;
   if (ownEntry) {
-    const totalIncome = toBigInt(ownEntry.totalIncome);
-    addVisible({
-      ...ownEntry,
-      totalIncome,
-      dailyIncome: toBigInt(ownEntry.dailyIncome),
-      weeklyIncome: toBigInt(ownEntry.weeklyIncome),
-      monthlyIncome: toBigInt(ownEntry.monthlyIncome),
-    });
+    addVisible(normalizeLeaderboardSummaryEntry(ctx, ownEntry));
   }
 
   return Array.from(visibleByIdentity.values()).map((entry) => {
@@ -5913,6 +6180,28 @@ function getLeaderboardSummaryRows(ctx: { sender: Identity; db: any }) {
       ...ranks,
     };
   });
+}
+
+function getLeaderboardEntriesFromIndex(
+  ctx: any,
+  index: { filter: (range: Range<bigint>) => Iterable<any> },
+) {
+  return Array.from<any>(index.filter(new Range())).map((entry: any) =>
+    normalizeLeaderboardSummaryEntry(ctx, entry),
+  );
+}
+
+function normalizeLeaderboardSummaryEntry(ctx: any, entry: any) {
+  const totalIncome = toBigInt(entry.totalIncome);
+  const periods = getLeaderboardPeriodValues(ctx, entry, totalIncome);
+
+  return {
+    ...entry,
+    totalIncome,
+    dailyIncome: periods.dailyIncome,
+    weeklyIncome: periods.weeklyIncome,
+    monthlyIncome: periods.monthlyIncome,
+  };
 }
 
 function getRankedLeaderboardEntries<T extends { identity: Identity }>(
@@ -6668,6 +6957,21 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
   }
 }
 
+function runStartupMaintenanceOnce(ctx: IdleWizardReducerCtx) {
+  if (ctx.db.maintenanceState.stateKey.find(STARTUP_MAINTENANCE_STATE_KEY)) {
+    return;
+  }
+
+  sanitizeSharedPlayerRows(ctx);
+  backfillLeaderboardTotalIncomeFromGameplaySaves(ctx);
+  sanitizeLeaderboardRows(ctx);
+  backfillPlayerGameplaySaveLevelCrystals(ctx);
+  ctx.db.maintenanceState.insert({
+    stateKey: STARTUP_MAINTENANCE_STATE_KEY,
+    appliedAt: ctx.timestamp,
+  });
+}
+
 function deleteAllPotionDiscoveries(ctx: IdleWizardReducerCtx) {
   for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
     ctx.db.potionRecipeDiscovery.delete(discovery);
@@ -7323,20 +7627,9 @@ function getSenderTradeAllianceTag(ctx: IdleWizardReducerCtx, identity = ctx.sen
 }
 
 function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
-  const rows = Array.from(ctx.db.playerShopTrade.iter()).sort((left, right) => {
-    const leftTradedAt = left.tradedAt.microsSinceUnixEpoch;
-    const rightTradedAt = right.tradedAt.microsSinceUnixEpoch;
-
-    if (leftTradedAt < rightTradedAt) {
-      return -1;
-    }
-
-    if (leftTradedAt > rightTradedAt) {
-      return 1;
-    }
-
-    return left.tradeId.compareTo(right.tradeId);
-  });
+  const rows = Array.from(ctx.db.playerShopTrade.byTradedAt.filter(new Range())).sort(
+    comparePlayerShopTradesOldestFirst,
+  );
 
   while (rows.length > PLAYER_SHOP_TRADE_HISTORY_LIMIT) {
     const row = rows.shift();
@@ -7345,6 +7638,47 @@ function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
       ctx.db.playerShopTrade.delete(row);
     }
   }
+}
+
+function getRecentPlayerShopTrades(ctx: { db: any }) {
+  return Array.from<any>(ctx.db.playerShopTrade.byTradedAt.filter(new Range()))
+    .sort(comparePlayerShopTradesNewestFirst)
+    .slice(0, PLAYER_SHOP_TRADE_HISTORY_LIMIT);
+}
+
+function getOwnPlayerShopTrades(ctx: { sender: Identity; db: any }) {
+  const byTradeId = new Map<string, any>();
+  const addRows = (rows: Iterable<any>) => {
+    for (const row of rows) {
+      byTradeId.set(getTradeAllianceIdKey(row.tradeId), row);
+    }
+  };
+
+  addRows(ctx.db.playerShopTrade.byBuyerIdentity.filter(ctx.sender));
+  addRows(ctx.db.playerShopTrade.bySellerIdentity.filter(ctx.sender));
+
+  return Array.from<any>(byTradeId.values())
+    .sort(comparePlayerShopTradesNewestFirst)
+    .slice(0, PLAYER_SHOP_TRADE_HISTORY_LIMIT);
+}
+
+function comparePlayerShopTradesOldestFirst(left: any, right: any) {
+  const leftTradedAt = left.tradedAt.microsSinceUnixEpoch;
+  const rightTradedAt = right.tradedAt.microsSinceUnixEpoch;
+
+  if (leftTradedAt < rightTradedAt) {
+    return -1;
+  }
+
+  if (leftTradedAt > rightTradedAt) {
+    return 1;
+  }
+
+  return left.tradeId.compareTo(right.tradeId);
+}
+
+function comparePlayerShopTradesNewestFirst(left: any, right: any) {
+  return comparePlayerShopTradesOldestFirst(right, left);
 }
 
 function isConfiguredNpcMarketAdmin(ctx: IdleWizardReducerCtx): boolean {
@@ -7373,9 +7707,9 @@ function assertMaintenanceLocked(ctx: IdleWizardReducerCtx) {
 
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   upsertPlayerSession(ctx);
-  sanitizeSharedPlayerRows(ctx);
-  backfillLeaderboardTotalIncomeFromGameplaySaves(ctx);
-  sanitizeLeaderboardRows(ctx);
+  ensureResearchConfigCatalog(ctx);
+  ensureGameConfigCatalog(ctx);
+  runStartupMaintenanceOnce(ctx);
   if (!ENABLE_CLIENT_POTION_DISCOVERY) {
     deleteAllPotionDiscoveries(ctx);
   }
@@ -7383,9 +7717,6 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   if (!isPostResetPlayerWithoutAcceptedSave(ctx, player)) {
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
   }
-  ensureResearchConfigCatalog(ctx);
-  ensureGameConfigCatalog(ctx);
-  backfillPlayerGameplaySaveLevelCrystals(ctx);
   const tradeAllianceMember = getTradeAllianceMember(ctx);
   if (tradeAllianceMember) {
     try {

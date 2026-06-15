@@ -34,7 +34,7 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
   it('reports saved and earned generated gold totals through the reducer', async () => {
     const setTotalGeneratedGold = vi.fn(() => Promise.resolve());
     const gameplayFacade = createGameplayFacade(12);
-    const manager = new LeaderboardGeneratedGoldSyncManager();
+    const manager = new LeaderboardGeneratedGoldSyncManager({ syncIntervalMs: 0 });
 
     manager.setGameplayFacade(gameplayFacade);
     manager.connect({
@@ -56,7 +56,7 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
   it('does not resend unchanged frame snapshots', async () => {
     const setTotalGeneratedGold = vi.fn(() => Promise.resolve());
     const gameplayFacade = createGameplayFacade(3);
-    const manager = new LeaderboardGeneratedGoldSyncManager();
+    const manager = new LeaderboardGeneratedGoldSyncManager({ syncIntervalMs: 0 });
 
     manager.setGameplayFacade(gameplayFacade);
     manager.connect({
@@ -77,7 +77,7 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
     const firstSetTotalGeneratedGold = vi.fn(() => Promise.resolve());
     const secondSetTotalGeneratedGold = vi.fn(() => Promise.resolve());
     const gameplayFacade = createGameplayFacade(11);
-    const manager = new LeaderboardGeneratedGoldSyncManager();
+    const manager = new LeaderboardGeneratedGoldSyncManager({ syncIntervalMs: 0 });
 
     manager.setGameplayFacade(gameplayFacade);
     manager.connect({
@@ -102,7 +102,7 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
   it('uses snake-case reducer bindings when camel-case bindings are missing', async () => {
     const setTotalGeneratedGold = vi.fn(() => Promise.resolve());
     const gameplayFacade = createGameplayFacade(7);
-    const manager = new LeaderboardGeneratedGoldSyncManager();
+    const manager = new LeaderboardGeneratedGoldSyncManager({ syncIntervalMs: 0 });
 
     manager.setGameplayFacade(gameplayFacade);
     manager.connect({
@@ -113,5 +113,46 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
     await Promise.resolve();
 
     expect(setTotalGeneratedGold).toHaveBeenCalledWith({ totalGeneratedGold: 7n });
+  });
+
+  it('throttles generated gold reports after the initial connection sync', async () => {
+    let nowMs = 0;
+    let scheduled = null;
+    const setTotalGeneratedGold = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(10);
+    const manager = new LeaderboardGeneratedGoldSyncManager({
+      syncIntervalMs: 1_000,
+      now: () => nowMs,
+      setTimeoutFn: (callback, delayMs) => {
+        scheduled = { callback, delayMs };
+        return 1;
+      },
+      clearTimeoutFn: () => {
+        scheduled = null;
+      },
+    });
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setTotalGeneratedGold,
+      },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    gameplayFacade.publishGoldTotal(12);
+    await Promise.resolve();
+
+    expect(setTotalGeneratedGold).toHaveBeenCalledTimes(1);
+    expect(scheduled?.delayMs).toBe(1_000);
+
+    nowMs = 1_000;
+    scheduled.callback();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(setTotalGeneratedGold).toHaveBeenCalledTimes(2);
+    expect(setTotalGeneratedGold).toHaveBeenLastCalledWith({ totalGeneratedGold: 12n });
   });
 });

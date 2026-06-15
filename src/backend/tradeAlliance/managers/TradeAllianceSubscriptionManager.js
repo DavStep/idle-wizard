@@ -1,8 +1,13 @@
-const ALLIANCES_QUERY = 'SELECT * FROM trade_alliance';
-const MEMBERS_QUERY = 'SELECT * FROM trade_alliance_member';
-const APPLICATIONS_QUERY = 'SELECT * FROM trade_alliance_application';
-const QUESTS_QUERY = 'SELECT * FROM trade_alliance_quest_progress';
-const CONTRIBUTIONS_QUERY = 'SELECT * FROM trade_alliance_quest_contribution';
+const ALLIANCES_QUERY = 'SELECT * FROM trade_alliance_snapshot';
+const MEMBERS_QUERY = 'SELECT * FROM trade_alliance_member_snapshot';
+const APPLICATIONS_QUERY = 'SELECT * FROM trade_alliance_application_snapshot';
+const QUESTS_QUERY = 'SELECT * FROM trade_alliance_quest_progress_snapshot';
+const CONTRIBUTIONS_QUERY = 'SELECT * FROM trade_alliance_quest_contribution_snapshot';
+const LEGACY_ALLIANCES_QUERY = 'SELECT * FROM trade_alliance';
+const LEGACY_MEMBERS_QUERY = 'SELECT * FROM trade_alliance_member';
+const LEGACY_APPLICATIONS_QUERY = 'SELECT * FROM trade_alliance_application';
+const LEGACY_QUESTS_QUERY = 'SELECT * FROM trade_alliance_quest_progress';
+const LEGACY_CONTRIBUTIONS_QUERY = 'SELECT * FROM trade_alliance_quest_contribution';
 const CHAT_QUERY = 'SELECT * FROM own_trade_alliance_chat';
 const REWARDS_QUERY = 'SELECT * FROM own_trade_alliance_reward_inbox';
 const MESSAGE_LIMIT = 40;
@@ -56,17 +61,61 @@ export class TradeAllianceSubscriptionManager {
     this.disconnect();
     this.connection = connection;
     this.identityKey = this.toIdentityKey(identity);
+    const alliances = this.findTableSource({
+      camelName: 'tradeAllianceSnapshot',
+      snakeName: 'trade_alliance_snapshot',
+      query: ALLIANCES_QUERY,
+      legacyCamelName: 'tradeAlliance',
+      legacySnakeName: 'trade_alliance',
+      legacyQuery: LEGACY_ALLIANCES_QUERY,
+    });
+    const members = this.findTableSource({
+      camelName: 'tradeAllianceMemberSnapshot',
+      snakeName: 'trade_alliance_member_snapshot',
+      query: MEMBERS_QUERY,
+      legacyCamelName: 'tradeAllianceMember',
+      legacySnakeName: 'trade_alliance_member',
+      legacyQuery: LEGACY_MEMBERS_QUERY,
+    });
+    const applications = this.findTableSource({
+      camelName: 'tradeAllianceApplicationSnapshot',
+      snakeName: 'trade_alliance_application_snapshot',
+      query: APPLICATIONS_QUERY,
+      legacyCamelName: 'tradeAllianceApplication',
+      legacySnakeName: 'trade_alliance_application',
+      legacyQuery: LEGACY_APPLICATIONS_QUERY,
+    });
+    const quests = this.findTableSource({
+      camelName: 'tradeAllianceQuestProgressSnapshot',
+      snakeName: 'trade_alliance_quest_progress_snapshot',
+      query: QUESTS_QUERY,
+      legacyCamelName: 'tradeAllianceQuestProgress',
+      legacySnakeName: 'trade_alliance_quest_progress',
+      legacyQuery: LEGACY_QUESTS_QUERY,
+    });
+    const contributions = this.findTableSource({
+      camelName: 'tradeAllianceQuestContributionSnapshot',
+      snakeName: 'trade_alliance_quest_contribution_snapshot',
+      query: CONTRIBUTIONS_QUERY,
+      legacyCamelName: 'tradeAllianceQuestContribution',
+      legacySnakeName: 'trade_alliance_quest_contribution',
+      legacyQuery: LEGACY_CONTRIBUTIONS_QUERY,
+    });
     this.tables = {
-      alliances: this.findTable('tradeAlliance', 'trade_alliance'),
-      members: this.findTable('tradeAllianceMember', 'trade_alliance_member'),
-      applications: this.findTable('tradeAllianceApplication', 'trade_alliance_application'),
-      quests: this.findTable('tradeAllianceQuestProgress', 'trade_alliance_quest_progress'),
-      contributions: this.findTable(
-        'tradeAllianceQuestContribution',
-        'trade_alliance_quest_contribution',
-      ),
+      alliances: alliances.table,
+      members: members.table,
+      applications: applications.table,
+      quests: quests.table,
+      contributions: contributions.table,
       chat: this.findTable('ownTradeAllianceChat', 'own_trade_alliance_chat'),
       rewards: this.findTable('ownTradeAllianceRewardInbox', 'own_trade_alliance_reward_inbox'),
+    };
+    this.queries = {
+      alliances: alliances.query,
+      members: members.query,
+      applications: applications.query,
+      quests: quests.query,
+      contributions: contributions.query,
     };
 
     if (!this.tables.alliances || !this.tables.members) {
@@ -79,11 +128,11 @@ export class TradeAllianceSubscriptionManager {
     }
 
     this.subscriptions = [
-      this.subscribeQuery(ALLIANCES_QUERY),
-      this.subscribeQuery(MEMBERS_QUERY),
-      this.subscribeQuery(APPLICATIONS_QUERY),
-      this.subscribeQuery(QUESTS_QUERY),
-      this.subscribeQuery(CONTRIBUTIONS_QUERY),
+      this.subscribeQuery(this.queries.alliances),
+      this.subscribeQuery(this.queries.members),
+      this.subscribeQuery(this.queries.applications),
+      this.subscribeQuery(this.queries.quests),
+      this.subscribeQuery(this.queries.contributions),
       this.subscribeQuery(CHAT_QUERY),
       this.subscribeQuery(REWARDS_QUERY),
     ].filter(Boolean);
@@ -104,6 +153,7 @@ export class TradeAllianceSubscriptionManager {
     this.connection = null;
     this.identityKey = '';
     this.tables = {};
+    this.queries = {};
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
@@ -114,6 +164,25 @@ export class TradeAllianceSubscriptionManager {
 
   findTable(camelName, snakeName) {
     return this.connection?.db?.[camelName] ?? this.connection?.db?.[snakeName] ?? null;
+  }
+
+  findTableSource({
+    camelName,
+    snakeName,
+    query,
+    legacyCamelName,
+    legacySnakeName,
+    legacyQuery,
+  }) {
+    const table = this.findTable(camelName, snakeName);
+    if (table) {
+      return { table, query };
+    }
+
+    return {
+      table: this.findTable(legacyCamelName, legacySnakeName),
+      query: legacyQuery,
+    };
   }
 
   bindTable(table) {

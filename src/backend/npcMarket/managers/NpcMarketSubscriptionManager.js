@@ -1,6 +1,7 @@
 import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
-const PRICES_QUERY = 'SELECT * FROM npc_market_price';
+const PRICES_QUERY = 'SELECT * FROM npc_market_price_snapshot';
+const LEGACY_PRICES_QUERY = 'SELECT * FROM npc_market_price';
 const EMPTY_SNAPSHOT = {
   connected: false,
   prices: [],
@@ -11,6 +12,7 @@ export class NpcMarketSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.pricesTable = null;
+    this.pricesQuery = PRICES_QUERY;
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.pricesByItemKey = new Map();
@@ -20,7 +22,16 @@ export class NpcMarketSubscriptionManager {
   connect(connection) {
     this.disconnect();
     this.connection = connection;
-    this.pricesTable = connection?.db?.npcMarketPrice ?? connection?.db?.npc_market_price ?? null;
+    this.pricesTable =
+      connection?.db?.npcMarketPriceSnapshot ??
+      connection?.db?.npc_market_price_snapshot ??
+      connection?.db?.npcMarketPrice ??
+      connection?.db?.npc_market_price ??
+      null;
+    this.pricesQuery =
+      connection?.db?.npcMarketPriceSnapshot || connection?.db?.npc_market_price_snapshot
+        ? PRICES_QUERY
+        : LEGACY_PRICES_QUERY;
 
     if (!this.pricesTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
@@ -28,7 +39,7 @@ export class NpcMarketSubscriptionManager {
     }
 
     this.bindTable(this.pricesTable);
-    this.subscriptions = [this.subscribeQuery(PRICES_QUERY)].filter(Boolean);
+    this.subscriptions = [this.subscribeQuery(this.pricesQuery)].filter(Boolean);
     this.publishFromTables();
   }
 
@@ -43,6 +54,7 @@ export class NpcMarketSubscriptionManager {
 
     this.connection = null;
     this.pricesTable = null;
+    this.pricesQuery = PRICES_QUERY;
     this.subscriptions = [];
     this.pricesByItemKey = new Map();
     this.publish({ ...EMPTY_SNAPSHOT });

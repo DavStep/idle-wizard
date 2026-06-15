@@ -1,4 +1,5 @@
-const DISCOVERIES_QUERY = 'SELECT * FROM potion_recipe_discovery';
+const DISCOVERIES_QUERY = 'SELECT * FROM potion_recipe_discovery_snapshot';
+const LEGACY_DISCOVERIES_QUERY = 'SELECT * FROM potion_recipe_discovery';
 const EMPTY_SNAPSHOT = {
   connected: false,
   discoveries: [],
@@ -18,10 +19,7 @@ export class PotionDiscoverySubscriptionManager {
   connect(connection) {
     this.disconnect();
     this.connection = connection;
-    this.table =
-      connection?.db?.potionRecipeDiscovery ??
-      connection?.db?.potion_recipe_discovery ??
-      null;
+    this.table = this.findTable(connection);
 
     if (!this.table) {
       this.publish({ ...EMPTY_SNAPSHOT });
@@ -36,7 +34,7 @@ export class PotionDiscoverySubscriptionManager {
       .subscriptionBuilder()
       .onApplied(() => this.publishFromTable())
       .onError(() => this.publish({ ...EMPTY_SNAPSHOT }))
-      .subscribe(DISCOVERIES_QUERY);
+      .subscribe(this.getQuery());
     this.publishFromTable();
   }
 
@@ -163,5 +161,24 @@ export class PotionDiscoverySubscriptionManager {
     }
 
     return Math.round((numericValue / scale + Number.EPSILON) * 100) / 100;
+  }
+
+  findTable(connection) {
+    return (
+      connection?.db?.potionRecipeDiscoverySnapshot ??
+      connection?.db?.potion_recipe_discovery_snapshot ??
+      connection?.db?.potionRecipeDiscovery ??
+      connection?.db?.potion_recipe_discovery ??
+      null
+    );
+  }
+
+  getQuery() {
+    return (
+      this.connection?.db?.potionRecipeDiscoverySnapshot ||
+      this.connection?.db?.potion_recipe_discovery_snapshot
+    )
+      ? DISCOVERIES_QUERY
+      : LEGACY_DISCOVERIES_QUERY;
   }
 }

@@ -1,11 +1,24 @@
+const DEFAULT_SYNC_INTERVAL_MS = 30_000;
+
 export class LeaderboardGeneratedGoldSyncManager {
-  constructor() {
+  constructor({
+    syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS,
+    setTimeoutFn = globalThis.setTimeout?.bind(globalThis),
+    clearTimeoutFn = globalThis.clearTimeout?.bind(globalThis),
+    now = () => Date.now(),
+  } = {}) {
     this.connection = null;
     this.gameplayFacade = null;
     this.unsubscribe = null;
     this.lastObservedTotalGeneratedGold = null;
     this.pendingTotalGeneratedGold = null;
     this.syncPromise = null;
+    this.syncIntervalMs = syncIntervalMs;
+    this.setTimeoutFn = setTimeoutFn;
+    this.clearTimeoutFn = clearTimeoutFn;
+    this.now = now;
+    this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
+    this.syncTimerId = null;
   }
 
   setGameplayFacade(gameplayFacade) {
@@ -25,10 +38,12 @@ export class LeaderboardGeneratedGoldSyncManager {
   connect(connection) {
     this.connection = connection;
     this.queueCurrentTotalGeneratedGold();
-    this.flush();
+    this.flush({ force: true });
   }
 
   disconnect() {
+    this.clearSyncTimer();
+    this.syncPromise = null;
     this.connection = null;
   }
 
@@ -62,8 +77,13 @@ export class LeaderboardGeneratedGoldSyncManager {
     this.flush();
   }
 
-  flush() {
+  flush({ force = false } = {}) {
     if (this.syncPromise || this.pendingTotalGeneratedGold === null || !this.connection) {
+      return;
+    }
+
+    if (!force && !this.canSyncNow()) {
+      this.scheduleFlush();
       return;
     }
 
@@ -74,6 +94,8 @@ export class LeaderboardGeneratedGoldSyncManager {
 
     const totalGeneratedGold = this.pendingTotalGeneratedGold;
     this.pendingTotalGeneratedGold = null;
+    this.clearSyncTimer();
+    this.lastSyncStartedAtMs = this.now();
 
     let syncResult;
     try {
@@ -91,6 +113,41 @@ export class LeaderboardGeneratedGoldSyncManager {
         this.syncPromise = null;
         this.flush();
       });
+  }
+
+  canSyncNow() {
+    if (!Number.isFinite(this.syncIntervalMs) || this.syncIntervalMs <= 0) {
+      return true;
+    }
+
+    return this.now() - this.lastSyncStartedAtMs >= this.syncIntervalMs;
+  }
+
+  scheduleFlush() {
+    if (
+      this.syncTimerId !== null ||
+      typeof this.setTimeoutFn !== 'function' ||
+      !Number.isFinite(this.syncIntervalMs) ||
+      this.syncIntervalMs <= 0
+    ) {
+      return;
+    }
+
+    const elapsedMs = this.now() - this.lastSyncStartedAtMs;
+    const delayMs = Math.max(0, this.syncIntervalMs - elapsedMs);
+    this.syncTimerId = this.setTimeoutFn(() => {
+      this.syncTimerId = null;
+      this.flush();
+    }, delayMs);
+  }
+
+  clearSyncTimer() {
+    if (this.syncTimerId === null) {
+      return;
+    }
+
+    this.clearTimeoutFn?.(this.syncTimerId);
+    this.syncTimerId = null;
   }
 
   restorePending(totalGeneratedGold) {

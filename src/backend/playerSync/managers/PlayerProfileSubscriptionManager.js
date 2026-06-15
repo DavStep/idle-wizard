@@ -1,4 +1,5 @@
-const PLAYER_QUERY = 'SELECT * FROM player';
+const PLAYER_PROFILE_QUERY = 'SELECT * FROM own_player_profile';
+const LEGACY_PLAYER_QUERY = 'SELECT * FROM player WHERE identity =';
 
 export class PlayerProfileSubscriptionManager {
   constructor({ onProfile } = {}) {
@@ -21,10 +22,16 @@ export class PlayerProfileSubscriptionManager {
     this.disconnect();
     this.connection = connection;
     this.identity = identity;
-    this.table = connection?.db?.player ?? null;
+    this.table = this.findProfileTable(connection);
     this.subscriptionApplied = false;
 
     if (!this.table || !this.identity) {
+      this.publish(null);
+      return;
+    }
+
+    const query = this.getPlayerQuery();
+    if (!query) {
       this.publish(null);
       return;
     }
@@ -40,7 +47,7 @@ export class PlayerProfileSubscriptionManager {
         this.publishFromTable();
       })
       .onError(() => this.publish(null))
-      .subscribe(this.getPlayerQuery());
+      .subscribe(query);
   }
 
   disconnect() {
@@ -99,6 +106,13 @@ export class PlayerProfileSubscriptionManager {
       return false;
     }
 
+    if (
+      this.table === this.connection?.db?.ownPlayerProfile ||
+      this.table === this.connection?.db?.own_player_profile
+    ) {
+      return true;
+    }
+
     return this.toIdentityKey(row.identity) === this.toIdentityKey(this.identity);
   }
 
@@ -123,14 +137,28 @@ export class PlayerProfileSubscriptionManager {
   }
 
   getPlayerQuery() {
+    if (
+      this.connection?.db?.ownPlayerProfile ||
+      this.connection?.db?.own_player_profile
+    ) {
+      return PLAYER_PROFILE_QUERY;
+    }
+
     const identitySql = this.toIdentitySqlLiteral(this.identity);
-    return identitySql
-      ? `SELECT * FROM player WHERE identity = ${identitySql}`
-      : PLAYER_QUERY;
+    return identitySql ? `${LEGACY_PLAYER_QUERY} ${identitySql}` : '';
   }
 
   toIdentitySqlLiteral(identity) {
     const identityKey = this.toIdentityKey(identity).replace(/^0x/i, '');
     return /^[0-9a-f]{64}$/i.test(identityKey) ? `0x${identityKey}` : '';
+  }
+
+  findProfileTable(connection) {
+    return (
+      connection?.db?.ownPlayerProfile ??
+      connection?.db?.own_player_profile ??
+      connection?.db?.player ??
+      null
+    );
   }
 }

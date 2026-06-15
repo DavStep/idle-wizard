@@ -117,7 +117,10 @@
   );
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
-  --garden-page-plot-row-min-height: calc(var(--style-row-min-height) + 4px);
+  --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
+  --garden-page-plot-row-min-height: calc(
+    var(--style-row-min-height) + 2px + var(--garden-page-plot-progress-slot-height)
+  );
   --garden-page-plot-rows-height: 220px;
   --garden-page-herb-rows-height: 210px;
   --garden-page-seed-rows-height: 360px;
@@ -576,7 +579,7 @@ body {
 }
 
 .app-fresh-start-choice {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 120;
   display: grid;
@@ -597,7 +600,7 @@ body {
 }
 
 .app-fresh-start-choice__panel {
-  width: calc(260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
   max-width: 100%;
   outline: none;
 }
@@ -608,7 +611,7 @@ body {
 }
 
 .style-dialog.app-fresh-start-choice__dialog {
-  width: 260px;
+  width: 300px;
   max-width: calc(100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px);
 }
 
@@ -623,26 +626,18 @@ body {
 }
 
 .app-fresh-start-choice__actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  justify-content: space-between;
   margin-top: 12px;
 }
 
 .style-button.app-fresh-start-choice__button {
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
   margin-bottom: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.style-button.app-fresh-start-choice__button--connect {
-  width: 118px;
-}
-
-.style-button.app-fresh-start-choice__button--fresh {
-  width: 94px;
 }
 
 .app-deploy-refresh {
@@ -984,56 +979,30 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: rgb(0 0 0 / 38%);
+  background: rgb(255 255 255 / 30%);
   pointer-events: none;
 }
 
 .tutorial-layer__highlight {
   position: absolute;
   z-index: 1;
-  border: var(--style-border-strong);
-  box-shadow:
-    0 0 0 1px var(--style-surface),
-    0 0 0 4px rgb(255 255 255 / 22%);
+  border: var(--style-border);
+  outline: 2px solid var(--style-surface);
+  background: transparent;
+  box-shadow: none;
   pointer-events: none;
-}
-
-.tutorial-layer__focus-clone {
-  position: absolute;
-  z-index: 2;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.tutorial-layer__focus-clone,
-.tutorial-layer__focus-clone * {
-  pointer-events: none !important;
-  user-select: none;
-}
-
-.tutorial-layer__focus-copy {
-  position: relative !important;
-  top: 0 !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: 0 !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
-  margin: 0 !important;
-  transform: none !important;
 }
 
 .tutorial-layer__pointer {
   position: absolute;
-  z-index: 4;
-  width: 46px;
+  z-index: 3;
+  width: 38px;
   height: auto;
   image-rendering: auto;
   pointer-events: none;
-  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 74%));
+  filter:
+    drop-shadow(0 1px 0 var(--style-surface))
+    drop-shadow(0 2px 1px rgb(0 0 0 / 34%));
   transform:
     translate(-50%, -50%)
     scaleX(var(--tutorial-pointer-scale-x, 1))
@@ -1063,39 +1032,9 @@ body {
 .tutorial-layer__hint {
   position: absolute;
   z-index: 6;
-  width: 144px;
+  width: 156px;
   min-height: 52px;
-  border-top: 0;
   pointer-events: auto;
-}
-
-.tutorial-layer__hint::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 0;
-  height: 1px;
-  content: "";
-  background: linear-gradient(
-    to right,
-    var(--style-stroke) 0,
-    var(--style-stroke) 8px,
-    transparent 8px,
-    transparent 50px,
-    var(--style-stroke) 50px,
-    var(--style-stroke) calc(100% - 34px),
-    transparent calc(100% - 34px),
-    transparent calc(100% - 7px),
-    var(--style-stroke) calc(100% - 7px),
-    var(--style-stroke) 100%
-  );
-  pointer-events: none;
-}
-
-.tutorial-layer__hint > * {
-  position: relative;
-  z-index: 1;
 }
 
 .tutorial-layer__hint > .style-box__title {
@@ -1136,7 +1075,7 @@ body {
     transform:
       translate(-50%, -50%)
       scaleX(var(--tutorial-pointer-scale-x, 1))
-      translateX(4px);
+      translateX(3px);
   }
 }
 
@@ -3283,10 +3222,12 @@ div.workshop-page__discovery-row {
 .garden-page__plot-row {
   display: grid;
   grid-template-columns: 2ch minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
+  grid-template-rows: var(--style-row-min-height) var(--garden-page-plot-progress-slot-height);
   column-gap: var(--style-row-column-gap);
   row-gap: 2px;
   align-items: center;
   width: 100%;
+  height: var(--garden-page-plot-row-min-height);
   min-height: var(--garden-page-plot-row-min-height);
 }
 
@@ -3455,6 +3396,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-progress {
   grid-column: 2 / -1;
+  grid-row: 2;
 }
 
 .garden-page__plot-progress[hidden] {
@@ -4382,23 +4324,9 @@ div.workshop-page__discovery-row {
   color: var(--style-muted);
 }
 
-.shop-page__stock-tabs {
-  position: absolute;
-  right: 10px;
-  bottom: var(--style-box-border-label-offset);
-  left: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .shop-page__stock-rows {
   box-sizing: border-box;
-  padding-top: 4px;
-  max-height: calc(var(--style-row-min-height) * 7);
-  overflow: hidden auto;
-  scrollbar-width: none;
+  overflow: visible;
 }
 
 .shop-page__stock-rows::-webkit-scrollbar {
@@ -4443,6 +4371,52 @@ div.workshop-page__discovery-row {
   margin-top: 4px;
 }
 
+.shop-page__stock-count {
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  right: var(--style-box-title-left);
+  display: inline-block;
+  padding: 0 var(--style-box-border-label-padding-x);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+}
+
+.shop-page__stock-type-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 0;
+  align-items: stretch;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  border-bottom: var(--style-border);
+}
+
+.shop-page__stock-toggle {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--style-box-border-label-padding-x);
+  border: 0;
+  background: var(--style-surface);
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+.shop-page__stock-toggle[hidden] {
+  display: none;
+}
+
 .shop-page__stock-buy-row,
 .shop-page__stock-buy-field,
 .shop-page__stock-buy-action-row,
@@ -4465,14 +4439,43 @@ div.workshop-page__discovery-row {
   text-align: right;
 }
 
-.style-input.shop-page__stock-buy-input {
-  box-sizing: border-box;
-  float: right;
-  width: 86px;
-  padding: 1px 4px;
+.amount-selection-row {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(27px, auto))
+    minmax(42px, 1fr)
+    repeat(3, minmax(27px, auto));
+  gap: 2px;
+  align-items: center;
+}
+
+.style-button.amount-selection-row__step {
+  width: auto;
+  min-width: 27px;
+  padding: 1px 2px;
   margin: 0;
   font-variant-numeric: tabular-nums lining-nums;
-  text-align: right;
+  line-height: normal;
+}
+
+.style-input.amount-selection-row__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 42px;
+  padding: 1px 3px;
+  margin: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: center;
+}
+
+.style-input.amount-selection-row__input::-webkit-inner-spin-button,
+.style-input.amount-selection-row__input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.shop-page__stock-buy-field {
+  margin-top: 5px;
 }
 
 .shop-page__player-listing-fields {
@@ -5736,7 +5739,7 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__sell-tab-button,
 .style-button.shop-page__request-tab-button,
 .style-button.shop-page__market-tab-button,
-.style-button.shop-page__stock-tab-button,
+.style-button.shop-page__stock-type-button,
 .style-button.shop-page__trade-history-tab-button,
 .style-button.shop-page__demand-tab-button {
   flex: 1 1 0;
@@ -5765,18 +5768,18 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
-.style-button.shop-page__stock-tab-button {
+.style-button.shop-page__stock-type-button {
   flex: 0 0 auto;
   width: auto;
-  min-height: var(--style-box-border-label-line-height);
-  padding: 0 8px;
-  font-size: var(--style-box-border-label-font-size);
-  line-height: var(--style-box-border-label-line-height);
+  min-height: calc(var(--style-row-min-height) * 2);
+  padding: 1px 4px;
+  font-size: var(--style-font-size);
+  line-height: normal;
   background: var(--style-surface);
   border: 0;
 }
 
-.style-button.shop-page__stock-tab-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__stock-type-button:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
 }
 
@@ -5865,7 +5868,7 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__sell-tab-button[aria-selected="true"],
 .style-button.shop-page__request-tab-button[aria-selected="true"],
 .style-button.shop-page__market-tab-button[aria-selected="true"],
-.style-button.shop-page__stock-tab-button[aria-selected="true"],
+.style-button.shop-page__stock-type-button[aria-selected="true"],
 .style-button.shop-page__trade-history-tab-button[aria-selected="true"],
 .style-button.shop-page__demand-tab-button[aria-selected="true"] {
   text-decoration: underline;
@@ -5934,6 +5937,7 @@ div.workshop-page__discovery-row {
 .style-progress {
   position: relative;
   display: block;
+  box-sizing: content-box;
   height: var(--style-progress-height);
   overflow: hidden;
   background: var(--style-progress-rail-background);
@@ -5970,8 +5974,6 @@ div.workshop-page__discovery-row {
 }
 
 .style-scroll-cue-progress {
-  box-sizing: border-box;
-  height: var(--style-progress-height);
   margin-top: var(--style-scroll-progress-gap);
 }
 

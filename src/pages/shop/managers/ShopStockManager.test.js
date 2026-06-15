@@ -40,7 +40,7 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ShopStockManager', () => {
-  it('renders shared NPC stock with bottom tabs and a quantity buy dialog', async () => {
+  it('renders shared NPC stock with type controls and a quantity buy dialog', async () => {
     const stage = document.createElement('section');
     const snapshot = {
       gold: { current: 5 },
@@ -85,8 +85,12 @@ describe('ShopStockManager', () => {
       false,
     );
     expect(
-      stage.querySelector('.shop-page__stock')?.lastElementChild,
-    ).toBe(stage.querySelector('.shop-page__stock-tabs'));
+      [...stage.querySelectorAll('.shop-page__stock-type-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['seeds', 'herbs', 'potions']);
+    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('1/1');
+    expect(stage.querySelector('.shop-page__stock-toggle')?.hidden).toBe(true);
 
     await manager.onBuyItem(1);
 
@@ -96,7 +100,39 @@ describe('ShopStockManager', () => {
       'total1.25 gold',
     );
 
+    const stepButtons = [
+      ...stage.querySelectorAll('.shop-page__stock-buy-step'),
+    ];
+    expect(stepButtons.map((button) => button.textContent)).toEqual([
+      '-100',
+      '-10',
+      '-1',
+      '+1',
+      '+10',
+      '+100',
+    ]);
+
     const input = stage.querySelector('.shop-page__stock-buy-input');
+    expect(input.value).toBe('1');
+
+    stepButtons.find((button) => button.textContent === '+1').click();
+
+    expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 2);
+    expect(input.value).toBe('2');
+    expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
+      'total2.6 gold',
+    );
+
+    stepButtons.find((button) => button.textContent === '+100').click();
+
+    expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 3);
+    expect(input.value).toBe('3');
+
+    stepButtons.find((button) => button.textContent === '-100').click();
+
+    expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 1);
+    expect(input.value).toBe('1');
+
     input.value = '2';
     input.dispatchEvent(new window.Event('input', { bubbles: true }));
 
@@ -243,6 +279,55 @@ describe('ShopStockManager', () => {
     expect(manager.refs.rows.get(1)?.row.hidden).toBe(true);
     expect(manager.refs.rows.get(101)?.row.hidden).toBe(true);
     expect(manager.refs.rows.get(201)?.row.hidden).toBe(false);
+
+    manager.unmount();
+  });
+
+  it('collapses stock rows after five and expands them from the bottom toggle', () => {
+    const stage = document.createElement('section');
+    const items = Array.from({ length: 6 }, (_, index) => ({
+      itemTypeId: index + 1,
+      key: `seed${index}Seed`,
+      label: `seed ${index}`,
+      kind: 'seed',
+      quantity: 0,
+      buyGold: 1,
+      stock: 3,
+      researched: true,
+    }));
+    const snapshot = {
+      gold: { current: 20 },
+      research: { completedResearchIds: [] },
+      shop: {
+        stock: {
+          items,
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopStockManager({ gameplayFacade });
+
+    manager.mount(stage);
+
+    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('5/6');
+    expect(stage.querySelector('.shop-page__stock-toggle')?.hidden).toBe(false);
+    expect(manager.refs.rows.get(1)?.row.hidden).toBe(false);
+    expect(manager.refs.rows.get(5)?.row.hidden).toBe(false);
+    expect(manager.refs.rows.get(6)?.row.hidden).toBe(true);
+
+    manager.toggleStockExpanded();
+
+    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('6/6');
+    expect(stage.querySelector('.shop-page__stock-toggle')?.textContent).toBe(
+      'collapse',
+    );
+    expect(manager.refs.rows.get(6)?.row.hidden).toBe(false);
+
+    manager.onSelectTab('herb');
+
+    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('0/0');
+    expect(stage.querySelector('.shop-page__stock-toggle')?.hidden).toBe(true);
+    expect(manager.stockExpanded).toBe(false);
 
     manager.unmount();
   });

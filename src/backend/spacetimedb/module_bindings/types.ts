@@ -41,6 +41,16 @@ export const GameConfig = __t.object("GameConfig", {
 });
 export type GameConfig = __Infer<typeof GameConfig>;
 
+export const GameConfigSnapshot = __t.object("GameConfigSnapshot", {});
+export type GameConfigSnapshot = __Infer<typeof GameConfigSnapshot>;
+
+export const GameConfigSnapshotResult = __t.object("GameConfigSnapshotResult", {
+  configKey: __t.string(),
+  configJson: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type GameConfigSnapshotResult = __Infer<typeof GameConfigSnapshotResult>;
+
 export const Leaderboard = __t.object("Leaderboard", {
   identity: __t.identity(),
   username: __t.string(),
@@ -124,11 +134,55 @@ export const NpcMarketPrice = __t.object("NpcMarketPrice", {
 });
 export type NpcMarketPrice = __Infer<typeof NpcMarketPrice>;
 
+export const NpcMarketPriceSnapshot = __t.object("NpcMarketPriceSnapshot", {});
+export type NpcMarketPriceSnapshot = __Infer<typeof NpcMarketPriceSnapshot>;
+
+export const NpcMarketPriceSnapshotResult = __t.object("NpcMarketPriceSnapshotResult", {
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  basePriceGold: __t.u64(),
+  marketPriceGold: __t.u64(),
+  npcBuyPriceGold: __t.u64(),
+  npcSellPriceGold: __t.u64(),
+  npcStock: __t.u64(),
+  targetStock: __t.u64(),
+  demandScore: __t.u64(),
+  supplyScore: __t.u64(),
+  updatedAt: __t.timestamp(),
+  lastTickAt: __t.timestamp(),
+  npcNeed: __t.u64(),
+  targetNeed: __t.u64(),
+  maxNeed: __t.u64(),
+  priceScale: __t.u32(),
+});
+export type NpcMarketPriceSnapshotResult = __Infer<typeof NpcMarketPriceSnapshotResult>;
+
 export const OwnPlayerGameplaySave = __t.object("OwnPlayerGameplaySave", {});
 export type OwnPlayerGameplaySave = __Infer<typeof OwnPlayerGameplaySave>;
 
+export const OwnPlayerProfile = __t.object("OwnPlayerProfile", {});
+export type OwnPlayerProfile = __Infer<typeof OwnPlayerProfile>;
+
 export const OwnPlayerSession = __t.object("OwnPlayerSession", {});
 export type OwnPlayerSession = __Infer<typeof OwnPlayerSession>;
+
+export const OwnPlayerShopListing = __t.object("OwnPlayerShopListing", {});
+export type OwnPlayerShopListing = __Infer<typeof OwnPlayerShopListing>;
+
+export const OwnPlayerShopProceeds = __t.object("OwnPlayerShopProceeds", {});
+export type OwnPlayerShopProceeds = __Infer<typeof OwnPlayerShopProceeds>;
+
+export const OwnPlayerShopProceedsResult = __t.object("OwnPlayerShopProceedsResult", {
+  sellerIdentity: __t.identity(),
+  gold: __t.u64(),
+  updatedAt: __t.timestamp(),
+  goldScale: __t.u32(),
+});
+export type OwnPlayerShopProceedsResult = __Infer<typeof OwnPlayerShopProceedsResult>;
+
+export const OwnPlayerShopTradeHistory = __t.object("OwnPlayerShopTradeHistory", {});
+export type OwnPlayerShopTradeHistory = __Infer<typeof OwnPlayerShopTradeHistory>;
 
 export const OwnTradeAllianceChat = __t.object("OwnTradeAllianceChat", {});
 export type OwnTradeAllianceChat = __Infer<typeof OwnTradeAllianceChat>;
@@ -200,6 +254,17 @@ export const PlayerGameplaySaveResult = __t.object("PlayerGameplaySaveResult", {
 });
 export type PlayerGameplaySaveResult = __Infer<typeof PlayerGameplaySaveResult>;
 
+export const PlayerProfileResult = __t.object("PlayerProfileResult", {
+  identity: __t.identity(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  theme: __t.string(),
+  colorMode: __t.string(),
+  usernamePromptSeen: __t.bool(),
+  font: __t.string(),
+});
+export type PlayerProfileResult = __Infer<typeof PlayerProfileResult>;
+
 export const PlayerSession = __t.object("PlayerSession", {
   identity: __t.identity(),
   activeConnectionId: __t.connectionId(),
@@ -254,6 +319,26 @@ export const PlayerShopTrade = __t.object("PlayerShopTrade", {
 });
 export type PlayerShopTrade = __Infer<typeof PlayerShopTrade>;
 
+export const PlayerShopTradeHistoryResult = __t.object("PlayerShopTradeHistoryResult", {
+  tradeId: __t.uuid(),
+  buyerIdentity: __t.identity(),
+  buyerUsername: __t.string(),
+  sellerIdentity: __t.identity(),
+  sellerUsername: __t.string(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  quantity: __t.u32(),
+  priceGold: __t.u64(),
+  totalPriceGold: __t.u64(),
+  tradedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+});
+export type PlayerShopTradeHistoryResult = __Infer<typeof PlayerShopTradeHistoryResult>;
+
+export const PlayerShopTradeRecent = __t.object("PlayerShopTradeRecent", {});
+export type PlayerShopTradeRecent = __Infer<typeof PlayerShopTradeRecent>;
+
 export const PotionRecipeDiscovery = __t.object("PotionRecipeDiscovery", {
   potionKey: __t.string(),
   potionLabel: __t.string(),
@@ -264,6 +349,38 @@ export const PotionRecipeDiscovery = __t.object("PotionRecipeDiscovery", {
   royaltyGoldScale: __t.u32(),
 });
 export type PotionRecipeDiscovery = __Infer<typeof PotionRecipeDiscovery>;
+
+export const PotionRecipeDiscoverySnapshot = __t.object("PotionRecipeDiscoverySnapshot", {});
+export type PotionRecipeDiscoverySnapshot = __Infer<typeof PotionRecipeDiscoverySnapshot>;
+
+export const PotionRecipeDiscoverySnapshotResult = __t.object("PotionRecipeDiscoverySnapshotResult", {
+  potionKey: __t.string(),
+  potionLabel: __t.string(),
+  discoveredByIdentity: __t.identity(),
+  username: __t.string(),
+  discoveredAt: __t.timestamp(),
+  royaltyGold: __t.u64(),
+  royaltyGoldScale: __t.u32(),
+});
+export type PotionRecipeDiscoverySnapshotResult = __Infer<typeof PotionRecipeDiscoverySnapshotResult>;
+
+export const PublicPlayerShopListing = __t.object("PublicPlayerShopListing", {});
+export type PublicPlayerShopListing = __Infer<typeof PublicPlayerShopListing>;
+
+export const PublicPlayerShopListingResult = __t.object("PublicPlayerShopListingResult", {
+  listingKey: __t.string(),
+  sellerIdentity: __t.identity(),
+  username: __t.string(),
+  slotNumber: __t.u8(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  quantity: __t.u32(),
+  priceGold: __t.u64(),
+  updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+});
+export type PublicPlayerShopListingResult = __Infer<typeof PublicPlayerShopListingResult>;
 
 export const ResearchConfig = __t.object("ResearchConfig", {
   researchId: __t.string(),
@@ -276,6 +393,21 @@ export const ResearchConfig = __t.object("ResearchConfig", {
   durationSeconds: __t.u64(),
 });
 export type ResearchConfig = __Infer<typeof ResearchConfig>;
+
+export const ResearchConfigSnapshot = __t.object("ResearchConfigSnapshot", {});
+export type ResearchConfigSnapshot = __Infer<typeof ResearchConfigSnapshot>;
+
+export const ResearchConfigSnapshotResult = __t.object("ResearchConfigSnapshotResult", {
+  researchId: __t.string(),
+  label: __t.string(),
+  groupId: __t.string(),
+  defaultCostGold: __t.u64(),
+  costGold: __t.u64(),
+  enabled: __t.bool(),
+  updatedAt: __t.timestamp(),
+  durationSeconds: __t.u64(),
+});
+export type ResearchConfigSnapshotResult = __Infer<typeof ResearchConfigSnapshotResult>;
 
 export const TradeAlliance = __t.object("TradeAlliance", {
   allianceId: __t.uuid(),
@@ -309,6 +441,19 @@ export const TradeAllianceApplication = __t.object("TradeAllianceApplication", {
 });
 export type TradeAllianceApplication = __Infer<typeof TradeAllianceApplication>;
 
+export const TradeAllianceApplicationSnapshot = __t.object("TradeAllianceApplicationSnapshot", {});
+export type TradeAllianceApplicationSnapshot = __Infer<typeof TradeAllianceApplicationSnapshot>;
+
+export const TradeAllianceApplicationSnapshotResult = __t.object("TradeAllianceApplicationSnapshotResult", {
+  applicationKey: __t.string(),
+  allianceId: __t.uuid(),
+  applicantIdentity: __t.identity(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  createdAt: __t.timestamp(),
+});
+export type TradeAllianceApplicationSnapshotResult = __Infer<typeof TradeAllianceApplicationSnapshotResult>;
+
 export const TradeAllianceChat = __t.object("TradeAllianceChat", {
   messageId: __t.uuid(),
   allianceId: __t.uuid(),
@@ -335,6 +480,23 @@ export const TradeAllianceMember = __t.object("TradeAllianceMember", {
 });
 export type TradeAllianceMember = __Infer<typeof TradeAllianceMember>;
 
+export const TradeAllianceMemberSnapshot = __t.object("TradeAllianceMemberSnapshot", {});
+export type TradeAllianceMemberSnapshot = __Infer<typeof TradeAllianceMemberSnapshot>;
+
+export const TradeAllianceMemberSnapshotResult = __t.object("TradeAllianceMemberSnapshotResult", {
+  memberIdentity: __t.identity(),
+  allianceId: __t.uuid(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  role: __t.string(),
+  joinedAt: __t.timestamp(),
+  updatedAt: __t.timestamp(),
+  totalContribution: __t.u64(),
+  dailyContribution: __t.u64(),
+  dayKey: __t.string(),
+});
+export type TradeAllianceMemberSnapshotResult = __Infer<typeof TradeAllianceMemberSnapshotResult>;
+
 export const TradeAllianceQuestContribution = __t.object("TradeAllianceQuestContribution", {
   contributionKey: __t.string(),
   allianceId: __t.uuid(),
@@ -346,6 +508,21 @@ export const TradeAllianceQuestContribution = __t.object("TradeAllianceQuestCont
   updatedAt: __t.timestamp(),
 });
 export type TradeAllianceQuestContribution = __Infer<typeof TradeAllianceQuestContribution>;
+
+export const TradeAllianceQuestContributionSnapshot = __t.object("TradeAllianceQuestContributionSnapshot", {});
+export type TradeAllianceQuestContributionSnapshot = __Infer<typeof TradeAllianceQuestContributionSnapshot>;
+
+export const TradeAllianceQuestContributionSnapshotResult = __t.object("TradeAllianceQuestContributionSnapshotResult", {
+  contributionKey: __t.string(),
+  allianceId: __t.uuid(),
+  dayKey: __t.string(),
+  questId: __t.string(),
+  contributorIdentity: __t.identity(),
+  username: __t.string(),
+  contribution: __t.u64(),
+  updatedAt: __t.timestamp(),
+});
+export type TradeAllianceQuestContributionSnapshotResult = __Infer<typeof TradeAllianceQuestContributionSnapshotResult>;
 
 export const TradeAllianceQuestProgress = __t.object("TradeAllianceQuestProgress", {
   questKey: __t.string(),
@@ -362,6 +539,24 @@ export const TradeAllianceQuestProgress = __t.object("TradeAllianceQuestProgress
 });
 export type TradeAllianceQuestProgress = __Infer<typeof TradeAllianceQuestProgress>;
 
+export const TradeAllianceQuestProgressSnapshot = __t.object("TradeAllianceQuestProgressSnapshot", {});
+export type TradeAllianceQuestProgressSnapshot = __Infer<typeof TradeAllianceQuestProgressSnapshot>;
+
+export const TradeAllianceQuestProgressSnapshotResult = __t.object("TradeAllianceQuestProgressSnapshotResult", {
+  questKey: __t.string(),
+  allianceId: __t.uuid(),
+  dayKey: __t.string(),
+  questId: __t.string(),
+  label: __t.string(),
+  questType: __t.string(),
+  target: __t.u64(),
+  progress: __t.u64(),
+  minContribution: __t.u64(),
+  crystalReward: __t.u32(),
+  updatedAt: __t.timestamp(),
+});
+export type TradeAllianceQuestProgressSnapshotResult = __Infer<typeof TradeAllianceQuestProgressSnapshotResult>;
+
 export const TradeAllianceRewardInbox = __t.object("TradeAllianceRewardInbox", {
   rewardKey: __t.string(),
   recipientIdentity: __t.identity(),
@@ -375,6 +570,31 @@ export const TradeAllianceRewardInbox = __t.object("TradeAllianceRewardInbox", {
   collected: __t.bool(),
 });
 export type TradeAllianceRewardInbox = __Infer<typeof TradeAllianceRewardInbox>;
+
+export const TradeAllianceSnapshot = __t.object("TradeAllianceSnapshot", {});
+export type TradeAllianceSnapshot = __Infer<typeof TradeAllianceSnapshot>;
+
+export const TradeAllianceSnapshotResult = __t.object("TradeAllianceSnapshotResult", {
+  allianceId: __t.uuid(),
+  name: __t.string(),
+  normalizedName: __t.string(),
+  tag: __t.string(),
+  description: __t.string(),
+  notice: __t.string(),
+  joinMode: __t.string(),
+  leaderIdentity: __t.identity(),
+  memberCount: __t.u32(),
+  totalIncome: __t.u64(),
+  seasonIncome: __t.u64(),
+  createdAt: __t.timestamp(),
+  updatedAt: __t.timestamp(),
+  seasonKey: __t.string(),
+  dayKey: __t.string(),
+  dailyIncome: __t.u64(),
+  monthlyIncome: __t.u64(),
+  monthKey: __t.string(),
+});
+export type TradeAllianceSnapshotResult = __Infer<typeof TradeAllianceSnapshotResult>;
 
 export const WorldChat = __t.object("WorldChat", {
   messageId: __t.uuid(),

@@ -1,14 +1,14 @@
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
 const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
-const HINT_WIDTH = 144;
+const HINT_WIDTH = 156;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 72;
 const HINT_GAP = 8;
-const HIGHLIGHT_PAD = 3;
+const HIGHLIGHT_PAD = 4;
 const PORTRAIT_WIDTH = 78;
 const PORTRAIT_HEIGHT = 98;
-const POINTER_WIDTH = 46;
-const POINTER_HALF_HEIGHT = 12;
+const POINTER_WIDTH = 38;
+const POINTER_HALF_HEIGHT = 10;
 const GUIDE_LEFT_BIAS = 22;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
@@ -19,7 +19,6 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.highlight = null;
-    this.focusClone = null;
     this.pointer = null;
     this.portrait = null;
     this.hint = null;
@@ -45,10 +44,6 @@ export class TutorialHintManager {
     this.highlight = document.createElement('div');
     this.highlight.className = 'tutorial-layer__highlight';
     this.highlight.setAttribute('aria-hidden', 'true');
-
-    this.focusClone = document.createElement('div');
-    this.focusClone.className = 'tutorial-layer__focus-clone';
-    this.focusClone.setAttribute('aria-hidden', 'true');
 
     this.pointer = document.createElement('img');
     this.pointer.className = 'tutorial-layer__pointer';
@@ -85,7 +80,6 @@ export class TutorialHintManager {
     this.root.append(
       this.backdrop,
       this.highlight,
-      this.focusClone,
       this.pointer,
       this.portrait,
       this.hint,
@@ -101,7 +95,6 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.highlight = null;
-    this.focusClone = null;
     this.pointer = null;
     this.portrait = null;
     this.hint = null;
@@ -126,7 +119,6 @@ export class TutorialHintManager {
     this.text.textContent = text ?? '';
     this.stepLabel.textContent = stepLabel ?? '';
     this.positionHighlight(rect);
-    this.positionFocusClone(target, rect);
     this.positionPointer(rect, showPointer);
     this.positionGuide(rect);
   }
@@ -173,20 +165,6 @@ export class TutorialHintManager {
     this.highlight.style.top = `${top}px`;
     this.highlight.style.width = `${width}px`;
     this.highlight.style.height = `${height}px`;
-  }
-
-  positionFocusClone(target, rect) {
-    this.focusClone.replaceChildren();
-
-    const clone = target.cloneNode(true);
-    stripClonedTargetAttrs(clone);
-    clone.classList.add('tutorial-layer__focus-copy');
-    this.focusClone.append(clone);
-
-    this.focusClone.style.left = `${rect.left}px`;
-    this.focusClone.style.top = `${rect.top}px`;
-    this.focusClone.style.width = `${rect.width}px`;
-    this.focusClone.style.height = `${rect.height}px`;
   }
 
   positionPointer(rect, showPointer) {
@@ -258,12 +236,4 @@ export class TutorialHintManager {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
-}
-
-function stripClonedTargetAttrs(root) {
-  for (const element of [root, ...root.querySelectorAll('*')]) {
-    element.removeAttribute('id');
-    element.removeAttribute('data-tutorial-id');
-    element.setAttribute('aria-hidden', 'true');
-  }
 }

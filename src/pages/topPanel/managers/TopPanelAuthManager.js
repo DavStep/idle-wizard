@@ -112,7 +112,7 @@ export class TopPanelAuthManager {
     }
 
     if (oidc.error) {
-      return `login error: ${this.getErrorText(oidc.error)}`;
+      return this.getLoginErrorStatusText(oidc.error);
     }
 
     if (oidc.authenticated) {
@@ -135,9 +135,35 @@ export class TopPanelAuthManager {
       return 'login cancelled';
     }
 
-    return `login error: ${this.getErrorText(
+    if (!result.message && this.isLoginUnavailableReason(result.reason)) {
+      return 'login unavailable';
+    }
+
+    return this.getLoginErrorStatusText(
       result.message ?? result.reason ?? 'unknown error',
-    )}`;
+    );
+  }
+
+  getLoginErrorStatusText(error) {
+    if (this.isLoginUnavailableReason(error)) {
+      return 'login unavailable';
+    }
+
+    return `login error: ${this.getErrorText(error)}`;
+  }
+
+  isLoginUnavailableReason(reason) {
+    return [
+      'browser_not_supported',
+      'invalid_client',
+      'missing_client_id',
+      'opt_out_or_no_session',
+      'secure_http_required',
+      'suppressed_by_user',
+      'unregistered_origin',
+      'unknown_reason',
+      'web_unavailable',
+    ].includes(String(reason ?? '').trim());
   }
 
   setBusy(busy, statusText = null) {

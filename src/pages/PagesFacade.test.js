@@ -2261,6 +2261,14 @@ function createMemoryStorage(initial = {}) {
   };
 }
 
+function unlockWorkshopSecondaryActions(gameplayFacade, level = 3) {
+  const snapshot = gameplayFacade.getSnapshot();
+  snapshot.tasks.currentLevel = level;
+  snapshot.tasks.level.level = level;
+  snapshot.playerLevel.currentLevel = level;
+  snapshot.prestige.currentLevel = Math.max(snapshot.prestige.currentLevel, level);
+}
+
 function markSeedResearchComplete(gameplayFacade, ...seedKeys) {
   const research = gameplayFacade.getSnapshot().research;
   const completedResearchIds = new Set(research.completedResearchIds ?? []);
@@ -2986,9 +2994,12 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__prestige-button')?.textContent).toBe(
       'prestige',
     );
+    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(true);
+    expect(stage.querySelector('.workshop-page__prestige-button')?.disabled).toBe(true);
     expect(stage.querySelector('.workshop-page__leaderboard-button')?.textContent).toBe(
       'leaderboard',
     );
+    expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat-button')?.textContent).toBe(
       'world chat',
     );
@@ -2998,9 +3009,11 @@ describe('PagesFacade', () => {
       ),
     ).toBe(true);
     expect(stage.querySelector('.workshop-page__logs-button')?.textContent).toBe('logs');
+    expect(stage.querySelector('.workshop-page__logs')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__discoveries-button')?.textContent).toBe(
       'discoveries',
     );
+    expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
     expect(
       stage.querySelector('.workshop-page__mana-sphere .workshop-page__summon-button'),
     ).toBeNull();
@@ -3039,6 +3052,24 @@ describe('PagesFacade', () => {
     expect(topPanel.querySelector('.room-top-panel__resource[aria-label="crystal"]')?.hidden).toBe(
       true,
     );
+  });
+
+  it('reveals Workshop secondary buttons at level 3', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__logs')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(false);
   });
 
   it('shows crystal or ruby in the top panel only on matching research tabs', () => {
@@ -4699,6 +4730,7 @@ describe('PagesFacade', () => {
   it('shows leaderboard popup when leaderboard button is clicked', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().leaderboard.topDailyUsers = [
       {
         name: 'Daily Ada',
@@ -4812,6 +4844,7 @@ describe('PagesFacade', () => {
   it('shows the current player rank below the leaderboard when outside the top ten', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().leaderboard = {
       topGeneratedGoldUsers: Array.from({ length: 10 }, (_value, index) => ({
         name: `Player ${index + 1}`,
@@ -4864,6 +4897,7 @@ describe('PagesFacade', () => {
   it('does not add a separate current rank when the player is already in the top ten', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().leaderboard = {
       topGeneratedGoldUsers: Array.from({ length: 10 }, (_value, index) => ({
         name: index === 2 ? 'Mine' : `Player ${index + 1}`,
@@ -4898,8 +4932,10 @@ describe('PagesFacade', () => {
 
   it('hides leaderboard popup with Escape or outside click', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
     });
 
     pagesFacade.mount(stage);
@@ -4921,6 +4957,7 @@ describe('PagesFacade', () => {
   it('fills a trade alliance item quest from owned inventory', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().inventory.push({
       itemTypeId: 2001,
       key: 'manaTonic',
@@ -4989,6 +5026,8 @@ describe('PagesFacade', () => {
     const now = Date.UTC(2026, 5, 14, 0, 0, 0);
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(now);
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const tradeAllianceFacade = createTradeAllianceFacadeFake({
       quests: [
         {
@@ -5007,7 +5046,7 @@ describe('PagesFacade', () => {
       ],
     });
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       tradeAllianceFacade,
     });
 
@@ -5038,6 +5077,8 @@ describe('PagesFacade', () => {
     const now = Date.UTC(2026, 5, 14, 0, 0, 0);
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(now);
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const tradeAllianceFacade = createTradeAllianceFacadeFake({
       alliances: [
         {
@@ -5077,7 +5118,7 @@ describe('PagesFacade', () => {
       ],
     });
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       tradeAllianceFacade,
     });
 
@@ -5114,6 +5155,7 @@ describe('PagesFacade', () => {
   it('marks a trade alliance quest claimed after claiming reward', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const quest = {
       allianceId: 'alliance-1',
       dayKey: '2026-W24',
@@ -5176,6 +5218,8 @@ describe('PagesFacade', () => {
 
   it('opens trade alliance member actions from a manageable member row', async () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const tradeAllianceFacade = createTradeAllianceFacadeFake({
       memberCount: 2,
       members: [
@@ -5198,7 +5242,7 @@ describe('PagesFacade', () => {
       ],
     });
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       tradeAllianceFacade,
     });
@@ -5261,9 +5305,11 @@ describe('PagesFacade', () => {
 
   it('saves trade alliance settings on touch before mobile keyboard blur can move layout', async () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const tradeAllianceFacade = createTradeAllianceFacadeFake();
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       tradeAllianceFacade,
     });
@@ -5314,9 +5360,11 @@ describe('PagesFacade', () => {
 
   it('disbands a solo trade alliance from settings', async () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const tradeAllianceFacade = createTradeAllianceFacadeFake();
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       tradeAllianceFacade,
     });
@@ -5353,9 +5401,11 @@ describe('PagesFacade', () => {
 
   it('leaves a solo trade alliance from home', async () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const tradeAllianceFacade = createTradeAllianceFacadeFake();
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       tradeAllianceFacade,
     });
@@ -5381,8 +5431,10 @@ describe('PagesFacade', () => {
 
   it('shows discoveries tabs and revealed unknown potion recipes', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
     });
 
     pagesFacade.mount(stage);
@@ -5445,8 +5497,10 @@ describe('PagesFacade', () => {
 
   it('shows logs popup when logs button is clicked', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
     });
 
     pagesFacade.mount(stage);
@@ -5485,6 +5539,7 @@ describe('PagesFacade', () => {
   it('shows an empty state when logs popup has no entries', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().logs.entries = [];
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -5502,6 +5557,7 @@ describe('PagesFacade', () => {
   it('keeps logs pinned to newest entries only while player is at the top', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -5514,7 +5570,15 @@ describe('PagesFacade', () => {
 
     const rows = stage.querySelector('.workshop-page__logs-rows');
     let scrollHeight = 300;
+    let scrollTop = 0;
     Object.defineProperty(rows, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(rows, 'scrollTop', {
+      get: () => scrollTop,
+      set: (value) => {
+        scrollTop = value;
+      },
+      configurable: true,
+    });
     Object.defineProperty(rows, 'scrollHeight', {
       get: () => scrollHeight,
       configurable: true,
@@ -5556,8 +5620,10 @@ describe('PagesFacade', () => {
 
   it('updates the logs popup progress bar and bottom fade when scrolled', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
     });
 
     pagesFacade.mount(stage);

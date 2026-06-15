@@ -39,16 +39,15 @@ function createPlayerTable(rows) {
   };
 }
 
-function createConnection(table) {
+function createConnection(table, { hasOwnProfile = true } = {}) {
   const subscription = {
     isEnded: () => false,
     unsubscribe: vi.fn(),
   };
+  const db = hasOwnProfile ? { own_player_profile: table } : { player: table };
 
   return {
-    db: {
-      player: table,
-    },
+    db,
     subscription,
     subscriptionBuilder: () => ({
       onApplied(callback) {
@@ -72,7 +71,6 @@ describe('PlayerProfileSubscriptionManager', () => {
   it('publishes the connected identity player profile', () => {
     const profiles = [];
     const table = createPlayerTable([
-      { identity: 'other', username: 'Other' },
       {
         identity: 'mine',
         username: 'Server Mage',
@@ -120,7 +118,7 @@ describe('PlayerProfileSubscriptionManager', () => {
     });
   });
 
-  it('subscribes only to the connected player row when identity hex is available', () => {
+  it('subscribes to the sender-scoped player profile view', () => {
     const identityHex = 'a'.repeat(64);
     const table = createPlayerTable([
       {
@@ -133,9 +131,42 @@ describe('PlayerProfileSubscriptionManager', () => {
 
     manager.connect(connection, { toHexString: () => identityHex });
 
+    expect(connection.subscription.query).toBe('SELECT * FROM own_player_profile');
+  });
+
+  it('falls back to an indexed player row query for old modules without the profile view', () => {
+    const identityHex = 'b'.repeat(64);
+    const table = createPlayerTable([
+      {
+        identity: { toHexString: () => identityHex },
+        username: 'Hex Mage',
+      },
+    ]);
+    const connection = createConnection(table, { hasOwnProfile: false });
+    const manager = new PlayerProfileSubscriptionManager();
+
+    manager.connect(connection, { toHexString: () => identityHex });
+
     expect(connection.subscription.query).toBe(
       `SELECT * FROM player WHERE identity = 0x${identityHex}`,
     );
+  });
+
+  it('does not fall back to a full player-table subscription without a SQL identity', () => {
+    const profiles = [];
+    const table = createPlayerTable([{ identity: 'mine', username: 'Mage' }]);
+    const connection = createConnection(table, { hasOwnProfile: false });
+    const manager = new PlayerProfileSubscriptionManager({
+      onProfile: (profile) => profiles.push(profile),
+    });
+
+    manager.connect(connection, 'mine');
+
+    expect(connection.subscription.query).toBeUndefined();
+    expect(profiles.at(-1)).toBeNull();
+    expect(table.callbacks.insert).toBeNull();
+    expect(table.callbacks.update).toBeNull();
+    expect(table.callbacks.delete).toBeNull();
   });
 
   it('publishes the updated row from table callbacks even when the table cache is stale', () => {

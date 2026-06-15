@@ -166,4 +166,62 @@ describe('TopPanelAuthManager', () => {
       'login error: could not save device data',
     );
   });
+
+  it('shows web-unavailable login failures as unavailable', async () => {
+    const refs = createRefs();
+    const authFacade = {
+      getSnapshot: vi.fn(() => ({
+        oidc: {
+          enabled: true,
+          authenticated: false,
+        },
+      })),
+      subscribe: vi.fn((listener) => {
+        listener(authFacade.getSnapshot());
+        return vi.fn();
+      }),
+      signInWithGoogle: vi.fn(() =>
+        Promise.resolve({ ok: false, reason: 'web_unavailable' }),
+      ),
+    };
+    const manager = new TopPanelAuthManager({
+      authFacade,
+      gameplayFacade: {
+        createPersistenceSave: vi.fn(() => ({ tasks: { currentLevel: 1 } })),
+      },
+      reload: vi.fn(),
+    });
+
+    manager.mount(refs);
+    refs.authButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(refs.authStatus.textContent).toBe('login unavailable');
+  });
+
+  it('hides raw Google prompt failure reasons in settings', () => {
+    const refs = createRefs();
+    const authFacade = {
+      getSnapshot: vi.fn(() => ({
+        oidc: {
+          enabled: true,
+          authenticated: false,
+          error: 'unregistered_origin',
+        },
+      })),
+      subscribe: vi.fn((listener) => {
+        listener(authFacade.getSnapshot());
+        return vi.fn();
+      }),
+    };
+    const manager = new TopPanelAuthManager({
+      authFacade,
+      reload: vi.fn(),
+    });
+
+    manager.mount(refs);
+
+    expect(refs.authStatus.textContent).toBe('login unavailable');
+  });
 });

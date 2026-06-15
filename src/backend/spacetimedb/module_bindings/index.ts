@@ -88,26 +88,41 @@ import UpsertResearchConfigReducer from "./upsert_research_config_reducer";
 import AdminPlayerFeedbackRow from "./admin_player_feedback_table";
 import AdminPlayerGameplaySaveRow from "./admin_player_gameplay_save_table";
 import GameConfigRow from "./game_config_table";
+import GameConfigSnapshotRow from "./game_config_snapshot_table";
 import LeaderboardRow from "./leaderboard_table";
 import LeaderboardSummaryRow from "./leaderboard_summary_table";
 import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketItemConfigRow from "./npc_market_item_config_table";
 import NpcMarketPriceRow from "./npc_market_price_table";
+import NpcMarketPriceSnapshotRow from "./npc_market_price_snapshot_table";
 import OwnPlayerGameplaySaveRow from "./own_player_gameplay_save_table";
+import OwnPlayerProfileRow from "./own_player_profile_table";
 import OwnPlayerSessionRow from "./own_player_session_table";
+import OwnPlayerShopListingRow from "./own_player_shop_listing_table";
+import OwnPlayerShopProceedsRow from "./own_player_shop_proceeds_table";
+import OwnPlayerShopTradeHistoryRow from "./own_player_shop_trade_history_table";
 import OwnTradeAllianceChatRow from "./own_trade_alliance_chat_table";
 import OwnTradeAllianceRewardInboxRow from "./own_trade_alliance_reward_inbox_table";
 import PlayerRow from "./player_table";
 import PlayerShopListingRow from "./player_shop_listing_table";
 import PlayerShopProceedsRow from "./player_shop_proceeds_table";
 import PlayerShopTradeRow from "./player_shop_trade_table";
+import PlayerShopTradeRecentRow from "./player_shop_trade_recent_table";
 import PotionRecipeDiscoveryRow from "./potion_recipe_discovery_table";
+import PotionRecipeDiscoverySnapshotRow from "./potion_recipe_discovery_snapshot_table";
+import PublicPlayerShopListingRow from "./public_player_shop_listing_table";
 import ResearchConfigRow from "./research_config_table";
+import ResearchConfigSnapshotRow from "./research_config_snapshot_table";
 import TradeAllianceRow from "./trade_alliance_table";
 import TradeAllianceApplicationRow from "./trade_alliance_application_table";
 import TradeAllianceMemberRow from "./trade_alliance_member_table";
 import TradeAllianceQuestContributionRow from "./trade_alliance_quest_contribution_table";
 import TradeAllianceQuestProgressRow from "./trade_alliance_quest_progress_table";
+import TradeAllianceApplicationSnapshotRow from "./trade_alliance_application_snapshot_table";
+import TradeAllianceMemberSnapshotRow from "./trade_alliance_member_snapshot_table";
+import TradeAllianceQuestContributionSnapshotRow from "./trade_alliance_quest_contribution_snapshot_table";
+import TradeAllianceQuestProgressSnapshotRow from "./trade_alliance_quest_progress_snapshot_table";
+import TradeAllianceSnapshotRow from "./trade_alliance_snapshot_table";
 import WorldChatRow from "./world_chat_table";
 import WorldChatRecentRow from "./world_chat_recent_table";
 
@@ -409,6 +424,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, AdminPlayerGameplaySaveRow),
+  game_config_snapshot: __table({
+    name: 'game_config_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, GameConfigSnapshotRow),
   leaderboard_summary: __table({
     name: 'leaderboard_summary',
     indexes: [
@@ -416,6 +438,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, LeaderboardSummaryRow),
+  npc_market_price_snapshot: __table({
+    name: 'npc_market_price_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, NpcMarketPriceSnapshotRow),
   own_player_gameplay_save: __table({
     name: 'own_player_gameplay_save',
     indexes: [
@@ -423,6 +452,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnPlayerGameplaySaveRow),
+  own_player_profile: __table({
+    name: 'own_player_profile',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerProfileRow),
   own_player_session: __table({
     name: 'own_player_session',
     indexes: [
@@ -430,6 +466,27 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnPlayerSessionRow),
+  own_player_shop_listing: __table({
+    name: 'own_player_shop_listing',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerShopListingRow),
+  own_player_shop_proceeds: __table({
+    name: 'own_player_shop_proceeds',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerShopProceedsRow),
+  own_player_shop_trade_history: __table({
+    name: 'own_player_shop_trade_history',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerShopTradeHistoryRow),
   own_trade_alliance_chat: __table({
     name: 'own_trade_alliance_chat',
     indexes: [
@@ -444,6 +501,69 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnTradeAllianceRewardInboxRow),
+  player_shop_trade_recent: __table({
+    name: 'player_shop_trade_recent',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, PlayerShopTradeRecentRow),
+  potion_recipe_discovery_snapshot: __table({
+    name: 'potion_recipe_discovery_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, PotionRecipeDiscoverySnapshotRow),
+  public_player_shop_listing: __table({
+    name: 'public_player_shop_listing',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, PublicPlayerShopListingRow),
+  research_config_snapshot: __table({
+    name: 'research_config_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ResearchConfigSnapshotRow),
+  trade_alliance_application_snapshot: __table({
+    name: 'trade_alliance_application_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TradeAllianceApplicationSnapshotRow),
+  trade_alliance_member_snapshot: __table({
+    name: 'trade_alliance_member_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TradeAllianceMemberSnapshotRow),
+  trade_alliance_quest_contribution_snapshot: __table({
+    name: 'trade_alliance_quest_contribution_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TradeAllianceQuestContributionSnapshotRow),
+  trade_alliance_quest_progress_snapshot: __table({
+    name: 'trade_alliance_quest_progress_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TradeAllianceQuestProgressSnapshotRow),
+  trade_alliance_snapshot: __table({
+    name: 'trade_alliance_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TradeAllianceSnapshotRow),
   world_chat_recent: __table({
     name: 'world_chat_recent',
     indexes: [

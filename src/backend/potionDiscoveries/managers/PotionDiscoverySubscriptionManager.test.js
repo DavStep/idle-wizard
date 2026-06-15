@@ -45,16 +45,17 @@ function createTable(rows) {
   };
 }
 
-function createConnection(table) {
+function createConnection(table, { hasSnapshot = true } = {}) {
   const subscription = {
     isEnded: () => false,
     unsubscribe: vi.fn(),
   };
+  const db = hasSnapshot
+    ? { potion_recipe_discovery_snapshot: table }
+    : { potionRecipeDiscovery: table };
 
   return {
-    db: {
-      potionRecipeDiscovery: table,
-    },
+    db,
     subscription,
     subscriptionBuilder: () => ({
       onApplied(callback) {
@@ -66,7 +67,7 @@ function createConnection(table) {
         return this;
       },
       subscribe(query) {
-        this.query = query;
+        subscription.query = query;
         this.applied();
         return subscription;
       },
@@ -129,6 +130,28 @@ describe('PotionDiscoverySubscriptionManager', () => {
       username: 'Mira',
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
+  });
+
+  it('subscribes to the indexed discovery snapshot view', () => {
+    const table = createTable([]);
+    const connection = createConnection(table);
+    const manager = new PotionDiscoverySubscriptionManager();
+
+    manager.connect(connection);
+
+    expect(connection.subscription.query).toBe(
+      'SELECT * FROM potion_recipe_discovery_snapshot',
+    );
+  });
+
+  it('falls back to the legacy discovery table for old modules', () => {
+    const table = createTable([]);
+    const connection = createConnection(table, { hasSnapshot: false });
+    const manager = new PotionDiscoverySubscriptionManager();
+
+    manager.connect(connection);
+
+    expect(connection.subscription.query).toBe('SELECT * FROM potion_recipe_discovery');
   });
 
   it('unsubscribes and clears snapshot on disconnect', () => {

@@ -199,4 +199,24 @@ describe('GameplaySaveSendManager', () => {
     await expect(flush).resolves.toBe(true);
     expect(settled).toBe(true);
   });
+
+  it('does not resend saves when only savedAt changed', async () => {
+    const setPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+    manager.save({ version: 2, savedAt: 100, gold: { current: 9 } });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    manager.save({ version: 2, savedAt: 200, gold: { current: 9 } });
+    await Promise.resolve();
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
+  });
 });

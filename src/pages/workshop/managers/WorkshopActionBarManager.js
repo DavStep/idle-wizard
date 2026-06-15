@@ -101,7 +101,13 @@ export class WorkshopActionBarManager {
     button.type = 'button';
     button.textContent = 'prestige';
     button.setAttribute('aria-label', 'open prestige');
-    button.addEventListener('click', () => this.onPrestigeClick?.());
+    button.addEventListener('click', () => {
+      if (button.disabled || button.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
+
+      this.onPrestigeClick?.();
+    });
     return button;
   }
 

@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PlayerShopSubscriptionManager } from './PlayerShopSubscriptionManager.js';
 
+const SELF_IDENTITY_HEX = 'b'.repeat(64);
+const SELF_IDENTITY = { toHexString: () => SELF_IDENTITY_HEX };
+
 function createTable(rows) {
   const callbacks = {
     insert: null,
@@ -87,7 +90,7 @@ describe('PlayerShopSubscriptionManager', () => {
     const listingsTable = createTable([
       {
         listingKey: 'self:1',
-        sellerIdentity: 'self',
+        sellerIdentity: SELF_IDENTITY_HEX,
         username: 'wizard',
         slotNumber: 1,
         itemKey: 'sageSeed',
@@ -110,7 +113,7 @@ describe('PlayerShopSubscriptionManager', () => {
     ]);
     const proceedsTable = createTable([
       {
-        sellerIdentity: 'self',
+        sellerIdentity: SELF_IDENTITY_HEX,
         gold: 7n,
       },
     ]);
@@ -119,7 +122,7 @@ describe('PlayerShopSubscriptionManager', () => {
       onSnapshot: (snapshot) => snapshots.push(snapshot),
     });
 
-    manager.connect(connection, 'self');
+    manager.connect(connection, SELF_IDENTITY);
 
     expect(manager.getSnapshot()).toMatchObject({
       connected: true,
@@ -152,7 +155,7 @@ describe('PlayerShopSubscriptionManager', () => {
     const tradeHistoryTable = createTable([
       {
         tradeId: 'trade-1',
-        buyerIdentity: 'self',
+        buyerIdentity: SELF_IDENTITY_HEX,
         buyerUsername: 'wizard',
         sellerIdentity: 'seller',
         sellerUsername: 'Ada',
@@ -182,11 +185,12 @@ describe('PlayerShopSubscriptionManager', () => {
     const connection = createConnection({ listingsTable, proceedsTable, tradeHistoryTable });
     const manager = new PlayerShopSubscriptionManager();
 
-    manager.connect(connection, 'self');
+    manager.connect(connection, SELF_IDENTITY);
 
     expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
-      'SELECT * FROM player_shop_listing',
-      'SELECT * FROM player_shop_proceeds',
+      'SELECT * FROM player_shop_listing WHERE quantity > 0',
+      `SELECT * FROM player_shop_listing WHERE "sellerIdentity" = 0x${SELF_IDENTITY_HEX}`,
+      `SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" = 0x${SELF_IDENTITY_HEX}`,
       'SELECT * FROM player_shop_trade',
     ]);
     expect(manager.getSnapshot().tradeHistory.map((trade) => trade.tradeId)).toEqual([
@@ -244,7 +248,7 @@ describe('PlayerShopSubscriptionManager', () => {
     });
     const manager = new PlayerShopSubscriptionManager();
 
-    manager.connect(connection, 'self');
+    manager.connect(connection, SELF_IDENTITY);
 
     expect(manager.getSnapshot()).toMatchObject({
       connected: true,
@@ -266,12 +270,13 @@ describe('PlayerShopSubscriptionManager', () => {
     const connection = createConnection({ listingsTable, proceedsTable });
     const manager = new PlayerShopSubscriptionManager();
 
-    manager.connect(connection, 'self');
+    manager.connect(connection, SELF_IDENTITY);
     manager.disconnect();
 
-    expect(connection.subscriptions).toHaveLength(2);
+    expect(connection.subscriptions).toHaveLength(3);
     expect(connection.subscriptions[0].unsubscribe).toHaveBeenCalledTimes(1);
     expect(connection.subscriptions[1].unsubscribe).toHaveBeenCalledTimes(1);
+    expect(connection.subscriptions[2].unsubscribe).toHaveBeenCalledTimes(1);
     expect(listingsTable.callbacks.insert).toBeNull();
     expect(proceedsTable.callbacks.insert).toBeNull();
     expect(manager.getSnapshot()).toEqual({

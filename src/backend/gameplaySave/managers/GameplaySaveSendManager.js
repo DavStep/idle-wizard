@@ -10,8 +10,10 @@ export class GameplaySaveSendManager {
     this.connection = null;
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
+    this.pendingSaveContentKey = null;
     this.inFlightSaveJson = null;
     this.inFlightSaveWasHydrated = false;
+    this.inFlightSaveContentKey = null;
     this.syncPromise = null;
     this.syncAttemptId = 0;
     this.syncTimeoutId = null;
@@ -21,6 +23,7 @@ export class GameplaySaveSendManager {
     this.clearTimeoutFn = clearTimeoutFn;
     this.onSyncUnhealthy = onSyncUnhealthy;
     this.readyToSend = false;
+    this.lastSyncedSaveContentKey = null;
   }
 
   connect(connection) {
@@ -50,8 +53,16 @@ export class GameplaySaveSendManager {
     }
 
     try {
-      this.pendingSaveJson = JSON.stringify(save);
+      const saveJson = JSON.stringify(save);
+      const saveContentKey = this.getSaveContentKey(save, saveJson);
+
+      if (this.isRedundantSaveContent(saveContentKey)) {
+        return true;
+      }
+
+      this.pendingSaveJson = saveJson;
       this.pendingSaveWasHydrated = this.readyToSend;
+      this.pendingSaveContentKey = saveContentKey;
     } catch {
       return false;
     }
@@ -79,6 +90,7 @@ export class GameplaySaveSendManager {
 
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
+    this.pendingSaveContentKey = null;
   }
 
   flush() {
@@ -98,10 +110,13 @@ export class GameplaySaveSendManager {
 
     const saveJson = this.pendingSaveJson;
     const saveWasHydrated = this.pendingSaveWasHydrated;
+    const saveContentKey = this.pendingSaveContentKey;
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
+    this.pendingSaveContentKey = null;
     this.inFlightSaveJson = saveJson;
     this.inFlightSaveWasHydrated = saveWasHydrated;
+    this.inFlightSaveContentKey = saveContentKey;
 
     let syncResult;
     try {
@@ -137,6 +152,7 @@ export class GameplaySaveSendManager {
         this.resolveSyncCancel = null;
 
         if (outcome?.ok) {
+          this.lastSyncedSaveContentKey = this.inFlightSaveContentKey;
           this.clearInFlightSave();
           shouldFlush = true;
           return true;
@@ -167,9 +183,10 @@ export class GameplaySaveSendManager {
       });
   }
 
-  restorePending(saveJson, saveWasHydrated = true) {
+  restorePending(saveJson, saveWasHydrated = true, saveContentKey = null) {
     this.pendingSaveJson = saveJson;
     this.pendingSaveWasHydrated = saveWasHydrated;
+    this.pendingSaveContentKey = saveContentKey;
   }
 
   restoreInFlightSave() {
@@ -179,6 +196,7 @@ export class GameplaySaveSendManager {
 
     if (!this.pendingSaveJson) {
       this.pendingSaveJson = this.inFlightSaveJson;
+      this.pendingSaveContentKey = this.inFlightSaveContentKey;
     }
 
     this.pendingSaveWasHydrated =
@@ -189,6 +207,7 @@ export class GameplaySaveSendManager {
   clearInFlightSave() {
     this.inFlightSaveJson = null;
     this.inFlightSaveWasHydrated = false;
+    this.inFlightSaveContentKey = null;
   }
 
   beginSyncAttempt() {
@@ -252,6 +271,25 @@ export class GameplaySaveSendManager {
 
   notifySyncUnhealthy(reason, error) {
     this.onSyncUnhealthy?.({ reason, error });
+  }
+
+  isRedundantSaveContent(saveContentKey) {
+    return Boolean(
+      saveContentKey &&
+        (saveContentKey === this.pendingSaveContentKey ||
+          saveContentKey === this.inFlightSaveContentKey ||
+          saveContentKey === this.lastSyncedSaveContentKey),
+    );
+  }
+
+  getSaveContentKey(save, fallbackJson) {
+    if (!save || typeof save !== 'object' || Array.isArray(save)) {
+      return fallbackJson;
+    }
+
+    const meaningfulSave = { ...save };
+    delete meaningfulSave.savedAt;
+    return JSON.stringify(meaningfulSave);
   }
 
   findSetPlayerGameplaySaveReducer() {

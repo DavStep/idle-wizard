@@ -309,7 +309,7 @@ describe('AuthOidcManager', () => {
     });
   });
 
-  it('reports web Google Identity prompt failures', async () => {
+  it('falls back to redirect when web Google Identity prompt cannot display', async () => {
     const google = {
       accounts: {
         id: {
@@ -324,24 +324,35 @@ describe('AuthOidcManager', () => {
         },
       },
     };
+    const storage = createMemoryStorage();
+    const oidcClient = {
+      signinRedirect: vi.fn(() => Promise.resolve()),
+    };
     const manager = new AuthOidcManager({
       clientId: 'client-1',
-      storage: createMemoryStorage(),
+      storage,
       windowRef: {
         document: {},
         google,
+        location: {
+          origin: 'https://davstep.github.io',
+        },
         setTimeout: vi.fn(() => 1),
         clearTimeout: vi.fn(),
       },
+      createUserManager: () => oidcClient,
     });
 
-    await expect(manager.signIn()).resolves.toEqual({
-      ok: false,
-      reason: 'web_unavailable',
-    });
+    await expect(
+      manager.signIn({ pendingAccountLinkAttemptId: 'attempt-1' }),
+    ).resolves.toEqual({ ok: true });
+    expect(oidcClient.signinRedirect).toHaveBeenCalledTimes(1);
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBe(
+      'attempt-1',
+    );
     expect(manager.getSnapshot()).toMatchObject({
       authenticated: false,
-      error: 'unregistered_origin',
+      error: null,
       cancelled: false,
     });
   });

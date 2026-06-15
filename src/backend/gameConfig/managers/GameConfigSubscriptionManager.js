@@ -1,5 +1,7 @@
-const RESEARCH_CONFIG_QUERY = 'SELECT * FROM research_config';
-const GAME_CONFIG_QUERY = 'SELECT * FROM game_config';
+const RESEARCH_CONFIG_QUERY = 'SELECT * FROM research_config_snapshot';
+const GAME_CONFIG_QUERY = 'SELECT * FROM game_config_snapshot';
+const LEGACY_RESEARCH_CONFIG_QUERY = 'SELECT * FROM research_config';
+const LEGACY_GAME_CONFIG_QUERY = 'SELECT * FROM game_config';
 const EMPTY_SNAPSHOT = {
   connected: false,
   researchConfigs: [],
@@ -12,6 +14,8 @@ export class GameConfigSubscriptionManager {
     this.connection = null;
     this.researchConfigTable = null;
     this.gameConfigTable = null;
+    this.researchConfigQuery = RESEARCH_CONFIG_QUERY;
+    this.gameConfigQuery = GAME_CONFIG_QUERY;
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
@@ -20,9 +24,27 @@ export class GameConfigSubscriptionManager {
   connect(connection) {
     this.disconnect();
     this.connection = connection;
-    this.researchConfigTable =
-      connection?.db?.researchConfig ?? connection?.db?.research_config ?? null;
-    this.gameConfigTable = connection?.db?.gameConfig ?? connection?.db?.game_config ?? null;
+    const researchConfigSource = this.findTableWithQuery({
+      camelName: 'researchConfigSnapshot',
+      snakeName: 'research_config_snapshot',
+      query: RESEARCH_CONFIG_QUERY,
+      legacyCamelName: 'researchConfig',
+      legacySnakeName: 'research_config',
+      legacyQuery: LEGACY_RESEARCH_CONFIG_QUERY,
+    });
+    const gameConfigSource = this.findTableWithQuery({
+      camelName: 'gameConfigSnapshot',
+      snakeName: 'game_config_snapshot',
+      query: GAME_CONFIG_QUERY,
+      legacyCamelName: 'gameConfig',
+      legacySnakeName: 'game_config',
+      legacyQuery: LEGACY_GAME_CONFIG_QUERY,
+    });
+
+    this.researchConfigTable = researchConfigSource.table;
+    this.researchConfigQuery = researchConfigSource.query;
+    this.gameConfigTable = gameConfigSource.table;
+    this.gameConfigQuery = gameConfigSource.query;
 
     if (!this.researchConfigTable && !this.gameConfigTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
@@ -32,8 +54,8 @@ export class GameConfigSubscriptionManager {
     this.bindTable(this.researchConfigTable);
     this.bindTable(this.gameConfigTable);
     this.subscriptions = [
-      this.researchConfigTable ? this.subscribeQuery(RESEARCH_CONFIG_QUERY) : null,
-      this.gameConfigTable ? this.subscribeQuery(GAME_CONFIG_QUERY) : null,
+      this.researchConfigTable ? this.subscribeQuery(this.researchConfigQuery) : null,
+      this.gameConfigTable ? this.subscribeQuery(this.gameConfigQuery) : null,
     ].filter(Boolean);
     this.publishFromTables();
   }
@@ -51,6 +73,8 @@ export class GameConfigSubscriptionManager {
     this.connection = null;
     this.researchConfigTable = null;
     this.gameConfigTable = null;
+    this.researchConfigQuery = RESEARCH_CONFIG_QUERY;
+    this.gameConfigQuery = GAME_CONFIG_QUERY;
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
@@ -69,6 +93,28 @@ export class GameConfigSubscriptionManager {
     table?.removeOnInsert?.(this.handleTableChange);
     table?.removeOnUpdate?.(this.handleTableChange);
     table?.removeOnDelete?.(this.handleTableChange);
+  }
+
+  findTableWithQuery({
+    camelName,
+    snakeName,
+    query,
+    legacyCamelName,
+    legacySnakeName,
+    legacyQuery,
+  }) {
+    const table = this.connection?.db?.[camelName] ?? this.connection?.db?.[snakeName] ?? null;
+    if (table) {
+      return { table, query };
+    }
+
+    return {
+      table:
+        this.connection?.db?.[legacyCamelName] ??
+        this.connection?.db?.[legacySnakeName] ??
+        null,
+      query: legacyQuery,
+    };
   }
 
   subscribeQuery(query) {

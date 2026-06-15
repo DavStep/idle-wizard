@@ -8,13 +8,15 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
+import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
 const STOCK_TABS = [
-  { kind: 'seed', label: 'seed' },
-  { kind: 'herb', label: 'herb' },
-  { kind: 'potion', label: 'potion' },
+  { kind: 'seed', label: 'seeds' },
+  { kind: 'herb', label: 'herbs' },
+  { kind: 'potion', label: 'potions' },
 ];
+const COLLAPSED_STOCK_ROW_COUNT = 5;
 
 export class ShopStockManager {
   constructor({ gameplayFacade } = {}) {
@@ -26,6 +28,7 @@ export class ShopStockManager {
       rows: new Map(),
     };
     this.selectedTab = 'seed';
+    this.stockExpanded = false;
     this.lastSnapshot = null;
     this.buyingItemTypeId = null;
     this.statusText = '';
@@ -66,14 +69,32 @@ export class ShopStockManager {
     title.className = 'style-box__title';
     title.textContent = 'npc stock market';
 
-    this.refs.tabs = this.createTabs();
+    this.refs.count = document.createElement('div');
+    this.refs.count.className = 'shop-page__stock-count';
+    this.refs.count.textContent = '0/0';
+    this.refs.typeControls = this.createTypeControls();
     this.refs.rowsRoot = document.createElement('div');
     this.refs.rowsRoot.className = 'shop-page__stock-rows';
+    this.refs.rowsRoot.id = 'shop-stock-rows';
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'shop-page__stock-status';
+    this.refs.toggle = document.createElement('button');
+    this.refs.toggle.className = 'shop-page__stock-toggle';
+    this.refs.toggle.type = 'button';
+    this.refs.toggle.textContent = 'expand';
+    this.refs.toggle.setAttribute('aria-controls', this.refs.rowsRoot.id);
+    this.refs.toggle.setAttribute('aria-expanded', 'false');
+    this.refs.toggle.addEventListener('click', () => this.toggleStockExpanded());
     this.refs.buyPopup = this.createBuyPopup();
 
-    this.root.append(title, this.refs.rowsRoot, this.refs.status, this.refs.tabs);
+    this.root.append(
+      title,
+      this.refs.count,
+      this.refs.typeControls,
+      this.refs.rowsRoot,
+      this.refs.status,
+      this.refs.toggle,
+    );
     parent.append(this.root);
     popupParent.append(this.refs.buyPopup);
     document.addEventListener('keydown', this.handleKeydown);
@@ -102,6 +123,7 @@ export class ShopStockManager {
       rows: new Map(),
     };
     this.selectedTab = 'seed';
+    this.stockExpanded = false;
     this.lastSnapshot = null;
     this.buyingItemTypeId = null;
     this.statusText = '';
@@ -112,24 +134,24 @@ export class ShopStockManager {
     this.previousFocus = null;
   }
 
-  createTabs() {
-    const tabs = document.createElement('div');
-    tabs.className = 'shop-page__stock-tabs';
-    tabs.setAttribute('aria-label', 'Stock item type');
-    tabs.setAttribute('role', 'tablist');
+  createTypeControls() {
+    const controls = document.createElement('div');
+    controls.className = 'shop-page__stock-type-row';
+    controls.setAttribute('aria-label', 'Stock item type');
+    controls.setAttribute('role', 'tablist');
 
     for (const tab of STOCK_TABS) {
       const button = document.createElement('button');
-      button.className = 'style-button shop-page__stock-tab-button';
+      button.className = 'style-button shop-page__stock-type-button';
       button.type = 'button';
       button.textContent = tab.label;
       button.setAttribute('role', 'tab');
       button.addEventListener('click', () => this.onSelectTab(tab.kind));
       this.refs.tabButtons.set(tab.kind, button);
-      tabs.append(button);
+      controls.append(button);
     }
 
-    return tabs;
+    return controls;
   }
 
   createBuyPopup() {
@@ -203,25 +225,14 @@ export class ShopStockManager {
   }
 
   createQuantityField() {
-    const field = document.createElement('label');
-    field.className = 'shop-page__stock-buy-field';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = 'amount';
-
-    const input = document.createElement('input');
-    input.className = 'style-input shop-page__stock-buy-input';
-    input.type = 'number';
-    input.inputMode = 'numeric';
-    input.min = '1';
-    input.step = '1';
-    input.autocomplete = 'off';
-    input.setAttribute('aria-label', 'Buy quantity');
-    input.addEventListener('input', () => this.onBuyQuantityInput());
-
-    field.append(label, input);
-    return { field, input };
+    return createAmountSelectionRow({
+      ariaLabel: 'amount',
+      className: 'shop-page__stock-buy-field',
+      inputClassName: 'shop-page__stock-buy-input',
+      stepClassName: 'shop-page__stock-buy-step',
+      onInput: () => this.onBuyQuantityInput(),
+      onStep: (delta) => this.onBuyQuantityStep(delta),
+    });
   }
 
   createRow(itemTypeId) {
@@ -256,6 +267,7 @@ export class ShopStockManager {
     }
 
     this.selectedTab = kind;
+    this.stockExpanded = false;
     this.statusText = '';
     this.render();
   }
@@ -282,6 +294,20 @@ export class ShopStockManager {
 
   onBuyQuantityInput() {
     this.buyQuantity = this.readPositiveInteger(this.refs.buyQuantityField?.input.value) ?? 0;
+    this.buyStatusText = '';
+    this.renderBuyDialog();
+  }
+
+  onBuyQuantityStep(delta) {
+    const item = this.getItem(this.buyItemTypeId);
+    const quantity = this.clampBuyQuantity(this.buyQuantity, item) ?? 1;
+    const nextQuantity = this.clampSteppedBuyQuantity(quantity + delta, item);
+
+    if (!nextQuantity || nextQuantity === quantity) {
+      return;
+    }
+
+    this.buyQuantity = nextQuantity;
     this.buyStatusText = '';
     this.renderBuyDialog();
   }
@@ -387,19 +413,45 @@ export class ShopStockManager {
     }
 
     const items = this.getVisibleStockItems();
+    const hiddenStartIndex = this.stockExpanded
+      ? items.length
+      : COLLAPSED_STOCK_ROW_COUNT;
     const visibleItemTypeIds = new Set(items.map((item) => item.itemTypeId));
 
     for (const [itemTypeId, refs] of this.refs.rows) {
       refs.row.hidden = !visibleItemTypeIds.has(itemTypeId);
     }
 
-    for (const item of items) {
+    items.forEach((item, index) => {
       const refs = this.ensureRow(item.itemTypeId);
       this.renderRow(refs, item);
-    }
+      refs.row.hidden = index >= hiddenStartIndex;
+    });
 
+    this.renderStockToggle(items.length);
     this.renderStatus(items.length === 0 ? 'empty' : this.statusText);
     this.renderBuyDialog();
+  }
+
+  renderStockToggle(itemCount) {
+    const collapsedCount = Math.min(itemCount, COLLAPSED_STOCK_ROW_COUNT);
+    const visibleCount = this.stockExpanded ? itemCount : collapsedCount;
+    const canToggle = itemCount > COLLAPSED_STOCK_ROW_COUNT;
+
+    this.root?.classList.toggle('is-expanded', this.stockExpanded);
+    this.root?.classList.toggle('is-collapsed', !this.stockExpanded);
+    this.refs.count.textContent = `${visibleCount}/${itemCount}`;
+    this.refs.toggle.hidden = !canToggle;
+    this.refs.toggle.textContent = this.stockExpanded ? 'collapse' : 'expand';
+    this.refs.toggle.setAttribute(
+      'aria-expanded',
+      this.stockExpanded ? 'true' : 'false',
+    );
+  }
+
+  toggleStockExpanded() {
+    this.stockExpanded = !this.stockExpanded;
+    this.render();
   }
 
   isRenderVisible() {
@@ -453,7 +505,7 @@ export class ShopStockManager {
       item,
       this.getStockDisplayQuantity(item, stock),
     );
-    const maxQuantity = Math.max(1, Math.min(stock, 10000));
+    const maxQuantity = Math.max(1, this.getMaxBuyQuantity(item) ?? 1);
     const quantity = this.clampBuyQuantity(this.buyQuantity, item) ?? 1;
     const quote = this.getBuyQuote(item, quantity);
     const buying = this.buyingItemTypeId === item.itemTypeId;
@@ -466,6 +518,13 @@ export class ShopStockManager {
 
     if (this.refs.buyQuantityField.input.value !== String(quantity)) {
       this.refs.buyQuantityField.input.value = String(quantity);
+    }
+
+    for (const [delta, button] of this.refs.buyQuantityField.stepButtons) {
+      const nextQuantity = this.clampSteppedBuyQuantity(quantity + delta, item);
+      const disabled = buying || !nextQuantity || nextQuantity === quantity;
+      button.disabled = disabled;
+      button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     }
 
     this.refs.buyItemValue.value.textContent = `${display.label} (${stock})`;
@@ -570,14 +629,29 @@ export class ShopStockManager {
       return null;
     }
 
-    const stock = Number.isFinite(item.stock) ? Math.floor(item.stock) : 0;
-    const maxQuantity = Math.min(stock, 10000);
+    const maxQuantity = this.getMaxBuyQuantity(item);
 
     if (maxQuantity <= 0) {
       return null;
     }
 
     return Math.min(safeQuantity, maxQuantity);
+  }
+
+  clampSteppedBuyQuantity(quantity, item) {
+    const integer = Math.floor(Number(quantity));
+    const maxQuantity = this.getMaxBuyQuantity(item);
+
+    if (!Number.isInteger(integer) || maxQuantity <= 0) {
+      return null;
+    }
+
+    return Math.min(Math.max(1, integer), maxQuantity);
+  }
+
+  getMaxBuyQuantity(item) {
+    const stock = Number.isFinite(item?.stock) ? Math.floor(item.stock) : 0;
+    return Math.min(stock, 10000);
   }
 
   canBuyItem(item) {

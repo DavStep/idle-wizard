@@ -162,9 +162,22 @@ export class AuthOidcManager {
     }
 
     if (this.shouldUseWebGoogleIdentity()) {
-      return this.signInWebGoogleIdentity({ pendingAccountLinkAttemptId });
+      const result = await this.signInWebGoogleIdentity({ pendingAccountLinkAttemptId });
+      if (this.shouldFallbackToRedirectSignIn(result)) {
+        this.saveActiveAccountLinkAttemptId(pendingAccountLinkAttemptId);
+        this.error = null;
+        this.cancelled = false;
+        this.publish();
+        return this.signInWithRedirect();
+      }
+
+      return result;
     }
 
+    return this.signInWithRedirect();
+  }
+
+  async signInWithRedirect() {
     try {
       await this.getUserManager().signinRedirect();
       return { ok: true };
@@ -174,6 +187,10 @@ export class AuthOidcManager {
       this.publish();
       return { ok: false, reason: 'redirect_failed' };
     }
+  }
+
+  shouldFallbackToRedirectSignIn(result = {}) {
+    return result?.ok === false && result.reason === 'web_unavailable';
   }
 
   async signOut() {

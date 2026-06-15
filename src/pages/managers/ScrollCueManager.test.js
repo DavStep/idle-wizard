@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScrollCueManager, updateScrollCueState } from './ScrollCueManager.js';
 
@@ -80,6 +82,20 @@ describe('ScrollCueManager', () => {
     expect(rows.nextElementSibling?.hidden).toBe(true);
 
     manager.unmount();
+  });
+
+  it('lets managed scroll progress use the shared progress rail height', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const progressRule = baseCss.match(/\.style-progress\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
+    const rule = baseCss.match(/\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
+
+    expect(progressRule).toBeDefined();
+    expect(progressRule).toMatch(/\bbox-sizing:\s*content-box;/);
+    expect(rule).toBeDefined();
+    expect(rule).not.toMatch(/\bheight\s*:/);
+    expect(rule).not.toMatch(/\bbox-sizing\s*:/);
   });
 
   it('shares progress math with framed scroll views', () => {

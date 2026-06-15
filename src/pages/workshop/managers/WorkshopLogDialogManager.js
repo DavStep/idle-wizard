@@ -102,12 +102,25 @@ export class WorkshopLogDialogManager {
   }
 
   show() {
+    if (!this.isButtonAvailable()) {
+      return;
+    }
+
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyVisibility();
     this.refs.dialog?.focus();
     this.scrollToTop();
     this.updateScrollProgress();
+  }
+
+  isButtonAvailable() {
+    return (
+      this.root &&
+      !this.root.hidden &&
+      this.refs.button?.disabled !== true &&
+      this.refs.button?.getAttribute('aria-disabled') !== 'true'
+    );
   }
 
   hide() {
