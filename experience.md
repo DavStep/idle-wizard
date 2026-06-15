@@ -159,6 +159,7 @@
 - NPC market stand and sell-picker labels include available quantity as `<item> (N)` before the sell price.
 - NPC market demand is player-visible only through the `demand` top-border popup, grouped by `seed`/`herb`/`potion`, with locked rows gray below a divider.
 - NPC market selected stands should keep need available from slot snapshots internally, because selected items may be hidden from picker rows.
+- NPC market sell picker should allow selecting zero-demand items; auto-sell already pauses when backend need is zero.
 - NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
 - NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
 - NPC market blank stand row space is inert; item/select text opens the sell picker, and the buy button owns locked-stand purchases.

@@ -741,6 +741,88 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('allows choosing an NPC market item while demand is depleted', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 8,
+              sellGold: 0.01,
+              sellNeed: 0,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: null,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      setSelectedShopShelfSlotSellItem(itemTypeId) {
+        const item = gameplaySnapshot.shop.shelf.sellItems.find(
+          (sellItem) => sellItem.itemTypeId === itemTypeId,
+        );
+        const slot = gameplaySnapshot.shop.shelf.slots[0];
+        slot.sellItemTypeId = item.itemTypeId;
+        slot.sellKind = item.kind;
+        slot.sellKey = item.key;
+        slot.sellLabel = item.label;
+        slot.sellQuantity = item.quantity;
+        slot.sellGold = item.sellGold;
+        slot.sellNeed = item.sellNeed;
+
+        return {
+          ok: true,
+          slotNumber: slot.slotNumber,
+          item,
+        };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+    manager.showSellPopup();
+
+    const sageButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent === 'sage seed (8) 0.01 gold');
+
+    expect(sageButton?.disabled).toBe(false);
+    expect(
+      manager.canSelectSellItem(gameplaySnapshot, gameplaySnapshot.shop.shelf.sellItems[0]),
+    ).toBe(true);
+
+    sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplaySnapshot.shop.shelf.slots[0].sellItemTypeId).toBe(1);
+    expect(popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+
+    manager.unmount();
+  });
+
   it('shows empty player market stand notifications as orange', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');

@@ -641,8 +641,9 @@ export class ShopShelfManager {
     return (
       shouldShowItemInActionList(snapshot, item, item.quantity) &&
       Number.isFinite(item.sellGold) &&
+      item.sellGold > 0 &&
       Number.isFinite(item.sellNeed) &&
-      item.sellNeed > 0
+      item.sellNeed >= 0
     );
   }
 
