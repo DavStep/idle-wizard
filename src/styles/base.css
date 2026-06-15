@@ -1213,6 +1213,10 @@ body {
   pointer-events: auto;
 }
 
+.tutorial-layer__objective:not([hidden]) {
+  animation: tutorial-objective-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
 .tutorial-layer__objective[hidden],
 .tutorial-layer__objective-button[hidden] {
   display: none;
@@ -1971,6 +1975,10 @@ body {
 
 .workshop-page__task-list[hidden] {
   display: none;
+}
+
+.workshop-page__task-list:not([hidden]) {
+  animation: style-expand-list-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
 .workshop-page__tasks-toggle {
@@ -4451,11 +4459,15 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-row-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 5px;
   align-items: center;
   width: 100%;
   white-space: nowrap;
+}
+
+.shop-page__market-row-controls > .shop-page__market-buy-button {
+  justify-self: end;
 }
 
 .shop-page__market-amount-field {
@@ -4643,10 +4655,11 @@ div.workshop-page__discovery-row {
   display: grid;
   grid-template-columns:
     repeat(3, max-content)
-    minmax(42px, 1fr)
+    max-content
     repeat(3, max-content);
-  gap: 5px;
+  column-gap: 7px;
   align-items: center;
+  justify-content: space-between;
 }
 
 .style-button.amount-selection-row__step {
@@ -4665,7 +4678,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.amount-selection-row__value {
-  width: 100%;
+  width: auto;
   min-width: 42px;
   padding: 1px 3px;
   margin: 0;
@@ -4675,7 +4688,7 @@ div.workshop-page__discovery-row {
 
 .style-input.amount-selection-row__input {
   box-sizing: border-box;
-  width: 100%;
+  width: 6ch;
   min-width: 42px;
   padding: 1px 3px;
   margin: 0;
@@ -4792,9 +4805,8 @@ div.workshop-page__discovery-row {
 
 .shop-page__request-quantity-field {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 8px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 2px;
 }
 
 .shop-page__request-amount-field {
@@ -6435,12 +6447,12 @@ div.workshop-page__discovery-row {
 @keyframes style-dialog-enter {
   from {
     opacity: 0.01;
-    transform: translate(-50%, calc(-50% + 7px));
+    translate: 0 7px;
   }
 
   to {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    translate: 0 0;
   }
 }
 
@@ -6459,12 +6471,40 @@ div.workshop-page__discovery-row {
 @keyframes style-dialog-top-enter {
   from {
     opacity: 0.01;
-    transform: translateX(-50%) translateY(7px);
+    translate: 0 7px;
   }
 
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    translate: 0 0;
+  }
+}
+
+@keyframes tutorial-objective-enter {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.01;
+    translate: -5px 8px;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes style-expand-list-enter {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.01;
+    translate: 0 -3px;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    translate: 0 0;
   }
 }
 
