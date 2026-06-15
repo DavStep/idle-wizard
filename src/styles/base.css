@@ -1075,6 +1075,11 @@ body {
   filter: drop-shadow(0 1px 0 var(--style-surface));
 }
 
+.tutorial-layer__objective-button[data-notification="true"]::before {
+  top: 8px;
+  right: 5px;
+}
+
 .style-box.tutorial-layer__hint {
   position: absolute;
   z-index: 6;
