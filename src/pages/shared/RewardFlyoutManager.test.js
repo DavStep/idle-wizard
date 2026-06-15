@@ -45,7 +45,11 @@ describe('RewardFlyoutManager', () => {
     const slotItem = document.createElement('span');
     slotItem.className = 'shop-page__slot-item-value';
     setRect(slotItem, { left: 220, top: 360, width: 120, height: 30 });
-    slot.append(slotItem);
+
+    const slotPrice = document.createElement('span');
+    slotPrice.className = 'shop-page__slot-price-value';
+    setRect(slotPrice, { left: 420, top: 360, width: 90, height: 30 });
+    slot.append(slotItem, slotPrice);
     host.append(summonCircle, slot);
 
     const goldTarget = document.createElement('span');
@@ -73,6 +77,10 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelectorAll('.room-seed-pack-composite')).toHaveLength(3);
     expect(document.querySelectorAll('.room-coin-particle').length).toBeGreaterThanOrEqual(3);
     expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+1000G');
+    expect(document.querySelector('.room-coin-particle')?.style.left).toBe('465px');
+    expect(document.querySelector('.room-coin-particle')?.style.top).toBe('373.2px');
+    expect(document.querySelector('.room-coin-amt-pop')?.style.left).toBe('465px');
+    expect(document.querySelector('.room-coin-amt-pop')?.style.top).toBe('369.2px');
 
     manager.unmount();
 
@@ -99,6 +107,37 @@ describe('RewardFlyoutManager', () => {
 
     expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('sage seed found');
     expect(document.querySelector('.room-item-drop')).toBeNull();
+  });
+
+  it('plays coin flyout when gold is collected from the gold offer', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const host = document.createElement('section');
+    const collectButton = document.createElement('button');
+    collectButton.className = 'shop-page__gold-offer-action';
+    setRect(collectButton, { left: 320, top: 410, width: 90, height: 30 });
+    host.append(collectButton);
+
+    const goldTarget = document.createElement('span');
+    goldTarget.className = 'room-top-panel__resource';
+    goldTarget.setAttribute('aria-label', 'gold');
+    setRect(goldTarget, { left: 12, top: 18, width: 90, height: 24 });
+    document.body.append(host, goldTarget);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'gold_collected',
+      gold: 20,
+      source: 'shop_gold_offer',
+    });
+
+    expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('collected 20 gold');
+    expect(document.querySelectorAll('.room-coin-particle').length).toBeGreaterThanOrEqual(3);
+    expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+20G');
+    expect(document.querySelector('.room-coin-particle')?.style.left).toBe('365px');
+    expect(document.querySelector('.room-coin-particle')?.style.top).toBe('423.2px');
+
+    manager.unmount();
   });
 
   it('starts herb drops from the end of the garden progress bar', () => {

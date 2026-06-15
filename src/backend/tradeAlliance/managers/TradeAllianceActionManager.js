@@ -1,3 +1,5 @@
+import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+
 const MAX_MESSAGE_LENGTH = 160;
 const ROLE_IDS = new Set(['tradeMaster', 'quartermaster', 'factor', 'broker', 'trader']);
 const JOIN_MODES = new Set(['open', 'apply', 'closed']);
@@ -15,19 +17,21 @@ export class TradeAllianceActionManager {
     this.connection = null;
   }
 
-  createAlliance({ name, tag, description = '', joinMode = 'apply' } = {}) {
+  createAlliance({ name, tag, tagColor, description = '', joinMode = 'apply' } = {}) {
     return this.callReducer('createTradeAlliance', 'create_trade_alliance', {
       name: this.normalizeName(name),
       tag: this.normalizeTag(tag),
+      tagColor: normalizeTradeAllianceTagColor(tagColor),
       description: this.normalizeText(description, 240),
       joinMode: this.normalizeJoinMode(joinMode),
     });
   }
 
-  updateProfile({ name, tag, description = '', notice = '', joinMode = 'apply' } = {}) {
+  updateProfile({ name, tag, tagColor, description = '', notice = '', joinMode = 'apply' } = {}) {
     return this.callReducer('updateTradeAllianceProfile', 'update_trade_alliance_profile', {
       name: this.normalizeName(name),
       tag: this.normalizeTag(tag),
+      tagColor: normalizeTradeAllianceTagColor(tagColor),
       description: this.normalizeText(description, 240),
       notice: this.normalizeText(notice, 240),
       joinMode: this.normalizeJoinMode(joinMode),

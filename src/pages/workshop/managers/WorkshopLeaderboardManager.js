@@ -1,3 +1,6 @@
+import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+
 const LEADERBOARD_SCOPES = [
   {
     id: 'singlePlayer',
@@ -305,14 +308,16 @@ export class WorkshopLeaderboardManager {
     });
     const bodyRows = rows.map((row, index) =>
       this.createRow(
-        isAllianceScope ? this.formatAllianceLabel(row, index) : this.formatUserLabel(row, index),
+        isAllianceScope
+          ? this.createAllianceLabel(row, index)
+          : this.createUserLabel(row, index),
         this.formatValue(row[activePeriod.valueKey]),
       ),
     );
     const currentRow = this.shouldShowCurrentUser(rows, currentUser)
       ? [
           this.createRow(
-            this.formatUserLabel(currentUser),
+            this.createUserLabel(currentUser),
             this.formatValue(currentUser[activePeriod.valueKey]),
             { current: true },
           ),
@@ -451,6 +456,9 @@ export class WorkshopLeaderboardManager {
     const normalizedUser = {
       name: user.name,
       allianceTag: this.normalizeAllianceTag(user.allianceTag ?? user.alliance_tag),
+      allianceTagColor: normalizeTradeAllianceTagColor(
+        user.allianceTagColor ?? user.alliance_tag_color,
+      ),
       playerLevel: this.normalizePlayerLevel(user.playerLevel),
       income: this.normalizeMetric(user.income),
       dailyIncome: this.normalizeMetric(user.dailyIncome),
@@ -475,6 +483,7 @@ export class WorkshopLeaderboardManager {
     return {
       name: alliance.name,
       tag: typeof alliance.tag === 'string' ? alliance.tag : '',
+      tagColor: normalizeTradeAllianceTagColor(alliance.tagColor ?? alliance.tag_color),
       dailyIncome: this.normalizeMetric(alliance.dailyIncome),
       weeklyIncome: this.normalizeMetric(alliance.weeklyIncome, alliance.seasonIncome),
       monthlyIncome: this.normalizeMetric(alliance.monthlyIncome),
@@ -509,11 +518,7 @@ export class WorkshopLeaderboardManager {
   }
 
   normalizeAllianceTag(tag) {
-    const normalized = String(tag ?? '')
-      .trim()
-      .toUpperCase();
-
-    return /^[A-Z]{2,5}$/.test(normalized) ? normalized : '';
+    return normalizeAllianceTag(tag);
   }
 
   shouldShowCurrentUser(users, currentUser) {
@@ -546,7 +551,7 @@ export class WorkshopLeaderboardManager {
 
     const key = document.createElement('span');
     key.className = 'row_key';
-    key.textContent = label;
+    this.appendCellContent(key, label);
 
     const val = document.createElement('span');
     val.className = 'row_val';
@@ -554,6 +559,41 @@ export class WorkshopLeaderboardManager {
 
     row.append(key, val);
     return row;
+  }
+
+  createUserLabel(user, index) {
+    const rank = this.normalizeRank(user?.rank) ?? index + 1;
+    const tag = createAllianceTagSpan(user?.allianceTag, user?.allianceTagColor);
+    return [
+      document.createTextNode(`${rank}. `),
+      ...(tag ? [tag, document.createTextNode(' ')] : []),
+      document.createTextNode(
+        `${user.name} (${this.normalizePlayerLevel(user.playerLevel)})`,
+      ),
+    ];
+  }
+
+  createAllianceLabel(alliance, index) {
+    const rank = this.normalizeRank(alliance?.rank) ?? index + 1;
+    const tag = createAllianceTagSpan(alliance?.tag, alliance?.tagColor);
+    return [
+      document.createTextNode(`${rank}. ${alliance.name}`),
+      ...(tag ? [document.createTextNode(' '), tag] : []),
+    ];
+  }
+
+  appendCellContent(element, content) {
+    if (Array.isArray(content)) {
+      element.replaceChildren(...content);
+      return;
+    }
+
+    if (content && typeof content === 'object' && typeof content.nodeType === 'number') {
+      element.replaceChildren(content);
+      return;
+    }
+
+    element.textContent = String(content ?? '');
   }
 
   applyVisibility() {

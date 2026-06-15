@@ -396,10 +396,14 @@ describe('AppLifecycleManager', () => {
 
     await lifecycle.handleGameplaySaveReady({ save: null });
 
+    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
     expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
       authSnapshot: { oidc: { authenticated: false } },
       statusText: null,
     });
+    expect(
+      lifecycle.onlineGateManager.hide.mock.invocationCallOrder[0],
+    ).toBeLessThan(freshStartChoiceManager.choose.mock.invocationCallOrder[0]);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       null,
       lifecycle.ecsFacade,

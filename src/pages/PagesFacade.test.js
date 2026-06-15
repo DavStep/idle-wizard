@@ -5416,6 +5416,58 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
+  it('labels trade alliance browse income and keeps alliance info compact', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const description = 'We try to break everything while testing, also we complain a lot';
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      alliances: [
+        {
+          allianceId: 'alliance-2',
+          name: 'BustinGame',
+          tag: 'BG',
+          description,
+          joinMode: 'open',
+          memberCount: 1,
+          totalIncome: 6367,
+          seasonIncome: 6367,
+          weeklyIncome: 6367,
+          monthlyIncome: 6367,
+          dailyIncome: 0,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const leaveButton = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-wide-button'),
+    ].find((button) => button.textContent === 'leave');
+
+    leaveButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const browseRow = popup.querySelector('.workshop-page__trade-alliance-list-row');
+    const infoRow = browseRow.querySelector('.workshop-page__trade-alliance-info-row');
+    const incomeRow = browseRow.querySelector('.workshop-page__trade-alliance-row.is-compact');
+
+    expect(infoRow.textContent).toBe(description);
+    expect(incomeRow.querySelector('.row_key')?.textContent).toBe('season income');
+    expect(incomeRow.querySelector('.row_val')?.textContent).toBe('6,367');
+  });
+
   it('fills a trade alliance item quest from owned inventory', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -5812,6 +5864,7 @@ describe('PagesFacade', () => {
       {
         name: 'Tap Void',
         tag: 'TAP',
+        tagColor: 'ink',
         description: 'tap save',
         notice: 'mobile',
         joinMode: 'closed',

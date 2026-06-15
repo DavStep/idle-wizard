@@ -1,3 +1,5 @@
+import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+
 const ALLIANCES_QUERY = 'SELECT * FROM trade_alliance_snapshot';
 const MEMBERS_QUERY = 'SELECT * FROM trade_alliance_member_snapshot';
 const APPLICATIONS_QUERY = 'SELECT * FROM trade_alliance_application_snapshot';
@@ -308,6 +310,7 @@ export class TradeAllianceSubscriptionManager {
       name: String(row.name ?? ''),
       normalizedName: String(row.normalizedName ?? row.normalized_name ?? ''),
       tag: String(row.tag ?? ''),
+      tagColor: normalizeTradeAllianceTagColor(row.tagColor ?? row.tag_color),
       description: String(row.description ?? ''),
       notice: String(row.notice ?? ''),
       joinMode: String(row.joinMode ?? row.join_mode ?? 'apply'),
@@ -417,6 +420,9 @@ export class TradeAllianceSubscriptionManager {
       id: this.toId(row.messageId ?? row.message_id),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
       allianceTag: String(row.allianceTag ?? row.alliance_tag ?? ''),
+      allianceTagColor: normalizeTradeAllianceTagColor(
+        row.allianceTagColor ?? row.alliance_tag_color,
+      ),
       senderIdentity: this.toIdentityKey(row.senderIdentity ?? row.sender_identity),
       username: String(row.username ?? 'wizard'),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),

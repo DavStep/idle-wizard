@@ -20,6 +20,16 @@
   --style-resource-ruby: var(--style-text);
   --style-resource-seed: var(--style-text);
   --style-resource-herb: var(--style-text);
+  --style-alliance-tag-ink: var(--style-text);
+  --style-alliance-tag-red: oklch(42% 0.15 25);
+  --style-alliance-tag-amber: oklch(43% 0.12 75);
+  --style-alliance-tag-green: oklch(40% 0.12 145);
+  --style-alliance-tag-teal: oklch(40% 0.1 190);
+  --style-alliance-tag-blue: oklch(42% 0.13 250);
+  --style-alliance-tag-violet: oklch(43% 0.13 295);
+  --style-alliance-tag-magenta: oklch(43% 0.14 335);
+  --style-alliance-tag-brown: oklch(40% 0.08 55);
+  --style-alliance-tag-slate: oklch(40% 0.03 250);
   --style-backdrop-rgb: 222 222 222;
   --style-log-fade-rgb: 229 229 229;
   --style-scroll-fade-rgb: var(--style-log-fade-rgb);
@@ -84,7 +94,6 @@
   --style-item-drop-size: clamp(34px, calc(var(--app-stage-width, 100vw) * 0.072), 78px);
   --style-herb-drop-size: clamp(38px, calc(var(--app-stage-width, 100vw) * 0.084), 90px);
   --style-potion-drop-size: clamp(36px, calc(var(--app-stage-width, 100vw) * 0.078), 84px);
-  --style-seed-drop-offset: 20px;
   --style-room-chat-bottom: 50px;
   --style-room-chat-source-height: calc(
     (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
@@ -215,6 +224,20 @@
   --style-overlay-shadow: 5px 5px 5px #05030a;
   --style-tooltip-shadow: -1px 3px 2px #05030a;
   color-scheme: dark;
+}
+
+:root[data-style-theme="black"],
+:root[data-style-theme="midnight"],
+:root[data-style-theme="witchcraft"] {
+  --style-alliance-tag-red: oklch(76% 0.13 25);
+  --style-alliance-tag-amber: oklch(80% 0.13 75);
+  --style-alliance-tag-green: oklch(76% 0.12 145);
+  --style-alliance-tag-teal: oklch(78% 0.1 190);
+  --style-alliance-tag-blue: oklch(78% 0.11 250);
+  --style-alliance-tag-violet: oklch(78% 0.11 295);
+  --style-alliance-tag-magenta: oklch(78% 0.12 335);
+  --style-alliance-tag-brown: oklch(76% 0.09 55);
+  --style-alliance-tag-slate: oklch(78% 0.03 250);
 }
 
 :root[data-style-progress="gradient"] {
@@ -1412,7 +1435,6 @@ body {
 
 .room-item-drop-anchor.is-seed {
   width: var(--style-item-drop-size);
-  transform: translate(-50%, calc(-50% - var(--style-seed-drop-offset)));
 }
 
 .room-item-drop-anchor.is-potion {
@@ -3016,6 +3038,11 @@ div.workshop-page__discovery-row {
   font-weight: bold;
 }
 
+.workshop-page__alliance-tag {
+  color: var(--workshop-alliance-tag-color, var(--style-text));
+  font-weight: bold;
+}
+
 .shop-page__trade-history-username {
   color: var(--style-text);
 }
@@ -3053,8 +3080,20 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-empty,
 .workshop-page__trade-alliance-paragraph,
 .workshop-page__trade-alliance-status,
-.workshop-page__trade-alliance-section-label {
+.workshop-page__trade-alliance-section-label,
+.workshop-page__trade-alliance-info-row {
   color: var(--style-muted);
+}
+
+.workshop-page__trade-alliance-row.is-compact,
+.workshop-page__trade-alliance-info-row {
+  min-height: var(--style-tiny-line-height);
+  font-size: var(--style-tiny-font-size);
+  line-height: var(--style-tiny-line-height);
+}
+
+.workshop-page__trade-alliance-info-row {
+  overflow-wrap: anywhere;
 }
 
 .workshop-page__trade-alliance-empty,
@@ -3121,6 +3160,41 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-field {
   display: grid;
   gap: 2px;
+}
+
+.workshop-page__trade-alliance-color-field {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.workshop-page__trade-alliance-color-field legend {
+  padding: 0;
+}
+
+.workshop-page__trade-alliance-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.workshop-page__trade-alliance-color-swatch {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  appearance: none;
+  cursor: pointer;
+  background: var(--workshop-alliance-swatch-color, var(--style-text));
+  border: var(--style-border);
+  border-radius: 0;
+}
+
+.workshop-page__trade-alliance-color-swatch.is-selected,
+.workshop-page__trade-alliance-color-swatch:focus-visible {
+  outline: var(--style-border-strong);
+  outline-offset: 1px;
 }
 
 .style-input.workshop-page__trade-alliance-search,

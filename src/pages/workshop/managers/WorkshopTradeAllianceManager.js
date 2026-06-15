@@ -1,3 +1,11 @@
+import {
+  DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
+  TRADE_ALLIANCE_TAG_COLORS,
+  getTradeAllianceTagColorCssValue,
+  normalizeTradeAllianceTagColor,
+} from '../../../shared/tradeAllianceTagColors.js';
+import { createAllianceTagSpan } from '../../shared/allianceTagLabel.js';
+
 const ROLE_LABELS = {
   tradeMaster: 'trade master',
   quartermaster: 'quartermaster',
@@ -273,9 +281,7 @@ export class WorkshopTradeAllianceManager {
     const ownAlliance = this.lastSnapshot.ownAlliance ?? null;
     this.syncMemberEditState();
     this.refs.button.textContent = ownAlliance ? 'alliance' : 'alliance';
-    this.refs.title.textContent = ownAlliance
-      ? `${ownAlliance.name} [${ownAlliance.tag}]`
-      : 'trade alliance';
+    this.renderTitle(ownAlliance);
     this.refs.status.textContent = this.status;
     this.syncQuestTimer();
 
@@ -311,6 +317,19 @@ export class WorkshopTradeAllianceManager {
         });
         return button;
       }),
+    );
+  }
+
+  renderTitle(ownAlliance) {
+    if (!ownAlliance) {
+      this.refs.title.textContent = 'trade alliance';
+      return;
+    }
+
+    const tag = this.createTagSpan(ownAlliance.tag, ownAlliance.tagColor);
+    this.refs.title.replaceChildren(
+      document.createTextNode(ownAlliance.name),
+      ...(tag ? [document.createTextNode(' '), tag] : []),
     );
   }
 
@@ -362,11 +381,17 @@ export class WorkshopTradeAllianceManager {
     const main = document.createElement('div');
     main.className = 'workshop-page__trade-alliance-list-main';
     main.append(
-      this.createTextRow(`${alliance.name} [${alliance.tag}]`, `${alliance.memberCount}/50`),
       this.createTextRow(
+        this.createAllianceNameTagLabel(alliance),
+        `${alliance.memberCount}/50`,
+      ),
+      this.createAllianceInfoRow(
         alliance.description || JOIN_MODE_LABELS[alliance.joinMode] || alliance.joinMode,
+      ),
+      this.createTextRow(
+        'season income',
         this.formatNumber(alliance.seasonIncome),
-        { muted: true },
+        { muted: true, compact: true },
       ),
     );
 
@@ -397,6 +422,7 @@ export class WorkshopTradeAllianceManager {
     form.append(
       this.createInputField('name', 'name', { maxLength: 24 }),
       this.createInputField('tag', 'tag', { maxLength: 5, autocapitalize: 'characters' }),
+      this.createTagColorField('tag color'),
       this.createInputField('description', 'description', { maxLength: 120 }),
       this.createJoinModeField('join mode'),
       submitButton,
@@ -412,6 +438,7 @@ export class WorkshopTradeAllianceManager {
       this.tradeAllianceFacade.createAlliance({
         name: formData.get('name'),
         tag: formData.get('tag'),
+        tagColor: formData.get('tagColor'),
         description: formData.get('description'),
         joinMode: formData.get('joinMode'),
       }),
@@ -752,6 +779,7 @@ export class WorkshopTradeAllianceManager {
         maxLength: 5,
         autocapitalize: 'characters',
       }),
+      this.createTagColorField('tag color', alliance.tagColor),
       this.createInputField('description', 'description', {
         value: alliance.description,
         maxLength: 120,
@@ -772,6 +800,7 @@ export class WorkshopTradeAllianceManager {
       this.tradeAllianceFacade.updateProfile({
         name: formData.get('name'),
         tag: formData.get('tag'),
+        tagColor: formData.get('tagColor'),
         description: formData.get('description'),
         notice: formData.get('notice'),
         joinMode: formData.get('joinMode'),
@@ -819,6 +848,60 @@ export class WorkshopTradeAllianceManager {
     }
 
     field.append(span, select);
+    return field;
+  }
+
+  createTagColorField(label, value = DEFAULT_TRADE_ALLIANCE_TAG_COLOR) {
+    const selectedColorId = normalizeTradeAllianceTagColor(value);
+    const field = document.createElement('fieldset');
+    field.className =
+      'workshop-page__trade-alliance-field workshop-page__trade-alliance-color-field';
+
+    const legend = document.createElement('legend');
+    legend.textContent = label;
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'tagColor';
+    input.value = selectedColorId;
+
+    const swatches = document.createElement('div');
+    swatches.className = 'workshop-page__trade-alliance-color-swatches';
+    swatches.setAttribute('role', 'radiogroup');
+    swatches.setAttribute('aria-label', label);
+
+    const buttons = TRADE_ALLIANCE_TAG_COLORS.map((color) => {
+      const button = document.createElement('button');
+      button.className = 'workshop-page__trade-alliance-color-swatch';
+      button.type = 'button';
+      button.style.setProperty(
+        '--workshop-alliance-swatch-color',
+        getTradeAllianceTagColorCssValue(color.id),
+      );
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-label', color.label);
+      button.dataset.colorId = color.id;
+      swatches.append(button);
+      return button;
+    });
+
+    const setSelected = (colorId) => {
+      const normalizedColorId = normalizeTradeAllianceTagColor(colorId);
+      input.value = normalizedColorId;
+      for (const button of buttons) {
+        const selected = button.dataset.colorId === normalizedColorId;
+        button.classList.toggle('is-selected', selected);
+        button.setAttribute('aria-checked', selected ? 'true' : 'false');
+        button.tabIndex = selected ? 0 : -1;
+      }
+    };
+
+    for (const button of buttons) {
+      button.addEventListener('click', () => setSelected(button.dataset.colorId));
+    }
+
+    setSelected(selectedColorId);
+    field.append(legend, input, swatches);
     return field;
   }
 
@@ -873,22 +956,58 @@ export class WorkshopTradeAllianceManager {
     return button;
   }
 
-  createTextRow(label, value, { muted = false } = {}) {
+  createTextRow(label, value, { muted = false, compact = false } = {}) {
     const row = document.createElement('div');
     row.className = 'workshop-page__row workshop-page__trade-alliance-row';
     if (muted) {
       row.classList.add('is-muted');
     }
+    if (compact) {
+      row.classList.add('is-compact');
+    }
 
     const key = document.createElement('span');
     key.className = 'row_key';
-    key.textContent = label;
+    this.appendCellContent(key, label);
 
     const val = document.createElement('span');
     val.className = 'row_val';
-    val.textContent = value;
+    this.appendCellContent(val, value);
 
     row.append(key, val);
+    return row;
+  }
+
+  createAllianceNameTagLabel(alliance) {
+    const tag = this.createTagSpan(alliance?.tag, alliance?.tagColor);
+    return [
+      document.createTextNode(String(alliance?.name ?? '')),
+      ...(tag ? [document.createTextNode(' '), tag] : []),
+    ];
+  }
+
+  createTagSpan(tag, tagColor) {
+    return createAllianceTagSpan(tag, tagColor);
+  }
+
+  appendCellContent(element, content) {
+    if (Array.isArray(content)) {
+      element.replaceChildren(...content);
+      return;
+    }
+
+    if (content && typeof content === 'object' && typeof content.nodeType === 'number') {
+      element.replaceChildren(content);
+      return;
+    }
+
+    element.textContent = String(content ?? '');
+  }
+
+  createAllianceInfoRow(text) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__trade-alliance-info-row';
+    row.textContent = text;
     return row;
   }
 

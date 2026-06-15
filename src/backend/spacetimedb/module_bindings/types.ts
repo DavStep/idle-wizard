@@ -73,6 +73,7 @@ export const LeaderboardSummaryResult = __t.object("LeaderboardSummaryResult", {
   identity: __t.identity(),
   username: __t.string(),
   allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
   totalIncome: __t.u64(),
   income: __t.u64(),
   dailyIncome: __t.u64(),
@@ -192,6 +193,7 @@ export const OwnTradeAllianceChatResult = __t.object("OwnTradeAllianceChatResult
   messageId: __t.uuid(),
   allianceId: __t.uuid(),
   allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
   senderIdentity: __t.identity(),
   username: __t.string(),
   playerLevel: __t.u32(),
@@ -429,6 +431,7 @@ export const TradeAlliance = __t.object("TradeAlliance", {
   dailyIncome: __t.u64(),
   monthlyIncome: __t.u64(),
   monthKey: __t.string(),
+  tagColor: __t.string(),
 });
 export type TradeAlliance = __Infer<typeof TradeAlliance>;
 
@@ -464,6 +467,7 @@ export const TradeAllianceChat = __t.object("TradeAllianceChat", {
   playerLevel: __t.u32(),
   body: __t.string(),
   sentAt: __t.timestamp(),
+  allianceTagColor: __t.string(),
 });
 export type TradeAllianceChat = __Infer<typeof TradeAllianceChat>;
 
@@ -580,6 +584,7 @@ export const TradeAllianceSnapshotResult = __t.object("TradeAllianceSnapshotResu
   name: __t.string(),
   normalizedName: __t.string(),
   tag: __t.string(),
+  tagColor: __t.string(),
   description: __t.string(),
   notice: __t.string(),
   joinMode: __t.string(),
@@ -605,6 +610,7 @@ export const WorldChat = __t.object("WorldChat", {
   sentAt: __t.timestamp(),
   playerLevel: __t.u32(),
   allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
 });
 export type WorldChat = __Infer<typeof WorldChat>;
 
@@ -619,6 +625,7 @@ export const WorldChatRecentResult = __t.object("WorldChatRecentResult", {
   body: __t.string(),
   sentAt: __t.timestamp(),
   allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
 });
 export type WorldChatRecentResult = __Infer<typeof WorldChatRecentResult>;
 

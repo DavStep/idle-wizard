@@ -18,4 +18,5 @@ export default __t.row({
   sentAt: __t.timestamp().name("sent_at"),
   playerLevel: __t.u32().name("player_level"),
   allianceTag: __t.string().name("alliance_tag"),
+  allianceTagColor: __t.string().name("alliance_tag_color"),
 });

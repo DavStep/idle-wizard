@@ -287,6 +287,7 @@ describe('LeaderboardSubscriptionManager', () => {
         playerLevel: 2,
         totalIncome: 12n,
         alliance_tag: 'tap',
+        alliance_tag_color: 'blue',
       },
     ];
     const manager = new LeaderboardSubscriptionManager();
@@ -296,6 +297,7 @@ describe('LeaderboardSubscriptionManager', () => {
     expect(manager.getSnapshot().topUsers[0]).toMatchObject({
       name: 'Tagged',
       allianceTag: 'TAP',
+      allianceTagColor: 'blue',
     });
   });
 

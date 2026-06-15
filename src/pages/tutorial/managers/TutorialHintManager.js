@@ -21,10 +21,36 @@ const GUIDE_BOTTOM_FRACTION = 0.44;
 const DIALOG_TOP = 218;
 const OBJECTIVE_LEFT = 76;
 const OBJECTIVE_TOP = 504;
-const OBJECTIVE_BUTTON_LEFT = 8;
-const OBJECTIVE_BUTTON_TOP = 491;
+const OBJECTIVE_BUTTON_LEFT = 0;
+const OBJECTIVE_BUTTON_TOP = 551;
 const OBJECTIVE_BUTTON_WIDTH = 63;
 const OBJECTIVE_BUTTON_HEIGHT = 81;
+const OBJECTIVE_PROTECTED_SELECTORS = [
+  '.workshop-page__leaderboard-button',
+  '.workshop-page__trade-alliance-button',
+  '.workshop-page__logs-button',
+  '.workshop-page__discoveries-button',
+];
+const OBJECTIVE_PLACEMENTS = [
+  {
+    objectiveLeft: OBJECTIVE_LEFT,
+    objectiveTop: OBJECTIVE_TOP,
+    buttonLeft: OBJECTIVE_BUTTON_LEFT,
+    buttonTop: OBJECTIVE_BUTTON_TOP,
+  },
+  {
+    objectiveLeft: OBJECTIVE_LEFT,
+    objectiveTop: 404,
+    buttonLeft: OBJECTIVE_BUTTON_LEFT,
+    buttonTop: 451,
+  },
+  {
+    objectiveLeft: OBJECTIVE_LEFT,
+    objectiveTop: 286,
+    buttonLeft: OBJECTIVE_BUTTON_LEFT,
+    buttonTop: 333,
+  },
+];
 
 export class TutorialHintManager {
   constructor() {
@@ -639,27 +665,85 @@ export class TutorialHintManager {
 
   positionObjective() {
     const bounds = this.getSourceBounds();
-    const objectiveLeft = clamp(
-      OBJECTIVE_LEFT,
-      HINT_GAP,
-      bounds.width - HINT_PADDED_WIDTH - HINT_GAP,
-    );
-    const objectiveTop = clamp(OBJECTIVE_TOP, HINT_GAP, bounds.height - HINT_HEIGHT - HINT_GAP);
-    const buttonLeft = clamp(
-      OBJECTIVE_BUTTON_LEFT,
-      HINT_GAP,
-      bounds.width - OBJECTIVE_BUTTON_WIDTH - HINT_GAP,
-    );
-    const buttonTop = clamp(
-      OBJECTIVE_BUTTON_TOP,
-      HINT_GAP,
-      bounds.height - OBJECTIVE_BUTTON_HEIGHT - HINT_GAP,
-    );
+    const protectedRects = this.getObjectiveProtectedRects();
+    const placement = this.resolveObjectivePlacement({ bounds, protectedRects });
+    const { objectiveLeft, objectiveTop, buttonLeft, buttonTop } = placement;
 
     this.objective.style.left = `${objectiveLeft}px`;
     this.objective.style.top = `${objectiveTop}px`;
     this.objectiveButton.style.left = `${buttonLeft}px`;
     this.objectiveButton.style.top = `${buttonTop}px`;
+  }
+
+  resolveObjectivePlacement({ bounds, protectedRects }) {
+    const candidates = OBJECTIVE_PLACEMENTS.map((placement, index) => {
+      const clamped = this.clampObjectivePlacement(placement, bounds);
+      const rects = getObjectivePlacementRects(clamped);
+      const protectedOverlap = protectedRects.reduce(
+        (total, protectedRect) =>
+          total +
+          getOverlapArea(rects.objective, protectedRect) +
+          getOverlapArea(rects.button, protectedRect),
+        0,
+      );
+
+      return {
+        ...clamped,
+        index,
+        score: protectedOverlap,
+      };
+    });
+
+    return candidates.sort((a, b) => a.score - b.score || a.index - b.index)[0];
+  }
+
+  clampObjectivePlacement(placement, bounds) {
+    return {
+      objectiveLeft: clamp(
+        placement.objectiveLeft,
+        HINT_GAP,
+        bounds.width - HINT_PADDED_WIDTH - HINT_GAP,
+      ),
+      objectiveTop: clamp(
+        placement.objectiveTop,
+        HINT_GAP,
+        bounds.height - HINT_HEIGHT - HINT_GAP,
+      ),
+      buttonLeft: clamp(
+        placement.buttonLeft,
+        0,
+        bounds.width - OBJECTIVE_BUTTON_WIDTH - HINT_GAP,
+      ),
+      buttonTop: clamp(
+        placement.buttonTop,
+        HINT_GAP,
+        bounds.height - OBJECTIVE_BUTTON_HEIGHT - HINT_GAP,
+      ),
+    };
+  }
+
+  getObjectiveProtectedRects() {
+    if (!this.stage) {
+      return [];
+    }
+
+    const stageRect = this.stage.getBoundingClientRect();
+    const scale = this.getUiScale();
+
+    return OBJECTIVE_PROTECTED_SELECTORS.flatMap((selector) =>
+      [...this.stage.querySelectorAll(selector)]
+        .filter((element) => isVisibleElement(element))
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+
+          return {
+            left: (rect.left - stageRect.left) / scale,
+            top: (rect.top - stageRect.top) / scale,
+            right: (rect.right - stageRect.left) / scale,
+            bottom: (rect.bottom - stageRect.top) / scale,
+          };
+        }),
+    );
   }
 
   getSourceBounds() {
@@ -766,6 +850,36 @@ function toPointerRect({ x, y }) {
     right: x + POINTER_HALF_EXTENT,
     bottom: y + POINTER_HALF_EXTENT,
   };
+}
+
+function getObjectivePlacementRects({ objectiveLeft, objectiveTop, buttonLeft, buttonTop }) {
+  return {
+    objective: {
+      left: objectiveLeft,
+      top: objectiveTop,
+      right: objectiveLeft + HINT_PADDED_WIDTH,
+      bottom: objectiveTop + HINT_HEIGHT,
+    },
+    button: {
+      left: buttonLeft,
+      top: buttonTop,
+      right: buttonLeft + OBJECTIVE_BUTTON_WIDTH,
+      bottom: buttonTop + OBJECTIVE_BUTTON_HEIGHT,
+    },
+  };
+}
+
+function isVisibleElement(element) {
+  const rect = element.getBoundingClientRect();
+
+  if (element.hidden || rect.width <= 0 || rect.height <= 0) {
+    return false;
+  }
+
+  const view = element.ownerDocument?.defaultView ?? globalThis.window;
+  const style = view?.getComputedStyle?.(element);
+
+  return style?.display !== 'none' && style?.visibility !== 'hidden';
 }
 
 function getOverflowAmount(rect, bounds) {

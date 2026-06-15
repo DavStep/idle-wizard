@@ -1,3 +1,5 @@
+import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+
 const WORLD_CHAT_QUERY = 'SELECT * FROM world_chat_recent';
 const MESSAGE_LIMIT = 40;
 const EMPTY_SNAPSHOT = {
@@ -98,6 +100,9 @@ export class WorldChatSubscriptionManager {
       ),
       body: typeof row.body === 'string' ? row.body : '',
       allianceTag: typeof row.allianceTag === 'string' ? row.allianceTag : '',
+      allianceTagColor: normalizeTradeAllianceTagColor(
+        row.allianceTagColor ?? row.alliance_tag_color,
+      ),
       sentAtMs: this.toTimestampMs(row.sentAt ?? row.sent_at),
     };
   }

@@ -1,3 +1,5 @@
+import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+
 const EMPTY_CHAT_SNAPSHOT = {
   connected: false,
   messages: [],
@@ -360,7 +362,7 @@ export class WorkshopWorldChatManager {
 
     const name = document.createElement('span');
     name.className = 'workshop-page__world-chat-name';
-    name.textContent = `${this.formatSender(message)}: `;
+    name.append(...this.createSenderContent(message), document.createTextNode(': '));
 
     const body = document.createElement('span');
     body.className = 'workshop-page__world-chat-body';
@@ -525,11 +527,22 @@ export class WorkshopWorldChatManager {
   }
 
   normalizeAllianceTag(tag) {
-    const normalized = String(tag ?? '')
-      .trim()
-      .toUpperCase();
+    return normalizeAllianceTag(tag);
+  }
 
-    return /^[A-Z]{2,5}$/.test(normalized) ? normalized : '';
+  createSenderContent(message) {
+    const username = message?.username || 'wizard';
+    const fallbackLevel = this.isSystemMessage(message) ? null : 1;
+    const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
+    const tag = createAllianceTagSpan(message?.allianceTag, message?.allianceTagColor);
+    const nodes = [];
+
+    if (tag) {
+      nodes.push(tag, document.createTextNode(' '));
+    }
+
+    nodes.push(document.createTextNode(playerLevel ? `${username}(${playerLevel})` : username));
+    return nodes;
   }
 
   isSystemMessage(message) {

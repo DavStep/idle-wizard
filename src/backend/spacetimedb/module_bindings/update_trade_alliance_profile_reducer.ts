@@ -13,6 +13,7 @@ import {
 export default {
   name: __t.string(),
   tag: __t.string(),
+  tagColor: __t.string(),
   description: __t.string(),
   notice: __t.string(),
   joinMode: __t.string(),

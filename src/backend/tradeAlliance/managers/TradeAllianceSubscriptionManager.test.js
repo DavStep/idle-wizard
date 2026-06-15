@@ -19,6 +19,7 @@ describe('TradeAllianceSubscriptionManager', () => {
           allianceId: 'alliance-1',
           name: 'All Seeing Void',
           tag: 'VOID',
+          tag_color: 'violet',
           joinMode: 'apply',
         },
       ]),
@@ -72,6 +73,10 @@ describe('TradeAllianceSubscriptionManager', () => {
     expect(manager.getSnapshot().rewardInbox[0]).toMatchObject({
       rewardKey: '2026-W24:allianceIncomeEasy:self',
       collected: true,
+    });
+    expect(manager.getSnapshot().ownAlliance).toMatchObject({
+      tag: 'VOID',
+      tagColor: 'violet',
     });
   });
 });

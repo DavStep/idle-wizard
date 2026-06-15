@@ -184,6 +184,7 @@ export class AppLifecycleManager {
     }
 
     if (this.shouldPromptForFreshStart({ save, accountLinkSave })) {
+      this.onlineGateManager.hide();
       await this.chooseFreshStart();
       if (this.stopping) {
         return;

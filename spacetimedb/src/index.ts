@@ -32,6 +32,7 @@ const MAX_TRADE_ALLIANCE_QUEST_TARGET = 1_000_000_000n;
 const MAX_TRADE_ALLIANCE_QUEST_CRYSTAL_REWARD = 100;
 const TRADE_ALLIANCE_CHAT_HISTORY_LIMIT = 200;
 const TRADE_ALLIANCE_REWARD_HISTORY_LIMIT = 80;
+const DEFAULT_TRADE_ALLIANCE_TAG_COLOR = 'ink';
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
@@ -106,6 +107,18 @@ const MAINTENANCE_MODES = new Set([
   MAINTENANCE_MODE_LOCKED,
 ]);
 const PLAYER_THEMES = new Set(['white', 'black', 'midnight', 'witchcraft']);
+const TRADE_ALLIANCE_TAG_COLORS = new Set([
+  'ink',
+  'red',
+  'amber',
+  'green',
+  'teal',
+  'blue',
+  'violet',
+  'magenta',
+  'brown',
+  'slate',
+]);
 const PLAYER_THEME_ALIASES = new Map([
   ['mild-white', 'white'],
   ['mild-black', 'black'],
@@ -216,90 +229,90 @@ const DEFAULT_CURRENT_TASKS_CONFIG_JSON = JSON.stringify({
       level: 6,
       tasks: [
         { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', quantity: 130 },
-        { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', quantity: 70 },
-        { id: 'level6-briar-seeds', itemKey: 'briarSeed', quantity: 80 },
-        { id: 'level6-calming-draught', itemKey: 'calmingDraught', quantity: 12 },
-        { id: 'level6-briar-ward', itemKey: 'briarWard', quantity: 8 },
+        { id: 'level6-nettle-herb', itemKey: 'nettleHerb', quantity: 70 },
+        { id: 'level6-minor-healing-potion', itemKey: 'minorHealingPotion', quantity: 12 },
+        { id: 'level6-nettle-vigor', itemKey: 'nettleVigor', quantity: 8 },
+        { id: 'level6-lavender-seeds', itemKey: 'lavenderSeed', quantity: 80 },
       ],
     },
     {
       level: 7,
       tasks: [
-        { id: 'level7-glowcap-seeds', itemKey: 'glowcapSeed', quantity: 120 },
-        { id: 'level7-glowcap-herb', itemKey: 'glowcapHerb', quantity: 80 },
-        { id: 'level7-simple-antidote', itemKey: 'simpleAntidote', quantity: 12 },
-        { id: 'level7-lantern-tonic', itemKey: 'lanternTonic', quantity: 14 },
-        { id: 'level7-nettle-vigor', itemKey: 'nettleVigor', quantity: 16 },
+        { id: 'level7-lavender-herb', itemKey: 'lavenderHerb', quantity: 80 },
+        { id: 'level7-briar-seeds', itemKey: 'briarSeed', quantity: 120 },
+        { id: 'level7-calming-draught', itemKey: 'calmingDraught', quantity: 14 },
+        { id: 'level7-briar-ward', itemKey: 'briarWard', quantity: 10 },
+        { id: 'level7-glowcap-seeds', itemKey: 'glowcapSeed', quantity: 90 },
       ],
     },
     {
       level: 8,
       tasks: [
+        { id: 'level8-glowcap-herb', itemKey: 'glowcapHerb', quantity: 70 },
+        { id: 'level8-lantern-tonic', itemKey: 'lanternTonic', quantity: 12 },
+        { id: 'level8-simple-antidote', itemKey: 'simpleAntidote', quantity: 10 },
         { id: 'level8-mandrake-seeds', itemKey: 'mandrakeSeed', quantity: 135 },
-        { id: 'level8-mandrake-herb', itemKey: 'mandrakeHerb', quantity: 90 },
-        { id: 'level8-healing-potion', itemKey: 'healingPotion', quantity: 14 },
-        { id: 'level8-sunroot-seeds', itemKey: 'sunrootSeed', quantity: 115 },
-        { id: 'level8-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 10 },
+        { id: 'level8-mandrake-herb', itemKey: 'mandrakeHerb', quantity: 55 },
       ],
     },
     {
       level: 9,
       tasks: [
-        { id: 'level9-moonflower-seeds', itemKey: 'moonflowerSeed', quantity: 150 },
-        { id: 'level9-moonflower-herb', itemKey: 'moonflowerHerb', quantity: 100 },
-        { id: 'level9-moonlit-focus', itemKey: 'moonlitFocus', quantity: 14 },
-        { id: 'level9-frostmoss-seeds', itemKey: 'frostmossSeed', quantity: 125 },
-        { id: 'level9-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 12 },
+        { id: 'level9-venom-draught', itemKey: 'venomDraught', quantity: 20 },
+        { id: 'level9-healing-potion', itemKey: 'healingPotion', quantity: 22 },
+        { id: 'level9-sunroot-seeds', itemKey: 'sunrootSeed', quantity: 180 },
+        { id: 'level9-sunroot-herb', itemKey: 'sunrootHerb', quantity: 125 },
+        { id: 'level9-moonflower-seeds', itemKey: 'moonflowerSeed', quantity: 160 },
       ],
     },
     {
       level: 10,
       tasks: [
-        { id: 'level10-dreambell-seeds', itemKey: 'dreambellSeed', quantity: 170 },
-        { id: 'level10-dreambell-herb', itemKey: 'dreambellHerb', quantity: 115 },
-        { id: 'level10-sleep-draught', itemKey: 'sleepDraught', quantity: 16 },
-        { id: 'level10-star-anise-seeds', itemKey: 'starAniseSeed', quantity: 135 },
-        { id: 'level10-star-luck-philtre', itemKey: 'starLuckPhiltre', quantity: 12 },
+        { id: 'level10-moonflower-herb', itemKey: 'moonflowerHerb', quantity: 150 },
+        { id: 'level10-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 20 },
+        { id: 'level10-moonlit-focus', itemKey: 'moonlitFocus', quantity: 22 },
+        { id: 'level10-frostmoss-seeds', itemKey: 'frostmossSeed', quantity: 210 },
+        { id: 'level10-frostmoss-herb', itemKey: 'frostmossHerb', quantity: 110 },
       ],
     },
     {
       level: 11,
       tasks: [
-        { id: 'level11-bloodrose-seeds', itemKey: 'bloodroseSeed', quantity: 185 },
-        { id: 'level11-bloodrose-herb', itemKey: 'bloodroseHerb', quantity: 130 },
-        { id: 'level11-pact-ward', itemKey: 'pactWard', quantity: 16 },
-        { id: 'level11-elixir-of-life', itemKey: 'elixirOfLife', quantity: 20 },
-        { id: 'level11-moonlit-focus', itemKey: 'moonlitFocus', quantity: 22 },
+        { id: 'level11-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 22 },
+        { id: 'level11-dreambell-seeds', itemKey: 'dreambellSeed', quantity: 230 },
+        { id: 'level11-dreambell-herb', itemKey: 'dreambellHerb', quantity: 135 },
+        { id: 'level11-sleep-draught', itemKey: 'sleepDraught', quantity: 20 },
+        { id: 'level11-star-anise-seeds', itemKey: 'starAniseSeed', quantity: 190 },
       ],
     },
     {
       level: 12,
       tasks: [
-        { id: 'level12-dragonpepper-seeds', itemKey: 'dragonpepperSeed', quantity: 205 },
-        { id: 'level12-dragonpepper-herb', itemKey: 'dragonpepperHerb', quantity: 150 },
-        { id: 'level12-dragon-courage', itemKey: 'dragonCourage', quantity: 20 },
-        { id: 'level12-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 24 },
-        { id: 'level12-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 22 },
+        { id: 'level12-star-anise-herb', itemKey: 'starAniseHerb', quantity: 170 },
+        { id: 'level12-elixir-of-life', itemKey: 'elixirOfLife', quantity: 20 },
+        { id: 'level12-star-luck-philtre', itemKey: 'starLuckPhiltre', quantity: 22 },
+        { id: 'level12-bloodrose-seeds', itemKey: 'bloodroseSeed', quantity: 250 },
+        { id: 'level12-bloodrose-herb', itemKey: 'bloodroseHerb', quantity: 140 },
       ],
     },
     {
       level: 13,
       tasks: [
-        { id: 'level13-glowcap-seeds', itemKey: 'glowcapSeed', quantity: 260 },
-        { id: 'level13-mandrake-herb', itemKey: 'mandrakeHerb', quantity: 180 },
-        { id: 'level13-venom-draught', itemKey: 'venomDraught', quantity: 32 },
-        { id: 'level13-healing-potion', itemKey: 'healingPotion', quantity: 34 },
-        { id: 'level13-sunroot-stamina', itemKey: 'sunrootStamina', quantity: 32 },
+        { id: 'level13-bloodrose-seeds', itemKey: 'bloodroseSeed', quantity: 280 },
+        { id: 'level13-bloodrose-herb', itemKey: 'bloodroseHerb', quantity: 180 },
+        { id: 'level13-deep-dream-vision', itemKey: 'deepDreamVision', quantity: 24 },
+        { id: 'level13-pact-ward', itemKey: 'pactWard', quantity: 24 },
+        { id: 'level13-dragonpepper-seeds', itemKey: 'dragonpepperSeed', quantity: 260 },
       ],
     },
     {
       level: 14,
       tasks: [
-        { id: 'level14-moonflower-seeds', itemKey: 'moonflowerSeed', quantity: 290 },
-        { id: 'level14-frostmoss-herb', itemKey: 'frostmossHerb', quantity: 200 },
-        { id: 'level14-moonlit-focus', itemKey: 'moonlitFocus', quantity: 36 },
-        { id: 'level14-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 34 },
-        { id: 'level14-sleep-draught', itemKey: 'sleepDraught', quantity: 30 },
+        { id: 'level14-moonflower-seeds', itemKey: 'moonflowerSeed', quantity: 330 },
+        { id: 'level14-frostmoss-herb', itemKey: 'frostmossHerb', quantity: 230 },
+        { id: 'level14-dragonpepper-herb', itemKey: 'dragonpepperHerb', quantity: 220 },
+        { id: 'level14-dragon-courage', itemKey: 'dragonCourage', quantity: 28 },
+        { id: 'level14-frostmoss-cleanse', itemKey: 'frostmossCleanse', quantity: 40 },
       ],
     },
     {
@@ -1380,6 +1393,7 @@ const spacetimedb = schema({
       sentAt: t.timestamp(),
       playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
       allianceTag: t.string().default(''),
+      allianceTagColor: t.string().default(DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
     },
   ),
   tradeAlliance: table(
@@ -1412,6 +1426,7 @@ const spacetimedb = schema({
       dailyIncome: t.u64().default(0n),
       monthlyIncome: t.u64().default(0n),
       monthKey: t.string().default(''),
+      tagColor: t.string().default(DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
     },
   ),
   tradeAllianceMember: table(
@@ -1473,6 +1488,7 @@ const spacetimedb = schema({
       playerLevel: t.u32(),
       body: t.string(),
       sentAt: t.timestamp(),
+      allianceTagColor: t.string().default(DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
     },
   ),
   tradeAllianceQuestProgress: table(
@@ -1784,6 +1800,7 @@ const leaderboardSummaryResult = t.array(
     identity: t.identity().primaryKey(),
     username: t.string(),
     allianceTag: t.string(),
+    allianceTagColor: t.string(),
     totalIncome: t.u64(),
     income: t.u64(),
     dailyIncome: t.u64(),
@@ -1802,6 +1819,7 @@ const ownTradeAllianceChatResult = t.array(
     messageId: t.uuid().primaryKey(),
     allianceId: t.uuid(),
     allianceTag: t.string(),
+    allianceTagColor: t.string(),
     senderIdentity: t.identity(),
     username: t.string(),
     playerLevel: t.u32(),
@@ -1832,6 +1850,7 @@ const worldChatRecentResult = t.array(
     body: t.string(),
     sentAt: t.timestamp(),
     allianceTag: t.string(),
+    allianceTagColor: t.string(),
   }),
 );
 const potionRecipeDiscoverySnapshotResult = t.array(
@@ -1891,6 +1910,7 @@ const tradeAllianceSnapshotResult = t.array(
     name: t.string(),
     normalizedName: t.string(),
     tag: t.string(),
+    tagColor: t.string(),
     description: t.string(),
     notice: t.string(),
     joinMode: t.string(),
@@ -2456,6 +2476,14 @@ function validateTradeAllianceTag(tag: string): string {
   }
 
   return safeTag;
+}
+
+function normalizeTradeAllianceTagColor(tagColor: string | undefined): string {
+  const safeTagColor = String(tagColor ?? '').trim().toLowerCase();
+
+  return TRADE_ALLIANCE_TAG_COLORS.has(safeTagColor)
+    ? safeTagColor
+    : DEFAULT_TRADE_ALLIANCE_TAG_COLOR;
 }
 
 function normalizeTradeAllianceDescription(description: string): string {
@@ -6641,6 +6669,7 @@ function getLeaderboardSummaryRows(ctx: any) {
       identity: entry.identity,
       username: entry.username,
       allianceTag: getSenderTradeAllianceTag(ctx, entry.identity),
+      allianceTagColor: getSenderTradeAllianceTagColor(ctx, entry.identity),
       totalIncome: toBigInt(entry.totalIncome),
       income: toBigInt(entry.totalIncome),
       dailyIncome: toBigInt(entry.dailyIncome),
@@ -8228,6 +8257,19 @@ function getSenderTradeAllianceTag(ctx: IdleWizardReducerCtx, identity = ctx.sen
   return alliance?.tag ?? '';
 }
 
+function getSenderTradeAllianceTagColor(
+  ctx: IdleWizardReducerCtx,
+  identity = ctx.sender,
+): string {
+  const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
+  if (!member) {
+    return DEFAULT_TRADE_ALLIANCE_TAG_COLOR;
+  }
+
+  const alliance = ctx.db.tradeAlliance.allianceId.find(member.allianceId);
+  return normalizeTradeAllianceTagColor(alliance?.tagColor);
+}
+
 function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
   const rows = Array.from(ctx.db.playerShopTrade.byTradedAt.filter(new Range())).sort(
     comparePlayerShopTradesOldestFirst,
@@ -8763,6 +8805,7 @@ export const announce_level_up = spacetimedb.reducer(
       body,
       sentAt: ctx.timestamp,
       allianceTag: '',
+      allianceTagColor: DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
     });
     pruneWorldChat(ctx);
   },
@@ -8856,6 +8899,7 @@ export const send_world_chat_message = spacetimedb.reducer(
       body: message,
       sentAt: ctx.timestamp,
       allianceTag: getSenderTradeAllianceTag(ctx),
+      allianceTagColor: getSenderTradeAllianceTagColor(ctx),
     });
     pruneWorldChat(ctx);
   },
@@ -8865,10 +8909,11 @@ export const create_trade_alliance = spacetimedb.reducer(
   {
     name: t.string(),
     tag: t.string(),
+    tagColor: t.string(),
     description: t.string(),
     joinMode: t.string(),
   },
-  (ctx, { name, tag, description, joinMode }) => {
+  (ctx, { name, tag, tagColor, description, joinMode }) => {
     assertActivePlayerSession(ctx);
 
     if (getTradeAllianceMember(ctx)) {
@@ -8880,6 +8925,7 @@ export const create_trade_alliance = spacetimedb.reducer(
     const safeName = validateTradeAllianceName(name);
     const normalizedName = getTradeAllianceNormalizedName(safeName);
     const safeTag = validateTradeAllianceTag(tag);
+    const safeTagColor = normalizeTradeAllianceTagColor(tagColor);
     const safeDescription = normalizeTradeAllianceDescription(description);
     const safeJoinMode = normalizeTradeAllianceJoinMode(joinMode);
 
@@ -8892,6 +8938,7 @@ export const create_trade_alliance = spacetimedb.reducer(
       name: safeName,
       normalizedName,
       tag: safeTag,
+      tagColor: safeTagColor,
       description: safeDescription,
       notice: '',
       joinMode: safeJoinMode,
@@ -8928,11 +8975,12 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
   {
     name: t.string(),
     tag: t.string(),
+    tagColor: t.string(),
     description: t.string(),
     notice: t.string(),
     joinMode: t.string(),
   },
-  (ctx, { name, tag, description, notice, joinMode }) => {
+  (ctx, { name, tag, tagColor, description, notice, joinMode }) => {
     assertActivePlayerSession(ctx);
 
     const member = getTradeAllianceMember(ctx);
@@ -8946,6 +8994,7 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
     const safeName = validateTradeAllianceName(name);
     const normalizedName = getTradeAllianceNormalizedName(safeName);
     const safeTag = validateTradeAllianceTag(tag);
+    const safeTagColor = normalizeTradeAllianceTagColor(tagColor);
 
     assertTradeAllianceNameAvailable(ctx, normalizedName, allianceKey);
     assertTradeAllianceTagAvailable(ctx, safeTag, allianceKey);
@@ -8955,6 +9004,7 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
       name: safeName,
       normalizedName,
       tag: safeTag,
+      tagColor: safeTagColor,
       description: normalizeTradeAllianceDescription(description),
       notice: normalizeTradeAllianceNotice(notice),
       joinMode: normalizeTradeAllianceJoinMode(joinMode),
@@ -9332,6 +9382,7 @@ export const send_trade_alliance_chat_message = spacetimedb.reducer(
       messageId: ctx.newUuidV7(),
       allianceId: alliance.allianceId,
       allianceTag: alliance.tag,
+      allianceTagColor: normalizeTradeAllianceTagColor(alliance.tagColor),
       senderIdentity: ctx.sender,
       username: player.username,
       playerLevel: player.playerLevel,
@@ -9654,6 +9705,7 @@ export const announce_research = spacetimedb.reducer(
       body: `${player.username} researched ${safeResearchName}`,
       sentAt: ctx.timestamp,
       allianceTag: '',
+      allianceTagColor: DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
     });
     pruneWorldChat(ctx);
   },
@@ -9703,6 +9755,7 @@ export const discover_potion_recipe = spacetimedb.reducer(
       ),
       sentAt: ctx.timestamp,
       allianceTag: '',
+      allianceTagColor: DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
     });
     pruneWorldChat(ctx);
   },

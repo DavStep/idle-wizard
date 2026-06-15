@@ -39,6 +39,30 @@ function getGuideRect(hint) {
   };
 }
 
+function getObjectiveRect(objective) {
+  const left = Number.parseFloat(objective.style.left);
+  const top = Number.parseFloat(objective.style.top);
+
+  return {
+    left,
+    top,
+    right: left + HINT_PADDED_WIDTH,
+    bottom: top + HINT_HEIGHT,
+  };
+}
+
+function getObjectiveButtonRect(button) {
+  const left = Number.parseFloat(button.style.left);
+  const top = Number.parseFloat(button.style.top);
+
+  return {
+    left,
+    top,
+    right: left + 63,
+    bottom: top + 81,
+  };
+}
+
 function overlaps(a, b) {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
@@ -208,8 +232,8 @@ describe('TutorialHintManager', () => {
 
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
     expect(button?.hidden).toBe(false);
-    expect(button?.style.left).toBe('8px');
-    expect(button?.style.top).toBe('491px');
+    expect(button?.style.left).toBe('0px');
+    expect(button?.style.top).toBe('551px');
     expect(button?.dataset.notification).toBe('true');
     expect(button?.dataset.notificationTone).toBe('red');
     expect(button?.getAttribute('aria-label')).toBe('open mira objective');
@@ -242,6 +266,63 @@ describe('TutorialHintManager', () => {
     expect(button?.getAttribute('aria-expanded')).toBe('false');
     expect(objective?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+  });
+
+  it('moves the objective away from unlocked Workshop secondary controls', () => {
+    const stage = document.createElement('section');
+    const controls = [
+      { className: 'workshop-page__leaderboard-button', left: 16, top: 468 },
+      { className: 'workshop-page__trade-alliance-button', left: 212, top: 468 },
+      { className: 'workshop-page__logs-button', left: 16, top: 510 },
+      { className: 'workshop-page__discoveries-button', left: 212, top: 510 },
+    ].map(({ className, left, top }) => {
+      const button = document.createElement('button');
+      button.className = className;
+      setClientRect(
+        button,
+        toClientRect({
+          left,
+          top,
+          width: 132,
+          height: 28,
+        }),
+      );
+      stage.append(button);
+      return {
+        left,
+        top,
+        right: left + 132,
+        bottom: top + 28,
+      };
+    });
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showObjective({
+      id: 'research-mint-seed',
+      text: 'research mint seed',
+      stepLabel: '17/23',
+      progress: { value: 0, max: 1 },
+      progressLabel: '0/1 research',
+    });
+
+    stage
+      .querySelector('.tutorial-layer__objective-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const button = stage.querySelector('.tutorial-layer__objective-button');
+    const objective = stage.querySelector('.tutorial-layer__objective');
+    const objectiveRect = getObjectiveRect(objective);
+    const buttonRect = getObjectiveButtonRect(button);
+
+    expect(button?.style.top).toBe('333px');
+    expect(objective?.style.top).toBe('286px');
+    expect(controls.some((control) => overlaps(objectiveRect, control))).toBe(false);
+    expect(controls.some((control) => overlaps(buttonRect, control))).toBe(false);
   });
 
   it('hides the prompt portrait while an objective button is active', () => {

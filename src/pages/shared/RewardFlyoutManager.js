@@ -95,8 +95,18 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'item_sold') {
+      const itemAnchor = this.getAnchorForEvent(event);
+      const goldAnchor = this.getShopSlotGoldAnchor(event.slotNumber) ?? itemAnchor;
+      this.playItemDrop(
+        this.getItemDropSource(event.item, event.item?.kind),
+        itemAnchor,
+        event.item?.kind,
+      );
+      this.animateCoinsToGold(goldAnchor, event.gold ?? 0, this.formatRewardMessage(event));
+    }
+
+    if (event.type === 'gold_collected') {
       const anchor = this.getAnchorForEvent(event);
-      this.playItemDrop(this.getItemDropSource(event.item, event.item?.kind), anchor, event.item?.kind);
       this.animateCoinsToGold(anchor, event.gold ?? 0, this.formatRewardMessage(event));
     }
   }
@@ -125,12 +135,49 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'item_sold' && Number.isInteger(event.slotNumber)) {
-      return this.root.parentElement?.querySelector(
-        `.shop-page__slot-row[data-shop-slot-number="${event.slotNumber}"] .shop-page__slot-item-value`,
-      );
+      return this.getShopSlotItemAnchor(event.slotNumber);
+    }
+
+    if (event.type === 'gold_collected') {
+      return this.getGoldCollectionAnchor(event.source);
     }
 
     return this.root.parentElement;
+  }
+
+  getGoldCollectionAnchor(source) {
+    if (source === 'shop_gold_offer') {
+      return (
+        this.root?.parentElement?.querySelector('.shop-page__gold-offer-action') ??
+        this.root?.parentElement?.querySelector('.shop-page__gold-offer-reward')
+      );
+    }
+
+    if (source === 'player_shop_proceeds') {
+      return this.root?.parentElement?.querySelector('.shop-page__claim-proceeds-button');
+    }
+
+    return this.root?.parentElement ?? null;
+  }
+
+  getShopSlotItemAnchor(slotNumber) {
+    if (!Number.isInteger(slotNumber)) {
+      return null;
+    }
+
+    return this.root?.parentElement?.querySelector(
+      `.shop-page__slot-row[data-shop-slot-number="${slotNumber}"] .shop-page__slot-item-value`,
+    );
+  }
+
+  getShopSlotGoldAnchor(slotNumber) {
+    if (!Number.isInteger(slotNumber)) {
+      return null;
+    }
+
+    return this.root?.parentElement?.querySelector(
+      `.shop-page__slot-row[data-shop-slot-number="${slotNumber}"] .shop-page__slot-price-value`,
+    );
   }
 
   getGardenHarvestAnchor(tileNumber) {
@@ -539,6 +586,10 @@ export class RewardFlyoutManager {
 
     if (event.type === 'item_sold') {
       return `sold ${event.item?.label ?? 'item'} for ${formatGoldPriceText(event.gold ?? 0)}`;
+    }
+
+    if (event.type === 'gold_collected') {
+      return `collected ${formatGoldPriceText(event.gold ?? 0)}`;
     }
 
     return '';

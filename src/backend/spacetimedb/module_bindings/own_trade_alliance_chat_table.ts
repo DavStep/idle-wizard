@@ -14,6 +14,7 @@ export default __t.row({
   messageId: __t.uuid().primaryKey().name("message_id"),
   allianceId: __t.uuid().name("alliance_id"),
   allianceTag: __t.string().name("alliance_tag"),
+  allianceTagColor: __t.string().name("alliance_tag_color"),
   senderIdentity: __t.identity().name("sender_identity"),
   username: __t.string(),
   playerLevel: __t.u32().name("player_level"),

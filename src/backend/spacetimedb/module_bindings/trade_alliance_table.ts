@@ -29,4 +29,5 @@ export default __t.row({
   dailyIncome: __t.u64().name("daily_income"),
   monthlyIncome: __t.u64().name("monthly_income"),
   monthKey: __t.string().name("month_key"),
+  tagColor: __t.string().name("tag_color"),
 });

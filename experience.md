@@ -43,7 +43,9 @@
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
+- Mira objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
+- Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Mira disappears while tasks remain.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
 
@@ -53,12 +55,12 @@
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
-- Release APK handoff files should be named `idle-wizard-release-<package-version>.apk`.
-- Current Gradle release output is `app-release-unsigned.apk`; sign it before device install or APK handoff.
+- Signed release APK handoff files should be named `idle-wizard-<package-version>-release.apk`; unsigned release APKs keep `-unsigned` in the filename.
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
 - User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
+- When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
@@ -92,6 +94,7 @@
 - All player-owned SpacetimeDB write reducers should call `assertActivePlayerSession(ctx)` before mutating rows; the single-account lock is only as strong as its least-guarded reducer.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Username prompt seen is monotonic; stale client/server profile echoes must not turn it false or the first-run name dialog can reopen after dismissal.
+- First-run account choice happens before `onOnline`; hide the server gate before awaiting that dialog or new players can look stuck at `connecting to server...`.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
@@ -162,6 +165,9 @@
 - Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
+- Task balance should not skip research order; first task use of seed/herb or recipe tiers must walk the configured research chain.
+- Level 10 is the first big progression milestone; level 9 can be a stronger gate before that unlock.
+- Milestone levels should not dip easier than the gate before them; when raising level 9, raise level 10+ to preserve curve.
 - Recipe research order can differ from potion item catalog order; keep item order stable to avoid potion type-id churn, and order prerequisites by ingredient tier.
 - Automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide automation research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.

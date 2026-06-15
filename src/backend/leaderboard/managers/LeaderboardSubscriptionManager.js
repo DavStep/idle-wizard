@@ -1,3 +1,5 @@
+import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+
 const TOP_USER_LIMIT = 10;
 const LEADERBOARD_QUERY = 'SELECT * FROM leaderboard_summary';
 const EMPTY_SNAPSHOT = {
@@ -97,6 +99,9 @@ export class LeaderboardSubscriptionManager {
         identity: this.toIdentityKey(row.identity),
         name: row.username,
         allianceTag: this.toAllianceTag(row.allianceTag ?? row.alliance_tag),
+        allianceTagColor: normalizeTradeAllianceTagColor(
+          row.allianceTagColor ?? row.alliance_tag_color,
+        ),
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
         dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
@@ -189,6 +194,7 @@ export class LeaderboardSubscriptionManager {
 
     if (user.allianceTag) {
       snapshotUser.allianceTag = user.allianceTag;
+      snapshotUser.allianceTagColor = user.allianceTagColor;
     }
 
     if (includeRank) {

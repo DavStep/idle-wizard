@@ -14,6 +14,7 @@ export default __t.row({
   identity: __t.identity().primaryKey(),
   username: __t.string(),
   allianceTag: __t.string().name("alliance_tag"),
+  allianceTagColor: __t.string().name("alliance_tag_color"),
   totalIncome: __t.u64().name("total_income"),
   income: __t.u64(),
   dailyIncome: __t.u64().name("daily_income"),

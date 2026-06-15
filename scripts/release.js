@@ -30,7 +30,7 @@ if (!skipGit && branch !== 'main' && !options['allow-non-main']) {
   fail(`Release push deploys GitHub Pages only from main. Current branch: ${branch || '(detached)'}`);
 }
 
-const apkPath = resolveApkPlan(apkMode);
+const apkPlan = resolveApkPlan(apkMode, packageInfo.version);
 
 step('lint');
 run('npm', ['run', 'lint']);
@@ -41,10 +41,11 @@ run('npm', ['test']);
 step('web production build');
 run('npm', ['run', 'build', '--', '--base=/idle-wizard/']);
 
-step(`android ${apkPath.label}`);
-if (apkPath.buildScript) {
-  run('npm', ['run', apkPath.buildScript]);
+step(`android ${apkPlan.label}`);
+if (apkPlan.buildScript) {
+  run('npm', ['run', apkPlan.buildScript]);
 }
+const apkPath = resolveBuiltApkPath(apkPlan);
 
 if (shouldPublishBackend(backendMode)) {
   step('spacetimedb maincloud publish');
@@ -67,16 +68,16 @@ if (!skipGit) {
 
 if (!skipDiscord) {
   step('discord player changelog + apk upload');
-  run('node', ['scripts/post-apk-discord.js', apkPath.path]);
+  run('node', ['scripts/post-apk-discord.js', apkPath]);
 }
 
 console.log('Release complete.');
 
-function resolveApkPlan(mode) {
+function resolveApkPlan(mode, version) {
   if (mode.endsWith('.apk') || mode.includes('/')) {
     return {
       label: 'custom APK',
-      path: mode,
+      pathCandidates: [mode],
       buildScript: null,
     };
   }
@@ -84,7 +85,7 @@ function resolveApkPlan(mode) {
   if (mode === 'prod-debug') {
     return {
       label: 'production debug-signed APK',
-      path: 'android/app/build/outputs/apk/debug/app-debug.apk',
+      pathCandidates: ['android/app/build/outputs/apk/debug/app-debug.apk'],
       buildScript: 'android:assembleProdDebug',
     };
   }
@@ -92,12 +93,26 @@ function resolveApkPlan(mode) {
   if (mode === 'release') {
     return {
       label: 'release APK',
-      path: 'android/app/build/outputs/apk/release/app-release-unsigned.apk',
+      pathCandidates: [
+        `android/app/build/outputs/apk/release/idle-wizard-${version}-release.apk`,
+        `android/app/build/outputs/apk/release/idle-wizard-${version}-release-unsigned.apk`,
+        'android/app/build/outputs/apk/release/app-release.apk',
+        'android/app/build/outputs/apk/release/app-release-unsigned.apk',
+      ],
       buildScript: 'android:assembleRelease',
     };
   }
 
   fail(`Unknown APK mode: ${mode}. Use prod-debug, release, or path/to/file.apk.`);
+}
+
+function resolveBuiltApkPath(apkPlan) {
+  const existingPath = apkPlan.pathCandidates.find((candidatePath) => existsSync(path.resolve(rootDir, candidatePath)));
+  if (existingPath) {
+    return existingPath;
+  }
+
+  fail(`APK not found. Checked:\n${apkPlan.pathCandidates.map((candidatePath) => `- ${candidatePath}`).join('\n')}`);
 }
 
 function shouldPublishBackend(mode) {

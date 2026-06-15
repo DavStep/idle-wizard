@@ -482,6 +482,14 @@ export class GameplayFacade {
     });
   }
 
+  handleGoldCollected(event) {
+    this.rewardEventManager.publish({
+      type: 'gold_collected',
+      gold: event.gold,
+      source: event.source,
+    });
+  }
+
   addBrewingIngredient(itemTypeId, cauldronIndex = 0) {
     const result = this.brewingFacade.addIngredient(itemTypeId, cauldronIndex);
     this.publishAndSaveSnapshot();
@@ -630,12 +638,24 @@ export class GameplayFacade {
 
   claimPlayerShopSaleProceeds(gold) {
     const result = this.shopFacade.claimPlayerShopSaleProceeds(gold);
+    if (result.ok) {
+      this.handleGoldCollected({
+        gold: result.gold,
+        source: 'player_shop_proceeds',
+      });
+    }
     this.publishAndSaveSnapshot();
     return result;
   }
 
   collectShopGoldOffer() {
     const result = this.shopFacade.collectGoldOffer();
+    if (result.ok) {
+      this.handleGoldCollected({
+        gold: result.gold,
+        source: 'shop_gold_offer',
+      });
+    }
     this.publishAndSaveSnapshot();
     return result;
   }

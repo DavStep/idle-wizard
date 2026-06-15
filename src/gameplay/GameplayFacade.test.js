@@ -3129,6 +3129,10 @@ describe('GameplayFacade', () => {
 
   it('collects the crystal-tab gold offer and cools it down', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
+    const rewardEvents = [];
+    const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
+      rewardEvents.push(event);
+    });
 
     expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
       rewardGold: 20,
@@ -3142,6 +3146,13 @@ describe('GameplayFacade', () => {
       cooldownSeconds: 7_200,
     });
     expect(gameplayFacade.getSnapshot().gold.current).toBe(20);
+    expect(rewardEvents).toEqual([
+      expect.objectContaining({
+        type: 'gold_collected',
+        gold: 20,
+        source: 'shop_gold_offer',
+      }),
+    ]);
     expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
       cooldownRemainingSeconds: 7_200,
       canCollect: false,
@@ -3150,6 +3161,7 @@ describe('GameplayFacade', () => {
       ok: false,
       reason: 'cooldown',
     });
+    expect(rewardEvents).toHaveLength(1);
 
     ecsFacade.update({ timerDeltaSeconds: 7_199 });
     expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
@@ -3169,6 +3181,35 @@ describe('GameplayFacade', () => {
       gold: 40,
     });
     expect(gameplayFacade.getSnapshot().gold.current).toBe(60);
+    expect(rewardEvents[1]).toMatchObject({
+      type: 'gold_collected',
+      gold: 40,
+      source: 'shop_gold_offer',
+    });
+    unsubscribeRewardEvents();
+  });
+
+  it('publishes player shop proceeds as collected gold', () => {
+    const { gameplayFacade } = createGameplay();
+    const rewardEvents = [];
+    const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
+      rewardEvents.push(event);
+    });
+
+    expect(gameplayFacade.claimPlayerShopSaleProceeds(5)).toEqual({
+      ok: true,
+      gold: 5,
+    });
+
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(5);
+    expect(rewardEvents).toEqual([
+      expect.objectContaining({
+        type: 'gold_collected',
+        gold: 5,
+        source: 'player_shop_proceeds',
+      }),
+    ]);
+    unsubscribeRewardEvents();
   });
 
   it('persists crystal-tab gold offer cooldown and catches it up offline', () => {

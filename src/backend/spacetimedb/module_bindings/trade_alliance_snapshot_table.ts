@@ -15,6 +15,7 @@ export default __t.row({
   name: __t.string(),
   normalizedName: __t.string().name("normalized_name"),
   tag: __t.string(),
+  tagColor: __t.string().name("tag_color"),
   description: __t.string(),
   notice: __t.string(),
   joinMode: __t.string().name("join_mode"),

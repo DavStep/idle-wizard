@@ -18,4 +18,5 @@ export default __t.row({
   body: __t.string(),
   sentAt: __t.timestamp().name("sent_at"),
   allianceTag: __t.string().name("alliance_tag"),
+  allianceTagColor: __t.string().name("alliance_tag_color"),
 });

@@ -171,7 +171,7 @@ describe('TutorialStepManager', () => {
       id: 'intro-welcome',
       kind: 'dialog',
       advanceOnClick: true,
-      stepLabel: '1/20',
+      stepLabel: '1/23',
     });
   });
 
@@ -198,7 +198,7 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:manaSphere',
       advanceOnClick: true,
       showPointer: false,
-      stepLabel: '2/20',
+      stepLabel: '2/23',
     });
   });
 
@@ -228,7 +228,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       targetId: 'workshop:summonSeed',
       text: 'use your mana to summon seeds.',
-      stepLabel: '3/20',
+      stepLabel: '3/23',
     });
   });
 
@@ -266,7 +266,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       targetId: 'task:level1-sage-seeds',
       text: 'fill task',
-      stepLabel: '4/20',
+      stepLabel: '4/23',
     });
   });
 
@@ -309,7 +309,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'summon seeds and fill the level task',
       progress: { value: 1, max: 10 },
       progressLabel: '1/10 seeds',
-      stepLabel: '5/20',
+      stepLabel: '5/23',
     });
   });
 
@@ -360,7 +360,7 @@ describe('TutorialStepManager', () => {
       id: 'intro-market',
       kind: 'dialog',
       advanceOnClick: true,
-      stepLabel: '6/20',
+      stepLabel: '6/23',
     });
   });
 
@@ -428,7 +428,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'shop:sell:sageSeed',
       hintText: 'choose sage seed',
-      stepLabel: '10/20',
+      stepLabel: '10/23',
     });
   });
 
@@ -459,7 +459,7 @@ describe('TutorialStepManager', () => {
         goldTarget: 10,
       },
       progressLabel: '0/10 gold',
-      stepLabel: '11/20',
+      stepLabel: '11/23',
     });
   });
 
@@ -533,7 +533,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:levelUp',
       objectiveText: 'return to workshop and level up',
-      stepLabel: '13/20',
+      stepLabel: '13/23',
     });
   });
 
@@ -563,7 +563,7 @@ describe('TutorialStepManager', () => {
       targetId: 'garden:plot:1:label',
       objectiveText: 'grow sage in garden',
       progressLabel: '0/1 sage',
-      stepLabel: '14/20',
+      stepLabel: '14/23',
     });
   });
 
@@ -645,7 +645,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'earn level-up gold in market',
       progress: { value: 10, max: 40 },
       progressLabel: '10/40 gold',
-      stepLabel: '16/20',
+      stepLabel: '16/23',
     });
   });
 
@@ -659,7 +659,7 @@ describe('TutorialStepManager', () => {
       hintText: 'sell for gold',
       objectiveText: 'earn level-up gold in market',
       progressLabel: '10/40 gold',
-      stepLabel: '16/20',
+      stepLabel: '16/23',
     });
   });
 
@@ -682,7 +682,7 @@ describe('TutorialStepManager', () => {
       hintText: 'level up',
       objectiveText: 'level up again',
       progressLabel: '1/1 ready',
-      stepLabel: '16/20',
+      stepLabel: '16/23',
     });
   });
 
@@ -696,7 +696,177 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '17/20',
+      stepLabel: '17/23',
+    });
+  });
+
+  it('keeps Mira active for the level three mint seed task after research', () => {
+    const snapshot = createSnapshot({
+      seedInventory: [{ key: 'mintSeed', quantity: 3 }],
+      research: {
+        completedResearchIds: ['unlockSeed:mintSeed'],
+      },
+      tasks: {
+        currentLevel: 3,
+        level: {
+          completion: { canComplete: false, costGold: 80 },
+          tasks: [
+            {
+              taskId: 'level3-sage-seeds',
+              itemKey: 'sageSeed',
+              requiredQuantity: 40,
+              progressQuantity: 40,
+              remainingQuantity: 0,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+            {
+              taskId: 'level3-mint-seeds',
+              itemKey: 'mintSeed',
+              requiredQuantity: 10,
+              progressQuantity: 7,
+              remainingQuantity: 3,
+              canFill: true,
+              canComplete: false,
+              completed: false,
+            },
+            {
+              taskId: 'level3-mint-herb',
+              itemKey: 'mintHerb',
+              requiredQuantity: 18,
+              progressQuantity: 0,
+              remainingQuantity: 18,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+      }),
+    ).toMatchObject({
+      id: 'fill-mint-seed-task',
+      kind: 'objective',
+      targetId: 'task:level3-mint-seeds',
+      hintText: 'fill task',
+      objectiveText: 'fill the mint seed task',
+      progressLabel: '7/10 mint seeds',
+      stepLabel: '18/23',
+    });
+  });
+
+  it('sends the level three mint herb task to garden after mint seeds are filled', () => {
+    const snapshot = createSnapshot({
+      seedInventory: [{ key: 'mintSeed', quantity: 1 }],
+      garden: {
+        seeds: [{ key: 'mintSeed', quantity: 1 }],
+        herbs: [{ key: 'mintHerb', quantity: 0 }],
+        plot: {
+          tiles: [
+            {
+              tileNumber: 1,
+              unlocked: true,
+              phase: 'empty',
+              selectedSeedItemTypeId: null,
+            },
+          ],
+        },
+      },
+      research: {
+        completedResearchIds: ['unlockSeed:mintSeed'],
+      },
+      tasks: {
+        currentLevel: 3,
+        level: {
+          completion: { canComplete: false, costGold: 80 },
+          tasks: [
+            {
+              taskId: 'level3-mint-seeds',
+              itemKey: 'mintSeed',
+              requiredQuantity: 10,
+              progressQuantity: 10,
+              remainingQuantity: 0,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+            {
+              taskId: 'level3-mint-herb',
+              itemKey: 'mintHerb',
+              requiredQuantity: 18,
+              progressQuantity: 0,
+              remainingQuantity: 18,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'fill-mint-herb-task',
+      kind: 'objective',
+      targetId: 'page:garden',
+      hintText: 'open garden',
+      objectiveText: 'fill the mint level task',
+      progressLabel: '0/18 mint',
+      stepLabel: '19/23',
+    });
+  });
+
+  it('keeps level three Mira active for level-up gold', () => {
+    const snapshot = createSnapshot({
+      gold: { current: 77 },
+      research: {
+        completedResearchIds: ['unlockSeed:mintSeed'],
+      },
+      tasks: {
+        currentLevel: 3,
+        level: {
+          completion: { canComplete: true, costGold: 80 },
+          tasks: [
+            {
+              taskId: 'level3-mint-seeds',
+              itemKey: 'mintSeed',
+              requiredQuantity: 10,
+              progressQuantity: 10,
+              remainingQuantity: 0,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+            {
+              taskId: 'level3-mint-herb',
+              itemKey: 'mintHerb',
+              requiredQuantity: 18,
+              progressQuantity: 18,
+              remainingQuantity: 0,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'level-up-three',
+      kind: 'objective',
+      targetId: 'page:shop',
+      hintText: 'open market',
+      objectiveText: 'earn level-up gold in market',
+      progressLabel: '77/80 gold',
+      stepLabel: '20/23',
     });
   });
 
@@ -717,7 +887,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'brewing:recipes',
       hintText: 'select recipe',
-      stepLabel: '19/20',
+      stepLabel: '22/23',
     });
   });
 
@@ -756,7 +926,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'fill the cauldron again',
       progress: { value: 0, max: 3 },
       progressLabel: '0/3 sage',
-      stepLabel: '20/20',
+      stepLabel: '23/23',
     });
   });
 
@@ -797,7 +967,7 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:action',
       hintText: 'brew again',
       progressLabel: '3/3 sage',
-      stepLabel: '20/20',
+      stepLabel: '23/23',
     });
   });
 
