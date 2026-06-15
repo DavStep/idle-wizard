@@ -61,6 +61,7 @@
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
 - User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
+- Before release, verify `package.json` has been bumped beyond the latest pushed release; release automation reuses the current version and will not bump it.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
 - When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
