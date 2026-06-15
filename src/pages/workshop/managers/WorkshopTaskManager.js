@@ -243,6 +243,7 @@ export class WorkshopTaskManager {
     const root = document.createElement('div');
     root.className = 'workshop-page__level-complete';
     root.hidden = true;
+    root.dataset.tutorialId = 'workshop:levelUp';
 
     const label = document.createElement('span');
     label.className = 'workshop-page__level-complete-label';
@@ -255,7 +256,6 @@ export class WorkshopTaskManager {
     button.className = 'style-button workshop-page__level-complete-button';
     button.type = 'button';
     button.textContent = 'complete';
-    button.dataset.tutorialId = 'workshop:levelUp';
     button.addEventListener('click', () => this.onLevelCompleteButton());
 
     root.append(label, cost, button);

@@ -32,11 +32,11 @@
     {
       "level": 5,
       "tasks": [
-        { "id": "level5-sage-seeds", "itemKey": "sageSeed", "quantity": 100 },
-        { "id": "level5-glowcap-herb", "itemKey": "glowcapHerb", "quantity": 55 },
-        { "id": "level5-lantern-tonic", "itemKey": "lanternTonic", "quantity": 9 },
-        { "id": "level5-mandrake-seeds", "itemKey": "mandrakeSeed", "quantity": 80 },
-        { "id": "level5-healing-potion", "itemKey": "healingPotion", "quantity": 8 }
+        { "id": "level5-sage-seeds", "itemKey": "sageSeed", "quantity": 120 },
+        { "id": "level5-mint-seeds", "itemKey": "mintSeed", "quantity": 90 },
+        { "id": "level5-sage-herb", "itemKey": "sageHerb", "quantity": 80 },
+        { "id": "level5-mint-herb", "itemKey": "mintHerb", "quantity": 60 },
+        { "id": "level5-mana-tonic", "itemKey": "manaTonic", "quantity": 12 }
       ]
     },
     {

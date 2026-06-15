@@ -3132,7 +3132,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page')).not.toBeNull();
   });
 
-  it('reveals Workshop secondary buttons at level 3', () => {
+  it('reveals Workshop non-prestige secondary buttons at level 3', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -3143,11 +3143,27 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(true);
+    expect(stage.querySelector('.workshop-page__prestige-button')?.disabled).toBe(true);
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__logs')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(false);
+  });
+
+  it('reveals the Workshop prestige button at level 7', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 7);
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__prestige-button')?.disabled).toBe(false);
   });
 
   it('shows crystal or ruby in the top panel only on matching research tabs', () => {
@@ -3543,6 +3559,7 @@ describe('PagesFacade', () => {
 
     expect(completion?.hidden).toBe(false);
     expect(completion?.textContent).toBe('level up20 goldcomplete');
+    expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));

@@ -7,7 +7,7 @@ import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 
 export class TutorialFacade {
   static explain =
-    'Mira gives new players short prompts, then keeps a small objective box visible while they learn the first loop.';
+    'Mira gives new players short prompts, then keeps an objective button available while they learn the first loop.';
 
   constructor({ gameplayFacade, getCurrentPageId, storage, now } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -108,6 +108,7 @@ export class TutorialFacade {
 
     if (step.kind === 'objective') {
       this.hintManager.showObjective({
+        id: step.id,
         text: step.objectiveText,
         stepLabel: step.stepLabel,
         progress: step.progress,

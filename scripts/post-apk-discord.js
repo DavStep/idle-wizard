@@ -4,6 +4,11 @@
 import { existsSync } from 'node:fs';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  DEFAULT_PLAYER_CHANGELOG_FILE,
+  buildPlayerChangelogDiscordMessages,
+  loadPlayerChangelog,
+} from './player-changelog.js';
 
 const rootDir = process.cwd();
 
@@ -32,6 +37,28 @@ const message = process.env.DISCORD_APK_MESSAGE || [
   path.basename(apkPath),
   `${formatBytes(apkStats.size)}`,
 ].join(' - ');
+const changelog = await loadPlayerChangelog({
+  rootDir,
+  version: packageInfo.version,
+});
+
+if (!changelog && process.env.DISCORD_APK_SKIP_CHANGELOG !== '1') {
+  fail(
+    `Missing player changelog for ${packageInfo.version}. Add a ## ${packageInfo.version} section to ${DEFAULT_PLAYER_CHANGELOG_FILE}, set DISCORD_APK_CHANGELOG, or set DISCORD_APK_SKIP_CHANGELOG=1 only for internal testing.`,
+  );
+}
+
+if (changelog) {
+  const changelogMessages = buildPlayerChangelogDiscordMessages({
+    version: packageInfo.version,
+    changelogText: changelog.text,
+  });
+
+  for (const changelogMessage of changelogMessages) {
+    await postDiscordMessage(webhookUrl, changelogMessage);
+  }
+  console.log(`Posted player changelog from ${changelog.source} to Discord.`);
+}
 
 const apkBytes = await readFile(apkPath);
 const form = new FormData();
@@ -54,6 +81,21 @@ if (!response.ok) {
 }
 
 console.log(`Posted ${relative(apkPath)} to Discord (${formatBytes(apkStats.size)}).`);
+
+async function postDiscordMessage(url, content) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ content }),
+  });
+
+  const responseBody = await response.text();
+  if (!response.ok) {
+    fail(`Discord changelog post failed: ${response.status} ${response.statusText}${responseBody ? `\n${responseBody}` : ''}`);
+  }
+}
 
 async function resolveApkPath(inputPath) {
   if (inputPath) {

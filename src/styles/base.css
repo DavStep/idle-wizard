@@ -990,12 +990,16 @@ body {
 .tutorial-layer__highlight {
   position: absolute;
   z-index: 1;
-  border: var(--style-border-strong);
-  outline: 1px solid var(--style-surface);
+  border: 1px solid rgb(255 215 106 / 88%);
+  outline: 1px solid rgb(255 240 191 / 92%);
   outline-offset: 0;
   background: transparent;
-  box-shadow: none;
+  box-shadow:
+    0 0 0 2px rgb(255 215 106 / 18%),
+    0 0 7px rgb(255 215 106 / 64%),
+    0 0 18px rgb(255 215 106 / 32%);
   pointer-events: none;
+  animation: tutorial-highlight-glow 1280ms var(--style-motion-ease) infinite;
 }
 
 .tutorial-layer__highlight[hidden] {
@@ -1036,9 +1040,35 @@ body {
   filter: drop-shadow(0 1px 0 var(--style-surface));
 }
 
-.tutorial-layer__objective-portrait {
+.tutorial-layer__objective-button {
   position: absolute;
   z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 54px;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.tutorial-layer__objective-button:focus {
+  outline: none;
+}
+
+.tutorial-layer__objective-button:focus-visible {
+  outline: var(--style-border);
+  outline-offset: 1px;
+}
+
+.tutorial-layer__objective-button-image {
+  display: block;
   width: 30px;
   height: 38px;
   object-fit: contain;
@@ -1070,6 +1100,36 @@ body {
 
 .tutorial-layer__objective > .style-box__title {
   background: var(--style-surface);
+}
+
+.tutorial-layer__objective-close {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  z-index: 1;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+  transform: translateX(-50%);
+}
+
+.tutorial-layer__objective-close:hover,
+.tutorial-layer__objective-close:focus-visible {
+  text-decoration: underline;
+}
+
+.tutorial-layer__objective-close:focus {
+  outline: none;
 }
 
 .tutorial-layer__step-label {
@@ -1141,15 +1201,15 @@ body {
   z-index: 3;
   width: 136px;
   min-height: 44px;
-  padding: 7px 10px 6px;
+  padding: 7px 10px calc(var(--style-box-border-label-line-height) - 2px);
   background: var(--style-surface);
   border: var(--style-border);
   box-shadow: none;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .tutorial-layer__objective[hidden],
-.tutorial-layer__objective-portrait[hidden] {
+.tutorial-layer__objective-button[hidden] {
   display: none;
 }
 
@@ -1175,6 +1235,25 @@ body {
   text-align: right;
 }
 
+@keyframes tutorial-highlight-glow {
+  0%,
+  100% {
+    opacity: 0.86;
+    box-shadow:
+      0 0 0 2px rgb(255 215 106 / 16%),
+      0 0 6px rgb(255 215 106 / 56%),
+      0 0 16px rgb(255 215 106 / 28%);
+  }
+
+  52% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 2px rgb(255 215 106 / 28%),
+      0 0 10px rgb(255 215 106 / 78%),
+      0 0 26px rgb(255 215 106 / 42%);
+  }
+}
+
 @keyframes tutorial-pointer-press {
   0%,
   100% {
@@ -1193,6 +1272,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tutorial-layer__highlight,
   .tutorial-layer__pointer {
     animation: none;
   }

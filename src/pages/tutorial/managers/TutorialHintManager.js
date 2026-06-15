@@ -1,3 +1,5 @@
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
+
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
 const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
 const HINT_WIDTH = 136;
@@ -5,6 +7,7 @@ const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 56;
 const HINT_GAP = 8;
 const HIGHLIGHT_PAD = 4;
+const HIGHLIGHT_TITLE_PAD = 14;
 const PORTRAIT_WIDTH = 42;
 const PORTRAIT_HEIGHT = 54;
 const POINTER_WIDTH = 38;
@@ -15,8 +18,10 @@ const GUIDE_BOTTOM_FRACTION = 0.44;
 const DIALOG_TOP = 218;
 const OBJECTIVE_LEFT = 184;
 const OBJECTIVE_TOP = 504;
-const OBJECTIVE_PORTRAIT_LEFT = 148;
-const OBJECTIVE_PORTRAIT_TOP = 507;
+const OBJECTIVE_BUTTON_LEFT = 142;
+const OBJECTIVE_BUTTON_TOP = 499;
+const OBJECTIVE_BUTTON_WIDTH = 42;
+const OBJECTIVE_BUTTON_HEIGHT = 54;
 
 export class TutorialHintManager {
   constructor() {
@@ -30,13 +35,17 @@ export class TutorialHintManager {
     this.stepLabel = null;
     this.text = null;
     this.advanceButton = null;
-    this.objectivePortrait = null;
+    this.objectiveButton = null;
+    this.objectiveButtonImage = null;
     this.objective = null;
+    this.objectiveCloseButton = null;
     this.objectiveText = null;
     this.objectiveStepLabel = null;
     this.objectiveProgress = null;
     this.objectiveProgressFill = null;
     this.objectiveProgressLabel = null;
+    this.objectivePanelOpen = false;
+    this.objectiveStepId = null;
     this.onAdvance = null;
   }
 
@@ -104,21 +113,47 @@ export class TutorialHintManager {
     copy.append(this.text);
     this.hint.append(title, this.stepLabel, copy, this.advanceButton);
 
-    this.objectivePortrait = document.createElement('img');
-    this.objectivePortrait.className = 'tutorial-layer__objective-portrait';
-    this.objectivePortrait.src = WITCH_GUIDE_URL;
-    this.objectivePortrait.alt = '';
-    this.objectivePortrait.hidden = true;
-    this.objectivePortrait.setAttribute('aria-hidden', 'true');
+    this.objectiveButton = document.createElement('button');
+    this.objectiveButton.className = 'tutorial-layer__objective-button';
+    this.objectiveButton.type = 'button';
+    this.objectiveButton.hidden = true;
+    this.objectiveButton.setAttribute('aria-label', 'open mira objective');
+    this.objectiveButton.setAttribute('aria-controls', 'tutorial-objective');
+    this.objectiveButton.setAttribute('aria-expanded', 'false');
+    this.objectiveButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.openObjectivePanel();
+    });
+
+    this.objectiveButtonImage = document.createElement('img');
+    this.objectiveButtonImage.className = 'tutorial-layer__objective-button-image';
+    this.objectiveButtonImage.src = WITCH_GUIDE_URL;
+    this.objectiveButtonImage.alt = '';
+    this.objectiveButtonImage.draggable = false;
+    this.objectiveButtonImage.setAttribute('aria-hidden', 'true');
+    this.objectiveButton.append(this.objectiveButtonImage);
 
     this.objective = document.createElement('section');
     this.objective.className = 'tutorial-layer__objective style-box';
+    this.objective.id = 'tutorial-objective';
     this.objective.hidden = true;
     this.objective.setAttribute('aria-live', 'polite');
 
     const objectiveTitle = document.createElement('div');
     objectiveTitle.className = 'style-box__title';
     objectiveTitle.textContent = 'objective';
+
+    this.objectiveCloseButton = document.createElement('button');
+    this.objectiveCloseButton.className = 'tutorial-layer__objective-close';
+    this.objectiveCloseButton.type = 'button';
+    this.objectiveCloseButton.textContent = 'close';
+    this.objectiveCloseButton.setAttribute('aria-label', 'close objective');
+    this.objectiveCloseButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeObjectivePanel();
+    });
 
     this.objectiveStepLabel = document.createElement('div');
     this.objectiveStepLabel.className = 'tutorial-layer__objective-step-label';
@@ -139,6 +174,7 @@ export class TutorialHintManager {
 
     this.objective.append(
       objectiveTitle,
+      this.objectiveCloseButton,
       this.objectiveStepLabel,
       this.objectiveText,
       this.objectiveProgress,
@@ -150,7 +186,7 @@ export class TutorialHintManager {
       this.highlight,
       this.pointer,
       this.portrait,
-      this.objectivePortrait,
+      this.objectiveButton,
       this.objective,
       this.hint,
     );
@@ -171,13 +207,17 @@ export class TutorialHintManager {
     this.stepLabel = null;
     this.text = null;
     this.advanceButton = null;
-    this.objectivePortrait = null;
+    this.objectiveButton = null;
+    this.objectiveButtonImage = null;
     this.objective = null;
+    this.objectiveCloseButton = null;
     this.objectiveText = null;
     this.objectiveStepLabel = null;
     this.objectiveProgress = null;
     this.objectiveProgressFill = null;
     this.objectiveProgressLabel = null;
+    this.objectivePanelOpen = false;
+    this.objectiveStepId = null;
     this.onAdvance = null;
   }
 
@@ -204,7 +244,7 @@ export class TutorialHintManager {
     this.text.textContent = text ?? '';
     this.stepLabel.textContent = stepLabel ?? '';
     this.advanceButton.hidden = !advanceOnClick;
-    this.positionHighlight(rect);
+    this.positionHighlight(rect, target);
     this.positionPointer(rect, showPointer);
     this.positionGuide(rect);
     this.syncRootVisibility();
@@ -226,15 +266,25 @@ export class TutorialHintManager {
     this.syncRootVisibility();
   }
 
-  showObjective({ text, stepLabel, progress, progressLabel }) {
-    if (!this.root || !this.stage || !this.objective) {
+  showObjective({ id, text, stepLabel, progress, progressLabel }) {
+    if (!this.root || !this.stage || !this.objective || !this.objectiveButton) {
       return;
+    }
+
+    if (id && id !== this.objectiveStepId) {
+      this.objectiveStepId = id;
+      this.objectivePanelOpen = false;
     }
 
     const normalizedProgress = this.normalizeProgress(progress);
     this.root.hidden = false;
-    this.objective.hidden = false;
-    this.objectivePortrait.hidden = false;
+    this.objectiveButton.hidden = false;
+    this.objective.hidden = !this.objectivePanelOpen;
+    this.objectiveButton.setAttribute(
+      'aria-expanded',
+      this.objectivePanelOpen ? 'true' : 'false',
+    );
+    setNotificationBadge(this.objectiveButton, true);
     this.objectiveText.textContent = text ?? '';
     this.objectiveStepLabel.textContent = stepLabel ?? '';
     this.objectiveProgress.hidden = !normalizedProgress;
@@ -249,10 +299,49 @@ export class TutorialHintManager {
     this.syncRootVisibility();
   }
 
-  hide() {
-    if (this.root) {
-      this.root.hidden = true;
+  openObjectivePanel() {
+    if (!this.objective || !this.objectiveButton) {
+      return;
     }
+
+    this.objectivePanelOpen = true;
+    this.objective.hidden = false;
+    this.objectiveButton.setAttribute('aria-expanded', 'true');
+    this.positionObjective();
+    this.syncRootVisibility();
+  }
+
+  closeObjectivePanel() {
+    if (!this.objective || !this.objectiveButton) {
+      return;
+    }
+
+    this.objectivePanelOpen = false;
+    this.objective.hidden = true;
+    this.objectiveButton.setAttribute('aria-expanded', 'false');
+    this.syncRootVisibility();
+  }
+
+  hide() {
+    if (this.hint) {
+      this.hint.hidden = true;
+    }
+
+    this.hideTargetCue();
+
+    if (this.objective) {
+      this.objective.hidden = true;
+    }
+
+    if (this.objectiveButton) {
+      this.objectiveButton.hidden = true;
+      this.objectiveButton.setAttribute('aria-expanded', 'false');
+      setNotificationBadge(this.objectiveButton, false);
+    }
+
+    this.objectivePanelOpen = false;
+    this.objectiveStepId = null;
+    this.syncRootVisibility();
   }
 
   hidePrompt() {
@@ -270,10 +359,14 @@ export class TutorialHintManager {
       this.objective.hidden = true;
     }
 
-    if (this.objectivePortrait) {
-      this.objectivePortrait.hidden = true;
+    if (this.objectiveButton) {
+      this.objectiveButton.hidden = true;
+      this.objectiveButton.setAttribute('aria-expanded', 'false');
+      setNotificationBadge(this.objectiveButton, false);
     }
 
+    this.objectivePanelOpen = false;
+    this.objectiveStepId = null;
     this.syncRootVisibility();
   }
 
@@ -317,17 +410,24 @@ export class TutorialHintManager {
     return Number.isFinite(scale) && scale > 0 ? scale : 1;
   }
 
-  positionHighlight(rect) {
+  positionHighlight(rect, target) {
+    const topPad = this.hasBorderTitle(target) ? HIGHLIGHT_TITLE_PAD : HIGHLIGHT_PAD;
     const left = Math.max(0, rect.left - HIGHLIGHT_PAD);
-    const top = Math.max(0, rect.top - HIGHLIGHT_PAD);
+    const top = Math.max(0, rect.top - topPad);
     const width = rect.width + HIGHLIGHT_PAD * 2;
-    const height = rect.height + HIGHLIGHT_PAD * 2;
+    const height = rect.height + topPad + HIGHLIGHT_PAD;
 
     this.highlight.hidden = false;
     this.highlight.style.left = `${left}px`;
     this.highlight.style.top = `${top}px`;
     this.highlight.style.width = `${width}px`;
     this.highlight.style.height = `${height}px`;
+  }
+
+  hasBorderTitle(target) {
+    return [...(target?.children ?? [])].some((child) =>
+      child.classList?.contains('style-box__title'),
+    );
   }
 
   positionPointer(rect, showPointer) {
@@ -360,7 +460,7 @@ export class TutorialHintManager {
 
   positionGuide(rect) {
     const bounds = this.getSourceBounds();
-    const left = clamp(
+    const baseLeft = clamp(
       (bounds.width - HINT_PADDED_WIDTH) / 2 - GUIDE_LEFT_BIAS,
       HINT_GAP + PORTRAIT_WIDTH - 4,
       Math.max(HINT_GAP + PORTRAIT_WIDTH - 4, bounds.width - HINT_PADDED_WIDTH - HINT_GAP),
@@ -368,11 +468,18 @@ export class TutorialHintManager {
     const targetMiddle = rect.top + rect.height / 2;
     const topFraction =
       targetMiddle < bounds.height / 2 ? GUIDE_BOTTOM_FRACTION : GUIDE_TOP_FRACTION;
-    const top = clamp(
+    const baseTop = clamp(
       Math.round(bounds.height * topFraction),
       HINT_GAP,
       bounds.height - HINT_HEIGHT - HINT_GAP,
     );
+    const placement = this.resolveGuidePlacement({
+      rect,
+      bounds,
+      baseLeft,
+      baseTop,
+    });
+    const { left, top } = placement;
     const portraitLeft = left - PORTRAIT_WIDTH + 4;
     const portraitTop = clamp(
       top + HINT_HEIGHT - PORTRAIT_HEIGHT + 9,
@@ -385,6 +492,37 @@ export class TutorialHintManager {
     this.portrait.style.left = `${portraitLeft}px`;
     this.portrait.style.top = `${portraitTop}px`;
     this.portrait.hidden = false;
+  }
+
+  resolveGuidePlacement({ rect, bounds, baseLeft, baseTop }) {
+    const base = { left: baseLeft, top: baseTop };
+
+    if (!rectsOverlap(toGuideRect(base), toPaddedRect(rect, HINT_GAP))) {
+      return base;
+    }
+
+    const minLeft = HINT_GAP + PORTRAIT_WIDTH - 4;
+    const maxLeft = Math.max(minLeft, bounds.width - HINT_PADDED_WIDTH - HINT_GAP);
+    const minTop = HINT_GAP;
+    const maxTop = bounds.height - HINT_HEIGHT - HINT_GAP;
+    const centeredTop = clamp(
+      Math.round(rect.top + rect.height / 2 - HINT_HEIGHT / 2),
+      minTop,
+      maxTop,
+    );
+    const candidates = [
+      { left: baseLeft, top: rect.top + rect.height + HINT_GAP },
+      { left: baseLeft, top: rect.top - HINT_HEIGHT - HINT_GAP },
+      { left: rect.left + rect.width + HINT_GAP, top: centeredTop },
+      { left: rect.left - HINT_PADDED_WIDTH - HINT_GAP, top: centeredTop },
+    ]
+      .map((candidate) => ({
+        left: clamp(Math.round(candidate.left), minLeft, maxLeft),
+        top: clamp(Math.round(candidate.top), minTop, maxTop),
+      }))
+      .filter((candidate) => !rectsOverlap(toGuideRect(candidate), toPaddedRect(rect, 0)));
+
+    return candidates[0] ?? base;
   }
 
   positionDialog() {
@@ -417,13 +555,21 @@ export class TutorialHintManager {
       bounds.width - HINT_PADDED_WIDTH - HINT_GAP,
     );
     const objectiveTop = clamp(OBJECTIVE_TOP, HINT_GAP, bounds.height - HINT_HEIGHT - HINT_GAP);
-    const portraitLeft = clamp(OBJECTIVE_PORTRAIT_LEFT, HINT_GAP, bounds.width - PORTRAIT_WIDTH);
-    const portraitTop = clamp(OBJECTIVE_PORTRAIT_TOP, HINT_GAP, bounds.height - PORTRAIT_HEIGHT);
+    const buttonLeft = clamp(
+      OBJECTIVE_BUTTON_LEFT,
+      HINT_GAP,
+      bounds.width - OBJECTIVE_BUTTON_WIDTH - HINT_GAP,
+    );
+    const buttonTop = clamp(
+      OBJECTIVE_BUTTON_TOP,
+      HINT_GAP,
+      bounds.height - OBJECTIVE_BUTTON_HEIGHT - HINT_GAP,
+    );
 
     this.objective.style.left = `${objectiveLeft}px`;
     this.objective.style.top = `${objectiveTop}px`;
-    this.objectivePortrait.style.left = `${portraitLeft}px`;
-    this.objectivePortrait.style.top = `${portraitTop}px`;
+    this.objectiveButton.style.left = `${buttonLeft}px`;
+    this.objectiveButton.style.top = `${buttonTop}px`;
   }
 
   getSourceBounds() {
@@ -453,10 +599,35 @@ export class TutorialHintManager {
       return;
     }
 
-    this.root.hidden = Boolean(this.hint?.hidden) && Boolean(this.objective?.hidden);
+    this.root.hidden =
+      Boolean(this.hint?.hidden) &&
+      Boolean(this.objective?.hidden) &&
+      Boolean(this.objectiveButton?.hidden);
   }
 }
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function toGuideRect({ left, top }) {
+  return {
+    left,
+    top,
+    right: left + HINT_PADDED_WIDTH,
+    bottom: top + HINT_HEIGHT,
+  };
+}
+
+function toPaddedRect(rect, padding) {
+  return {
+    left: rect.left - padding,
+    top: rect.top - padding,
+    right: rect.left + rect.width + padding,
+    bottom: rect.top + rect.height + padding,
+  };
+}
+
+function rectsOverlap(a, b) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }

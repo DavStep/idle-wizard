@@ -64,7 +64,7 @@ if (!skipGit) {
 }
 
 if (!skipDiscord) {
-  step('discord apk upload');
+  step('discord player changelog + apk upload');
   run('node', ['scripts/post-apk-discord.js', apkPath.path]);
 }
 

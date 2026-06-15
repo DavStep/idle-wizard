@@ -1,6 +1,6 @@
 # Tutorial
 
-Mira introduces the first loop with a few press-to-advance prompts, then stays in a small objective box with progress. Target hints still point at real controls, hide during waits, and reappear only after inactivity.
+Mira introduces the first loop with a few press-to-advance prompts, then stays as a small objective button with progress behind it. Target hints still point at real controls, hide during waits, and reappear only after inactivity.
 
 The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage, level 3 seed research, and level 4 Brewing recipe research. It has no skip state.
 

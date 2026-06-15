@@ -34,10 +34,14 @@
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE highlights should not clone the target DOM; cloned rows can duplicate/mislay out text. Use a crisp outline and light veil.
+- FTUE highlights on border-labeled boxes need extra top clearance so the cue does not cross embedded titles.
 - FTUE press-to-advance prompts must stay visible until pressed; only action reminders should auto-hide.
 - FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
+- FTUE terminal hides must clear inner prompt/objective/button state; hiding only the layer lets later click-driven prompt hides re-show stale objective UI for one frame.
+- FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
+- FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
-- Workshop secondary buttons (`prestige`, `leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3 so FTUE starts with only core loop controls.
+- Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
 
 ## Architecture
 
@@ -48,6 +52,7 @@
 - Release APK handoff files should be named `idle-wizard-release-<package-version>.apk`.
 - Current Gradle release output is `app-release-unsigned.apk`; sign it before device install or APK handoff.
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
+- Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
 - User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
 - `spacetime publish --server maincloud` still prompts for `y` after maintenance `--confirm-live`; pipe confirmation for non-interactive deploys.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
@@ -150,6 +155,7 @@
 - Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
 - Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
+- Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
 - Automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide automation research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.

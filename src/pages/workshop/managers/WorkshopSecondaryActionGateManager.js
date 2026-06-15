@@ -1,4 +1,5 @@
 export const WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL = 3;
+export const WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL = 7;
 
 export class WorkshopSecondaryActionGateManager {
   constructor({ unlockLevel = WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL } = {}) {

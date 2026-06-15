@@ -468,16 +468,52 @@ const STEPS = [
   {
     id: 'level-up-two',
     kind: 'objective',
-    pageId: 'workshop',
-    objectiveText: 'level up again',
-    getTargetId: ({ dom }) => (dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks'),
-    getHintText: ({ dom }) => (dom.isTasksExpanded() ? 'level up' : 'open tasks'),
-    getProgress: ({ snapshot }) => ({
-      value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
-      max: 1,
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
+    getObjectiveText: ({ snapshot }) =>
+      hasLevelCompletionGold(snapshot) ? 'level up again' : 'earn level-up gold in market',
+    getTargetId: ({ currentPageId, dom, snapshot }) => {
+      if (!hasLevelCompletionGold(snapshot)) {
+        return currentPageId === 'shop' ? 'shop:stand:1' : 'page:shop';
+      }
+
+      if (currentPageId !== 'workshop') {
+        return 'page:workshop';
+      }
+
+      return dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks';
+    },
+    getHintText: ({ currentPageId, dom, snapshot }) => {
+      if (!hasLevelCompletionGold(snapshot)) {
+        return currentPageId === 'shop' ? 'sell for gold' : 'open market';
+      }
+
+      if (currentPageId !== 'workshop') {
+        return 'open workshop';
+      }
+
+      return dom.isTasksExpanded() ? 'level up' : 'open tasks';
+    },
+    getProgress: ({ snapshot }) => {
+      if (!hasLevelCompletionGold(snapshot)) {
+        const costGold = getLevelCompletionCostGold(snapshot);
+        return {
+          value: Math.min(getGold(snapshot), costGold),
+          max: costGold,
+        };
+      }
+
+      return {
+        value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
+        max: 1,
+      };
+    },
+    getProgressLabel: ({ snapshot }) => {
+      if (!hasLevelCompletionGold(snapshot)) {
+        const costGold = getLevelCompletionCostGold(snapshot);
+        return `${Math.min(getGold(snapshot), costGold)}/${costGold} gold`;
+      }
+
+      return `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`;
+    },
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
@@ -808,6 +844,14 @@ function getItemQuantity(snapshot, itemKey) {
 
 function getGold(snapshot) {
   return Math.max(0, Math.floor(Number(snapshot?.gold?.current) || 0));
+}
+
+function getLevelCompletionCostGold(snapshot) {
+  return Math.max(0, Math.floor(Number(snapshot?.tasks?.level?.completion?.costGold) || 0));
+}
+
+function hasLevelCompletionGold(snapshot) {
+  return getGold(snapshot) >= getLevelCompletionCostGold(snapshot);
 }
 
 function getGrowTile(snapshot) {

@@ -135,6 +135,36 @@ function createLevelOneTaskCompleteSnapshot(overrides = {}) {
   });
 }
 
+function createLevelTwoReadySnapshot(overrides = {}) {
+  return createSnapshot({
+    gold: {
+      current: 10,
+    },
+    tasks: {
+      currentLevel: 2,
+      level: {
+        completion: {
+          canComplete: true,
+          costGold: 40,
+        },
+        tasks: [
+          {
+            taskId: 'level2-sage-herb',
+            itemKey: 'sageHerb',
+            requiredQuantity: 6,
+            progressQuantity: 6,
+            remainingQuantity: 0,
+            canFill: false,
+            canComplete: false,
+            completed: true,
+          },
+        ],
+      },
+    },
+    ...overrides,
+  });
+}
+
 describe('TutorialStepManager', () => {
   it('starts with Mira intro dialog', () => {
     expect(getStep()).toMatchObject({
@@ -494,6 +524,58 @@ describe('TutorialStepManager', () => {
       objectiveText: 'grow sage in garden',
       progressLabel: '0/1 sage',
       stepLabel: '14/19',
+    });
+  });
+
+  it('redirects level two gold shortfall to market before level up', () => {
+    const snapshot = createLevelTwoReadySnapshot();
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'page:shop',
+      hintText: 'open market',
+      objectiveText: 'earn level-up gold in market',
+      progress: { value: 10, max: 40 },
+      progressLabel: '10/40 gold',
+      stepLabel: '16/19',
+    });
+  });
+
+  it('points at the market stand while earning level two gold', () => {
+    const snapshot = createLevelTwoReadySnapshot();
+
+    expect(getStep({ pageId: 'shop', snapshot })).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'shop:stand:1',
+      hintText: 'sell for gold',
+      objectiveText: 'earn level-up gold in market',
+      progressLabel: '10/40 gold',
+      stepLabel: '16/19',
+    });
+  });
+
+  it('returns level two players to the level-up button once gold is ready', () => {
+    const snapshot = createLevelTwoReadySnapshot({
+      gold: {
+        current: 40,
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+      }),
+    ).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'workshop:levelUp',
+      hintText: 'level up',
+      objectiveText: 'level up again',
+      progressLabel: '1/1 ready',
+      stepLabel: '16/19',
     });
   });
 

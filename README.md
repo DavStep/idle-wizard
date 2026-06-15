@@ -26,6 +26,8 @@ To post a debug APK to Discord after building, add a Discord channel webhook URL
 DISCORD_APK_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
+Add player-facing notes for the current `package.json` version to `PLAYER_CHANGELOG.md` before posting. The Discord script posts that changelog first, then uploads the APK. For one-off internal APK tests, set `DISCORD_APK_SKIP_CHANGELOG=1`.
+
 Then run:
 
 ```sh
@@ -41,6 +43,8 @@ npm run release
 It runs lint, tests, production web build, production debug-signed APK build, optional SpacetimeDB Maincloud publish when `spacetimedb/` changed, git commit/push from `main`, and Discord APK upload. Use `RELEASE_BACKEND=always` to force backend publish or `RELEASE_BACKEND=skip` to skip it.
 
 For a manually signed APK, run `npm run discord:postApk -- path/to/app.apk`. The script refuses `unsigned` APK filenames unless `DISCORD_APK_ALLOW_UNSIGNED=1` is set.
+
+You can override the posted notes with `DISCORD_APK_CHANGELOG="..."` or `DISCORD_APK_CHANGELOG_FILE=path/to/notes.md`.
 
 In a dev build, open the browser console:
 
