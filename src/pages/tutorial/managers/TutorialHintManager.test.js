@@ -80,6 +80,40 @@ describe('TutorialHintManager', () => {
     expect(overlaps(guideRect, sourceTargetRect)).toBe(false);
   });
 
+  it('uses an under-target mark instead of boxing the target', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 16,
+        top: 100,
+        width: 120,
+        height: 30,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.show({
+      target,
+      text: 'summon seeds',
+      stepLabel: '2/19',
+    });
+
+    const highlight = stage.querySelector('.tutorial-layer__highlight');
+
+    expect(highlight?.style.left).toBe('12px');
+    expect(highlight?.style.top).toBe('132px');
+    expect(highlight?.style.width).toBe('128px');
+    expect(highlight?.style.height).toBe('4px');
+  });
+
   it('keeps objective text behind a Mira button until opened', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
@@ -102,16 +136,30 @@ describe('TutorialHintManager', () => {
 
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
     expect(button?.hidden).toBe(false);
+    expect(button?.style.left).toBe('8px');
+    expect(button?.style.top).toBe('491px');
     expect(button?.dataset.notification).toBe('true');
     expect(button?.dataset.notificationTone).toBe('red');
+    expect(button?.getAttribute('aria-label')).toBe('open mira objective');
     expect(button?.getAttribute('aria-expanded')).toBe('false');
     expect(objective?.hidden).toBe(true);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    expect(button?.hidden).toBe(false);
+    expect(button?.getAttribute('aria-label')).toBe('close mira objective');
     expect(button?.getAttribute('aria-expanded')).toBe('true');
     expect(objective?.hidden).toBe(false);
     expect(objective?.textContent).toContain('summon seeds and fill the level task');
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(button?.hidden).toBe(false);
+    expect(button?.getAttribute('aria-label')).toBe('open mira objective');
+    expect(button?.getAttribute('aria-expanded')).toBe('false');
+    expect(objective?.hidden).toBe(true);
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     objective
       ?.querySelector('.tutorial-layer__objective-close')
@@ -122,6 +170,43 @@ describe('TutorialHintManager', () => {
     expect(button?.getAttribute('aria-expanded')).toBe('false');
     expect(objective?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+  });
+
+  it('hides the prompt portrait while an objective button is active', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 16,
+        top: 100,
+        width: 120,
+        height: 30,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showObjective({
+      id: 'prepare-seed-sale',
+      text: 'summon one seed to sell',
+      stepLabel: '7/19',
+    });
+    manager.show({
+      target,
+      text: 'open market',
+      stepLabel: '7/19',
+      showPortrait: false,
+    });
+
+    expect(stage.querySelector('.tutorial-layer__objective-button')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__hint')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__portrait')?.hidden).toBe(true);
   });
 
   it('closes the objective panel when a new objective starts', () => {
@@ -157,6 +242,41 @@ describe('TutorialHintManager', () => {
       .querySelector('.tutorial-layer__objective-button')
       ?.getAttribute('aria-expanded'),
     ).toBe('false');
+  });
+
+  it('runs objective press handler from the open objective panel', () => {
+    const stage = document.createElement('section');
+    const manager = new TutorialHintManager();
+    let pressed = 0;
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.setObjectivePressHandler(() => {
+      pressed += 1;
+    });
+    manager.showObjective({
+      id: 'finish-seed-task',
+      text: 'summon seeds and fill the level task',
+      stepLabel: '5/19',
+    });
+
+    stage
+      .querySelector('.tutorial-layer__objective-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.tutorial-layer__objective')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(pressed).toBe(1);
+
+    stage
+      .querySelector('.tutorial-layer__objective-close')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(pressed).toBe(1);
   });
 
   it('does not revive a stale objective button after the tutorial hides', () => {

@@ -7163,8 +7163,34 @@ function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function deletePlayerShopProgressionForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const listing of Array.from(ctx.db.playerShopListing.iter())) {
+    if (listing.sellerIdentity.isEqual(identity)) {
+      ctx.db.playerShopListing.delete(listing);
+    }
+  }
+
+  const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(identity);
+  if (proceeds) {
+    ctx.db.playerShopProceeds.delete(proceeds);
+  }
+}
+
 function deleteAllPlayerGameplaySaves(ctx: IdleWizardReducerCtx) {
   for (const save of Array.from(ctx.db.playerGameplaySave.iter())) {
+    ctx.db.playerGameplaySave.delete(save);
+  }
+}
+
+function deletePlayerGameplaySaveForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  const save = ctx.db.playerGameplaySave.identity.find(identity);
+  if (save) {
     ctx.db.playerGameplaySave.delete(save);
   }
 }
@@ -7173,6 +7199,32 @@ function deleteAllLeaderboardState(ctx: IdleWizardReducerCtx) {
   for (const entry of Array.from(ctx.db.leaderboard.iter())) {
     ctx.db.leaderboard.delete(entry);
   }
+}
+
+function resetLeaderboardProgressForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+  username: string,
+) {
+  const existingEntry = ctx.db.leaderboard.identity.find(identity);
+  const resetEntry = {
+    identity,
+    username,
+    playerLevel: DEFAULT_PLAYER_LEVEL,
+    totalIncome: 0n,
+    ...getLeaderboardPeriodDefaults(ctx, 0n),
+    updatedAt: ctx.timestamp,
+  };
+
+  if (existingEntry) {
+    ctx.db.leaderboard.identity.update({
+      ...existingEntry,
+      ...resetEntry,
+    });
+    return;
+  }
+
+  ctx.db.leaderboard.insert(resetEntry);
 }
 
 function deleteAllWorldChatMessages(ctx: IdleWizardReducerCtx) {
@@ -7211,6 +7263,38 @@ function deleteAllTradeAllianceState(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function deleteTradeAllianceProgressionForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
+    if (reward.recipientIdentity.isEqual(identity)) {
+      ctx.db.tradeAllianceRewardInbox.delete(reward);
+    }
+  }
+
+  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+    if (contribution.contributorIdentity.isEqual(identity)) {
+      ctx.db.tradeAllianceQuestContribution.delete(contribution);
+    }
+  }
+
+  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+    if (application.applicantIdentity.isEqual(identity)) {
+      ctx.db.tradeAllianceApplication.delete(application);
+    }
+  }
+
+  const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
+  if (!member) {
+    return;
+  }
+
+  const allianceId = member.allianceId;
+  ctx.db.tradeAllianceMember.delete(member);
+  refreshAdminMergedAlliance(ctx, allianceId);
+}
+
 function resetAllPlayerSharedProgress(ctx: IdleWizardReducerCtx) {
   for (const player of Array.from(ctx.db.player.iter())) {
     ctx.db.player.identity.update({
@@ -7224,6 +7308,23 @@ function resetAllPlayerSharedProgress(ctx: IdleWizardReducerCtx) {
       lastSeenAt: ctx.timestamp,
     });
   }
+}
+
+function resetPlayerSharedProgress(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof findPlayerByIdentityHex>,
+) {
+  return ctx.db.player.identity.update({
+    ...player,
+    username: normalizeUsername(player.username),
+    playerLevel: DEFAULT_PLAYER_LEVEL,
+    theme: normalizePlayerTheme(player.theme),
+    font: normalizePlayerFont(player.font),
+    colorMode: normalizePlayerColorMode(player.colorMode),
+    usernamePromptSeen: Boolean(player.usernamePromptSeen),
+    connected: false,
+    lastSeenAt: ctx.timestamp,
+  });
 }
 
 function moveAdminTradeAllianceApplications(
@@ -9887,6 +9988,36 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     deleteAllPotionDiscoveries(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
     resetAllPlayerSharedProgress(ctx);
+
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_reset_player_progression_by_identity = spacetimedb.reducer(
+  {
+    identityHex: t.string(),
+    resetKey: t.string(),
+  },
+  (ctx, { identityHex, resetKey }) => {
+    assertGameConfigAdmin(ctx);
+    assertMaintenanceLocked(ctx);
+
+    const player = findPlayerByIdentityHex(ctx, identityHex);
+    const identityKey = getIdentityHex(player.identity);
+    const stateKey = `player-progression-reset:${identityKey}:${normalizeMaintenanceKey(resetKey)}`;
+    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+      return;
+    }
+
+    const nextPlayer = resetPlayerSharedProgress(ctx, player);
+    deletePlayerGameplaySaveForIdentity(ctx, nextPlayer.identity);
+    resetLeaderboardProgressForIdentity(ctx, nextPlayer.identity, nextPlayer.username);
+    deleteTradeAllianceProgressionForIdentity(ctx, nextPlayer.identity);
+    deletePlayerShopProgressionForIdentity(ctx, nextPlayer.identity);
+    deleteAdminPlayerSession(ctx, nextPlayer.identity);
 
     ctx.db.maintenanceState.insert({
       stateKey,

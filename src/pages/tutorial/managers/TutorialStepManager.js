@@ -3,6 +3,7 @@ const SAGE_HERB_KEY = 'sageHerb';
 const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
 const MANA_TONIC_KEY = 'manaTonic';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
+const MANA_TONIC_SAGE_COUNT = 3;
 const LEVEL_ONE_SEED_TASK_ID = 'level1-sage-seeds';
 const LEVEL_ONE_GOLD_TARGET = 10;
 const TUTORIAL_SELL_GOLD_EACH = LEVEL_ONE_GOLD_TARGET;
@@ -36,6 +37,7 @@ const LEVEL_THREE_STEP_IDS = [
 const LEVEL_FOUR_STEP_IDS = [
   'research-mana-tonic',
   'brew-mana-tonic',
+  'refill-mana-tonic-cauldron',
 ];
 
 export const TUTORIAL_STEP_IDS = [
@@ -144,7 +146,7 @@ const STEPS = [
         return `task:${task.taskId}`;
       }
 
-      return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : null;
+      return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
     },
     getHintText: ({ dom, snapshot }) => {
       if (!dom.isTasksExpanded()) {
@@ -188,7 +190,7 @@ const STEPS = [
     pageId: 'workshop',
     objectiveText: 'summon one seed to sell',
     getTargetId: ({ snapshot }) =>
-      snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : null,
+      snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere',
     getHintText: ({ snapshot }) =>
       snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana',
     getProgress: ({ snapshot }) => ({
@@ -286,7 +288,7 @@ const STEPS = [
           return 'page:workshop';
         }
 
-        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : null;
+        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
       }
 
       return currentPageId === 'shop' ? 'shop:stand:1' : null;
@@ -366,7 +368,7 @@ const STEPS = [
           return 'page:workshop';
         }
 
-        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : null;
+        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
       }
 
       const tile = getGrowTile(snapshot);
@@ -427,33 +429,52 @@ const STEPS = [
   {
     id: 'fill-sage-herb-task',
     kind: 'objective',
-    pageId: 'workshop',
     objectiveText: 'fill the sage level task',
-    getTargetId: ({ dom, snapshot }) => {
-      if (!dom.isTasksExpanded()) {
-        return 'workshop:tasks';
-      }
-
+    getTargetId: ({ currentPageId, dom, snapshot }) => {
       const task = getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
 
       if (task?.canFill || task?.canComplete) {
+        if (currentPageId !== 'workshop') {
+          return 'page:workshop';
+        }
+
+        if (!dom.isTasksExpanded()) {
+          return 'workshop:tasks';
+        }
+
         return `task:${task.taskId}`;
       }
 
-      return null;
+      return getSageObtainTargetId({ currentPageId, dom, snapshot });
     },
-    getHintText: ({ dom, snapshot }) => {
-      if (!dom.isTasksExpanded()) {
-        return 'open tasks';
-      }
-
+    getHintText: ({ currentPageId, dom, snapshot }) => {
       const task = getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
 
       if (task?.canComplete) {
+        if (currentPageId !== 'workshop') {
+          return 'open workshop';
+        }
+
+        if (!dom.isTasksExpanded()) {
+          return 'open tasks';
+        }
+
         return 'complete task';
       }
 
-      return task?.canFill ? 'fill sage task' : 'wait for sage';
+      if (task?.canFill) {
+        if (currentPageId !== 'workshop') {
+          return 'open workshop';
+        }
+
+        if (!dom.isTasksExpanded()) {
+          return 'open tasks';
+        }
+
+        return 'fill sage task';
+      }
+
+      return getSageObtainHintText({ currentPageId, dom, snapshot });
     },
     getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)),
     getProgressLabel: ({ snapshot }) =>
@@ -609,6 +630,64 @@ const STEPS = [
       getCurrentLevel(snapshot) >= 4 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 5 || hasBrewedManaTonic(snapshot),
+  },
+  {
+    id: 'refill-mana-tonic-cauldron',
+    kind: 'objective',
+    pageId: 'brewing',
+    objectiveText: 'fill the cauldron again',
+    getTargetId: ({ snapshot }) => {
+      const brewing = getPrimaryBrewingState(snapshot);
+      const activeAction = isActiveManaTonicBrew(snapshot)
+        ? getActiveBrewingAction(brewing)
+        : null;
+
+      if (activeAction || isManaTonicCauldronReady(snapshot)) {
+        return 'brewing:action';
+      }
+
+      return canAddManaTonicSage(snapshot) ? `brewing:herb:${SAGE_HERB_KEY}` : null;
+    },
+    getHintText: ({ snapshot }) => {
+      const brewing = getPrimaryBrewingState(snapshot);
+      const activeAction = isActiveManaTonicBrew(snapshot)
+        ? getActiveBrewingAction(brewing)
+        : null;
+
+      if (activeAction === 'collect') {
+        return 'collect mana tonic';
+      }
+
+      if (activeAction === 'bottle') {
+        return 'bottle mana tonic';
+      }
+
+      if (isManaTonicCauldronReady(snapshot)) {
+        return 'brew again';
+      }
+
+      const progress = getManaTonicCauldronFillCount(snapshot);
+
+      return progress > 0
+        ? 'add sage. recipes care about order'
+        : 'tap sage to fill cauldron. recipes care about order';
+    },
+    getProgress: ({ snapshot }) => ({
+      value: getManaTonicCauldronFillCount(snapshot),
+      max: MANA_TONIC_SAGE_COUNT,
+    }),
+    getProgressLabel: ({ snapshot }) =>
+      `${getManaTonicCauldronFillCount(snapshot)}/${MANA_TONIC_SAGE_COUNT} sage`,
+    getReminderKey: () => 'refill-mana-tonic-cauldron-actions',
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 4 &&
+      hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID) &&
+      hasBrewedManaTonic(snapshot) &&
+      !hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 5 ||
+      hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY) ||
+      isActiveManaTonicBrew(snapshot),
   },
 ];
 
@@ -865,6 +944,72 @@ function getGrowTile(snapshot) {
   );
 }
 
+function getSageObtainTargetId({ currentPageId, dom, snapshot }) {
+  if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 && !hasActiveSageCrop(snapshot)) {
+    if (currentPageId !== 'workshop') {
+      return 'page:workshop';
+    }
+
+    return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+  }
+
+  if (currentPageId !== 'garden') {
+    return 'page:garden';
+  }
+
+  const tile = getGrowTile(snapshot);
+
+  if (!tile) {
+    return null;
+  }
+
+  if (tile.phase === 'ready') {
+    return `garden:plot:${tile.tileNumber}`;
+  }
+
+  if (dom.isGardenSeedPopupOpen()) {
+    return `garden:seed:${SAGE_SEED_KEY}`;
+  }
+
+  if (tile.phase === 'empty' && tile.selectedSeedItemTypeId) {
+    return `garden:plot:${tile.tileNumber}`;
+  }
+
+  return `garden:plot:${tile.tileNumber}:label`;
+}
+
+function getSageObtainHintText({ currentPageId, dom, snapshot }) {
+  if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 && !hasActiveSageCrop(snapshot)) {
+    if (currentPageId !== 'workshop') {
+      return 'open workshop';
+    }
+
+    return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
+  }
+
+  if (currentPageId !== 'garden') {
+    return 'open garden';
+  }
+
+  const tile = getGrowTile(snapshot);
+
+  if (tile?.phase === 'ready') {
+    return 'harvest sage';
+  }
+
+  if (dom.isGardenSeedPopupOpen()) {
+    return 'choose sage seed';
+  }
+
+  if (tile?.phase === 'empty' && tile.selectedSeedItemTypeId) {
+    return 'plant sage seed';
+  }
+
+  return tile?.phase === 'growing' || tile?.phase === 'harvesting'
+    ? 'wait for sage'
+    : 'choose a seed';
+}
+
 function getCurrentTasks(snapshot) {
   return snapshot?.tasks?.level?.tasks ?? [];
 }
@@ -909,12 +1054,53 @@ function hasGrownSage(snapshot) {
   );
 }
 
+function hasActiveSageCrop(snapshot) {
+  return (snapshot?.garden?.plot?.tiles ?? []).some(
+    (tile) =>
+      tile?.unlocked &&
+      tile.seedKey === SAGE_SEED_KEY &&
+      (tile.phase === 'ready' || tile.phase === 'growing' || tile.phase === 'harvesting'),
+  );
+}
+
 function hasBrewedManaTonic(snapshot) {
   return (
     getItemQuantity(snapshot, MANA_TONIC_KEY) > 0 ||
     hasTaskProgressForItem(snapshot, MANA_TONIC_KEY) ||
     hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY)
   );
+}
+
+function isActiveManaTonicBrew(snapshot) {
+  return getPrimaryBrewingState(snapshot)?.activeBrew?.key === MANA_TONIC_KEY;
+}
+
+function isManaTonicCauldronReady(snapshot) {
+  return (
+    getManaTonicCauldronFillCount(snapshot) >= MANA_TONIC_SAGE_COUNT &&
+    Boolean(getPrimaryBrewingState(snapshot)?.canBrew)
+  );
+}
+
+function canAddManaTonicSage(snapshot) {
+  const brewing = getPrimaryBrewingState(snapshot);
+
+  return (
+    Boolean(brewing?.canAddIngredient) &&
+    !brewing?.activeBrew &&
+    getManaTonicCauldronFillCount(snapshot) < MANA_TONIC_SAGE_COUNT &&
+    (brewing?.herbs ?? []).some(
+      (herb) => herb?.key === SAGE_HERB_KEY && (Number(herb.availableQuantity) || 0) > 0,
+    )
+  );
+}
+
+function getManaTonicCauldronFillCount(snapshot) {
+  const ingredients = getPrimaryBrewingState(snapshot)?.ingredients ?? [];
+  const stagedSageCount = ingredients.filter((ingredient) => ingredient?.key === SAGE_HERB_KEY)
+    .length;
+
+  return Math.min(MANA_TONIC_SAGE_COUNT, stagedSageCount);
 }
 
 function getCurrentLevel(snapshot) {

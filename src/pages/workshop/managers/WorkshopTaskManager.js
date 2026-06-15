@@ -9,6 +9,7 @@ export class WorkshopTaskManager {
     this.unsubscribe = null;
     this.refs = {};
     this.rowsByTaskId = new Map();
+    this.rowAnimations = new Map();
     this.currentTasksById = new Map();
     this.currentLevelCompletion = null;
     this.currentGold = 0;
@@ -76,10 +77,12 @@ export class WorkshopTaskManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.cancelRowAnimations();
     this.root?.remove();
     this.root = null;
     this.refs = {};
     this.rowsByTaskId.clear();
+    this.rowAnimations.clear();
     this.currentTasksById.clear();
     this.currentLevelCompletion = null;
     this.currentGold = 0;
@@ -118,7 +121,7 @@ export class WorkshopTaskManager {
     this.currentTasksById = new Map(tasks.map((task) => [task.taskId, task]));
     this.currentLevelCompletion = taskSnapshot.level.completion ?? null;
     this.currentGold = Number(snapshot?.gold?.current) || 0;
-    this.ensureRows(listTasks);
+    const rowMovement = this.ensureRows(listTasks);
 
     this.renderSummaryTask(summaryTask, taskSnapshot.completedAllLevels);
     this.setText(
@@ -140,6 +143,7 @@ export class WorkshopTaskManager {
     }
 
     this.renderLevelComplete();
+    this.animateMovedRows(rowMovement);
   }
 
   getDisplayTasks(tasks) {
@@ -188,17 +192,32 @@ export class WorkshopTaskManager {
       taskIds.length === existingTaskIds.length &&
       taskIds.every((taskId, index) => taskId === existingTaskIds[index])
     ) {
-      return;
+      return null;
     }
 
-    this.refs.list.replaceChildren();
-    this.rowsByTaskId.clear();
+    const shouldAnimate = this.shouldAnimateRows();
+    const firstRects = shouldAnimate ? this.getCurrentTaskRowRects(taskIds) : null;
+
+    const nextRowsByTaskId = new Map();
+    const orderedRoots = [];
 
     for (const task of tasks) {
-      const row = this.createTaskRow(task);
-      this.rowsByTaskId.set(task.taskId, row);
-      this.refs.list.append(row.root);
+      const row = this.rowsByTaskId.get(task.taskId) ?? this.createTaskRow();
+      nextRowsByTaskId.set(task.taskId, row);
+      orderedRoots.push(row.root);
     }
+
+    for (const [taskId, row] of this.rowsByTaskId.entries()) {
+      if (!nextRowsByTaskId.has(taskId)) {
+        this.cancelRowAnimation(taskId);
+        row.root.remove();
+      }
+    }
+
+    this.rowsByTaskId = nextRowsByTaskId;
+    this.refs.list.replaceChildren(...orderedRoots);
+
+    return shouldAnimate ? firstRects : null;
   }
 
   createTaskRow() {
@@ -373,5 +392,131 @@ export class WorkshopTaskManager {
     if (element.textContent !== text) {
       element.textContent = text;
     }
+  }
+
+  shouldAnimateRows() {
+    return Boolean(
+      this.expanded &&
+        this.root?.isConnected &&
+        this.refs.list &&
+        !this.refs.list.hidden &&
+        !this.prefersReducedMotion(),
+    );
+  }
+
+  getCurrentTaskRowRects(nextTaskIds) {
+    const rects = new Map();
+
+    for (const [taskId, row] of this.rowsByTaskId.entries()) {
+      const rect = row.root.getBoundingClientRect();
+
+      if (rect.width || rect.height) {
+        rects.set(taskId, rect);
+      }
+    }
+
+    const summaryTaskId = this.refs.summaryTask?.button?.dataset.taskId;
+
+    if (summaryTaskId && nextTaskIds.includes(summaryTaskId) && !rects.has(summaryTaskId)) {
+      const rect = this.refs.summaryTask.root.getBoundingClientRect();
+
+      if (rect.width || rect.height) {
+        rects.set(summaryTaskId, rect);
+      }
+    }
+
+    return rects;
+  }
+
+  animateMovedRows(firstRects) {
+    if (!firstRects?.size || !this.shouldAnimateRows()) {
+      return;
+    }
+
+    for (const [taskId, row] of this.rowsByTaskId.entries()) {
+      const firstRect = firstRects.get(taskId);
+
+      if (!firstRect) {
+        continue;
+      }
+
+      const lastRect = row.root.getBoundingClientRect();
+      const deltaX = firstRect.left - lastRect.left;
+      const deltaY = firstRect.top - lastRect.top;
+
+      if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
+        continue;
+      }
+
+      this.animateRowFromDelta(taskId, row.root, deltaX, deltaY);
+    }
+  }
+
+  animateRowFromDelta(taskId, root, deltaX, deltaY) {
+    this.cancelRowAnimation(taskId);
+    root.classList.add('is-reordering');
+    root.style.transition = 'none';
+    root.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    root.style.opacity = '0.9';
+    root.getBoundingClientRect();
+
+    const cleanup = () => {
+      const animation = this.rowAnimations.get(taskId);
+
+      if (animation?.cleanup !== cleanup) {
+        return;
+      }
+
+      root.removeEventListener('transitionend', onTransitionEnd);
+      window.clearTimeout(animation.timeoutId);
+      this.rowAnimations.delete(taskId);
+      root.classList.remove('is-reordering');
+      root.style.transition = '';
+      root.style.transform = '';
+      root.style.opacity = '';
+    };
+    const onTransitionEnd = (event) => {
+      if (event.target === root && event.propertyName === 'transform') {
+        cleanup();
+      }
+    };
+    const timeoutId = window.setTimeout(cleanup, 280);
+
+    this.rowAnimations.set(taskId, { cleanup, onTransitionEnd, root, timeoutId });
+    root.addEventListener('transitionend', onTransitionEnd);
+    root.style.transition =
+      'transform 230ms cubic-bezier(0.16, 1, 0.3, 1), opacity 140ms linear';
+    root.style.transform = 'translate(0, 0)';
+    root.style.opacity = '1';
+  }
+
+  cancelRowAnimations() {
+    for (const taskId of this.rowAnimations.keys()) {
+      this.cancelRowAnimation(taskId);
+    }
+  }
+
+  cancelRowAnimation(taskId) {
+    const animation = this.rowAnimations.get(taskId);
+
+    if (!animation) {
+      return;
+    }
+
+    this.rowAnimations.delete(taskId);
+    animation.root.removeEventListener('transitionend', animation.onTransitionEnd);
+    window.clearTimeout(animation.timeoutId);
+    animation.root.classList.remove('is-reordering');
+    animation.root.style.transition = '';
+    animation.root.style.transform = '';
+    animation.root.style.opacity = '';
+  }
+
+  prefersReducedMotion() {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
   }
 }

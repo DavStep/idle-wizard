@@ -44,15 +44,29 @@ export class ResearchSnapshotManager {
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
     const requiredResearchIds =
-      research.requiredResearchIds ?? this.researchDefinitionManager.getRequiredResearchIds(research.id);
+      research.requiredResearchIds ??
+      this.researchDefinitionManager.getRequiredResearchIds(research.id);
     const hasRequiredResearch = requiredResearchIds.every((requiredResearchId) =>
       this.researchStateEntityManager.isCompleted(requiredResearchId),
     );
+    const missingRequiredPlayerLevel =
+      this.researchDefinitionManager.getMissingRequiredPlayerLevel(research.id);
+    const hasRequiredPlayerLevel = !missingRequiredPlayerLevel;
+    const locked =
+      !completed &&
+      !progress.inProgress &&
+      (!hasRequiredResearch || !hasRequiredPlayerLevel);
 
     return {
       ...research,
       effect: research.value,
-      value: this.formatResearchValue({ completed, hasRequiredResearch, cost, progress }),
+      value: this.formatResearchValue({
+        completed,
+        hasRequiredResearch,
+        hasRequiredPlayerLevel,
+        cost,
+        progress,
+      }),
       ...this.getCostSnapshot(cost),
       completed,
       ...(progress.inProgress
@@ -65,16 +79,23 @@ export class ResearchSnapshotManager {
             progress: progress.progress,
           }
         : {}),
-      ...(!completed && !progress.inProgress && !hasRequiredResearch ? { locked: true } : {}),
+      ...(locked ? { locked: true } : {}),
       canResearch:
         !completed &&
         !progress.inProgress &&
         hasRequiredResearch &&
+        hasRequiredPlayerLevel &&
         this.getCurrencyFacade(cost.currency)?.canSpend(cost.amount),
     };
   }
 
-  formatResearchValue({ completed, hasRequiredResearch, cost, progress }) {
+  formatResearchValue({
+    completed,
+    hasRequiredResearch,
+    hasRequiredPlayerLevel,
+    cost,
+    progress,
+  }) {
     if (completed) {
       return 'researched';
     }
@@ -83,7 +104,7 @@ export class ResearchSnapshotManager {
       return 'researching';
     }
 
-    if (!hasRequiredResearch) {
+    if (!hasRequiredResearch || !hasRequiredPlayerLevel) {
       return 'locked';
     }
 

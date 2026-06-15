@@ -13,11 +13,13 @@ const MUTATING_ACTIONS = new Set([
   'publish',
   'reset-progress',
   'reset-discord-post',
+  'reset-player',
 ]);
 const SCHEMA_NAMES = [
   'set_maintenance_mode',
   'migrate_player_gameplay_saves',
   'admin_reset_player_progression_data',
+  'admin_reset_player_progression_by_identity',
   'leaderboard_summary',
   'world_chat_recent',
 ];
@@ -89,11 +91,17 @@ switch (action) {
   case 'backup-reset':
     backupPlayerProgressionResetData();
     break;
+  case 'backup-player-reset':
+    backupSinglePlayerProgressionResetData();
+    break;
   case 'verify':
     verifyPlayerGameplaySave();
     break;
   case 'verify-reset':
     verifyPlayerProgressionReset();
+    break;
+  case 'verify-player-reset':
+    verifySinglePlayerProgressionReset();
     break;
   case 'migrate':
     migratePlayerGameplaySaves();
@@ -103,6 +111,9 @@ switch (action) {
     break;
   case 'reset-progress':
     await resetPlayerProgressionData();
+    break;
+  case 'reset-player':
+    resetSinglePlayerProgressionData();
     break;
   case 'publish':
     runSpacetime(['publish', database, '--server', server, '--module-path', './spacetimedb']);
@@ -146,11 +157,14 @@ function printHelp() {
   node scripts/maintenance.js locked --confirm-live
   node scripts/maintenance.js backup
   node scripts/maintenance.js backup-reset
+  node scripts/maintenance.js backup-player-reset --identity <hex>
   node scripts/maintenance.js verify
   node scripts/maintenance.js verify-reset
+  node scripts/maintenance.js verify-player-reset --identity <hex>
   node scripts/maintenance.js migrate --key YYYY-MM-DD-maintenance --confirm-live
   node scripts/maintenance.js reset-discord-post --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js reset-progress --key YYYY-MM-DD-reset --post-discord --confirm-live
+  node scripts/maintenance.js reset-player --identity <hex> --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js publish --confirm-live
   node scripts/maintenance.js off --confirm-live
 
@@ -251,6 +265,57 @@ function backupPlayerProgressionResetData() {
   console.log(`Backup written: ${path}`);
 }
 
+function backupSinglePlayerProgressionResetData() {
+  const identityHex = getIdentityHex();
+  const identitySql = getIdentitySqlLiteral(identityHex);
+  mkdirSync(join('backups', 'maintenance'), { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const path = join(
+    'backups',
+    'maintenance',
+    `player_progression_reset_${server}_${database}_${identityHex}_${timestamp}.sql.txt`,
+  );
+  const sections = [
+    ['player', `SELECT * FROM player WHERE identity = ${identitySql}`],
+    [
+      'player_gameplay_save',
+      `SELECT identity, updated_at, save_json FROM player_gameplay_save WHERE identity = ${identitySql}`,
+    ],
+    ['leaderboard', `SELECT * FROM leaderboard WHERE identity = ${identitySql}`],
+    ['player_session', `SELECT * FROM player_session WHERE identity = ${identitySql}`],
+    [
+      'trade_alliance_member',
+      `SELECT * FROM trade_alliance_member WHERE member_identity = ${identitySql}`,
+    ],
+    [
+      'trade_alliance_application',
+      `SELECT * FROM trade_alliance_application WHERE applicant_identity = ${identitySql}`,
+    ],
+    [
+      'trade_alliance_quest_contribution',
+      `SELECT * FROM trade_alliance_quest_contribution WHERE contributor_identity = ${identitySql}`,
+    ],
+    [
+      'trade_alliance_reward_inbox',
+      `SELECT * FROM trade_alliance_reward_inbox WHERE recipient_identity = ${identitySql}`,
+    ],
+    [
+      'player_shop_listing',
+      `SELECT * FROM player_shop_listing WHERE seller_identity = ${identitySql}`,
+    ],
+    [
+      'player_shop_proceeds',
+      `SELECT * FROM player_shop_proceeds WHERE seller_identity = ${identitySql}`,
+    ],
+  ].map(([tableName, sql]) => {
+    const result = runSpacetime(['sql', '-s', server, database, sql], { capture: true });
+    return `-- ${tableName}\n${result.stdout.trimEnd()}`;
+  });
+
+  writeFileSync(path, `${sections.join('\n\n')}\n`);
+  console.log(`Backup written: ${path}`);
+}
+
 function verifyPlayerGameplaySave() {
   runSql('SELECT COUNT(*) AS row_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS parseable_count FROM admin_player_gameplay_save');
@@ -281,6 +346,38 @@ function verifyPlayerProgressionReset() {
   );
 }
 
+function verifySinglePlayerProgressionReset() {
+  const identityHex = getIdentityHex();
+  const identitySql = getIdentitySqlLiteral(identityHex);
+
+  runSql(
+    `SELECT identity, username, player_level, connected, last_seen_at FROM player WHERE identity = ${identitySql}`,
+  );
+  runSql(`SELECT COUNT(*) AS save_count FROM player_gameplay_save WHERE identity = ${identitySql}`);
+  runSql(
+    `SELECT identity, username, player_level, total_income, daily_income, weekly_income, monthly_income FROM leaderboard WHERE identity = ${identitySql}`,
+  );
+  runSql(`SELECT COUNT(*) AS session_count FROM player_session WHERE identity = ${identitySql}`);
+  runSql(
+    `SELECT COUNT(*) AS alliance_member_count FROM trade_alliance_member WHERE member_identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS alliance_application_count FROM trade_alliance_application WHERE applicant_identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS alliance_contribution_count FROM trade_alliance_quest_contribution WHERE contributor_identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS alliance_reward_count FROM trade_alliance_reward_inbox WHERE recipient_identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS player_shop_listing_count FROM player_shop_listing WHERE seller_identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS player_shop_proceeds_count FROM player_shop_proceeds WHERE seller_identity = ${identitySql}`,
+  );
+}
+
 function migratePlayerGameplaySaves() {
   const migrationKey = options.key ?? options._?.[0];
 
@@ -302,6 +399,13 @@ async function resetPlayerProgressionData() {
   callReducer('admin_reset_player_progression_data', [resetKey]);
 }
 
+function resetSinglePlayerProgressionData() {
+  const identityHex = getIdentityHex();
+  const resetKey = getResetKey();
+
+  callReducer('admin_reset_player_progression_by_identity', [identityHex, resetKey]);
+}
+
 function getResetKey() {
   const resetKey = options.key ?? options._?.[0];
 
@@ -311,6 +415,29 @@ function getResetKey() {
   }
 
   return resetKey;
+}
+
+function getIdentityHex() {
+  const identityHex = options.identity ?? options['identity-hex'] ?? options._?.[0];
+  const safeIdentityHex = normalizeIdentityHex(identityHex);
+
+  if (!/^[0-9a-f]{64}$/.test(safeIdentityHex)) {
+    console.error('Missing or invalid identity. Pass --identity <64 hex chars>.');
+    process.exit(1);
+  }
+
+  return safeIdentityHex;
+}
+
+function getIdentitySqlLiteral(identityHex) {
+  return `0x${identityHex}`;
+}
+
+function normalizeIdentityHex(identityHex) {
+  return String(identityHex ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/^0x/, '');
 }
 
 async function postResetDiscordNotice(resetKey) {

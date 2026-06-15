@@ -62,6 +62,19 @@ export class ResearchPurchaseManager {
       };
     }
 
+    const missingRequiredPlayerLevel =
+      this.researchDefinitionManager.getMissingRequiredPlayerLevel(normalizedResearchId);
+
+    if (missingRequiredPlayerLevel) {
+      return {
+        ok: false,
+        reason: 'missing_required_level',
+        researchId: normalizedResearchId,
+        requiredPlayerLevel: missingRequiredPlayerLevel,
+        ...this.getCostResult(cost),
+      };
+    }
+
     if (!this.getCurrencyFacade(cost.currency)?.spend(cost.amount)) {
       return {
         ok: false,

@@ -171,7 +171,7 @@ describe('TutorialStepManager', () => {
       id: 'intro-welcome',
       kind: 'dialog',
       advanceOnClick: true,
-      stepLabel: '1/19',
+      stepLabel: '1/20',
     });
   });
 
@@ -198,7 +198,7 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:manaSphere',
       advanceOnClick: true,
       showPointer: false,
-      stepLabel: '2/19',
+      stepLabel: '2/20',
     });
   });
 
@@ -228,7 +228,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       targetId: 'workshop:summonSeed',
       text: 'use your mana to summon seeds.',
-      stepLabel: '3/19',
+      stepLabel: '3/20',
     });
   });
 
@@ -266,7 +266,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       targetId: 'task:level1-sage-seeds',
       text: 'fill task',
-      stepLabel: '4/19',
+      stepLabel: '4/20',
     });
   });
 
@@ -309,7 +309,47 @@ describe('TutorialStepManager', () => {
       objectiveText: 'summon seeds and fill the level task',
       progress: { value: 1, max: 10 },
       progressLabel: '1/10 seeds',
-      stepLabel: '5/19',
+      stepLabel: '5/20',
+    });
+  });
+
+  it('points seed task objective at mana sphere while waiting for summon mana', () => {
+    const snapshot = createSnapshot({
+      seedSummoning: {
+        canSummon: false,
+        cost: 10,
+      },
+      tasks: {
+        currentLevel: 1,
+        level: {
+          completion: { canComplete: false, costGold: 10 },
+          tasks: [
+            {
+              taskId: 'level1-sage-seeds',
+              itemKey: 'sageSeed',
+              requiredQuantity: 10,
+              progressQuantity: 1,
+              remainingQuantity: 9,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('first-fill-seed-task'),
+      }),
+    ).toMatchObject({
+      id: 'finish-seed-task',
+      kind: 'objective',
+      targetId: 'workshop:manaSphere',
+      hintText: 'wait for mana',
     });
   });
 
@@ -320,7 +360,7 @@ describe('TutorialStepManager', () => {
       id: 'intro-market',
       kind: 'dialog',
       advanceOnClick: true,
-      stepLabel: '6/19',
+      stepLabel: '6/20',
     });
   });
 
@@ -388,7 +428,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'shop:sell:sageSeed',
       hintText: 'choose sage seed',
-      stepLabel: '10/19',
+      stepLabel: '10/20',
     });
   });
 
@@ -419,7 +459,7 @@ describe('TutorialStepManager', () => {
         goldTarget: 10,
       },
       progressLabel: '0/10 gold',
-      stepLabel: '11/19',
+      stepLabel: '11/20',
     });
   });
 
@@ -493,7 +533,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:levelUp',
       objectiveText: 'return to workshop and level up',
-      stepLabel: '13/19',
+      stepLabel: '13/20',
     });
   });
 
@@ -523,7 +563,74 @@ describe('TutorialStepManager', () => {
       targetId: 'garden:plot:1:label',
       objectiveText: 'grow sage in garden',
       progressLabel: '0/1 sage',
-      stepLabel: '14/19',
+      stepLabel: '14/20',
+    });
+  });
+
+  it('sends a short sage task to garden when a sage seed is available', () => {
+    const snapshot = createSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costGold: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 6,
+              progressQuantity: 1,
+              remainingQuantity: 5,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'fill-sage-herb-task',
+      kind: 'objective',
+      targetId: 'page:garden',
+      hintText: 'open garden',
+      objectiveText: 'fill the sage level task',
+      progressLabel: '1/6 sage',
+    });
+  });
+
+  it('sends a short sage task to summon when no sage source exists', () => {
+    const snapshot = createSnapshot({
+      seedSummoning: {
+        canSummon: true,
+        cost: 10,
+      },
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costGold: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 6,
+              progressQuantity: 1,
+              remainingQuantity: 5,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'fill-sage-herb-task',
+      kind: 'objective',
+      targetId: 'workshop:summonSeed',
+      hintText: 'summon seed',
     });
   });
 
@@ -538,7 +645,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'earn level-up gold in market',
       progress: { value: 10, max: 40 },
       progressLabel: '10/40 gold',
-      stepLabel: '16/19',
+      stepLabel: '16/20',
     });
   });
 
@@ -552,7 +659,7 @@ describe('TutorialStepManager', () => {
       hintText: 'sell for gold',
       objectiveText: 'earn level-up gold in market',
       progressLabel: '10/40 gold',
-      stepLabel: '16/19',
+      stepLabel: '16/20',
     });
   });
 
@@ -575,7 +682,7 @@ describe('TutorialStepManager', () => {
       hintText: 'level up',
       objectiveText: 'level up again',
       progressLabel: '1/1 ready',
-      stepLabel: '16/19',
+      stepLabel: '16/20',
     });
   });
 
@@ -589,7 +696,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '17/19',
+      stepLabel: '17/20',
     });
   });
 
@@ -610,7 +717,87 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'brewing:recipes',
       hintText: 'select recipe',
-      stepLabel: '19/19',
+      stepLabel: '19/20',
+    });
+  });
+
+  it('points at sage after the first mana tonic so the cauldron can be refilled', () => {
+    const snapshot = createSnapshot({
+      inventory: [{ key: 'manaTonic', quantity: 1 }],
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        ingredients: [],
+        canAddIngredient: true,
+        activeBrew: null,
+        herbs: [
+          {
+            key: 'sageHerb',
+            quantity: 15,
+            availableQuantity: 15,
+          },
+        ],
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'brewing',
+        snapshot,
+        completed: completedThrough('brew-mana-tonic'),
+      }),
+    ).toMatchObject({
+      id: 'refill-mana-tonic-cauldron',
+      kind: 'objective',
+      targetId: 'brewing:herb:sageHerb',
+      hintText: 'tap sage to fill cauldron. recipes care about order',
+      objectiveText: 'fill the cauldron again',
+      progress: { value: 0, max: 3 },
+      progressLabel: '0/3 sage',
+      stepLabel: '20/20',
+    });
+  });
+
+  it('points at brew again once the mana tonic cauldron is full', () => {
+    const snapshot = createSnapshot({
+      inventory: [{ key: 'manaTonic', quantity: 1 }],
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        canBrew: true,
+        canAddIngredient: true,
+        activeBrew: null,
+        herbs: [
+          {
+            key: 'sageHerb',
+            quantity: 15,
+            availableQuantity: 12,
+          },
+        ],
+        ingredients: [
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+        ],
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'brewing',
+        snapshot,
+        completed: completedThrough('brew-mana-tonic'),
+      }),
+    ).toMatchObject({
+      id: 'refill-mana-tonic-cauldron',
+      targetId: 'brewing:action',
+      hintText: 'brew again',
+      progressLabel: '3/3 sage',
+      stepLabel: '20/20',
     });
   });
 

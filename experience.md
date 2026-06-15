@@ -33,14 +33,16 @@
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
-- FTUE highlights should not clone the target DOM; cloned rows can duplicate/mislay out text. Use a crisp outline and light veil.
-- FTUE highlights on border-labeled boxes need extra top clearance so the cue does not cross embedded titles.
+- FTUE highlights should not clone the target DOM or draw boxed outlines; use a compact under-target mark with the pointer.
+- FTUE under-target marks should stay below border-labeled boxes so the cue never crosses embedded titles.
 - FTUE press-to-advance prompts must stay visible until pressed; only action reminders should auto-hide.
 - FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
 - FTUE terminal hides must clear inner prompt/objective/button state; hiding only the layer lets later click-driven prompt hides re-show stale objective UI for one frame.
+- FTUE objective steps use the left Mira objective button as the only Mira; suppress the prompt portrait and make the Mira button toggle the objective open/closed.
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
+- After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
 
 ## Architecture
@@ -161,6 +163,7 @@
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
 - With Research moved to level 3, level-one FTUE should bank only the 10 gold needed for level 2; do not hold players for mint research before Garden.
+- Nettle seed research stays locked until level 4 so level-3 players keep the 60 gold needed to complete the level-3 task step.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
@@ -216,8 +219,10 @@
 - Progress bar style is a separate visual setting (`regular`/`gradient`), not part of a theme.
 - Shared progress rails should keep `.style-progress` as `content-box`; global/dialog `border-box` shrinks the 3px fill area.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
+- Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
+- Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
 - Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
 - Player-facing UI labels should stay lowercase, including seed, herb, potion, research, notice, and task labels; preserve user-entered names as typed.
 - Project typography uses `Lexend` at `13px` source size with tabular lining numerals for values.
@@ -387,6 +392,7 @@
 - Deploy-triggered page refresh should only load compatible new code after migrations/sanitizers preserve player saves; refresh must not write defaults over hydrated user data.
 - Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
+- Release automation must let `.env.production` override `.env.local` for `VITE_*`; otherwise local SpacetimeDB values can leak into release APKs.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.

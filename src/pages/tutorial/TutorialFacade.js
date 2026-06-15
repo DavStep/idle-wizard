@@ -36,6 +36,7 @@ export class TutorialFacade {
       this.scheduleRefresh();
     };
     this.handleAdvance = () => this.advanceActiveStep();
+    this.handleObjectivePress = () => this.pressActiveObjective();
     this.handleResize = () => this.scheduleRefresh();
   }
 
@@ -48,6 +49,7 @@ export class TutorialFacade {
     this.targetManager.setStage(stage);
     this.hintManager.mount(stage);
     this.hintManager.setAdvanceHandler(this.handleAdvance);
+    this.hintManager.setObjectivePressHandler(this.handleObjectivePress);
     this.unsubscribe = this.gameplayFacade.subscribe(() => this.scheduleRefresh());
     stage.addEventListener('click', this.handleClick, true);
     window.addEventListener('resize', this.handleResize);
@@ -63,6 +65,7 @@ export class TutorialFacade {
     this.stage?.removeEventListener('click', this.handleClick, true);
     window.removeEventListener('resize', this.handleResize);
     this.hintManager.setAdvanceHandler(null);
+    this.hintManager.setObjectivePressHandler(null);
     this.hintManager.unmount();
     this.targetManager.setStage(null);
     this.stage = null;
@@ -145,6 +148,7 @@ export class TutorialFacade {
         text: step.hintText ?? step.text,
         stepLabel: step.stepLabel,
         showPointer: step.showPointer !== false && step.targetId !== 'workshop:manaSphere',
+        showPortrait: step.kind !== 'objective',
         advanceOnClick: true,
       });
       return;
@@ -164,6 +168,7 @@ export class TutorialFacade {
       text: step.hintText ?? step.text,
       stepLabel: step.stepLabel,
       showPointer: step.showPointer !== false && step.targetId !== 'workshop:manaSphere',
+      showPortrait: step.kind !== 'objective',
       advanceOnClick: step.advanceOnClick,
     });
   }
@@ -178,6 +183,60 @@ export class TutorialFacade {
     this.reminderManager.discardActivePrompt();
     this.hintManager.hidePrompt();
     this.scheduleRefresh();
+  }
+
+  pressActiveObjective() {
+    const step = this.activeStep;
+
+    if (!step || step.kind !== 'objective') {
+      return;
+    }
+
+    const target = this.targetManager.getTarget(step.targetId);
+
+    if (this.shouldClickObjectiveTarget(step, target)) {
+      this.hintManager.closeObjectivePanel();
+      target.click();
+      this.scheduleRefresh();
+      return;
+    }
+
+    this.showPromptNow(step);
+  }
+
+  shouldClickObjectiveTarget(step, target) {
+    const ButtonElement = target?.ownerDocument?.defaultView?.HTMLButtonElement;
+
+    return (
+      Boolean(target) &&
+      step?.targetId?.startsWith('task:') &&
+      typeof ButtonElement === 'function' &&
+      target instanceof ButtonElement &&
+      !target.disabled
+    );
+  }
+
+  showPromptNow(step) {
+    const target = this.targetManager.getTarget(step?.targetId);
+
+    if (!target) {
+      this.hintManager.closeObjectivePanel();
+      this.hintManager.hidePrompt();
+      return;
+    }
+
+    this.cancelRefresh();
+    this.cancelReminderRefresh();
+    this.reminderManager.discardActivePrompt();
+    this.hintManager.closeObjectivePanel();
+    this.hintManager.show({
+      target,
+      text: step.hintText ?? step.text,
+      stepLabel: step.stepLabel,
+      showPointer: step.showPointer !== false && step.targetId !== 'workshop:manaSphere',
+      showPortrait: step.kind !== 'objective',
+      advanceOnClick: step.advanceOnClick,
+    });
   }
 
   scheduleRefresh() {

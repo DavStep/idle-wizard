@@ -35,6 +35,12 @@ describe('ViewportScaleManager', () => {
     expect(
       document.documentElement.style.getPropertyValue('--app-viewport-height'),
     ).toBe('720px');
+    expect(document.documentElement.style.getPropertyValue('--app-stage-width')).toBe(
+      `${gameViewport.width * expectedViewportScale}px`,
+    );
+    expect(document.documentElement.style.getPropertyValue('--app-stage-height')).toBe(
+      `${gameViewport.height * expectedViewportScale}px`,
+    );
   });
 
   it('keeps the source UI at full mobile scale for the authored viewport', () => {

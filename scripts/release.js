@@ -11,6 +11,8 @@ const options = parseOptions(process.argv.slice(2));
 
 await loadEnvFile('.env.local');
 await loadEnvFile('.env');
+await loadEnvFile('.env.production', { overrideKeys: /^VITE_/ });
+await loadEnvFile('.env.production.local', { overrideKeys: /^VITE_/ });
 
 const packageInfo = JSON.parse(await readFile(path.join(rootDir, 'package.json'), 'utf8'));
 const commitMessage = options.message || process.env.RELEASE_COMMIT_MESSAGE || `release: ${packageInfo.version}`;
@@ -144,7 +146,7 @@ function parseOptions(rawArgs) {
   return parsed;
 }
 
-async function loadEnvFile(fileName) {
+async function loadEnvFile(fileName, { overrideKeys } = {}) {
   const filePath = path.join(rootDir, fileName);
   if (!existsSync(filePath)) {
     return;
@@ -164,7 +166,7 @@ async function loadEnvFile(fileName) {
 
     const key = trimmed.slice(0, separatorIndex).trim();
     const rawValue = trimmed.slice(separatorIndex + 1).trim();
-    if (!key || process.env[key] !== undefined) {
+    if (!key || (process.env[key] !== undefined && !overrideKeys?.test(key))) {
       continue;
     }
 

@@ -1853,6 +1853,62 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('locks nettle seed research until after level 3 completion', () => {
+    const { gameplayFacade } = createGameplay();
+    const getResearch = (researchId) =>
+      gameplayFacade
+        .getSnapshot()
+        .research.boxes.flatMap((box) => box.researches)
+        .find((research) => research.id === researchId);
+    const finishCurrentTasksWithoutGold = () => {
+      for (const task of gameplayFacade.getSnapshot().tasks.level.tasks) {
+        gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+        gameplayFacade.fillTask(task.taskId);
+        gameplayFacade.completeTask(task.taskId);
+      }
+    };
+
+    advanceToLevel(gameplayFacade, 3);
+    gameplayFacade.goldFacade.add(65);
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
+      ok: true,
+      cost: 5,
+    });
+
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(60);
+    expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
+      value: 'locked',
+      requiredPlayerLevel: 4,
+      locked: true,
+      canResearch: false,
+    });
+    expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toEqual({
+      ok: false,
+      reason: 'missing_required_level',
+      researchId: 'unlockSeed:nettleSeed',
+      requiredPlayerLevel: 4,
+      cost: 50,
+    });
+
+    finishCurrentTasksWithoutGold();
+    expect(gameplayFacade.completeTaskLevel()).toMatchObject({
+      ok: true,
+      currentLevel: 4,
+    });
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+
+    gameplayFacade.goldFacade.add(50);
+    expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
+      value: '50 gold',
+      canResearch: true,
+    });
+    expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toMatchObject({
+      ok: true,
+      researchId: 'unlockSeed:nettleSeed',
+      cost: 50,
+    });
+  });
+
   it('rejects legacy mana research ids', () => {
     const { gameplayFacade } = createGameplay();
 

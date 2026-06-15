@@ -1098,6 +1098,16 @@ function createGameplayFacadeFake() {
     stack.quantity -= quantity;
     return true;
   };
+  const getTask = (taskId) =>
+    snapshot.tasks.level.tasks.find((candidate) => candidate.taskId === taskId) ?? null;
+  const syncTaskState = (task) => {
+    task.remainingQuantity = Math.max(0, task.requiredQuantity - task.progressQuantity);
+    task.ownedQuantity = getItemQuantity(task.itemTypeId);
+    task.progress = task.requiredQuantity <= 0 ? 1 : task.progressQuantity / task.requiredQuantity;
+    task.maxed = task.progressQuantity >= task.requiredQuantity;
+    task.canFill = !task.completed && !task.maxed && task.ownedQuantity > 0;
+    task.canComplete = !task.completed && task.maxed;
+  };
 
   const gameplayFacade = {
     getSnapshot: () => snapshot,
@@ -1120,6 +1130,98 @@ function createGameplayFacadeFake() {
       ok: false,
       reason: 'not_enough_mana',
     }),
+    fillTask: (taskId) => {
+      const task = getTask(taskId);
+
+      if (!task) {
+        return {
+          ok: false,
+          reason: 'unknown_task',
+          taskId,
+        };
+      }
+
+      syncTaskState(task);
+
+      if (task.completed) {
+        return {
+          ok: false,
+          reason: 'already_completed',
+          taskId,
+        };
+      }
+
+      if (task.maxed) {
+        return {
+          ok: false,
+          reason: 'ready_to_complete',
+          taskId,
+        };
+      }
+
+      const quantity = Math.min(task.ownedQuantity, task.remainingQuantity);
+
+      if (quantity <= 0 || !removeItemQuantity(task.itemTypeId, quantity)) {
+        syncTaskState(task);
+        return {
+          ok: false,
+          reason: 'not_enough_items',
+          taskId,
+        };
+      }
+
+      task.progressQuantity += quantity;
+      syncTaskState(task);
+      publish();
+
+      return {
+        ok: true,
+        taskId,
+        quantity,
+        progressQuantity: task.progressQuantity,
+        requiredQuantity: task.requiredQuantity,
+        maxed: task.maxed,
+      };
+    },
+    completeTask: (taskId) => {
+      const task = getTask(taskId);
+
+      if (!task) {
+        return {
+          ok: false,
+          reason: 'unknown_task',
+          taskId,
+        };
+      }
+
+      syncTaskState(task);
+
+      if (!task.maxed) {
+        return {
+          ok: false,
+          reason: 'not_ready',
+          taskId,
+        };
+      }
+
+      task.completed = true;
+      task.progressQuantity = task.requiredQuantity;
+      snapshot.tasks.level.completedTasks = snapshot.tasks.level.tasks.filter(
+        (candidate) => candidate.completed,
+      ).length;
+      snapshot.tasks.level.completion.allTasksCompleted =
+        snapshot.tasks.level.completedTasks >= snapshot.tasks.level.totalTasks;
+      snapshot.tasks.level.completion.canComplete =
+        snapshot.tasks.level.completion.allTasksCompleted;
+      syncTaskState(task);
+      publish();
+
+      return {
+        ok: true,
+        taskId,
+        level: snapshot.tasks.currentLevel,
+      };
+    },
     buyShopShelfSlot: () => ({
       ok: false,
       reason: 'not_enough_gold',
@@ -3298,6 +3400,50 @@ describe('PagesFacade', () => {
     ).toEqual(TUTORIAL_STEP_IDS);
   });
 
+  it('fills a ready task when the active objective panel is pressed', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const task = snapshot.tasks.level.tasks[0];
+    const completedStepIds = TUTORIAL_STEP_IDS.slice(
+      0,
+      TUTORIAL_STEP_IDS.indexOf('first-fill-seed-task') + 1,
+    );
+
+    snapshot.seedInventory[0].quantity = 1;
+    task.progressQuantity = 1;
+    task.remainingQuantity = 9;
+    task.ownedQuantity = 1;
+    task.progress = 0.1;
+    task.canFill = true;
+
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({ completedStepIds }),
+      }),
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__tasks-toggle')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    pagesFacade.tutorialFacade.refresh();
+
+    stage
+      .querySelector('.tutorial-layer__objective-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.tutorial-layer__objective')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(task.progressQuantity).toBe(2);
+    expect(task.remainingQuantity).toBe(8);
+    expect(snapshot.seedInventory[0].quantity).toBe(0);
+  });
+
   it('shows a garden tab notification when garden work is ready outside Workshop', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -3516,6 +3662,113 @@ describe('PagesFacade', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(list?.hidden).toBe(false);
     expect(tasks?.classList.contains('is-expanded')).toBe(true);
+  });
+
+  it('keeps Workshop task row nodes stable when completed tasks move down', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    const createTask = ({ taskId, itemLabel, completed = false }) => ({
+      ...baseTask,
+      taskId,
+      itemLabel,
+      progressQuantity: completed ? baseTask.requiredQuantity : 0,
+      remainingQuantity: completed ? 0 : baseTask.requiredQuantity,
+      progress: completed ? 1 : 0,
+      maxed: completed,
+      completed,
+      canFill: false,
+      canComplete: false,
+    });
+
+    snapshot.tasks.level.completedTasks = 1;
+    snapshot.tasks.level.totalTasks = 4;
+    snapshot.tasks.level.tasks = [
+      createTask({ taskId: 'level1-sage-seeds', itemLabel: 'sage seed' }),
+      createTask({ taskId: 'level1-mint-seeds', itemLabel: 'mint seed' }),
+      createTask({ taskId: 'level1-nettle-seeds', itemLabel: 'nettle seed' }),
+      createTask({
+        taskId: 'level1-lavender-seeds',
+        itemLabel: 'lavender seed',
+        completed: true,
+      }),
+    ];
+
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
+    const makeRect = (top) => ({
+      x: 0,
+      y: top,
+      top,
+      left: 0,
+      right: 240,
+      bottom: top + 22,
+      width: 240,
+      height: 22,
+      toJSON: () => ({}),
+    });
+
+    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      if (this.classList?.contains('workshop-page__task')) {
+        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
+          const rows = [
+            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
+          ];
+          return makeRect(100 + rows.indexOf(this) * 28);
+        }
+
+        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
+          return makeRect(60);
+        }
+      }
+
+      return makeRect(0);
+    };
+    document.body.append(stage);
+
+    try {
+      const pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake(),
+      });
+
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__tasks-toggle')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const list = stage.querySelector('.workshop-page__task-list');
+      const getLabels = () =>
+        [...list.querySelectorAll('.workshop-page__task-label')].map((label) => label.textContent);
+
+      expect(getLabels()).toEqual(['mint seed', 'nettle seed', 'lavender seed']);
+      const mintRow = list.querySelector('.workshop-page__task');
+
+      snapshot.tasks.level.completedTasks = 2;
+      snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) =>
+        task.taskId === 'level1-mint-seeds'
+          ? {
+              ...task,
+              progressQuantity: task.requiredQuantity,
+              remainingQuantity: 0,
+              progress: 1,
+              maxed: true,
+              completed: true,
+            }
+          : task,
+      );
+      gameplayFacade.publishSnapshot();
+
+      const rowsAfter = [...list.querySelectorAll('.workshop-page__task')];
+      expect(getLabels()).toEqual(['nettle seed', 'mint seed', 'lavender seed']);
+      expect(rowsAfter[1]).toBe(mintRow);
+      expect(mintRow.classList.contains('is-completed')).toBe(true);
+      expect(mintRow.classList.contains('is-reordering')).toBe(true);
+      expect(mintRow.style.transition).toContain('transform 230ms');
+    } finally {
+      stage.remove();
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
   });
 
   it('shows Workshop level completion at the bottom of the expanded task list', () => {

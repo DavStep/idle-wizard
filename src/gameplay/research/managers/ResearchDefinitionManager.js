@@ -35,6 +35,10 @@ const summonSeedResearches = [
   },
 ];
 
+const seedUnlockRequiredPlayerLevels = {
+  nettleSeed: 4,
+};
+
 const maxAutomationGardenTiles = 10;
 const maxAutomationCauldrons = 5;
 
@@ -128,6 +132,9 @@ export class ResearchDefinitionManager {
         id: `unlockSeed:${seed.key}`,
         label: seed.label,
         value: 'drop',
+        ...(seedUnlockRequiredPlayerLevels[seed.key]
+          ? { requiredPlayerLevel: seedUnlockRequiredPlayerLevels[seed.key] }
+          : {}),
         ...(previousSeed
           ? { requiredResearchIds: [`unlockSeed:${previousSeed.key}`] }
           : {}),
@@ -357,6 +364,20 @@ export class ResearchDefinitionManager {
 
   getRequiredResearchIds(researchId) {
     return this.getResearch(researchId)?.requiredResearchIds ?? [];
+  }
+
+  getMissingRequiredPlayerLevel(researchId) {
+    const requiredPlayerLevel = this.getResearch(researchId)?.requiredPlayerLevel;
+
+    if (!Number.isInteger(requiredPlayerLevel)) {
+      return null;
+    }
+
+    return this.getCurrentPlayerLevel() >= requiredPlayerLevel ? null : requiredPlayerLevel;
+  }
+
+  getCurrentPlayerLevel() {
+    return this.playerLevelFacade?.getSnapshot?.().currentLevel ?? 1;
   }
 
   normalizeResearchId(researchId) {

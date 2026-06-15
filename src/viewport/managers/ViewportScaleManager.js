@@ -41,6 +41,8 @@ export class ViewportScaleManager {
     document.removeEventListener('focusout', this.handleTextEntryFocusOut);
     document.documentElement.style.removeProperty('--app-viewport-width');
     document.documentElement.style.removeProperty('--app-viewport-height');
+    document.documentElement.style.removeProperty('--app-stage-width');
+    document.documentElement.style.removeProperty('--app-stage-height');
     this.layoutViewport = null;
     this.textEntryViewportLocked = false;
     this.stage = null;
@@ -66,6 +68,14 @@ export class ViewportScaleManager {
     document.documentElement.style.setProperty(
       '--app-viewport-height',
       `${viewportSize.height}px`,
+    );
+    document.documentElement.style.setProperty(
+      '--app-stage-width',
+      `${this.viewport.width * scale}px`,
+    );
+    document.documentElement.style.setProperty(
+      '--app-stage-height',
+      `${this.viewport.height * scale}px`,
     );
     this.stage.style.setProperty('--viewport-scale', String(scale));
     this.stage.style.setProperty('--style-ui-scale', String(uiScale));

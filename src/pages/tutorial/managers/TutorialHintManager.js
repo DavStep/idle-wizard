@@ -7,7 +7,8 @@ const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 56;
 const HINT_GAP = 8;
 const HIGHLIGHT_PAD = 4;
-const HIGHLIGHT_TITLE_PAD = 14;
+const HIGHLIGHT_UNDERLINE_HEIGHT = 4;
+const HIGHLIGHT_UNDERLINE_OFFSET = 2;
 const PORTRAIT_WIDTH = 42;
 const PORTRAIT_HEIGHT = 54;
 const POINTER_WIDTH = 38;
@@ -16,12 +17,12 @@ const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
 const DIALOG_TOP = 218;
-const OBJECTIVE_LEFT = 184;
+const OBJECTIVE_LEFT = 76;
 const OBJECTIVE_TOP = 504;
-const OBJECTIVE_BUTTON_LEFT = 142;
-const OBJECTIVE_BUTTON_TOP = 499;
-const OBJECTIVE_BUTTON_WIDTH = 42;
-const OBJECTIVE_BUTTON_HEIGHT = 54;
+const OBJECTIVE_BUTTON_LEFT = 8;
+const OBJECTIVE_BUTTON_TOP = 491;
+const OBJECTIVE_BUTTON_WIDTH = 63;
+const OBJECTIVE_BUTTON_HEIGHT = 81;
 
 export class TutorialHintManager {
   constructor() {
@@ -47,6 +48,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.objectiveStepId = null;
     this.onAdvance = null;
+    this.onObjectivePress = null;
   }
 
   mount(stage) {
@@ -123,6 +125,11 @@ export class TutorialHintManager {
     this.objectiveButton.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
+      if (this.objectivePanelOpen) {
+        this.closeObjectivePanel();
+        return;
+      }
+
       this.openObjectivePanel();
     });
 
@@ -139,6 +146,15 @@ export class TutorialHintManager {
     this.objective.id = 'tutorial-objective';
     this.objective.hidden = true;
     this.objective.setAttribute('aria-live', 'polite');
+    this.objective.addEventListener('click', (event) => {
+      if (event.target?.closest?.('.tutorial-layer__objective-close')) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      this.onObjectivePress?.();
+    });
 
     const objectiveTitle = document.createElement('div');
     objectiveTitle.className = 'style-box__title';
@@ -219,14 +235,31 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.objectiveStepId = null;
     this.onAdvance = null;
+    this.onObjectivePress = null;
   }
 
   setAdvanceHandler(onAdvance) {
     this.onAdvance = typeof onAdvance === 'function' ? onAdvance : null;
   }
 
-  show({ target, text, stepLabel, showPointer = true, advanceOnClick = false }) {
+  setObjectivePressHandler(onObjectivePress) {
+    this.onObjectivePress = typeof onObjectivePress === 'function' ? onObjectivePress : null;
+  }
+
+  show({
+    target,
+    text,
+    stepLabel,
+    showPointer = true,
+    showPortrait = true,
+    advanceOnClick = false,
+  }) {
     if (!this.root || !this.stage || !target) {
+      this.hidePrompt();
+      return;
+    }
+
+    if (this.objectivePanelOpen) {
       this.hidePrompt();
       return;
     }
@@ -244,9 +277,9 @@ export class TutorialHintManager {
     this.text.textContent = text ?? '';
     this.stepLabel.textContent = stepLabel ?? '';
     this.advanceButton.hidden = !advanceOnClick;
-    this.positionHighlight(rect, target);
+    this.positionHighlight(rect);
     this.positionPointer(rect, showPointer);
-    this.positionGuide(rect);
+    this.positionGuide(rect, showPortrait);
     this.syncRootVisibility();
   }
 
@@ -284,6 +317,10 @@ export class TutorialHintManager {
       'aria-expanded',
       this.objectivePanelOpen ? 'true' : 'false',
     );
+    this.objectiveButton.setAttribute(
+      'aria-label',
+      this.objectivePanelOpen ? 'close mira objective' : 'open mira objective',
+    );
     setNotificationBadge(this.objectiveButton, true);
     this.objectiveText.textContent = text ?? '';
     this.objectiveStepLabel.textContent = stepLabel ?? '';
@@ -307,6 +344,8 @@ export class TutorialHintManager {
     this.objectivePanelOpen = true;
     this.objective.hidden = false;
     this.objectiveButton.setAttribute('aria-expanded', 'true');
+    this.objectiveButton.setAttribute('aria-label', 'close mira objective');
+    this.hidePrompt();
     this.positionObjective();
     this.syncRootVisibility();
   }
@@ -319,6 +358,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.objective.hidden = true;
     this.objectiveButton.setAttribute('aria-expanded', 'false');
+    this.objectiveButton.setAttribute('aria-label', 'open mira objective');
     this.syncRootVisibility();
   }
 
@@ -336,6 +376,7 @@ export class TutorialHintManager {
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
+      this.objectiveButton.setAttribute('aria-label', 'open mira objective');
       setNotificationBadge(this.objectiveButton, false);
     }
 
@@ -362,6 +403,7 @@ export class TutorialHintManager {
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
+      this.objectiveButton.setAttribute('aria-label', 'open mira objective');
       setNotificationBadge(this.objectiveButton, false);
     }
 
@@ -410,24 +452,21 @@ export class TutorialHintManager {
     return Number.isFinite(scale) && scale > 0 ? scale : 1;
   }
 
-  positionHighlight(rect, target) {
-    const topPad = this.hasBorderTitle(target) ? HIGHLIGHT_TITLE_PAD : HIGHLIGHT_PAD;
+  positionHighlight(rect) {
+    const bounds = this.getSourceBounds();
     const left = Math.max(0, rect.left - HIGHLIGHT_PAD);
-    const top = Math.max(0, rect.top - topPad);
-    const width = rect.width + HIGHLIGHT_PAD * 2;
-    const height = rect.height + topPad + HIGHLIGHT_PAD;
+    const top = clamp(
+      rect.top + rect.height + HIGHLIGHT_UNDERLINE_OFFSET,
+      0,
+      Math.max(0, bounds.height - HIGHLIGHT_UNDERLINE_HEIGHT),
+    );
+    const width = Math.max(0, Math.min(bounds.width - left, rect.width + HIGHLIGHT_PAD * 2));
 
     this.highlight.hidden = false;
     this.highlight.style.left = `${left}px`;
     this.highlight.style.top = `${top}px`;
     this.highlight.style.width = `${width}px`;
-    this.highlight.style.height = `${height}px`;
-  }
-
-  hasBorderTitle(target) {
-    return [...(target?.children ?? [])].some((child) =>
-      child.classList?.contains('style-box__title'),
-    );
+    this.highlight.style.height = `${HIGHLIGHT_UNDERLINE_HEIGHT}px`;
   }
 
   positionPointer(rect, showPointer) {
@@ -458,7 +497,7 @@ export class TutorialHintManager {
     this.pointer.style.setProperty('--tutorial-pointer-scale-x', hasLeftRoom ? '1' : '-1');
   }
 
-  positionGuide(rect) {
+  positionGuide(rect, showPortrait = true) {
     const bounds = this.getSourceBounds();
     const baseLeft = clamp(
       (bounds.width - HINT_PADDED_WIDTH) / 2 - GUIDE_LEFT_BIAS,
@@ -491,7 +530,7 @@ export class TutorialHintManager {
     this.hint.style.top = `${top}px`;
     this.portrait.style.left = `${portraitLeft}px`;
     this.portrait.style.top = `${portraitTop}px`;
-    this.portrait.hidden = false;
+    this.portrait.hidden = !showPortrait;
   }
 
   resolveGuidePlacement({ rect, bounds, baseLeft, baseTop }) {
