@@ -19,6 +19,7 @@ function createLifecycle({
   authFacade,
   freshStartChoiceManager,
   maintenanceFacade,
+  pagesFacade,
   playerFacade,
   reload,
 } = {}) {
@@ -69,9 +70,10 @@ function createLifecycle({
       startFrameLoop: vi.fn(),
       stopFrameLoop: vi.fn(),
     },
-    pagesFacade: {
+    pagesFacade: pagesFacade ?? {
       mount: vi.fn(),
       unmount: vi.fn(),
+      resetTutorialProgress: vi.fn(),
     },
     ecsFacade: {
       createWorld: vi.fn(),
@@ -408,7 +410,32 @@ describe('AppLifecycleManager', () => {
       null,
       lifecycle.ecsFacade,
     );
+    expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets old tutorial progress before loading fresh gameplay data', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      unmount: vi.fn(),
+    };
+    const pagesFacade = {
+      mount: vi.fn(),
+      unmount: vi.fn(),
+      resetTutorialProgress: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, pagesFacade });
+    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
+
+    await lifecycle.handleGameplaySaveReady({ save: null });
+
+    expect(pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
+    expect(
+      pagesFacade.resetTutorialProgress.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      lifecycle.gameplayFacade.loadPersistenceSave.mock.invocationCallOrder[0],
+    );
   });
 
   it('connects an account from the fresh start dialog before fresh data is saved', async () => {
@@ -441,6 +468,7 @@ describe('AppLifecycleManager', () => {
       null,
       lifecycle.ecsFacade,
     );
+    expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
   });
 
   it('shows web-unavailable fresh-start login failures as unavailable', async () => {
@@ -482,6 +510,7 @@ describe('AppLifecycleManager', () => {
     await lifecycle.handleGameplaySaveReady({ save });
 
     expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.pagesFacade.resetTutorialProgress).not.toHaveBeenCalled();
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       save,
       lifecycle.ecsFacade,
@@ -505,6 +534,7 @@ describe('AppLifecycleManager', () => {
     await lifecycle.handleGameplaySaveReady({ save: null });
 
     expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       null,
       lifecycle.ecsFacade,

@@ -191,6 +191,10 @@ export class AppLifecycleManager {
       }
     }
 
+    if (!save && !accountLinkSave) {
+      this.pagesFacade.resetTutorialProgress?.();
+    }
+
     this.loadGameplaySave(save);
   }
 

@@ -1,6 +1,6 @@
 # Tutorial
 
-Mira introduces the first loop with a few press-to-advance prompts, then stays as a small objective button with progress behind it. Target hints still point at real controls, hide during waits, and reappear only after inactivity. Level 3 uses passive guidance: Mira stays quiet, then shows an attention badge and glow only after idle time; target hints appear when the player opens Mira and asks for direction.
+Elara Starbrew introduces the first loop with a few press-to-advance prompts, then stays as a small objective button with progress behind it. Target hints still point at real controls, hide during waits, and reappear only after inactivity. Level 3 uses passive guidance: Elara stays quiet, then shows an attention badge and glow only after idle time; target hints appear when the player opens Elara and asks for direction.
 
 The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage, level 3 seed research, and level 4 Brewing recipe research. It has no skip state.
 

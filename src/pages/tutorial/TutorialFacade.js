@@ -7,7 +7,7 @@ import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 
 export class TutorialFacade {
   static explain =
-    'Mira gives new players short prompts, then keeps an objective button available while they learn the first loop.';
+    'Elara Starbrew gives new players short prompts, then keeps an objective button available while they learn the first loop.';
 
   constructor({ gameplayFacade, getCurrentPageId, storage, now } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -69,6 +69,13 @@ export class TutorialFacade {
     this.hintManager.unmount();
     this.targetManager.setStage(null);
     this.stage = null;
+  }
+
+  resetProgress() {
+    this.progressManager.reset();
+    this.activeStep = null;
+    this.reminderManager.discardActivePrompt();
+    this.scheduleRefresh();
   }
 
   refresh() {

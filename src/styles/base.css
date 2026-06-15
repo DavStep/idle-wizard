@@ -464,6 +464,37 @@ body {
   user-select: none;
 }
 
+.game-stage.is-control-revealing :where(button, [role="button"]) {
+  pointer-events: none;
+  animation: stage-control-reveal 240ms var(--style-motion-ease) both;
+}
+
+.game-stage.is-control-revealing
+  :where(.room-top-panel-layer button, .room-top-panel-layer [role="button"]) {
+  animation-delay: 60ms;
+}
+
+.game-stage.is-control-revealing
+  :where(
+    .workshop-page__ui-layer button,
+    .brewing-page__ui-layer button,
+    .garden-page__ui-layer button,
+    .shop-page__ui-layer button,
+    .research-page__ui-layer button
+  ) {
+  animation-delay: 140ms;
+}
+
+.game-stage.is-control-revealing
+  :where(.room-bottom-panel-layer button, .room-bottom-panel-layer [role="button"]) {
+  animation-delay: 260ms;
+}
+
+.game-stage.is-control-revealing
+  :where(.tutorial-layer button, .tutorial-layer [role="button"]) {
+  animation-delay: 0ms;
+}
+
 .game-stage *,
 .game-stage *::before,
 .game-stage *::after {
@@ -1075,13 +1106,19 @@ body {
 .tutorial-layer__portrait {
   position: absolute;
   z-index: 5;
-  width: 42px;
-  height: 54px;
+  width: 54px;
+  height: 70px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: auto;
   pointer-events: none;
   filter: drop-shadow(0 1px 0 var(--style-surface));
+  transform-origin: 48% 78%;
+}
+
+.tutorial-layer__portrait[data-speaking] {
+  animation: tutorial-elara-portrait-talk 420ms cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  will-change: transform;
 }
 
 .tutorial-layer__objective-button {
@@ -1089,8 +1126,8 @@ body {
   z-index: 4;
   display: grid;
   place-items: center;
-  width: 96px;
-  height: 118px;
+  width: 112px;
+  height: 142px;
   padding: 0;
   margin: 0;
   appearance: none;
@@ -1104,12 +1141,12 @@ body {
 }
 
 .tutorial-layer__objective-button:not([hidden]) {
-  animation: tutorial-mira-objective-enter 240ms var(--style-motion-ease) both;
+  animation: tutorial-elara-objective-enter 240ms var(--style-motion-ease) both;
 }
 
 .tutorial-layer__objective-button::after {
   position: absolute;
-  inset: 18px 11px 12px 9px;
+  inset: 22px 14px 14px 11px;
   z-index: 0;
   display: block;
   content: "";
@@ -1124,7 +1161,7 @@ body {
 }
 
 .tutorial-layer__objective-button[data-attention="true"]::after {
-  animation: tutorial-mira-glow 1800ms var(--style-motion-ease) infinite;
+  animation: tutorial-elara-glow 1800ms var(--style-motion-ease) infinite;
 }
 
 .tutorial-layer__objective-button:focus {
@@ -1140,23 +1177,29 @@ body {
   position: relative;
   z-index: 1;
   display: block;
-  width: 90px;
-  height: 114px;
+  width: 106px;
+  height: 136px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: auto;
   pointer-events: none;
   filter: drop-shadow(0 1px 0 var(--style-surface));
+  transform-origin: 48% 78%;
   transition: transform var(--style-motion-normal) var(--style-motion-ease);
 }
 
 .tutorial-layer__objective-button[data-attention="true"] .tutorial-layer__objective-button-image {
-  animation: tutorial-mira-shake 2400ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation: tutorial-elara-shake 2400ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
   filter:
     drop-shadow(0 1px 0 var(--style-surface))
     drop-shadow(0 0 4px var(--style-notification-current, var(--style-notification)))
     drop-shadow(0 0 8px rgb(193 18 31 / 34%));
   transform-origin: 50% 78%;
+}
+
+.tutorial-layer__objective-button[data-speaking] .tutorial-layer__objective-button-image {
+  animation: tutorial-elara-portrait-talk 420ms cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  will-change: transform;
 }
 
 .tutorial-layer__objective-button[aria-expanded="true"] .tutorial-layer__objective-button-image {
@@ -1358,7 +1401,22 @@ body {
   }
 }
 
-@keyframes tutorial-mira-glow {
+@keyframes tutorial-elara-portrait-talk {
+  0%,
+  100% {
+    transform: rotate(-1.1deg) translateY(0) scale(1);
+  }
+
+  32% {
+    transform: rotate(1.4deg) translateY(-0.55%) scale(1.008);
+  }
+
+  68% {
+    transform: rotate(-0.7deg) translateY(0.45%) scale(0.998);
+  }
+}
+
+@keyframes tutorial-elara-glow {
   0%,
   100% {
     opacity: 0.32;
@@ -1371,7 +1429,7 @@ body {
   }
 }
 
-@keyframes tutorial-mira-shake {
+@keyframes tutorial-elara-shake {
   0%,
   100% {
     transform: translateX(0) rotate(0deg);
@@ -1395,10 +1453,17 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .game-stage.is-control-revealing :where(button, [role="button"]) {
+    pointer-events: auto;
+    animation: none;
+  }
+
   .tutorial-layer__objective-button:not([hidden]),
   .tutorial-layer__objective:not([hidden]),
   .tutorial-layer__highlight,
   .tutorial-layer__pointer,
+  .tutorial-layer__portrait[data-speaking],
+  .tutorial-layer__objective-button[data-speaking] .tutorial-layer__objective-button-image,
   .tutorial-layer__objective-button[data-attention="true"]::after,
   .tutorial-layer__objective-button[data-attention="true"] .tutorial-layer__objective-button-image {
     animation: none;
@@ -1412,6 +1477,16 @@ body {
 
   .tutorial-layer__objective-button[data-attention="true"]::after {
     opacity: 0.48;
+  }
+}
+
+@keyframes stage-control-reveal {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 
@@ -6693,7 +6768,7 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes tutorial-mira-objective-enter {
+@keyframes tutorial-elara-objective-enter {
   from {
     opacity: 0.01;
     scale: 0.84;

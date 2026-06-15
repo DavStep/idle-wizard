@@ -2,18 +2,20 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
 const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
+const GUIDE_NAME = 'Elara Starbrew';
 const HINT_WIDTH = 136;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 56;
 const HINT_GAP = 8;
-const TYPEWRITER_CHARACTER_MS = 18;
+const TYPEWRITER_INTERVAL_MS = 12;
+const TYPEWRITER_CHARS_PER_TICK = 2;
 const OBJECTIVE_AUTO_CLOSE_MS = 5200;
 const POINTER_HIDE_MS = 180;
 const HIGHLIGHT_PAD = 4;
 const HIGHLIGHT_UNDERLINE_HEIGHT = 4;
 const HIGHLIGHT_UNDERLINE_OFFSET = 2;
-const PORTRAIT_WIDTH = 42;
-const PORTRAIT_HEIGHT = 54;
+const PORTRAIT_WIDTH = 54;
+const PORTRAIT_HEIGHT = 70;
 const POINTER_WIDTH = 38;
 const POINTER_HEIGHT = 17;
 const POINTER_HALF_EXTENT = Math.ceil((POINTER_WIDTH + POINTER_HEIGHT) * Math.SQRT1_2 * 0.5);
@@ -22,12 +24,12 @@ const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
 const DIALOG_TOP = 218;
-const OBJECTIVE_LEFT = 92;
+const OBJECTIVE_LEFT = 108;
 const OBJECTIVE_TOP = 500;
 const OBJECTIVE_BUTTON_LEFT = 0;
-const OBJECTIVE_BUTTON_TOP = 506;
-const OBJECTIVE_BUTTON_WIDTH = 96;
-const OBJECTIVE_BUTTON_HEIGHT = 118;
+const OBJECTIVE_BUTTON_TOP = 498;
+const OBJECTIVE_BUTTON_WIDTH = 112;
+const OBJECTIVE_BUTTON_HEIGHT = 142;
 const OBJECTIVE_PROTECTED_SELECTORS = [
   '.workshop-page__leaderboard-button',
   '.workshop-page__trade-alliance-button',
@@ -95,7 +97,7 @@ export class TutorialHintManager {
     this.root = document.createElement('section');
     this.root.className = 'tutorial-layer';
     this.root.hidden = true;
-    this.root.setAttribute('aria-label', 'guide');
+    this.root.setAttribute('aria-label', `${GUIDE_NAME} guide`);
 
     this.backdrop = document.createElement('div');
     this.backdrop.className = 'tutorial-layer__backdrop';
@@ -126,7 +128,7 @@ export class TutorialHintManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'mira';
+    title.textContent = GUIDE_NAME;
 
     this.stepLabel = document.createElement('div');
     this.stepLabel.className = 'tutorial-layer__step-label';
@@ -154,7 +156,7 @@ export class TutorialHintManager {
     this.objectiveButton.className = 'tutorial-layer__objective-button';
     this.objectiveButton.type = 'button';
     this.objectiveButton.hidden = true;
-    this.objectiveButton.setAttribute('aria-label', 'open mira objective');
+    this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
     this.objectiveButton.setAttribute('aria-controls', 'tutorial-objective');
     this.objectiveButton.setAttribute('aria-expanded', 'false');
     this.objectiveButton.addEventListener('click', (event) => {
@@ -193,7 +195,7 @@ export class TutorialHintManager {
 
     const objectiveTitle = document.createElement('div');
     objectiveTitle.className = 'style-box__title';
-    objectiveTitle.textContent = 'mira';
+    objectiveTitle.textContent = GUIDE_NAME;
 
     this.objectiveCloseButton = document.createElement('button');
     this.objectiveCloseButton.className = 'tutorial-layer__objective-close';
@@ -309,13 +311,12 @@ export class TutorialHintManager {
     this.hint.hidden = false;
     this.hint.classList.remove('is-dialog');
     this.setTypedText(this.text, text ?? '', {
-      onComplete: () => this.typeAdvanceLabel(advanceOnClick),
+      speakingElement: this.portrait,
     });
     this.stepLabel.textContent = stepLabel ?? '';
     this.advanceButton.hidden = !advanceOnClick;
     if (advanceOnClick) {
-      this.advanceButton.textContent = '';
-      this.advanceButton.setAttribute('aria-label', 'next');
+      this.setPlainText(this.advanceButton, 'next');
     } else {
       this.setPlainText(this.advanceButton, '');
     }
@@ -333,19 +334,18 @@ export class TutorialHintManager {
     this.root.hidden = false;
     this.hint.hidden = false;
     this.hint.classList.add('is-dialog');
+    this.hideTargetCue();
+    this.positionDialog();
     this.setTypedText(this.text, text ?? '', {
-      onComplete: () => this.typeAdvanceLabel(advanceOnClick),
+      speakingElement: this.portrait,
     });
     this.stepLabel.textContent = stepLabel ?? '';
     this.advanceButton.hidden = !advanceOnClick;
     if (advanceOnClick) {
-      this.advanceButton.textContent = '';
-      this.advanceButton.setAttribute('aria-label', 'next');
+      this.setPlainText(this.advanceButton, 'next');
     } else {
       this.setPlainText(this.advanceButton, '');
     }
-    this.hideTargetCue();
-    this.positionDialog();
     this.syncRootVisibility();
   }
 
@@ -380,7 +380,9 @@ export class TutorialHintManager {
     );
     this.objectiveButton.setAttribute(
       'aria-label',
-      this.objectivePanelOpen ? 'close mira objective' : 'open mira objective',
+      this.objectivePanelOpen
+        ? `close ${GUIDE_NAME} objective`
+        : `open ${GUIDE_NAME} objective`,
     );
     this.setObjectiveAttention(attention);
     this.updateObjectiveCopy();
@@ -414,7 +416,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = true;
     this.objective.hidden = false;
     this.objectiveButton.setAttribute('aria-expanded', 'true');
-    this.objectiveButton.setAttribute('aria-label', 'close mira objective');
+    this.objectiveButton.setAttribute('aria-label', `close ${GUIDE_NAME} objective`);
     this.setObjectiveAttention(false);
     this.hidePrompt();
     this.resetTypedText(this.objectiveText);
@@ -434,7 +436,7 @@ export class TutorialHintManager {
     this.clearObjectiveAutoClose();
     this.resetTypedText(this.objectiveText);
     this.objectiveButton.setAttribute('aria-expanded', 'false');
-    this.objectiveButton.setAttribute('aria-label', 'open mira objective');
+    this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
     this.syncRootVisibility();
   }
 
@@ -452,8 +454,9 @@ export class TutorialHintManager {
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
-      this.objectiveButton.setAttribute('aria-label', 'open mira objective');
+      this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
       this.setObjectiveAttention(false);
+      this.setSpeaking(this.objectiveButton, false);
     }
 
     this.objectivePanelOpen = false;
@@ -487,8 +490,9 @@ export class TutorialHintManager {
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
-      this.objectiveButton.setAttribute('aria-label', 'open mira objective');
+      this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
       this.setObjectiveAttention(false);
+      this.setSpeaking(this.objectiveButton, false);
     }
 
     this.objectivePanelOpen = false;
@@ -508,6 +512,7 @@ export class TutorialHintManager {
 
     if (this.portrait) {
       this.portrait.hidden = true;
+      this.setSpeaking(this.portrait, false);
     }
   }
 
@@ -712,7 +717,16 @@ export class TutorialHintManager {
 
     this.pointer.classList.remove('is-visible');
     this.pointer.classList.add('is-hiding');
-    this.pointerHideTimeout = window.setTimeout(() => {
+    const view = this.getWindow();
+
+    if (typeof view?.setTimeout !== 'function') {
+      this.pointer.hidden = true;
+      this.cleanupPointerState();
+      this.syncRootVisibility();
+      return;
+    }
+
+    this.pointerHideTimeout = view.setTimeout(() => {
       this.pointerHideTimeout = null;
       if (!this.pointer) {
         return;
@@ -914,15 +928,8 @@ export class TutorialHintManager {
 
     this.setTypedText(this.objectiveText, this.objectiveCopyText, {
       onComplete: () => this.scheduleObjectiveAutoClose(),
+      speakingElement: this.objectiveButton,
     });
-  }
-
-  typeAdvanceLabel(show) {
-    if (!this.advanceButton || !show || this.advanceButton.hidden) {
-      return;
-    }
-
-    this.setTypedText(this.advanceButton, 'next');
   }
 
   setPlainText(element, text) {
@@ -943,7 +950,7 @@ export class TutorialHintManager {
     delete element.dataset.tutorialFullText;
   }
 
-  setTypedText(element, text, { onComplete } = {}) {
+  setTypedText(element, text, { onComplete, speakingElement } = {}) {
     if (!element) {
       return;
     }
@@ -957,10 +964,15 @@ export class TutorialHintManager {
       element.textContent !== nextText
     ) {
       existing.onComplete = onComplete;
+      if (speakingElement) {
+        existing.speakingElement = speakingElement;
+        this.setSpeaking(speakingElement, true);
+      }
       return;
     }
 
     if (element.dataset.tutorialFullText === nextText && element.textContent === nextText) {
+      this.setSpeaking(speakingElement, false);
       onComplete?.();
       return;
     }
@@ -971,6 +983,7 @@ export class TutorialHintManager {
     if (!nextText) {
       element.textContent = '';
       element.removeAttribute('aria-label');
+      this.setSpeaking(speakingElement, false);
       onComplete?.();
       return;
     }
@@ -979,6 +992,16 @@ export class TutorialHintManager {
 
     if (this.prefersReducedMotion()) {
       element.textContent = nextText;
+      this.setSpeaking(speakingElement, false);
+      onComplete?.();
+      return;
+    }
+
+    const view = element.ownerDocument?.defaultView ?? this.getWindow();
+
+    if (typeof view?.setTimeout !== 'function' || typeof view?.clearTimeout !== 'function') {
+      element.textContent = nextText;
+      this.setSpeaking(speakingElement, false);
       onComplete?.();
       return;
     }
@@ -987,8 +1010,12 @@ export class TutorialHintManager {
       isTyping: true,
       timeout: null,
       onComplete,
+      speakingElement,
+      setTimeout: view.setTimeout.bind(view),
+      clearTimeout: view.clearTimeout.bind(view),
     };
     this.typewriterTimers.set(element, timerState);
+    this.setSpeaking(speakingElement, true);
     let index = 0;
 
     const tick = () => {
@@ -996,20 +1023,21 @@ export class TutorialHintManager {
         return;
       }
 
-      index += 1;
+      index += TYPEWRITER_CHARS_PER_TICK;
       element.textContent = nextText.slice(0, index);
 
       if (index >= nextText.length) {
         this.typewriterTimers.delete(element);
+        this.setSpeaking(timerState.speakingElement, false);
         timerState.onComplete?.();
         return;
       }
 
-      timerState.timeout = window.setTimeout(tick, TYPEWRITER_CHARACTER_MS);
+      timerState.timeout = timerState.setTimeout(tick, TYPEWRITER_INTERVAL_MS);
     };
 
     element.textContent = '';
-    timerState.timeout = window.setTimeout(tick, TYPEWRITER_CHARACTER_MS);
+    timerState.timeout = timerState.setTimeout(tick, TYPEWRITER_INTERVAL_MS);
   }
 
   clearTypedText(element) {
@@ -1020,9 +1048,10 @@ export class TutorialHintManager {
     const timerState = this.typewriterTimers.get(element);
 
     if (timerState?.timeout) {
-      window.clearTimeout(timerState.timeout);
+      timerState.clearTimeout?.(timerState.timeout);
     }
 
+    this.setSpeaking(timerState?.speakingElement, false);
     this.typewriterTimers.delete(element);
   }
 
@@ -1040,10 +1069,15 @@ export class TutorialHintManager {
   clearAllTypewriterTimers() {
     this.typewriterTimers.forEach((timerState) => {
       if (timerState?.timeout) {
-        window.clearTimeout(timerState.timeout);
+        timerState.clearTimeout?.(timerState.timeout);
       }
+      this.setSpeaking(timerState?.speakingElement, false);
     });
     this.typewriterTimers.clear();
+  }
+
+  setSpeaking(element, active) {
+    element?.toggleAttribute?.('data-speaking', Boolean(active));
   }
 
   scheduleObjectiveAutoClose() {
@@ -1051,7 +1085,14 @@ export class TutorialHintManager {
       return;
     }
 
-    this.objectiveAutoCloseTimeout = window.setTimeout(() => {
+    const view = this.getWindow();
+
+    if (typeof view?.setTimeout !== 'function') {
+      this.closeObjectivePanel();
+      return;
+    }
+
+    this.objectiveAutoCloseTimeout = view.setTimeout(() => {
       this.objectiveAutoCloseTimeout = null;
       this.closeObjectivePanel();
     }, OBJECTIVE_AUTO_CLOSE_MS);
@@ -1062,7 +1103,7 @@ export class TutorialHintManager {
       return;
     }
 
-    window.clearTimeout(this.objectiveAutoCloseTimeout);
+    this.getWindow()?.clearTimeout?.(this.objectiveAutoCloseTimeout);
     this.objectiveAutoCloseTimeout = null;
   }
 
@@ -1071,14 +1112,18 @@ export class TutorialHintManager {
       return;
     }
 
-    window.clearTimeout(this.pointerHideTimeout);
+    this.getWindow()?.clearTimeout?.(this.pointerHideTimeout);
     this.pointerHideTimeout = null;
   }
 
   prefersReducedMotion() {
-    const view = this.stage?.ownerDocument?.defaultView ?? globalThis.window;
+    const view = this.getWindow();
 
     return Boolean(view?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+  }
+
+  getWindow() {
+    return this.stage?.ownerDocument?.defaultView ?? globalThis.window;
   }
 }
 

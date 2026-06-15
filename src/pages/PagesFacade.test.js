@@ -3496,6 +3496,29 @@ describe('PagesFacade', () => {
     expect(layer?.querySelector('.tutorial-layer__skip')).toBeNull();
   });
 
+  it('can reset stale FTUE progress for a fresh gameplay save', () => {
+    const stage = document.createElement('section');
+    const storage = createMemoryStorage({
+      [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+        completedStepIds: TUTORIAL_STEP_IDS,
+      }),
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: storage,
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.resetTutorialProgress();
+
+    expect(JSON.parse(storage.getItem(TUTORIAL_STORAGE_KEY))).toEqual({
+      completedStepIds: [],
+    });
+
+    pagesFacade.unmount();
+  });
+
   it('auto-completes FTUE for players already past brewing introduction', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

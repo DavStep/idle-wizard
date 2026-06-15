@@ -58,8 +58,8 @@ function getObjectiveButtonRect(button) {
   return {
     left,
     top,
-    right: left + 96,
-    bottom: top + 118,
+    right: left + 112,
+    bottom: top + 142,
   };
 }
 
@@ -210,7 +210,7 @@ describe('TutorialHintManager', () => {
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
 
-  it('types prompt text before typing the next action', () => {
+  it('types prompt text while the next action appears immediately', () => {
     vi.useFakeTimers();
 
     try {
@@ -230,30 +230,28 @@ describe('TutorialHintManager', () => {
 
       const text = stage.querySelector('.tutorial-layer__text');
       const advance = stage.querySelector('.tutorial-layer__advance');
+      const portrait = stage.querySelector('.tutorial-layer__portrait');
 
       expect(text?.textContent).toBe('');
       expect(text?.getAttribute('aria-label')).toBe('abc');
       expect(advance?.hidden).toBe(false);
-      expect(advance?.textContent).toBe('');
-
-      vi.advanceTimersByTime(18);
-      expect(text?.textContent).toBe('a');
-
-      vi.advanceTimersByTime(36);
-      expect(text?.textContent).toBe('abc');
-      expect(advance?.textContent).toBe('');
-
-      vi.advanceTimersByTime(54);
-      expect(advance?.textContent).toBe('nex');
-
-      vi.advanceTimersByTime(18);
       expect(advance?.textContent).toBe('next');
+      expect(portrait?.hasAttribute('data-speaking')).toBe(true);
+
+      vi.advanceTimersByTime(12);
+      expect(text?.textContent).toBe('ab');
+      expect(advance?.textContent).toBe('next');
+
+      vi.advanceTimersByTime(12);
+      expect(text?.textContent).toBe('abc');
+      expect(advance?.textContent).toBe('next');
+      expect(portrait?.hasAttribute('data-speaking')).toBe(false);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('opens objective text from a larger Mira button and auto-closes it', () => {
+  it('opens objective text from a larger Elara button and auto-closes it', () => {
     vi.useFakeTimers();
 
     try {
@@ -281,39 +279,41 @@ describe('TutorialHintManager', () => {
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
       expect(button?.hidden).toBe(false);
       expect(button?.style.left).toBe('0px');
-      expect(button?.style.top).toBe('506px');
+      expect(button?.style.top).toBe('498px');
       expect(button?.dataset.notification).toBe('true');
       expect(button?.dataset.notificationTone).toBe('red');
-      expect(button?.getAttribute('aria-label')).toBe('close mira objective');
+      expect(button?.getAttribute('aria-label')).toBe('close Elara Starbrew objective');
       expect(button?.getAttribute('aria-expanded')).toBe('true');
+      expect(button?.hasAttribute('data-speaking')).toBe(true);
       expect(objective?.hidden).toBe(false);
-      expect(objective?.textContent).toContain('mira');
+      expect(objective?.textContent).toContain('Elara Starbrew');
       expect(copy?.textContent).toBe('');
       expect(copy?.getAttribute('aria-label')).toBe(objectiveText);
 
-      vi.advanceTimersByTime(18);
-      expect(copy?.textContent).toBe('s');
+      vi.advanceTimersByTime(12);
+      expect(copy?.textContent).toBe('su');
 
-      vi.advanceTimersByTime(objectiveText.length * 18);
+      vi.advanceTimersByTime(objectiveText.length * 12);
       expect(copy?.textContent).toBe(objectiveText);
+      expect(button?.hasAttribute('data-speaking')).toBe(false);
 
       vi.advanceTimersByTime(5200);
       expect(button?.hidden).toBe(false);
-      expect(button?.getAttribute('aria-label')).toBe('open mira objective');
+      expect(button?.getAttribute('aria-label')).toBe('open Elara Starbrew objective');
       expect(button?.getAttribute('aria-expanded')).toBe('false');
       expect(objective?.hidden).toBe(true);
 
       button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
       expect(button?.hidden).toBe(false);
-      expect(button?.getAttribute('aria-label')).toBe('close mira objective');
+      expect(button?.getAttribute('aria-label')).toBe('close Elara Starbrew objective');
       expect(button?.getAttribute('aria-expanded')).toBe('true');
       expect(objective?.hidden).toBe(false);
 
       button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
       expect(button?.hidden).toBe(false);
-      expect(button?.getAttribute('aria-label')).toBe('open mira objective');
+      expect(button?.getAttribute('aria-label')).toBe('open Elara Starbrew objective');
       expect(button?.getAttribute('aria-expanded')).toBe('false');
       expect(objective?.hidden).toBe(true);
     } finally {
@@ -352,7 +352,7 @@ describe('TutorialHintManager', () => {
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
   });
 
-  it('can keep Mira quiet until passive attention is active', () => {
+  it('can keep Elara quiet until passive attention is active', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
 

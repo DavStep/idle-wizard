@@ -57,7 +57,7 @@ const STEPS = [
     id: 'intro-welcome',
     kind: 'dialog',
     text:
-      "yo! i'm mira. this is your workshop. i will point at the next thing until the first loop makes sense.",
+      "yo! i'm Elara Starbrew. this is your workshop. i will point at the next thing until the first loop makes sense.",
     advanceOnClick: true,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,

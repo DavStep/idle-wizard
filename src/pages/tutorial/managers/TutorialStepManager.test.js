@@ -166,12 +166,14 @@ function createLevelTwoReadySnapshot(overrides = {}) {
 }
 
 describe('TutorialStepManager', () => {
-  it('starts with Mira intro dialog', () => {
+  it('starts with Elara intro dialog', () => {
     expect(getStep()).toMatchObject({
       id: 'intro-welcome',
       kind: 'dialog',
       advanceOnClick: true,
       stepLabel: '1/23',
+      text:
+        "yo! i'm Elara Starbrew. this is your workshop. i will point at the next thing until the first loop makes sense.",
     });
   });
 
@@ -700,7 +702,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('keeps Mira active for the level three mint seed task after research', () => {
+  it('keeps Elara active for the level three mint seed task after research', () => {
     const snapshot = createSnapshot({
       seedInventory: [{ key: 'mintSeed', quantity: 3 }],
       research: {
@@ -823,7 +825,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('keeps level three Mira active for level-up gold', () => {
+  it('keeps level three Elara active for level-up gold', () => {
     const snapshot = createSnapshot({
       gold: { current: 77 },
       research: {

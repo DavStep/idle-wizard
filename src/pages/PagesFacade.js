@@ -154,6 +154,10 @@ export class PagesFacade {
     this.tutorialFacade?.scheduleRefresh();
   }
 
+  resetTutorialProgress() {
+    this.tutorialFacade?.resetProgress();
+  }
+
   getCurrentPageId() {
     return this.currentPageManager.getCurrentPageId();
   }
