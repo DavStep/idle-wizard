@@ -46,9 +46,13 @@ export class TutorialCaptureFacade {
       openLessonPanel: () => this.openLessonPanel(),
       closeLessonPanel: () => this.closeLessonPanel(),
       showPage: (pageId) => this.showPage(pageId),
+      setUsername: (username) => this.setUsername(username),
       clickTarget: (targetId) => this.clickTarget(targetId),
       clickSelector: (selector) => this.clickSelector(selector),
       clickByText: (text, selector) => this.clickByText(text, selector),
+      completeTaskWithItems: (taskId, itemKey, quantity) =>
+        this.completeTaskWithItems(taskId, itemKey, quantity),
+      completeCurrentTask: (taskId) => this.completeCurrentTask(taskId),
     });
   }
 
@@ -78,12 +82,15 @@ export class TutorialCaptureFacade {
       lessonText: lesson?.querySelector('.tutorial-layer__lesson-text')?.textContent ?? '',
       lessonButtonVisible: Boolean(lessonButton && !lessonButton.hidden),
       pointerVisible: Boolean(pointer && !pointer.hidden),
+      username:
+        stage?.querySelector('[data-tutorial-id="top:username"]')?.textContent?.trim() ?? '',
       onlineGateVisible: Boolean(
         this.app?.onlineGateManager?.root && !this.app.onlineGateManager.root.hidden,
       ),
       freshStartVisible: Boolean(
         stage?.querySelector('.app-fresh-start-choice:not([hidden])'),
       ),
+      completedStepIds: [...(tutorial?.progressManager?.completedStepIds ?? [])],
       targetIds: [...(stage?.querySelectorAll('[data-tutorial-id]') ?? [])].map(
         (element) => element.dataset.tutorialId,
       ),
@@ -99,6 +106,7 @@ export class TutorialCaptureFacade {
       page: this.app?.pagesFacade?.getCurrentPageId?.() ?? null,
       mana: snapshot?.mana ?? null,
       gold: snapshot?.gold ?? null,
+      tasks: snapshot?.tasks ?? null,
       inventory: summarizeItems(snapshot?.inventory),
       seeds: summarizeItems(snapshot?.seedInventory),
       herbs: summarizeItems(snapshot?.garden?.herbs),
@@ -113,13 +121,29 @@ export class TutorialCaptureFacade {
 
   startFresh() {
     const button = this.app?.lifecycleManager?.freshStartChoiceManager?.refs?.freshButton;
+    const manager = this.app?.lifecycleManager?.freshStartChoiceManager;
 
     if (!button || button.hidden || button.closest('[hidden]')) {
-      return { ok: false, reason: 'fresh_button_missing' };
+      return {
+        ok: false,
+        reason: 'fresh_button_missing',
+        hasButton: Boolean(button),
+        buttonHidden: Boolean(button?.hidden),
+        hiddenAncestor: Boolean(button?.closest?.('[hidden]')),
+        hasResolver: Boolean(manager?.resolveChoice),
+      };
     }
 
     button.click();
-    return { ok: true };
+    if (manager?.root && !manager.root.hidden && manager.resolveChoice) {
+      manager.resolve('start_fresh');
+    }
+
+    return {
+      ok: true,
+      hidden: Boolean(manager?.root?.hidden),
+      hasResolver: Boolean(manager?.resolveChoice),
+    };
   }
 
   resetTutorialProgress() {
@@ -149,6 +173,36 @@ export class TutorialCaptureFacade {
     return this.getState();
   }
 
+  setUsername(username) {
+    const open = this.clickTarget('top:username');
+
+    if (!open?.ok) {
+      return open;
+    }
+
+    const stage = this.getStage();
+    const input = stage?.querySelector?.('.room-top-panel__username-input');
+    const form = stage?.querySelector?.('.room-top-panel__username-form');
+
+    if (!input || !form) {
+      return {
+        ok: false,
+        reason: 'username_form_missing',
+        hasInput: Boolean(input),
+        hasForm: Boolean(form),
+      };
+    }
+
+    const EventCtor = input.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+
+    input.value = String(username ?? '');
+    input.dispatchEvent(new EventCtor('input', { bubbles: true }));
+    form.dispatchEvent(new EventCtor('submit', { bubbles: true, cancelable: true }));
+    this.refreshTutorial();
+
+    return { ok: true, state: this.getState() };
+  }
+
   clickTarget(targetId) {
     const target = this.app?.pagesFacade?.tutorialFacade?.targetManager?.getTarget?.(targetId);
 
@@ -156,7 +210,10 @@ export class TutorialCaptureFacade {
       return { ok: false, reason: 'target_missing', targetId };
     }
 
-    target.click();
+    const clickable = target.matches?.('button')
+      ? target
+      : (target.querySelector?.('button') ?? target);
+    clickable.click();
     this.refreshTutorial();
     return { ok: true, state: this.getState() };
   }
@@ -185,6 +242,56 @@ export class TutorialCaptureFacade {
     target.click();
     this.refreshTutorial();
     return { ok: true, state: this.getState() };
+  }
+
+  completeTaskWithItems(taskId, itemKey, quantity) {
+    const gameplay = this.app?.gameplayFacade;
+    let definition = null;
+    try {
+      definition = gameplay?.itemsFacade?.getItemDefinitionByKey?.(itemKey);
+    } catch {
+      definition = null;
+    }
+    const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+
+    if (!gameplay || !definition) {
+      return { ok: false, reason: 'gameplay_or_item_missing', taskId, itemKey };
+    }
+
+    if (safeQuantity > 0) {
+      gameplay.itemsFacade.addItem(definition.id, safeQuantity);
+    }
+
+    const fill = gameplay.tasksFacade?.fillTask?.(taskId);
+    const complete = gameplay.tasksFacade?.completeTask?.(taskId);
+    gameplay.publishAndSaveSnapshot?.();
+    this.refreshTutorial();
+
+    return {
+      ok: fill?.ok !== false && complete?.ok !== false,
+      fill,
+      complete,
+      state: this.getState(),
+    };
+  }
+
+  completeCurrentTask(taskId) {
+    const task = this.app?.gameplayFacade
+      ?.getSnapshot?.()
+      ?.tasks?.level?.tasks?.find((candidate) => candidate.taskId === taskId);
+
+    if (!task) {
+      return { ok: false, reason: 'task_missing', taskId };
+    }
+
+    return this.completeTaskWithItems(
+      taskId,
+      task.itemKey,
+      Math.max(
+        0,
+        (Number(task.remainingQuantity) || 0) - (Number(task.ownedQuantity) || 0),
+      ),
+    );
   }
 
   getStage() {

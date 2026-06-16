@@ -39,7 +39,17 @@ export class TutorialTargetManager {
         Boolean(this.stage?.querySelector('.brewing-page__recipes-popup:not([hidden])')),
       isShopSellPopupOpen: () =>
         Boolean(this.stage?.querySelector('.shop-page__sell-popup:not([hidden])')),
+      getUsername: () =>
+        this.stage
+          ?.querySelector('[data-tutorial-id="top:username"]')
+          ?.textContent?.trim() || 'wizard',
       isTasksExpanded: () => {
+        const toggle = this.stage?.querySelector('.workshop-page__tasks-toggle');
+
+        if (toggle) {
+          return toggle.hidden || toggle.getAttribute('aria-expanded') === 'true';
+        }
+
         const tasks = this.stage?.querySelector('[data-tutorial-id="workshop:tasks"]');
         return tasks?.getAttribute('aria-expanded') === 'true';
       },

@@ -39,9 +39,11 @@
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
+- Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
-- FTUE opening should reveal the room piece by piece: top-panel username first, then mana sphere, then summon, then tasks and room chrome.
+- FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then mana sphere, then summon, then tasks and room chrome.
+- Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
 - FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
@@ -52,7 +54,9 @@
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
-- FTUE lesson labels are `lesson 1: seeding`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
+- FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
+- FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
+- FTUE username target needs the username button rect to fit the visible name text; a flex-filled button makes the pointer drift toward the level/gold side.
 - Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Elara disappears while tasks remain.
 - Level-3 FTUE should be passive: no automatic target popups; show Elara attention only after idle/stuck time, then reveal target guidance on player request.
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
@@ -119,6 +123,7 @@
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
 - Prestige reset saves intentionally lower run level, gold, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
+- After prestige, leaderboard and alliance income must advance from accepted save run-gold deltas; comparing new run `gold.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
 - SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
@@ -130,6 +135,7 @@
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
+- All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
 - When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.
 - Server weekly/monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly is 7 days, monthly is 30 days, and UTC midnight is Armenia 04:00.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.

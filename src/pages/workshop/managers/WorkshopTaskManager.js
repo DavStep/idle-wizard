@@ -14,6 +14,7 @@ export class WorkshopTaskManager {
     this.currentLevelCompletion = null;
     this.currentGold = 0;
     this.expanded = false;
+    this.canToggleTasks = false;
   }
 
   mount(parent) {
@@ -66,7 +67,8 @@ export class WorkshopTaskManager {
       this.refs.toggleButton,
     );
     parent.append(this.root);
-    this.setExpanded(this.expanded);
+    this.setCanToggleTasks(false);
+    this.syncExpansionState();
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
     this.render(this.gameplayFacade.getSnapshot());
@@ -93,19 +95,8 @@ export class WorkshopTaskManager {
   }
 
   setExpanded(expanded) {
-    this.expanded = expanded;
-    this.root?.classList.toggle('is-expanded', expanded);
-    this.root?.classList.toggle('is-collapsed', !expanded);
-    this.refs.toggleButton?.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    this.setText(this.refs.toggleButton, expanded ? 'collapse' : 'expand');
-
-    if (this.refs.list) {
-      this.refs.list.hidden = !expanded;
-    }
-
-    this.renderLevelComplete();
-
-    this.updateToggleNotification();
+    this.expanded = Boolean(expanded);
+    this.syncExpansionState();
   }
 
   render(snapshot) {
@@ -122,6 +113,7 @@ export class WorkshopTaskManager {
     this.currentLevelCompletion = taskSnapshot.level.completion ?? null;
     this.currentGold = Number(snapshot?.gold?.current) || 0;
     const rowMovement = this.ensureRows(listTasks);
+    this.setCanToggleTasks(listTasks.length > 0);
 
     this.renderSummaryTask(summaryTask, taskSnapshot.completedAllLevels);
     this.setText(
@@ -131,18 +123,13 @@ export class WorkshopTaskManager {
         : `${taskSnapshot.level.completedTasks}/${taskSnapshot.level.totalTasks}`,
     );
     this.refs.count.setAttribute('aria-label', this.refs.count.textContent);
-    this.refs.toggleButton.setAttribute(
-      'aria-label',
-      this.expanded ? 'collapse tasks' : 'expand tasks',
-    );
     this.root.classList.toggle('is-all-complete', taskSnapshot.completedAllLevels);
-    this.updateToggleNotification();
 
     for (const task of listTasks) {
       this.renderTask(task);
     }
 
-    this.renderLevelComplete();
+    this.syncExpansionState();
     this.animateMovedRows(rowMovement);
   }
 
@@ -154,6 +141,11 @@ export class WorkshopTaskManager {
   }
 
   updateToggleNotification() {
+    if (!this.canToggleTasks) {
+      setNotificationBadge(this.refs.toggleButton, false);
+      return;
+    }
+
     setNotificationBadge(
       this.refs.toggleButton,
       !this.expanded &&
@@ -345,7 +337,9 @@ export class WorkshopTaskManager {
       return;
     }
 
-    const show = this.expanded && this.shouldShowLevelComplete();
+    const show =
+      this.shouldShowLevelComplete() &&
+      (!this.canToggleTasks || this.isTaskListExpanded());
     row.root.hidden = !show;
 
     if (!show) {
@@ -392,6 +386,53 @@ export class WorkshopTaskManager {
     if (element.textContent !== text) {
       element.textContent = text;
     }
+  }
+
+  setCanToggleTasks(canToggleTasks) {
+    this.canToggleTasks = Boolean(canToggleTasks);
+
+    if (!this.refs.toggleButton) {
+      return;
+    }
+
+    this.refs.toggleButton.hidden = !this.canToggleTasks;
+    this.refs.toggleButton.disabled = !this.canToggleTasks;
+    this.root?.classList.toggle('has-task-toggle', this.canToggleTasks);
+
+    if (this.canToggleTasks) {
+      this.refs.toggleButton.dataset.tutorialId = 'workshop:tasks';
+      this.refs.toggleButton.setAttribute('aria-controls', 'workshop-task-list');
+    } else {
+      delete this.refs.toggleButton.dataset.tutorialId;
+      this.refs.toggleButton.removeAttribute('aria-controls');
+    }
+  }
+
+  isTaskListExpanded() {
+    return Boolean(this.canToggleTasks && this.expanded);
+  }
+
+  syncExpansionState() {
+    const listExpanded = this.isTaskListExpanded();
+    const levelCompleteVisible =
+      this.shouldShowLevelComplete() && (!this.canToggleTasks || listExpanded);
+    const hasExpandedContent = listExpanded || levelCompleteVisible;
+
+    this.root?.classList.toggle('is-expanded', hasExpandedContent);
+    this.root?.classList.toggle('is-collapsed', !hasExpandedContent);
+    this.refs.toggleButton?.setAttribute('aria-expanded', listExpanded ? 'true' : 'false');
+    this.refs.toggleButton?.setAttribute(
+      'aria-label',
+      listExpanded ? 'collapse tasks' : 'expand tasks',
+    );
+    this.setText(this.refs.toggleButton, listExpanded ? 'collapse' : 'expand');
+
+    if (this.refs.list) {
+      this.refs.list.hidden = !listExpanded;
+    }
+
+    this.renderLevelComplete();
+    this.updateToggleNotification();
   }
 
   shouldAnimateRows() {

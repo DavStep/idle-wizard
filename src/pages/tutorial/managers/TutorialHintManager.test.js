@@ -173,9 +173,9 @@ describe('TutorialHintManager', () => {
       manager.mount(stage);
       manager.showLesson({
         id: 'intro-welcome',
-        title: 'lesson 1: seeding',
+        title: 'lesson 1: introduction',
         text: 'abc',
-        stepLabel: '1/23',
+        stepLabel: '1/25',
         advanceOnClick: true,
       });
 
@@ -218,9 +218,9 @@ describe('TutorialHintManager', () => {
       manager.mount(stage);
       manager.showLesson({
         id: 'short-copy',
-        title: 'lesson 1: seeding',
+        title: 'lesson 1: introduction',
         text: 'wait',
-        stepLabel: '1/23',
+        stepLabel: '1/25',
       });
 
       const lesson = stage.querySelector('.tutorial-layer__lesson');
@@ -237,7 +237,7 @@ describe('TutorialHintManager', () => {
         id: 'long-copy',
         title: 'lesson 2: market',
         text: 'summon seeds and sell them for level-up gold',
-        stepLabel: '9/23',
+        stepLabel: '11/25',
         progress: { value: 0, max: 10 },
         progressLabel: '0/10 gold',
         canShowTarget: true,
@@ -274,9 +274,9 @@ describe('TutorialHintManager', () => {
       manager.mount(stage);
       manager.showLesson({
         id: 'finish-seed-task',
-        title: 'lesson 1: seeding',
+        title: 'lesson 1: introduction',
         text: lessonText,
-        stepLabel: '5/23',
+        stepLabel: '7/25',
         progress: { value: 1, max: 10 },
         progressLabel: '1/10 seeds',
         canShowTarget: true,
@@ -298,7 +298,7 @@ describe('TutorialHintManager', () => {
       expect(button?.getAttribute('aria-expanded')).toBe('true');
       expect(button?.hasAttribute('data-speaking')).toBe(true);
       expect(lesson?.hidden).toBe(false);
-      expect(lesson?.textContent).toContain('lesson 1: seeding');
+      expect(lesson?.textContent).toContain('lesson 1: introduction');
       expect(copy?.textContent).toBe('');
       expect(Number.parseFloat(lesson?.style.height ?? '0')).toBeGreaterThan(0);
       expect(copy?.getAttribute('aria-label')).toBe(lessonText);
@@ -350,9 +350,9 @@ describe('TutorialHintManager', () => {
     manager.mount(stage);
     manager.showLesson({
       id: 'finish-seed-task',
-      title: 'lesson 1: seeding',
+      title: 'lesson 1: introduction',
       text: 'summon seeds and fill the level task',
-      stepLabel: '5/23',
+      stepLabel: '7/25',
       progress: { value: 1, max: 10 },
       progressLabel: '1/10 seeds',
     });
@@ -384,7 +384,7 @@ describe('TutorialHintManager', () => {
       id: 'research-mint-seed',
       title: 'lesson 3: gardening',
       text: 'research mint seed',
-      stepLabel: '17/23',
+      stepLabel: '19/25',
       attention: false,
       autoOpen: false,
     });
@@ -447,7 +447,7 @@ describe('TutorialHintManager', () => {
       id: 'research-mint-seed',
       title: 'lesson 3: gardening',
       text: 'research mint seed',
-      stepLabel: '17/23',
+      stepLabel: '19/25',
       progress: { value: 0, max: 1 },
       progressLabel: '0/1 research',
     });
@@ -491,7 +491,7 @@ describe('TutorialHintManager', () => {
       id: 'prepare-seed-sale',
       title: 'lesson 2: market',
       text: 'summon one seed to sell',
-      stepLabel: '7/23',
+      stepLabel: '9/25',
     });
     manager.showTargetCue({
       target,
@@ -515,9 +515,9 @@ describe('TutorialHintManager', () => {
     manager.mount(stage);
     manager.showLesson({
       id: 'finish-seed-task',
-      title: 'lesson 1: seeding',
+      title: 'lesson 1: introduction',
       text: 'summon seeds and fill the level task',
-      stepLabel: '5/23',
+      stepLabel: '7/25',
     });
 
     stage
@@ -530,7 +530,7 @@ describe('TutorialHintManager', () => {
       id: 'prepare-seed-sale',
       title: 'lesson 2: market',
       text: 'summon one seed to sell',
-      stepLabel: '7/23',
+      stepLabel: '9/25',
     });
 
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
@@ -554,9 +554,9 @@ describe('TutorialHintManager', () => {
     });
     manager.showLesson({
       id: 'finish-seed-task',
-      title: 'lesson 1: seeding',
+      title: 'lesson 1: introduction',
       text: 'summon seeds and fill the level task',
-      stepLabel: '5/23',
+      stepLabel: '7/25',
       canShowTarget: true,
     });
 
@@ -589,7 +589,7 @@ describe('TutorialHintManager', () => {
       id: 'brew-mana-tonic',
       title: 'lesson 4: brewing',
       text: 'brew mana tonic',
-      stepLabel: '19/23',
+      stepLabel: '24/25',
     });
 
     const button = stage.querySelector('.tutorial-layer__lesson-button');

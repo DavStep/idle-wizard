@@ -3566,9 +3566,6 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    stage
-      .querySelector('.workshop-page__tasks-toggle')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     pagesFacade.tutorialFacade.refresh();
 
     stage
@@ -3724,7 +3721,7 @@ describe('PagesFacade', () => {
     expect(levelPopup.hidden).toBe(true);
   });
 
-  it('shows Workshop tasks collapsed and expands them from the bottom action', () => {
+  it('shows a single Workshop task without an expand action', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -3747,7 +3744,9 @@ describe('PagesFacade', () => {
     ).toBe('0%');
     expect(stage.querySelector('.workshop-page__tasks-level')).toBeNull();
     expect(count?.textContent).toBe('0/1');
-    expect(toggle?.textContent).toBe('expand');
+    expect(toggle?.hidden).toBe(true);
+    expect(toggle?.disabled).toBe(true);
+    expect(toggle?.dataset.tutorialId).toBeUndefined();
     expect(toggle?.dataset.notification).toBeUndefined();
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(list?.hidden).toBe(true);
@@ -3757,6 +3756,50 @@ describe('PagesFacade', () => {
 
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(list.hidden).toBe(true);
+    expect(tasks.classList.contains('is-collapsed')).toBe(true);
+  });
+
+  it('shows Workshop tasks collapsed and expands multiple tasks from the bottom action', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 2;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const tasks = stage.querySelector('.workshop-page__tasks');
+    const summary = stage.querySelector('.workshop-page__tasks-summary');
+    const count = stage.querySelector('.workshop-page__tasks-count');
+    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+    const list = stage.querySelector('.workshop-page__task-list');
+    const summaryRow = summary?.querySelector('.workshop-page__task-row');
+
+    expect(tasks).not.toBeNull();
+    expect(summaryRow?.textContent).toBe('sage seed0/10fill');
+    expect(count?.textContent).toBe('0/2');
+    expect(toggle?.hidden).toBe(false);
+    expect(toggle?.textContent).toBe('expand');
+    expect(toggle?.dataset.tutorialId).toBe('workshop:tasks');
+    expect(toggle?.dataset.notification).toBeUndefined();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(list?.hidden).toBe(true);
+    expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(1);
 
     toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -3764,7 +3807,8 @@ describe('PagesFacade', () => {
     expect(toggle.textContent).toBe('collapse');
     expect(toggle.dataset.notification).toBeUndefined();
     expect(list.hidden).toBe(false);
-    expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(0);
+    expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(1);
+    expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
     expect(summaryRow?.textContent).toBe('sage seed0/10fill');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
@@ -3780,8 +3824,23 @@ describe('PagesFacade', () => {
 
   it('keeps Workshop tasks expanded across page swaps', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 2;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+    ];
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
 
@@ -3910,12 +3969,13 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('shows Workshop level completion at the bottom of the expanded task list', () => {
+  it('shows Workshop level completion without expand when there is one task', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
     snapshot.gold.current = 20;
-    snapshot.tasks.level.completedTasks = 2;
+    snapshot.tasks.level.completedTasks = 1;
+    snapshot.tasks.level.totalTasks = 1;
     snapshot.tasks.level.completion = {
       level: 1,
       costGold: 20,
@@ -3942,9 +4002,8 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-    expect(toggle?.dataset.notification).toBe('true');
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(toggle?.hidden).toBe(true);
+    expect(toggle?.dataset.notification).toBeUndefined();
 
     const completion = stage.querySelector('.workshop-page__level-complete');
     const button = stage.querySelector('.workshop-page__level-complete-button');

@@ -5,13 +5,13 @@ import { describe, expect, it } from 'vitest';
 import { TutorialRevealManager } from './TutorialRevealManager.js';
 
 describe('TutorialRevealManager', () => {
-  it('reveals the top panel during the opening username step', () => {
+  it('reveals the top panel during the username step', () => {
     const stage = document.createElement('section');
     const manager = new TutorialRevealManager();
 
     manager.setStage(stage);
     manager.update({
-      step: { id: 'intro-welcome', revealTokens: ['top'] },
+      step: { id: 'intro-username', revealTokens: ['top'] },
     });
 
     expect(stage.dataset.tutorialReveal).toBe('top');
@@ -23,10 +23,10 @@ describe('TutorialRevealManager', () => {
 
     manager.setStage(stage);
     manager.update({
-      step: { id: 'intro-mana-sphere', revealTokens: ['mana'] },
+      step: { id: 'intro-mana-sphere', revealTokens: ['top', 'mana'] },
     });
 
-    expect(stage.dataset.tutorialReveal).toBe('mana');
+    expect(stage.dataset.tutorialReveal).toBe('top mana');
   });
 
   it('reveals Workshop actions and room tabs as the level-one workflow expands', () => {
@@ -35,14 +35,14 @@ describe('TutorialRevealManager', () => {
 
     manager.setStage(stage);
     manager.update({
-      step: { id: 'first-summon-seed', revealTokens: ['mana', 'summon'] },
+      step: { id: 'first-summon-seed', revealTokens: ['top', 'mana', 'summon'] },
     });
-    expect(stage.dataset.tutorialReveal).toBe('mana summon');
+    expect(stage.dataset.tutorialReveal).toBe('top mana summon');
 
     manager.update({
-      step: { id: 'finish-seed-task', revealTokens: ['mana', 'summon', 'tasks'] },
+      step: { id: 'finish-seed-task', revealTokens: ['top', 'mana', 'summon', 'tasks'] },
     });
-    expect(stage.dataset.tutorialReveal).toBe('mana summon tasks');
+    expect(stage.dataset.tutorialReveal).toBe('top mana summon tasks');
 
     manager.update({
       step: {

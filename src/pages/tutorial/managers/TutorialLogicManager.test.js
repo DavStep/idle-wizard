@@ -8,7 +8,7 @@ function createStep(overrides = {}) {
     kind: 'objective',
     targetId: 'task:level1-sage-seeds',
     objectiveText: 'summon seeds and fill the level task',
-    stepLabel: '5/23',
+    stepLabel: '7/25',
     progress: { value: 1, max: 10 },
     progressLabel: '1/10 seeds',
     cueMode: 'active',

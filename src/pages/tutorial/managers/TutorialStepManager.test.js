@@ -81,8 +81,10 @@ function createDomFake({
   seedPopupOpen = false,
   recipePopupOpen = false,
   shopSellPopupOpen = false,
+  username = 'wizard',
 } = {}) {
   return {
+    getUsername: () => username,
     isBrewingRecipePopupOpen: () => recipePopupOpen,
     isGardenSeedPopupOpen: () => seedPopupOpen,
     isShopSellPopupOpen: () => shopSellPopupOpen,
@@ -166,17 +168,14 @@ function createLevelTwoReadySnapshot(overrides = {}) {
 }
 
 describe('TutorialStepManager', () => {
-  it('starts by pointing at the top-panel username', () => {
+  it('starts with Elara introduction before the top panel unlocks', () => {
     expect(getStep()).toMatchObject({
       id: 'intro-welcome',
       kind: 'prompt',
-      targetId: 'top:username',
       advanceOnClick: true,
-      allowTargetClick: true,
-      stepLabel: '1/23',
-      revealTokens: ['top'],
-      text:
-        "yo! i'm Elara Starbrew. your name is up here. tap it to change username in settings.",
+      stepLabel: '1/25',
+      revealTokens: [],
+      text: "hi there. i'm Elara Starbrew. i'll help you wake this workshop up.",
     });
   });
 
@@ -195,7 +194,7 @@ describe('TutorialStepManager', () => {
   it('highlights mana sphere after the welcome', () => {
     expect(
       getStep({
-        completed: ['intro-welcome'],
+        completed: completedThrough('intro-username-return'),
       }),
     ).toMatchObject({
       id: 'intro-mana-sphere',
@@ -203,15 +202,46 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:manaSphere',
       advanceOnClick: true,
       showPointer: false,
-      revealTokens: ['mana'],
-      stepLabel: '2/23',
+      revealTokens: ['top', 'mana'],
+      stepLabel: '4/25',
+    });
+  });
+
+  it('reveals the top panel and points at username after the introduction', () => {
+    expect(
+      getStep({
+        completed: ['intro-welcome'],
+      }),
+    ).toMatchObject({
+      id: 'intro-username',
+      kind: 'prompt',
+      targetId: 'top:username',
+      revealTokens: ['top'],
+      stepLabel: '2/25',
+      text: "i don't need your name, but it would be nice to set it here.",
+    });
+  });
+
+  it('continues the introduction after the username is set', () => {
+    expect(
+      getStep({
+        completed: ['intro-welcome'],
+        dom: createDomFake({ username: 'Mira' }),
+      }),
+    ).toMatchObject({
+      id: 'intro-username-return',
+      kind: 'prompt',
+      advanceOnClick: true,
+      revealTokens: ['top'],
+      stepLabel: '3/25',
+      text: "hi again, Mira. let's start with mana.",
     });
   });
 
   it('hides first summon prompt while waiting for mana', () => {
     expect(
       getStep({
-        completed: ['intro-welcome', 'intro-mana-sphere'],
+        completed: completedThrough('intro-mana-sphere'),
       }),
     ).toBeNull();
   });
@@ -227,15 +257,15 @@ describe('TutorialStepManager', () => {
     expect(
       getStep({
         snapshot,
-        completed: ['intro-welcome', 'intro-mana-sphere'],
+        completed: completedThrough('intro-mana-sphere'),
       }),
     ).toMatchObject({
       id: 'first-summon-seed',
       kind: 'prompt',
       targetId: 'workshop:summonSeed',
       text: 'use your mana to summon seeds.',
-      revealTokens: ['mana', 'summon'],
-      stepLabel: '3/23',
+      revealTokens: ['top', 'mana', 'summon'],
+      stepLabel: '5/25',
     });
   });
 
@@ -266,14 +296,14 @@ describe('TutorialStepManager', () => {
       getStep({
         snapshot,
         dom: createDomFake({ tasksExpanded: true }),
-        completed: ['intro-welcome', 'intro-mana-sphere', 'first-summon-seed'],
+        completed: completedThrough('first-summon-seed'),
       }),
     ).toMatchObject({
       id: 'first-fill-seed-task',
       kind: 'prompt',
       targetId: 'task:level1-sage-seeds',
       text: 'fill task',
-      stepLabel: '4/23',
+      stepLabel: '6/25',
     });
   });
 
@@ -316,7 +346,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'summon seeds and fill the level task',
       progress: { value: 1, max: 10 },
       progressLabel: '1/10 seeds',
-      stepLabel: '5/23',
+      stepLabel: '7/25',
     });
   });
 
@@ -367,7 +397,7 @@ describe('TutorialStepManager', () => {
       id: 'intro-market',
       kind: 'dialog',
       advanceOnClick: true,
-      stepLabel: '6/23',
+      stepLabel: '8/25',
     });
   });
 
@@ -393,6 +423,42 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('does not mark sale prep complete before the seed task is done', () => {
+    const progress = createProgressFake(completedThrough('first-fill-seed-task'));
+    const snapshot = createSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+      tasks: {
+        currentLevel: 1,
+        level: {
+          completion: { canComplete: false, costGold: 10 },
+          tasks: [
+            {
+              taskId: 'level1-sage-seeds',
+              itemKey: 'sageSeed',
+              requiredQuantity: 10,
+              progressQuantity: 1,
+              remainingQuantity: 9,
+              canFill: true,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+        progress,
+      }),
+    ).toMatchObject({
+      id: 'finish-seed-task',
+    });
+    expect(progress.completedStepIds.has('prepare-seed-sale')).toBe(false);
+  });
+
   it('points at market after a seed exists for sale', () => {
     const snapshot = createLevelOneTaskCompleteSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],
@@ -409,6 +475,30 @@ describe('TutorialStepManager', () => {
       targetId: 'page:shop',
       hintText: 'open market',
       objectiveText: 'start selling sage seeds in market',
+    });
+  });
+
+  it('asks to open the market stand picker even when the first stand is selected by default', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+      shop: {
+        shelf: {
+          selectedSlotNumber: 1,
+          slots: [{ slotNumber: 1, unlocked: true, sellKey: null }],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        completed: completedThrough('open-market'),
+      }),
+    ).toMatchObject({
+      id: 'select-market-stand',
+      targetId: 'shop:stand:1',
+      progressLabel: '0/1 stand',
     });
   });
 
@@ -435,7 +525,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'shop:sell:sageSeed',
       hintText: 'choose sage seed',
-      stepLabel: '10/23',
+      stepLabel: '12/25',
     });
   });
 
@@ -466,7 +556,7 @@ describe('TutorialStepManager', () => {
         goldTarget: 10,
       },
       progressLabel: '0/10 gold',
-      stepLabel: '11/23',
+      stepLabel: '13/25',
     });
   });
 
@@ -540,7 +630,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:levelUp',
       objectiveText: 'return to workshop and level up',
-      stepLabel: '13/23',
+      stepLabel: '15/25',
     });
   });
 
@@ -570,7 +660,7 @@ describe('TutorialStepManager', () => {
       targetId: 'garden:plot:1:label',
       objectiveText: 'grow sage in garden',
       progressLabel: '0/1 sage',
-      stepLabel: '14/23',
+      stepLabel: '16/25',
     });
   });
 
@@ -652,7 +742,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'earn level-up gold in market',
       progress: { value: 10, max: 40 },
       progressLabel: '10/40 gold',
-      stepLabel: '16/23',
+      stepLabel: '18/25',
     });
   });
 
@@ -666,7 +756,7 @@ describe('TutorialStepManager', () => {
       hintText: 'sell for gold',
       objectiveText: 'earn level-up gold in market',
       progressLabel: '10/40 gold',
-      stepLabel: '16/23',
+      stepLabel: '18/25',
     });
   });
 
@@ -689,7 +779,7 @@ describe('TutorialStepManager', () => {
       hintText: 'level up',
       objectiveText: 'level up again',
       progressLabel: '1/1 ready',
-      stepLabel: '16/23',
+      stepLabel: '18/25',
     });
   });
 
@@ -703,7 +793,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '17/23',
+      stepLabel: '19/25',
     });
   });
 
@@ -765,7 +855,7 @@ describe('TutorialStepManager', () => {
       hintText: 'fill task',
       objectiveText: 'fill the mint seed task',
       progressLabel: '7/10 mint seeds',
-      stepLabel: '18/23',
+      stepLabel: '20/25',
     });
   });
 
@@ -826,7 +916,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       objectiveText: 'fill the mint level task',
       progressLabel: '0/18 mint',
-      stepLabel: '19/23',
+      stepLabel: '21/25',
     });
   });
 
@@ -873,7 +963,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open market',
       objectiveText: 'earn level-up gold in market',
       progressLabel: '77/80 gold',
-      stepLabel: '20/23',
+      stepLabel: '22/25',
     });
   });
 
@@ -894,7 +984,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'brewing:recipes',
       hintText: 'select recipe',
-      stepLabel: '22/23',
+      stepLabel: '24/25',
     });
   });
 
@@ -933,7 +1023,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'fill the cauldron again',
       progress: { value: 0, max: 3 },
       progressLabel: '0/3 sage',
-      stepLabel: '23/23',
+      stepLabel: '25/25',
     });
   });
 
@@ -974,7 +1064,7 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:action',
       hintText: 'brew again',
       progressLabel: '3/3 sage',
-      stepLabel: '23/23',
+      stepLabel: '25/25',
     });
   });
 
@@ -992,6 +1082,26 @@ describe('TutorialStepManager', () => {
           level: {
             tasks: [],
           },
+        },
+      }),
+      dom: createDomFake(),
+    });
+
+    expect(step).toBeNull();
+    expect(progress.completedStepIds).toEqual(new Set(TUTORIAL_STEP_IDS));
+  });
+
+  it('auto-completes all steps after any prestige', () => {
+    const progress = createProgressFake();
+    const manager = new TutorialStepManager({
+      progressManager: progress,
+      getCurrentPageId: () => 'workshop',
+    });
+
+    const step = manager.getActiveStep({
+      snapshot: createSnapshot({
+        prestige: {
+          completedLevels: [10],
         },
       }),
       dom: createDomFake(),

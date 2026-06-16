@@ -5598,6 +5598,32 @@ function readSavedPrestigeCompletedLevels(saveJson?: string): number[] | null {
   }
 }
 
+function readSavedPrestigeCapLevel(saveJson?: string): number {
+  const completedLevels = readSavedPrestigeCompletedLevels(saveJson);
+
+  if (!completedLevels || completedLevels.length === 0) {
+    return DEFAULT_PLAYER_LEVEL;
+  }
+
+  return completedLevels.reduce(
+    (highestLevel, level) => Math.max(highestLevel, normalizePlayerLevel(level)),
+    DEFAULT_PLAYER_LEVEL,
+  );
+}
+
+function getLeaderboardCapPlayerLevel(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+  playerLevel: number,
+): number {
+  const save = ctx.db.playerGameplaySave.identity.find(identity);
+
+  return Math.max(
+    normalizePlayerLevel(playerLevel),
+    readSavedPrestigeCapLevel(save?.saveJson),
+  );
+}
+
 function hasSavedPrestigeProgression(
   previousSaveJson: string | undefined,
   nextSaveJson: string,
@@ -5616,6 +5642,34 @@ function hasSavedPrestigeProgression(
     previousLevels.every((level) => nextLevelSet.has(level)) &&
     nextLevels.some((level) => !previousLevelSet.has(level))
   );
+}
+
+function syncLeaderboardIncomeFromGameplaySave(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof ensurePlayer>,
+  previousSaveJson: string | undefined,
+  nextSaveJson: string,
+) {
+  if (!ENABLE_CLIENT_REPORTED_TOTAL_INCOME || !previousSaveJson) {
+    return;
+  }
+
+  const completedPrestigeLevels = readSavedPrestigeCompletedLevels(nextSaveJson);
+  if (!completedPrestigeLevels || completedPrestigeLevels.length === 0) {
+    return;
+  }
+
+  const previousRunIncome = readSavedTotalGeneratedGold(previousSaveJson) ?? 0n;
+  const nextRunIncome = readSavedTotalGeneratedGold(nextSaveJson) ?? 0n;
+  let incomeDelta = 0n;
+
+  if (hasSavedPrestigeProgression(previousSaveJson, nextSaveJson)) {
+    incomeDelta = nextRunIncome;
+  } else if (nextRunIncome > previousRunIncome) {
+    incomeDelta = nextRunIncome - previousRunIncome;
+  }
+
+  applyLeaderboardIncomeDelta(ctx, player, incomeDelta);
 }
 
 function saveJsonHasReplayProgress(saveJson: string): boolean {
@@ -5721,9 +5775,14 @@ function shouldIgnorePostResetReportedGold(
   player: ReturnType<typeof ensurePlayer>,
   totalGeneratedGold: bigint | number,
 ): boolean {
+  const capPlayerLevel = getLeaderboardCapPlayerLevel(
+    ctx,
+    player.identity,
+    player.playerLevel,
+  );
   const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
     toBigInt(totalGeneratedGold),
-    player.playerLevel,
+    capPlayerLevel,
   );
 
   return (
@@ -7407,7 +7466,12 @@ function sanitizeLeaderboardRows(ctx: IdleWizardReducerCtx) {
   for (const rawEntry of ctx.db.leaderboard.iter()) {
     const username = normalizeUsername(rawEntry.username);
     const playerLevel = normalizePlayerLevel(rawEntry.playerLevel);
-    const totalIncome = clampLeaderboardTotalIncome(rawEntry.totalIncome, playerLevel);
+    const capPlayerLevel = getLeaderboardCapPlayerLevel(
+      ctx,
+      rawEntry.identity,
+      playerLevel,
+    );
+    const totalIncome = clampLeaderboardTotalIncome(rawEntry.totalIncome, capPlayerLevel);
     const periods = getLeaderboardPeriodValues(ctx, rawEntry, totalIncome);
 
     if (
@@ -7455,9 +7519,14 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
     const playerLevel = normalizePlayerLevel(
       player?.playerLevel ?? existingEntry?.playerLevel ?? DEFAULT_PLAYER_LEVEL,
     );
+    const capPlayerLevel = getLeaderboardCapPlayerLevel(
+      ctx,
+      save.identity,
+      playerLevel,
+    );
     const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
       savedTotalIncome,
-      playerLevel,
+      capPlayerLevel,
     );
 
     if (reportedTotalIncome === null) {
@@ -7466,7 +7535,7 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
 
     const currentTotalIncome = clampLeaderboardTotalIncome(
       existingEntry?.totalIncome ?? 0n,
-      playerLevel,
+      capPlayerLevel,
     );
     const totalIncome =
       reportedTotalIncome > currentTotalIncome ? reportedTotalIncome : currentTotalIncome;
@@ -7576,9 +7645,14 @@ function ensureLeaderboardEntry(
   playerLevel = DEFAULT_PLAYER_LEVEL,
 ) {
   const safePlayerLevel = normalizePlayerLevel(playerLevel);
+  const capPlayerLevel = getLeaderboardCapPlayerLevel(
+    ctx,
+    ctx.sender,
+    safePlayerLevel,
+  );
   const rawExistingEntry = ctx.db.leaderboard.identity.find(ctx.sender);
   const safeExistingTotalIncome = rawExistingEntry
-    ? clampLeaderboardTotalIncome(rawExistingEntry.totalIncome, safePlayerLevel)
+    ? clampLeaderboardTotalIncome(rawExistingEntry.totalIncome, capPlayerLevel)
     : 0n;
   const existingEntry = rawExistingEntry
     ? refreshLeaderboardPeriods(ctx, rawExistingEntry, safeExistingTotalIncome)
@@ -7602,6 +7676,48 @@ function ensureLeaderboardEntry(
     ...getLeaderboardPeriodDefaults(ctx),
     updatedAt: ctx.timestamp,
   });
+}
+
+function applyLeaderboardIncomeDelta(
+  ctx: IdleWizardReducerCtx,
+  player: { identity: Identity; username: string; playerLevel: number },
+  delta: bigint,
+) {
+  const safeDelta = toBigInt(delta);
+
+  if (safeDelta <= 0n) {
+    return;
+  }
+
+  const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+  const capPlayerLevel = getLeaderboardCapPlayerLevel(
+    ctx,
+    player.identity,
+    player.playerLevel,
+  );
+  const currentTotalIncome = clampLeaderboardTotalIncome(
+    entry.totalIncome,
+    capPlayerLevel,
+  );
+  const maxTotalIncome = getLeaderboardTotalIncomeCap(capPlayerLevel);
+  const remainingAllowedIncome =
+    maxTotalIncome > currentTotalIncome ? maxTotalIncome - currentTotalIncome : 0n;
+  const incomeDelta =
+    safeDelta > remainingAllowedIncome ? remainingAllowedIncome : safeDelta;
+
+  if (incomeDelta <= 0n) {
+    return;
+  }
+
+  ctx.db.leaderboard.identity.update({
+    ...entry,
+    totalIncome: currentTotalIncome + incomeDelta,
+    dailyIncome: toBigInt(entry.dailyIncome) + incomeDelta,
+    weeklyIncome: toBigInt(entry.weeklyIncome) + incomeDelta,
+    monthlyIncome: toBigInt(entry.monthlyIncome) + incomeDelta,
+    updatedAt: ctx.timestamp,
+  });
+  applyTradeAllianceIncomeDelta(ctx, player, incomeDelta);
 }
 
 function assertWorldChatRateLimit(ctx: IdleWizardReducerCtx) {
@@ -8802,14 +8918,21 @@ export const set_player_gameplay_save = spacetimedb.reducer(
 
     if (existingSave) {
       ctx.db.playerGameplaySave.identity.update(nextSave);
-      syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson, {
+      const nextPlayer = syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson, {
         allowDecrease: allowsRunProgressReset,
       });
+      syncLeaderboardIncomeFromGameplaySave(
+        ctx,
+        nextPlayer,
+        existingSave.saveJson,
+        safeSaveJson,
+      );
       return;
     }
 
     ctx.db.playerGameplaySave.insert(nextSave);
-    syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson);
+    const nextPlayer = syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson);
+    syncLeaderboardIncomeFromGameplaySave(ctx, nextPlayer, undefined, safeSaveJson);
   },
 );
 
@@ -8908,9 +9031,14 @@ export const set_total_generated_gold = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     const player = ensurePlayer(ctx);
+    const capPlayerLevel = getLeaderboardCapPlayerLevel(
+      ctx,
+      player.identity,
+      player.playerLevel,
+    );
     const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
       totalGeneratedGold,
-      player.playerLevel,
+      capPlayerLevel,
     );
 
     if (shouldIgnorePostResetReportedGold(ctx, player, totalGeneratedGold)) {
@@ -8929,7 +9057,7 @@ export const set_total_generated_gold = spacetimedb.reducer(
     const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
     const currentTotalIncome = clampLeaderboardTotalIncome(
       entry.totalIncome,
-      player.playerLevel,
+      capPlayerLevel,
     );
 
     if (reportedTotalIncome === null) {

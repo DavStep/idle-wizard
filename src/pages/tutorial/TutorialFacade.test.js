@@ -210,7 +210,7 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('lets the opening username target receive its click while advancing', () => {
+  it('lets the username target open settings while waiting for the saved name', () => {
     let usernameClicks = 0;
     const stage = document.createElement('section');
     const usernameButton = document.createElement('button');
@@ -221,10 +221,15 @@ describe('TutorialFacade', () => {
     const facade = new TutorialFacade({
       gameplayFacade,
       getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage(),
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-welcome'],
+        }),
+      }),
     });
 
     usernameButton.dataset.tutorialId = 'top:username';
+    usernameButton.textContent = 'wizard';
     usernameButton.addEventListener('click', () => {
       usernameClicks += 1;
     });
@@ -236,6 +241,8 @@ describe('TutorialFacade', () => {
     facade.mount(stage);
     facade.refresh();
 
+    expect(facade.activeStep?.id).toBe('intro-username');
+
     const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
 
     usernameButton.dispatchEvent(click);
@@ -243,6 +250,13 @@ describe('TutorialFacade', () => {
     expect(click.defaultPrevented).toBe(false);
     expect(usernameClicks).toBe(1);
     expect(facade.progressManager.hasCompleted('intro-welcome')).toBe(true);
+    expect(facade.progressManager.hasCompleted('intro-username')).toBe(false);
+
+    usernameButton.textContent = 'Mira';
+    facade.refresh();
+
+    expect(facade.progressManager.hasCompleted('intro-username')).toBe(true);
+    expect(facade.activeStep?.id).toBe('intro-username-return');
 
     facade.unmount();
   });
@@ -314,6 +328,8 @@ describe('TutorialFacade', () => {
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
           completedStepIds: [
             'intro-welcome',
+            'intro-username',
+            'intro-username-return',
             'intro-mana-sphere',
             'first-summon-seed',
             'first-fill-seed-task',

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+/* global console, process, fetch, Buffer, WebSocket, setTimeout */
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
-import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -15,9 +15,12 @@ const VIEWPORT = { width: 1080, height: 2170 };
 const OUT_DIR = path.join(ROOT, 'docs/tutorial-flow/screenshots');
 const CONTACT_SHEET_PATH = path.join(ROOT, 'docs/tutorial-flow/contact-sheet.png');
 const CONTACT_SHEET_URL = 'http://127.0.0.1:55173/docs/tutorial-flow/contact-sheet.html';
+const CAPTURE_USERNAME = 'Mira';
 
 const FLOW_STEPS = [
   'intro-welcome',
+  'intro-username',
+  'intro-username-return',
   'intro-mana-sphere',
   'first-summon-seed',
   'first-fill-seed-task',
@@ -46,6 +49,12 @@ const STEP_ACTIONS = {
   'intro-welcome': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
+  'intro-username': async (page) => {
+    await page.setUsername(CAPTURE_USERNAME);
+  },
+  'intro-username-return': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  },
   'intro-mana-sphere': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
     await page.cheat('fillMana');
@@ -59,8 +68,7 @@ const STEP_ACTIONS = {
   },
   'finish-seed-task': async (page) => {
     await page.ensureTasksExpanded();
-    await page.cheat('addItem', 'sageSeed', 9);
-    await page.clickActiveTarget();
+    await page.completeCurrentTask('level1-sage-seeds');
   },
   'intro-market': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
@@ -99,7 +107,8 @@ const STEP_ACTIONS = {
   'fill-sage-herb-task': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.clickActiveTarget();
+    await page.completeCurrentTask('level2-sage-seeds');
+    await page.completeCurrentTask('level2-sage-herb');
     await page.cheat('addGold', 40);
   },
   'level-up-two': async (page) => {
@@ -114,14 +123,15 @@ const STEP_ACTIONS = {
   'fill-mint-seed-task': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.clickActiveTarget();
+    await page.completeCurrentTask('level3-sage-seeds');
+    await page.completeCurrentTask('level3-mint-seeds');
   },
   'fill-mint-herb-task': async (page) => {
     await page.clickTarget('page:garden');
     await page.cheat('addItem', 'mintHerb', 18);
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.clickActiveTarget();
+    await page.completeCurrentTask('level3-mint-herb');
     await page.cheat('addGold', 80);
   },
   'level-up-three': async (page) => {
@@ -177,6 +187,7 @@ async function main() {
       `typeof window.tutorialCapture === 'object' && typeof window.cheats === 'object'`,
       { timeoutMs: 20_000 },
     );
+    await page.waitForFreshStart();
     await page.startFresh();
     await page.waitForStep('intro-welcome');
 
@@ -273,6 +284,7 @@ async function prepareStepForCapture(page, stepId) {
   await page.hideOnlineGate();
   await page.openLessonPanel();
   await page.waitForStep(stepId);
+  await page.waitForLessonText();
   await page.waitForImages();
 }
 
@@ -417,23 +429,54 @@ class TutorialPage {
     return this.run(() => window.tutorialCapture.openLessonPanel());
   }
 
+  waitForFreshStart() {
+    return this.waitForExpression(
+      `window.tutorialCapture.getState().freshStartVisible === true`,
+      { timeoutMs: 20_000 },
+    );
+  }
+
   async startFresh() {
-    await this.run(() => {
+    const result = await this.run(() => {
       window.tutorialCapture.hideOnlineGate();
       const state = window.tutorialCapture.getState();
       if (state.freshStartVisible) {
-        window.tutorialCapture.startFresh();
+        return window.tutorialCapture.startFresh();
       }
+
+      return { ok: true, skipped: true };
     });
-    await sleep(200);
+    if (!result?.ok) {
+      throw new Error(`Failed to start fresh: ${JSON.stringify(result ?? null)}`);
+    }
+
+    await sleep(500);
     await this.hideOnlineGate();
+    await this.waitForExpression(
+      `window.tutorialCapture.getState().freshStartVisible === false`,
+      { timeoutMs: 5_000 },
+    );
   }
 
   async waitForStep(stepId, { timeoutMs = 10_000 } = {}) {
-    await this.waitForExpression(
-      `window.tutorialCapture.getState().activeStep?.id === ${JSON.stringify(stepId)}`,
-      { timeoutMs },
-    );
+    try {
+      await this.waitForExpression(
+        `window.tutorialCapture.getState().activeStep?.id === ${JSON.stringify(stepId)}`,
+        { timeoutMs },
+      );
+    } catch (error) {
+      const state = await this.getState();
+      throw new Error(
+        `${error.message}; state=${JSON.stringify({
+          activeStep: state.activeStep,
+          currentPageId: state.currentPageId,
+          freshStartVisible: state.freshStartVisible,
+          onlineGateVisible: state.onlineGateVisible,
+          completedStepIds: state.completedStepIds,
+          snapshot: state.snapshot,
+        })}`,
+      );
+    }
     await this.hideOnlineGate();
     return this.getState();
   }
@@ -452,10 +495,19 @@ class TutorialPage {
 
   async ensureTasksExpanded() {
     const expanded = await this.run(
-      () =>
-        document
-          .querySelector('[data-tutorial-id="workshop:tasks"]')
-          ?.getAttribute('aria-expanded') === 'true',
+      () => {
+        const toggle = document.querySelector('.workshop-page__tasks-toggle');
+
+        if (toggle) {
+          return toggle.hidden || toggle.getAttribute('aria-expanded') === 'true';
+        }
+
+        return (
+          document
+            .querySelector('[data-tutorial-id="workshop:tasks"]')
+            ?.getAttribute('aria-expanded') === 'true'
+        );
+      },
     );
 
     if (!expanded) {
@@ -499,6 +551,21 @@ class TutorialPage {
     await this.hideOnlineGate();
   }
 
+  async setUsername(username) {
+    const result = await this.run((value) => window.tutorialCapture.setUsername(value), username);
+
+    if (!result?.ok) {
+      throw new Error(`Failed to set username: ${JSON.stringify(result ?? null)}`);
+    }
+
+    await sleep(250);
+    await this.hideOnlineGate();
+    await this.waitForExpression(
+      `window.tutorialCapture.getState().username === ${JSON.stringify(username)}`,
+      { timeoutMs: 5_000 },
+    );
+  }
+
   async clickSelector(selector) {
     const result = await this.run(
       (targetSelector) => window.tutorialCapture.clickSelector(targetSelector),
@@ -536,9 +603,57 @@ class TutorialPage {
     return result;
   }
 
+  async completeTaskWithItems(taskId, itemKey, quantity) {
+    const result = await this.run(
+      (id, key, amount) => window.tutorialCapture.completeTaskWithItems(id, key, amount),
+      taskId,
+      itemKey,
+      quantity,
+    );
+
+    if (!result?.ok) {
+      throw new Error(
+        `Failed to complete task ${taskId}: ${JSON.stringify(result ?? null)}`,
+      );
+    }
+
+    await sleep(150);
+    await this.hideOnlineGate();
+    return result;
+  }
+
+  async completeCurrentTask(taskId) {
+    const result = await this.run((id) => window.tutorialCapture.completeCurrentTask(id), taskId);
+
+    if (!result?.ok) {
+      throw new Error(
+        `Failed to complete current task ${taskId}: ${JSON.stringify(result ?? null)}`,
+      );
+    }
+
+    await sleep(150);
+    await this.hideOnlineGate();
+    return result;
+  }
+
   waitForImages() {
     return this.waitForExpression(
       `Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0)`,
+    );
+  }
+
+  waitForLessonText() {
+    return this.waitForExpression(
+      `(() => {
+        const text = document.querySelector('.tutorial-layer__lesson-text');
+        if (!text || text.closest('[hidden]')) {
+          return true;
+        }
+
+        const fullText = text.dataset.tutorialFullText;
+        return !fullText || text.textContent === fullText;
+      })()`,
+      { timeoutMs: 10_000 },
     );
   }
 

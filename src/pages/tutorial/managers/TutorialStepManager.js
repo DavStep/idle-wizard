@@ -12,6 +12,8 @@ const TUTORIAL_SELL_GOLD_EACH = LEVEL_ONE_GOLD_TARGET;
 
 const LEVEL_ONE_STEP_IDS = [
   'intro-welcome',
+  'intro-username',
+  'intro-username-return',
   'intro-mana-sphere',
   'first-summon-seed',
   'first-fill-seed-task',
@@ -47,6 +49,8 @@ const LEVEL_FOUR_STEP_IDS = [
 
 const SEEDING_LESSON_STEP_IDS = [
   'intro-welcome',
+  'intro-username',
+  'intro-username-return',
   'intro-mana-sphere',
   'first-summon-seed',
   'first-fill-seed-task',
@@ -61,7 +65,7 @@ const GARDENING_LESSON_STEP_IDS = [...LEVEL_TWO_STEP_IDS, ...LEVEL_THREE_STEP_ID
 const BREWING_LESSON_STEP_IDS = LEVEL_FOUR_STEP_IDS;
 
 const LESSON_TITLE_BY_STEP_ID = new Map([
-  ...SEEDING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 1: seeding']),
+  ...SEEDING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 1: introduction']),
   ...MARKET_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 2: market']),
   ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 3: gardening']),
   ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 4: brewing']),
@@ -75,22 +79,39 @@ export const TUTORIAL_STEP_IDS = [
 ];
 
 const REVEAL_TOP = ['top'];
-const REVEAL_MANA = ['mana'];
-const REVEAL_MANA_SUMMON = ['mana', 'summon'];
-const REVEAL_MANA_SUMMON_TASKS = ['mana', 'summon', 'tasks'];
+const REVEAL_MANA = ['top', 'mana'];
+const REVEAL_MANA_SUMMON = ['top', 'mana', 'summon'];
+const REVEAL_MANA_SUMMON_TASKS = ['top', 'mana', 'summon', 'tasks'];
 const REVEAL_LEVEL_ONE_WORKFLOW = ['mana', 'summon', 'tasks', 'top', 'rooms'];
 
 export const TUTORIAL_STEPS = [
   {
     id: 'intro-welcome',
     kind: 'prompt',
+    revealTokens: [],
+    text: "hi there. i'm Elara Starbrew. i'll help you wake this workshop up.",
+    advanceOnClick: true,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
+  },
+  {
+    id: 'intro-username',
+    kind: 'prompt',
     targetId: 'top:username',
     revealTokens: REVEAL_TOP,
-    text:
-      "yo! i'm Elara Starbrew. your name is up here. tap it to change username in settings.",
-    advanceOnClick: true,
-    allowTargetClick: true,
+    text: "i don't need your name, but it would be nice to set it here.",
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
+    isComplete: ({ dom, snapshot }) =>
+      getCurrentLevel(snapshot) >= 2 || hasCustomUsername(dom),
+  },
+  {
+    id: 'intro-username-return',
+    kind: 'prompt',
+    revealTokens: REVEAL_TOP,
+    getText: ({ dom }) => `hi again, ${getTutorialUsername(dom)}. let's start with mana.`,
+    advanceOnClick: true,
+    isAvailable: ({ dom, snapshot }) =>
+      getCurrentLevel(snapshot) === 1 && hasCustomUsername(dom),
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
   },
   {
@@ -278,19 +299,18 @@ export const TUTORIAL_STEPS = [
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'choose a market stand',
     text: 'select stand',
-    getProgress: ({ snapshot }) => ({
-      value: snapshot?.shop?.shelf?.selectedSlotNumber === 1 ? 1 : 0,
+    getProgress: ({ dom }) => ({
+      value: dom.isShopSellPopupOpen() ? 1 : 0,
       max: 1,
     }),
-    getProgressLabel: ({ snapshot }) =>
-      `${snapshot?.shop?.shelf?.selectedSlotNumber === 1 ? 1 : 0}/1 stand`,
+    getProgressLabel: ({ dom }) => `${dom.isShopSellPopupOpen() ? 1 : 0}/1 stand`,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
       getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
-    isComplete: ({ snapshot }) =>
+    isComplete: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
-      snapshot?.shop?.shelf?.selectedSlotNumber === 1 ||
+      dom.isShopSellPopupOpen() ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
   {
@@ -949,6 +969,11 @@ export class TutorialStepManager {
 
     const currentLevel = getCurrentLevel(snapshot);
 
+    if (hasCompletedPrestige(snapshot)) {
+      this.completeSteps(TUTORIAL_STEP_IDS);
+      return;
+    }
+
     if (currentLevel >= 5) {
       this.completeSteps(TUTORIAL_STEP_IDS);
       return;
@@ -963,13 +988,7 @@ export class TutorialStepManager {
     }
 
     if (this.progressManager.hasCompleted('finish-first-task')) {
-      this.completeSteps([
-        'intro-welcome',
-        'intro-mana-sphere',
-        'first-summon-seed',
-        'first-fill-seed-task',
-        'finish-seed-task',
-      ]);
+      this.completeSteps(SEEDING_LESSON_STEP_IDS);
     }
 
     if (hasAnySeedQuantity(snapshot) || hasAnySeedTaskProgress(snapshot)) {
@@ -981,16 +1000,14 @@ export class TutorialStepManager {
     }
 
     if (isLevelOneSeedTaskComplete(snapshot)) {
-      this.completeSteps([
-        'intro-welcome',
-        'intro-mana-sphere',
-        'first-summon-seed',
-        'first-fill-seed-task',
-        'finish-seed-task',
-      ]);
+      this.completeSteps(SEEDING_LESSON_STEP_IDS);
     }
 
-    if (getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 || getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET) {
+    if (
+      isLevelOneSeedTaskComplete(snapshot) &&
+      (getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 ||
+        getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET)
+    ) {
       this.completeSteps(['prepare-seed-sale']);
     }
 
@@ -1114,6 +1131,10 @@ function hasStartedOrCompletedResearch(snapshot, researchId) {
       (research) => research?.researchId === researchId,
     )
   );
+}
+
+function hasCompletedPrestige(snapshot) {
+  return (snapshot?.prestige?.completedLevels ?? []).length > 0;
 }
 
 function getLessonTitle(stepId) {
@@ -1397,6 +1418,15 @@ function getManaTonicCauldronFillCount(snapshot) {
 
 function getCurrentLevel(snapshot) {
   return Math.max(1, Math.floor(Number(snapshot?.tasks?.currentLevel) || 1));
+}
+
+function getTutorialUsername(dom) {
+  const username = typeof dom?.getUsername === 'function' ? dom.getUsername() : '';
+  return String(username ?? '').trim() || 'wizard';
+}
+
+function hasCustomUsername(dom) {
+  return getTutorialUsername(dom).toLowerCase() !== 'wizard';
 }
 
 function isNpcMarketSelling(snapshot, itemKey) {

@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.19
+
+- Improved Elara's first lesson with a clearer intro, username setup, and a personal greeting before mana guidance.
+- Kept early guide focus steadier by keeping the top panel visible after it is introduced and by skipping old guide steps after prestige.
+- Made Workshop tasks cleaner when only one task is active, while keeping expand/collapse for multi-task levels.
+- Fixed the Market guide step so it waits for the sell picker before asking players to choose a seed.
+- Fixed leaderboard and alliance income growth after prestige so new-run earnings keep counting.
+
 ## 0.1.18
 
 - Renamed the first-time guide to Elara Starbrew across prompts and objective labels.
