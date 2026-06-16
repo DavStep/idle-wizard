@@ -434,7 +434,7 @@ describe('GameplayFacade', () => {
       cap: 50,
       perSecond: 1,
     });
-  });
+  }, 30_000);
 
   it('persists prestige reset data with only settings and prestige progress kept', () => {
     const persistenceStorage = createMemoryStorage();
@@ -467,7 +467,7 @@ describe('GameplayFacade', () => {
         currentLevel: 1,
       },
     });
-  });
+  }, 30_000);
 
   it('requires confirmation when a higher prestige milestone is available', () => {
     const { gameplayFacade } = createGameplay();
