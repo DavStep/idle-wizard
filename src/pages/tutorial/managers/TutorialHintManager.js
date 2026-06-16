@@ -3,19 +3,33 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
 const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
 const GUIDE_NAME = 'Elara Starbrew';
-const HINT_WIDTH = 136;
+const HINT_WIDTH = 190;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 56;
+const DIALOG_WIDTH = 244;
+const DIALOG_PADDED_WIDTH = DIALOG_WIDTH + 24;
+const DIALOG_HEIGHT = 95;
+const OBJECTIVE_WIDTH = HINT_WIDTH;
+const OBJECTIVE_PADDED_WIDTH = OBJECTIVE_WIDTH + 24;
+const OBJECTIVE_HEIGHT = DIALOG_HEIGHT;
+const OBJECTIVE_CONTENT_HEIGHT = 74;
+const OBJECTIVE_HORIZONTAL_CHROME = OBJECTIVE_PADDED_WIDTH - OBJECTIVE_WIDTH;
+const OBJECTIVE_VERTICAL_CHROME = OBJECTIVE_HEIGHT - OBJECTIVE_CONTENT_HEIGHT;
+const LESSON_MIN_WIDTH = 136;
+const LESSON_MAX_WIDTH = DIALOG_WIDTH;
+const LESSON_MIN_HEIGHT = 34;
+const LESSON_MAX_HEIGHT = 126;
+const LESSON_ESTIMATED_CHAR_WIDTH = 6.4;
+const LESSON_ESTIMATED_LINE_HEIGHT = 16;
 const HINT_GAP = 8;
 const TYPEWRITER_INTERVAL_MS = 12;
 const TYPEWRITER_CHARS_PER_TICK = 2;
 const OBJECTIVE_AUTO_CLOSE_MS = 5200;
 const POINTER_HIDE_MS = 180;
-const HIGHLIGHT_PAD = 4;
-const HIGHLIGHT_UNDERLINE_HEIGHT = 4;
-const HIGHLIGHT_UNDERLINE_OFFSET = 2;
-const PORTRAIT_WIDTH = 54;
-const PORTRAIT_HEIGHT = 70;
+const PORTRAIT_WIDTH = 70;
+const PORTRAIT_HEIGHT = 91;
+const PORTRAIT_LEFT_GAP = 4;
+const PORTRAIT_BOX_OVERLAP = 0;
 const POINTER_WIDTH = 38;
 const POINTER_HEIGHT = 17;
 const POINTER_HALF_EXTENT = Math.ceil((POINTER_WIDTH + POINTER_HEIGHT) * Math.SQRT1_2 * 0.5);
@@ -24,12 +38,13 @@ const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
 const GUIDE_BOTTOM_FRACTION = 0.44;
 const DIALOG_TOP = 218;
-const OBJECTIVE_LEFT = 108;
+const GUIDE_BOX_LEFT_MIN = PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVERLAP;
+const OBJECTIVE_LEFT = GUIDE_BOX_LEFT_MIN;
 const OBJECTIVE_TOP = 500;
-const OBJECTIVE_BUTTON_LEFT = 0;
-const OBJECTIVE_BUTTON_TOP = 498;
-const OBJECTIVE_BUTTON_WIDTH = 112;
-const OBJECTIVE_BUTTON_HEIGHT = 142;
+const OBJECTIVE_BUTTON_LEFT = PORTRAIT_LEFT_GAP;
+const OBJECTIVE_BUTTON_TOP = OBJECTIVE_TOP + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9;
+const OBJECTIVE_BUTTON_WIDTH = PORTRAIT_WIDTH;
+const OBJECTIVE_BUTTON_HEIGHT = PORTRAIT_HEIGHT;
 const OBJECTIVE_PROTECTED_SELECTORS = [
   '.workshop-page__leaderboard-button',
   '.workshop-page__trade-alliance-button',
@@ -45,15 +60,15 @@ const OBJECTIVE_PLACEMENTS = [
   },
   {
     objectiveLeft: OBJECTIVE_LEFT,
-    objectiveTop: 286,
+    objectiveTop: 260,
     buttonLeft: OBJECTIVE_BUTTON_LEFT,
-    buttonTop: 292,
+    buttonTop: 260 + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9,
   },
   {
     objectiveLeft: OBJECTIVE_LEFT,
     objectiveTop: 166,
     buttonLeft: OBJECTIVE_BUTTON_LEFT,
-    buttonTop: 172,
+    buttonTop: 166 + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9,
   },
 ];
 
@@ -62,7 +77,6 @@ export class TutorialHintManager {
     this.stage = null;
     this.root = null;
     this.backdrop = null;
-    this.highlight = null;
     this.pointer = null;
     this.portrait = null;
     this.hint = null;
@@ -72,13 +86,19 @@ export class TutorialHintManager {
     this.objectiveButton = null;
     this.objectiveButtonImage = null;
     this.objective = null;
+    this.objectiveTitle = null;
     this.objectiveCloseButton = null;
     this.objectiveText = null;
     this.objectiveStepLabel = null;
     this.objectiveProgress = null;
     this.objectiveProgressFill = null;
     this.objectiveProgressLabel = null;
+    this.lessonAdvanceButton = null;
+    this.lessonShowButton = null;
+    this.objectiveWidth = OBJECTIVE_WIDTH;
+    this.objectiveHeight = OBJECTIVE_CONTENT_HEIGHT;
     this.objectivePanelOpen = false;
+    this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
     this.objectiveAutoCloseTimeout = null;
@@ -102,10 +122,6 @@ export class TutorialHintManager {
     this.backdrop = document.createElement('div');
     this.backdrop.className = 'tutorial-layer__backdrop';
     this.backdrop.setAttribute('aria-hidden', 'true');
-
-    this.highlight = document.createElement('div');
-    this.highlight.className = 'tutorial-layer__highlight';
-    this.highlight.setAttribute('aria-hidden', 'true');
 
     this.pointer = document.createElement('img');
     this.pointer.className = 'tutorial-layer__pointer';
@@ -153,25 +169,27 @@ export class TutorialHintManager {
     this.hint.append(title, this.stepLabel, copy, this.advanceButton);
 
     this.objectiveButton = document.createElement('button');
-    this.objectiveButton.className = 'tutorial-layer__objective-button';
+    this.objectiveButton.className =
+      'tutorial-layer__lesson-button tutorial-layer__objective-button';
     this.objectiveButton.type = 'button';
     this.objectiveButton.hidden = true;
-    this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
-    this.objectiveButton.setAttribute('aria-controls', 'tutorial-objective');
+    this.objectiveButton.setAttribute('aria-label', 'open lesson');
+    this.objectiveButton.setAttribute('aria-controls', 'tutorial-lesson');
     this.objectiveButton.setAttribute('aria-expanded', 'false');
     this.objectiveButton.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
       if (this.objectivePanelOpen) {
-        this.closeObjectivePanel();
+        this.closeLessonPanel();
         return;
       }
 
-      this.openObjectivePanel();
+      this.openLessonPanel();
     });
 
     this.objectiveButtonImage = document.createElement('img');
-    this.objectiveButtonImage.className = 'tutorial-layer__objective-button-image';
+    this.objectiveButtonImage.className =
+      'tutorial-layer__lesson-button-image tutorial-layer__objective-button-image';
     this.objectiveButtonImage.src = WITCH_GUIDE_URL;
     this.objectiveButtonImage.alt = '';
     this.objectiveButtonImage.draggable = false;
@@ -179,12 +197,16 @@ export class TutorialHintManager {
     this.objectiveButton.append(this.objectiveButtonImage);
 
     this.objective = document.createElement('section');
-    this.objective.className = 'tutorial-layer__objective style-box';
-    this.objective.id = 'tutorial-objective';
+    this.objective.className = 'tutorial-layer__lesson tutorial-layer__objective style-box';
+    this.objective.id = 'tutorial-lesson';
     this.objective.hidden = true;
     this.objective.setAttribute('aria-live', 'polite');
     this.objective.addEventListener('click', (event) => {
-      if (event.target?.closest?.('.tutorial-layer__objective-close')) {
+      if (
+        event.target?.closest?.(
+          '.tutorial-layer__lesson-close, .tutorial-layer__lesson-advance, .tutorial-layer__lesson-show, .tutorial-layer__objective-close',
+        )
+      ) {
         return;
       }
 
@@ -193,50 +215,78 @@ export class TutorialHintManager {
       this.onObjectivePress?.();
     });
 
-    const objectiveTitle = document.createElement('div');
-    objectiveTitle.className = 'style-box__title';
-    objectiveTitle.textContent = GUIDE_NAME;
+    this.objectiveTitle = document.createElement('div');
+    this.objectiveTitle.className = 'style-box__title';
+    this.objectiveTitle.textContent = 'lesson';
 
     this.objectiveCloseButton = document.createElement('button');
-    this.objectiveCloseButton.className = 'tutorial-layer__objective-close';
+    this.objectiveCloseButton.className =
+      'tutorial-layer__lesson-close tutorial-layer__objective-close';
     this.objectiveCloseButton.type = 'button';
     this.objectiveCloseButton.textContent = 'close';
-    this.objectiveCloseButton.setAttribute('aria-label', 'close objective');
+    this.objectiveCloseButton.setAttribute('aria-label', 'close lesson');
     this.objectiveCloseButton.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      this.closeObjectivePanel();
+      this.closeLessonPanel();
     });
 
     this.objectiveStepLabel = document.createElement('div');
-    this.objectiveStepLabel.className = 'tutorial-layer__objective-step-label';
+    this.objectiveStepLabel.className =
+      'tutorial-layer__lesson-step-label tutorial-layer__objective-step-label';
 
     this.objectiveText = document.createElement('p');
-    this.objectiveText.className = 'tutorial-layer__objective-text';
+    this.objectiveText.className = 'tutorial-layer__lesson-text tutorial-layer__objective-text';
 
     this.objectiveProgress = document.createElement('div');
-    this.objectiveProgress.className = 'style-progress tutorial-layer__objective-progress';
+    this.objectiveProgress.className =
+      'style-progress tutorial-layer__lesson-progress tutorial-layer__objective-progress';
     this.objectiveProgress.setAttribute('aria-hidden', 'true');
 
     this.objectiveProgressFill = document.createElement('span');
-    this.objectiveProgressFill.className = 'style-progress__fill tutorial-layer__objective-fill';
+    this.objectiveProgressFill.className =
+      'style-progress__fill tutorial-layer__lesson-fill tutorial-layer__objective-fill';
     this.objectiveProgress.append(this.objectiveProgressFill);
 
     this.objectiveProgressLabel = document.createElement('div');
-    this.objectiveProgressLabel.className = 'tutorial-layer__objective-progress-label';
+    this.objectiveProgressLabel.className =
+      'tutorial-layer__lesson-progress-label tutorial-layer__objective-progress-label';
+
+    this.lessonShowButton = document.createElement('button');
+    this.lessonShowButton.className = 'tutorial-layer__lesson-show';
+    this.lessonShowButton.type = 'button';
+    this.lessonShowButton.textContent = 'show me';
+    this.lessonShowButton.hidden = true;
+    this.lessonShowButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.onObjectivePress?.();
+    });
+
+    this.lessonAdvanceButton = document.createElement('button');
+    this.lessonAdvanceButton.className = 'tutorial-layer__lesson-advance tutorial-layer__advance';
+    this.lessonAdvanceButton.type = 'button';
+    this.lessonAdvanceButton.textContent = 'next';
+    this.lessonAdvanceButton.hidden = true;
+    this.lessonAdvanceButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.onAdvance?.();
+    });
 
     this.objective.append(
-      objectiveTitle,
+      this.objectiveTitle,
       this.objectiveCloseButton,
       this.objectiveStepLabel,
       this.objectiveText,
       this.objectiveProgress,
       this.objectiveProgressLabel,
+      this.lessonShowButton,
+      this.lessonAdvanceButton,
     );
 
     this.root.append(
       this.backdrop,
-      this.highlight,
       this.pointer,
       this.portrait,
       this.objectiveButton,
@@ -253,7 +303,6 @@ export class TutorialHintManager {
     this.stage = null;
     this.root = null;
     this.backdrop = null;
-    this.highlight = null;
     this.pointer = null;
     this.portrait = null;
     this.hint = null;
@@ -263,13 +312,19 @@ export class TutorialHintManager {
     this.objectiveButton = null;
     this.objectiveButtonImage = null;
     this.objective = null;
+    this.objectiveTitle = null;
     this.objectiveCloseButton = null;
     this.objectiveText = null;
     this.objectiveStepLabel = null;
     this.objectiveProgress = null;
     this.objectiveProgressFill = null;
     this.objectiveProgressLabel = null;
+    this.lessonAdvanceButton = null;
+    this.lessonShowButton = null;
+    this.objectiveWidth = OBJECTIVE_WIDTH;
+    this.objectiveHeight = OBJECTIVE_CONTENT_HEIGHT;
     this.objectivePanelOpen = false;
+    this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
     this.clearObjectiveAutoClose();
@@ -292,71 +347,62 @@ export class TutorialHintManager {
     text,
     stepLabel,
     showPointer = true,
-    showPortrait = true,
     advanceOnClick = false,
   }) {
+    this.showLesson({
+      id: `prompt:${stepLabel ?? ''}:${text ?? ''}`,
+      title: 'lesson',
+      text,
+      stepLabel,
+      advanceOnClick,
+      canShowTarget: Boolean(target),
+    });
+
+    if (target) {
+      this.showTargetCue({ target, showPointer });
+    }
+  }
+
+  showTargetCue({ target, showPointer = true } = {}) {
     if (!this.root || !this.stage || !target) {
-      this.hidePrompt();
+      this.hideTargetCue();
       return;
     }
 
     const rect = this.getSourceRect(target);
 
     if (!rect) {
-      this.hidePrompt();
+      this.hideTargetCue();
       return;
     }
 
     this.root.hidden = false;
-    this.hint.hidden = false;
-    this.hint.classList.remove('is-dialog');
-    this.setTypedText(this.text, text ?? '', {
-      speakingElement: this.portrait,
-    });
-    this.stepLabel.textContent = stepLabel ?? '';
-    this.advanceButton.hidden = !advanceOnClick;
-    if (advanceOnClick) {
-      this.setPlainText(this.advanceButton, 'next');
-    } else {
-      this.setPlainText(this.advanceButton, '');
-    }
-    this.positionHighlight(rect);
-    const guidePlacement = this.positionGuide(rect, showPortrait);
-    this.positionPointer(rect, showPointer, guidePlacement);
+    this.hidePromptBox();
+    this.positionPointer(rect, showPointer);
     this.syncRootVisibility();
   }
 
   showDialog({ text, stepLabel, advanceOnClick = true }) {
-    if (!this.root || !this.stage) {
-      return;
-    }
-
-    this.root.hidden = false;
-    this.hint.hidden = false;
-    this.hint.classList.add('is-dialog');
-    this.hideTargetCue();
-    this.positionDialog();
-    this.setTypedText(this.text, text ?? '', {
-      speakingElement: this.portrait,
+    this.showLesson({
+      id: `dialog:${stepLabel ?? ''}:${text ?? ''}`,
+      title: 'lesson',
+      text,
+      stepLabel,
+      advanceOnClick,
     });
-    this.stepLabel.textContent = stepLabel ?? '';
-    this.advanceButton.hidden = !advanceOnClick;
-    if (advanceOnClick) {
-      this.setPlainText(this.advanceButton, 'next');
-    } else {
-      this.setPlainText(this.advanceButton, '');
-    }
-    this.syncRootVisibility();
   }
 
-  showObjective({
+  showLesson({
     id,
+    title = 'lesson',
     text,
     stepLabel,
     progress,
     progressLabel,
     attention = true,
     autoOpen = true,
+    advanceOnClick = false,
+    canShowTarget = false,
   }) {
     if (!this.root || !this.stage || !this.objective || !this.objectiveButton) {
       return;
@@ -370,6 +416,7 @@ export class TutorialHintManager {
     }
 
     const normalizedProgress = this.normalizeProgress(progress);
+    const hasProgress = normalizedProgress !== null;
     this.objectiveCopyText = text ?? '';
     this.root.hidden = false;
     this.objectiveButton.hidden = false;
@@ -380,35 +427,260 @@ export class TutorialHintManager {
     );
     this.objectiveButton.setAttribute(
       'aria-label',
-      this.objectivePanelOpen
-        ? `close ${GUIDE_NAME} objective`
-        : `open ${GUIDE_NAME} objective`,
+      this.objectivePanelOpen ? 'close lesson' : 'open lesson',
     );
-    this.setObjectiveAttention(attention);
-    this.updateObjectiveCopy();
+    this.objectiveTitle.textContent = title ?? 'lesson';
     this.objectiveStepLabel.textContent = stepLabel ?? '';
-    this.objectiveProgress.hidden = !normalizedProgress;
-    this.objectiveProgressLabel.hidden = !normalizedProgress && !progressLabel;
+    this.lessonAdvanceButton.hidden = !advanceOnClick;
+    this.lessonShowButton.hidden = advanceOnClick || !canShowTarget;
+    this.objectiveProgress.hidden = !hasProgress;
+    this.objectiveProgressLabel.hidden = !hasProgress && !progressLabel;
     this.objectiveProgressLabel.textContent = progressLabel ?? '';
 
     if (normalizedProgress !== null) {
       this.objectiveProgressFill.style.width = `${normalizedProgress * 100}%`;
     }
 
+    this.applyObjectiveSize(
+      this.measureLessonSize({
+        title,
+        text,
+        stepLabel,
+        progress: hasProgress,
+        progressLabel,
+        advanceOnClick,
+        canShowTarget,
+      }),
+    );
+    this.setObjectiveAttention(attention);
+    this.updateObjectiveCopy();
+
+    if (this.objectivePanelOpen) {
+      this.hidePromptBox();
+      this.hideTargetCue();
+    }
+
     this.positionObjective();
     this.syncRootVisibility();
   }
 
+  showObjective(objective) {
+    this.showLesson({
+      title: 'lesson',
+      ...objective,
+    });
+  }
+
+  measureLessonSize({
+    title,
+    text,
+    stepLabel,
+    progress,
+    progressLabel,
+    advanceOnClick,
+    canShowTarget,
+  } = {}) {
+    const width = this.estimateLessonWidth({
+      title,
+      text,
+      stepLabel,
+      progressLabel,
+      advanceOnClick,
+      canShowTarget,
+    });
+    const estimatedHeight = this.estimateLessonHeight({
+      text,
+      width,
+      progress,
+      progressLabel,
+    });
+    const measuredHeight = this.measureLessonHeight({
+      title,
+      text,
+      stepLabel,
+      progress,
+      progressLabel,
+      advanceOnClick,
+      canShowTarget,
+      width,
+    });
+
+    return {
+      width,
+      height: clamp(measuredHeight ?? estimatedHeight, LESSON_MIN_HEIGHT, LESSON_MAX_HEIGHT),
+    };
+  }
+
+  measureLessonHeight({
+    title,
+    text,
+    stepLabel,
+    progress,
+    progressLabel,
+    advanceOnClick,
+    canShowTarget,
+    width,
+  }) {
+    const doc = this.root?.ownerDocument;
+
+    if (!doc || !this.root) {
+      return null;
+    }
+
+    const measure = doc.createElement('section');
+    measure.className = 'tutorial-layer__lesson tutorial-layer__lesson-measure style-box';
+    measure.setAttribute('aria-hidden', 'true');
+    measure.style.width = `${width}px`;
+
+    const measureTitle = doc.createElement('div');
+    measureTitle.className = 'style-box__title';
+    measureTitle.textContent = title ?? 'lesson';
+
+    const measureClose = doc.createElement('button');
+    measureClose.className = 'tutorial-layer__lesson-close tutorial-layer__objective-close';
+    measureClose.type = 'button';
+    measureClose.textContent = 'close';
+
+    const measureStep = doc.createElement('div');
+    measureStep.className = 'tutorial-layer__lesson-step-label tutorial-layer__objective-step-label';
+    measureStep.textContent = stepLabel ?? '';
+
+    const measureText = doc.createElement('p');
+    measureText.className = 'tutorial-layer__lesson-text tutorial-layer__objective-text';
+    measureText.textContent = text ?? '';
+
+    const measureProgress = doc.createElement('div');
+    measureProgress.className =
+      'style-progress tutorial-layer__lesson-progress tutorial-layer__objective-progress';
+    measureProgress.hidden = !progress;
+    measureProgress.append(doc.createElement('span'));
+
+    const measureProgressLabel = doc.createElement('div');
+    measureProgressLabel.className =
+      'tutorial-layer__lesson-progress-label tutorial-layer__objective-progress-label';
+    measureProgressLabel.hidden = !progress && !progressLabel;
+    measureProgressLabel.textContent = progressLabel ?? '';
+
+    const measureShow = doc.createElement('button');
+    measureShow.className = 'tutorial-layer__lesson-show';
+    measureShow.type = 'button';
+    measureShow.textContent = 'show me';
+    measureShow.hidden = advanceOnClick || !canShowTarget;
+
+    const measureAdvance = doc.createElement('button');
+    measureAdvance.className = 'tutorial-layer__lesson-advance tutorial-layer__advance';
+    measureAdvance.type = 'button';
+    measureAdvance.textContent = 'next';
+    measureAdvance.hidden = !advanceOnClick;
+
+    measure.append(
+      measureTitle,
+      measureClose,
+      measureStep,
+      measureText,
+      measureProgress,
+      measureProgressLabel,
+      measureShow,
+      measureAdvance,
+    );
+    this.root.append(measure);
+
+    const style = this.getWindow()?.getComputedStyle?.(measure);
+    const paddingTop = Number.parseFloat(style?.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(style?.paddingBottom) || 0;
+    const contentHeight = Math.ceil(measure.scrollHeight - paddingTop - paddingBottom);
+    measure.remove();
+
+    return contentHeight > 0 ? contentHeight : null;
+  }
+
+  estimateLessonWidth({
+    title,
+    text,
+    stepLabel,
+    progressLabel,
+    advanceOnClick,
+    canShowTarget,
+  }) {
+    const titleWidth =
+      estimateInlineWidth(title ?? 'lesson') + estimateInlineWidth(stepLabel ?? '') + HINT_GAP * 3;
+    const actionLabel = advanceOnClick ? 'next' : canShowTarget ? 'show me' : '';
+    const actionWidth =
+      estimateInlineWidth('close') + estimateInlineWidth(actionLabel) + HINT_GAP * 4;
+    const textWidth = Math.min(estimateInlineWidth(text ?? ''), LESSON_MAX_WIDTH);
+    const progressWidth = estimateInlineWidth(progressLabel ?? '');
+
+    return clamp(
+      Math.ceil(Math.max(titleWidth, actionWidth, textWidth, progressWidth, LESSON_MIN_WIDTH)),
+      LESSON_MIN_WIDTH,
+      LESSON_MAX_WIDTH,
+    );
+  }
+
+  estimateLessonHeight({ text, width, progress, progressLabel }) {
+    const charsPerLine = Math.max(1, Math.floor(width / LESSON_ESTIMATED_CHAR_WIDTH));
+    const textLines = String(text ?? '')
+      .split('\n')
+      .reduce(
+        (total, line) => total + Math.max(1, Math.ceil(line.length / charsPerLine)),
+        0,
+      );
+    let height = Math.max(
+      LESSON_MIN_HEIGHT,
+      textLines * LESSON_ESTIMATED_LINE_HEIGHT,
+      Number(Boolean(text)) * 20,
+    );
+
+    if (progress) {
+      height += 8;
+    }
+
+    if (progress || progressLabel) {
+      height += 16;
+    }
+
+    return Math.ceil(height);
+  }
+
+  applyObjectiveSize({ width, height }) {
+    this.objectiveWidth = width;
+    this.objectiveHeight = height;
+    this.objective.style.width = `${width}px`;
+    this.objective.style.height = `${height}px`;
+  }
+
   setObjectiveAttention(active) {
+    this.objectiveAttentionActive = Boolean(active);
+    this.applyObjectiveAttention();
+  }
+
+  setLessonAttention(active) {
+    this.setObjectiveAttention(active);
+  }
+
+  isObjectivePanelOpen() {
+    return Boolean(this.objectivePanelOpen && this.objective && !this.objective.hidden);
+  }
+
+  isLessonPanelOpen() {
+    return this.isObjectivePanelOpen();
+  }
+
+  applyObjectiveAttention() {
     if (!this.objectiveButton) {
       return;
     }
 
+    const active = this.objectiveAttentionActive && !this.objectivePanelOpen;
     setNotificationBadge(this.objectiveButton, active);
-    this.objectiveButton.toggleAttribute('data-attention', Boolean(active));
+    this.objectiveButton.toggleAttribute('data-attention', active);
   }
 
   openObjectivePanel() {
+    this.openLessonPanel();
+  }
+
+  openLessonPanel() {
     if (!this.objective || !this.objectiveButton) {
       return;
     }
@@ -416,8 +688,8 @@ export class TutorialHintManager {
     this.objectivePanelOpen = true;
     this.objective.hidden = false;
     this.objectiveButton.setAttribute('aria-expanded', 'true');
-    this.objectiveButton.setAttribute('aria-label', `close ${GUIDE_NAME} objective`);
-    this.setObjectiveAttention(false);
+    this.objectiveButton.setAttribute('aria-label', 'close lesson');
+    this.applyObjectiveAttention();
     this.hidePrompt();
     this.resetTypedText(this.objectiveText);
     this.clearObjectiveAutoClose();
@@ -427,6 +699,10 @@ export class TutorialHintManager {
   }
 
   closeObjectivePanel() {
+    this.closeLessonPanel();
+  }
+
+  closeLessonPanel() {
     if (!this.objective || !this.objectiveButton) {
       return;
     }
@@ -435,8 +711,10 @@ export class TutorialHintManager {
     this.objective.hidden = true;
     this.clearObjectiveAutoClose();
     this.resetTypedText(this.objectiveText);
+    this.hideTargetCue();
     this.objectiveButton.setAttribute('aria-expanded', 'false');
-    this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
+    this.objectiveButton.setAttribute('aria-label', 'open lesson');
+    this.applyObjectiveAttention();
     this.syncRootVisibility();
   }
 
@@ -454,12 +732,14 @@ export class TutorialHintManager {
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
-      this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
-      this.setObjectiveAttention(false);
+      this.objectiveButton.setAttribute('aria-label', 'open lesson');
+      this.objectiveAttentionActive = false;
+      this.applyObjectiveAttention();
       this.setSpeaking(this.objectiveButton, false);
     }
 
     this.objectivePanelOpen = false;
+    this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
     this.clearObjectiveAutoClose();
@@ -475,11 +755,24 @@ export class TutorialHintManager {
       return;
     }
 
-    this.hint.hidden = true;
-    this.resetTypedText(this.text);
-    this.resetTypedText(this.advanceButton);
+    this.hidePromptBox();
     this.hideTargetCue();
     this.syncRootVisibility();
+  }
+
+  hidePromptBox() {
+    if (this.hint) {
+      this.hint.hidden = true;
+      this.hint.classList.remove('is-dialog');
+    }
+
+    this.resetTypedText(this.text);
+    this.resetTypedText(this.advanceButton);
+
+    if (this.portrait) {
+      this.portrait.hidden = true;
+      this.setSpeaking(this.portrait, false);
+    }
   }
 
   hideObjective() {
@@ -490,12 +783,14 @@ export class TutorialHintManager {
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
       this.objectiveButton.setAttribute('aria-expanded', 'false');
-      this.objectiveButton.setAttribute('aria-label', `open ${GUIDE_NAME} objective`);
-      this.setObjectiveAttention(false);
+      this.objectiveButton.setAttribute('aria-label', 'open lesson');
+      this.objectiveAttentionActive = false;
+      this.applyObjectiveAttention();
       this.setSpeaking(this.objectiveButton, false);
     }
 
     this.objectivePanelOpen = false;
+    this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
     this.clearObjectiveAutoClose();
@@ -504,10 +799,6 @@ export class TutorialHintManager {
   }
 
   hideTargetCue({ immediate = false } = {}) {
-    if (this.highlight) {
-      this.highlight.hidden = true;
-    }
-
     this.hidePointer({ immediate });
 
     if (this.portrait) {
@@ -542,23 +833,6 @@ export class TutorialHintManager {
     return Number.isFinite(scale) && scale > 0 ? scale : 1;
   }
 
-  positionHighlight(rect) {
-    const bounds = this.getSourceBounds();
-    const left = Math.max(0, rect.left - HIGHLIGHT_PAD);
-    const top = clamp(
-      rect.top + rect.height + HIGHLIGHT_UNDERLINE_OFFSET,
-      0,
-      Math.max(0, bounds.height - HIGHLIGHT_UNDERLINE_HEIGHT),
-    );
-    const width = Math.max(0, Math.min(bounds.width - left, rect.width + HIGHLIGHT_PAD * 2));
-
-    this.highlight.hidden = false;
-    this.highlight.style.left = `${left}px`;
-    this.highlight.style.top = `${top}px`;
-    this.highlight.style.width = `${width}px`;
-    this.highlight.style.height = `${HIGHLIGHT_UNDERLINE_HEIGHT}px`;
-  }
-
   positionPointer(rect, showPointer, guidePlacement) {
     if (!this.pointer || !showPointer) {
       this.hidePointer();
@@ -587,8 +861,11 @@ export class TutorialHintManager {
     const bounds = this.getSourceBounds();
     const baseLeft = clamp(
       (bounds.width - HINT_PADDED_WIDTH) / 2 - GUIDE_LEFT_BIAS,
-      HINT_GAP + PORTRAIT_WIDTH - 4,
-      Math.max(HINT_GAP + PORTRAIT_WIDTH - 4, bounds.width - HINT_PADDED_WIDTH - HINT_GAP),
+      PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVERLAP,
+      Math.max(
+        PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVERLAP,
+        bounds.width - HINT_PADDED_WIDTH - HINT_GAP,
+      ),
     );
     const targetMiddle = rect.top + rect.height / 2;
     const topFraction =
@@ -605,7 +882,7 @@ export class TutorialHintManager {
       baseTop,
     });
     const { left, top } = placement;
-    const portraitLeft = left - PORTRAIT_WIDTH + 4;
+    const portraitLeft = left - PORTRAIT_WIDTH + PORTRAIT_BOX_OVERLAP;
     const portraitTop = clamp(
       top + HINT_HEIGHT - PORTRAIT_HEIGHT + 9,
       HINT_GAP,
@@ -638,7 +915,7 @@ export class TutorialHintManager {
       return base;
     }
 
-    const minLeft = HINT_GAP + PORTRAIT_WIDTH - 4;
+    const minLeft = PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVERLAP;
     const maxLeft = Math.max(minLeft, bounds.width - HINT_PADDED_WIDTH - HINT_GAP);
     const minTop = HINT_GAP;
     const maxTop = bounds.height - HINT_HEIGHT - HINT_GAP;
@@ -775,14 +1052,17 @@ export class TutorialHintManager {
   positionDialog() {
     const bounds = this.getSourceBounds();
     const left = clamp(
-      (bounds.width - HINT_PADDED_WIDTH) / 2 - GUIDE_LEFT_BIAS,
-      HINT_GAP + PORTRAIT_WIDTH - 4,
-      Math.max(HINT_GAP + PORTRAIT_WIDTH - 4, bounds.width - HINT_PADDED_WIDTH - HINT_GAP),
+      (bounds.width - DIALOG_PADDED_WIDTH) / 2 - GUIDE_LEFT_BIAS,
+      PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVERLAP,
+      Math.max(
+        PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVERLAP,
+        bounds.width - DIALOG_PADDED_WIDTH - HINT_GAP,
+      ),
     );
-    const top = clamp(DIALOG_TOP, HINT_GAP, bounds.height - HINT_HEIGHT - HINT_GAP);
-    const portraitLeft = left - PORTRAIT_WIDTH + 4;
+    const top = clamp(DIALOG_TOP, HINT_GAP, bounds.height - DIALOG_HEIGHT - HINT_GAP);
+    const portraitLeft = left - PORTRAIT_WIDTH + PORTRAIT_BOX_OVERLAP;
     const portraitTop = clamp(
-      top + HINT_HEIGHT - PORTRAIT_HEIGHT + 9,
+      top + DIALOG_HEIGHT - PORTRAIT_HEIGHT + 9,
       HINT_GAP,
       bounds.height - PORTRAIT_HEIGHT - HINT_GAP,
     );
@@ -807,9 +1087,10 @@ export class TutorialHintManager {
   }
 
   resolveObjectivePlacement({ bounds, protectedRects }) {
+    const outerSize = this.getObjectiveOuterSize();
     const candidates = OBJECTIVE_PLACEMENTS.map((placement, index) => {
-      const clamped = this.clampObjectivePlacement(placement, bounds);
-      const rects = getObjectivePlacementRects(clamped);
+      const clamped = this.clampObjectivePlacement(placement, bounds, outerSize);
+      const rects = getObjectivePlacementRects(clamped, outerSize);
       const protectedOverlap = protectedRects.reduce(
         (total, protectedRect) =>
           total +
@@ -828,28 +1109,38 @@ export class TutorialHintManager {
     return candidates.sort((a, b) => a.score - b.score || a.index - b.index)[0];
   }
 
-  clampObjectivePlacement(placement, bounds) {
+  clampObjectivePlacement(placement, bounds, outerSize) {
+    const objectiveLeft = clamp(
+      placement.objectiveLeft,
+      HINT_GAP,
+      bounds.width - outerSize.width - HINT_GAP,
+    );
+    const objectiveTop = clamp(
+      placement.objectiveTop,
+      HINT_GAP,
+      bounds.height - outerSize.height - HINT_GAP,
+    );
+
     return {
-      objectiveLeft: clamp(
-        placement.objectiveLeft,
-        HINT_GAP,
-        bounds.width - HINT_PADDED_WIDTH - HINT_GAP,
-      ),
-      objectiveTop: clamp(
-        placement.objectiveTop,
-        HINT_GAP,
-        bounds.height - HINT_HEIGHT - HINT_GAP,
-      ),
+      objectiveLeft,
+      objectiveTop,
       buttonLeft: clamp(
         placement.buttonLeft,
         0,
         bounds.width - OBJECTIVE_BUTTON_WIDTH - HINT_GAP,
       ),
       buttonTop: clamp(
-        placement.buttonTop,
+        objectiveTop + outerSize.height - OBJECTIVE_BUTTON_HEIGHT + 9,
         HINT_GAP,
         bounds.height - OBJECTIVE_BUTTON_HEIGHT - HINT_GAP,
       ),
+    };
+  }
+
+  getObjectiveOuterSize() {
+    return {
+      width: this.objectiveWidth + OBJECTIVE_HORIZONTAL_CHROME,
+      height: this.objectiveHeight + OBJECTIVE_VERTICAL_CHROME,
     };
   }
 
@@ -905,7 +1196,6 @@ export class TutorialHintManager {
     }
 
     const hasTargetCue =
-      Boolean(this.highlight && !this.highlight.hidden) ||
       Boolean(this.pointer && !this.pointer.hidden) ||
       Boolean(this.portrait && !this.portrait.hidden);
 
@@ -1131,6 +1421,10 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function estimateInlineWidth(text) {
+  return Math.ceil(String(text ?? '').length * LESSON_ESTIMATED_CHAR_WIDTH);
+}
+
 function toGuideRect({ left, top }) {
   return {
     left,
@@ -1199,13 +1493,16 @@ function toPointerRect({ x, y }) {
   };
 }
 
-function getObjectivePlacementRects({ objectiveLeft, objectiveTop, buttonLeft, buttonTop }) {
+function getObjectivePlacementRects(
+  { objectiveLeft, objectiveTop, buttonLeft, buttonTop },
+  outerSize,
+) {
   return {
     objective: {
       left: objectiveLeft,
       top: objectiveTop,
-      right: objectiveLeft + HINT_PADDED_WIDTH,
-      bottom: objectiveTop + HINT_HEIGHT,
+      right: objectiveLeft + outerSize.width,
+      bottom: objectiveTop + outerSize.height,
     },
     button: {
       left: buttonLeft,

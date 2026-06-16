@@ -13,6 +13,7 @@
     "preview": "vite preview --host 0.0.0.0 --port 55174 --strictPort",
     "lint": "eslint .",
     "test": "vitest run",
+    "check": "npm run lint && npm test && npm run build",
     "release": "node scripts/release.js",
     "balance:sim": "node scripts/balance-sim.js",
     "mobile:sync": "npm run mobile:sync:prod",
@@ -55,5 +56,21 @@
     "typescript": "^5.9.3",
     "vite": "^8.0.16",
     "vitest": "^4.0.15"
-  }
+  },
+  "description": "JavaScript mobile game with a full ECS gameplay layer, room-view UI, Vite client, Capacitor Android package, and SpacetimeDB backend.",
+  "main": "eslint.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavStep/idle-wizard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DavStep/idle-wizard/issues"
+  },
+  "homepage": "https://github.com/DavStep/idle-wizard#readme"
 }

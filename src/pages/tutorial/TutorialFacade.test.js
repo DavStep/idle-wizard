@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { TutorialFacade } from './TutorialFacade.js';
+import { TUTORIAL_STORAGE_KEY } from './managers/TutorialProgressManager.js';
 import { TUTORIAL_HINT_REMINDER_MS } from './managers/TutorialReminderManager.js';
 
 const UI_SCALE = 3;
@@ -56,9 +57,194 @@ function createLevelThreeSnapshot() {
   };
 }
 
+function createLevelOneSnapshot() {
+  return {
+    ...createLevelThreeSnapshot(),
+    tasks: {
+      currentLevel: 1,
+      level: {
+        completion: { canComplete: false, costGold: 10 },
+        tasks: [],
+      },
+    },
+  };
+}
+
+function createLevelOneObjectiveSnapshot() {
+  return {
+    ...createLevelOneSnapshot(),
+    seedSummoning: { canSummon: true },
+    tasks: {
+      currentLevel: 1,
+      level: {
+        completion: { canComplete: false, costGold: 10 },
+        tasks: [
+          {
+            taskId: 'level1-sage-seeds',
+            itemKey: 'sageSeed',
+            requiredQuantity: 10,
+            progressQuantity: 1,
+            canFill: true,
+            canComplete: false,
+            completed: false,
+          },
+        ],
+      },
+    },
+  };
+}
+
 describe('TutorialFacade', () => {
   afterEach(() => {
     document.body.textContent = '';
+  });
+
+  it('treats any press as next while an advance prompt is active', () => {
+    let underlyingClicks = 0;
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage(),
+    });
+
+    target.addEventListener('click', () => {
+      underlyingClicks += 1;
+    });
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    stage.append(target);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('intro-welcome');
+
+    const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+
+    target.dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(underlyingClicks).toBe(0);
+    expect(facade.progressManager.hasCompleted('intro-welcome')).toBe(true);
+
+    facade.unmount();
+  });
+
+  it('lets Elara button toggle instead of advancing an active lesson', () => {
+    const stage = document.createElement('section');
+    const usernameButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage(),
+    });
+
+    usernameButton.dataset.tutorialId = 'top:username';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    stage.append(usernameButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    const lessonButton = stage.querySelector('.tutorial-layer__lesson-button');
+
+    lessonButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(facade.progressManager.hasCompleted('intro-welcome')).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+    expect(lessonButton?.getAttribute('aria-label')).toBe('open lesson');
+
+    facade.unmount();
+  });
+
+  it('hides the lesson when an app blocker appears after mount', async () => {
+    const stage = document.createElement('section');
+    const usernameButton = document.createElement('button');
+    const blocker = document.createElement('section');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage(),
+    });
+
+    usernameButton.dataset.tutorialId = 'top:username';
+    blocker.className = 'app-fresh-start-choice';
+    blocker.hidden = true;
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    stage.append(usernameButton);
+    document.body.append(stage, blocker);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+
+    blocker.hidden = false;
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+
+    blocker.hidden = true;
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+
+    facade.unmount();
+  });
+
+  it('lets the opening username target receive its click while advancing', () => {
+    let usernameClicks = 0;
+    const stage = document.createElement('section');
+    const usernameButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage(),
+    });
+
+    usernameButton.dataset.tutorialId = 'top:username';
+    usernameButton.addEventListener('click', () => {
+      usernameClicks += 1;
+    });
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    stage.append(usernameButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+
+    usernameButton.dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(false);
+    expect(usernameClicks).toBe(1);
+    expect(facade.progressManager.hasCompleted('intro-welcome')).toBe(true);
+
+    facade.unmount();
   });
 
   it('keeps level three guidance passive until the player is idle', () => {
@@ -87,12 +273,12 @@ describe('TutorialFacade', () => {
     facade.mount(stage);
     facade.refresh();
 
-    const button = stage.querySelector('.tutorial-layer__objective-button');
-    const objective = stage.querySelector('.tutorial-layer__objective');
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
     const hint = stage.querySelector('.tutorial-layer__hint');
 
     expect(button?.hidden).toBe(false);
-    expect(objective?.hidden).toBe(true);
+    expect(lesson?.hidden).toBe(true);
     expect(hint?.hidden).toBe(true);
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
@@ -106,9 +292,57 @@ describe('TutorialFacade', () => {
 
     button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(objective?.hidden).toBe(false);
+    expect(lesson?.hidden).toBe(false);
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
+
+    facade.unmount();
+  });
+
+  it('keeps one lesson box visible while cueing its target', () => {
+    const stage = document.createElement('section');
+    const tasks = document.createElement('section');
+    const taskButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneObjectiveSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: [
+            'intro-welcome',
+            'intro-mana-sphere',
+            'first-summon-seed',
+            'first-fill-seed-task',
+          ],
+        }),
+      }),
+    });
+
+    tasks.dataset.tutorialId = 'workshop:tasks';
+    tasks.setAttribute('aria-expanded', 'true');
+    taskButton.dataset.tutorialId = 'task:level1-sage-seeds';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(tasks, { left: 48, top: 660, width: 900, height: 280 });
+    setClientRect(taskButton, { left: 64, top: 720, width: 760, height: 70 });
+    stage.append(tasks, taskButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const hint = stage.querySelector('.tutorial-layer__hint');
+
+    expect(facade.activeStep?.id).toBe('finish-seed-task');
+    expect(lesson?.hidden).toBe(false);
+    expect(hint?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+    expect([lesson, hint].filter((element) => element && !element.hidden)).toHaveLength(1);
 
     facade.unmount();
   });

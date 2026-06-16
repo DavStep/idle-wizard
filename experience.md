@@ -31,25 +31,36 @@
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
-- FTUE guide should hide while top-panel username/settings dialog is open, then resume after it closes.
+- First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
+- FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
+- FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
+- Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
+- Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
-- FTUE highlights should not clone the target DOM or draw boxed outlines; use a compact under-target mark with the pointer.
-- FTUE under-target marks should stay below border-labeled boxes so the cue never crosses embedded titles.
-- FTUE press-to-advance prompts must stay visible until pressed; only action reminders should auto-hide.
+- FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
+- FTUE opening should reveal the room piece by piece: top-panel username first, then mana sphere, then summon, then tasks and room chrome.
+- FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
 - FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
-- FTUE terminal hides must clear inner prompt/objective/button state; hiding only the layer lets later click-driven prompt hides re-show stale objective UI for one frame.
-- FTUE objective steps use the left Elara objective button as the only Elara; suppress the prompt portrait and make the Elara button toggle the objective open/closed.
+- FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
+- FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
+- FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
+- FTUE lesson labels are `lesson 1: seeding`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
 - Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Elara disappears while tasks remain.
 - Level-3 FTUE should be passive: no automatic target popups; show Elara attention only after idle/stuck time, then reveal target guidance on player request.
-- Tutorial guide is Elara Starbrew; only guide body/objective copy typewrites, while name, step labels, and action labels appear immediately.
+- Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
+- FTUE lesson panels should measure final copy/progress first and set box size before typewriter text appears; do not let panels resize as copy reveals.
+- FTUE target cues should be pointer-only while the lesson panel is open or the player asks with `show me`; never stack a target hint box with a lesson box.
+- Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
+- FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
+- FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
 
@@ -199,7 +210,7 @@
 - NPC market prices should follow uncapped `npcNeed / targetNeed` pressure; avoid hard price caps that hide real scarcity.
 - NPC market tick logic must not clamp `npcNeed` against a zero `maxNeed`; that drains all demand to `0` on the first due tick.
 - Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
-- Market sellable quantities must subtract Brewing cauldron-staged herbs; NPC and player market sales should use available quantities, not raw item stacks.
+- Market sellable quantities must subtract Brewing cauldron-staged herbs and selected Garden seeds, but not unfinished task requirements; NPC and player market sales should use available quantities, not raw item stacks.
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
 - Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
@@ -399,6 +410,7 @@
 
 - Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
+- Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.
 - Match verification to risk: tiny deterministic edits can use inspection or a focused check, while shared runtime/UI changes justify lint, tests, build, and browser/device checks.

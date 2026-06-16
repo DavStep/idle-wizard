@@ -166,14 +166,17 @@ function createLevelTwoReadySnapshot(overrides = {}) {
 }
 
 describe('TutorialStepManager', () => {
-  it('starts with Elara intro dialog', () => {
+  it('starts by pointing at the top-panel username', () => {
     expect(getStep()).toMatchObject({
       id: 'intro-welcome',
-      kind: 'dialog',
+      kind: 'prompt',
+      targetId: 'top:username',
       advanceOnClick: true,
+      allowTargetClick: true,
       stepLabel: '1/23',
+      revealTokens: ['top'],
       text:
-        "yo! i'm Elara Starbrew. this is your workshop. i will point at the next thing until the first loop makes sense.",
+        "yo! i'm Elara Starbrew. your name is up here. tap it to change username in settings.",
     });
   });
 
@@ -185,7 +188,7 @@ describe('TutorialStepManager', () => {
 
     expect(step).toMatchObject({
       id: 'intro-welcome',
-      kind: 'dialog',
+      kind: 'prompt',
     });
   });
 
@@ -200,6 +203,7 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:manaSphere',
       advanceOnClick: true,
       showPointer: false,
+      revealTokens: ['mana'],
       stepLabel: '2/23',
     });
   });
@@ -230,6 +234,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       targetId: 'workshop:summonSeed',
       text: 'use your mana to summon seeds.',
+      revealTokens: ['mana', 'summon'],
       stepLabel: '3/23',
     });
   });

@@ -1,6 +1,6 @@
 # Idle Wizard
 
-JavaScript mobile game scaffold with a full ECS architecture, Vite client, and SpacetimeDB backend setup.
+JavaScript mobile game with a full ECS gameplay layer, room-view UI, Vite client, Capacitor Android package, and SpacetimeDB backend.
 
 ## Commands
 
@@ -11,12 +11,16 @@ npm run build
 npm run build:dev
 npm run build:prod
 npm run lint
+npm run test
+npm run check
 npm run release
 npm run android:assembleDebug
 npm run android:assembleProdDebug
 npm run android:assembleRelease
 npm run android:postDebugDiscord
 ```
+
+`npm run check` is the default verification gate for code changes. It runs lint, tests, and a production web build.
 
 `npm run dev`, `npm run build:dev`, and `npm run android:assembleDebug` load development env and enable console cheats. Production builds use `VITE_ENABLE_CHEATS=false`.
 
@@ -85,19 +89,34 @@ npm run stdb:generate
 
 ## Current Scope
 
-Herbs, potions, and potion recipes exist only as item concepts. Planting, harvesting, active brewing, selling, and other gameplay mechanics will be added only when requested.
+Idle Wizard currently has five room pages: `Brewing`, `Garden`, `Workshop`, `Research`, and `Market`. Implemented systems include mana, gold, inventory items, seed summoning, garden planting/harvesting, active brewing, research, tasks, NPC/player market flows, prestige, automation, visual settings, world chat, leaderboard, account/session handling, save sync, feedback, maintenance, and trade alliance backend/UI flows.
+
+Do not add new gameplay behavior beyond the explicit request. If requested gameplay behavior is unclear, ask before implementing.
+
+## AI / Contributor Workflow
+
+Start with:
+
+- `AGENTS.md`: mandatory project rules for agents.
+- `experience.md`: durable lessons and current traps.
+- `docs/ai-workflow.md`: verification ladder, repo map, and safe edit workflow.
+- `docs/architecture.md`: layer boundaries and feature layout.
+- `docs/style.md` and `docs/ui-patterns.md`: required UI style/patterns.
+
+If top-level docs conflict with source or tests, inspect source/tests and update the stale doc in the same change.
 
 ## Architecture
 
 - `src/app`: application bootstrap and lifecycle.
 - `src/viewport`: fixed `1080x2170` design surface scaling.
-- `src/pages`: room-view pages. The default page is `Workshop`.
-- `src/gameplay`: ECS-backed gameplay facades for mana, inventory, and seed summoning.
+- `src/pages`: room-view UI pages. The default page is `Workshop`.
+- `src/gameplay`: ECS-backed gameplay facades/managers.
 - `src/rendering`: render shell and frame loop.
 - `src/ecs`: ECS world, entity, component, and system managers.
 - `src/backend`: SpacetimeDB and auth integration boundaries.
 - `spacetimedb`: server module project.
 - `android`: Capacitor Android wrapper for building the Vite game as an Android app.
+- `docs/ai-workflow.md`: AI/contributor workflow and verification guide.
 - `docs/style.md`: visual style definition.
 
 See `AGENTS.md` for project rules future agents should follow.

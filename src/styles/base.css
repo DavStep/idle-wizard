@@ -1033,6 +1033,55 @@ body {
   display: none;
 }
 
+.game-stage[data-tutorial-reveal] :where(
+    .room-top-panel-layer,
+    .room-bottom-panel-layer,
+    .room-world-chat-layer,
+    .workshop-page__mana-sphere,
+    .workshop-page__action-bar > .style-button,
+    .workshop-page__tasks
+  ) {
+  opacity: 0;
+  pointer-events: none;
+  translate: 0 4px;
+  transition:
+    opacity var(--style-motion-normal) var(--style-motion-ease),
+    translate var(--style-motion-normal) var(--style-motion-ease);
+}
+
+.game-stage[data-tutorial-reveal] :where(
+    .room-top-panel-layer,
+    .room-bottom-panel-layer
+  ) :where(button, [role="button"], input, select, textarea) {
+  pointer-events: none;
+}
+
+.game-stage[data-tutorial-reveal~="top"] .room-top-panel-layer,
+.game-stage[data-tutorial-reveal~="rooms"] .room-bottom-panel-layer,
+.game-stage[data-tutorial-reveal~="mana"] .workshop-page__mana-sphere,
+.game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
+.game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
+  opacity: 1;
+  translate: 0;
+}
+
+.game-stage[data-tutorial-reveal~="top"] .room-top-panel-layer :where(
+    button,
+    [role="button"],
+    input,
+    select,
+    textarea
+  ),
+.game-stage[data-tutorial-reveal~="rooms"] .room-bottom-panel-layer :where(
+    button,
+    [role="button"]
+  ),
+.game-stage[data-tutorial-reveal~="mana"] .workshop-page__mana-sphere,
+.game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
+.game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
+  pointer-events: auto;
+}
+
 .tutorial-layer,
 .tutorial-layer *,
 .tutorial-layer *::before,
@@ -1046,20 +1095,6 @@ body {
   z-index: 0;
   background: transparent;
   pointer-events: none;
-}
-
-.tutorial-layer__highlight {
-  position: absolute;
-  z-index: 1;
-  background: var(--style-text);
-  border: 0;
-  opacity: 0.26;
-  pointer-events: none;
-  animation: tutorial-highlight-mark 1280ms var(--style-motion-ease) infinite;
-}
-
-.tutorial-layer__highlight[hidden] {
-  display: none;
 }
 
 .tutorial-layer__pointer {
@@ -1106,8 +1141,8 @@ body {
 .tutorial-layer__portrait {
   position: absolute;
   z-index: 5;
-  width: 54px;
-  height: 70px;
+  width: 70px;
+  height: 91px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: auto;
@@ -1126,8 +1161,8 @@ body {
   z-index: 4;
   display: grid;
   place-items: center;
-  width: 112px;
-  height: 142px;
+  width: 70px;
+  height: 91px;
   padding: 0;
   margin: 0;
   appearance: none;
@@ -1146,7 +1181,7 @@ body {
 
 .tutorial-layer__objective-button::after {
   position: absolute;
-  inset: 22px 14px 14px 11px;
+  inset: 14px 8px 9px 7px;
   z-index: 0;
   display: block;
   content: "";
@@ -1177,8 +1212,8 @@ body {
   position: relative;
   z-index: 1;
   display: block;
-  width: 106px;
-  height: 136px;
+  width: 70px;
+  height: 91px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: auto;
@@ -1207,14 +1242,14 @@ body {
 }
 
 .tutorial-layer__objective-button[data-notification="true"]::before {
-  top: 21px;
-  right: 8px;
+  top: 12px;
+  right: 5px;
 }
 
 .style-box.tutorial-layer__hint {
   position: absolute;
   z-index: 6;
-  width: 136px;
+  width: 190px;
   min-height: 34px;
   padding: 7px 10px 5px;
   border: var(--style-border-strong);
@@ -1224,21 +1259,26 @@ body {
 }
 
 .style-box.tutorial-layer__hint.is-dialog {
-  min-height: 48px;
+  width: 244px;
+  height: 74px;
+  min-height: 0;
 }
 
 .tutorial-layer__hint > .style-box__title {
   background: var(--style-surface);
 }
 
-.tutorial-layer__objective > .style-box__title {
+.tutorial-layer__objective > .style-box__title,
+.tutorial-layer__lesson > .style-box__title {
   background: var(--style-surface);
 }
 
-.tutorial-layer__objective-close {
+.tutorial-layer__objective-close,
+.tutorial-layer__lesson-close,
+.tutorial-layer__lesson-show,
+.tutorial-layer__lesson-advance {
   position: absolute;
   bottom: var(--style-box-border-label-offset);
-  left: 50%;
   z-index: 1;
   min-height: var(--style-box-border-label-line-height);
   padding: 0 var(--style-box-border-label-padding-x);
@@ -1253,16 +1293,34 @@ body {
   background: var(--style-surface);
   border: 0;
   border-radius: 0;
+}
+
+.tutorial-layer__objective-close,
+.tutorial-layer__lesson-close {
+  left: 50%;
   transform: translateX(-50%);
 }
 
 .tutorial-layer__objective-close:hover,
-.tutorial-layer__objective-close:focus-visible {
+.tutorial-layer__objective-close:focus-visible,
+.tutorial-layer__lesson-close:hover,
+.tutorial-layer__lesson-close:focus-visible,
+.tutorial-layer__lesson-show:hover,
+.tutorial-layer__lesson-show:focus-visible,
+.tutorial-layer__lesson-advance:hover,
+.tutorial-layer__lesson-advance:focus-visible {
   text-decoration: underline;
 }
 
-.tutorial-layer__objective-close:focus {
+.tutorial-layer__objective-close:focus,
+.tutorial-layer__lesson-close:focus,
+.tutorial-layer__lesson-show:focus,
+.tutorial-layer__lesson-advance:focus {
   outline: none;
+}
+
+.tutorial-layer__lesson-show {
+  left: var(--style-box-title-left);
 }
 
 .tutorial-layer__step-label {
@@ -1277,7 +1335,8 @@ body {
   background: var(--style-surface);
 }
 
-.tutorial-layer__objective-step-label {
+.tutorial-layer__objective-step-label,
+.tutorial-layer__lesson-step-label {
   position: absolute;
   top: var(--style-box-border-label-offset);
   right: var(--style-box-title-left);
@@ -1291,6 +1350,11 @@ body {
 
 .tutorial-layer__copy {
   min-height: var(--style-row-min-height);
+}
+
+.tutorial-layer__hint.is-dialog .tutorial-layer__copy {
+  height: 100%;
+  overflow: hidden;
 }
 
 .tutorial-layer__text {
@@ -1325,15 +1389,19 @@ body {
   outline: none;
 }
 
-.tutorial-layer__advance[hidden] {
+.tutorial-layer__advance[hidden],
+.tutorial-layer__lesson-show[hidden],
+.tutorial-layer__lesson-advance[hidden] {
   display: none;
 }
 
-.style-box.tutorial-layer__objective {
+.style-box.tutorial-layer__objective,
+.style-box.tutorial-layer__lesson {
   position: absolute;
   z-index: 3;
-  width: 136px;
-  min-height: 44px;
+  width: 190px;
+  height: 74px;
+  min-height: 0;
   padding: 7px 10px calc(var(--style-box-border-label-line-height) - 2px);
   background: var(--style-surface);
   border: var(--style-border-strong);
@@ -1342,46 +1410,54 @@ body {
   transform-origin: left bottom;
 }
 
-.tutorial-layer__objective:not([hidden]) {
+.style-box.tutorial-layer__lesson-measure {
+  position: absolute;
+  top: -10000px;
+  left: -10000px;
+  height: auto;
+  min-height: 0;
+  visibility: hidden;
+  pointer-events: none;
+  animation: none;
+}
+
+.tutorial-layer__objective:not([hidden]),
+.tutorial-layer__lesson:not([hidden]) {
   animation: tutorial-objective-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
 .tutorial-layer__objective[hidden],
-.tutorial-layer__objective-button[hidden] {
+.tutorial-layer__lesson[hidden],
+.tutorial-layer__objective-button[hidden],
+.tutorial-layer__lesson-button[hidden] {
   display: none;
 }
 
-.tutorial-layer__objective-text {
+.tutorial-layer__objective-text,
+.tutorial-layer__lesson-text {
   min-height: var(--style-row-min-height);
   margin: 0;
 }
 
-.tutorial-layer__objective-progress {
+.tutorial-layer__objective-progress,
+.tutorial-layer__lesson-progress {
   margin-top: 5px;
 }
 
 .tutorial-layer__objective-progress[hidden],
-.tutorial-layer__objective-progress-label[hidden] {
+.tutorial-layer__lesson-progress[hidden],
+.tutorial-layer__objective-progress-label[hidden],
+.tutorial-layer__lesson-progress-label[hidden] {
   display: none;
 }
 
-.tutorial-layer__objective-progress-label {
+.tutorial-layer__objective-progress-label,
+.tutorial-layer__lesson-progress-label {
   margin-top: 2px;
   color: var(--style-muted);
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
   text-align: right;
-}
-
-@keyframes tutorial-highlight-mark {
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-
-  52% {
-    opacity: 0.36;
-  }
 }
 
 @keyframes tutorial-pointer-press {
@@ -1458,9 +1534,19 @@ body {
     animation: none;
   }
 
+  .game-stage[data-tutorial-reveal] :where(
+      .room-top-panel-layer,
+      .room-bottom-panel-layer,
+      .room-world-chat-layer,
+      .workshop-page__mana-sphere,
+      .workshop-page__action-bar > .style-button,
+      .workshop-page__tasks
+    ) {
+    transition: none;
+  }
+
   .tutorial-layer__objective-button:not([hidden]),
   .tutorial-layer__objective:not([hidden]),
-  .tutorial-layer__highlight,
   .tutorial-layer__pointer,
   .tutorial-layer__portrait[data-speaking],
   .tutorial-layer__objective-button[data-speaking] .tutorial-layer__objective-button-image,
@@ -6754,14 +6840,12 @@ div.workshop-page__discovery-row {
 
 @keyframes tutorial-objective-enter {
   from {
-    clip-path: inset(0 0 60% 0);
     opacity: 0.01;
     scale: 0.94;
     translate: -8px 10px;
   }
 
   to {
-    clip-path: inset(0 0 0 0);
     opacity: 1;
     scale: 1;
     translate: 0 0;

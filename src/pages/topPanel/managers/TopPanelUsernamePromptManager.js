@@ -1,7 +1,6 @@
 export class TopPanelUsernamePromptManager {
-  constructor({ playerFacade, settingsManager } = {}) {
+  constructor({ playerFacade } = {}) {
     this.playerFacade = playerFacade;
-    this.settingsManager = settingsManager;
     this.unsubscribe = null;
   }
 
@@ -20,11 +19,10 @@ export class TopPanelUsernamePromptManager {
   }
 
   render(snapshot) {
-    if (!snapshot?.shouldPromptForUsername || this.settingsManager?.isVisible?.()) {
+    if (!snapshot?.shouldPromptForUsername) {
       return;
     }
 
-    this.settingsManager?.showUsernamePrompt?.();
     this.playerFacade?.markUsernamePromptSeen?.();
   }
 }

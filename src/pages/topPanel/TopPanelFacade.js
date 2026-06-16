@@ -23,7 +23,6 @@ export class TopPanelFacade {
     });
     this.usernamePromptManager = new TopPanelUsernamePromptManager({
       playerFacade,
-      settingsManager: this.settingsManager,
     });
   }
 

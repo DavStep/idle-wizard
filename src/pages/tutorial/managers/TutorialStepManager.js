@@ -45,6 +45,28 @@ const LEVEL_FOUR_STEP_IDS = [
   'refill-mana-tonic-cauldron',
 ];
 
+const SEEDING_LESSON_STEP_IDS = [
+  'intro-welcome',
+  'intro-mana-sphere',
+  'first-summon-seed',
+  'first-fill-seed-task',
+  'finish-seed-task',
+];
+
+const MARKET_LESSON_STEP_IDS = LEVEL_ONE_STEP_IDS.filter(
+  (stepId) => !SEEDING_LESSON_STEP_IDS.includes(stepId),
+);
+
+const GARDENING_LESSON_STEP_IDS = [...LEVEL_TWO_STEP_IDS, ...LEVEL_THREE_STEP_IDS];
+const BREWING_LESSON_STEP_IDS = LEVEL_FOUR_STEP_IDS;
+
+const LESSON_TITLE_BY_STEP_ID = new Map([
+  ...SEEDING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 1: seeding']),
+  ...MARKET_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 2: market']),
+  ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 3: gardening']),
+  ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 4: brewing']),
+]);
+
 export const TUTORIAL_STEP_IDS = [
   ...LEVEL_ONE_STEP_IDS,
   ...LEVEL_TWO_STEP_IDS,
@@ -52,13 +74,22 @@ export const TUTORIAL_STEP_IDS = [
   ...LEVEL_FOUR_STEP_IDS,
 ];
 
-const STEPS = [
+const REVEAL_TOP = ['top'];
+const REVEAL_MANA = ['mana'];
+const REVEAL_MANA_SUMMON = ['mana', 'summon'];
+const REVEAL_MANA_SUMMON_TASKS = ['mana', 'summon', 'tasks'];
+const REVEAL_LEVEL_ONE_WORKFLOW = ['mana', 'summon', 'tasks', 'top', 'rooms'];
+
+export const TUTORIAL_STEPS = [
   {
     id: 'intro-welcome',
-    kind: 'dialog',
+    kind: 'prompt',
+    targetId: 'top:username',
+    revealTokens: REVEAL_TOP,
     text:
-      "yo! i'm Elara Starbrew. this is your workshop. i will point at the next thing until the first loop makes sense.",
+      "yo! i'm Elara Starbrew. your name is up here. tap it to change username in settings.",
     advanceOnClick: true,
+    allowTargetClick: true,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
   },
@@ -67,6 +98,7 @@ const STEPS = [
     kind: 'prompt',
     pageId: 'workshop',
     targetId: 'workshop:manaSphere',
+    revealTokens: REVEAL_MANA,
     text: 'this is the mana sphere. mana fills over time, up to the cap shown here.',
     advanceOnClick: true,
     showPointer: false,
@@ -78,6 +110,7 @@ const STEPS = [
     kind: 'prompt',
     pageId: 'workshop',
     targetId: 'workshop:summonSeed',
+    revealTokens: REVEAL_MANA_SUMMON,
     text: 'use your mana to summon seeds.',
     isPaused: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
@@ -95,6 +128,7 @@ const STEPS = [
     id: 'first-fill-seed-task',
     kind: 'prompt',
     pageId: 'workshop',
+    revealTokens: REVEAL_MANA_SUMMON_TASKS,
     getTargetId: ({ dom, snapshot }) => {
       if (!dom.isTasksExpanded()) {
         return 'workshop:tasks';
@@ -139,6 +173,7 @@ const STEPS = [
     id: 'finish-seed-task',
     kind: 'objective',
     pageId: 'workshop',
+    revealTokens: REVEAL_MANA_SUMMON_TASKS,
     objectiveText: 'summon seeds and fill the level task',
     getTargetId: ({ dom, snapshot }) => {
       if (!dom.isTasksExpanded()) {
@@ -181,6 +216,7 @@ const STEPS = [
   {
     id: 'intro-market',
     kind: 'dialog',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     text: 'good. that finishes the level task. level up also needs gold. go sell a seed in market.',
     advanceOnClick: true,
     isAvailable: ({ snapshot }) =>
@@ -193,6 +229,7 @@ const STEPS = [
     id: 'prepare-seed-sale',
     kind: 'objective',
     pageId: 'workshop',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'summon one seed to sell',
     getTargetId: ({ snapshot }) =>
       snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere',
@@ -219,6 +256,7 @@ const STEPS = [
     kind: 'objective',
     pageId: 'shop',
     targetId: 'shop:stand:1',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'start selling sage seeds in market',
     text: 'select stand',
     getProgress: () => ({ value: 0, max: 1 }),
@@ -237,6 +275,7 @@ const STEPS = [
     kind: 'objective',
     pageId: 'shop',
     targetId: 'shop:stand:1',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'choose a market stand',
     text: 'select stand',
     getProgress: ({ snapshot }) => ({
@@ -258,6 +297,7 @@ const STEPS = [
     id: 'select-sage-seed-sale',
     kind: 'objective',
     pageId: 'shop',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'choose sage seed for that stand',
     getTargetId: ({ dom }) =>
       dom.isShopSellPopupOpen() ? `shop:sell:${SAGE_SEED_KEY}` : 'shop:stand:1',
@@ -279,6 +319,7 @@ const STEPS = [
     id: 'earn-tutorial-gold',
     kind: 'objective',
     pageId: null,
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'summon seeds and sell them for level-up gold',
     effect: 'tutorial-sale',
     sale: {
@@ -326,6 +367,7 @@ const STEPS = [
     id: 'unselect-sage-seed-sale',
     kind: 'objective',
     pageId: 'shop',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'unselect the seed from the stand',
     getTargetId: ({ dom }) =>
       dom.isShopSellPopupOpen() ? 'shop:sell:empty' : 'shop:stand:1',
@@ -347,6 +389,7 @@ const STEPS = [
     id: 'level-up-one',
     kind: 'objective',
     pageId: 'workshop',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'return to workshop and level up',
     getTargetId: ({ dom }) => (dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks'),
     getHintText: ({ dom }) => (dom.isTasksExpanded() ? 'level up' : 'open tasks'),
@@ -855,7 +898,7 @@ export class TutorialStepManager {
   getActiveStep({ snapshot, dom }) {
     this.syncSnapshotProgress(snapshot);
 
-    for (const step of STEPS) {
+    for (const step of TUTORIAL_STEPS) {
       const context = this.createContext({ step, snapshot, dom });
 
       if (this.progressManager.hasCompleted(step.id)) {
@@ -1024,10 +1067,13 @@ export class TutorialStepManager {
         text: `open ${formatPageLabel(step.pageId)}`,
         hintText: `open ${formatPageLabel(step.pageId)}`,
         objectiveText: step.getObjectiveText?.(context) ?? step.objectiveText ?? step.text ?? '',
+        lessonTitle: getLessonTitle(step.id),
         progress: step.getProgress?.(context) ?? null,
         progressLabel: step.getProgressLabel?.(context) ?? '',
         stepLabel,
         reminderKey: step.getReminderKey?.(context) ?? null,
+        revealTokens: step.revealTokens ?? [],
+        allowTargetClick: step.allowTargetClick === true,
         cueMode: step.cueMode ?? 'active',
         effect: step.effect,
         sale: step.sale,
@@ -1045,12 +1091,15 @@ export class TutorialStepManager {
       text,
       hintText,
       objectiveText: step.getObjectiveText?.(context) ?? step.objectiveText ?? text,
+      lessonTitle: getLessonTitle(step.id),
       progress: step.getProgress?.(context) ?? null,
       progressLabel: step.getProgressLabel?.(context) ?? '',
       stepLabel,
       advanceOnClick: step.advanceOnClick === true,
+      allowTargetClick: step.allowTargetClick === true,
       showPointer: step.showPointer !== false,
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
+      revealTokens: step.revealTokens ?? [],
       cueMode: step.cueMode ?? 'active',
       effect: step.effect,
       sale: step.sale,
@@ -1065,6 +1114,10 @@ function hasStartedOrCompletedResearch(snapshot, researchId) {
       (research) => research?.researchId === researchId,
     )
   );
+}
+
+function getLessonTitle(stepId) {
+  return LESSON_TITLE_BY_STEP_ID.get(stepId) ?? 'lesson';
 }
 
 function hasCompletedResearch(snapshot, researchId) {

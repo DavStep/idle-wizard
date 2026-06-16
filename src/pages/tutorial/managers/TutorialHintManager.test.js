@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { TutorialHintManager } from './TutorialHintManager.js';
 
 const UI_SCALE = 3;
-const HINT_PADDED_WIDTH = 160;
-const HINT_HEIGHT = 56;
+const LESSON_HORIZONTAL_CHROME = 24;
+const LESSON_VERTICAL_CHROME = 21;
 
 function setClientRect(element, rect) {
   element.getBoundingClientRect = () => ({
@@ -27,39 +27,33 @@ function toClientRect(rect) {
   };
 }
 
-function getGuideRect(hint) {
-  const left = Number.parseFloat(hint.style.left);
-  const top = Number.parseFloat(hint.style.top);
+function getLessonRect(lesson) {
+  const left = Number.parseFloat(lesson.style.left);
+  const top = Number.parseFloat(lesson.style.top);
+  const width = Number.parseFloat(lesson.style.width) + LESSON_HORIZONTAL_CHROME;
+  const height = Number.parseFloat(lesson.style.height) + LESSON_VERTICAL_CHROME;
 
   return {
     left,
     top,
-    right: left + HINT_PADDED_WIDTH,
-    bottom: top + HINT_HEIGHT,
+    right: left + width,
+    bottom: top + height,
   };
 }
 
-function getObjectiveRect(objective) {
-  const left = Number.parseFloat(objective.style.left);
-  const top = Number.parseFloat(objective.style.top);
-
-  return {
-    left,
-    top,
-    right: left + HINT_PADDED_WIDTH,
-    bottom: top + HINT_HEIGHT,
-  };
+function getLessonOuterHeight(lesson) {
+  return Number.parseFloat(lesson.style.height) + LESSON_VERTICAL_CHROME;
 }
 
-function getObjectiveButtonRect(button) {
+function getLessonButtonRect(button) {
   const left = Number.parseFloat(button.style.left);
   const top = Number.parseFloat(button.style.top);
 
   return {
     left,
     top,
-    right: left + 112,
-    bottom: top + 142,
+    right: left + 70,
+    bottom: top + 91,
   };
 }
 
@@ -68,43 +62,7 @@ function overlaps(a, b) {
 }
 
 describe('TutorialHintManager', () => {
-  it('moves the guide box off the target when default placement would cover it', () => {
-    const stage = document.createElement('section');
-    const target = document.createElement('button');
-    const manager = new TutorialHintManager();
-    const targetRect = {
-      left: 16,
-      top: 316,
-      width: 328,
-      height: 30,
-    };
-
-    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    setClientRect(target, toClientRect(targetRect));
-    stage.append(target);
-    document.body.append(stage);
-
-    manager.mount(stage);
-    manager.show({
-      target,
-      text: 'level up',
-      stepLabel: '16/19',
-    });
-
-    const hint = stage.querySelector('.tutorial-layer__hint');
-    const guideRect = getGuideRect(hint);
-    const sourceTargetRect = {
-      left: targetRect.left,
-      top: targetRect.top,
-      right: targetRect.left + targetRect.width,
-      bottom: targetRect.top + targetRect.height,
-    };
-
-    expect(overlaps(guideRect, sourceTargetRect)).toBe(false);
-  });
-
-  it('uses an under-target mark instead of boxing the target', () => {
+  it('uses the pointer without drawing a target rectangle', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');
     const manager = new TutorialHintManager();
@@ -124,18 +82,13 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.show({
+    manager.showTargetCue({
       target,
-      text: 'summon seeds',
-      stepLabel: '2/19',
     });
 
-    const highlight = stage.querySelector('.tutorial-layer__highlight');
+    const pointer = stage.querySelector('.tutorial-layer__pointer');
 
-    expect(highlight?.style.left).toBe('12px');
-    expect(highlight?.style.top).toBe('132px');
-    expect(highlight?.style.width).toBe('128px');
-    expect(highlight?.style.height).toBe('4px');
+    expect(pointer?.hidden).toBe(false);
   });
 
   it('angles the pointer from the best fitting diagonal corner', () => {
@@ -158,10 +111,8 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.show({
+    manager.showTargetCue({
       target,
-      text: 'summon seeds',
-      stepLabel: '2/19',
     });
 
     const pointer = stage.querySelector('.tutorial-layer__pointer');
@@ -194,10 +145,8 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.show({
+    manager.showTargetCue({
       target,
-      text: 'open market',
-      stepLabel: '7/19',
     });
 
     const pointer = stage.querySelector('.tutorial-layer__pointer');
@@ -210,7 +159,7 @@ describe('TutorialHintManager', () => {
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
 
-  it('types prompt text while the next action appears immediately', () => {
+  it('types lesson text while border actions appear immediately', () => {
     vi.useFakeTimers();
 
     try {
@@ -222,21 +171,25 @@ describe('TutorialHintManager', () => {
       document.body.append(stage);
 
       manager.mount(stage);
-      manager.showDialog({
+      manager.showLesson({
+        id: 'intro-welcome',
+        title: 'lesson 1: seeding',
         text: 'abc',
-        stepLabel: '1/19',
+        stepLabel: '1/23',
         advanceOnClick: true,
       });
 
-      const text = stage.querySelector('.tutorial-layer__text');
-      const advance = stage.querySelector('.tutorial-layer__advance');
-      const portrait = stage.querySelector('.tutorial-layer__portrait');
+      const text = stage.querySelector('.tutorial-layer__lesson-text');
+      const advance = stage.querySelector('.tutorial-layer__lesson-advance');
+      const showMe = stage.querySelector('.tutorial-layer__lesson-show');
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
 
       expect(text?.textContent).toBe('');
       expect(text?.getAttribute('aria-label')).toBe('abc');
       expect(advance?.hidden).toBe(false);
       expect(advance?.textContent).toBe('next');
-      expect(portrait?.hasAttribute('data-speaking')).toBe(true);
+      expect(showMe?.hidden).toBe(true);
+      expect(button?.hasAttribute('data-speaking')).toBe(true);
 
       vi.advanceTimersByTime(12);
       expect(text?.textContent).toBe('ab');
@@ -245,83 +198,148 @@ describe('TutorialHintManager', () => {
       vi.advanceTimersByTime(12);
       expect(text?.textContent).toBe('abc');
       expect(advance?.textContent).toBe('next');
-      expect(portrait?.hasAttribute('data-speaking')).toBe(false);
+      expect(button?.hasAttribute('data-speaking')).toBe(false);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('opens objective text from a larger Elara button and auto-closes it', () => {
+  it('sizes the lesson for final copy before the typewriter reveals it', () => {
     vi.useFakeTimers();
 
     try {
       const stage = document.createElement('section');
       const manager = new TutorialHintManager();
-      const objectiveText = 'summon seeds and fill the level task';
 
       stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
       setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
       document.body.append(stage);
 
       manager.mount(stage);
-      manager.showObjective({
-        id: 'finish-seed-task',
-        text: objectiveText,
-        stepLabel: '5/19',
-        progress: { value: 1, max: 10 },
-        progressLabel: '1/10 seeds',
+      manager.showLesson({
+        id: 'short-copy',
+        title: 'lesson 1: seeding',
+        text: 'wait',
+        stepLabel: '1/23',
       });
 
-      const button = stage.querySelector('.tutorial-layer__objective-button');
-      const objective = stage.querySelector('.tutorial-layer__objective');
-      const copy = stage.querySelector('.tutorial-layer__objective-text');
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
+      const text = stage.querySelector('.tutorial-layer__lesson-text');
+      const shortSize = {
+        width: Number.parseFloat(lesson?.style.width ?? '0'),
+        height: Number.parseFloat(lesson?.style.height ?? '0'),
+      };
 
-      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
-      expect(button?.hidden).toBe(false);
-      expect(button?.style.left).toBe('0px');
-      expect(button?.style.top).toBe('498px');
-      expect(button?.dataset.notification).toBe('true');
-      expect(button?.dataset.notificationTone).toBe('red');
-      expect(button?.getAttribute('aria-label')).toBe('close Elara Starbrew objective');
-      expect(button?.getAttribute('aria-expanded')).toBe('true');
-      expect(button?.hasAttribute('data-speaking')).toBe(true);
-      expect(objective?.hidden).toBe(false);
-      expect(objective?.textContent).toContain('Elara Starbrew');
-      expect(copy?.textContent).toBe('');
-      expect(copy?.getAttribute('aria-label')).toBe(objectiveText);
+      expect(text?.textContent).toBe('');
+      expect(text?.getAttribute('aria-label')).toBe('wait');
 
-      vi.advanceTimersByTime(12);
-      expect(copy?.textContent).toBe('su');
+      manager.showLesson({
+        id: 'long-copy',
+        title: 'lesson 2: market',
+        text: 'summon seeds and sell them for level-up gold',
+        stepLabel: '9/23',
+        progress: { value: 0, max: 10 },
+        progressLabel: '0/10 gold',
+        canShowTarget: true,
+      });
 
-      vi.advanceTimersByTime(objectiveText.length * 12);
-      expect(copy?.textContent).toBe(objectiveText);
-      expect(button?.hasAttribute('data-speaking')).toBe(false);
+      const longSize = {
+        width: Number.parseFloat(lesson?.style.width ?? '0'),
+        height: Number.parseFloat(lesson?.style.height ?? '0'),
+      };
 
-      vi.advanceTimersByTime(5200);
-      expect(button?.hidden).toBe(false);
-      expect(button?.getAttribute('aria-label')).toBe('open Elara Starbrew objective');
-      expect(button?.getAttribute('aria-expanded')).toBe('false');
-      expect(objective?.hidden).toBe(true);
-
-      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-      expect(button?.hidden).toBe(false);
-      expect(button?.getAttribute('aria-label')).toBe('close Elara Starbrew objective');
-      expect(button?.getAttribute('aria-expanded')).toBe('true');
-      expect(objective?.hidden).toBe(false);
-
-      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-      expect(button?.hidden).toBe(false);
-      expect(button?.getAttribute('aria-label')).toBe('open Elara Starbrew objective');
-      expect(button?.getAttribute('aria-expanded')).toBe('false');
-      expect(objective?.hidden).toBe(true);
+      expect(text?.textContent).toBe('');
+      expect(text?.getAttribute('aria-label')).toBe(
+        'summon seeds and sell them for level-up gold',
+      );
+      expect(longSize.width).toBeGreaterThanOrEqual(shortSize.width);
+      expect(longSize.height).toBeGreaterThan(shortSize.height);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('keeps the objective close label on the border', () => {
+  it('opens lesson text from the same-size Elara button and auto-closes it', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const manager = new TutorialHintManager();
+      const lessonText = 'summon seeds and fill the level task';
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'finish-seed-task',
+        title: 'lesson 1: seeding',
+        text: lessonText,
+        stepLabel: '5/23',
+        progress: { value: 1, max: 10 },
+        progressLabel: '1/10 seeds',
+        canShowTarget: true,
+      });
+
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
+      const copy = stage.querySelector('.tutorial-layer__lesson-text');
+      const showMe = stage.querySelector('.tutorial-layer__lesson-show');
+
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+      expect(button?.hidden).toBe(false);
+      expect(button?.style.left).toBe('4px');
+      expect(button?.style.top).toBe(
+        `${500 + getLessonOuterHeight(lesson) - 91 + 9}px`,
+      );
+      expect(button?.dataset.notification).toBeUndefined();
+      expect(button?.getAttribute('aria-label')).toBe('close lesson');
+      expect(button?.getAttribute('aria-expanded')).toBe('true');
+      expect(button?.hasAttribute('data-speaking')).toBe(true);
+      expect(lesson?.hidden).toBe(false);
+      expect(lesson?.textContent).toContain('lesson 1: seeding');
+      expect(copy?.textContent).toBe('');
+      expect(Number.parseFloat(lesson?.style.height ?? '0')).toBeGreaterThan(0);
+      expect(copy?.getAttribute('aria-label')).toBe(lessonText);
+      expect(showMe?.hidden).toBe(false);
+
+      vi.advanceTimersByTime(12);
+      expect(copy?.textContent).toBe('su');
+
+      vi.advanceTimersByTime(lessonText.length * 12);
+      expect(copy?.textContent).toBe(lessonText);
+      expect(button?.hasAttribute('data-speaking')).toBe(false);
+
+      vi.advanceTimersByTime(5200);
+      expect(button?.hidden).toBe(false);
+      expect(button?.dataset.notification).toBe('true');
+      expect(button?.dataset.notificationTone).toBe('red');
+      expect(button?.getAttribute('aria-label')).toBe('open lesson');
+      expect(button?.getAttribute('aria-expanded')).toBe('false');
+      expect(lesson?.hidden).toBe(true);
+
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(button?.hidden).toBe(false);
+      expect(button?.dataset.notification).toBeUndefined();
+      expect(button?.getAttribute('aria-label')).toBe('close lesson');
+      expect(button?.getAttribute('aria-expanded')).toBe('true');
+      expect(lesson?.hidden).toBe(false);
+
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(button?.hidden).toBe(false);
+      expect(button?.dataset.notification).toBe('true');
+      expect(button?.getAttribute('aria-label')).toBe('open lesson');
+      expect(button?.getAttribute('aria-expanded')).toBe('false');
+      expect(lesson?.hidden).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the lesson close label on the border', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
 
@@ -330,25 +348,26 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.showObjective({
+    manager.showLesson({
       id: 'finish-seed-task',
+      title: 'lesson 1: seeding',
       text: 'summon seeds and fill the level task',
-      stepLabel: '5/19',
+      stepLabel: '5/23',
       progress: { value: 1, max: 10 },
       progressLabel: '1/10 seeds',
     });
 
-    const button = stage.querySelector('.tutorial-layer__objective-button');
-    const objective = stage.querySelector('.tutorial-layer__objective');
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
 
-    objective
-      ?.querySelector('.tutorial-layer__objective-close')
+    lesson
+      ?.querySelector('.tutorial-layer__lesson-close')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(button?.hidden).toBe(false);
     expect(button?.dataset.notification).toBe('true');
     expect(button?.getAttribute('aria-expanded')).toBe('false');
-    expect(objective?.hidden).toBe(true);
+    expect(lesson?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
   });
 
@@ -361,35 +380,36 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.showObjective({
+    manager.showLesson({
       id: 'research-mint-seed',
+      title: 'lesson 3: gardening',
       text: 'research mint seed',
       stepLabel: '17/23',
       attention: false,
       autoOpen: false,
     });
 
-    const button = stage.querySelector('.tutorial-layer__objective-button');
-    const objective = stage.querySelector('.tutorial-layer__objective');
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
 
     expect(button?.hidden).toBe(false);
-    expect(objective?.hidden).toBe(true);
+    expect(lesson?.hidden).toBe(true);
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
 
-    manager.setObjectiveAttention(true);
+    manager.setLessonAttention(true);
 
     expect(button?.dataset.notification).toBe('true');
     expect(button?.hasAttribute('data-attention')).toBe(true);
 
     button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(objective?.hidden).toBe(false);
+    expect(lesson?.hidden).toBe(false);
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
   });
 
-  it('moves the objective away from unlocked Workshop secondary controls', () => {
+  it('moves the lesson away from unlocked Workshop secondary controls', () => {
     const stage = document.createElement('section');
     const controls = [
       { className: 'workshop-page__leaderboard-button', left: 16, top: 468 },
@@ -423,30 +443,31 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.showObjective({
+    manager.showLesson({
       id: 'research-mint-seed',
+      title: 'lesson 3: gardening',
       text: 'research mint seed',
       stepLabel: '17/23',
       progress: { value: 0, max: 1 },
       progressLabel: '0/1 research',
     });
 
-    stage
-      .querySelector('.tutorial-layer__objective-button')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const lessonRect = getLessonRect(lesson);
+    const buttonRect = getLessonButtonRect(button);
 
-    const button = stage.querySelector('.tutorial-layer__objective-button');
-    const objective = stage.querySelector('.tutorial-layer__objective');
-    const objectiveRect = getObjectiveRect(objective);
-    const buttonRect = getObjectiveButtonRect(button);
-
-    expect(button?.style.top).toBe('292px');
-    expect(objective?.style.top).toBe('286px');
-    expect(controls.some((control) => overlaps(objectiveRect, control))).toBe(false);
+    expect(button?.style.left).toBe('4px');
+    expect(lesson?.style.left).toBe('74px');
+    expect(lesson?.style.top).toBe('260px');
+    expect(button?.style.top).toBe(
+      `${260 + getLessonOuterHeight(lesson) - 91 + 9}px`,
+    );
+    expect(controls.some((control) => overlaps(lessonRect, control))).toBe(false);
     expect(controls.some((control) => overlaps(buttonRect, control))).toBe(false);
   });
 
-  it('hides the prompt portrait while an objective button is active', () => {
+  it('shows only the lesson box while cueing the target from an open lesson', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');
     const manager = new TutorialHintManager();
@@ -466,24 +487,24 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.showObjective({
+    manager.showLesson({
       id: 'prepare-seed-sale',
+      title: 'lesson 2: market',
       text: 'summon one seed to sell',
-      stepLabel: '7/19',
+      stepLabel: '7/23',
     });
-    manager.show({
+    manager.showTargetCue({
       target,
-      text: 'open market',
-      stepLabel: '7/19',
-      showPortrait: false,
     });
 
-    expect(stage.querySelector('.tutorial-layer__objective-button')?.hidden).toBe(false);
-    expect(stage.querySelector('.tutorial-layer__hint')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson-button')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__hint')?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer__portrait')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
   });
 
-  it('opens the objective panel again when a new objective starts', () => {
+  it('opens the lesson panel again when a new lesson step starts', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
 
@@ -492,33 +513,33 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.showObjective({
+    manager.showLesson({
       id: 'finish-seed-task',
+      title: 'lesson 1: seeding',
       text: 'summon seeds and fill the level task',
-      stepLabel: '5/19',
+      stepLabel: '5/23',
     });
 
     stage
-      .querySelector('.tutorial-layer__objective-button')
+      .querySelector('.tutorial-layer__lesson-button')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.tutorial-layer__objective')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
 
-    manager.showObjective({
+    manager.showLesson({
       id: 'prepare-seed-sale',
+      title: 'lesson 2: market',
       text: 'summon one seed to sell',
-      stepLabel: '7/19',
+      stepLabel: '7/23',
     });
 
-    expect(stage.querySelector('.tutorial-layer__objective')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
     expect(
-      stage
-      .querySelector('.tutorial-layer__objective-button')
-      ?.getAttribute('aria-expanded'),
+      stage.querySelector('.tutorial-layer__lesson-button')?.getAttribute('aria-expanded'),
     ).toBe('true');
   });
 
-  it('runs objective press handler from the open objective panel', () => {
+  it('runs lesson press handler from the open lesson panel and show-me action', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
     let pressed = 0;
@@ -531,29 +552,31 @@ describe('TutorialHintManager', () => {
     manager.setObjectivePressHandler(() => {
       pressed += 1;
     });
-    manager.showObjective({
+    manager.showLesson({
       id: 'finish-seed-task',
+      title: 'lesson 1: seeding',
       text: 'summon seeds and fill the level task',
-      stepLabel: '5/19',
+      stepLabel: '5/23',
+      canShowTarget: true,
     });
 
     stage
-      .querySelector('.tutorial-layer__objective-button')
+      .querySelector('.tutorial-layer__lesson')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
-      .querySelector('.tutorial-layer__objective')
+      .querySelector('.tutorial-layer__lesson-show')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(pressed).toBe(1);
+    expect(pressed).toBe(2);
 
     stage
-      .querySelector('.tutorial-layer__objective-close')
+      .querySelector('.tutorial-layer__lesson-close')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(pressed).toBe(1);
+    expect(pressed).toBe(2);
   });
 
-  it('does not revive a stale objective button after the tutorial hides', () => {
+  it('does not revive a stale lesson button after the tutorial hides', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
 
@@ -562,13 +585,14 @@ describe('TutorialHintManager', () => {
     document.body.append(stage);
 
     manager.mount(stage);
-    manager.showObjective({
+    manager.showLesson({
       id: 'brew-mana-tonic',
+      title: 'lesson 4: brewing',
       text: 'brew mana tonic',
-      stepLabel: '19/19',
+      stepLabel: '19/23',
     });
 
-    const button = stage.querySelector('.tutorial-layer__objective-button');
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
 
     expect(button?.hidden).toBe(false);
 

@@ -1,0 +1,232 @@
+[
+  {
+    "index": 1,
+    "id": "intro-welcome",
+    "fileName": "01-intro-welcome.png",
+    "error": null,
+    "lesson": "yo! i'm Elara Starbrew. your name is up here. tap it to change username in settings.",
+    "open": true,
+    "progress": "",
+    "step": "intro-welcome"
+  },
+  {
+    "index": 2,
+    "id": "intro-mana-sphere",
+    "fileName": "02-intro-mana-sphere.png",
+    "error": null,
+    "lesson": "this is the mana sphere. mana fills over time, up to the cap shown here.",
+    "open": true,
+    "progress": "",
+    "step": "intro-mana-sphere"
+  },
+  {
+    "index": 3,
+    "id": "first-summon-seed",
+    "fileName": "03-first-summon-seed.png",
+    "error": null,
+    "lesson": "use your mana to summon seeds.",
+    "open": true,
+    "progress": "",
+    "step": "first-summon-seed"
+  },
+  {
+    "index": 4,
+    "id": "first-fill-seed-task",
+    "fileName": "04-first-fill-seed-task.png",
+    "error": null,
+    "lesson": "fill task",
+    "open": true,
+    "progress": "",
+    "step": "first-fill-seed-task"
+  },
+  {
+    "index": 5,
+    "id": "finish-seed-task",
+    "fileName": "05-finish-seed-task.png",
+    "error": null,
+    "lesson": "summon seeds and fill the level task",
+    "open": true,
+    "progress": "1/10 seeds",
+    "step": "finish-seed-task"
+  },
+  {
+    "index": 6,
+    "id": "intro-market",
+    "fileName": "06-intro-market.png",
+    "error": null,
+    "lesson": "good. that finishes the level task. level up also needs gold. go sell a seed in market.",
+    "open": true,
+    "progress": "",
+    "step": "intro-market"
+  },
+  {
+    "index": 7,
+    "id": "prepare-seed-sale",
+    "fileName": "07-prepare-seed-sale.png",
+    "error": null,
+    "lesson": "summon one seed to sell",
+    "open": true,
+    "progress": "0/1 seed",
+    "step": "prepare-seed-sale"
+  },
+  {
+    "index": 8,
+    "id": "open-market",
+    "fileName": "08-open-market.png",
+    "error": null,
+    "lesson": "start selling sage seeds in market",
+    "open": true,
+    "progress": "0/1 stand",
+    "step": "open-market"
+  },
+  {
+    "index": 9,
+    "id": "select-market-stand",
+    "fileName": "09-select-market-stand.png",
+    "error": null,
+    "lesson": "choose a market stand",
+    "open": true,
+    "progress": "0/1 stand",
+    "step": "select-market-stand"
+  },
+  {
+    "index": 10,
+    "id": "select-sage-seed-sale",
+    "fileName": "10-select-sage-seed-sale.png",
+    "error": null,
+    "lesson": "choose sage seed for that stand",
+    "open": true,
+    "progress": "0/1 seed",
+    "step": "select-sage-seed-sale"
+  },
+  {
+    "index": 11,
+    "id": "earn-tutorial-gold",
+    "fileName": "11-earn-tutorial-gold.png",
+    "error": null,
+    "lesson": "summon seeds and sell them for level-up gold",
+    "open": true,
+    "progress": "0/10 gold",
+    "step": "earn-tutorial-gold"
+  },
+  {
+    "index": 12,
+    "id": "unselect-sage-seed-sale",
+    "fileName": "12-unselect-sage-seed-sale.png",
+    "error": null,
+    "lesson": "unselect the seed from the stand",
+    "open": true,
+    "progress": "0/1 unselected",
+    "step": "unselect-sage-seed-sale"
+  },
+  {
+    "index": 13,
+    "id": "level-up-one",
+    "fileName": "13-level-up-one.png",
+    "error": null,
+    "lesson": "return to workshop and level up",
+    "open": true,
+    "progress": "1/1 ready",
+    "step": "level-up-one"
+  },
+  {
+    "index": 14,
+    "id": "grow-sage",
+    "fileName": "14-grow-sage.png",
+    "error": null,
+    "lesson": "grow sage in garden",
+    "open": true,
+    "progress": "0/1 sage",
+    "step": "grow-sage"
+  },
+  {
+    "index": 15,
+    "id": "fill-sage-herb-task",
+    "fileName": "15-fill-sage-herb-task.png",
+    "error": null,
+    "lesson": "fill the sage level task",
+    "open": true,
+    "progress": "0/6 sage",
+    "step": "fill-sage-herb-task"
+  },
+  {
+    "index": 16,
+    "id": "level-up-two",
+    "fileName": "16-level-up-two.png",
+    "error": null,
+    "lesson": "level up again",
+    "open": true,
+    "progress": "1/1 ready",
+    "step": "level-up-two"
+  },
+  {
+    "index": 17,
+    "id": "research-mint-seed",
+    "fileName": "17-research-mint-seed.png",
+    "error": null,
+    "lesson": "research mint seed",
+    "open": true,
+    "progress": "0/1 research",
+    "step": "research-mint-seed"
+  },
+  {
+    "index": 18,
+    "id": "fill-mint-seed-task",
+    "fileName": "18-fill-mint-seed-task.png",
+    "error": null,
+    "lesson": "fill the mint seed task",
+    "open": true,
+    "progress": "7/10 mint seeds",
+    "step": "fill-mint-seed-task"
+  },
+  {
+    "index": 19,
+    "id": "fill-mint-herb-task",
+    "fileName": "19-fill-mint-herb-task.png",
+    "error": null,
+    "lesson": "fill the mint level task",
+    "open": true,
+    "progress": "0/18 mint",
+    "step": "fill-mint-herb-task"
+  },
+  {
+    "index": 20,
+    "id": "level-up-three",
+    "fileName": "20-level-up-three.png",
+    "error": null,
+    "lesson": "level up again",
+    "open": true,
+    "progress": "1/1 ready",
+    "step": "level-up-three"
+  },
+  {
+    "index": 21,
+    "id": "research-mana-tonic",
+    "fileName": "21-research-mana-tonic.png",
+    "error": null,
+    "lesson": "research mana tonic",
+    "open": true,
+    "progress": "0/1 research",
+    "step": "research-mana-tonic"
+  },
+  {
+    "index": 22,
+    "id": "brew-mana-tonic",
+    "fileName": "22-brew-mana-tonic.png",
+    "error": null,
+    "lesson": "brew mana tonic",
+    "open": true,
+    "progress": "0/1 potion",
+    "step": "brew-mana-tonic"
+  },
+  {
+    "index": 23,
+    "id": "refill-mana-tonic-cauldron",
+    "fileName": "23-refill-mana-tonic-cauldron.png",
+    "error": null,
+    "lesson": "fill the cauldron again",
+    "open": true,
+    "progress": "0/3 sage",
+    "step": "refill-mana-tonic-cauldron"
+  }
+]

@@ -888,15 +888,8 @@ export class GameplayFacade {
   getReservedShopItemQuantity(itemTypeId) {
     return (
       this.brewingFacade.getStagedIngredientQuantity(itemTypeId) +
-      this.getCurrentTaskReservedItemQuantity(itemTypeId) +
       this.getGardenSelectedSeedReservedQuantity(itemTypeId)
     );
-  }
-
-  getCurrentTaskReservedItemQuantity(itemTypeId) {
-    return (this.tasksFacade.getSnapshot().level?.tasks ?? [])
-      .filter((task) => task.itemTypeId === itemTypeId && !task.completed)
-      .reduce((total, task) => total + task.remainingQuantity, 0);
   }
 
   getGardenSelectedSeedReservedQuantity(itemTypeId) {

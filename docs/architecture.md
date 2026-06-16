@@ -6,33 +6,61 @@ Every feature has a facade and dedicated managers. Facades explain the feature i
 
 ## Current Layers
 
-- App: starts and stops the project shell.
+- App: starts/stops the game shell, online gate, account-link gates, deploy refresh, and lifecycle flushes.
 - Viewport: keeps the authored `1080x2170` stage proportional on real devices.
-- Pages: owns the current room view. A page is one room the player is looking at.
-- Gameplay: owns ECS-backed game rules such as mana, inventory, and seed summoning.
-- Rendering: owns the canvas shell and frame loop.
-- ECS: owns world data and system execution.
-- Backend: owns SpacetimeDB connection and auth session boundaries.
+- Pages: owns room-view DOM for `Brewing`, `Garden`, `Workshop`, `Research`, and `Market`.
+- Gameplay: owns ECS-backed rules and snapshots for mana, gold, inventory, garden, brewing, research, tasks, market, prestige, automation, visual settings, and persistence.
+- Backend: owns SpacetimeDB connection, auth/session, save sync, leaderboard, NPC/player market, potion discoveries, world chat, feedback, maintenance, and trade alliance transport.
+- ECS: owns world data, entities, components, and system execution. It must not depend on DOM/canvas or SpacetimeDB.
+- Rendering: owns the frame loop and render shell. It observes game/page state; it does not own gameplay rules.
+- Assets/styles: owns static icons/images/fonts and shared A Dark Room-style CSS.
 
-## Pages
+## Room Pages
 
-The first page is `Workshop`.
+A page is one room the player is looking at, not a web route. Workshop is the default page. Bottom navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`.
 
-A page should feel like a room view, not a menu route. It can draw the wall, floor, props, and page-local visual state. It should call gameplay facades later when the room needs actual game behavior.
+Page code can build DOM, popups, tabs, scroll cues, notifications, and tutorial targets. Gameplay effects must go through facades. Page managers should render snapshots and keep interactive nodes stable across updates.
 
-Current visual direction is defined in `docs/style.md`. Keep page views extremely simple unless a specific visual is requested.
+## Gameplay Boundaries
 
-## Future Gameplay Features
+Gameplay features live under `src/gameplay/<feature>/`. Each feature should expose a facade, keep managers narrow, and add a local `README.md` when the feature has behavior an agent must understand before editing.
 
-When gameplay starts, create feature folders instead of adding logic to existing managers:
+Current gameplay features include:
+
+- `automation`
+- `brewing`
+- `crystal`
+- `garden`
+- `gold`
+- `items`
+- `logs`
+- `mana`
+- `persistence`
+- `playerLevel`
+- `prestige`
+- `research`
+- `ruby`
+- `seedSummoning`
+- `shop`
+- `tasks`
+- `visualSettings`
+
+## Backend Boundaries
+
+SpacetimeDB reducers are the server-authoritative write path. Gameplay and pages should call backend facades/managers, not raw generated APIs.
+
+Generated bindings are read-only. Do not edit them manually; regenerate with `npm run stdb:generate`.
+
+## Feature Pattern
+
+Use this shape for new features:
 
 ```txt
-src/gameplay/seedSpawning/
-  SeedSpawningFacade.js
+src/<area>/<feature>/
+  <Feature>Facade.js
   managers/
-    SeedSpawnScheduleManager.js
-    SeedSpawnPlacementManager.js
+    <SpecificThing>Manager.js
   README.md
 ```
 
-Keep the first version small, but preserve the boundary.
+Tests should sit next to the code they cover. Prefer focused feature tests for new behavior and broad facade tests only when verifying cross-feature flows.

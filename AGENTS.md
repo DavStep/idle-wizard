@@ -16,6 +16,10 @@ Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an exi
 
 For any UI, UX, layout, visual, popup, dialog, screen, page, button, label, or flow change, use the `impeccable` skill and follow `PRODUCT.md`, `DESIGN.md`, `docs/style.md`, and `docs/ui-patterns.md` before editing.
 
+For any tutorial, FTUE, Elara guide box, objective panel, target hint, tutorial overlay, action reminder, pointer cue, data-tutorial-id placement, or tutorial popup/dialog work, use both `impeccable` and `idle-wizard-tutorial-ui`; the tutorial skill owns final tutorial-box placement, collision, stacking, and screenshot QA rules.
+
+For general repo orientation, verification scope, and safe edit workflow, read `docs/ai-workflow.md`.
+
 A Dark Room-style blocks use titles embedded over the top border on white background, not separate headings inside bordered panels.
 
 Use A Dark Room's source UI proportions, including `16px` source text, inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.

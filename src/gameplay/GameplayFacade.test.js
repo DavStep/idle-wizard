@@ -314,6 +314,28 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('keeps task requirements out of market sell reservations', () => {
+    const { gameplayFacade } = createGameplay();
+    const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
+
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+
+    expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find(
+      (item) => item.itemTypeId === task.itemTypeId,
+    )).toMatchObject({
+      quantity: task.requiredQuantity,
+    });
+
+    expect(gameplayFacade.setSelectedPlayerShopShelfSlotListing({
+      itemTypeId: task.itemTypeId,
+      quantity: task.requiredQuantity,
+      priceGold: 1,
+    })).toMatchObject({
+      ok: true,
+      quantity: task.requiredQuantity,
+    });
+  });
+
   it('adds mana cap and regen when player level advances', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -760,12 +782,14 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
       'summoned sage seed',
+      'sold sage seed for 1 gold',
       'brewed wasted potion',
       'planted sage seed',
       'harvested sage',
     ]);
     expect(rewardEvents.map((event) => event.type)).toEqual([
       'seed_summoned',
+      'item_sold',
       'potion_collected',
       'herb_harvested',
     ]);
@@ -775,11 +799,17 @@ describe('GameplayFacade', () => {
       quantity: 1,
     });
     expect(rewardEvents[1]).toMatchObject({
+      type: 'item_sold',
+      item: { label: 'sage seed' },
+      gold: 1,
+      quantity: 1,
+    });
+    expect(rewardEvents[2]).toMatchObject({
       type: 'potion_collected',
       potion: { label: 'wasted potion' },
       quantity: 1,
     });
-    expect(rewardEvents[2]).toMatchObject({
+    expect(rewardEvents[3]).toMatchObject({
       type: 'herb_harvested',
       herb: { label: 'sage' },
       quantity: 1,
@@ -3123,7 +3153,7 @@ describe('GameplayFacade', () => {
       sellItemTypeId: summonResult.seed.id,
       sellKind: 'seed',
       sellLabel: summonResult.seed.label,
-      sellQuantity: 0,
+      sellQuantity: 10,
     });
   });
 

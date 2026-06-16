@@ -25,6 +25,7 @@ if (!redirectMobileOidcCallbackToApp()) {
   const root = document.querySelector('#app');
   const app = new AppFacade({ root });
   let devCheatsFacade = null;
+  let tutorialCaptureFacade = null;
   let disposed = false;
 
   app.start();
@@ -40,10 +41,24 @@ if (!redirectMobileOidcCallbackToApp()) {
     });
   }
 
+  if (import.meta.env.VITE_ENABLE_TUTORIAL_CAPTURE === 'true') {
+    void import('./dev/tutorialCapture/TutorialCaptureFacade.js').then(
+      ({ TutorialCaptureFacade }) => {
+        if (disposed) {
+          return;
+        }
+
+        tutorialCaptureFacade = new TutorialCaptureFacade({ app });
+        tutorialCaptureFacade.mount();
+      },
+    );
+  }
+
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       disposed = true;
       devCheatsFacade?.unmount();
+      tutorialCaptureFacade?.unmount();
       app.stop();
     });
   }

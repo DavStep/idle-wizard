@@ -3492,7 +3492,7 @@ describe('PagesFacade', () => {
     expect(layer?.querySelector('.tutorial-layer__portrait')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__pointer')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__step-label')).not.toBeNull();
-    expect(layer?.querySelector('.tutorial-layer__objective')).not.toBeNull();
+    expect(layer?.querySelector('.tutorial-layer__lesson')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__skip')).toBeNull();
   });
 
@@ -3572,10 +3572,10 @@ describe('PagesFacade', () => {
     pagesFacade.tutorialFacade.refresh();
 
     stage
-      .querySelector('.tutorial-layer__objective-button')
+      .querySelector('.tutorial-layer__lesson-button')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
-      .querySelector('.tutorial-layer__objective')
+      .querySelector('.tutorial-layer__lesson')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(task.progressQuantity).toBe(2);
@@ -4271,7 +4271,7 @@ describe('PagesFacade', () => {
     expect(feedbackFacade.getMessages()).toEqual(cases.map((item) => item.expected));
   });
 
-  it('asks first landed players to set a username', () => {
+  it('marks first landed players prompted without opening the username dialog', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('wizard', 'white', {
       shouldPromptForUsername: true,
@@ -4284,29 +4284,13 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const settings = stage.querySelector('.room-top-panel__settings');
-    const input = stage.querySelector('.room-top-panel__username-input');
-    const form = stage.querySelector('.room-top-panel__username-form');
+    const usernameButton = stage.querySelector('.room-top-panel__username');
 
-    expect(settings.hidden).toBe(false);
-    expect(settings.classList.contains('is-username-prompt')).toBe(true);
-    expect(settings.querySelector('.style-box__title')?.textContent).toBe('username');
-    expect(input.value).toBe('');
+    expect(settings.hidden).toBe(true);
+    expect(settings.classList.contains('is-username-prompt')).toBe(false);
+    expect(usernameButton?.dataset.tutorialId).toBe('top:username');
     expect(stage.querySelector('.room-top-panel__theme-section')).not.toBeNull();
     expect(playerFacade.getPromptSeenCount()).toBe(1);
-
-    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
-
-    expect(settings.hidden).toBe(false);
-    expect(stage.querySelector('.room-top-panel__username-error')?.textContent).toBe(
-      'enter a name',
-    );
-
-    input.value = 'New Mage';
-    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
-
-    expect(playerFacade.getSnapshot().username).toBe('New Mage');
-    expect(stage.querySelector('.room-top-panel__username')?.textContent).toBe('New Mage');
-    expect(settings.hidden).toBe(true);
   });
 
   it('keeps the first username prompt closed after a stale unseen profile arrives', () => {
@@ -4324,12 +4308,11 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const settings = stage.querySelector('.room-top-panel__settings');
-    const closeButton = stage.querySelector('.room-top-panel__settings-close');
 
-    expect(settings.hidden).toBe(false);
-    expect(settings.classList.contains('is-username-prompt')).toBe(true);
+    expect(settings.hidden).toBe(true);
+    expect(settings.classList.contains('is-username-prompt')).toBe(false);
+    expect(playerFacade.getSnapshot().shouldPromptForUsername).toBe(false);
 
-    closeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     playerFacade.applyServerProfile({
       username: 'wizard',
       usernamePromptSeen: false,

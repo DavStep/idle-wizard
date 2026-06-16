@@ -1,0 +1,4 @@
+interface:
+  display_name: "Idle Wizard Tutorial UI"
+  short_description: "Guardrails for Idle Wizard tutorial boxes"
+  default_prompt: "Use $idle-wizard-tutorial-ui to adjust or review Idle Wizard tutorial boxes."

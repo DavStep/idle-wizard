@@ -49,6 +49,7 @@ export class TopPanelViewManager {
     this.refs.usernameButton.className = 'room-top-panel__username';
     this.refs.usernameButton.type = 'button';
     this.refs.usernameButton.textContent = 'wizard';
+    this.refs.usernameButton.dataset.tutorialId = 'top:username';
     this.refs.usernameButton.setAttribute('aria-label', 'open settings');
 
     this.refs.levelButton = document.createElement('button');
