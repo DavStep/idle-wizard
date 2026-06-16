@@ -59,7 +59,7 @@ export class TutorialLogicManager {
     return {
       kind: 'lesson',
       step,
-      revealTokens: step.revealTokens ?? [],
+      revealTokens: step.revealTokens,
       lesson: {
         id: step.id,
         title: step.lessonTitle,

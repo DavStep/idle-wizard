@@ -8,19 +8,23 @@ export class TutorialRevealManager {
     this.stage = stage ?? null;
   }
 
-  update({ step, revealTokens = step?.revealTokens ?? [] } = {}) {
+  update({ step, revealTokens } = {}) {
     if (!this.stage) {
       return;
     }
 
-    const tokens = Array.isArray(revealTokens)
-      ? revealTokens.filter((token) => typeof token === 'string' && token.length > 0)
-      : [];
+    const sourceTokens = Array.isArray(revealTokens)
+      ? revealTokens
+      : Array.isArray(step?.revealTokens)
+        ? step.revealTokens
+        : null;
 
-    if (tokens.length === 0) {
+    if (!sourceTokens) {
       this.clear();
       return;
     }
+
+    const tokens = sourceTokens.filter((token) => typeof token === 'string' && token.length > 0);
 
     this.stage.dataset.tutorialReveal = tokens.join(' ');
   }

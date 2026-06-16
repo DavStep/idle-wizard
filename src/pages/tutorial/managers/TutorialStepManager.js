@@ -1089,7 +1089,7 @@ export class TutorialStepManager {
         progressLabel: step.getProgressLabel?.(context) ?? '',
         stepLabel,
         reminderKey: step.getReminderKey?.(context) ?? null,
-        revealTokens: step.revealTokens ?? [],
+        revealTokens: getRevealTokens(step),
         allowTargetClick: step.allowTargetClick === true,
         cueMode: step.cueMode ?? 'active',
         effect: step.effect,
@@ -1116,7 +1116,7 @@ export class TutorialStepManager {
       allowTargetClick: step.allowTargetClick === true,
       showPointer: step.showPointer !== false,
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
-      revealTokens: step.revealTokens ?? [],
+      revealTokens: getRevealTokens(step),
       cueMode: step.cueMode ?? 'active',
       effect: step.effect,
       sale: step.sale,
@@ -1139,6 +1139,10 @@ function hasCompletedPrestige(snapshot) {
 
 function getLessonTitle(stepId) {
   return LESSON_TITLE_BY_STEP_ID.get(stepId) ?? 'lesson';
+}
+
+function getRevealTokens(step) {
+  return Array.isArray(step?.revealTokens) ? step.revealTokens : null;
 }
 
 function hasCompletedResearch(snapshot, researchId) {

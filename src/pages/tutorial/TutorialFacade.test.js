@@ -125,6 +125,8 @@ describe('TutorialFacade', () => {
     facade.refresh();
 
     expect(facade.activeStep?.id).toBe('intro-welcome');
+    expect(stage.dataset.tutorialReveal).toBe('');
+    expect(stage.hasAttribute('data-tutorial-reveal')).toBe(true);
 
     const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
 

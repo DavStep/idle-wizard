@@ -5,6 +5,19 @@ import { describe, expect, it } from 'vitest';
 import { TutorialRevealManager } from './TutorialRevealManager.js';
 
 describe('TutorialRevealManager', () => {
+  it('keeps the reveal gate active when the step reveals only Elara', () => {
+    const stage = document.createElement('section');
+    const manager = new TutorialRevealManager();
+
+    manager.setStage(stage);
+    manager.update({
+      step: { id: 'intro-welcome', revealTokens: [] },
+    });
+
+    expect(stage.dataset.tutorialReveal).toBe('');
+    expect(stage.hasAttribute('data-tutorial-reveal')).toBe(true);
+  });
+
   it('reveals the top panel during the username step', () => {
     const stage = document.createElement('section');
     const manager = new TutorialRevealManager();
