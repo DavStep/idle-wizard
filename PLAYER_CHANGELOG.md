@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.21
+
+- Raised player progression to level 44 with new task goals, level costs, and research gates.
+- Added fast sell in Market, with ruby research that improves manual NPC sell payouts up to 95%.
+- Reworked NPC market auto-sell around one shared timer that sells eligible selected item stacks.
+- Retuned seed, recipe, summon, task, and level balance for the longer progression curve.
+- Updated Elara's early Market guide to use fast sell and made garden crop guidance steadier.
+
 ## 0.1.20
 
 - Added player info popups from visible player names in chat, leaderboards, alliances, and market history.

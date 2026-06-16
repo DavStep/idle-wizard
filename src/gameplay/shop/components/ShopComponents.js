@@ -1,5 +1,6 @@
 export const ShopShelf = {
   selectedSlotNumber: [],
+  sellProgressSeconds: [],
 };
 
 export const ShopShelfSlot = {

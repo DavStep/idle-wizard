@@ -97,7 +97,8 @@ export const TUTORIAL_STEPS = [
   {
     id: 'intro-username',
     kind: 'prompt',
-    targetId: 'top:username',
+    getTargetId: ({ dom }) =>
+      dom.isUsernameSettingsOpen?.() ? 'top:username-input' : 'top:username',
     revealTokens: REVEAL_TOP,
     text: "i don't need your name, but it would be nice to set it here.",
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
@@ -276,12 +277,12 @@ export const TUTORIAL_STEPS = [
     id: 'open-market',
     kind: 'objective',
     pageId: 'shop',
-    targetId: 'shop:stand:1',
+    targetId: 'shop:directSell',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'start selling sage seeds in market',
-    text: 'select stand',
+    objectiveText: 'sell sage seeds in market',
+    text: 'fast sell',
     getProgress: () => ({ value: 0, max: 1 }),
-    getProgressLabel: () => '0/1 stand',
+    getProgressLabel: () => '0/1 market',
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
@@ -295,22 +296,22 @@ export const TUTORIAL_STEPS = [
     id: 'select-market-stand',
     kind: 'objective',
     pageId: 'shop',
-    targetId: 'shop:stand:1',
+    targetId: 'shop:directSell',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'choose a market stand',
-    text: 'select stand',
+    objectiveText: 'open fast sell',
+    text: 'fast sell',
     getProgress: ({ dom }) => ({
-      value: dom.isShopSellPopupOpen() ? 1 : 0,
+      value: dom.isShopDirectSellPopupOpen?.() ? 1 : 0,
       max: 1,
     }),
-    getProgressLabel: ({ dom }) => `${dom.isShopSellPopupOpen() ? 1 : 0}/1 stand`,
+    getProgressLabel: ({ dom }) => `${dom.isShopDirectSellPopupOpen?.() ? 1 : 0}/1 open`,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
       getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
     isComplete: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
-      dom.isShopSellPopupOpen() ||
+      dom.isShopDirectSellPopupOpen?.() ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
   {
@@ -318,22 +319,36 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: 'shop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'choose sage seed for that stand',
+    objectiveText: 'choose sage seed to sell',
     getTargetId: ({ dom }) =>
-      dom.isShopSellPopupOpen() ? `shop:sell:${SAGE_SEED_KEY}` : 'shop:stand:1',
-    getHintText: ({ dom }) => (dom.isShopSellPopupOpen() ? 'choose sage seed' : 'select stand'),
-    getProgress: ({ snapshot }) => ({
-      value: isNpcMarketSelling(snapshot, SAGE_SEED_KEY) ? 1 : 0,
+      dom.isShopDirectSellPopupOpen?.()
+        ? `shop:directSell:${SAGE_SEED_KEY}`
+        : 'shop:directSell',
+    getHintText: ({ dom }) =>
+      dom.isShopDirectSellPopupOpen?.() ? 'choose sage seed' : 'fast sell',
+    getProgress: ({ dom, snapshot }) => ({
+      value:
+        isDirectSellSelected(dom, SAGE_SEED_KEY) ||
+        isNpcMarketSelling(snapshot, SAGE_SEED_KEY)
+          ? 1
+          : 0,
       max: 1,
     }),
-    getProgressLabel: ({ snapshot }) =>
-      `${isNpcMarketSelling(snapshot, SAGE_SEED_KEY) ? 1 : 0}/1 seed`,
+    getProgressLabel: ({ dom, snapshot }) =>
+      `${
+        isDirectSellSelected(dom, SAGE_SEED_KEY) ||
+        isNpcMarketSelling(snapshot, SAGE_SEED_KEY)
+          ? 1
+          : 0
+      }/1 seed`,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
       getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
-    isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 2 || isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
+    isComplete: ({ dom, snapshot }) =>
+      getCurrentLevel(snapshot) >= 2 ||
+      isDirectSellSelected(dom, SAGE_SEED_KEY) ||
+      isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
   {
     id: 'earn-tutorial-gold',
@@ -357,7 +372,7 @@ export const TUTORIAL_STEPS = [
         return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
       }
 
-      return currentPageId === 'shop' ? 'shop:stand:1' : null;
+      return currentPageId === 'shop' ? 'shop:directSell' : null;
     },
     getHintText: ({ currentPageId, snapshot }) => {
       if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0) {
@@ -380,7 +395,7 @@ export const TUTORIAL_STEPS = [
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
+      getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2 || getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET,
   },
   {
@@ -388,22 +403,19 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: 'shop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'unselect the seed from the stand',
-    getTargetId: ({ dom }) =>
-      dom.isShopSellPopupOpen() ? 'shop:sell:empty' : 'shop:stand:1',
-    getHintText: ({ dom }) => (dom.isShopSellPopupOpen() ? 'choose empty' : 'select stand'),
-    getProgress: ({ snapshot }) => ({
-      value: isNpcMarketSelling(snapshot, SAGE_SEED_KEY) ? 0 : 1,
+    objectiveText: 'finish direct sale',
+    getTargetId: () => 'shop:directSell',
+    getHintText: () => 'done selling',
+    getProgress: () => ({
+      value: 1,
       max: 1,
     }),
-    getProgressLabel: ({ snapshot }) =>
-      `${isNpcMarketSelling(snapshot, SAGE_SEED_KEY) ? 0 : 1}/1 unselected`,
+    getProgressLabel: () => '1/1 sold',
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
       getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET,
-    isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 2 || !isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
+    isComplete: () => true,
   },
   {
     id: 'level-up-one',
@@ -431,7 +443,11 @@ export const TUTORIAL_STEPS = [
     pageId: 'garden',
     objectiveText: 'grow sage in garden',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
-      if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 && !hasGrownSage(snapshot)) {
+      if (
+        getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 &&
+        !hasGrownSage(snapshot) &&
+        !hasActiveCrop(snapshot, SAGE_SEED_KEY)
+      ) {
         if (currentPageId !== 'workshop') {
           return 'page:workshop';
         }
@@ -439,28 +455,32 @@ export const TUTORIAL_STEPS = [
         return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
       }
 
-      const tile = getGrowTile(snapshot);
+      const tile = getGrowTile(snapshot, SAGE_SEED_KEY);
 
       if (!tile) {
         return null;
-      }
-
-      if (tile.phase === 'ready') {
-        return `garden:plot:${tile.tileNumber}`;
       }
 
       if (dom.isGardenSeedPopupOpen()) {
         return `garden:seed:${SAGE_SEED_KEY}`;
       }
 
-      if (tile.phase === 'empty' && tile.selectedSeedItemTypeId) {
+      if (tile.phase === 'ready') {
+        return `garden:plot:${tile.tileNumber}`;
+      }
+
+      if (tile.phase === 'empty' && isTileSelectedSeed(tile, SAGE_SEED_KEY)) {
         return `garden:plot:${tile.tileNumber}`;
       }
 
       return `garden:plot:${tile.tileNumber}:label`;
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
-      if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 && !hasGrownSage(snapshot)) {
+      if (
+        getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 &&
+        !hasGrownSage(snapshot) &&
+        !hasActiveCrop(snapshot, SAGE_SEED_KEY)
+      ) {
         if (currentPageId !== 'workshop') {
           return 'open workshop';
         }
@@ -468,29 +488,33 @@ export const TUTORIAL_STEPS = [
         return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
       }
 
-      const tile = getGrowTile(snapshot);
-
-      if (tile?.phase === 'ready') {
-        return 'harvest sage';
-      }
+      const tile = getGrowTile(snapshot, SAGE_SEED_KEY);
 
       if (dom.isGardenSeedPopupOpen()) {
         return 'choose sage seed';
       }
 
-      if (tile?.phase === 'empty' && tile.selectedSeedItemTypeId) {
+      if (tile?.phase === 'ready') {
+        return `harvest ${getTileHerbHintName(tile, 'sage')}`;
+      }
+
+      if (tile?.phase === 'empty' && isTileSelectedSeed(tile, SAGE_SEED_KEY)) {
         return 'plant sage seed';
       }
 
       return tile?.phase === 'growing' || tile?.phase === 'harvesting'
-        ? 'wait for sage'
-        : 'choose a seed';
+        ? `wait for ${getTileHerbHintName(tile, 'sage')}`
+        : 'choose sage seed';
     },
     getProgress: ({ snapshot }) => ({
       value: hasGrownSage(snapshot) ? 1 : 0,
       max: 1,
     }),
     getProgressLabel: ({ snapshot }) => `${hasGrownSage(snapshot) ? 1 : 0}/1 sage`,
+    isPaused: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 2 &&
+      !hasGrownSage(snapshot) &&
+      isWaitingForCrop(snapshot, SAGE_SEED_KEY),
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3 || hasGrownSage(snapshot),
   },
@@ -547,6 +571,13 @@ export const TUTORIAL_STEPS = [
     getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)),
     getProgressLabel: ({ snapshot }) =>
       getTaskProgressLabel(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY), 'sage'),
+    isPaused: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 2 &&
+      (getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
+        hasTaskProgressForItem(snapshot, SAGE_HERB_KEY)) &&
+      isWaitingForCrop(snapshot, SAGE_SEED_KEY) &&
+      !getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)?.canFill &&
+      !getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)?.canComplete,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
       (getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
@@ -561,7 +592,7 @@ export const TUTORIAL_STEPS = [
       hasLevelCompletionGold(snapshot) ? 'level up again' : 'earn level-up gold in market',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'shop:stand:1' : 'page:shop';
+        return currentPageId === 'shop' ? 'shop:directSell' : 'page:shop';
       }
 
       if (currentPageId !== 'workshop') {
@@ -572,7 +603,7 @@ export const TUTORIAL_STEPS = [
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'sell for gold' : 'open market';
+        return currentPageId === 'shop' ? 'fast sell' : 'open market';
       }
 
       if (currentPageId !== 'workshop') {
@@ -711,6 +742,14 @@ export const TUTORIAL_STEPS = [
     getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, MINT_HERB_KEY)),
     getProgressLabel: ({ snapshot }) =>
       getTaskProgressLabel(getCurrentTaskForItem(snapshot, MINT_HERB_KEY), 'mint'),
+    isPaused: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 3 &&
+      hasCompletedTaskForItem(snapshot, MINT_SEED_KEY) &&
+      Boolean(getCurrentTaskForItem(snapshot, MINT_HERB_KEY)) &&
+      !hasCompletedTaskForItem(snapshot, MINT_HERB_KEY) &&
+      isWaitingForCrop(snapshot, MINT_SEED_KEY) &&
+      !getCurrentTaskForItem(snapshot, MINT_HERB_KEY)?.canFill &&
+      !getCurrentTaskForItem(snapshot, MINT_HERB_KEY)?.canComplete,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 3 &&
       hasCompletedTaskForItem(snapshot, MINT_SEED_KEY) &&
@@ -727,7 +766,7 @@ export const TUTORIAL_STEPS = [
       hasLevelCompletionGold(snapshot) ? 'level up again' : 'earn level-up gold in market',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'shop:stand:1' : 'page:shop';
+        return currentPageId === 'shop' ? 'shop:directSell' : 'page:shop';
       }
 
       if (currentPageId !== 'workshop') {
@@ -738,7 +777,7 @@ export const TUTORIAL_STEPS = [
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'sell for gold' : 'open market';
+        return currentPageId === 'shop' ? 'fast sell' : 'open market';
       }
 
       if (currentPageId !== 'workshop') {
@@ -1175,8 +1214,25 @@ function hasLevelCompletionGold(snapshot) {
   return getGold(snapshot) >= getLevelCompletionCostGold(snapshot);
 }
 
-function getGrowTile(snapshot) {
+function getGrowTile(snapshot, seedKey = null) {
   const tiles = (snapshot?.garden?.plot?.tiles ?? []).filter((tile) => tile.unlocked);
+
+  if (seedKey) {
+    return (
+      tiles.find((tile) => tile.phase === 'ready' && isTileActiveSeed(tile, seedKey)) ??
+      tiles.find((tile) => tile.phase === 'empty' && isTileSelectedSeed(tile, seedKey)) ??
+      tiles.find(
+        (tile) =>
+          (tile.phase === 'growing' || tile.phase === 'harvesting') &&
+          isTileActiveSeed(tile, seedKey),
+      ) ??
+      tiles.find((tile) => tile.phase === 'empty' && !hasTileSelectedSeed(tile)) ??
+      tiles.find((tile) => tile.phase === 'empty') ??
+      tiles.find((tile) => tile.phase === 'ready') ??
+      tiles.find((tile) => tile.phase === 'growing' || tile.phase === 'harvesting') ??
+      null
+    );
+  }
 
   return (
     tiles.find((tile) => tile.phase === 'ready') ??
@@ -1274,7 +1330,11 @@ function getHerbObtainTargetId({ currentPageId, dom, snapshot, seedKey }) {
     return 'page:garden';
   }
 
-  const tile = getGrowTile(snapshot);
+  if (dom.isGardenSeedPopupOpen()) {
+    return `garden:seed:${seedKey}`;
+  }
+
+  const tile = getGrowTile(snapshot, seedKey);
 
   if (!tile) {
     return null;
@@ -1284,11 +1344,7 @@ function getHerbObtainTargetId({ currentPageId, dom, snapshot, seedKey }) {
     return `garden:plot:${tile.tileNumber}`;
   }
 
-  if (dom.isGardenSeedPopupOpen()) {
-    return `garden:seed:${seedKey}`;
-  }
-
-  if (tile.phase === 'empty' && tile.selectedSeedItemTypeId) {
+  if (tile.phase === 'empty' && isTileSelectedSeed(tile, seedKey)) {
     return `garden:plot:${tile.tileNumber}`;
   }
 
@@ -1308,23 +1364,47 @@ function getHerbObtainHintText({ currentPageId, dom, snapshot, seedKey, herbName
     return 'open garden';
   }
 
-  const tile = getGrowTile(snapshot);
-
-  if (tile?.phase === 'ready') {
-    return `harvest ${herbName}`;
-  }
-
   if (dom.isGardenSeedPopupOpen()) {
     return `choose ${herbName} seed`;
   }
 
-  if (tile?.phase === 'empty' && tile.selectedSeedItemTypeId) {
+  const tile = getGrowTile(snapshot, seedKey);
+
+  if (tile?.phase === 'ready') {
+    return `harvest ${getTileHerbHintName(tile, herbName)}`;
+  }
+
+  if (tile?.phase === 'empty' && isTileSelectedSeed(tile, seedKey)) {
     return `plant ${herbName} seed`;
   }
 
   return tile?.phase === 'growing' || tile?.phase === 'harvesting'
-    ? `wait for ${herbName}`
-    : 'choose a seed';
+    ? `wait for ${getTileHerbHintName(tile, herbName)}`
+    : `choose ${herbName} seed`;
+}
+
+function hasTileSelectedSeed(tile) {
+  return Boolean(tile?.selectedSeedKey || tile?.selectedSeedItemTypeId);
+}
+
+function isTileSelectedSeed(tile, seedKey) {
+  return tile?.selectedSeedKey === seedKey;
+}
+
+function isTileActiveSeed(tile, seedKey) {
+  return tile?.seedKey === seedKey;
+}
+
+function getTileHerbHintName(tile, fallbackName) {
+  return tile?.herbLabel || stripSeedSuffix(tile?.seedLabel) || fallbackName;
+}
+
+function stripSeedSuffix(label) {
+  if (typeof label !== 'string') {
+    return null;
+  }
+
+  return label.endsWith(' seed') ? label.slice(0, -' seed'.length) : label;
 }
 
 function getCurrentTasks(snapshot) {
@@ -1377,6 +1457,15 @@ function hasActiveCrop(snapshot, seedKey) {
       tile?.unlocked &&
       tile.seedKey === seedKey &&
       (tile.phase === 'ready' || tile.phase === 'growing' || tile.phase === 'harvesting'),
+  );
+}
+
+function isWaitingForCrop(snapshot, seedKey) {
+  return (snapshot?.garden?.plot?.tiles ?? []).some(
+    (tile) =>
+      tile?.unlocked &&
+      tile.seedKey === seedKey &&
+      (tile.phase === 'growing' || tile.phase === 'harvesting'),
   );
 }
 
@@ -1437,6 +1526,10 @@ function isNpcMarketSelling(snapshot, itemKey) {
   return (snapshot?.shop?.shelf?.slots ?? []).some(
     (slot) => slot?.unlocked && slot.sellKey === itemKey,
   );
+}
+
+function isDirectSellSelected(dom, itemKey) {
+  return Boolean(dom?.isShopDirectSellItemSelected?.(itemKey));
 }
 
 function getPrimaryBrewingState(snapshot) {

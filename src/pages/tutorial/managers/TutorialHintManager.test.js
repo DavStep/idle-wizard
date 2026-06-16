@@ -119,8 +119,8 @@ describe('TutorialHintManager', () => {
 
     expect(pointer?.hidden).toBe(false);
     expect(pointer?.dataset.placement).toBe('bottom-right');
-    expect(pointer?.style.left).toBe('83px');
-    expect(pointer?.style.top).toBe('53px');
+    expect(pointer?.style.left).toBe('81px');
+    expect(pointer?.style.top).toBe('51px');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('-1');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
@@ -169,8 +169,8 @@ describe('TutorialHintManager', () => {
 
       expect(requestAnimationFrame).not.toHaveBeenCalled();
       expect(pointer?.dataset.placement).toBe('bottom-right');
-      expect(pointer?.style.left).toBe('83px');
-      expect(pointer?.style.top).toBe('53px');
+      expect(pointer?.style.left).toBe('81px');
+      expect(pointer?.style.top).toBe('51px');
     } finally {
       if (hadRequestAnimationFrame) {
         Object.defineProperty(window, 'requestAnimationFrame', {
@@ -212,8 +212,8 @@ describe('TutorialHintManager', () => {
 
     expect(pointer?.hidden).toBe(false);
     expect(pointer?.dataset.placement).toBe('top-left');
-    expect(pointer?.style.left).toBe('281px');
-    expect(pointer?.style.top).toBe('631px');
+    expect(pointer?.style.left).toBe('283px');
+    expect(pointer?.style.top).toBe('633px');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('1');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });

@@ -10,6 +10,11 @@ import {
   advancedResearchMaxLevel,
   applyAdvancedResearchTimeReduction,
 } from './advancedResearchIds.js';
+import {
+  fastSellResearchIds,
+  fastSellResearchMaxLevel,
+  getFastSellPercent as getFastSellPercentForLevel,
+} from './fastSellResearch.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ResearchFacade {
@@ -159,6 +164,24 @@ export class ResearchFacade {
       durationMs,
       this.getCompletedPlotGrowthLevel(plotNumber),
     );
+  }
+
+  getFastSellPercent() {
+    return getFastSellPercentForLevel(this.getCompletedFastSellLevel());
+  }
+
+  getCompletedFastSellLevel() {
+    let completedLevel = 0;
+
+    for (let level = 1; level <= fastSellResearchMaxLevel; level += 1) {
+      if (!this.researchStateEntityManager.isCompleted(fastSellResearchIds.payout(level))) {
+        break;
+      }
+
+      completedLevel = level;
+    }
+
+    return completedLevel;
   }
 
   getCompletedAdvancedLevel({ getId, targetNumber }) {

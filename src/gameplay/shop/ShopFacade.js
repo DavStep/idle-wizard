@@ -1,5 +1,6 @@
 import { ShopBalanceManager } from './managers/ShopBalanceManager.js';
 import { ShopAutoSellManager } from './managers/ShopAutoSellManager.js';
+import { ShopDirectSellManager } from './managers/ShopDirectSellManager.js';
 import { ShopShelfEntityManager } from './managers/ShopShelfEntityManager.js';
 import { ShopShelfSlotSelectionManager } from './managers/ShopShelfSlotSelectionManager.js';
 import { ShopSellItemVisibilityManager } from './managers/ShopSellItemVisibilityManager.js';
@@ -12,6 +13,7 @@ import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
 import { ShopGoldOfferManager } from './managers/ShopGoldOfferManager.js';
+import { ShopNpcSellQuoteManager } from './managers/ShopNpcSellQuoteManager.js';
 import { ShopStockPurchaseManager } from './managers/ShopStockPurchaseManager.js';
 import { ShopStockPriceQuoteManager } from './managers/ShopStockPriceQuoteManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
@@ -40,6 +42,9 @@ export class ShopFacade {
     this.shopSellAvailabilityManager = new ShopSellAvailabilityManager({
       itemsFacade,
       getReservedItemQuantity,
+    });
+    this.shopNpcSellQuoteManager = new ShopNpcSellQuoteManager({
+      shopNpcPriceManager: this.shopNpcPriceManager,
     });
     this.shopStockPriceQuoteManager = new ShopStockPriceQuoteManager({
       shopNpcPriceManager: this.shopNpcPriceManager,
@@ -102,11 +107,21 @@ export class ShopFacade {
       shopNpcPriceManager: this.shopNpcPriceManager,
       shopStockPriceQuoteManager: this.shopStockPriceQuoteManager,
     });
+    this.shopDirectSellManager = new ShopDirectSellManager({
+      goldFacade,
+      itemsFacade,
+      researchFacade,
+      shopNpcPriceManager: this.shopNpcPriceManager,
+      shopNpcSellQuoteManager: this.shopNpcSellQuoteManager,
+      shopSellAvailabilityManager: this.shopSellAvailabilityManager,
+      onItemSold,
+    });
     this.shopAutoSellManager = new ShopAutoSellManager({
       goldFacade,
       itemsFacade,
       shopBalanceManager: this.shopBalanceManager,
       shopNpcPriceManager: this.shopNpcPriceManager,
+      shopNpcSellQuoteManager: this.shopNpcSellQuoteManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
       onItemSold,
@@ -209,6 +224,14 @@ export class ShopFacade {
     return this.shopStockPurchaseManager.quoteItem({ itemTypeId, quantity });
   }
 
+  sellNpcMarketItem(itemTypeId, quantity = 1) {
+    return this.shopDirectSellManager.sellItem({ itemTypeId, quantity });
+  }
+
+  quoteNpcMarketSell(itemTypeId, quantity = 1) {
+    return this.shopDirectSellManager.quoteItem({ itemTypeId, quantity });
+  }
+
   claimPlayerShopSaleProceeds(gold) {
     return this.shopPlayerShelfListingManager.claimSaleProceeds(gold);
   }
@@ -253,6 +276,7 @@ export class ShopFacade {
           ? this.playerLevelFacade?.getRequiredLevelForNpcMarketStand(nextSlotNumber) ?? null
           : null,
         selectedSlotNumber: this.shopShelfEntityManager.getSelectedSlotNumber(),
+        sellProgressSeconds: this.shopShelfEntityManager.getSellProgressSeconds(),
         autoSellSeconds: this.shopBalanceManager.getAutoSellSeconds(),
         sellKinds,
         sellItems: visibleSellItems,
@@ -317,10 +341,13 @@ export class ShopFacade {
   }
 
   getVisibleSellItemSnapshots(sellableItems = this.getAvailableSellableItemSnapshots()) {
+    const fastSellPercent = this.shopDirectSellManager.getFastSellPercent();
+
     return this.shopSellItemVisibilityManager
       .getVisibleSellItems(sellableItems)
       .map((item) => {
         const npcPrice = this.shopNpcPriceManager.getNpcPrice(item);
+        const sellGold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
 
         return {
           ...item,
@@ -337,7 +364,9 @@ export class ShopFacade {
                 targetStock: npcPrice.targetStock,
               }
             : {}),
-          sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
+          sellGold,
+          fastSellGold: this.shopDirectSellManager.getFastSellPriceGold(sellGold),
+          fastSellPercent,
           sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
           buyGold: this.shopNpcPriceManager.getNpcSellPriceGold(item),
           stock: this.shopNpcPriceManager.getNpcStock(item),
@@ -437,6 +466,7 @@ export class ShopFacade {
       shelf: {
         unlockedSlots: shelf.unlockedSlots,
         selectedSlotNumber: shelf.selectedSlotNumber,
+        sellProgressSeconds: this.shopShelfEntityManager.getSellProgressSeconds(),
         slots: this.shopShelfEntityManager.getSlotSnapshots().map((slot) => ({
           slotNumber: slot.slotNumber,
           sellItemKey: slot.sellItemTypeId
@@ -489,6 +519,7 @@ export class ShopFacade {
     this.shopShelfEntityManager.applySnapshot({
       unlockedSlots: this.clampUnlockedSlotsByLevel(shelfSnapshot.unlockedSlots),
       selectedSlotNumber: shelfSnapshot.selectedSlotNumber,
+      sellProgressSeconds: shelfSnapshot.sellProgressSeconds,
       slots,
     });
 

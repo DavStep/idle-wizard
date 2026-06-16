@@ -2,19 +2,22 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ShopAutoSellManager } from './ShopAutoSellManager.js';
 
-function createSlotManager() {
-  let progressSeconds = 0;
+function createSlotManager({
+  slots = [
+    {
+      slotNumber: 1,
+      unlocked: true,
+      sellItemTypeId: 1,
+    },
+  ],
+  initialProgressSeconds = 0,
+} = {}) {
+  let progressSeconds = initialProgressSeconds;
 
   return {
-    getSlotSnapshots: () => [
-      {
-        slotNumber: 1,
-        unlocked: true,
-        sellItemTypeId: 1,
-      },
-    ],
+    getSlotSnapshots: () => slots,
     getSellProgressSeconds: () => progressSeconds,
-    setSellProgressSeconds: (_slotNumber, nextProgressSeconds) => {
+    setSellProgressSeconds: (nextProgressSeconds) => {
       progressSeconds = nextProgressSeconds;
     },
   };
@@ -121,6 +124,94 @@ describe('ShopAutoSellManager', () => {
     expect(removeItem).toHaveBeenCalledTimes(1);
     expect(addGold).toHaveBeenCalledTimes(1);
     expect(addGold).toHaveBeenCalledWith(6);
+  });
+
+  it('sells all eligible NPC stands on one shared shop timer', () => {
+    const addGold = vi.fn();
+    const quantities = new Map([
+      [1, 2],
+      [2, 3],
+    ]);
+    const definitions = new Map([
+      [
+        1,
+        {
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+        },
+      ],
+      [
+        2,
+        {
+          id: 2,
+          key: 'mintSeed',
+          label: 'mint seed',
+          kind: 'seed',
+        },
+      ],
+    ]);
+    const removeItem = vi.fn((itemTypeId, quantity) => {
+      const availableQuantity = quantities.get(itemTypeId) ?? 0;
+
+      if (availableQuantity < quantity) {
+        return null;
+      }
+
+      quantities.set(itemTypeId, availableQuantity - quantity);
+      return {
+        itemTypeId,
+        ...definitions.get(itemTypeId),
+        quantity,
+      };
+    });
+    const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
+    const slotManager = createSlotManager({
+      slots: [
+        {
+          slotNumber: 1,
+          unlocked: true,
+          sellItemTypeId: 1,
+        },
+        {
+          slotNumber: 2,
+          unlocked: true,
+          sellItemTypeId: 2,
+        },
+      ],
+    });
+    const manager = new ShopAutoSellManager({
+      goldFacade: {
+        add: addGold,
+      },
+      itemsFacade: {
+        getItemDefinition: (itemTypeId) => definitions.get(itemTypeId),
+        getItemQuantity: (itemTypeId) => quantities.get(itemTypeId) ?? 0,
+        removeItem,
+      },
+      shopBalanceManager: {
+        getAutoSellSeconds: () => 5,
+      },
+      shopNpcPriceManager: {
+        getNpcBuyPriceGold: (item) => (item.id === 1 ? 4 : 7),
+        recordSellToNpc,
+      },
+      shopShelfEntityManager: slotManager,
+    });
+
+    manager.update(4);
+
+    expect(removeItem).not.toHaveBeenCalled();
+    expect(slotManager.getSellProgressSeconds()).toBe(4);
+
+    manager.update(1);
+
+    expect(removeItem).toHaveBeenCalledWith(1, 2);
+    expect(removeItem).toHaveBeenCalledWith(2, 3);
+    expect(addGold).toHaveBeenCalledWith(8);
+    expect(addGold).toHaveBeenCalledWith(21);
+    expect(slotManager.getSellProgressSeconds()).toBe(0);
   });
 
   it('does not sell when backend NPC price is missing', () => {

@@ -1,5 +1,6 @@
 import { ShopCrystalOfferManager } from './managers/ShopCrystalOfferManager.js';
 import { ShopDemandManager } from './managers/ShopDemandManager.js';
+import { ShopDirectSellManager } from './managers/ShopDirectSellManager.js';
 import { ShopGoldOfferManager } from './managers/ShopGoldOfferManager.js';
 import { ShopMarketTabsManager } from './managers/ShopMarketTabsManager.js';
 import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js';
@@ -25,6 +26,7 @@ export class ShopPageFacade {
     });
     this.shelfManager = new ShopShelfManager({ gameplayFacade });
     this.demandManager = new ShopDemandManager({ gameplayFacade });
+    this.directSellManager = new ShopDirectSellManager({ gameplayFacade });
     this.stockManager = new ShopStockManager({ gameplayFacade });
     this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
     this.playerShelfManager = new ShopPlayerShelfManager({
@@ -58,6 +60,10 @@ export class ShopPageFacade {
       buttonParent: shelfRoot,
       popupParent: popupLayer,
     });
+    this.directSellManager.mount({
+      buttonParent: shelfRoot,
+      popupParent: popupLayer,
+    });
     this.stockManager.mount(npmMarketPanel, popupLayer);
     this.playerRequestManager.mount(playerMarketPanel, popupLayer);
     this.playerShelfManager.mount(playerMarketPanel, popupLayer);
@@ -78,6 +84,7 @@ export class ShopPageFacade {
     this.playerShelfManager.unmount();
     this.playerRequestManager.unmount();
     this.stockManager.unmount();
+    this.directSellManager.unmount();
     this.demandManager.unmount();
     this.shelfManager.unmount();
     this.flyoutManager.unmount();

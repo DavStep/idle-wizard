@@ -1,24 +1,79 @@
 export const DEFAULT_PLAYER_LEVEL_BALANCE = {
-  maxLevel: 20,
+  maxLevel: 44,
   mana: {
     baseMaxManaCap: 50,
     maxManaCapPerLevel: 50,
     baseManaPerSecond: 1,
-    manaPerSecondPerLevel: 1,
+    manaPerSecondPerLevel: 1
   },
   crystal: {
-    perLevel: 1,
+    perLevel: 1
   },
   milestones: [
-    { level: 1, maxGardenTiles: 2, maxCauldrons: 1, maxNpcMarketStands: 1, maxPlayerMarketStands: 1 },
-    { level: 2, maxGardenTiles: 3, maxCauldrons: 1, maxNpcMarketStands: 1, maxPlayerMarketStands: 1 },
-    { level: 3, maxGardenTiles: 3, maxCauldrons: 1, maxNpcMarketStands: 2, maxPlayerMarketStands: 2 },
-    { level: 5, maxGardenTiles: 5, maxCauldrons: 3, maxNpcMarketStands: 2, maxPlayerMarketStands: 2 },
-    { level: 8, maxGardenTiles: 7, maxCauldrons: 3, maxNpcMarketStands: 2, maxPlayerMarketStands: 2 },
-    { level: 10, maxGardenTiles: 8, maxCauldrons: 4, maxNpcMarketStands: 3, maxPlayerMarketStands: 3 },
-    { level: 13, maxGardenTiles: 9, maxCauldrons: 4, maxNpcMarketStands: 4, maxPlayerMarketStands: 4 },
-    { level: 17, maxGardenTiles: 10, maxCauldrons: 5, maxNpcMarketStands: 5, maxPlayerMarketStands: 5 },
-  ],
+    {
+      level: 1,
+      maxGardenTiles: 2,
+      maxCauldrons: 1,
+      maxNpcMarketStands: 0,
+      maxPlayerMarketStands: 0
+    },
+    {
+      level: 2,
+      maxGardenTiles: 3,
+      maxCauldrons: 1,
+      maxNpcMarketStands: 0,
+      maxPlayerMarketStands: 0
+    },
+    {
+      level: 3,
+      maxGardenTiles: 3,
+      maxCauldrons: 1,
+      maxNpcMarketStands: 0,
+      maxPlayerMarketStands: 0
+    },
+    {
+      level: 4,
+      maxGardenTiles: 3,
+      maxCauldrons: 1,
+      maxNpcMarketStands: 1,
+      maxPlayerMarketStands: 1
+    },
+    {
+      level: 5,
+      maxGardenTiles: 5,
+      maxCauldrons: 3,
+      maxNpcMarketStands: 2,
+      maxPlayerMarketStands: 2
+    },
+    {
+      level: 8,
+      maxGardenTiles: 7,
+      maxCauldrons: 3,
+      maxNpcMarketStands: 2,
+      maxPlayerMarketStands: 2
+    },
+    {
+      level: 10,
+      maxGardenTiles: 8,
+      maxCauldrons: 4,
+      maxNpcMarketStands: 3,
+      maxPlayerMarketStands: 3
+    },
+    {
+      level: 13,
+      maxGardenTiles: 9,
+      maxCauldrons: 4,
+      maxNpcMarketStands: 4,
+      maxPlayerMarketStands: 4
+    },
+    {
+      level: 17,
+      maxGardenTiles: 10,
+      maxCauldrons: 5,
+      maxNpcMarketStands: 5,
+      maxPlayerMarketStands: 5
+    }
+  ]
 };
 
 export class PlayerLevelBalanceManager {

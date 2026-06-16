@@ -92,6 +92,7 @@ export class ShopShelfManager {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
     row.dataset.shopSlotNumber = String(slotNumber);
+    row.addEventListener('click', (event) => this.onLockedSlotRowClick(event, slotNumber));
 
     const label = document.createElement('span');
     label.className = 'row_key';
@@ -250,6 +251,22 @@ export class ShopShelfManager {
   onBuySlot() {
     this.gameplayFacade.buyShopShelfSlot();
     this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  onLockedSlotRowClick(event, slotNumber) {
+    if (event.target?.closest?.('button')) {
+      return;
+    }
+
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const shelf = snapshot?.shop?.shelf;
+    const slot = shelf?.slots?.find((candidate) => candidate.slotNumber === slotNumber);
+
+    if (!this.canBuyLockedSlot(snapshot, shelf, slot, slotNumber)) {
+      return;
+    }
+
+    this.onBuySlot();
   }
 
   onSelectSellTab(kind) {
@@ -689,6 +706,17 @@ export class ShopShelfManager {
       shouldShowItemInActionList(snapshot, item, item.quantity) &&
       Number.isFinite(item.sellGold) &&
       item.sellGold > 0
+    );
+  }
+
+  canBuyLockedSlot(snapshot, shelf, slot, slotNumber) {
+    return (
+      slot &&
+      !slot.unlocked &&
+      slotNumber === shelf?.nextSlotNumber &&
+      shelf.nextSlotLockedByLevel !== true &&
+      Number.isFinite(shelf.nextSlotCost) &&
+      (snapshot?.gold?.current ?? 0) >= shelf.nextSlotCost
     );
   }
 

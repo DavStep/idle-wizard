@@ -137,6 +137,7 @@ export class TutorialFacade {
       this.saleManager.update({
         step: viewState.step,
         snapshot,
+        dom: this.targetManager.getDomState(),
         gameplayFacade: this.gameplayFacade,
         onChange: () => this.scheduleRefresh(),
       });

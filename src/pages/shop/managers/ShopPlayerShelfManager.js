@@ -426,7 +426,16 @@ export class ShopPlayerShelfManager {
   }
 
   onSelectSlot(event, slotNumber) {
-    if (event.target?.tagName === 'BUTTON') {
+    if (event.target?.closest?.('button')) {
+      return;
+    }
+
+    const shelf = this.lastGameplaySnapshot?.shop?.playerShelf;
+    const slot = shelf?.slots?.find((candidate) => candidate.slotNumber === slotNumber);
+    if (!slot?.unlocked) {
+      if (this.canBuyLockedSlot(shelf, slot, slotNumber)) {
+        this.onBuySlot();
+      }
       return;
     }
 
@@ -869,6 +878,17 @@ export class ShopPlayerShelfManager {
     }
 
     return cost === 0 ? 'buy (free)' : `buy (${formatGoldPriceText(cost)})`;
+  }
+
+  canBuyLockedSlot(shelf, slot, slotNumber) {
+    return (
+      slot &&
+      !slot.unlocked &&
+      slotNumber === shelf?.nextSlotNumber &&
+      shelf.nextSlotLockedByLevel !== true &&
+      Number.isFinite(shelf.nextSlotCost) &&
+      (this.lastGameplaySnapshot?.gold?.current ?? 0) >= shelf.nextSlotCost
+    );
   }
 
   renderListingControls(shelf, snapshot) {

@@ -70,4 +70,29 @@ describe('TutorialTargetManager', () => {
 
     expect(manager.getDomState().isBlockingDialogOpen()).toBe(false);
   });
+
+  it('lets the intro username step guide the settings input', () => {
+    const stage = document.createElement('section');
+    const settings = document.createElement('section');
+    const input = document.createElement('input');
+    const manager = new TutorialTargetManager({ stage });
+
+    settings.className = 'room-top-panel__settings';
+    input.dataset.tutorialId = 'top:username-input';
+    settings.append(input);
+    stage.append(settings);
+    document.body.append(stage);
+
+    expect(manager.getDomState().isUsernameSettingsOpen()).toBe(true);
+    expect(manager.getDomState().isBlockingDialogOpenForStep({ id: 'intro-username' })).toBe(
+      false,
+    );
+    expect(manager.getDomState().isBlockingDialogOpenForStep({ id: 'intro-mana-sphere' })).toBe(
+      true,
+    );
+
+    settings.hidden = true;
+
+    expect(manager.getDomState().isUsernameSettingsOpen()).toBe(false);
+  });
 });

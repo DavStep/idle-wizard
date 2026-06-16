@@ -94,6 +94,51 @@ function createLevelOneObjectiveSnapshot() {
   };
 }
 
+function createLevelTwoSageTaskSnapshot(overrides = {}) {
+  return {
+    ...createLevelThreeSnapshot(),
+    inventory: [],
+    seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+    seedSummoning: { canSummon: false },
+    garden: {
+      seeds: [{ key: 'sageSeed', quantity: 1 }],
+      herbs: [{ key: 'sageHerb', quantity: 0 }],
+      plot: {
+        tiles: [
+          {
+            tileNumber: 1,
+            unlocked: true,
+            phase: 'empty',
+            selectedSeedKey: null,
+            seedKey: null,
+            seedLabel: null,
+            herbLabel: null,
+          },
+        ],
+      },
+    },
+    tasks: {
+      currentLevel: 2,
+      level: {
+        completion: { canComplete: false, costGold: 40 },
+        tasks: [
+          {
+            taskId: 'level2-sage-herb',
+            itemKey: 'sageHerb',
+            requiredQuantity: 6,
+            progressQuantity: 2,
+            remainingQuantity: 4,
+            canFill: false,
+            canComplete: false,
+            completed: false,
+          },
+        ],
+      },
+    },
+    ...overrides,
+  };
+}
+
 describe('TutorialFacade', () => {
   afterEach(() => {
     document.body.textContent = '';
@@ -212,10 +257,11 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('keeps the tutorial reveal gate while the username settings dialog is open', async () => {
+  it('shows Elara pointing at the username input while settings is open', async () => {
     const stage = document.createElement('section');
     const usernameButton = document.createElement('button');
     const settings = document.createElement('section');
+    const usernameInput = document.createElement('input');
     const gameplayFacade = {
       getSnapshot: () => createLevelOneSnapshot(),
       subscribe: () => () => {},
@@ -234,8 +280,12 @@ describe('TutorialFacade', () => {
     usernameButton.textContent = 'wizard';
     settings.className = 'room-top-panel__settings';
     settings.hidden = true;
+    usernameInput.dataset.tutorialId = 'top:username-input';
+    settings.append(usernameInput);
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(usernameButton, { left: 80, top: 80, width: 240, height: 70 });
+    setClientRect(usernameInput, { left: 120, top: 360, width: 520, height: 70 });
     stage.append(usernameButton, settings);
     document.body.append(stage);
 
@@ -245,15 +295,25 @@ describe('TutorialFacade', () => {
     expect(facade.activeStep?.id).toBe('intro-username');
     expect(stage.dataset.tutorialReveal).toBe('top');
 
+    stage.querySelector('.tutorial-layer__lesson-button')?.dispatchEvent(
+      new window.MouseEvent('click', { bubbles: true }),
+    );
+
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+
     settings.hidden = false;
     await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
 
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+    expect(facade.activeStep?.targetId).toBe('top:username-input');
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
     expect(stage.dataset.tutorialReveal).toBe('top');
 
     settings.hidden = true;
     await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
 
+    expect(facade.activeStep?.targetId).toBe('top:username');
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
     expect(stage.dataset.tutorialReveal).toBe('top');
 
@@ -267,6 +327,7 @@ describe('TutorialFacade', () => {
       const stage = document.createElement('section');
       const usernameButton = document.createElement('button');
       const settings = document.createElement('section');
+      const usernameInput = document.createElement('input');
       const gameplayFacade = {
         getSnapshot: () => createLevelOneSnapshot(),
         subscribe: () => () => {},
@@ -285,8 +346,12 @@ describe('TutorialFacade', () => {
       usernameButton.textContent = 'wizard';
       settings.className = 'room-top-panel__settings';
       settings.hidden = true;
+      usernameInput.dataset.tutorialId = 'top:username-input';
+      settings.append(usernameInput);
       stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
       setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      setClientRect(usernameButton, { left: 80, top: 80, width: 240, height: 70 });
+      setClientRect(usernameInput, { left: 120, top: 360, width: 520, height: 70 });
       stage.append(usernameButton, settings);
       document.body.append(stage);
 
@@ -308,7 +373,7 @@ describe('TutorialFacade', () => {
       settings.hidden = false;
       facade.refresh();
 
-      expect(layer?.hidden).toBe(true);
+      expect(layer?.hidden).toBe(false);
       expect(copy?.textContent).toBe(fullText);
 
       settings.hidden = true;
@@ -472,6 +537,63 @@ describe('TutorialFacade', () => {
     expect(hint?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
     expect([lesson, hint].filter((element) => element && !element.hidden)).toHaveLength(1);
+
+    facade.unmount();
+  });
+
+  it('hides the lesson pointer while the sage plot is only growing', () => {
+    let snapshot = createLevelTwoSageTaskSnapshot();
+    const stage = document.createElement('section');
+    const plotLabel = document.createElement('span');
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'garden',
+      storage: createMemoryStorage(),
+    });
+
+    plotLabel.dataset.tutorialId = 'garden:plot:1:label';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(plotLabel, { left: 160, top: 240, width: 360, height: 54 });
+    stage.append(plotLabel);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('fill-sage-herb-task');
+    expect(facade.activeStep?.targetId).toBe('garden:plot:1:label');
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+
+    snapshot = createLevelTwoSageTaskSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 0 }],
+        plot: {
+          tiles: [
+            {
+              tileNumber: 1,
+              unlocked: true,
+              phase: 'growing',
+              seedKey: 'sageSeed',
+              seedLabel: 'sage seed',
+              herbLabel: 'sage',
+            },
+          ],
+        },
+      },
+    });
+    facade.refresh();
+
+    expect(facade.activeStep).toBeNull();
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
 
     facade.unmount();
   });

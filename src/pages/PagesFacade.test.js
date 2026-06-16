@@ -915,6 +915,25 @@ function createGameplayFacadeFake() {
   ];
   const advancedResearchBoxes = [
     {
+      id: 'fastSell',
+      label: 'fast sell research',
+      researches: [
+        {
+          id: 'fastSellPayout:1',
+          label: 'fast sell lvl 1',
+          value: '2 ruby',
+          effect: '85% payout',
+          showEffect: true,
+          requiredResearchIds: [],
+          costGold: 0,
+          costRuby: 2,
+          costCurrency: 'ruby',
+          completed: false,
+          canResearch: false,
+        },
+      ],
+    },
+    {
       id: 'cauldronBrewing',
       label: 'cauldron brewing research',
       researches: [

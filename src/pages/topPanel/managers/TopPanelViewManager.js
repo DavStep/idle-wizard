@@ -168,6 +168,7 @@ export class TopPanelViewManager {
     this.refs.usernameInput.autocomplete = 'off';
     this.refs.usernameInput.setAttribute('enterkeyhint', 'done');
     this.refs.usernameInput.setAttribute('aria-label', 'username');
+    this.refs.usernameInput.dataset.tutorialId = 'top:username-input';
 
     this.refs.usernameError = document.createElement('div');
     this.refs.usernameError.className = 'room-top-panel__username-error';

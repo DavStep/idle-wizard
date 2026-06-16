@@ -4,6 +4,11 @@ import {
   advancedResearchMaxLevel,
   getAdvancedResearchLevelReductionPercent,
 } from '../advancedResearchIds.js';
+import {
+  fastSellResearchIds,
+  fastSellResearchMaxLevel,
+  getFastSellPercent,
+} from '../fastSellResearch.js';
 
 const summonSeedResearches = [
   {
@@ -36,7 +41,40 @@ const summonSeedResearches = [
 ];
 
 const seedUnlockRequiredPlayerLevels = {
+  mintSeed: 3,
   nettleSeed: 4,
+  lavenderSeed: 5,
+  briarSeed: 7,
+  glowcapSeed: 9,
+  mandrakeSeed: 11,
+  sunrootSeed: 13,
+  moonflowerSeed: 16,
+  frostmossSeed: 19,
+  dreambellSeed: 22,
+  starAniseSeed: 25,
+  bloodroseSeed: 28,
+  dragonpepperSeed: 31,
+};
+
+const recipeUnlockRequiredPlayerLevels = {
+  manaTonic: 4,
+  minorHealingPotion: 5,
+  nettleVigor: 6,
+  calmingDraught: 8,
+  briarWard: 10,
+  lanternTonic: 12,
+  simpleAntidote: 14,
+  venomDraught: 16,
+  healingPotion: 18,
+  sunrootStamina: 20,
+  moonlitFocus: 23,
+  frostmossCleanse: 26,
+  sleepDraught: 29,
+  elixirOfLife: 32,
+  starLuckPhiltre: 35,
+  deepDreamVision: 38,
+  pactWard: 41,
+  dragonCourage: 44,
 };
 
 const recipeUnlockOrder = [
@@ -172,6 +210,9 @@ export class ResearchDefinitionManager {
         id: `unlockRecipe:${potion.key}`,
         label: potion.label,
         value: 'brew',
+        ...(recipeUnlockRequiredPlayerLevels[potion.key]
+          ? { requiredPlayerLevel: recipeUnlockRequiredPlayerLevels[potion.key] }
+          : {}),
         ...(previousPotion
           ? { requiredResearchIds: [`unlockRecipe:${previousPotion.key}`] }
           : {}),
@@ -268,6 +309,11 @@ export class ResearchDefinitionManager {
   getAdvancedResearchBoxes({ includeLevelLockedAutomation = false } = {}) {
     return [
       {
+        id: 'fastSell',
+        label: 'fast sell research',
+        researches: this.getFastSellResearches(),
+      },
+      {
         id: 'cauldronBrewing',
         label: 'cauldron brewing research',
         researches: this.getAdvancedSlotResearches({
@@ -293,6 +339,24 @@ export class ResearchDefinitionManager {
         }),
       },
     ];
+  }
+
+  getFastSellResearches() {
+    return Array.from({ length: fastSellResearchMaxLevel }, (_value, index) => {
+      const level = index + 1;
+      const percent = getFastSellPercent(level);
+
+      return {
+        id: fastSellResearchIds.payout(level),
+        label: `fast sell lvl ${level}`,
+        value: `${percent}% payout`,
+        showEffect: true,
+        seriesId: 'fastSell',
+        requiredResearchIds:
+          level > 1 ? [fastSellResearchIds.payout(level - 1)] : [],
+        description: `fast sell pays ${percent}% of npc bulk sell price.`,
+      };
+    });
   }
 
   getAdvancedSlotResearches({ count, getId, seriesId, label, description }) {

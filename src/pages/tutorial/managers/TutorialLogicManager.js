@@ -30,15 +30,25 @@ export class TutorialLogicManager {
     lessonPanelOpen = objectivePanelOpen,
     now = this.getNow(),
   } = {}) {
-    if (dom?.isBlockingDialogOpen?.()) {
+    if ((dom?.isNonSettingsBlockingDialogOpen ?? dom?.isBlockingDialogOpen)?.()) {
       this.activeStep = null;
       this.reminderManager.discardActivePrompt();
       return this.createEmptyState('blocked');
     }
 
     const previousStepId = this.activeStep?.id ?? null;
+    const previousTargetId = this.activeStep?.targetId ?? null;
     const step = this.stepManager.getActiveStep({ snapshot, dom });
-    const isNewStep = previousStepId !== step?.id;
+
+    if (dom?.isBlockingDialogOpenForStep?.(step)) {
+      this.activeStep = null;
+      this.reminderManager.discardActivePrompt();
+      return this.createEmptyState('blocked');
+    }
+
+    const isNewStep =
+      previousStepId !== step?.id ||
+      (step?.id === 'intro-username' && previousTargetId !== step?.targetId);
     this.activeStep = step;
 
     if (!step) {
@@ -48,7 +58,8 @@ export class TutorialLogicManager {
 
     const target = targetResolver(step.targetId);
     const autoOpen = step.cueMode !== 'passive';
-    const panelOpen = Boolean(lessonPanelOpen || (isNewStep && autoOpen));
+    const forceOpen = Boolean(isNewStep && autoOpen);
+    const panelOpen = Boolean(lessonPanelOpen || forceOpen);
     const cue = this.getCueState({
       step,
       target,
@@ -69,6 +80,7 @@ export class TutorialLogicManager {
         progressLabel: step.progressLabel,
         attention: autoOpen || cue.lessonAttention === true,
         autoOpen,
+        forceOpen,
         advanceOnClick: step.advanceOnClick,
         canShowTarget: Boolean(target),
       },

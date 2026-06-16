@@ -4,189 +4,1314 @@
       "level": 1,
       "completionCostGold": 10,
       "tasks": [
-        { "id": "level1-sage-seeds", "itemKey": "sageSeed", "quantity": 10 }
+        {
+          "id": "level1-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 10
+        }
       ]
     },
     {
       "level": 2,
+      "completionCostGold": 40,
       "tasks": [
-        { "id": "level2-sage-seeds", "itemKey": "sageSeed", "quantity": 20 },
-        { "id": "level2-sage-herb", "itemKey": "sageHerb", "quantity": 6 }
+        {
+          "id": "level2-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 20
+        },
+        {
+          "id": "level2-sage-herb",
+          "itemKey": "sageHerb",
+          "quantity": 6
+        }
       ]
     },
     {
       "level": 3,
+      "completionCostGold": 90,
       "tasks": [
-        { "id": "level3-sage-seeds", "itemKey": "sageSeed", "quantity": 40 },
-        { "id": "level3-mint-seeds", "itemKey": "mintSeed", "quantity": 10 },
-        { "id": "level3-mint-herb", "itemKey": "mintHerb", "quantity": 18 }
+        {
+          "id": "level3-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 40
+        },
+        {
+          "id": "level3-mint-seeds",
+          "itemKey": "mintSeed",
+          "quantity": 10
+        },
+        {
+          "id": "level3-mint-herb",
+          "itemKey": "mintHerb",
+          "quantity": 18
+        }
       ]
     },
     {
       "level": 4,
+      "completionCostGold": 160,
       "tasks": [
-        { "id": "level4-sage-herb", "itemKey": "sageHerb", "quantity": 24 },
-        { "id": "level4-mana-tonic", "itemKey": "manaTonic", "quantity": 4 }
+        {
+          "id": "level4-nettle-seeds",
+          "itemKey": "nettleSeed",
+          "quantity": 125
+        },
+        {
+          "id": "level4-nettle-herb",
+          "itemKey": "nettleHerb",
+          "quantity": 80
+        },
+        {
+          "id": "level4-sage-herb",
+          "itemKey": "sageHerb",
+          "quantity": 24
+        },
+        {
+          "id": "level4-mana-tonic",
+          "itemKey": "manaTonic",
+          "quantity": 4
+        }
       ]
     },
     {
       "level": 5,
+      "completionCostGold": 250,
       "tasks": [
-        { "id": "level5-sage-seeds", "itemKey": "sageSeed", "quantity": 120 },
-        { "id": "level5-mint-seeds", "itemKey": "mintSeed", "quantity": 90 },
-        { "id": "level5-sage-herb", "itemKey": "sageHerb", "quantity": 80 },
-        { "id": "level5-mint-herb", "itemKey": "mintHerb", "quantity": 60 },
-        { "id": "level5-mana-tonic", "itemKey": "manaTonic", "quantity": 12 }
+        {
+          "id": "level5-nettle-seeds",
+          "itemKey": "nettleSeed",
+          "quantity": 160
+        },
+        {
+          "id": "level5-lavender-seeds",
+          "itemKey": "lavenderSeed",
+          "quantity": 175
+        },
+        {
+          "id": "level5-lavender-herb",
+          "itemKey": "lavenderHerb",
+          "quantity": 100
+        },
+        {
+          "id": "level5-minor-healing-potion",
+          "itemKey": "minorHealingPotion",
+          "quantity": 12
+        },
+        {
+          "id": "level5-mana-tonic",
+          "itemKey": "manaTonic",
+          "quantity": 11
+        }
       ]
     },
     {
       "level": 6,
+      "completionCostGold": 360,
       "tasks": [
-        { "id": "level6-nettle-seeds", "itemKey": "nettleSeed", "quantity": 130 },
-        { "id": "level6-nettle-herb", "itemKey": "nettleHerb", "quantity": 70 },
-        { "id": "level6-minor-healing-potion", "itemKey": "minorHealingPotion", "quantity": 12 },
-        { "id": "level6-nettle-vigor", "itemKey": "nettleVigor", "quantity": 8 },
-        { "id": "level6-lavender-seeds", "itemKey": "lavenderSeed", "quantity": 80 }
+        {
+          "id": "level6-nettle-vigor",
+          "itemKey": "nettleVigor",
+          "quantity": 14
+        },
+        {
+          "id": "level6-lavender-seeds",
+          "itemKey": "lavenderSeed",
+          "quantity": 190
+        },
+        {
+          "id": "level6-lavender-herb",
+          "itemKey": "lavenderHerb",
+          "quantity": 110
+        },
+        {
+          "id": "level6-minor-healing-potion",
+          "itemKey": "minorHealingPotion",
+          "quantity": 13
+        },
+        {
+          "id": "level6-nettle-seeds",
+          "itemKey": "nettleSeed",
+          "quantity": 180
+        }
       ]
     },
     {
       "level": 7,
+      "completionCostGold": 490,
       "tasks": [
-        { "id": "level7-lavender-herb", "itemKey": "lavenderHerb", "quantity": 80 },
-        { "id": "level7-briar-seeds", "itemKey": "briarSeed", "quantity": 120 },
-        { "id": "level7-calming-draught", "itemKey": "calmingDraught", "quantity": 14 },
-        { "id": "level7-briar-ward", "itemKey": "briarWard", "quantity": 10 },
-        { "id": "level7-glowcap-seeds", "itemKey": "glowcapSeed", "quantity": 90 }
+        {
+          "id": "level7-lavender-seeds",
+          "itemKey": "lavenderSeed",
+          "quantity": 210
+        },
+        {
+          "id": "level7-briar-seeds",
+          "itemKey": "briarSeed",
+          "quantity": 220
+        },
+        {
+          "id": "level7-briar-herb",
+          "itemKey": "briarHerb",
+          "quantity": 130
+        },
+        {
+          "id": "level7-nettle-vigor",
+          "itemKey": "nettleVigor",
+          "quantity": 15
+        },
+        {
+          "id": "level7-minor-healing-potion",
+          "itemKey": "minorHealingPotion",
+          "quantity": 14
+        }
       ]
     },
     {
       "level": 8,
+      "completionCostGold": 640,
       "tasks": [
-        { "id": "level8-glowcap-herb", "itemKey": "glowcapHerb", "quantity": 70 },
-        { "id": "level8-lantern-tonic", "itemKey": "lanternTonic", "quantity": 12 },
-        { "id": "level8-simple-antidote", "itemKey": "simpleAntidote", "quantity": 10 },
-        { "id": "level8-mandrake-seeds", "itemKey": "mandrakeSeed", "quantity": 135 },
-        { "id": "level8-mandrake-herb", "itemKey": "mandrakeHerb", "quantity": 55 }
+        {
+          "id": "level8-calming-draught",
+          "itemKey": "calmingDraught",
+          "quantity": 18
+        },
+        {
+          "id": "level8-briar-seeds",
+          "itemKey": "briarSeed",
+          "quantity": 240
+        },
+        {
+          "id": "level8-briar-herb",
+          "itemKey": "briarHerb",
+          "quantity": 140
+        },
+        {
+          "id": "level8-nettle-vigor",
+          "itemKey": "nettleVigor",
+          "quantity": 17
+        },
+        {
+          "id": "level8-lavender-seeds",
+          "itemKey": "lavenderSeed",
+          "quantity": 225
+        }
       ]
     },
     {
       "level": 9,
+      "completionCostGold": 810,
       "tasks": [
-        { "id": "level9-venom-draught", "itemKey": "venomDraught", "quantity": 20 },
-        { "id": "level9-healing-potion", "itemKey": "healingPotion", "quantity": 22 },
-        { "id": "level9-sunroot-seeds", "itemKey": "sunrootSeed", "quantity": 180 },
-        { "id": "level9-sunroot-herb", "itemKey": "sunrootHerb", "quantity": 125 },
-        { "id": "level9-moonflower-seeds", "itemKey": "moonflowerSeed", "quantity": 160 }
+        {
+          "id": "level9-briar-seeds",
+          "itemKey": "briarSeed",
+          "quantity": 255
+        },
+        {
+          "id": "level9-glowcap-seeds",
+          "itemKey": "glowcapSeed",
+          "quantity": 270
+        },
+        {
+          "id": "level9-glowcap-herb",
+          "itemKey": "glowcapHerb",
+          "quantity": 160
+        },
+        {
+          "id": "level9-calming-draught",
+          "itemKey": "calmingDraught",
+          "quantity": 19
+        },
+        {
+          "id": "level9-nettle-vigor",
+          "itemKey": "nettleVigor",
+          "quantity": 18
+        }
       ]
     },
     {
       "level": 10,
+      "completionCostGold": 1000,
       "tasks": [
-        { "id": "level10-moonflower-herb", "itemKey": "moonflowerHerb", "quantity": 150 },
-        { "id": "level10-sunroot-stamina", "itemKey": "sunrootStamina", "quantity": 20 },
-        { "id": "level10-moonlit-focus", "itemKey": "moonlitFocus", "quantity": 22 },
-        { "id": "level10-frostmoss-seeds", "itemKey": "frostmossSeed", "quantity": 210 },
-        { "id": "level10-frostmoss-herb", "itemKey": "frostmossHerb", "quantity": 110 }
+        {
+          "id": "level10-briar-ward",
+          "itemKey": "briarWard",
+          "quantity": 21
+        },
+        {
+          "id": "level10-glowcap-seeds",
+          "itemKey": "glowcapSeed",
+          "quantity": 285
+        },
+        {
+          "id": "level10-glowcap-herb",
+          "itemKey": "glowcapHerb",
+          "quantity": 170
+        },
+        {
+          "id": "level10-calming-draught",
+          "itemKey": "calmingDraught",
+          "quantity": 20
+        },
+        {
+          "id": "level10-briar-seeds",
+          "itemKey": "briarSeed",
+          "quantity": 275
+        }
       ]
     },
     {
       "level": 11,
+      "completionCostGold": 1210,
       "tasks": [
-        { "id": "level11-frostmoss-cleanse", "itemKey": "frostmossCleanse", "quantity": 22 },
-        { "id": "level11-dreambell-seeds", "itemKey": "dreambellSeed", "quantity": 230 },
-        { "id": "level11-dreambell-herb", "itemKey": "dreambellHerb", "quantity": 135 },
-        { "id": "level11-sleep-draught", "itemKey": "sleepDraught", "quantity": 20 },
-        { "id": "level11-star-anise-seeds", "itemKey": "starAniseSeed", "quantity": 190 }
+        {
+          "id": "level11-glowcap-seeds",
+          "itemKey": "glowcapSeed",
+          "quantity": 305
+        },
+        {
+          "id": "level11-mandrake-seeds",
+          "itemKey": "mandrakeSeed",
+          "quantity": 315
+        },
+        {
+          "id": "level11-mandrake-herb",
+          "itemKey": "mandrakeHerb",
+          "quantity": 190
+        },
+        {
+          "id": "level11-briar-ward",
+          "itemKey": "briarWard",
+          "quantity": 22
+        },
+        {
+          "id": "level11-calming-draught",
+          "itemKey": "calmingDraught",
+          "quantity": 21
+        }
       ]
     },
     {
       "level": 12,
+      "completionCostGold": 1440,
       "tasks": [
-        { "id": "level12-star-anise-herb", "itemKey": "starAniseHerb", "quantity": 170 },
-        { "id": "level12-elixir-of-life", "itemKey": "elixirOfLife", "quantity": 20 },
-        { "id": "level12-star-luck-philtre", "itemKey": "starLuckPhiltre", "quantity": 22 },
-        { "id": "level12-bloodrose-seeds", "itemKey": "bloodroseSeed", "quantity": 250 },
-        { "id": "level12-bloodrose-herb", "itemKey": "bloodroseHerb", "quantity": 140 }
+        {
+          "id": "level12-lantern-tonic",
+          "itemKey": "lanternTonic",
+          "quantity": 25
+        },
+        {
+          "id": "level12-mandrake-seeds",
+          "itemKey": "mandrakeSeed",
+          "quantity": 335
+        },
+        {
+          "id": "level12-mandrake-herb",
+          "itemKey": "mandrakeHerb",
+          "quantity": 200
+        },
+        {
+          "id": "level12-briar-ward",
+          "itemKey": "briarWard",
+          "quantity": 23
+        },
+        {
+          "id": "level12-glowcap-seeds",
+          "itemKey": "glowcapSeed",
+          "quantity": 325
+        }
       ]
     },
     {
       "level": 13,
+      "completionCostGold": 1690,
       "tasks": [
-        { "id": "level13-bloodrose-seeds", "itemKey": "bloodroseSeed", "quantity": 280 },
-        { "id": "level13-bloodrose-herb", "itemKey": "bloodroseHerb", "quantity": 180 },
-        { "id": "level13-deep-dream-vision", "itemKey": "deepDreamVision", "quantity": 24 },
-        { "id": "level13-pact-ward", "itemKey": "pactWard", "quantity": 24 },
-        { "id": "level13-dragonpepper-seeds", "itemKey": "dragonpepperSeed", "quantity": 260 }
+        {
+          "id": "level13-mandrake-seeds",
+          "itemKey": "mandrakeSeed",
+          "quantity": 355
+        },
+        {
+          "id": "level13-sunroot-seeds",
+          "itemKey": "sunrootSeed",
+          "quantity": 365
+        },
+        {
+          "id": "level13-sunroot-herb",
+          "itemKey": "sunrootHerb",
+          "quantity": 220
+        },
+        {
+          "id": "level13-lantern-tonic",
+          "itemKey": "lanternTonic",
+          "quantity": 26
+        },
+        {
+          "id": "level13-briar-ward",
+          "itemKey": "briarWard",
+          "quantity": 25
+        }
       ]
     },
     {
       "level": 14,
+      "completionCostGold": 1960,
       "tasks": [
-        { "id": "level14-moonflower-seeds", "itemKey": "moonflowerSeed", "quantity": 330 },
-        { "id": "level14-frostmoss-herb", "itemKey": "frostmossHerb", "quantity": 230 },
-        { "id": "level14-dragonpepper-herb", "itemKey": "dragonpepperHerb", "quantity": 220 },
-        { "id": "level14-dragon-courage", "itemKey": "dragonCourage", "quantity": 28 },
-        { "id": "level14-frostmoss-cleanse", "itemKey": "frostmossCleanse", "quantity": 40 }
+        {
+          "id": "level14-simple-antidote",
+          "itemKey": "simpleAntidote",
+          "quantity": 28
+        },
+        {
+          "id": "level14-sunroot-seeds",
+          "itemKey": "sunrootSeed",
+          "quantity": 385
+        },
+        {
+          "id": "level14-sunroot-herb",
+          "itemKey": "sunrootHerb",
+          "quantity": 230
+        },
+        {
+          "id": "level14-lantern-tonic",
+          "itemKey": "lanternTonic",
+          "quantity": 27
+        },
+        {
+          "id": "level14-mandrake-seeds",
+          "itemKey": "mandrakeSeed",
+          "quantity": 370
+        }
       ]
     },
     {
       "level": 15,
+      "completionCostGold": 2250,
       "tasks": [
-        { "id": "level15-star-anise-seeds", "itemKey": "starAniseSeed", "quantity": 320 },
-        { "id": "level15-bloodrose-herb", "itemKey": "bloodroseHerb", "quantity": 220 },
-        { "id": "level15-star-luck-philtre", "itemKey": "starLuckPhiltre", "quantity": 36 },
-        { "id": "level15-pact-ward", "itemKey": "pactWard", "quantity": 32 },
-        { "id": "level15-elixir-of-life", "itemKey": "elixirOfLife", "quantity": 36 }
+        {
+          "id": "level15-sunroot-seeds",
+          "itemKey": "sunrootSeed",
+          "quantity": 400
+        },
+        {
+          "id": "level15-sunroot-herb",
+          "itemKey": "sunrootHerb",
+          "quantity": 240
+        },
+        {
+          "id": "level15-simple-antidote",
+          "itemKey": "simpleAntidote",
+          "quantity": 29
+        },
+        {
+          "id": "level15-lantern-tonic",
+          "itemKey": "lanternTonic",
+          "quantity": 28
+        },
+        {
+          "id": "level15-mandrake-seeds",
+          "itemKey": "mandrakeSeed",
+          "quantity": 390
+        }
       ]
     },
     {
       "level": 16,
+      "completionCostGold": 2560,
       "tasks": [
-        { "id": "level16-dragonpepper-seeds", "itemKey": "dragonpepperSeed", "quantity": 350 },
-        { "id": "level16-dragonpepper-herb", "itemKey": "dragonpepperHerb", "quantity": 240 },
-        { "id": "level16-dragon-courage", "itemKey": "dragonCourage", "quantity": 34 },
-        { "id": "level16-sunroot-stamina", "itemKey": "sunrootStamina", "quantity": 40 },
-        { "id": "level16-pact-ward", "itemKey": "pactWard", "quantity": 36 }
+        {
+          "id": "level16-sunroot-seeds",
+          "itemKey": "sunrootSeed",
+          "quantity": 420
+        },
+        {
+          "id": "level16-moonflower-seeds",
+          "itemKey": "moonflowerSeed",
+          "quantity": 430
+        },
+        {
+          "id": "level16-moonflower-herb",
+          "itemKey": "moonflowerHerb",
+          "quantity": 255
+        },
+        {
+          "id": "level16-venom-draught",
+          "itemKey": "venomDraught",
+          "quantity": 32
+        },
+        {
+          "id": "level16-simple-antidote",
+          "itemKey": "simpleAntidote",
+          "quantity": 30
+        }
       ]
     },
     {
       "level": 17,
+      "completionCostGold": 2890,
       "tasks": [
-        { "id": "level17-lavender-herb", "itemKey": "lavenderHerb", "quantity": 280 },
-        { "id": "level17-briar-herb", "itemKey": "briarHerb", "quantity": 260 },
-        { "id": "level17-calming-draught", "itemKey": "calmingDraught", "quantity": 52 },
-        { "id": "level17-briar-ward", "itemKey": "briarWard", "quantity": 50 },
-        { "id": "level17-simple-antidote", "itemKey": "simpleAntidote", "quantity": 48 }
+        {
+          "id": "level17-moonflower-seeds",
+          "itemKey": "moonflowerSeed",
+          "quantity": 450
+        },
+        {
+          "id": "level17-moonflower-herb",
+          "itemKey": "moonflowerHerb",
+          "quantity": 265
+        },
+        {
+          "id": "level17-venom-draught",
+          "itemKey": "venomDraught",
+          "quantity": 33
+        },
+        {
+          "id": "level17-simple-antidote",
+          "itemKey": "simpleAntidote",
+          "quantity": 31
+        },
+        {
+          "id": "level17-sunroot-seeds",
+          "itemKey": "sunrootSeed",
+          "quantity": 435
+        }
       ]
     },
     {
       "level": 18,
+      "completionCostGold": 3240,
       "tasks": [
-        { "id": "level18-moonflower-herb", "itemKey": "moonflowerHerb", "quantity": 290 },
-        { "id": "level18-frostmoss-herb", "itemKey": "frostmossHerb", "quantity": 280 },
-        { "id": "level18-sleep-draught", "itemKey": "sleepDraught", "quantity": 46 },
-        { "id": "level18-frostmoss-cleanse", "itemKey": "frostmossCleanse", "quantity": 48 },
-        { "id": "level18-deep-dream-vision", "itemKey": "deepDreamVision", "quantity": 36 }
+        {
+          "id": "level18-healing-potion",
+          "itemKey": "healingPotion",
+          "quantity": 35
+        },
+        {
+          "id": "level18-moonflower-seeds",
+          "itemKey": "moonflowerSeed",
+          "quantity": 465
+        },
+        {
+          "id": "level18-moonflower-herb",
+          "itemKey": "moonflowerHerb",
+          "quantity": 275
+        },
+        {
+          "id": "level18-venom-draught",
+          "itemKey": "venomDraught",
+          "quantity": 34
+        },
+        {
+          "id": "level18-sunroot-seeds",
+          "itemKey": "sunrootSeed",
+          "quantity": 455
+        }
       ]
     },
     {
       "level": 19,
+      "completionCostGold": 3610,
       "tasks": [
-        { "id": "level19-bloodrose-seeds", "itemKey": "bloodroseSeed", "quantity": 430 },
-        { "id": "level19-star-anise-herb", "itemKey": "starAniseHerb", "quantity": 310 },
-        { "id": "level19-dragon-courage", "itemKey": "dragonCourage", "quantity": 46 },
-        { "id": "level19-deep-dream-vision", "itemKey": "deepDreamVision", "quantity": 44 },
-        { "id": "level19-pact-ward", "itemKey": "pactWard", "quantity": 46 }
+        {
+          "id": "level19-moonflower-seeds",
+          "itemKey": "moonflowerSeed",
+          "quantity": 485
+        },
+        {
+          "id": "level19-frostmoss-seeds",
+          "itemKey": "frostmossSeed",
+          "quantity": 495
+        },
+        {
+          "id": "level19-frostmoss-herb",
+          "itemKey": "frostmossHerb",
+          "quantity": 295
+        },
+        {
+          "id": "level19-healing-potion",
+          "itemKey": "healingPotion",
+          "quantity": 36
+        },
+        {
+          "id": "level19-venom-draught",
+          "itemKey": "venomDraught",
+          "quantity": 35
+        }
       ]
     },
     {
       "level": 20,
+      "completionCostGold": 4000,
       "tasks": [
-        { "id": "level20-dragonpepper-seeds", "itemKey": "dragonpepperSeed", "quantity": 500 },
-        { "id": "level20-dragonpepper-herb", "itemKey": "dragonpepperHerb", "quantity": 360 },
-        { "id": "level20-dragon-courage", "itemKey": "dragonCourage", "quantity": 60 },
-        { "id": "level20-pact-ward", "itemKey": "pactWard", "quantity": 52 },
-        { "id": "level20-deep-dream-vision", "itemKey": "deepDreamVision", "quantity": 52 }
+        {
+          "id": "level20-sunroot-stamina",
+          "itemKey": "sunrootStamina",
+          "quantity": 39
+        },
+        {
+          "id": "level20-frostmoss-seeds",
+          "itemKey": "frostmossSeed",
+          "quantity": 515
+        },
+        {
+          "id": "level20-frostmoss-herb",
+          "itemKey": "frostmossHerb",
+          "quantity": 305
+        },
+        {
+          "id": "level20-healing-potion",
+          "itemKey": "healingPotion",
+          "quantity": 37
+        },
+        {
+          "id": "level20-moonflower-seeds",
+          "itemKey": "moonflowerSeed",
+          "quantity": 505
+        }
+      ]
+    },
+    {
+      "level": 21,
+      "completionCostGold": 4410,
+      "tasks": [
+        {
+          "id": "level21-frostmoss-seeds",
+          "itemKey": "frostmossSeed",
+          "quantity": 535
+        },
+        {
+          "id": "level21-frostmoss-herb",
+          "itemKey": "frostmossHerb",
+          "quantity": 315
+        },
+        {
+          "id": "level21-sunroot-stamina",
+          "itemKey": "sunrootStamina",
+          "quantity": 40
+        },
+        {
+          "id": "level21-healing-potion",
+          "itemKey": "healingPotion",
+          "quantity": 38
+        },
+        {
+          "id": "level21-moonflower-seeds",
+          "itemKey": "moonflowerSeed",
+          "quantity": 520
+        }
+      ]
+    },
+    {
+      "level": 22,
+      "completionCostGold": 4840,
+      "tasks": [
+        {
+          "id": "level22-frostmoss-seeds",
+          "itemKey": "frostmossSeed",
+          "quantity": 550
+        },
+        {
+          "id": "level22-dreambell-seeds",
+          "itemKey": "dreambellSeed",
+          "quantity": 565
+        },
+        {
+          "id": "level22-dreambell-herb",
+          "itemKey": "dreambellHerb",
+          "quantity": 335
+        },
+        {
+          "id": "level22-sunroot-stamina",
+          "itemKey": "sunrootStamina",
+          "quantity": 41
+        },
+        {
+          "id": "level22-healing-potion",
+          "itemKey": "healingPotion",
+          "quantity": 39
+        }
+      ]
+    },
+    {
+      "level": 23,
+      "completionCostGold": 5290,
+      "tasks": [
+        {
+          "id": "level23-moonlit-focus",
+          "itemKey": "moonlitFocus",
+          "quantity": 43
+        },
+        {
+          "id": "level23-dreambell-seeds",
+          "itemKey": "dreambellSeed",
+          "quantity": 580
+        },
+        {
+          "id": "level23-dreambell-herb",
+          "itemKey": "dreambellHerb",
+          "quantity": 345
+        },
+        {
+          "id": "level23-sunroot-stamina",
+          "itemKey": "sunrootStamina",
+          "quantity": 42
+        },
+        {
+          "id": "level23-frostmoss-seeds",
+          "itemKey": "frostmossSeed",
+          "quantity": 570
+        }
+      ]
+    },
+    {
+      "level": 24,
+      "completionCostGold": 5760,
+      "tasks": [
+        {
+          "id": "level24-dreambell-seeds",
+          "itemKey": "dreambellSeed",
+          "quantity": 600
+        },
+        {
+          "id": "level24-dreambell-herb",
+          "itemKey": "dreambellHerb",
+          "quantity": 355
+        },
+        {
+          "id": "level24-moonlit-focus",
+          "itemKey": "moonlitFocus",
+          "quantity": 44
+        },
+        {
+          "id": "level24-sunroot-stamina",
+          "itemKey": "sunrootStamina",
+          "quantity": 43
+        },
+        {
+          "id": "level24-frostmoss-seeds",
+          "itemKey": "frostmossSeed",
+          "quantity": 585
+        }
+      ]
+    },
+    {
+      "level": 25,
+      "completionCostGold": 6250,
+      "tasks": [
+        {
+          "id": "level25-dreambell-seeds",
+          "itemKey": "dreambellSeed",
+          "quantity": 615
+        },
+        {
+          "id": "level25-star-anise-seeds",
+          "itemKey": "starAniseSeed",
+          "quantity": 630
+        },
+        {
+          "id": "level25-star-anise-herb",
+          "itemKey": "starAniseHerb",
+          "quantity": 375
+        },
+        {
+          "id": "level25-moonlit-focus",
+          "itemKey": "moonlitFocus",
+          "quantity": 45
+        },
+        {
+          "id": "level25-sunroot-stamina",
+          "itemKey": "sunrootStamina",
+          "quantity": 44
+        }
+      ]
+    },
+    {
+      "level": 26,
+      "completionCostGold": 6760,
+      "tasks": [
+        {
+          "id": "level26-frostmoss-cleanse",
+          "itemKey": "frostmossCleanse",
+          "quantity": 48
+        },
+        {
+          "id": "level26-star-anise-seeds",
+          "itemKey": "starAniseSeed",
+          "quantity": 645
+        },
+        {
+          "id": "level26-star-anise-herb",
+          "itemKey": "starAniseHerb",
+          "quantity": 385
+        },
+        {
+          "id": "level26-moonlit-focus",
+          "itemKey": "moonlitFocus",
+          "quantity": 46
+        },
+        {
+          "id": "level26-dreambell-seeds",
+          "itemKey": "dreambellSeed",
+          "quantity": 635
+        }
+      ]
+    },
+    {
+      "level": 27,
+      "completionCostGold": 7290,
+      "tasks": [
+        {
+          "id": "level27-star-anise-seeds",
+          "itemKey": "starAniseSeed",
+          "quantity": 665
+        },
+        {
+          "id": "level27-star-anise-herb",
+          "itemKey": "starAniseHerb",
+          "quantity": 395
+        },
+        {
+          "id": "level27-frostmoss-cleanse",
+          "itemKey": "frostmossCleanse",
+          "quantity": 49
+        },
+        {
+          "id": "level27-moonlit-focus",
+          "itemKey": "moonlitFocus",
+          "quantity": 47
+        },
+        {
+          "id": "level27-dreambell-seeds",
+          "itemKey": "dreambellSeed",
+          "quantity": 655
+        }
+      ]
+    },
+    {
+      "level": 28,
+      "completionCostGold": 7840,
+      "tasks": [
+        {
+          "id": "level28-star-anise-seeds",
+          "itemKey": "starAniseSeed",
+          "quantity": 685
+        },
+        {
+          "id": "level28-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 695
+        },
+        {
+          "id": "level28-bloodrose-herb",
+          "itemKey": "bloodroseHerb",
+          "quantity": 415
+        },
+        {
+          "id": "level28-frostmoss-cleanse",
+          "itemKey": "frostmossCleanse",
+          "quantity": 50
+        },
+        {
+          "id": "level28-moonlit-focus",
+          "itemKey": "moonlitFocus",
+          "quantity": 49
+        }
+      ]
+    },
+    {
+      "level": 29,
+      "completionCostGold": 8410,
+      "tasks": [
+        {
+          "id": "level29-sleep-draught",
+          "itemKey": "sleepDraught",
+          "quantity": 52
+        },
+        {
+          "id": "level29-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 715
+        },
+        {
+          "id": "level29-bloodrose-herb",
+          "itemKey": "bloodroseHerb",
+          "quantity": 425
+        },
+        {
+          "id": "level29-frostmoss-cleanse",
+          "itemKey": "frostmossCleanse",
+          "quantity": 51
+        },
+        {
+          "id": "level29-star-anise-seeds",
+          "itemKey": "starAniseSeed",
+          "quantity": 700
+        }
+      ]
+    },
+    {
+      "level": 30,
+      "completionCostGold": 9000,
+      "tasks": [
+        {
+          "id": "level30-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 730
+        },
+        {
+          "id": "level30-bloodrose-herb",
+          "itemKey": "bloodroseHerb",
+          "quantity": 435
+        },
+        {
+          "id": "level30-sleep-draught",
+          "itemKey": "sleepDraught",
+          "quantity": 53
+        },
+        {
+          "id": "level30-frostmoss-cleanse",
+          "itemKey": "frostmossCleanse",
+          "quantity": 52
+        },
+        {
+          "id": "level30-star-anise-seeds",
+          "itemKey": "starAniseSeed",
+          "quantity": 720
+        }
+      ]
+    },
+    {
+      "level": 31,
+      "completionCostGold": 9610,
+      "tasks": [
+        {
+          "id": "level31-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 750
+        },
+        {
+          "id": "level31-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 760
+        },
+        {
+          "id": "level31-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 450
+        },
+        {
+          "id": "level31-sleep-draught",
+          "itemKey": "sleepDraught",
+          "quantity": 54
+        },
+        {
+          "id": "level31-frostmoss-cleanse",
+          "itemKey": "frostmossCleanse",
+          "quantity": 53
+        }
+      ]
+    },
+    {
+      "level": 32,
+      "completionCostGold": 10240,
+      "tasks": [
+        {
+          "id": "level32-elixir-of-life",
+          "itemKey": "elixirOfLife",
+          "quantity": 57
+        },
+        {
+          "id": "level32-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 780
+        },
+        {
+          "id": "level32-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 460
+        },
+        {
+          "id": "level32-sleep-draught",
+          "itemKey": "sleepDraught",
+          "quantity": 55
+        },
+        {
+          "id": "level32-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 765
+        }
+      ]
+    },
+    {
+      "level": 33,
+      "completionCostGold": 10890,
+      "tasks": [
+        {
+          "id": "level33-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 795
+        },
+        {
+          "id": "level33-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 470
+        },
+        {
+          "id": "level33-elixir-of-life",
+          "itemKey": "elixirOfLife",
+          "quantity": 58
+        },
+        {
+          "id": "level33-sleep-draught",
+          "itemKey": "sleepDraught",
+          "quantity": 57
+        },
+        {
+          "id": "level33-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 785
+        }
+      ]
+    },
+    {
+      "level": 34,
+      "completionCostGold": 11560,
+      "tasks": [
+        {
+          "id": "level34-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 815
+        },
+        {
+          "id": "level34-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 480
+        },
+        {
+          "id": "level34-elixir-of-life",
+          "itemKey": "elixirOfLife",
+          "quantity": 59
+        },
+        {
+          "id": "level34-sleep-draught",
+          "itemKey": "sleepDraught",
+          "quantity": 58
+        },
+        {
+          "id": "level34-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 805
+        }
+      ]
+    },
+    {
+      "level": 35,
+      "completionCostGold": 12250,
+      "tasks": [
+        {
+          "id": "level35-star-luck-philtre",
+          "itemKey": "starLuckPhiltre",
+          "quantity": 61
+        },
+        {
+          "id": "level35-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 835
+        },
+        {
+          "id": "level35-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 490
+        },
+        {
+          "id": "level35-elixir-of-life",
+          "itemKey": "elixirOfLife",
+          "quantity": 60
+        },
+        {
+          "id": "level35-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 820
+        }
+      ]
+    },
+    {
+      "level": 36,
+      "completionCostGold": 12960,
+      "tasks": [
+        {
+          "id": "level36-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 850
+        },
+        {
+          "id": "level36-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 500
+        },
+        {
+          "id": "level36-star-luck-philtre",
+          "itemKey": "starLuckPhiltre",
+          "quantity": 62
+        },
+        {
+          "id": "level36-elixir-of-life",
+          "itemKey": "elixirOfLife",
+          "quantity": 61
+        },
+        {
+          "id": "level36-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 840
+        }
+      ]
+    },
+    {
+      "level": 37,
+      "completionCostGold": 13690,
+      "tasks": [
+        {
+          "id": "level37-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 870
+        },
+        {
+          "id": "level37-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 510
+        },
+        {
+          "id": "level37-star-luck-philtre",
+          "itemKey": "starLuckPhiltre",
+          "quantity": 63
+        },
+        {
+          "id": "level37-elixir-of-life",
+          "itemKey": "elixirOfLife",
+          "quantity": 62
+        },
+        {
+          "id": "level37-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 855
+        }
+      ]
+    },
+    {
+      "level": 38,
+      "completionCostGold": 14440,
+      "tasks": [
+        {
+          "id": "level38-deep-dream-vision",
+          "itemKey": "deepDreamVision",
+          "quantity": 66
+        },
+        {
+          "id": "level38-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 885
+        },
+        {
+          "id": "level38-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 520
+        },
+        {
+          "id": "level38-star-luck-philtre",
+          "itemKey": "starLuckPhiltre",
+          "quantity": 65
+        },
+        {
+          "id": "level38-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 875
+        }
+      ]
+    },
+    {
+      "level": 39,
+      "completionCostGold": 15210,
+      "tasks": [
+        {
+          "id": "level39-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 905
+        },
+        {
+          "id": "level39-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 530
+        },
+        {
+          "id": "level39-deep-dream-vision",
+          "itemKey": "deepDreamVision",
+          "quantity": 67
+        },
+        {
+          "id": "level39-star-luck-philtre",
+          "itemKey": "starLuckPhiltre",
+          "quantity": 66
+        },
+        {
+          "id": "level39-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 895
+        }
+      ]
+    },
+    {
+      "level": 40,
+      "completionCostGold": 16000,
+      "tasks": [
+        {
+          "id": "level40-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 925
+        },
+        {
+          "id": "level40-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 540
+        },
+        {
+          "id": "level40-deep-dream-vision",
+          "itemKey": "deepDreamVision",
+          "quantity": 68
+        },
+        {
+          "id": "level40-star-luck-philtre",
+          "itemKey": "starLuckPhiltre",
+          "quantity": 67
+        },
+        {
+          "id": "level40-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 910
+        }
+      ]
+    },
+    {
+      "level": 41,
+      "completionCostGold": 16810,
+      "tasks": [
+        {
+          "id": "level41-pact-ward",
+          "itemKey": "pactWard",
+          "quantity": 70
+        },
+        {
+          "id": "level41-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 940
+        },
+        {
+          "id": "level41-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 550
+        },
+        {
+          "id": "level41-deep-dream-vision",
+          "itemKey": "deepDreamVision",
+          "quantity": 69
+        },
+        {
+          "id": "level41-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 930
+        }
+      ]
+    },
+    {
+      "level": 42,
+      "completionCostGold": 17640,
+      "tasks": [
+        {
+          "id": "level42-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 960
+        },
+        {
+          "id": "level42-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 560
+        },
+        {
+          "id": "level42-pact-ward",
+          "itemKey": "pactWard",
+          "quantity": 71
+        },
+        {
+          "id": "level42-deep-dream-vision",
+          "itemKey": "deepDreamVision",
+          "quantity": 70
+        },
+        {
+          "id": "level42-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 945
+        }
+      ]
+    },
+    {
+      "level": 43,
+      "completionCostGold": 18490,
+      "tasks": [
+        {
+          "id": "level43-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 975
+        },
+        {
+          "id": "level43-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 570
+        },
+        {
+          "id": "level43-pact-ward",
+          "itemKey": "pactWard",
+          "quantity": 73
+        },
+        {
+          "id": "level43-deep-dream-vision",
+          "itemKey": "deepDreamVision",
+          "quantity": 71
+        },
+        {
+          "id": "level43-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 965
+        }
+      ]
+    },
+    {
+      "level": 44,
+      "completionCostGold": 19360,
+      "tasks": [
+        {
+          "id": "level44-dragon-courage",
+          "itemKey": "dragonCourage",
+          "quantity": 75
+        },
+        {
+          "id": "level44-dragonpepper-seeds",
+          "itemKey": "dragonpepperSeed",
+          "quantity": 995
+        },
+        {
+          "id": "level44-dragonpepper-herb",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 580
+        },
+        {
+          "id": "level44-pact-ward",
+          "itemKey": "pactWard",
+          "quantity": 74
+        },
+        {
+          "id": "level44-bloodrose-seeds",
+          "itemKey": "bloodroseSeed",
+          "quantity": 985
+        }
       ]
     }
   ]

@@ -1110,7 +1110,7 @@ body {
   position: absolute;
   z-index: 3;
   display: block;
-  width: 38px;
+  width: 32px;
   margin: 0;
   opacity: 1;
   pointer-events: none;
@@ -1143,36 +1143,28 @@ body {
 }
 
 .tutorial-layer__pointer[data-placement="top-left"] .tutorial-layer__pointer-image {
-  --tutorial-pointer-push-x: 2px;
-  --tutorial-pointer-push-y: 2px;
-  --tutorial-pointer-soft-x: 1px;
-  --tutorial-pointer-soft-y: 1px;
+  --tutorial-pointer-push-x: 1.25px;
+  --tutorial-pointer-push-y: 1.25px;
 }
 
 .tutorial-layer__pointer[data-placement="top-right"] .tutorial-layer__pointer-image {
-  --tutorial-pointer-push-x: -2px;
-  --tutorial-pointer-push-y: 2px;
-  --tutorial-pointer-soft-x: -1px;
-  --tutorial-pointer-soft-y: 1px;
+  --tutorial-pointer-push-x: -1.25px;
+  --tutorial-pointer-push-y: 1.25px;
 }
 
 .tutorial-layer__pointer[data-placement="bottom-left"] .tutorial-layer__pointer-image {
-  --tutorial-pointer-push-x: 2px;
-  --tutorial-pointer-push-y: -2px;
-  --tutorial-pointer-soft-x: 1px;
-  --tutorial-pointer-soft-y: -1px;
+  --tutorial-pointer-push-x: 1.25px;
+  --tutorial-pointer-push-y: -1.25px;
 }
 
 .tutorial-layer__pointer[data-placement="bottom-right"] .tutorial-layer__pointer-image {
-  --tutorial-pointer-push-x: -2px;
-  --tutorial-pointer-push-y: -2px;
-  --tutorial-pointer-soft-x: -1px;
-  --tutorial-pointer-soft-y: -1px;
+  --tutorial-pointer-push-x: -1.25px;
+  --tutorial-pointer-push-y: -1.25px;
 }
 
 .tutorial-layer__pointer[data-placement] .tutorial-layer__pointer-image {
-  animation: tutorial-pointer-point 2200ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
-  will-change: margin;
+  animation: tutorial-pointer-point 2600ms cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  will-change: translate;
 }
 
 .tutorial-layer__pointer.is-hiding[data-placement] .tutorial-layer__pointer-image {
@@ -1490,27 +1482,14 @@ body {
 
 @keyframes tutorial-pointer-point {
   0%,
-  14%,
-  72%,
+  18%,
+  76%,
   100% {
-    margin-top: 0;
-    margin-left: 0;
+    translate: 0 0;
   }
 
-  30% {
-    margin-top: var(--tutorial-pointer-soft-y);
-    margin-left: var(--tutorial-pointer-soft-x);
-  }
-
-  42%,
-  48% {
-    margin-top: var(--tutorial-pointer-push-y);
-    margin-left: var(--tutorial-pointer-push-x);
-  }
-
-  62% {
-    margin-top: var(--tutorial-pointer-soft-y);
-    margin-left: var(--tutorial-pointer-soft-x);
+  46% {
+    translate: var(--tutorial-pointer-push-x) var(--tutorial-pointer-push-y);
   }
 }
 
@@ -4399,6 +4378,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__trade-alliance-close,
 .style-button.shop-page__request-close,
 .style-button.shop-page__crystal-support-close,
+.style-button.shop-page__direct-sell-close,
 .style-button.shop-page__stock-buy-close,
 .style-button.room-bottom-panel__lock-close {
   position: absolute;
@@ -4424,6 +4404,7 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__crystal-support-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
+.style-button.shop-page__direct-sell-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]),
 .style-button.room-bottom-panel__lock-close:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
@@ -4672,6 +4653,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__trade-history-popup,
+.shop-page__direct-sell-popup,
 .shop-page__demand-popup,
 .shop-page__crystal-support-popup,
 .shop-page__stock-buy-popup {
@@ -4684,6 +4666,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-popup[hidden],
 .shop-page__request-popup[hidden],
 .shop-page__trade-history-popup[hidden],
+.shop-page__direct-sell-popup[hidden],
 .shop-page__demand-popup[hidden],
 .shop-page__crystal-support-popup[hidden],
 .shop-page__stock-buy-popup[hidden] {
@@ -4697,6 +4680,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-popup-panel,
 .shop-page__request-panel,
 .shop-page__trade-history-panel,
+.shop-page__direct-sell-panel,
 .shop-page__demand-panel {
   position: absolute;
   top: 50%;
@@ -4755,6 +4739,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__trade-history-panel,
+.shop-page__direct-sell-panel,
 .shop-page__demand-panel {
   width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
 }
@@ -4777,6 +4762,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__trade-history-tabs,
+.shop-page__direct-sell-tabs,
 .shop-page__demand-tabs {
   position: relative;
   z-index: 21;
@@ -4800,6 +4786,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-dialog.shop-page__trade-history-dialog,
+.style-dialog.shop-page__direct-sell-dialog,
 .style-dialog.shop-page__demand-dialog {
   position: relative;
   width: 300px;
@@ -4942,6 +4929,18 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
+.shop-page__direct-sell-rows {
+  height: 126px;
+  margin-bottom: 8px;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.shop-page__direct-sell-rows::-webkit-scrollbar {
+  display: none;
+}
+
 .shop-page__trade-history-row {
   padding: 2px 0;
   overflow-wrap: anywhere;
@@ -5062,23 +5061,32 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-buy-row,
+.shop-page__direct-sell-value-row,
 .shop-page__stock-buy-field,
+.shop-page__direct-sell-field,
 .shop-page__stock-buy-action-row,
+.shop-page__direct-sell-action-row,
+.shop-page__direct-sell-status,
 .shop-page__stock-buy-status {
   min-height: var(--style-row-min-height);
   clear: both;
 }
 
 .shop-page__stock-buy-row::after,
+.shop-page__direct-sell-value-row::after,
 .shop-page__stock-buy-field::after,
+.shop-page__direct-sell-field::after,
 .shop-page__stock-buy-action-row::after,
+.shop-page__direct-sell-action-row::after,
+.shop-page__direct-sell-status::after,
 .shop-page__stock-buy-status::after {
   display: block;
   clear: both;
   content: "";
 }
 
-.shop-page__stock-buy-action-row {
+.shop-page__stock-buy-action-row,
+.shop-page__direct-sell-action-row {
   margin-top: 8px;
   text-align: right;
 }
@@ -5139,7 +5147,8 @@ div.workshop-page__discovery-row {
   appearance: none;
 }
 
-.shop-page__stock-buy-field {
+.shop-page__stock-buy-field,
+.shop-page__direct-sell-field {
   margin-top: 5px;
 }
 
@@ -5328,6 +5337,10 @@ div.workshop-page__discovery-row {
 }
 
 .style-box.shop-page__stock {
+  padding-bottom: calc(5px + var(--style-box-border-label-line-height));
+}
+
+.style-box.shop-page__shelf {
   padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
 
@@ -6455,7 +6468,24 @@ div.workshop-page__discovery-row {
   border: 0;
 }
 
-.style-button.shop-page__demand-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__direct-sell-button {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  width: auto;
+  min-width: 0;
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+  border: 0;
+  transform: translateX(-50%);
+}
+
+.style-button.shop-page__demand-button:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.shop-page__direct-sell-button:active:not(:disabled):not([aria-disabled="true"]) {
   background: var(--style-surface);
 }
 
@@ -6504,12 +6534,19 @@ div.workshop-page__discovery-row {
   margin: 0;
 }
 
+.style-button.shop-page__direct-sell-confirm {
+  width: 86px;
+  padding: 1px 5px;
+  margin: 0;
+}
+
 .style-button.shop-page__sell-tab-button,
 .style-button.shop-page__request-tab-button,
 .style-button.shop-page__market-popup-tab-button,
 .style-button.shop-page__market-tab-button,
 .style-button.shop-page__stock-type-button,
 .style-button.shop-page__trade-history-tab-button,
+.style-button.shop-page__direct-sell-tab-button,
 .style-button.shop-page__demand-tab-button {
   flex: 1 1 0;
   width: auto;
@@ -6556,6 +6593,7 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__request-tab-button,
 .style-button.shop-page__market-popup-tab-button,
 .style-button.shop-page__trade-history-tab-button,
+.style-button.shop-page__direct-sell-tab-button,
 .style-button.shop-page__demand-tab-button,
 .style-button.room-top-panel__settings-tab-button,
 .style-button.room-top-panel__level-pager-button {
@@ -6641,6 +6679,7 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__market-tab-button[aria-selected="true"],
 .style-button.shop-page__stock-type-button[aria-selected="true"],
 .style-button.shop-page__trade-history-tab-button[aria-selected="true"],
+.style-button.shop-page__direct-sell-tab-button[aria-selected="true"],
 .style-button.shop-page__demand-tab-button[aria-selected="true"] {
   text-decoration: underline;
 }
@@ -6836,6 +6875,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-popup:not([hidden]),
 .shop-page__request-popup:not([hidden]),
 .shop-page__trade-history-popup:not([hidden]),
+.shop-page__direct-sell-popup:not([hidden]),
 .shop-page__demand-popup:not([hidden]),
 .shop-page__crystal-support-popup:not([hidden]),
 .shop-page__stock-buy-popup:not([hidden]),
@@ -6862,6 +6902,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__request-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__trade-history-popup:not([hidden])) .shop-page,
+.game-stage:has(.shop-page__direct-sell-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__demand-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__crystal-support-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__stock-buy-popup:not([hidden])) .shop-page,
@@ -6902,6 +6943,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
 .shop-page__request-popup:not([hidden]) .shop-page__request-panel,
 .shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel,
+.shop-page__direct-sell-popup:not([hidden]) .shop-page__direct-sell-panel,
 .shop-page__demand-popup:not([hidden]) .shop-page__demand-panel,
 .shop-page__crystal-support-popup:not([hidden]) .shop-page__crystal-support-dialog,
 .shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog,

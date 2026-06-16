@@ -6,13 +6,13 @@ export class TutorialSaleManager {
     this.timeout = null;
   }
 
-  update({ step, snapshot, gameplayFacade, onChange }) {
+  update({ step, snapshot, dom, gameplayFacade, onChange }) {
     if (step?.effect !== 'tutorial-sale') {
       this.cancel();
       return;
     }
 
-    if (this.timeout || !this.canSell(step.sale, snapshot)) {
+    if (this.timeout || !this.canSell(step.sale, snapshot, dom)) {
       return;
     }
 
@@ -33,21 +33,25 @@ export class TutorialSaleManager {
     this.timeout = null;
   }
 
-  canSell(sale = {}, snapshot = {}) {
+  canSell(sale = {}, snapshot = {}, dom = {}) {
     const itemKey = sale.itemKey;
 
     if (!itemKey || this.getGold(snapshot) >= sale.goldTarget) {
       return false;
     }
 
-    if (!this.isSelectedForNpcSale(snapshot, itemKey)) {
+    if (!this.isSelectedForNpcSale(snapshot, itemKey, dom)) {
       return false;
     }
 
     return this.getItemQuantity(snapshot, itemKey) > 0;
   }
 
-  isSelectedForNpcSale(snapshot, itemKey) {
+  isSelectedForNpcSale(snapshot, itemKey, dom = {}) {
+    if (dom.isShopDirectSellItemSelected?.(itemKey)) {
+      return true;
+    }
+
     return (snapshot?.shop?.shelf?.slots ?? []).some(
       (slot) => slot?.unlocked && slot.sellKey === itemKey,
     );

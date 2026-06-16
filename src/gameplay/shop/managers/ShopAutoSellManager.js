@@ -4,6 +4,7 @@ export class ShopAutoSellManager {
     itemsFacade,
     shopBalanceManager,
     shopNpcPriceManager,
+    shopNpcSellQuoteManager,
     shopSellAvailabilityManager,
     shopShelfEntityManager,
     onItemSold,
@@ -12,6 +13,7 @@ export class ShopAutoSellManager {
     this.itemsFacade = itemsFacade;
     this.shopBalanceManager = shopBalanceManager;
     this.shopNpcPriceManager = shopNpcPriceManager;
+    this.shopNpcSellQuoteManager = shopNpcSellQuoteManager;
     this.shopSellAvailabilityManager = shopSellAvailabilityManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
     this.onItemSold = onItemSold;
@@ -31,57 +33,85 @@ export class ShopAutoSellManager {
 
   update(deltaSeconds) {
     const autoSellSeconds = this.shopBalanceManager.getAutoSellSeconds();
-    const slots = this.shopShelfEntityManager.getSlotSnapshots();
+    const activeSlots = this.shopShelfEntityManager
+      .getSlotSnapshots()
+      .filter((slot) => slot.unlocked && slot.sellItemTypeId);
+
+    if (activeSlots.length <= 0) {
+      this.shopShelfEntityManager.setSellProgressSeconds(0);
+      return;
+    }
+
+    let progressSeconds =
+      this.shopShelfEntityManager.getSellProgressSeconds() +
+      (Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0);
+
+    while (progressSeconds >= autoSellSeconds) {
+      const soldAny = this.sellShopCycle(activeSlots);
+
+      if (!soldAny) {
+        progressSeconds = autoSellSeconds;
+        break;
+      }
+
+      progressSeconds -= autoSellSeconds;
+    }
+
+    this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
+  }
+
+  sellShopCycle(slots) {
+    let soldAny = false;
 
     for (const slot of slots) {
-      if (!slot.unlocked || !slot.sellItemTypeId) {
-        continue;
+      if (this.sellSlot(slot)) {
+        soldAny = true;
       }
-
-      const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
-      let progressSeconds =
-        this.shopShelfEntityManager.getSellProgressSeconds(slot.slotNumber) + deltaSeconds;
-
-      while (progressSeconds >= autoSellSeconds) {
-        const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
-
-        if (
-          !Number.isFinite(gold) ||
-          gold <= 0 ||
-          this.shopNpcPriceManager.canSellToNpc?.(item) === false
-        ) {
-          progressSeconds = autoSellSeconds;
-          break;
-        }
-
-        const quantity = this.getBulkSellQuantity(slot.sellItemTypeId);
-
-        if (quantity <= 0 || !this.canSellItem(slot.sellItemTypeId, quantity)) {
-          progressSeconds = autoSellSeconds;
-          break;
-        }
-
-        const soldItem = this.itemsFacade.removeItem(slot.sellItemTypeId, quantity);
-
-        if (!soldItem) {
-          progressSeconds = autoSellSeconds;
-          break;
-        }
-
-        const totalGold = gold * quantity;
-        this.goldFacade.add(totalGold);
-        void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
-        this.onItemSold?.({
-          item,
-          gold: totalGold,
-          quantity,
-          slotNumber: slot.slotNumber,
-        });
-        progressSeconds -= autoSellSeconds;
-      }
-
-      this.shopShelfEntityManager.setSellProgressSeconds(slot.slotNumber, progressSeconds);
     }
+
+    return soldAny;
+  }
+
+  sellSlot(slot) {
+    const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
+    const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
+
+    if (
+      !Number.isFinite(gold) ||
+      gold <= 0 ||
+      this.shopNpcPriceManager.canSellToNpc?.(item) === false
+    ) {
+      return false;
+    }
+
+    const quantity = this.getBulkSellQuantity(slot.sellItemTypeId);
+
+    if (quantity <= 0 || !this.canSellItem(slot.sellItemTypeId, quantity)) {
+      return false;
+    }
+
+    const quote = this.quoteSale(item, quantity, gold);
+
+    if (!quote.ok) {
+      return false;
+    }
+
+    const soldItem = this.itemsFacade.removeItem(slot.sellItemTypeId, quantity);
+
+    if (!soldItem) {
+      return false;
+    }
+
+    const totalGold = quote.totalPriceGold;
+    this.goldFacade.add(totalGold);
+    void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
+    this.onItemSold?.({
+      item,
+      gold: totalGold,
+      quantity,
+      slotNumber: slot.slotNumber,
+    });
+    return true;
   }
 
   getTimerDeltaSeconds(frame = {}) {
@@ -99,11 +129,46 @@ export class ShopAutoSellManager {
       this.shopSellAvailabilityManager?.getAvailableQuantity?.(itemTypeId) ??
       this.itemsFacade?.getItemQuantity?.(itemTypeId) ??
       0;
+    const npcNeed = this.getNpcNeed(itemTypeId);
 
     if (!Number.isFinite(availableQuantity) || availableQuantity <= 0) {
       return 0;
     }
 
-    return Math.max(0, Math.min(10_000, Math.floor(availableQuantity)));
+    return Math.max(0, Math.min(10_000, Math.floor(availableQuantity), npcNeed));
+  }
+
+  getNpcNeed(itemTypeId) {
+    const item = this.itemsFacade.getItemDefinition(itemTypeId);
+
+    if (typeof this.shopNpcPriceManager.getNpcNeed !== 'function') {
+      return 10_000;
+    }
+
+    const need = this.shopNpcPriceManager.getNpcNeed?.(item);
+
+    if (!Number.isFinite(need) || need <= 0) {
+      return 0;
+    }
+
+    return Math.floor(need);
+  }
+
+  quoteSale(item, quantity, fallbackPriceGold) {
+    const quote = this.shopNpcSellQuoteManager?.quoteItem?.({
+      item,
+      quantity,
+    });
+
+    if (quote) {
+      return quote;
+    }
+
+    return {
+      ok: true,
+      quantity,
+      priceGold: fallbackPriceGold,
+      totalPriceGold: fallbackPriceGold * quantity,
+    };
   }
 }

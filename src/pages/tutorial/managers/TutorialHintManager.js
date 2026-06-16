@@ -29,8 +29,8 @@ const PORTRAIT_WIDTH = 70;
 const PORTRAIT_HEIGHT = 91;
 const PORTRAIT_LEFT_GAP = 4;
 const PORTRAIT_BOX_OVERLAP = 0;
-const POINTER_WIDTH = 38;
-const POINTER_HEIGHT = 17;
+const POINTER_WIDTH = 32;
+const POINTER_HEIGHT = 16;
 const POINTER_HALF_EXTENT = Math.ceil((POINTER_WIDTH + POINTER_HEIGHT) * Math.SQRT1_2 * 0.5);
 const POINTER_TARGET_GAP = HINT_GAP;
 const GUIDE_LEFT_BIAS = 6;
@@ -395,6 +395,7 @@ export class TutorialHintManager {
     progressLabel,
     attention = true,
     autoOpen = true,
+    forceOpen = false,
     advanceOnClick = false,
     canShowTarget = false,
     hideTargetCue = true,
@@ -407,6 +408,8 @@ export class TutorialHintManager {
       this.objectiveStepId = id;
       this.objectivePanelOpen = Boolean(autoOpen);
       this.resetTypedText(this.objectiveText);
+    } else if (forceOpen) {
+      this.objectivePanelOpen = true;
     }
 
     const normalizedProgress = this.normalizeProgress(progress);

@@ -21,6 +21,42 @@ const RNG_SEED = 0x1d1e12d;
 const LEVEL_COMPLETION_GOLD_COST_PER_LEVEL = 20;
 const DEFAULT_COMPLETED_RESEARCH_IDS = ['unlockSeed:sageSeed'];
 const PRESTIGE_STEP = 10;
+const SEED_RESEARCH_LEVELS = {
+  "unlockSeed:sageSeed": 1,
+  "unlockSeed:mintSeed": 3,
+  "unlockSeed:nettleSeed": 4,
+  "unlockSeed:lavenderSeed": 5,
+  "unlockSeed:briarSeed": 7,
+  "unlockSeed:glowcapSeed": 9,
+  "unlockSeed:mandrakeSeed": 11,
+  "unlockSeed:sunrootSeed": 13,
+  "unlockSeed:moonflowerSeed": 16,
+  "unlockSeed:frostmossSeed": 19,
+  "unlockSeed:dreambellSeed": 22,
+  "unlockSeed:starAniseSeed": 25,
+  "unlockSeed:bloodroseSeed": 28,
+  "unlockSeed:dragonpepperSeed": 31
+};
+const RECIPE_RESEARCH_LEVELS = {
+  "unlockRecipe:manaTonic": 4,
+  "unlockRecipe:minorHealingPotion": 5,
+  "unlockRecipe:nettleVigor": 6,
+  "unlockRecipe:calmingDraught": 8,
+  "unlockRecipe:briarWard": 10,
+  "unlockRecipe:lanternTonic": 12,
+  "unlockRecipe:simpleAntidote": 14,
+  "unlockRecipe:venomDraught": 16,
+  "unlockRecipe:healingPotion": 18,
+  "unlockRecipe:sunrootStamina": 20,
+  "unlockRecipe:moonlitFocus": 23,
+  "unlockRecipe:frostmossCleanse": 26,
+  "unlockRecipe:sleepDraught": 29,
+  "unlockRecipe:elixirOfLife": 32,
+  "unlockRecipe:starLuckPhiltre": 35,
+  "unlockRecipe:deepDreamVision": 38,
+  "unlockRecipe:pactWard": 41,
+  "unlockRecipe:dragonCourage": 44
+};
 const RECIPE_UNLOCK_ORDER = [
   'manaTonic',
   'minorHealingPotion',
@@ -306,6 +342,7 @@ class BalanceSimulator {
       changed = this.summonSeeds() || changed;
       changed = this.runGarden() || changed;
       changed = this.fillTasks() || changed;
+      changed = this.sellSpareItems() || changed;
       changed = this.completePrestige() || changed;
       changed = this.assignMarket() || changed;
     }
@@ -377,15 +414,12 @@ class BalanceSimulator {
   }
 
   isResearchUnlockedForLevel(researchId) {
-    if (this.state.level < 2) {
-      return false;
-    }
+    const requiredLevel =
+      SEED_RESEARCH_LEVELS[researchId] ??
+      RECIPE_RESEARCH_LEVELS[researchId] ??
+      (researchId.startsWith('unlockRecipe:') ? 4 : 2);
 
-    if (researchId.startsWith('unlockRecipe:') && this.state.level < 3) {
-      return false;
-    }
-
-    return true;
+    return this.state.level >= requiredLevel;
   }
 
   getResearchPriority(researchId) {
@@ -637,7 +671,7 @@ class BalanceSimulator {
   }
 
   runBrewing() {
-    if (this.state.level < 3) {
+    if (this.state.level < 4) {
       return false;
     }
 
@@ -842,6 +876,33 @@ class BalanceSimulator {
         return this.getItemValue(item.key) > 0;
       })
       .sort((left, right) => this.getItemValue(right.key) - this.getItemValue(left.key));
+  }
+
+  sellSpareItems() {
+    const sellable = this.getSellableItemsByValue();
+    let changed = false;
+
+    for (const item of sellable) {
+      const quantity = this.getSellableItemQuantity(item.key);
+
+      if (quantity <= 0) {
+        continue;
+      }
+
+      const gold = roundGoldPrice(this.getItemValue(item.key) * 0.8 * quantity);
+
+      if (gold <= 0) {
+        continue;
+      }
+
+      this.removeItem(item.key, quantity);
+      this.state.gold.current += gold;
+      this.state.gold.totalGenerated += gold;
+      this.addEvent(`direct sell: ${quantity} ${item.key}`);
+      changed = true;
+    }
+
+    return changed;
   }
 
   isMarketUnlocked() {
@@ -1452,6 +1513,10 @@ function formatNumber(value) {
   if (Math.abs(number) < 1_000_000) return Math.round(number).toLocaleString('en-US');
 
   return number.toExponential(2);
+}
+
+function roundGoldPrice(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
 function formatSmallNumber(value) {

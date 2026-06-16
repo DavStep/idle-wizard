@@ -1,5 +1,5 @@
 {
-  "maxLevel": 20,
+  "maxLevel": 44,
   "mana": {
     "baseMaxManaCap": 50,
     "maxManaCapPerLevel": 50,
@@ -14,22 +14,29 @@
       "level": 1,
       "maxGardenTiles": 2,
       "maxCauldrons": 1,
-      "maxNpcMarketStands": 1,
-      "maxPlayerMarketStands": 1
+      "maxNpcMarketStands": 0,
+      "maxPlayerMarketStands": 0
     },
     {
       "level": 2,
       "maxGardenTiles": 3,
       "maxCauldrons": 1,
-      "maxNpcMarketStands": 1,
-      "maxPlayerMarketStands": 1
+      "maxNpcMarketStands": 0,
+      "maxPlayerMarketStands": 0
     },
     {
       "level": 3,
       "maxGardenTiles": 3,
       "maxCauldrons": 1,
-      "maxNpcMarketStands": 2,
-      "maxPlayerMarketStands": 2
+      "maxNpcMarketStands": 0,
+      "maxPlayerMarketStands": 0
+    },
+    {
+      "level": 4,
+      "maxGardenTiles": 3,
+      "maxCauldrons": 1,
+      "maxNpcMarketStands": 1,
+      "maxPlayerMarketStands": 1
     },
     {
       "level": 5,

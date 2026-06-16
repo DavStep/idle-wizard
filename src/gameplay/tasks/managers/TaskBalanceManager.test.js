@@ -26,7 +26,7 @@ const potionResearchOrder = [
 ];
 
 describe('TaskBalanceManager', () => {
-  it('keeps level 5 tasks on early progression items', () => {
+  it('moves level 5 onto lavender and the second recipe tier', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -36,15 +36,19 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level5-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 120 },
-      { id: 'level5-mint-seeds', itemKey: 'mintSeed', requiredQuantity: 90 },
-      { id: 'level5-sage-herb', itemKey: 'sageHerb', requiredQuantity: 80 },
-      { id: 'level5-mint-herb', itemKey: 'mintHerb', requiredQuantity: 60 },
-      { id: 'level5-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 12 },
+      { id: 'level5-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 160 },
+      { id: 'level5-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 175 },
+      { id: 'level5-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 100 },
+      {
+        id: 'level5-minor-healing-potion',
+        itemKey: 'minorHealingPotion',
+        requiredQuantity: 12,
+      },
+      { id: 'level5-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 11 },
     ]);
   });
 
-  it('keeps level 6 on nettle and lavender progression without recipe skips', () => {
+  it('moves level 6 onto nettle vigor without recipe skips', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -54,11 +58,15 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 130 },
-      { id: 'level6-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 70 },
-      { id: 'level6-minor-healing-potion', itemKey: 'minorHealingPotion', requiredQuantity: 12 },
-      { id: 'level6-nettle-vigor', itemKey: 'nettleVigor', requiredQuantity: 8 },
-      { id: 'level6-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 80 },
+      { id: 'level6-nettle-vigor', itemKey: 'nettleVigor', requiredQuantity: 14 },
+      { id: 'level6-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 190 },
+      { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 110 },
+      {
+        id: 'level6-minor-healing-potion',
+        itemKey: 'minorHealingPotion',
+        requiredQuantity: 13,
+      },
+      { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 180 },
     ]);
   });
 

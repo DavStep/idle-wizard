@@ -8,6 +8,8 @@ Player level also sets mana cap and mana regen through the `mana` progression in
 
 Player level-ups also grant crystal through `crystal.perLevel` in `game_config.playerLevel`. Level 1 is the starting level and does not grant this reward.
 
+The current playable cap is level 44. SpacetimeDB caps reported player levels and accepted player-level config at the same value, so raising this curve requires updating the backend constants before publishing.
+
 Milestones can also include display-only `unlocks` and `researchUnlocks` arrays. Those render as `unlocks chat` or `allows researching "Mana Cap"` in the level dialog; they do not gate gameplay until a feature wires that rule.
 
 `maxCauldrons` is exposed in the level dialog as a milestone cap, but cauldron buying is not wired yet.
