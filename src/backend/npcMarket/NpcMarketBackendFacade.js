@@ -17,7 +17,6 @@ export class NpcMarketBackendFacade {
   connect(connection) {
     this.subscriptionManager.connect(connection);
     this.tradeManager.connect(connection);
-    void this.tradeManager.tickMarket();
   }
 
   disconnect() {
@@ -59,10 +58,6 @@ export class NpcMarketBackendFacade {
 
   buyFromNpc({ itemKey, quantity = 1 }) {
     return this.tradeManager.buyFromNpc({ itemKey, quantity });
-  }
-
-  tickMarket() {
-    return this.tradeManager.tickMarket();
   }
 
   resetMarket() {

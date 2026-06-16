@@ -6,6 +6,7 @@ import { GameplaySaveBackendFacade } from './gameplaySave/GameplaySaveBackendFac
 import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade.js';
 import { MaintenanceBackendFacade } from './maintenance/MaintenanceBackendFacade.js';
 import { NpcMarketBackendFacade } from './npcMarket/NpcMarketBackendFacade.js';
+import { PlayerInfoBackendFacade } from './playerInfo/PlayerInfoBackendFacade.js';
 import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js';
 import { PlayerShopBackendFacade } from './playerShop/PlayerShopBackendFacade.js';
 import { PotionDiscoveryBackendFacade } from './potionDiscoveries/PotionDiscoveryBackendFacade.js';
@@ -32,6 +33,7 @@ export class BackendFacade {
     this.worldChatFacade = new WorldChatBackendFacade();
     this.feedbackFacade = new FeedbackBackendFacade();
     this.npcMarketFacade = new NpcMarketBackendFacade();
+    this.playerInfoFacade = new PlayerInfoBackendFacade();
     this.playerSyncFacade = new PlayerBackendSyncFacade();
     this.playerShopFacade = new PlayerShopBackendFacade();
     this.potionDiscoveryFacade = new PotionDiscoveryBackendFacade();
@@ -144,6 +146,7 @@ export class BackendFacade {
         this.worldChatFacade.connect(connection);
         this.feedbackFacade.connect(connection);
         this.npcMarketFacade.connect(connection);
+        this.playerInfoFacade.connect(connection);
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
         this.potionDiscoveryFacade.connect(connection);
@@ -214,6 +217,7 @@ export class BackendFacade {
     this.worldChatFacade.disconnect();
     this.feedbackFacade.disconnect();
     this.npcMarketFacade.disconnect();
+    this.playerInfoFacade.disconnect();
     this.playerSyncFacade.disconnect();
     this.playerShopFacade.disconnect();
     this.potionDiscoveryFacade.disconnect();
@@ -254,6 +258,10 @@ export class BackendFacade {
 
   getNpcMarketFacade() {
     return this.npcMarketFacade;
+  }
+
+  getPlayerInfoFacade() {
+    return this.playerInfoFacade;
   }
 
   getPlayerShopFacade() {

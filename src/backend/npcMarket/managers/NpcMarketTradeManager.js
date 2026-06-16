@@ -1,17 +1,13 @@
 export class NpcMarketTradeManager {
-  constructor({ tickIntervalMs = 60_000 } = {}) {
+  constructor() {
     this.connection = null;
-    this.tickIntervalMs = tickIntervalMs;
-    this.tickIntervalId = null;
   }
 
   connect(connection) {
     this.connection = connection;
-    this.startMarketTicks();
   }
 
   disconnect() {
-    this.stopMarketTicks();
     this.connection = null;
   }
 
@@ -69,30 +65,6 @@ export class NpcMarketTradeManager {
     }
   }
 
-  async tickMarket() {
-    const tickNpcMarket = this.findReducer('tickNpcMarket', 'tick_npc_market');
-
-    if (!tickNpcMarket) {
-      return {
-        ok: false,
-        reason: 'offline',
-      };
-    }
-
-    try {
-      await tickNpcMarket({});
-
-      return {
-        ok: true,
-      };
-    } catch {
-      return {
-        ok: false,
-        reason: 'tick_failed',
-      };
-    }
-  }
-
   async resetMarket() {
     const resetNpcMarket = this.findReducer('resetNpcMarket', 'reset_npc_market');
 
@@ -115,22 +87,6 @@ export class NpcMarketTradeManager {
         reason: 'reset_failed',
       };
     }
-  }
-
-  startMarketTicks() {
-    this.stopMarketTicks();
-    this.tickIntervalId = globalThis.setInterval(() => {
-      void this.tickMarket();
-    }, this.tickIntervalMs);
-  }
-
-  stopMarketTicks() {
-    if (this.tickIntervalId === null) {
-      return;
-    }
-
-    globalThis.clearInterval(this.tickIntervalId);
-    this.tickIntervalId = null;
   }
 
   findReducer(camelName, snakeName) {

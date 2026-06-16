@@ -10,4 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {};
+export default {
+  prestigeCount: __t.u32(),
+  playerLevel: __t.u32(),
+};

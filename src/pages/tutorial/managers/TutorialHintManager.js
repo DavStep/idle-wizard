@@ -24,7 +24,6 @@ const LESSON_ESTIMATED_LINE_HEIGHT = 16;
 const HINT_GAP = 8;
 const TYPEWRITER_INTERVAL_MS = 12;
 const TYPEWRITER_CHARS_PER_TICK = 2;
-const OBJECTIVE_AUTO_CLOSE_MS = 5200;
 const POINTER_HIDE_MS = 180;
 const PORTRAIT_WIDTH = 70;
 const PORTRAIT_HEIGHT = 91;
@@ -78,6 +77,7 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
+    this.pointerImage = null;
     this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
@@ -87,7 +87,6 @@ export class TutorialHintManager {
     this.objectiveButtonImage = null;
     this.objective = null;
     this.objectiveTitle = null;
-    this.objectiveCloseButton = null;
     this.objectiveText = null;
     this.objectiveStepLabel = null;
     this.objectiveProgress = null;
@@ -101,7 +100,8 @@ export class TutorialHintManager {
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
-    this.objectiveAutoCloseTimeout = null;
+    this.blockingDialogSuspended = false;
+    this.pointerState = null;
     this.pointerHideTimeout = null;
     this.typewriterTimers = new Map();
     this.onAdvance = null;
@@ -123,12 +123,18 @@ export class TutorialHintManager {
     this.backdrop.className = 'tutorial-layer__backdrop';
     this.backdrop.setAttribute('aria-hidden', 'true');
 
-    this.pointer = document.createElement('img');
+    this.pointer = document.createElement('span');
     this.pointer.className = 'tutorial-layer__pointer';
-    this.pointer.src = POINTING_HAND_URL;
-    this.pointer.alt = '';
     this.pointer.hidden = true;
     this.pointer.setAttribute('aria-hidden', 'true');
+
+    this.pointerImage = document.createElement('img');
+    this.pointerImage.className = 'tutorial-layer__pointer-image';
+    this.pointerImage.src = POINTING_HAND_URL;
+    this.pointerImage.alt = '';
+    this.pointerImage.draggable = false;
+    this.pointerImage.setAttribute('aria-hidden', 'true');
+    this.pointer.append(this.pointerImage);
 
     this.portrait = document.createElement('img');
     this.portrait.className = 'tutorial-layer__portrait';
@@ -204,7 +210,7 @@ export class TutorialHintManager {
     this.objective.addEventListener('click', (event) => {
       if (
         event.target?.closest?.(
-          '.tutorial-layer__lesson-close, .tutorial-layer__lesson-advance, .tutorial-layer__lesson-show, .tutorial-layer__objective-close',
+          '.tutorial-layer__lesson-advance, .tutorial-layer__lesson-show',
         )
       ) {
         return;
@@ -218,18 +224,6 @@ export class TutorialHintManager {
     this.objectiveTitle = document.createElement('div');
     this.objectiveTitle.className = 'style-box__title';
     this.objectiveTitle.textContent = 'lesson';
-
-    this.objectiveCloseButton = document.createElement('button');
-    this.objectiveCloseButton.className =
-      'tutorial-layer__lesson-close tutorial-layer__objective-close';
-    this.objectiveCloseButton.type = 'button';
-    this.objectiveCloseButton.textContent = 'close';
-    this.objectiveCloseButton.setAttribute('aria-label', 'close lesson');
-    this.objectiveCloseButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      this.closeLessonPanel();
-    });
 
     this.objectiveStepLabel = document.createElement('div');
     this.objectiveStepLabel.className =
@@ -276,7 +270,6 @@ export class TutorialHintManager {
 
     this.objective.append(
       this.objectiveTitle,
-      this.objectiveCloseButton,
       this.objectiveStepLabel,
       this.objectiveText,
       this.objectiveProgress,
@@ -304,6 +297,7 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
+    this.pointerImage = null;
     this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
@@ -313,7 +307,6 @@ export class TutorialHintManager {
     this.objectiveButtonImage = null;
     this.objective = null;
     this.objectiveTitle = null;
-    this.objectiveCloseButton = null;
     this.objectiveText = null;
     this.objectiveStepLabel = null;
     this.objectiveProgress = null;
@@ -327,7 +320,7 @@ export class TutorialHintManager {
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
-    this.clearObjectiveAutoClose();
+    this.blockingDialogSuspended = false;
     this.clearPointerHideTimeout();
     this.clearAllTypewriterTimers();
     this.onAdvance = null;
@@ -376,6 +369,7 @@ export class TutorialHintManager {
       return;
     }
 
+    this.blockingDialogSuspended = false;
     this.root.hidden = false;
     this.hidePromptBox();
     this.positionPointer(rect, showPointer);
@@ -403,6 +397,7 @@ export class TutorialHintManager {
     autoOpen = true,
     advanceOnClick = false,
     canShowTarget = false,
+    hideTargetCue = true,
   }) {
     if (!this.root || !this.stage || !this.objective || !this.objectiveButton) {
       return;
@@ -412,12 +407,12 @@ export class TutorialHintManager {
       this.objectiveStepId = id;
       this.objectivePanelOpen = Boolean(autoOpen);
       this.resetTypedText(this.objectiveText);
-      this.clearObjectiveAutoClose();
     }
 
     const normalizedProgress = this.normalizeProgress(progress);
     const hasProgress = normalizedProgress !== null;
     this.objectiveCopyText = text ?? '';
+    this.blockingDialogSuspended = false;
     this.root.hidden = false;
     this.objectiveButton.hidden = false;
     this.objective.hidden = !this.objectivePanelOpen;
@@ -457,7 +452,9 @@ export class TutorialHintManager {
 
     if (this.objectivePanelOpen) {
       this.hidePromptBox();
-      this.hideTargetCue();
+      if (hideTargetCue) {
+        this.hideTargetCue();
+      }
     }
 
     this.positionObjective();
@@ -536,11 +533,6 @@ export class TutorialHintManager {
     measureTitle.className = 'style-box__title';
     measureTitle.textContent = title ?? 'lesson';
 
-    const measureClose = doc.createElement('button');
-    measureClose.className = 'tutorial-layer__lesson-close tutorial-layer__objective-close';
-    measureClose.type = 'button';
-    measureClose.textContent = 'close';
-
     const measureStep = doc.createElement('div');
     measureStep.className = 'tutorial-layer__lesson-step-label tutorial-layer__objective-step-label';
     measureStep.textContent = stepLabel ?? '';
@@ -575,7 +567,6 @@ export class TutorialHintManager {
 
     measure.append(
       measureTitle,
-      measureClose,
       measureStep,
       measureText,
       measureProgress,
@@ -605,8 +596,7 @@ export class TutorialHintManager {
     const titleWidth =
       estimateInlineWidth(title ?? 'lesson') + estimateInlineWidth(stepLabel ?? '') + HINT_GAP * 3;
     const actionLabel = advanceOnClick ? 'next' : canShowTarget ? 'show me' : '';
-    const actionWidth =
-      estimateInlineWidth('close') + estimateInlineWidth(actionLabel) + HINT_GAP * 4;
+    const actionWidth = actionLabel ? estimateInlineWidth(actionLabel) + HINT_GAP * 2 : 0;
     const textWidth = Math.min(estimateInlineWidth(text ?? ''), LESSON_MAX_WIDTH);
     const progressWidth = estimateInlineWidth(progressLabel ?? '');
 
@@ -692,7 +682,6 @@ export class TutorialHintManager {
     this.applyObjectiveAttention();
     this.hidePrompt();
     this.resetTypedText(this.objectiveText);
-    this.clearObjectiveAutoClose();
     this.updateObjectiveCopy();
     this.positionObjective();
     this.syncRootVisibility();
@@ -709,7 +698,6 @@ export class TutorialHintManager {
 
     this.objectivePanelOpen = false;
     this.objective.hidden = true;
-    this.clearObjectiveAutoClose();
     this.resetTypedText(this.objectiveText);
     this.hideTargetCue();
     this.objectiveButton.setAttribute('aria-expanded', 'false');
@@ -742,12 +730,21 @@ export class TutorialHintManager {
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
-    this.clearObjectiveAutoClose();
+    this.blockingDialogSuspended = false;
     this.clearAllTypewriterTimers();
     this.resetTypedText(this.text);
     this.resetTypedText(this.advanceButton);
     this.resetTypedText(this.objectiveText);
     this.syncRootVisibility();
+  }
+
+  suspendForBlockingDialog() {
+    if (!this.root) {
+      return;
+    }
+
+    this.blockingDialogSuspended = true;
+    this.root.hidden = true;
   }
 
   hidePrompt() {
@@ -793,7 +790,7 @@ export class TutorialHintManager {
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveCopyText = '';
-    this.clearObjectiveAutoClose();
+    this.blockingDialogSuspended = false;
     this.resetTypedText(this.objectiveText);
     this.syncRootVisibility();
   }
@@ -845,16 +842,41 @@ export class TutorialHintManager {
       guidePlacement?.portrait,
     ].filter(Boolean);
     const placement = this.resolvePointerPlacement({ rect, bounds, protectedRects });
+    const nextPointerState = {
+      placement: placement.id,
+      x: placement.x,
+      y: placement.y,
+      scaleX: placement.scaleX,
+      rotation: placement.rotation,
+    };
+    const pointerStateChanged =
+      !this.pointerState ||
+      this.pointerState.placement !== nextPointerState.placement ||
+      this.pointerState.x !== nextPointerState.x ||
+      this.pointerState.y !== nextPointerState.y ||
+      this.pointerState.scaleX !== nextPointerState.scaleX ||
+      this.pointerState.rotation !== nextPointerState.rotation;
+    const shouldRevealPointer =
+      this.pointer.hidden ||
+      !this.pointer.classList.contains('is-visible') ||
+      this.pointer.classList.contains('is-hiding');
 
     this.pointer.hidden = false;
     this.clearPointerHideTimeout();
     this.pointer.classList.remove('is-hiding');
-    this.showPointerWithAnimation();
-    this.pointer.dataset.placement = placement.id;
-    this.pointer.style.left = `${placement.x}px`;
-    this.pointer.style.top = `${placement.y}px`;
-    this.pointer.style.setProperty('--tutorial-pointer-scale-x', placement.scaleX);
-    this.pointer.style.setProperty('--tutorial-pointer-rotation', placement.rotation);
+
+    if (pointerStateChanged) {
+      this.pointer.dataset.placement = placement.id;
+      this.pointer.style.left = `${placement.x}px`;
+      this.pointer.style.top = `${placement.y}px`;
+      this.pointer.style.setProperty('--tutorial-pointer-scale-x', placement.scaleX);
+      this.pointer.style.setProperty('--tutorial-pointer-rotation', placement.rotation);
+      this.pointerState = nextPointerState;
+    }
+
+    if (shouldRevealPointer) {
+      this.showPointerWithAnimation();
+    }
   }
 
   positionGuide(rect, showPortrait = true) {
@@ -1047,6 +1069,7 @@ export class TutorialHintManager {
     delete this.pointer.dataset.placement;
     this.pointer.style.removeProperty('--tutorial-pointer-scale-x');
     this.pointer.style.removeProperty('--tutorial-pointer-rotation');
+    this.pointerState = null;
   }
 
   positionDialog() {
@@ -1195,6 +1218,11 @@ export class TutorialHintManager {
       return;
     }
 
+    if (this.blockingDialogSuspended) {
+      this.root.hidden = true;
+      return;
+    }
+
     const hasTargetCue =
       Boolean(this.pointer && !this.pointer.hidden) ||
       Boolean(this.portrait && !this.portrait.hidden);
@@ -1217,7 +1245,6 @@ export class TutorialHintManager {
     }
 
     this.setTypedText(this.objectiveText, this.objectiveCopyText, {
-      onComplete: () => this.scheduleObjectiveAutoClose(),
       speakingElement: this.objectiveButton,
     });
   }
@@ -1368,33 +1395,6 @@ export class TutorialHintManager {
 
   setSpeaking(element, active) {
     element?.toggleAttribute?.('data-speaking', Boolean(active));
-  }
-
-  scheduleObjectiveAutoClose() {
-    if (!this.objectivePanelOpen || this.objectiveAutoCloseTimeout) {
-      return;
-    }
-
-    const view = this.getWindow();
-
-    if (typeof view?.setTimeout !== 'function') {
-      this.closeObjectivePanel();
-      return;
-    }
-
-    this.objectiveAutoCloseTimeout = view.setTimeout(() => {
-      this.objectiveAutoCloseTimeout = null;
-      this.closeObjectivePanel();
-    }, OBJECTIVE_AUTO_CLOSE_MS);
-  }
-
-  clearObjectiveAutoClose() {
-    if (!this.objectiveAutoCloseTimeout) {
-      return;
-    }
-
-    this.getWindow()?.clearTimeout?.(this.objectiveAutoCloseTimeout);
-    this.objectiveAutoCloseTimeout = null;
   }
 
   clearPointerHideTimeout() {

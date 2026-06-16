@@ -66,8 +66,9 @@ export class GameplayLogFacade {
     return this.logManager.add(`brewed ${potion.label}${suffix}`);
   }
 
-  logItemSold({ item, gold }) {
-    return this.logManager.add(`sold ${item.label} for ${formatGoldPriceText(gold)}`);
+  logItemSold({ item, gold, quantity = 1 }) {
+    const suffix = quantity > 1 ? ` x${quantity}` : '';
+    return this.logManager.add(`sold ${item.label}${suffix} for ${formatGoldPriceText(gold)}`);
   }
 
   logItemBought({ item, gold, quantity = 1 }) {

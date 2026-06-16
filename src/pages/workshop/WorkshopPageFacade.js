@@ -22,6 +22,7 @@ export class WorkshopPageFacade {
     gameplayFacade,
     leaderboardFacade,
     tradeAllianceFacade,
+    onOpenPlayerInfo,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new WorkshopRoomViewManager();
@@ -45,13 +46,18 @@ export class WorkshopPageFacade {
       gameplayFacade,
       leaderboardFacade,
       tradeAllianceFacade,
+      onOpenPlayerInfo,
     });
     this.tradeAllianceManager = new WorkshopTradeAllianceManager({
       gameplayFacade,
       tradeAllianceFacade,
+      onOpenPlayerInfo,
     });
     this.logDialogManager = new WorkshopLogDialogManager({ gameplayFacade });
-    this.discoveriesManager = new WorkshopDiscoveriesManager({ gameplayFacade });
+    this.discoveriesManager = new WorkshopDiscoveriesManager({
+      gameplayFacade,
+      onOpenPlayerInfo,
+    });
     this.manaSphereManager = new WorkshopManaSphereManager({ gameplayFacade });
     this.taskManager = new WorkshopTaskManager({ gameplayFacade });
   }

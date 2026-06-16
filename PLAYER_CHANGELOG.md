@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.20
+
+- Added player info popups from visible player names in chat, leaderboards, alliances, and market history.
+- Added prestige announcements to world chat.
+- Made auto brewing remember separate recipe and on/off settings for each cauldron.
+- Improved NPC market selling with longer sell timers, bulk sales, and visible countdowns.
+- Kept Elara's guide steadier around blocking popups and target pointers.
+
 ## 0.1.19
 
 - Improved Elara's first lesson with a clearer intro, username setup, and a personal greeting before mana guidance.

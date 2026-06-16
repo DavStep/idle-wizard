@@ -2,13 +2,18 @@ import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { getCompletedResearchIds } from '../../shared/itemResearchStatus.js';
-
-const AUTO_BREW_CAULDRON_RESEARCH_ID = 'automation:autoBrewCauldron:1';
+import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
 
 export class BrewingRecipeBookManager {
-  constructor({ gameplayFacade, getSelectedRecipeKey, onSelectRecipe } = {}) {
+  constructor({
+    gameplayFacade,
+    getSelectedRecipeKey,
+    getCurrentCauldronIndex,
+    onSelectRecipe,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSelectedRecipeKey = getSelectedRecipeKey;
+    this.getCurrentCauldronIndex = getCurrentCauldronIndex;
     this.onSelectRecipe = onSelectRecipe;
     this.root = null;
     this.unsubscribe = null;
@@ -208,7 +213,8 @@ export class BrewingRecipeBookManager {
       return;
     }
 
-    const brewing = snapshot.brewing ?? {};
+    const cauldronIndex = this.getSafeCurrentCauldronIndex();
+    const brewing = this.getCauldronSnapshot(snapshot, cauldronIndex) ?? snapshot.brewing ?? {};
     const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? null;
     const selectedRecipe = recipes.find((recipe) => recipe.key === selectedRecipeKey);
     const hasSelectedRecipe = Boolean(selectedRecipe);
@@ -326,13 +332,14 @@ export class BrewingRecipeBookManager {
 
   toggleAutoBrew() {
     const snapshot = this.gameplayFacade.getSnapshot();
-    const brewing = snapshot.brewing ?? {};
+    const cauldronIndex = this.getSafeCurrentCauldronIndex();
+    const brewing = this.getCauldronSnapshot(snapshot, cauldronIndex) ?? snapshot.brewing ?? {};
     const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? null;
     const enabled =
       brewing.autoBrewEnabled === true && brewing.autoBrewRecipeKey === selectedRecipeKey;
 
     if (enabled) {
-      this.gameplayFacade.setBrewingAutoBrewEnabled?.(false);
+      this.gameplayFacade.setBrewingAutoBrewEnabled?.(false, cauldronIndex);
       this.render(this.gameplayFacade.getSnapshot());
       return;
     }
@@ -342,19 +349,25 @@ export class BrewingRecipeBookManager {
       return;
     }
 
-    const selectResult = this.gameplayFacade.setBrewingAutoBrewRecipe?.(selectedRecipeKey);
+    const selectResult = this.gameplayFacade.setBrewingAutoBrewRecipe?.(
+      selectedRecipeKey,
+      cauldronIndex,
+    );
 
     if (selectResult?.ok === false) {
       this.render(this.gameplayFacade.getSnapshot());
       return;
     }
 
-    this.gameplayFacade.setBrewingAutoBrewEnabled?.(true);
+    this.gameplayFacade.setBrewingAutoBrewEnabled?.(true, cauldronIndex);
     this.render(this.gameplayFacade.getSnapshot());
   }
 
   isAutoBrewAvailable(snapshot) {
-    if (snapshot?.brewing?.autoBrewEnabled === true) {
+    const cauldronIndex = this.getSafeCurrentCauldronIndex();
+    const cauldron = this.getCauldronSnapshot(snapshot, cauldronIndex);
+
+    if (cauldron?.autoBrewEnabled === true) {
       return true;
     }
 
@@ -364,7 +377,27 @@ export class BrewingRecipeBookManager {
       return false;
     }
 
-    return completedResearchIds.has(AUTO_BREW_CAULDRON_RESEARCH_ID);
+    return completedResearchIds.has(automationResearchIds.autoBrewCauldron(cauldronIndex + 1));
+  }
+
+  getCauldronSnapshot(snapshot, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    return (
+      (snapshot?.brewing?.cauldrons ?? []).find(
+        (cauldron) => cauldron.cauldronIndex === safeCauldronIndex,
+      ) ?? (safeCauldronIndex === 0 ? snapshot?.brewing ?? null : null)
+    );
+  }
+
+  getSafeCurrentCauldronIndex() {
+    return this.normalizeCauldronIndex(this.getCurrentCauldronIndex?.() ?? 0);
+  }
+
+  normalizeCauldronIndex(cauldronIndex) {
+    const safeCauldronIndex = Math.floor(Number(cauldronIndex));
+    return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
+      ? safeCauldronIndex
+      : 0;
   }
 
   formatAutoStateAriaLabel(enabled, hasSelectedRecipe) {

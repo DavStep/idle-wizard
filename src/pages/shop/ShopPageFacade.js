@@ -14,7 +14,7 @@ export class ShopPageFacade {
   static explain =
     'Shows the market room, where players sell to NPC demand, trade with other players, and see crystal prices.';
 
-  constructor({ gameplayFacade, playerShopFacade } = {}) {
+  constructor({ gameplayFacade, playerShopFacade, onOpenPlayerInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new ShopRoomViewManager();
     this.flyoutManager = new RewardFlyoutManager();
@@ -27,8 +27,15 @@ export class ShopPageFacade {
     this.demandManager = new ShopDemandManager({ gameplayFacade });
     this.stockManager = new ShopStockManager({ gameplayFacade });
     this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
-    this.playerShelfManager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
-    this.tradeHistoryManager = new ShopTradeHistoryManager({ playerShopFacade });
+    this.playerShelfManager = new ShopPlayerShelfManager({
+      gameplayFacade,
+      playerShopFacade,
+      onOpenPlayerInfo,
+    });
+    this.tradeHistoryManager = new ShopTradeHistoryManager({
+      playerShopFacade,
+      onOpenPlayerInfo,
+    });
     this.goldOfferManager = new ShopGoldOfferManager({ gameplayFacade });
     this.crystalOfferManager = new ShopCrystalOfferManager();
   }

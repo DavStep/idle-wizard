@@ -57,6 +57,23 @@ function createNpcMarketFacadeFake(gameplayFacade) {
   };
 }
 
+function setShopAutoSellSeconds(gameplayFacade, autoSellSeconds) {
+  gameplayFacade.applyRuntimeConfig({
+    gameConfigs: [
+      {
+        configKey: 'shop',
+        configJson: JSON.stringify({
+          shopShelf: {
+            initialUnlockedSlots: 1,
+            slotCostsGold: [0, 50, 150, 400, 1000],
+            autoSellSeconds,
+          },
+        }),
+      },
+    ],
+  });
+}
+
 function unlockSageSeed(gameplayFacade) {
   return gameplayFacade.buyResearch('unlockSeed:sageSeed');
 }
@@ -436,6 +453,29 @@ describe('GameplayFacade', () => {
     });
   }, 30_000);
 
+  it('announces prestige completions to world chat', () => {
+    const { gameplayFacade } = createGameplay();
+    const prestigeAnnouncements = [];
+
+    advanceToLevel(gameplayFacade, 10);
+
+    gameplayFacade.setWorldChatFacade({
+      announcePrestige: (prestige) => {
+        prestigeAnnouncements.push(prestige);
+        return Promise.resolve({ ok: true, ...prestige });
+      },
+    });
+
+    gameplayFacade.completePrestigeMilestone(10);
+
+    expect(prestigeAnnouncements).toEqual([
+      {
+        prestigeCount: 1,
+        playerLevel: 10,
+      },
+    ]);
+  }, 30_000);
+
   it('persists prestige reset data with only settings and prestige progress kept', () => {
     const persistenceStorage = createMemoryStorage();
     const { gameplayFacade } = createGameplay({ persistenceStorage });
@@ -755,6 +795,7 @@ describe('GameplayFacade', () => {
     const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
       rewardEvents.push(event);
     });
+    setShopAutoSellSeconds(gameplayFacade, 5);
 
     unlockSageSeed(gameplayFacade);
     ecsFacade.update({ deltaSeconds: 10 });
@@ -2187,6 +2228,71 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('keeps auto brew recipes scoped to each cauldron', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 5);
+    gameplayFacade.syncPlayerLevelManaEffects();
+    gameplayFacade.manaFacade.fill();
+    gameplayFacade.goldFacade.add(500);
+    gameplayFacade.crystalFacade.add(3);
+    gameplayFacade.itemsFacade.addItem(1001, 5);
+    gameplayFacade.itemsFacade.addItem(1002, 1);
+    unlockRecipeResearch(gameplayFacade);
+    unlockRecipeResearch(gameplayFacade, 'unlockRecipe:minorHealingPotion');
+
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1))).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(2))).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.setBrewingAutoBrewRecipe('manaTonic', 0)).toMatchObject({
+      ok: true,
+      autoBrewRecipeKey: 'manaTonic',
+      cauldronNumber: 1,
+    });
+    expect(gameplayFacade.setBrewingAutoBrewEnabled(true, 0)).toMatchObject({
+      ok: true,
+      autoBrewEnabled: true,
+      cauldronNumber: 1,
+    });
+    expect(gameplayFacade.setBrewingAutoBrewRecipe('minorHealingPotion', 1)).toMatchObject({
+      ok: true,
+      autoBrewRecipeKey: 'minorHealingPotion',
+      cauldronNumber: 2,
+    });
+    expect(gameplayFacade.setBrewingAutoBrewEnabled(true, 1)).toMatchObject({
+      ok: true,
+      autoBrewEnabled: true,
+      cauldronNumber: 2,
+    });
+
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewRecipeKey: 'manaTonic',
+    });
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[0]).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewRecipeKey: 'manaTonic',
+    });
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1]).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewRecipeKey: 'minorHealingPotion',
+    });
+
+    ecsFacade.update({ deltaSeconds: 0 });
+
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[0].activeBrew).toMatchObject({
+      key: 'manaTonic',
+      cauldronNumber: 1,
+    });
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].activeBrew).toMatchObject({
+      key: 'minorHealingPotion',
+      cauldronNumber: 2,
+    });
+  });
+
   it('persists level-unlocked cauldrons and potion inventory across restart', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
@@ -2433,6 +2539,7 @@ describe('GameplayFacade', () => {
 
   it('buys NPC market stands with costs from shop balance', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
+    setShopAutoSellSeconds(gameplayFacade, 5);
 
     expect(gameplayFacade.getSnapshot().shop.shelf).toMatchObject({
       unlockedSlots: 1,
@@ -2464,16 +2571,8 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(1);
-    expect(gameplayFacade.getSnapshot().inventory).toEqual([
-      {
-        itemTypeId: summonResult.seed.id,
-        key: summonResult.seed.key,
-        label: summonResult.seed.label,
-        kind: 'seed',
-        quantity: 10,
-      },
-    ]);
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(11);
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: false,
       reason: 'level_locked',
@@ -2485,7 +2584,7 @@ describe('GameplayFacade', () => {
       finishCurrentTaskLevel(gameplayFacade);
     }
 
-    gameplayFacade.goldFacade.add(49);
+    gameplayFacade.goldFacade.add(39);
 
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: true,
@@ -3123,6 +3222,7 @@ describe('GameplayFacade', () => {
 
   it('auto sells selected NPC market item over time', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
+    setShopAutoSellSeconds(gameplayFacade, 5);
 
     unlockSageSeed(gameplayFacade);
     ecsFacade.update({ deltaSeconds: 10 });
@@ -3137,23 +3237,15 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(1);
-    expect(gameplayFacade.getSnapshot().inventory).toEqual([
-      {
-        itemTypeId: summonResult.seed.id,
-        key: summonResult.seed.key,
-        label: summonResult.seed.label,
-        kind: 'seed',
-        quantity: 10,
-      },
-    ]);
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(11);
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       slotNumber: 1,
       unlocked: true,
       sellItemTypeId: summonResult.seed.id,
       sellKind: 'seed',
       sellLabel: summonResult.seed.label,
-      sellQuantity: 10,
+      sellQuantity: 0,
     });
   });
 
@@ -3281,6 +3373,7 @@ describe('GameplayFacade', () => {
 
   it('excludes cauldron-staged herbs from NPC market sales', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
+    setShopAutoSellSeconds(gameplayFacade, 5);
 
     gameplayFacade.itemsFacade.addItem(1001, 3);
     gameplayFacade.addBrewingIngredient(1001);
@@ -3504,6 +3597,7 @@ describe('GameplayFacade', () => {
 
   it('auto sells only the selected item type', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
+    setShopAutoSellSeconds(gameplayFacade, 5);
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.itemsFacade.addItem(2, 1);

@@ -114,7 +114,13 @@ export class TutorialFacade {
   }
 
   applyViewState(viewState, snapshot) {
-    if (viewState.kind === 'blocked' || viewState.kind === 'hidden') {
+    if (viewState.kind === 'blocked') {
+      this.saleManager.cancel();
+      this.hintManager.suspendForBlockingDialog();
+      return;
+    }
+
+    if (viewState.kind === 'hidden') {
       this.saleManager.cancel();
       this.revealManager.clear();
       this.hintManager.hide();
@@ -124,7 +130,10 @@ export class TutorialFacade {
     this.revealManager.update(viewState);
 
     if (viewState.kind === 'lesson') {
-      this.hintManager.showLesson(viewState.lesson);
+      this.hintManager.showLesson({
+        ...viewState.lesson,
+        hideTargetCue: false,
+      });
       this.saleManager.update({
         step: viewState.step,
         snapshot,

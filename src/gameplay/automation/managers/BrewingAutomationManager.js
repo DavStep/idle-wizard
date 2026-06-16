@@ -52,9 +52,9 @@ export class BrewingAutomationManager {
       return;
     }
 
-    const snapshot = this.brewingFacade.getSnapshot();
+    const cauldron = this.getCauldronSnapshot(cauldronNumber);
 
-    if (!snapshot.autoBrewEnabled || !snapshot.autoBrewRecipeKey) {
+    if (!cauldron?.autoBrewEnabled || !cauldron.autoBrewRecipeKey) {
       return;
     }
 

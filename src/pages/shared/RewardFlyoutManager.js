@@ -606,7 +606,12 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'item_sold') {
-      return `sold ${event.item?.label ?? 'item'} for ${formatGoldPriceText(event.gold ?? 0)}`;
+      return this.formatItemQuantity(
+        'sold',
+        event.item,
+        event.quantity,
+        ` for ${formatGoldPriceText(event.gold ?? 0)}`,
+      );
     }
 
     if (event.type === 'gold_collected') {
@@ -638,10 +643,10 @@ export class RewardFlyoutManager {
     return `${seed?.label ?? 'seed'}${suffix}`;
   }
 
-  formatItemQuantity(prefix, item, quantity = 1) {
+  formatItemQuantity(prefix, item, quantity = 1, trailingText = '') {
     const safeQuantity = Number.isFinite(quantity) ? Math.max(1, Math.floor(quantity)) : 1;
     const suffix = safeQuantity > 1 ? ` x${safeQuantity}` : '';
-    return `${prefix} ${item?.label ?? 'item'}${suffix}`;
+    return `${prefix} ${item?.label ?? 'item'}${suffix}${trailingText}`;
   }
 
   unmount() {

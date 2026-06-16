@@ -16,6 +16,7 @@ import {
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import {
   formatGoldPrice,
   formatGoldPriceText,
@@ -31,9 +32,10 @@ const MARKET_BROWSE_TABS = [
 ];
 
 export class ShopPlayerShelfManager {
-  constructor({ gameplayFacade, playerShopFacade } = {}) {
+  constructor({ gameplayFacade, playerShopFacade, onOpenPlayerInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerShopFacade = playerShopFacade;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribeGameplay = null;
     this.unsubscribePlayerShop = null;
@@ -1056,9 +1058,19 @@ export class ShopPlayerShelfManager {
       this.refs.marketGroupBySellerKey.set(group.sellerKey, groupNode);
     }
 
-    if (groupNode.name.textContent !== group.username) {
-      groupNode.name.textContent = group.username;
-    }
+    groupNode.name.replaceChildren(
+      createPlayerInfoLink(
+        {
+          identity: group.sellerIdentity,
+          username: group.username,
+        },
+        {
+          onOpenPlayerInfo: this.onOpenPlayerInfo,
+          text: group.username,
+          className: 'shop-page__market-seller-link',
+        },
+      ),
+    );
 
     return groupNode;
   }
@@ -1204,6 +1216,7 @@ export class ShopPlayerShelfManager {
         group = {
           sellerKey,
           username: listing.username || 'wizard',
+          sellerIdentity: listing.sellerIdentity,
           listings: [],
         };
         groups.set(sellerKey, group);

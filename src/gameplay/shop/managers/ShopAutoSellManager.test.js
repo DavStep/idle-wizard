@@ -21,14 +21,14 @@ function createSlotManager() {
 }
 
 describe('ShopAutoSellManager', () => {
-  it('uses dynamic NPC price and records backend sell pressure', () => {
+  it('bulk sells available items at the static NPC price', () => {
     const addGold = vi.fn();
     const removeItem = vi.fn().mockReturnValue({
       itemTypeId: 1,
       key: 'sageSeed',
       label: 'sage seed',
       kind: 'seed',
-      quantity: 1,
+      quantity: 3,
     });
     const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
     const manager = new ShopAutoSellManager({
@@ -42,6 +42,7 @@ describe('ShopAutoSellManager', () => {
           label: 'sage seed',
           kind: 'seed',
         }),
+        getItemQuantity: () => 3,
         removeItem,
       },
       shopBalanceManager: {
@@ -56,8 +57,8 @@ describe('ShopAutoSellManager', () => {
 
     manager.update(5);
 
-    expect(removeItem).toHaveBeenCalledWith(1, 1);
-    expect(addGold).toHaveBeenCalledWith(4);
+    expect(removeItem).toHaveBeenCalledWith(1, 3);
+    expect(addGold).toHaveBeenCalledWith(12);
     expect(recordSellToNpc).toHaveBeenCalledWith(
       {
         id: 1,
@@ -65,7 +66,7 @@ describe('ShopAutoSellManager', () => {
         label: 'sage seed',
         kind: 'seed',
       },
-      1,
+      3,
     );
   });
 
@@ -107,6 +108,7 @@ describe('ShopAutoSellManager', () => {
         recordSellToNpc: vi.fn(),
       },
       shopSellAvailabilityManager: {
+        getAvailableQuantity: () => quantity - 2,
         canRemoveItem: (_itemTypeId, removeQuantity) => quantity - 2 >= removeQuantity,
       },
       shopShelfEntityManager: createSlotManager(),

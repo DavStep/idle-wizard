@@ -4,6 +4,7 @@ import { ShopPageFacade } from './shop/ShopPageFacade.js';
 import { ResearchPageFacade } from './research/ResearchPageFacade.js';
 import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
 import { PageNotificationFacade } from './notifications/PageNotificationFacade.js';
+import { PlayerInfoDialogFacade } from './playerInfo/PlayerInfoDialogFacade.js';
 import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
 import { TutorialFacade } from './tutorial/TutorialFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
@@ -30,6 +31,7 @@ export class PagesFacade {
     worldChatFacade,
     tradeAllianceFacade,
     feedbackFacade,
+    playerInfoFacade,
     playerShopFacade,
     authFacade,
     tutorialStorage,
@@ -71,9 +73,13 @@ export class PagesFacade {
       authFacade,
       feedbackFacade,
     });
+    this.playerInfoDialogFacade = new PlayerInfoDialogFacade({
+      playerInfoFacade,
+    });
     this.worldChatManager = new WorkshopWorldChatManager({
       worldChatFacade,
       tradeAllianceFacade,
+      onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
     });
     this.tutorialFacade = FTUE_ENABLED
       ? new TutorialFacade({
@@ -89,6 +95,7 @@ export class PagesFacade {
         gameplayFacade,
         leaderboardFacade,
         tradeAllianceFacade,
+        onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
       }),
     );
     this.registryManager.register(
@@ -115,6 +122,7 @@ export class PagesFacade {
       new ShopPageFacade({
         gameplayFacade,
         playerShopFacade,
+        onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
       }),
     );
   }
@@ -126,6 +134,7 @@ export class PagesFacade {
     this.notificationFacade.mount();
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
+    this.playerInfoDialogFacade.mount(stage);
     this.syncTopPanelResourceContext();
     this.syncPageUnlocks(this.getGameplaySnapshot());
     this.pageUnlockUnsubscribe =
@@ -140,6 +149,7 @@ export class PagesFacade {
     this.pageUnlockUnsubscribe?.();
     this.pageUnlockUnsubscribe = null;
     this.topPanelFacade.unmount();
+    this.playerInfoDialogFacade.unmount();
     this.worldChatManager.unmount();
     this.notificationFacade.unmount();
     this.bottomPanelFacade.unmount();

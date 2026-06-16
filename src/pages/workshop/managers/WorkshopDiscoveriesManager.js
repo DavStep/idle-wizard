@@ -2,6 +2,7 @@ import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
 const DISCOVERY_TABS = [
@@ -11,8 +12,9 @@ const DISCOVERY_TABS = [
 ];
 
 export class WorkshopDiscoveriesManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, onOpenPlayerInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -273,7 +275,20 @@ export class WorkshopDiscoveriesManager {
 
     element.textContent = potion.label;
     setItemIconLabel(element, 'potion', potion.key);
-    element.append(`: discovered by ${potion.discoveredByUsername || 'wizard'}`);
+    element.append(
+      ': discovered by ',
+      createPlayerInfoLink(
+        {
+          identity: potion.discoveredByIdentity,
+          username: potion.discoveredByUsername || 'wizard',
+        },
+        {
+          onOpenPlayerInfo: this.onOpenPlayerInfo,
+          text: potion.discoveredByUsername || 'wizard',
+          className: 'workshop-page__discovery-player-link',
+        },
+      ),
+    );
   }
 
   createRoyaltyValue(potion) {

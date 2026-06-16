@@ -1,5 +1,6 @@
 import { WorldChatSendManager } from './managers/WorldChatSendManager.js';
 import { WorldChatLevelUpAnnouncementManager } from './managers/WorldChatLevelUpAnnouncementManager.js';
+import { WorldChatPrestigeAnnouncementManager } from './managers/WorldChatPrestigeAnnouncementManager.js';
 import { WorldChatResearchAnnouncementManager } from './managers/WorldChatResearchAnnouncementManager.js';
 import { WorldChatStateObserverManager } from './managers/WorldChatStateObserverManager.js';
 import { WorldChatSubscriptionManager } from './managers/WorldChatSubscriptionManager.js';
@@ -15,6 +16,7 @@ export class WorldChatBackendFacade {
     });
     this.sendManager = new WorldChatSendManager();
     this.levelUpAnnouncementManager = new WorldChatLevelUpAnnouncementManager();
+    this.prestigeAnnouncementManager = new WorldChatPrestigeAnnouncementManager();
     this.researchAnnouncementManager = new WorldChatResearchAnnouncementManager();
   }
 
@@ -22,11 +24,13 @@ export class WorldChatBackendFacade {
     this.subscriptionManager.connect(connection);
     this.sendManager.connect(connection);
     this.levelUpAnnouncementManager.connect(connection);
+    this.prestigeAnnouncementManager.connect(connection);
     this.researchAnnouncementManager.connect(connection);
   }
 
   disconnect() {
     this.researchAnnouncementManager.disconnect();
+    this.prestigeAnnouncementManager.disconnect();
     this.levelUpAnnouncementManager.disconnect();
     this.sendManager.disconnect();
     this.subscriptionManager.disconnect();
@@ -50,5 +54,9 @@ export class WorldChatBackendFacade {
 
   announceLevelUp(playerLevel) {
     return this.levelUpAnnouncementManager.announceLevelUp(playerLevel);
+  }
+
+  announcePrestige(prestige) {
+    return this.prestigeAnnouncementManager.announcePrestige(prestige);
   }
 }

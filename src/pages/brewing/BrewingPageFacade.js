@@ -34,6 +34,7 @@ export class BrewingPageFacade {
         this.recipeGuideManager.getSelectedRecipeKey(
           this.recipeGuideManager.getCurrentCauldronIndex(),
         ),
+      getCurrentCauldronIndex: () => this.recipeGuideManager.getCurrentCauldronIndex(),
       onSelectRecipe: (recipe) =>
         this.selectRecipe(
           recipe?.key ?? null,
@@ -69,23 +70,48 @@ export class BrewingPageFacade {
   }
 
   selectRecipe(recipeKey, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const autoBrewState = this.getAutoBrewState(safeCauldronIndex);
+
     if (!recipeKey) {
-      this.recipeGuideManager.selectRecipe(null, cauldronIndex);
-      const result = this.gameplayFacade?.setBrewingAutoBrewRecipe?.(null) ?? null;
+      this.recipeGuideManager.selectRecipe(null, safeCauldronIndex);
+      const result = autoBrewState.autoBrewEnabled
+        ? this.gameplayFacade?.setBrewingAutoBrewRecipe?.(null, safeCauldronIndex) ?? null
+        : null;
       this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
       return result;
     }
 
-    this.recipeGuideManager.selectRecipe(recipeKey, cauldronIndex);
+    this.recipeGuideManager.selectRecipe(recipeKey, safeCauldronIndex);
     const result =
-      this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey, cauldronIndex) ?? null;
-    const snapshot = this.gameplayFacade?.getSnapshot();
+      this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey, safeCauldronIndex) ?? null;
 
-    if (snapshot?.brewing?.autoBrewEnabled === true) {
-      this.gameplayFacade?.setBrewingAutoBrewRecipe?.(recipeKey);
+    if (autoBrewState.autoBrewEnabled) {
+      this.gameplayFacade?.setBrewingAutoBrewRecipe?.(recipeKey, safeCauldronIndex);
     }
 
     this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
     return result;
+  }
+
+  getAutoBrewState(cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const snapshot = this.gameplayFacade?.getSnapshot();
+    const cauldron =
+      (snapshot?.brewing?.cauldrons ?? []).find(
+        (candidate) => candidate.cauldronIndex === safeCauldronIndex,
+      ) ?? (safeCauldronIndex === 0 ? snapshot?.brewing : null);
+
+    return {
+      autoBrewEnabled: cauldron?.autoBrewEnabled === true,
+      autoBrewRecipeKey: cauldron?.autoBrewRecipeKey ?? null,
+    };
+  }
+
+  normalizeCauldronIndex(cauldronIndex) {
+    const safeCauldronIndex = Math.floor(Number(cauldronIndex));
+    return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
+      ? safeCauldronIndex
+      : 0;
   }
 }

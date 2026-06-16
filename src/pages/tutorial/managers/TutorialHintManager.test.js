@@ -125,6 +125,65 @@ describe('TutorialHintManager', () => {
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
 
+  it('does not restart the pointer animation when the same cue repeats', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+    const requestAnimationFrame = vi.fn((callback) => {
+      callback(0);
+      return 1;
+    });
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+      writable: true,
+    });
+
+    try {
+      const stage = document.createElement('section');
+      const target = document.createElement('button');
+      const manager = new TutorialHintManager();
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      setClientRect(
+        target,
+        toClientRect({
+          left: 4,
+          top: 4,
+          width: 60,
+          height: 30,
+        }),
+      );
+      stage.append(target);
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showTargetCue({ target });
+
+      const pointer = stage.querySelector('.tutorial-layer__pointer');
+      expect(pointer?.classList.contains('is-visible')).toBe(true);
+      expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+      requestAnimationFrame.mockClear();
+      manager.showTargetCue({ target });
+
+      expect(requestAnimationFrame).not.toHaveBeenCalled();
+      expect(pointer?.dataset.placement).toBe('bottom-right');
+      expect(pointer?.style.left).toBe('83px');
+      expect(pointer?.style.top).toBe('53px');
+    } finally {
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+    }
+  });
+
   it('moves the angled pointer when another corner has more room', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');
@@ -259,7 +318,7 @@ describe('TutorialHintManager', () => {
     }
   });
 
-  it('opens lesson text from the same-size Elara button and auto-closes it', () => {
+  it('keeps lesson text open until the player closes it', () => {
     vi.useFakeTimers();
 
     try {
@@ -313,15 +372,6 @@ describe('TutorialHintManager', () => {
 
       vi.advanceTimersByTime(5200);
       expect(button?.hidden).toBe(false);
-      expect(button?.dataset.notification).toBe('true');
-      expect(button?.dataset.notificationTone).toBe('red');
-      expect(button?.getAttribute('aria-label')).toBe('open lesson');
-      expect(button?.getAttribute('aria-expanded')).toBe('false');
-      expect(lesson?.hidden).toBe(true);
-
-      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-      expect(button?.hidden).toBe(false);
       expect(button?.dataset.notification).toBeUndefined();
       expect(button?.getAttribute('aria-label')).toBe('close lesson');
       expect(button?.getAttribute('aria-expanded')).toBe('true');
@@ -339,7 +389,7 @@ describe('TutorialHintManager', () => {
     }
   });
 
-  it('keeps the lesson close label on the border', () => {
+  it('omits the visible lesson close label', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
 
@@ -360,9 +410,9 @@ describe('TutorialHintManager', () => {
     const button = stage.querySelector('.tutorial-layer__lesson-button');
     const lesson = stage.querySelector('.tutorial-layer__lesson');
 
-    lesson
-      ?.querySelector('.tutorial-layer__lesson-close')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(lesson?.querySelector('.tutorial-layer__lesson-close')).toBeNull();
+
+    button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(button?.hidden).toBe(false);
     expect(button?.dataset.notification).toBe('true');
@@ -504,6 +554,52 @@ describe('TutorialHintManager', () => {
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
   });
 
+  it('can update an open lesson without hiding the active target cue', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 16,
+        top: 100,
+        width: 120,
+        height: 30,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'prepare-seed-sale',
+      title: 'lesson 2: market',
+      text: 'summon one seed to sell',
+      stepLabel: '9/25',
+      canShowTarget: true,
+    });
+    manager.showTargetCue({ target });
+
+    const pointer = stage.querySelector('.tutorial-layer__pointer');
+    expect(pointer?.hidden).toBe(false);
+
+    manager.showLesson({
+      id: 'prepare-seed-sale',
+      title: 'lesson 2: market',
+      text: 'summon one seed to sell',
+      stepLabel: '9/25',
+      canShowTarget: true,
+      hideTargetCue: false,
+    });
+
+    expect(pointer?.hidden).toBe(false);
+    expect(pointer?.classList.contains('is-hiding')).toBe(false);
+    expect(pointer?.dataset.placement).toBeTruthy();
+  });
+
   it('opens the lesson panel again when a new lesson step starts', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
@@ -569,8 +665,10 @@ describe('TutorialHintManager', () => {
 
     expect(pressed).toBe(2);
 
+    expect(stage.querySelector('.tutorial-layer__lesson-close')).toBeNull();
+
     stage
-      .querySelector('.tutorial-layer__lesson-close')
+      .querySelector('.tutorial-layer__lesson-button')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(pressed).toBe(2);

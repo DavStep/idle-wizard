@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TutorialFacade } from './TutorialFacade.js';
 import { TUTORIAL_STORAGE_KEY } from './managers/TutorialProgressManager.js';
@@ -210,6 +210,117 @@ describe('TutorialFacade', () => {
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
 
     facade.unmount();
+  });
+
+  it('keeps the tutorial reveal gate while the username settings dialog is open', async () => {
+    const stage = document.createElement('section');
+    const usernameButton = document.createElement('button');
+    const settings = document.createElement('section');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-welcome'],
+        }),
+      }),
+    });
+
+    usernameButton.dataset.tutorialId = 'top:username';
+    usernameButton.textContent = 'wizard';
+    settings.className = 'room-top-panel__settings';
+    settings.hidden = true;
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    stage.append(usernameButton, settings);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('intro-username');
+    expect(stage.dataset.tutorialReveal).toBe('top');
+
+    settings.hidden = false;
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+    expect(stage.dataset.tutorialReveal).toBe('top');
+
+    settings.hidden = true;
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    expect(stage.dataset.tutorialReveal).toBe('top');
+
+    facade.unmount();
+  });
+
+  it('keeps typed lesson text fixed after closing the username settings dialog', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const usernameButton = document.createElement('button');
+      const settings = document.createElement('section');
+      const gameplayFacade = {
+        getSnapshot: () => createLevelOneSnapshot(),
+        subscribe: () => () => {},
+      };
+      const facade = new TutorialFacade({
+        gameplayFacade,
+        getCurrentPageId: () => 'workshop',
+        storage: createMemoryStorage({
+          [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+            completedStepIds: ['intro-welcome'],
+          }),
+        }),
+      });
+
+      usernameButton.dataset.tutorialId = 'top:username';
+      usernameButton.textContent = 'wizard';
+      settings.className = 'room-top-panel__settings';
+      settings.hidden = true;
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      stage.append(usernameButton, settings);
+      document.body.append(stage);
+
+      facade.mount(stage);
+      facade.refresh();
+
+      const layer = stage.querySelector('.tutorial-layer');
+      const copy = stage.querySelector('.tutorial-layer__lesson-text');
+      const fullText = copy?.getAttribute('aria-label');
+
+      expect(facade.activeStep?.id).toBe('intro-username');
+      expect(copy?.textContent).toBe('');
+      expect(fullText).toBe("i don't need your name, but it would be nice to set it here.");
+
+      vi.advanceTimersByTime(1_000);
+
+      expect(copy?.textContent).toBe(fullText);
+
+      settings.hidden = false;
+      facade.refresh();
+
+      expect(layer?.hidden).toBe(true);
+      expect(copy?.textContent).toBe(fullText);
+
+      settings.hidden = true;
+      facade.refresh();
+
+      expect(layer?.hidden).toBe(false);
+      expect(copy?.textContent).toBe(fullText);
+
+      facade.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('lets the username target open settings while waiting for the saved name', () => {

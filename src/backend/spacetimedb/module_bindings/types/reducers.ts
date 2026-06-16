@@ -14,6 +14,7 @@ import AdminResetPlayerProgressionByIdentityReducer from "../admin_reset_player_
 import AdminResetPlayerProgressionDataReducer from "../admin_reset_player_progression_data_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "../admin_set_trade_alliance_member_role_reducer";
 import AnnounceLevelUpReducer from "../announce_level_up_reducer";
+import AnnouncePrestigeReducer from "../announce_prestige_reducer";
 import AnnounceResearchReducer from "../announce_research_reducer";
 import ApplyTradeAllianceReducer from "../apply_trade_alliance_reducer";
 import BuyFromNpcReducer from "../buy_from_npc_reducer";
@@ -49,7 +50,6 @@ import SetTotalGeneratedGoldReducer from "../set_total_generated_gold_reducer";
 import SetTradeAllianceMemberRoleReducer from "../set_trade_alliance_member_role_reducer";
 import SetUsernameReducer from "../set_username_reducer";
 import SubmitFeedbackReducer from "../submit_feedback_reducer";
-import TickNpcMarketReducer from "../tick_npc_market_reducer";
 import TransferTradeAllianceLeadershipReducer from "../transfer_trade_alliance_leadership_reducer";
 import UpdateTradeAllianceProfileReducer from "../update_trade_alliance_profile_reducer";
 import UpsertGameConfigReducer from "../upsert_game_config_reducer";
@@ -64,6 +64,7 @@ export type AdminResetPlayerProgressionByIdentityParams = __Infer<typeof AdminRe
 export type AdminResetPlayerProgressionDataParams = __Infer<typeof AdminResetPlayerProgressionDataReducer>;
 export type AdminSetTradeAllianceMemberRoleParams = __Infer<typeof AdminSetTradeAllianceMemberRoleReducer>;
 export type AnnounceLevelUpParams = __Infer<typeof AnnounceLevelUpReducer>;
+export type AnnouncePrestigeParams = __Infer<typeof AnnouncePrestigeReducer>;
 export type AnnounceResearchParams = __Infer<typeof AnnounceResearchReducer>;
 export type ApplyTradeAllianceParams = __Infer<typeof ApplyTradeAllianceReducer>;
 export type BuyFromNpcParams = __Infer<typeof BuyFromNpcReducer>;
@@ -99,7 +100,6 @@ export type SetTotalGeneratedGoldParams = __Infer<typeof SetTotalGeneratedGoldRe
 export type SetTradeAllianceMemberRoleParams = __Infer<typeof SetTradeAllianceMemberRoleReducer>;
 export type SetUsernameParams = __Infer<typeof SetUsernameReducer>;
 export type SubmitFeedbackParams = __Infer<typeof SubmitFeedbackReducer>;
-export type TickNpcMarketParams = __Infer<typeof TickNpcMarketReducer>;
 export type TransferTradeAllianceLeadershipParams = __Infer<typeof TransferTradeAllianceLeadershipReducer>;
 export type UpdateTradeAllianceProfileParams = __Infer<typeof UpdateTradeAllianceProfileReducer>;
 export type UpsertGameConfigParams = __Infer<typeof UpsertGameConfigReducer>;

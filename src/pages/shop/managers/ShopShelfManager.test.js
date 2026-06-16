@@ -951,6 +951,70 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('shows remaining bulk sell time on selected NPC market stands', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          autoSellSeconds: 1_800,
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 4,
+              sellGold: 1,
+              sellNeed: 1000,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'sage seed',
+              sellQuantity: 4,
+              sellGold: 1,
+              sellNeed: 1000,
+              sellProgressSeconds: 900,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    expect(stage.querySelector('.shop-page__slot-timer-value')?.textContent).toBe('15m');
+
+    gameplaySnapshot.shop.shelf.slots[0].sellProgressSeconds = 1_800;
+    manager.render(gameplaySnapshot);
+
+    expect(stage.querySelector('.shop-page__slot-timer-value')?.textContent).toBe('ready');
+
+    manager.unmount();
+  });
+
   it('allows choosing an NPC market item while demand is depleted', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');

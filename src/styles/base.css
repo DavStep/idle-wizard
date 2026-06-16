@@ -1055,6 +1055,10 @@ body {
   pointer-events: none;
 }
 
+.game-stage[data-tutorial-reveal] .workshop-page__action-bar > .style-button {
+  pointer-events: none;
+}
+
 .game-stage[data-tutorial-reveal~="top"] .room-top-panel-layer,
 .game-stage[data-tutorial-reveal~="rooms"] .room-bottom-panel-layer,
 .game-stage[data-tutorial-reveal~="mana"] .workshop-page__mana-sphere,
@@ -1081,6 +1085,12 @@ body {
   pointer-events: auto;
 }
 
+.game-stage[data-tutorial-reveal~="summon"]
+  .workshop-page__action-bar
+  > .workshop-page__summon-button {
+  pointer-events: auto;
+}
+
 .tutorial-layer,
 .tutorial-layer *,
 .tutorial-layer *::before,
@@ -1099,42 +1109,75 @@ body {
 .tutorial-layer__pointer {
   position: absolute;
   z-index: 3;
+  display: block;
   width: 38px;
-  height: auto;
-  image-rendering: auto;
-  opacity: 0;
+  margin: 0;
+  opacity: 1;
   pointer-events: none;
-  filter:
-    drop-shadow(0 1px 0 var(--style-surface))
-    drop-shadow(0 2px 1px rgb(0 0 0 / 34%));
   translate: -50% -50%;
-  scale: 0.9;
-  transform:
-    rotate(var(--tutorial-pointer-rotation, 0deg))
-    scaleX(var(--tutorial-pointer-scale-x, 1))
-    translateX(0);
-  transform-origin: 50% 50%;
-  transition:
-    opacity 180ms var(--style-motion-ease),
-    scale 180ms var(--style-motion-ease);
-  animation: tutorial-pointer-press 860ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
-  animation-play-state: paused;
+  transition: opacity var(--style-motion-fast) var(--style-motion-ease);
 }
 
-.tutorial-layer__pointer.is-visible {
-  opacity: 1;
-  scale: 1;
-  animation-play-state: running;
+.tutorial-layer__pointer-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  image-rendering: auto;
+  filter:
+    drop-shadow(0 1px 0 var(--style-surface))
+    drop-shadow(0 2px 1px rgb(0 0 0 / 30%));
+  transform:
+    rotate(var(--tutorial-pointer-rotation, 0deg))
+    scaleX(var(--tutorial-pointer-scale-x, 1));
+  transform-origin: 50% 50%;
 }
 
 .tutorial-layer__pointer.is-hiding {
   opacity: 0;
-  scale: 0.86;
-  animation: none;
+  will-change: opacity;
 }
 
 .tutorial-layer__pointer[hidden] {
   display: none;
+}
+
+.tutorial-layer__pointer[data-placement="top-left"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-push-x: 2px;
+  --tutorial-pointer-push-y: 2px;
+  --tutorial-pointer-soft-x: 1px;
+  --tutorial-pointer-soft-y: 1px;
+}
+
+.tutorial-layer__pointer[data-placement="top-right"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-push-x: -2px;
+  --tutorial-pointer-push-y: 2px;
+  --tutorial-pointer-soft-x: -1px;
+  --tutorial-pointer-soft-y: 1px;
+}
+
+.tutorial-layer__pointer[data-placement="bottom-left"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-push-x: 2px;
+  --tutorial-pointer-push-y: -2px;
+  --tutorial-pointer-soft-x: 1px;
+  --tutorial-pointer-soft-y: -1px;
+}
+
+.tutorial-layer__pointer[data-placement="bottom-right"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-push-x: -2px;
+  --tutorial-pointer-push-y: -2px;
+  --tutorial-pointer-soft-x: -1px;
+  --tutorial-pointer-soft-y: -1px;
+}
+
+.tutorial-layer__pointer[data-placement] .tutorial-layer__pointer-image {
+  animation: tutorial-pointer-point 2200ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  will-change: margin;
+}
+
+.tutorial-layer__pointer.is-hiding[data-placement] .tutorial-layer__pointer-image {
+  animation: none;
+  will-change: auto;
 }
 
 .tutorial-layer__portrait {
@@ -1272,8 +1315,6 @@ body {
   background: var(--style-surface);
 }
 
-.tutorial-layer__objective-close,
-.tutorial-layer__lesson-close,
 .tutorial-layer__lesson-show,
 .tutorial-layer__lesson-advance {
   position: absolute;
@@ -1294,16 +1335,6 @@ body {
   border-radius: 0;
 }
 
-.tutorial-layer__objective-close,
-.tutorial-layer__lesson-close {
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.tutorial-layer__objective-close:hover,
-.tutorial-layer__objective-close:focus-visible,
-.tutorial-layer__lesson-close:hover,
-.tutorial-layer__lesson-close:focus-visible,
 .tutorial-layer__lesson-show:hover,
 .tutorial-layer__lesson-show:focus-visible,
 .tutorial-layer__lesson-advance:hover,
@@ -1311,8 +1342,6 @@ body {
   text-decoration: underline;
 }
 
-.tutorial-layer__objective-close:focus,
-.tutorial-layer__lesson-close:focus,
 .tutorial-layer__lesson-show:focus,
 .tutorial-layer__lesson-advance:focus {
   outline: none;
@@ -1459,20 +1488,29 @@ body {
   text-align: right;
 }
 
-@keyframes tutorial-pointer-press {
+@keyframes tutorial-pointer-point {
   0%,
+  14%,
+  72%,
   100% {
-    transform:
-      rotate(var(--tutorial-pointer-rotation, 0deg))
-      scaleX(var(--tutorial-pointer-scale-x, 1))
-      translateX(0);
+    margin-top: 0;
+    margin-left: 0;
   }
 
-  52% {
-    transform:
-      rotate(var(--tutorial-pointer-rotation, 0deg))
-      scaleX(var(--tutorial-pointer-scale-x, 1))
-      translateX(3px);
+  30% {
+    margin-top: var(--tutorial-pointer-soft-y);
+    margin-left: var(--tutorial-pointer-soft-x);
+  }
+
+  42%,
+  48% {
+    margin-top: var(--tutorial-pointer-push-y);
+    margin-left: var(--tutorial-pointer-push-x);
+  }
+
+  62% {
+    margin-top: var(--tutorial-pointer-soft-y);
+    margin-left: var(--tutorial-pointer-soft-x);
   }
 }
 
@@ -1547,6 +1585,7 @@ body {
   .tutorial-layer__objective-button:not([hidden]),
   .tutorial-layer__objective:not([hidden]),
   .tutorial-layer__pointer,
+  .tutorial-layer__pointer-image,
   .tutorial-layer__portrait[data-speaking],
   .tutorial-layer__objective-button[data-speaking] .tutorial-layer__objective-button-image,
   .tutorial-layer__objective-button[data-attention="true"]::after,
@@ -1556,8 +1595,12 @@ body {
 
   .tutorial-layer__pointer {
     opacity: 1;
-    scale: 1;
     transition: none;
+    will-change: auto;
+  }
+
+  .tutorial-layer__pointer-image {
+    will-change: auto;
   }
 
   .tutorial-layer__objective-button[data-attention="true"]::after {
@@ -1883,7 +1926,7 @@ body {
 
 .shop-page__slot-value {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
   align-items: baseline;
   column-gap: var(--style-row-column-gap);
   min-width: 0;
@@ -1910,11 +1953,16 @@ body {
 }
 
 .shop-page__slot-price-value,
+.shop-page__slot-timer-value,
 .shop-page__request-row-price {
   justify-self: end;
   font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
   white-space: nowrap;
+}
+
+.shop-page__slot-timer-value {
+  color: var(--style-muted);
 }
 
 .shop-page__slot-empty-rule {
@@ -2938,6 +2986,12 @@ body {
   z-index: 30;
 }
 
+.room-player-info-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+}
+
 .workshop-page__leaderboard-popup[hidden],
 .workshop-page__trade-alliance-popup[hidden],
 .workshop-page__trade-alliance-member-popup[hidden],
@@ -2945,7 +2999,8 @@ body {
 .workshop-page__bag-popup[hidden],
 .workshop-page__logs-popup[hidden],
 .workshop-page__discoveries-popup[hidden],
-.workshop-page__prestige-popup[hidden] {
+.workshop-page__prestige-popup[hidden],
+.room-player-info-popup[hidden] {
   display: none;
 }
 
@@ -3307,6 +3362,30 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-name {
   color: var(--style-text);
   font-weight: bold;
+}
+
+.room-player-info-link {
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.room-player-info-link:hover,
+.room-player-info-link:focus {
+  text-decoration: underline;
+}
+
+.room-player-info-link:focus {
+  outline: none;
 }
 
 .workshop-page__alliance-tag {
@@ -6118,6 +6197,55 @@ div.workshop-page__discovery-row {
   transform: translate(-50%, -50%);
 }
 
+.style-dialog.room-player-info-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
+  transform: translate(-50%, -50%);
+}
+
+.style-button.room-player-info-close {
+  position: absolute;
+  right: var(--style-dialog-padding);
+  bottom: var(--style-box-border-label-offset);
+  z-index: 1;
+  width: auto;
+  min-width: 0;
+  padding: 0 4px;
+  margin: 0;
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+  border: 0;
+}
+
+.room-player-info-rows {
+  display: grid;
+  gap: 4px;
+}
+
+.room-player-info-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: var(--style-row-column-gap);
+  align-items: baseline;
+  min-height: var(--style-row-min-height);
+}
+
+.room-player-info-row .row_key {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-player-info-row .row_val {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .style-button {
   position: relative;
   width: var(--style-button-width);
@@ -6711,6 +6839,7 @@ div.workshop-page__discovery-row {
 .shop-page__demand-popup:not([hidden]),
 .shop-page__crystal-support-popup:not([hidden]),
 .shop-page__stock-buy-popup:not([hidden]),
+.room-player-info-popup:not([hidden]),
 .room-top-panel__settings:not([hidden]),
 .room-top-panel__level-popup:not([hidden]) {
   background: rgb(var(--style-backdrop-rgb) / 68%);
@@ -6735,7 +6864,12 @@ div.workshop-page__discovery-row {
 .game-stage:has(.shop-page__trade-history-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__demand-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__crystal-support-popup:not([hidden])) .shop-page,
-.game-stage:has(.shop-page__stock-buy-popup:not([hidden])) .shop-page {
+.game-stage:has(.shop-page__stock-buy-popup:not([hidden])) .shop-page,
+.game-stage:has(.room-player-info-popup:not([hidden])) .workshop-page,
+.game-stage:has(.room-player-info-popup:not([hidden])) .brewing-page,
+.game-stage:has(.room-player-info-popup:not([hidden])) .garden-page,
+.game-stage:has(.room-player-info-popup:not([hidden])) .research-page,
+.game-stage:has(.room-player-info-popup:not([hidden])) .shop-page {
   z-index: 3;
 }
 
@@ -6770,7 +6904,8 @@ div.workshop-page__discovery-row {
 .shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel,
 .shop-page__demand-popup:not([hidden]) .shop-page__demand-panel,
 .shop-page__crystal-support-popup:not([hidden]) .shop-page__crystal-support-dialog,
-.shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog {
+.shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog,
+.room-player-info-popup:not([hidden]) .room-player-info-dialog {
   animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 

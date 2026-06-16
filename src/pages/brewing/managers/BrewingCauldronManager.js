@@ -7,8 +7,8 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
 
-const AUTO_BREW_CAULDRON_RESEARCH_ID = 'automation:autoBrewCauldron:1';
 const TOUCH_DRAG_DISTANCE = 8;
 const NATIVE_HERB_DRAG_QUERY = '(hover: hover) and (pointer: fine)';
 
@@ -267,14 +267,16 @@ export class BrewingCauldronManager {
     const brewing = {
       ...snapshot.brewing,
       herbs: this.getHerbRows(snapshot),
-      autoBrewAvailable: this.isAutoBrewAvailable(snapshot),
     };
     brewing.cauldrons = this.getCauldrons(brewing);
     this.normalizeSelectedCauldron(brewing.cauldrons);
     for (const cauldron of brewing.cauldrons) {
       cauldron.herbs = brewing.herbs;
-      cauldron.autoBrewAvailable = brewing.autoBrewAvailable;
-      cauldron.autoBrewEnabled = brewing.autoBrewEnabled;
+      cauldron.autoBrewAvailable = this.isAutoBrewAvailable(
+        snapshot,
+        cauldron.cauldronIndex,
+      );
+      cauldron.autoBrewEnabled = cauldron.autoBrewEnabled === true;
       cauldron.selectedRecipe = this.getSelectedRecipe(
         brewing.recipes ?? [],
         cauldron.cauldronIndex,
@@ -1043,8 +1045,14 @@ export class BrewingCauldronManager {
     );
   }
 
-  isAutoBrewAvailable(snapshot) {
-    if (snapshot?.brewing?.autoBrewEnabled === true) {
+  isAutoBrewAvailable(snapshot, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const cauldron =
+      (snapshot?.brewing?.cauldrons ?? []).find(
+        (candidate) => candidate.cauldronIndex === safeCauldronIndex,
+      ) ?? (safeCauldronIndex === 0 ? snapshot?.brewing : null);
+
+    if (cauldron?.autoBrewEnabled === true) {
       return true;
     }
 
@@ -1054,7 +1062,9 @@ export class BrewingCauldronManager {
       return false;
     }
 
-    return completedResearchIds.has(AUTO_BREW_CAULDRON_RESEARCH_ID);
+    return completedResearchIds.has(
+      automationResearchIds.autoBrewCauldron(safeCauldronIndex + 1),
+    );
   }
 
   getPrimaryAction(brewing) {

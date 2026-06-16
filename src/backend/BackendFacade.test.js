@@ -56,6 +56,10 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
+  backendFacade.playerInfoFacade = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
   backendFacade.playerSyncFacade = {
     setPlayerFacade: vi.fn(),
     setGameplayFacade: vi.fn(),

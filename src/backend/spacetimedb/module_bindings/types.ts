@@ -257,6 +257,21 @@ export const PlayerGameplaySaveResult = __t.object("PlayerGameplaySaveResult", {
 });
 export type PlayerGameplaySaveResult = __Infer<typeof PlayerGameplaySaveResult>;
 
+export const PlayerInfoSummary = __t.object("PlayerInfoSummary", {});
+export type PlayerInfoSummary = __Infer<typeof PlayerInfoSummary>;
+
+export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
+  identity: __t.identity(),
+  username: __t.string(),
+  allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
+  totalProducedGold: __t.u64(),
+  playerLevel: __t.u32(),
+  prestigeCount: __t.u32(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerInfoSummaryResult = __Infer<typeof PlayerInfoSummaryResult>;
+
 export const PlayerProfileResult = __t.object("PlayerProfileResult", {
   identity: __t.identity(),
   username: __t.string(),

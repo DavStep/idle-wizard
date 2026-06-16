@@ -159,6 +159,7 @@ export class ItemsFacade {
           unlocked: discovered,
           known: discovered,
           discoveredByUsername: discovery?.username ?? null,
+          discoveredByIdentity: discovery?.discoveredByIdentity ?? null,
           discoveredAtMs: discovery?.discoveredAtMs ?? null,
           royaltyGold: discovery?.royaltyGold ?? 0,
           ingredients: recipe.ingredients,

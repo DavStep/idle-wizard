@@ -47,8 +47,8 @@ export class BrewingSnapshotManager {
       recipes,
       cauldrons,
       maxCauldrons,
-      autoBrewEnabled: this.getAutoBrewEnabled?.() === true,
-      autoBrewRecipeKey: this.getAutoBrewRecipeKey?.() ?? null,
+      autoBrewEnabled: this.getAutoBrewEnabled?.(0) === true,
+      autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(0) ?? null,
     };
   }
 
@@ -106,6 +106,8 @@ export class BrewingSnapshotManager {
       canStartBottling: Boolean(activeBrew?.canStartBottling),
       canCollectPotion: Boolean(activeBrew?.canCollect),
       maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
+      autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
+      autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
       herbs,
     };
   }

@@ -54,23 +54,27 @@ export class ShopAutoSellManager {
           break;
         }
 
-        if (!this.canSellItem(slot.sellItemTypeId, 1)) {
+        const quantity = this.getBulkSellQuantity(slot.sellItemTypeId);
+
+        if (quantity <= 0 || !this.canSellItem(slot.sellItemTypeId, quantity)) {
           progressSeconds = autoSellSeconds;
           break;
         }
 
-        const soldItem = this.itemsFacade.removeItem(slot.sellItemTypeId, 1);
+        const soldItem = this.itemsFacade.removeItem(slot.sellItemTypeId, quantity);
 
         if (!soldItem) {
           progressSeconds = autoSellSeconds;
           break;
         }
 
-        this.goldFacade.add(gold);
-        void this.shopNpcPriceManager.recordSellToNpc(item, 1);
+        const totalGold = gold * quantity;
+        this.goldFacade.add(totalGold);
+        void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
         this.onItemSold?.({
           item,
-          gold,
+          gold: totalGold,
+          quantity,
           slotNumber: slot.slotNumber,
         });
         progressSeconds -= autoSellSeconds;
@@ -88,5 +92,18 @@ export class ShopAutoSellManager {
 
   canSellItem(itemTypeId, quantity) {
     return this.shopSellAvailabilityManager?.canRemoveItem(itemTypeId, quantity) ?? true;
+  }
+
+  getBulkSellQuantity(itemTypeId) {
+    const availableQuantity =
+      this.shopSellAvailabilityManager?.getAvailableQuantity?.(itemTypeId) ??
+      this.itemsFacade?.getItemQuantity?.(itemTypeId) ??
+      0;
+
+    if (!Number.isFinite(availableQuantity) || availableQuantity <= 0) {
+      return 0;
+    }
+
+    return Math.max(0, Math.min(10_000, Math.floor(availableQuantity)));
   }
 }

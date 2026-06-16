@@ -1,4 +1,5 @@
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 
 const EMPTY_CHAT_SNAPSHOT = {
   connected: false,
@@ -20,9 +21,10 @@ const CHAT_AGE_MINUTE_MS = 60_000;
 const CHAT_AGE_REFRESH_FUZZ_MS = 250;
 
 export class WorkshopWorldChatManager {
-  constructor({ worldChatFacade, tradeAllianceFacade } = {}) {
+  constructor({ worldChatFacade, tradeAllianceFacade, onOpenPlayerInfo } = {}) {
     this.worldChatFacade = worldChatFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribeWorldChat = null;
     this.unsubscribeTradeAlliance = null;
@@ -541,7 +543,32 @@ export class WorkshopWorldChatManager {
       nodes.push(tag, document.createTextNode(' '));
     }
 
-    nodes.push(document.createTextNode(playerLevel ? `${username}(${playerLevel})` : username));
+    if (this.isSystemMessage(message)) {
+      nodes.push(document.createTextNode(username));
+      return nodes;
+    }
+
+    nodes.push(
+      createPlayerInfoLink(
+        {
+          identity: message?.senderIdentity,
+          username,
+          allianceTag: message?.allianceTag,
+          allianceTagColor: message?.allianceTagColor,
+          playerLevel,
+        },
+        {
+          onOpenPlayerInfo: this.onOpenPlayerInfo,
+          text: username,
+          className: 'workshop-page__world-chat-player-link',
+        },
+      ),
+    );
+
+    if (playerLevel) {
+      nodes.push(document.createTextNode(`(${playerLevel})`));
+    }
+
     return nodes;
   }
 

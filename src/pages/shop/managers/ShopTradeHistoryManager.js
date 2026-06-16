@@ -11,11 +11,13 @@ const EMPTY_PLAYER_SHOP_SNAPSHOT = {
 
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 import { appendTextWithSeedIcons } from '../../shared/itemIconLabel.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 
 export class ShopTradeHistoryManager {
-  constructor({ playerShopFacade } = {}) {
+  constructor({ playerShopFacade, onOpenPlayerInfo } = {}) {
     this.playerShopFacade = playerShopFacade;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.refs = {};
     this.unsubscribe = null;
     this.visible = false;
@@ -230,13 +232,29 @@ export class ShopTradeHistoryManager {
     const row = document.createElement('div');
     row.className = 'shop-page__trade-history-row';
 
-    const buyer = document.createElement('span');
-    buyer.className = 'shop-page__trade-history-username';
-    buyer.textContent = buyerUsername;
+    const buyer = createPlayerInfoLink(
+      {
+        identity: trade.buyerIdentity,
+        username: buyerUsername,
+      },
+      {
+        onOpenPlayerInfo: this.onOpenPlayerInfo,
+        text: buyerUsername,
+        className: 'shop-page__trade-history-username',
+      },
+    );
 
-    const seller = document.createElement('span');
-    seller.className = 'shop-page__trade-history-username';
-    seller.textContent = sellerUsername;
+    const seller = createPlayerInfoLink(
+      {
+        identity: trade.sellerIdentity,
+        username: sellerUsername,
+      },
+      {
+        onOpenPlayerInfo: this.onOpenPlayerInfo,
+        text: sellerUsername,
+        className: 'shop-page__trade-history-username',
+      },
+    );
 
     const item = document.createElement('span');
     appendTextWithSeedIcons(item, itemText);

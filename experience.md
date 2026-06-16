@@ -33,6 +33,8 @@
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
+- FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
+- FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
@@ -41,8 +43,11 @@
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
+- FTUE lesson panels have no visible `close` border label; players collapse them with the Elara portrait button.
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
 - FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then mana sphere, then summon, then tasks and room chrome.
+- FTUE intro-only reveal needs an empty `data-tutorial-reveal` attribute; clearing the attribute makes all gated room controls appear.
+- FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
 - FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
@@ -62,6 +67,10 @@
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
 - FTUE lesson panels should measure final copy/progress first and set box size before typewriter text appears; do not let panels resize as copy reveals.
 - FTUE target cues should be pointer-only while the lesson panel is open or the player asks with `show me`; never stack a target hint box with a lesson box.
+- FTUE pointer animation should keep opacity stable and use one gentle `1-2px` source-distance push with a long rest; authored source movement scales up on mobile.
+- FTUE pointer motion should keep target positioning on a stable container and animate a child hand image with a tiny placement-specific margin offset; animated transform paths can collapse to near-zero live motion in the in-app browser.
+- FTUE pointer rendering must not rewrite unchanged placement/style on every render; repeated DOM writes restart the cue animation before it can move.
+- Open FTUE lesson refreshes should let `applyCue` own target-cue visibility; hiding the cue during `showLesson` and showing it again resets pointer motion every refresh.
 - Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
 - FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
@@ -74,6 +83,7 @@
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
+- When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
 - Signed release APK handoff files should be named `idle-wizard-<package-version>-release.apk`; unsigned release APKs keep `-unsigned` in the filename.
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
@@ -123,15 +133,18 @@
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
 - Prestige reset saves intentionally lower run level, gold, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
+- Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
 - After prestige, leaderboard and alliance income must advance from accepted save run-gold deltas; comparing new run `gold.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
 - SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
 - Global client subscriptions should target indexed server views (`*_snapshot`, own views, or top/recent views), not raw public tables; `SELECT *` on base tables can keep sequential-scan warnings alive even when tables are small.
+- Player profile/info popups should subscribe to bounded visible-identity summary views, not global player/profile tables.
 - Current-player profile subscriptions should use `own_player_profile`; never fall back to `SELECT * FROM player` when identity SQL formatting is unavailable.
 - SpacetimeDB one-time startup maintenance uses `STARTUP_MAINTENANCE_STATE_KEY`; bump that key when adding new backfills/sanitizers that must run after deploy.
 - SpacetimeDB identity subscription filters use `0x${identity.toHexString()}` literals; quote camel-case column names such as `"sellerIdentity"` in raw SQL strings.
 - Global background work like NPC market ticks should be scheduled or single-owner server work, not one reducer interval per connected client.
+- NPC market replenishment is owned by the SpacetimeDB `npc_market_tick_schedule` table; clients should not call market tick reducers on connect or intervals.
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
@@ -196,6 +209,7 @@
 - Automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide automation research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
+- Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - NPC market stand 1 starts unlocked for free; later stand costs and sale timing come from SpacetimeDB `game_config.shop`.
 - With Research moved to level 3, level-one FTUE should bank only the 10 gold needed for level 2; do not hold players for mint research before Garden.
 - Nettle seed research stays locked until level 4 so level-3 players keep the 60 gold needed to complete the level-3 task step.
@@ -220,6 +234,7 @@
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
 - Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
 - Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
+- Player market listing prices should use only global sanity caps and trade-total limits; do not cap by item base price multiplier, because cheap seeds need arbitrary player-set prices.
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
 - Market page uses visible `npc market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
 - Crystal tab gold offer grants current level * 20 gold only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim gold; ready state owns Market/crystals notification dots.

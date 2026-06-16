@@ -3,6 +3,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { NpcMarketTradeManager } from './NpcMarketTradeManager.js';
 
 describe('NpcMarketTradeManager', () => {
+  it('does not start client-owned market tick intervals on connect', () => {
+    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
+    const manager = new NpcMarketTradeManager();
+
+    try {
+      manager.connect({ reducers: {} });
+      manager.disconnect();
+
+      expect(setIntervalSpy).not.toHaveBeenCalled();
+    } finally {
+      setIntervalSpy.mockRestore();
+    }
+  });
+
   it('resets NPC market demand and stock through the generated reducer', async () => {
     const resetNpcMarket = vi.fn(() => Promise.resolve());
     const manager = new NpcMarketTradeManager();

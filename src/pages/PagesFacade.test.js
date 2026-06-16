@@ -5850,7 +5850,12 @@ describe('PagesFacade', () => {
     ];
 
     expect(memberRows).toHaveLength(2);
-    expect(memberRows.every((row) => row.querySelector('button, select') === null)).toBe(true);
+    expect(memberRows.every((row) => row.querySelector('.room-player-info-link'))).toBe(true);
+    expect(
+      memberRows.every(
+        (row) => row.querySelector('button:not(.room-player-info-link), select') === null,
+      ),
+    ).toBe(true);
 
     memberRows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(memberPopup.hidden).toBe(true);
@@ -8583,7 +8588,7 @@ describe('PagesFacade', () => {
     );
 
     expect(visibleRows).toEqual(['empty', 'mint seed (1) 1 gold']);
-    expect(mintButton?.disabled).toBe(true);
+    expect(mintButton?.disabled).toBe(false);
     expect(sageRow?.hidden ?? true).toBe(true);
   });
 

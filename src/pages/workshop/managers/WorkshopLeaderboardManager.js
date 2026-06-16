@@ -1,5 +1,6 @@
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 
 const LEADERBOARD_SCOPES = [
   {
@@ -56,10 +57,16 @@ const DEFAULT_SCOPE_ID = 'singlePlayer';
 const DEFAULT_PERIOD_ID = 'allTime';
 
 export class WorkshopLeaderboardManager {
-  constructor({ gameplayFacade, leaderboardFacade, tradeAllianceFacade } = {}) {
+  constructor({
+    gameplayFacade,
+    leaderboardFacade,
+    tradeAllianceFacade,
+    onOpenPlayerInfo,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.leaderboardFacade = leaderboardFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribeLeaderboard = null;
     this.unsubscribeGameplay = null;
@@ -455,6 +462,7 @@ export class WorkshopLeaderboardManager {
 
     const normalizedUser = {
       name: user.name,
+      identity: user.identity,
       allianceTag: this.normalizeAllianceTag(user.allianceTag ?? user.alliance_tag),
       allianceTagColor: normalizeTradeAllianceTagColor(
         user.allianceTagColor ?? user.alliance_tag_color,
@@ -466,6 +474,7 @@ export class WorkshopLeaderboardManager {
       monthlyIncome: this.normalizeMetric(user.monthlyIncome),
       totalGeneratedGold: this.normalizeMetric(user.totalIncome, user.totalGeneratedGold),
       totalIncome: this.normalizeMetric(user.totalIncome, user.totalGeneratedGold),
+      prestigeCount: this.normalizeMetric(user.prestigeCount),
     };
 
     if (includeRank) {
@@ -564,12 +573,27 @@ export class WorkshopLeaderboardManager {
   createUserLabel(user, index) {
     const rank = this.normalizeRank(user?.rank) ?? index + 1;
     const tag = createAllianceTagSpan(user?.allianceTag, user?.allianceTagColor);
+    const name = createPlayerInfoLink(
+      {
+        identity: user.identity,
+        username: user.name,
+        allianceTag: user.allianceTag,
+        allianceTagColor: user.allianceTagColor,
+        playerLevel: user.playerLevel,
+        totalProducedGold: user.totalIncome,
+        prestigeCount: user.prestigeCount,
+      },
+      {
+        onOpenPlayerInfo: this.onOpenPlayerInfo,
+        text: user.name,
+        className: 'workshop-page__leaderboard-player-link',
+      },
+    );
     return [
       document.createTextNode(`${rank}. `),
       ...(tag ? [tag, document.createTextNode(' ')] : []),
-      document.createTextNode(
-        `${user.name} (${this.normalizePlayerLevel(user.playerLevel)})`,
-      ),
+      name,
+      document.createTextNode(` (${this.normalizePlayerLevel(user.playerLevel)})`),
     ];
   }
 

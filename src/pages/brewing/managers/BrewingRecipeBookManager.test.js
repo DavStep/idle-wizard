@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { BrewingRecipeBookManager } from './BrewingRecipeBookManager.js';
 
@@ -126,6 +126,70 @@ describe('BrewingRecipeBookManager', () => {
     expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
       'select',
     );
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('enables auto brew for the current cauldron only', () => {
+    const snapshot = createSnapshot();
+    snapshot.research = {
+      completedResearchIds: ['automation:autoBrewCauldron:2'],
+    };
+    snapshot.brewing.cauldrons = [
+      {
+        cauldronIndex: 0,
+        cauldronNumber: 1,
+        autoBrewEnabled: true,
+        autoBrewRecipeKey: 'manaTonic',
+      },
+      {
+        cauldronIndex: 1,
+        cauldronNumber: 2,
+        autoBrewEnabled: false,
+        autoBrewRecipeKey: null,
+      },
+    ];
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const setBrewingAutoBrewRecipe = vi.fn((recipeKey, cauldronIndex) => {
+      snapshot.brewing.cauldrons[cauldronIndex].autoBrewRecipeKey = recipeKey;
+      return { ok: true };
+    });
+    const setBrewingAutoBrewEnabled = vi.fn((enabled, cauldronIndex) => {
+      snapshot.brewing.cauldrons[cauldronIndex].autoBrewEnabled = enabled === true;
+      return { ok: true };
+    });
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: {
+        ...createGameplayFacadeFake(snapshot),
+        setBrewingAutoBrewRecipe,
+        setBrewingAutoBrewEnabled,
+      },
+      getSelectedRecipeKey: () => 'minorHealingPotion',
+      getCurrentCauldronIndex: () => 1,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+
+    const stateButton = parent.querySelector('.brewing-page__auto-state-button');
+    expect(parent.querySelector('.brewing-page__auto-summary')?.hidden).toBe(false);
+    expect(stateButton.disabled).toBe(false);
+    expect(stateButton.textContent).toBe('disabled');
+
+    stateButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(setBrewingAutoBrewRecipe).toHaveBeenCalledWith('minorHealingPotion', 1);
+    expect(setBrewingAutoBrewEnabled).toHaveBeenCalledWith(true, 1);
+    expect(snapshot.brewing.cauldrons[0]).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewRecipeKey: 'manaTonic',
+    });
+    expect(snapshot.brewing.cauldrons[1]).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewRecipeKey: 'minorHealingPotion',
+    });
 
     manager.unmount();
     parent.remove();

@@ -361,6 +361,11 @@ export class GameplayFacade {
       return result;
     }
 
+    void this.worldChatFacade?.announcePrestige?.({
+      prestigeCount: result.completedLevels?.length,
+      playerLevel: result.milestone?.level,
+    });
+
     this.resetRunAfterPrestige();
     this.publishAndSaveSnapshot();
 
@@ -514,26 +519,26 @@ export class GameplayFacade {
     return result;
   }
 
-  setBrewingAutoBrewRecipe(recipeKey) {
-    const result = this.brewingFacade.setAutoBrewRecipeKey(recipeKey);
+  setBrewingAutoBrewRecipe(recipeKey, cauldronIndex = 0) {
+    const result = this.brewingFacade.setAutoBrewRecipeKey(recipeKey, cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  setBrewingAutoBrewEnabled(enabled) {
-    const result = this.brewingFacade.setAutoBrewEnabled(enabled);
+  setBrewingAutoBrewEnabled(enabled, cauldronIndex = 0) {
+    const result = this.brewingFacade.setAutoBrewEnabled(enabled, cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  toggleBrewingAutoBrewEnabled() {
-    const result = this.brewingFacade.toggleAutoBrewEnabled();
+  toggleBrewingAutoBrewEnabled(cauldronIndex = 0) {
+    const result = this.brewingFacade.toggleAutoBrewEnabled(cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  getBrewingAutoBrewRecipeKey() {
-    return this.brewingFacade.getAutoBrewRecipeKey();
+  getBrewingAutoBrewRecipeKey(cauldronIndex = 0) {
+    return this.brewingFacade.getAutoBrewRecipeKey(cauldronIndex);
   }
 
   brewCauldron(cauldronIndex = 0) {

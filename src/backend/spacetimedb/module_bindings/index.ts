@@ -42,6 +42,7 @@ import AdminResetPlayerProgressionByIdentityReducer from "./admin_reset_player_p
 import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progression_data_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
 import AnnounceLevelUpReducer from "./announce_level_up_reducer";
+import AnnouncePrestigeReducer from "./announce_prestige_reducer";
 import AnnounceResearchReducer from "./announce_research_reducer";
 import ApplyTradeAllianceReducer from "./apply_trade_alliance_reducer";
 import BuyFromNpcReducer from "./buy_from_npc_reducer";
@@ -77,7 +78,6 @@ import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetTradeAllianceMemberRoleReducer from "./set_trade_alliance_member_role_reducer";
 import SetUsernameReducer from "./set_username_reducer";
 import SubmitFeedbackReducer from "./submit_feedback_reducer";
-import TickNpcMarketReducer from "./tick_npc_market_reducer";
 import TransferTradeAllianceLeadershipReducer from "./transfer_trade_alliance_leadership_reducer";
 import UpdateTradeAllianceProfileReducer from "./update_trade_alliance_profile_reducer";
 import UpsertGameConfigReducer from "./upsert_game_config_reducer";
@@ -109,6 +109,7 @@ import PlayerRow from "./player_table";
 import PlayerShopListingRow from "./player_shop_listing_table";
 import PlayerShopProceedsRow from "./player_shop_proceeds_table";
 import PlayerShopTradeRow from "./player_shop_trade_table";
+import PlayerInfoSummaryRow from "./player_info_summary_table";
 import PlayerShopTradeRecentRow from "./player_shop_trade_recent_table";
 import PotionRecipeDiscoveryRow from "./potion_recipe_discovery_table";
 import PotionRecipeDiscoverySnapshotRow from "./potion_recipe_discovery_snapshot_table";
@@ -503,6 +504,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnTradeAllianceRewardInboxRow),
+  player_info_summary: __table({
+    name: 'player_info_summary',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, PlayerInfoSummaryRow),
   player_shop_trade_recent: __table({
     name: 'player_shop_trade_recent',
     indexes: [
@@ -585,6 +593,7 @@ const reducersSchema = __reducers(
   __reducerSchema("admin_reset_player_progression_data", AdminResetPlayerProgressionDataReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
   __reducerSchema("announce_level_up", AnnounceLevelUpReducer),
+  __reducerSchema("announce_prestige", AnnouncePrestigeReducer),
   __reducerSchema("announce_research", AnnounceResearchReducer),
   __reducerSchema("apply_trade_alliance", ApplyTradeAllianceReducer),
   __reducerSchema("buy_from_npc", BuyFromNpcReducer),
@@ -620,7 +629,6 @@ const reducersSchema = __reducers(
   __reducerSchema("set_trade_alliance_member_role", SetTradeAllianceMemberRoleReducer),
   __reducerSchema("set_username", SetUsernameReducer),
   __reducerSchema("submit_feedback", SubmitFeedbackReducer),
-  __reducerSchema("tick_npc_market", TickNpcMarketReducer),
   __reducerSchema("transfer_trade_alliance_leadership", TransferTradeAllianceLeadershipReducer),
   __reducerSchema("update_trade_alliance_profile", UpdateTradeAllianceProfileReducer),
   __reducerSchema("upsert_game_config", UpsertGameConfigReducer),

@@ -6,6 +6,7 @@ import {
 } from '../../../shared/tradeAllianceTagColors.js';
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 import { createAllianceTagSpan } from '../../shared/allianceTagLabel.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 
@@ -48,9 +49,10 @@ const QUEST_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
 const QUEST_TIMER_INTERVAL_MS = 1000;
 
 export class WorkshopTradeAllianceManager {
-  constructor({ gameplayFacade, tradeAllianceFacade } = {}) {
+  constructor({ gameplayFacade, tradeAllianceFacade, onOpenPlayerInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -619,7 +621,7 @@ export class WorkshopTradeAllianceManager {
     const main = document.createElement('div');
     main.className = 'workshop-page__trade-alliance-member-main';
     main.append(
-      this.createTextRow(`${member.username}(${member.playerLevel})`, this.formatRole(member.role)),
+      this.createTextRow(this.createPlayerLabel(member), this.formatRole(member.role)),
       this.createTextRow('weekly', this.formatNumber(this.getMemberWeeklyContribution(member)), {
         muted: true,
       }),
@@ -748,7 +750,14 @@ export class WorkshopTradeAllianceManager {
     const row = document.createElement('div');
     row.className = 'workshop-page__trade-alliance-application-row';
     row.append(
-      this.createTextRow(`${application.username}(${application.playerLevel})`, 'pending'),
+      this.createTextRow(
+        this.createPlayerLabel({
+          identity: application.applicantIdentity,
+          username: application.username,
+          playerLevel: application.playerLevel,
+        }),
+        'pending',
+      ),
       this.createSmallButton('accept', () =>
         this.runAction(() =>
           this.tradeAllianceFacade.acceptApplication(application.applicationKey),
@@ -991,6 +1000,26 @@ export class WorkshopTradeAllianceManager {
     return [
       ...(tag ? [tag, document.createTextNode(' ')] : []),
       document.createTextNode(String(alliance?.name ?? '')),
+    ];
+  }
+
+  createPlayerLabel(player) {
+    const username = String(player?.username ?? 'wizard');
+    const level = this.normalizePlayerLevel(player?.playerLevel);
+    return [
+      createPlayerInfoLink(
+        {
+          identity: player?.identity ?? player?.memberIdentity ?? player?.applicantIdentity,
+          username,
+          playerLevel: level,
+        },
+        {
+          onOpenPlayerInfo: this.onOpenPlayerInfo,
+          text: username,
+          className: 'workshop-page__trade-alliance-player-link',
+        },
+      ),
+      document.createTextNode(`(${level})`),
     ];
   }
 
@@ -1432,6 +1461,11 @@ export class WorkshopTradeAllianceManager {
   formatNumber(value) {
     const safeValue = Math.floor(Number(value) || 0);
     return safeValue.toLocaleString('en-US');
+  }
+
+  normalizePlayerLevel(value) {
+    const level = Math.floor(Number(value));
+    return Number.isFinite(level) && level >= 1 ? level : 1;
   }
 
   formatGoldText(value) {

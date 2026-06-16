@@ -45,8 +45,8 @@ export class BrewingFacade {
       brewingProcessEntityManager: this.brewingProcessEntityManager,
       itemsFacade,
     });
-    this.autoBrewEnabled = false;
-    this.autoBrewRecipeKey = null;
+    this.autoBrewEnabledByCauldron = new Map();
+    this.autoBrewRecipeKeysByCauldron = new Map();
     this.onBrewComplete = onBrewComplete;
     this.brewingSnapshotManager = new BrewingSnapshotManager({
       brewingBalanceManager: this.brewingBalanceManager,
@@ -56,8 +56,8 @@ export class BrewingFacade {
       itemsFacade,
       manaFacade,
       playerLevelFacade,
-      getAutoBrewEnabled: () => this.autoBrewEnabled,
-      getAutoBrewRecipeKey: () => this.autoBrewRecipeKey,
+      getAutoBrewEnabled: (cauldronIndex) => this.getAutoBrewEnabled(cauldronIndex),
+      getAutoBrewRecipeKey: (cauldronIndex) => this.getAutoBrewRecipeKey(cauldronIndex),
     });
   }
 
@@ -71,72 +71,106 @@ export class BrewingFacade {
     this.brewingRecipeMatchManager.setPotionDiscoveryFacade(potionDiscoveryFacade);
   }
 
-  setAutoBrewRecipeKey(recipeKey) {
+  setAutoBrewRecipeKey(recipeKey, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const nextKey = typeof recipeKey === 'string' && recipeKey.length > 0 ? recipeKey : null;
 
     const recipe = nextKey ? this.brewingRecipeMatchManager.getRecipeByKey(nextKey) : null;
 
     if (!recipe || !this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)) {
-      this.autoBrewRecipeKey = null;
-      this.autoBrewEnabled = false;
+      this.autoBrewRecipeKeysByCauldron.delete(safeCauldronIndex);
+      this.autoBrewEnabledByCauldron.delete(safeCauldronIndex);
       return {
         ok: true,
         autoBrewRecipeKey: null,
         autoBrewEnabled: false,
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
       };
     }
 
-    this.autoBrewRecipeKey = nextKey;
+    this.autoBrewRecipeKeysByCauldron.set(safeCauldronIndex, nextKey);
     return {
       ok: true,
-      autoBrewRecipeKey: this.autoBrewRecipeKey,
-      autoBrewEnabled: this.autoBrewEnabled,
+      autoBrewRecipeKey: this.getAutoBrewRecipeKey(safeCauldronIndex),
+      autoBrewEnabled: this.getAutoBrewEnabled(safeCauldronIndex),
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
     };
   }
 
-  getAutoBrewRecipeKey() {
-    return this.autoBrewRecipeKey;
+  getAutoBrewRecipeKey(cauldronIndex = 0) {
+    return this.autoBrewRecipeKeysByCauldron.get(this.normalizeCauldronIndex(cauldronIndex)) ?? null;
   }
 
-  setAutoBrewEnabled(enabled) {
+  setAutoBrewEnabled(enabled, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const nextEnabled = enabled === true;
-    if (nextEnabled && !this.autoBrewRecipeKey) {
+    if (nextEnabled && !this.getAutoBrewRecipeKey(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'auto_brew_recipe_required',
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
       };
     }
 
-    this.autoBrewEnabled = nextEnabled;
+    if (nextEnabled) {
+      this.autoBrewEnabledByCauldron.set(safeCauldronIndex, true);
+    } else {
+      this.autoBrewEnabledByCauldron.delete(safeCauldronIndex);
+    }
 
     return {
       ok: true,
-      autoBrewEnabled: this.autoBrewEnabled,
+      autoBrewEnabled: this.getAutoBrewEnabled(safeCauldronIndex),
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
     };
   }
 
-  toggleAutoBrewEnabled() {
-    return this.setAutoBrewEnabled(!this.autoBrewEnabled);
+  toggleAutoBrewEnabled(cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    return this.setAutoBrewEnabled(!this.getAutoBrewEnabled(safeCauldronIndex), safeCauldronIndex);
   }
 
-  getAutoBrewEnabled() {
-    return this.autoBrewEnabled;
+  getAutoBrewEnabled(cauldronIndex = 0) {
+    return this.autoBrewEnabledByCauldron.get(this.normalizeCauldronIndex(cauldronIndex)) === true;
   }
 
   getPendingAutoBrewManaCost() {
-    if (!this.autoBrewEnabled || !this.autoBrewRecipeKey) {
+    const maxCauldrons = this.brewingSnapshotManager.getMaxCauldrons();
+    let manaCost = 0;
+
+    for (let cauldronIndex = 0; cauldronIndex < maxCauldrons; cauldronIndex += 1) {
+      const cauldronManaCost = this.getPendingAutoBrewManaCostForCauldron(cauldronIndex);
+
+      if (cauldronManaCost <= 0) {
+        continue;
+      }
+
+      manaCost += cauldronManaCost;
+    }
+
+    return manaCost;
+  }
+
+  getPendingAutoBrewManaCostForCauldron(cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (
+      !this.getAutoBrewEnabled(safeCauldronIndex) ||
+      !this.getAutoBrewRecipeKey(safeCauldronIndex) ||
+      this.brewingProcessEntityManager.hasActiveBrew(safeCauldronIndex)
+    ) {
       return 0;
     }
 
-    const recipe = this.brewingRecipeMatchManager.getRecipeByKey(this.autoBrewRecipeKey);
+    const recipe = this.brewingRecipeMatchManager.getRecipeByKey(
+      this.getAutoBrewRecipeKey(safeCauldronIndex),
+    );
 
     if (!recipe || !this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)) {
-      return 0;
-    }
-
-    const targetCauldronIndex = this.getPendingAutoBrewCauldronIndex(recipe);
-
-    if (targetCauldronIndex === null) {
       return 0;
     }
 
@@ -153,7 +187,7 @@ export class BrewingFacade {
     if (
       !this.brewingStartManager.hasEnoughInventoryForCauldron(
         ingredientItemTypeIds,
-        targetCauldronIndex,
+        safeCauldronIndex,
       )
     ) {
       return 0;
@@ -162,48 +196,28 @@ export class BrewingFacade {
     return Number.isFinite(recipe.manaCost) ? Math.max(0, recipe.manaCost) : 0;
   }
 
-  getPendingAutoBrewCauldronIndex(recipe) {
-    const maxCauldrons = this.brewingSnapshotManager.getMaxCauldrons();
-
-    for (let cauldronIndex = 0; cauldronIndex < maxCauldrons; cauldronIndex += 1) {
-      if (this.brewingProcessEntityManager.hasActiveBrew(cauldronIndex)) {
-        continue;
-      }
-
-      const ingredientItemTypeIds =
-        this.brewingStartManager.getRecipeIngredientItemTypeIds(recipe);
-
-      if (
-        this.brewingStartManager.hasEnoughInventoryForCauldron(
-          ingredientItemTypeIds,
-          cauldronIndex,
-        )
-      ) {
-        return cauldronIndex;
-      }
-    }
-
-    return null;
-  }
-
   autoBrew(cauldronIndex = 0) {
-    if (!this.autoBrewEnabled) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (!this.getAutoBrewEnabled(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'auto_brew_disabled',
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
       };
     }
 
     const prepared = this.brewingStartManager.prepareRecipeForAutoBrew(
-      this.autoBrewRecipeKey,
-      cauldronIndex,
+      this.getAutoBrewRecipeKey(safeCauldronIndex),
+      safeCauldronIndex,
     );
 
     if (!prepared.ok) {
       return prepared;
     }
 
-    return this.brew(cauldronIndex);
+    return this.brew(safeCauldronIndex);
   }
 
   prepareRecipeForSelection(recipeKey, cauldronIndex = 0) {
@@ -284,12 +298,14 @@ export class BrewingFacade {
         activeBrew: cauldronActiveBrew
           ? this.formatActiveBrewPersistence(cauldronActiveBrew)
           : null,
+        autoBrewEnabled: this.getAutoBrewEnabled(cauldronIndex),
+        autoBrewRecipeKey: this.getAutoBrewRecipeKey(cauldronIndex),
       };
     });
 
     return {
-      autoBrewEnabled: this.autoBrewEnabled,
-      autoBrewRecipeKey: this.autoBrewRecipeKey,
+      autoBrewEnabled: this.getAutoBrewEnabled(0),
+      autoBrewRecipeKey: this.getAutoBrewRecipeKey(0),
       cauldrons,
       cauldronItemKeys: this.brewingCauldronEntityManager
         .getIngredientSnapshots()
@@ -313,10 +329,7 @@ export class BrewingFacade {
       return;
     }
 
-    this.setAutoBrewRecipeKey(
-      typeof snapshot.autoBrewRecipeKey === 'string' ? snapshot.autoBrewRecipeKey : null,
-    );
-    this.setAutoBrewEnabled(Boolean(snapshot.autoBrewEnabled));
+    this.clearAutoBrewState();
 
     this.brewingCauldronEntityManager.clearAllIngredients();
     this.brewingProcessEntityManager.clearAllActiveBrews();
@@ -337,9 +350,41 @@ export class BrewingFacade {
           ? savedCauldron.cauldronNumber - 1
           : index,
       );
+      this.restoreAutoBrew(savedCauldron, snapshot, cauldronIndex);
       this.restoreCauldronItems(savedCauldron?.cauldronItemKeys, itemsFacade, cauldronIndex);
       this.restoreActiveBrew(savedCauldron?.activeBrew, itemsFacade, cauldronIndex);
     }
+  }
+
+  restoreAutoBrew(savedCauldron, snapshot, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const recipeKey =
+      typeof savedCauldron?.autoBrewRecipeKey === 'string'
+        ? savedCauldron.autoBrewRecipeKey
+        : safeCauldronIndex === 0 && typeof snapshot.autoBrewRecipeKey === 'string'
+          ? snapshot.autoBrewRecipeKey
+          : null;
+    const enabled =
+      typeof savedCauldron?.autoBrewEnabled === 'boolean'
+        ? savedCauldron.autoBrewEnabled
+        : safeCauldronIndex === 0
+          ? Boolean(snapshot.autoBrewEnabled)
+          : false;
+
+    if (!recipeKey) {
+      return;
+    }
+
+    this.setAutoBrewRecipeKey(recipeKey, safeCauldronIndex);
+
+    if (enabled) {
+      this.setAutoBrewEnabled(true, safeCauldronIndex);
+    }
+  }
+
+  clearAutoBrewState() {
+    this.autoBrewEnabledByCauldron.clear();
+    this.autoBrewRecipeKeysByCauldron.clear();
   }
 
   restoreCauldronItems(cauldronItemKeys, itemsFacade, cauldronIndex = 0) {

@@ -42,6 +42,7 @@ export class AppFacade {
       worldChatFacade: this.backendFacade.getWorldChatFacade(),
       tradeAllianceFacade: this.backendFacade.getTradeAllianceFacade(),
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
+      playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
       authFacade: this.backendFacade.getAuthFacade(),
     });

@@ -116,6 +116,9 @@ export class ShopShelfManager {
     const priceValue = document.createElement('span');
     priceValue.className = 'shop-page__slot-price-value';
 
+    const timerValue = document.createElement('span');
+    timerValue.className = 'shop-page__slot-timer-value';
+
     const emptyRule = document.createElement('span');
     emptyRule.className = 'shop-page__slot-empty-rule';
     emptyRule.setAttribute('aria-hidden', 'true');
@@ -129,7 +132,7 @@ export class ShopShelfManager {
     });
 
     row.append(label, value);
-    return { row, value, button, itemValue, priceValue, emptyRule };
+    return { row, value, button, itemValue, priceValue, timerValue, emptyRule };
   }
 
   createSellControls() {
@@ -407,14 +410,16 @@ export class ShopShelfManager {
       if (refs.emptyRule.parentElement !== refs.priceValue) {
         refs.priceValue.replaceChildren(refs.emptyRule);
       }
+      this.setText(refs.timerValue, '');
       return;
     }
 
     if (
       refs.itemValue.parentElement !== refs.value ||
-      refs.priceValue.parentElement !== refs.value
+      refs.priceValue.parentElement !== refs.value ||
+      refs.timerValue.parentElement !== refs.value
     ) {
-      refs.value.replaceChildren(refs.itemValue, refs.priceValue);
+      refs.value.replaceChildren(refs.itemValue, refs.priceValue, refs.timerValue);
     }
 
     this.setText(refs.itemValue, parts.itemText);
@@ -423,6 +428,7 @@ export class ShopShelfManager {
 
     setResourceIconText(refs.priceValue, parts.priceText ? ` ${parts.priceText}` : '');
     setResourceColor(refs.priceValue, parts.priceResource ?? null);
+    this.setText(refs.timerValue, parts.timerText);
   }
 
   formatLockedSlotAction(shelf, cost) {
@@ -589,6 +595,7 @@ export class ShopShelfManager {
         itemKind: displayItem.kind,
         priceText: 'offline',
         priceResource: null,
+        timerText: this.formatBulkSellTimer(slot, shelf),
       };
     }
 
@@ -598,7 +605,46 @@ export class ShopShelfManager {
       itemKind: displayItem.kind,
       priceText: this.formatSellGold(sellGold),
       priceResource: 'gold',
+      timerText: this.formatBulkSellTimer(slot, shelf),
     };
+  }
+
+  formatBulkSellTimer(slot, shelf) {
+    const autoSellSeconds = Number(shelf.autoSellSeconds);
+    if (!Number.isFinite(autoSellSeconds) || autoSellSeconds <= 0) {
+      return '';
+    }
+
+    const progressSeconds = Number.isFinite(slot.sellProgressSeconds)
+      ? Math.max(0, slot.sellProgressSeconds)
+      : 0;
+    const remainingSeconds = Math.max(0, autoSellSeconds - progressSeconds);
+
+    if (remainingSeconds <= 0) {
+      return 'ready';
+    }
+
+    return this.formatTimer(remainingSeconds);
+  }
+
+  formatTimer(seconds) {
+    const safeSeconds = Math.max(0, Math.ceil(Number.isFinite(seconds) ? seconds : 0));
+    const hours = Math.floor(safeSeconds / 3_600);
+    const minutes = Math.floor((safeSeconds % 3_600) / 60);
+
+    if (hours > 0 && minutes > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+
+    if (hours > 0) {
+      return `${hours}h`;
+    }
+
+    if (minutes > 0) {
+      return `${minutes}m`;
+    }
+
+    return `${safeSeconds}s`;
   }
 
   applySlotItemColor(element, parts) {
@@ -642,9 +688,7 @@ export class ShopShelfManager {
     return (
       shouldShowItemInActionList(snapshot, item, item.quantity) &&
       Number.isFinite(item.sellGold) &&
-      item.sellGold > 0 &&
-      Number.isFinite(item.sellNeed) &&
-      item.sellNeed >= 0
+      item.sellGold > 0
     );
   }
 
