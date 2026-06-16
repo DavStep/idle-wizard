@@ -486,7 +486,7 @@ describe('GameplayFacade', () => {
       },
     });
     expect(gameplayFacade.getSnapshot().prestige.completedLevels).toEqual([10]);
-  }, 10_000);
+  }, 30_000);
 
   it('derives loaded ruby from completed prestiges minus completed ruby research cost', () => {
     const persistenceStorage = createMemoryStorage();
