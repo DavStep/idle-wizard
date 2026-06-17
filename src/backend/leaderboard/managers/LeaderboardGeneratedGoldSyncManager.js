@@ -1,4 +1,4 @@
-const DEFAULT_SYNC_INTERVAL_MS = 30_000;
+const DEFAULT_SYNC_INTERVAL_MS = 60_000;
 
 export class LeaderboardGeneratedGoldSyncManager {
   constructor({

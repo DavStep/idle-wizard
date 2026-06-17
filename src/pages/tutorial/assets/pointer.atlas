@@ -1,0 +1,14 @@
+pointer.png
+size:160,416
+filter:Linear,Linear
+pointer-glow
+bounds:1,1,120,119
+offsets:5,4,129,129
+pointer-pattern1
+bounds:120,210,32,46
+pointer-pattern2
+bounds:120,184,34,24
+pointer-shockwave
+bounds:1,258,158,157
+pointer1-asset
+bounds:1,122,117,134

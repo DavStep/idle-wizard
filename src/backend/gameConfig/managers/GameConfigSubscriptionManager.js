@@ -2,6 +2,8 @@ const RESEARCH_CONFIG_QUERY = 'SELECT * FROM research_config_snapshot';
 const GAME_CONFIG_QUERY = 'SELECT * FROM game_config_snapshot';
 const LEGACY_RESEARCH_CONFIG_QUERY = 'SELECT * FROM research_config';
 const LEGACY_GAME_CONFIG_QUERY = 'SELECT * FROM game_config';
+const MAINTENANCE_CONFIG_KEY = 'maintenance';
+const MAINTENANCE_QUERY = `SELECT * FROM game_config WHERE "configKey" = '${MAINTENANCE_CONFIG_KEY}'`;
 const EMPTY_SNAPSHOT = {
   connected: false,
   researchConfigs: [],
@@ -14,8 +16,9 @@ export class GameConfigSubscriptionManager {
     this.connection = null;
     this.researchConfigTable = null;
     this.gameConfigTable = null;
-    this.researchConfigQuery = RESEARCH_CONFIG_QUERY;
-    this.gameConfigQuery = GAME_CONFIG_QUERY;
+    this.maintenanceTable = null;
+    this.bootstrapResearchConfigs = [];
+    this.bootstrapGameConfigs = [];
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
@@ -24,45 +27,62 @@ export class GameConfigSubscriptionManager {
   connect(connection) {
     this.disconnect();
     this.connection = connection;
-    const researchConfigSource = this.findTableWithQuery({
+    const researchConfigSource = this.findBootstrapSource({
       camelName: 'researchConfigSnapshot',
       snakeName: 'research_config_snapshot',
       query: RESEARCH_CONFIG_QUERY,
-      legacyCamelName: 'researchConfig',
-      legacySnakeName: 'research_config',
+      fallbackCamelName: 'researchConfig',
+      fallbackSnakeName: 'research_config',
       legacyQuery: LEGACY_RESEARCH_CONFIG_QUERY,
     });
-    const gameConfigSource = this.findTableWithQuery({
+    const gameConfigSource = this.findBootstrapSource({
       camelName: 'gameConfigSnapshot',
       snakeName: 'game_config_snapshot',
       query: GAME_CONFIG_QUERY,
-      legacyCamelName: 'gameConfig',
-      legacySnakeName: 'game_config',
+      fallbackCamelName: 'gameConfig',
+      fallbackSnakeName: 'game_config',
       legacyQuery: LEGACY_GAME_CONFIG_QUERY,
+    });
+    const maintenanceSource = this.findLiveTableSource({
+      preferredCamelName: 'gameConfig',
+      preferredSnakeName: 'game_config',
+      fallbackCamelName: 'gameConfigSnapshot',
+      fallbackSnakeName: 'game_config_snapshot',
+      query: MAINTENANCE_QUERY,
     });
 
     this.researchConfigTable = researchConfigSource.table;
-    this.researchConfigQuery = researchConfigSource.query;
     this.gameConfigTable = gameConfigSource.table;
-    this.gameConfigQuery = gameConfigSource.query;
+    this.maintenanceTable = maintenanceSource.table;
 
-    if (!this.researchConfigTable && !this.gameConfigTable) {
+    if (!this.researchConfigTable && !this.gameConfigTable && !this.maintenanceTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
-    this.bindTable(this.researchConfigTable);
-    this.bindTable(this.gameConfigTable);
     this.subscriptions = [
-      this.researchConfigTable ? this.subscribeQuery(this.researchConfigQuery) : null,
-      this.gameConfigTable ? this.subscribeQuery(this.gameConfigQuery) : null,
+      this.researchConfigTable
+        ? this.subscribeBootstrapQuery(researchConfigSource.query, () => {
+            this.bootstrapResearchConfigs = this.readResearchConfigs(this.researchConfigTable);
+            this.publishFromTables();
+          })
+        : null,
+      this.gameConfigTable
+        ? this.subscribeBootstrapQuery(gameConfigSource.query, () => {
+            this.bootstrapGameConfigs = this.readGameConfigs(this.gameConfigTable);
+            this.publishFromTables();
+          })
+        : null,
+      this.maintenanceTable
+        ? this.subscribeLiveQuery(maintenanceSource.query, () => this.publishFromTables())
+        : null,
     ].filter(Boolean);
+    this.bindTable(this.maintenanceTable);
     this.publishFromTables();
   }
 
   disconnect() {
-    this.unbindTable(this.researchConfigTable);
-    this.unbindTable(this.gameConfigTable);
+    this.unbindTable(this.maintenanceTable);
 
     for (const subscription of this.subscriptions) {
       if (!subscription.isEnded?.()) {
@@ -73,8 +93,9 @@ export class GameConfigSubscriptionManager {
     this.connection = null;
     this.researchConfigTable = null;
     this.gameConfigTable = null;
-    this.researchConfigQuery = RESEARCH_CONFIG_QUERY;
-    this.gameConfigQuery = GAME_CONFIG_QUERY;
+    this.maintenanceTable = null;
+    this.bootstrapResearchConfigs = [];
+    this.bootstrapGameConfigs = [];
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
@@ -95,12 +116,12 @@ export class GameConfigSubscriptionManager {
     table?.removeOnDelete?.(this.handleTableChange);
   }
 
-  findTableWithQuery({
+  findBootstrapSource({
     camelName,
     snakeName,
     query,
-    legacyCamelName,
-    legacySnakeName,
+    fallbackCamelName,
+    fallbackSnakeName,
     legacyQuery,
   }) {
     const table = this.connection?.db?.[camelName] ?? this.connection?.db?.[snakeName] ?? null;
@@ -110,42 +131,122 @@ export class GameConfigSubscriptionManager {
 
     return {
       table:
-        this.connection?.db?.[legacyCamelName] ??
-        this.connection?.db?.[legacySnakeName] ??
+        this.connection?.db?.[fallbackCamelName] ??
+        this.connection?.db?.[fallbackSnakeName] ??
         null,
       query: legacyQuery,
     };
   }
 
-  subscribeQuery(query) {
+  findLiveTableSource({
+    preferredCamelName,
+    preferredSnakeName,
+    fallbackCamelName,
+    fallbackSnakeName,
+    query,
+  }) {
+    return {
+      table:
+        this.connection?.db?.[preferredCamelName] ??
+        this.connection?.db?.[preferredSnakeName] ??
+        this.connection?.db?.[fallbackCamelName] ??
+        this.connection?.db?.[fallbackSnakeName] ??
+        null,
+      query,
+    };
+  }
+
+  subscribeBootstrapQuery(query, onApplied) {
+    if (!query) {
+      return null;
+    }
+
+    let subscription = null;
+    let applied = false;
+
+    subscription = this.connection
+      ?.subscriptionBuilder()
+      .onApplied(() => {
+        applied = true;
+        onApplied?.();
+        if (!subscription?.isEnded?.()) {
+          subscription?.unsubscribe?.();
+        }
+      })
+      .onError(() => this.publishFromTables())
+      .subscribe(query);
+
+    if (applied && !subscription?.isEnded?.()) {
+      subscription?.unsubscribe?.();
+    }
+
+    return subscription;
+  }
+
+  subscribeLiveQuery(query, onApplied) {
+    if (!query) {
+      return null;
+    }
+
     return this.connection
       ?.subscriptionBuilder()
-      .onApplied(() => this.publishFromTables())
-      .onError(() => this.publish({ ...EMPTY_SNAPSHOT }))
+      .onApplied(() => onApplied?.())
+      .onError(() => this.publishFromTables())
       .subscribe(query);
   }
 
   publishFromTables() {
-    if (!this.researchConfigTable && !this.gameConfigTable) {
+    if (
+      this.bootstrapResearchConfigs.length <= 0 &&
+      this.bootstrapGameConfigs.length <= 0 &&
+      !this.maintenanceTable
+    ) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
-    const researchConfigs = Array.from(this.researchConfigTable?.iter?.() ?? [])
+    const maintenanceRow = this.readFirstRow(this.maintenanceTable);
+    const gameConfigs = this.mergeMaintenanceGameConfig(maintenanceRow);
+
+    this.publish({
+      connected: true,
+      researchConfigs: this.bootstrapResearchConfigs,
+      gameConfigs,
+    });
+  }
+
+  readResearchConfigs(table) {
+    return Array.from(table?.iter?.() ?? [])
       .map((row) => this.mapResearchConfig(row))
       .sort((left, right) => {
         const groupCompare = left.groupId.localeCompare(right.groupId);
         return groupCompare || left.label.localeCompare(right.label);
       });
-    const gameConfigs = Array.from(this.gameConfigTable?.iter?.() ?? [])
+  }
+
+  readGameConfigs(table) {
+    return Array.from(table?.iter?.() ?? [])
       .map((row) => this.mapGameConfig(row))
       .sort((left, right) => left.configKey.localeCompare(right.configKey));
+  }
 
-    this.publish({
-      connected: true,
-      researchConfigs,
-      gameConfigs,
-    });
+  readFirstRow(table) {
+    for (const row of table?.iter?.() ?? []) {
+      return row;
+    }
+
+    return null;
+  }
+
+  mergeMaintenanceGameConfig(maintenanceRow) {
+    const baseConfigs = this.bootstrapGameConfigs.filter(
+      (config) => config.configKey !== MAINTENANCE_CONFIG_KEY,
+    );
+    const mappedMaintenance = maintenanceRow ? this.mapGameConfig(maintenanceRow) : null;
+
+    return [...baseConfigs, ...(mappedMaintenance ? [mappedMaintenance] : [])].sort(
+      (left, right) => left.configKey.localeCompare(right.configKey),
+    );
   }
 
   mapResearchConfig(row) {

@@ -123,6 +123,8 @@ export class PagesFacade {
         gameplayFacade,
         playerShopFacade,
         onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
+        onDirectSellOverride: (sale) =>
+          this.tutorialFacade?.handleDirectSellOverride?.(sale) ?? null,
       }),
     );
   }

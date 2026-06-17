@@ -1,7 +1,8 @@
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
 
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
-const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
+const POINTER_FALLBACK_URL = new URL('../assets/pointer.png', import.meta.url).href;
 const GUIDE_NAME = 'Elara Starbrew';
 const HINT_WIDTH = 190;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
@@ -29,9 +30,12 @@ const PORTRAIT_WIDTH = 70;
 const PORTRAIT_HEIGHT = 91;
 const PORTRAIT_LEFT_GAP = 4;
 const PORTRAIT_BOX_OVERLAP = 0;
-const POINTER_WIDTH = 32;
-const POINTER_HEIGHT = 16;
-const POINTER_HALF_EXTENT = Math.ceil((POINTER_WIDTH + POINTER_HEIGHT) * Math.SQRT1_2 * 0.5);
+const POINTER_CONTACT_WIDTH = 32;
+const POINTER_FRAME_WIDTH = 56;
+const POINTER_FRAME_HEIGHT = 56;
+const POINTER_HALF_EXTENT = Math.ceil(
+  Math.hypot(POINTER_FRAME_WIDTH, POINTER_FRAME_HEIGHT) * 0.5,
+);
 const POINTER_TARGET_GAP = HINT_GAP;
 const GUIDE_LEFT_BIAS = 6;
 const GUIDE_TOP_FRACTION = 0.18;
@@ -77,7 +81,10 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
+    this.pointerArt = null;
     this.pointerImage = null;
+    this.pointerSpineHost = null;
+    this.pointerSpineManager = new TutorialPointerSpineManager();
     this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
@@ -127,14 +134,25 @@ export class TutorialHintManager {
     this.pointer.className = 'tutorial-layer__pointer';
     this.pointer.hidden = true;
     this.pointer.setAttribute('aria-hidden', 'true');
+    this.pointer.style.width = `${POINTER_FRAME_WIDTH}px`;
+    this.pointer.style.height = `${POINTER_FRAME_HEIGHT}px`;
+
+    this.pointerArt = document.createElement('span');
+    this.pointerArt.className = 'tutorial-layer__pointer-art';
 
     this.pointerImage = document.createElement('img');
     this.pointerImage.className = 'tutorial-layer__pointer-image';
-    this.pointerImage.src = POINTING_HAND_URL;
+    this.pointerImage.src = POINTER_FALLBACK_URL;
     this.pointerImage.alt = '';
     this.pointerImage.draggable = false;
     this.pointerImage.setAttribute('aria-hidden', 'true');
-    this.pointer.append(this.pointerImage);
+
+    this.pointerSpineHost = document.createElement('span');
+    this.pointerSpineHost.className = 'tutorial-layer__pointer-spine';
+    this.pointerSpineHost.setAttribute('aria-hidden', 'true');
+
+    this.pointerArt.append(this.pointerImage, this.pointerSpineHost);
+    this.pointer.append(this.pointerArt);
 
     this.portrait = document.createElement('img');
     this.portrait.className = 'tutorial-layer__portrait';
@@ -287,17 +305,24 @@ export class TutorialHintManager {
       this.hint,
     );
     stage.append(this.root);
+    this.pointerSpineManager.mount({
+      host: this.pointerSpineHost,
+      root: this.pointer,
+    });
 
     return this.root;
   }
 
   unmount() {
+    this.pointerSpineManager.unmount();
     this.root?.remove();
     this.stage = null;
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
+    this.pointerArt = null;
     this.pointerImage = null;
+    this.pointerSpineHost = null;
     this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
@@ -835,6 +860,7 @@ export class TutorialHintManager {
 
   positionPointer(rect, showPointer, guidePlacement) {
     if (!this.pointer || !showPointer) {
+      this.pointerSpineManager.hide();
       this.hidePointer();
       return;
     }
@@ -880,6 +906,13 @@ export class TutorialHintManager {
     if (shouldRevealPointer) {
       this.showPointerWithAnimation();
     }
+
+    if (this.prefersReducedMotion()) {
+      this.pointerSpineManager.hide({ fallbackOnly: true });
+      return;
+    }
+
+    this.pointerSpineManager.show();
   }
 
   positionGuide(rect, showPortrait = true) {
@@ -1004,6 +1037,7 @@ export class TutorialHintManager {
       return;
     }
 
+    this.pointerSpineManager.hide();
     this.clearPointerHideTimeout();
 
     if (this.pointer.hidden) {
@@ -1453,7 +1487,7 @@ function rectsOverlap(a, b) {
 function createPointerCandidates(rect) {
   const right = rect.left + rect.width;
   const bottom = rect.top + rect.height;
-  const diagonalOffset = (POINTER_WIDTH / 2 + POINTER_TARGET_GAP) * Math.SQRT1_2;
+  const diagonalOffset = (POINTER_CONTACT_WIDTH / 2 + POINTER_TARGET_GAP) * Math.SQRT1_2;
 
   return [
     {

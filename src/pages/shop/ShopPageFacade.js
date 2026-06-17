@@ -15,10 +15,17 @@ export class ShopPageFacade {
   static explain =
     'Shows the market room, where players sell to NPC demand, trade with other players, and see crystal prices.';
 
-  constructor({ gameplayFacade, playerShopFacade, onOpenPlayerInfo } = {}) {
+  constructor({
+    gameplayFacade,
+    playerShopFacade,
+    onOpenPlayerInfo,
+    onDirectSellOverride,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.playerShopFacade = playerShopFacade;
     this.roomViewManager = new ShopRoomViewManager();
     this.flyoutManager = new RewardFlyoutManager();
+    this.releasePlayerShopPublicData = null;
     this.rewardEventsUnsubscribe = null;
     this.marketTabsManager = new ShopMarketTabsManager({
       gameplayFacade,
@@ -26,7 +33,10 @@ export class ShopPageFacade {
     });
     this.shelfManager = new ShopShelfManager({ gameplayFacade });
     this.demandManager = new ShopDemandManager({ gameplayFacade });
-    this.directSellManager = new ShopDirectSellManager({ gameplayFacade });
+    this.directSellManager = new ShopDirectSellManager({
+      gameplayFacade,
+      onSellOverride: onDirectSellOverride,
+    });
     this.stockManager = new ShopStockManager({ gameplayFacade });
     this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
     this.playerShelfManager = new ShopPlayerShelfManager({
@@ -43,6 +53,7 @@ export class ShopPageFacade {
   }
 
   mount(stage) {
+    this.releasePlayerShopPublicData = this.playerShopFacade?.retainPublicData?.() ?? null;
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
@@ -76,6 +87,8 @@ export class ShopPageFacade {
   }
 
   unmount() {
+    this.releasePlayerShopPublicData?.();
+    this.releasePlayerShopPublicData = null;
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
     this.crystalOfferManager.unmount();

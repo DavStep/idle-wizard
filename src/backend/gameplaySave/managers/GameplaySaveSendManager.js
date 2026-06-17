@@ -1,10 +1,13 @@
 const DEFAULT_SYNC_TIMEOUT_MS = 10_000;
+const DEFAULT_SYNC_INTERVAL_MS = 60_000;
 
 export class GameplaySaveSendManager {
   constructor({
     syncTimeoutMs = DEFAULT_SYNC_TIMEOUT_MS,
+    syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS,
     setTimeoutFn = globalThis.setTimeout?.bind(globalThis),
     clearTimeoutFn = globalThis.clearTimeout?.bind(globalThis),
+    now = () => Date.now(),
     onSyncUnhealthy = null,
   } = {}) {
     this.connection = null;
@@ -19,11 +22,15 @@ export class GameplaySaveSendManager {
     this.syncTimeoutId = null;
     this.resolveSyncCancel = null;
     this.syncTimeoutMs = syncTimeoutMs;
+    this.syncIntervalMs = syncIntervalMs;
     this.setTimeoutFn = setTimeoutFn;
     this.clearTimeoutFn = clearTimeoutFn;
+    this.now = now;
     this.onSyncUnhealthy = onSyncUnhealthy;
     this.readyToSend = false;
     this.lastSyncedSaveContentKey = null;
+    this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
+    this.syncTimerId = null;
   }
 
   connect(connection) {
@@ -34,6 +41,8 @@ export class GameplaySaveSendManager {
   disconnect() {
     this.restoreInFlightSave();
     this.cancelSyncAttempt();
+    this.clearSyncTimer();
+    this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
     this.connection = null;
     this.readyToSend = false;
   }
@@ -76,8 +85,17 @@ export class GameplaySaveSendManager {
       return false;
     }
 
-    while (this.syncPromise) {
-      await this.syncPromise;
+    while (true) {
+      this.flush({ force: true });
+
+      if (!this.syncPromise) {
+        break;
+      }
+
+      const synced = await this.syncPromise;
+      if (!synced) {
+        break;
+      }
     }
 
     return this.pendingSaveJson === null;
@@ -93,13 +111,18 @@ export class GameplaySaveSendManager {
     this.pendingSaveContentKey = null;
   }
 
-  flush() {
+  flush({ force = false } = {}) {
     if (
       !this.readyToSend ||
       !this.connection ||
       !this.pendingSaveJson ||
       this.syncPromise
     ) {
+      return;
+    }
+
+    if (!force && !this.canSyncNow()) {
+      this.scheduleFlush();
       return;
     }
 
@@ -127,6 +150,8 @@ export class GameplaySaveSendManager {
       return;
     }
 
+    this.clearSyncTimer();
+    this.lastSyncStartedAtMs = this.now();
     const attemptId = this.beginSyncAttempt();
     let shouldFlush = false;
     const reducerOutcome = Promise.resolve(syncResult)
@@ -263,6 +288,41 @@ export class GameplaySaveSendManager {
 
     this.clearTimeoutFn?.(this.syncTimeoutId);
     this.syncTimeoutId = null;
+  }
+
+  canSyncNow() {
+    if (!Number.isFinite(this.syncIntervalMs) || this.syncIntervalMs <= 0) {
+      return true;
+    }
+
+    return this.now() - this.lastSyncStartedAtMs >= this.syncIntervalMs;
+  }
+
+  scheduleFlush() {
+    if (
+      this.syncTimerId !== null ||
+      typeof this.setTimeoutFn !== 'function' ||
+      !Number.isFinite(this.syncIntervalMs) ||
+      this.syncIntervalMs <= 0
+    ) {
+      return;
+    }
+
+    const elapsedMs = this.now() - this.lastSyncStartedAtMs;
+    const delayMs = Math.max(0, this.syncIntervalMs - elapsedMs);
+    this.syncTimerId = this.setTimeoutFn(() => {
+      this.syncTimerId = null;
+      this.flush();
+    }, delayMs);
+  }
+
+  clearSyncTimer() {
+    if (this.syncTimerId === null) {
+      return;
+    }
+
+    this.clearTimeoutFn?.(this.syncTimerId);
+    this.syncTimerId = null;
   }
 
   isCurrentSyncAttempt(attemptId) {

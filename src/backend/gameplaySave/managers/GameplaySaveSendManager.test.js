@@ -219,4 +219,77 @@ describe('GameplaySaveSendManager', () => {
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
   });
+
+  it('throttles repeated sends within the sync interval', async () => {
+    let nowMs = 1_000;
+    let scheduledFlush;
+    const setTimeoutFn = vi.fn((callback, delayMs) => {
+      scheduledFlush = callback;
+      return { delayMs };
+    });
+    const setPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      syncIntervalMs: 60_000,
+      setTimeoutFn,
+      now: () => nowMs,
+    });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+    manager.save({ version: 2, gold: { current: 1 } });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    nowMs += 5_000;
+    manager.save({ version: 2, gold: { current: 2 } });
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
+    expect(setTimeoutFn).toHaveBeenCalledWith(expect.any(Function), 55_000);
+
+    nowMs += 55_000;
+    scheduledFlush();
+    await Promise.resolve();
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(2);
+    expect(setPlayerGameplaySave).toHaveBeenLastCalledWith({
+      saveJson: JSON.stringify({ version: 2, gold: { current: 2 } }),
+    });
+  });
+
+  it('bypasses the sync interval when a flush is forced', async () => {
+    let nowMs = 1_000;
+    const setPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      syncIntervalMs: 60_000,
+      now: () => nowMs,
+    });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+    manager.save({ version: 2, gold: { current: 1 } });
+    await Promise.resolve();
+
+    nowMs += 5_000;
+    await expect(
+      manager.saveAndFlush({ version: 2, gold: { current: 2 } }),
+    ).resolves.toBe(true);
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(2);
+    expect(setPlayerGameplaySave).toHaveBeenLastCalledWith({
+      saveJson: JSON.stringify({ version: 2, gold: { current: 2 } }),
+    });
+  });
 });

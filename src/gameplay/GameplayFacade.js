@@ -58,8 +58,8 @@ export class GameplayFacade {
     this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
       crystalFacade: this.crystalFacade,
       playerLevelFacade: this.playerLevelFacade,
-      getCompletedCrystalResearchCostTotal: () =>
-        this.researchFacade.getCompletedCrystalCostTotal(),
+      getCommittedCrystalResearchCostTotal: () =>
+        this.researchFacade.getCommittedCrystalCostTotal(),
     });
     this.brewingFacade = new BrewingFacade({
       itemsFacade: this.itemsFacade,

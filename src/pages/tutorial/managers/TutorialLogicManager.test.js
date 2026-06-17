@@ -185,6 +185,37 @@ describe('TutorialLogicManager', () => {
     });
   });
 
+  it('keeps a delayed objective visible when the player is only waiting', () => {
+    const step = createStep({
+      cueMode: 'delayed-target',
+      targetId: null,
+      objectiveText: 'wait for sage',
+      text: 'wait for sage',
+    });
+    const { manager } = createManager({ step });
+
+    const viewState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => null,
+      lessonPanelOpen: true,
+    });
+
+    expect(viewState).toMatchObject({
+      kind: 'lesson',
+      lesson: {
+        id: 'finish-seed-task',
+        text: 'wait for sage',
+        autoOpen: true,
+        canShowTarget: false,
+      },
+      cue: {
+        kind: 'none',
+        lessonAttention: false,
+      },
+    });
+  });
+
   it('advances only active click-through steps', () => {
     const step = createStep({
       kind: 'prompt',

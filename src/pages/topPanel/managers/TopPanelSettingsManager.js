@@ -19,6 +19,7 @@ import {
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
 import { getDefaultPlayerVisualSettingsResearched } from '../../../player/playerVisualSettings.js';
+import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
 const SETTINGS_TABS = ['account', 'report', 'theme'];
@@ -417,6 +418,17 @@ export class TopPanelSettingsManager {
     }
 
     this.playerFacade?.setUsername(username);
+    const CustomEventClass =
+      this.refs?.settings?.ownerDocument?.defaultView?.CustomEvent ?? globalThis.CustomEvent;
+    if (typeof CustomEventClass !== 'function') {
+      this.hide();
+      return;
+    }
+    this.refs?.settings?.dispatchEvent(
+      new CustomEventClass(TOP_PANEL_USERNAME_SAVED_EVENT, {
+        bubbles: true,
+      }),
+    );
     this.hide();
   }
 

@@ -358,7 +358,7 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: null,
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'summon seeds and sell them for level-up gold',
+    objectiveText: 'choose amount and press sell',
     effect: 'tutorial-sale',
     sale: {
       itemKey: SAGE_SEED_KEY,
@@ -366,7 +366,7 @@ export const TUTORIAL_STEPS = [
       goldEach: TUTORIAL_SELL_GOLD_EACH,
       goldTarget: LEVEL_ONE_GOLD_TARGET,
     },
-    getTargetId: ({ currentPageId, snapshot }) => {
+    getTargetId: ({ currentPageId, snapshot, dom }) => {
       if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0) {
         if (currentPageId !== 'workshop') {
           return 'page:workshop';
@@ -375,9 +375,21 @@ export const TUTORIAL_STEPS = [
         return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
       }
 
-      return currentPageId === 'shop' ? 'shop:directSell' : null;
+      if (currentPageId !== 'shop') {
+        return 'page:shop';
+      }
+
+      if (!dom.isShopDirectSellPopupOpen?.()) {
+        return 'shop:directSell';
+      }
+
+      if (!isDirectSellSelected(dom, SAGE_SEED_KEY)) {
+        return `shop:directSell:${SAGE_SEED_KEY}`;
+      }
+
+      return 'shop:directSell:sell';
     },
-    getHintText: ({ currentPageId, snapshot }) => {
+    getHintText: ({ currentPageId, snapshot, dom }) => {
       if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0) {
         if (currentPageId !== 'workshop') {
           return 'open workshop';
@@ -386,7 +398,19 @@ export const TUTORIAL_STEPS = [
         return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
       }
 
-      return 'selling seed';
+      if (currentPageId !== 'shop') {
+        return 'open market';
+      }
+
+      if (!dom.isShopDirectSellPopupOpen?.()) {
+        return 'fast sell';
+      }
+
+      if (!isDirectSellSelected(dom, SAGE_SEED_KEY)) {
+        return 'choose sage seed';
+      }
+
+      return 'press sell';
     },
     getProgress: ({ snapshot }) => ({
       value: Math.min(getGold(snapshot), LEVEL_ONE_GOLD_TARGET),
@@ -443,8 +467,10 @@ export const TUTORIAL_STEPS = [
   {
     id: 'grow-sage',
     kind: 'objective',
-    cueMode: 'delayed-target',
-    objectiveText: 'grow sage 3 times',
+    getObjectiveText: ({ snapshot }) =>
+      isGrowSageWaitState(snapshot) ? 'wait for sage' : 'grow sage 3 times',
+    getCueMode: ({ snapshot }) =>
+      getLessonSageGrowCount(snapshot) <= 0 ? 'active' : 'delayed-target',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       if (
         getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 &&
@@ -456,6 +482,10 @@ export const TUTORIAL_STEPS = [
         }
 
         return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+      }
+
+      if (isGrowSageWaitState(snapshot)) {
+        return null;
       }
 
       if (currentPageId !== 'garden') {
@@ -525,10 +555,6 @@ export const TUTORIAL_STEPS = [
       `${getLessonSageGrowCount(snapshot)}/${LEVEL_TWO_SAGE_GROW_TARGET} sage`,
     getReminderKey: () => 'lesson-three-sage-actions',
     getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
-    isPaused: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
-      !hasGrownEnoughSageForLesson(snapshot) &&
-      isWaitingForCrop(snapshot, SAGE_SEED_KEY),
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 3 || hasGrownEnoughSageForLesson(snapshot),
@@ -1174,7 +1200,7 @@ export class TutorialStepManager {
         reminderMs: getReminderMs(step, context),
         revealTokens: getRevealTokens(step),
         allowTargetClick: step.allowTargetClick === true,
-        cueMode: step.cueMode ?? 'active',
+        cueMode: getCueMode(step, context),
         effect: step.effect,
         sale: step.sale,
       };
@@ -1201,7 +1227,7 @@ export class TutorialStepManager {
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
       reminderMs: getReminderMs(step, { ...context, targetId, text, hintText }),
       revealTokens: getRevealTokens(step),
-      cueMode: step.cueMode ?? 'active',
+      cueMode: getCueMode(step, { ...context, targetId, text, hintText }),
       effect: step.effect,
       sale: step.sale,
     };
@@ -1232,6 +1258,11 @@ function getRevealTokens(step) {
 function getReminderMs(step, context) {
   const reminderMs = step?.getReminderMs?.(context) ?? step?.reminderMs ?? null;
   return Number.isFinite(reminderMs) && reminderMs >= 0 ? reminderMs : null;
+}
+
+function getCueMode(step, context) {
+  const cueMode = step?.getCueMode?.(context) ?? step?.cueMode ?? 'active';
+  return cueMode || 'active';
 }
 
 function hasCompletedResearch(snapshot, researchId) {
@@ -1507,6 +1538,14 @@ function getLessonSageGrowCount(snapshot) {
 
 function hasGrownEnoughSageForLesson(snapshot) {
   return getLessonSageGrowCount(snapshot) >= LEVEL_TWO_SAGE_GROW_TARGET;
+}
+
+function isGrowSageWaitState(snapshot) {
+  return (
+    getCurrentLevel(snapshot) === 2 &&
+    !hasGrownEnoughSageForLesson(snapshot) &&
+    isWaitingForCrop(snapshot, SAGE_SEED_KEY)
+  );
 }
 
 function hasActiveCrop(snapshot, seedKey) {

@@ -681,6 +681,44 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
   });
 
+  it('counts in-progress crystal research when backfilling old saves', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 2,
+        mana: {},
+        gold: {},
+        crystal: { current: 1 },
+        inventory: [],
+        research: {
+          completedIds: [],
+          inProgress: [
+            {
+              researchId: automationResearchIds.autoPlantTile(1),
+              totalSeconds: 30,
+              remainingSeconds: 12,
+            },
+          ],
+        },
+        tasks: {
+          currentLevel: 3,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().research.inProgressResearches).toEqual([
+      expect.objectContaining({
+        researchId: automationResearchIds.autoPlantTile(1),
+      }),
+    ]);
+  });
+
   it('uses runtime player-level config for crystal level-up rewards', () => {
     const { gameplayFacade } = createGameplay();
 

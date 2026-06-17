@@ -57,6 +57,7 @@ export class WorkshopTradeAllianceManager {
     this.unsubscribe = null;
     this.refs = {};
     this.visible = false;
+    this.releasePublicData = null;
     this.selectedSoloTabId = 'browse';
     this.selectedMemberTabId = 'home';
     this.searchTerm = '';
@@ -227,6 +228,9 @@ export class WorkshopTradeAllianceManager {
       return;
     }
 
+    if (!this.releasePublicData) {
+      this.releasePublicData = this.tradeAllianceFacade?.retainPublicData?.() ?? null;
+    }
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyVisibility();
@@ -249,6 +253,8 @@ export class WorkshopTradeAllianceManager {
     this.selectedMemberIdentity = null;
     this.applyVisibility();
     this.applyMemberEditVisibility();
+    this.releasePublicData?.();
+    this.releasePublicData = null;
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
       this.previousFocus.focus();
@@ -259,6 +265,8 @@ export class WorkshopTradeAllianceManager {
 
   unmount() {
     this.stopQuestTimer();
+    this.releasePublicData?.();
+    this.releasePublicData = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);

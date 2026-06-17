@@ -1,37 +1,42 @@
-export const TUTORIAL_FAKE_SELL_DELAY_MS = 700;
-
 export class TutorialSaleManager {
-  constructor({ delayMs = TUTORIAL_FAKE_SELL_DELAY_MS } = {}) {
-    this.delayMs = delayMs;
-    this.timeout = null;
-  }
-
-  update({ step, snapshot, dom, gameplayFacade, onChange }) {
+  update({ step } = {}) {
     if (step?.effect !== 'tutorial-sale') {
       this.cancel();
-      return;
     }
-
-    if (this.timeout || !this.canSell(step.sale, snapshot, dom)) {
-      return;
-    }
-
-    this.timeout = globalThis.setTimeout(() => {
-      this.timeout = null;
-      gameplayFacade?.sellTutorialItemForGold?.(step.sale);
-      onChange?.();
-    }, this.delayMs);
-    this.timeout?.unref?.();
   }
 
-  cancel() {
-    if (this.timeout === null) {
-      return;
+  handleDirectSellOverride({
+    step,
+    snapshot,
+    dom,
+    gameplayFacade,
+    itemKey,
+    quantity = 1,
+  } = {}) {
+    if (step?.effect !== 'tutorial-sale') {
+      return { handled: false };
     }
 
-    globalThis.clearTimeout(this.timeout);
-    this.timeout = null;
+    if (!this.canSell(step.sale, snapshot, dom) || itemKey !== step.sale?.itemKey) {
+      return { handled: false };
+    }
+
+    const result = gameplayFacade?.sellTutorialItemForGold?.({
+      ...step.sale,
+      quantity,
+    }) ?? {
+      ok: false,
+      reason: 'sell_failed',
+    };
+
+    return {
+      handled: true,
+      ...result,
+      message: this.getFailureMessage(result.reason),
+    };
   }
+
+  cancel() {}
 
   canSell(sale = {}, snapshot = {}, dom = {}) {
     const itemKey = sale.itemKey;
@@ -73,5 +78,17 @@ export class TutorialSaleManager {
 
   getGold(snapshot) {
     return Math.max(0, Math.floor(Number(snapshot?.gold?.current) || 0));
+  }
+
+  getFailureMessage(reason) {
+    if (reason === 'not_enough_items') {
+      return 'not enough items';
+    }
+
+    if (reason === 'gold_target_met') {
+      return 'done selling';
+    }
+
+    return 'sell failed';
   }
 }

@@ -34,6 +34,7 @@
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
+- FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
 - FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
@@ -41,6 +42,7 @@
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Fast-sell picker rows are one action; make the whole visual row the button and put the tutorial id on that button.
+- FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
@@ -60,9 +62,10 @@
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
-- FTUE lesson 3 sage objectives should show objective copy first, delay pointer help for about 3-4s of idle, then point only when the player appears stuck.
+- FTUE should actively show the first `grow sage` loop at `0/3`; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.
+- FTUE grow-sage should stay visible during planted sage wait states; hide pointer/show-me guidance there, but do not pause Elara entirely.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
@@ -147,6 +150,7 @@
 - Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
 - After prestige, leaderboard and alliance income must advance from accepted save run-gold deltas; comparing new run `gold.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
+- Crystal earn-back floors must subtract committed automation research, not only completed automation research; otherwise reload can refund crystal while in-progress research keeps ticking.
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
 - SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
 - Global client subscriptions should target indexed server views (`*_snapshot`, own views, or top/recent views), not raw public tables; `SELECT *` on base tables can keep sequential-scan warnings alive even when tables are small.
@@ -286,6 +290,7 @@
 - Shared progress rails should keep `.style-progress` as `content-box`; global/dialog `border-box` shrinks the 3px fill area.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
+- Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.

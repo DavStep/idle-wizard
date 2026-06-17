@@ -135,10 +135,7 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'seed_summoned') {
-      return (
-        this.root.parentElement?.querySelector('.workshop-page__summon-circle') ??
-        this.root.parentElement?.querySelector('.workshop-page__summon-button')
-      );
+      return this.getWorkshopSummonAnchor();
     }
 
     if (event.type === 'herb_harvested' && Number.isInteger(event.tileNumber)) {
@@ -161,6 +158,22 @@ export class RewardFlyoutManager {
     }
 
     return this.root.parentElement;
+  }
+
+  getWorkshopSummonAnchor() {
+    const summonAnchor =
+      this.root?.parentElement?.querySelector('.workshop-page__summon-circle') ??
+      this.root?.parentElement?.querySelector('.workshop-page__summon-button');
+    const rect = this.getElementRect(summonAnchor);
+
+    if (!rect) {
+      return summonAnchor;
+    }
+
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height * 0.3,
+    };
   }
 
   getGoldCollectionAnchor(source) {
@@ -313,7 +326,8 @@ export class RewardFlyoutManager {
       return 0;
     }
 
-    const anchorPoint = this.getAnchorPoint(anchor);
+    const visualParent = this.getVisualNodeParent();
+    const anchorPoint = this.getAnchorPoint(anchor, { relativeTo: visualParent });
     if (!anchorPoint) {
       return 0;
     }
@@ -331,8 +345,10 @@ export class RewardFlyoutManager {
       const delay = seedBurst ? Math.random() * 140 : index * 60;
       const dropAnchor = document.createElement('span');
       dropAnchor.className = `room-item-drop-anchor is-${normalizedKind}`;
-      dropAnchor.style.left = `${baseX + xOffset}px`;
-      dropAnchor.style.top = `${baseY}px`;
+      this.positionVisualNode(dropAnchor, visualParent, {
+        x: baseX + xOffset,
+        y: baseY,
+      });
 
       const drop = this.createItemDropElement({
         source,
@@ -348,7 +364,7 @@ export class RewardFlyoutManager {
       }
 
       dropAnchor.append(drop);
-      this.appendVisualNode(dropAnchor);
+      this.appendVisualNode(dropAnchor, visualParent);
       const remove = () => this.removeVisualNode(dropAnchor);
       drop.addEventListener('animationend', remove, { once: true });
       this.setManagedTimeout(remove, ITEM_DROP_LIFETIME_MS + delay);
@@ -357,11 +373,13 @@ export class RewardFlyoutManager {
     return sources.length;
   }
 
-  getAnchorPoint(anchor) {
+  getAnchorPoint(anchor, { relativeTo = null } = {}) {
+    const origin = this.getCoordinateSpaceOrigin(relativeTo);
+
     if (Number.isFinite(anchor?.x) && Number.isFinite(anchor?.y)) {
       return {
-        x: anchor.x,
-        y: anchor.y,
+        x: anchor.x - origin.left,
+        y: anchor.y - origin.top,
       };
     }
 
@@ -372,9 +390,36 @@ export class RewardFlyoutManager {
     }
 
     return {
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2,
+      x: rect.left - origin.left + rect.width / 2,
+      y: rect.top - origin.top + rect.height / 2,
     };
+  }
+
+  getVisualNodeParent() {
+    return this.root?.closest('.game-stage') ?? document.body;
+  }
+
+  getCoordinateSpaceOrigin(parent) {
+    if (!parent || parent === document.body) {
+      return { left: 0, top: 0 };
+    }
+
+    const rect = parent.getBoundingClientRect?.();
+
+    if (!rect) {
+      return { left: 0, top: 0 };
+    }
+
+    return {
+      left: rect.left + (parent.clientLeft ?? 0),
+      top: rect.top + (parent.clientTop ?? 0),
+    };
+  }
+
+  positionVisualNode(node, parent, point) {
+    node.style.position = parent === document.body ? 'fixed' : 'absolute';
+    node.style.left = `${point.x}px`;
+    node.style.top = `${point.y}px`;
   }
 
   getElementRect(element) {
@@ -446,21 +491,23 @@ export class RewardFlyoutManager {
       return 0;
     }
 
+    const visualParent = this.getVisualNodeParent();
+    const origin = this.getCoordinateSpaceOrigin(visualParent);
     const targetRect = target.getBoundingClientRect();
     const sourceRect = source?.getBoundingClientRect();
     const hasSource = Boolean(sourceRect && sourceRect.width > 0 && sourceRect.height > 0);
     const from = hasSource
       ? {
-          x: sourceRect.left + sourceRect.width * 0.5,
-          y: sourceRect.top + sourceRect.height * 0.44,
+          x: sourceRect.left - origin.left + sourceRect.width * 0.5,
+          y: sourceRect.top - origin.top + sourceRect.height * 0.44,
         }
       : {
-          x: targetRect.left + targetRect.width * 0.56,
-          y: targetRect.bottom + Math.max(58, targetRect.height * 1.9),
+          x: targetRect.left - origin.left + targetRect.width * 0.56,
+          y: targetRect.bottom - origin.top + Math.max(58, targetRect.height * 1.9),
         };
     const to = {
-      x: targetRect.left + targetRect.width * 0.5,
-      y: targetRect.top + targetRect.height * 0.55,
+      x: targetRect.left - origin.left + targetRect.width * 0.5,
+      y: targetRect.top - origin.top + targetRect.height * 0.55,
     };
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -491,13 +538,12 @@ export class RewardFlyoutManager {
 
       const coin = document.createElement('div');
       coin.className = 'room-coin-particle';
-      coin.style.left = `${from.x}px`;
-      coin.style.top = `${from.y}px`;
       coin.style.backgroundImage = `url(${goldIconUrl})`;
       coin.style.animationName = name;
       coin.style.animationDuration = `${dur}ms`;
       coin.style.animationDelay = `${delay}ms`;
-      this.appendVisualNode(coin);
+      this.positionVisualNode(coin, visualParent, from);
+      this.appendVisualNode(coin, visualParent);
       const removeCoin = () => this.removeVisualNode(coin);
       coin.addEventListener('animationend', removeCoin, { once: true });
       this.setManagedTimeout(removeCoin, delay + dur + 250);
@@ -510,11 +556,13 @@ export class RewardFlyoutManager {
 
     const amountPop = document.createElement('div');
     amountPop.className = 'room-coin-amt-pop';
-    amountPop.style.left = `${from.x}px`;
-    amountPop.style.top = `${from.y - 4}px`;
     amountPop.title = title;
     amountPop.textContent = `+${this.formatCoinFlyoutAmount(safeAmount)}G`;
-    this.appendVisualNode(amountPop);
+    this.positionVisualNode(amountPop, visualParent, {
+      x: from.x,
+      y: from.y - 4,
+    });
+    this.appendVisualNode(amountPop, visualParent);
     const removeAmount = () => this.removeVisualNode(amountPop);
     amountPop.addEventListener('animationend', removeAmount, { once: true });
     this.setManagedTimeout(removeAmount, 1200);

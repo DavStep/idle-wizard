@@ -123,6 +123,7 @@ describe('PlayerShopSubscriptionManager', () => {
     });
 
     manager.connect(connection, SELF_IDENTITY);
+    manager.setPublicDataActive(true);
 
     expect(manager.getSnapshot()).toMatchObject({
       connected: true,
@@ -186,11 +187,12 @@ describe('PlayerShopSubscriptionManager', () => {
     const manager = new PlayerShopSubscriptionManager();
 
     manager.connect(connection, SELF_IDENTITY);
+    manager.setPublicDataActive(true);
 
     expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
-      'SELECT * FROM player_shop_listing WHERE quantity > 0',
       `SELECT * FROM player_shop_listing WHERE "sellerIdentity" = 0x${SELF_IDENTITY_HEX}`,
       `SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" = 0x${SELF_IDENTITY_HEX}`,
+      'SELECT * FROM player_shop_listing WHERE quantity > 0',
       'SELECT * FROM player_shop_trade',
     ]);
     expect(manager.getSnapshot().tradeHistory.map((trade) => trade.tradeId)).toEqual([
@@ -216,11 +218,12 @@ describe('PlayerShopSubscriptionManager', () => {
     const manager = new PlayerShopSubscriptionManager();
 
     manager.connect(connection, { toHexString: () => identityHex });
+    manager.setPublicDataActive(true);
 
     expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
-      'SELECT * FROM player_shop_listing WHERE quantity > 0',
       `SELECT * FROM player_shop_listing WHERE "sellerIdentity" = 0x${identityHex}`,
       `SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" = 0x${identityHex}`,
+      'SELECT * FROM player_shop_listing WHERE quantity > 0',
     ]);
   });
 
@@ -249,6 +252,7 @@ describe('PlayerShopSubscriptionManager', () => {
     const manager = new PlayerShopSubscriptionManager();
 
     manager.connect(connection, SELF_IDENTITY);
+    manager.setPublicDataActive(true);
 
     expect(manager.getSnapshot()).toMatchObject({
       connected: true,
@@ -273,10 +277,9 @@ describe('PlayerShopSubscriptionManager', () => {
     manager.connect(connection, SELF_IDENTITY);
     manager.disconnect();
 
-    expect(connection.subscriptions).toHaveLength(3);
+    expect(connection.subscriptions).toHaveLength(2);
     expect(connection.subscriptions[0].unsubscribe).toHaveBeenCalledTimes(1);
     expect(connection.subscriptions[1].unsubscribe).toHaveBeenCalledTimes(1);
-    expect(connection.subscriptions[2].unsubscribe).toHaveBeenCalledTimes(1);
     expect(listingsTable.callbacks.insert).toBeNull();
     expect(proceedsTable.callbacks.insert).toBeNull();
     expect(manager.getSnapshot()).toEqual({

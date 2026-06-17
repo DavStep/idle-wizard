@@ -63,7 +63,7 @@ export class GameplayPersistenceFacade {
     this.now = now;
     this.offlineDeltaSeconds = 0;
     this.autosaveElapsedSeconds = 0;
-    this.boundSave = () => this.save();
+    this.boundSave = () => this.saveAndFlush();
   }
 
   load() {
@@ -135,7 +135,7 @@ export class GameplayPersistenceFacade {
   }
 
   stop() {
-    this.save();
+    this.saveAndFlush();
 
     if (typeof globalThis.removeEventListener === 'function') {
       globalThis.removeEventListener('pagehide', this.boundSave);

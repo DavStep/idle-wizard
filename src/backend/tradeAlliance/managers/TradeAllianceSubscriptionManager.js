@@ -10,6 +10,7 @@ const LEGACY_MEMBERS_QUERY = 'SELECT * FROM trade_alliance_member';
 const LEGACY_APPLICATIONS_QUERY = 'SELECT * FROM trade_alliance_application';
 const LEGACY_QUESTS_QUERY = 'SELECT * FROM trade_alliance_quest_progress';
 const LEGACY_CONTRIBUTIONS_QUERY = 'SELECT * FROM trade_alliance_quest_contribution';
+const OVERVIEW_QUERY = 'SELECT * FROM own_trade_alliance_overview';
 const CHAT_QUERY = 'SELECT * FROM own_trade_alliance_chat';
 const REWARDS_QUERY = 'SELECT * FROM own_trade_alliance_reward_inbox';
 const MESSAGE_LIMIT = 40;
@@ -53,8 +54,10 @@ export class TradeAllianceSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.identityKey = '';
+    this.publicDataActive = false;
     this.tables = {};
-    this.subscriptions = [];
+    this.coreSubscriptions = [];
+    this.publicSubscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
   }
@@ -104,6 +107,7 @@ export class TradeAllianceSubscriptionManager {
       legacyQuery: LEGACY_CONTRIBUTIONS_QUERY,
     });
     this.tables = {
+      overview: this.findTable('ownTradeAllianceOverview', 'own_trade_alliance_overview'),
       alliances: alliances.table,
       members: members.table,
       applications: applications.table,
@@ -113,6 +117,7 @@ export class TradeAllianceSubscriptionManager {
       rewards: this.findTable('ownTradeAllianceRewardInbox', 'own_trade_alliance_reward_inbox'),
     };
     this.queries = {
+      overview: OVERVIEW_QUERY,
       alliances: alliances.query,
       members: members.query,
       applications: applications.query,
@@ -120,33 +125,31 @@ export class TradeAllianceSubscriptionManager {
       contributions: contributions.query,
     };
 
-    if (!this.tables.alliances || !this.tables.members) {
+    if (!this.tables.overview && !this.tables.chat && !this.tables.rewards) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
-    for (const table of Object.values(this.tables)) {
-      this.bindTable(table);
-    }
+    this.bindTable(this.tables.overview);
+    this.bindTable(this.tables.chat);
+    this.bindTable(this.tables.rewards);
 
-    this.subscriptions = [
-      this.subscribeQuery(this.queries.alliances),
-      this.subscribeQuery(this.queries.members),
-      this.subscribeQuery(this.queries.applications),
-      this.subscribeQuery(this.queries.quests),
-      this.subscribeQuery(this.queries.contributions),
-      this.subscribeQuery(CHAT_QUERY),
-      this.subscribeQuery(REWARDS_QUERY),
+    this.coreSubscriptions = [
+      this.tables.overview ? this.subscribeQuery(this.queries.overview) : null,
+      this.tables.chat ? this.subscribeQuery(CHAT_QUERY) : null,
+      this.tables.rewards ? this.subscribeQuery(REWARDS_QUERY) : null,
     ].filter(Boolean);
+    this.reconcilePublicDataSubscriptions();
     this.publishFromTables();
   }
 
   disconnect() {
-    for (const table of Object.values(this.tables)) {
-      this.unbindTable(table);
-    }
+    this.unbindTable(this.tables.overview);
+    this.unbindTable(this.tables.chat);
+    this.unbindTable(this.tables.rewards);
+    this.teardownPublicDataSubscriptions();
 
-    for (const subscription of this.subscriptions) {
+    for (const subscription of this.coreSubscriptions) {
       if (!subscription.isEnded?.()) {
         subscription.unsubscribe();
       }
@@ -154,14 +157,22 @@ export class TradeAllianceSubscriptionManager {
 
     this.connection = null;
     this.identityKey = '';
+    this.publicDataActive = false;
     this.tables = {};
     this.queries = {};
-    this.subscriptions = [];
+    this.coreSubscriptions = [];
+    this.publicSubscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
 
   getSnapshot() {
     return this.snapshot;
+  }
+
+  setPublicDataActive(active = true) {
+    this.publicDataActive = Boolean(active);
+    this.reconcilePublicDataSubscriptions();
+    this.publishFromTables();
   }
 
   findTable(camelName, snakeName) {
@@ -200,6 +211,10 @@ export class TradeAllianceSubscriptionManager {
   }
 
   subscribeQuery(query) {
+    if (!query) {
+      return null;
+    }
+
     return this.connection
       ?.subscriptionBuilder()
       .onApplied(() => this.publishFromTables())
@@ -207,22 +222,74 @@ export class TradeAllianceSubscriptionManager {
       .subscribe(query);
   }
 
-  publishFromTables() {
-    const alliances = this.readRows(this.tables.alliances, (row) => this.mapAlliance(row))
-      .filter((alliance) => alliance.allianceId)
-      .sort((left, right) => left.name.localeCompare(right.name));
-    const members = this.readRows(this.tables.members, (row) => this.mapMember(row))
-      .filter((member) => member.memberIdentity && member.allianceId)
-      .sort((left, right) => {
-        if (left.roleRank !== right.roleRank) {
-          return right.roleRank - left.roleRank;
-        }
+  reconcilePublicDataSubscriptions() {
+    if (!this.connection) {
+      return;
+    }
 
-        return left.joinedAtMs - right.joinedAtMs;
-      });
-    const applications = this.readRows(this.tables.applications, (row) =>
-      this.mapApplication(row),
-    ).sort((left, right) => left.createdAtMs - right.createdAtMs);
+    if (!this.publicDataActive) {
+      this.teardownPublicDataSubscriptions();
+      return;
+    }
+
+    if (this.publicSubscriptions.length > 0) {
+      return;
+    }
+
+    this.bindTable(this.tables.alliances);
+    this.bindTable(this.tables.members);
+    this.bindTable(this.tables.applications);
+    this.bindTable(this.tables.quests);
+    this.bindTable(this.tables.contributions);
+
+    this.publicSubscriptions = [
+      this.tables.alliances ? this.subscribeQuery(this.queries.alliances) : null,
+      this.tables.members ? this.subscribeQuery(this.queries.members) : null,
+      this.tables.applications ? this.subscribeQuery(this.queries.applications) : null,
+      this.tables.quests ? this.subscribeQuery(this.queries.quests) : null,
+      this.tables.contributions ? this.subscribeQuery(this.queries.contributions) : null,
+    ].filter(Boolean);
+  }
+
+  teardownPublicDataSubscriptions() {
+    this.unbindTable(this.tables.alliances);
+    this.unbindTable(this.tables.members);
+    this.unbindTable(this.tables.applications);
+    this.unbindTable(this.tables.quests);
+    this.unbindTable(this.tables.contributions);
+
+    for (const subscription of this.publicSubscriptions) {
+      if (!subscription.isEnded?.()) {
+        subscription.unsubscribe();
+      }
+    }
+
+    this.publicSubscriptions = [];
+  }
+
+  publishFromTables() {
+    const overview = this.readFirstRow(this.tables.overview, (row) => this.mapOverview(row));
+    const alliances = this.publicDataActive
+      ? this.readRows(this.tables.alliances, (row) => this.mapAlliance(row))
+          .filter((alliance) => alliance.allianceId)
+          .sort((left, right) => left.name.localeCompare(right.name))
+      : [];
+    const members = this.publicDataActive
+      ? this.readRows(this.tables.members, (row) => this.mapMember(row))
+          .filter((member) => member.memberIdentity && member.allianceId)
+          .sort((left, right) => {
+            if (left.roleRank !== right.roleRank) {
+              return right.roleRank - left.roleRank;
+            }
+
+            return left.joinedAtMs - right.joinedAtMs;
+          })
+      : [];
+    const applications = this.publicDataActive
+      ? this.readRows(this.tables.applications, (row) => this.mapApplication(row)).sort(
+          (left, right) => left.createdAtMs - right.createdAtMs,
+        )
+      : [];
     const rewardInbox = this.readRows(this.tables.rewards, (row) => this.mapReward(row)).sort(
       (left, right) => {
         if (left.claimedAtMs !== right.claimedAtMs) {
@@ -235,24 +302,24 @@ export class TradeAllianceSubscriptionManager {
     const claimedQuestKeys = new Set(
       rewardInbox.map((reward) => this.getQuestClaimKey(reward.questId, reward.dayKey)),
     );
-    const quests = this.readRows(this.tables.quests, (row) => {
-      const quest = this.mapQuest(row);
-      return {
-        ...quest,
-        claimed: claimedQuestKeys.has(this.getQuestClaimKey(quest.questId, quest.dayKey)),
-      };
-    }).sort(
-      (left, right) => {
-        if (left.dayKey !== right.dayKey) {
-          return right.dayKey.localeCompare(left.dayKey);
-        }
+    const quests = this.publicDataActive
+      ? this.readRows(this.tables.quests, (row) => {
+          const quest = this.mapQuest(row);
+          return {
+            ...quest,
+            claimed: claimedQuestKeys.has(this.getQuestClaimKey(quest.questId, quest.dayKey)),
+          };
+        }).sort((left, right) => {
+          if (left.dayKey !== right.dayKey) {
+            return right.dayKey.localeCompare(left.dayKey);
+          }
 
-        return left.questId.localeCompare(right.questId);
-      },
-    );
-    const contributions = this.readRows(this.tables.contributions, (row) =>
-      this.mapContribution(row),
-    );
+          return left.questId.localeCompare(right.questId);
+        })
+      : [];
+    const contributions = this.publicDataActive
+      ? this.readRows(this.tables.contributions, (row) => this.mapContribution(row))
+      : [];
     const allianceChatMessages = this.readRows(this.tables.chat, (row) => this.mapChat(row))
       .filter((message) => message.body)
       .sort((left, right) => {
@@ -263,10 +330,8 @@ export class TradeAllianceSubscriptionManager {
         return left.id.localeCompare(right.id);
       })
       .slice(-MESSAGE_LIMIT);
-    const ownMember =
-      members.find((member) => member.memberIdentity === this.identityKey) ?? null;
-    const ownAlliance =
-      ownMember && alliances.find((alliance) => alliance.allianceId === ownMember.allianceId);
+    const ownMember = overview?.ownMember ?? null;
+    const ownAlliance = overview?.ownAlliance ?? null;
     const ownApplications = applications.filter(
       (application) => application.applicantIdentity === this.identityKey,
     );
@@ -302,6 +367,61 @@ export class TradeAllianceSubscriptionManager {
     }
 
     return Array.from(table.iter()).map(mapRow);
+  }
+
+  readFirstRow(table, mapRow) {
+    if (!table) {
+      return null;
+    }
+
+    for (const row of table.iter()) {
+      return mapRow(row);
+    }
+
+    return null;
+  }
+
+  mapOverview(row) {
+    const ownMember = {
+      memberIdentity: this.toIdentityKey(row.memberIdentity ?? row.member_identity),
+      allianceId: this.toId(row.allianceId ?? row.alliance_id),
+      username: String(row.username ?? 'wizard'),
+      playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
+      role: String(row.role ?? 'trader'),
+      roleRank: this.getRoleRank(String(row.role ?? 'trader')),
+      joinedAtMs: this.toTimestampMs(row.joinedAt ?? row.joined_at),
+      updatedAtMs: this.toTimestampMs(row.memberUpdatedAt ?? row.member_updated_at),
+      totalContribution: this.toNumber(row.totalContribution ?? row.total_contribution),
+      dailyContribution: this.toNumber(row.dailyContribution ?? row.daily_contribution),
+      weeklyContribution: this.toNumber(row.dailyContribution ?? row.daily_contribution),
+      dayKey: String(row.memberDayKey ?? row.member_day_key ?? ''),
+    };
+
+    return {
+      ownMember,
+      ownAlliance: {
+        allianceId: this.toId(row.allianceId ?? row.alliance_id),
+        name: String(row.name ?? ''),
+        normalizedName: String(row.normalizedName ?? row.normalized_name ?? ''),
+        tag: String(row.tag ?? ''),
+        tagColor: normalizeTradeAllianceTagColor(row.tagColor ?? row.tag_color),
+        description: String(row.description ?? ''),
+        notice: String(row.notice ?? ''),
+        joinMode: String(row.joinMode ?? row.join_mode ?? 'apply'),
+        leaderIdentity: this.toIdentityKey(row.leaderIdentity ?? row.leader_identity),
+        memberCount: this.toNumber(row.memberCount ?? row.member_count),
+        totalIncome: this.toNumber(row.totalIncome ?? row.total_income),
+        seasonIncome: this.toNumber(row.seasonIncome ?? row.season_income),
+        weeklyIncome: this.toNumber(row.seasonIncome ?? row.season_income),
+        monthlyIncome: this.toNumber(row.monthlyIncome ?? row.monthly_income),
+        dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
+        seasonKey: String(row.seasonKey ?? row.season_key ?? ''),
+        monthKey: String(row.monthKey ?? row.month_key ?? ''),
+        dayKey: String(row.dayKey ?? row.day_key ?? ''),
+        createdAtMs: this.toTimestampMs(row.createdAt ?? row.created_at),
+        updatedAtMs: this.toTimestampMs(row.allianceUpdatedAt ?? row.alliance_updated_at),
+      },
+    };
   }
 
   mapAlliance(row) {

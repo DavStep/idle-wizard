@@ -202,6 +202,41 @@ export const OwnTradeAllianceChatResult = __t.object("OwnTradeAllianceChatResult
 });
 export type OwnTradeAllianceChatResult = __Infer<typeof OwnTradeAllianceChatResult>;
 
+export const OwnTradeAllianceOverview = __t.object("OwnTradeAllianceOverview", {});
+export type OwnTradeAllianceOverview = __Infer<typeof OwnTradeAllianceOverview>;
+
+export const OwnTradeAllianceOverviewResult = __t.object("OwnTradeAllianceOverviewResult", {
+  memberIdentity: __t.identity(),
+  allianceId: __t.uuid(),
+  username: __t.string(),
+  playerLevel: __t.u32(),
+  role: __t.string(),
+  joinedAt: __t.timestamp(),
+  memberUpdatedAt: __t.timestamp(),
+  totalContribution: __t.u64(),
+  dailyContribution: __t.u64(),
+  memberDayKey: __t.string(),
+  name: __t.string(),
+  normalizedName: __t.string(),
+  tag: __t.string(),
+  tagColor: __t.string(),
+  description: __t.string(),
+  notice: __t.string(),
+  joinMode: __t.string(),
+  leaderIdentity: __t.identity(),
+  memberCount: __t.u32(),
+  totalIncome: __t.u64(),
+  seasonIncome: __t.u64(),
+  createdAt: __t.timestamp(),
+  allianceUpdatedAt: __t.timestamp(),
+  seasonKey: __t.string(),
+  dayKey: __t.string(),
+  dailyIncome: __t.u64(),
+  monthlyIncome: __t.u64(),
+  monthKey: __t.string(),
+});
+export type OwnTradeAllianceOverviewResult = __Infer<typeof OwnTradeAllianceOverviewResult>;
+
 export const OwnTradeAllianceRewardInbox = __t.object("OwnTradeAllianceRewardInbox", {});
 export type OwnTradeAllianceRewardInbox = __Infer<typeof OwnTradeAllianceRewardInbox>;
 

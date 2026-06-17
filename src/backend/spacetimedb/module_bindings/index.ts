@@ -105,6 +105,7 @@ import OwnPlayerShopListingRow from "./own_player_shop_listing_table";
 import OwnPlayerShopProceedsRow from "./own_player_shop_proceeds_table";
 import OwnPlayerShopTradeHistoryRow from "./own_player_shop_trade_history_table";
 import OwnTradeAllianceChatRow from "./own_trade_alliance_chat_table";
+import OwnTradeAllianceOverviewRow from "./own_trade_alliance_overview_table";
 import OwnTradeAllianceRewardInboxRow from "./own_trade_alliance_reward_inbox_table";
 import PlayerRow from "./player_table";
 import PlayerShopListingRow from "./player_shop_listing_table";
@@ -498,6 +499,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnTradeAllianceChatRow),
+  own_trade_alliance_overview: __table({
+    name: 'own_trade_alliance_overview',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnTradeAllianceOverviewRow),
   own_trade_alliance_reward_inbox: __table({
     name: 'own_trade_alliance_reward_inbox',
     indexes: [

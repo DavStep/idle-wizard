@@ -18,8 +18,9 @@ const DIRECT_SELL_TABS = [
 ];
 
 export class ShopDirectSellManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, onSellOverride } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.onSellOverride = typeof onSellOverride === 'function' ? onSellOverride : null;
     this.refs = {
       tabButtons: new Map(),
       rows: new Map(),
@@ -310,6 +311,27 @@ export class ShopDirectSellManager {
     if (!quote.ok) {
       this.statusText = this.getSellFailureText(quote.reason);
       this.renderDetails();
+      return;
+    }
+
+    const overrideResult = await this.onSellOverride?.({
+      item,
+      quantity,
+      quote,
+    });
+
+    if (overrideResult?.handled) {
+      this.lastSnapshot = this.gameplayFacade.getSnapshot();
+      this.sellingItemTypeId = null;
+
+      if (overrideResult.ok) {
+        this.statusText = '';
+        this.hide();
+        return;
+      }
+
+      this.statusText = overrideResult.message ?? this.getSellFailureText(overrideResult.reason);
+      this.render();
       return;
     }
 

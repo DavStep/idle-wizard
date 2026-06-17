@@ -12,6 +12,7 @@ export class PlayerShopBackendFacade {
       onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
     });
     this.listingManager = new PlayerShopListingManager();
+    this.publicDataRetainCount = 0;
   }
 
   connect(connection, identity) {
@@ -20,6 +21,7 @@ export class PlayerShopBackendFacade {
   }
 
   disconnect() {
+    this.publicDataRetainCount = 0;
     this.listingManager.disconnect();
     this.subscriptionManager.disconnect();
   }
@@ -30,6 +32,22 @@ export class PlayerShopBackendFacade {
 
   subscribe(listener) {
     return this.stateObserverManager.subscribe(listener);
+  }
+
+  retainPublicData() {
+    this.publicDataRetainCount += 1;
+    this.subscriptionManager.setPublicDataActive(true);
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.publicDataRetainCount = Math.max(0, this.publicDataRetainCount - 1);
+      this.subscriptionManager.setPublicDataActive(this.publicDataRetainCount > 0);
+    };
   }
 
   setSlotListing(slot) {

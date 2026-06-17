@@ -619,13 +619,18 @@ describe('TutorialStepManager', () => {
       getStep({
         pageId: 'shop',
         snapshot,
-        dom: createDomFake({ directSellItemKey: 'sageSeed' }),
+        dom: createDomFake({
+          shopDirectSellPopupOpen: true,
+          directSellItemKey: 'sageSeed',
+        }),
         completed: completedThrough('select-sage-seed-sale'),
       }),
     ).toMatchObject({
       id: 'earn-tutorial-gold',
       kind: 'objective',
       effect: 'tutorial-sale',
+      targetId: 'shop:directSell:sell',
+      hintText: 'press sell',
       sale: {
         itemKey: 'sageSeed',
         goldEach: 10,
@@ -726,7 +731,7 @@ describe('TutorialStepManager', () => {
       targetId: 'garden:plot:1:label',
       objectiveText: 'grow sage 3 times',
       progressLabel: '0/3 sage',
-      cueMode: 'delayed-target',
+      cueMode: 'active',
       stepLabel: '16/26',
     });
   });
@@ -757,10 +762,11 @@ describe('TutorialStepManager', () => {
       id: 'grow-sage',
       progress: { value: 2, max: 3 },
       progressLabel: '2/3 sage',
+      cueMode: 'delayed-target',
     });
   });
 
-  it('hides grow sage guidance while planted sage is growing', () => {
+  it('keeps grow sage visible while planted sage is growing', () => {
     const snapshot = createSnapshot({
       tasks: { currentLevel: 2, level: { tasks: [] } },
       seedInventory: [{ key: 'sageSeed', quantity: 0 }],
@@ -782,7 +788,12 @@ describe('TutorialStepManager', () => {
       },
     });
 
-    expect(getStep({ pageId: 'garden', snapshot })).toBeNull();
+    expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
+      id: 'grow-sage',
+      objectiveText: 'wait for sage',
+      targetId: null,
+      progressLabel: '0/3 sage',
+    });
   });
 
   it('targets ready planted sage instead of returning to workshop', () => {

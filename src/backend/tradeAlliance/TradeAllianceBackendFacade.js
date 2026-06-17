@@ -19,6 +19,7 @@ export class TradeAllianceBackendFacade {
         this.rewardManager.processSnapshot(snapshot);
       },
     });
+    this.publicDataRetainCount = 0;
   }
 
   setGameplayFacade(gameplayFacade) {
@@ -35,6 +36,7 @@ export class TradeAllianceBackendFacade {
   }
 
   disconnect() {
+    this.publicDataRetainCount = 0;
     this.rewardManager.disconnect();
     this.subscriptionManager.disconnect();
     this.actionManager.disconnect();
@@ -46,6 +48,22 @@ export class TradeAllianceBackendFacade {
 
   subscribe(listener) {
     return this.stateObserverManager.subscribe(listener);
+  }
+
+  retainPublicData() {
+    this.publicDataRetainCount += 1;
+    this.subscriptionManager.setPublicDataActive(true);
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.publicDataRetainCount = Math.max(0, this.publicDataRetainCount - 1);
+      this.subscriptionManager.setPublicDataActive(this.publicDataRetainCount > 0);
+    };
   }
 
   createAlliance(alliance) {

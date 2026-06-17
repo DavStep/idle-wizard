@@ -71,6 +71,7 @@ export class WorkshopLeaderboardManager {
     this.unsubscribeLeaderboard = null;
     this.unsubscribeGameplay = null;
     this.unsubscribeTradeAlliance = null;
+    this.releaseTradeAlliancePublicData = null;
     this.refs = {};
     this.visible = false;
     this.selectedScopeId = DEFAULT_SCOPE_ID;
@@ -239,6 +240,10 @@ export class WorkshopLeaderboardManager {
       return;
     }
 
+    if (!this.releaseTradeAlliancePublicData) {
+      this.releaseTradeAlliancePublicData =
+        this.tradeAllianceFacade?.retainPublicData?.() ?? null;
+    }
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyVisibility();
@@ -258,6 +263,8 @@ export class WorkshopLeaderboardManager {
     const wasVisible = this.visible;
     this.visible = false;
     this.applyVisibility();
+    this.releaseTradeAlliancePublicData?.();
+    this.releaseTradeAlliancePublicData = null;
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
       this.previousFocus.focus();
@@ -267,6 +274,8 @@ export class WorkshopLeaderboardManager {
   }
 
   unmount() {
+    this.releaseTradeAlliancePublicData?.();
+    this.releaseTradeAlliancePublicData = null;
     this.unsubscribeLeaderboard?.();
     this.unsubscribeGameplay?.();
     this.unsubscribeTradeAlliance?.();

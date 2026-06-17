@@ -13,7 +13,40 @@ describe('TradeAllianceSubscriptionManager', () => {
     const manager = new TradeAllianceSubscriptionManager();
 
     manager.identityKey = 'self';
+    manager.publicDataActive = true;
     manager.tables = {
+      overview: createTable([
+        {
+          memberIdentity: 'self',
+          allianceId: 'alliance-1',
+          username: 'wizard',
+          playerLevel: 1,
+          role: 'tradeMaster',
+          joinedAt: 1,
+          memberUpdatedAt: 1,
+          totalContribution: 0,
+          dailyContribution: 0,
+          memberDayKey: '2026-W24',
+          name: 'All Seeing Void',
+          normalizedName: 'all seeing void',
+          tag: 'VOID',
+          tagColor: 'violet',
+          description: '',
+          notice: '',
+          joinMode: 'apply',
+          leaderIdentity: 'self',
+          memberCount: 1,
+          totalIncome: 0,
+          seasonIncome: 0,
+          createdAt: 1,
+          allianceUpdatedAt: 1,
+          seasonKey: '2026-W24',
+          dayKey: '2026-W24',
+          dailyIncome: 0,
+          monthlyIncome: 0,
+          monthKey: '2026-M06',
+        },
+      ]),
       alliances: createTable([
         {
           allianceId: 'alliance-1',

@@ -23,12 +23,15 @@ export class PlayerShopSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.identity = null;
+    this.publicDataActive = false;
     this.publicListingsTable = null;
     this.ownListingsTable = null;
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
     this.querySources = {};
+    this.publicSubscriptions = [];
+    this.publicTablesBound = false;
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
@@ -86,42 +89,25 @@ export class PlayerShopSubscriptionManager {
     this.ownTradeHistoryTable = ownTradeHistory.table;
     this.querySources = { publicListings, ownListings, proceeds, tradeHistory, ownTradeHistory };
 
-    if (!this.publicListingsTable || !this.ownListingsTable || !this.proceedsTable) {
+    if (!this.ownListingsTable || !this.proceedsTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
-    this.bindTable(this.publicListingsTable);
     this.bindTable(this.ownListingsTable);
     this.bindTable(this.proceedsTable);
-    this.bindTable(this.tradeHistoryTable);
-    this.bindTable(this.ownTradeHistoryTable);
     this.subscriptions = [
-      this.subscribeQuery(publicListings.query),
       this.subscribeQuery(ownListings.query),
       this.subscribeQuery(proceeds.query),
-      this.tradeHistoryTable && tradeHistory.query
-        ? this.subscribeOptionalQuery(tradeHistory.query, () => {
-            this.unbindTable(this.tradeHistoryTable);
-            this.tradeHistoryTable = null;
-          })
-        : null,
-      this.ownTradeHistoryTable && ownTradeHistory.query
-        ? this.subscribeOptionalQuery(ownTradeHistory.query, () => {
-            this.unbindTable(this.ownTradeHistoryTable);
-            this.ownTradeHistoryTable = null;
-          })
-        : null,
     ].filter(Boolean);
+    this.reconcilePublicDataSubscriptions();
     this.publishFromTables();
   }
 
   disconnect() {
-    this.unbindTable(this.publicListingsTable);
+    this.teardownPublicDataSubscriptions();
     this.unbindTable(this.ownListingsTable);
     this.unbindTable(this.proceedsTable);
-    this.unbindTable(this.tradeHistoryTable);
-    this.unbindTable(this.ownTradeHistoryTable);
 
     for (const subscription of this.subscriptions) {
       if (!subscription.isEnded?.()) {
@@ -131,18 +117,27 @@ export class PlayerShopSubscriptionManager {
 
     this.connection = null;
     this.identity = null;
+    this.publicDataActive = false;
     this.publicListingsTable = null;
     this.ownListingsTable = null;
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
     this.querySources = {};
+    this.publicSubscriptions = [];
+    this.publicTablesBound = false;
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
 
   getSnapshot() {
     return this.snapshot;
+  }
+
+  setPublicDataActive(active = true) {
+    this.publicDataActive = Boolean(active);
+    this.reconcilePublicDataSubscriptions();
+    this.publishFromTables();
   }
 
   bindTable(table) {
@@ -176,6 +171,64 @@ export class PlayerShopSubscriptionManager {
       .subscribe(query);
   }
 
+  reconcilePublicDataSubscriptions() {
+    if (!this.connection || !this.publicListingsTable) {
+      return;
+    }
+
+    if (!this.publicDataActive) {
+      this.teardownPublicDataSubscriptions();
+      return;
+    }
+
+    if (!this.publicTablesBound) {
+      this.bindTable(this.publicListingsTable);
+      this.bindTable(this.tradeHistoryTable);
+      this.bindTable(this.ownTradeHistoryTable);
+      this.publicTablesBound = true;
+    }
+
+    if (this.publicSubscriptions.length > 0) {
+      return;
+    }
+
+    const { publicListings, tradeHistory, ownTradeHistory } = this.querySources;
+    this.publicSubscriptions = [
+      publicListings?.query ? this.subscribeQuery(publicListings.query) : null,
+      this.tradeHistoryTable && tradeHistory?.query
+        ? this.subscribeOptionalQuery(tradeHistory.query, () => {
+            this.unbindTable(this.tradeHistoryTable);
+            this.tradeHistoryTable = null;
+            this.publishFromTables();
+          })
+        : null,
+      this.ownTradeHistoryTable && ownTradeHistory?.query
+        ? this.subscribeOptionalQuery(ownTradeHistory.query, () => {
+            this.unbindTable(this.ownTradeHistoryTable);
+            this.ownTradeHistoryTable = null;
+            this.publishFromTables();
+          })
+        : null,
+    ].filter(Boolean);
+  }
+
+  teardownPublicDataSubscriptions() {
+    if (this.publicTablesBound) {
+      this.unbindTable(this.publicListingsTable);
+      this.unbindTable(this.tradeHistoryTable);
+      this.unbindTable(this.ownTradeHistoryTable);
+      this.publicTablesBound = false;
+    }
+
+    for (const subscription of this.publicSubscriptions) {
+      if (!subscription.isEnded?.()) {
+        subscription.unsubscribe();
+      }
+    }
+
+    this.publicSubscriptions = [];
+  }
+
   getLegacyPublicListingsQuery() {
     return LEGACY_PUBLIC_LISTINGS_QUERY;
   }
@@ -191,13 +244,15 @@ export class PlayerShopSubscriptionManager {
   }
 
   publishFromTables() {
-    if (!this.publicListingsTable || !this.ownListingsTable || !this.proceedsTable) {
+    if (!this.ownListingsTable || !this.proceedsTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
     const identityKey = this.toIdentityKey(this.identity);
-    const publicListings = Array.from(this.publicListingsTable.iter())
+    const publicListings = Array.from(
+      this.publicDataActive ? this.publicListingsTable?.iter?.() ?? [] : [],
+    )
       .map((row) => this.mapListing(row))
       .sort((left, right) => {
         const nameCompare = left.username.localeCompare(right.username);
@@ -209,7 +264,7 @@ export class PlayerShopSubscriptionManager {
         return left.slotNumber - right.slotNumber;
       });
     const ownListingSource =
-      this.ownListingsTable === this.publicListingsTable
+      this.publicDataActive && this.ownListingsTable === this.publicListingsTable
         ? publicListings
         : Array.from(this.ownListingsTable.iter()).map((row) => this.mapListing(row));
     const ownListings = ownListingSource.filter(
@@ -258,7 +313,7 @@ export class PlayerShopSubscriptionManager {
   }
 
   getTradeHistoryRows() {
-    if (!this.tradeHistoryTable) {
+    if (!this.publicDataActive || !this.tradeHistoryTable) {
       return [];
     }
 
@@ -280,6 +335,10 @@ export class PlayerShopSubscriptionManager {
   }
 
   getOwnTradeHistoryRows(tradeHistory, identityKey) {
+    if (!this.publicDataActive) {
+      return [];
+    }
+
     if (!this.ownTradeHistoryTable) {
       return tradeHistory.filter(
         (trade) => trade.buyerIdentity === identityKey || trade.sellerIdentity === identityKey,

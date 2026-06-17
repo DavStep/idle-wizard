@@ -163,4 +163,62 @@ describe('ShopDirectSellManager', () => {
 
     manager.unmount();
   });
+
+  it('lets the tutorial override the confirm action without calling NPC sell', async () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 2,
+              sellGold: 1.4,
+              fastSellGold: 1.12,
+              fastSellPercent: 80,
+              sellNeed: 3,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const onSellOverride = vi.fn(async () => ({
+      handled: true,
+      ok: true,
+      gold: 10,
+    }));
+    const manager = new ShopDirectSellManager({
+      gameplayFacade,
+      onSellOverride,
+    });
+
+    manager.mount({ buttonParent, popupParent });
+
+    buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
+    popupParent.querySelector('.shop-page__direct-sell-item-button')?.click();
+
+    await manager.onConfirmSell();
+
+    expect(onSellOverride).toHaveBeenCalledWith({
+      item: expect.objectContaining({
+        itemTypeId: 1,
+        key: 'sageSeed',
+      }),
+      quantity: 1,
+      quote: expect.objectContaining({
+        ok: true,
+        quantity: 1,
+      }),
+    });
+    expect(gameplayFacade.sellNpcMarketItem).not.toHaveBeenCalled();
+    expect(popupParent.querySelector('.shop-page__direct-sell-popup')?.hidden).toBe(true);
+
+    manager.unmount();
+  });
 });

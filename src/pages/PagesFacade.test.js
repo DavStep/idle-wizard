@@ -4920,6 +4920,45 @@ describe('PagesFacade', () => {
     expect(settings.hidden).toBe(true);
   });
 
+  it('treats saving the unchanged default name as completing the tutorial step', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const playerFacade = createPlayerFacadeFake('wizard');
+    const tutorialStorage = createMemoryStorage({
+      [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+        completedStepIds: ['intro-welcome'],
+      }),
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade,
+      tutorialStorage,
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-username');
+
+    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const saveButton = stage.querySelector('.room-top-panel__username-save');
+
+    usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    saveButton.dispatchEvent(
+      new window.Event('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(playerFacade.getSnapshot().username).toBe('wizard');
+    expect(pagesFacade.tutorialFacade.progressManager.hasCompleted('intro-username')).toBe(true);
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-mana-sphere');
+
+    pagesFacade.unmount();
+  });
+
   it('shows seed inventory in the bag when the seeds tab is selected', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

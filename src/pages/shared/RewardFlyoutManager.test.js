@@ -94,6 +94,36 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-coin-amt-pop')).toBeNull();
   });
 
+  it('anchors seed drops to the stage and starts them a bit above summon', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const stage = document.createElement('section');
+    stage.className = 'game-stage';
+    setRect(stage, { left: 500, top: 50, width: 320, height: 640 });
+
+    const host = document.createElement('section');
+    const summonCircle = document.createElement('span');
+    summonCircle.className = 'workshop-page__summon-circle';
+    setRect(summonCircle, { left: 600, top: 200, width: 80, height: 80 });
+
+    host.append(summonCircle);
+    stage.append(host);
+    document.body.append(stage);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'seed_summoned',
+      seed: { key: 'sageSeed', label: 'sage seed', kind: 'seed' },
+      quantity: 1,
+    });
+
+    const anchor = document.querySelector('.room-item-drop-anchor.is-seed');
+    expect(anchor?.parentElement).toBe(stage);
+    expect(anchor?.style.position).toBe('absolute');
+    expect(anchor?.style.left).toBe('140px');
+    expect(anchor?.style.top).toBe('174px');
+  });
+
   it('keeps reward visuals disabled when icon mode is off', () => {
     const host = document.createElement('section');
     const summonCircle = document.createElement('span');

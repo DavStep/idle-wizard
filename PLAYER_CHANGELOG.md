@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.23
+
+- Improved Elara's early guide so saving the default name counts, fast sell points at the real confirm flow, and sage-grow wait states keep the lesson alive.
+- Reworked Elara's pointer cue for steadier motion and better visibility on mobile.
+- Made summon reward drops anchor more cleanly to the room stage on scaled screens.
+- Reduced background loading for Market listings, alliances, and leaderboard popups until those views are opened.
+- Tightened save syncing and crystal backfill so reloads are less chatty and in-progress crystal research stays accounted for.
+
 ## 0.1.22
 
 - Made early Workshop tasks shorter and sage growth faster so the first levels move better.

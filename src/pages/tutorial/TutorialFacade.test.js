@@ -542,8 +542,7 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('delays lesson three target help until the player is stuck', () => {
-    let now = 1_000;
+  it('shows first grow sage guidance immediately', () => {
     const snapshot = createLevelTwoSageTaskSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 0 }],
       seedSummoning: { canSummon: true },
@@ -563,6 +562,64 @@ describe('TutorialFacade', () => {
               requiredQuantity: 3,
               progressQuantity: 0,
               remainingQuantity: 3,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+    const stage = document.createElement('section');
+    const summonButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage(),
+    });
+
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(summonButton, { left: 140, top: 420, width: 420, height: 70 });
+    stage.append(summonButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('grow-sage');
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+
+    facade.unmount();
+  });
+
+  it('delays later grow sage target help until the player is stuck', () => {
+    let now = 1_000;
+    const snapshot = createLevelTwoSageTaskSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      seedSummoning: { canSummon: true },
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 0 }],
+        plot: { tiles: [] },
+      },
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costGold: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 3,
+              progressQuantity: 1,
+              remainingQuantity: 2,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -657,8 +714,11 @@ describe('TutorialFacade', () => {
     });
     facade.refresh();
 
-    expect(facade.activeStep).toBeNull();
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+    expect(facade.activeStep?.id).toBe('grow-sage');
+    expect(facade.activeStep?.objectiveText).toBe('wait for sage');
+    expect(facade.activeStep?.targetId).toBeNull();
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
 
     facade.unmount();

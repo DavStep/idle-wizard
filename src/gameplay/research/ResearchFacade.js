@@ -115,6 +115,20 @@ export class ResearchFacade {
       );
   }
 
+  getCommittedCrystalCostTotal() {
+    const researchIds = new Set([
+      ...this.researchStateEntityManager.getCompletedResearchIds(),
+      ...this.researchStateEntityManager
+        .getInProgressResearches()
+        .map((research) => research.researchId),
+    ]);
+
+    return [...researchIds].reduce(
+      (total, researchId) => total + this.researchBalanceManager.getCostCrystal(researchId),
+      0,
+    );
+  }
+
   getCompletedRubyCostTotal() {
     return this.researchStateEntityManager
       .getCompletedResearchIds()

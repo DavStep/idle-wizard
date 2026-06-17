@@ -4,6 +4,7 @@ import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialRevealManager } from './managers/TutorialRevealManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
+import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanel/topPanelEvents.js';
 
 export class TutorialFacade {
   static explain =
@@ -56,6 +57,14 @@ export class TutorialFacade {
     this.handleAdvance = () => this.advanceActiveStep();
     this.handleObjectivePress = () => this.pressActiveLesson();
     this.handleResize = () => this.scheduleRefresh();
+    this.handleUsernameSaved = () => {
+      if (this.progressManager.hasCompleted('intro-username')) {
+        return;
+      }
+
+      this.stepManager.advanceStep('intro-username');
+      this.scheduleRefresh();
+    };
   }
 
   mount(stage) {
@@ -71,6 +80,7 @@ export class TutorialFacade {
     this.hintManager.setObjectivePressHandler(this.handleObjectivePress);
     this.unsubscribe = this.gameplayFacade.subscribe(() => this.scheduleRefresh());
     stage.addEventListener('click', this.handleClick, true);
+    stage.addEventListener(TOP_PANEL_USERNAME_SAVED_EVENT, this.handleUsernameSaved);
     window.addEventListener('resize', this.handleResize);
     this.watchBlockingDialogs();
     this.scheduleRefresh();
@@ -84,6 +94,7 @@ export class TutorialFacade {
     this.disconnectBlockingDialogObserver();
     this.saleManager.cancel();
     this.stage?.removeEventListener('click', this.handleClick, true);
+    this.stage?.removeEventListener(TOP_PANEL_USERNAME_SAVED_EVENT, this.handleUsernameSaved);
     window.removeEventListener('resize', this.handleResize);
     this.hintManager.setAdvanceHandler(null);
     this.hintManager.setObjectivePressHandler(null);
@@ -99,6 +110,25 @@ export class TutorialFacade {
     this.scheduleRefresh();
   }
 
+  handleDirectSellOverride({ item, quantity } = {}) {
+    const snapshot = this.gameplayFacade?.getSnapshot?.();
+    const dom = this.targetManager.getDomState();
+    const result = this.saleManager.handleDirectSellOverride({
+      step: this.activeStep,
+      snapshot,
+      dom,
+      gameplayFacade: this.gameplayFacade,
+      itemKey: item?.key,
+      quantity,
+    });
+
+    if (result?.handled) {
+      this.scheduleRefresh();
+    }
+
+    return result;
+  }
+
   refresh() {
     this.cancelReminderRefresh();
     const dom = this.targetManager.getDomState();
@@ -110,10 +140,10 @@ export class TutorialFacade {
       lessonPanelOpen: this.hintManager.isLessonPanelOpen(),
     });
     this.activeStep = viewState.step;
-    this.applyViewState(viewState, snapshot);
+    this.applyViewState(viewState);
   }
 
-  applyViewState(viewState, snapshot) {
+  applyViewState(viewState) {
     if (viewState.kind === 'blocked') {
       this.saleManager.cancel();
       this.hintManager.suspendForBlockingDialog();
@@ -136,10 +166,6 @@ export class TutorialFacade {
       });
       this.saleManager.update({
         step: viewState.step,
-        snapshot,
-        dom: this.targetManager.getDomState(),
-        gameplayFacade: this.gameplayFacade,
-        onChange: () => this.scheduleRefresh(),
       });
       this.applyCue(viewState.cue);
       this.scheduleReminderRefresh(viewState.nextRefreshAt);
