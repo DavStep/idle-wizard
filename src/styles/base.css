@@ -5199,6 +5199,39 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.shop-page__direct-sell-selected-label {
+  padding: 0;
+  appearance: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.shop-page__direct-sell-selected-label:hover,
+.shop-page__direct-sell-selected-label:focus-visible,
+.shop-page__direct-sell-selected-label[aria-pressed="true"],
+.shop-page__sell-item-button:hover .shop-page__direct-sell-target-label,
+.shop-page__sell-item-button:focus .shop-page__direct-sell-target-label,
+.shop-page__sell-item-button[aria-pressed="true"] .shop-page__direct-sell-target-label {
+  text-decoration: underline;
+}
+
+.shop-page__direct-sell-selected-label:focus {
+  outline: none;
+}
+
+.shop-page__direct-sell-selected-label:disabled,
+.shop-page__direct-sell-selected-label[aria-disabled="true"] {
+  cursor: default;
+  text-decoration: none;
+}
+
 .shop-page__direct-sell-selected-row > .row_val {
   justify-self: end;
   white-space: nowrap;

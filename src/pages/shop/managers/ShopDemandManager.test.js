@@ -8,6 +8,21 @@ function createTouchStartEvent() {
   return new window.Event('touchstart', { bubbles: true, cancelable: true });
 }
 
+function withPointerEvent(callback) {
+  const previousPointerEvent = window.PointerEvent;
+  window.PointerEvent = function PointerEvent() {};
+
+  try {
+    callback();
+  } finally {
+    if (previousPointerEvent === undefined) {
+      delete window.PointerEvent;
+    } else {
+      window.PointerEvent = previousPointerEvent;
+    }
+  }
+}
+
 function createSnapshot() {
   return {
     research: { completedResearchIds: ['unlockSeed:sageSeed'] },
@@ -122,32 +137,34 @@ describe('ShopDemandManager', () => {
   });
 
   it('opens NPC demand on touchstart of the border label', () => {
-    const buttonParent = document.createElement('section');
-    const popupParent = document.createElement('section');
-    const snapshot = createSnapshot();
-    const gameplayFacade = {
-      subscribe(callback) {
-        callback(snapshot);
-        return () => {};
-      },
-      getSnapshot() {
-        return snapshot;
-      },
-    };
-    const manager = new ShopDemandManager({ gameplayFacade });
+    withPointerEvent(() => {
+      const buttonParent = document.createElement('section');
+      const popupParent = document.createElement('section');
+      const snapshot = createSnapshot();
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(snapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return snapshot;
+        },
+      };
+      const manager = new ShopDemandManager({ gameplayFacade });
 
-    manager.mount({ buttonParent, popupParent });
-    const button = buttonParent.querySelector('.shop-page__demand-button');
-    const popup = popupParent.querySelector('.shop-page__demand-popup');
+      manager.mount({ buttonParent, popupParent });
+      const button = buttonParent.querySelector('.shop-page__demand-button');
+      const popup = popupParent.querySelector('.shop-page__demand-popup');
 
-    button.dispatchEvent(createTouchStartEvent());
-    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      button.dispatchEvent(createTouchStartEvent());
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.hidden).toBe(false);
-    expect([...popup.querySelectorAll('.shop-page__demand-row')].map((row) =>
-      row.querySelector('.row_key')?.textContent,
-    )).toEqual(['sage seed', 'mint seed']);
+      expect(popup.hidden).toBe(false);
+      expect([...popup.querySelectorAll('.shop-page__demand-row')].map((row) =>
+        row.querySelector('.row_key')?.textContent,
+      )).toEqual(['sage seed', 'mint seed']);
 
-    manager.unmount();
+      manager.unmount();
+    });
   });
 });

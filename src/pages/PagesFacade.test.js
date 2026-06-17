@@ -7569,6 +7569,75 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage1');
   });
 
+  it('refills a remembered Brewing recipe from the primary action after collecting', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    gameplayFacade.setGold(3);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+    gameplayFacade.setMana(24);
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    stage
+      .querySelector('.brewing-page__recipes-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.brewing-page__recipe-row')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.brewing-page__action-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.brewing.activeBrew = {
+      resultItemTypeId: 2001,
+      key: 'manaTonic',
+      label: 'mana tonic',
+      phase: 'ready',
+      canStartBottling: false,
+      canCollect: true,
+      remainingMs: 0,
+      totalMs: 0,
+      bottlingTotalMs: 2_000,
+      progress: 1,
+    };
+    snapshot.brewing.canCollectPotion = true;
+    gameplayFacade.publishSnapshot();
+
+    stage
+      .querySelector('.brewing-page__action-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
+      'fill recipe',
+    );
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
+      'recipemana tonic',
+    );
+
+    stage
+      .querySelector('.brewing-page__action-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('- 3 sage');
+    expect(stage.querySelector('.brewing-page__cauldron-count')?.textContent).toBe('3/5');
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
+      'matches mana tonic',
+    );
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
+      'brew (12 mana)',
+    );
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
+  });
+
   it('keeps the selected Brewing recipe after switching room tabs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

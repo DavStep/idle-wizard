@@ -13,6 +13,7 @@ import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
 const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
 const EMPTY_UNLOCKED_STAND_LABEL = 'select';
+const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 
 export class ShopShelfManager {
   constructor({ gameplayFacade, getSellPriceOverride } = {}) {
@@ -28,6 +29,10 @@ export class ShopShelfManager {
     this.handledBuyPressStart = false;
     this.handledLockedSlotPressStartSlotNumber = null;
     this.handledSelectSlotPressStartSlotNumber = null;
+    this.lastTouchLikePressStart = {
+      key: null,
+      timeStamp: Number.NEGATIVE_INFINITY,
+    };
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hideSellPopup();
@@ -97,14 +102,9 @@ export class ShopShelfManager {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
     row.dataset.shopSlotNumber = String(slotNumber);
-    row.addEventListener('pointerdown', (event) =>
+    this.bindTouchLikePressStart(row, `locked-slot:${slotNumber}`, (event) =>
       this.onLockedSlotRowPressStart(event, slotNumber),
     );
-    if (typeof window.PointerEvent !== 'function') {
-      row.addEventListener('touchstart', (event) => this.onLockedSlotRowPressStart(event, slotNumber), {
-        passive: false,
-      });
-    }
     row.addEventListener('click', (event) => this.onLockedSlotRowClick(event, slotNumber));
 
     const label = document.createElement('span');
@@ -117,14 +117,9 @@ export class ShopShelfManager {
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
     itemValue.dataset.tutorialId = `shop:stand:${slotNumber}`;
-    itemValue.addEventListener('pointerdown', (event) =>
+    this.bindTouchLikePressStart(itemValue, `select-slot:${slotNumber}`, (event) =>
       this.onSelectSlotPressStart(event, slotNumber),
     );
-    if (typeof window.PointerEvent !== 'function') {
-      itemValue.addEventListener('touchstart', (event) => this.onSelectSlotPressStart(event, slotNumber), {
-        passive: false,
-      });
-    }
     itemValue.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
     itemValue.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') {
@@ -148,12 +143,9 @@ export class ShopShelfManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__buy-slot-button';
     button.type = 'button';
-    button.addEventListener('pointerdown', (event) => this.onBuySlotPressStart(event));
-    if (typeof window.PointerEvent !== 'function') {
-      button.addEventListener('touchstart', (event) => this.onBuySlotPressStart(event), {
-        passive: false,
-      });
-    }
+    this.bindTouchLikePressStart(button, `buy-slot:${slotNumber}`, (event) =>
+      this.onBuySlotPressStart(event),
+    );
     button.addEventListener('click', (event) => {
       event.stopPropagation();
 
@@ -352,6 +344,25 @@ export class ShopShelfManager {
   onSelectSellTab(kind) {
     this.selectedSellTab = kind;
     this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  bindTouchLikePressStart(target, key, handler) {
+    target.addEventListener('pointerdown', (event) =>
+      this.onTouchLikePressStart(event, key, handler),
+    );
+    target.addEventListener(
+      'touchstart',
+      (event) => this.onTouchLikePressStart(event, key, handler),
+      { passive: false },
+    );
+  }
+
+  onTouchLikePressStart(event, key, handler) {
+    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+      return;
+    }
+
+    handler(event);
   }
 
   onSetSellItem(itemTypeId) {
@@ -814,6 +825,17 @@ export class ShopShelfManager {
       Number.isFinite(shelf.nextSlotCost) &&
       (snapshot?.gold?.current ?? 0) >= shelf.nextSlotCost
     );
+  }
+
+  isDuplicateTouchLikePressStart(event, key) {
+    const timeStamp = Number.isFinite(event?.timeStamp) ? event.timeStamp : Date.now();
+    const isDuplicate =
+      this.lastTouchLikePressStart.key === key &&
+      Math.abs(timeStamp - this.lastTouchLikePressStart.timeStamp) <=
+        TOUCH_LIKE_PRESS_START_DEDUPE_MS;
+
+    this.lastTouchLikePressStart = { key, timeStamp };
+    return isDuplicate;
   }
 
   applyPopupVisibility() {

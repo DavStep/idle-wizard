@@ -841,8 +841,23 @@ export class BrewingCauldronManager {
       );
     }
 
+    const placedQuantities = new Map();
+
+    for (const ingredient of brewing.ingredients ?? []) {
+      placedQuantities.set(
+        ingredient.itemTypeId,
+        (placedQuantities.get(ingredient.itemTypeId) ?? 0) + 1,
+      );
+    }
+
     const ownedQuantities = new Map(
-      (brewing.herbs ?? []).map((herb) => [herb.itemTypeId, herb.quantity ?? 0]),
+      (brewing.herbs ?? []).map((herb) => {
+        const placedQuantity = placedQuantities.get(herb.itemTypeId) ?? 0;
+        const availableQuantity = Number.isFinite(herb.availableQuantity)
+          ? herb.availableQuantity
+          : herb.quantity ?? 0;
+        return [herb.itemTypeId, availableQuantity + placedQuantity];
+      }),
     );
     const missingQuantities = new Map();
 
@@ -1100,6 +1115,17 @@ export class BrewingCauldronManager {
       }
     }
 
+    if (brewing.ingredients.length === 0 && brewing.selectedRecipe) {
+      const canFillRecipe = this.canFillSelectedRecipe(brewing);
+      return {
+        id: 'fill',
+        label: 'fill recipe',
+        hasCost: false,
+        disabled: !canFillRecipe,
+        ariaLabel: this.formatFillRecipeAriaLabel(brewing, canFillRecipe),
+      };
+    }
+
     const recipeLocked = Boolean(
       brewing.match && !brewing.match.unlocked && !brewing.match.discoverable,
     );
@@ -1112,6 +1138,14 @@ export class BrewingCauldronManager {
       disabled: !canBrew,
       ariaLabel: this.formatBrewAriaLabel(brewing),
     };
+  }
+
+  canFillSelectedRecipe(brewing) {
+    if (!brewing?.selectedRecipe || (brewing.ingredients?.length ?? 0) > 0) {
+      return false;
+    }
+
+    return this.getMissingIngredientQuantities(brewing.selectedRecipe, brewing).size === 0;
   }
 
   onHerbButtonClick(event, itemTypeId) {
@@ -1200,7 +1234,37 @@ export class BrewingCauldronManager {
       return;
     }
 
+    if (action === 'fill') {
+      this.onFillSelectedRecipe(safeCauldronIndex);
+      return;
+    }
+
     this.onBrew(safeCauldronIndex);
+  }
+
+  onFillSelectedRecipe(cauldronIndex = this.selectedCauldronIndex) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const recipe = this.getSelectedRecipe(snapshot?.brewing?.recipes ?? [], safeCauldronIndex);
+
+    if (!recipe) {
+      return;
+    }
+
+    const result = this.gameplayFacade.prepareBrewingRecipe(recipe.key, safeCauldronIndex);
+
+    if (!result.ok) {
+      this.message = {
+        cauldronIndex: safeCauldronIndex,
+        text: this.formatResultMessage(result),
+      };
+      this.render(this.gameplayFacade.getSnapshot());
+      this.flashMessage(safeCauldronIndex);
+      return;
+    }
+
+    this.message = null;
+    this.render(this.gameplayFacade.getSnapshot());
   }
 
   onBrew(cauldronIndex = this.selectedCauldronIndex) {
@@ -1633,6 +1697,16 @@ export class BrewingCauldronManager {
     }
 
     return `brew${costLabel}`;
+  }
+
+  formatFillRecipeAriaLabel(brewing, canFillRecipe = this.canFillSelectedRecipe(brewing)) {
+    const recipeLabel = brewing?.selectedRecipe?.label ?? 'selected recipe';
+
+    if (!canFillRecipe) {
+      return `missing herbs for ${recipeLabel}`;
+    }
+
+    return `fill ${recipeLabel} recipe`;
   }
 
   flashMessage(cauldronIndex = this.selectedCauldronIndex) {

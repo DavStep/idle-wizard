@@ -35,6 +35,7 @@ export class ShopDirectSellManager {
     this.selectedItemTypeId = null;
     this.sellQuantity = 1;
     this.sellingItemTypeId = null;
+    this.handledSelectPressStartItemTypeId = null;
     this.statusText = '';
     this.lastSnapshot = null;
     this.previousFocus = null;
@@ -117,6 +118,7 @@ export class ShopDirectSellManager {
     this.selectedItemTypeId = null;
     this.sellQuantity = 1;
     this.sellingItemTypeId = null;
+    this.handledSelectPressStartItemTypeId = null;
     this.statusText = '';
     this.lastSnapshot = null;
     this.previousFocus = null;
@@ -263,8 +265,10 @@ export class ShopDirectSellManager {
     const row = document.createElement('div');
     row.className = 'shop-page__direct-sell-selected-row';
 
-    const label = document.createElement('span');
-    label.className = 'row_key';
+    const label = document.createElement('button');
+    label.className = 'row_key shop-page__direct-sell-selected-label';
+    label.type = 'button';
+    label.addEventListener('click', () => this.clearSelectedItem());
 
     const value = document.createElement('span');
     value.className = 'row_val';
@@ -381,11 +385,45 @@ export class ShopDirectSellManager {
   }
 
   onSelectItem(itemTypeId) {
-    this.selectedItemTypeId = itemTypeId;
+    this.selectedItemTypeId = this.selectedItemTypeId === itemTypeId ? null : itemTypeId;
     this.sellQuantity = 1;
     this.statusText = '';
     this.render();
     this.refs.quantityField?.hideInput();
+  }
+
+  clearSelectedItem() {
+    if (this.selectedItemTypeId === null) {
+      return;
+    }
+
+    this.selectedItemTypeId = null;
+    this.sellQuantity = 1;
+    this.statusText = '';
+    this.render();
+    this.refs.quantityField?.hideInput();
+  }
+
+  onSelectItemClick(event, itemTypeId) {
+    if (
+      event.type === 'click' &&
+      this.handledSelectPressStartItemTypeId === itemTypeId
+    ) {
+      this.handledSelectPressStartItemTypeId = null;
+      return;
+    }
+
+    this.onSelectItem(itemTypeId);
+  }
+
+  onSelectItemPressStart(event, itemTypeId) {
+    if (this.isMousePressStart(event) || event.currentTarget?.disabled) {
+      return;
+    }
+
+    event.preventDefault();
+    this.handledSelectPressStartItemTypeId = itemTypeId;
+    this.onSelectItem(itemTypeId);
   }
 
   onQuantityInput() {
@@ -544,6 +582,10 @@ export class ShopDirectSellManager {
     this.refs.confirmButton.hidden = !hasItem;
 
     if (!item) {
+      this.refs.selectedItem.label.disabled = true;
+      this.refs.selectedItem.label.setAttribute('aria-disabled', 'true');
+      this.refs.selectedItem.label.setAttribute('aria-pressed', 'false');
+      this.refs.selectedItem.label.setAttribute('aria-label', 'no item selected');
       this.refs.selectedItem.label.textContent = 'no item selected';
       setItemIconLabel(this.refs.selectedItem.label, null);
       setResourceColor(this.refs.selectedItem.label, null);
@@ -562,6 +604,10 @@ export class ShopDirectSellManager {
     const display = getItemDisplay(this.lastSnapshot, item, item.quantity);
 
     this.sellQuantity = quantity;
+    this.refs.selectedItem.label.disabled = false;
+    this.refs.selectedItem.label.setAttribute('aria-disabled', 'false');
+    this.refs.selectedItem.label.setAttribute('aria-pressed', 'true');
+    this.refs.selectedItem.label.setAttribute('aria-label', `deselect ${display.label}`);
     this.refs.quantityField.input.max = String(maxQuantity);
     this.refs.quantityField.setValue(quantity);
 
@@ -644,7 +690,15 @@ export class ShopDirectSellManager {
     button.className =
       'shop-page__direct-sell-row shop-page__sell-item-row shop-page__direct-sell-item-button shop-page__sell-item-button';
     button.type = 'button';
-    button.addEventListener('click', () => this.onSelectItem(itemTypeId));
+    button.addEventListener('pointerdown', (event) =>
+      this.onSelectItemPressStart(event, itemTypeId),
+    );
+    if (typeof window.PointerEvent !== 'function') {
+      button.addEventListener('touchstart', (event) => this.onSelectItemPressStart(event, itemTypeId), {
+        passive: false,
+      });
+    }
+    button.addEventListener('click', (event) => this.onSelectItemClick(event, itemTypeId));
 
     const label = document.createElement('span');
     label.className = 'row_key';
@@ -897,5 +951,9 @@ export class ShopDirectSellManager {
 
     tooltip.style.left = `${Math.round(left)}px`;
     tooltip.style.top = `${Math.round(top)}px`;
+  }
+
+  isMousePressStart(event) {
+    return event.type === 'pointerdown' && event.pointerType === 'mouse';
   }
 }

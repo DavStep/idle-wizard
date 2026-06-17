@@ -529,6 +529,62 @@ describe('TutorialHintManager', () => {
     expect(controls.some((control) => overlaps(buttonRect, control))).toBe(false);
   });
 
+  it('moves the lesson away from research sub-tabs', () => {
+    const stage = document.createElement('section');
+    const tabs = [
+      { left: 16, top: 554, width: 110, height: 30 },
+      { left: 130, top: 554, width: 110, height: 30 },
+      { left: 244, top: 554, width: 118, height: 30 },
+    ].map(({ left, top, width, height }) => {
+      const button = document.createElement('button');
+      button.className = 'research-page__tab-button';
+      setClientRect(
+        button,
+        toClientRect({
+          left,
+          top,
+          width,
+          height,
+        }),
+      );
+      stage.append(button);
+      return {
+        left,
+        top,
+        right: left + width,
+        bottom: top + height,
+      };
+    });
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'research-mint-seed',
+      title: 'lesson 3: gardening',
+      text: 'research mint seed',
+      stepLabel: '19/25',
+      progress: { value: 0, max: 1 },
+      progressLabel: '0/1 research',
+      canShowTarget: true,
+    });
+
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const lessonRect = getLessonRect(lesson);
+    const buttonRect = getLessonButtonRect(button);
+
+    expect(lesson?.style.top).toBe('260px');
+    expect(button?.style.top).toBe(
+      `${260 + getLessonOuterHeight(lesson) - 91 + 9}px`,
+    );
+    expect(tabs.some((tab) => overlaps(lessonRect, tab))).toBe(false);
+    expect(tabs.some((tab) => overlaps(buttonRect, tab))).toBe(false);
+  });
+
   it('shows only the lesson box while cueing the target from an open lesson', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');

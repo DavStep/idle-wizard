@@ -11,6 +11,21 @@ function createTouchStartEvent() {
   return new window.Event('touchstart', { bubbles: true, cancelable: true });
 }
 
+function withPointerEvent(callback) {
+  const previousPointerEvent = window.PointerEvent;
+  window.PointerEvent = function PointerEvent() {};
+
+  try {
+    callback();
+  } finally {
+    if (previousPointerEvent === undefined) {
+      delete window.PointerEvent;
+    } else {
+      window.PointerEvent = previousPointerEvent;
+    }
+  }
+}
+
 function createRequestGameplayFacadeFake() {
   const listeners = new Set();
   const snapshot = {
@@ -499,109 +514,113 @@ describe('ShopShelfManager', () => {
   });
 
   it('buys the next NPC market stand on touchstart of the locked row text', () => {
-    const stage = document.createElement('section');
-    const popupLayer = document.createElement('section');
-    let buyCount = 0;
-    const gameplaySnapshot = {
-      gold: { current: 0 },
-      research: { completedResearchIds: [] },
-      shop: {
-        shelf: {
-          maxSlots: 5,
-          selectedSlotNumber: 1,
-          nextSlotNumber: 1,
-          nextSlotCost: 0,
-          nextSlotLockedByLevel: false,
-          slotCosts: [0, 50, 150, 400, 1000],
-          sellKinds: [],
-          sellItems: [],
-          slots: [
-            { slotNumber: 1, unlocked: false },
-            { slotNumber: 2, unlocked: false },
-            { slotNumber: 3, unlocked: false },
-            { slotNumber: 4, unlocked: false },
-            { slotNumber: 5, unlocked: false },
-          ],
+    withPointerEvent(() => {
+      const stage = document.createElement('section');
+      const popupLayer = document.createElement('section');
+      let buyCount = 0;
+      const gameplaySnapshot = {
+        gold: { current: 0 },
+        research: { completedResearchIds: [] },
+        shop: {
+          shelf: {
+            maxSlots: 5,
+            selectedSlotNumber: 1,
+            nextSlotNumber: 1,
+            nextSlotCost: 0,
+            nextSlotLockedByLevel: false,
+            slotCosts: [0, 50, 150, 400, 1000],
+            sellKinds: [],
+            sellItems: [],
+            slots: [
+              { slotNumber: 1, unlocked: false },
+              { slotNumber: 2, unlocked: false },
+              { slotNumber: 3, unlocked: false },
+              { slotNumber: 4, unlocked: false },
+              { slotNumber: 5, unlocked: false },
+            ],
+          },
         },
-      },
-    };
-    const gameplayFacade = {
-      subscribe(callback) {
-        callback(gameplaySnapshot);
-        return () => {};
-      },
-      getSnapshot() {
-        return gameplaySnapshot;
-      },
-      buyShopShelfSlot() {
-        buyCount += 1;
-        return { ok: true, cost: 0, slotNumber: 1 };
-      },
-    };
-    const manager = new ShopShelfManager({ gameplayFacade });
+      };
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+        buyShopShelfSlot() {
+          buyCount += 1;
+          return { ok: true, cost: 0, slotNumber: 1 };
+        },
+      };
+      const manager = new ShopShelfManager({ gameplayFacade });
 
-    manager.mount(stage, popupLayer);
+      manager.mount(stage, popupLayer);
 
-    const itemValue = stage.querySelector('.shop-page__slot-item-value');
-    itemValue?.dispatchEvent(createTouchStartEvent());
-    itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      const itemValue = stage.querySelector('.shop-page__slot-item-value');
+      itemValue?.dispatchEvent(createTouchStartEvent());
+      itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(buyCount).toBe(1);
+      expect(buyCount).toBe(1);
 
-    manager.unmount();
+      manager.unmount();
+    });
   });
 
   it('buys the next NPC market stand on touchstart of the buy button', () => {
-    const stage = document.createElement('section');
-    const popupLayer = document.createElement('section');
-    let buyCount = 0;
-    const gameplaySnapshot = {
-      gold: { current: 0 },
-      research: { completedResearchIds: [] },
-      shop: {
-        shelf: {
-          maxSlots: 5,
-          selectedSlotNumber: 1,
-          nextSlotNumber: 1,
-          nextSlotCost: 0,
-          nextSlotLockedByLevel: false,
-          slotCosts: [0, 50, 150, 400, 1000],
-          sellKinds: [],
-          sellItems: [],
-          slots: [
-            { slotNumber: 1, unlocked: false },
-            { slotNumber: 2, unlocked: false },
-            { slotNumber: 3, unlocked: false },
-            { slotNumber: 4, unlocked: false },
-            { slotNumber: 5, unlocked: false },
-          ],
+    withPointerEvent(() => {
+      const stage = document.createElement('section');
+      const popupLayer = document.createElement('section');
+      let buyCount = 0;
+      const gameplaySnapshot = {
+        gold: { current: 0 },
+        research: { completedResearchIds: [] },
+        shop: {
+          shelf: {
+            maxSlots: 5,
+            selectedSlotNumber: 1,
+            nextSlotNumber: 1,
+            nextSlotCost: 0,
+            nextSlotLockedByLevel: false,
+            slotCosts: [0, 50, 150, 400, 1000],
+            sellKinds: [],
+            sellItems: [],
+            slots: [
+              { slotNumber: 1, unlocked: false },
+              { slotNumber: 2, unlocked: false },
+              { slotNumber: 3, unlocked: false },
+              { slotNumber: 4, unlocked: false },
+              { slotNumber: 5, unlocked: false },
+            ],
+          },
         },
-      },
-    };
-    const gameplayFacade = {
-      subscribe(callback) {
-        callback(gameplaySnapshot);
-        return () => {};
-      },
-      getSnapshot() {
-        return gameplaySnapshot;
-      },
-      buyShopShelfSlot() {
-        buyCount += 1;
-        return { ok: true, cost: 0, slotNumber: 1 };
-      },
-    };
-    const manager = new ShopShelfManager({ gameplayFacade });
+      };
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+        buyShopShelfSlot() {
+          buyCount += 1;
+          return { ok: true, cost: 0, slotNumber: 1 };
+        },
+      };
+      const manager = new ShopShelfManager({ gameplayFacade });
 
-    manager.mount(stage, popupLayer);
+      manager.mount(stage, popupLayer);
 
-    const buyButton = stage.querySelector('.shop-page__buy-slot-button');
-    buyButton?.dispatchEvent(createTouchStartEvent());
-    buyButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      const buyButton = stage.querySelector('.shop-page__buy-slot-button');
+      buyButton?.dispatchEvent(createTouchStartEvent());
+      buyButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(buyCount).toBe(1);
+      expect(buyCount).toBe(1);
 
-    manager.unmount();
+      manager.unmount();
+    });
   });
 
   it('opens NPC market sell picker only from the stand item text', () => {
@@ -682,73 +701,75 @@ describe('ShopShelfManager', () => {
   });
 
   it('opens NPC market sell picker on touchstart of the stand item text', () => {
-    const stage = document.createElement('section');
-    const popupLayer = document.createElement('section');
-    let selectCount = 0;
-    const gameplaySnapshot = {
-      gold: { current: 0 },
-      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
-      shop: {
-        shelf: {
-          maxSlots: 1,
-          selectedSlotNumber: 1,
-          slotCosts: [0],
-          sellKinds: [{ kind: 'seed', label: 'seeds' }],
-          sellItems: [
-            {
-              itemTypeId: 1,
-              key: 'sageSeed',
-              label: 'sage seed',
-              kind: 'seed',
-              quantity: 1,
-              sellGold: 8,
-              sellNeed: 12,
-            },
-          ],
-          slots: [
-            {
-              slotNumber: 1,
-              unlocked: true,
-              sellItemTypeId: 1,
-              sellKind: 'seed',
-              sellKey: 'sageSeed',
-              sellLabel: 'sage seed',
-              sellQuantity: 1,
-              sellGold: 8,
-              sellNeed: 12,
-            },
-          ],
+    withPointerEvent(() => {
+      const stage = document.createElement('section');
+      const popupLayer = document.createElement('section');
+      let selectCount = 0;
+      const gameplaySnapshot = {
+        gold: { current: 0 },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          shelf: {
+            maxSlots: 1,
+            selectedSlotNumber: 1,
+            slotCosts: [0],
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 1,
+                sellGold: 8,
+                sellNeed: 12,
+              },
+            ],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                sellItemTypeId: 1,
+                sellKind: 'seed',
+                sellKey: 'sageSeed',
+                sellLabel: 'sage seed',
+                sellQuantity: 1,
+                sellGold: 8,
+                sellNeed: 12,
+              },
+            ],
+          },
         },
-      },
-    };
-    const gameplayFacade = {
-      subscribe(callback) {
-        callback(gameplaySnapshot);
-        return () => {};
-      },
-      getSnapshot() {
-        return gameplaySnapshot;
-      },
-      selectShopShelfSlot(slotNumber) {
-        selectCount += 1;
-        gameplaySnapshot.shop.shelf.selectedSlotNumber = slotNumber;
-        return { ok: true, slotNumber };
-      },
-    };
-    const manager = new ShopShelfManager({ gameplayFacade });
+      };
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+        selectShopShelfSlot(slotNumber) {
+          selectCount += 1;
+          gameplaySnapshot.shop.shelf.selectedSlotNumber = slotNumber;
+          return { ok: true, slotNumber };
+        },
+      };
+      const manager = new ShopShelfManager({ gameplayFacade });
 
-    manager.mount(stage, popupLayer);
+      manager.mount(stage, popupLayer);
 
-    const itemValue = stage.querySelector('.shop-page__slot-item-value');
-    const popup = popupLayer.querySelector('.shop-page__sell-popup');
+      const itemValue = stage.querySelector('.shop-page__slot-item-value');
+      const popup = popupLayer.querySelector('.shop-page__sell-popup');
 
-    itemValue?.dispatchEvent(createTouchStartEvent());
-    itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      itemValue?.dispatchEvent(createTouchStartEvent());
+      itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.hidden).toBe(false);
-    expect(selectCount).toBe(1);
+      expect(popup.hidden).toBe(false);
+      expect(selectCount).toBe(1);
 
-    manager.unmount();
+      manager.unmount();
+    });
   });
 
   it('keeps NPC market tutorial targets on item names, not prices', () => {

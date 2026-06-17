@@ -79,6 +79,7 @@
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.
 - FTUE grow-sage should stay visible during planted sage wait states; hide pointer/show-me guidance there, but do not pause Elara entirely.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
+- Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.

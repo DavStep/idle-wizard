@@ -55,22 +55,22 @@
         {
           "id": "level4-nettle-seeds",
           "itemKey": "nettleSeed",
-          "quantity": 125
+          "quantity": 81
         },
         {
           "id": "level4-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 80
+          "quantity": 52
         },
         {
           "id": "level4-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 24
+          "quantity": 16
         },
         {
           "id": "level4-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 4
+          "quantity": 3
         }
       ]
     },
@@ -81,27 +81,27 @@
         {
           "id": "level5-nettle-seeds",
           "itemKey": "nettleSeed",
-          "quantity": 160
+          "quantity": 120
         },
         {
           "id": "level5-lavender-seeds",
           "itemKey": "lavenderSeed",
-          "quantity": 175
+          "quantity": 131
         },
         {
           "id": "level5-lavender-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 100
+          "quantity": 75
         },
         {
           "id": "level5-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 12
+          "quantity": 9
         },
         {
           "id": "level5-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 11
+          "quantity": 8
         }
       ]
     },
@@ -112,27 +112,27 @@
         {
           "id": "level6-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 14
+          "quantity": 11
         },
         {
           "id": "level6-lavender-seeds",
           "itemKey": "lavenderSeed",
-          "quantity": 190
+          "quantity": 152
         },
         {
           "id": "level6-lavender-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 110
+          "quantity": 88
         },
         {
           "id": "level6-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 13
+          "quantity": 10
         },
         {
           "id": "level6-nettle-seeds",
           "itemKey": "nettleSeed",
-          "quantity": 180
+          "quantity": 144
         }
       ]
     },

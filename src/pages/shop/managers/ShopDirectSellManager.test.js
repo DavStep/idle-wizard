@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ShopDirectSellManager } from './ShopDirectSellManager.js';
 
+function createTouchStartEvent() {
+  return new window.Event('touchstart', { bubbles: true, cancelable: true });
+}
+
 function setElementMetrics(
   element,
   {
@@ -187,6 +191,9 @@ describe('ShopDirectSellManager', () => {
 
     expect(itemButton.getAttribute('aria-pressed')).toBe('true');
     expect(itemButton.dataset.directSellItemKey).toBe('sageSeed');
+    expect(
+      popup.querySelector('.shop-page__direct-sell-selected-label')?.getAttribute('aria-pressed'),
+    ).toBe('true');
     expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
       'sage seed (5)1.12 gold',
     );
@@ -234,6 +241,120 @@ describe('ShopDirectSellManager', () => {
 
     expect(gameplayFacade.sellNpcMarketItem).toHaveBeenCalledWith(1, 2);
     expect(popup.hidden).toBe(true);
+
+    manager.unmount();
+  });
+
+  it('selects a fast-sell item on touchstart of the item name', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 5,
+              sellGold: 1.4,
+              fastSellGold: 1.12,
+              fastSellPercent: 80,
+              sellNeed: 3,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopDirectSellManager({ gameplayFacade });
+
+    manager.mount({ buttonParent, popupParent });
+    const onSelectItemSpy = vi.spyOn(manager, 'onSelectItem');
+    buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
+
+    const itemName = popupParent.querySelector('.shop-page__direct-sell-target-label');
+    itemName?.dispatchEvent(createTouchStartEvent());
+    itemName?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onSelectItemSpy).toHaveBeenCalledTimes(1);
+    expect(
+      popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
+    ).toBe('sage seed (5)1.12 gold');
+    expect(
+      popupParent.querySelector('.shop-page__direct-sell-item-button')?.getAttribute('aria-pressed'),
+    ).toBe('true');
+
+    manager.unmount();
+  });
+
+  it('deselects the selected fast-sell item from the list row and top name', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 5,
+              sellGold: 1.4,
+              fastSellGold: 1.12,
+              fastSellPercent: 80,
+              sellNeed: 5,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopDirectSellManager({ gameplayFacade });
+
+    manager.mount({ buttonParent, popupParent });
+
+    buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
+
+    const itemButton = popupParent.querySelector('.shop-page__direct-sell-item-button');
+    const selectedLabel = popupParent.querySelector('.shop-page__direct-sell-selected-label');
+    const quantityField = popupParent.querySelector('.shop-page__direct-sell-field');
+    const confirmButton = popupParent.querySelector('.shop-page__direct-sell-confirm');
+
+    itemButton?.click();
+
+    expect(itemButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(selectedLabel?.textContent).toBe('sage seed (5)');
+    expect(selectedLabel?.getAttribute('aria-pressed')).toBe('true');
+    expect(quantityField?.hidden).toBe(false);
+    expect(confirmButton?.hidden).toBe(false);
+
+    itemButton?.click();
+
+    expect(itemButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(selectedLabel?.textContent).toBe('no item selected');
+    expect(selectedLabel?.getAttribute('aria-pressed')).toBe('false');
+    expect(selectedLabel?.hasAttribute('disabled')).toBe(true);
+    expect(quantityField?.hidden).toBe(true);
+    expect(confirmButton?.hidden).toBe(true);
+
+    itemButton?.click();
+
+    expect(itemButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(selectedLabel?.getAttribute('aria-pressed')).toBe('true');
+
+    selectedLabel?.click();
+
+    expect(itemButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(selectedLabel?.textContent).toBe('no item selected');
+    expect(selectedLabel?.getAttribute('aria-pressed')).toBe('false');
+    expect(selectedLabel?.hasAttribute('disabled')).toBe(true);
+    expect(quantityField?.hidden).toBe(true);
+    expect(confirmButton?.hidden).toBe(true);
 
     manager.unmount();
   });

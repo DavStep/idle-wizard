@@ -6,6 +6,7 @@ const DEMAND_TABS = [
   { kind: 'herb', label: 'herb' },
   { kind: 'potion', label: 'potion' },
 ];
+const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 
 export class ShopDemandManager {
   constructor({ gameplayFacade } = {}) {
@@ -17,6 +18,7 @@ export class ShopDemandManager {
     this.previousFocus = null;
     this.lastSnapshot = null;
     this.handledShowPressStart = false;
+    this.lastTouchLikePressStartTimeStamp = Number.NEGATIVE_INFINITY;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -80,11 +82,9 @@ export class ShopDemandManager {
     button.textContent = 'demand';
     button.setAttribute('aria-label', 'show npc demand');
     button.addEventListener('pointerdown', (event) => this.onShowPressStart(event));
-    if (typeof window.PointerEvent !== 'function') {
-      button.addEventListener('touchstart', (event) => this.onShowPressStart(event), {
-        passive: false,
-      });
-    }
+    button.addEventListener('touchstart', (event) => this.onShowPressStart(event), {
+      passive: false,
+    });
     button.addEventListener('click', () => {
       if (this.handledShowPressStart) {
         this.handledShowPressStart = false;
@@ -270,7 +270,10 @@ export class ShopDemandManager {
   }
 
   onShowPressStart(event) {
-    if (event.type === 'pointerdown' && event.pointerType === 'mouse') {
+    if (
+      (event.type === 'pointerdown' && event.pointerType === 'mouse') ||
+      this.isDuplicateTouchLikePressStart(event)
+    ) {
       return;
     }
 
@@ -286,5 +289,15 @@ export class ShopDemandManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  isDuplicateTouchLikePressStart(event) {
+    const timeStamp = Number.isFinite(event?.timeStamp) ? event.timeStamp : Date.now();
+    const isDuplicate =
+      Math.abs(timeStamp - this.lastTouchLikePressStartTimeStamp) <=
+      TOUCH_LIKE_PRESS_START_DEDUPE_MS;
+
+    this.lastTouchLikePressStartTimeStamp = timeStamp;
+    return isDuplicate;
   }
 }

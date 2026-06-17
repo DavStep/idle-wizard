@@ -55,6 +55,23 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
+  it('uses reduced level 4 nettle requirements', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(
+      taskBalanceManager.getLevelTasks(4).map((task) => ({
+        id: task.id,
+        itemKey: task.itemKey,
+        requiredQuantity: task.requiredQuantity,
+      })),
+    ).toEqual([
+      { id: 'level4-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 81 },
+      { id: 'level4-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 52 },
+      { id: 'level4-sage-herb', itemKey: 'sageHerb', requiredQuantity: 16 },
+      { id: 'level4-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 3 },
+    ]);
+  });
+
   it('moves level 5 onto lavender and the second recipe tier', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
@@ -65,15 +82,15 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level5-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 160 },
-      { id: 'level5-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 175 },
-      { id: 'level5-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 100 },
+      { id: 'level5-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 120 },
+      { id: 'level5-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 131 },
+      { id: 'level5-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 75 },
       {
         id: 'level5-minor-healing-potion',
         itemKey: 'minorHealingPotion',
-        requiredQuantity: 12,
+        requiredQuantity: 9,
       },
-      { id: 'level5-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 11 },
+      { id: 'level5-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 8 },
     ]);
   });
 
@@ -87,15 +104,15 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level6-nettle-vigor', itemKey: 'nettleVigor', requiredQuantity: 14 },
-      { id: 'level6-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 190 },
-      { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 110 },
+      { id: 'level6-nettle-vigor', itemKey: 'nettleVigor', requiredQuantity: 11 },
+      { id: 'level6-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 152 },
+      { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 88 },
       {
         id: 'level6-minor-healing-potion',
         itemKey: 'minorHealingPotion',
-        requiredQuantity: 13,
+        requiredQuantity: 10,
       },
-      { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 180 },
+      { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 144 },
     ]);
   });
 
