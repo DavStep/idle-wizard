@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.24
+
+- Swapped Elara's target cue back to the plain pointing hand so guidance stays cleaner and easier to read.
+- Removed the Spine pointer runtime path and kept the small hand nudge in CSS for steadier tutorial prompts.
+
 ## 0.1.23
 
 - Improved Elara's early guide so saving the default name counts, fast sell points at the real confirm flow, and sage-grow wait states keep the lesson alive.

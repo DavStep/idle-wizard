@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "private": true,
   "type": "module",
   "scripts": {
@@ -44,7 +44,6 @@
     "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.4.0",
     "@capacitor/ios": "^8.4.0",
-    "@esotericsoftware/spine-player": "^4.3.7",
     "@fontsource/lexend": "^5.2.11",
     "bitecs": "^0.4.0",
     "oidc-client-ts": "^3.5.0",

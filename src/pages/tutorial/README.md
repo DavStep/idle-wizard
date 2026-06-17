@@ -6,7 +6,7 @@ Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` 
 
 The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage seed and sage herb tasks, level 3 seed research, and level 4 Brewing recipe research. It has no skip state.
 
-The target cue keeps the same diagonal placement math, but now prefers a Spine-rendered pointer with a static PNG fallback when WebGL or reduced-motion constraints block the runtime.
+The target cue keeps the same diagonal placement math and uses the plain pointing-hand asset, with the small source-scale nudge animation handled in CSS.
 
 Lesson 3 starts by showing the first sage grow directly at `0/3`, so players see the summon/plant loop once. After that first grow, later sage objectives go back to plain objectives first and delay target pointer help for a short idle window, then point only when the player appears stuck.
 
