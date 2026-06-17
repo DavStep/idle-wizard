@@ -5,12 +5,21 @@ const MINT_HERB_KEY = 'mintHerb';
 const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
 const MANA_TONIC_KEY = 'manaTonic';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
+const DIRECT_SELL_POPUP_CLASS = 'shop-page__direct-sell-popup';
 const MANA_TONIC_SAGE_COUNT = 3;
 const LEVEL_ONE_SEED_TASK_ID = 'level1-sage-seeds';
 const LEVEL_ONE_GOLD_TARGET = 10;
 const TUTORIAL_SELL_GOLD_EACH = LEVEL_ONE_GOLD_TARGET;
 const LEVEL_TWO_SAGE_GROW_TARGET = 3;
 export const TUTORIAL_LESSON_THREE_STUCK_MS = 3500;
+export const LEVEL_ONE_TUTORIAL_SALE = Object.freeze({
+  itemKey: SAGE_SEED_KEY,
+  quantity: 1,
+  goldEach: TUTORIAL_SELL_GOLD_EACH,
+  goldTarget: LEVEL_ONE_GOLD_TARGET,
+});
+const LEVEL_TWO_SELL_ITEM_KEYS = [SAGE_SEED_KEY, SAGE_HERB_KEY];
+const LEVEL_THREE_SELL_ITEM_KEYS = [...LEVEL_TWO_SELL_ITEM_KEYS, MINT_SEED_KEY, MINT_HERB_KEY];
 
 const LEVEL_ONE_STEP_IDS = [
   'intro-welcome',
@@ -32,8 +41,8 @@ const LEVEL_ONE_STEP_IDS = [
 
 const LEVEL_TWO_STEP_IDS = [
   'grow-sage',
-  'fill-sage-seed-task',
   'fill-sage-herb-task',
+  'fill-sage-seed-task',
   'level-up-two',
 ];
 
@@ -245,7 +254,10 @@ export const TUTORIAL_STEPS = [
     id: 'intro-market',
     kind: 'dialog',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    text: 'good. that finishes the level task. level up also needs gold. go sell a seed in market.',
+    getText: ({ snapshot }) =>
+      getItemQuantity(snapshot, SAGE_SEED_KEY) > 0
+        ? 'good. that finishes the level task. now we need more gold. sell a sage seed in market.'
+        : 'good. that finishes the level task. now we need more gold. summon a sage seed, then sell it in market.',
     advanceOnClick: true,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
@@ -363,12 +375,7 @@ export const TUTORIAL_STEPS = [
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'choose amount and press sell',
     effect: 'tutorial-sale',
-    sale: {
-      itemKey: SAGE_SEED_KEY,
-      quantity: 1,
-      goldEach: TUTORIAL_SELL_GOLD_EACH,
-      goldTarget: LEVEL_ONE_GOLD_TARGET,
-    },
+    sale: LEVEL_ONE_TUTORIAL_SALE,
     getTargetId: ({ currentPageId, snapshot, dom }) => {
       if (getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0) {
         if (currentPageId !== 'workshop') {
@@ -470,8 +477,15 @@ export const TUTORIAL_STEPS = [
   {
     id: 'grow-sage',
     kind: 'objective',
-    getObjectiveText: ({ snapshot }) =>
-      isGrowSageWaitState(snapshot) ? 'wait for sage' : 'grow sage 3 times',
+    getObjectiveText: ({ snapshot }) => {
+      if (isGrowSageWaitState(snapshot)) {
+        return 'wait for sage to grow';
+      }
+
+      return getLessonSageGrowCount(snapshot) <= 0
+        ? "hmm... sage, not sage seed. we need to learn gardening. i'm not paid enough for this, but let's do it."
+        : 'keep going. grow sage 3 times.';
+    },
     getCueMode: ({ snapshot }) =>
       getLessonSageGrowCount(snapshot) <= 0 ? 'active' : 'delayed-target',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
@@ -547,7 +561,7 @@ export const TUTORIAL_STEPS = [
       }
 
       return tile?.phase === 'growing' || tile?.phase === 'harvesting'
-        ? `wait for ${getTileHerbHintName(tile, 'sage')}`
+        ? `wait for ${getTileHerbHintName(tile, 'sage')} to grow`
         : 'choose sage seed';
     },
     getProgress: ({ snapshot }) => ({
@@ -563,31 +577,10 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 3 || hasGrownEnoughSageForLesson(snapshot),
   },
   {
-    id: 'fill-sage-seed-task',
-    kind: 'objective',
-    cueMode: 'delayed-target',
-    objectiveText: 'fill the sage seed task',
-    getTargetId: ({ currentPageId, dom, snapshot }) =>
-      getSeedTaskTargetId({ currentPageId, dom, snapshot, itemKey: SAGE_SEED_KEY }),
-    getHintText: ({ currentPageId, dom, snapshot }) =>
-      getSeedTaskHintText({ currentPageId, dom, snapshot, itemKey: SAGE_SEED_KEY }),
-    getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)),
-    getProgressLabel: ({ snapshot }) =>
-      getTaskProgressLabel(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY), 'sage seeds'),
-    getReminderKey: () => 'lesson-three-sage-actions',
-    getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
-    isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
-      Boolean(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)) &&
-      !hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
-    isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
-  },
-  {
     id: 'fill-sage-herb-task',
     kind: 'objective',
     cueMode: 'delayed-target',
-    objectiveText: 'fill the sage level task',
+    objectiveText: 'good. now pack the task with sage.',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       const task = getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
 
@@ -654,13 +647,48 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
   },
   {
+    id: 'fill-sage-seed-task',
+    kind: 'objective',
+    cueMode: 'delayed-target',
+    objectiveText: 'and yes, the sage seed task still needs filling.',
+    getTargetId: ({ currentPageId, dom, snapshot }) =>
+      getSeedTaskTargetId({ currentPageId, dom, snapshot, itemKey: SAGE_SEED_KEY }),
+    getHintText: ({ currentPageId, dom, snapshot }) =>
+      getSeedTaskHintText({ currentPageId, dom, snapshot, itemKey: SAGE_SEED_KEY }),
+    getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)),
+    getProgressLabel: ({ snapshot }) =>
+      getTaskProgressLabel(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY), 'sage seeds'),
+    getReminderKey: () => 'lesson-three-sage-actions',
+    getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 2 &&
+      Boolean(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)) &&
+      !hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
+  },
+  {
     id: 'level-up-two',
     kind: 'objective',
-    getObjectiveText: ({ snapshot }) =>
-      hasLevelCompletionGold(snapshot) ? 'level up again' : 'earn level-up gold in market',
+    getObjectiveText: ({ currentPageId, dom, snapshot }) =>
+      hasLevelCompletionGold(snapshot)
+        ? 'level up again'
+        : getLevelUpGoldObjectiveText({
+            currentPageId,
+            dom,
+            snapshot,
+            sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+            emptyObjectiveText: 'get sage to sell',
+          }),
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'shop:directSell' : 'page:shop';
+        return getLevelUpGoldTargetId({
+          currentPageId,
+          dom,
+          snapshot,
+          sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+          getObtainTargetId: getSageObtainTargetId,
+        });
       }
 
       if (currentPageId !== 'workshop') {
@@ -671,7 +699,13 @@ export const TUTORIAL_STEPS = [
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'fast sell' : 'open market';
+        return getLevelUpGoldHintText({
+          currentPageId,
+          dom,
+          snapshot,
+          sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+          getObtainHintText: getSageObtainHintText,
+        });
       }
 
       if (currentPageId !== 'workshop') {
@@ -679,6 +713,18 @@ export const TUTORIAL_STEPS = [
       }
 
       return dom.isTasksExpanded() ? 'level up' : 'open tasks';
+    },
+    getAllowedPopupClasses: ({ currentPageId, dom, snapshot }) => {
+      if (hasLevelCompletionGold(snapshot)) {
+        return [];
+      }
+
+      return getLevelUpGoldAllowedPopupClasses({
+        currentPageId,
+        dom,
+        snapshot,
+        sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+      });
     },
     getProgress: ({ snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
@@ -830,11 +876,25 @@ export const TUTORIAL_STEPS = [
     id: 'level-up-three',
     kind: 'objective',
     cueMode: 'passive',
-    getObjectiveText: ({ snapshot }) =>
-      hasLevelCompletionGold(snapshot) ? 'level up again' : 'earn level-up gold in market',
+    getObjectiveText: ({ currentPageId, dom, snapshot }) =>
+      hasLevelCompletionGold(snapshot)
+        ? 'level up again'
+        : getLevelUpGoldObjectiveText({
+            currentPageId,
+            dom,
+            snapshot,
+            sellItemKeys: LEVEL_THREE_SELL_ITEM_KEYS,
+            emptyObjectiveText: 'get mint to sell',
+          }),
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'shop:directSell' : 'page:shop';
+        return getLevelUpGoldTargetId({
+          currentPageId,
+          dom,
+          snapshot,
+          sellItemKeys: LEVEL_THREE_SELL_ITEM_KEYS,
+          getObtainTargetId: getMintObtainTargetId,
+        });
       }
 
       if (currentPageId !== 'workshop') {
@@ -845,7 +905,13 @@ export const TUTORIAL_STEPS = [
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
-        return currentPageId === 'shop' ? 'fast sell' : 'open market';
+        return getLevelUpGoldHintText({
+          currentPageId,
+          dom,
+          snapshot,
+          sellItemKeys: LEVEL_THREE_SELL_ITEM_KEYS,
+          getObtainHintText: getMintObtainHintText,
+        });
       }
 
       if (currentPageId !== 'workshop') {
@@ -853,6 +919,18 @@ export const TUTORIAL_STEPS = [
       }
 
       return dom.isTasksExpanded() ? 'level up' : 'open tasks';
+    },
+    getAllowedPopupClasses: ({ currentPageId, dom, snapshot }) => {
+      if (hasLevelCompletionGold(snapshot)) {
+        return [];
+      }
+
+      return getLevelUpGoldAllowedPopupClasses({
+        currentPageId,
+        dom,
+        snapshot,
+        sellItemKeys: LEVEL_THREE_SELL_ITEM_KEYS,
+      });
     },
     getProgress: ({ snapshot }) => {
       if (!hasLevelCompletionGold(snapshot)) {
@@ -1202,6 +1280,7 @@ export class TutorialStepManager {
         reminderKey: step.getReminderKey?.(context) ?? null,
         reminderMs: getReminderMs(step, context),
         revealTokens: getRevealTokens(step),
+        allowedPopupClasses: [],
         allowTargetClick: step.allowTargetClick === true,
         cueMode: getCueMode(step, context),
         effect: step.effect,
@@ -1230,6 +1309,7 @@ export class TutorialStepManager {
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
       reminderMs: getReminderMs(step, { ...context, targetId, text, hintText }),
       revealTokens: getRevealTokens(step),
+      allowedPopupClasses: getAllowedPopupClasses(step, { ...context, targetId, text, hintText }),
       cueMode: getCueMode(step, { ...context, targetId, text, hintText }),
       effect: step.effect,
       sale: step.sale,
@@ -1299,6 +1379,16 @@ function getReminderMs(step, context) {
   return Number.isFinite(reminderMs) && reminderMs >= 0 ? reminderMs : null;
 }
 
+function getAllowedPopupClasses(step, context) {
+  const popupClasses = step?.getAllowedPopupClasses?.(context) ?? step?.allowedPopupClasses ?? [];
+
+  if (!Array.isArray(popupClasses)) {
+    return [];
+  }
+
+  return popupClasses.filter((popupClass) => typeof popupClass === 'string' && popupClass.length > 0);
+}
+
 function getCueMode(step, context) {
   const cueMode = step?.getCueMode?.(context) ?? step?.cueMode ?? 'active';
   return cueMode || 'active';
@@ -1322,6 +1412,10 @@ function getItemQuantity(snapshot, itemKey) {
     .reduce((total, item) => total + (Number(item.quantity) || 0), 0);
 }
 
+function hasAnyItemQuantity(snapshot, itemKeys) {
+  return itemKeys.some((itemKey) => getItemQuantity(snapshot, itemKey) > 0);
+}
+
 function getGold(snapshot) {
   return Math.max(0, Math.floor(Number(snapshot?.gold?.current) || 0));
 }
@@ -1332,6 +1426,168 @@ function getLevelCompletionCostGold(snapshot) {
 
 function hasLevelCompletionGold(snapshot) {
   return getGold(snapshot) >= getLevelCompletionCostGold(snapshot);
+}
+
+function getLevelUpGoldObjectiveText({
+  currentPageId,
+  dom,
+  snapshot,
+  sellItemKeys,
+  emptyObjectiveText,
+}) {
+  const state = getLevelUpGoldMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys,
+  });
+
+  if (state.kind === 'obtain-item') {
+    return emptyObjectiveText;
+  }
+
+  if (state.kind === 'choose-item') {
+    return 'choose something to sell';
+  }
+
+  if (state.kind === 'set-amount') {
+    return 'amount starts at 1. press sell, or +1 if you have more to sell.';
+  }
+
+  return 'earn level-up gold in market';
+}
+
+function getLevelUpGoldTargetId({
+  currentPageId,
+  dom,
+  snapshot,
+  sellItemKeys,
+  getObtainTargetId,
+}) {
+  const state = getLevelUpGoldMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys,
+  });
+
+  if (state.kind === 'open-market') {
+    return 'page:shop';
+  }
+
+  if (state.kind === 'open-fast-sell') {
+    return 'shop:directSell';
+  }
+
+  if (state.kind === 'choose-item') {
+    return `shop:directSell:${state.itemKey}`;
+  }
+
+  if (state.kind === 'set-amount') {
+    return null;
+  }
+
+  if (state.kind !== 'obtain-item') {
+    return null;
+  }
+
+  return getObtainTargetId({ currentPageId, dom, snapshot });
+}
+
+function getLevelUpGoldHintText({
+  currentPageId,
+  dom,
+  snapshot,
+  sellItemKeys,
+  getObtainHintText,
+}) {
+  const state = getLevelUpGoldMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys,
+  });
+
+  if (state.kind === 'open-market') {
+    return 'open market';
+  }
+
+  if (state.kind === 'open-fast-sell') {
+    return 'fast sell';
+  }
+
+  if (state.kind === 'choose-item') {
+    return 'choose something to sell';
+  }
+
+  if (state.kind === 'set-amount') {
+    return 'sell or +1';
+  }
+
+  if (state.kind !== 'obtain-item') {
+    return '';
+  }
+
+  return getObtainHintText({ currentPageId, dom, snapshot });
+}
+
+function getLevelUpGoldAllowedPopupClasses({
+  currentPageId,
+  dom,
+  snapshot,
+  sellItemKeys,
+}) {
+  const state = getLevelUpGoldMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys,
+  });
+
+  if (state.kind === 'set-amount') {
+    return [DIRECT_SELL_POPUP_CLASS];
+  }
+
+  return [];
+}
+
+function getLevelUpGoldMarketState({
+  currentPageId,
+  dom,
+  snapshot,
+  sellItemKeys,
+}) {
+  if (!hasAnyItemQuantity(snapshot, sellItemKeys)) {
+    return { kind: 'obtain-item' };
+  }
+
+  if (currentPageId !== 'shop') {
+    return { kind: 'open-market' };
+  }
+
+  if (!dom?.isShopDirectSellPopupOpen?.()) {
+    return { kind: 'open-fast-sell' };
+  }
+
+  if (getSelectedDirectSellItemKey(dom, sellItemKeys)) {
+    return { kind: 'set-amount' };
+  }
+
+  const itemKey = getFirstSellableItemKey(snapshot, sellItemKeys);
+
+  if (itemKey) {
+    return { kind: 'choose-item', itemKey };
+  }
+
+  return { kind: 'open-fast-sell' };
+}
+
+function getFirstSellableItemKey(snapshot, itemKeys) {
+  return itemKeys.find((itemKey) => getItemQuantity(snapshot, itemKey) > 0) ?? null;
+}
+
+function getSelectedDirectSellItemKey(dom, itemKeys) {
+  return itemKeys.find((itemKey) => dom?.isShopDirectSellItemSelected?.(itemKey)) ?? null;
 }
 
 function getGrowTile(snapshot, seedKey = null) {
@@ -1437,6 +1693,25 @@ function getSageObtainHintText({ currentPageId, dom, snapshot }) {
   });
 }
 
+function getMintObtainTargetId({ currentPageId, dom, snapshot }) {
+  return getHerbObtainTargetId({
+    currentPageId,
+    dom,
+    snapshot,
+    seedKey: MINT_SEED_KEY,
+  });
+}
+
+function getMintObtainHintText({ currentPageId, dom, snapshot }) {
+  return getHerbObtainHintText({
+    currentPageId,
+    dom,
+    snapshot,
+    seedKey: MINT_SEED_KEY,
+    herbName: 'mint',
+  });
+}
+
 function getHerbObtainTargetId({ currentPageId, dom, snapshot, seedKey }) {
   if (getItemQuantity(snapshot, seedKey) <= 0 && !hasActiveCrop(snapshot, seedKey)) {
     if (currentPageId !== 'workshop') {
@@ -1499,7 +1774,7 @@ function getHerbObtainHintText({ currentPageId, dom, snapshot, seedKey, herbName
   }
 
   return tile?.phase === 'growing' || tile?.phase === 'harvesting'
-    ? `wait for ${getTileHerbHintName(tile, herbName)}`
+    ? `wait for ${getTileHerbHintName(tile, herbName)} to grow`
     : `choose ${herbName} seed`;
 }
 

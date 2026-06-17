@@ -120,9 +120,9 @@ function createGameplayFacadeFake() {
             itemKey: 'sageSeed',
             itemLabel: 'sage seed',
             itemKind: 'seed',
-            requiredQuantity: 6,
+            requiredQuantity: 5,
             progressQuantity: 0,
-            remainingQuantity: 6,
+            remainingQuantity: 5,
             ownedQuantity: 0,
             progress: 0,
             maxed: false,
@@ -3665,7 +3665,7 @@ describe('PagesFacade', () => {
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(task.progressQuantity).toBe(2);
-    expect(task.remainingQuantity).toBe(4);
+    expect(task.remainingQuantity).toBe(3);
     expect(snapshot.seedInventory[0].quantity).toBe(0);
   });
 
@@ -3827,7 +3827,7 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summaryRow?.textContent).toBe('sage seed0/6fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/5fill');
     expect(
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
     ).toBe('0%');
@@ -3880,7 +3880,7 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summaryRow?.textContent).toBe('sage seed0/6fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/5fill');
     expect(count?.textContent).toBe('0/2');
     expect(toggle?.hidden).toBe(false);
     expect(toggle?.textContent).toBe('expand');
@@ -3898,7 +3898,7 @@ describe('PagesFacade', () => {
     expect(list.hidden).toBe(false);
     expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(1);
     expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
-    expect(summaryRow?.textContent).toBe('sage seed0/6fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/5fill');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
 

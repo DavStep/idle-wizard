@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 
 import { ShopDemandManager } from './ShopDemandManager.js';
 
+function createTouchStartEvent() {
+  return new window.Event('touchstart', { bubbles: true, cancelable: true });
+}
+
 function createSnapshot() {
   return {
     research: { completedResearchIds: ['unlockSeed:sageSeed'] },
@@ -113,6 +117,36 @@ describe('ShopDemandManager', () => {
       row.querySelector('.row_val')?.textContent,
     ])).toEqual([['sage', '412']]);
     expect(herbTab.getAttribute('aria-selected')).toBe('true');
+
+    manager.unmount();
+  });
+
+  it('opens NPC demand on touchstart of the border label', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = createSnapshot();
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(snapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return snapshot;
+      },
+    };
+    const manager = new ShopDemandManager({ gameplayFacade });
+
+    manager.mount({ buttonParent, popupParent });
+    const button = buttonParent.querySelector('.shop-page__demand-button');
+    const popup = popupParent.querySelector('.shop-page__demand-popup');
+
+    button.dispatchEvent(createTouchStartEvent());
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
+    expect([...popup.querySelectorAll('.shop-page__demand-row')].map((row) =>
+      row.querySelector('.row_key')?.textContent,
+    )).toEqual(['sage seed', 'mint seed']);
 
     manager.unmount();
   });

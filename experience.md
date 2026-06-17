@@ -21,6 +21,7 @@
 
 - This is an Android-first mobile JavaScript game.
 - The authored game viewport is `1080x2170`.
+- Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
@@ -34,24 +35,28 @@
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
+- NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
 - FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
+- FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
+- When fast sell is already open with an item selected, FTUE should switch to copy-only amount guidance and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
+- Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE lesson panels have no visible `close` border label; players collapse them with the Elara portrait button.
-- FTUE paused/wait states should collapse to a stable Elara help anchor instead of hiding entirely, and the collapsed Elara toggle needs explicit `help`/`hide` text so players know it reopens the lesson.
+- FTUE paused/wait states should collapse to a stable Elara help anchor instead of hiding entirely; show explicit `help` on the collapsed Elara toggle, but no visible `hide` chip while the lesson is open.
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
 - FTUE target cues should keep the plain hand asset; swapping in a Spine click-effect pointer adds noisy blobs and weakens the cue.
 - FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then mana sphere, then summon, then tasks and room chrome.
@@ -60,6 +65,8 @@
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
 - FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
+- FTUE fast-sell price text should show the tutorial sale quote while the tutorial sale step is active; live NPC fast-sell quotes can contradict the fixed tutorial payout.
+- FTUE market quotes should stay tutorial-owned until the guide completes; letting shared NPC prices or offline rows leak into tutorial gold goals makes Market feel broken.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
@@ -67,6 +74,7 @@
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - FTUE should actively show the first `grow sage` loop at `0/3`; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
+- FTUE level-2 task order should match the visible level-2 task row order; showing `sage` before `sage seed` keeps the gardening lesson coherent.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.
 - FTUE grow-sage should stay visible during planted sage wait states; hide pointer/show-me guidance there, but do not pause Elara entirely.
@@ -103,6 +111,7 @@
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
 - User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
+- Live browser/tutorial QA on the shared dev server can hit the `server required` single-account gate after reload if another client owns the session; close the other client or use a fresh local session before screenshot work.
 - Before release, verify `package.json` has been bumped beyond the latest pushed release; release automation reuses the current version and will not bump it.
 - Before running release automation, verify the current `PLAYER_CHANGELOG.md` section exists; the script commits/pushes before Discord upload fails on a missing changelog.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.

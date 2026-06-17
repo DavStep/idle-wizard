@@ -207,12 +207,12 @@ export class GardenPlotManager {
     const button = document.createElement('button');
     button.className = 'garden-page__seed-button';
     button.type = 'button';
-    button.dataset.tutorialId = `garden:seed:${seed.key}`;
     setResourceColor(button, 'seed');
     button.addEventListener('click', () => this.onSelectSeed(seed.itemTypeId));
 
     const label = document.createElement('span');
     label.className = 'row_key';
+    label.dataset.tutorialId = `garden:seed:${seed.key}`;
 
     const quantity = document.createElement('span');
     quantity.className = 'row_val';

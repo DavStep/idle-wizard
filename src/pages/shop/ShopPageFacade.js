@@ -20,6 +20,9 @@ export class ShopPageFacade {
     playerShopFacade,
     onOpenPlayerInfo,
     onDirectSellOverride,
+    getDirectSellQuoteOverride,
+    getNpcSellPriceOverride,
+    getNpcStockBuyQuoteOverride,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerShopFacade = playerShopFacade;
@@ -31,13 +34,20 @@ export class ShopPageFacade {
       gameplayFacade,
       onActiveTabChange: () => this.renderActiveMarketTab(),
     });
-    this.shelfManager = new ShopShelfManager({ gameplayFacade });
+    this.shelfManager = new ShopShelfManager({
+      gameplayFacade,
+      getSellPriceOverride: getNpcSellPriceOverride,
+    });
     this.demandManager = new ShopDemandManager({ gameplayFacade });
     this.directSellManager = new ShopDirectSellManager({
       gameplayFacade,
       onSellOverride: onDirectSellOverride,
+      getSellQuoteOverride: getDirectSellQuoteOverride,
     });
-    this.stockManager = new ShopStockManager({ gameplayFacade });
+    this.stockManager = new ShopStockManager({
+      gameplayFacade,
+      getBuyQuoteOverride: getNpcStockBuyQuoteOverride,
+    });
     this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
     this.playerShelfManager = new ShopPlayerShelfManager({
       gameplayFacade,

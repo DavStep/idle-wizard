@@ -1,14 +1,27 @@
-export const BLOCKING_DIALOG_SELECTORS = [
+export const GLOBAL_BLOCKING_DIALOG_SELECTORS = [
   '.app-account-link-choice:not([hidden])',
   '.app-fresh-start-choice:not([hidden])',
   '.mobile-auth-bridge:not([hidden])',
   '.room-top-panel__level-popup:not([hidden])',
-  '.room-top-panel__settings:not([hidden])',
 ];
-const USERNAME_SETTINGS_BLOCKER = '.room-top-panel__settings:not([hidden])';
-const NON_SETTINGS_BLOCKING_DIALOG_SELECTORS = BLOCKING_DIALOG_SELECTORS.filter(
-  (selector) => selector !== USERNAME_SETTINGS_BLOCKER,
-);
+const POPUP_ROOT_BASE_SELECTORS = [
+  '.room-top-panel__settings',
+  '[class$="__popup"]',
+  '[class*="__popup "]',
+  '[class$="-popup"]',
+  '[class*="-popup "]',
+];
+export const POPUP_ROOT_SELECTORS = POPUP_ROOT_BASE_SELECTORS.map(
+  (selector) => `${selector}:not([hidden])`,
+).join(', ');
+const POPUP_ROOT_MUTATION_SELECTORS = POPUP_ROOT_BASE_SELECTORS.join(', ');
+const POPUP_TARGET_PREFIXES = new Map([
+  ['top:username-input', ['room-top-panel__settings']],
+  ['garden:seed:', ['garden-page__seed-popup']],
+  ['brewing:recipe:', ['brewing-page__recipes-popup']],
+  ['shop:directSell:', ['shop-page__direct-sell-popup']],
+]);
+const NON_SETTINGS_BLOCKING_DIALOG_SELECTORS = GLOBAL_BLOCKING_DIALOG_SELECTORS;
 
 export class TutorialTargetManager {
   constructor({ stage } = {}) {
@@ -36,23 +49,15 @@ export class TutorialTargetManager {
 
     return {
       isBlockingDialogOpen: () =>
-        BLOCKING_DIALOG_SELECTORS.some((selector) => Boolean(root?.querySelector(selector))),
+        GLOBAL_BLOCKING_DIALOG_SELECTORS.some((selector) =>
+          Boolean(root?.querySelector(selector)),
+        ) || this.getVisiblePopupRoots(root).length > 0,
       isNonSettingsBlockingDialogOpen: () =>
         NON_SETTINGS_BLOCKING_DIALOG_SELECTORS.some((selector) =>
           Boolean(root?.querySelector(selector)),
         ),
-      isBlockingDialogOpenForStep: (step) =>
-        BLOCKING_DIALOG_SELECTORS.some((selector) => {
-          if (
-            selector === USERNAME_SETTINGS_BLOCKER &&
-            step?.id === 'intro-username' &&
-            isUsernameSettingsOpen(this.stage)
-          ) {
-            return false;
-          }
-
-          return Boolean(root?.querySelector(selector));
-        }),
+      isBlockingDialogOpenForStep: (step, target) =>
+        this.isBlockingDialogOpenForStep({ root, step, target }),
       isUsernameSettingsOpen: () => isUsernameSettingsOpen(this.stage),
       isGardenSeedPopupOpen: () =>
         Boolean(this.stage?.querySelector('.garden-page__seed-popup:not([hidden])')),
@@ -96,6 +101,55 @@ export class TutorialTargetManager {
       );
     });
   }
+
+  isBlockingDialogOpenForStep({
+    root = this.stage?.ownerDocument ?? this.stage,
+    step,
+    target,
+  } = {}) {
+    if (
+      GLOBAL_BLOCKING_DIALOG_SELECTORS.some((selector) => Boolean(root?.querySelector(selector)))
+    ) {
+      return true;
+    }
+
+    const popupRoots = this.getVisiblePopupRoots(root);
+
+    if (!popupRoots.length) {
+      return false;
+    }
+
+    const allowedPopupClasses = new Set([
+      ...normalizePopupClasses(step?.allowedPopupClasses),
+      ...getPopupClassesForTargetId(step?.targetId),
+    ]);
+
+    return popupRoots.some((popupRoot) => {
+      if (target && popupRoot.contains(target)) {
+        return false;
+      }
+
+      const popupClasses = getPopupClasses(popupRoot);
+      return !popupClasses.some((popupClass) => allowedPopupClasses.has(popupClass));
+    });
+  }
+
+  getVisiblePopupRoots(root = this.stage?.ownerDocument ?? this.stage) {
+    if (!root?.querySelectorAll) {
+      return [];
+    }
+
+    const seen = new Set();
+
+    return [...root.querySelectorAll(POPUP_ROOT_SELECTORS)].filter((element) => {
+      if (!element || seen.has(element) || element.closest('.tutorial-layer')) {
+        return false;
+      }
+
+      seen.add(element);
+      return true;
+    });
+  }
 }
 
 function isUsernameSettingsOpen(stage) {
@@ -110,8 +164,46 @@ function isBlockingDialogNode(node) {
     return false;
   }
 
-  return BLOCKING_DIALOG_SELECTORS.some((selector) => {
-    const baseSelector = selector.replace(':not([hidden])', '');
-    return node.matches(baseSelector) || Boolean(node.querySelector(baseSelector));
+  return (
+    GLOBAL_BLOCKING_DIALOG_SELECTORS.some((selector) => {
+      const baseSelector = selector.replace(':not([hidden])', '');
+      return node.matches(baseSelector) || Boolean(node.querySelector(baseSelector));
+    }) ||
+    node.matches(POPUP_ROOT_MUTATION_SELECTORS) ||
+    Boolean(node.querySelector(POPUP_ROOT_MUTATION_SELECTORS))
+  );
+}
+
+function normalizePopupClasses(popupClasses) {
+  if (!Array.isArray(popupClasses)) {
+    return [];
+  }
+
+  return popupClasses.filter(
+    (popupClass) => typeof popupClass === 'string' && popupClass.length > 0,
+  );
+}
+
+function getPopupClassesForTargetId(targetId) {
+  if (typeof targetId !== 'string' || targetId.length === 0) {
+    return [];
+  }
+
+  for (const [prefix, popupClasses] of POPUP_TARGET_PREFIXES) {
+    if (targetId === prefix || targetId.startsWith(prefix)) {
+      return popupClasses;
+    }
+  }
+
+  return [];
+}
+
+function getPopupClasses(node) {
+  return [...(node?.classList ?? [])].filter((className) => {
+    if (className === 'room-top-panel__settings') {
+      return true;
+    }
+
+    return className.endsWith('__popup') || className.endsWith('-popup');
   });
 }

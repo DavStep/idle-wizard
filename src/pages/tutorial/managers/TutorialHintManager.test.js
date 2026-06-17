@@ -350,14 +350,14 @@ describe('TutorialHintManager', () => {
       expect(button?.hidden).toBe(false);
       expect(button?.style.left).toBe('4px');
       expect(button?.style.top).toBe(
-        `${500 + getLessonOuterHeight(lesson) - 91 + 9}px`,
+        `${520 + getLessonOuterHeight(lesson) - 91 + 9}px`,
       );
       expect(button?.dataset.notification).toBeUndefined();
       expect(button?.getAttribute('aria-label')).toBe('hide lesson');
       expect(button?.getAttribute('aria-expanded')).toBe('true');
       expect(
         button?.querySelector('.tutorial-layer__objective-button-label')?.textContent,
-      ).toBe('hide');
+      ).toBe('');
       expect(button?.hasAttribute('data-speaking')).toBe(true);
       expect(lesson?.hidden).toBe(false);
       expect(lesson?.textContent).toContain('lesson 1: introduction');
@@ -467,7 +467,7 @@ describe('TutorialHintManager', () => {
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
     expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
-      'hide',
+      '',
     );
   });
 

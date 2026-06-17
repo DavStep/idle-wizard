@@ -4,6 +4,54 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ShopDirectSellManager } from './ShopDirectSellManager.js';
 
+function setElementMetrics(
+  element,
+  {
+    clientWidth,
+    clientHeight,
+    offsetWidth,
+    offsetHeight,
+    rect,
+  },
+) {
+  if (clientWidth !== undefined) {
+    Object.defineProperty(element, 'clientWidth', {
+      configurable: true,
+      get: () => clientWidth,
+    });
+  }
+
+  if (clientHeight !== undefined) {
+    Object.defineProperty(element, 'clientHeight', {
+      configurable: true,
+      get: () => clientHeight,
+    });
+  }
+
+  if (offsetWidth !== undefined) {
+    Object.defineProperty(element, 'offsetWidth', {
+      configurable: true,
+      get: () => offsetWidth,
+    });
+  }
+
+  if (offsetHeight !== undefined) {
+    Object.defineProperty(element, 'offsetHeight', {
+      configurable: true,
+      get: () => offsetHeight,
+    });
+  }
+
+  if (rect) {
+    element.getBoundingClientRect = () => ({
+      ...rect,
+      x: rect.left,
+      y: rect.top,
+      toJSON: () => rect,
+    });
+  }
+}
+
 function createGameplayFacade(snapshot) {
   const listeners = new Set();
   const quoteNpcMarketSell = vi.fn((itemTypeId, quantity = 1) => {
@@ -190,6 +238,139 @@ describe('ShopDirectSellManager', () => {
     manager.unmount();
   });
 
+  it('keeps help tooltip inside the scaled popup layer on web', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 5,
+              sellGold: 1.4,
+              fastSellGold: 1.12,
+              fastSellPercent: 80,
+              sellNeed: 3,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopDirectSellManager({ gameplayFacade });
+
+    manager.mount({ buttonParent, popupParent });
+
+    const helpButton = buttonParent.querySelector('.shop-page__direct-sell-help-button');
+    const helpPopup = popupParent.querySelector('.shop-page__direct-sell-help-popup');
+    const helpTooltip = popupParent.querySelector('.shop-page__direct-sell-help-tooltip');
+
+    setElementMetrics(helpPopup, {
+      clientWidth: 300,
+      clientHeight: 500,
+      offsetWidth: 300,
+      offsetHeight: 500,
+      rect: {
+        left: 0,
+        top: 0,
+        right: 450,
+        bottom: 750,
+        width: 450,
+        height: 750,
+      },
+    });
+    setElementMetrics(helpTooltip, {
+      clientWidth: 150,
+      clientHeight: 120,
+      offsetWidth: 150,
+      offsetHeight: 120,
+      rect: {
+        left: 0,
+        top: 0,
+        right: 225,
+        bottom: 180,
+        width: 225,
+        height: 180,
+      },
+    });
+    setElementMetrics(helpButton, {
+      rect: {
+        left: 408,
+        top: 120,
+        right: 438,
+        bottom: 150,
+        width: 30,
+        height: 30,
+      },
+    });
+
+    helpButton.click();
+
+    expect(helpPopup.hidden).toBe(false);
+    expect(helpTooltip.style.left).toBe('142px');
+    expect(helpTooltip.style.top).toBe('106px');
+
+    manager.unmount();
+  });
+
+  it('resets the popup amount to one when reopened', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 5,
+              sellGold: 1.4,
+              fastSellGold: 1.12,
+              fastSellPercent: 80,
+              sellNeed: 5,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopDirectSellManager({ gameplayFacade });
+
+    manager.mount({ buttonParent, popupParent });
+
+    const openButton = buttonParent.querySelector('.shop-page__direct-sell-button');
+    openButton?.click();
+
+    const itemButton = popupParent.querySelector('.shop-page__direct-sell-item-button');
+    itemButton?.click();
+
+    const incrementButton = [...popupParent.querySelectorAll('.shop-page__direct-sell-step')].find(
+      (button) => button.textContent === '+1',
+    );
+    incrementButton?.click();
+
+    expect(
+      popupParent.querySelector('.amount-selection-row__value')?.textContent,
+    ).toBe('2');
+
+    popupParent.querySelector('.shop-page__direct-sell-close')?.click();
+    openButton?.click();
+
+    expect(
+      popupParent.querySelector('.amount-selection-row__value')?.textContent,
+    ).toBe('1');
+
+    manager.unmount();
+  });
+
   it('lets the tutorial override the confirm action without calling NPC sell', async () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');
@@ -244,6 +425,60 @@ describe('ShopDirectSellManager', () => {
     });
     expect(gameplayFacade.sellNpcMarketItem).not.toHaveBeenCalled();
     expect(popupParent.querySelector('.shop-page__direct-sell-popup')?.hidden).toBe(true);
+
+    manager.unmount();
+  });
+
+  it('uses a quote override for tutorial fast-sell display text', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 2,
+              sellGold: 0.44,
+              fastSellGold: 0.35,
+              fastSellPercent: 80,
+              sellNeed: 3,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopDirectSellManager({
+      gameplayFacade,
+      getSellQuoteOverride: vi.fn(() => ({
+        ok: true,
+        quantity: 1,
+        priceGold: 10,
+        totalPriceGold: 10,
+        tutorial: true,
+      })),
+    });
+
+    manager.mount({ buttonParent, popupParent });
+
+    buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
+
+    const itemButton = popupParent.querySelector('.shop-page__direct-sell-item-button');
+    expect(itemButton?.textContent).toContain('10 gold');
+
+    itemButton?.click();
+
+    expect(popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
+      'sage seed (2)10 gold',
+    );
+    expect(popupParent.querySelector('.shop-page__direct-sell-value-row')?.textContent).toBe(
+      'total10 gold',
+    );
 
     manager.unmount();
   });

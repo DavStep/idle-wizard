@@ -9,8 +9,8 @@ function createStep(overrides = {}) {
     targetId: 'task:level1-sage-seeds',
     objectiveText: 'summon seeds and fill the level task',
     stepLabel: '7/25',
-    progress: { value: 1, max: 6 },
-    progressLabel: '1/6 seeds',
+    progress: { value: 1, max: 5 },
+    progressLabel: '1/5 seeds',
     cueMode: 'active',
     showPointer: true,
     revealTokens: ['mana', 'summon', 'tasks'],
@@ -185,12 +185,41 @@ describe('TutorialLogicManager', () => {
     });
   });
 
+  it('keeps a delayed target cue visible after the player asks for guidance', () => {
+    const target = {};
+    const step = createStep({
+      cueMode: 'delayed-target',
+      text: 'grow sage 3 times',
+    });
+    const reminderManager = createReminderFake({
+      attentionState: { shouldNotify: false, nextRefreshAt: 4500 },
+    });
+    const { manager } = createManager({
+      reminderManager,
+      step,
+    });
+
+    expect(
+      manager.getViewState({
+        snapshot: {},
+        dom: {},
+        targetResolver: () => target,
+        lessonPanelOpen: true,
+        requestedTargetGuidanceStepId: step.id,
+      }).cue,
+    ).toMatchObject({
+      kind: 'target-cue',
+      target,
+      showPointer: true,
+    });
+  });
+
   it('keeps a delayed objective visible when the player is only waiting', () => {
     const step = createStep({
       cueMode: 'delayed-target',
       targetId: null,
-      objectiveText: 'wait for sage',
-      text: 'wait for sage',
+      objectiveText: 'wait for sage to grow',
+      text: 'wait for sage to grow',
     });
     const { manager } = createManager({ step });
 
@@ -205,7 +234,7 @@ describe('TutorialLogicManager', () => {
       kind: 'lesson',
       lesson: {
         id: 'finish-seed-task',
-        text: 'wait for sage',
+        text: 'wait for sage to grow',
         autoOpen: true,
         canShowTarget: false,
       },
@@ -214,6 +243,31 @@ describe('TutorialLogicManager', () => {
         lessonAttention: false,
       },
     });
+  });
+
+  it('passes the resolved target into popup blocker checks', () => {
+    const target = {};
+    const step = createStep({
+      targetId: 'shop:directSell:sageSeed',
+    });
+    const { manager } = createManager({ step });
+    let blockerTarget = null;
+
+    const viewState = manager.getViewState({
+      snapshot: {},
+      dom: {
+        isNonSettingsBlockingDialogOpen: () => false,
+        isBlockingDialogOpenForStep: (_step, resolvedTarget) => {
+          blockerTarget = resolvedTarget;
+          return false;
+        },
+      },
+      targetResolver: () => target,
+      lessonPanelOpen: false,
+    });
+
+    expect(blockerTarget).toBe(target);
+    expect(viewState.kind).toBe('lesson');
   });
 
   it('advances only active click-through steps', () => {

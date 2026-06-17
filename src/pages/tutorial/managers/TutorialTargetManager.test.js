@@ -75,24 +75,77 @@ describe('TutorialTargetManager', () => {
     const stage = document.createElement('section');
     const settings = document.createElement('section');
     const input = document.createElement('input');
+    const manaSphere = document.createElement('button');
     const manager = new TutorialTargetManager({ stage });
 
     settings.className = 'room-top-panel__settings';
     input.dataset.tutorialId = 'top:username-input';
+    manaSphere.dataset.tutorialId = 'workshop:manaSphere';
     settings.append(input);
-    stage.append(settings);
+    stage.append(settings, manaSphere);
     document.body.append(stage);
 
     expect(manager.getDomState().isUsernameSettingsOpen()).toBe(true);
-    expect(manager.getDomState().isBlockingDialogOpenForStep({ id: 'intro-username' })).toBe(
-      false,
-    );
-    expect(manager.getDomState().isBlockingDialogOpenForStep({ id: 'intro-mana-sphere' })).toBe(
-      true,
-    );
+    expect(
+      manager
+        .getDomState()
+        .isBlockingDialogOpenForStep({ targetId: 'top:username-input' }, input),
+    ).toBe(false);
+    expect(
+      manager
+        .getDomState()
+        .isBlockingDialogOpenForStep({ targetId: 'workshop:manaSphere' }, manaSphere),
+    ).toBe(true);
 
     settings.hidden = true;
 
     expect(manager.getDomState().isUsernameSettingsOpen()).toBe(false);
+  });
+
+  it('allows popup guidance when the active target is inside the open popup', () => {
+    const stage = document.createElement('section');
+    const popup = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    popup.className = 'shop-page__direct-sell-popup';
+    target.dataset.tutorialId = 'shop:directSell:sageSeed';
+    popup.append(target);
+    stage.append(popup);
+    document.body.append(stage);
+
+    expect(
+      manager
+        .getDomState()
+        .isBlockingDialogOpenForStep({ targetId: 'shop:directSell:sageSeed' }, target),
+    ).toBe(false);
+  });
+
+  it('keeps copy-only popup guidance visible only for the popup it needs', () => {
+    const stage = document.createElement('section');
+    const directSellPopup = document.createElement('section');
+    const otherPopup = document.createElement('section');
+    const manager = new TutorialTargetManager({ stage });
+
+    directSellPopup.className = 'shop-page__direct-sell-popup';
+    otherPopup.className = 'workshop-page__leaderboard-popup';
+    stage.append(directSellPopup, otherPopup);
+    document.body.append(stage);
+
+    expect(
+      manager.getDomState().isBlockingDialogOpenForStep({
+        targetId: null,
+        allowedPopupClasses: ['shop-page__direct-sell-popup'],
+      }),
+    ).toBe(true);
+
+    otherPopup.hidden = true;
+
+    expect(
+      manager.getDomState().isBlockingDialogOpenForStep({
+        targetId: null,
+        allowedPopupClasses: ['shop-page__direct-sell-popup'],
+      }),
+    ).toBe(false);
   });
 });

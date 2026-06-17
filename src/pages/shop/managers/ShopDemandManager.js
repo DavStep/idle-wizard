@@ -16,6 +16,7 @@ export class ShopDemandManager {
     this.selectedTab = 'seed';
     this.previousFocus = null;
     this.lastSnapshot = null;
+    this.handledShowPressStart = false;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -78,7 +79,20 @@ export class ShopDemandManager {
     button.type = 'button';
     button.textContent = 'demand';
     button.setAttribute('aria-label', 'show npc demand');
-    button.addEventListener('click', () => this.show());
+    button.addEventListener('pointerdown', (event) => this.onShowPressStart(event));
+    if (typeof window.PointerEvent !== 'function') {
+      button.addEventListener('touchstart', (event) => this.onShowPressStart(event), {
+        passive: false,
+      });
+    }
+    button.addEventListener('click', () => {
+      if (this.handledShowPressStart) {
+        this.handledShowPressStart = false;
+        return;
+      }
+
+      this.show();
+    });
     return button;
   }
 
@@ -253,6 +267,16 @@ export class ShopDemandManager {
     }
 
     return String(Math.floor(sellNeed));
+  }
+
+  onShowPressStart(event) {
+    if (event.type === 'pointerdown' && event.pointerType === 'mouse') {
+      return;
+    }
+
+    event.preventDefault();
+    this.handledShowPressStart = true;
+    this.show();
   }
 
   applyVisibility() {

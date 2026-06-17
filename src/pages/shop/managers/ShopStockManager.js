@@ -19,8 +19,10 @@ const STOCK_TABS = [
 const COLLAPSED_STOCK_ROW_COUNT = 5;
 
 export class ShopStockManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, getBuyQuoteOverride } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.getBuyQuoteOverride =
+      typeof getBuyQuoteOverride === 'function' ? getBuyQuoteOverride : null;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {
@@ -528,8 +530,13 @@ export class ShopStockManager {
     setItemIconLabel(this.refs.buyItemValue.value, item.kind, item.key);
     setResourceColor(this.refs.buyItemValue.value, item.kind);
 
-    setResourceIconText(this.refs.buyEachValue.value, formatGoldPriceText(item.buyGold));
-    setResourceColor(this.refs.buyEachValue.value, 'gold');
+    const displayQuote = this.getDisplayBuyQuote(item, 1);
+
+    setResourceIconText(
+      this.refs.buyEachValue.value,
+      displayQuote.ok ? formatGoldPriceText(displayQuote.priceGold) : 'offline',
+    );
+    setResourceColor(this.refs.buyEachValue.value, displayQuote.ok ? 'gold' : null);
 
     setResourceIconText(
       this.refs.buyTotalValue.value,
@@ -609,6 +616,27 @@ export class ShopStockManager {
     };
   }
 
+  getDisplayBuyQuote(item, quantity = 1) {
+    if (Number.isFinite(item?.buyGold) && item.buyGold > 0) {
+      return {
+        ok: true,
+        quantity,
+        priceGold: item.buyGold,
+        totalPriceGold: item.buyGold * quantity,
+      };
+    }
+
+    return (
+      this.getBuyQuoteOverride?.({
+        item,
+        quantity,
+      }) ?? {
+        ok: false,
+        quantity,
+      }
+    );
+  }
+
   readPositiveInteger(value) {
     const integer = Math.floor(Number(value));
 
@@ -667,7 +695,9 @@ export class ShopStockManager {
   }
 
   getBuyButtonText(item) {
-    if (!Number.isFinite(item.buyGold)) {
+    const displayQuote = this.getDisplayBuyQuote(item, 1);
+
+    if (!displayQuote.ok || !Number.isFinite(displayQuote.priceGold)) {
       return 'offline';
     }
 
@@ -675,7 +705,7 @@ export class ShopStockManager {
       return 'empty';
     }
 
-    return formatGoldPriceText(item.buyGold);
+    return formatGoldPriceText(displayQuote.priceGold);
   }
 
   getCannotBuyStatus(item) {

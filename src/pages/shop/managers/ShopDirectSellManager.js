@@ -19,9 +19,11 @@ const DIRECT_SELL_TABS = [
 const DIRECT_SELL_HELP_TOOLTIP_ID = 'shop-page__direct-sell-help-tooltip';
 
 export class ShopDirectSellManager {
-  constructor({ gameplayFacade, onSellOverride } = {}) {
+  constructor({ gameplayFacade, onSellOverride, getSellQuoteOverride } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onSellOverride = typeof onSellOverride === 'function' ? onSellOverride : null;
+    this.getSellQuoteOverride =
+      typeof getSellQuoteOverride === 'function' ? getSellQuoteOverride : null;
     this.refs = {
       tabButtons: new Map(),
       rows: new Map(),
@@ -325,6 +327,7 @@ export class ShopDirectSellManager {
     this.hideHelp();
     this.visible = true;
     this.statusText = '';
+    this.sellQuantity = 1;
     this.applyVisibility();
     this.render();
     this.refs.dialog?.focus();
@@ -523,7 +526,7 @@ export class ShopDirectSellManager {
     refs.targetLabel.textContent = `${display.label} (${display.quantity})`;
     setItemIconLabel(refs.targetLabel, item.kind, item.key);
     setResourceColor(refs.targetLabel, item.kind);
-    setResourceIconText(refs.value, this.formatSellGold(this.getFastSellGold(item)));
+    setResourceIconText(refs.value, this.formatSellGold(this.getDisplayPriceGold(item)));
     setResourceColorFromText(refs.value, refs.value.textContent);
   }
 
@@ -552,6 +555,7 @@ export class ShopDirectSellManager {
 
     const maxQuantity = Math.max(1, this.getMaxSellQuantity(item));
     const quantity = this.clampSellQuantity(this.sellQuantity, item) ?? 1;
+    const displayQuote = this.getDisplaySellQuote(item, quantity);
     const quote = this.getSellQuote(item, quantity);
     const selling = this.sellingItemTypeId === item.itemTypeId;
     const canSell = quote.ok && !selling;
@@ -574,15 +578,15 @@ export class ShopDirectSellManager {
 
     setResourceIconText(
       this.refs.selectedItem.value,
-      this.formatSellGold(this.getFastSellGold(item)),
+      this.formatSellGold(this.getDisplayPriceGold(item)),
     );
     setResourceColor(this.refs.selectedItem.value, 'gold');
 
     setResourceIconText(
       this.refs.totalValue.value,
-      quote.ok ? formatGoldPriceText(quote.totalPriceGold) : '?',
+      displayQuote.ok ? formatGoldPriceText(displayQuote.totalPriceGold) : '?',
     );
-    setResourceColor(this.refs.totalValue.value, quote.ok ? 'gold' : null);
+    setResourceColor(this.refs.totalValue.value, displayQuote.ok ? 'gold' : null);
 
     this.refs.confirmButton.textContent = selling ? 'selling' : 'sell';
     this.refs.confirmButton.disabled = !canSell;
@@ -755,6 +759,32 @@ export class ShopDirectSellManager {
     return Number.isFinite(item?.fastSellGold) ? item.fastSellGold : item?.sellGold;
   }
 
+  getDisplayPriceGold(item) {
+    const quoteOverride = this.getSellQuoteOverride?.({
+      item,
+      quantity: 1,
+    });
+
+    if (quoteOverride?.ok && Number.isFinite(quoteOverride.priceGold)) {
+      return quoteOverride.priceGold;
+    }
+
+    return this.getFastSellGold(item);
+  }
+
+  getDisplaySellQuote(item, quantity = 1) {
+    const quoteOverride = this.getSellQuoteOverride?.({
+      item,
+      quantity,
+    });
+
+    if (quoteOverride?.ok) {
+      return quoteOverride;
+    }
+
+    return this.getSellQuote(item, quantity);
+  }
+
   getFastSellPercent() {
     const selectedPercent = Number(this.getSelectedItem()?.fastSellPercent);
 
@@ -834,20 +864,35 @@ export class ShopDirectSellManager {
     const buttonRect = button.getBoundingClientRect();
     const popupRect = popupRoot.getBoundingClientRect();
     const tooltipRect = tooltip.getBoundingClientRect();
+    const popupWidth =
+      popupRoot.clientWidth || popupRoot.offsetWidth || popupRect.width || 0;
+    const popupHeight =
+      popupRoot.clientHeight || popupRoot.offsetHeight || popupRect.height || 0;
+    const scaleX = popupWidth > 0 ? popupRect.width / popupWidth : 1;
+    const scaleY = popupHeight > 0 ? popupRect.height / popupHeight : 1;
+    const safeScaleX = Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1;
+    const safeScaleY = Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1;
+    const tooltipWidth =
+      tooltip.offsetWidth || tooltip.clientWidth || tooltipRect.width / safeScaleX;
+    const tooltipHeight =
+      tooltip.offsetHeight || tooltip.clientHeight || tooltipRect.height / safeScaleY;
+    const buttonRight = (buttonRect.right - popupRect.left) / safeScaleX;
+    const buttonTop = (buttonRect.top - popupRect.top) / safeScaleY;
+    const buttonBottom = (buttonRect.bottom - popupRect.top) / safeScaleY;
     const gap = 6;
     const viewportPadding = 8;
-    const maxLeft = Math.max(viewportPadding, popupRect.width - tooltipRect.width - viewportPadding);
+    const maxLeft = Math.max(viewportPadding, popupWidth - tooltipWidth - viewportPadding);
 
-    let left = buttonRect.right - popupRect.left - tooltipRect.width;
+    let left = buttonRight - tooltipWidth;
     left = Math.min(Math.max(left, viewportPadding), maxLeft);
 
-    let top = buttonRect.top - popupRect.top - tooltipRect.height - gap;
+    let top = buttonTop - tooltipHeight - gap;
 
     if (top < viewportPadding) {
-      top = buttonRect.bottom - popupRect.top + gap;
+      top = buttonBottom + gap;
     }
 
-    const maxTop = Math.max(viewportPadding, popupRect.height - tooltipRect.height - viewportPadding);
+    const maxTop = Math.max(viewportPadding, popupHeight - tooltipHeight - viewportPadding);
     top = Math.min(Math.max(top, viewportPadding), maxTop);
 
     tooltip.style.left = `${Math.round(left)}px`;

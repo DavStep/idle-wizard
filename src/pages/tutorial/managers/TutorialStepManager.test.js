@@ -62,9 +62,9 @@ function createSnapshot(overrides = {}) {
           {
             taskId: 'level1-sage-seeds',
             itemKey: 'sageSeed',
-            requiredQuantity: 6,
+            requiredQuantity: 5,
             progressQuantity: 0,
-            remainingQuantity: 6,
+            remainingQuantity: 5,
             canFill: false,
             canComplete: false,
             completed: false,
@@ -129,8 +129,8 @@ function createLevelOneTaskCompleteSnapshot(overrides = {}) {
           {
             taskId: 'level1-sage-seeds',
             itemKey: 'sageSeed',
-            requiredQuantity: 6,
-            progressQuantity: 6,
+            requiredQuantity: 5,
+            progressQuantity: 5,
             remainingQuantity: 0,
             canFill: false,
             canComplete: false,
@@ -145,6 +145,7 @@ function createLevelOneTaskCompleteSnapshot(overrides = {}) {
 
 function createLevelTwoReadySnapshot(overrides = {}) {
   return createSnapshot({
+    inventory: [{ key: 'sageHerb', quantity: 1 }],
     gold: {
       current: 10,
     },
@@ -369,9 +370,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 6,
+              requiredQuantity: 5,
               progressQuantity: 0,
-              remainingQuantity: 6,
+              remainingQuantity: 5,
               canFill: true,
               canComplete: false,
               completed: false,
@@ -410,9 +411,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 6,
+              requiredQuantity: 5,
               progressQuantity: 1,
-              remainingQuantity: 5,
+              remainingQuantity: 4,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -433,8 +434,8 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:summonSeed',
       objectiveText: 'summon seeds and fill the level task',
-      progress: { value: 1, max: 6 },
-      progressLabel: '1/6 seeds',
+      progress: { value: 1, max: 5 },
+      progressLabel: '1/5 seeds',
       stepLabel: '7/26',
     });
   });
@@ -453,9 +454,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 6,
+              requiredQuantity: 5,
               progressQuantity: 1,
-              remainingQuantity: 5,
+              remainingQuantity: 4,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -485,8 +486,20 @@ describe('TutorialStepManager', () => {
     expect(getStep({ snapshot })).toMatchObject({
       id: 'intro-market',
       kind: 'dialog',
+      text: 'good. that finishes the level task. now we need more gold. summon a sage seed, then sell it in market.',
       advanceOnClick: true,
       stepLabel: '8/26',
+    });
+  });
+
+  it('keeps the market intro aligned with the next action when a sage seed is already ready', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'intro-market',
+      text: 'good. that finishes the level task. now we need more gold. sell a sage seed in market.',
     });
   });
 
@@ -524,9 +537,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 6,
+              requiredQuantity: 5,
               progressQuantity: 1,
-              remainingQuantity: 5,
+              remainingQuantity: 4,
               canFill: true,
               canComplete: false,
               completed: false,
@@ -680,8 +693,8 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 6,
-              progressQuantity: 6,
+              requiredQuantity: 5,
+              progressQuantity: 5,
               remainingQuantity: 0,
               canFill: false,
               canComplete: false,
@@ -737,7 +750,8 @@ describe('TutorialStepManager', () => {
       id: 'grow-sage',
       kind: 'objective',
       targetId: 'garden:plot:1:label',
-      objectiveText: 'grow sage 3 times',
+      objectiveText:
+        "hmm... sage, not sage seed. we need to learn gardening. i'm not paid enough for this, but let's do it.",
       progressLabel: '0/3 sage',
       cueMode: 'active',
       stepLabel: '16/26',
@@ -769,6 +783,7 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
       id: 'grow-sage',
       progress: { value: 2, max: 3 },
+      objectiveText: 'keep going. grow sage 3 times.',
       progressLabel: '2/3 sage',
       cueMode: 'delayed-target',
     });
@@ -798,7 +813,7 @@ describe('TutorialStepManager', () => {
 
     expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
       id: 'grow-sage',
-      objectiveText: 'wait for sage',
+      objectiveText: 'wait for sage to grow',
       targetId: null,
       progressLabel: '0/3 sage',
     });
@@ -834,7 +849,57 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('guides the level two sage seed task after sage has grown three times', () => {
+  it('guides the level two sage herb task right after the first gardening loop', () => {
+    const snapshot = createSnapshot({
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costGold: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 3,
+              progressQuantity: 1,
+              remainingQuantity: 2,
+              canFill: true,
+              canComplete: false,
+              completed: false,
+            },
+            {
+              taskId: 'level2-sage-seeds',
+              itemKey: 'sageSeed',
+              requiredQuantity: 10,
+              progressQuantity: 0,
+              remainingQuantity: 10,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('grow-sage'),
+      }),
+    ).toMatchObject({
+      id: 'fill-sage-herb-task',
+      kind: 'objective',
+      targetId: 'task:level2-sage-herb',
+      hintText: 'fill sage task',
+      objectiveText: 'good. now pack the task with sage.',
+      progressLabel: '1/3 sage',
+      cueMode: 'delayed-target',
+      stepLabel: '17/26',
+    });
+  });
+
+  it('guides the level two sage seed task after the sage task is filled', () => {
     const snapshot = createSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 4 }],
       tasks: {
@@ -860,7 +925,7 @@ describe('TutorialStepManager', () => {
               remainingQuantity: 0,
               canFill: false,
               canComplete: false,
-              completed: false,
+              completed: true,
             },
           ],
         },
@@ -877,10 +942,10 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'task:level2-sage-seeds',
       hintText: 'fill task',
-      objectiveText: 'fill the sage seed task',
+      objectiveText: 'and yes, the sage seed task still needs filling.',
       progressLabel: '4/10 sage seeds',
       cueMode: 'delayed-target',
-      stepLabel: '17/26',
+      stepLabel: '18/26',
     });
   });
 
@@ -907,13 +972,14 @@ describe('TutorialStepManager', () => {
       },
     });
 
-    expect(getStep({ snapshot, completed: completedThrough('fill-sage-seed-task') })).toMatchObject({
+    expect(getStep({ snapshot, completed: completedThrough('grow-sage') })).toMatchObject({
       id: 'fill-sage-herb-task',
       kind: 'objective',
       targetId: 'page:garden',
       hintText: 'open garden',
-      objectiveText: 'fill the sage level task',
+      objectiveText: 'good. now pack the task with sage.',
       progressLabel: '1/3 sage',
+      stepLabel: '17/26',
     });
   });
 
@@ -960,15 +1026,16 @@ describe('TutorialStepManager', () => {
       getStep({
         pageId: 'garden',
         snapshot,
-        completed: completedThrough('fill-sage-seed-task'),
+        completed: completedThrough('grow-sage'),
       }),
     ).toMatchObject({
       id: 'fill-sage-herb-task',
       targetId: null,
-      hintText: 'wait for sage',
-      objectiveText: 'wait for sage',
+      hintText: 'wait for sage to grow',
+      objectiveText: 'wait for sage to grow',
       cueMode: 'passive',
       progressLabel: '1/3 sage',
+      stepLabel: '17/26',
     });
   });
 
@@ -998,11 +1065,12 @@ describe('TutorialStepManager', () => {
       },
     });
 
-    expect(getStep({ snapshot, completed: completedThrough('fill-sage-seed-task') })).toMatchObject({
+    expect(getStep({ snapshot, completed: completedThrough('grow-sage') })).toMatchObject({
       id: 'fill-sage-herb-task',
       kind: 'objective',
       targetId: 'workshop:summonSeed',
       hintText: 'summon seed',
+      objectiveText: 'good. now pack the task with sage.',
     });
   });
 
@@ -1030,6 +1098,70 @@ describe('TutorialStepManager', () => {
       targetId: 'shop:directSell',
       hintText: 'fast sell',
       objectiveText: 'earn level-up gold in market',
+      progressLabel: '10/40 gold',
+      stepLabel: '19/26',
+    });
+  });
+
+  it('targets an item row when fast sell is already open during level two gold guidance', () => {
+    const snapshot = createLevelTwoReadySnapshot();
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({ shopDirectSellPopupOpen: true }),
+      }),
+    ).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'shop:directSell:sageHerb',
+      hintText: 'choose something to sell',
+      objectiveText: 'choose something to sell',
+      progressLabel: '10/40 gold',
+      stepLabel: '19/26',
+    });
+  });
+
+  it('switches to copy-only amount guidance once a level two fast-sell item is selected', () => {
+    const snapshot = createLevelTwoReadySnapshot();
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({
+          shopDirectSellPopupOpen: true,
+          directSellItemKey: 'sageHerb',
+        }),
+      }),
+    ).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: null,
+      allowedPopupClasses: ['shop-page__direct-sell-popup'],
+      hintText: 'sell or +1',
+      objectiveText: 'amount starts at 1. press sell, or +1 if you have more to sell.',
+      progressLabel: '10/40 gold',
+      stepLabel: '19/26',
+    });
+  });
+
+  it('routes level two gold shortfall back to a sage source when nothing is sellable', () => {
+    const snapshot = createLevelTwoReadySnapshot({
+      inventory: [],
+      seedSummoning: {
+        canSummon: true,
+        cost: 10,
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'workshop:summonSeed',
+      hintText: 'summon seed',
+      objectiveText: 'get sage to sell',
       progressLabel: '10/40 gold',
       stepLabel: '19/26',
     });
@@ -1190,9 +1322,9 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
       id: 'fill-mint-herb-task',
       targetId: null,
-      text: 'wait for mint',
-      hintText: 'wait for mint',
-      objectiveText: 'wait for mint',
+      text: 'wait for mint to grow',
+      hintText: 'wait for mint to grow',
+      objectiveText: 'wait for mint to grow',
       cueMode: 'passive',
       progressLabel: '0/18 mint',
     });
@@ -1236,6 +1368,7 @@ describe('TutorialStepManager', () => {
 
   it('keeps level three Elara active for level-up gold', () => {
     const snapshot = createSnapshot({
+      inventory: [{ key: 'mintHerb', quantity: 1 }],
       gold: { current: 77 },
       research: {
         completedResearchIds: ['unlockSeed:mintSeed'],
@@ -1276,6 +1409,57 @@ describe('TutorialStepManager', () => {
       targetId: 'page:shop',
       hintText: 'open market',
       objectiveText: 'earn level-up gold in market',
+      progressLabel: '77/80 gold',
+      stepLabel: '23/26',
+    });
+  });
+
+  it('routes level three gold shortfall to mint supply when nothing is sellable', () => {
+    const snapshot = createSnapshot({
+      gold: { current: 77 },
+      seedSummoning: {
+        canSummon: true,
+        cost: 10,
+      },
+      research: {
+        completedResearchIds: ['unlockSeed:mintSeed'],
+      },
+      tasks: {
+        currentLevel: 3,
+        level: {
+          completion: { canComplete: true, costGold: 80 },
+          tasks: [
+            {
+              taskId: 'level3-mint-seeds',
+              itemKey: 'mintSeed',
+              requiredQuantity: 10,
+              progressQuantity: 10,
+              remainingQuantity: 0,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+            {
+              taskId: 'level3-mint-herb',
+              itemKey: 'mintHerb',
+              requiredQuantity: 18,
+              progressQuantity: 18,
+              remainingQuantity: 0,
+              canFill: false,
+              canComplete: false,
+              completed: true,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'level-up-three',
+      kind: 'objective',
+      targetId: 'workshop:summonSeed',
+      hintText: 'summon seed',
+      objectiveText: 'get mint to sell',
       progressLabel: '77/80 gold',
       stepLabel: '23/26',
     });

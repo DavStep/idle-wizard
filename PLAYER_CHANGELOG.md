@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.26
+
+- Tightened Elara's Market and level-up guidance so later gold goals stay locked onto the real fast-sell flow, selected items, and amount step.
+- Kept tutorial-owned Market prices visible during FTUE so sell and buy quotes match lesson goals instead of drifting with live NPC values.
+- Smoothed early progression by shortening the first sage seed task and putting the level 2 sage herb task before the sage seed follow-up.
+- Made Market touch targets more reliable on mobile for demand, locked stand buys, and stand item selection.
+
 ## 0.1.25
 
 - Added public alliance popups from alliance tags and alliance rows, with member roles and quick join/apply actions where allowed.

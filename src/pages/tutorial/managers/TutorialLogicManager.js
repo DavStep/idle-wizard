@@ -28,6 +28,7 @@ export class TutorialLogicManager {
     targetResolver = () => null,
     objectivePanelOpen = false,
     lessonPanelOpen = objectivePanelOpen,
+    requestedTargetGuidanceStepId = null,
     now = this.getNow(),
   } = {}) {
     if ((dom?.isNonSettingsBlockingDialogOpen ?? dom?.isBlockingDialogOpen)?.()) {
@@ -40,7 +41,9 @@ export class TutorialLogicManager {
     const previousTargetId = this.activeStep?.targetId ?? null;
     const step = this.stepManager.getActiveStep({ snapshot, dom });
 
-    if (dom?.isBlockingDialogOpenForStep?.(step)) {
+    const target = step ? targetResolver(step.targetId) : null;
+
+    if (dom?.isBlockingDialogOpenForStep?.(step, target)) {
       this.activeStep = null;
       this.reminderManager.discardActivePrompt();
       return this.createEmptyState('blocked');
@@ -56,7 +59,6 @@ export class TutorialLogicManager {
       return this.createEmptyState('hidden');
     }
 
-    const target = targetResolver(step.targetId);
     const autoOpen = step.cueMode !== 'passive';
     const forceOpen = Boolean(isNewStep && autoOpen);
     const panelOpen = Boolean(lessonPanelOpen || forceOpen);
@@ -64,6 +66,7 @@ export class TutorialLogicManager {
       step,
       target,
       lessonPanelOpen: panelOpen,
+      targetGuidanceRequested: requestedTargetGuidanceStepId === step?.id,
       now,
     });
 
@@ -99,7 +102,7 @@ export class TutorialLogicManager {
     };
   }
 
-  getCueState({ step, target, lessonPanelOpen, now }) {
+  getCueState({ step, target, lessonPanelOpen, targetGuidanceRequested = false, now }) {
     if (!target) {
       this.reminderManager.clearVisible();
       return {
@@ -110,6 +113,16 @@ export class TutorialLogicManager {
     }
 
     if (lessonPanelOpen && step.cueMode === 'delayed-target') {
+      if (targetGuidanceRequested) {
+        this.reminderManager.clearVisible();
+        return {
+          kind: 'target-cue',
+          target,
+          showPointer: this.shouldShowPointer(step),
+          nextRefreshAt: null,
+        };
+      }
+
       const attentionState = this.reminderManager.getAttentionState({ step, now });
 
       if (attentionState.shouldNotify) {

@@ -26,7 +26,21 @@ const potionResearchOrder = [
 ];
 
 describe('TaskBalanceManager', () => {
-  it('uses reduced level 2 sage requirements', () => {
+  it('uses reduced level 1 sage requirements', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(
+      taskBalanceManager.getLevelTasks(1).map((task) => ({
+        id: task.id,
+        itemKey: task.itemKey,
+        requiredQuantity: task.requiredQuantity,
+      })),
+    ).toEqual([
+      { id: 'level1-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 5 },
+    ]);
+  });
+
+  it('uses reduced level 2 sage requirements with herb first', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -36,8 +50,8 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 10 },
       { id: 'level2-sage-herb', itemKey: 'sageHerb', requiredQuantity: 3 },
+      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 10 },
     ]);
   });
 

@@ -132,6 +132,12 @@ export class PagesFacade {
         onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
         onDirectSellOverride: (sale) =>
           this.tutorialFacade?.handleDirectSellOverride?.(sale) ?? null,
+        getDirectSellQuoteOverride: (sale) =>
+          this.tutorialFacade?.getDirectSellQuoteOverride?.(sale) ?? null,
+        getNpcSellPriceOverride: (sale) =>
+          this.tutorialFacade?.getNpcSellPriceOverride?.(sale) ?? null,
+        getNpcStockBuyQuoteOverride: (sale) =>
+          this.tutorialFacade?.getNpcStockBuyQuoteOverride?.(sale) ?? null,
       }),
     );
   }

@@ -6,6 +6,8 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
+Current source routes the market lesson through `fast sell`. The screenshot set below predates that routing and should be refreshed the next time tutorial captures are regenerated.
+
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
 ## Graph
@@ -22,9 +24,9 @@ flowchart TD
   S08["8. intro-market<br/>lesson 2: market"]
   S09["9. prepare-seed-sale<br/>objective: one seed to sell"]
   S10["10. open-market<br/>target: market tab"]
-  S11["11. select-market-stand<br/>target: stand 1"]
-  S12["12. select-sage-seed-sale<br/>target: sage seed picker row"]
-  S13["13. earn-tutorial-gold<br/>effect: tutorial sale"]
+  S11["11. select-market-stand<br/>target: fast sell button"]
+  S12["12. select-sage-seed-sale<br/>target: fast sell sage seed row"]
+  S13["13. earn-tutorial-gold<br/>effect: tutorial fast sell"]
   S14["14. unselect-sage-seed-sale<br/>target: empty picker row"]
   S15["15. level-up-one<br/>target: level up"]
   S16["16. grow-sage<br/>lesson 3: gardening"]
@@ -49,7 +51,7 @@ flowchart TD
   S08 -->|"next"| S09
   S09 -->|"seed exists"| S10
   S10 -->|"Market opened"| S11
-  S11 -->|"picker opened"| S12
+  S11 -->|"fast sell opened"| S12
   S12 -->|"sage seed selected"| S13
   S13 -->|"10 gold earned"| S14
   S14 -->|"stand emptied"| S15

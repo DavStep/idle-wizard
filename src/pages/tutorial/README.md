@@ -4,12 +4,14 @@ Elara Starbrew teaches through one lesson surface. A small Elara button stays on
 
 Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` chooses and normalizes the current step, step definitions own reveal tokens and effects, `TutorialReminderManager` owns timing, and `TutorialLogicManager` returns the single view state the facade renders. Keep new tutorial flow rules in that path instead of branching directly inside `TutorialFacade`.
 
-The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage seed and sage herb tasks, level 3 seed research, and level 4 Brewing recipe research. It has no skip state.
+The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage herb and sage seed tasks, level 3 seed research, and level 4 Brewing recipe research. It has no skip state.
+
+When later level-up gold goals already have the fast-sell popup open and an item selected, Elara switches to copy-only amount guidance instead of a pointer cue. The popup amount resets to `1` on open so the first sell read stays clear.
 
 The target cue keeps the same diagonal placement math and uses the plain pointing-hand asset, with the small source-scale nudge animation handled in CSS.
 
-Lesson 3 starts by showing the first sage grow directly at `0/3`, so players see the summon/plant loop once. After that first grow, later sage objectives go back to plain objectives first and delay target pointer help for a short idle window, then point only when the player appears stuck.
+Lesson 3 starts by showing the first sage grow directly at `0/3`, so players see the summon/plant loop once. The level 2 gardening lesson fills the visible sage herb task before circling back to the sage seed task. After that first grow, later sage objectives go back to plain objectives first and delay target pointer help for a short idle window, then point only when the player appears stuck.
 
-The level 1 market lesson is the only tutorial-only gameplay effect: after the player selects sage seed in fast sell and presses `sell`, the tutorial locally sells one sage seed for fixed tutorial gold. It updates real local inventory/gold and save data, but it does not call the NPC market backend or change normal market pricing/demand.
+Tutorial-owned market pricing stays active until FTUE finishes. Fast sell uses fixed tutorial quotes and local gold/item mutations instead of the live NPC market backend, so tutorial goals do not depend on shared market pressure or offline quotes. Passive market rows may also show tutorial fallback prices when live backend prices are missing.
 
 Players already past level 4 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.

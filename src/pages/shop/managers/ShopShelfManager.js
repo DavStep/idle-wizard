@@ -15,14 +15,19 @@ const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
 const EMPTY_UNLOCKED_STAND_LABEL = 'select';
 
 export class ShopShelfManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, getSellPriceOverride } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.getSellPriceOverride =
+      typeof getSellPriceOverride === 'function' ? getSellPriceOverride : null;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
     this.selectedSellTab = 'seed';
     this.visible = false;
     this.previousFocus = null;
+    this.handledBuyPressStart = false;
+    this.handledLockedSlotPressStartSlotNumber = null;
+    this.handledSelectSlotPressStartSlotNumber = null;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hideSellPopup();
@@ -92,6 +97,14 @@ export class ShopShelfManager {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
     row.dataset.shopSlotNumber = String(slotNumber);
+    row.addEventListener('pointerdown', (event) =>
+      this.onLockedSlotRowPressStart(event, slotNumber),
+    );
+    if (typeof window.PointerEvent !== 'function') {
+      row.addEventListener('touchstart', (event) => this.onLockedSlotRowPressStart(event, slotNumber), {
+        passive: false,
+      });
+    }
     row.addEventListener('click', (event) => this.onLockedSlotRowClick(event, slotNumber));
 
     const label = document.createElement('span');
@@ -104,6 +117,14 @@ export class ShopShelfManager {
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
     itemValue.dataset.tutorialId = `shop:stand:${slotNumber}`;
+    itemValue.addEventListener('pointerdown', (event) =>
+      this.onSelectSlotPressStart(event, slotNumber),
+    );
+    if (typeof window.PointerEvent !== 'function') {
+      itemValue.addEventListener('touchstart', (event) => this.onSelectSlotPressStart(event, slotNumber), {
+        passive: false,
+      });
+    }
     itemValue.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
     itemValue.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') {
@@ -127,8 +148,20 @@ export class ShopShelfManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__buy-slot-button';
     button.type = 'button';
+    button.addEventListener('pointerdown', (event) => this.onBuySlotPressStart(event));
+    if (typeof window.PointerEvent !== 'function') {
+      button.addEventListener('touchstart', (event) => this.onBuySlotPressStart(event), {
+        passive: false,
+      });
+    }
     button.addEventListener('click', (event) => {
       event.stopPropagation();
+
+      if (this.handledBuyPressStart) {
+        this.handledBuyPressStart = false;
+        return;
+      }
+
       this.onBuySlot();
     });
 
@@ -218,6 +251,14 @@ export class ShopShelfManager {
   }
 
   onSelectSlot(event, slotNumber) {
+    if (
+      event.type === 'click' &&
+      this.handledSelectSlotPressStartSlotNumber === slotNumber
+    ) {
+      this.handledSelectSlotPressStartSlotNumber = null;
+      return;
+    }
+
     if (event.target?.tagName === 'BUTTON') {
       return;
     }
@@ -248,12 +289,41 @@ export class ShopShelfManager {
     this.showSellPopup();
   }
 
+  onSelectSlotPressStart(event, slotNumber) {
+    if (this.isMousePressStart(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.handledSelectSlotPressStartSlotNumber = slotNumber;
+    this.onSelectSlot(event, slotNumber);
+  }
+
   onBuySlot() {
     this.gameplayFacade.buyShopShelfSlot();
     this.render(this.gameplayFacade.getSnapshot());
   }
 
+  onBuySlotPressStart(event) {
+    if (this.isMousePressStart(event) || event.currentTarget?.disabled) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.handledBuyPressStart = true;
+    this.onBuySlot();
+  }
+
   onLockedSlotRowClick(event, slotNumber) {
+    if (
+      event.type === 'click' &&
+      this.handledLockedSlotPressStartSlotNumber === slotNumber
+    ) {
+      this.handledLockedSlotPressStartSlotNumber = null;
+      return;
+    }
+
     if (event.target?.closest?.('button')) {
       return;
     }
@@ -267,6 +337,16 @@ export class ShopShelfManager {
     }
 
     this.onBuySlot();
+  }
+
+  onLockedSlotRowPressStart(event, slotNumber) {
+    if (this.isMousePressStart(event) || event.target?.closest?.('button')) {
+      return;
+    }
+
+    event.preventDefault();
+    this.handledLockedSlotPressStartSlotNumber = slotNumber;
+    this.onLockedSlotRowClick(event, slotNumber);
   }
 
   onSelectSellTab(kind) {
@@ -511,7 +591,7 @@ export class ShopShelfManager {
       this.setText(label, `${display.label} (${display.quantity}) `);
       setItemIconLabel(label, item.kind, item.key);
       setResourceColor(label, item.kind);
-      setResourceIconText(quantity, this.formatSellGold(item.sellGold));
+      setResourceIconText(quantity, this.formatSellGold(this.getDisplaySellGold(item)));
       setResourceColorFromText(quantity, quantity.textContent);
       button.disabled = !canSelectItem;
       button.setAttribute('aria-disabled', canSelectItem ? 'false' : 'true');
@@ -593,13 +673,13 @@ export class ShopShelfManager {
 
     const sellItem = this.getSellItem(shelf, slot);
     const quantity = Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
-    const sellGold = slot.sellGold ?? sellItem?.sellGold;
     const displayItem = sellItem ?? {
       itemTypeId: slot.sellItemTypeId,
       key: slot.sellKey,
       kind: slot.sellKind,
       label: slot.sellLabel,
     };
+    const sellGold = this.getDisplaySellGold(displayItem, slot.sellGold ?? sellItem?.sellGold);
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
       : { label: slot.sellLabel, quantity: String(quantity) };
@@ -701,6 +781,22 @@ export class ShopShelfManager {
     return formatGoldPriceText(sellGold);
   }
 
+  getDisplaySellGold(item, fallbackSellGold = item?.sellGold) {
+    if (Number.isFinite(fallbackSellGold) && fallbackSellGold > 0) {
+      return fallbackSellGold;
+    }
+
+    const overrideSellGold = this.getSellPriceOverride?.({
+      item,
+    });
+
+    if (Number.isFinite(overrideSellGold) && overrideSellGold > 0) {
+      return overrideSellGold;
+    }
+
+    return fallbackSellGold;
+  }
+
   canSelectSellItem(snapshot, item) {
     return (
       shouldShowItemInActionList(snapshot, item, item.quantity) &&
@@ -733,5 +829,9 @@ export class ShopShelfManager {
     if (node && node.textContent !== value) {
       node.textContent = value;
     }
+  }
+
+  isMousePressStart(event) {
+    return event.type === 'pointerdown' && event.pointerType === 'mouse';
   }
 }

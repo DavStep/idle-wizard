@@ -197,7 +197,7 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level1-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 6
+          "quantity": 5
         }
       ]
     },
@@ -206,14 +206,14 @@ const DEFAULT_TASKS_CONFIG = {
       "completionCostGold": 40,
       "tasks": [
         {
-          "id": "level2-sage-seeds",
-          "itemKey": "sageSeed",
-          "quantity": 10
-        },
-        {
           "id": "level2-sage-herb",
           "itemKey": "sageHerb",
           "quantity": 3
+        },
+        {
+          "id": "level2-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 10
         }
       ]
     },
@@ -4842,9 +4842,14 @@ function hasLegacyShortTaskCatalog(levels: unknown[]): boolean {
 }
 
 function hasLegacyLevelTwoSageTasks(levels: unknown[]): boolean {
-  return taskConfigListsMatch(getTaskConfigsForLevel(levels, 2), [
+  const levelTwoTasks = getTaskConfigsForLevel(levels, 2);
+
+  return taskConfigListsMatch(levelTwoTasks, [
     { id: 'level2-sage-seeds', itemKey: 'sageSeed', quantity: 20 },
     { id: 'level2-sage-herb', itemKey: 'sageHerb', quantity: 6 },
+  ]) || taskConfigListsMatch(levelTwoTasks, [
+    { id: 'level2-sage-seeds', itemKey: 'sageSeed', quantity: 10 },
+    { id: 'level2-sage-herb', itemKey: 'sageHerb', quantity: 3 },
   ]);
 }
 

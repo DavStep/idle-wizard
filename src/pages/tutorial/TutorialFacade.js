@@ -3,6 +3,7 @@ import { TutorialLogicManager } from './managers/TutorialLogicManager.js';
 import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialRevealManager } from './managers/TutorialRevealManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
+import { LEVEL_ONE_TUTORIAL_SALE } from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanel/topPanelEvents.js';
 
@@ -31,6 +32,7 @@ export class TutorialFacade {
     this.reminderTimeout = null;
     this.blockingDialogObserver = null;
     this.activeStep = null;
+    this.requestedTargetGuidanceStepId = null;
     this.handleClick = (event) => {
       if (event.target?.closest?.('.tutorial-layer')) {
         return;
@@ -51,6 +53,7 @@ export class TutorialFacade {
       }
 
       this.logicManager.recordActivity(this.getNow());
+      this.clearRequestedTargetGuidance();
       this.hintManager.hideTargetCue();
       this.scheduleRefresh();
     };
@@ -107,6 +110,7 @@ export class TutorialFacade {
   resetProgress() {
     this.logicManager.resetProgress();
     this.activeStep = null;
+    this.clearRequestedTargetGuidance();
     this.scheduleRefresh();
   }
 
@@ -118,6 +122,7 @@ export class TutorialFacade {
       snapshot,
       dom,
       gameplayFacade: this.gameplayFacade,
+      item,
       itemKey: item?.key,
       quantity,
     });
@@ -129,28 +134,80 @@ export class TutorialFacade {
     return result;
   }
 
+  getDirectSellQuoteOverride({ item, quantity } = {}) {
+    return this.saleManager.getDirectSellQuoteOverride({
+      step: this.getTutorialSalePreviewStep(),
+      snapshot: this.gameplayFacade?.getSnapshot?.(),
+      item,
+      itemKey: item?.key,
+      quantity,
+    });
+  }
+
+  getNpcSellPriceOverride({ item } = {}) {
+    return this.saleManager.getNpcSellPriceOverride({
+      snapshot: this.gameplayFacade?.getSnapshot?.(),
+      item,
+      itemKey: item?.key,
+    });
+  }
+
+  getNpcStockBuyQuoteOverride({ item, quantity } = {}) {
+    return this.saleManager.getNpcStockBuyQuoteOverride({
+      snapshot: this.gameplayFacade?.getSnapshot?.(),
+      item,
+      itemKey: item?.key,
+      quantity,
+    });
+  }
+
+  getTutorialSalePreviewStep() {
+    if (!this.activeStep) {
+      return null;
+    }
+
+    if (this.activeStep.effect === 'tutorial-sale') {
+      return this.activeStep;
+    }
+
+    if (this.activeStep.id !== 'select-sage-seed-sale') {
+      return this.activeStep;
+    }
+
+    return {
+      ...this.activeStep,
+      effect: 'tutorial-sale',
+      sale: LEVEL_ONE_TUTORIAL_SALE,
+    };
+  }
+
   refresh() {
     this.cancelReminderRefresh();
     const dom = this.targetManager.getDomState();
     const snapshot = this.gameplayFacade?.getSnapshot?.();
+    const lessonPanelOpen = this.hintManager.isLessonPanelOpen();
     const viewState = this.logicManager.getViewState({
       snapshot,
       dom,
       targetResolver: (targetId) => this.targetManager.getTarget(targetId),
-      lessonPanelOpen: this.hintManager.isLessonPanelOpen(),
+      lessonPanelOpen,
+      requestedTargetGuidanceStepId: this.requestedTargetGuidanceStepId,
     });
+    this.syncRequestedTargetGuidance(viewState, lessonPanelOpen);
     this.activeStep = viewState.step;
     this.applyViewState(viewState);
   }
 
   applyViewState(viewState) {
     if (viewState.kind === 'blocked') {
+      this.clearRequestedTargetGuidance();
       this.saleManager.cancel();
       this.hintManager.suspendForBlockingDialog();
       return;
     }
 
     if (viewState.kind === 'hidden') {
+      this.clearRequestedTargetGuidance();
       this.saleManager.cancel();
       this.revealManager.clear();
       this.hintManager.hide();
@@ -199,6 +256,7 @@ export class TutorialFacade {
     }
 
     this.activeStep = null;
+    this.clearRequestedTargetGuidance();
     this.hintManager.hideTargetCue();
     this.scheduleRefresh();
   }
@@ -246,9 +304,28 @@ export class TutorialFacade {
       return;
     }
 
+    this.requestedTargetGuidanceStepId = step?.id ?? null;
     this.cancelRefresh();
     this.cancelReminderRefresh();
     this.applyCue(cue);
+  }
+
+  clearRequestedTargetGuidance() {
+    this.requestedTargetGuidanceStepId = null;
+  }
+
+  syncRequestedTargetGuidance(viewState, lessonPanelOpen) {
+    if (!this.requestedTargetGuidanceStepId) {
+      return;
+    }
+
+    if (
+      viewState.kind !== 'lesson' ||
+      !lessonPanelOpen ||
+      viewState.step?.id !== this.requestedTargetGuidanceStepId
+    ) {
+      this.clearRequestedTargetGuidance();
+    }
   }
 
   scheduleRefresh() {

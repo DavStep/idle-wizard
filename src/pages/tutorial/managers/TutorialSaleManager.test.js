@@ -4,7 +4,11 @@ import { TutorialSaleManager } from './TutorialSaleManager.js';
 
 function createSnapshot({
   gold = 0,
+  level = 1,
+  levelCostGold = 10,
   seeds = [{ key: 'sageSeed', quantity: 1 }],
+  herbs = [],
+  prestigeCompletedLevels = [],
 } = {}) {
   return {
     gold: { current: gold },
@@ -12,7 +16,18 @@ function createSnapshot({
     seedInventory: seeds,
     garden: {
       seeds: [],
-      herbs: [],
+      herbs,
+    },
+    prestige: {
+      completedLevels: prestigeCompletedLevels,
+    },
+    tasks: {
+      currentLevel: level,
+      level: {
+        completion: {
+          costGold: levelCostGold,
+        },
+      },
     },
     shop: {
       shelf: {
@@ -29,13 +44,71 @@ function createDom({ selectedItemKey = null } = {}) {
 }
 
 describe('TutorialSaleManager', () => {
-  it('ignores normal direct sells outside the tutorial sale step', () => {
+  it('returns a fixed tutorial quote override for fast sell display', () => {
+    const manager = new TutorialSaleManager();
+
+    expect(
+      manager.getDirectSellQuoteOverride({
+        step: {
+          effect: 'tutorial-sale',
+          sale: {
+            itemKey: 'sageSeed',
+            quantity: 1,
+            goldEach: 10,
+            goldTarget: 10,
+          },
+        },
+        snapshot: createSnapshot({
+          seeds: [{ key: 'sageSeed', quantity: 2 }],
+        }),
+        itemKey: 'sageSeed',
+        quantity: 4,
+      }),
+    ).toMatchObject({
+      ok: true,
+      quantity: 1,
+      priceGold: 10,
+      totalPriceGold: 10,
+      tutorial: true,
+    });
+  });
+
+  it('keeps using tutorial fast-sell quotes until FTUE completes', () => {
+    const manager = new TutorialSaleManager();
+
+    expect(
+      manager.getDirectSellQuoteOverride({
+        step: { effect: 'none' },
+        snapshot: createSnapshot({
+          level: 3,
+          gold: 30,
+          levelCostGold: 40,
+          herbs: [{ key: 'sageHerb', quantity: 2 }],
+          seeds: [],
+        }),
+        item: {
+          key: 'sageHerb',
+          kind: 'herb',
+        },
+        itemKey: 'sageHerb',
+        quantity: 2,
+      }),
+    ).toMatchObject({
+      ok: true,
+      quantity: 1,
+      priceGold: 10,
+      totalPriceGold: 10,
+      tutorial: true,
+    });
+  });
+
+  it('ignores direct sells once FTUE market pricing is finished', () => {
     const manager = new TutorialSaleManager();
 
     expect(
       manager.handleDirectSellOverride({
         step: { effect: 'none' },
-        snapshot: createSnapshot(),
+        snapshot: createSnapshot({ level: 5 }),
         dom: createDom({ selectedItemKey: 'sageSeed' }),
         itemKey: 'sageSeed',
       }),
@@ -83,6 +156,49 @@ describe('TutorialSaleManager', () => {
     });
   });
 
+  it('routes later FTUE fast sells through the local tutorial market prices too', () => {
+    const manager = new TutorialSaleManager();
+    const gameplayFacade = {
+      sellTutorialItemForGold: vi.fn(() => ({
+        ok: true,
+        quantity: 1,
+        gold: 10,
+        tutorial: true,
+      })),
+    };
+
+    const result = manager.handleDirectSellOverride({
+      step: { effect: 'none' },
+      snapshot: createSnapshot({
+        level: 3,
+        gold: 30,
+        levelCostGold: 40,
+        herbs: [{ key: 'sageHerb', quantity: 2 }],
+        seeds: [],
+      }),
+      dom: createDom({ selectedItemKey: 'sageHerb' }),
+      gameplayFacade,
+      item: {
+        key: 'sageHerb',
+        kind: 'herb',
+      },
+      itemKey: 'sageHerb',
+      quantity: 2,
+    });
+
+    expect(result).toMatchObject({
+      handled: true,
+      ok: true,
+      gold: 10,
+    });
+    expect(gameplayFacade.sellTutorialItemForGold).toHaveBeenCalledWith({
+      itemKey: 'sageHerb',
+      quantity: 2,
+      goldEach: 20,
+      goldTarget: 40,
+    });
+  });
+
   it('does not hijack confirm for a different selected item', () => {
     const manager = new TutorialSaleManager();
     const gameplayFacade = {
@@ -113,5 +229,31 @@ describe('TutorialSaleManager', () => {
       }),
     ).toEqual({ handled: false });
     expect(gameplayFacade.sellTutorialItemForGold).not.toHaveBeenCalled();
+  });
+
+  it('provides fallback FTUE prices for offline stand and stock rows', () => {
+    const manager = new TutorialSaleManager();
+    const snapshot = createSnapshot({
+      level: 2,
+    });
+    const item = {
+      key: 'manaTonic',
+      kind: 'potion',
+    };
+
+    expect(manager.getNpcSellPriceOverride({ snapshot, item })).toBe(100);
+    expect(
+      manager.getNpcStockBuyQuoteOverride({
+        snapshot,
+        item,
+        quantity: 2,
+      }),
+    ).toMatchObject({
+      ok: true,
+      quantity: 2,
+      priceGold: 100,
+      totalPriceGold: 200,
+      tutorial: true,
+    });
   });
 });

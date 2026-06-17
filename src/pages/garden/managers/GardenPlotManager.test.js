@@ -311,6 +311,26 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('12s');
   });
 
+  it('targets the seed name text for tutorial guidance, not the quantity value', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+    parent
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const seedTarget = parent.querySelector('[data-tutorial-id="garden:seed:mintSeed"]');
+    const quantity = parent.querySelector('.garden-page__seed-button > .row_val');
+    const button = seedTarget?.closest('.garden-page__seed-button');
+
+    expect(seedTarget?.classList.contains('row_key')).toBe(true);
+    expect(button?.dataset.tutorialId).toBeUndefined();
+    expect(button?.textContent).toBe('mint seed1');
+    expect(quantity?.dataset.tutorialId).toBeUndefined();
+  });
+
   it('opens seed choices from selected seed text without planting', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

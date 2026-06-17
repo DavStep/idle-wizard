@@ -185,6 +185,54 @@ describe('ShopStockManager', () => {
     manager.unmount();
   });
 
+  it('shows tutorial fallback stock prices when backend prices are missing', () => {
+    const stage = document.createElement('section');
+    const snapshot = {
+      gold: { current: 1 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        stock: {
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          items: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 0,
+              buyGold: null,
+              stock: 3,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopStockManager({
+      gameplayFacade,
+      getBuyQuoteOverride: ({ item, quantity }) =>
+        item?.key === 'sageSeed'
+          ? {
+              ok: true,
+              quantity,
+              priceGold: 12.5,
+              totalPriceGold: 12.5 * quantity,
+              tutorial: true,
+            }
+          : null,
+    });
+
+    manager.mount(stage);
+
+    const button = stage.querySelector('.shop-page__stock-buy-button');
+
+    expect(button?.textContent).toBe('12.5 gold');
+    expect(button?.disabled).toBe(true);
+    expect(button?.getAttribute('data-resource-color')).toBeNull();
+
+    manager.unmount();
+  });
+
   it('shows backend-stocked items even with zero local quantity and no research', () => {
     const stage = document.createElement('section');
     const snapshot = {

@@ -26,7 +26,6 @@ const TYPEWRITER_INTERVAL_MS = 12;
 const TYPEWRITER_CHARS_PER_TICK = 2;
 const POINTER_HIDE_MS = 180;
 const OBJECTIVE_BUTTON_COLLAPSED_LABEL = 'help';
-const OBJECTIVE_BUTTON_OPEN_LABEL = 'hide';
 const PORTRAIT_WIDTH = 70;
 const PORTRAIT_HEIGHT = 91;
 const PORTRAIT_LEFT_GAP = 4;
@@ -41,7 +40,7 @@ const GUIDE_BOTTOM_FRACTION = 0.44;
 const DIALOG_TOP = 218;
 const GUIDE_BOX_LEFT_MIN = PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVERLAP;
 const OBJECTIVE_LEFT = GUIDE_BOX_LEFT_MIN;
-const OBJECTIVE_TOP = 500;
+const OBJECTIVE_TOP = 520;
 const OBJECTIVE_BUTTON_LEFT = PORTRAIT_LEFT_GAP;
 const OBJECTIVE_BUTTON_TOP = OBJECTIVE_TOP + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9;
 const OBJECTIVE_BUTTON_WIDTH = PORTRAIT_WIDTH;
@@ -682,9 +681,8 @@ export class TutorialHintManager {
     this.objectiveButton.setAttribute('aria-label', expanded ? 'hide lesson' : 'open lesson');
 
     if (this.objectiveButtonLabel) {
-      this.objectiveButtonLabel.textContent = expanded
-        ? OBJECTIVE_BUTTON_OPEN_LABEL
-        : OBJECTIVE_BUTTON_COLLAPSED_LABEL;
+      this.objectiveButtonLabel.hidden = expanded;
+      this.objectiveButtonLabel.textContent = expanded ? '' : OBJECTIVE_BUTTON_COLLAPSED_LABEL;
     }
   }
 

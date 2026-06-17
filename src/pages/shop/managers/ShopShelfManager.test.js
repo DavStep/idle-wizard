@@ -7,6 +7,10 @@ import { ShopPlayerShelfManager } from './ShopPlayerShelfManager.js';
 import { ShopPlayerRequestManager } from './ShopPlayerRequestManager.js';
 import { ShopShelfManager } from './ShopShelfManager.js';
 
+function createTouchStartEvent() {
+  return new window.Event('touchstart', { bubbles: true, cancelable: true });
+}
+
 function createRequestGameplayFacadeFake() {
   const listeners = new Set();
   const snapshot = {
@@ -494,6 +498,112 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('buys the next NPC market stand on touchstart of the locked row text', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    let buyCount = 0;
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: [] },
+      shop: {
+        shelf: {
+          maxSlots: 5,
+          selectedSlotNumber: 1,
+          nextSlotNumber: 1,
+          nextSlotCost: 0,
+          nextSlotLockedByLevel: false,
+          slotCosts: [0, 50, 150, 400, 1000],
+          sellKinds: [],
+          sellItems: [],
+          slots: [
+            { slotNumber: 1, unlocked: false },
+            { slotNumber: 2, unlocked: false },
+            { slotNumber: 3, unlocked: false },
+            { slotNumber: 4, unlocked: false },
+            { slotNumber: 5, unlocked: false },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      buyShopShelfSlot() {
+        buyCount += 1;
+        return { ok: true, cost: 0, slotNumber: 1 };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const itemValue = stage.querySelector('.shop-page__slot-item-value');
+    itemValue?.dispatchEvent(createTouchStartEvent());
+    itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(buyCount).toBe(1);
+
+    manager.unmount();
+  });
+
+  it('buys the next NPC market stand on touchstart of the buy button', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    let buyCount = 0;
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: [] },
+      shop: {
+        shelf: {
+          maxSlots: 5,
+          selectedSlotNumber: 1,
+          nextSlotNumber: 1,
+          nextSlotCost: 0,
+          nextSlotLockedByLevel: false,
+          slotCosts: [0, 50, 150, 400, 1000],
+          sellKinds: [],
+          sellItems: [],
+          slots: [
+            { slotNumber: 1, unlocked: false },
+            { slotNumber: 2, unlocked: false },
+            { slotNumber: 3, unlocked: false },
+            { slotNumber: 4, unlocked: false },
+            { slotNumber: 5, unlocked: false },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      buyShopShelfSlot() {
+        buyCount += 1;
+        return { ok: true, cost: 0, slotNumber: 1 };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const buyButton = stage.querySelector('.shop-page__buy-slot-button');
+    buyButton?.dispatchEvent(createTouchStartEvent());
+    buyButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(buyCount).toBe(1);
+
+    manager.unmount();
+  });
+
   it('opens NPC market sell picker only from the stand item text', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -564,6 +674,76 @@ describe('ShopShelfManager', () => {
     expect(selectCount).toBe(0);
 
     itemValue.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
+    expect(selectCount).toBe(1);
+
+    manager.unmount();
+  });
+
+  it('opens NPC market sell picker on touchstart of the stand item text', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    let selectCount = 0;
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 1,
+              sellGold: 8,
+              sellNeed: 12,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'sage seed',
+              sellQuantity: 1,
+              sellGold: 8,
+              sellNeed: 12,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      selectShopShelfSlot(slotNumber) {
+        selectCount += 1;
+        gameplaySnapshot.shop.shelf.selectedSlotNumber = slotNumber;
+        return { ok: true, slotNumber };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const itemValue = stage.querySelector('.shop-page__slot-item-value');
+    const popup = popupLayer.querySelector('.shop-page__sell-popup');
+
+    itemValue?.dispatchEvent(createTouchStartEvent());
+    itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
     expect(selectCount).toBe(1);
@@ -1062,6 +1242,70 @@ describe('ShopShelfManager', () => {
 
     expect(standValue?.textContent).toBe('mana tonic (0) offline');
     expect(priceValue?.getAttribute('data-resource-color')).toBeNull();
+
+    manager.unmount();
+  });
+
+  it('shows tutorial fallback stand prices while FTUE market pricing is active', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockRecipe:manaTonic'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'potion', label: 'potions' }],
+          sellItems: [
+            {
+              itemTypeId: 2001,
+              key: 'manaTonic',
+              label: 'mana tonic',
+              kind: 'potion',
+              quantity: 0,
+              sellGold: null,
+              sellNeed: null,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 2001,
+              sellKind: 'potion',
+              sellKey: 'manaTonic',
+              sellLabel: 'mana tonic',
+              sellQuantity: 0,
+              sellGold: null,
+              sellNeed: null,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({
+      gameplayFacade,
+      getSellPriceOverride: ({ item }) => (item?.key === 'manaTonic' ? 100 : null),
+    });
+
+    manager.mount(stage, popupLayer);
+
+    const standValue = stage.querySelector('.shop-page__slot-row .row_val');
+    const priceValue = stage.querySelector('.shop-page__slot-price-value');
+
+    expect(standValue?.textContent).toBe('mana tonic (0) 100 gold');
+    expect(priceValue?.getAttribute('data-resource-color')).toBe('gold');
 
     manager.unmount();
   });
