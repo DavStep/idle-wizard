@@ -40,6 +40,7 @@
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
+- Fast-sell picker rows are one action; make the whole visual row the button and put the tutorial id on that button.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
@@ -59,6 +60,7 @@
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
+- FTUE lesson 3 sage objectives should show objective copy first, delay pointer help for about 3-4s of idle, then point only when the player appears stuck.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
@@ -127,6 +129,7 @@
 - Player-distributed Android prod APKs must be signed with a Google OAuth-registered cert; debug-signed prod builds can connect only if that debug SHA-1 is registered for `com.idlewizard.game`.
 - Native Google sign-in returns inside the same WebView, so persist the native user and reload/reconnect after success; web OIDC redirect handled that implicitly.
 - SpacetimeDB computes OIDC identities from `iss` + `sub`, so a direct Google ID token creates a stable account without a SpacetimeAuth hop.
+- Historical player rows cannot prove Google-link status unless the server stored auth issuer/provider at connect time.
 - Google ID-token parsing must bind browser `atob` to its owning window and decode JWT payload bytes as UTF-8; raw `atob` strings can make valid tokens look invalid.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - All player-owned SpacetimeDB write reducers should call `assertActivePlayerSession(ctx)` before mutating rows; the single-account lock is only as strong as its least-guarded reducer.
@@ -147,6 +150,7 @@
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
 - SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
 - Global client subscriptions should target indexed server views (`*_snapshot`, own views, or top/recent views), not raw public tables; `SELECT *` on base tables can keep sequential-scan warnings alive even when tables are small.
+- SpacetimeDB energy warnings can still name tables that already have indexes when many clients subscribe to full snapshot views; verify deployed schema before adding duplicate indexes.
 - Player profile/info popups should subscribe to bounded visible-identity summary views, not global player/profile tables.
 - Current-player profile subscriptions should use `own_player_profile`; never fall back to `SELECT * FROM player` when identity SQL formatting is unavailable.
 - SpacetimeDB one-time startup maintenance uses `STARTUP_MAINTENANCE_STATE_KEY`; bump that key when adding new backfills/sanitizers that must run after deploy.
@@ -204,7 +208,7 @@
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
-- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `20s` to `210s` by herb tier.
+- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `210s` by herb tier.
 - Crystal is the hard currency; it starts at `0`, appears in the top panel only where usable, level-ups grant `playerLevel.crystal.perLevel`, and automation research spends it.
 - Ruby starts at `0`, has no source yet, appears in the top panel only where usable, and advanced research spends it on per-slot speed upgrades.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
@@ -478,6 +482,8 @@
 - Generated-gold leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedGold` field.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
 - Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
+- Task balance default changes need a matching `game_config.tasks` update path, such as a narrow legacy-value normalizer or an admin upsert; valid stored rows do not change just because source defaults changed.
+- Item catalog default value changes need a matching `game_config.items` update path; existing valid item rows override source catalog defaults.
 - When adding new fields to SpacetimeDB `game_config` JSON, server normalization and client readers must default legacy rows; otherwise old hosted config can silently disable the new behavior.
 - Catalog-backed `game_config` arrays need merge-by-key normalization for new catalog entries; valid old rows will not self-heal from defaults unless the normalizer appends missing entries.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.

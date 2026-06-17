@@ -26,6 +26,21 @@ const potionResearchOrder = [
 ];
 
 describe('TaskBalanceManager', () => {
+  it('uses reduced level 2 sage requirements', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(
+      taskBalanceManager.getLevelTasks(2).map((task) => ({
+        id: task.id,
+        itemKey: task.itemKey,
+        requiredQuantity: task.requiredQuantity,
+      })),
+    ).toEqual([
+      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 10 },
+      { id: 'level2-sage-herb', itemKey: 'sageHerb', requiredQuantity: 3 },
+    ]);
+  });
+
   it('moves level 5 onto lavender and the second recipe tier', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 

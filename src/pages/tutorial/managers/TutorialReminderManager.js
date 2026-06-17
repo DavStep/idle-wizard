@@ -26,6 +26,7 @@ export class TutorialReminderManager {
 
     const promptKey = this.getPromptKey(viewModel);
     const reminderKey = this.getReminderKey(viewModel, promptKey);
+    const reminderMs = this.getReminderMs(viewModel);
     const lastShownAt = this.lastShownAtByPrompt.get(promptKey);
     const lastReminderShownAt = this.lastShownAtByReminder.get(reminderKey);
     const lastPromptKey = this.lastPromptKeyByReminder.get(reminderKey);
@@ -53,17 +54,17 @@ export class TutorialReminderManager {
 
     const reminderElapsedMs = Number.isFinite(lastReminderShownAt)
       ? Math.max(0, now - lastReminderShownAt)
-      : this.reminderMs;
+      : reminderMs;
     const lastActivityAt = this.lastActivityAtByReminder.get(reminderKey);
     const activityElapsedMs = Number.isFinite(lastActivityAt)
       ? Math.max(0, now - lastActivityAt)
-      : this.reminderMs;
+      : reminderMs;
     const quietElapsedMs = Math.min(reminderElapsedMs, activityElapsedMs);
 
-    if (quietElapsedMs < this.reminderMs) {
+    if (quietElapsedMs < reminderMs) {
       return {
         shouldShow: false,
-        nextDelayMs: this.reminderMs - quietElapsedMs,
+        nextDelayMs: reminderMs - quietElapsedMs,
       };
     }
 
@@ -88,6 +89,7 @@ export class TutorialReminderManager {
 
     const promptKey = this.getPromptKey(step);
     const reminderKey = this.getReminderKey(step, promptKey);
+    const reminderMs = this.getReminderMs(step);
     const lastPromptKey = this.lastPromptKeyByReminder.get(reminderKey);
     this.activePromptKey = promptKey;
     this.activeReminderKey = reminderKey;
@@ -95,22 +97,22 @@ export class TutorialReminderManager {
     if (lastPromptKey !== promptKey) {
       this.lastPromptKeyByReminder.set(reminderKey, promptKey);
       this.lastActivityAtByReminder.set(reminderKey, now);
-      return { shouldNotify: false, nextRefreshAt: now + this.reminderMs };
+      return { shouldNotify: false, nextRefreshAt: now + reminderMs };
     }
 
     const lastActivityAt = this.lastActivityAtByReminder.get(reminderKey);
 
     if (!Number.isFinite(lastActivityAt)) {
       this.lastActivityAtByReminder.set(reminderKey, now);
-      return { shouldNotify: false, nextRefreshAt: now + this.reminderMs };
+      return { shouldNotify: false, nextRefreshAt: now + reminderMs };
     }
 
     const activityElapsedMs = Math.max(0, now - lastActivityAt);
 
-    if (activityElapsedMs < this.reminderMs) {
+    if (activityElapsedMs < reminderMs) {
       return {
         shouldNotify: false,
-        nextRefreshAt: now + this.reminderMs - activityElapsedMs,
+        nextRefreshAt: now + reminderMs - activityElapsedMs,
       };
     }
 
@@ -158,6 +160,11 @@ export class TutorialReminderManager {
 
   getReminderKey(viewModel, promptKey) {
     return viewModel.reminderKey || promptKey;
+  }
+
+  getReminderMs(viewModel) {
+    const reminderMs = Number(viewModel?.reminderMs);
+    return Number.isFinite(reminderMs) && reminderMs >= 0 ? reminderMs : this.reminderMs;
   }
 
   markShown(promptKey, reminderKey, shownAt) {

@@ -5,7 +5,7 @@ const POTION_TYPE_ID_START = 2001;
 const SEED_SUMMON_MANA_COST = 10;
 
 const herbCatalog = [
-  { key: 'sage', label: 'sage', growthDurationMs: 20_000 },
+  { key: 'sage', label: 'sage', growthDurationMs: 12_000 },
   { key: 'mint', label: 'mint', growthDurationMs: 25_000 },
   { key: 'nettle', label: 'nettle', growthDurationMs: 30_000 },
   { key: 'lavender', label: 'lavender', growthDurationMs: 40_000 },

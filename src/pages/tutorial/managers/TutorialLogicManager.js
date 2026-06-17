@@ -109,6 +109,26 @@ export class TutorialLogicManager {
       };
     }
 
+    if (lessonPanelOpen && step.cueMode === 'delayed-target') {
+      const attentionState = this.reminderManager.getAttentionState({ step, now });
+
+      if (attentionState.shouldNotify) {
+        return {
+          kind: 'target-cue',
+          target,
+          showPointer: this.shouldShowPointer(step),
+          nextRefreshAt: null,
+        };
+      }
+
+      return {
+        kind: 'none',
+        lessonAttention: false,
+        hideTargetImmediate: true,
+        nextRefreshAt: attentionState.nextRefreshAt,
+      };
+    }
+
     if (lessonPanelOpen) {
       this.reminderManager.clearVisible();
       return {
@@ -119,7 +139,7 @@ export class TutorialLogicManager {
       };
     }
 
-    if (step.cueMode === 'passive') {
+    if (step.cueMode === 'passive' || step.cueMode === 'delayed-target') {
       const attentionState = this.reminderManager.getAttentionState({ step, now });
       return {
         kind: 'none',

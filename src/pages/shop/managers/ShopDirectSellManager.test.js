@@ -96,16 +96,47 @@ describe('ShopDirectSellManager', () => {
     const popup = popupParent.querySelector('.shop-page__direct-sell-popup');
     expect(popup?.hidden).toBe(false);
     expect(popup?.textContent).toContain('fast sell');
+    expect(popup?.textContent).toContain('no item selected');
     expect(popup?.textContent).toContain('select item');
+    expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(true);
+    expect(popup.querySelector('.shop-page__direct-sell-confirm')?.hidden).toBe(true);
 
+    const itemRow = popup.querySelector('.shop-page__direct-sell-row');
     const itemButton = popup.querySelector('.shop-page__direct-sell-item-button');
-    itemButton.click();
+    expect(itemRow).toBe(itemButton);
+    expect(itemButton.dataset.tutorialId).toBe('shop:directSell:sageSeed');
+    expect(itemButton.querySelector('.row_key')?.dataset.tutorialId).toBeUndefined();
+
+    itemButton
+      .querySelector('.row_val')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(itemButton.getAttribute('aria-pressed')).toBe('true');
     expect(itemButton.dataset.directSellItemKey).toBe('sageSeed');
-    expect(popup.textContent).toContain('each1.12 gold');
-    expect(popup.textContent).toContain('need3');
+    expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
+      'sage seed (5)1.12 gold',
+    );
+    expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(false);
+    expect(popup.querySelector('.shop-page__direct-sell-confirm')?.hidden).toBe(false);
     expect(popup.textContent).toContain('total1.12 gold');
+
+    const incrementButton = [...popup.querySelectorAll('.shop-page__direct-sell-step')].find(
+      (button) => button.textContent === '+1',
+    );
+    incrementButton.click();
+
+    expect(gameplayFacade.quoteNpcMarketSell).toHaveBeenLastCalledWith(1, 2);
+    expect(popup.querySelector('.amount-selection-row__value')?.textContent).toBe('2');
+    expect(popup.textContent).toContain('total2.08 gold');
+
+    const herbsTab = [...popup.querySelectorAll('.shop-page__direct-sell-tab-button')].find(
+      (button) => button.textContent === 'herbs',
+    );
+    herbsTab.click();
+
+    expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
+      'sage seed (5)1.12 gold',
+    );
 
     const input = popup.querySelector('.shop-page__direct-sell-input');
     input.value = '4';

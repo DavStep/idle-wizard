@@ -7,7 +7,7 @@
         {
           "id": "level1-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 10
+          "quantity": 6
         }
       ]
     },
@@ -18,12 +18,12 @@
         {
           "id": "level2-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 20
+          "quantity": 10
         },
         {
           "id": "level2-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 6
+          "quantity": 3
         }
       ]
     },

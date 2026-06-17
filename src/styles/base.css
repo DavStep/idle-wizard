@@ -1972,6 +1972,9 @@ body {
 .shop-page__sell-item-row.is-empty .shop-page__sell-item-button,
 .shop-page__sell-item-row.is-locked .shop-page__sell-item-button,
 .shop-page__sell-item-row.is-unknown .shop-page__sell-item-button,
+.shop-page__direct-sell-row.is-empty,
+.shop-page__direct-sell-row.is-locked,
+.shop-page__direct-sell-row.is-unknown,
 .shop-page__player-listing-item-row.is-empty .shop-page__sell-item-button,
 .shop-page__player-listing-item-row.is-locked .shop-page__sell-item-button,
 .shop-page__player-listing-item-row.is-unknown .shop-page__sell-item-button,
@@ -4744,6 +4747,10 @@ div.workshop-page__discovery-row {
   width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
 }
 
+.shop-page__direct-sell-panel {
+  top: 39%;
+}
+
 .shop-page__sell-tabs {
   position: relative;
   z-index: 21;
@@ -4792,6 +4799,11 @@ div.workshop-page__discovery-row {
   width: 300px;
   height: var(--style-tabbed-dialog-content-height);
   overflow: visible;
+}
+
+.style-dialog.shop-page__direct-sell-dialog {
+  display: flex;
+  flex-direction: column;
 }
 
 .style-dialog.shop-page__market-dialog {
@@ -4930,14 +4942,18 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__direct-sell-rows {
-  height: 126px;
-  margin-bottom: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
 }
 
 .shop-page__direct-sell-rows::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-page__direct-sell-row[hidden] {
   display: none;
 }
 
@@ -5061,6 +5077,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-buy-row,
+.shop-page__direct-sell-selected-row,
 .shop-page__direct-sell-value-row,
 .shop-page__stock-buy-field,
 .shop-page__direct-sell-field,
@@ -5073,6 +5090,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-buy-row::after,
+.shop-page__direct-sell-selected-row::after,
 .shop-page__direct-sell-value-row::after,
 .shop-page__stock-buy-field::after,
 .shop-page__direct-sell-field::after,
@@ -5083,6 +5101,42 @@ div.workshop-page__discovery-row {
   display: block;
   clear: both;
   content: "";
+}
+
+.shop-page__direct-sell-selected-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+}
+
+.shop-page__direct-sell-selected-row > .row_key,
+.shop-page__direct-sell-selected-row > .row_val {
+  float: none;
+  clear: none;
+}
+
+.shop-page__direct-sell-selected-row > .row_key {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-page__direct-sell-selected-row > .row_val {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.shop-page__direct-sell-selected-row::after {
+  display: none;
+}
+
+.shop-page__direct-sell-divider {
+  flex: 0 0 auto;
+  height: 0;
+  margin: 7px 0 5px;
+  border-top: var(--style-border);
 }
 
 .shop-page__stock-buy-action-row,
@@ -5138,6 +5192,13 @@ div.workshop-page__discovery-row {
 
 .style-button.amount-selection-row__value[hidden],
 .style-input.amount-selection-row__input[hidden] {
+  display: none;
+}
+
+.shop-page__direct-sell-field[hidden],
+.shop-page__direct-sell-action-row[hidden],
+.shop-page__direct-sell-status[hidden],
+.shop-page__direct-sell-value-row[hidden] {
   display: none;
 }
 

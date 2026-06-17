@@ -164,7 +164,7 @@ export class TutorialFacade {
       this.hintManager.setLessonAttention(cue.lessonAttention);
     }
 
-    this.hintManager.hideTargetCue();
+    this.hintManager.hideTargetCue({ immediate: cue.hideTargetImmediate === true });
   }
 
   advanceActiveStep() {

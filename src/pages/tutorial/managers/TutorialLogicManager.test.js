@@ -9,8 +9,8 @@ function createStep(overrides = {}) {
     targetId: 'task:level1-sage-seeds',
     objectiveText: 'summon seeds and fill the level task',
     stepLabel: '7/25',
-    progress: { value: 1, max: 10 },
-    progressLabel: '1/10 seeds',
+    progress: { value: 1, max: 6 },
+    progressLabel: '1/6 seeds',
     cueMode: 'active',
     showPointer: true,
     revealTokens: ['mana', 'summon', 'tasks'],
@@ -133,6 +133,55 @@ describe('TutorialLogicManager', () => {
         lessonAttention: true,
         nextRefreshAt: null,
       },
+    });
+  });
+
+  it('delays target cues while a delayed objective panel is open', () => {
+    const target = {};
+    const step = createStep({
+      cueMode: 'delayed-target',
+      text: 'grow sage 3 times',
+    });
+    const waitingReminder = createReminderFake({
+      attentionState: { shouldNotify: false, nextRefreshAt: 4500 },
+    });
+    const readyReminder = createReminderFake({
+      attentionState: { shouldNotify: true, nextRefreshAt: null },
+    });
+    const { manager: waitingManager } = createManager({
+      reminderManager: waitingReminder,
+      step,
+    });
+    const { manager: readyManager } = createManager({
+      reminderManager: readyReminder,
+      step,
+    });
+
+    expect(
+      waitingManager.getViewState({
+        snapshot: {},
+        dom: {},
+        targetResolver: () => target,
+        lessonPanelOpen: true,
+      }).cue,
+    ).toEqual({
+      kind: 'none',
+      lessonAttention: false,
+      hideTargetImmediate: true,
+      nextRefreshAt: 4500,
+    });
+
+    expect(
+      readyManager.getViewState({
+        snapshot: {},
+        dom: {},
+        targetResolver: () => target,
+        lessonPanelOpen: true,
+      }).cue,
+    ).toMatchObject({
+      kind: 'target-cue',
+      target,
+      showPointer: true,
     });
   });
 

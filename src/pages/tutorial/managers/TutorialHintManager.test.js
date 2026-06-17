@@ -336,8 +336,8 @@ describe('TutorialHintManager', () => {
         title: 'lesson 1: introduction',
         text: lessonText,
         stepLabel: '7/25',
-        progress: { value: 1, max: 10 },
-        progressLabel: '1/10 seeds',
+        progress: { value: 1, max: 6 },
+        progressLabel: '1/6 seeds',
         canShowTarget: true,
       });
 
@@ -403,8 +403,8 @@ describe('TutorialHintManager', () => {
       title: 'lesson 1: introduction',
       text: 'summon seeds and fill the level task',
       stepLabel: '7/25',
-      progress: { value: 1, max: 10 },
-      progressLabel: '1/10 seeds',
+      progress: { value: 1, max: 6 },
+      progressLabel: '1/6 seeds',
     });
 
     const button = stage.querySelector('.tutorial-layer__lesson-button');

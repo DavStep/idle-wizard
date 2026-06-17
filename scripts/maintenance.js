@@ -14,12 +14,14 @@ const MUTATING_ACTIONS = new Set([
   'reset-progress',
   'reset-discord-post',
   'reset-player',
+  'wipe-player-data',
 ]);
 const SCHEMA_NAMES = [
   'set_maintenance_mode',
   'migrate_player_gameplay_saves',
   'admin_reset_player_progression_data',
   'admin_reset_player_progression_by_identity',
+  'admin_wipe_all_player_data',
   'leaderboard_summary',
   'world_chat_recent',
 ];
@@ -42,6 +44,11 @@ const PLAYER_PROGRESSION_RESET_TABLES = [
   'player_shop_trade',
   'potion_recipe_discovery',
   'npc_market_price',
+];
+const ALL_PLAYER_DATA_WIPE_TABLES = [
+  ...PLAYER_PROGRESSION_RESET_TABLES,
+  'player_session',
+  'player_feedback',
 ];
 
 const args = process.argv.slice(2);
@@ -91,6 +98,9 @@ switch (action) {
   case 'backup-reset':
     backupPlayerProgressionResetData();
     break;
+  case 'backup-player-data-wipe':
+    backupAllPlayerDataWipeData();
+    break;
   case 'backup-player-reset':
     backupSinglePlayerProgressionResetData();
     break;
@@ -99,6 +109,9 @@ switch (action) {
     break;
   case 'verify-reset':
     verifyPlayerProgressionReset();
+    break;
+  case 'verify-player-data-wipe':
+    verifyAllPlayerDataWipe();
     break;
   case 'verify-player-reset':
     verifySinglePlayerProgressionReset();
@@ -114,6 +127,9 @@ switch (action) {
     break;
   case 'reset-player':
     resetSinglePlayerProgressionData();
+    break;
+  case 'wipe-player-data':
+    await wipeAllPlayerData();
     break;
   case 'publish':
     runSpacetime(['publish', database, '--server', server, '--module-path', './spacetimedb']);
@@ -157,14 +173,17 @@ function printHelp() {
   node scripts/maintenance.js locked --confirm-live
   node scripts/maintenance.js backup
   node scripts/maintenance.js backup-reset
+  node scripts/maintenance.js backup-player-data-wipe
   node scripts/maintenance.js backup-player-reset --identity <hex>
   node scripts/maintenance.js verify
   node scripts/maintenance.js verify-reset
+  node scripts/maintenance.js verify-player-data-wipe
   node scripts/maintenance.js verify-player-reset --identity <hex>
   node scripts/maintenance.js migrate --key YYYY-MM-DD-maintenance --confirm-live
   node scripts/maintenance.js reset-discord-post --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js reset-progress --key YYYY-MM-DD-reset --post-discord --confirm-live
   node scripts/maintenance.js reset-player --identity <hex> --key YYYY-MM-DD-reset --confirm-live
+  node scripts/maintenance.js wipe-player-data --key YYYY-MM-DD-reset --post-discord --confirm-live
   node scripts/maintenance.js publish --confirm-live
   node scripts/maintenance.js off --confirm-live
 
@@ -200,6 +219,16 @@ Full progression reset order after schema has admin_reset_player_progression_dat
 4. node scripts/maintenance.js backup-reset --server maincloud --database idle-wizard
 5. node scripts/maintenance.js reset-progress --server maincloud --database idle-wizard --key YYYY-MM-DD-reset --post-discord --confirm-live
 6. node scripts/maintenance.js verify-reset --server maincloud --database idle-wizard
+7. node scripts/maintenance.js off --server maincloud --database idle-wizard --confirm-live
+
+Full player data wipe order after schema has admin_wipe_all_player_data:
+0. Close/navigate away active game clients where possible.
+1. node scripts/maintenance.js drain --server maincloud --database idle-wizard --confirm-live
+2. Wait 2-3 minutes.
+3. node scripts/maintenance.js locked --server maincloud --database idle-wizard --confirm-live
+4. node scripts/maintenance.js backup-player-data-wipe --server maincloud --database idle-wizard
+5. node scripts/maintenance.js wipe-player-data --server maincloud --database idle-wizard --key YYYY-MM-DD-reset --post-discord --confirm-live
+6. node scripts/maintenance.js verify-player-data-wipe --server maincloud --database idle-wizard
 7. node scripts/maintenance.js off --server maincloud --database idle-wizard --confirm-live`);
 }
 
@@ -254,6 +283,28 @@ function backupPlayerProgressionResetData() {
   const sections = [];
 
   for (const tableName of PLAYER_PROGRESSION_RESET_TABLES) {
+    const result = runSpacetime(
+      ['sql', '-s', server, database, `SELECT * FROM ${tableName}`],
+      { capture: true },
+    );
+    sections.push(`-- ${tableName}\n${result.stdout.trimEnd()}`);
+  }
+
+  writeFileSync(path, `${sections.join('\n\n')}\n`);
+  console.log(`Backup written: ${path}`);
+}
+
+function backupAllPlayerDataWipeData() {
+  mkdirSync(join('backups', 'maintenance'), { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const path = join(
+    'backups',
+    'maintenance',
+    `all_player_data_wipe_${server}_${database}_${timestamp}.sql.txt`,
+  );
+  const sections = [];
+
+  for (const tableName of ALL_PLAYER_DATA_WIPE_TABLES) {
     const result = runSpacetime(
       ['sql', '-s', server, database, `SELECT * FROM ${tableName}`],
       { capture: true },
@@ -346,6 +397,29 @@ function verifyPlayerProgressionReset() {
   );
 }
 
+function verifyAllPlayerDataWipe() {
+  runSql('SELECT COUNT(*) AS player_count FROM player');
+  runSql('SELECT COUNT(*) AS player_session_count FROM player_session');
+  runSql('SELECT COUNT(*) AS player_feedback_count FROM player_feedback');
+  runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
+  runSql('SELECT COUNT(*) AS leaderboard_count FROM leaderboard');
+  runSql('SELECT COUNT(*) AS world_chat_count FROM world_chat');
+  runSql('SELECT COUNT(*) AS alliance_count FROM trade_alliance');
+  runSql('SELECT COUNT(*) AS alliance_member_count FROM trade_alliance_member');
+  runSql('SELECT COUNT(*) AS alliance_application_count FROM trade_alliance_application');
+  runSql('SELECT COUNT(*) AS alliance_chat_count FROM trade_alliance_chat');
+  runSql('SELECT COUNT(*) AS alliance_quest_count FROM trade_alliance_quest_progress');
+  runSql('SELECT COUNT(*) AS alliance_contribution_count FROM trade_alliance_quest_contribution');
+  runSql('SELECT COUNT(*) AS alliance_reward_count FROM trade_alliance_reward_inbox');
+  runSql('SELECT COUNT(*) AS player_shop_listing_count FROM player_shop_listing');
+  runSql('SELECT COUNT(*) AS player_shop_proceeds_count FROM player_shop_proceeds');
+  runSql('SELECT COUNT(*) AS player_shop_trade_count FROM player_shop_trade');
+  runSql('SELECT COUNT(*) AS potion_discovery_count FROM potion_recipe_discovery');
+  runSql(
+    'SELECT item_key, npc_need, npc_stock, demand_score, supply_score FROM npc_market_price LIMIT 10',
+  );
+}
+
 function verifySinglePlayerProgressionReset() {
   const identityHex = getIdentityHex();
   const identitySql = getIdentitySqlLiteral(identityHex);
@@ -399,6 +473,21 @@ async function resetPlayerProgressionData() {
   callReducer('admin_reset_player_progression_data', [resetKey]);
 }
 
+async function wipeAllPlayerData() {
+  const resetKey = getResetKey();
+
+  if (options['post-discord']) {
+    await postResetDiscordNotice(resetKey, { fullPlayerDataWipe: true });
+  }
+
+  if (options['dry-run']) {
+    console.log(`Dry run: would call admin_wipe_all_player_data ${shellQuote(resetKey)}`);
+    return;
+  }
+
+  callReducer('admin_wipe_all_player_data', [resetKey]);
+}
+
 function resetSinglePlayerProgressionData() {
   const identityHex = getIdentityHex();
   const resetKey = getResetKey();
@@ -440,11 +529,11 @@ function normalizeIdentityHex(identityHex) {
     .replace(/^0x/, '');
 }
 
-async function postResetDiscordNotice(resetKey) {
+async function postResetDiscordNotice(resetKey, { fullPlayerDataWipe = false } = {}) {
   const content =
     options['discord-message'] ??
     process.env.DISCORD_RESET_MESSAGE ??
-    buildDefaultResetDiscordMessage(resetKey);
+    buildDefaultResetDiscordMessage(resetKey, { fullPlayerDataWipe });
 
   if (content.length > 2000) {
     console.error(`Discord reset post is ${content.length} characters; Discord limit is 2000.`);
@@ -492,7 +581,23 @@ async function postResetDiscordNotice(resetKey) {
   console.log('Posted reset notice to Discord.');
 }
 
-function buildDefaultResetDiscordMessage(resetKey) {
+function buildDefaultResetDiscordMessage(resetKey, { fullPlayerDataWipe = false } = {}) {
+  if (fullPlayerDataWipe) {
+    return [
+      '**Idle Wizard reset notice**',
+      '',
+      'Hey everyone. We are doing a full account and progression reset for Idle Wizard.',
+      '',
+      'This clears account/profile rows and gameplay progress: saved names, theme/font/color settings, saves, leaderboards, world chat history, feedback, alliances, player market listings, potion discoveries, and shared market pressure. Everyone starts as a brand-new player after maintenance ends.',
+      '',
+      'Why this is happening: the game is still in early testing, and the economy/server systems have changed enough that old account data can leave players in unfair or broken states. A clean reset gives the next build a fair baseline and helps us tune the game properly.',
+      '',
+      'What to do: if you are in the game now, close it during maintenance. When maintenance is over, open the newest build and start fresh. Thank you for testing through the rough parts.',
+      '',
+      `Reset key: ${resetKey}`,
+    ].join('\n');
+  }
+
   return [
     '**Idle Wizard reset notice**',
     '',
@@ -509,7 +614,9 @@ function buildDefaultResetDiscordMessage(resetKey) {
 }
 
 function checkSchema() {
-  const result = runSpacetime(['describe', '-s', server, '--json', database], { capture: true });
+  const result = runSpacetime(['describe', '-s', server, '--json', '--no-config', database], {
+    capture: true,
+  });
   const schemaText = result.stdout;
 
   try {

@@ -1,4 +1,4 @@
-export const DEFAULT_PLAYER_ICON_MODE = 'none';
+export const DEFAULT_PLAYER_ICON_MODE = 'icons';
 
 export const PLAYER_ICON_MODE_OPTIONS = Object.freeze([
   Object.freeze({

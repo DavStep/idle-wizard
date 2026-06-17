@@ -154,13 +154,12 @@ export class WorkshopActionBarManager {
     const costLabel = `${snapshot.seedSummoning.cost} mana`;
     const ariaLabel = `${summonLabel}, costs ${snapshot.seedSummoning.cost} mana`;
     const ariaDisabled = snapshot.seedSummoning.canSummon ? 'false' : 'true';
-    const disabled = !snapshot.seedSummoning.canSummon;
 
     this.setText(this.refs.summonButtonLabel, summonLabel);
     setResourceIconText(this.refs.summonButtonCost, costLabel);
     this.setAttribute(this.refs.summonButton, 'aria-label', ariaLabel);
     this.setAttribute(this.refs.summonButton, 'aria-disabled', ariaDisabled);
-    this.refs.summonButton.disabled = disabled;
+    this.refs.summonButton.disabled = false;
     setNotificationBadge(this.refs.summonButton, snapshot.seedSummoning.canSummon);
   }
 

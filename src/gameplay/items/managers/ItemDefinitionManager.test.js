@@ -12,7 +12,7 @@ describe('ItemDefinitionManager', () => {
       key: 'sageHerb',
       label: 'sage',
       kind: 'herb',
-      growthDurationMs: 20_000,
+      growthDurationMs: 12_000,
       baseSellPrice: 6,
     });
     expect(manager.getDefinitionByKey('dragonpepperHerb')).toEqual({

@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.22
+
+- Made early Workshop tasks shorter and sage growth faster so the first levels move better.
+- Updated Elara's Garden lesson to guide three sage grows, then the sage seed and sage herb tasks.
+- Made Elara wait a few seconds before pointing during lesson 3, so target prompts feel less pushy.
+- Improved Market fast sell with full-row item taps and a clearer selected item summary.
+- Turned resource icons on by default for new players.
+
 ## 0.1.21
 
 - Raised player progression to level 44 with new task goals, level costs, and research gates.

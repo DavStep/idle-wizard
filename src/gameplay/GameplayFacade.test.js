@@ -1166,7 +1166,7 @@ describe('GameplayFacade', () => {
       },
       color: { monochrome: true, resources: false },
       progressBar: { regular: true, gradient: false },
-      icons: { none: true, icons: false },
+      icons: { none: true, icons: true },
     });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
       ok: false,
@@ -1806,7 +1806,7 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(1, 1);
     expect(gameplayFacade.plantGardenSeed(1, 1)).toMatchObject({
       ok: true,
-      durationMs: 19_600,
+      durationMs: 11_760,
     });
 
     ecsFacade.update({ deltaSeconds: 12 });
@@ -2797,7 +2797,7 @@ describe('GameplayFacade', () => {
         label: 'sage',
         kind: 'herb',
       },
-      durationMs: 20_000,
+      durationMs: 12_000,
     });
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
@@ -2807,17 +2807,17 @@ describe('GameplayFacade', () => {
       selectedSeedKey: 'sageSeed',
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
-      remainingMs: 20_000,
-      totalMs: 20_000,
+      remainingMs: 12_000,
+      totalMs: 12_000,
       process: {
         phase: 'growing',
-        totalMs: 20_000,
-        remainingMs: 20_000,
+        totalMs: 12_000,
+        remainingMs: 12_000,
         progress: 0,
       },
     });
 
-    ecsFacade.update({ deltaSeconds: 19 });
+    ecsFacade.update({ deltaSeconds: 11 });
 
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: 'growing',
@@ -3024,7 +3024,7 @@ describe('GameplayFacade', () => {
       selectedSeedKey: 'sageSeed',
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
-      remainingMs: 20_000,
+      remainingMs: 12_000,
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[1]).toMatchObject({
       phase: 'ready',
@@ -3171,11 +3171,11 @@ describe('GameplayFacade', () => {
       phase: 'growing',
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
-      remainingMs: 15_000,
-      totalMs: 20_000,
+      remainingMs: 7_000,
+      totalMs: 12_000,
     });
 
-    second.ecsFacade.update({ deltaSeconds: 15 });
+    second.ecsFacade.update({ deltaSeconds: 7 });
 
     expect(second.gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: 'ready',

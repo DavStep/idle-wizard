@@ -130,11 +130,7 @@ export class ShopDirectSellManager {
     closeButton.textContent = 'close';
     closeButton.addEventListener('click', () => this.hide());
 
-    this.refs.rowsRoot = document.createElement('div');
-    this.refs.rowsRoot.className = 'shop-page__direct-sell-rows';
-    this.refs.itemValue = this.createValueRow('item');
-    this.refs.eachValue = this.createValueRow('each');
-    this.refs.needValue = this.createValueRow('need');
+    this.refs.selectedItem = this.createSelectedItemRow();
     this.refs.quantityField = createAmountSelectionRow({
       ariaLabel: 'amount',
       className: 'shop-page__direct-sell-field',
@@ -147,6 +143,7 @@ export class ShopDirectSellManager {
 
     const actionRow = document.createElement('div');
     actionRow.className = 'shop-page__direct-sell-action-row';
+    this.refs.actionRow = actionRow;
 
     this.refs.confirmButton = document.createElement('button');
     this.refs.confirmButton.className = 'style-button shop-page__direct-sell-confirm';
@@ -158,25 +155,44 @@ export class ShopDirectSellManager {
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'shop-page__direct-sell-status';
 
+    this.refs.divider = document.createElement('div');
+    this.refs.divider.className = 'shop-page__direct-sell-divider';
+
+    this.refs.rowsRoot = document.createElement('div');
+    this.refs.rowsRoot.className = 'shop-page__direct-sell-rows';
+
     this.refs.tabs = this.createTabs();
 
     actionRow.append(this.refs.confirmButton);
     dialog.append(
       title,
       closeButton,
-      this.refs.rowsRoot,
-      this.refs.itemValue.row,
-      this.refs.eachValue.row,
-      this.refs.needValue.row,
+      this.refs.selectedItem.row,
       this.refs.quantityField.field,
       this.refs.totalValue.row,
       actionRow,
       this.refs.status,
+      this.refs.divider,
+      this.refs.rowsRoot,
     );
     panel.append(dialog, this.refs.tabs);
     popup.append(panel);
     this.refs.dialog = panel;
     return popup;
+  }
+
+  createSelectedItemRow() {
+    const row = document.createElement('div');
+    row.className = 'shop-page__direct-sell-selected-row';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+
+    const value = document.createElement('span');
+    value.className = 'row_val';
+
+    row.append(label, value);
+    return { row, label, value };
   }
 
   createValueRow(labelText) {
@@ -243,8 +259,6 @@ export class ShopDirectSellManager {
     }
 
     this.selectedTab = kind;
-    this.selectedItemTypeId = null;
-    this.sellQuantity = 1;
     this.statusText = '';
     this.render();
   }
@@ -335,10 +349,7 @@ export class ShopDirectSellManager {
       refs.row.hidden = !visibleItemTypeIds.has(itemTypeId);
     }
 
-    if (
-      this.selectedItemTypeId !== null &&
-      !visibleItemTypeIds.has(this.selectedItemTypeId)
-    ) {
+    if (this.selectedItemTypeId !== null && !this.canKeepSelectedItem()) {
       this.selectedItemTypeId = null;
       this.sellQuantity = 1;
     }
@@ -364,8 +375,8 @@ export class ShopDirectSellManager {
     refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
     refs.button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     refs.button.dataset.directSellItemKey = item.key;
+    refs.button.dataset.tutorialId = `shop:directSell:${item.key}`;
     refs.label.textContent = `${display.label} (${display.quantity})`;
-    refs.label.dataset.tutorialId = `shop:directSell:${item.key}`;
     setItemIconLabel(refs.label, item.kind, item.key);
     setResourceColor(refs.label, item.kind);
     setResourceIconText(refs.value, this.formatSellGold(this.getFastSellGold(item)));
@@ -373,25 +384,24 @@ export class ShopDirectSellManager {
   }
 
   renderDetails() {
-    if (!this.refs.itemValue) {
+    if (!this.refs.selectedItem) {
       return;
     }
 
     const item = this.getSelectedItem();
     const hasItem = Boolean(item);
 
-    for (const ref of [
-      this.refs.itemValue,
-      this.refs.eachValue,
-      this.refs.needValue,
-      this.refs.totalValue,
-    ]) {
-      ref.row.hidden = !hasItem;
-    }
+    this.refs.totalValue.row.hidden = !hasItem;
     this.refs.quantityField.field.hidden = !hasItem;
+    this.refs.actionRow.hidden = !hasItem;
     this.refs.confirmButton.hidden = !hasItem;
 
     if (!item) {
+      this.refs.selectedItem.label.textContent = 'no item selected';
+      setItemIconLabel(this.refs.selectedItem.label, null);
+      setResourceColor(this.refs.selectedItem.label, null);
+      this.refs.selectedItem.value.textContent = '';
+      setResourceColor(this.refs.selectedItem.value, null);
       this.renderStatus('select item');
       return;
     }
@@ -414,20 +424,15 @@ export class ShopDirectSellManager {
       button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     }
 
-    this.refs.itemValue.value.textContent = `${display.label} (${display.quantity})`;
-    setItemIconLabel(this.refs.itemValue.value, item.kind, item.key);
-    setResourceColor(this.refs.itemValue.value, item.kind);
+    this.refs.selectedItem.label.textContent = `${display.label} (${display.quantity})`;
+    setItemIconLabel(this.refs.selectedItem.label, item.kind, item.key);
+    setResourceColor(this.refs.selectedItem.label, item.kind);
 
     setResourceIconText(
-      this.refs.eachValue.value,
+      this.refs.selectedItem.value,
       this.formatSellGold(this.getFastSellGold(item)),
     );
-    setResourceColor(this.refs.eachValue.value, 'gold');
-
-    this.refs.needValue.value.textContent = Number.isFinite(item.sellNeed)
-      ? String(Math.floor(item.sellNeed))
-      : '?';
-    setResourceColorFromText(this.refs.needValue.value, this.refs.needValue.value.textContent);
+    setResourceColor(this.refs.selectedItem.value, 'gold');
 
     setResourceIconText(
       this.refs.totalValue.value,
@@ -460,11 +465,9 @@ export class ShopDirectSellManager {
   }
 
   createRow(itemTypeId) {
-    const row = document.createElement('div');
-    row.className = 'shop-page__direct-sell-row shop-page__sell-item-row';
-
     const button = document.createElement('button');
-    button.className = 'shop-page__direct-sell-item-button shop-page__sell-item-button';
+    button.className =
+      'shop-page__direct-sell-row shop-page__sell-item-row shop-page__direct-sell-item-button shop-page__sell-item-button';
     button.type = 'button';
     button.addEventListener('click', () => this.onSelectItem(itemTypeId));
 
@@ -475,10 +478,9 @@ export class ShopDirectSellManager {
     value.className = 'row_val';
 
     button.append(label, value);
-    row.append(button);
-    this.refs.rowsRoot.append(row);
+    this.refs.rowsRoot.append(button);
     return {
-      row,
+      row: button,
       button,
       label,
       value,
@@ -504,6 +506,13 @@ export class ShopDirectSellManager {
       (this.lastSnapshot?.shop?.shelf?.sellItems ?? []).find(
         (item) => item.itemTypeId === this.selectedItemTypeId,
       ) ?? null
+    );
+  }
+
+  canKeepSelectedItem() {
+    const item = this.getSelectedItem();
+    return Boolean(
+      item && shouldShowItemInActionList(this.lastSnapshot, item, item.quantity),
     );
   }
 

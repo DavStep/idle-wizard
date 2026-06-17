@@ -34,6 +34,7 @@ const FLOW_STEPS = [
   'unselect-sage-seed-sale',
   'level-up-one',
   'grow-sage',
+  'fill-sage-seed-task',
   'fill-sage-herb-task',
   'level-up-two',
   'research-mint-seed',
@@ -102,12 +103,17 @@ const STEP_ACTIONS = {
   },
   'grow-sage': async (page) => {
     await page.clickTarget('page:garden');
-    await page.cheat('addItem', 'sageHerb', 6);
+    await page.cheat('addItem', 'sageHerb', 3);
+    await page.cheat('addItem', 'sageSeed', 10);
+  },
+  'fill-sage-seed-task': async (page) => {
+    await page.clickTarget('page:workshop');
+    await page.ensureTasksExpanded();
+    await page.completeCurrentTask('level2-sage-seeds');
   },
   'fill-sage-herb-task': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level2-sage-seeds');
     await page.completeCurrentTask('level2-sage-herb');
     await page.cheat('addGold', 40);
   },
@@ -253,6 +259,7 @@ async function prepareStepForCapture(page, stepId) {
     case 'first-fill-seed-task':
     case 'finish-seed-task':
     case 'level-up-one':
+    case 'fill-sage-seed-task':
     case 'fill-sage-herb-task':
     case 'level-up-two':
     case 'fill-mint-seed-task':

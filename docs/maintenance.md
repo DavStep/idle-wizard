@@ -191,6 +191,58 @@ Expected post-reset counts:
 After verification, publish if the reset reducer was newly added, then reopen
 play with maintenance `off`.
 
+## Full Player Data Wipe
+
+Use this only when intentionally deleting all player accounts and all
+player-owned state. This removes `player` rows too, so usernames, theme/font/color
+settings, username prompt state, and Google-derived identities are not preserved.
+Players recreate as fresh accounts on next connect.
+
+The wipe requires `locked` maintenance mode and a one-time reset key. Before
+running it, drain active clients, lock writes, and take a full player-data backup:
+
+```sh
+node scripts/maintenance.js backup-player-data-wipe \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+This backs up:
+
+```txt
+player
+player_gameplay_save
+leaderboard
+world_chat
+trade_alliance*
+player_shop*
+potion_recipe_discovery
+npc_market_price
+player_session
+player_feedback
+```
+
+Run the wipe while still locked:
+
+```sh
+node scripts/maintenance.js wipe-player-data \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --key YYYY-MM-DD-reset --post-discord --confirm-live
+```
+
+Then verify:
+
+```sh
+node scripts/maintenance.js verify-player-data-wipe \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+Expected post-wipe counts:
+
+- player, player session, player feedback, gameplay saves, leaderboard, world
+  chat, alliance rows, player shop rows, and potion discovery rows are `0`.
+- NPC market rows remain, but `npc_need`, `npc_stock`, `demand_score`, and
+  `supply_score` should be neutral/reset values.
+
 Run the idempotent player-save migration while still locked:
 
 ```sh

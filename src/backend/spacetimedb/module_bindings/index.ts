@@ -41,6 +41,7 @@ import AdminMoveTradeAllianceMemberReducer from "./admin_move_trade_alliance_mem
 import AdminResetPlayerProgressionByIdentityReducer from "./admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progression_data_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
+import AdminWipeAllPlayerDataReducer from "./admin_wipe_all_player_data_reducer";
 import AnnounceLevelUpReducer from "./announce_level_up_reducer";
 import AnnouncePrestigeReducer from "./announce_prestige_reducer";
 import AnnounceResearchReducer from "./announce_research_reducer";
@@ -592,6 +593,7 @@ const reducersSchema = __reducers(
   __reducerSchema("admin_reset_player_progression_by_identity", AdminResetPlayerProgressionByIdentityReducer),
   __reducerSchema("admin_reset_player_progression_data", AdminResetPlayerProgressionDataReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
+  __reducerSchema("admin_wipe_all_player_data", AdminWipeAllPlayerDataReducer),
   __reducerSchema("announce_level_up", AnnounceLevelUpReducer),
   __reducerSchema("announce_prestige", AnnouncePrestigeReducer),
   __reducerSchema("announce_research", AnnounceResearchReducer),

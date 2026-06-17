@@ -3,10 +3,7 @@ import {
   PLAYER_COLOR_MODE_OPTIONS,
 } from './playerColorModes.js';
 import { DEFAULT_PLAYER_FONT, PLAYER_FONT_OPTIONS } from './playerFonts.js';
-import {
-  DEFAULT_PLAYER_ICON_MODE,
-  PLAYER_ICON_MODE_OPTIONS,
-} from './playerIconModes.js';
+import { PLAYER_ICON_MODE_OPTIONS } from './playerIconModes.js';
 import {
   DEFAULT_PLAYER_PROGRESS_BAR,
   PLAYER_PROGRESS_BAR_OPTIONS,
@@ -55,7 +52,7 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
   font: Object.freeze({ [DEFAULT_PLAYER_FONT]: true }),
   color: Object.freeze({ [DEFAULT_PLAYER_COLOR_MODE]: true }),
   progressBar: Object.freeze({ [DEFAULT_PLAYER_PROGRESS_BAR]: true }),
-  icons: Object.freeze({ [DEFAULT_PLAYER_ICON_MODE]: true }),
+  icons: Object.freeze({ none: true, icons: true }),
 });
 
 const CATEGORY_BY_KEY = new Map(

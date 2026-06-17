@@ -1,5 +1,13 @@
 import { Timestamp, type Identity } from 'spacetimedb';
-import { schema, table, t, Range, type ReducerCtx, type InferSchema } from 'spacetimedb/server';
+import {
+  schema,
+  table,
+  t,
+  Range,
+  type ReducerCtx,
+  type InferSchema,
+  type Uuid,
+} from 'spacetimedb/server';
 
 const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
@@ -7,7 +15,7 @@ const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
 const DEFAULT_PLAYER_FONT = 'lexend';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
-const DEFAULT_PLAYER_ICON_MODE = 'none';
+const DEFAULT_PLAYER_ICON_MODE = 'icons';
 const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
 const MAX_REPORTED_PLAYER_LEVEL = 44;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
@@ -189,7 +197,7 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level1-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 10
+          "quantity": 6
         }
       ]
     },
@@ -200,12 +208,12 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level2-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 20
+          "quantity": 10
         },
         {
           "id": "level2-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 6
+          "quantity": 3
         }
       ]
     },
@@ -1579,7 +1587,7 @@ const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = JSON.stringify({
 });
 
 const herbCatalog = [
-  { key: 'sage', label: 'sage', growthDurationMs: 20_000 },
+  { key: 'sage', label: 'sage', growthDurationMs: 12_000 },
   { key: 'mint', label: 'mint', growthDurationMs: 25_000 },
   { key: 'nettle', label: 'nettle', growthDurationMs: 30_000 },
   { key: 'lavender', label: 'lavender', growthDurationMs: 40_000 },
@@ -4110,8 +4118,12 @@ function getTradeAllianceMember(ctx: IdleWizardReducerCtx, identity = ctx.sender
 
 function getTradeAllianceMembers(ctx: IdleWizardReducerCtx, allianceId: unknown) {
   const allianceKey = getTradeAllianceIdKey(allianceId);
+  const indexedMembers =
+    allianceId && typeof allianceId === 'object' && 'compareTo' in allianceId
+      ? ctx.db.tradeAllianceMember.byAllianceId.filter(allianceId as Uuid)
+      : ctx.db.tradeAllianceMember.iter();
 
-  return Array.from(ctx.db.tradeAllianceMember.iter()).filter(
+  return Array.from(indexedMembers).filter(
     (member) => getTradeAllianceIdKey(member.allianceId) === allianceKey,
   );
 }
@@ -4238,11 +4250,7 @@ function updateTradeAllianceMemberProfile(
     });
   }
 
-  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
-    if (!application.applicantIdentity.isEqual(identity)) {
-      continue;
-    }
-
+  for (const application of ctx.db.tradeAllianceApplication.byApplicantIdentity.filter(identity)) {
     ctx.db.tradeAllianceApplication.applicationKey.update({
       ...application,
       username,
@@ -4746,7 +4754,9 @@ function normalizeTasksGameConfigJson(
 }
 
 function shouldResetTasksGameConfigToDefault(levels: unknown[]): boolean {
-  return hasNonDefaultLevelOneTasks(levels) || hasLegacyShortTaskCatalog(levels);
+  return hasNonDefaultLevelOneTasks(levels) ||
+    hasLegacyLevelTwoSageTasks(levels) ||
+    hasLegacyShortTaskCatalog(levels);
 }
 
 function hasNonDefaultLevelOneTasks(levels: unknown[]): boolean {
@@ -4766,6 +4776,13 @@ function hasLegacyShortTaskCatalog(levels: unknown[]): boolean {
   return hasTaskConfigId(levels, 'level6-mandrake-herb') ||
     hasTaskConfigId(levels, 'level8-glowcap-herb') ||
     hasTaskConfigId(levels, 'level20-sage-seeds');
+}
+
+function hasLegacyLevelTwoSageTasks(levels: unknown[]): boolean {
+  return taskConfigListsMatch(getTaskConfigsForLevel(levels, 2), [
+    { id: 'level2-sage-seeds', itemKey: 'sageSeed', quantity: 20 },
+    { id: 'level2-sage-herb', itemKey: 'sageHerb', quantity: 6 },
+  ]);
 }
 
 function normalizeLegacyLevel5Tasks(levels: unknown[]): unknown[] {
@@ -4898,8 +4915,11 @@ function normalizeItemsGameConfigJson(
   let changed = false;
 
   for (const key of ['seeds', 'herbs', 'potions']) {
-    const normalizedList = appendMissingItemConfigRows(
-      parsedConfig[key],
+    const normalizedList = normalizeLegacyItemConfigRows(
+      appendMissingItemConfigRows(
+        parsedConfig[key],
+        defaultConfig[key],
+      ),
       defaultConfig[key],
     );
 
@@ -4910,6 +4930,40 @@ function normalizeItemsGameConfigJson(
   }
 
   return changed ? JSON.stringify(normalizedConfig) : originalJson;
+}
+
+function normalizeLegacyItemConfigRows(existingRows: unknown, defaultRows: unknown) {
+  if (!Array.isArray(existingRows) || !Array.isArray(defaultRows)) {
+    return existingRows;
+  }
+
+  const defaultRowsByKey = new Map(
+    defaultRows
+      .filter((row): row is Record<string, unknown> => isRecord(row))
+      .map((row) => [normalizeNpcMarketItemKey(String(row.key ?? '')), row]),
+  );
+  let changed = false;
+  const normalizedRows = existingRows.map((row) => {
+    if (!isRecord(row)) {
+      return row;
+    }
+
+    const itemKey = normalizeNpcMarketItemKey(String(row.key ?? ''));
+    const defaultRow = defaultRowsByKey.get(itemKey);
+
+    if (
+      itemKey === 'sageHerb' &&
+      Number(row.growthDurationMs) === 20_000 &&
+      Number(defaultRow?.growthDurationMs) === 12_000
+    ) {
+      changed = true;
+      return { ...row, growthDurationMs: 12_000 };
+    }
+
+    return row;
+  });
+
+  return changed ? normalizedRows : existingRows;
 }
 
 function appendMissingItemConfigRows(existingRows: unknown, defaultRows: unknown) {
@@ -8217,10 +8271,14 @@ function getPlayerInfoSummaryRows(ctx: any) {
       addIdentity(message.senderIdentity);
     }
 
-    for (const contribution of ctx.db.tradeAllianceQuestContribution.iter()) {
-      if (getTradeAllianceIdKey(contribution.allianceId) === ownAllianceKey) {
-        addIdentity(contribution.contributorIdentity);
+    for (const contribution of ctx.db.tradeAllianceQuestContribution.byAllianceId.filter(
+      ownMember.allianceId,
+    )) {
+      if (getTradeAllianceIdKey(contribution.allianceId) !== ownAllianceKey) {
+        continue;
       }
+
+      addIdentity(contribution.contributorIdentity);
     }
   }
 
@@ -9135,7 +9193,10 @@ function deleteAllPotionDiscoveries(ctx: IdleWizardReducerCtx) {
   }
 }
 
-function ensurePlayer(ctx: IdleWizardReducerCtx) {
+function ensurePlayer(
+  ctx: IdleWizardReducerCtx,
+  { touchLastSeen = true }: { touchLastSeen?: boolean } = {},
+) {
   const existingPlayer = ctx.db.player.identity.find(ctx.sender);
   const username = normalizeUsername(existingPlayer?.username ?? DEFAULT_USERNAME);
   const theme = normalizePlayerTheme(existingPlayer?.theme ?? DEFAULT_PLAYER_THEME);
@@ -9146,16 +9207,32 @@ function ensurePlayer(ctx: IdleWizardReducerCtx) {
   const usernamePromptSeen = Boolean(existingPlayer?.usernamePromptSeen);
 
   if (existingPlayer) {
+    const playerLevel = normalizePlayerLevel(existingPlayer.playerLevel);
+    const lastSeenAt = touchLastSeen ? ctx.timestamp : existingPlayer.lastSeenAt;
+    const shouldUpdate =
+      existingPlayer.username !== username ||
+      existingPlayer.playerLevel !== playerLevel ||
+      existingPlayer.theme !== theme ||
+      existingPlayer.font !== font ||
+      existingPlayer.colorMode !== colorMode ||
+      Boolean(existingPlayer.usernamePromptSeen) !== usernamePromptSeen ||
+      existingPlayer.connected !== true ||
+      lastSeenAt.microsSinceUnixEpoch !== existingPlayer.lastSeenAt.microsSinceUnixEpoch;
+
+    if (!shouldUpdate) {
+      return existingPlayer;
+    }
+
     return ctx.db.player.identity.update({
       ...existingPlayer,
       username,
-      playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
+      playerLevel,
       theme,
       font,
       colorMode,
       usernamePromptSeen,
       connected: true,
-      lastSeenAt: ctx.timestamp,
+      lastSeenAt,
     });
   }
 
@@ -9193,6 +9270,21 @@ function ensureLeaderboardEntry(
     : undefined;
 
   if (existingEntry) {
+    const shouldUpdate =
+      existingEntry.username !== username ||
+      existingEntry.playerLevel !== safePlayerLevel ||
+      toBigInt(existingEntry.totalIncome) !== safeExistingTotalIncome ||
+      rawExistingEntry?.dayKey !== existingEntry.dayKey ||
+      rawExistingEntry?.weekKey !== existingEntry.weekKey ||
+      rawExistingEntry?.monthKey !== existingEntry.monthKey ||
+      toBigInt(rawExistingEntry?.dailyIncome ?? 0n) !== toBigInt(existingEntry.dailyIncome) ||
+      toBigInt(rawExistingEntry?.weeklyIncome ?? 0n) !== toBigInt(existingEntry.weeklyIncome) ||
+      toBigInt(rawExistingEntry?.monthlyIncome ?? 0n) !== toBigInt(existingEntry.monthlyIncome);
+
+    if (!shouldUpdate) {
+      return existingEntry;
+    }
+
     return ctx.db.leaderboard.identity.update({
       ...existingEntry,
       username,
@@ -9332,6 +9424,24 @@ function deletePlayerShopProgressionForIdentity(
 function deleteAllPlayerGameplaySaves(ctx: IdleWizardReducerCtx) {
   for (const save of Array.from(ctx.db.playerGameplaySave.iter())) {
     ctx.db.playerGameplaySave.delete(save);
+  }
+}
+
+function deleteAllPlayerSessions(ctx: IdleWizardReducerCtx) {
+  for (const session of Array.from(ctx.db.playerSession.iter())) {
+    ctx.db.playerSession.delete(session);
+  }
+}
+
+function deleteAllPlayerFeedback(ctx: IdleWizardReducerCtx) {
+  for (const row of Array.from(ctx.db.playerFeedback.iter())) {
+    ctx.db.playerFeedback.delete(row);
+  }
+}
+
+function deleteAllPlayerRows(ctx: IdleWizardReducerCtx) {
+  for (const player of Array.from(ctx.db.player.iter())) {
+    ctx.db.player.delete(player);
   }
 }
 
@@ -9862,7 +9972,7 @@ function assertAdminMergeAccountsInactive(
 }
 
 function pruneWorldChat(ctx: IdleWizardReducerCtx) {
-  const rows = Array.from(ctx.db.worldChat.iter()).sort((left, right) => {
+  const rows = Array.from(ctx.db.worldChat.bySentAt.filter(new Range())).sort((left, right) => {
     const leftSentAt = left.sentAt.microsSinceUnixEpoch;
     const rightSentAt = right.sentAt.microsSinceUnixEpoch;
 
@@ -9957,7 +10067,7 @@ function deleteTradeAllianceState(ctx: IdleWizardReducerCtx, alliance: any) {
 }
 
 function hasWorldChatBodyForSender(ctx: IdleWizardReducerCtx, body: string): boolean {
-  for (const row of ctx.db.worldChat.iter()) {
+  for (const row of ctx.db.worldChat.bySentAt.filter(new Range())) {
     if (row.username === 'system' && row.senderIdentity.isEqual(ctx.sender) && row.body === body) {
       return true;
     }
@@ -9972,7 +10082,7 @@ function hasLevelUpAnnouncementForSender(
 ): boolean {
   const levelSuffix = ` reached level ${playerLevel}`;
 
-  for (const row of ctx.db.worldChat.iter()) {
+  for (const row of ctx.db.worldChat.bySentAt.filter(new Range())) {
     if (
       row.username === 'system' &&
       row.senderIdentity.isEqual(ctx.sender) &&
@@ -10219,14 +10329,28 @@ export const set_player_profile = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     const normalizedUsername = normalizeUsername(username);
-    assertUsernameAvailable(ctx, normalizedUsername);
-
     const safeTheme = normalizePlayerTheme(theme);
     const safeFont = normalizePlayerFont(font);
     const safeColorMode = normalizePlayerColorMode(colorMode);
     const incomingUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
     const existingPlayer = ctx.db.player.identity.find(ctx.sender);
+    const nextUsernamePromptSeen =
+      Boolean(existingPlayer?.usernamePromptSeen) || incomingUsernamePromptSeen;
+
+    if (
+      existingPlayer &&
+      existingPlayer.username === normalizedUsername &&
+      normalizePlayerTheme(existingPlayer.theme) === safeTheme &&
+      normalizePlayerFont(existingPlayer.font) === safeFont &&
+      normalizePlayerColorMode(existingPlayer.colorMode) === safeColorMode &&
+      Boolean(existingPlayer.usernamePromptSeen) === nextUsernamePromptSeen
+    ) {
+      return;
+    }
+
+    assertUsernameAvailable(ctx, normalizedUsername);
+
     let player;
 
     if (existingPlayer) {
@@ -10237,8 +10361,7 @@ export const set_player_profile = spacetimedb.reducer(
         theme: safeTheme,
         font: safeFont,
         colorMode: safeColorMode,
-        usernamePromptSeen:
-          Boolean(existingPlayer.usernamePromptSeen) || incomingUsernamePromptSeen,
+        usernamePromptSeen: nextUsernamePromptSeen,
         lastSeenAt: ctx.timestamp,
       });
     } else {
@@ -10503,21 +10626,24 @@ export const set_player_level = spacetimedb.reducer(
   (ctx, { playerLevel }) => {
     assertActivePlayerSession(ctx);
 
-    const player = ensurePlayer(ctx);
+    const player = ensurePlayer(ctx, { touchLastSeen: false });
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
 
     if (shouldIgnorePostResetReportedLevel(ctx, player, safePlayerLevel)) {
       return;
     }
 
+    if (safePlayerLevel <= player.playerLevel) {
+      ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+      return;
+    }
+
     const nextPlayer =
-      safePlayerLevel <= player.playerLevel
-        ? player
-        : ctx.db.player.identity.update({
-            ...player,
-            playerLevel: safePlayerLevel,
-            lastSeenAt: ctx.timestamp,
-          });
+      ctx.db.player.identity.update({
+        ...player,
+        playerLevel: safePlayerLevel,
+        lastSeenAt: ctx.timestamp,
+      });
 
     ensureLeaderboardEntry(ctx, nextPlayer.username, nextPlayer.playerLevel);
     updateTradeAllianceMemberProfile(
@@ -10652,7 +10778,7 @@ export const set_total_generated_gold = spacetimedb.reducer(
   (ctx, { totalGeneratedGold }) => {
     assertActivePlayerSession(ctx);
 
-    const player = ensurePlayer(ctx);
+    const player = ensurePlayer(ctx, { touchLastSeen: false });
     const capPlayerLevel = getLeaderboardCapPlayerLevel(
       ctx,
       player.identity,
@@ -12257,6 +12383,35 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     deleteAllPotionDiscoveries(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
     resetAllPlayerSharedProgress(ctx);
+
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_wipe_all_player_data = spacetimedb.reducer(
+  { resetKey: t.string() },
+  (ctx, { resetKey }) => {
+    assertGameConfigAdmin(ctx);
+    assertMaintenanceLocked(ctx);
+
+    const stateKey = `all-player-data-wipe:${normalizeMaintenanceKey(resetKey)}`;
+    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+      return;
+    }
+
+    deleteAllPlayerGameplaySaves(ctx);
+    deleteAllLeaderboardState(ctx);
+    deleteAllWorldChatMessages(ctx);
+    deleteAllTradeAllianceState(ctx);
+    deleteAllPlayerShopState(ctx);
+    deleteAllPotionDiscoveries(ctx);
+    deleteAllPlayerFeedback(ctx);
+    deleteAllPlayerSessions(ctx);
+    deleteAllPlayerRows(ctx);
+    resetNpcMarketRows(ctx, { resetStock: true });
 
     ctx.db.maintenanceState.insert({
       stateKey,

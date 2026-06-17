@@ -104,13 +104,13 @@ function createGameplayFacadeFake() {
       tile.herbKey = herb.key;
       tile.herbLabel = herb.label;
       tile.phase = 'growing';
-      tile.totalMs = 20_000;
-      tile.remainingMs = 20_000;
+      tile.totalMs = 12_000;
+      tile.remainingMs = 12_000;
       tile.progress = 0;
       tile.process = {
         phase: 'growing',
-        totalMs: 20_000,
-        remainingMs: 20_000,
+        totalMs: 12_000,
+        remainingMs: 12_000,
         progress: 0,
       };
       publish();
@@ -307,8 +307,8 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
       'seed',
     );
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
-    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('20s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('12s');
   });
 
   it('opens seed choices from selected seed text without planting', () => {
@@ -351,7 +351,7 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tile.phase).toBe('growing');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 
   it('keeps selected seed text stable across renders so taps can open choices', () => {
@@ -418,7 +418,7 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(tile.phase).toBe('growing');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 
   it('keeps blank row space inert when the selected seed count is empty', () => {

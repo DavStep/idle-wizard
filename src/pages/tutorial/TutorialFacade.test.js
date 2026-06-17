@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TutorialFacade } from './TutorialFacade.js';
 import { TUTORIAL_STORAGE_KEY } from './managers/TutorialProgressManager.js';
 import { TUTORIAL_HINT_REMINDER_MS } from './managers/TutorialReminderManager.js';
+import { TUTORIAL_LESSON_THREE_STUCK_MS } from './managers/TutorialStepManager.js';
 
 const UI_SCALE = 3;
 
@@ -82,7 +83,7 @@ function createLevelOneObjectiveSnapshot() {
           {
             taskId: 'level1-sage-seeds',
             itemKey: 'sageSeed',
-            requiredQuantity: 10,
+            requiredQuantity: 6,
             progressQuantity: 1,
             canFill: true,
             canComplete: false,
@@ -125,9 +126,9 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
           {
             taskId: 'level2-sage-herb',
             itemKey: 'sageHerb',
-            requiredQuantity: 6,
+            requiredQuantity: 3,
             progressQuantity: 2,
-            remainingQuantity: 4,
+            remainingQuantity: 1,
             canFill: false,
             canComplete: false,
             completed: false,
@@ -541,6 +542,71 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
+  it('delays lesson three target help until the player is stuck', () => {
+    let now = 1_000;
+    const snapshot = createLevelTwoSageTaskSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      seedSummoning: { canSummon: true },
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 0 }],
+        plot: { tiles: [] },
+      },
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costGold: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 3,
+              progressQuantity: 0,
+              remainingQuantity: 3,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+    const stage = document.createElement('section');
+    const summonButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage(),
+      now: () => now,
+    });
+
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(summonButton, { left: 140, top: 420, width: 420, height: 70 });
+    stage.append(summonButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('grow-sage');
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
+
+    now += TUTORIAL_LESSON_THREE_STUCK_MS;
+    facade.refresh();
+
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+
+    facade.unmount();
+  });
+
   it('hides the lesson pointer while the sage plot is only growing', () => {
     let snapshot = createLevelTwoSageTaskSnapshot();
     const stage = document.createElement('section');
@@ -565,10 +631,10 @@ describe('TutorialFacade', () => {
     facade.mount(stage);
     facade.refresh();
 
-    expect(facade.activeStep?.id).toBe('fill-sage-herb-task');
+    expect(facade.activeStep?.id).toBe('grow-sage');
     expect(facade.activeStep?.targetId).toBe('garden:plot:1:label');
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
-    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
 
     snapshot = createLevelTwoSageTaskSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 0 }],

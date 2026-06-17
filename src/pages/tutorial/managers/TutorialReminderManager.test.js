@@ -147,6 +147,38 @@ describe('TutorialReminderManager', () => {
     });
   });
 
+  it('uses a step-specific reminder delay when supplied', () => {
+    const clock = createClock();
+    const manager = new TutorialReminderManager({
+      now: clock.now,
+      visibleMs: 100,
+      reminderMs: 500,
+    });
+    const prompt = {
+      id: 'grow-sage',
+      targetId: 'workshop:summonSeed',
+      text: 'summon seed',
+      reminderMs: 3500,
+    };
+
+    expect(manager.getAttentionState({ step: prompt })).toEqual({
+      shouldNotify: false,
+      nextRefreshAt: 3500,
+    });
+
+    clock.tick(3499);
+    expect(manager.getAttentionState({ step: prompt })).toEqual({
+      shouldNotify: false,
+      nextRefreshAt: 3500,
+    });
+
+    clock.tick(1);
+    expect(manager.getAttentionState({ step: prompt })).toEqual({
+      shouldNotify: true,
+      nextRefreshAt: null,
+    });
+  });
+
   it('can discard an interrupted prompt so it shows again after a blocking dialog closes', () => {
     const clock = createClock();
     const manager = new TutorialReminderManager({

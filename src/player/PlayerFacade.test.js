@@ -15,7 +15,7 @@ describe('PlayerFacade', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
-      iconMode: 'none',
+      iconMode: 'icons',
       progressBar: 'regular',
     });
   });
@@ -32,7 +32,7 @@ describe('PlayerFacade', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
-      iconMode: 'none',
+      iconMode: 'icons',
       progressBar: 'regular',
     });
   });
@@ -129,7 +129,7 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');
 
     playerFacade.setIconMode('unknown');
-    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(playerFacade.getSnapshot().iconMode).toBe('icons');
   });
 
   it('normalizes progress bar', () => {

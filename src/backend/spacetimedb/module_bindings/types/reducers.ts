@@ -13,6 +13,7 @@ import AdminMoveTradeAllianceMemberReducer from "../admin_move_trade_alliance_me
 import AdminResetPlayerProgressionByIdentityReducer from "../admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "../admin_reset_player_progression_data_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "../admin_set_trade_alliance_member_role_reducer";
+import AdminWipeAllPlayerDataReducer from "../admin_wipe_all_player_data_reducer";
 import AnnounceLevelUpReducer from "../announce_level_up_reducer";
 import AnnouncePrestigeReducer from "../announce_prestige_reducer";
 import AnnounceResearchReducer from "../announce_research_reducer";
@@ -63,6 +64,7 @@ export type AdminMoveTradeAllianceMemberParams = __Infer<typeof AdminMoveTradeAl
 export type AdminResetPlayerProgressionByIdentityParams = __Infer<typeof AdminResetPlayerProgressionByIdentityReducer>;
 export type AdminResetPlayerProgressionDataParams = __Infer<typeof AdminResetPlayerProgressionDataReducer>;
 export type AdminSetTradeAllianceMemberRoleParams = __Infer<typeof AdminSetTradeAllianceMemberRoleReducer>;
+export type AdminWipeAllPlayerDataParams = __Infer<typeof AdminWipeAllPlayerDataReducer>;
 export type AnnounceLevelUpParams = __Infer<typeof AnnounceLevelUpReducer>;
 export type AnnouncePrestigeParams = __Infer<typeof AnnouncePrestigeReducer>;
 export type AnnounceResearchParams = __Infer<typeof AnnounceResearchReducer>;

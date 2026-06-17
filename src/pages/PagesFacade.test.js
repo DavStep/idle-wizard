@@ -77,7 +77,7 @@ function createGameplayFacadeFake() {
         },
         color: { monochrome: true, resources: false },
         progressBar: { regular: true, gradient: false },
-        icons: { none: true, icons: false },
+        icons: { none: true, icons: true },
       },
     },
     inventory: [],
@@ -120,9 +120,9 @@ function createGameplayFacadeFake() {
             itemKey: 'sageSeed',
             itemLabel: 'sage seed',
             itemKind: 'seed',
-            requiredQuantity: 10,
+            requiredQuantity: 6,
             progressQuantity: 0,
-            remainingQuantity: 10,
+            remainingQuantity: 6,
             ownedQuantity: 0,
             progress: 0,
             maxed: false,
@@ -1464,13 +1464,13 @@ function createGameplayFacadeFake() {
       tile.herbKey = herb.key;
       tile.herbLabel = herb.label;
       tile.phase = 'growing';
-      tile.totalMs = 20_000;
-      tile.remainingMs = 20_000;
+      tile.totalMs = 12_000;
+      tile.remainingMs = 12_000;
       tile.progress = 0;
       tile.process = {
         phase: 'growing',
-        totalMs: 20_000,
-        remainingMs: 20_000,
+        totalMs: 12_000,
+        remainingMs: 12_000,
         progress: 0,
       };
       publish();
@@ -1480,7 +1480,7 @@ function createGameplayFacadeFake() {
         tileNumber,
         seed,
         herb,
-        durationMs: 20_000,
+        durationMs: 12_000,
       };
     },
     selectGardenSeed: (tileNumber, seedTypeId) => {
@@ -2564,7 +2564,7 @@ function createPlayerFacadeFake(
     shouldPromptForUsername = false,
     initialColorMode = 'monochrome',
     initialFont = 'lexend',
-    initialIconMode = 'none',
+    initialIconMode = 'icons',
     initialProgressBar = 'regular',
   } = {},
 ) {
@@ -3595,7 +3595,7 @@ describe('PagesFacade', () => {
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(task.progressQuantity).toBe(2);
-    expect(task.remainingQuantity).toBe(8);
+    expect(task.remainingQuantity).toBe(4);
     expect(snapshot.seedInventory[0].quantity).toBe(0);
   });
 
@@ -3757,7 +3757,7 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summaryRow?.textContent).toBe('sage seed0/10fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/6fill');
     expect(
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
     ).toBe('0%');
@@ -3810,7 +3810,7 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summaryRow?.textContent).toBe('sage seed0/10fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/6fill');
     expect(count?.textContent).toBe('0/2');
     expect(toggle?.hidden).toBe(false);
     expect(toggle?.textContent).toBe('expand');
@@ -3828,7 +3828,7 @@ describe('PagesFacade', () => {
     expect(list.hidden).toBe(false);
     expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(1);
     expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
-    expect(summaryRow?.textContent).toBe('sage seed0/10fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/6fill');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
 
@@ -4063,6 +4063,36 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__action-bar')?.textContent).not.toContain('found');
   });
 
+  it('shows and hides a short mana warning when seed summon is pressed too early', () => {
+    vi.useFakeTimers();
+    try {
+      const stage = document.createElement('section');
+      const gameplayFacade = createGameplayFacadeFake();
+      const pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake(),
+      });
+
+      pagesFacade.mount(stage);
+
+      const button = stage.querySelector('.workshop-page__summon-button');
+      expect(button?.disabled).toBe(false);
+      expect(button?.getAttribute('aria-disabled')).toBe('true');
+
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
+        'not enough mana',
+      );
+
+      vi.advanceTimersByTime(1200);
+
+      expect(stage.querySelector('.workshop-page__flyout')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shows active seed summon multiplier in the Workshop action bar', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -4202,7 +4232,7 @@ describe('PagesFacade', () => {
       'researched',
       'free',
       'researched',
-      'free',
+      'researched',
     ]);
     expect(stage.querySelector('.room-top-panel__feedback-open')?.textContent).toBe(
       'feedback',
@@ -4628,23 +4658,16 @@ describe('PagesFacade', () => {
     const iconsButton = stage.querySelector(
       '.room-top-panel__icon-button[data-icon-mode="icons"]',
     );
-    const iconsResearchButton = iconsButton
-      ?.closest('.room-top-panel__visual-option')
-      ?.querySelector('.room-top-panel__visual-option-price');
-
-    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(noIconsButton.getAttribute('aria-checked')).toBe('false');
+    expect(iconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(noIconsButton.disabled).toBe(false);
     expect(iconsButton.disabled).toBe(false);
 
-    iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    noIconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().iconMode).toBe('none');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(false);
-
-    iconsResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.none).toBe(true);
     expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(true);
-    expect(iconsResearchButton?.textContent).toBe('researched');
 
     iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -7608,9 +7631,9 @@ describe('PagesFacade', () => {
       'seed',
     );
     expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('');
-    expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
+    expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
     expect(rows[0].querySelector('.garden-page__plot-action-label')?.textContent).toBe('growing');
-    expect(rows[0].querySelector('.garden-page__plot-action-timer')?.textContent).toBe('20s');
+    expect(rows[0].querySelector('.garden-page__plot-action-timer')?.textContent).toBe('12s');
     expect(rows[0].classList.contains('is-ready')).toBe(false);
     expect(rows[0].querySelector('.garden-page__plot-progress')?.hidden).toBe(false);
     expect(
@@ -7721,7 +7744,7 @@ describe('PagesFacade', () => {
 
     expect(seedPopup.hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage seed');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 20s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 
   it('changes room pages from Research controls with horizontal touch swipes', () => {

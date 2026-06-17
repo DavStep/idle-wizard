@@ -9,6 +9,8 @@ const MANA_TONIC_SAGE_COUNT = 3;
 const LEVEL_ONE_SEED_TASK_ID = 'level1-sage-seeds';
 const LEVEL_ONE_GOLD_TARGET = 10;
 const TUTORIAL_SELL_GOLD_EACH = LEVEL_ONE_GOLD_TARGET;
+const LEVEL_TWO_SAGE_GROW_TARGET = 3;
+export const TUTORIAL_LESSON_THREE_STUCK_MS = 3500;
 
 const LEVEL_ONE_STEP_IDS = [
   'intro-welcome',
@@ -30,6 +32,7 @@ const LEVEL_ONE_STEP_IDS = [
 
 const LEVEL_TWO_STEP_IDS = [
   'grow-sage',
+  'fill-sage-seed-task',
   'fill-sage-herb-task',
   'level-up-two',
 ];
@@ -440,12 +443,12 @@ export const TUTORIAL_STEPS = [
   {
     id: 'grow-sage',
     kind: 'objective',
-    pageId: 'garden',
-    objectiveText: 'grow sage in garden',
+    cueMode: 'delayed-target',
+    objectiveText: 'grow sage 3 times',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       if (
         getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 &&
-        !hasGrownSage(snapshot) &&
+        !hasGrownEnoughSageForLesson(snapshot) &&
         !hasActiveCrop(snapshot, SAGE_SEED_KEY)
       ) {
         if (currentPageId !== 'workshop') {
@@ -453,6 +456,10 @@ export const TUTORIAL_STEPS = [
         }
 
         return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+      }
+
+      if (currentPageId !== 'garden') {
+        return 'page:garden';
       }
 
       const tile = getGrowTile(snapshot, SAGE_SEED_KEY);
@@ -478,7 +485,7 @@ export const TUTORIAL_STEPS = [
     getHintText: ({ currentPageId, dom, snapshot }) => {
       if (
         getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 &&
-        !hasGrownSage(snapshot) &&
+        !hasGrownEnoughSageForLesson(snapshot) &&
         !hasActiveCrop(snapshot, SAGE_SEED_KEY)
       ) {
         if (currentPageId !== 'workshop') {
@@ -486,6 +493,10 @@ export const TUTORIAL_STEPS = [
         }
 
         return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
+      }
+
+      if (currentPageId !== 'garden') {
+        return 'open garden';
       }
 
       const tile = getGrowTile(snapshot, SAGE_SEED_KEY);
@@ -507,20 +518,46 @@ export const TUTORIAL_STEPS = [
         : 'choose sage seed';
     },
     getProgress: ({ snapshot }) => ({
-      value: hasGrownSage(snapshot) ? 1 : 0,
-      max: 1,
+      value: getLessonSageGrowCount(snapshot),
+      max: LEVEL_TWO_SAGE_GROW_TARGET,
     }),
-    getProgressLabel: ({ snapshot }) => `${hasGrownSage(snapshot) ? 1 : 0}/1 sage`,
+    getProgressLabel: ({ snapshot }) =>
+      `${getLessonSageGrowCount(snapshot)}/${LEVEL_TWO_SAGE_GROW_TARGET} sage`,
+    getReminderKey: () => 'lesson-three-sage-actions',
+    getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
     isPaused: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      !hasGrownSage(snapshot) &&
+      !hasGrownEnoughSageForLesson(snapshot) &&
       isWaitingForCrop(snapshot, SAGE_SEED_KEY),
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3 || hasGrownSage(snapshot),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 || hasGrownEnoughSageForLesson(snapshot),
+  },
+  {
+    id: 'fill-sage-seed-task',
+    kind: 'objective',
+    cueMode: 'delayed-target',
+    objectiveText: 'fill the sage seed task',
+    getTargetId: ({ currentPageId, dom, snapshot }) =>
+      getSeedTaskTargetId({ currentPageId, dom, snapshot, itemKey: SAGE_SEED_KEY }),
+    getHintText: ({ currentPageId, dom, snapshot }) =>
+      getSeedTaskHintText({ currentPageId, dom, snapshot, itemKey: SAGE_SEED_KEY }),
+    getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)),
+    getProgressLabel: ({ snapshot }) =>
+      getTaskProgressLabel(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY), 'sage seeds'),
+    getReminderKey: () => 'lesson-three-sage-actions',
+    getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 2 &&
+      Boolean(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)) &&
+      !hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
   },
   {
     id: 'fill-sage-herb-task',
     kind: 'objective',
+    cueMode: 'delayed-target',
     objectiveText: 'fill the sage level task',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       const task = getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
@@ -571,6 +608,8 @@ export const TUTORIAL_STEPS = [
     getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)),
     getProgressLabel: ({ snapshot }) =>
       getTaskProgressLabel(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY), 'sage'),
+    getReminderKey: () => 'lesson-three-sage-actions',
+    getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
     isPaused: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
       (getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
@@ -1062,8 +1101,12 @@ export class TutorialStepManager {
       }
     }
 
-    if (hasGrownSage(snapshot)) {
+    if (hasGrownEnoughSageForLesson(snapshot)) {
       this.completeSteps(['grow-sage']);
+    }
+
+    if (currentLevel === 2 && hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY)) {
+      this.completeSteps(['fill-sage-seed-task']);
     }
 
     if (hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY)) {
@@ -1128,6 +1171,7 @@ export class TutorialStepManager {
         progressLabel: step.getProgressLabel?.(context) ?? '',
         stepLabel,
         reminderKey: step.getReminderKey?.(context) ?? null,
+        reminderMs: getReminderMs(step, context),
         revealTokens: getRevealTokens(step),
         allowTargetClick: step.allowTargetClick === true,
         cueMode: step.cueMode ?? 'active',
@@ -1155,6 +1199,7 @@ export class TutorialStepManager {
       allowTargetClick: step.allowTargetClick === true,
       showPointer: step.showPointer !== false,
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
+      reminderMs: getReminderMs(step, { ...context, targetId, text, hintText }),
       revealTokens: getRevealTokens(step),
       cueMode: step.cueMode ?? 'active',
       effect: step.effect,
@@ -1182,6 +1227,11 @@ function getLessonTitle(stepId) {
 
 function getRevealTokens(step) {
   return Array.isArray(step?.revealTokens) ? step.revealTokens : null;
+}
+
+function getReminderMs(step, context) {
+  const reminderMs = step?.getReminderMs?.(context) ?? step?.reminderMs ?? null;
+  return Number.isFinite(reminderMs) && reminderMs >= 0 ? reminderMs : null;
 }
 
 function hasCompletedResearch(snapshot, researchId) {
@@ -1443,12 +1493,20 @@ function hasCompletedTaskForItem(snapshot, itemKey) {
   return getCurrentTasks(snapshot).some((task) => task.itemKey === itemKey && task.completed);
 }
 
-function hasGrownSage(snapshot) {
-  return (
-    getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
-    hasTaskProgressForItem(snapshot, SAGE_HERB_KEY) ||
-    hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY)
+function getLessonSageGrowCount(snapshot) {
+  const task = getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
+  const taskCount = task?.completed
+    ? Number(task.requiredQuantity) || LEVEL_TWO_SAGE_GROW_TARGET
+    : Number(task?.progressQuantity) || 0;
+
+  return Math.min(
+    LEVEL_TWO_SAGE_GROW_TARGET,
+    Math.max(0, Math.floor(getItemQuantity(snapshot, SAGE_HERB_KEY) + taskCount)),
   );
+}
+
+function hasGrownEnoughSageForLesson(snapshot) {
+  return getLessonSageGrowCount(snapshot) >= LEVEL_TWO_SAGE_GROW_TARGET;
 }
 
 function hasActiveCrop(snapshot, seedKey) {
