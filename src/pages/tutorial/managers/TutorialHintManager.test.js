@@ -357,7 +357,7 @@ describe('TutorialHintManager', () => {
       expect(button?.getAttribute('aria-expanded')).toBe('true');
       expect(
         button?.querySelector('.tutorial-layer__objective-button-label')?.textContent,
-      ).toBe('');
+      ).toBe('hide');
       expect(button?.hasAttribute('data-speaking')).toBe(true);
       expect(lesson?.hidden).toBe(false);
       expect(lesson?.textContent).toContain('lesson 1: introduction');
@@ -395,7 +395,7 @@ describe('TutorialHintManager', () => {
     }
   });
 
-  it('omits the visible lesson close label', () => {
+  it('shows a visible hide label on the open lesson toggle', () => {
     const stage = document.createElement('section');
     const manager = new TutorialHintManager();
 
@@ -417,6 +417,9 @@ describe('TutorialHintManager', () => {
     const lesson = stage.querySelector('.tutorial-layer__lesson');
 
     expect(lesson?.querySelector('.tutorial-layer__lesson-close')).toBeNull();
+    expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
+      'hide',
+    );
 
     button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -467,7 +470,7 @@ describe('TutorialHintManager', () => {
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
     expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
-      '',
+      'hide',
     );
   });
 

@@ -28,11 +28,11 @@ export class WorkshopTaskManager {
 
     this.root = document.createElement('section');
     this.root.className = 'workshop-page__tasks style-box is-collapsed';
-    this.root.setAttribute('aria-label', 'Tasks');
+    this.root.setAttribute('aria-label', 'level up needs');
 
     this.refs.title = document.createElement('div');
     this.refs.title.className = 'style-box__title';
-    this.refs.title.textContent = 'tasks';
+    this.refs.title.textContent = 'level up needs';
 
     this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'workshop-page__tasks-summary';
@@ -122,7 +122,12 @@ export class WorkshopTaskManager {
         ? 'done'
         : `${taskSnapshot.level.completedTasks}/${taskSnapshot.level.totalTasks}`,
     );
-    this.refs.count.setAttribute('aria-label', this.refs.count.textContent);
+    this.refs.count.setAttribute(
+      'aria-label',
+      taskSnapshot.completedAllLevels
+        ? 'all level up needs met'
+        : `${taskSnapshot.level.completedTasks} of ${taskSnapshot.level.totalTasks} level up needs met`,
+    );
     this.root.classList.toggle('is-all-complete', taskSnapshot.completedAllLevels);
 
     for (const task of listTasks) {
@@ -166,13 +171,13 @@ export class WorkshopTaskManager {
       this.refs.summaryTask.root.hidden = true;
       this.refs.summary.setAttribute(
         'aria-label',
-        completedAllLevels ? 'all tasks done' : 'no tasks',
+        completedAllLevels ? 'all level up needs met' : 'no level up needs',
       );
       return;
     }
 
     this.refs.summaryTask.root.hidden = false;
-    this.refs.summary.setAttribute('aria-label', task.itemLabel);
+    this.refs.summary.setAttribute('aria-label', `${task.itemLabel} needed for level up`);
     this.renderTaskRow(this.refs.summaryTask, task);
   }
 
@@ -258,7 +263,7 @@ export class WorkshopTaskManager {
 
     const label = document.createElement('span');
     label.className = 'workshop-page__level-complete-label';
-    label.textContent = 'level up';
+    label.textContent = 'pay gold';
 
     const cost = document.createElement('span');
     cost.className = 'workshop-page__level-complete-cost';
@@ -266,7 +271,7 @@ export class WorkshopTaskManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__level-complete-button';
     button.type = 'button';
-    button.textContent = 'complete';
+    button.textContent = 'level up';
     button.addEventListener('click', () => this.onLevelCompleteButton());
 
     root.append(label, cost, button);
@@ -325,7 +330,7 @@ export class WorkshopTaskManager {
     this.setText(row.button, buttonText);
     row.button.disabled = disabled;
     row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-    row.button.setAttribute('aria-label', `${buttonText} ${task.itemLabel} task`);
+    row.button.setAttribute('aria-label', `${buttonText} ${task.itemLabel} for level up`);
     setNotificationBadge(row.button, !disabled);
     row.fill.style.width = `${Math.max(0, Math.min(1, task.progress)) * 100}%`;
   }
@@ -354,7 +359,7 @@ export class WorkshopTaskManager {
     row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     row.button.setAttribute(
       'aria-label',
-      `complete level ${this.currentLevelCompletion.level} for ${costText}`,
+      `level up to ${this.currentLevelCompletion.level + 1} for ${costText}`,
     );
     setNotificationBadge(row.button, !disabled);
   }
@@ -376,10 +381,10 @@ export class WorkshopTaskManager {
     }
 
     if (task.canComplete) {
-      return 'complete';
+      return 'turn in';
     }
 
-    return 'fill';
+    return 'bring';
   }
 
   setText(element, text) {
@@ -423,7 +428,7 @@ export class WorkshopTaskManager {
     this.refs.toggleButton?.setAttribute('aria-expanded', listExpanded ? 'true' : 'false');
     this.refs.toggleButton?.setAttribute(
       'aria-label',
-      listExpanded ? 'collapse tasks' : 'expand tasks',
+      listExpanded ? 'collapse level up needs' : 'expand level up needs',
     );
     this.setText(this.refs.toggleButton, listExpanded ? 'collapse' : 'expand');
 

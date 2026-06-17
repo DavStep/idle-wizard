@@ -1260,7 +1260,7 @@ body {
 
 .tutorial-layer__objective-button-label {
   position: absolute;
-  right: -8px;
+  right: 4px;
   bottom: 6px;
   z-index: 2;
   display: inline-block;
@@ -1276,6 +1276,10 @@ body {
   background: var(--style-surface);
   border: var(--style-border);
   pointer-events: none;
+}
+
+.tutorial-layer__objective-button-label[hidden] {
+  display: none;
 }
 
 .tutorial-layer__objective-button-image {

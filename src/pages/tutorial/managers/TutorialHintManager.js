@@ -26,6 +26,7 @@ const TYPEWRITER_INTERVAL_MS = 12;
 const TYPEWRITER_CHARS_PER_TICK = 2;
 const POINTER_HIDE_MS = 180;
 const OBJECTIVE_BUTTON_COLLAPSED_LABEL = 'help';
+const OBJECTIVE_BUTTON_EXPANDED_LABEL = 'hide';
 const PORTRAIT_WIDTH = 70;
 const PORTRAIT_HEIGHT = 91;
 const PORTRAIT_LEFT_GAP = 4;
@@ -680,11 +681,19 @@ export class TutorialHintManager {
     const expanded = Boolean(this.objectivePanelOpen && this.objective && !this.objective.hidden);
     this.objectiveButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     this.objectiveButton.setAttribute('aria-label', expanded ? 'hide lesson' : 'open lesson');
+    this.setObjectiveButtonLabel(
+      expanded ? OBJECTIVE_BUTTON_EXPANDED_LABEL : OBJECTIVE_BUTTON_COLLAPSED_LABEL,
+    );
+  }
 
-    if (this.objectiveButtonLabel) {
-      this.objectiveButtonLabel.hidden = expanded;
-      this.objectiveButtonLabel.textContent = expanded ? '' : OBJECTIVE_BUTTON_COLLAPSED_LABEL;
+  setObjectiveButtonLabel(label) {
+    if (!this.objectiveButtonLabel) {
+      return;
     }
+
+    const nextLabel = typeof label === 'string' ? label.trim() : '';
+    this.objectiveButtonLabel.hidden = nextLabel.length === 0;
+    this.objectiveButtonLabel.textContent = nextLabel;
   }
 
   openObjectivePanel() {

@@ -3820,6 +3820,7 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const tasks = stage.querySelector('.workshop-page__tasks');
+    const title = tasks?.querySelector('.style-box__title');
     const summary = stage.querySelector('.workshop-page__tasks-summary');
     const count = stage.querySelector('.workshop-page__tasks-count');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
@@ -3827,7 +3828,8 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summaryRow?.textContent).toBe('sage seed0/5fill');
+    expect(title?.textContent).toBe('level up needs');
+    expect(summaryRow?.textContent).toBe('sage seed0/5bring');
     expect(
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
     ).toBe('0%');
@@ -3873,6 +3875,7 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const tasks = stage.querySelector('.workshop-page__tasks');
+    const title = tasks?.querySelector('.style-box__title');
     const summary = stage.querySelector('.workshop-page__tasks-summary');
     const count = stage.querySelector('.workshop-page__tasks-count');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
@@ -3880,7 +3883,8 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
 
     expect(tasks).not.toBeNull();
-    expect(summaryRow?.textContent).toBe('sage seed0/5fill');
+    expect(title?.textContent).toBe('level up needs');
+    expect(summaryRow?.textContent).toBe('sage seed0/5bring');
     expect(count?.textContent).toBe('0/2');
     expect(toggle?.hidden).toBe(false);
     expect(toggle?.textContent).toBe('expand');
@@ -3898,7 +3902,7 @@ describe('PagesFacade', () => {
     expect(list.hidden).toBe(false);
     expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(1);
     expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
-    expect(summaryRow?.textContent).toBe('sage seed0/5fill');
+    expect(summaryRow?.textContent).toBe('sage seed0/5bring');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
 
@@ -4098,7 +4102,7 @@ describe('PagesFacade', () => {
     const button = stage.querySelector('.workshop-page__level-complete-button');
 
     expect(completion?.hidden).toBe(false);
-    expect(completion?.textContent).toBe('level up20 goldcomplete');
+    expect(completion?.textContent).toBe('pay gold20 goldlevel up');
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
     expect(button?.disabled).toBe(false);
 
