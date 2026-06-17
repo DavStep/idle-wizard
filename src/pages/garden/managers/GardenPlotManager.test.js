@@ -23,7 +23,7 @@ function createGameplayFacadeFake() {
         tileCosts: [0],
         nextTileNumber: null,
         nextTileCost: null,
-        harvestSeconds: 10,
+        harvestSeconds: 3,
         tiles: [
           {
             tileNumber: 1,
@@ -166,13 +166,13 @@ function createGameplayFacadeFake() {
       }
 
       tile.phase = 'harvesting';
-      tile.totalMs = 10_000;
-      tile.remainingMs = 10_000;
+      tile.totalMs = 3_000;
+      tile.remainingMs = 3_000;
       tile.progress = 0;
       tile.process = {
         phase: 'harvesting',
-        totalMs: 10_000,
-        remainingMs: 10_000,
+        totalMs: 3_000,
+        remainingMs: 3_000,
         progress: 0,
       };
       publish();
@@ -408,6 +408,43 @@ describe('GardenPlotManager', () => {
     expect(tile.phase).toBe('empty');
   });
 
+  it('shows the selected plot and seed while the seed picker is open', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const tile = snapshot.garden.plot.tiles[0];
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 2,
+      selectedSeedKey: 'mintSeed',
+      selectedSeedLabel: 'mint seed',
+      phase: 'empty',
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-label')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = parent.querySelector('.garden-page__seed-popup');
+    const emptyButton = parent.querySelector('[aria-label="set plot seed to empty"]');
+    const mintButton = parent.querySelector('[aria-label="select mint seed, owned 1"]');
+
+    expect(popup.hidden).toBe(false);
+    expect(plotRow.classList.contains('is-selected')).toBe(true);
+    expect(emptyButton.getAttribute('aria-pressed')).toBe('false');
+    expect(mintButton.getAttribute('aria-pressed')).toBe('true');
+
+    popup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(true);
+    expect(plotRow.classList.contains('is-selected')).toBe(false);
+    expect(mintButton.getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('plants from the full right action slot when a tap misses the text', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -618,11 +655,11 @@ describe('GardenPlotManager', () => {
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 10s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 3s');
     expect(plotRow.querySelector('.garden-page__plot-action-label')?.textContent).toBe(
       'harvesting',
     );
-    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('10s');
+    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('3s');
   });
 
   it('shows full progress when a plot can be harvested', () => {

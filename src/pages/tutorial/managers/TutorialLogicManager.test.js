@@ -7,7 +7,7 @@ function createStep(overrides = {}) {
     id: 'finish-seed-task',
     kind: 'objective',
     targetId: 'task:level1-sage-seeds',
-    objectiveText: 'summon seeds and fill the level task',
+    objectiveText: 'summon and turn in sage seeds for the next level',
     stepLabel: '7/25',
     progress: { value: 1, max: 5 },
     progressLabel: '1/5 seeds',
@@ -81,6 +81,85 @@ describe('TutorialLogicManager', () => {
         target,
         showPointer: true,
       },
+    });
+  });
+
+  it('keeps focus-target steps collapsed while pointing at the target', () => {
+    const target = {};
+    const step = createStep({
+      id: 'intro-username',
+      kind: 'prompt',
+      targetId: 'top:username',
+      text: "i don't need your name, but it would be nice to set it here.",
+      progress: null,
+      progressLabel: '',
+      cueMode: 'focus-target',
+      revealTokens: ['top'],
+    });
+    const { manager, reminderManager } = createManager({ step });
+
+    const viewState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => target,
+      lessonPanelOpen: false,
+    });
+
+    expect(viewState).toMatchObject({
+      kind: 'lesson',
+      lesson: {
+        id: 'intro-username',
+        autoOpen: false,
+        forceOpen: false,
+      },
+      cue: {
+        kind: 'target-cue',
+        target,
+        showPointer: true,
+      },
+    });
+    expect(reminderManager.clearVisibleCount).toBe(1);
+  });
+
+  it('hides focus-target cues while the lesson is open until show me is requested', () => {
+    const target = {};
+    const step = createStep({
+      id: 'intro-username',
+      kind: 'prompt',
+      targetId: 'top:username',
+      text: "i don't need your name, but it would be nice to set it here.",
+      progress: null,
+      progressLabel: '',
+      cueMode: 'focus-target',
+      revealTokens: ['top'],
+    });
+    const { manager } = createManager({ step });
+
+    expect(
+      manager.getViewState({
+        snapshot: {},
+        dom: {},
+        targetResolver: () => target,
+        lessonPanelOpen: true,
+      }).cue,
+    ).toEqual({
+      kind: 'none',
+      lessonAttention: false,
+      nextRefreshAt: null,
+    });
+
+    expect(
+      manager.getViewState({
+        snapshot: {},
+        dom: {},
+        targetResolver: () => target,
+        lessonPanelOpen: true,
+        requestedTargetGuidanceStepId: 'intro-username',
+      }).cue,
+    ).toMatchObject({
+      kind: 'target-cue',
+      target,
+      showPointer: true,
     });
   });
 

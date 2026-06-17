@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import { setNotificationVisibilityPolicy } from '../shared/notificationBadge.js';
 import { TutorialFacade } from './TutorialFacade.js';
 import { TUTORIAL_STORAGE_KEY } from './managers/TutorialProgressManager.js';
 import { TUTORIAL_HINT_REMINDER_MS } from './managers/TutorialReminderManager.js';
@@ -142,6 +143,7 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
 
 describe('TutorialFacade', () => {
   afterEach(() => {
+    setNotificationVisibilityPolicy(null);
     document.body.textContent = '';
   });
 
@@ -260,6 +262,43 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
+  it('publishes notification suppression only while the active step is blocking', () => {
+    let snapshot = createLevelOneSnapshot();
+    const policies = [];
+    const stage = document.createElement('section');
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage(),
+      onNotificationVisibilityPolicyChange: (policy) => policies.push(policy),
+    });
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(policies.at(-1)).toEqual({
+      active: true,
+      allowedTutorialIds: [],
+    });
+
+    snapshot = createLevelThreeSnapshot();
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('research-mint-seed');
+    expect(facade.activeStep?.cueMode).toBe('passive');
+    expect(policies.at(-1)).toBeNull();
+
+    facade.unmount();
+  });
+
   it('hides the lesson when an app blocker appears after mount', async () => {
     const stage = document.createElement('section');
     const usernameButton = document.createElement('button');
@@ -300,7 +339,7 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('shows Elara pointing at the username input while settings is open', async () => {
+  it('keeps the rename lesson collapsed while pointing at username and settings input', async () => {
     const stage = document.createElement('section');
     const usernameButton = document.createElement('button');
     const settings = document.createElement('section');
@@ -337,19 +376,15 @@ describe('TutorialFacade', () => {
 
     expect(facade.activeStep?.id).toBe('intro-username');
     expect(stage.dataset.tutorialReveal).toBe('top');
-
-    stage.querySelector('.tutorial-layer__lesson-button')?.dispatchEvent(
-      new window.MouseEvent('click', { bubbles: true }),
-    );
-
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
 
     settings.hidden = false;
     await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
 
     expect(facade.activeStep?.targetId).toBe('top:username-input');
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
     expect(stage.dataset.tutorialReveal).toBe('top');
 
@@ -358,77 +393,57 @@ describe('TutorialFacade', () => {
 
     expect(facade.activeStep?.targetId).toBe('top:username');
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
     expect(stage.dataset.tutorialReveal).toBe('top');
 
     facade.unmount();
   });
 
-  it('keeps typed lesson text fixed after closing the username settings dialog', () => {
-    vi.useFakeTimers();
-
-    try {
-      const stage = document.createElement('section');
-      const usernameButton = document.createElement('button');
-      const settings = document.createElement('section');
-      const usernameInput = document.createElement('input');
-      const gameplayFacade = {
-        getSnapshot: () => createLevelOneSnapshot(),
-        subscribe: () => () => {},
-      };
-      const facade = new TutorialFacade({
-        gameplayFacade,
-        getCurrentPageId: () => 'workshop',
-        storage: createMemoryStorage({
-          [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-            completedStepIds: ['intro-welcome'],
-          }),
+  it('reopens rename target guidance after the player closes the help panel', () => {
+    const stage = document.createElement('section');
+    const usernameButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-welcome'],
         }),
-      });
+      }),
+    });
 
-      usernameButton.dataset.tutorialId = 'top:username';
-      usernameButton.textContent = 'wizard';
-      settings.className = 'room-top-panel__settings';
-      settings.hidden = true;
-      usernameInput.dataset.tutorialId = 'top:username-input';
-      settings.append(usernameInput);
-      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-      setClientRect(usernameButton, { left: 80, top: 80, width: 240, height: 70 });
-      setClientRect(usernameInput, { left: 120, top: 360, width: 520, height: 70 });
-      stage.append(usernameButton, settings);
-      document.body.append(stage);
+    usernameButton.dataset.tutorialId = 'top:username';
+    usernameButton.textContent = 'wizard';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(usernameButton, { left: 80, top: 80, width: 240, height: 70 });
+    stage.append(usernameButton);
+    document.body.append(stage);
 
-      facade.mount(stage);
-      facade.refresh();
+    facade.mount(stage);
+    facade.refresh();
 
-      const layer = stage.querySelector('.tutorial-layer');
-      const copy = stage.querySelector('.tutorial-layer__lesson-text');
-      const fullText = copy?.getAttribute('aria-label');
+    const lessonButton = stage.querySelector('.tutorial-layer__lesson-button');
 
-      expect(facade.activeStep?.id).toBe('intro-username');
-      expect(copy?.textContent).toBe('');
-      expect(fullText).toBe("i don't need your name, but it would be nice to set it here.");
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
 
-      vi.advanceTimersByTime(1_000);
+    lessonButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
 
-      expect(copy?.textContent).toBe(fullText);
+    lessonButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-      settings.hidden = false;
-      facade.refresh();
-
-      expect(layer?.hidden).toBe(false);
-      expect(copy?.textContent).toBe(fullText);
-
-      settings.hidden = true;
-      facade.refresh();
-
-      expect(layer?.hidden).toBe(false);
-      expect(copy?.textContent).toBe(fullText);
+    return new Promise((resolve) => globalThis.requestAnimationFrame(resolve)).then(() => {
+      expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+      expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
 
       facade.unmount();
-    } finally {
-      vi.useRealTimers();
-    }
+    });
   });
 
   it('lets the username target open settings while waiting for the saved name', () => {
@@ -767,6 +782,8 @@ describe('TutorialFacade', () => {
     showButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(pointer?.hidden).toBe(false);
+    expect(summonButton.classList.contains('is-tutorial-target-emphasized')).toBe(true);
+    expect(summonButton.getAttribute('data-tutorial-target-emphasis')).toBe('true');
 
     now += 250;
     facade.refresh();

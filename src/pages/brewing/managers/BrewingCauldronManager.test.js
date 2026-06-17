@@ -84,4 +84,51 @@ describe('BrewingCauldronManager', () => {
       ariaLabel: 'fill mana tonic recipe',
     });
   });
+
+  it('does not offer fill recipe while the cauldron has an active brew', () => {
+    const manager = new BrewingCauldronManager();
+    const brewing = {
+      ingredients: [],
+      herbs: [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          kind: 'herb',
+          quantity: 3,
+          availableQuantity: 3,
+        },
+      ],
+      selectedRecipe: {
+        key: 'manaTonic',
+        label: 'mana tonic',
+        ingredients: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            quantity: 3,
+          },
+        ],
+      },
+      match: null,
+      canBrew: false,
+      manaCost: 12,
+      activeBrew: {
+        key: 'manaTonic',
+        label: 'mana tonic',
+        phase: 'brewing',
+        canStartBottling: false,
+        canCollect: false,
+      },
+    };
+
+    expect(manager.getPrimaryAction(brewing)).toMatchObject({
+      id: 'brew',
+      label: 'brew',
+      disabled: true,
+      hasCost: false,
+    });
+    expect(manager.canFillSelectedRecipe(brewing)).toBe(false);
+  });
 });

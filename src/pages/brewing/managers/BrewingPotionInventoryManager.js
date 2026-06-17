@@ -69,8 +69,8 @@ export class BrewingPotionInventoryManager {
     const button = document.createElement('button');
     button.className = 'style-button brewing-page__potions-button';
     button.type = 'button';
-    button.textContent = 'potions';
-    button.setAttribute('aria-label', 'open potions');
+    button.textContent = 'bag';
+    button.setAttribute('aria-label', 'open bag');
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -82,14 +82,14 @@ export class BrewingPotionInventoryManager {
 
     const dialog = document.createElement('section');
     dialog.className = 'brewing-page__potions-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Potions');
+    dialog.setAttribute('aria-label', 'Bag');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
     dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'potions';
+    title.textContent = 'bag';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'style-button brewing-page__potions-close';

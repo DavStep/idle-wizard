@@ -283,7 +283,7 @@
     "step": "brew-mana-tonic",
     "lesson": "brew mana tonic",
     "progress": "0/1 potion",
-    "targetId": "brewing:recipes",
+    "targetId": "brewing:herb:sageHerb",
     "page": "brewing",
     "pointerVisible": true
   },

@@ -99,8 +99,13 @@ export class ResearchInfoDialogManager {
 
     const label = this.currentResearch?.label ?? 'research';
     this.refs.title.textContent = label;
-    this.refs.body.textContent = this.getDescription(this.currentResearch);
+    this.refs.body.textContent = this.getCopy(this.currentResearch);
     this.refs.dialog?.setAttribute('aria-label', `${label} research information`);
+  }
+
+  getCopy(research) {
+    const parts = [this.getDescription(research), this.getLockReason(research)].filter(Boolean);
+    return parts.join(' ');
   }
 
   getDescription(research) {
@@ -121,6 +126,14 @@ export class ResearchInfoDialogManager {
     }
 
     return `${research.label} records this study as complete.`;
+  }
+
+  getLockReason(research) {
+    if (typeof research?.lockReason !== 'string') {
+      return '';
+    }
+
+    return research.lockReason.trim();
   }
 
   applyVisibility() {

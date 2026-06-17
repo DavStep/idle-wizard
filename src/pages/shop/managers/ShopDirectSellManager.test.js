@@ -8,6 +8,21 @@ function createTouchStartEvent() {
   return new window.Event('touchstart', { bubbles: true, cancelable: true });
 }
 
+function withPointerEvent(callback) {
+  const previousPointerEvent = window.PointerEvent;
+  window.PointerEvent = function PointerEvent() {};
+
+  try {
+    callback();
+  } finally {
+    if (previousPointerEvent === undefined) {
+      delete window.PointerEvent;
+    } else {
+      window.PointerEvent = previousPointerEvent;
+    }
+  }
+}
+
 function setElementMetrics(
   element,
   {
@@ -199,7 +214,14 @@ describe('ShopDirectSellManager', () => {
     );
     expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(false);
     expect(popup.querySelector('.shop-page__direct-sell-confirm')?.hidden).toBe(false);
-    expect(popup.textContent).toContain('total1.12 gold');
+    const confirmButton = popup.querySelector('.shop-page__direct-sell-confirm');
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-label')?.textContent).toBe(
+      'sell x1',
+    );
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
+      '1.12 gold',
+    );
+    expect(popup.textContent).not.toContain('total1.12 gold');
 
     const incrementButton = [...popup.querySelectorAll('.shop-page__direct-sell-step')].find(
       (button) => button.textContent === '+1',
@@ -208,7 +230,12 @@ describe('ShopDirectSellManager', () => {
 
     expect(gameplayFacade.quoteNpcMarketSell).toHaveBeenLastCalledWith(1, 2);
     expect(popup.querySelector('.amount-selection-row__value')?.textContent).toBe('2');
-    expect(popup.textContent).toContain('total2.08 gold');
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-label')?.textContent).toBe(
+      'sell x2',
+    );
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
+      '2.08 gold',
+    );
 
     const herbsTab = [...popup.querySelectorAll('.shop-page__direct-sell-tab-button')].find(
       (button) => button.textContent === 'herbs',
@@ -226,13 +253,23 @@ describe('ShopDirectSellManager', () => {
     expect(gameplayFacade.quoteNpcMarketSell).toHaveBeenLastCalledWith(1, 4);
     expect(popup.textContent).toContain('demand too low');
     expect(popup.querySelector('.shop-page__direct-sell-confirm')?.disabled).toBe(true);
-    expect(popup.textContent).toContain('total?');
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-label')?.textContent).toBe(
+      'sell x4',
+    );
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
+      '?',
+    );
 
     input.value = '2';
     input.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     expect(gameplayFacade.quoteNpcMarketSell).toHaveBeenLastCalledWith(1, 2);
-    expect(popup.textContent).toContain('total2.08 gold');
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-label')?.textContent).toBe(
+      'sell x2',
+    );
+    expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
+      '2.08 gold',
+    );
     expect(popup.querySelector('.shop-page__direct-sell-confirm')?.disabled).toBe(
       false,
     );
@@ -288,6 +325,54 @@ describe('ShopDirectSellManager', () => {
     ).toBe('true');
 
     manager.unmount();
+  });
+
+  it('selects a fast-sell item from touchstart on the visible seed text when PointerEvent exists', () => {
+    withPointerEvent(() => {
+      const buttonParent = document.createElement('section');
+      const popupParent = document.createElement('section');
+      const snapshot = {
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          shelf: {
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 5,
+                sellGold: 1.4,
+                fastSellGold: 1.12,
+                fastSellPercent: 80,
+                sellNeed: 3,
+              },
+            ],
+          },
+        },
+      };
+      const gameplayFacade = createGameplayFacade(snapshot);
+      const manager = new ShopDirectSellManager({ gameplayFacade });
+
+      manager.mount({ buttonParent, popupParent });
+      buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
+
+      const visibleSeedText = popupParent.querySelector(
+        '.shop-page__direct-sell-target-label .style-seed-label__text',
+      );
+      visibleSeedText?.dispatchEvent(createTouchStartEvent());
+
+      expect(
+        popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
+      ).toBe('sage seed (5)1.12 gold');
+      expect(
+        popupParent.querySelector('.shop-page__direct-sell-item-button')?.getAttribute(
+          'aria-pressed',
+        ),
+      ).toBe('true');
+
+      manager.unmount();
+    });
   });
 
   it('deselects the selected fast-sell item from the list row and top name', () => {
@@ -597,8 +682,13 @@ describe('ShopDirectSellManager', () => {
     expect(popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
       'sage seed (2)10 gold',
     );
-    expect(popupParent.querySelector('.shop-page__direct-sell-value-row')?.textContent).toBe(
-      'total10 gold',
+    expect(
+      popupParent.querySelector('.shop-page__direct-sell-confirm-label')?.textContent,
+    ).toBe('sell x1');
+    expect(
+      popupParent.querySelector('.shop-page__direct-sell-confirm-value')?.textContent,
+    ).toBe(
+      '10 gold',
     );
 
     manager.unmount();

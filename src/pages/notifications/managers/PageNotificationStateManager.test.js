@@ -4,6 +4,11 @@ import { PageNotificationStateManager } from './PageNotificationStateManager.js'
 
 function createSnapshot() {
   return {
+    mana: {
+      current: 0,
+      cap: 50,
+      perSecond: 1,
+    },
     gold: { current: 0 },
     seedSummoning: { canSummon: false },
     tasks: {
@@ -80,7 +85,7 @@ describe('PageNotificationStateManager', () => {
     expect(manager.getSnapshot(null, { playerShop: null })).toEqual({
       active: false,
       pages: {
-        brewing: { active: false, children: { herbs: false, action: false } },
+        brewing: { active: false, children: { herbs: false, action: false, cauldron: false } },
         garden: { active: false, children: { plots: false } },
         workshop: { active: false, children: { seeds: false, tasks: false } },
         research: { active: false, children: { research: false } },
@@ -112,6 +117,51 @@ describe('PageNotificationStateManager', () => {
       active: true,
       children: {
         plots: true,
+      },
+    });
+  });
+
+  it('keeps summon seed notifications immediate through early levels', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.seedSummoning.canSummon = true;
+    snapshot.mana.current = 10;
+    snapshot.mana.cap = 100;
+    snapshot.tasks.currentLevel = 2;
+
+    expect(manager.getSnapshot(snapshot).pages.workshop).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        seeds: true,
+      },
+    });
+  });
+
+  it('suppresses summon seed notifications after early levels until mana is capped', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.seedSummoning.canSummon = true;
+    snapshot.mana.current = 10;
+    snapshot.mana.cap = 150;
+    snapshot.tasks.currentLevel = 3;
+
+    expect(manager.getSnapshot(snapshot).pages.workshop).toMatchObject({
+      active: false,
+      children: {
+        seeds: false,
+      },
+    });
+
+    snapshot.mana.current = 150;
+
+    expect(manager.getSnapshot(snapshot).pages.workshop).toMatchObject({
+      active: true,
+      tone: 'orange',
+      children: {
+        seeds: 'orange',
       },
     });
   });

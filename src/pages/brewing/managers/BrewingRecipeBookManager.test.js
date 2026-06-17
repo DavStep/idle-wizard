@@ -71,6 +71,57 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
+  it('marks the recipe popup close button as the tutorial close target', () => {
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(createSnapshot()),
+      getSelectedRecipeKey: () => null,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.brewing-page__recipes-close')?.dataset.tutorialId).toBe(
+      'brewing:recipes:close',
+    );
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows the current cauldron in the recipe popup title', () => {
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    let cauldronIndex = 1;
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(createSnapshot()),
+      getSelectedRecipeKey: () => null,
+      getCurrentCauldronIndex: () => cauldronIndex,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+    manager.show();
+
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
+      'select recipe: cauldron 2',
+    );
+    expect(parent.querySelector('.brewing-page__recipes-dialog')?.getAttribute('aria-label')).toBe(
+      'select recipe: cauldron 2',
+    );
+
+    cauldronIndex = 2;
+    manager.render(createSnapshot());
+
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
+      'select recipe: cauldron 3',
+    );
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('selects a recipe when the recipe action is clicked', () => {
     const parent = document.createElement('div');
     document.body.append(parent);

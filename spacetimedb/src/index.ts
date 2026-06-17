@@ -2393,7 +2393,7 @@ const DEFAULT_GARDEN_CONFIG_JSON = toGameConfigJson({
     initialUnlockedTiles: 1,
     tileCostsGold: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
     tilesPerRow: 4,
-    harvestSeconds: 10,
+    harvestSeconds: 3,
   },
 });
 const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
@@ -2414,6 +2414,8 @@ const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
   wastedBrewDurationMs: 4_000,
   bottlingDurationMs: 2_000,
   maxCauldronIngredients: 5,
+  initialUnlockedCauldrons: 1,
+  cauldronCostsGold: [0, 25, 75, 175, 400],
   wastedPotionKey: 'wastedPotion',
 });
 const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
@@ -6202,9 +6204,16 @@ function normalizeSaveBrewing(
     });
   }
 
-  const cauldrons = [...cauldronsByNumber.values()].sort(
-    (left, right) => left.cauldronNumber - right.cauldronNumber,
+  const fallbackUnlockedCauldrons = getLegacyUnlockedCauldronCount(cauldronsByNumber);
+  const unlockedCauldrons = clampSaveInteger(
+    brewing.unlockedCauldrons,
+    1,
+    maxCauldrons,
+    fallbackUnlockedCauldrons,
   );
+  const cauldrons = [...cauldronsByNumber.values()]
+    .filter((cauldron) => cauldron.cauldronNumber <= unlockedCauldrons)
+    .sort((left, right) => left.cauldronNumber - right.cauldronNumber);
   const primaryCauldron =
     cauldrons.find((cauldron) => cauldron.cauldronNumber === 1) ?? {
       cauldronNumber: 1,
@@ -6217,10 +6226,43 @@ function normalizeSaveBrewing(
   return {
     autoBrewEnabled: primaryCauldron.autoBrewEnabled,
     autoBrewRecipeKey: primaryCauldron.autoBrewRecipeKey,
+    unlockedCauldrons,
     cauldrons,
     cauldronItemKeys: primaryCauldron.cauldronItemKeys,
     activeBrew: primaryCauldron.activeBrew,
   };
+}
+
+function getLegacyUnlockedCauldronCount(
+  cauldronsByNumber: Map<
+    number,
+    {
+      cauldronNumber: number;
+      cauldronItemKeys: string[];
+      activeBrew: ReturnType<typeof normalizeSaveActiveBrew>;
+      autoBrewEnabled: boolean;
+      autoBrewRecipeKey: string | null;
+    }
+  >,
+) {
+  let unlockedCauldrons = 1;
+
+  for (const cauldron of cauldronsByNumber.values()) {
+    if (cauldron.cauldronNumber <= unlockedCauldrons) {
+      continue;
+    }
+
+    if (
+      cauldron.cauldronItemKeys.length > 0 ||
+      cauldron.activeBrew !== null ||
+      cauldron.autoBrewEnabled ||
+      cauldron.autoBrewRecipeKey !== null
+    ) {
+      unlockedCauldrons = cauldron.cauldronNumber;
+    }
+  }
+
+  return unlockedCauldrons;
 }
 
 function normalizeSaveCauldronItemKeys(
@@ -7879,6 +7921,8 @@ function validateBrewingGameConfig(value: unknown) {
   const wastedBrewDurationMs = Number(config.wastedBrewDurationMs);
   const bottlingDurationMs = Number(config.bottlingDurationMs);
   const maxCauldronIngredients = Number(config.maxCauldronIngredients);
+  const initialUnlockedCauldrons = Number(config.initialUnlockedCauldrons ?? 1);
+  const cauldronCostsGold = config.cauldronCostsGold;
   const wastedPotionKey = normalizeNpcMarketItemKey(String(config.wastedPotionKey ?? ''));
 
   if (
@@ -7894,9 +7938,19 @@ function validateBrewingGameConfig(value: unknown) {
     !Number.isInteger(maxCauldronIngredients) ||
     maxCauldronIngredients < 1 ||
     maxCauldronIngredients > 10 ||
+    !Number.isInteger(initialUnlockedCauldrons) ||
+    initialUnlockedCauldrons < 1 ||
     !npcMarketCatalogByItemKey.has(wastedPotionKey)
   ) {
     throw new Error('Invalid brewing config.');
+  }
+
+  if (cauldronCostsGold !== undefined) {
+    validateCostList(cauldronCostsGold, 1, MAX_PLAYER_SAVE_CAULDRONS);
+
+    if (initialUnlockedCauldrons > (cauldronCostsGold as unknown[]).length) {
+      throw new Error('Invalid brewing config.');
+    }
   }
 }
 

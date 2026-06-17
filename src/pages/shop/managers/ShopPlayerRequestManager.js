@@ -515,8 +515,9 @@ export class ShopPlayerRequestManager {
       const slot = this.getRequestSlotSnapshot(shelf, slotNumber);
       const request = this.getRequestFromSlot(slot);
       const unlocked = Boolean(slot.unlocked);
+      const selected = slotNumber === this.selectedRequestSlotNumber;
 
-      refs.row.classList.toggle('is-selected', slotNumber === this.selectedRequestSlotNumber);
+      refs.row.classList.toggle('is-selected', selected);
       refs.row.classList.toggle('is-locked', !unlocked);
       refs.row.classList.toggle('is-empty', unlocked && !request);
 
@@ -525,6 +526,7 @@ export class ShopPlayerRequestManager {
         refs.row.setAttribute('role', 'button');
         refs.row.tabIndex = 0;
         refs.row.setAttribute('aria-label', `set player market request ${slotNumber}`);
+        refs.row.setAttribute('aria-pressed', selected ? 'true' : 'false');
         this.renderRequestSlotValue(refs, request);
         continue;
       }
@@ -533,6 +535,7 @@ export class ShopPlayerRequestManager {
       refs.row.removeAttribute('role');
       refs.row.removeAttribute('aria-label');
       refs.row.removeAttribute('tabindex');
+      refs.row.removeAttribute('aria-pressed');
       refs.itemValue.textContent = EMPTY_LOCKED_REQUEST_LABEL;
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);

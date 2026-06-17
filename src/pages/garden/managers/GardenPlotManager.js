@@ -287,8 +287,10 @@ export class GardenPlotManager {
       ? (seedQuantityById.get(tile.selectedSeedItemTypeId) ?? 0)
       : 0;
     const hasSelectedSeed = Boolean(tile.selectedSeedItemTypeId);
+    const selected = this.visible && this.selectedTileNumber === tile.tileNumber;
 
     refs.button.hidden = !tile.unlocked && !isNextLockedTile;
+    refs.button.classList.toggle('is-selected', selected);
     refs.button.classList.toggle('is-locked', !tile.unlocked);
     refs.button.classList.toggle('is-empty', tile.unlocked && tile.phase === 'empty');
     refs.button.classList.toggle(
@@ -416,7 +418,14 @@ export class GardenPlotManager {
   }
 
   renderSeeds(snapshot, seeds) {
+    const selectedTile = this.getSelectedTile(snapshot);
+    const selectedSeedItemTypeId = selectedTile?.selectedSeedItemTypeId ?? null;
+
     if (this.emptySeedRef) {
+      this.emptySeedRef.button.setAttribute(
+        'aria-pressed',
+        selectedTile && !selectedSeedItemTypeId ? 'true' : 'false',
+      );
       this.emptySeedRef.button.disabled = false;
       this.emptySeedRef.button.setAttribute('aria-disabled', 'false');
       this.emptySeedRef.button.setAttribute('aria-label', 'set plot seed to empty');
@@ -432,6 +441,10 @@ export class GardenPlotManager {
       this.setText(refs.quantity, String(seed.quantity));
       refs.button.disabled = false;
       refs.button.setAttribute('aria-disabled', 'false');
+      refs.button.setAttribute(
+        'aria-pressed',
+        selectedSeedItemTypeId === seed.itemTypeId ? 'true' : 'false',
+      );
       refs.button.setAttribute('aria-label', `select ${seed.label}, owned ${seed.quantity}`);
       setNotificationBadge(refs.button, seed.quantity > 0);
     }
@@ -635,6 +648,7 @@ export class GardenPlotManager {
     this.selectedTileNumber = tileNumber;
     this.previousFocus = document.activeElement;
     this.visible = true;
+    this.render(this.gameplayFacade.getSnapshot());
     this.applyPopupVisibility();
     this.queueOverflowCue(this.refs.seedRows);
     this.focusFirstPlantableSeed();
@@ -651,6 +665,19 @@ export class GardenPlotManager {
 
     this.selectedTileNumber = null;
     this.previousFocus = null;
+    this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  getSelectedTile(snapshot) {
+    if (!this.visible || !this.selectedTileNumber) {
+      return null;
+    }
+
+    return (
+      snapshot?.garden?.plot?.tiles?.find(
+        (tile) => tile.tileNumber === this.selectedTileNumber,
+      ) ?? null
+    );
   }
 
   applyPopupVisibility() {

@@ -7,6 +7,7 @@ import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
 import { WorkshopLogDialogManager } from './managers/WorkshopLogDialogManager.js';
 import { WorkshopDiscoveriesManager } from './managers/WorkshopDiscoveriesManager.js';
 import { WorkshopPrestigeManager } from './managers/WorkshopPrestigeManager.js';
+import { WorkshopRequirementConnectionManager } from './managers/WorkshopRequirementConnectionManager.js';
 import { WorkshopTaskManager } from './managers/WorkshopTaskManager.js';
 import { WorkshopTradeAllianceManager } from './managers/WorkshopTradeAllianceManager.js';
 import {
@@ -28,6 +29,7 @@ export class WorkshopPageFacade {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new WorkshopRoomViewManager();
     this.flyoutManager = new WorkshopFlyoutManager();
+    this.requirementConnectionManager = new WorkshopRequirementConnectionManager();
     this.rewardEventsUnsubscribe = null;
     this.secondaryActionGateUnsubscribe = null;
     this.secondaryActionGateManager = new WorkshopSecondaryActionGateManager();
@@ -62,21 +64,26 @@ export class WorkshopPageFacade {
       onOpenPlayerInfo,
     });
     this.manaSphereManager = new WorkshopManaSphereManager({ gameplayFacade });
-    this.taskManager = new WorkshopTaskManager({ gameplayFacade });
+    this.taskManager = new WorkshopTaskManager({
+      gameplayFacade,
+      onLevelUpNotice: ({ message }) => this.flyoutManager.show(message),
+    });
   }
 
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
-    this.taskManager.mount(uiLayer);
+    this.requirementConnectionManager.mount(uiLayer);
+    this.taskManager.mount(uiLayer, popupLayer);
     this.manaSphereManager.mount(uiLayer);
     this.actionBarManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
-      this.gameplayFacade?.subscribeRewardEvents?.((event) =>
-        this.flyoutManager.showReward(event),
-      ) ?? null;
+      this.gameplayFacade?.subscribeRewardEvents?.((event) => {
+        this.flyoutManager.showReward(event);
+        this.showRequirementConnection(event);
+      }) ?? null;
     this.leaderboardManager.mount(uiLayer, popupLayer);
     this.tradeAllianceManager.mount(uiLayer, popupLayer);
     this.logDialogManager.mount(uiLayer, popupLayer);
@@ -94,6 +101,7 @@ export class WorkshopPageFacade {
     this.secondaryActionGateUnsubscribe = null;
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
+    this.requirementConnectionManager.unmount();
     this.prestigeManager.unmount();
     this.bagManager.unmount();
     this.discoveriesManager.unmount();
@@ -105,6 +113,63 @@ export class WorkshopPageFacade {
     this.flyoutManager.unmount();
     this.manaSphereManager.unmount();
     this.roomViewManager.unmount();
+  }
+
+  showRequirementConnection(event) {
+    const target = this.taskManager.getCurrentRequirementRowForItemTypeIds(
+      this.getRewardItemTypeIds(event),
+    );
+
+    if (!target) {
+      return;
+    }
+
+    this.requirementConnectionManager.show({
+      source: this.getRequirementConnectionSource(event),
+      target,
+    });
+  }
+
+  getRewardItemTypeIds(event) {
+    const itemTypeIds = new Set();
+
+    if (event?.type === 'seed_summoned') {
+      const seedCounts = Array.isArray(event.seedCounts) ? event.seedCounts : [];
+
+      for (const seedCount of seedCounts) {
+        this.addRewardItemTypeId(itemTypeIds, seedCount?.seed);
+      }
+
+      this.addRewardItemTypeId(itemTypeIds, event.seed);
+      return itemTypeIds;
+    }
+
+    if (event?.type === 'herb_harvested') {
+      this.addRewardItemTypeId(itemTypeIds, event.herb);
+      return itemTypeIds;
+    }
+
+    if (event?.type === 'potion_collected') {
+      this.addRewardItemTypeId(itemTypeIds, event.potion);
+    }
+
+    return itemTypeIds;
+  }
+
+  addRewardItemTypeId(itemTypeIds, item) {
+    const itemTypeId = Number(item?.itemTypeId ?? item?.id);
+
+    if (Number.isInteger(itemTypeId)) {
+      itemTypeIds.add(itemTypeId);
+    }
+  }
+
+  getRequirementConnectionSource(event) {
+    if (event?.type === 'seed_summoned') {
+      return this.actionBarManager.refs.summonButton;
+    }
+
+    return null;
   }
 
   applySecondaryActionGate(snapshot) {

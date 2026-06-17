@@ -35,7 +35,10 @@
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
+- Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
+- Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
+- Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
@@ -50,6 +53,7 @@
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
 - When fast sell is already open with an item selected, FTUE should switch to copy-only amount guidance and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
+- FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
@@ -73,6 +77,8 @@
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
+- FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
+- FTUE mana tonic recipe guidance should point to the recipe popup `close` label after the recipe is selected; do not keep cueing the selected row.
 - FTUE should actively show the first `grow sage` loop at `0/3`; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
 - FTUE level-2 task order should match the visible level-2 task row order; showing `sage` before `sage seed` keeps the gardening lesson coherent.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
@@ -80,6 +86,7 @@
 - FTUE grow-sage should stay visible during planted sage wait states; hide pointer/show-me guidance there, but do not pause Elara entirely.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
+- Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
@@ -96,9 +103,12 @@
 - Open FTUE lesson refreshes should let `applyCue` own target-cue visibility; hiding the cue during `showLesson` and showing it again resets pointer motion every refresh.
 - Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
+- Brewing FTUE lesson placement must protect the herbs box, cauldron, and bottom brewing controls so Elara never hides brew status/progress.
 - FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
+- Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
+- Workshop task drag-sort spans a fixed summary row plus list rows; use a drag ghost plus placeholder and commit priority only on drop, not render-on-pointermove.
 
 ## Architecture
 
@@ -113,6 +123,8 @@
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
 - User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
 - Live browser/tutorial QA on the shared dev server can hit the `server required` single-account gate after reload if another client owns the session; close the other client or use a fresh local session before screenshot work.
+- When the shared single-account gate blocks local UI QA, mount the affected facade in a temporary localhost HTML harness instead of clearing browser storage or touching the live player save.
+- The in-app browser blocks `data:` QA harnesses; serve temporary module harnesses through Vite on `127.0.0.1:55173` so source imports stay same-origin.
 - Before release, verify `package.json` has been bumped beyond the latest pushed release; release automation reuses the current version and will not bump it.
 - Before running release automation, verify the current `PLAYER_CHANGELOG.md` section exists; the script commits/pushes before Discord upload fails on a missing changelog.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
@@ -180,6 +192,8 @@
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
 - All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
+- Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
+- Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.
 - When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.
 - Server weekly/monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly is 7 days, monthly is 30 days, and UTC midnight is Armenia 04:00.
 - Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
@@ -199,6 +213,7 @@
 - Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make wasted potion.
 - Potion recipe ingredient order matters; expand grouped quantities in listed order for matching.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
+- Brewing `maxCauldrons` is only the level cap; bought slots persist as `brewing.unlockedCauldrons`.
 - Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
 - Player-visible discovery reducers must not silently return behind feature flags; client success with no table row makes recipes look undiscovered.
 - Potion discovery table inserts must not depend on world-chat announcement rate limits; chat is secondary to the global unlock.
@@ -211,6 +226,7 @@
 - Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Brewing recipe selection comes from the recipes popup; selecting stages full ingredients when owned, otherwise the cauldron guide shows missing counts.
+- Brewing `fill recipe` is only actionable before a brew starts; active brew phases must not show it or its notification dot because gameplay rejects recipe prep as `brew_in_progress`.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 sage`), not expanded numbered slots.
 - Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
 - Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
@@ -427,6 +443,7 @@
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
+- FTUE notification suppression is a visible badge policy only; keep gameplay notification state intact and allow only the current tutorial target during non-passive blocking steps.
 - Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
 - Notification dots sit at each notified control's top-right corner, offset out by 3px.
 - Scroll containers that hold notification dots need invisible top/right bleed so offset dots do not get clipped without moving the controls.
@@ -465,6 +482,8 @@
 
 - Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
+- Shared live local QA belongs to one primary branch/worktree; helper branches/worktrees can prep code or run static checks, but runtime verification is invalid unless that checkout owns the running Vite and SpacetimeDB processes.
+- Before claiming local runtime verification, confirm both Vite `55173` and SpacetimeDB `3000`; frontend-only status is not enough.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.

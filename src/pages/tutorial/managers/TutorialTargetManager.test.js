@@ -121,6 +121,23 @@ describe('TutorialTargetManager', () => {
     ).toBe(false);
   });
 
+  it('reads the selected brewing recipe row from the open popup', () => {
+    const stage = document.createElement('section');
+    const popup = document.createElement('section');
+    const row = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    popup.className = 'brewing-page__recipes-popup';
+    row.className = 'brewing-page__recipe-row';
+    row.dataset.tutorialId = 'brewing:recipe:manaTonic';
+    row.setAttribute('aria-pressed', 'true');
+    popup.append(row);
+    stage.append(popup);
+
+    expect(manager.getDomState().isBrewingRecipeSelected('manaTonic')).toBe(true);
+    expect(manager.getDomState().isBrewingRecipeSelected('minorHealingPotion')).toBe(false);
+  });
+
   it('keeps copy-only popup guidance visible only for the popup it needs', () => {
     const stage = document.createElement('section');
     const directSellPopup = document.createElement('section');

@@ -1,12 +1,17 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import packageJson from '../../package.json';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { PagesFacade } from './PagesFacade.js';
+import { setNotificationVisibilityPolicy } from './shared/notificationBadge.js';
 import { TUTORIAL_STORAGE_KEY } from './tutorial/managers/TutorialProgressManager.js';
 import { TUTORIAL_STEP_IDS } from './tutorial/managers/TutorialStepManager.js';
+
+afterEach(() => {
+  setNotificationVisibilityPolicy(null);
+});
 
 function createGameplayFacadeFake() {
   const snapshot = {
@@ -284,6 +289,14 @@ function createGameplayFacadeFake() {
       canStartBottling: false,
       canCollectPotion: false,
       maxIngredients: 5,
+      unlockedCauldrons: 1,
+      maxCauldrons: 1,
+      configuredMaxCauldrons: 3,
+      cauldronCosts: [0, 1, 3],
+      nextCauldronNumber: null,
+      nextCauldronCost: null,
+      nextCauldronLockedByLevel: false,
+      nextCauldronRequiresLevel: null,
       autoBrewEnabled: false,
       autoBrewRecipeKey: null,
     },
@@ -731,7 +744,7 @@ function createGameplayFacadeFake() {
         tileCosts: [0, 1, 3, 6, 10, 15, 21, 28, 36, 45],
         nextTileNumber: 2,
         nextTileCost: 1,
-        harvestSeconds: 10,
+        harvestSeconds: 3,
         tiles: Array.from({ length: 10 }, (_value, index) => ({
           tileNumber: index + 1,
           unlocked: index === 0,
@@ -1111,6 +1124,20 @@ function createGameplayFacadeFake() {
     );
     snapshot.brewing.canCollectPotion = Boolean(snapshot.brewing.activeBrew?.canCollect);
   };
+  const updateBrewingNextCauldron = () => {
+    const brewing = snapshot.brewing;
+    const unlockedCauldrons = Number.isInteger(brewing.unlockedCauldrons)
+      ? brewing.unlockedCauldrons
+      : (brewing.cauldrons?.length ?? 1);
+    const nextCauldronNumber = unlockedCauldrons + 1;
+    const nextCauldronCost = brewing.cauldronCosts?.[nextCauldronNumber - 1] ?? null;
+    brewing.unlockedCauldrons = unlockedCauldrons;
+    brewing.nextCauldronNumber = nextCauldronCost === null ? null : nextCauldronNumber;
+    brewing.nextCauldronCost = nextCauldronCost;
+    brewing.nextCauldronLockedByLevel =
+      nextCauldronCost !== null && nextCauldronNumber > brewing.maxCauldrons;
+    brewing.nextCauldronRequiresLevel = brewing.nextCauldronLockedByLevel ? 5 : null;
+  };
 
   const updateGardenNextTile = () => {
     const garden = snapshot.garden.plot;
@@ -1346,6 +1373,70 @@ function createGameplayFacadeFake() {
         tileNumber,
       };
     },
+    buyBrewingCauldron: () => {
+      const brewing = snapshot.brewing;
+      const cauldronNumber = brewing.nextCauldronNumber;
+      const cost = brewing.nextCauldronCost;
+
+      if (!cauldronNumber) {
+        return {
+          ok: false,
+          reason: 'max_cauldrons',
+        };
+      }
+
+      if (brewing.nextCauldronLockedByLevel) {
+        return {
+          ok: false,
+          reason: 'level_locked',
+          cauldronNumber,
+          requiredLevel: brewing.nextCauldronRequiresLevel,
+        };
+      }
+
+      if (snapshot.gold.current < cost) {
+        return {
+          ok: false,
+          reason: 'not_enough_gold',
+          cost,
+          cauldronNumber,
+        };
+      }
+
+      snapshot.gold.current -= cost;
+      brewing.unlockedCauldrons += 1;
+      const brewingFields = { ...brewing };
+      delete brewingFields.cauldrons;
+      const cauldrons = Array.isArray(brewing.cauldrons)
+        ? brewing.cauldrons
+        : [
+            {
+              ...brewingFields,
+              cauldronIndex: 0,
+              cauldronNumber: 1,
+              unlocked: true,
+              ingredients: brewing.ingredients,
+              activeBrew: brewing.activeBrew,
+            },
+          ];
+      cauldrons.push({
+        ...brewingFields,
+        cauldronIndex: cauldronNumber - 1,
+        cauldronNumber,
+        unlocked: true,
+        ingredients: [],
+        activeBrew: null,
+      });
+      brewing.cauldrons = cauldrons;
+      updateBrewingNextCauldron();
+      publish();
+
+      return {
+        ok: true,
+        cost,
+        cauldronNumber,
+      };
+    },
     completeTaskLevel: () => {
       const completion = snapshot.tasks.level.completion;
 
@@ -1576,13 +1667,13 @@ function createGameplayFacadeFake() {
       }
 
       tile.phase = 'harvesting';
-      tile.totalMs = 10_000;
-      tile.remainingMs = 10_000;
+      tile.totalMs = 3_000;
+      tile.remainingMs = 3_000;
       tile.progress = 0;
       tile.process = {
         phase: 'harvesting',
-        totalMs: 10_000,
-        remainingMs: 10_000,
+        totalMs: 3_000,
+        remainingMs: 3_000,
         progress: 0,
       };
       publish();
@@ -1596,7 +1687,7 @@ function createGameplayFacadeFake() {
           label: 'sage',
           kind: 'herb',
         },
-        durationMs: 10_000,
+        durationMs: 3_000,
       };
     },
     cancelGardenPlanting: (tileNumber) => {
@@ -2521,6 +2612,14 @@ function createMemoryStorage(initial = {}) {
   };
 }
 
+function createCompletedTutorialStorage() {
+  return createMemoryStorage({
+    [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+      completedStepIds: TUTORIAL_STEP_IDS,
+    }),
+  });
+}
+
 function unlockWorkshopSecondaryActions(gameplayFacade, level = 4) {
   const snapshot = gameplayFacade.getSnapshot();
   snapshot.tasks.currentLevel = level;
@@ -2529,15 +2628,22 @@ function unlockWorkshopSecondaryActions(gameplayFacade, level = 4) {
   snapshot.prestige.currentLevel = Math.max(snapshot.prestige.currentLevel, level);
 }
 
-function markSeedResearchComplete(gameplayFacade, ...seedKeys) {
+function markResearchComplete(gameplayFacade, ...researchIds) {
   const research = gameplayFacade.getSnapshot().research;
   const completedResearchIds = new Set(research.completedResearchIds ?? []);
 
-  for (const seedKey of seedKeys) {
-    completedResearchIds.add(`unlockSeed:${seedKey}`);
+  for (const researchId of researchIds) {
+    completedResearchIds.add(researchId);
   }
 
   research.completedResearchIds = [...completedResearchIds];
+}
+
+function markSeedResearchComplete(gameplayFacade, ...seedKeys) {
+  markResearchComplete(
+    gameplayFacade,
+    ...seedKeys.map((seedKey) => `unlockSeed:${seedKey}`),
+  );
 }
 
 function clickRoomTab(stage, pageId) {
@@ -3676,6 +3782,7 @@ describe('PagesFacade', () => {
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createCompletedTutorialStorage(),
     });
 
     pagesFacade.mount(stage);
@@ -3701,6 +3808,34 @@ describe('PagesFacade', () => {
 
     const row = stage.querySelector('.garden-page__plot-row');
     expect(row?.dataset.notification).toBe('true');
+  });
+
+  it('suppresses unrelated notifications while a blocking FTUE step is active', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createMemoryStorage(),
+    });
+
+    gameplayFacade.getSnapshot().shop.goldOffer.canCollect = true;
+
+    pagesFacade.mount(stage);
+    gameplayFacade.publishSnapshot();
+    pagesFacade.tutorialFacade.refresh();
+
+    const shopTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="shop"]');
+
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-welcome');
+    expect(shopTab?.dataset.notification).toBeUndefined();
+
+    pagesFacade.tutorialFacade.progressManager.completeMany(TUTORIAL_STEP_IDS);
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(shopTab?.dataset.notification).toBe('true');
+
+    pagesFacade.unmount();
   });
 
   it('opens level rewards from the top-panel level', () => {
@@ -3822,14 +3957,35 @@ describe('PagesFacade', () => {
     const tasks = stage.querySelector('.workshop-page__tasks');
     const title = tasks?.querySelector('.style-box__title');
     const summary = stage.querySelector('.workshop-page__tasks-summary');
+    const infoPopup = stage.querySelector('.workshop-page__tasks-info-popup');
+    const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
     const count = stage.querySelector('.workshop-page__tasks-count');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
+    const rewards = stage.querySelector('.workshop-page__level-rewards');
 
     expect(tasks).not.toBeNull();
-    expect(title?.textContent).toBe('level up needs');
-    expect(summaryRow?.textContent).toBe('sage seed0/5bring');
+    expect(title?.textContent).toBe('level 2 requirements');
+    expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
+    expect(rewards?.hidden).toBe(false);
+    expect(rewards?.querySelector('.workshop-page__level-payoff-title')?.textContent).toBe(
+      'level 2 rewards',
+    );
+    expect(
+      [...rewards.querySelectorAll('.workshop-page__level-payoff-row')].map(
+        (row) => row.textContent,
+      ),
+    ).toEqual([
+      'unlocksgarden',
+      'garden plots+1',
+      'mana cap+50',
+      'mana regen+1/sec',
+      'crystal+1',
+    ]);
+    expect(stage.querySelector('.workshop-page__tasks-helper')).toBeNull();
+    expect(infoPopup?.hidden).toBe(true);
+    expect(backdrop?.hidden).toBe(true);
     expect(
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
     ).toBe('0%');
@@ -3848,6 +4004,19 @@ describe('PagesFacade', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(list.hidden).toBe(true);
     expect(tasks.classList.contains('is-collapsed')).toBe(true);
+
+    title.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(infoPopup.hidden).toBe(false);
+    expect(infoPopup.querySelector('.workshop-page__tasks-info-copy')?.textContent).toBe(
+      'turn in these items to reach level 2. turned-in items are consumed.',
+    );
+
+    infoPopup
+      .querySelector('.workshop-page__tasks-info-close')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(infoPopup.hidden).toBe(true);
   });
 
   it('shows Workshop tasks collapsed and expands multiple tasks from the bottom action', () => {
@@ -3877,14 +4046,20 @@ describe('PagesFacade', () => {
     const tasks = stage.querySelector('.workshop-page__tasks');
     const title = tasks?.querySelector('.style-box__title');
     const summary = stage.querySelector('.workshop-page__tasks-summary');
+    const infoPopup = stage.querySelector('.workshop-page__tasks-info-popup');
+    const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
     const count = stage.querySelector('.workshop-page__tasks-count');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
+    const rewards = stage.querySelector('.workshop-page__level-rewards');
 
     expect(tasks).not.toBeNull();
-    expect(title?.textContent).toBe('level up needs');
-    expect(summaryRow?.textContent).toBe('sage seed0/5bring');
+    expect(title?.textContent).toBe('level 2 requirements');
+    expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
+    expect(stage.querySelector('.workshop-page__tasks-helper')).toBeNull();
+    expect(infoPopup?.hidden).toBe(true);
+    expect(backdrop?.hidden).toBe(true);
     expect(count?.textContent).toBe('0/2');
     expect(toggle?.hidden).toBe(false);
     expect(toggle?.textContent).toBe('expand');
@@ -3893,6 +4068,7 @@ describe('PagesFacade', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(list?.hidden).toBe(true);
     expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(1);
+    expect(rewards?.hidden).toBe(true);
 
     toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -3900,9 +4076,12 @@ describe('PagesFacade', () => {
     expect(toggle.textContent).toBe('collapse');
     expect(toggle.dataset.notification).toBeUndefined();
     expect(list.hidden).toBe(false);
+    expect(backdrop.hidden).toBe(false);
     expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(1);
     expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
-    expect(summaryRow?.textContent).toBe('sage seed0/5bring');
+    expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
+    expect(rewards?.hidden).toBe(false);
+    expect(rewards?.textContent).toContain('level 2 rewards');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
 
@@ -3912,7 +4091,30 @@ describe('PagesFacade', () => {
     expect(toggle.textContent).toBe('expand');
     expect(toggle.dataset.notification).toBeUndefined();
     expect(list.hidden).toBe(true);
+    expect(backdrop.hidden).toBe(true);
+    expect(rewards?.hidden).toBe(true);
     expect(tasks.classList.contains('is-collapsed')).toBe(true);
+
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(list.hidden).toBe(false);
+    expect(backdrop.hidden).toBe(false);
+
+    backdrop.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(list.hidden).toBe(true);
+    expect(backdrop.hidden).toBe(true);
+
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(list.hidden).toBe(false);
+
+    document.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(list.hidden).toBe(true);
+    expect(backdrop.hidden).toBe(true);
   });
 
   it('keeps Workshop tasks expanded across page swaps', () => {
@@ -3953,6 +4155,141 @@ describe('PagesFacade', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(list?.hidden).toBe(false);
     expect(tasks?.classList.contains('is-expanded')).toBe(true);
+  });
+
+  it('lets expanded Workshop tasks be dragged from the row to change priority', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 3;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+      {
+        ...baseTask,
+        taskId: 'level1-nettle-seeds',
+        itemKey: 'nettleSeed',
+        itemLabel: 'nettle seed',
+        requiredQuantity: 8,
+        remainingQuantity: 8,
+      },
+    ];
+
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
+    const makeRect = (top) => ({
+      x: 0,
+      y: top,
+      top,
+      left: 0,
+      right: 240,
+      bottom: top + 22,
+      width: 240,
+      height: 22,
+      toJSON: () => ({}),
+    });
+
+    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      if (this.classList?.contains('workshop-page__task')) {
+        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
+          return makeRect(60);
+        }
+
+        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
+          const rows = [
+            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
+          ];
+          return makeRect(90 + rows.indexOf(this) * 30);
+        }
+      }
+
+      return makeRect(0);
+    };
+
+    let pagesFacade = null;
+
+    try {
+      pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake(),
+      });
+
+      pagesFacade.mount(stage);
+
+      const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+      toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const summary = stage.querySelector('.workshop-page__tasks-summary');
+      const list = stage.querySelector('.workshop-page__task-list');
+      const getVisibleLabels = () => [
+        summary.querySelector('.workshop-page__task-label')?.textContent,
+        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
+          (label) => label.textContent,
+        ),
+      ];
+      const getFlowLabels = () => getVisibleLabels().filter(Boolean);
+
+      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
+      expect(stage.querySelector('.workshop-page__task-drag')).toBeNull();
+
+      const mintRow = list.querySelector('.workshop-page__task');
+      mintRow.dispatchEvent(
+        new window.MouseEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 100,
+        }),
+      );
+      document.dispatchEvent(
+        new window.MouseEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 40,
+        }),
+      );
+
+      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).not.toBeNull();
+      expect(getFlowLabels()).toEqual(['sage seed', 'nettle seed']);
+      expect(
+        document.body.querySelector(
+          '.workshop-page__task-drag-ghost .workshop-page__task-label',
+        )?.textContent,
+      ).toBe('mint seed');
+
+      document.dispatchEvent(
+        new window.MouseEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 40,
+        }),
+      );
+
+      expect(getVisibleLabels()).toEqual(['mint seed', 'sage seed', 'nettle seed']);
+      expect(document.body.querySelector('.workshop-page__task-drag-ghost')).toBeNull();
+
+      const sageRow = list.querySelector('.workshop-page__task');
+      sageRow.dispatchEvent(
+        new window.KeyboardEvent('keydown', {
+          bubbles: true,
+          key: 'ArrowDown',
+        }),
+      );
+
+      expect(getVisibleLabels()).toEqual(['mint seed', 'nettle seed', 'sage seed']);
+    } finally {
+      pagesFacade?.unmount();
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
   });
 
   it('keeps Workshop task row nodes stable when completed tasks move down', () => {
@@ -4016,23 +4353,25 @@ describe('PagesFacade', () => {
       return makeRect(0);
     };
     document.body.append(stage);
+    let pagesFacade = null;
 
     try {
-      const pagesFacade = new PagesFacade({
+      pagesFacade = new PagesFacade({
         gameplayFacade,
         playerFacade: createPlayerFacadeFake(),
       });
 
       pagesFacade.mount(stage);
-      stage
-        .querySelector('.workshop-page__tasks-toggle')
-        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      pagesFacade.currentPageManager.currentPage.taskManager.setExpanded(true);
 
       const list = stage.querySelector('.workshop-page__task-list');
       const getLabels = () =>
         [...list.querySelectorAll('.workshop-page__task-label')].map((label) => label.textContent);
 
       expect(getLabels()).toEqual(['mint seed', 'nettle seed', 'lavender seed']);
+      expect(list.querySelector('.is-first-completed .workshop-page__task-label')?.textContent).toBe(
+        'lavender seed',
+      );
       const mintRow = list.querySelector('.workshop-page__task');
 
       snapshot.tasks.level.completedTasks = 2;
@@ -4054,9 +4393,11 @@ describe('PagesFacade', () => {
       expect(getLabels()).toEqual(['nettle seed', 'mint seed', 'lavender seed']);
       expect(rowsAfter[1]).toBe(mintRow);
       expect(mintRow.classList.contains('is-completed')).toBe(true);
+      expect(mintRow.classList.contains('is-first-completed')).toBe(true);
       expect(mintRow.classList.contains('is-reordering')).toBe(true);
       expect(mintRow.style.transition).toContain('transform 230ms');
     } finally {
+      pagesFacade?.unmount();
       stage.remove();
       window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     }
@@ -4100,16 +4441,33 @@ describe('PagesFacade', () => {
 
     const completion = stage.querySelector('.workshop-page__level-complete');
     const button = stage.querySelector('.workshop-page__level-complete-button');
+    const rewards = stage.querySelector('.workshop-page__level-rewards');
+    const payoffTitle = rewards?.querySelector('.workshop-page__level-payoff-title');
+    const payoffRows = [
+      ...rewards.querySelectorAll('.workshop-page__level-payoff-row'),
+    ].map((row) => row.textContent);
 
     expect(completion?.hidden).toBe(false);
-    expect(completion?.textContent).toBe('pay gold20 goldlevel up');
+    expect(rewards?.hidden).toBe(false);
+    expect(payoffTitle?.textContent).toBe('level 2 rewards');
+    expect(payoffRows).toEqual([
+      'unlocksgarden',
+      'garden plots+1',
+      'mana cap+50',
+      'mana regen+1/sec',
+      'crystal+1',
+    ]);
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
+    expect(button?.textContent).toBe('level up20 gold');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
+      'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +1/sec mana regen, +1 crystal',
+    );
   });
 
   it('shows seed summon feedback as a flyout', () => {
@@ -4324,6 +4682,34 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().username).toBe('Mira');
     expect(usernameButton.textContent).toBe('Mira');
     expect(settings.hidden).toBe(true);
+  });
+
+  it('selects the whole username on the first edit click', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin'),
+    });
+
+    pagesFacade.mount(stage);
+
+    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const input = stage.querySelector('.room-top-panel__username-input');
+
+    usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    input.dispatchEvent(new window.Event('focus'));
+    input.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe('Merlin'.length);
+
+    input.value = 'Merlina';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    input.setSelectionRange(3, 3);
+    input.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(input.selectionStart).toBe(3);
+    expect(input.selectionEnd).toBe(3);
   });
 
   it('closes settings from the popup close button', () => {
@@ -5029,6 +5415,54 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().username).toBe('wizard');
     expect(pagesFacade.tutorialFacade.progressManager.hasCompleted('intro-username')).toBe(true);
     expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-mana-sphere');
+
+    pagesFacade.unmount();
+  });
+
+  it('selects the default tutorial name so typing can replace it immediately', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const playerFacade = createPlayerFacadeFake('wizard');
+    const tutorialStorage = createMemoryStorage({
+      [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+        completedStepIds: ['intro-welcome'],
+      }),
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade,
+      tutorialStorage,
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-username');
+
+    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const input = stage.querySelector('.room-top-panel__username-input');
+    const saveButton = stage.querySelector('.room-top-panel__username-save');
+
+    usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    input.dispatchEvent(new window.Event('focus'));
+    input.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe('wizard'.length);
+
+    input.value = 'Mira';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    saveButton.dispatchEvent(
+      new window.Event('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(playerFacade.getSnapshot().username).toBe('Mira');
+    expect(pagesFacade.tutorialFacade.progressManager.hasCompleted('intro-username')).toBe(true);
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-username-return');
 
     pagesFacade.unmount();
   });
@@ -6911,6 +7345,7 @@ describe('PagesFacade', () => {
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createCompletedTutorialStorage(),
     });
 
     pagesFacade.mount(stage);
@@ -6941,8 +7376,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__cauldron')).not.toBeNull();
     expect(stage.querySelector('.brewing-page__guide')).toBeNull();
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('empty');
-    expect(stage.querySelector('.brewing-page__recipes-button')?.textContent).toBe('select recipe');
-    expect(stage.querySelector('.brewing-page__potions-button')?.textContent).toBe('potions');
+    expect(stage.querySelector('.brewing-page__recipes-button')).toBeNull();
+    expect(stage.querySelector('.brewing-page__potions-button')?.textContent).toBe('bag');
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew (12 mana)',
     );
@@ -7233,7 +7668,112 @@ describe('PagesFacade', () => {
     ).toEqual(['cauldron 1', 'cauldron 2', 'cauldron 3']);
   });
 
-  it('shows select recipe control with auto state only after auto brew research', () => {
+  it('shows the next Brewing cauldron as a buyable locked box', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const brewing = gameplayFacade.getSnapshot().brewing;
+    brewing.maxCauldrons = 3;
+    brewing.configuredMaxCauldrons = 3;
+    brewing.cauldronCosts = [0, 1, 3];
+    brewing.unlockedCauldrons = 1;
+    brewing.nextCauldronNumber = 2;
+    brewing.nextCauldronCost = 1;
+    brewing.nextCauldronLockedByLevel = false;
+    brewing.nextCauldronRequiresLevel = null;
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    let cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
+    expect(cauldrons).toHaveLength(2);
+    expect(cauldrons[1].classList.contains('is-locked')).toBe(true);
+    expect(cauldrons[1].textContent).toContain('locked');
+    expect(cauldrons[1].querySelector('.brewing-page__action-button')?.textContent).toContain(
+      'buy 1 gold',
+    );
+    expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(true);
+
+    gameplayFacade.setGold(1);
+    expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(false);
+    cauldrons[1]
+      .querySelector('.brewing-page__action-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
+    expect(cauldrons).toHaveLength(3);
+    expect(cauldrons[1].classList.contains('is-locked')).toBe(false);
+    expect(cauldrons[1].querySelector('.style-box__title')?.textContent).toBe('cauldron 2');
+    expect(cauldrons[2].querySelector('.style-box__title')?.textContent).toBe('cauldron 3');
+    expect(cauldrons[2].classList.contains('is-locked')).toBe(true);
+  });
+
+  it('shows select recipe control on each cauldron and opens for the clicked cauldron', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    gameplayFacade.setGold(3);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+
+    const brewing = gameplayFacade.getSnapshot().brewing;
+    brewing.cauldrons = [0, 1, 2].map((cauldronIndex) => ({
+      ...brewing,
+      cauldronIndex,
+      cauldronNumber: cauldronIndex + 1,
+      ingredients: [],
+      activeBrew:
+        cauldronIndex === 1
+          ? {
+              key: 'manaTonic',
+              label: 'mana tonic',
+              phase: 'bottling',
+              canStartBottling: false,
+              canCollect: false,
+              remainingMs: 500,
+              totalMs: 1_000,
+              progress: 0.5,
+            }
+          : null,
+    }));
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    const selectRecipeButtons = [
+      ...stage.querySelectorAll('.brewing-page__cauldron-select-recipe-text'),
+    ].filter((button) => !button.hidden);
+
+    expect(selectRecipeButtons).toHaveLength(3);
+    expect(selectRecipeButtons.map((button) => button.textContent)).toEqual([
+      'select recipe',
+      'select recipe',
+      'select recipe',
+    ]);
+
+    selectRecipeButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.brewing-page__recipes-popup');
+    expect(popup.hidden).toBe(false);
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe(
+      'select recipe: cauldron 2',
+    );
+    expect(stage.querySelector('.brewing-page__cauldron.is-current')?.dataset.cauldronIndex).toBe(
+      '1',
+    );
+
+    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(popup.hidden).toBe(true);
+  });
+
+  it('shows select recipe control after recipe unlock and auto state after auto brew research', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -7253,23 +7793,40 @@ describe('PagesFacade', () => {
 
     gameplayFacade.setGold(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+
+    expect(selectRecipeButton?.hidden).toBe(false);
+    expect(selectRecipeButton?.textContent).toBe('select recipe');
+    expect(selectRecipeButton?.getAttribute('aria-label')).toBe(
+      'open select recipe for cauldron 1',
+    );
+    expect(actions?.classList.contains('is-centered')).toBe(false);
+
+    selectRecipeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    let popup = stage.querySelector('.brewing-page__recipes-popup');
+    expect(popup.hidden).toBe(false);
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe(
+      'select recipe: cauldron 1',
+    );
+    expect(popup.querySelector('.brewing-page__auto-summary')?.hidden).toBe(true);
+    popup
+      .querySelector('.brewing-page__recipes-close')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     gameplayFacade.getSnapshot().crystal.current = 1;
     expect(gameplayFacade.buyResearch('automation:autoBrewCauldron:1')).toMatchObject({
       ok: true,
     });
 
-    expect(selectRecipeButton?.hidden).toBe(false);
-    expect(selectRecipeButton?.textContent).toBe('select recipe');
-    expect(selectRecipeButton?.getAttribute('aria-label')).toBe('open select recipe');
-    expect(actions?.classList.contains('is-centered')).toBe(false);
-
     selectRecipeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const popup = stage.querySelector('.brewing-page__recipes-popup');
+    popup = stage.querySelector('.brewing-page__recipes-popup');
     const stateButton = popup.querySelector('.brewing-page__auto-state-button');
 
     expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('.style-box__title')?.textContent).toBe('select recipe');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe(
+      'select recipe: cauldron 1',
+    );
     expect(popup.textContent).not.toContain('auto brewing');
     expect(popup.querySelector('.brewing-page__auto-summary')?.hidden).toBe(false);
     expect(stateButton?.textContent).toBe('disabled');
@@ -7388,13 +7945,14 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'brewing');
 
-    const button = stage.querySelector('.brewing-page__recipes-button');
+    const button = stage.querySelector('.brewing-page__cauldron-select-recipe-text');
     const popup = stage.querySelector('.brewing-page__recipes-popup');
     const potionsButton = stage.querySelector('.brewing-page__potions-button');
     const potionsPopup = stage.querySelector('.brewing-page__potions-popup');
 
+    expect(stage.querySelector('.brewing-page__recipes-button')).toBeNull();
     expect(button?.textContent).toBe('select recipe');
-    expect(potionsButton?.textContent).toBe('potions');
+    expect(potionsButton?.textContent).toBe('bag');
     expect(popup.hidden).toBe(true);
     expect(potionsPopup.hidden).toBe(true);
 
@@ -7402,7 +7960,9 @@ describe('PagesFacade', () => {
 
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(popup.querySelector('.style-box__title')?.textContent).toBe('select recipe');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe(
+      'select recipe: cauldron 1',
+    );
     expect(popup.querySelector('.brewing-page__recipes-close')?.textContent).toBe('close');
     expect(popup.querySelector('.brewing-page__recipe-group-title')).toBeNull();
     expect(popup.textContent).not.toContain('unlocked recipes');
@@ -7475,6 +8035,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage0');
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
     expect(
       [...popup.querySelectorAll('.brewing-page__recipe-row')]
         .find((row) => row.textContent.includes('mana tonic'))
@@ -7496,6 +8058,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(true);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
     expect(
       [...popup.querySelectorAll('.brewing-page__recipe-row')]
         .find((row) => row.textContent.includes('mana tonic'))
@@ -7526,7 +8090,7 @@ describe('PagesFacade', () => {
     expect(potionsPopup.hidden).toBe(false);
     expect(potionsPopup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(potionsPopup.querySelector('.brewing-page__potions-close')?.textContent).toBe('close');
-    expect(potionsPopup.textContent).toContain('potions');
+    expect(potionsPopup.textContent).toContain('bag');
     expect(potionsPopup.textContent).toContain('mana tonic2');
     expect(potionsPopup.textContent).not.toContain('minor healing potion');
     expect(potionsPopup.textContent).not.toContain('locked');
@@ -7556,7 +8120,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'brewing');
 
     stage
-      .querySelector('.brewing-page__recipes-button')
+      .querySelector('.brewing-page__cauldron-select-recipe-text')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.brewing-page__recipe-select-button')
@@ -7590,7 +8154,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'brewing');
 
     stage
-      .querySelector('.brewing-page__recipes-button')
+      .querySelector('.brewing-page__cauldron-select-recipe-text')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.brewing-page__recipe-row')
@@ -7657,7 +8221,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'brewing');
 
     stage
-      .querySelector('.brewing-page__recipes-button')
+      .querySelector('.brewing-page__cauldron-select-recipe-text')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.brewing-page__recipe-select-button')
@@ -7676,7 +8240,7 @@ describe('PagesFacade', () => {
     );
 
     stage
-      .querySelector('.brewing-page__recipes-button')
+      .querySelector('.brewing-page__cauldron-select-recipe-text')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const selectButton = stage.querySelector('.brewing-page__recipe-select-button');
@@ -7700,7 +8264,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'brewing');
 
     stage
-      .querySelector('.brewing-page__recipes-button')
+      .querySelector('.brewing-page__cauldron-select-recipe-text')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.brewing-page__recipe-select-button')
@@ -8814,6 +9378,56 @@ describe('PagesFacade', () => {
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
 
     expect(popup.hidden).toBe(true);
+  });
+
+  it('explains missing requirements when a locked research row is tapped', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    const recipeBox = gameplayFacade
+      .getSnapshot()
+      .research.boxes.find((box) => box.id === 'recipeUnlocks');
+
+    recipeBox.researches.push({
+      id: 'unlockRecipe:minorHealingPotion',
+      label: 'minor healing potion',
+      value: 'locked',
+      effect: 'brew',
+      costGold: 7,
+      completed: false,
+      locked: true,
+      canResearch: false,
+      requiredResearchIds: ['unlockRecipe:manaTonic'],
+      requiredPlayerLevel: 5,
+      description: 'allows valid cauldron ingredients to brew minor healing potion.',
+    });
+
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'research');
+
+    const popup = stage.querySelector('.research-page__info-popup');
+    const row = [...stage.querySelectorAll('.research-page__row')].find((candidate) =>
+      candidate.textContent?.includes('minor healing potion'),
+    );
+
+    expect(popup).not.toBeNull();
+    expect(popup.hidden).toBe(true);
+    expect(row?.classList.contains('is-locked')).toBe(true);
+
+    dispatchTouchTap(row);
+
+    expect(popup.hidden).toBe(false);
+    expect(popup.textContent).toContain(
+      'allows valid cauldron ingredients to brew minor healing potion.',
+    );
+    expect(popup.textContent).toContain(
+      'requires mana tonic research and level 5.',
+    );
   });
 
   it('sets selected NPC market stand item', () => {

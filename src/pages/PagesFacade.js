@@ -13,6 +13,7 @@ import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatM
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
 import { PageUnlockManager } from './managers/PageUnlockManager.js';
 import { PageRegistryManager } from './managers/PageRegistryManager.js';
+import { setNotificationVisibilityPolicy } from './shared/notificationBadge.js';
 import {
   DEFAULT_PAGE_SWIPE_ORDER,
   PageSwipeNavigationManager,
@@ -38,6 +39,7 @@ export class PagesFacade {
     tutorialStorage,
     defaultPageId = 'workshop',
   } = {}) {
+    this.stage = null;
     this.gameplayFacade = gameplayFacade;
     this.registryManager = new PageRegistryManager();
     this.pageUnlockManager = new PageUnlockManager({
@@ -92,6 +94,8 @@ export class PagesFacade {
           gameplayFacade,
           getCurrentPageId: () => this.getCurrentPageId(),
           storage: tutorialStorage,
+          onNotificationVisibilityPolicyChange: (policy) =>
+            this.applyTutorialNotificationVisibilityPolicy(policy),
         })
       : null;
 
@@ -143,6 +147,7 @@ export class PagesFacade {
   }
 
   mount(stage) {
+    this.stage = stage;
     this.currentPageManager.mount(stage);
     this.swipeNavigationManager.mount(stage);
     this.bottomPanelFacade.mount(stage);
@@ -160,6 +165,7 @@ export class PagesFacade {
   }
 
   unmount() {
+    this.applyTutorialNotificationVisibilityPolicy(null);
     this.scrollCueManager.unmount();
     this.tutorialFacade?.unmount();
     this.pageUnlockUnsubscribe?.();
@@ -172,6 +178,7 @@ export class PagesFacade {
     this.bottomPanelFacade.unmount();
     this.swipeNavigationManager.unmount();
     this.currentPageManager.unmount();
+    this.stage = null;
   }
 
   show(pageId) {
@@ -230,6 +237,11 @@ export class PagesFacade {
 
   syncTopPanelResourceContext() {
     this.topPanelFacade.setResourceContext(this.getTopPanelResourceContext());
+  }
+
+  applyTutorialNotificationVisibilityPolicy(policy) {
+    setNotificationVisibilityPolicy(policy, { root: this.stage });
+    this.notificationFacade.publish();
   }
 
   getTopPanelResourceContext() {

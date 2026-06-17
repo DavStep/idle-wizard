@@ -253,6 +253,80 @@ describe('GameplayFacade', () => {
     expect(snapshot.shop.playerShelf.unlockedSlots).toBe(0);
   });
 
+  it('locks empty legacy Brewing cauldrons that used to appear from player level', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 3,
+        mana: {},
+        gold: {},
+        crystal: {},
+        logs: {},
+        inventory: [],
+        research: {
+          completedIds: [],
+        },
+        brewing: {
+          cauldrons: [
+            { cauldronNumber: 1, cauldronItemKeys: [], activeBrew: null },
+            { cauldronNumber: 2, cauldronItemKeys: [], activeBrew: null },
+            { cauldronNumber: 3, cauldronItemKeys: [], activeBrew: null },
+          ],
+        },
+        tasks: {
+          currentLevel: 5,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+    const brewing = gameplayFacade.getSnapshot().brewing;
+
+    expect(brewing.maxCauldrons).toBe(3);
+    expect(brewing.unlockedCauldrons).toBe(1);
+    expect(brewing.cauldrons).toHaveLength(1);
+    expect(brewing.nextCauldronNumber).toBe(2);
+  });
+
+  it('keeps non-empty legacy Brewing cauldrons unlocked to avoid losing staged progress', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 3,
+        mana: {},
+        gold: {},
+        crystal: {},
+        logs: {},
+        inventory: [{ itemKey: 'sageHerb', quantity: 3 }],
+        research: {
+          completedIds: [],
+        },
+        brewing: {
+          cauldrons: [
+            { cauldronNumber: 1, cauldronItemKeys: [], activeBrew: null },
+            { cauldronNumber: 2, cauldronItemKeys: ['sageHerb'], activeBrew: null },
+            { cauldronNumber: 3, cauldronItemKeys: [], activeBrew: null },
+          ],
+        },
+        tasks: {
+          currentLevel: 5,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+    const brewing = gameplayFacade.getSnapshot().brewing;
+
+    expect(brewing.unlockedCauldrons).toBe(2);
+    expect(brewing.cauldrons).toHaveLength(2);
+    expect(brewing.cauldrons[1].ingredients).toHaveLength(1);
+    expect(brewing.nextCauldronNumber).toBe(3);
+  });
+
   it('fills tasks from inventory and advances player level after gold payment', () => {
     const { gameplayFacade } = createGameplay();
     const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
@@ -2314,17 +2388,46 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('uses level-unlocked cauldrons as independent brewing slots', () => {
+  it('uses bought cauldrons as independent brewing slots', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     advanceToLevel(gameplayFacade, 5);
     gameplayFacade.syncPlayerLevelManaEffects();
     gameplayFacade.manaFacade.fill();
     gameplayFacade.itemsFacade.addItem(1001, 6);
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.goldFacade.add(180);
     unlockRecipeResearch(gameplayFacade);
+    gameplayFacade.goldFacade.add(100);
 
     expect(gameplayFacade.getSnapshot().brewing.maxCauldrons).toBe(3);
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(1);
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      unlockedCauldrons: 1,
+      nextCauldronNumber: 2,
+      nextCauldronCost: 25,
+      nextCauldronLockedByLevel: false,
+    });
+    expect(gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
+      ok: false,
+      reason: 'cauldron_locked',
+      cauldronNumber: 2,
+    });
+    expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({
+      ok: true,
+      cost: 25,
+      cauldronNumber: 2,
+    });
+    expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({
+      ok: true,
+      cost: 75,
+      cauldronNumber: 3,
+    });
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      unlockedCauldrons: 3,
+      nextCauldronNumber: 4,
+      nextCauldronLockedByLevel: true,
+      nextCauldronRequiresLevel: 10,
+    });
     expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(3);
 
     expect(gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
@@ -2384,6 +2487,11 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(1002, 1);
     unlockRecipeResearch(gameplayFacade);
     unlockRecipeResearch(gameplayFacade, 'unlockRecipe:minorHealingPotion');
+    gameplayFacade.goldFacade.add(500);
+    expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({
+      ok: true,
+      cauldronNumber: 2,
+    });
 
     expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1))).toMatchObject({
       ok: true,
@@ -2437,7 +2545,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('persists level-unlocked cauldrons and potion inventory across restart', () => {
+  it('persists bought cauldrons and potion inventory across restart', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
 
@@ -2445,8 +2553,17 @@ describe('GameplayFacade', () => {
     first.gameplayFacade.syncPlayerLevelManaEffects();
     first.gameplayFacade.itemsFacade.addItem(1001, 9);
     first.gameplayFacade.itemsFacade.addItem(2001, 2);
-    first.gameplayFacade.goldFacade.add(80);
+    first.gameplayFacade.goldFacade.add(180);
     unlockRecipeResearch(first.gameplayFacade);
+    first.gameplayFacade.goldFacade.add(100);
+    expect(first.gameplayFacade.buyBrewingCauldron()).toMatchObject({
+      ok: true,
+      cauldronNumber: 2,
+    });
+    expect(first.gameplayFacade.buyBrewingCauldron()).toMatchObject({
+      ok: true,
+      cauldronNumber: 3,
+    });
 
     expect(first.gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
       ok: true,
@@ -2462,6 +2579,7 @@ describe('GameplayFacade', () => {
     const second = createGameplay({ persistenceStorage });
     const snapshot = second.gameplayFacade.getSnapshot();
 
+    expect(snapshot.brewing.unlockedCauldrons).toBe(3);
     expect(snapshot.brewing.cauldrons).toHaveLength(3);
     expect(snapshot.brewing.cauldrons[1].ingredients).toHaveLength(3);
     expect(snapshot.brewing.cauldrons[2].ingredients).toHaveLength(3);
@@ -2775,7 +2893,7 @@ describe('GameplayFacade', () => {
       nextTileCost: 25,
       nextTileLockedByLevel: false,
       nextTileRequiresLevel: null,
-      harvestSeconds: 10,
+      harvestSeconds: 3,
     });
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({
       itemTypeId: 1001,
@@ -2879,10 +2997,10 @@ describe('GameplayFacade', () => {
         label: 'sage',
         kind: 'herb',
       },
-      durationMs: 10_000,
+      durationMs: 3_000,
     });
 
-    ecsFacade.update({ deltaSeconds: 9 });
+    ecsFacade.update({ deltaSeconds: 2 });
 
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: 'harvesting',
@@ -3047,7 +3165,7 @@ describe('GameplayFacade', () => {
       phase: 'harvesting',
       selectedSeedKey: 'sageSeed',
       herbKey: 'sageHerb',
-      remainingMs: 10_000,
+      remainingMs: 3_000,
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[1]).toMatchObject({
       phase: 'ready',

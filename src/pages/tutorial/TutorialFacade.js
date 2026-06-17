@@ -11,11 +11,18 @@ export class TutorialFacade {
   static explain =
     'Elara Starbrew teaches early play through one lesson button and panel, with progress and target cues behind it.';
 
-  constructor({ gameplayFacade, getCurrentPageId, storage, now } = {}) {
+  constructor({
+    gameplayFacade,
+    getCurrentPageId,
+    storage,
+    now,
+    onNotificationVisibilityPolicyChange,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.stage = null;
     this.unsubscribe = null;
     this.getNow = typeof now === 'function' ? now : () => Date.now();
+    this.onNotificationVisibilityPolicyChange = onNotificationVisibilityPolicyChange;
     this.progressManager = new TutorialProgressManager({ storage });
     this.targetManager = new TutorialTargetManager();
     this.logicManager = new TutorialLogicManager({
@@ -24,7 +31,7 @@ export class TutorialFacade {
       now: this.getNow,
     });
     this.stepManager = this.logicManager.stepManager;
-    this.hintManager = new TutorialHintManager();
+    this.hintManager = new TutorialHintManager({ storage });
     this.revealManager = new TutorialRevealManager();
     this.reminderManager = this.logicManager.reminderManager;
     this.saleManager = new TutorialSaleManager();
@@ -33,6 +40,7 @@ export class TutorialFacade {
     this.blockingDialogObserver = null;
     this.activeStep = null;
     this.requestedTargetGuidanceStepId = null;
+    this.notificationVisibilityPolicyKey = '';
     this.handleClick = (event) => {
       if (event.target?.closest?.('.tutorial-layer')) {
         return;
@@ -58,7 +66,11 @@ export class TutorialFacade {
       this.scheduleRefresh();
     };
     this.handleAdvance = () => this.advanceActiveStep();
-    this.handleObjectivePress = () => this.pressActiveLesson();
+    this.handleObjectivePress = (detail) => this.pressActiveLesson(detail);
+    this.handleLessonPanelClose = () => {
+      this.cancelRefresh();
+      this.refresh();
+    };
     this.handleResize = () => this.scheduleRefresh();
     this.handleUsernameSaved = () => {
       if (this.progressManager.hasCompleted('intro-username')) {
@@ -81,6 +93,7 @@ export class TutorialFacade {
     this.hintManager.mount(stage);
     this.hintManager.setAdvanceHandler(this.handleAdvance);
     this.hintManager.setObjectivePressHandler(this.handleObjectivePress);
+    this.hintManager.setLessonPanelCloseHandler(this.handleLessonPanelClose);
     this.unsubscribe = this.gameplayFacade.subscribe(() => this.scheduleRefresh());
     stage.addEventListener('click', this.handleClick, true);
     stage.addEventListener(TOP_PANEL_USERNAME_SAVED_EVENT, this.handleUsernameSaved);
@@ -101,7 +114,9 @@ export class TutorialFacade {
     window.removeEventListener('resize', this.handleResize);
     this.hintManager.setAdvanceHandler(null);
     this.hintManager.setObjectivePressHandler(null);
+    this.hintManager.setLessonPanelCloseHandler(null);
     this.hintManager.unmount();
+    this.updateNotificationVisibilityPolicy(null);
     this.revealManager.setStage(null);
     this.targetManager.setStage(null);
     this.stage = null;
@@ -199,6 +214,10 @@ export class TutorialFacade {
   }
 
   applyViewState(viewState) {
+    this.updateNotificationVisibilityPolicy(
+      this.getNotificationVisibilityPolicy(viewState),
+    );
+
     if (viewState.kind === 'blocked') {
       this.clearRequestedTargetGuidance();
       this.saleManager.cancel();
@@ -261,7 +280,7 @@ export class TutorialFacade {
     this.scheduleRefresh();
   }
 
-  pressActiveLesson() {
+  pressActiveLesson({ source } = {}) {
     const step = this.activeStep;
 
     if (!step) {
@@ -277,7 +296,7 @@ export class TutorialFacade {
       return;
     }
 
-    this.showTargetNow(step);
+    this.showTargetNow(step, { emphasize: source === 'show-me' });
   }
 
   shouldClickObjectiveTarget(step, target) {
@@ -292,8 +311,9 @@ export class TutorialFacade {
     );
   }
 
-  showTargetNow(step) {
+  showTargetNow(step, { emphasize = false } = {}) {
     const target = this.targetManager.getTarget(step?.targetId);
+    const targetWasVisible = this.hintManager.isTargetVisibleOnScreen(target);
     this.revealManager.update({
       step,
     });
@@ -308,6 +328,34 @@ export class TutorialFacade {
     this.cancelRefresh();
     this.cancelReminderRefresh();
     this.applyCue(cue);
+
+    if (emphasize && targetWasVisible) {
+      this.hintManager.emphasizeTarget(target);
+    }
+  }
+
+  getNotificationVisibilityPolicy(viewState) {
+    const step = viewState?.step;
+
+    if (viewState?.kind !== 'lesson' || step?.cueMode === 'passive') {
+      return null;
+    }
+
+    return {
+      active: true,
+      allowedTutorialIds: step.targetId ? [step.targetId] : [],
+    };
+  }
+
+  updateNotificationVisibilityPolicy(policy) {
+    const key = getNotificationVisibilityPolicyKey(policy);
+
+    if (this.notificationVisibilityPolicyKey === key) {
+      return;
+    }
+
+    this.notificationVisibilityPolicyKey = key;
+    this.onNotificationVisibilityPolicyChange?.(policy);
   }
 
   clearRequestedTargetGuidance() {
@@ -402,4 +450,12 @@ export class TutorialFacade {
     this.blockingDialogObserver = null;
   }
 
+}
+
+function getNotificationVisibilityPolicyKey(policy) {
+  if (policy?.active !== true) {
+    return '';
+  }
+
+  return `active:${(policy.allowedTutorialIds ?? []).join('|')}`;
 }

@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.27
+
+- Added buyable extra Brewing cauldrons so potion work can expand through player progress instead of appearing all at once.
+- Made early herb growth faster and tightened Workshop level-up requirements so the first loops move more clearly.
+- Improved Workshop requirement labels and guide connections so level goals show what they unlock and where to act next.
+- Hardened Elara's tutorial targeting around Brewing, Market, Garden, and level-up steps, with steadier pointer placement and mobile tap handling.
+
 ## 0.1.26
 
 - Tightened Elara's Market and level-up guidance so later gold goals stay locked onto the real fast-sell flow, selected items, and amount step.

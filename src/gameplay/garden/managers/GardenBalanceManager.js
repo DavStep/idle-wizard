@@ -3,7 +3,7 @@ const DEFAULT_GARDEN_BALANCE = {
     initialUnlockedTiles: 1,
     tileCostsGold: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
     tilesPerRow: 4,
-    harvestSeconds: 10,
+    harvestSeconds: 3,
   },
 };
 

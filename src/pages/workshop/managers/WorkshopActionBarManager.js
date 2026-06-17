@@ -1,6 +1,7 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { getSeedSummonNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import summonCircleUrl from '../../../assets/ui/summon-circle.png';
 
 export class WorkshopActionBarManager {
@@ -160,7 +161,7 @@ export class WorkshopActionBarManager {
     this.setAttribute(this.refs.summonButton, 'aria-label', ariaLabel);
     this.setAttribute(this.refs.summonButton, 'aria-disabled', ariaDisabled);
     this.refs.summonButton.disabled = false;
-    setNotificationBadge(this.refs.summonButton, snapshot.seedSummoning.canSummon);
+    setNotificationBadge(this.refs.summonButton, getSeedSummonNotification(snapshot));
   }
 
   setText(element, text) {

@@ -59,7 +59,7 @@ export class TutorialLogicManager {
       return this.createEmptyState('hidden');
     }
 
-    const autoOpen = step.cueMode !== 'passive';
+    const autoOpen = this.shouldAutoOpen(step);
     const forceOpen = Boolean(isNewStep && autoOpen);
     const panelOpen = Boolean(lessonPanelOpen || forceOpen);
     const cue = this.getCueState({
@@ -86,6 +86,7 @@ export class TutorialLogicManager {
         forceOpen,
         advanceOnClick: step.advanceOnClick,
         canShowTarget: Boolean(target),
+        target,
       },
       cue,
       nextRefreshAt: cue.nextRefreshAt,
@@ -105,6 +106,34 @@ export class TutorialLogicManager {
   getCueState({ step, target, lessonPanelOpen, targetGuidanceRequested = false, now }) {
     if (!target) {
       this.reminderManager.clearVisible();
+      return {
+        kind: 'none',
+        lessonAttention: false,
+        nextRefreshAt: null,
+      };
+    }
+
+    if (step.cueMode === 'focus-target') {
+      this.reminderManager.clearVisible();
+
+      if (!lessonPanelOpen) {
+        return {
+          kind: 'target-cue',
+          target,
+          showPointer: this.shouldShowPointer(step),
+          nextRefreshAt: null,
+        };
+      }
+
+      if (targetGuidanceRequested) {
+        return {
+          kind: 'target-cue',
+          target,
+          showPointer: this.shouldShowPointer(step),
+          nextRefreshAt: null,
+        };
+      }
+
       return {
         kind: 'none',
         lessonAttention: false,
@@ -198,6 +227,10 @@ export class TutorialLogicManager {
 
   shouldShowPointer(step) {
     return step?.showPointer !== false && step?.targetId !== 'workshop:manaSphere';
+  }
+
+  shouldAutoOpen(step) {
+    return step?.cueMode !== 'passive' && step?.cueMode !== 'focus-target';
   }
 
   recordActivity(now = this.getNow()) {

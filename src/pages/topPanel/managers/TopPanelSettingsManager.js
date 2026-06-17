@@ -22,6 +22,7 @@ import { getDefaultPlayerVisualSettingsResearched } from '../../../player/player
 import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
+const DEFAULT_USERNAME = 'wizard';
 const SETTINGS_TABS = ['account', 'report', 'theme'];
 const DEFAULT_FEEDBACK_KIND = 'feedback';
 const FEEDBACK_KIND_CONFIG = {
@@ -64,6 +65,8 @@ export class TopPanelSettingsManager {
     this.settingsTab = DEFAULT_SETTINGS_TAB;
     this.feedbackKind = DEFAULT_FEEDBACK_KIND;
     this.feedbackPending = false;
+    this.primeUsernameSelection = false;
+    this.reselectUsernameOnClick = false;
     this.previousFocus = null;
     this.handleUsernameClick = () => this.showSettings();
     this.handleCloseClick = () => this.hide();
@@ -83,6 +86,28 @@ export class TopPanelSettingsManager {
 
       event.preventDefault();
       this.saveUsername();
+    };
+    this.handleUsernameInputFocus = () => {
+      if (!this.visible) {
+        return;
+      }
+
+      this.selectUsernameOnFirstFocus();
+    };
+    this.handleUsernameInputClick = () => {
+      if (!this.visible || !this.reselectUsernameOnClick) {
+        return;
+      }
+
+      this.selectUsernameInputText();
+      this.reselectUsernameOnClick = false;
+    };
+    this.handleUsernameInputInput = () => {
+      this.reselectUsernameOnClick = false;
+      this.clearUsernameError();
+    };
+    this.handleUsernameInputBlur = () => {
+      this.reselectUsernameOnClick = false;
     };
     this.handleSavePressStart = (event) => {
       if (!this.visible) {
@@ -175,6 +200,10 @@ export class TopPanelSettingsManager {
     this.refs.settings.addEventListener('click', this.handleOverlayClick);
     this.refs.usernameForm.addEventListener('submit', this.handleSubmit);
     this.refs.usernameInput.addEventListener('keydown', this.handleInputKeydown);
+    this.refs.usernameInput.addEventListener('focus', this.handleUsernameInputFocus);
+    this.refs.usernameInput.addEventListener('click', this.handleUsernameInputClick);
+    this.refs.usernameInput.addEventListener('input', this.handleUsernameInputInput);
+    this.refs.usernameInput.addEventListener('blur', this.handleUsernameInputBlur);
     this.refs.usernameSaveButton.addEventListener('pointerdown', this.handleSavePointerDown);
     this.refs.usernameSaveButton.addEventListener('touchstart', this.handleSaveTouchStart, {
       passive: false,
@@ -268,6 +297,10 @@ export class TopPanelSettingsManager {
       this.refs.settings.removeEventListener('click', this.handleOverlayClick);
       this.refs.usernameForm.removeEventListener('submit', this.handleSubmit);
       this.refs.usernameInput.removeEventListener('keydown', this.handleInputKeydown);
+      this.refs.usernameInput.removeEventListener('focus', this.handleUsernameInputFocus);
+      this.refs.usernameInput.removeEventListener('click', this.handleUsernameInputClick);
+      this.refs.usernameInput.removeEventListener('input', this.handleUsernameInputInput);
+      this.refs.usernameInput.removeEventListener('blur', this.handleUsernameInputBlur);
       this.refs.usernameSaveButton.removeEventListener(
         'pointerdown',
         this.handleSavePointerDown,
@@ -324,6 +357,8 @@ export class TopPanelSettingsManager {
     this.gameplaySnapshot = null;
     this.visible = false;
     this.feedbackPending = false;
+    this.primeUsernameSelection = false;
+    this.reselectUsernameOnClick = false;
     this.previousFocus = null;
   }
 
@@ -375,9 +410,11 @@ export class TopPanelSettingsManager {
     this.feedbackKind = this.normalizeFeedbackKind(feedbackKind);
     this.applyMode();
     this.refs.usernameInput.value =
-      usernamePromptMode && this.refs.usernameButton.textContent === 'wizard'
+      usernamePromptMode && this.refs.usernameButton.textContent === DEFAULT_USERNAME
         ? ''
         : this.refs.usernameButton.textContent;
+    this.primeUsernameSelection = this.refs.usernameInput.value.length > 0;
+    this.reselectUsernameOnClick = false;
     this.clearUsernameError();
     this.clearFeedbackStatus();
     this.clearVisualSettingStatus();
@@ -398,6 +435,8 @@ export class TopPanelSettingsManager {
     this.settingsTab = DEFAULT_SETTINGS_TAB;
     this.feedbackKind = DEFAULT_FEEDBACK_KIND;
     this.feedbackPending = false;
+    this.primeUsernameSelection = false;
+    this.reselectUsernameOnClick = false;
     this.applyMode();
     this.applyVisibility();
 
@@ -961,6 +1000,32 @@ export class TopPanelSettingsManager {
 
   getFocusTarget() {
     return this.refs.settingsPanel ?? this.refs.settingsDialog;
+  }
+
+  selectUsernameOnFirstFocus() {
+    if (!this.primeUsernameSelection) {
+      return;
+    }
+
+    this.primeUsernameSelection = false;
+    this.reselectUsernameOnClick = true;
+    this.selectUsernameInputText();
+  }
+
+  selectUsernameInputText() {
+    const input = this.refs?.usernameInput;
+
+    if (!input) {
+      return;
+    }
+
+    input.select?.();
+
+    try {
+      input.setSelectionRange(0, input.value.length);
+    } catch {
+      // Selection APIs are not guaranteed for every input implementation.
+    }
   }
 
   focusWithoutScroll(element) {

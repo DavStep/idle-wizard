@@ -6,9 +6,16 @@ import {
 } from '../components/BrewingComponents.js';
 
 export class BrewingCauldronEntityManager {
-  constructor({ itemsFacade, maxIngredients }) {
+  constructor({ itemsFacade, maxIngredients, initialUnlockedCauldrons = 1, maxCauldrons = 1 }) {
     this.itemsFacade = itemsFacade;
     this.maxIngredients = maxIngredients;
+    this.initialUnlockedCauldrons = this.normalizeCauldronCount(
+      initialUnlockedCauldrons,
+      1,
+      maxCauldrons,
+    );
+    this.maxCauldrons = this.normalizeMaxCauldrons(maxCauldrons);
+    this.unlockedCauldrons = this.initialUnlockedCauldrons;
     this.ecsManagers = null;
     this.entityIds = new Map();
   }
@@ -16,12 +23,31 @@ export class BrewingCauldronEntityManager {
   initialize(ecsManagers) {
     this.ecsManagers = ecsManagers;
 
-    this.ensureCauldron(0);
+    this.ensureCauldrons(this.unlockedCauldrons);
   }
 
-  configureCapacity({ maxIngredients = this.maxIngredients, maxCauldrons = 1 } = {}) {
+  configureCapacity({
+    maxIngredients = this.maxIngredients,
+    initialUnlockedCauldrons = this.initialUnlockedCauldrons,
+    maxCauldrons = this.maxCauldrons,
+  } = {}) {
     this.maxIngredients = maxIngredients;
-    this.ensureCauldrons(maxCauldrons);
+    this.maxCauldrons = this.normalizeMaxCauldrons(maxCauldrons);
+    this.initialUnlockedCauldrons = this.normalizeCauldronCount(
+      initialUnlockedCauldrons,
+      1,
+      this.maxCauldrons,
+    );
+    this.unlockedCauldrons = this.normalizeCauldronCount(
+      this.unlockedCauldrons,
+      this.initialUnlockedCauldrons,
+      this.maxCauldrons,
+    );
+    if (!this.ecsManagers) {
+      return;
+    }
+
+    this.ensureCauldrons(this.unlockedCauldrons);
   }
 
   ensureCauldrons(maxCauldrons = 1) {
@@ -48,6 +74,11 @@ export class BrewingCauldronEntityManager {
 
   addIngredient(itemTypeId, cauldronIndex = 0) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    if (!this.isCauldronUnlocked(safeCauldronIndex)) {
+      return false;
+    }
+
     this.ensureCauldron(safeCauldronIndex);
 
     if (this.getIngredientCount(safeCauldronIndex) >= this.maxIngredients) {
@@ -88,6 +119,41 @@ export class BrewingCauldronEntityManager {
     for (const entityId of this.getIngredientEntityIds(null)) {
       this.ecsManagers.entities.removeEntity(entityId);
     }
+  }
+
+  getUnlockedCauldrons() {
+    return this.normalizeCauldronCount(
+      this.unlockedCauldrons,
+      this.initialUnlockedCauldrons,
+      this.maxCauldrons,
+    );
+  }
+
+  unlockNextCauldron() {
+    if (this.getUnlockedCauldrons() >= this.maxCauldrons) {
+      return false;
+    }
+
+    this.unlockedCauldrons += 1;
+    this.ensureCauldron(this.unlockedCauldrons - 1);
+    return true;
+  }
+
+  applyUnlockedCauldrons(unlockedCauldrons) {
+    this.unlockedCauldrons = this.normalizeCauldronCount(
+      unlockedCauldrons,
+      this.initialUnlockedCauldrons,
+      this.maxCauldrons,
+    );
+    if (!this.ecsManagers) {
+      return;
+    }
+
+    this.ensureCauldrons(this.unlockedCauldrons);
+  }
+
+  isCauldronUnlocked(cauldronIndex = 0) {
+    return this.normalizeCauldronIndex(cauldronIndex) < this.getUnlockedCauldrons();
   }
 
   getIngredientCount(cauldronIndex = 0) {
@@ -170,5 +236,22 @@ export class BrewingCauldronEntityManager {
     return Number.isInteger(safeCauldronIndex) && safeCauldronIndex >= 0
       ? safeCauldronIndex
       : 0;
+  }
+
+  normalizeMaxCauldrons(maxCauldrons) {
+    const safeMaxCauldrons = Math.floor(Number(maxCauldrons));
+    return Number.isInteger(safeMaxCauldrons) && safeMaxCauldrons > 0
+      ? safeMaxCauldrons
+      : 1;
+  }
+
+  normalizeCauldronCount(cauldronCount, min = 1, max = this.maxCauldrons) {
+    const safeMax = this.normalizeMaxCauldrons(max);
+    const safeMin = Math.max(1, Math.min(Math.floor(Number(min)) || 1, safeMax));
+    const safeCauldronCount = Math.floor(Number(cauldronCount));
+
+    return Number.isInteger(safeCauldronCount)
+      ? Math.max(safeMin, Math.min(safeCauldronCount, safeMax))
+      : safeMin;
   }
 }

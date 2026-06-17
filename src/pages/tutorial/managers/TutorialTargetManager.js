@@ -63,6 +63,8 @@ export class TutorialTargetManager {
         Boolean(this.stage?.querySelector('.garden-page__seed-popup:not([hidden])')),
       isBrewingRecipePopupOpen: () =>
         Boolean(this.stage?.querySelector('.brewing-page__recipes-popup:not([hidden])')),
+      isBrewingRecipeSelected: (recipeKey) =>
+        Boolean(getSelectedBrewingRecipeRow(this.stage, recipeKey)),
       isShopSellPopupOpen: () =>
         Boolean(this.stage?.querySelector('.shop-page__sell-popup:not([hidden])')),
       isShopDirectSellPopupOpen: () =>
@@ -157,6 +159,18 @@ function isUsernameSettingsOpen(stage) {
   const input = settings?.querySelector('[data-tutorial-id="top:username-input"]');
 
   return Boolean(input && !input.closest('[hidden]'));
+}
+
+function getSelectedBrewingRecipeRow(stage, recipeKey) {
+  if (!stage || !recipeKey) {
+    return null;
+  }
+
+  return (
+    [...stage.querySelectorAll('.brewing-page__recipe-row[aria-pressed="true"]')].find(
+      (row) => row.dataset?.tutorialId === `brewing:recipe:${recipeKey}`,
+    ) ?? null
+  );
 }
 
 function isBlockingDialogNode(node) {

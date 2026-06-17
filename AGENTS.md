@@ -80,6 +80,14 @@ If the feature is large enough to be a top-level area, place its facade directly
 - Commit intentional native Android project files, but do not commit local SDK paths or build output.
 - Keep Android-specific changes inside `android/` or Capacitor config unless a web change is required.
 
+## Branch / Worktree Rules
+
+- Stay on the user's current branch/worktree by default.
+- Do not create or switch to another branch or worktree unless the user explicitly asks for it.
+- If multiple agents help on one task, keep the implementation on one shared branch/worktree.
+- Do not use separate branches/worktrees for browser, Android, or backend verification; shared local services only reflect one checkout.
+- Helper agents in separate branches/worktrees may do read-only investigation, static analysis, or patch prep, but they must not claim live local runtime QA.
+
 ## Dev Server Rules
 
 - Use one shared Vite dev server on `http://127.0.0.1:55173/`.
@@ -87,7 +95,12 @@ If the feature is large enough to be a top-level area, place its facade directly
 - Do not pass alternate Vite ports or let Vite auto-increment to `55174+`.
 - If port `55173` is held by a stale Vite process, stop it with `npm run dev:kill`, then start `npm run dev` once.
 - Keep SpacetimeDB on `http://127.0.0.1:3000`; do not start duplicate backend processes.
-- When multiple agents work in parallel, only one should own the dev server.
+- Before claiming local browser/manual QA, confirm both Vite `55173` and SpacetimeDB `3000` are up.
+- Check Vite with `npm run dev:status`.
+- Check SpacetimeDB with `lsof -nP -sTCP:LISTEN -iTCP:3000`.
+- If both frontend and backend need a cold start, prefer `npm run stdb:dev` from the primary worktree.
+- If Vite is already running but backend is missing, run `npm run stdb:start`, then `npm run stdb:publish`; run `npm run stdb:generate` too if bindings are missing or schema changed.
+- When multiple agents work in parallel, only one should own live local runtime processes; other agents reuse them and do not start duplicates.
 
 ## Ambiguity Rule
 

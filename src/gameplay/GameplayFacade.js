@@ -62,6 +62,7 @@ export class GameplayFacade {
         this.researchFacade.getCommittedCrystalCostTotal(),
     });
     this.brewingFacade = new BrewingFacade({
+      goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
       playerLevelFacade: this.playerLevelFacade,
@@ -268,6 +269,15 @@ export class GameplayFacade {
     const result = this.gardenFacade.buyNextTile();
     if (result.ok) {
       this.gameplayLogFacade.logGardenTileBought(result);
+    }
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  buyBrewingCauldron() {
+    const result = this.brewingFacade.buyNextCauldron();
+    if (result.ok) {
+      this.gameplayLogFacade.logBrewingCauldronBought(result);
     }
     this.publishAndSaveSnapshot();
     return result;

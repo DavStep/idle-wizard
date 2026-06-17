@@ -1,6 +1,7 @@
 import { BrewingBalanceManager } from './managers/BrewingBalanceManager.js';
 import { BrewingBottlingManager } from './managers/BrewingBottlingManager.js';
 import { BrewingCauldronEntityManager } from './managers/BrewingCauldronEntityManager.js';
+import { BrewingCauldronPurchaseManager } from './managers/BrewingCauldronPurchaseManager.js';
 import { BrewingCollectManager } from './managers/BrewingCollectManager.js';
 import { BrewingProcessEntityManager } from './managers/BrewingProcessEntityManager.js';
 import { BrewingProcessManager } from './managers/BrewingProcessManager.js';
@@ -13,11 +14,27 @@ export class BrewingFacade {
   static explain =
     'Brewing lets the wizard place herbs into a cauldron, spend mana, bottle the result, and collect the potion.';
 
-  constructor({ itemsFacade, manaFacade, playerLevelFacade, researchFacade, onBrewComplete }) {
+  constructor({
+    goldFacade,
+    itemsFacade,
+    manaFacade,
+    playerLevelFacade,
+    researchFacade,
+    onBrewComplete,
+  }) {
+    this.playerLevelFacade = playerLevelFacade;
     this.brewingBalanceManager = new BrewingBalanceManager();
     this.brewingCauldronEntityManager = new BrewingCauldronEntityManager({
       itemsFacade,
       maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
+      initialUnlockedCauldrons: this.brewingBalanceManager.getInitialUnlockedCauldrons(),
+      maxCauldrons: this.brewingBalanceManager.getMaxCauldrons(),
+    });
+    this.brewingCauldronPurchaseManager = new BrewingCauldronPurchaseManager({
+      goldFacade,
+      brewingBalanceManager: this.brewingBalanceManager,
+      brewingCauldronEntityManager: this.brewingCauldronEntityManager,
+      playerLevelFacade,
     });
     this.brewingProcessEntityManager = new BrewingProcessEntityManager({
       itemsFacade,
@@ -75,6 +92,15 @@ export class BrewingFacade {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const nextKey = typeof recipeKey === 'string' && recipeKey.length > 0 ? recipeKey : null;
 
+    if (!this.brewingCauldronEntityManager.isCauldronUnlocked(safeCauldronIndex)) {
+      return {
+        ok: false,
+        reason: 'cauldron_locked',
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
+      };
+    }
+
     const recipe = nextKey ? this.brewingRecipeMatchManager.getRecipeByKey(nextKey) : null;
 
     if (!recipe || !this.brewingRecipeMatchManager.isRecipeUnlocked(recipe)) {
@@ -106,6 +132,16 @@ export class BrewingFacade {
   setAutoBrewEnabled(enabled, cauldronIndex = 0) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const nextEnabled = enabled === true;
+
+    if (!this.brewingCauldronEntityManager.isCauldronUnlocked(safeCauldronIndex)) {
+      return {
+        ok: false,
+        reason: 'cauldron_locked',
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
+      };
+    }
+
     if (nextEnabled && !this.getAutoBrewRecipeKey(safeCauldronIndex)) {
       return {
         ok: false,
@@ -139,10 +175,10 @@ export class BrewingFacade {
   }
 
   getPendingAutoBrewManaCost() {
-    const maxCauldrons = this.brewingSnapshotManager.getMaxCauldrons();
+    const unlockedCauldrons = this.brewingSnapshotManager.getUnlockedCauldrons();
     let manaCost = 0;
 
-    for (let cauldronIndex = 0; cauldronIndex < maxCauldrons; cauldronIndex += 1) {
+    for (let cauldronIndex = 0; cauldronIndex < unlockedCauldrons; cauldronIndex += 1) {
       const cauldronManaCost = this.getPendingAutoBrewManaCostForCauldron(cauldronIndex);
 
       if (cauldronManaCost <= 0) {
@@ -235,7 +271,8 @@ export class BrewingFacade {
       this.brewingBalanceManager.setRuntimeBalance(balance);
       this.brewingCauldronEntityManager.configureCapacity({
         maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
-        maxCauldrons: this.brewingSnapshotManager.getMaxCauldrons(),
+        initialUnlockedCauldrons: this.brewingBalanceManager.getInitialUnlockedCauldrons(),
+        maxCauldrons: this.brewingBalanceManager.getMaxCauldrons(),
       });
     } catch {
       return;
@@ -252,6 +289,10 @@ export class BrewingFacade {
 
   clearCauldron(cauldronIndex = 0) {
     return this.brewingStartManager.clearCauldron(cauldronIndex);
+  }
+
+  buyNextCauldron() {
+    return this.brewingCauldronPurchaseManager.buyNextCauldron();
   }
 
   getStagedIngredientQuantity(itemTypeId) {
@@ -285,8 +326,8 @@ export class BrewingFacade {
 
   getPersistenceSnapshot() {
     const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
-    const maxCauldrons = this.brewingSnapshotManager.getMaxCauldrons();
-    const cauldrons = Array.from({ length: maxCauldrons }, (_unused, cauldronIndex) => {
+    const unlockedCauldrons = this.brewingSnapshotManager.getUnlockedCauldrons();
+    const cauldrons = Array.from({ length: unlockedCauldrons }, (_unused, cauldronIndex) => {
       const cauldronActiveBrew =
         this.brewingProcessEntityManager.getActiveBrewSnapshot(cauldronIndex);
 
@@ -306,6 +347,7 @@ export class BrewingFacade {
     return {
       autoBrewEnabled: this.getAutoBrewEnabled(0),
       autoBrewRecipeKey: this.getAutoBrewRecipeKey(0),
+      unlockedCauldrons,
       cauldrons,
       cauldronItemKeys: this.brewingCauldronEntityManager
         .getIngredientSnapshots()
@@ -344,16 +386,80 @@ export class BrewingFacade {
           },
         ];
 
+    const restoredUnlockedCauldrons = Number.isInteger(snapshot.unlockedCauldrons)
+      ? snapshot.unlockedCauldrons
+      : this.getLegacyUnlockedCauldrons(savedCauldrons, snapshot);
+    const unlockedCauldrons = this.clampUnlockedCauldronsByLevel(restoredUnlockedCauldrons);
+    this.brewingCauldronEntityManager.applyUnlockedCauldrons(unlockedCauldrons);
+
     for (const [index, savedCauldron] of savedCauldrons.entries()) {
       const cauldronIndex = this.normalizeCauldronIndex(
         Number.isInteger(savedCauldron?.cauldronNumber)
           ? savedCauldron.cauldronNumber - 1
           : index,
       );
+      if (cauldronIndex >= unlockedCauldrons) {
+        continue;
+      }
       this.restoreAutoBrew(savedCauldron, snapshot, cauldronIndex);
       this.restoreCauldronItems(savedCauldron?.cauldronItemKeys, itemsFacade, cauldronIndex);
       this.restoreActiveBrew(savedCauldron?.activeBrew, itemsFacade, cauldronIndex);
     }
+  }
+
+  clampUnlockedCauldronsByLevel(unlockedCauldrons) {
+    if (!Number.isInteger(unlockedCauldrons)) {
+      return this.brewingBalanceManager.getInitialUnlockedCauldrons();
+    }
+
+    return Math.min(
+      unlockedCauldrons,
+      this.playerLevelFacade?.getMaxCauldrons?.() ?? unlockedCauldrons,
+      this.brewingBalanceManager.getMaxCauldrons(),
+    );
+  }
+
+  getLegacyUnlockedCauldrons(savedCauldrons, snapshot = {}) {
+    let unlockedCauldrons = this.brewingBalanceManager.getInitialUnlockedCauldrons();
+
+    for (const [index, savedCauldron] of savedCauldrons.entries()) {
+      const cauldronNumber = Number.isInteger(savedCauldron?.cauldronNumber)
+        ? savedCauldron.cauldronNumber
+        : index + 1;
+
+      if (cauldronNumber <= unlockedCauldrons) {
+        continue;
+      }
+
+      if (this.hasLegacyCauldronProgress(savedCauldron, snapshot, cauldronNumber - 1)) {
+        unlockedCauldrons = cauldronNumber;
+      }
+    }
+
+    return unlockedCauldrons;
+  }
+
+  hasLegacyCauldronProgress(savedCauldron, snapshot = {}, cauldronIndex = 0) {
+    if (!savedCauldron || typeof savedCauldron !== 'object') {
+      return false;
+    }
+
+    if (Array.isArray(savedCauldron.cauldronItemKeys) && savedCauldron.cauldronItemKeys.length > 0) {
+      return true;
+    }
+
+    if (savedCauldron.activeBrew && typeof savedCauldron.activeBrew === 'object') {
+      return true;
+    }
+
+    const autoBrewRecipeKey =
+      typeof savedCauldron.autoBrewRecipeKey === 'string'
+        ? savedCauldron.autoBrewRecipeKey
+        : cauldronIndex === 0 && typeof snapshot.autoBrewRecipeKey === 'string'
+          ? snapshot.autoBrewRecipeKey
+          : null;
+
+    return Boolean(autoBrewRecipeKey || savedCauldron.autoBrewEnabled === true);
   }
 
   restoreAutoBrew(savedCauldron, snapshot, cauldronIndex = 0) {

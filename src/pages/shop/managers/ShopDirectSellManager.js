@@ -17,6 +17,8 @@ const DIRECT_SELL_TABS = [
   { kind: 'potion', label: 'potions' },
 ];
 const DIRECT_SELL_HELP_TOOLTIP_ID = 'shop-page__direct-sell-help-tooltip';
+const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
+const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
 
 export class ShopDirectSellManager {
   constructor({ gameplayFacade, onSellOverride, getSellQuoteOverride } = {}) {
@@ -36,6 +38,11 @@ export class ShopDirectSellManager {
     this.sellQuantity = 1;
     this.sellingItemTypeId = null;
     this.handledSelectPressStartItemTypeId = null;
+    this.handledSelectPressStartReset = null;
+    this.lastTouchLikePressStart = {
+      key: null,
+      timeStamp: Number.NEGATIVE_INFINITY,
+    };
     this.statusText = '';
     this.lastSnapshot = null;
     this.previousFocus = null;
@@ -104,6 +111,7 @@ export class ShopDirectSellManager {
     this.unsubscribe = null;
     document.removeEventListener('click', this.handleDocumentClick);
     document.removeEventListener('keydown', this.handleKeydown);
+    this.clearHandledSelectPressStartItemTypeId();
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.refs.controlsRoot?.remove();
     this.refs.helpPopup?.root?.remove();
@@ -119,6 +127,11 @@ export class ShopDirectSellManager {
     this.sellQuantity = 1;
     this.sellingItemTypeId = null;
     this.handledSelectPressStartItemTypeId = null;
+    this.handledSelectPressStartReset = null;
+    this.lastTouchLikePressStart = {
+      key: null,
+      timeStamp: Number.NEGATIVE_INFINITY,
+    };
     this.statusText = '';
     this.lastSnapshot = null;
     this.previousFocus = null;
@@ -219,7 +232,6 @@ export class ShopDirectSellManager {
       onInput: () => this.onQuantityInput(),
       onStep: (delta) => this.onQuantityStep(delta),
     });
-    this.refs.totalValue = this.createValueRow('total');
 
     const actionRow = document.createElement('div');
     actionRow.className = 'shop-page__direct-sell-action-row';
@@ -228,9 +240,16 @@ export class ShopDirectSellManager {
     this.refs.confirmButton = document.createElement('button');
     this.refs.confirmButton.className = 'style-button shop-page__direct-sell-confirm';
     this.refs.confirmButton.type = 'button';
-    this.refs.confirmButton.textContent = 'sell';
     this.refs.confirmButton.dataset.tutorialId = 'shop:directSell:sell';
     this.refs.confirmButton.addEventListener('click', () => this.onConfirmSell());
+    this.refs.confirmButtonLabel = document.createElement('span');
+    this.refs.confirmButtonLabel.className = 'shop-page__direct-sell-confirm-label';
+    this.refs.confirmButtonValue = document.createElement('span');
+    this.refs.confirmButtonValue.className = 'shop-page__direct-sell-confirm-value';
+    this.refs.confirmButton.append(
+      this.refs.confirmButtonLabel,
+      this.refs.confirmButtonValue,
+    );
 
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'shop-page__direct-sell-status';
@@ -249,7 +268,6 @@ export class ShopDirectSellManager {
       closeButton,
       this.refs.selectedItem.row,
       this.refs.quantityField.field,
-      this.refs.totalValue.row,
       actionRow,
       this.refs.status,
       this.refs.divider,
@@ -289,21 +307,6 @@ export class ShopDirectSellManager {
 
     row.append(label, value);
     return { row, label, value };
-  }
-
-  createValueRow(labelText) {
-    const row = document.createElement('div');
-    row.className = 'shop-page__direct-sell-value-row';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = labelText;
-
-    const value = document.createElement('span');
-    value.className = 'row_val';
-
-    row.append(label, value);
-    return { row, value };
   }
 
   createTabs() {
@@ -409,7 +412,7 @@ export class ShopDirectSellManager {
       event.type === 'click' &&
       this.handledSelectPressStartItemTypeId === itemTypeId
     ) {
-      this.handledSelectPressStartItemTypeId = null;
+      this.clearHandledSelectPressStartItemTypeId();
       return;
     }
 
@@ -417,12 +420,12 @@ export class ShopDirectSellManager {
   }
 
   onSelectItemPressStart(event, itemTypeId) {
-    if (this.isMousePressStart(event) || event.currentTarget?.disabled) {
+    if (event.currentTarget?.disabled) {
       return;
     }
 
     event.preventDefault();
-    this.handledSelectPressStartItemTypeId = itemTypeId;
+    this.setHandledSelectPressStartItemTypeId(itemTypeId);
     this.onSelectItem(itemTypeId);
   }
 
@@ -576,7 +579,6 @@ export class ShopDirectSellManager {
     const item = this.getSelectedItem();
     const hasItem = Boolean(item);
 
-    this.refs.totalValue.row.hidden = !hasItem;
     this.refs.quantityField.field.hidden = !hasItem;
     this.refs.actionRow.hidden = !hasItem;
     this.refs.confirmButton.hidden = !hasItem;
@@ -628,13 +630,18 @@ export class ShopDirectSellManager {
     );
     setResourceColor(this.refs.selectedItem.value, 'gold');
 
-    setResourceIconText(
-      this.refs.totalValue.value,
-      displayQuote.ok ? formatGoldPriceText(displayQuote.totalPriceGold) : '?',
+    const totalText = displayQuote.ok
+      ? formatGoldPriceText(displayQuote.totalPriceGold)
+      : '?';
+    this.refs.confirmButtonLabel.textContent = selling ? 'selling' : `sell x${quantity}`;
+    setResourceIconText(this.refs.confirmButtonValue, totalText);
+    setResourceColor(this.refs.confirmButtonValue, displayQuote.ok ? 'gold' : null);
+    this.refs.confirmButton.setAttribute(
+      'aria-label',
+      displayQuote.ok
+        ? `${selling ? 'selling' : 'sell'} ${quantity} for ${totalText}`
+        : `${selling ? 'selling' : 'sell'} ${quantity}`,
     );
-    setResourceColor(this.refs.totalValue.value, displayQuote.ok ? 'gold' : null);
-
-    this.refs.confirmButton.textContent = selling ? 'selling' : 'sell';
     this.refs.confirmButton.disabled = !canSell;
     this.refs.confirmButton.setAttribute('aria-disabled', canSell ? 'false' : 'true');
 
@@ -690,14 +697,9 @@ export class ShopDirectSellManager {
     button.className =
       'shop-page__direct-sell-row shop-page__sell-item-row shop-page__direct-sell-item-button shop-page__sell-item-button';
     button.type = 'button';
-    button.addEventListener('pointerdown', (event) =>
+    this.bindTouchLikePressStart(button, `direct-sell:${itemTypeId}`, (event) =>
       this.onSelectItemPressStart(event, itemTypeId),
     );
-    if (typeof window.PointerEvent !== 'function') {
-      button.addEventListener('touchstart', (event) => this.onSelectItemPressStart(event, itemTypeId), {
-        passive: false,
-      });
-    }
     button.addEventListener('click', (event) => this.onSelectItemClick(event, itemTypeId));
 
     const label = document.createElement('span');
@@ -955,5 +957,57 @@ export class ShopDirectSellManager {
 
   isMousePressStart(event) {
     return event.type === 'pointerdown' && event.pointerType === 'mouse';
+  }
+
+  bindTouchLikePressStart(target, key, handler) {
+    target.addEventListener('pointerdown', (event) =>
+      this.onTouchLikePressStart(event, key, handler),
+    );
+    target.addEventListener(
+      'touchstart',
+      (event) => this.onTouchLikePressStart(event, key, handler),
+      { passive: false },
+    );
+  }
+
+  onTouchLikePressStart(event, key, handler) {
+    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+      return;
+    }
+
+    handler(event);
+  }
+
+  isDuplicateTouchLikePressStart(event, key) {
+    const timeStamp = Number.isFinite(event?.timeStamp) ? event.timeStamp : Date.now();
+    const isDuplicate =
+      this.lastTouchLikePressStart.key === key &&
+      Math.abs(timeStamp - this.lastTouchLikePressStart.timeStamp) <=
+        TOUCH_LIKE_PRESS_START_DEDUPE_MS;
+
+    this.lastTouchLikePressStart = { key, timeStamp };
+    return isDuplicate;
+  }
+
+  setHandledSelectPressStartItemTypeId(itemTypeId) {
+    this.clearHandledSelectPressStartItemTypeId();
+    this.handledSelectPressStartItemTypeId = itemTypeId;
+    this.handledSelectPressStartReset = globalThis.setTimeout(() => {
+      if (this.handledSelectPressStartItemTypeId === itemTypeId) {
+        this.handledSelectPressStartItemTypeId = null;
+      }
+
+      this.handledSelectPressStartReset = null;
+    }, TOUCH_LIKE_CLICK_DEDUPE_RESET_MS);
+    this.handledSelectPressStartReset?.unref?.();
+  }
+
+  clearHandledSelectPressStartItemTypeId() {
+    if (this.handledSelectPressStartReset !== null) {
+      globalThis.clearTimeout(this.handledSelectPressStartReset);
+      this.handledSelectPressStartReset = null;
+    }
+
+    this.handledSelectPressStartItemTypeId = null;
   }
 }

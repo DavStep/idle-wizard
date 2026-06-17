@@ -24,6 +24,17 @@ Use the smallest check that proves the change, then broaden when touching shared
 
 `npm run check` is the default green gate: lint, tests, production web build.
 
+## Shared Local Runtime
+
+Live browser/Android/manual QA must happen from the primary branch/worktree that owns the shared local services. Alternate branches/worktrees can help with code edits and static checks, but they must not claim runtime verification unless they also own the running services.
+
+Before local runtime QA, confirm both services:
+
+- `npm run dev:status`
+- `lsof -nP -sTCP:LISTEN -iTCP:3000`
+
+If neither service is up and live QA is needed, prefer `npm run stdb:dev` from the primary worktree. If Vite is already up, start the backend with `npm run stdb:start`, publish with `npm run stdb:publish`, and regenerate bindings with `npm run stdb:generate` when schema or bindings changed.
+
 ## Structure Rules
 
 - Gameplay state and behavior belong in ECS-backed gameplay facades/managers.
@@ -53,4 +64,5 @@ Keep managers narrow. Split a manager once it has two reasons to change.
 - Ask before implementing unclear gameplay behavior.
 - Do not add new seed, herb, potion, selling, economy, inventory, or progression behavior beyond the explicit request.
 - Do not start another Vite port; use `npm run dev:status`, then shared `http://127.0.0.1:55173/`.
+- Do not create a separate branch/worktree just to do live local QA; shared services only represent one checkout.
 - Do not use raw generated database APIs outside backend boundaries.

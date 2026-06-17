@@ -776,8 +776,9 @@ export class ShopPlayerShelfManager {
       const slotNumber = index + 1;
       const cost = shelf.slotCosts[index];
       const slot = shelf.slots[index];
+      const selected = slotNumber === shelf.selectedSlotNumber;
 
-      row.classList.toggle('is-selected', slotNumber === shelf.selectedSlotNumber);
+      row.classList.toggle('is-selected', selected);
       row.classList.toggle('is-locked', !slot.unlocked);
       row.classList.toggle('is-empty', slot.unlocked && !slot.itemTypeId);
 
@@ -786,6 +787,7 @@ export class ShopPlayerShelfManager {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select player market stand ${slotNumber}`);
+        row.setAttribute('aria-pressed', selected ? 'true' : 'false');
         setNotificationBadge(
           row,
           this.lastPlayerShopSnapshot.connected && !slot.itemTypeId && hasListableItem,
@@ -801,6 +803,7 @@ export class ShopPlayerShelfManager {
         row.removeAttribute('role');
         row.removeAttribute('aria-label');
         row.removeAttribute('tabindex');
+        row.removeAttribute('aria-pressed');
         setResourceIconText(button, this.formatLockedSlotAction(shelf, cost));
         setResourceColorFromText(button, button.textContent);
         button.disabled = shelf.nextSlotLockedByLevel || this.lastGameplaySnapshot.gold.current < cost;
@@ -825,6 +828,7 @@ export class ShopPlayerShelfManager {
       row.removeAttribute('role');
       row.removeAttribute('aria-label');
       row.removeAttribute('tabindex');
+      row.removeAttribute('aria-pressed');
       setNotificationBadge(row, false);
       setNotificationBadge(button, false);
       this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
@@ -877,7 +881,7 @@ export class ShopPlayerShelfManager {
       return `level ${shelf.nextSlotRequiresLevel}`;
     }
 
-    return cost === 0 ? 'buy (free)' : `buy (${formatGoldPriceText(cost)})`;
+    return cost === 0 ? 'free' : `buy (${formatGoldPriceText(cost)})`;
   }
 
   canBuyLockedSlot(shelf, slot, slotNumber) {

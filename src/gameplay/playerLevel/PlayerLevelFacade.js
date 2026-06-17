@@ -80,6 +80,10 @@ export class PlayerLevelFacade {
     return this.playerLevelBalanceManager.getRequiredLevelForGardenTile(tileNumber);
   }
 
+  getRequiredLevelForCauldron(cauldronNumber) {
+    return this.playerLevelBalanceManager.getRequiredLevelForCauldron(cauldronNumber);
+  }
+
   getRequiredLevelForShopSlot(slotNumber) {
     return this.getRequiredLevelForNpcMarketStand(slotNumber);
   }

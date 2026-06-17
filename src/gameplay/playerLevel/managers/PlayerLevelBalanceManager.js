@@ -199,6 +199,10 @@ export class PlayerLevelBalanceManager {
     return this.getRequiredLevelForLimit('maxGardenTiles', tileNumber);
   }
 
+  getRequiredLevelForCauldron(cauldronNumber) {
+    return this.getRequiredLevelForLimit('maxCauldrons', cauldronNumber);
+  }
+
   getRequiredLevelForShopSlot(slotNumber) {
     return this.getRequiredLevelForNpcMarketStand(slotNumber);
   }

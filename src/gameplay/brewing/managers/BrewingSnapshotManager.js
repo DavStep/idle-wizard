@@ -25,10 +25,15 @@ export class BrewingSnapshotManager {
     const herbs = this.getHerbSnapshots();
     const recipes = this.brewingRecipeMatchManager.getRecipes();
     const maxCauldrons = this.getMaxCauldrons();
-    this.brewingCauldronEntityManager.ensureCauldrons(maxCauldrons);
-    const cauldrons = Array.from({ length: maxCauldrons }, (_unused, index) =>
+    const unlockedCauldrons = this.getUnlockedCauldrons();
+    this.brewingCauldronEntityManager.ensureCauldrons(unlockedCauldrons);
+    const cauldrons = Array.from({ length: unlockedCauldrons }, (_unused, index) =>
       this.getCauldronSnapshot(index, herbs),
     );
+    const nextCauldronNumber = unlockedCauldrons + 1;
+    const nextCauldronCost = this.brewingBalanceManager.getCauldronCost(nextCauldronNumber);
+    const nextCauldronLockedByLevel =
+      nextCauldronCost !== null && nextCauldronNumber > maxCauldrons;
     const primaryCauldron = cauldrons[0] ?? this.getCauldronSnapshot(0, herbs);
     const legacyPrimaryCauldron = {
       ...primaryCauldron,
@@ -46,7 +51,16 @@ export class BrewingSnapshotManager {
       herbs,
       recipes,
       cauldrons,
+      unlockedCauldrons,
       maxCauldrons,
+      configuredMaxCauldrons: this.brewingBalanceManager.getMaxCauldrons(),
+      cauldronCosts: this.brewingBalanceManager.getCauldronCosts(),
+      nextCauldronNumber: nextCauldronCost === null ? null : nextCauldronNumber,
+      nextCauldronCost,
+      nextCauldronLockedByLevel,
+      nextCauldronRequiresLevel: nextCauldronLockedByLevel
+        ? this.playerLevelFacade?.getRequiredLevelForCauldron?.(nextCauldronNumber) ?? null
+        : null,
       autoBrewEnabled: this.getAutoBrewEnabled?.(0) === true,
       autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(0) ?? null,
     };
@@ -133,9 +147,18 @@ export class BrewingSnapshotManager {
   getMaxCauldrons() {
     const maxCauldrons = this.playerLevelFacade?.getMaxCauldrons?.();
     const safeMaxCauldrons = Math.floor(Number(maxCauldrons));
-    return Number.isInteger(safeMaxCauldrons) && safeMaxCauldrons > 0
-      ? safeMaxCauldrons
-      : 1;
+    const maxCauldronsByLevel =
+      Number.isInteger(safeMaxCauldrons) && safeMaxCauldrons > 0
+        ? safeMaxCauldrons
+        : 1;
+    return Math.min(this.brewingBalanceManager.getMaxCauldrons(), maxCauldronsByLevel);
+  }
+
+  getUnlockedCauldrons() {
+    return Math.min(
+      this.brewingCauldronEntityManager.getUnlockedCauldrons(),
+      this.getMaxCauldrons(),
+    );
   }
 
   hasEnoughIngredients(itemTypeIds) {

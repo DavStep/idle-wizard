@@ -1,5 +1,8 @@
 /* @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
+
 import { describe, expect, it } from 'vitest';
 
 import { ShopMarketTabsManager } from './ShopMarketTabsManager.js';
@@ -391,8 +394,27 @@ describe('ShopShelfManager', () => {
     const manager = new ShopShelfManager();
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 0)).toBe(
-      'buy (free)',
+      'free',
     );
+  });
+
+  it('keeps NPC market free stand buys clear of the demand border action', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const firstSlotRule = baseCss.match(
+      /\.shop-page__shelf > \.shop-page__slot-row:first-of-type\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const unlockButtonRule = baseCss.match(
+      /\.shop-page__slot-unlock-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(firstSlotRule).toBeDefined();
+    expect(firstSlotRule).toMatch(
+      /margin-top:\s*calc\(\s*var\(--style-box-border-label-line-height\) \+ var\(--style-row-column-gap\)\s*\);/,
+    );
+    expect(unlockButtonRule).toBeDefined();
+    expect(unlockButtonRule).toMatch(/\bdisplay:\s*grid;/);
+    expect(unlockButtonRule).toMatch(/\bgrid-column:\s*1 \/ -1;/);
+    expect(unlockButtonRule).toMatch(/\btouch-action:\s*manipulation;/);
   });
 
   it('formats NPC market stand buy costs as compact gold text', () => {
@@ -455,6 +477,10 @@ describe('ShopShelfManager', () => {
       ['5.', 'empty stand', 'locked'],
     ]);
     expect(rows[0].querySelector('.shop-page__slot-empty-rule')).not.toBeNull();
+    expect(rows[0].querySelector('.shop-page__slot-item-value')?.getAttribute('aria-pressed'))
+      .toBe('true');
+    expect(rows[1].querySelector('.shop-page__slot-item-value')?.getAttribute('aria-pressed'))
+      .toBeNull();
 
     manager.unmount();
   });
@@ -559,6 +585,9 @@ describe('ShopShelfManager', () => {
       manager.mount(stage, popupLayer);
 
       const itemValue = stage.querySelector('.shop-page__slot-item-value');
+      expect(stage.querySelector('.shop-page__slot-unlock-action')?.textContent).toBe(
+        'free',
+      );
       itemValue?.dispatchEvent(createTouchStartEvent());
       itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -566,6 +595,65 @@ describe('ShopShelfManager', () => {
 
       manager.unmount();
     });
+  });
+
+  it('buys the next NPC market stand from keyboard focus on the locked row', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    let buyCount = 0;
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: [] },
+      shop: {
+        shelf: {
+          maxSlots: 5,
+          selectedSlotNumber: null,
+          nextSlotNumber: 1,
+          nextSlotCost: 0,
+          nextSlotLockedByLevel: false,
+          slotCosts: [0, 50, 150, 400, 1000],
+          sellKinds: [],
+          sellItems: [],
+          slots: [
+            { slotNumber: 1, unlocked: false },
+            { slotNumber: 2, unlocked: false },
+            { slotNumber: 3, unlocked: false },
+            { slotNumber: 4, unlocked: false },
+            { slotNumber: 5, unlocked: false },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      buyShopShelfSlot() {
+        buyCount += 1;
+        return { ok: true, cost: 0, slotNumber: 1 };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const unlockButton = stage.querySelector('.shop-page__slot-unlock-button');
+    expect(unlockButton?.textContent).toBe('1.empty standfree');
+    expect(unlockButton?.getAttribute('aria-label')).toBe(
+      'unlock npc market stand 1 for free',
+    );
+
+    unlockButton?.dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+
+    expect(buyCount).toBe(1);
+
+    manager.unmount();
   });
 
   it('buys the next NPC market stand on touchstart of the buy button', () => {
@@ -613,9 +701,9 @@ describe('ShopShelfManager', () => {
 
       manager.mount(stage, popupLayer);
 
-      const buyButton = stage.querySelector('.shop-page__buy-slot-button');
-      buyButton?.dispatchEvent(createTouchStartEvent());
-      buyButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      const unlockButton = stage.querySelector('.shop-page__slot-unlock-button');
+      unlockButton?.dispatchEvent(createTouchStartEvent());
+      unlockButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
       expect(buyCount).toBe(1);
 
@@ -842,6 +930,79 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('selects an NPC market sell item from touchstart on the visible seed text', () => {
+    withPointerEvent(() => {
+      const stage = document.createElement('section');
+      const popupLayer = document.createElement('section');
+      const gameplaySnapshot = {
+        gold: { current: 0 },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          shelf: {
+            maxSlots: 1,
+            selectedSlotNumber: 1,
+            slotCosts: [0],
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 1,
+                sellGold: 8,
+                sellNeed: 12,
+              },
+            ],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                sellItemTypeId: null,
+              },
+            ],
+          },
+        },
+      };
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+        setSelectedShopShelfSlotSellItem(itemTypeId) {
+          const item = gameplaySnapshot.shop.shelf.sellItems[0];
+          Object.assign(gameplaySnapshot.shop.shelf.slots[0], {
+            sellItemTypeId: itemTypeId,
+            sellKind: item.kind,
+            sellKey: item.key,
+            sellLabel: item.label,
+            sellQuantity: item.quantity,
+            sellGold: item.sellGold,
+            sellNeed: item.sellNeed,
+          });
+          return { ok: true, item };
+        },
+      };
+      const manager = new ShopShelfManager({ gameplayFacade });
+
+      manager.mount(stage, popupLayer);
+      manager.showSellPopup();
+
+      const visibleSeedText = popupLayer.querySelector(
+        '[data-tutorial-id="shop:sell:sageSeed"] .style-seed-label__text',
+      );
+      visibleSeedText?.dispatchEvent(createTouchStartEvent());
+
+      expect(gameplaySnapshot.shop.shelf.slots[0].sellItemTypeId).toBe(1);
+      expect(popupLayer.querySelector('.shop-page__sell-popup')?.hidden).toBe(true);
+
+      manager.unmount();
+    });
+  });
+
   it('keeps NPC market stand item text stable across renders so taps can open picker', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -928,7 +1089,7 @@ describe('ShopShelfManager', () => {
     const manager = new ShopPlayerShelfManager();
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 0)).toBe(
-      'buy (free)',
+      'free',
     );
   });
 
@@ -1072,6 +1233,8 @@ describe('ShopShelfManager', () => {
       ['4.', 'empty stand', 'locked'],
       ['5.', 'empty stand', 'locked'],
     ]);
+    expect(rows[0].getAttribute('aria-pressed')).toBe('true');
+    expect(rows[1].getAttribute('aria-pressed')).toBeNull();
     expect(stage.querySelector('.shop-page__player-proceeds-row')).toBeNull();
 
     manager.unmount();

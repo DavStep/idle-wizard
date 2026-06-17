@@ -4,6 +4,7 @@ import { setResourceColorFromText } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 const maxLockedResearchesPerBox = 3;
+const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 
 export class ResearchBoxListManager {
   constructor({ gameplayFacade, onSelectedTabChange, onShowResearchInfo } = {}) {
@@ -18,6 +19,11 @@ export class ResearchBoxListManager {
     this.selectedTabId = 'regular';
     this.tabButtons = new Map();
     this.rowRefs = new Map();
+    this.handledLockedRowPressStartResearchId = null;
+    this.lastTouchLikePressStart = {
+      key: null,
+      timeStamp: Number.NEGATIVE_INFINITY,
+    };
   }
 
   mount(parent) {
@@ -57,12 +63,22 @@ export class ResearchBoxListManager {
     this.selectedTabId = 'regular';
     this.tabButtons.clear();
     this.rowRefs.clear();
+    this.handledLockedRowPressStartResearchId = null;
+    this.lastTouchLikePressStart = {
+      key: null,
+      timeStamp: Number.NEGATIVE_INFINITY,
+    };
   }
 
   render(snapshot) {
     const tabs = this.getTabs(snapshot);
     const selectedTab = this.getSelectedTab(tabs);
-    const boxes = selectedTab?.boxes ?? [];
+    const boxes = this.decorateBoxes({
+      boxes: selectedTab?.boxes ?? [],
+      playerLevel: snapshot?.playerLevel?.currentLevel ?? 1,
+      researchLabelById: this.getResearchLabelById(tabs),
+      completedResearchIds: this.getCompletedResearchIds(snapshot, tabs),
+    });
     const signature = `${selectedTab?.id ?? 'none'}|${tabs
       .map((tab) => `${tab.id}:${tab.label}`)
       .join(',')}|${boxes
@@ -71,7 +87,7 @@ export class ResearchBoxListManager {
           `${box.id}:${box.researches
             .map(
               (research) =>
-                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}`,
+                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}:${research.lockReason ?? ''}`,
             )
             .join(',')}`,
       )
@@ -117,6 +133,98 @@ export class ResearchBoxListManager {
     }
 
     return selectedTab;
+  }
+
+  decorateBoxes({ boxes = [], playerLevel = 1, researchLabelById, completedResearchIds }) {
+    return boxes.map((box) => ({
+      ...box,
+      researches: (box.researches ?? []).map((research) => ({
+        ...research,
+        lockReason: this.getResearchLockReason({
+          research,
+          playerLevel,
+          researchLabelById,
+          completedResearchIds,
+        }),
+      })),
+    }));
+  }
+
+  getResearchLabelById(tabs = []) {
+    const labels = new Map();
+
+    for (const tab of tabs) {
+      for (const box of tab.boxes ?? []) {
+        for (const research of box.researches ?? []) {
+          if (typeof research?.id !== 'string' || typeof research?.label !== 'string') {
+            continue;
+          }
+
+          labels.set(research.id, research.label);
+        }
+      }
+    }
+
+    return labels;
+  }
+
+  getCompletedResearchIds(snapshot, tabs = []) {
+    const completedResearchIds = new Set(snapshot?.research?.completedResearchIds ?? []);
+
+    for (const tab of tabs) {
+      for (const box of tab.boxes ?? []) {
+        for (const research of box.researches ?? []) {
+          if (research?.completed) {
+            completedResearchIds.add(research.id);
+          }
+        }
+      }
+    }
+
+    return completedResearchIds;
+  }
+
+  getResearchLockReason({ research, playerLevel, researchLabelById, completedResearchIds }) {
+    if (!research?.locked) {
+      return '';
+    }
+
+    const missingResearchLabels = (research.requiredResearchIds ?? [])
+      .filter((researchId) => !completedResearchIds.has(researchId))
+      .map((researchId) => researchLabelById.get(researchId) ?? researchId);
+    const missingRequiredPlayerLevel =
+      Number.isInteger(research.requiredPlayerLevel) && playerLevel < research.requiredPlayerLevel
+        ? research.requiredPlayerLevel
+        : null;
+    const requirements = [];
+
+    if (missingResearchLabels.length > 0) {
+      requirements.push(
+        this.formatRequirementList(missingResearchLabels.map((label) => `${label} research`)),
+      );
+    }
+
+    if (missingRequiredPlayerLevel) {
+      requirements.push(`level ${missingRequiredPlayerLevel}`);
+    }
+
+    if (requirements.length === 0) {
+      return 'this research is still locked.';
+    }
+
+    return `requires ${this.formatRequirementList(requirements)}.`;
+  }
+
+  formatRequirementList(values = []) {
+    if (values.length <= 1) {
+      return values[0] ?? '';
+    }
+
+    if (values.length === 2) {
+      return `${values[0]} and ${values[1]}`;
+    }
+
+    return `${values.slice(0, -1).join(', ')}, and ${values.at(-1)}`;
   }
 
   syncTabs(tabs) {
@@ -224,6 +332,13 @@ export class ResearchBoxListManager {
     row.classList.toggle('is-locked', Boolean(research.locked));
     row.classList.toggle('is-in-progress', Boolean(research.inProgress));
 
+    if (research.locked) {
+      this.bindTouchLikePressStart(row, `locked-research:${research.id}`, (event) =>
+        this.onLockedRowPressStart(event, research),
+      );
+      row.addEventListener('click', (event) => this.onLockedRowClick(event, research));
+    }
+
     const key = document.createElement('button');
     key.className = 'row_key research-page__research-label research-page__research-label-button';
     key.type = 'button';
@@ -233,7 +348,9 @@ export class ResearchBoxListManager {
     key.append(...this.createResearchLabelParts(research));
 
     const val =
-      research.completed || research.inProgress
+      research.locked
+        ? this.createLockedValue(research)
+        : research.completed || research.inProgress
         ? this.createReadonlyValue(research)
         : this.createBuyButton(research);
 
@@ -254,6 +371,66 @@ export class ResearchBoxListManager {
 
     this.rowRefs.set(research.id, ref);
     return row;
+  }
+
+  onLockedRowClick(event, research) {
+    if (
+      event.type === 'click' &&
+      this.handledLockedRowPressStartResearchId === research.id
+    ) {
+      this.handledLockedRowPressStartResearchId = null;
+      return;
+    }
+
+    if (event.target?.closest?.('button')) {
+      return;
+    }
+
+    this.onShowResearchInfo?.(research);
+  }
+
+  onLockedRowPressStart(event, research) {
+    if (this.isMousePressStart(event) || event.target?.closest?.('button')) {
+      return;
+    }
+
+    event.preventDefault();
+    this.handledLockedRowPressStartResearchId = research.id;
+    this.onShowResearchInfo?.(research);
+  }
+
+  bindTouchLikePressStart(target, key, handler) {
+    target.addEventListener('pointerdown', (event) =>
+      this.onTouchLikePressStart(event, key, handler),
+    );
+    target.addEventListener(
+      'touchstart',
+      (event) => this.onTouchLikePressStart(event, key, handler),
+      { passive: false },
+    );
+  }
+
+  onTouchLikePressStart(event, key, handler) {
+    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+      return;
+    }
+
+    handler(event);
+  }
+
+  isDuplicateTouchLikePressStart(event, key) {
+    const timeStamp = Number.isFinite(event?.timeStamp) ? event.timeStamp : Date.now();
+    const isDuplicate =
+      this.lastTouchLikePressStart.key === key &&
+      Math.abs(timeStamp - this.lastTouchLikePressStart.timeStamp) <=
+        TOUCH_LIKE_PRESS_START_DEDUPE_MS;
+
+    this.lastTouchLikePressStart = { key, timeStamp };
+    return isDuplicate;
+  }
+
+  isMousePressStart(event) {
+    return event.type === 'pointerdown' && event.pointerType === 'mouse';
   }
 
   createResearchLabelParts(research) {
@@ -319,6 +496,14 @@ export class ResearchBoxListManager {
       { value: val, valueLabel: label, valueGap: gap, valueTimer: timer },
       research,
     );
+    return val;
+  }
+
+  createLockedValue(research) {
+    const val = document.createElement('span');
+    val.className = 'row_val research-page__research-value';
+    setResourceIconText(val, research.value);
+    setResourceColorFromText(val, research.value);
     return val;
   }
 

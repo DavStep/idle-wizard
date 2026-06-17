@@ -52,6 +52,10 @@ export class GameplayLogFacade {
     return this.logManager.add(`opened garden plot ${tileNumber}`);
   }
 
+  logBrewingCauldronBought({ cauldronNumber }) {
+    return this.logManager.add(`opened cauldron ${cauldronNumber}`);
+  }
+
   logGardenSeedPlanted({ seed }) {
     return this.logManager.add(`planted ${seed.label}`);
   }

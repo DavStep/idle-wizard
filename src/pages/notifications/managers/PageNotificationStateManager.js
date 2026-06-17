@@ -29,7 +29,7 @@ export class PageNotificationStateManager {
 
   getWorkshopPage(snapshot) {
     return this.createPage({
-      seeds: snapshot.seedSummoning?.canSummon === true,
+      seeds: getSeedSummonNotification(snapshot),
       tasks: (snapshot.tasks?.level?.tasks ?? []).some(
         (task) => task.canFill === true || task.canComplete === true,
       ),
@@ -46,6 +46,7 @@ export class PageNotificationStateManager {
       );
 
     return this.createPage({
+      cauldron: canBuyNextCauldron(snapshot, brewing),
       herbs: canUseHerb,
       action:
         brewing.canBrew === true ||
@@ -149,6 +150,18 @@ export class PageNotificationStateManager {
   }
 }
 
+export function getSeedSummonNotification(snapshot = {}) {
+  if (snapshot?.seedSummoning?.canSummon !== true) {
+    return false;
+  }
+
+  if (getCurrentTaskLevel(snapshot) <= 2) {
+    return true;
+  }
+
+  return isManaCapped(snapshot?.mana) ? NOTIFICATION_TONE_ORANGE : false;
+}
+
 export function getResearchTabs(snapshot) {
   const tabs = snapshot.research?.tabs;
 
@@ -220,6 +233,15 @@ function canBuyNextTile({ tile, plot, gold }) {
   );
 }
 
+function canBuyNextCauldron(snapshot, brewing) {
+  return (
+    Number.isInteger(brewing?.nextCauldronNumber) &&
+    brewing?.nextCauldronLockedByLevel !== true &&
+    Number.isFinite(brewing?.nextCauldronCost) &&
+    (snapshot.gold?.current ?? 0) >= brewing.nextCauldronCost
+  );
+}
+
 function canBuyNextSlot(snapshot, shelf) {
   return (
     Number.isInteger(shelf?.nextSlotNumber) &&
@@ -227,4 +249,17 @@ function canBuyNextSlot(snapshot, shelf) {
     Number.isFinite(shelf?.nextSlotCost) &&
     (snapshot.gold?.current ?? 0) >= shelf.nextSlotCost
   );
+}
+
+function getCurrentTaskLevel(snapshot = {}) {
+  const level = snapshot?.tasks?.currentLevel ?? snapshot?.playerLevel?.currentLevel ?? 1;
+
+  return Number.isFinite(level) ? level : 1;
+}
+
+function isManaCapped(mana = {}) {
+  const current = Number(mana?.current);
+  const cap = Number(mana?.cap);
+
+  return Number.isFinite(current) && Number.isFinite(cap) && cap > 0 && current >= cap;
 }

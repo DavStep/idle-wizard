@@ -41,13 +41,11 @@ export class BrewingRecipeBookManager {
       return null;
     }
 
-    if (this.root) {
-      return this.root;
+    if (this.refs.popup) {
+      return this.refs.popup;
     }
 
-    this.root = this.createOpenButton();
     this.refs.popup = this.createPopup();
-    parent.append(this.root);
     popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
 
@@ -55,7 +53,7 @@ export class BrewingRecipeBookManager {
     this.render(this.gameplayFacade.getSnapshot());
     this.applyVisibility();
 
-    return this.root;
+    return this.refs.popup;
   }
 
   unmount() {
@@ -63,24 +61,12 @@ export class BrewingRecipeBookManager {
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
-    this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
     this.refs = {};
     this.visible = false;
     this.previousFocus = null;
     this.renderedSignature = null;
-  }
-
-  createOpenButton() {
-    const button = document.createElement('button');
-    button.className = 'style-button brewing-page__recipes-button';
-    button.type = 'button';
-    button.textContent = 'select recipe';
-    button.dataset.tutorialId = 'brewing:recipes';
-    button.setAttribute('aria-label', 'open select recipe');
-    button.addEventListener('click', () => this.show());
-    return button;
   }
 
   createPopup() {
@@ -102,6 +88,7 @@ export class BrewingRecipeBookManager {
     const closeButton = document.createElement('button');
     closeButton.className = 'style-button brewing-page__recipes-close';
     closeButton.type = 'button';
+    closeButton.dataset.tutorialId = 'brewing:recipes:close';
     closeButton.textContent = 'close';
     closeButton.addEventListener('click', () => this.hide());
 
@@ -113,6 +100,7 @@ export class BrewingRecipeBookManager {
     dialog.append(title, closeButton, autoSummary.root, rows);
     popup.append(dialog);
     this.refs.dialog = dialog;
+    this.refs.title = title;
     this.refs.autoSummary = autoSummary.root;
     this.refs.autoStateButton = autoSummary.stateButton;
     this.refs.autoRecipeValue = autoSummary.recipeValue;
@@ -178,12 +166,13 @@ export class BrewingRecipeBookManager {
   }
 
   render(snapshot) {
-    if (!this.root) {
+    if (!this.refs.rows) {
       return;
     }
 
     const recipes = snapshot.brewing?.recipes ?? [];
     const unlockedRecipes = recipes.filter((recipe) => recipe.unlocked);
+    this.renderTitle();
     this.renderAutoSummary(snapshot, unlockedRecipes);
     const ownedIngredientQuantities = this.getOwnedIngredientQuantities(snapshot);
     const signature = this.createRenderSignature(unlockedRecipes, ownedIngredientQuantities);
@@ -197,6 +186,14 @@ export class BrewingRecipeBookManager {
     this.refs.rows.replaceChildren(
       ...this.createRecipeListRows(unlockedRecipes, ownedIngredientQuantities),
     );
+  }
+
+  renderTitle() {
+    const cauldronNumber = this.getSafeCurrentCauldronIndex() + 1;
+    const title = `select recipe: cauldron ${cauldronNumber}`;
+
+    this.setText(this.refs.title, title);
+    this.setAttribute(this.refs.dialog, 'aria-label', title);
   }
 
   renderAutoSummary(snapshot, recipes) {

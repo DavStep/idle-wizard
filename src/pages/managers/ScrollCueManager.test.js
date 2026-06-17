@@ -92,6 +92,7 @@ describe('ScrollCueManager', () => {
       ?.groups?.body;
 
     expect(progressRule).toBeDefined();
+    expect(progressRule).toMatch(/\bflex:\s*0 0 auto;/);
     expect(progressRule).toMatch(/\bbox-sizing:\s*content-box;/);
     expect(rule).toBeDefined();
     expect(rule).not.toMatch(/\bheight\s*:/);

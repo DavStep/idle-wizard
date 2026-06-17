@@ -12,6 +12,7 @@ const BLOCKED_TARGET_SELECTOR = [
   'select',
   '[contenteditable="true"]',
   '[draggable="true"]',
+  '.workshop-page__task.is-draggable',
   '.style-dialog',
 ].join(',');
 
@@ -20,6 +21,7 @@ const OPEN_POPUP_SELECTOR = [
   '.workshop-page__prestige-popup:not([hidden])',
   '.workshop-page__leaderboard-popup:not([hidden])',
   '.workshop-page__world-chat-popup:not([hidden])',
+  '.workshop-page__tasks-info-popup:not([hidden])',
   '.brewing-page__recipes-popup:not([hidden])',
   '.brewing-page__potions-popup:not([hidden])',
   '.garden-page__seed-popup:not([hidden])',

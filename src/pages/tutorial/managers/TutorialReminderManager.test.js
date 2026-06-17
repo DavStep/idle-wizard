@@ -64,7 +64,7 @@ describe('TutorialReminderManager', () => {
       manager.getCue({
         id: 'fill-sage-seed-task',
         targetId: 'task:level1-sage-seeds',
-        text: 'fill task',
+        text: 'turn in',
         reminderKey: 'fill-loop',
       }).shouldShow,
     ).toBe(true);
@@ -189,7 +189,7 @@ describe('TutorialReminderManager', () => {
     const prompt = {
       id: 'open-tasks',
       targetId: 'workshop:tasks',
-      text: 'open tasks',
+      text: 'open level 2 requirements',
     };
 
     expect(manager.getCue(prompt).shouldShow).toBe(true);
