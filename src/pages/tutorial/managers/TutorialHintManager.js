@@ -25,6 +25,8 @@ const HINT_GAP = 8;
 const TYPEWRITER_INTERVAL_MS = 12;
 const TYPEWRITER_CHARS_PER_TICK = 2;
 const POINTER_HIDE_MS = 180;
+const OBJECTIVE_BUTTON_COLLAPSED_LABEL = 'help';
+const OBJECTIVE_BUTTON_OPEN_LABEL = 'hide';
 const PORTRAIT_WIDTH = 70;
 const PORTRAIT_HEIGHT = 91;
 const PORTRAIT_LEFT_GAP = 4;
@@ -85,6 +87,7 @@ export class TutorialHintManager {
     this.advanceButton = null;
     this.objectiveButton = null;
     this.objectiveButtonImage = null;
+    this.objectiveButtonLabel = null;
     this.objective = null;
     this.objectiveTitle = null;
     this.objectiveText = null;
@@ -200,7 +203,13 @@ export class TutorialHintManager {
     this.objectiveButtonImage.alt = '';
     this.objectiveButtonImage.draggable = false;
     this.objectiveButtonImage.setAttribute('aria-hidden', 'true');
-    this.objectiveButton.append(this.objectiveButtonImage);
+
+    this.objectiveButtonLabel = document.createElement('span');
+    this.objectiveButtonLabel.className = 'tutorial-layer__objective-button-label';
+    this.objectiveButtonLabel.textContent = OBJECTIVE_BUTTON_COLLAPSED_LABEL;
+    this.objectiveButtonLabel.setAttribute('aria-hidden', 'true');
+
+    this.objectiveButton.append(this.objectiveButtonImage, this.objectiveButtonLabel);
 
     this.objective = document.createElement('section');
     this.objective.className = 'tutorial-layer__lesson tutorial-layer__objective style-box';
@@ -305,6 +314,7 @@ export class TutorialHintManager {
     this.advanceButton = null;
     this.objectiveButton = null;
     this.objectiveButtonImage = null;
+    this.objectiveButtonLabel = null;
     this.objective = null;
     this.objectiveTitle = null;
     this.objectiveText = null;
@@ -419,14 +429,7 @@ export class TutorialHintManager {
     this.root.hidden = false;
     this.objectiveButton.hidden = false;
     this.objective.hidden = !this.objectivePanelOpen;
-    this.objectiveButton.setAttribute(
-      'aria-expanded',
-      this.objectivePanelOpen ? 'true' : 'false',
-    );
-    this.objectiveButton.setAttribute(
-      'aria-label',
-      this.objectivePanelOpen ? 'close lesson' : 'open lesson',
-    );
+    this.updateObjectiveButtonState();
     this.objectiveTitle.textContent = title ?? 'lesson';
     this.objectiveStepLabel.textContent = stepLabel ?? '';
     this.lessonAdvanceButton.hidden = !advanceOnClick;
@@ -669,6 +672,22 @@ export class TutorialHintManager {
     this.objectiveButton.toggleAttribute('data-attention', active);
   }
 
+  updateObjectiveButtonState() {
+    if (!this.objectiveButton) {
+      return;
+    }
+
+    const expanded = Boolean(this.objectivePanelOpen && this.objective && !this.objective.hidden);
+    this.objectiveButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    this.objectiveButton.setAttribute('aria-label', expanded ? 'hide lesson' : 'open lesson');
+
+    if (this.objectiveButtonLabel) {
+      this.objectiveButtonLabel.textContent = expanded
+        ? OBJECTIVE_BUTTON_OPEN_LABEL
+        : OBJECTIVE_BUTTON_COLLAPSED_LABEL;
+    }
+  }
+
   openObjectivePanel() {
     this.openLessonPanel();
   }
@@ -680,8 +699,7 @@ export class TutorialHintManager {
 
     this.objectivePanelOpen = true;
     this.objective.hidden = false;
-    this.objectiveButton.setAttribute('aria-expanded', 'true');
-    this.objectiveButton.setAttribute('aria-label', 'close lesson');
+    this.updateObjectiveButtonState();
     this.applyObjectiveAttention();
     this.hidePrompt();
     this.resetTypedText(this.objectiveText);
@@ -703,8 +721,7 @@ export class TutorialHintManager {
     this.objective.hidden = true;
     this.resetTypedText(this.objectiveText);
     this.hideTargetCue();
-    this.objectiveButton.setAttribute('aria-expanded', 'false');
-    this.objectiveButton.setAttribute('aria-label', 'open lesson');
+    this.updateObjectiveButtonState();
     this.applyObjectiveAttention();
     this.syncRootVisibility();
   }
@@ -722,9 +739,8 @@ export class TutorialHintManager {
 
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
-      this.objectiveButton.setAttribute('aria-expanded', 'false');
-      this.objectiveButton.setAttribute('aria-label', 'open lesson');
       this.objectiveAttentionActive = false;
+      this.updateObjectiveButtonState();
       this.applyObjectiveAttention();
       this.setSpeaking(this.objectiveButton, false);
     }
@@ -782,9 +798,8 @@ export class TutorialHintManager {
 
     if (this.objectiveButton) {
       this.objectiveButton.hidden = true;
-      this.objectiveButton.setAttribute('aria-expanded', 'false');
-      this.objectiveButton.setAttribute('aria-label', 'open lesson');
       this.objectiveAttentionActive = false;
+      this.updateObjectiveButtonState();
       this.applyObjectiveAttention();
       this.setSpeaking(this.objectiveButton, false);
     }

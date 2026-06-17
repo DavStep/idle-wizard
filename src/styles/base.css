@@ -1242,6 +1242,26 @@ body {
   outline-offset: 1px;
 }
 
+.tutorial-layer__objective-button-label {
+  position: absolute;
+  right: -8px;
+  bottom: 6px;
+  z-index: 2;
+  display: inline-block;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  white-space: nowrap;
+  background: var(--style-surface);
+  border: var(--style-border);
+  pointer-events: none;
+}
+
 .tutorial-layer__objective-button-image {
   position: relative;
   z-index: 1;
@@ -2974,6 +2994,12 @@ body {
   z-index: 95;
 }
 
+.room-alliance-info-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 96;
+}
+
 .workshop-page__leaderboard-popup[hidden],
 .workshop-page__trade-alliance-popup[hidden],
 .workshop-page__trade-alliance-member-popup[hidden],
@@ -2982,7 +3008,8 @@ body {
 .workshop-page__logs-popup[hidden],
 .workshop-page__discoveries-popup[hidden],
 .workshop-page__prestige-popup[hidden],
-.room-player-info-popup[hidden] {
+.room-player-info-popup[hidden],
+.room-alliance-info-popup[hidden] {
   display: none;
 }
 
@@ -3471,6 +3498,23 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__trade-alliance-member-row.is-actionable:focus {
+  outline: none;
+}
+
+.workshop-page__trade-alliance-list-main.is-actionable,
+.workshop-page__leaderboard-row.is-actionable {
+  cursor: pointer;
+}
+
+.workshop-page__trade-alliance-list-main.is-actionable:hover .row_key,
+.workshop-page__trade-alliance-list-main.is-actionable:focus .row_key,
+.workshop-page__leaderboard-row.is-actionable:hover .row_key,
+.workshop-page__leaderboard-row.is-actionable:focus .row_key {
+  text-decoration: underline;
+}
+
+.workshop-page__trade-alliance-list-main.is-actionable:focus,
+.workshop-page__leaderboard-row.is-actionable:focus {
   outline: none;
 }
 
@@ -5401,6 +5445,10 @@ div.workshop-page__discovery-row {
   padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
 
+.style-box.shop-page__direct-sell-box {
+  padding-bottom: calc(5px + var(--style-box-border-label-line-height));
+}
+
 .style-box.shop-page__shelf {
   padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
@@ -5428,6 +5476,7 @@ div.workshop-page__discovery-row {
 .shop-page__demand-dialog,
 .shop-page__gold-offer,
 .shop-page__crystal-offers,
+.shop-page__direct-sell-box,
 .shop-page__shelf,
 .shop-page__stock,
 .shop-page__player-request,
@@ -5439,6 +5488,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-panel .shop-page__stock,
 .shop-page__market-panel .shop-page__gold-offer,
 .shop-page__market-panel .shop-page__crystal-offers,
+.shop-page__market-panel .shop-page__direct-sell-box,
 .shop-page__market-panel .shop-page__player-request,
 .shop-page__market-panel .shop-page__player-shelf {
   position: relative;
@@ -5452,6 +5502,7 @@ div.workshop-page__discovery-row {
 .shop-page__market-panel .shop-page__stock:last-child,
 .shop-page__market-panel .shop-page__gold-offer:last-child,
 .shop-page__market-panel .shop-page__crystal-offers:last-child,
+.shop-page__market-panel .shop-page__direct-sell-box:last-child,
 .shop-page__market-panel .shop-page__player-request:last-child,
 .shop-page__market-panel .shop-page__player-shelf:last-child {
   margin-bottom: 0;
@@ -6279,7 +6330,33 @@ div.workshop-page__discovery-row {
   transform: translate(-50%, -50%);
 }
 
+.style-dialog.room-alliance-info-dialog {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: var(--style-tabbed-dialog-content-height);
+  transform: translate(-50%, -50%);
+}
+
 .style-button.room-player-info-close {
+  position: absolute;
+  right: var(--style-dialog-padding);
+  bottom: var(--style-box-border-label-offset);
+  z-index: 1;
+  width: auto;
+  min-width: 0;
+  padding: 0 4px;
+  margin: 0;
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+  border: 0;
+}
+
+.style-button.room-alliance-info-close {
   position: absolute;
   right: var(--style-dialog-padding);
   bottom: var(--style-box-border-label-offset);
@@ -6318,6 +6395,79 @@ div.workshop-page__discovery-row {
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
+}
+
+.room-alliance-info-content {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 5px;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.room-alliance-info-content::-webkit-scrollbar {
+  display: none;
+}
+
+.room-alliance-info-actions {
+  flex: 0 0 auto;
+  margin-top: 6px;
+}
+
+.room-alliance-info-actions:empty {
+  display: none;
+}
+
+.style-button.room-alliance-info-action {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+}
+
+.room-alliance-info-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: var(--style-row-column-gap);
+  align-items: baseline;
+  min-height: var(--style-row-min-height);
+}
+
+.room-alliance-info-row .row_key {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-alliance-info-row .row_val {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.room-alliance-info-empty,
+.room-alliance-info-paragraph,
+.room-alliance-info-section-label,
+.room-alliance-info-status {
+  color: var(--style-muted);
+}
+
+.room-alliance-info-empty,
+.room-alliance-info-section-label,
+.room-alliance-info-status {
+  min-height: var(--style-row-min-height);
+}
+
+.room-alliance-info-paragraph {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-alliance-info-divider {
+  height: 1px;
+  margin: 3px 0;
+  border-top: var(--style-border);
 }
 
 .style-button {
@@ -6529,6 +6679,44 @@ div.workshop-page__discovery-row {
   border: 0;
 }
 
+.shop-page__direct-sell-summary {
+  min-height: var(--style-row-min-height);
+  clear: both;
+}
+
+.shop-page__direct-sell-summary::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+.shop-page__direct-sell-summary > .row_val {
+  text-align: right;
+}
+
+.shop-page__direct-sell-target-label {
+  display: inline-block;
+}
+
+.shop-page__direct-sell-help {
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  right: var(--style-box-title-left);
+  display: flex;
+  align-items: center;
+}
+
+.shop-page__direct-sell-help-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 31;
+  pointer-events: none;
+}
+
+.shop-page__direct-sell-help-popup[hidden] {
+  display: none;
+}
+
 .style-button.shop-page__direct-sell-button {
   position: absolute;
   bottom: var(--style-box-border-label-offset);
@@ -6545,8 +6733,34 @@ div.workshop-page__discovery-row {
   transform: translateX(-50%);
 }
 
+.style-button.shop-page__direct-sell-help-button {
+  width: auto;
+  min-width: 0;
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+  border: 0;
+}
+
+.style-button.shop-page__direct-sell-help-button {
+  min-width: var(--style-box-border-label-line-height);
+  padding: 0 1px;
+}
+
+.shop-page__direct-sell-help-tooltip {
+  width: 150px;
+  text-align: left;
+  white-space: normal;
+}
+
 .style-button.shop-page__demand-button:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.shop-page__direct-sell-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__direct-sell-button:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.shop-page__direct-sell-help-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-surface);
 }
 
@@ -6904,6 +7118,10 @@ div.workshop-page__discovery-row {
   display: block;
 }
 
+.shop-page__direct-sell-help-popup .shop-page__direct-sell-help-tooltip {
+  display: block;
+}
+
 .style-overlay {
   padding: var(--style-dialog-padding);
   color: var(--style-text);
@@ -6941,6 +7159,7 @@ div.workshop-page__discovery-row {
 .shop-page__crystal-support-popup:not([hidden]),
 .shop-page__stock-buy-popup:not([hidden]),
 .room-player-info-popup:not([hidden]),
+.room-alliance-info-popup:not([hidden]),
 .room-top-panel__settings:not([hidden]),
 .room-top-panel__level-popup:not([hidden]) {
   background: rgb(var(--style-backdrop-rgb) / 68%);
@@ -6971,6 +7190,11 @@ div.workshop-page__discovery-row {
 .game-stage:has(.room-player-info-popup:not([hidden])) .brewing-page,
 .game-stage:has(.room-player-info-popup:not([hidden])) .garden-page,
 .game-stage:has(.room-player-info-popup:not([hidden])) .research-page,
+.game-stage:has(.room-alliance-info-popup:not([hidden])) .workshop-page,
+.game-stage:has(.room-alliance-info-popup:not([hidden])) .brewing-page,
+.game-stage:has(.room-alliance-info-popup:not([hidden])) .garden-page,
+.game-stage:has(.room-alliance-info-popup:not([hidden])) .research-page,
+.game-stage:has(.room-alliance-info-popup:not([hidden])) .shop-page,
 .game-stage:has(.room-player-info-popup:not([hidden])) .shop-page {
   z-index: 3;
 }
@@ -6986,6 +7210,11 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__settings:not([hidden]) .room-top-panel__settings-panel {
   animation: style-dialog-top-enter var(--style-motion-normal) var(--style-motion-ease) both;
+}
+
+.room-alliance-info-popup:not([hidden]) .room-alliance-info-dialog,
+.room-player-info-popup:not([hidden]) .room-player-info-dialog {
+  animation: style-dialog-enter var(--style-motion-normal) var(--style-motion-ease) both;
 }
 
 .room-top-panel__level-popup:not([hidden]) .room-top-panel__level-panel {

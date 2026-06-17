@@ -120,8 +120,12 @@ export class TutorialCaptureFacade {
   }
 
   startFresh() {
-    const button = this.app?.lifecycleManager?.freshStartChoiceManager?.refs?.freshButton;
     const manager = this.app?.lifecycleManager?.freshStartChoiceManager;
+    const button =
+      manager?.refs?.freshButton ??
+      this.getStage()?.querySelector?.(
+        '.app-fresh-start-choice__button--fresh:not([hidden])',
+      );
 
     if (!button || button.hidden || button.closest('[hidden]')) {
       return {
@@ -138,6 +142,7 @@ export class TutorialCaptureFacade {
     if (manager?.root && !manager.root.hidden && manager.resolveChoice) {
       manager.resolve('start_fresh');
     }
+    this.refreshTutorial();
 
     return {
       ok: true,

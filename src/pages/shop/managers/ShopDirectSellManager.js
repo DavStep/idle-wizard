@@ -16,6 +16,7 @@ const DIRECT_SELL_TABS = [
   { kind: 'herb', label: 'herbs' },
   { kind: 'potion', label: 'potions' },
 ];
+const DIRECT_SELL_HELP_TOOLTIP_ID = 'shop-page__direct-sell-help-tooltip';
 
 export class ShopDirectSellManager {
   constructor({ gameplayFacade, onSellOverride } = {}) {
@@ -27,6 +28,7 @@ export class ShopDirectSellManager {
     };
     this.unsubscribe = null;
     this.visible = false;
+    this.helpVisible = false;
     this.selectedTab = 'seed';
     this.selectedItemTypeId = null;
     this.sellQuantity = 1;
@@ -39,13 +41,30 @@ export class ShopDirectSellManager {
         this.hide();
       }
     };
+    this.handleDocumentClick = (event) => {
+      if (!this.helpVisible || this.refs.controlsRoot?.contains(event.target)) {
+        return;
+      }
+
+      this.hideHelp();
+    };
     this.handleKeydown = (event) => {
-      if (!this.visible || event.key !== 'Escape') {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      if (this.visible) {
+        event.preventDefault();
+        this.hide();
+        return;
+      }
+
+      if (!this.helpVisible) {
         return;
       }
 
       event.preventDefault();
-      this.hide();
+      this.hideHelp();
     };
   }
 
@@ -58,10 +77,13 @@ export class ShopDirectSellManager {
       return this.refs.button;
     }
 
-    this.refs.button = this.createButton();
+    this.refs.controlsRoot = this.createControls();
+    this.refs.helpPopup = this.createHelpPopup();
     this.refs.popup = this.createPopup();
-    buttonParent.append(this.refs.button);
+    buttonParent.append(this.refs.controlsRoot);
+    popupParent.append(this.refs.helpPopup.root);
     popupParent.append(this.refs.popup);
+    document.addEventListener('click', this.handleDocumentClick);
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => {
@@ -77,15 +99,18 @@ export class ShopDirectSellManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    document.removeEventListener('click', this.handleDocumentClick);
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
-    this.refs.button?.remove();
+    this.refs.controlsRoot?.remove();
+    this.refs.helpPopup?.root?.remove();
     this.refs.popup?.remove();
     this.refs = {
       tabButtons: new Map(),
       rows: new Map(),
     };
     this.visible = false;
+    this.helpVisible = false;
     this.selectedTab = 'seed';
     this.selectedItemTypeId = null;
     this.sellQuantity = 1;
@@ -93,6 +118,23 @@ export class ShopDirectSellManager {
     this.statusText = '';
     this.lastSnapshot = null;
     this.previousFocus = null;
+  }
+
+  createControls() {
+    const root = document.createElement('section');
+    root.className = 'shop-page__direct-sell-box style-box';
+    root.setAttribute('aria-label', 'fast sell');
+
+    const title = document.createElement('div');
+    title.className = 'style-box__title';
+    title.textContent = 'fast sell';
+
+    this.refs.button = this.createButton();
+    this.refs.help = this.createHelpControl();
+    this.refs.summary = this.createSummaryRow();
+
+    root.append(title, this.refs.summary.row, this.refs.button, this.refs.help.root);
+    return root;
   }
 
   createButton() {
@@ -104,6 +146,39 @@ export class ShopDirectSellManager {
     button.setAttribute('aria-label', 'fast sell to npc');
     button.addEventListener('click', () => this.show());
     return button;
+  }
+
+  createHelpControl() {
+    const root = document.createElement('div');
+    root.className = 'shop-page__direct-sell-help';
+
+    const button = document.createElement('button');
+    button.className = 'style-button shop-page__direct-sell-help-button';
+    button.type = 'button';
+    button.textContent = '?';
+    button.setAttribute('aria-controls', DIRECT_SELL_HELP_TOOLTIP_ID);
+    button.setAttribute('aria-expanded', 'false');
+    button.setAttribute('aria-label', 'what is fast sell?');
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.toggleHelp();
+    });
+
+    root.append(button);
+    return { root, button };
+  }
+
+  createHelpPopup() {
+    const root = document.createElement('section');
+    root.className = 'shop-page__direct-sell-help-popup';
+    root.hidden = true;
+
+    const tooltip = document.createElement('div');
+    tooltip.id = DIRECT_SELL_HELP_TOOLTIP_ID;
+    tooltip.className = 'style-tooltip shop-page__direct-sell-help-tooltip';
+
+    root.append(tooltip);
+    return { root, tooltip };
   }
 
   createPopup() {
@@ -196,6 +271,20 @@ export class ShopDirectSellManager {
     return { row, label, value };
   }
 
+  createSummaryRow() {
+    const row = document.createElement('div');
+    row.className = 'shop-page__direct-sell-summary';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+
+    const value = document.createElement('span');
+    value.className = 'row_val';
+
+    row.append(label, value);
+    return { row, label, value };
+  }
+
   createValueRow(labelText) {
     const row = document.createElement('div');
     row.className = 'shop-page__direct-sell-value-row';
@@ -233,6 +322,7 @@ export class ShopDirectSellManager {
 
   show() {
     this.previousFocus = document.activeElement;
+    this.hideHelp();
     this.visible = true;
     this.statusText = '';
     this.applyVisibility();
@@ -252,6 +342,29 @@ export class ShopDirectSellManager {
     }
 
     this.previousFocus = null;
+  }
+
+  toggleHelp() {
+    if (this.helpVisible) {
+      this.hideHelp();
+      return;
+    }
+
+    this.showHelp();
+  }
+
+  showHelp() {
+    this.helpVisible = true;
+    this.applyHelpVisibility();
+  }
+
+  hideHelp() {
+    if (!this.helpVisible) {
+      return;
+    }
+
+    this.helpVisible = false;
+    this.applyHelpVisibility();
   }
 
   onSelectTab(kind) {
@@ -353,7 +466,14 @@ export class ShopDirectSellManager {
   }
 
   render() {
-    if (!this.refs.popup || !this.lastSnapshot || !this.visible) {
+    if (!this.lastSnapshot) {
+      return;
+    }
+
+    this.renderHelp();
+    this.renderSummary();
+
+    if (!this.refs.popup || !this.visible) {
       return;
     }
 
@@ -397,10 +517,12 @@ export class ShopDirectSellManager {
     refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
     refs.button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     refs.button.dataset.directSellItemKey = item.key;
-    refs.button.dataset.tutorialId = `shop:directSell:${item.key}`;
-    refs.label.textContent = `${display.label} (${display.quantity})`;
-    setItemIconLabel(refs.label, item.kind, item.key);
-    setResourceColor(refs.label, item.kind);
+    delete refs.button.dataset.tutorialId;
+    delete refs.label.dataset.tutorialId;
+    refs.targetLabel.dataset.tutorialId = `shop:directSell:${item.key}`;
+    refs.targetLabel.textContent = `${display.label} (${display.quantity})`;
+    setItemIconLabel(refs.targetLabel, item.kind, item.key);
+    setResourceColor(refs.targetLabel, item.kind);
     setResourceIconText(refs.value, this.formatSellGold(this.getFastSellGold(item)));
     setResourceColorFromText(refs.value, refs.value.textContent);
   }
@@ -478,6 +600,33 @@ export class ShopDirectSellManager {
     setResourceColorFromText(this.refs.status, message);
   }
 
+  renderHelp() {
+    if (!this.refs.helpPopup?.tooltip) {
+      return;
+    }
+
+    const fastSellPercent = this.getFastSellPercent();
+    this.refs.helpPopup.tooltip.textContent =
+      fastSellPercent === null
+        ? 'fast sell sells now for less than full npc price. market stands wait for the timer and pay 100%.'
+        : `fast sell sells now for ${fastSellPercent}% of full npc price. market stands wait for the timer and pay 100%.`;
+
+    if (this.helpVisible) {
+      this.positionHelpPopup();
+    }
+  }
+
+  renderSummary() {
+    if (!this.refs.summary) {
+      return;
+    }
+
+    const fastSellPercent = this.getFastSellPercent();
+    this.refs.summary.label.textContent = 'instant sale';
+    this.refs.summary.value.textContent =
+      fastSellPercent === null ? 'lower payout' : `${fastSellPercent}% payout`;
+  }
+
   ensureRow(itemTypeId) {
     if (!this.refs.rows.has(itemTypeId)) {
       this.refs.rows.set(itemTypeId, this.createRow(itemTypeId));
@@ -496,6 +645,10 @@ export class ShopDirectSellManager {
     const label = document.createElement('span');
     label.className = 'row_key';
 
+    const targetLabel = document.createElement('span');
+    targetLabel.className = 'shop-page__direct-sell-target-label';
+    label.append(targetLabel);
+
     const value = document.createElement('span');
     value.className = 'row_val';
 
@@ -505,6 +658,7 @@ export class ShopDirectSellManager {
       row: button,
       button,
       label,
+      targetLabel,
       value,
     };
   }
@@ -601,6 +755,24 @@ export class ShopDirectSellManager {
     return Number.isFinite(item?.fastSellGold) ? item.fastSellGold : item?.sellGold;
   }
 
+  getFastSellPercent() {
+    const selectedPercent = Number(this.getSelectedItem()?.fastSellPercent);
+
+    if (Number.isFinite(selectedPercent) && selectedPercent > 0) {
+      return Math.max(0, Math.min(100, Math.floor(selectedPercent)));
+    }
+
+    for (const item of this.lastSnapshot?.shop?.shelf?.sellItems ?? []) {
+      const percent = Number(item?.fastSellPercent);
+
+      if (Number.isFinite(percent) && percent > 0) {
+        return Math.max(0, Math.min(100, Math.floor(percent)));
+      }
+    }
+
+    return null;
+  }
+
   formatSellGold(sellGold) {
     if (!Number.isFinite(sellGold)) {
       return 'offline';
@@ -636,5 +808,49 @@ export class ShopDirectSellManager {
 
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+
+  applyHelpVisibility() {
+    if (this.refs.helpPopup?.root) {
+      this.refs.helpPopup.root.hidden = !this.helpVisible;
+    }
+
+    this.refs.help?.button?.setAttribute('aria-expanded', this.helpVisible ? 'true' : 'false');
+
+    if (this.helpVisible) {
+      this.positionHelpPopup();
+    }
+  }
+
+  positionHelpPopup() {
+    const button = this.refs.help?.button;
+    const popupRoot = this.refs.helpPopup?.root;
+    const tooltip = this.refs.helpPopup?.tooltip;
+
+    if (!button || !popupRoot || !tooltip || popupRoot.hidden) {
+      return;
+    }
+
+    const buttonRect = button.getBoundingClientRect();
+    const popupRect = popupRoot.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const gap = 6;
+    const viewportPadding = 8;
+    const maxLeft = Math.max(viewportPadding, popupRect.width - tooltipRect.width - viewportPadding);
+
+    let left = buttonRect.right - popupRect.left - tooltipRect.width;
+    left = Math.min(Math.max(left, viewportPadding), maxLeft);
+
+    let top = buttonRect.top - popupRect.top - tooltipRect.height - gap;
+
+    if (top < viewportPadding) {
+      top = buttonRect.bottom - popupRect.top + gap;
+    }
+
+    const maxTop = Math.max(viewportPadding, popupRect.height - tooltipRect.height - viewportPadding);
+    top = Math.min(Math.max(top, viewportPadding), maxTop);
+
+    tooltip.style.left = `${Math.round(left)}px`;
+    tooltip.style.top = `${Math.round(top)}px`;
   }
 }

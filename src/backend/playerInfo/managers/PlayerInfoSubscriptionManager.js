@@ -83,6 +83,8 @@ export class PlayerInfoSubscriptionManager {
     return {
       identity: this.toIdentityKey(row.identity),
       username: typeof username === 'string' ? username : 'wizard',
+      allianceId: this.toIdentityKey(row.allianceId ?? row.alliance_id),
+      allianceName: String(row.allianceName ?? row.alliance_name ?? ''),
       allianceTag: this.normalizeAllianceTag(row.allianceTag ?? row.alliance_tag),
       allianceTagColor: normalizeTradeAllianceTagColor(
         row.allianceTagColor ?? row.alliance_tag_color,

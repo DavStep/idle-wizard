@@ -4,8 +4,11 @@ export class PlayerInfoDialogFacade {
   static explain =
     'Shows a small player information popup when a visible player name is pressed.';
 
-  constructor({ playerInfoFacade } = {}) {
-    this.manager = new PlayerInfoDialogManager({ playerInfoFacade });
+  constructor({ playerInfoFacade, onOpenAllianceInfo } = {}) {
+    this.manager = new PlayerInfoDialogManager({
+      playerInfoFacade,
+      onOpenAllianceInfo,
+    });
   }
 
   mount(stage) {

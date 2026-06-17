@@ -66,12 +66,12 @@ export class ShopPageFacade {
     const npmMarketPanel = this.marketTabsManager.getPanel('npm');
     const playerMarketPanel = this.marketTabsManager.getPanel('player');
     const crystalsPanel = this.marketTabsManager.getPanel('crystals');
-    const shelfRoot = this.shelfManager.mount(npmMarketPanel, popupLayer);
-    this.demandManager.mount({
-      buttonParent: shelfRoot,
+    this.directSellManager.mount({
+      buttonParent: npmMarketPanel,
       popupParent: popupLayer,
     });
-    this.directSellManager.mount({
+    const shelfRoot = this.shelfManager.mount(npmMarketPanel, popupLayer);
+    this.demandManager.mount({
       buttonParent: shelfRoot,
       popupParent: popupLayer,
     });

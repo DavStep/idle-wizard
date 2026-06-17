@@ -62,11 +62,13 @@ export class WorkshopLeaderboardManager {
     leaderboardFacade,
     tradeAllianceFacade,
     onOpenPlayerInfo,
+    onOpenAllianceInfo,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.leaderboardFacade = leaderboardFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
+    this.onOpenAllianceInfo = onOpenAllianceInfo;
     this.root = null;
     this.unsubscribeLeaderboard = null;
     this.unsubscribeGameplay = null;
@@ -328,6 +330,9 @@ export class WorkshopLeaderboardManager {
           ? this.createAllianceLabel(row, index)
           : this.createUserLabel(row, index),
         this.formatValue(row[activePeriod.valueKey]),
+        {
+          onActivate: isAllianceScope ? () => this.openAllianceInfo(row) : null,
+        },
       ),
     );
     const currentRow = this.shouldShowCurrentUser(rows, currentUser)
@@ -499,9 +504,14 @@ export class WorkshopLeaderboardManager {
     }
 
     return {
+      allianceId: alliance.allianceId,
       name: alliance.name,
       tag: typeof alliance.tag === 'string' ? alliance.tag : '',
       tagColor: normalizeTradeAllianceTagColor(alliance.tagColor ?? alliance.tag_color),
+      description: typeof alliance.description === 'string' ? alliance.description : '',
+      notice: typeof alliance.notice === 'string' ? alliance.notice : '',
+      joinMode: typeof alliance.joinMode === 'string' ? alliance.joinMode : '',
+      memberCount: this.normalizeMetric(alliance.memberCount),
       dailyIncome: this.normalizeMetric(alliance.dailyIncome),
       weeklyIncome: this.normalizeMetric(alliance.weeklyIncome, alliance.seasonIncome),
       monthlyIncome: this.normalizeMetric(alliance.monthlyIncome),
@@ -555,9 +565,9 @@ export class WorkshopLeaderboardManager {
     return safePlayerLevel;
   }
 
-  createRow(label, value, { header = false, current = false } = {}) {
+  createRow(label, value, { header = false, current = false, onActivate = null } = {}) {
     const row = document.createElement('div');
-    row.className = 'workshop-page__row';
+    row.className = 'workshop-page__row workshop-page__leaderboard-row';
 
     if (header) {
       row.classList.add('workshop-page__leaderboard-header');
@@ -565,6 +575,21 @@ export class WorkshopLeaderboardManager {
 
     if (current) {
       row.classList.add('workshop-page__leaderboard-current');
+    }
+
+    if (typeof onActivate === 'function') {
+      row.classList.add('is-actionable');
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.addEventListener('click', () => onActivate());
+      row.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+          return;
+        }
+
+        event.preventDefault();
+        onActivate();
+      });
     }
 
     const key = document.createElement('span');
@@ -613,6 +638,22 @@ export class WorkshopLeaderboardManager {
       document.createTextNode(`${rank}. ${alliance.name}`),
       ...(tag ? [document.createTextNode(' '), tag] : []),
     ];
+  }
+
+  openAllianceInfo(alliance) {
+    this.onOpenAllianceInfo?.({
+      allianceId: alliance?.allianceId,
+      name: alliance?.name,
+      tag: alliance?.tag,
+      tagColor: alliance?.tagColor,
+      description: alliance?.description,
+      notice: alliance?.notice,
+      joinMode: alliance?.joinMode,
+      memberCount: alliance?.memberCount,
+      seasonIncome: alliance?.seasonIncome,
+      weeklyIncome: alliance?.weeklyIncome,
+      totalIncome: alliance?.totalIncome,
+    });
   }
 
   appendCellContent(element, content) {

@@ -49,10 +49,16 @@ const QUEST_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
 const QUEST_TIMER_INTERVAL_MS = 1000;
 
 export class WorkshopTradeAllianceManager {
-  constructor({ gameplayFacade, tradeAllianceFacade, onOpenPlayerInfo } = {}) {
+  constructor({
+    gameplayFacade,
+    tradeAllianceFacade,
+    onOpenPlayerInfo,
+    onOpenAllianceInfo,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
+    this.onOpenAllianceInfo = onOpenAllianceInfo;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -393,6 +399,7 @@ export class WorkshopTradeAllianceManager {
 
     const main = document.createElement('div');
     main.className = 'workshop-page__trade-alliance-list-main';
+    this.makeAllianceSummaryActionable(main, alliance);
     main.append(
       this.createTextRow(
         this.createAllianceNameTagLabel(alliance),
@@ -423,6 +430,26 @@ export class WorkshopTradeAllianceManager {
 
     row.append(main, action);
     return row;
+  }
+
+  makeAllianceSummaryActionable(element, alliance) {
+    if (typeof this.onOpenAllianceInfo !== 'function' || !alliance?.allianceId) {
+      return;
+    }
+
+    element.classList.add('is-actionable');
+    element.tabIndex = 0;
+    element.setAttribute('role', 'button');
+    element.setAttribute('aria-label', `view ${alliance.name}`);
+    element.addEventListener('click', () => this.openAllianceInfo(alliance));
+    element.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      event.preventDefault();
+      this.openAllianceInfo(alliance);
+    });
   }
 
   renderCreateView() {
@@ -1103,6 +1130,22 @@ export class WorkshopTradeAllianceManager {
     label.className = 'workshop-page__trade-alliance-section-label';
     label.textContent = text;
     return label;
+  }
+
+  openAllianceInfo(alliance) {
+    this.onOpenAllianceInfo?.({
+      allianceId: alliance?.allianceId,
+      name: alliance?.name,
+      tag: alliance?.tag,
+      tagColor: alliance?.tagColor,
+      description: alliance?.description,
+      notice: alliance?.notice,
+      joinMode: alliance?.joinMode,
+      memberCount: alliance?.memberCount,
+      seasonIncome: alliance?.seasonIncome,
+      weeklyIncome: alliance?.weeklyIncome,
+      totalIncome: alliance?.totalIncome,
+    });
   }
 
   getFilteredAlliances() {

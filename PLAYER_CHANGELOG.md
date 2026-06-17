@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.25
+
+- Added public alliance popups from alliance tags and alliance rows, with member roles and quick join/apply actions where allowed.
+- Linked player info popups into those alliance details so it is easier to inspect who is in each group.
+- Updated Elara's Market lesson to use the real fast-sell flow, including the item target and final sell confirm.
+- Hardened tutorial capture around fresh-start and direct-sell steps so release screenshots stay in sync with live FTUE behavior.
+
 ## 0.1.24
 
 - Swapped Elara's target cue back to the plain pointing hand so guidance stays cleaner and easier to read.

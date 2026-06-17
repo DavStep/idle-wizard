@@ -319,12 +319,20 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('hides first summon prompt while waiting for mana', () => {
+  it('keeps first summon guidance collapsed while waiting for mana', () => {
     expect(
       getStep({
         completed: completedThrough('intro-mana-sphere'),
       }),
-    ).toBeNull();
+    ).toMatchObject({
+      id: 'first-summon-seed',
+      kind: 'prompt',
+      targetId: null,
+      text: 'wait for mana',
+      hintText: 'wait for mana',
+      cueMode: 'passive',
+      stepLabel: '5/26',
+    });
   });
 
   it('points at summon once mana is ready', () => {
@@ -909,7 +917,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('hides sage task guidance while another sage crop is growing', () => {
+  it('keeps sage task guidance collapsed while another sage crop is growing', () => {
     const snapshot = createSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 0 }],
       garden: {
@@ -954,7 +962,14 @@ describe('TutorialStepManager', () => {
         snapshot,
         completed: completedThrough('fill-sage-seed-task'),
       }),
-    ).toBeNull();
+    ).toMatchObject({
+      id: 'fill-sage-herb-task',
+      targetId: null,
+      hintText: 'wait for sage',
+      objectiveText: 'wait for sage',
+      cueMode: 'passive',
+      progressLabel: '1/3 sage',
+    });
   });
 
   it('sends a short sage task to summon when no sage source exists', () => {
@@ -1161,7 +1176,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('hides mint herb guidance while planted mint is growing', () => {
+  it('keeps mint herb guidance collapsed while planted mint is growing', () => {
     const snapshot = createLevelThreeMintHerbSnapshot({
       seedQuantity: 0,
       tile: {
@@ -1172,7 +1187,15 @@ describe('TutorialStepManager', () => {
       },
     });
 
-    expect(getStep({ pageId: 'garden', snapshot })).toBeNull();
+    expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
+      id: 'fill-mint-herb-task',
+      targetId: null,
+      text: 'wait for mint',
+      hintText: 'wait for mint',
+      objectiveText: 'wait for mint',
+      cueMode: 'passive',
+      progressLabel: '0/18 mint',
+    });
   });
 
   it('only asks to plant mint when mint seed is selected', () => {

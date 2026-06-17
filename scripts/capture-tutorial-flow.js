@@ -31,7 +31,6 @@ const FLOW_STEPS = [
   'select-market-stand',
   'select-sage-seed-sale',
   'earn-tutorial-gold',
-  'unselect-sage-seed-sale',
   'level-up-one',
   'grow-sage',
   'fill-sage-seed-task',
@@ -82,18 +81,14 @@ const STEP_ACTIONS = {
     await page.clickTarget('page:shop');
   },
   'select-market-stand': async (page) => {
-    await page.clickTarget('shop:stand:1');
+    await page.clickTarget('shop:directSell');
   },
   'select-sage-seed-sale': async (page) => {
-    await page.ensureShopSellPopup();
-    await page.clickTarget('shop:sell:sageSeed');
+    await page.ensureShopDirectSellPopup();
+    await page.clickTarget('shop:directSell:sageSeed');
   },
   'earn-tutorial-gold': async (page) => {
-    await page.waitForStep('unselect-sage-seed-sale', { timeoutMs: 5_000 });
-  },
-  'unselect-sage-seed-sale': async (page) => {
-    await page.ensureShopSellPopup();
-    await page.clickTarget('shop:sell:empty');
+    await page.clickTarget('shop:directSell:sell');
   },
   'level-up-one': async (page) => {
     await page.clickTarget('page:workshop');
@@ -193,7 +188,6 @@ async function main() {
       `typeof window.tutorialCapture === 'object' && typeof window.cheats === 'object'`,
       { timeoutMs: 20_000 },
     );
-    await page.waitForFreshStart();
     await page.startFresh();
     await page.waitForStep('intro-welcome');
 
@@ -229,7 +223,7 @@ async function main() {
     }
 
     await page.waitForExpression(
-      `window.tutorialCapture.getState().activeStep === null`,
+      `typeof window.tutorialCapture === 'object' && window.tutorialCapture.getState().activeStep === null`,
       { timeoutMs: 10_000 },
     );
 
@@ -268,9 +262,9 @@ async function prepareStepForCapture(page, stepId) {
       await page.ensureTasksExpanded();
       break;
     case 'select-sage-seed-sale':
-    case 'unselect-sage-seed-sale':
+    case 'earn-tutorial-gold':
       await page.ensurePage('shop');
-      await page.ensureShopSellPopup();
+      await page.ensureShopDirectSellPopup();
       break;
     case 'grow-sage':
     case 'fill-mint-herb-task':
@@ -402,7 +396,12 @@ class TutorialPage {
     );
 
     if (result.exceptionDetails) {
-      throw new Error(result.exceptionDetails.text ?? 'Runtime.evaluate failed');
+      const detail =
+        result.exceptionDetails.exception?.description ??
+        result.exceptionDetails.exception?.value ??
+        result.exceptionDetails.text ??
+        'Runtime.evaluate failed';
+      throw new Error(String(detail));
     }
 
     return result.result?.value;
@@ -425,7 +424,7 @@ class TutorialPage {
   }
 
   getState() {
-    return this.run(() => window.tutorialCapture.getState());
+    return this.run(() => window.tutorialCapture?.getState?.() ?? null);
   }
 
   hideOnlineGate() {
@@ -434,13 +433,6 @@ class TutorialPage {
 
   openLessonPanel() {
     return this.run(() => window.tutorialCapture.openLessonPanel());
-  }
-
-  waitForFreshStart() {
-    return this.waitForExpression(
-      `window.tutorialCapture.getState().freshStartVisible === true`,
-      { timeoutMs: 20_000 },
-    );
   }
 
   async startFresh() {
@@ -459,16 +451,28 @@ class TutorialPage {
 
     await sleep(500);
     await this.hideOnlineGate();
-    await this.waitForExpression(
-      `window.tutorialCapture.getState().freshStartVisible === false`,
-      { timeoutMs: 5_000 },
-    );
+    const state = await this.getState();
+
+    if (state.freshStartVisible) {
+      const fallback = await this.run(() =>
+        window.tutorialCapture.clickByText('start fresh', 'button'),
+      );
+
+      if (!fallback?.ok) {
+        throw new Error(
+          `Failed to start fresh with fallback: ${JSON.stringify(fallback ?? null)}`,
+        );
+      }
+
+      await sleep(500);
+      await this.hideOnlineGate();
+    }
   }
 
   async waitForStep(stepId, { timeoutMs = 10_000 } = {}) {
     try {
       await this.waitForExpression(
-        `window.tutorialCapture.getState().activeStep?.id === ${JSON.stringify(stepId)}`,
+        `typeof window.tutorialCapture === 'object' && window.tutorialCapture.getState().activeStep?.id === ${JSON.stringify(stepId)}`,
         { timeoutMs },
       );
     } catch (error) {
@@ -496,7 +500,7 @@ class TutorialPage {
 
     await this.clickTarget(`page:${pageId}`);
     await this.waitForExpression(
-      `window.tutorialCapture.getState().currentPageId === ${JSON.stringify(pageId)}`,
+      `typeof window.tutorialCapture === 'object' && window.tutorialCapture.getState().currentPageId === ${JSON.stringify(pageId)}`,
     );
   }
 
@@ -525,15 +529,15 @@ class TutorialPage {
     }
   }
 
-  async ensureShopSellPopup() {
+  async ensureShopDirectSellPopup() {
     const open = await this.run(
-      () => Boolean(document.querySelector('.shop-page__sell-popup:not([hidden])')),
+      () => Boolean(document.querySelector('.shop-page__direct-sell-popup:not([hidden])')),
     );
 
     if (!open) {
-      await this.clickTarget('shop:stand:1');
+      await this.clickTarget('shop:directSell');
       await this.waitForExpression(
-        `Boolean(document.querySelector('.shop-page__sell-popup:not([hidden])'))`,
+        `Boolean(document.querySelector('.shop-page__direct-sell-popup:not([hidden])'))`,
       );
     }
   }
@@ -568,7 +572,7 @@ class TutorialPage {
     await sleep(250);
     await this.hideOnlineGate();
     await this.waitForExpression(
-      `window.tutorialCapture.getState().username === ${JSON.stringify(username)}`,
+      `typeof window.tutorialCapture === 'object' && window.tutorialCapture.getState().username === ${JSON.stringify(username)}`,
       { timeoutMs: 5_000 },
     );
   }

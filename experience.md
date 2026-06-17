@@ -32,6 +32,7 @@
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
+- Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
@@ -41,7 +42,8 @@
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
-- Fast-sell picker rows are one action; make the whole visual row the button and put the tutorial id on that button.
+- Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
+- Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
@@ -49,6 +51,7 @@
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE lesson panels have no visible `close` border label; players collapse them with the Elara portrait button.
+- FTUE paused/wait states should collapse to a stable Elara help anchor instead of hiding entirely, and the collapsed Elara toggle needs explicit `help`/`hide` text so players know it reopens the lesson.
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
 - FTUE target cues should keep the plain hand asset; swapping in a Spine click-effect pointer adds noisy blobs and weakens the cue.
 - FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then mana sphere, then summon, then tasks and room chrome.

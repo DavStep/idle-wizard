@@ -137,6 +137,7 @@ export const TUTORIAL_STEPS = [
     targetId: 'workshop:summonSeed',
     revealTokens: REVEAL_MANA_SUMMON,
     text: 'use your mana to summon seeds.',
+    getPausedText: () => 'wait for mana',
     isPaused: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       !hasAnySeedTaskProgress(snapshot) &&
@@ -180,6 +181,8 @@ export const TUTORIAL_STEPS = [
 
       return task?.canFill ? 'fill task' : '';
     },
+    getPausedText: ({ snapshot }) =>
+      snapshot?.seedSummoning?.canSummon ? 'summon more seeds' : 'wait for mana',
     isPaused: ({ dom, snapshot }) => {
       if (!dom.isTasksExpanded()) {
         return false;
@@ -1036,7 +1039,7 @@ export class TutorialStepManager {
 
       if (step.isPaused?.(context)) {
         this.activeStepId = step.id;
-        return null;
+        return this.createPausedViewModel(step, context);
       }
 
       if (step.isAvailable && !step.isAvailable(context)) {
@@ -1230,6 +1233,42 @@ export class TutorialStepManager {
       cueMode: getCueMode(step, { ...context, targetId, text, hintText }),
       effect: step.effect,
       sale: step.sale,
+    };
+  }
+
+  createPausedViewModel(step, context) {
+    const viewModel = this.createViewModel(step, context);
+    const pausedText =
+      step.getPausedText?.({ ...context, ...viewModel }) ??
+      step.pauseText ??
+      viewModel.hintText ??
+      viewModel.text ??
+      viewModel.objectiveText ??
+      '';
+    const pausedHintText =
+      step.getPausedHintText?.({ ...context, ...viewModel, pausedText }) ??
+      step.pauseHintText ??
+      pausedText ??
+      viewModel.hintText;
+    const pausedObjectiveText =
+      step.getPausedObjectiveText?.({
+        ...context,
+        ...viewModel,
+        pausedHintText,
+        pausedText,
+      }) ??
+      step.pauseObjectiveText ??
+      pausedHintText ??
+      pausedText;
+
+    return {
+      ...viewModel,
+      targetId: null,
+      text: pausedText,
+      hintText: pausedHintText,
+      objectiveText: pausedObjectiveText,
+      advanceOnClick: false,
+      cueMode: step.pauseCueMode ?? 'passive',
     };
   }
 }

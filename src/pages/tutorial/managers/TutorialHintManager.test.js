@@ -353,8 +353,11 @@ describe('TutorialHintManager', () => {
         `${500 + getLessonOuterHeight(lesson) - 91 + 9}px`,
       );
       expect(button?.dataset.notification).toBeUndefined();
-      expect(button?.getAttribute('aria-label')).toBe('close lesson');
+      expect(button?.getAttribute('aria-label')).toBe('hide lesson');
       expect(button?.getAttribute('aria-expanded')).toBe('true');
+      expect(
+        button?.querySelector('.tutorial-layer__objective-button-label')?.textContent,
+      ).toBe('hide');
       expect(button?.hasAttribute('data-speaking')).toBe(true);
       expect(lesson?.hidden).toBe(false);
       expect(lesson?.textContent).toContain('lesson 1: introduction');
@@ -373,7 +376,7 @@ describe('TutorialHintManager', () => {
       vi.advanceTimersByTime(5200);
       expect(button?.hidden).toBe(false);
       expect(button?.dataset.notification).toBeUndefined();
-      expect(button?.getAttribute('aria-label')).toBe('close lesson');
+      expect(button?.getAttribute('aria-label')).toBe('hide lesson');
       expect(button?.getAttribute('aria-expanded')).toBe('true');
       expect(lesson?.hidden).toBe(false);
 
@@ -383,6 +386,9 @@ describe('TutorialHintManager', () => {
       expect(button?.dataset.notification).toBe('true');
       expect(button?.getAttribute('aria-label')).toBe('open lesson');
       expect(button?.getAttribute('aria-expanded')).toBe('false');
+      expect(
+        button?.querySelector('.tutorial-layer__objective-button-label')?.textContent,
+      ).toBe('help');
       expect(lesson?.hidden).toBe(true);
     } finally {
       vi.useRealTimers();
@@ -446,6 +452,9 @@ describe('TutorialHintManager', () => {
     expect(lesson?.hidden).toBe(true);
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
+    expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
+      'help',
+    );
 
     manager.setLessonAttention(true);
 
@@ -457,6 +466,9 @@ describe('TutorialHintManager', () => {
     expect(lesson?.hidden).toBe(false);
     expect(button?.dataset.notification).toBeUndefined();
     expect(button?.hasAttribute('data-attention')).toBe(false);
+    expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
+      'hide',
+    );
   });
 
   it('moves the lesson away from unlocked Workshop secondary controls', () => {

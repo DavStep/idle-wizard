@@ -2806,6 +2806,23 @@ function createWorldChatFacadeFake({ messages } = {}) {
   };
 }
 
+function createPlayerInfoFacadeFake({ players = [] } = {}) {
+  const snapshot = {
+    connected: true,
+    players,
+  };
+  const listeners = new Set();
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      listener(snapshot);
+      return () => listeners.delete(listener);
+    },
+  };
+}
+
 function createTradeAllianceFacadeFake({
   alliances = [],
   memberCount = 1,
@@ -2813,45 +2830,58 @@ function createTradeAllianceFacadeFake({
   quests = [],
   contributions = [],
   rewardInbox = [],
-  canManageRoles = true,
+  canManageRoles = undefined,
+  ownAlliance = undefined,
+  ownMember = undefined,
+  ownRole = undefined,
+  canEditSettings = undefined,
+  canManageApplications = undefined,
 } = {}) {
   const profileUpdates = [];
   const roleUpdates = [];
   const leadershipTransfers = [];
   const kickedMembers = [];
+  const joinRequests = [];
+  const applyRequests = [];
   let leaveCount = 0;
+  const defaultOwnAlliance = {
+    allianceId: 'alliance-1',
+    name: 'All Seeing Void',
+    tag: 'VOID',
+    description: 'Yes',
+    notice: '',
+    joinMode: 'apply',
+    memberCount,
+    totalIncome: 0,
+    seasonIncome: 0,
+    weeklyIncome: 0,
+    monthlyIncome: 0,
+    dailyIncome: 0,
+    seasonKey: '0',
+    dayKey: '20705',
+  };
+  const defaultOwnMember = {
+    allianceId: 'alliance-1',
+    memberIdentity: 'self',
+    username: 'wizard',
+    playerLevel: 2,
+    role: 'tradeMaster',
+    dailyContribution: 0,
+    dayKey: '0',
+  };
+  const resolvedOwnAlliance = ownAlliance === undefined ? defaultOwnAlliance : ownAlliance;
+  const resolvedOwnMember = ownMember === undefined ? defaultOwnMember : ownMember;
+  const resolvedOwnRole =
+    ownRole === undefined ? (resolvedOwnMember?.role ?? null) : ownRole;
   let snapshot = {
     connected: true,
     alliances,
-    ownAlliance: {
-      allianceId: 'alliance-1',
-      name: 'All Seeing Void',
-      tag: 'VOID',
-      description: 'Yes',
-      notice: '',
-      joinMode: 'apply',
-      memberCount,
-      totalIncome: 0,
-      seasonIncome: 0,
-      weeklyIncome: 0,
-      monthlyIncome: 0,
-      dailyIncome: 0,
-      seasonKey: '0',
-      dayKey: '20705',
-    },
-    ownMember: {
-      allianceId: 'alliance-1',
-      memberIdentity: 'self',
-      username: 'wizard',
-      playerLevel: 2,
-      role: 'tradeMaster',
-      dailyContribution: 0,
-      dayKey: '0',
-    },
-    ownRole: 'tradeMaster',
-    canEditSettings: true,
-    canManageRoles,
-    canManageApplications: true,
+    ownAlliance: resolvedOwnAlliance,
+    ownMember: resolvedOwnMember,
+    ownRole: resolvedOwnRole,
+    canEditSettings: canEditSettings ?? resolvedOwnRole === 'tradeMaster',
+    canManageRoles: canManageRoles ?? resolvedOwnRole === 'tradeMaster',
+    canManageApplications: canManageApplications ?? resolvedOwnRole === 'tradeMaster',
     members,
     applications: [],
     quests,
@@ -2872,12 +2902,15 @@ function createTradeAllianceFacadeFake({
     getRoleUpdates: () => roleUpdates,
     getLeadershipTransfers: () => leadershipTransfers,
     getKickedMembers: () => kickedMembers,
+    getJoinRequests: () => joinRequests,
+    getApplyRequests: () => applyRequests,
     getLeaveCount: () => leaveCount,
     subscribe: (listener) => {
       listeners.add(listener);
       listener(snapshot);
       return () => listeners.delete(listener);
     },
+    retainPublicData: () => () => {},
     updateProfile: async (profile) => {
       profileUpdates.push(profile);
       snapshot = {
@@ -2932,6 +2965,43 @@ function createTradeAllianceFacadeFake({
         members: snapshot.members.filter((member) => member.memberIdentity !== memberIdentity),
       };
       publish();
+      return { ok: true };
+    },
+    joinAlliance: async (allianceId) => {
+      joinRequests.push(allianceId);
+      const joinedAlliance = snapshot.alliances.find(
+        (alliance) => alliance.allianceId === allianceId,
+      );
+
+      if (!joinedAlliance) {
+        return { ok: false, reason: 'not_found' };
+      }
+
+      snapshot = {
+        ...snapshot,
+        ownAlliance: {
+          ...joinedAlliance,
+          memberCount: Math.max(1, Number(joinedAlliance.memberCount ?? 1)),
+        },
+        ownMember: {
+          allianceId,
+          memberIdentity: 'self',
+          username: 'wizard',
+          playerLevel: 2,
+          role: 'trader',
+          dailyContribution: 0,
+          dayKey: '0',
+        },
+        ownRole: 'trader',
+        canEditSettings: false,
+        canManageRoles: false,
+        canManageApplications: false,
+      };
+      publish();
+      return { ok: true };
+    },
+    applyAlliance: async (allianceId) => {
+      applyRequests.push(allianceId);
       return { ok: true };
     },
     leaveAlliance: async () => {
@@ -5448,6 +5518,86 @@ describe('PagesFacade', () => {
     ).toEqual(['monthly', '84']);
   });
 
+  it('opens alliance info from leaderboard alliance rows and groups members by role', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      alliances: [
+        {
+          allianceId: 'alliance-1',
+          name: 'All Seeing Void',
+          tag: 'VOID',
+          joinMode: 'apply',
+          memberCount: 3,
+          totalIncome: 128,
+          seasonIncome: 42,
+          weeklyIncome: 42,
+          monthlyIncome: 84,
+          dailyIncome: 7,
+        },
+      ],
+      members: [
+        {
+          allianceId: 'alliance-1',
+          memberIdentity: 'self',
+          username: 'wizard',
+          playerLevel: 2,
+          role: 'tradeMaster',
+          dailyContribution: 0,
+        },
+        {
+          allianceId: 'alliance-1',
+          memberIdentity: 'member-2',
+          username: 'Ada',
+          playerLevel: 4,
+          role: 'trader',
+          dailyContribution: 0,
+        },
+        {
+          allianceId: 'alliance-1',
+          memberIdentity: 'member-3',
+          username: 'Merlin',
+          playerLevel: 7,
+          role: 'trader',
+          dailyContribution: 0,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__leaderboard-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const leaderboardPopup = stage.querySelector('.workshop-page__leaderboard-popup');
+    const allianceButton = [
+      ...leaderboardPopup.querySelectorAll('.workshop-page__leaderboard-tab-button'),
+    ].find((button) => button.textContent === 'alliance');
+
+    allianceButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const allianceRow = leaderboardPopup.querySelector('.workshop-page__leaderboard-row.is-actionable');
+    allianceRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const infoPopup = stage.querySelector('.room-alliance-info-popup');
+    expect(infoPopup.hidden).toBe(false);
+    expect(infoPopup.querySelector('.style-box__title')?.textContent).toBe('[VOID] All Seeing Void');
+    expect(
+      [...infoPopup.querySelectorAll('.room-alliance-info-section-label')].map(
+        (label) => label.textContent,
+      ),
+    ).toEqual(['members', 'trade master', 'trader']);
+    expect(infoPopup.textContent).toContain('wizard');
+    expect(infoPopup.textContent).toContain('Ada');
+    expect(infoPopup.textContent).toContain('Merlin');
+  });
+
   it('shows the current player rank below the leaderboard when outside the top ten', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -5562,6 +5712,70 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
+  it('opens alliance info from the player info dialog alliance tag', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const playerInfoFacade = createPlayerInfoFacadeFake({
+      players: [
+        {
+          identity: 'identity-ada',
+          username: 'Ada',
+          allianceTag: 'TAP',
+          allianceTagColor: 'blue',
+          totalProducedGold: 321,
+          playerLevel: 9,
+          prestigeCount: 1,
+        },
+      ],
+    });
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      alliances: [
+        {
+          allianceId: 'alliance-2',
+          name: 'Tap Guild',
+          tag: 'TAP',
+          tagColor: 'blue',
+          joinMode: 'apply',
+          memberCount: 1,
+          totalIncome: 200,
+          seasonIncome: 80,
+          weeklyIncome: 80,
+          monthlyIncome: 120,
+          dailyIncome: 10,
+        },
+      ],
+      members: [
+        {
+          allianceId: 'alliance-2',
+          memberIdentity: 'identity-ada',
+          username: 'Ada',
+          playerLevel: 9,
+          role: 'tradeMaster',
+          dailyContribution: 0,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerInfoFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.playerInfoDialogFacade.show({
+      identity: 'identity-ada',
+      username: 'Ada',
+    });
+
+    const playerInfoPopup = stage.querySelector('.room-player-info-popup');
+    const allianceLink = playerInfoPopup.querySelector('.room-player-info-alliance-link');
+    allianceLink.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const infoPopup = stage.querySelector('.room-alliance-info-popup');
+    expect(infoPopup.hidden).toBe(false);
+    expect(infoPopup.querySelector('.style-box__title')?.textContent).toBe('[TAP] Tap Guild');
+  });
+
   it('labels trade alliance browse income and keeps alliance info compact', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -5617,6 +5831,77 @@ describe('PagesFacade', () => {
     expect(incomeRow.querySelector('.row_val')?.textContent).toBe('6.36k gold');
     expect(incomeRow.querySelector('.row_val')?.getAttribute('data-resource-color')).toBe('gold');
     expect(incomeRow.querySelector('.row_val .style-resource-label--gold')).not.toBeNull();
+  });
+
+  it('opens alliance info from trade alliance browse rows and joins open alliances', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      alliances: [
+        {
+          allianceId: 'alliance-2',
+          name: 'BustinGame',
+          tag: 'BG',
+          description: 'stress crew',
+          joinMode: 'open',
+          memberCount: 2,
+          totalIncome: 1000,
+          seasonIncome: 420,
+          weeklyIncome: 420,
+          monthlyIncome: 640,
+          dailyIncome: 80,
+        },
+      ],
+      members: [
+        {
+          allianceId: 'alliance-2',
+          memberIdentity: 'member-2',
+          username: 'Ada',
+          playerLevel: 4,
+          role: 'tradeMaster',
+          dailyContribution: 0,
+        },
+        {
+          allianceId: 'alliance-2',
+          memberIdentity: 'member-3',
+          username: 'Merlin',
+          playerLevel: 6,
+          role: 'trader',
+          dailyContribution: 0,
+        },
+      ],
+      ownAlliance: null,
+      ownMember: null,
+      ownRole: null,
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const browseMain = stage.querySelector('.workshop-page__trade-alliance-list-main.is-actionable');
+    browseMain.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const infoPopup = stage.querySelector('.room-alliance-info-popup');
+    expect(infoPopup.hidden).toBe(false);
+    expect(infoPopup.querySelector('.style-box__title')?.textContent).toBe('[BG] BustinGame');
+
+    const joinButton = infoPopup.querySelector('.room-alliance-info-action');
+    expect(joinButton?.textContent).toBe('join');
+
+    joinButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(tradeAllianceFacade.getJoinRequests()).toEqual(['alliance-2']);
+    expect(infoPopup.querySelector('.room-alliance-info-action')).toBeNull();
   });
 
   it('fills a trade alliance item quest from owned inventory', async () => {
@@ -6729,6 +7014,10 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       'npc demand market',
+    );
+    expect(stage.querySelector('.shop-page__direct-sell-box')).not.toBeNull();
+    expect(stage.querySelector('.shop-page__direct-sell-box')?.textContent).toContain(
+      'fast sell',
     );
     expect(stage.querySelector('.shop-page__stock')).not.toBeNull();
     expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(

@@ -1,4 +1,5 @@
 import { BrewingPageFacade } from './brewing/BrewingPageFacade.js';
+import { AllianceInfoDialogFacade } from './allianceInfo/AllianceInfoDialogFacade.js';
 import { GardenPageFacade } from './garden/GardenPageFacade.js';
 import { ShopPageFacade } from './shop/ShopPageFacade.js';
 import { ResearchPageFacade } from './research/ResearchPageFacade.js';
@@ -75,6 +76,11 @@ export class PagesFacade {
     });
     this.playerInfoDialogFacade = new PlayerInfoDialogFacade({
       playerInfoFacade,
+      onOpenAllianceInfo: (alliance) => this.allianceInfoDialogFacade.show(alliance),
+    });
+    this.allianceInfoDialogFacade = new AllianceInfoDialogFacade({
+      tradeAllianceFacade,
+      onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
     });
     this.worldChatManager = new WorkshopWorldChatManager({
       worldChatFacade,
@@ -96,6 +102,7 @@ export class PagesFacade {
         leaderboardFacade,
         tradeAllianceFacade,
         onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
+        onOpenAllianceInfo: (alliance) => this.allianceInfoDialogFacade.show(alliance),
       }),
     );
     this.registryManager.register(
@@ -137,6 +144,7 @@ export class PagesFacade {
     this.worldChatManager.mount(stage);
     this.topPanelFacade.mount(stage);
     this.playerInfoDialogFacade.mount(stage);
+    this.allianceInfoDialogFacade.mount(stage);
     this.syncTopPanelResourceContext();
     this.syncPageUnlocks(this.getGameplaySnapshot());
     this.pageUnlockUnsubscribe =
@@ -151,6 +159,7 @@ export class PagesFacade {
     this.pageUnlockUnsubscribe?.();
     this.pageUnlockUnsubscribe = null;
     this.topPanelFacade.unmount();
+    this.allianceInfoDialogFacade.unmount();
     this.playerInfoDialogFacade.unmount();
     this.worldChatManager.unmount();
     this.notificationFacade.unmount();

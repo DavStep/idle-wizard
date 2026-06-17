@@ -6,8 +6,9 @@ const EMPTY_SNAPSHOT = {
 };
 
 export class PlayerInfoDialogManager {
-  constructor({ playerInfoFacade } = {}) {
+  constructor({ playerInfoFacade, onOpenAllianceInfo } = {}) {
     this.playerInfoFacade = playerInfoFacade;
+    this.onOpenAllianceInfo = onOpenAllianceInfo;
     this.unsubscribe = null;
     this.refs = {};
     this.root = null;
@@ -149,7 +150,24 @@ export class PlayerInfoDialogManager {
     val.className = 'row_val';
     const tag = createAllianceTagSpan(player.allianceTag, player.allianceTagColor);
 
-    if (tag) {
+    if (tag && typeof this.onOpenAllianceInfo === 'function') {
+      const button = document.createElement('button');
+      button.className = 'room-player-info-link room-player-info-alliance-link';
+      button.type = 'button';
+      button.setAttribute('aria-label', `view ${player.allianceTag} alliance`);
+      button.append(tag);
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.onOpenAllianceInfo?.({
+          allianceId: player.allianceId,
+          name: player.allianceName,
+          tag: player.allianceTag,
+          tagColor: player.allianceTagColor,
+        });
+      });
+      val.append(button);
+    } else if (tag) {
       val.append(tag);
     } else {
       val.textContent = 'none';
@@ -179,6 +197,8 @@ export class PlayerInfoDialogManager {
       ...player,
       identity: player?.identity ?? fallback.identity,
       username: player?.username ?? fallback.username,
+      allianceId: player?.allianceId ?? fallback.allianceId,
+      allianceName: player?.allianceName ?? fallback.allianceName,
       allianceTag: player?.allianceTag ?? fallback.allianceTag,
       allianceTagColor: player?.allianceTagColor ?? fallback.allianceTagColor,
       playerLevel: player?.playerLevel ?? fallback.playerLevel,
@@ -211,6 +231,8 @@ export class PlayerInfoDialogManager {
     return {
       identity: this.normalizeIdentity(player.identity),
       username: String(player.username ?? player.name ?? '').trim(),
+      allianceId: this.normalizeIdentity(player.allianceId ?? player.alliance_id),
+      allianceName: String(player.allianceName ?? player.alliance_name ?? '').trim(),
       allianceTag: normalizeAllianceTag(player.allianceTag ?? player.alliance_tag),
       allianceTagColor: player.allianceTagColor ?? player.alliance_tag_color,
       totalProducedGold: this.normalizeMetric(

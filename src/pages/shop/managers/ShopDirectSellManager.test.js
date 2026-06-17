@@ -87,11 +87,31 @@ describe('ShopDirectSellManager', () => {
 
     manager.mount({ buttonParent, popupParent });
 
+    const box = buttonParent.querySelector('.shop-page__direct-sell-box');
     const openButton = buttonParent.querySelector('.shop-page__direct-sell-button');
+    const helpButton = buttonParent.querySelector('.shop-page__direct-sell-help-button');
+    const helpPopup = popupParent.querySelector('.shop-page__direct-sell-help-popup');
+    const helpTooltip = popupParent.querySelector('.shop-page__direct-sell-help-tooltip');
+    expect(box?.querySelector('.style-box__title')?.textContent).toBe('fast sell');
+    expect(box?.querySelector('.shop-page__direct-sell-summary')?.textContent).toBe(
+      'instant sale80% payout',
+    );
     expect(openButton?.textContent).toBe('fast sell');
     expect(openButton?.dataset.tutorialId).toBe('shop:directSell');
+    expect(helpButton?.textContent).toBe('?');
+    expect(helpPopup?.hidden).toBe(true);
+
+    helpButton.click();
+
+    expect(helpButton?.getAttribute('aria-expanded')).toBe('true');
+    expect(helpPopup?.hidden).toBe(false);
+    expect(helpTooltip?.textContent).toContain('80% of full npc price');
+    expect(helpTooltip?.textContent).toContain('wait for the timer');
 
     openButton.click();
+
+    expect(helpButton?.getAttribute('aria-expanded')).toBe('false');
+    expect(helpPopup?.hidden).toBe(true);
 
     const popup = popupParent.querySelector('.shop-page__direct-sell-popup');
     expect(popup?.hidden).toBe(false);
@@ -104,8 +124,14 @@ describe('ShopDirectSellManager', () => {
     const itemRow = popup.querySelector('.shop-page__direct-sell-row');
     const itemButton = popup.querySelector('.shop-page__direct-sell-item-button');
     expect(itemRow).toBe(itemButton);
-    expect(itemButton.dataset.tutorialId).toBe('shop:directSell:sageSeed');
+    expect(itemButton.dataset.tutorialId).toBeUndefined();
     expect(itemButton.querySelector('.row_key')?.dataset.tutorialId).toBeUndefined();
+    expect(
+      itemButton.querySelector('.shop-page__direct-sell-target-label')?.dataset.tutorialId,
+    ).toBe(
+      'shop:directSell:sageSeed',
+    );
+    expect(itemButton.querySelector('.row_val')?.dataset.tutorialId).toBeUndefined();
 
     itemButton
       .querySelector('.row_val')

@@ -218,6 +218,48 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
+  it('keeps Elara collapsed instead of hiding while waiting for mana', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: [
+            'intro-welcome',
+            'intro-username',
+            'intro-username-return',
+            'intro-mana-sphere',
+          ],
+        }),
+      }),
+    });
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('first-summon-seed');
+    expect(facade.activeStep?.targetId).toBeNull();
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson-button')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+    expect(
+      stage
+        .querySelector('.tutorial-layer__objective-button-label')
+        ?.textContent,
+    ).toBe('help');
+
+    facade.unmount();
+  });
+
   it('hides the lesson when an app blocker appears after mount', async () => {
     const stage = document.createElement('section');
     const usernameButton = document.createElement('button');

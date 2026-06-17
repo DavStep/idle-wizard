@@ -58,4 +58,41 @@ describe('PlayerInfoDialogManager', () => {
     expect(popup.hidden).toBe(true);
     expect(document.activeElement).toBe(opener);
   });
+
+  it('opens alliance info from the alliance tag button', () => {
+    const snapshot = {
+      connected: true,
+      players: [
+        {
+          identity: 'identity-ada',
+          username: 'Ada',
+          allianceTag: 'TAP',
+          allianceTagColor: 'blue',
+          totalProducedGold: 1234,
+          playerLevel: 14,
+          prestigeCount: 2,
+        },
+      ],
+    };
+    const onOpenAllianceInfo = vi.fn();
+    const stage = document.createElement('section');
+    const manager = new PlayerInfoDialogManager({
+      playerInfoFacade: createPlayerInfoFacade(snapshot),
+      onOpenAllianceInfo,
+    });
+
+    document.body.append(stage);
+    manager.mount(stage);
+    manager.show({ identity: 'identity-ada', username: 'Ada' });
+
+    const button = stage.querySelector('.room-player-info-alliance-link');
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onOpenAllianceInfo).toHaveBeenCalledWith({
+      allianceId: '',
+      name: '',
+      tag: 'TAP',
+      tagColor: 'blue',
+    });
+  });
 });
