@@ -122,6 +122,7 @@ export class GameplayFacade {
     this.gameConfigUnsubscribe = null;
     this.initialized = false;
     this.lastFrameSnapshotPublishTime = Number.NEGATIVE_INFINITY;
+    this.lastFrameSnapshotKey = '';
   }
 
   setPersistenceStorage(storageManager) {
@@ -962,7 +963,7 @@ export class GameplayFacade {
   }
 
   publishSnapshot() {
-    this.stateObserverManager.publish(this.getSnapshot());
+    this.publishSnapshotObject(this.getSnapshot());
   }
 
   publishFrameSnapshot(frame = {}) {
@@ -981,8 +982,38 @@ export class GameplayFacade {
     }
 
     this.lastFrameSnapshotPublishTime = time;
-    this.publishSnapshot();
+    const snapshot = this.getSnapshot();
+    const snapshotKey = this.getFrameSnapshotKey(snapshot);
+
+    if (snapshotKey === this.lastFrameSnapshotKey) {
+      return false;
+    }
+
+    this.publishSnapshotObject(snapshot, snapshotKey);
     return true;
+  }
+
+  publishSnapshotObject(snapshot, frameSnapshotKey = this.getFrameSnapshotKey(snapshot)) {
+    this.lastFrameSnapshotKey = frameSnapshotKey;
+    this.stateObserverManager.publish(snapshot);
+  }
+
+  getFrameSnapshotKey(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') {
+      return '';
+    }
+
+    const mana = snapshot.mana
+      ? {
+          ...snapshot.mana,
+          current: Math.floor(Number(snapshot.mana.current) || 0),
+        }
+      : snapshot.mana;
+
+    return JSON.stringify({
+      ...snapshot,
+      mana,
+    });
   }
 
   publishAndSaveSnapshot() {

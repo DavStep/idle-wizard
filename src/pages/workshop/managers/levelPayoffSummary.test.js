@@ -59,6 +59,23 @@ const snapshot = {
           'crystal reward 1',
         ],
       },
+      {
+        level: 4,
+        totals: {
+          maxGardenTiles: 3,
+          maxCauldrons: 4,
+          maxNpcMarketStands: 0,
+          maxPlayerMarketStands: 0,
+          maxManaCap: 200,
+          manaPerSecond: 4,
+        },
+        effects: [
+          'max cauldrons 4',
+          'max mana cap 200',
+          'mana regen 4/sec',
+          'crystal reward 1',
+        ],
+      },
     ],
   },
 };
@@ -68,7 +85,8 @@ describe('levelPayoffSummary', () => {
     expect(getLevelPayoffRows(snapshot, { fromLevel: 1, toLevel: 2 })).toEqual([
       {
         label: 'unlocks',
-        value: 'garden',
+        value: '-garden',
+        valueLines: ['-garden'],
         notice: 'garden unlocked',
       },
       {
@@ -100,13 +118,9 @@ describe('levelPayoffSummary', () => {
     expect(rows).toEqual([
       {
         label: 'unlocks',
-        value: 'research',
-        notice: 'research unlocked',
-      },
-      {
-        label: 'workshop',
-        value: 'logs, discoveries, leaderboard, alliance',
-        notice: 'logs, discoveries, leaderboard, alliance available',
+        value: '-research\n-logs\n-leaderboard',
+        valueLines: ['-research', '-logs', '-leaderboard'],
+        notice: 'research unlocked, logs available, leaderboard available',
       },
       {
         label: 'mana cap',
@@ -125,7 +139,38 @@ describe('levelPayoffSummary', () => {
       },
     ]);
     expect(formatLevelUpNotice(3, rows)).toBe(
-      'level 3 reached: research unlocked, logs, discoveries, leaderboard, alliance available, +50 mana cap, +1/sec mana regen, +1 crystal',
+      'level 3 reached: research unlocked, logs available, leaderboard available, +50 mana cap, +1/sec mana regen, +1 crystal',
+    );
+  });
+
+  it('moves discoveries and alliance to the level-four unlock list', () => {
+    const rows = getLevelPayoffRows(snapshot, { fromLevel: 3, toLevel: 4 });
+
+    expect(rows).toEqual([
+      {
+        label: 'unlocks',
+        value: '-brewing\n-discoveries\n-alliance',
+        valueLines: ['-brewing', '-discoveries', '-alliance'],
+        notice: 'brewing unlocked, discoveries available, alliance available',
+      },
+      {
+        label: 'mana cap',
+        value: '+50',
+        notice: '+50 mana cap',
+      },
+      {
+        label: 'mana regen',
+        value: '+1/sec',
+        notice: '+1/sec mana regen',
+      },
+      {
+        label: 'crystal',
+        value: '+1',
+        notice: '+1 crystal',
+      },
+    ]);
+    expect(formatLevelUpNotice(4, rows)).toBe(
+      'level 4 reached: brewing unlocked, discoveries available, alliance available, +50 mana cap, +1/sec mana regen, +1 crystal',
     );
   });
 });

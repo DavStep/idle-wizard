@@ -4,17 +4,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { WorkshopPageFacade } from './WorkshopPageFacade.js';
 
-describe('WorkshopPageFacade requirement connection', () => {
-  it('connects a matching summoned item to the current requirement row', () => {
+describe('WorkshopPageFacade requirement feedback', () => {
+  it('pulses a matching summoned item requirement row', () => {
     const facade = new WorkshopPageFacade();
     const target = document.createElement('div');
-    const source = document.createElement('button');
     const getCurrentRequirementRowForItemTypeIds = vi.fn(() => target);
     const show = vi.fn();
 
     facade.taskManager = { getCurrentRequirementRowForItemTypeIds };
     facade.requirementConnectionManager = { show };
-    facade.actionBarManager = { refs: { summonButton: source } };
 
     facade.showRequirementConnection({
       type: 'seed_summoned',
@@ -24,7 +22,7 @@ describe('WorkshopPageFacade requirement connection', () => {
 
     const [itemTypeIds] = getCurrentRequirementRowForItemTypeIds.mock.calls[0];
     expect([...itemTypeIds]).toEqual([1, 2]);
-    expect(show).toHaveBeenCalledWith({ source, target });
+    expect(show).toHaveBeenCalledWith({ target });
   });
 
   it('does not play when the created item is not the current requirement', () => {

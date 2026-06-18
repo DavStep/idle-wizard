@@ -12,6 +12,7 @@ import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js
 const INITIAL_REQUIREMENTS_LABEL = formatLevelRequirementsLabel();
 const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
+const EXPANDED_CONTENT_COLLAPSE_MS = 230;
 
 export class WorkshopTaskManager {
   constructor({ gameplayFacade, onLevelUpNotice } = {}) {
@@ -33,6 +34,9 @@ export class WorkshopTaskManager {
     this.taskPriorityByLevel = new Map();
     this.dragState = null;
     this.expanded = false;
+    this.collapsingExpandedContent = false;
+    this.collapseAnimationTimeoutId = null;
+    this.collapseAnimationFrameId = null;
     this.canToggleTasks = false;
     this.infoVisible = false;
     this.previousFocus = null;
@@ -95,6 +99,14 @@ export class WorkshopTaskManager {
     this.handleTaskDragDocumentCancel = (event) => {
       this.onTaskDragDocumentPointerCancel(event);
     };
+    this.handleExpandedContentTransitionEnd = (event) => {
+      if (
+        event.target === this.refs.expandedContent &&
+        event.propertyName === 'height'
+      ) {
+        this.finishExpandedContentCollapse();
+      }
+    };
   }
 
   mount(parent, popupParent = parent) {
@@ -109,6 +121,9 @@ export class WorkshopTaskManager {
     this.root = document.createElement('section');
     this.root.className = 'workshop-page__tasks style-box is-collapsed';
     this.root.setAttribute('aria-label', this.currentRequirementsLabel);
+
+    this.refs.slot = document.createElement('div');
+    this.refs.slot.className = 'workshop-page__tasks-slot';
 
     this.refs.backdrop = document.createElement('button');
     this.refs.backdrop.className = 'workshop-page__tasks-backdrop';
@@ -154,16 +169,28 @@ export class WorkshopTaskManager {
     this.refs.levelRewards = this.createLevelRewardsPanel();
     this.refs.levelComplete = this.createLevelCompleteRow();
 
+    this.refs.expandedContent = document.createElement('div');
+    this.refs.expandedContent.className = 'workshop-page__tasks-expanded-content';
+
+    this.refs.expandedContentBody = document.createElement('div');
+    this.refs.expandedContentBody.className =
+      'workshop-page__tasks-expanded-content-body';
+    this.refs.expandedContentBody.append(
+      this.refs.list,
+      this.refs.levelRewards.root,
+      this.refs.levelComplete.root,
+    );
+    this.refs.expandedContent.append(this.refs.expandedContentBody);
+
     this.root.append(
       this.refs.title,
       this.refs.count,
       this.refs.summary,
-      this.refs.list,
-      this.refs.levelRewards.root,
-      this.refs.levelComplete.root,
+      this.refs.expandedContent,
       this.refs.toggleButton,
     );
-    parent.append(this.refs.backdrop, this.root);
+    this.refs.slot.append(this.root);
+    parent.append(this.refs.backdrop, this.refs.slot);
     this.refs.infoPopup = this.createInfoPopup();
     popupParent.append(this.refs.infoPopup);
     document.addEventListener('pointerdown', this.handleOutsidePress, true);
@@ -187,11 +214,13 @@ export class WorkshopTaskManager {
     this.refs.infoPopup?.removeEventListener('click', this.handleInfoPopupClick);
     this.refs.backdrop?.removeEventListener('pointerdown', this.handleBackdropPress);
     this.refs.backdrop?.removeEventListener('click', this.handleBackdropPress);
+    this.cancelExpandedContentCollapse();
     this.stopTaskDragListeners();
     this.clearTaskDragPreview(this.dragState);
     this.cancelRowAnimations();
     this.refs.infoPopup?.remove();
     this.refs.backdrop?.remove();
+    this.refs.slot?.remove();
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -205,6 +234,7 @@ export class WorkshopTaskManager {
     this.currentFirstCompletedTaskId = null;
     this.currentRequirementsLabel = INITIAL_REQUIREMENTS_LABEL;
     this.currentRequirementTargetLevel = null;
+    this.collapsingExpandedContent = false;
     this.infoVisible = false;
     this.previousFocus = null;
     this.dragState = null;
@@ -215,7 +245,20 @@ export class WorkshopTaskManager {
   }
 
   setExpanded(expanded) {
-    this.expanded = Boolean(expanded);
+    const nextExpanded = Boolean(expanded);
+    const shouldAnimateCollapse =
+      this.expanded && !nextExpanded && this.shouldAnimateExpandedContentCollapse();
+
+    if (nextExpanded) {
+      this.cancelExpandedContentCollapse();
+    }
+
+    this.expanded = nextExpanded;
+
+    if (shouldAnimateCollapse) {
+      this.startExpandedContentCollapse();
+    }
+
     this.syncExpansionState();
   }
 
@@ -725,7 +768,7 @@ export class WorkshopTaskManager {
     const show =
       Number.isInteger(nextLevel) &&
       insideLevelRange &&
-      (!this.canToggleTasks || this.isTaskListExpanded()) &&
+      (!this.canToggleTasks || this.isExpandedContentVisible()) &&
       this.currentSnapshot?.tasks?.completedAllLevels !== true &&
       this.currentLevelCompletion?.completedAllLevels !== true;
 
@@ -752,7 +795,7 @@ export class WorkshopTaskManager {
 
     const show =
       this.shouldShowLevelComplete() &&
-      (!this.canToggleTasks || this.isTaskListExpanded());
+      (!this.canToggleTasks || this.isExpandedContentVisible());
     row.root.hidden = !show;
 
     if (!show) {
@@ -829,8 +872,10 @@ export class WorkshopTaskManager {
     container.dataset.signature = signature;
     container.replaceChildren(
       ...displayRows.map((row) => {
+        const valueLines = Array.isArray(row.valueLines) ? row.valueLines : [];
         const root = document.createElement('div');
         root.className = 'workshop-page__level-payoff-row';
+        root.classList.toggle('workshop-page__level-payoff-row--list', valueLines.length > 0);
 
         const label = document.createElement('span');
         label.className = 'workshop-page__level-payoff-label';
@@ -838,7 +883,20 @@ export class WorkshopTaskManager {
 
         const value = document.createElement('span');
         value.className = 'workshop-page__level-payoff-value';
-        value.textContent = row.value;
+
+        if (valueLines.length > 0) {
+          value.classList.add('workshop-page__level-payoff-value--list');
+          value.replaceChildren(
+            ...valueLines.map((line) => {
+              const item = document.createElement('span');
+              item.className = 'workshop-page__level-payoff-value-line';
+              item.textContent = line;
+              return item;
+            }),
+          );
+        } else {
+          value.textContent = row.value;
+        }
 
         root.append(label, value);
         return root;
@@ -1321,14 +1379,20 @@ export class WorkshopTaskManager {
     return Boolean(this.canToggleTasks && this.expanded);
   }
 
+  isExpandedContentVisible() {
+    return Boolean(this.isTaskListExpanded() || this.collapsingExpandedContent);
+  }
+
   syncExpansionState() {
     const listExpanded = this.isTaskListExpanded();
-    const levelCompleteVisible =
+    const expandedContentVisible = this.isExpandedContentVisible();
+    const levelCompleteExpanded =
       this.shouldShowLevelComplete() && (!this.canToggleTasks || listExpanded);
-    const hasExpandedContent = listExpanded || levelCompleteVisible;
+    const hasExpandedContent = listExpanded || levelCompleteExpanded;
 
     this.root?.classList.toggle('is-expanded', hasExpandedContent);
     this.root?.classList.toggle('is-collapsed', !hasExpandedContent);
+    this.root?.classList.toggle('is-collapsing', this.collapsingExpandedContent);
     this.refs.toggleButton?.setAttribute('aria-expanded', listExpanded ? 'true' : 'false');
     this.refs.toggleButton?.setAttribute(
       'aria-label',
@@ -1345,13 +1409,97 @@ export class WorkshopTaskManager {
     }
 
     if (this.refs.list) {
-      this.refs.list.hidden = !listExpanded;
+      this.refs.list.hidden = !expandedContentVisible;
     }
 
     this.syncTaskDragState();
     this.renderLevelRewards();
     this.renderLevelComplete();
     this.updateToggleNotification();
+  }
+
+  shouldAnimateExpandedContentCollapse() {
+    return Boolean(
+      this.canToggleTasks &&
+        this.root?.isConnected &&
+        this.refs.expandedContent &&
+        !this.prefersReducedMotion(),
+    );
+  }
+
+  startExpandedContentCollapse() {
+    this.cancelExpandedContentCollapse();
+    const content = this.refs.expandedContent;
+    const contentHeight = content?.getBoundingClientRect().height ?? 0;
+
+    if (content && contentHeight > 0) {
+      content.style.height = `${contentHeight}px`;
+      content.style.opacity = '1';
+      content.style.overflow = 'hidden';
+      content.getBoundingClientRect();
+    }
+
+    this.collapsingExpandedContent = true;
+    this.root?.classList.add('is-collapsing');
+    this.refs.expandedContent?.addEventListener(
+      'transitionend',
+      this.handleExpandedContentTransitionEnd,
+    );
+    this.collapseAnimationFrameId =
+      window.requestAnimationFrame?.(() => {
+        this.collapseAnimationFrameId = null;
+
+        if (!this.collapsingExpandedContent || !content) {
+          return;
+        }
+
+        content.style.height = '0px';
+        content.style.opacity = '0.01';
+      }) ?? null;
+
+    if (this.collapseAnimationFrameId === null && content) {
+      content.style.height = '0px';
+      content.style.opacity = '0.01';
+    }
+
+    this.collapseAnimationTimeoutId = window.setTimeout(
+      () => this.finishExpandedContentCollapse(),
+      EXPANDED_CONTENT_COLLAPSE_MS + 40,
+    );
+  }
+
+  finishExpandedContentCollapse() {
+    if (!this.collapsingExpandedContent) {
+      return;
+    }
+
+    this.cancelExpandedContentCollapse();
+    this.syncExpansionState();
+  }
+
+  cancelExpandedContentCollapse() {
+    if (this.collapseAnimationTimeoutId !== null) {
+      window.clearTimeout(this.collapseAnimationTimeoutId);
+      this.collapseAnimationTimeoutId = null;
+    }
+
+    if (this.collapseAnimationFrameId !== null) {
+      window.cancelAnimationFrame?.(this.collapseAnimationFrameId);
+      this.collapseAnimationFrameId = null;
+    }
+
+    this.refs.expandedContent?.removeEventListener(
+      'transitionend',
+      this.handleExpandedContentTransitionEnd,
+    );
+    this.collapsingExpandedContent = false;
+    this.root?.classList.remove('is-collapsing');
+
+    if (this.refs.expandedContent) {
+      this.refs.expandedContent.style.height = '';
+      this.refs.expandedContent.style.opacity = '';
+      this.refs.expandedContent.style.overflow = '';
+    }
   }
 
   shouldAnimateRows() {
@@ -1445,12 +1593,12 @@ export class WorkshopTaskManager {
         cleanup();
       }
     };
-    const timeoutId = window.setTimeout(cleanup, 280);
+    const timeoutId = window.setTimeout(cleanup, 310);
 
     this.rowAnimations.set(taskId, { cleanup, onTransitionEnd, root, timeoutId });
     root.addEventListener('transitionend', onTransitionEnd);
     root.style.transition =
-      'transform 230ms cubic-bezier(0.16, 1, 0.3, 1), opacity 140ms linear';
+      'transform 260ms cubic-bezier(0.2, 1.32, 0.36, 1), opacity 140ms linear';
     root.style.transform = 'translate(0, 0)';
     root.style.opacity = '1';
   }

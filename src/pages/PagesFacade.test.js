@@ -2628,6 +2628,12 @@ function unlockWorkshopSecondaryActions(gameplayFacade, level = 4) {
   snapshot.prestige.currentLevel = Math.max(snapshot.prestige.currentLevel, level);
 }
 
+function createWorkshopSecondaryUnlockedGameplayFacade(level = 3) {
+  const gameplayFacade = createGameplayFacadeFake();
+  unlockWorkshopSecondaryActions(gameplayFacade, level);
+  return gameplayFacade;
+}
+
 function markResearchComplete(gameplayFacade, ...researchIds) {
   const research = gameplayFacade.getSnapshot().research;
   const completedResearchIds = new Set(research.completedResearchIds ?? []);
@@ -3439,6 +3445,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__world-chat-button')?.textContent).toBe(
       'world chat',
     );
+    expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(true);
+    expect(stage.querySelector('.workshop-page__world-chat-button')?.disabled).toBe(true);
     expect(
       stage.querySelector('.workshop-page__world-chat-box')?.parentElement?.classList.contains(
         'room-world-chat-layer',
@@ -3545,7 +3553,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page')).not.toBeNull();
   });
 
-  it('reveals Workshop non-prestige secondary buttons at level 3', () => {
+  it('reveals Workshop non-prestige secondary buttons by milestone level', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -3559,8 +3567,16 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__prestige-button')?.disabled).toBe(true);
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(false);
-    expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(true);
+    expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__world-chat-button')?.disabled).toBe(false);
     expect(stage.querySelector('.workshop-page__logs')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
+
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    gameplayFacade.publishSnapshot();
+
+    expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(false);
   });
 
@@ -3714,11 +3730,48 @@ describe('PagesFacade', () => {
     pagesFacade.unmount();
   });
 
-  it('auto-completes FTUE for players already past brewing introduction', () => {
+  it('shows passive FTUE guidance for level five theme settings', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const storage = createMemoryStorage();
     gameplayFacade.getSnapshot().tasks.currentLevel = 5;
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: storage,
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('find-theme-settings');
+    expect(pagesFacade.tutorialFacade.activeStep?.cueMode).toBe('passive');
+    expect(pagesFacade.tutorialFacade.activeStep?.targetId).toBe('top:username');
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+
+    stage
+      .querySelector('[data-tutorial-id="top:username"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(pagesFacade.tutorialFacade.activeStep?.targetId).toBe('top:settings:theme-tab');
+
+    stage
+      .querySelector('[data-tutorial-id="top:settings:theme-tab"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    pagesFacade.tutorialFacade.refresh();
+
+    expect(pagesFacade.tutorialFacade.activeStep).toBeNull();
+
+    pagesFacade.unmount();
+  });
+
+  it('auto-completes FTUE for players already past settings introduction', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const storage = createMemoryStorage();
+    gameplayFacade.getSnapshot().tasks.currentLevel = 6;
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -3966,6 +4019,7 @@ describe('PagesFacade', () => {
     const rewards = stage.querySelector('.workshop-page__level-rewards');
 
     expect(tasks).not.toBeNull();
+    expect(tasks.parentElement?.classList.contains('workshop-page__tasks-slot')).toBe(true);
     expect(title?.textContent).toBe('level 2 requirements');
     expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
     expect(rewards?.hidden).toBe(false);
@@ -3977,7 +4031,7 @@ describe('PagesFacade', () => {
         (row) => row.textContent,
       ),
     ).toEqual([
-      'unlocksgarden',
+      'unlocks-garden',
       'garden plots+1',
       'mana cap+50',
       'mana regen+1/sec',
@@ -4395,7 +4449,7 @@ describe('PagesFacade', () => {
       expect(mintRow.classList.contains('is-completed')).toBe(true);
       expect(mintRow.classList.contains('is-first-completed')).toBe(true);
       expect(mintRow.classList.contains('is-reordering')).toBe(true);
-      expect(mintRow.style.transition).toContain('transform 230ms');
+      expect(mintRow.style.transition).toContain('transform 260ms');
     } finally {
       pagesFacade?.unmount();
       stage.remove();
@@ -4451,7 +4505,7 @@ describe('PagesFacade', () => {
     expect(rewards?.hidden).toBe(false);
     expect(payoffTitle?.textContent).toBe('level 2 rewards');
     expect(payoffRows).toEqual([
-      'unlocksgarden',
+      'unlocks-garden',
       'garden plots+1',
       'mana cap+50',
       'mana regen+1/sec',
@@ -7045,8 +7099,42 @@ describe('PagesFacade', () => {
     expect(frame.classList.contains('has-bottom-overflow')).toBe(false);
   });
 
+  it('keeps world chat locked until level 3', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade: createWorldChatFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const root = stage.querySelector('.workshop-page__world-chat');
+    const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const button = stage.querySelector('.workshop-page__world-chat-button');
+
+    expect(root.hidden).toBe(true);
+    expect(button.disabled).toBe(true);
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(true);
+
+    unlockWorkshopSecondaryActions(gameplayFacade, 3);
+    gameplayFacade.publishSnapshot();
+
+    expect(root.hidden).toBe(false);
+    expect(button.disabled).toBe(false);
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
+  });
+
   it('shows world chat popup and sends messages', async () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
     const worldChatFacade = createWorldChatFacadeFake({
       messages: [
         {
@@ -7076,7 +7164,7 @@ describe('PagesFacade', () => {
       ],
     });
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       worldChatFacade,
     });
@@ -7161,8 +7249,9 @@ describe('PagesFacade', () => {
           sentAtMs: (index + 1) * 1_000,
         })),
       });
+      const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
       const pagesFacade = new PagesFacade({
-        gameplayFacade: createGameplayFacadeFake(),
+        gameplayFacade,
         playerFacade: createPlayerFacadeFake(),
         worldChatFacade,
       });
@@ -7200,8 +7289,9 @@ describe('PagesFacade', () => {
   it('keeps empty world chat preview static', () => {
     const stage = document.createElement('section');
     const worldChatFacade = createWorldChatFacadeFake({ messages: [] });
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       worldChatFacade,
     });
@@ -7227,6 +7317,7 @@ describe('PagesFacade', () => {
     const nowMs = 1_000 + 3 * 24 * 60 * 60 * 1000 + 60_000;
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
     const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
     const worldChatFacade = createWorldChatFacadeFake({
       messages: [
         {
@@ -7248,7 +7339,7 @@ describe('PagesFacade', () => {
       ],
     });
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       worldChatFacade,
     });
@@ -7274,6 +7365,7 @@ describe('PagesFacade', () => {
 
   it('marks system world chat messages and sender label', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
     const worldChatFacade = createWorldChatFacadeFake({
       messages: [
         {
@@ -7287,7 +7379,7 @@ describe('PagesFacade', () => {
       ],
     });
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       worldChatFacade,
     });
@@ -7306,6 +7398,7 @@ describe('PagesFacade', () => {
 
   it('marks potion recipe discovery chat announcements', () => {
     const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
     const worldChatFacade = createWorldChatFacadeFake({
       messages: [
         {
@@ -7319,7 +7412,7 @@ describe('PagesFacade', () => {
       ],
     });
     const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
+      gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
       worldChatFacade,
     });

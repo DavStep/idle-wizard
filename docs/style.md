@@ -55,6 +55,15 @@ This project should use the same kind of minimal text-game language, without cop
 - Disabled state changes text and border to gray and removes underline.
 - Cooldown/progress fills, if added later, should be flat light gray.
 
+## Motion
+
+- Motion should feel like a restrained rubber snap: move slightly past the final position once, then settle.
+- Use the rubber snap for page entry, dialog entry, expandable content, row reorder, reward feedback, and pressed release.
+- Keep the overshoot small in source units: usually `1px` to `2px`, or about `1.02x` scale.
+- Keep normal UI motion at or under `250ms`; longer reward flyouts may persist, but their snap happens early.
+- Do not add looping bounce, decorative wobble, or motion that fights readability.
+- Preserve `prefers-reduced-motion` by removing or shortening nonessential movement.
+
 ## Inventory Visibility
 
 - Dedicated info inventories for seeds, herbs, and potions show the category catalog.

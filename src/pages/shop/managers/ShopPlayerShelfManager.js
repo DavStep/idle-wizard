@@ -52,6 +52,8 @@ export class ShopPlayerShelfManager {
       connected: false,
       listings: [],
       ownListings: [],
+      requests: [],
+      ownRequests: [],
       proceedsGold: 0,
     };
     this.handlePopupClick = (event) => {
@@ -401,6 +403,7 @@ export class ShopPlayerShelfManager {
     this.refs.marketBrowseTabs = tabs;
     this.refs.marketGroupBySellerKey = new Map();
     this.refs.marketRowByListingKey = new Map();
+    this.refs.marketRowByRequestKey = new Map();
 
     return popup;
   }
@@ -778,7 +781,7 @@ export class ShopPlayerShelfManager {
       const slot = shelf.slots[index];
       const selected = slotNumber === shelf.selectedSlotNumber;
 
-      row.classList.toggle('is-selected', selected);
+      row.classList.remove('is-selected');
       row.classList.toggle('is-locked', !slot.unlocked);
       row.classList.toggle('is-empty', slot.unlocked && !slot.itemTypeId);
 
@@ -998,14 +1001,21 @@ export class ShopPlayerShelfManager {
     this.renderMarketBrowseTabs();
     const rows = this.selectedMarketBrowseTab === 'selling'
       ? this.lastPlayerShopSnapshot.listings ?? []
-      : [];
-    const rowKeys = new Set(rows.map((listing) => listing.listingKey));
-    const groupKeys = new Set(rows.map((listing) => this.getMarketSellerKey(listing)));
+      : this.lastPlayerShopSnapshot.requests ?? [];
+    const rowKeys = new Set(rows.map((row) => this.getMarketRowKey(row)));
+    const groupKeys = new Set(rows.map((row) => this.getMarketParticipantKey(row)));
 
     for (const [listingKey, row] of this.refs.marketRowByListingKey) {
-      if (!rowKeys.has(listingKey)) {
+      if (this.selectedMarketBrowseTab !== 'selling' || !rowKeys.has(listingKey)) {
         row.row.remove();
         this.refs.marketRowByListingKey.delete(listingKey);
+      }
+    }
+
+    for (const [requestKey, row] of this.refs.marketRowByRequestKey) {
+      if (this.selectedMarketBrowseTab !== 'buying' || !rowKeys.has(requestKey)) {
+        row.row.remove();
+        this.refs.marketRowByRequestKey.delete(requestKey);
       }
     }
 
@@ -1027,7 +1037,7 @@ export class ShopPlayerShelfManager {
     }
 
     this.setMarketMessage('');
-    const groups = this.groupMarketListings(rows);
+    const groups = this.groupMarketRows(rows);
     let previousGroupNode = this.refs.marketMessage;
 
     for (const group of groups) {
@@ -1038,7 +1048,7 @@ export class ShopPlayerShelfManager {
         this.refs.marketRows.insertBefore(groupNode.root, desiredNext);
       }
 
-      this.renderMarketGroupRows(groupNode, group.listings);
+      this.renderMarketGroupRows(groupNode, group.rows);
       previousGroupNode = groupNode.root;
     }
   }
@@ -1056,11 +1066,13 @@ export class ShopPlayerShelfManager {
     }
   }
 
-  renderMarketGroupRows(group, listings) {
+  renderMarketGroupRows(group, rows) {
     let previousRowNode = null;
 
-    for (const listing of listings) {
-      const row = this.ensureMarketRow(listing);
+    for (const entry of rows) {
+      const row = this.selectedMarketBrowseTab === 'selling'
+        ? this.ensureMarketRow(entry)
+        : this.ensureMarketRequestRow(entry);
       const desiredNext = previousRowNode
         ? previousRowNode.nextSibling
         : group.list.firstChild;
@@ -1069,7 +1081,11 @@ export class ShopPlayerShelfManager {
         group.list.insertBefore(row.row, desiredNext);
       }
 
-      this.renderMarketRow(row, listing);
+      if (this.selectedMarketBrowseTab === 'selling') {
+        this.renderMarketRow(row, entry);
+      } else {
+        this.renderMarketRequestRow(row, entry);
+      }
       previousRowNode = row.row;
     }
   }
@@ -1085,7 +1101,7 @@ export class ShopPlayerShelfManager {
     groupNode.name.replaceChildren(
       createPlayerInfoLink(
         {
-          identity: group.sellerIdentity,
+          identity: group.identity,
           username: group.username,
         },
         {
@@ -1119,6 +1135,17 @@ export class ShopPlayerShelfManager {
     if (!row) {
       row = this.createMarketRow();
       this.refs.marketRowByListingKey.set(listing.listingKey, row);
+    }
+
+    return row;
+  }
+
+  ensureMarketRequestRow(request) {
+    let row = this.refs.marketRowByRequestKey.get(request.requestKey);
+
+    if (!row) {
+      row = this.createMarketRequestRow();
+      this.refs.marketRowByRequestKey.set(request.requestKey, row);
     }
 
     return row;
@@ -1165,6 +1192,20 @@ export class ShopPlayerShelfManager {
     return rowState;
   }
 
+  createMarketRequestRow() {
+    const row = document.createElement('div');
+    row.className = 'shop-page__market-row shop-page__market-request-row';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+
+    const price = document.createElement('span');
+    price.className = 'row_val shop-page__market-request-price';
+
+    row.append(label, price);
+    return { row, label, price };
+  }
+
   renderMarketRow(row, listing) {
     const quantity = Math.max(0, Math.floor(Number(listing.quantity) || 0));
     const label = `- ${listing.itemLabel} (${quantity})`;
@@ -1183,6 +1224,18 @@ export class ShopPlayerShelfManager {
     }
 
     this.renderMarketRowBuyState(row, listing);
+  }
+
+  renderMarketRequestRow(row, request) {
+    const quantity = Math.max(0, Math.floor(Number(request.quantity) || 0));
+    const label = `- ${request.itemLabel} (${quantity})`;
+
+    if (row.label.textContent !== label) {
+      appendTextWithSeedIcons(row.label, label);
+    }
+    setResourceColor(row.label, request.itemKind);
+    setResourceIconText(row.price, ` ${formatGoldPriceText(request.priceGold)}`);
+    setResourceColor(row.price, 'gold');
   }
 
   renderMarketRowBuyState(row, listing) {
@@ -1229,31 +1282,35 @@ export class ShopPlayerShelfManager {
     );
   }
 
-  groupMarketListings(rows) {
+  groupMarketRows(rows) {
     const groups = new Map();
 
-    for (const listing of rows) {
-      const sellerKey = this.getMarketSellerKey(listing);
-      let group = groups.get(sellerKey);
+    for (const row of rows) {
+      const participantKey = this.getMarketParticipantKey(row);
+      let group = groups.get(participantKey);
 
       if (!group) {
         group = {
-          sellerKey,
-          username: listing.username || 'wizard',
-          sellerIdentity: listing.sellerIdentity,
-          listings: [],
+          sellerKey: participantKey,
+          username: row.username || 'wizard',
+          identity: row.sellerIdentity ?? row.requesterIdentity,
+          rows: [],
         };
-        groups.set(sellerKey, group);
+        groups.set(participantKey, group);
       }
 
-      group.listings.push(listing);
+      group.rows.push(row);
     }
 
     return [...groups.values()];
   }
 
-  getMarketSellerKey(listing) {
-    return listing.sellerIdentity || listing.username || 'unknown';
+  getMarketRowKey(row) {
+    return row.listingKey ?? row.requestKey ?? '';
+  }
+
+  getMarketParticipantKey(row) {
+    return row.sellerIdentity ?? row.requesterIdentity ?? row.username ?? 'unknown';
   }
 
   setMarketMessage(message) {

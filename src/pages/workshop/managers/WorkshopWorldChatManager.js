@@ -1,5 +1,6 @@
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
+import { WorkshopSecondaryActionGateManager } from './WorkshopSecondaryActionGateManager.js';
 
 const EMPTY_CHAT_SNAPSHOT = {
   connected: false,
@@ -21,15 +22,19 @@ const CHAT_AGE_MINUTE_MS = 60_000;
 const CHAT_AGE_REFRESH_FUZZ_MS = 250;
 
 export class WorkshopWorldChatManager {
-  constructor({ worldChatFacade, tradeAllianceFacade, onOpenPlayerInfo } = {}) {
+  constructor({ gameplayFacade, worldChatFacade, tradeAllianceFacade, onOpenPlayerInfo } = {}) {
+    this.gameplayFacade = gameplayFacade;
     this.worldChatFacade = worldChatFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
+    this.unlockGateManager = new WorkshopSecondaryActionGateManager();
     this.root = null;
+    this.unsubscribeGameplay = null;
     this.unsubscribeWorldChat = null;
     this.unsubscribeTradeAlliance = null;
     this.refs = {};
     this.visible = false;
+    this.unlocked = false;
     this.sending = false;
     this.selectedChannelId = 'world';
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
@@ -84,6 +89,9 @@ export class WorkshopWorldChatManager {
     }
 
     this.render();
+    this.unsubscribeGameplay =
+      this.gameplayFacade?.subscribe((snapshot) => this.applyUnlockGate(snapshot)) ?? null;
+    this.applyUnlockGate(this.gameplayFacade?.getSnapshot?.());
     this.applyVisibility();
 
     return this.root;
@@ -252,6 +260,10 @@ export class WorkshopWorldChatManager {
   }
 
   show() {
+    if (!this.unlocked) {
+      return;
+    }
+
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyVisibility();
@@ -273,8 +285,10 @@ export class WorkshopWorldChatManager {
   }
 
   unmount() {
+    this.unsubscribeGameplay?.();
     this.unsubscribeWorldChat?.();
     this.unsubscribeTradeAlliance?.();
+    this.unsubscribeGameplay = null;
     this.unsubscribeWorldChat = null;
     this.unsubscribeTradeAlliance = null;
     document.removeEventListener('keydown', this.handleKeydown);
@@ -282,6 +296,7 @@ export class WorkshopWorldChatManager {
     this.root = null;
     this.refs = {};
     this.visible = false;
+    this.unlocked = false;
     this.sending = false;
     this.selectedChannelId = 'world';
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
@@ -477,7 +492,9 @@ export class WorkshopWorldChatManager {
     for (const ageLabel of this.root?.querySelectorAll('.workshop-page__world-chat-age') ??
       []) {
       const age = this.formatMessageAge({ sentAtMs: ageLabel.dataset.sentAtMs });
-      ageLabel.textContent = age;
+      if (ageLabel.textContent !== age) {
+        ageLabel.textContent = age;
+      }
     }
 
     this.scheduleAgeRefresh(this.getSelectedSnapshot().messages);
@@ -681,8 +698,22 @@ export class WorkshopWorldChatManager {
       return;
     }
 
-    this.refs.popup.hidden = !this.visible;
-    this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+    const visible = this.visible && this.unlocked;
+
+    this.refs.popup.hidden = !visible;
+    this.refs.popup.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  }
+
+  applyUnlockGate(snapshot) {
+    const unlocked = this.unlockGateManager.apply(snapshot, [this.root]);
+    this.unlocked = unlocked;
+
+    if (!unlocked) {
+      this.hide();
+      return;
+    }
+
+    this.applyVisibility();
   }
 
   getSelectedChannel() {

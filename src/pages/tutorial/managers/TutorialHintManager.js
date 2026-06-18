@@ -26,6 +26,7 @@ const HINT_GAP = 8;
 const TYPEWRITER_INTERVAL_MS = 12;
 const TYPEWRITER_CHARS_PER_TICK = 2;
 const GUIDE_DRAG_DISTANCE = 8;
+const LESSON_HIDE_MS = 150;
 const POINTER_HIDE_MS = 180;
 const TARGET_EMPHASIS_MS = 560;
 const TARGET_EMPHASIS_REDUCED_MS = 420;
@@ -50,6 +51,7 @@ const GUIDE_BOX_LEFT_MIN = PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVE
 const OBJECTIVE_LEFT = GUIDE_BOX_LEFT_MIN;
 const OBJECTIVE_TOP = 520;
 const OBJECTIVE_BUTTON_LEFT = PORTRAIT_LEFT_GAP;
+const OBJECTIVE_BUTTON_LEFT_MIN = -HINT_GAP;
 const OBJECTIVE_BUTTON_TOP = OBJECTIVE_TOP + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9;
 const OBJECTIVE_BUTTON_WIDTH = PORTRAIT_WIDTH;
 const OBJECTIVE_BUTTON_HEIGHT = PORTRAIT_HEIGHT;
@@ -132,6 +134,7 @@ export class TutorialHintManager {
     this.blockingDialogSuspended = false;
     this.pointerState = null;
     this.pointerHideTimeout = null;
+    this.objectiveHideTimeout = null;
     this.targetEmphasisStates = new Map();
     this.typewriterTimers = new Map();
     this.guideDragManager = new TutorialGuideDragManager({ storage });
@@ -379,6 +382,7 @@ export class TutorialHintManager {
     this.objectiveTarget = null;
     this.blockingDialogSuspended = false;
     this.clearPointerHideTimeout();
+    this.clearObjectiveHideTimeout();
     this.cancelGuideDrag();
     this.clearAllTargetEmphasis();
     this.clearAllTypewriterTimers();
@@ -491,6 +495,9 @@ export class TutorialHintManager {
     this.blockingDialogSuspended = false;
     this.root.hidden = false;
     this.objectiveButton.hidden = false;
+    this.clearObjectiveHideTimeout();
+    this.objective.classList.remove('is-hiding');
+    this.objectiveButton.classList.remove('is-collapsing');
     this.objective.hidden = !this.objectivePanelOpen;
     this.updateObjectiveButtonState();
     this.objectiveTitle.textContent = title ?? 'lesson';
@@ -771,6 +778,9 @@ export class TutorialHintManager {
     }
 
     this.objectivePanelOpen = true;
+    this.clearObjectiveHideTimeout();
+    this.objective.classList.remove('is-hiding');
+    this.objectiveButton.classList.remove('is-collapsing');
     this.objective.hidden = false;
     this.updateObjectiveButtonState();
     this.applyObjectiveAttention();
@@ -791,12 +801,44 @@ export class TutorialHintManager {
     }
 
     this.objectivePanelOpen = false;
-    this.objective.hidden = true;
-    this.resetTypedText(this.objectiveText);
+    this.clearTypedText(this.objectiveText);
     this.hideTargetCue();
     this.updateObjectiveButtonState();
     this.applyObjectiveAttention();
     this.positionObjective();
+    this.objectiveButton.classList.add('is-collapsing');
+
+    if (this.objective.hidden || this.prefersReducedMotion()) {
+      this.finishLessonPanelClose();
+      return;
+    }
+
+    this.objective.classList.add('is-hiding');
+    const view = this.getWindow();
+
+    if (typeof view?.setTimeout !== 'function') {
+      this.finishLessonPanelClose();
+      return;
+    }
+
+    this.clearObjectiveHideTimeout();
+    this.objectiveHideTimeout = view.setTimeout(() => {
+      this.objectiveHideTimeout = null;
+      this.finishLessonPanelClose();
+    }, LESSON_HIDE_MS);
+    this.syncRootVisibility();
+  }
+
+  finishLessonPanelClose() {
+    if (!this.objective || this.objectivePanelOpen) {
+      return;
+    }
+
+    this.clearObjectiveHideTimeout();
+    this.objective.classList.remove('is-hiding');
+    this.objectiveButton?.classList.remove('is-collapsing');
+    this.objective.hidden = true;
+    this.resetTypedText(this.objectiveText);
     this.syncRootVisibility();
   }
 
@@ -808,10 +850,13 @@ export class TutorialHintManager {
     this.hideTargetCue({ immediate: true });
 
     if (this.objective) {
+      this.clearObjectiveHideTimeout();
+      this.objective.classList.remove('is-hiding');
       this.objective.hidden = true;
     }
 
     if (this.objectiveButton) {
+      this.objectiveButton.classList.remove('is-collapsing');
       this.objectiveButton.hidden = true;
       this.objectiveAttentionActive = false;
       this.updateObjectiveButtonState();
@@ -868,10 +913,13 @@ export class TutorialHintManager {
 
   hideObjective() {
     if (this.objective) {
+      this.clearObjectiveHideTimeout();
+      this.objective.classList.remove('is-hiding');
       this.objective.hidden = true;
     }
 
     if (this.objectiveButton) {
+      this.objectiveButton.classList.remove('is-collapsing');
       this.objectiveButton.hidden = true;
       this.objectiveAttentionActive = false;
       this.updateObjectiveButtonState();
@@ -1281,7 +1329,7 @@ export class TutorialHintManager {
     const outerSize = this.getObjectiveOuterSize();
     const buttonLeft = clamp(
       this.objectivePanelOpen ? OBJECTIVE_BUTTON_LEFT : manual.buttonLeft,
-      0,
+      OBJECTIVE_BUTTON_LEFT_MIN,
       bounds.width - OBJECTIVE_BUTTON_WIDTH - HINT_GAP,
     );
     const buttonTop = clamp(
@@ -1440,7 +1488,7 @@ export class TutorialHintManager {
       objectiveTop,
       buttonLeft: clamp(
         placement.buttonLeft,
-        0,
+        OBJECTIVE_BUTTON_LEFT_MIN,
         bounds.width - OBJECTIVE_BUTTON_WIDTH - HINT_GAP,
       ),
       buttonTop: clamp(
@@ -1859,6 +1907,15 @@ export class TutorialHintManager {
 
     this.getWindow()?.clearTimeout?.(this.pointerHideTimeout);
     this.pointerHideTimeout = null;
+  }
+
+  clearObjectiveHideTimeout() {
+    if (!this.objectiveHideTimeout) {
+      return;
+    }
+
+    this.getWindow()?.clearTimeout?.(this.objectiveHideTimeout);
+    this.objectiveHideTimeout = null;
   }
 
   clearTargetEmphasis(target) {

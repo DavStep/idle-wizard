@@ -27,6 +27,14 @@ export class TutorialRevealManager {
     const tokens = sourceTokens.filter((token) => typeof token === 'string' && token.length > 0);
 
     this.stage.dataset.tutorialReveal = tokens.join(' ');
+
+    const targetId = step?.targetId;
+
+    if (typeof targetId === 'string' && targetId.length > 0) {
+      this.stage.dataset.tutorialTargetId = targetId;
+    } else {
+      delete this.stage.dataset.tutorialTargetId;
+    }
   }
 
   clear() {
@@ -35,6 +43,7 @@ export class TutorialRevealManager {
     }
 
     delete this.stage.dataset.tutorialReveal;
+    delete this.stage.dataset.tutorialTargetId;
   }
 
 }

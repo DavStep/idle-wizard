@@ -491,7 +491,7 @@ export class ShopShelfManager {
       const slot = shelf.slots[index];
       const selected = slotNumber === shelf.selectedSlotNumber;
 
-      row.classList.toggle('is-selected', selected);
+      row.classList.remove('is-selected');
       row.classList.toggle('is-locked', !slot.unlocked);
       row.classList.toggle('is-empty', slot.unlocked && this.isSlotEmpty(slot));
 

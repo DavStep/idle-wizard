@@ -487,7 +487,15 @@ describe('TutorialHintManager', () => {
         button?.querySelector('.tutorial-layer__objective-button-label')?.textContent,
       ).toBe('help');
       expect(buttonImage?.hidden).toBe(false);
+      expect(lesson?.hidden).toBe(false);
+      expect(lesson?.classList.contains('is-hiding')).toBe(true);
+      expect(button?.classList.contains('is-collapsing')).toBe(true);
+
+      vi.advanceTimersByTime(150);
+
       expect(lesson?.hidden).toBe(true);
+      expect(lesson?.classList.contains('is-hiding')).toBe(false);
+      expect(button?.classList.contains('is-collapsing')).toBe(false);
     } finally {
       vi.useRealTimers();
     }
@@ -584,6 +592,62 @@ describe('TutorialHintManager', () => {
     nextStage.remove();
   });
 
+  it('lets the collapsed Elara button move slightly past the left edge', () => {
+    const storage = createMemoryStorage();
+    const stage = document.createElement('section');
+    const manager = new TutorialHintManager({ storage });
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'collapsed-left-drag',
+      title: 'lesson',
+      text: 'move me',
+      stepLabel: '1/1',
+      autoOpen: false,
+    });
+
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const startLeft = Number.parseFloat(button?.style.left ?? '0');
+    const startTop = Number.parseFloat(button?.style.top ?? '0');
+    const dragStart = {
+      x: (startLeft + 10) * UI_SCALE,
+      y: (startTop + 20) * UI_SCALE,
+    };
+    const dragEnd = {
+      x: dragStart.x - 50 * UI_SCALE,
+      y: dragStart.y,
+    };
+
+    button?.dispatchEvent(
+      createPointerEvent('pointerdown', {
+        clientX: dragStart.x,
+        clientY: dragStart.y,
+      }),
+    );
+    document.dispatchEvent(
+      createPointerEvent('pointermove', {
+        clientX: dragEnd.x,
+        clientY: dragEnd.y,
+      }),
+    );
+    document.dispatchEvent(
+      createPointerEvent('pointerup', {
+        clientX: dragEnd.x,
+        clientY: dragEnd.y,
+      }),
+    );
+
+    expect(button?.style.left).toBe('-8px');
+    expect(button?.style.top).toBe(`${startTop}px`);
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('pins the open lesson to the left even after a right-side drag', () => {
     const storage = createMemoryStorage({
       'idle-wizard.tutorial.elaraPlacement.v1': JSON.stringify({
@@ -619,38 +683,52 @@ describe('TutorialHintManager', () => {
   });
 
   it('shows a visible hide label on the open lesson toggle', () => {
-    const stage = document.createElement('section');
-    const manager = new TutorialHintManager();
+    vi.useFakeTimers();
 
-    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    document.body.append(stage);
+    try {
+      const stage = document.createElement('section');
+      const manager = new TutorialHintManager();
 
-    manager.mount(stage);
-    manager.showLesson({
-      id: 'finish-seed-task',
-      title: 'lesson 1: introduction',
-      text: 'summon and turn in sage seeds for the next level',
-      stepLabel: '7/25',
-      progress: { value: 1, max: 6 },
-      progressLabel: '1/6 seeds',
-    });
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
 
-    const button = stage.querySelector('.tutorial-layer__lesson-button');
-    const lesson = stage.querySelector('.tutorial-layer__lesson');
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'finish-seed-task',
+        title: 'lesson 1: introduction',
+        text: 'summon and turn in sage seeds for the next level',
+        stepLabel: '7/25',
+        progress: { value: 1, max: 6 },
+        progressLabel: '1/6 seeds',
+      });
 
-    expect(lesson?.querySelector('.tutorial-layer__lesson-close')).toBeNull();
-    expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
-      'hide',
-    );
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
 
-    button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      expect(lesson?.querySelector('.tutorial-layer__lesson-close')).toBeNull();
+      expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
+        'hide',
+      );
 
-    expect(button?.hidden).toBe(false);
-    expect(button?.dataset.notification).toBe('true');
-    expect(button?.getAttribute('aria-expanded')).toBe('false');
-    expect(lesson?.hidden).toBe(true);
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+      button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(button?.hidden).toBe(false);
+      expect(button?.dataset.notification).toBe('true');
+      expect(button?.getAttribute('aria-expanded')).toBe('false');
+      expect(lesson?.hidden).toBe(false);
+      expect(lesson?.classList.contains('is-hiding')).toBe(true);
+      expect(button?.classList.contains('is-collapsing')).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+
+      vi.advanceTimersByTime(150);
+
+      expect(lesson?.hidden).toBe(true);
+      expect(lesson?.classList.contains('is-hiding')).toBe(false);
+      expect(button?.classList.contains('is-collapsing')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('can keep Elara quiet until passive attention is active', () => {
@@ -941,7 +1019,7 @@ describe('TutorialHintManager', () => {
       id: 'brew-mana-tonic',
       title: 'lesson 4: brewing',
       text: 'brew mana tonic',
-      stepLabel: '25/26',
+      stepLabel: '25/27',
       progress: { value: 0, max: 1 },
       progressLabel: '0/1 potion',
       canShowTarget: true,
@@ -1060,7 +1138,10 @@ describe('TutorialHintManager', () => {
       .querySelector('.tutorial-layer__lesson-button')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(
+      stage.querySelector('.tutorial-layer__lesson')?.classList.contains('is-hiding'),
+    ).toBe(true);
 
     manager.showLesson({
       id: 'prepare-seed-sale',
@@ -1070,6 +1151,12 @@ describe('TutorialHintManager', () => {
     });
 
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(
+      stage.querySelector('.tutorial-layer__lesson')?.classList.contains('is-hiding'),
+    ).toBe(false);
+    expect(
+      stage.querySelector('.tutorial-layer__lesson-button')?.classList.contains('is-collapsing'),
+    ).toBe(false);
     expect(
       stage.querySelector('.tutorial-layer__lesson-button')?.getAttribute('aria-expanded'),
     ).toBe('true');

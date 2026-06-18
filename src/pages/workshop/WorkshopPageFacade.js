@@ -11,6 +11,7 @@ import { WorkshopRequirementConnectionManager } from './managers/WorkshopRequire
 import { WorkshopTaskManager } from './managers/WorkshopTaskManager.js';
 import { WorkshopTradeAllianceManager } from './managers/WorkshopTradeAllianceManager.js';
 import {
+  WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
   WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
   WorkshopSecondaryActionGateManager,
 } from './managers/WorkshopSecondaryActionGateManager.js';
@@ -33,6 +34,9 @@ export class WorkshopPageFacade {
     this.rewardEventsUnsubscribe = null;
     this.secondaryActionGateUnsubscribe = null;
     this.secondaryActionGateManager = new WorkshopSecondaryActionGateManager();
+    this.discoveryAllianceActionGateManager = new WorkshopSecondaryActionGateManager({
+      unlockLevel: WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
+    });
     this.prestigeActionGateManager = new WorkshopSecondaryActionGateManager({
       unlockLevel: WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
     });
@@ -125,7 +129,6 @@ export class WorkshopPageFacade {
     }
 
     this.requirementConnectionManager.show({
-      source: this.getRequirementConnectionSource(event),
       target,
     });
   }
@@ -164,22 +167,16 @@ export class WorkshopPageFacade {
     }
   }
 
-  getRequirementConnectionSource(event) {
-    if (event?.type === 'seed_summoned') {
-      return this.actionBarManager.refs.summonButton;
-    }
-
-    return null;
-  }
-
   applySecondaryActionGate(snapshot) {
     const prestigeUnlocked = this.prestigeActionGateManager.apply(snapshot, [
       this.actionBarManager.refs.prestigeButton,
     ]);
     const secondaryUnlocked = this.secondaryActionGateManager.apply(snapshot, [
       this.leaderboardManager.root,
-      this.tradeAllianceManager.root,
       this.logDialogManager.root,
+    ]);
+    const discoveryAllianceUnlocked = this.discoveryAllianceActionGateManager.apply(snapshot, [
+      this.tradeAllianceManager.root,
       this.discoveriesManager.root,
     ]);
 
@@ -189,8 +186,11 @@ export class WorkshopPageFacade {
 
     if (!secondaryUnlocked) {
       this.leaderboardManager.hide();
-      this.tradeAllianceManager.hide();
       this.logDialogManager.hide();
+    }
+
+    if (!discoveryAllianceUnlocked) {
+      this.tradeAllianceManager.hide();
       this.discoveriesManager.hide();
     }
   }

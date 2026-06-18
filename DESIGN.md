@@ -3,7 +3,7 @@ name: Idle Wizard
 description: Minimal text-first mobile idle game with sparse bordered room panels.
 colors:
   room-bg: "#dedede"
-  room-surface: "#e5e5e5"
+  room-surface: "#dedede"
   ink: "#1a1a1a"
   muted: "#5e5e5e"
   disabled: "#969696"

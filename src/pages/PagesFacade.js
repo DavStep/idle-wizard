@@ -85,6 +85,7 @@ export class PagesFacade {
       onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
     });
     this.worldChatManager = new WorkshopWorldChatManager({
+      gameplayFacade,
       worldChatFacade,
       tradeAllianceFacade,
       onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),

@@ -183,6 +183,9 @@ export const OwnPlayerShopProceedsResult = __t.object("OwnPlayerShopProceedsResu
 });
 export type OwnPlayerShopProceedsResult = __Infer<typeof OwnPlayerShopProceedsResult>;
 
+export const OwnPlayerShopRequest = __t.object("OwnPlayerShopRequest", {});
+export type OwnPlayerShopRequest = __Infer<typeof OwnPlayerShopRequest>;
+
 export const OwnPlayerShopTradeHistory = __t.object("OwnPlayerShopTradeHistory", {});
 export type OwnPlayerShopTradeHistory = __Infer<typeof OwnPlayerShopTradeHistory>;
 
@@ -355,6 +358,21 @@ export const PlayerShopProceeds = __t.object("PlayerShopProceeds", {
 });
 export type PlayerShopProceeds = __Infer<typeof PlayerShopProceeds>;
 
+export const PlayerShopRequest = __t.object("PlayerShopRequest", {
+  requestKey: __t.string(),
+  requesterIdentity: __t.identity(),
+  username: __t.string(),
+  slotNumber: __t.u8(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  quantity: __t.u32(),
+  priceGold: __t.u64(),
+  updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+});
+export type PlayerShopRequest = __Infer<typeof PlayerShopRequest>;
+
 export const PlayerShopTrade = __t.object("PlayerShopTrade", {
   tradeId: __t.uuid(),
   buyerIdentity: __t.identity(),
@@ -434,6 +452,24 @@ export const PublicPlayerShopListingResult = __t.object("PublicPlayerShopListing
   priceScale: __t.u32(),
 });
 export type PublicPlayerShopListingResult = __Infer<typeof PublicPlayerShopListingResult>;
+
+export const PublicPlayerShopRequest = __t.object("PublicPlayerShopRequest", {});
+export type PublicPlayerShopRequest = __Infer<typeof PublicPlayerShopRequest>;
+
+export const PublicPlayerShopRequestResult = __t.object("PublicPlayerShopRequestResult", {
+  requestKey: __t.string(),
+  requesterIdentity: __t.identity(),
+  username: __t.string(),
+  slotNumber: __t.u8(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  quantity: __t.u32(),
+  priceGold: __t.u64(),
+  updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+});
+export type PublicPlayerShopRequestResult = __Infer<typeof PublicPlayerShopRequestResult>;
 
 export const ResearchConfig = __t.object("ResearchConfig", {
   researchId: __t.string(),

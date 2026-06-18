@@ -102,6 +102,33 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isUsernameSettingsOpen()).toBe(false);
   });
 
+  it('reads theme settings tab visibility and selection', () => {
+    const stage = document.createElement('section');
+    const settings = document.createElement('section');
+    const tabs = document.createElement('div');
+    const themeTab = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    settings.className = 'room-top-panel__settings';
+    themeTab.dataset.tutorialId = 'top:settings:theme-tab';
+    themeTab.setAttribute('aria-selected', 'false');
+    tabs.append(themeTab);
+    settings.append(tabs);
+    stage.append(settings);
+
+    expect(manager.getDomState().isSettingsThemeTabVisible()).toBe(true);
+    expect(manager.getDomState().isThemeSettingsTabOpen()).toBe(false);
+
+    themeTab.setAttribute('aria-selected', 'true');
+
+    expect(manager.getDomState().isThemeSettingsTabOpen()).toBe(true);
+
+    tabs.hidden = true;
+
+    expect(manager.getDomState().isSettingsThemeTabVisible()).toBe(false);
+    expect(manager.getDomState().isThemeSettingsTabOpen()).toBe(false);
+  });
+
   it('allows popup guidance when the active target is inside the open popup', () => {
     const stage = document.createElement('section');
     const popup = document.createElement('section');

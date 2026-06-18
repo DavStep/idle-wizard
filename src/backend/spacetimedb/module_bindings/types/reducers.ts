@@ -24,6 +24,7 @@ import CancelTradeAllianceApplicationReducer from "../cancel_trade_alliance_appl
 import ClaimNpcMarketAdminReducer from "../claim_npc_market_admin_reducer";
 import ClaimPlayerShopProceedsReducer from "../claim_player_shop_proceeds_reducer";
 import ClaimTradeAllianceQuestRewardReducer from "../claim_trade_alliance_quest_reward_reducer";
+import ClearPlayerShopRequestReducer from "../clear_player_shop_request_reducer";
 import ClearPlayerShopSlotReducer from "../clear_player_shop_slot_reducer";
 import CollectTradeAllianceRewardReducer from "../collect_trade_alliance_reward_reducer";
 import CreateTradeAllianceReducer from "../create_trade_alliance_reducer";
@@ -46,6 +47,7 @@ import SetNpcMarketItemBasePriceReducer from "../set_npc_market_item_base_price_
 import SetPlayerGameplaySaveReducer from "../set_player_gameplay_save_reducer";
 import SetPlayerLevelReducer from "../set_player_level_reducer";
 import SetPlayerProfileReducer from "../set_player_profile_reducer";
+import SetPlayerShopRequestReducer from "../set_player_shop_request_reducer";
 import SetPlayerShopSlotReducer from "../set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "../set_total_generated_gold_reducer";
 import SetTradeAllianceMemberRoleReducer from "../set_trade_alliance_member_role_reducer";
@@ -75,6 +77,7 @@ export type CancelTradeAllianceApplicationParams = __Infer<typeof CancelTradeAll
 export type ClaimNpcMarketAdminParams = __Infer<typeof ClaimNpcMarketAdminReducer>;
 export type ClaimPlayerShopProceedsParams = __Infer<typeof ClaimPlayerShopProceedsReducer>;
 export type ClaimTradeAllianceQuestRewardParams = __Infer<typeof ClaimTradeAllianceQuestRewardReducer>;
+export type ClearPlayerShopRequestParams = __Infer<typeof ClearPlayerShopRequestReducer>;
 export type ClearPlayerShopSlotParams = __Infer<typeof ClearPlayerShopSlotReducer>;
 export type CollectTradeAllianceRewardParams = __Infer<typeof CollectTradeAllianceRewardReducer>;
 export type CreateTradeAllianceParams = __Infer<typeof CreateTradeAllianceReducer>;
@@ -97,6 +100,7 @@ export type SetNpcMarketItemBasePriceParams = __Infer<typeof SetNpcMarketItemBas
 export type SetPlayerGameplaySaveParams = __Infer<typeof SetPlayerGameplaySaveReducer>;
 export type SetPlayerLevelParams = __Infer<typeof SetPlayerLevelReducer>;
 export type SetPlayerProfileParams = __Infer<typeof SetPlayerProfileReducer>;
+export type SetPlayerShopRequestParams = __Infer<typeof SetPlayerShopRequestReducer>;
 export type SetPlayerShopSlotParams = __Infer<typeof SetPlayerShopSlotReducer>;
 export type SetTotalGeneratedGoldParams = __Infer<typeof SetTotalGeneratedGoldReducer>;
 export type SetTradeAllianceMemberRoleParams = __Infer<typeof SetTradeAllianceMemberRoleReducer>;

@@ -52,6 +52,7 @@ import CancelTradeAllianceApplicationReducer from "./cancel_trade_alliance_appli
 import ClaimNpcMarketAdminReducer from "./claim_npc_market_admin_reducer";
 import ClaimPlayerShopProceedsReducer from "./claim_player_shop_proceeds_reducer";
 import ClaimTradeAllianceQuestRewardReducer from "./claim_trade_alliance_quest_reward_reducer";
+import ClearPlayerShopRequestReducer from "./clear_player_shop_request_reducer";
 import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
 import CollectTradeAllianceRewardReducer from "./collect_trade_alliance_reward_reducer";
 import CreateTradeAllianceReducer from "./create_trade_alliance_reducer";
@@ -74,6 +75,7 @@ import SetNpcMarketItemBasePriceReducer from "./set_npc_market_item_base_price_r
 import SetPlayerGameplaySaveReducer from "./set_player_gameplay_save_reducer";
 import SetPlayerLevelReducer from "./set_player_level_reducer";
 import SetPlayerProfileReducer from "./set_player_profile_reducer";
+import SetPlayerShopRequestReducer from "./set_player_shop_request_reducer";
 import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetTradeAllianceMemberRoleReducer from "./set_trade_alliance_member_role_reducer";
@@ -103,6 +105,7 @@ import OwnPlayerProfileRow from "./own_player_profile_table";
 import OwnPlayerSessionRow from "./own_player_session_table";
 import OwnPlayerShopListingRow from "./own_player_shop_listing_table";
 import OwnPlayerShopProceedsRow from "./own_player_shop_proceeds_table";
+import OwnPlayerShopRequestRow from "./own_player_shop_request_table";
 import OwnPlayerShopTradeHistoryRow from "./own_player_shop_trade_history_table";
 import OwnTradeAllianceChatRow from "./own_trade_alliance_chat_table";
 import OwnTradeAllianceOverviewRow from "./own_trade_alliance_overview_table";
@@ -110,12 +113,14 @@ import OwnTradeAllianceRewardInboxRow from "./own_trade_alliance_reward_inbox_ta
 import PlayerRow from "./player_table";
 import PlayerShopListingRow from "./player_shop_listing_table";
 import PlayerShopProceedsRow from "./player_shop_proceeds_table";
+import PlayerShopRequestRow from "./player_shop_request_table";
 import PlayerShopTradeRow from "./player_shop_trade_table";
 import PlayerInfoSummaryRow from "./player_info_summary_table";
 import PlayerShopTradeRecentRow from "./player_shop_trade_recent_table";
 import PotionRecipeDiscoveryRow from "./potion_recipe_discovery_table";
 import PotionRecipeDiscoverySnapshotRow from "./potion_recipe_discovery_snapshot_table";
 import PublicPlayerShopListingRow from "./public_player_shop_listing_table";
+import PublicPlayerShopRequestRow from "./public_player_shop_request_table";
 import ResearchConfigRow from "./research_config_table";
 import ResearchConfigSnapshotRow from "./research_config_snapshot_table";
 import TradeAllianceRow from "./trade_alliance_table";
@@ -256,6 +261,26 @@ const tablesSchema = __schema({
       { name: 'player_shop_proceeds_seller_identity_key', constraint: 'unique', columns: ['sellerIdentity'] },
     ],
   }, PlayerShopProceedsRow),
+  playerShopRequest: __table({
+    name: 'player_shop_request',
+    indexes: [
+      { accessor: 'byQuantity', name: 'player_shop_request_quantity_idx_btree', algorithm: 'btree', columns: [
+        'quantity',
+      ] },
+      { accessor: 'requestKey', name: 'player_shop_request_request_key_idx_btree', algorithm: 'btree', columns: [
+        'requestKey',
+      ] },
+      { accessor: 'byRequesterIdentity', name: 'player_shop_request_requester_identity_idx_btree', algorithm: 'btree', columns: [
+        'requesterIdentity',
+      ] },
+      { accessor: 'byUpdatedAt', name: 'player_shop_request_updated_at_idx_btree', algorithm: 'btree', columns: [
+        'updatedAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_shop_request_request_key_key', constraint: 'unique', columns: ['requestKey'] },
+    ],
+  }, PlayerShopRequestRow),
   playerShopTrade: __table({
     name: 'player_shop_trade',
     indexes: [
@@ -485,6 +510,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnPlayerShopProceedsRow),
+  own_player_shop_request: __table({
+    name: 'own_player_shop_request',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerShopRequestRow),
   own_player_shop_trade_history: __table({
     name: 'own_player_shop_trade_history',
     indexes: [
@@ -541,6 +573,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, PublicPlayerShopListingRow),
+  public_player_shop_request: __table({
+    name: 'public_player_shop_request',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, PublicPlayerShopRequestRow),
   research_config_snapshot: __table({
     name: 'research_config_snapshot',
     indexes: [
@@ -612,6 +651,7 @@ const reducersSchema = __reducers(
   __reducerSchema("claim_npc_market_admin", ClaimNpcMarketAdminReducer),
   __reducerSchema("claim_player_shop_proceeds", ClaimPlayerShopProceedsReducer),
   __reducerSchema("claim_trade_alliance_quest_reward", ClaimTradeAllianceQuestRewardReducer),
+  __reducerSchema("clear_player_shop_request", ClearPlayerShopRequestReducer),
   __reducerSchema("clear_player_shop_slot", ClearPlayerShopSlotReducer),
   __reducerSchema("collect_trade_alliance_reward", CollectTradeAllianceRewardReducer),
   __reducerSchema("create_trade_alliance", CreateTradeAllianceReducer),
@@ -634,6 +674,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_player_gameplay_save", SetPlayerGameplaySaveReducer),
   __reducerSchema("set_player_level", SetPlayerLevelReducer),
   __reducerSchema("set_player_profile", SetPlayerProfileReducer),
+  __reducerSchema("set_player_shop_request", SetPlayerShopRequestReducer),
   __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_trade_alliance_member_role", SetTradeAllianceMemberRoleReducer),

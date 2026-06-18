@@ -16,6 +16,8 @@ Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an exi
 
 For any UI, UX, layout, visual, popup, dialog, screen, page, button, label, or flow change, use the `impeccable` skill and follow `PRODUCT.md`, `DESIGN.md`, `docs/style.md`, and `docs/ui-patterns.md` before editing.
 
+For any animation, motion, transition, micro-interaction, animated feedback, or "animate this" request, use `$impeccable animate <target>` by default.
+
 For any tutorial, FTUE, Elara guide box, objective panel, target hint, tutorial overlay, action reminder, pointer cue, data-tutorial-id placement, or tutorial popup/dialog work, use both `impeccable` and `idle-wizard-tutorial-ui`; the tutorial skill owns final tutorial-box placement, collision, stacking, and screenshot QA rules.
 
 For general repo orientation, verification scope, and safe edit workflow, read `docs/ai-workflow.md`.

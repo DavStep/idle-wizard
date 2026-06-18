@@ -44,6 +44,8 @@ function createTable(rows) {
 
 function createConnection({
   listingsTable,
+  publicRequestsTable = null,
+  ownRequestsTable = null,
   proceedsTable,
   tradeHistoryTable = null,
   failedQueries = [],
@@ -53,6 +55,8 @@ function createConnection({
   return {
     db: {
       playerShopListing: listingsTable,
+      ...(publicRequestsTable ? { publicPlayerShopRequest: publicRequestsTable } : {}),
+      ...(ownRequestsTable ? { ownPlayerShopRequest: ownRequestsTable } : {}),
       playerShopProceeds: proceedsTable,
       ...(tradeHistoryTable ? { playerShopTrade: tradeHistoryTable } : {}),
     },
@@ -148,6 +152,81 @@ describe('PlayerShopSubscriptionManager', () => {
       ownTradeHistory: [],
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
+  });
+
+  it('publishes other requests and own requests', () => {
+    const listingsTable = createTable([]);
+    const publicRequestsTable = createTable([
+      {
+        requestKey: 'self:1',
+        requesterIdentity: SELF_IDENTITY_HEX,
+        username: 'wizard',
+        slotNumber: 1,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 1,
+        priceGold: 2n,
+      },
+      {
+        requestKey: 'hershel:1',
+        requesterIdentity: 'hershel',
+        username: 'Hershel',
+        slotNumber: 1,
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        itemKind: 'seed',
+        quantity: 4,
+        priceGold: 325n,
+        priceScale: 100,
+      },
+    ]);
+    const ownRequestsTable = createTable([
+      {
+        requestKey: 'self:1',
+        requesterIdentity: SELF_IDENTITY_HEX,
+        username: 'wizard',
+        slotNumber: 1,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 1,
+        priceGold: 2n,
+      },
+    ]);
+    const proceedsTable = createTable([]);
+    const connection = createConnection({
+      listingsTable,
+      publicRequestsTable,
+      ownRequestsTable,
+      proceedsTable,
+    });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.connect(connection, SELF_IDENTITY);
+    manager.setPublicDataActive(true);
+
+    expect(manager.getSnapshot()).toMatchObject({
+      connected: true,
+      requests: [
+        {
+          requestKey: 'hershel:1',
+          username: 'Hershel',
+          itemLabel: 'mint seed',
+          quantity: 4,
+          priceGold: 3.25,
+        },
+      ],
+      ownRequests: [
+        {
+          requestKey: 'self:1',
+          username: 'wizard',
+          itemLabel: 'sage seed',
+          quantity: 1,
+          priceGold: 2,
+        },
+      ],
+    });
   });
 
   it('publishes own and global trade history newest first', () => {
@@ -286,6 +365,8 @@ describe('PlayerShopSubscriptionManager', () => {
       connected: false,
       listings: [],
       ownListings: [],
+      requests: [],
+      ownRequests: [],
       tradeHistory: [],
       ownTradeHistory: [],
       proceedsGold: 0,

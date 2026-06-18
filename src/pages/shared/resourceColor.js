@@ -6,11 +6,17 @@ export function setResourceColor(element, resource) {
   }
 
   if (RESOURCE_COLORS.has(resource)) {
+    if (element.dataset.resourceColor === resource) {
+      return;
+    }
+
     element.dataset.resourceColor = resource;
     return;
   }
 
-  delete element.dataset.resourceColor;
+  if (element.dataset.resourceColor !== undefined) {
+    delete element.dataset.resourceColor;
+  }
 }
 
 export function setResourceColorFromText(element, text) {

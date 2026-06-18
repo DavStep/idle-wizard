@@ -59,6 +59,8 @@ export class TutorialTargetManager {
       isBlockingDialogOpenForStep: (step, target) =>
         this.isBlockingDialogOpenForStep({ root, step, target }),
       isUsernameSettingsOpen: () => isUsernameSettingsOpen(this.stage),
+      isSettingsThemeTabVisible: () => isSettingsThemeTabVisible(this.stage),
+      isThemeSettingsTabOpen: () => isThemeSettingsTabOpen(this.stage),
       isGardenSeedPopupOpen: () =>
         Boolean(this.stage?.querySelector('.garden-page__seed-popup:not([hidden])')),
       isBrewingRecipePopupOpen: () =>
@@ -159,6 +161,24 @@ function isUsernameSettingsOpen(stage) {
   const input = settings?.querySelector('[data-tutorial-id="top:username-input"]');
 
   return Boolean(input && !input.closest('[hidden]'));
+}
+
+function isSettingsThemeTabVisible(stage) {
+  const settings = stage?.querySelector('.room-top-panel__settings:not([hidden])');
+  const themeTab = settings?.querySelector('[data-tutorial-id="top:settings:theme-tab"]');
+
+  return Boolean(themeTab && !themeTab.closest('[hidden]'));
+}
+
+function isThemeSettingsTabOpen(stage) {
+  const settings = stage?.querySelector('.room-top-panel__settings:not([hidden])');
+  const themeTab = settings?.querySelector('[data-tutorial-id="top:settings:theme-tab"]');
+
+  return Boolean(
+    themeTab &&
+      !themeTab.closest('[hidden]') &&
+      themeTab.getAttribute('aria-selected') === 'true',
+  );
 }
 
 function getSelectedBrewingRecipeRow(stage, recipeKey) {

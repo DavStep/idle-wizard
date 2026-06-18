@@ -1,5 +1,6 @@
 import { getPlayerVisualSettingCategories } from '../../../player/playerVisualSettings.js';
 import { getClientReleaseVersion } from '../../../shared/clientReleaseVersion.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
@@ -332,6 +333,9 @@ export class TopPanelViewManager {
       button.setAttribute('aria-controls', tab.controls);
       button.setAttribute('aria-selected', 'false');
       button.setAttribute('role', 'tab');
+      if (tab.key === 'theme') {
+        button.dataset.tutorialId = 'top:settings:theme-tab';
+      }
       this.refs.settingsTabs.append(button);
       this.refs.settingsTabButtons.push(button);
     }
@@ -435,7 +439,12 @@ export class TopPanelViewManager {
         this.refs.iconModeButtons.push(name);
       }
 
+      const preview = this.createVisualSettingPreview(categoryKey, option);
+
       row.append(name, price);
+      if (preview) {
+        row.append(preview);
+      }
       buttons.append(row);
       this.refs.visualSettingButtons.push(name);
       this.refs.visualSettingResearchButtons.push(price);
@@ -444,6 +453,126 @@ export class TopPanelViewManager {
 
     section.append(title, buttons);
     return section;
+  }
+
+  createVisualSettingPreview(categoryKey, option) {
+    if (categoryKey === 'theme') {
+      return this.createThemePreview(option.key);
+    }
+
+    if (categoryKey === 'progressBar') {
+      return this.createProgressBarPreview(option.key);
+    }
+
+    if (categoryKey === 'color') {
+      return this.createColorModePreview(option.key);
+    }
+
+    if (categoryKey === 'icons') {
+      return this.createIconModePreview(option.key);
+    }
+
+    return null;
+  }
+
+  createThemePreview(themeKey) {
+    const preview = document.createElement('div');
+    preview.className = 'room-top-panel__visual-preview room-top-panel__theme-preview';
+    preview.dataset.previewTheme = themeKey;
+    preview.setAttribute('aria-hidden', 'true');
+
+    const box = document.createElement('div');
+    box.className = 'room-top-panel__theme-preview-box';
+
+    const title = document.createElement('div');
+    title.className = 'room-top-panel__theme-preview-title';
+    title.textContent = 'sample';
+
+    const row = document.createElement('div');
+    row.className = 'room-top-panel__theme-preview-row';
+    row.textContent = '34.4k gold';
+
+    box.append(
+      title,
+      row,
+      this.createProgressPreviewRail(themeKey === 'witchcraft' ? 0.72 : 0.64),
+    );
+    preview.append(box);
+    return preview;
+  }
+
+  createProgressBarPreview(progressBarKey) {
+    const preview = document.createElement('div');
+    preview.className = 'room-top-panel__visual-preview room-top-panel__progress-preview';
+    preview.dataset.previewProgress = progressBarKey;
+    preview.setAttribute('aria-hidden', 'true');
+    preview.append(this.createProgressPreviewRail(0.68));
+    return preview;
+  }
+
+  createProgressPreviewRail(ratio) {
+    const progress = document.createElement('div');
+    progress.className = 'style-progress room-top-panel__preview-progress';
+
+    const fill = document.createElement('div');
+    fill.className = 'style-progress__fill room-top-panel__preview-progress-fill';
+    fill.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+
+    progress.append(fill);
+    return progress;
+  }
+
+  createColorModePreview(colorModeKey) {
+    const preview = document.createElement('div');
+    preview.className = 'room-top-panel__visual-preview room-top-panel__color-preview';
+    preview.dataset.previewColor = colorModeKey;
+    preview.setAttribute('aria-hidden', 'true');
+
+    preview.append(
+      this.createColorPreviewItem('mana 100/100', 'mana'),
+      this.createColorPreviewItem('34.4k gold', 'gold'),
+      this.createColorPreviewItem('sage seed', 'seed'),
+      this.createColorPreviewItem('sage', 'herb'),
+    );
+
+    return preview;
+  }
+
+  createColorPreviewItem(label, resource) {
+    const item = document.createElement('span');
+    item.className = 'room-top-panel__color-preview-item';
+    item.textContent = label;
+    setResourceColor(item, resource);
+    return item;
+  }
+
+  createIconModePreview(iconModeKey) {
+    const preview = document.createElement('div');
+    preview.className = 'room-top-panel__visual-preview room-top-panel__icon-preview';
+    preview.dataset.previewIcons = iconModeKey;
+    preview.setAttribute('aria-hidden', 'true');
+
+    preview.append(
+      this.createIconPreviewItem('34.4k gold', 'resource', 'gold'),
+      this.createIconPreviewItem('sage seed', 'seed', 'sageSeed'),
+      this.createIconPreviewItem('mana tonic', 'potion', 'manaTonic'),
+    );
+
+    return preview;
+  }
+
+  createIconPreviewItem(label, kind, itemKey) {
+    const item = document.createElement('span');
+    item.className = 'room-top-panel__icon-preview-item';
+    item.textContent = label;
+
+    if (kind === 'resource') {
+      setResourceIconText(item, label);
+      return item;
+    }
+
+    setItemIconLabel(item, kind, itemKey);
+    return item;
   }
 
   createLevelPopup() {

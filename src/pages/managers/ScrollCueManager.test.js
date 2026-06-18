@@ -84,6 +84,90 @@ describe('ScrollCueManager', () => {
     manager.unmount();
   });
 
+  it('ignores unrelated subtree text mutations', async () => {
+    const root = document.createElement('div');
+    const rows = document.createElement('div');
+    const unrelated = document.createElement('p');
+    rows.className = 'shop-page__stock-rows';
+    root.append(rows, unrelated);
+    document.body.append(root);
+
+    let scrollHeightReads = 0;
+    Object.defineProperty(rows, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(rows, 'scrollHeight', {
+      configurable: true,
+      get: () => {
+        scrollHeightReads += 1;
+        return 300;
+      },
+    });
+
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+
+    scrollHeightReads = 0;
+    unrelated.textContent = 'typing elsewhere';
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+
+    expect(scrollHeightReads).toBe(0);
+
+    manager.unmount();
+  });
+
+  it('updates an existing cue when its own content changes', async () => {
+    const root = document.createElement('div');
+    const rows = document.createElement('div');
+    rows.className = 'shop-page__stock-rows';
+    root.append(rows);
+    document.body.append(root);
+
+    let scrollHeightReads = 0;
+    Object.defineProperty(rows, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(rows, 'scrollHeight', {
+      configurable: true,
+      get: () => {
+        scrollHeightReads += 1;
+        return 300;
+      },
+    });
+
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+
+    scrollHeightReads = 0;
+    rows.append(document.createElement('span'));
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+
+    expect(scrollHeightReads).toBeGreaterThan(0);
+
+    manager.unmount();
+  });
+
+  it('scans when a new cue element is added later', async () => {
+    const root = document.createElement('div');
+    document.body.append(root);
+
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+
+    const rows = document.createElement('div');
+    rows.className = 'shop-page__stock-rows';
+    root.append(rows);
+
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+
+    expect(rows.classList.contains('style-scroll-cue')).toBe(true);
+
+    manager.unmount();
+  });
+
   it('lets managed scroll progress use the shared progress rail height', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const progressRule = baseCss.match(/\.style-progress\s*\{(?<body>[^}]*)\}/)

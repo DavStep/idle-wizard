@@ -38,6 +38,7 @@
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
+- Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
@@ -64,6 +65,7 @@
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
 - FTUE target cues should keep the plain hand asset; swapping in a Spine click-effect pointer adds noisy blobs and weakens the cue.
 - FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then mana sphere, then summon, then tasks and room chrome.
+- Room section entry animations must opt out while `data-tutorial-reveal` is present; opacity/translate animations can override FTUE reveal gates.
 - FTUE intro-only reveal needs an empty `data-tutorial-reveal` attribute; clearing the attribute makes all gated room controls appear.
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
@@ -89,6 +91,7 @@
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
+- FTUE level-5 theme/settings guidance is passive; it should point to the username settings opener first, then the `theme` settings tab when settings is open.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
 - FTUE username target needs the username button rect to fit the visible name text; a flex-filled button makes the pointer drift toward the level/gold side.
 - Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Elara disappears while tasks remain.
@@ -96,6 +99,7 @@
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
 - FTUE lesson panels should measure final copy/progress first and set box size before typewriter text appears; do not let panels resize as copy reveals.
 - FTUE target cues should be pointer-only while the lesson panel is open or the player asks with `show me`; never stack a target hint box with a lesson box.
+- When FTUE points to a bottom page tab while Workshop tasks are expanded, keep the bottom tab panel undimmed; the task-expanded chrome opacity makes the target read disabled.
 - FTUE pointer animation should keep opacity stable and use one gentle `1-2px` source-distance push with a long rest; authored source movement scales up on mobile.
 - FTUE pointer motion should keep target positioning on a stable container and animate a child hand image with a tiny placement-specific margin offset; animated transform paths can collapse to near-zero live motion in the in-app browser.
 - FTUE pointer child motion can use individual CSS `translate`; it keeps rotation/scale transforms intact and samples smoothly in the in-app browser.
@@ -105,10 +109,15 @@
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
 - Brewing FTUE lesson placement must protect the herbs box, cauldron, and bottom brewing controls so Elara never hides brew status/progress.
 - FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
+- FTUE lesson collapse animations need a temporary exit class before setting `hidden`; full tutorial hides still clear immediately to prevent stale flashes.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
-- Workshop secondary buttons (`leaderboard`, `alliance`, `logs`, `discoveries`) stay hidden until level 3; `prestige` stays hidden until level 7.
+- Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` stays hidden until level 7.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
+- Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop task drag-sort spans a fixed summary row plus list rows; use a drag ghost plus placeholder and commit priority only on drop, not render-on-pointermove.
+- Workshop summon button text must overlay the summon circle, not stack below it; stacking drops the label into the secondary action row.
+- Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
+- Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 
 ## Architecture
 
@@ -190,6 +199,7 @@
 - NPC market auto-sell uses one shelf-level timer; changing a selected stand item resets that shared timer, and each completed cycle attempts all eligible selected stands.
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
+- Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
 - All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
 - Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
@@ -287,10 +297,10 @@
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
 - Market page uses visible `npc market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
 - Crystal tab gold offer grants current level * 20 gold only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim gold; ready state owns Market/crystals notification dots.
-- Player market request UI is local-only until backend request listings exist; do not fake server trades.
+- Player market requests publish to backend request rows for public `buying` visibility; fulfillment is still not a server trade without escrow/delivery semantics.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
 - Player market requests use local numbered slots that follow player market stand unlock state.
-- Player market request data is local gameplay-save state, not a backend trade listing, and must survive reload/server restart.
+- Player market request data is local gameplay-save state mirrored to backend request rows; local saves still preserve own slots across reload/server restart.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
@@ -462,7 +472,7 @@
 - Workshop collapsed task summary should preview the first incomplete task in level order; expanded task display keeps incomplete rows before completed rows.
 - Reuse the Workshop-style box expansion pattern for future boxes: one summary row remains visible, top-right border label shows progress/count, bottom-center border label toggles `expand`/`collapse`, and expanded rows appear in normal flow inside the same box.
 - Workshop task border labels need higher-specificity or late CSS overrides because generic `.style-box` padding and `.style-box :where(button, ...)` font-size rules otherwise override component styles.
-- Workshop tasks should expand in normal flow above mana sphere/action bar; do not overlay action panels.
+- Workshop tasks reserve collapsed height in normal flow, then expanded requirements overlay lower Workshop content; do not push `mana sphere` or action controls down.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.

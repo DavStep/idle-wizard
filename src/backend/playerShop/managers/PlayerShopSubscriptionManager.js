@@ -2,6 +2,8 @@ import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
 const PUBLIC_LISTINGS_QUERY = 'SELECT * FROM public_player_shop_listing';
 const OWN_LISTINGS_QUERY = 'SELECT * FROM own_player_shop_listing';
+const PUBLIC_REQUESTS_QUERY = 'SELECT * FROM public_player_shop_request';
+const OWN_REQUESTS_QUERY = 'SELECT * FROM own_player_shop_request';
 const PROCEEDS_QUERY = 'SELECT * FROM own_player_shop_proceeds';
 const TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade_recent';
 const OWN_TRADE_HISTORY_QUERY = 'SELECT * FROM own_player_shop_trade_history';
@@ -13,6 +15,8 @@ const EMPTY_SNAPSHOT = {
   connected: false,
   listings: [],
   ownListings: [],
+  requests: [],
+  ownRequests: [],
   tradeHistory: [],
   ownTradeHistory: [],
   proceedsGold: 0,
@@ -26,6 +30,8 @@ export class PlayerShopSubscriptionManager {
     this.publicDataActive = false;
     this.publicListingsTable = null;
     this.ownListingsTable = null;
+    this.publicRequestsTable = null;
+    this.ownRequestsTable = null;
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
@@ -57,6 +63,22 @@ export class PlayerShopSubscriptionManager {
       legacySnakeName: 'player_shop_listing',
       legacyQuery: this.getLegacyOwnListingsQuery(),
     });
+    const publicRequests = this.findTableSource({
+      camelName: 'publicPlayerShopRequest',
+      snakeName: 'public_player_shop_request',
+      query: PUBLIC_REQUESTS_QUERY,
+      legacyCamelName: null,
+      legacySnakeName: null,
+      legacyQuery: null,
+    });
+    const ownRequests = this.findTableSource({
+      camelName: 'ownPlayerShopRequest',
+      snakeName: 'own_player_shop_request',
+      query: OWN_REQUESTS_QUERY,
+      legacyCamelName: null,
+      legacySnakeName: null,
+      legacyQuery: null,
+    });
     const proceeds = this.findTableSource({
       camelName: 'ownPlayerShopProceeds',
       snakeName: 'own_player_shop_proceeds',
@@ -83,11 +105,21 @@ export class PlayerShopSubscriptionManager {
     });
     this.publicListingsTable = publicListings.table;
     this.ownListingsTable = ownListings.table;
+    this.publicRequestsTable = publicRequests.table;
+    this.ownRequestsTable = ownRequests.table;
     this.proceedsTable =
       proceeds.query ? proceeds.table : null;
     this.tradeHistoryTable = tradeHistory.table;
     this.ownTradeHistoryTable = ownTradeHistory.table;
-    this.querySources = { publicListings, ownListings, proceeds, tradeHistory, ownTradeHistory };
+    this.querySources = {
+      publicListings,
+      ownListings,
+      publicRequests,
+      ownRequests,
+      proceeds,
+      tradeHistory,
+      ownTradeHistory,
+    };
 
     if (!this.ownListingsTable || !this.proceedsTable) {
       this.publish({ ...EMPTY_SNAPSHOT });
@@ -95,9 +127,14 @@ export class PlayerShopSubscriptionManager {
     }
 
     this.bindTable(this.ownListingsTable);
+    this.bindTable(this.ownRequestsTable);
     this.bindTable(this.proceedsTable);
     this.subscriptions = [
       this.subscribeQuery(ownListings.query),
+      ownRequests.query ? this.subscribeOptionalQuery(ownRequests.query, () => {
+        this.unbindTable(this.ownRequestsTable);
+        this.ownRequestsTable = null;
+      }) : null,
       this.subscribeQuery(proceeds.query),
     ].filter(Boolean);
     this.reconcilePublicDataSubscriptions();
@@ -107,6 +144,7 @@ export class PlayerShopSubscriptionManager {
   disconnect() {
     this.teardownPublicDataSubscriptions();
     this.unbindTable(this.ownListingsTable);
+    this.unbindTable(this.ownRequestsTable);
     this.unbindTable(this.proceedsTable);
 
     for (const subscription of this.subscriptions) {
@@ -120,6 +158,8 @@ export class PlayerShopSubscriptionManager {
     this.publicDataActive = false;
     this.publicListingsTable = null;
     this.ownListingsTable = null;
+    this.publicRequestsTable = null;
+    this.ownRequestsTable = null;
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
@@ -183,6 +223,7 @@ export class PlayerShopSubscriptionManager {
 
     if (!this.publicTablesBound) {
       this.bindTable(this.publicListingsTable);
+      this.bindTable(this.publicRequestsTable);
       this.bindTable(this.tradeHistoryTable);
       this.bindTable(this.ownTradeHistoryTable);
       this.publicTablesBound = true;
@@ -192,9 +233,16 @@ export class PlayerShopSubscriptionManager {
       return;
     }
 
-    const { publicListings, tradeHistory, ownTradeHistory } = this.querySources;
+    const { publicListings, publicRequests, tradeHistory, ownTradeHistory } = this.querySources;
     this.publicSubscriptions = [
       publicListings?.query ? this.subscribeQuery(publicListings.query) : null,
+      this.publicRequestsTable && publicRequests?.query
+        ? this.subscribeOptionalQuery(publicRequests.query, () => {
+            this.unbindTable(this.publicRequestsTable);
+            this.publicRequestsTable = null;
+            this.publishFromTables();
+          })
+        : null,
       this.tradeHistoryTable && tradeHistory?.query
         ? this.subscribeOptionalQuery(tradeHistory.query, () => {
             this.unbindTable(this.tradeHistoryTable);
@@ -215,6 +263,7 @@ export class PlayerShopSubscriptionManager {
   teardownPublicDataSubscriptions() {
     if (this.publicTablesBound) {
       this.unbindTable(this.publicListingsTable);
+      this.unbindTable(this.publicRequestsTable);
       this.unbindTable(this.tradeHistoryTable);
       this.unbindTable(this.ownTradeHistoryTable);
       this.publicTablesBound = false;
@@ -274,6 +323,30 @@ export class PlayerShopSubscriptionManager {
       (listing) =>
         listing.sellerIdentity !== identityKey && listing.quantity > 0 && listing.priceGold > 0,
     );
+    const publicRequests = Array.from(
+      this.publicDataActive ? this.publicRequestsTable?.iter?.() ?? [] : [],
+    )
+      .map((row) => this.mapRequest(row))
+      .sort((left, right) => {
+        const nameCompare = left.username.localeCompare(right.username);
+
+        if (nameCompare !== 0) {
+          return nameCompare;
+        }
+
+        return left.slotNumber - right.slotNumber;
+      });
+    const ownRequestSource =
+      this.publicDataActive && this.ownRequestsTable === this.publicRequestsTable
+        ? publicRequests
+        : Array.from(this.ownRequestsTable?.iter?.() ?? []).map((row) => this.mapRequest(row));
+    const ownRequests = ownRequestSource.filter(
+      (request) => request.requesterIdentity === identityKey,
+    );
+    const requests = publicRequests.filter(
+      (request) =>
+        request.requesterIdentity !== identityKey && request.quantity > 0 && request.priceGold > 0,
+    );
     const proceedsRow = Array.from(this.proceedsTable.iter()).find(
       (row) => this.toIdentityKey(row.sellerIdentity ?? row.seller_identity) === identityKey,
     ) ?? null;
@@ -284,6 +357,8 @@ export class PlayerShopSubscriptionManager {
       connected: true,
       listings,
       ownListings,
+      requests,
+      ownRequests,
       tradeHistory,
       ownTradeHistory,
       proceedsGold:
@@ -300,6 +375,26 @@ export class PlayerShopSubscriptionManager {
     return {
       listingKey: String(row.listingKey ?? row.listing_key ?? ''),
       sellerIdentity: this.toIdentityKey(row.sellerIdentity ?? row.seller_identity),
+      username: typeof row.username === 'string' ? row.username : 'wizard',
+      slotNumber: this.toNumber(row.slotNumber ?? row.slot_number),
+      itemKey: String(row.itemKey ?? row.item_key ?? ''),
+      itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
+      itemKind: String(row.itemKind ?? row.item_kind ?? ''),
+      quantity,
+      priceGold,
+      totalPriceGold: priceGold,
+      updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
+    };
+  }
+
+  mapRequest(row) {
+    const quantity = this.toNumber(row.quantity);
+    const priceGold =
+      this.toGoldPrice(row.priceGold ?? row.price_gold, row.priceScale ?? row.price_scale) ?? 0;
+
+    return {
+      requestKey: String(row.requestKey ?? row.request_key ?? ''),
+      requesterIdentity: this.toIdentityKey(row.requesterIdentity ?? row.requester_identity),
       username: typeof row.username === 'string' ? row.username : 'wizard',
       slotNumber: this.toNumber(row.slotNumber ?? row.slot_number),
       itemKey: String(row.itemKey ?? row.item_key ?? ''),

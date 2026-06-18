@@ -18,8 +18,9 @@ const EMPTY_LOCKED_REQUEST_LABEL = 'empty request';
 const EMPTY_REQUEST_ACTION_LABEL = 'request item';
 
 export class ShopPlayerRequestManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, playerShopFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.playerShopFacade = playerShopFacade;
     this.root = null;
     this.unsubscribeGameplay = null;
     this.refs = {};
@@ -424,23 +425,98 @@ export class ShopPlayerRequestManager {
       return;
     }
 
-    const result = this.gameplayFacade?.setPlayerShopRequest?.(this.selectedRequestSlotNumber, {
+    const request = {
       itemTypeId: item.itemTypeId,
       quantity,
       priceGold,
-    });
+    };
 
-    if (!result?.ok) {
-      this.setStatus(this.getRequestResultStatus(result));
+    if (this.hasBackendRequests()) {
+      void this.publishAndPlaceRequest(item, request);
       return;
     }
 
-    this.lastGameplaySnapshot = this.gameplayFacade?.getSnapshot?.() ?? this.lastGameplaySnapshot;
-    this.hidePopup();
+    this.placeLocalRequest(request);
+  }
+
+  async publishAndPlaceRequest(item, request) {
+    if (!this.playerShopFacade?.getSnapshot?.()?.connected) {
+      this.setStatus('offline');
+      return;
+    }
+
+    this.setStatus('requesting');
+    const publishResult = await this.playerShopFacade.setSlotRequest({
+      slotNumber: this.selectedRequestSlotNumber,
+      itemKey: item.key,
+      itemLabel: item.label,
+      itemKind: item.kind,
+      quantity: request.quantity,
+      priceGold: request.priceGold,
+    });
+
+    if (!publishResult?.ok) {
+      this.setStatus(this.getRequestResultStatus(publishResult));
+      return;
+    }
+
+    const result = this.placeLocalRequest(request, { hidePopup: true });
+
+    if (!result?.ok) {
+      await this.playerShopFacade?.clearSlotRequest?.(this.selectedRequestSlotNumber);
+      this.setStatus(this.getRequestResultStatus(result));
+      return;
+    }
+  }
+
+  placeLocalRequest(request, { hidePopup = true } = {}) {
+    const result = this.gameplayFacade?.setPlayerShopRequest?.(
+      this.selectedRequestSlotNumber,
+      request,
+    );
+
+    if (!result?.ok) {
+      this.setStatus(this.getRequestResultStatus(result));
+      return result;
+    }
+
+    this.lastGameplaySnapshot =
+      this.gameplayFacade?.getSnapshot?.() ?? this.lastGameplaySnapshot;
+    if (hidePopup) {
+      this.hidePopup();
+    }
     this.render();
+    return result;
   }
 
   clearRequest() {
+    if (this.hasBackendRequests() && this.getSelectedRequest()) {
+      void this.publishAndClearRequest();
+      return;
+    }
+
+    this.clearLocalRequest();
+  }
+
+  async publishAndClearRequest() {
+    if (!this.playerShopFacade?.getSnapshot?.()?.connected) {
+      this.setStatus('offline');
+      return;
+    }
+
+    const publishResult = await this.playerShopFacade.clearSlotRequest(
+      this.selectedRequestSlotNumber,
+    );
+
+    if (!publishResult?.ok) {
+      this.setStatus(this.getRequestResultStatus(publishResult));
+      return;
+    }
+
+    this.clearLocalRequest();
+  }
+
+  clearLocalRequest() {
     const result = this.gameplayFacade?.clearPlayerShopRequest?.(
       this.selectedRequestSlotNumber,
     );
@@ -452,6 +528,13 @@ export class ShopPlayerRequestManager {
 
     this.lastGameplaySnapshot = this.gameplayFacade?.getSnapshot?.() ?? this.lastGameplaySnapshot;
     this.render();
+  }
+
+  hasBackendRequests() {
+    return (
+      typeof this.playerShopFacade?.setSlotRequest === 'function' &&
+      typeof this.playerShopFacade?.clearSlotRequest === 'function'
+    );
   }
 
   render() {
@@ -517,7 +600,7 @@ export class ShopPlayerRequestManager {
       const unlocked = Boolean(slot.unlocked);
       const selected = slotNumber === this.selectedRequestSlotNumber;
 
-      refs.row.classList.toggle('is-selected', selected);
+      refs.row.classList.remove('is-selected');
       refs.row.classList.toggle('is-locked', !unlocked);
       refs.row.classList.toggle('is-empty', unlocked && !request);
 
@@ -692,6 +775,10 @@ export class ShopPlayerRequestManager {
 
     if (result?.reason === 'item_not_requestable') {
       return 'bad item';
+    }
+
+    if (result?.reason === 'offline') {
+      return 'offline';
     }
 
     return 'request failed';

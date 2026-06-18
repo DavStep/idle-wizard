@@ -86,6 +86,8 @@ function createDomFake({
   directSellItemKey = null,
   username = 'wizard',
   usernameSettingsOpen = false,
+  settingsThemeTabVisible = false,
+  themeSettingsTabOpen = false,
 } = {}) {
   return {
     getUsername: () => username,
@@ -97,6 +99,8 @@ function createDomFake({
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isTasksExpanded: () => tasksExpanded,
     isUsernameSettingsOpen: () => usernameSettingsOpen,
+    isSettingsThemeTabVisible: () => settingsThemeTabVisible,
+    isThemeSettingsTabOpen: () => themeSettingsTabOpen,
   };
 }
 
@@ -242,7 +246,7 @@ describe('TutorialStepManager', () => {
       id: 'intro-welcome',
       kind: 'prompt',
       advanceOnClick: true,
-      stepLabel: '1/26',
+      stepLabel: '1/27',
       revealTokens: [],
       text: "hi there. i'm Elara Starbrew. i'll help you wake this workshop up.",
     });
@@ -272,7 +276,7 @@ describe('TutorialStepManager', () => {
       advanceOnClick: true,
       showPointer: false,
       revealTokens: ['top', 'mana'],
-      stepLabel: '4/26',
+      stepLabel: '4/27',
     });
   });
 
@@ -287,7 +291,7 @@ describe('TutorialStepManager', () => {
       targetId: 'top:username',
       cueMode: 'focus-target',
       revealTokens: ['top'],
-      stepLabel: '2/26',
+      stepLabel: '2/27',
       text: "i don't need your name, but it would be nice to set it here.",
     });
   });
@@ -303,7 +307,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       advanceOnClick: true,
       revealTokens: ['top'],
-      stepLabel: '3/26',
+      stepLabel: '3/27',
       text: "hi again, Mira. let's start with mana.",
     });
   });
@@ -320,7 +324,7 @@ describe('TutorialStepManager', () => {
       targetId: 'top:username-input',
       cueMode: 'focus-target',
       revealTokens: ['top'],
-      stepLabel: '2/26',
+      stepLabel: '2/27',
     });
   });
 
@@ -336,7 +340,7 @@ describe('TutorialStepManager', () => {
       text: 'wait for mana',
       hintText: 'wait for mana',
       cueMode: 'passive',
-      stepLabel: '5/26',
+      stepLabel: '5/27',
     });
   });
 
@@ -359,7 +363,7 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:summonSeed',
       text: 'use your mana to summon seeds.',
       revealTokens: ['top', 'mana', 'summon'],
-      stepLabel: '5/26',
+      stepLabel: '5/27',
     });
   });
 
@@ -397,7 +401,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       targetId: 'task:level1-sage-seeds',
       text: 'turn in',
-      stepLabel: '6/26',
+      stepLabel: '6/27',
     });
   });
 
@@ -440,7 +444,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'summon and turn in sage seeds for the next level',
       progress: { value: 1, max: 5 },
       progressLabel: '1/5 seeds',
-      stepLabel: '7/26',
+      stepLabel: '7/27',
     });
   });
 
@@ -492,7 +496,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       text: 'good. that completes the first requirement. now we need more gold. summon a sage seed, then sell it in market.',
       advanceOnClick: true,
-      stepLabel: '8/26',
+      stepLabel: '8/27',
     });
   });
 
@@ -608,6 +612,26 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('asks to open market before fast sell if the player leaves market', () => {
+    const snapshot = createLevelOneTaskCompleteSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+    });
+
+    expect(
+      getStep({
+        pageId: 'workshop',
+        snapshot,
+        completed: completedThrough('open-market'),
+      }),
+    ).toMatchObject({
+      id: 'select-market-stand',
+      targetId: 'page:shop',
+      objectiveText: 'open market',
+      hintText: 'open market',
+      progressLabel: '0/1 open',
+    });
+  });
+
   it('targets sage seed inside fast sell', () => {
     const snapshot = createLevelOneTaskCompleteSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],
@@ -631,7 +655,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'shop:directSell:sageSeed',
       hintText: 'choose sage seed',
-      stepLabel: '12/26',
+      stepLabel: '12/27',
     });
   });
 
@@ -662,7 +686,7 @@ describe('TutorialStepManager', () => {
         goldTarget: 10,
       },
       progressLabel: '0/10 gold',
-      stepLabel: '13/26',
+      stepLabel: '13/27',
     });
   });
 
@@ -726,7 +750,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:levelUp',
       objectiveText: 'return to workshop and level up',
-      stepLabel: '15/26',
+      stepLabel: '15/27',
     });
   });
 
@@ -757,7 +781,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'sage seed grows into sage. plant one, then harvest it.',
       progressLabel: '0/3 sage',
       cueMode: 'active',
-      stepLabel: '16/26',
+      stepLabel: '16/27',
     });
   });
 
@@ -935,7 +959,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'good. now turn in sage for the next level.',
       progressLabel: '1/3 sage',
       cueMode: 'delayed-target',
-      stepLabel: '17/26',
+      stepLabel: '17/27',
     });
   });
 
@@ -985,7 +1009,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'and yes, the next level still requires sage seed.',
       progressLabel: '4/10 sage seeds',
       cueMode: 'delayed-target',
-      stepLabel: '18/26',
+      stepLabel: '18/27',
     });
   });
 
@@ -1019,7 +1043,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       objectiveText: 'good. now turn in sage for the next level.',
       progressLabel: '1/3 sage',
-      stepLabel: '17/26',
+      stepLabel: '17/27',
     });
   });
 
@@ -1075,7 +1099,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'wait for sage to grow',
       cueMode: 'passive',
       progressLabel: '1/3 sage',
-      stepLabel: '17/26',
+      stepLabel: '17/27',
     });
   });
 
@@ -1125,7 +1149,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'earn level-up gold in market',
       progress: { value: 10, max: 40 },
       progressLabel: '10/40 gold',
-      stepLabel: '19/26',
+      stepLabel: '19/27',
     });
   });
 
@@ -1139,7 +1163,7 @@ describe('TutorialStepManager', () => {
       hintText: 'fast sell',
       objectiveText: 'earn level-up gold in market',
       progressLabel: '10/40 gold',
-      stepLabel: '19/26',
+      stepLabel: '19/27',
     });
   });
 
@@ -1159,7 +1183,7 @@ describe('TutorialStepManager', () => {
       hintText: 'choose something to sell',
       objectiveText: 'choose something to sell',
       progressLabel: '10/40 gold',
-      stepLabel: '19/26',
+      stepLabel: '19/27',
     });
   });
 
@@ -1183,7 +1207,7 @@ describe('TutorialStepManager', () => {
       hintText: 'sell or +1',
       objectiveText: 'amount starts at 1. press sell, or +1 if you have more to sell.',
       progressLabel: '10/40 gold',
-      stepLabel: '19/26',
+      stepLabel: '19/27',
     });
   });
 
@@ -1203,7 +1227,7 @@ describe('TutorialStepManager', () => {
       hintText: 'summon seed',
       objectiveText: 'get sage to sell',
       progressLabel: '10/40 gold',
-      stepLabel: '19/26',
+      stepLabel: '19/27',
     });
   });
 
@@ -1226,7 +1250,7 @@ describe('TutorialStepManager', () => {
       hintText: 'level up',
       objectiveText: 'level up again',
       progressLabel: '1/1 ready',
-      stepLabel: '19/26',
+      stepLabel: '19/27',
     });
   });
 
@@ -1240,7 +1264,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '20/26',
+      stepLabel: '20/27',
     });
   });
 
@@ -1302,7 +1326,7 @@ describe('TutorialStepManager', () => {
       hintText: 'turn in',
       objectiveText: 'turn in mint seed for the next level',
       progressLabel: '7/10 mint seeds',
-      stepLabel: '21/26',
+      stepLabel: '21/27',
     });
   });
 
@@ -1396,7 +1420,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       objectiveText: 'turn in mint for the next level',
       progressLabel: '0/18 mint',
-      stepLabel: '22/26',
+      stepLabel: '22/27',
     });
   });
 
@@ -1530,7 +1554,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open market',
       objectiveText: 'earn level-up gold in market',
       progressLabel: '77/80 gold',
-      stepLabel: '23/26',
+      stepLabel: '23/27',
     });
   });
 
@@ -1581,7 +1605,7 @@ describe('TutorialStepManager', () => {
       hintText: 'summon seed',
       objectiveText: 'get mint to sell',
       progressLabel: '77/80 gold',
-      stepLabel: '23/26',
+      stepLabel: '23/27',
     });
   });
 
@@ -1660,7 +1684,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'tap sage to fill cauldron. recipes care about order',
-      stepLabel: '25/26',
+      stepLabel: '25/27',
     });
   });
 
@@ -1694,7 +1718,7 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:recipes:close',
       hintText: 'close recipes',
       progressLabel: '0/1 potion',
-      stepLabel: '25/26',
+      stepLabel: '25/27',
     });
   });
 
@@ -1773,7 +1797,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'fill the cauldron again',
       progress: { value: 0, max: 3 },
       progressLabel: '0/3 sage',
-      stepLabel: '26/26',
+      stepLabel: '26/27',
     });
   });
 
@@ -1814,11 +1838,54 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:action',
       hintText: 'brew again',
       progressLabel: '3/3 sage',
-      stepLabel: '26/26',
+      stepLabel: '26/27',
     });
   });
 
-  it('auto-completes all steps for players already past brewing introduction', () => {
+  it('keeps level five theme settings guidance passive', () => {
+    const snapshot = createSnapshot({
+      tasks: {
+        currentLevel: 5,
+        level: {
+          tasks: [],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'find-theme-settings',
+      targetId: 'top:username',
+      objectiveText: 'you can change themes in settings. open settings, then use the theme tab.',
+      hintText: 'open settings',
+      cueMode: 'passive',
+      stepLabel: '27/27',
+    });
+  });
+
+  it('points level five theme guidance at the settings theme tab when settings is open', () => {
+    const snapshot = createSnapshot({
+      tasks: {
+        currentLevel: 5,
+        level: {
+          tasks: [],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ settingsThemeTabVisible: true }),
+      }),
+    ).toMatchObject({
+      id: 'find-theme-settings',
+      targetId: 'top:settings:theme-tab',
+      hintText: 'theme tab',
+      cueMode: 'passive',
+    });
+  });
+
+  it('completes level five theme guidance when the theme tab is selected', () => {
     const progress = createProgressFake();
     const manager = new TutorialStepManager({
       progressManager: progress,
@@ -1829,6 +1896,29 @@ describe('TutorialStepManager', () => {
       snapshot: createSnapshot({
         tasks: {
           currentLevel: 5,
+          level: {
+            tasks: [],
+          },
+        },
+      }),
+      dom: createDomFake({ settingsThemeTabVisible: true, themeSettingsTabOpen: true }),
+    });
+
+    expect(step).toBeNull();
+    expect(progress.completedStepIds.has('find-theme-settings')).toBe(true);
+  });
+
+  it('auto-completes all steps for players already past settings introduction', () => {
+    const progress = createProgressFake();
+    const manager = new TutorialStepManager({
+      progressManager: progress,
+      getCurrentPageId: () => 'workshop',
+    });
+
+    const step = manager.getActiveStep({
+      snapshot: createSnapshot({
+        tasks: {
+          currentLevel: 6,
           level: {
             tasks: [],
           },

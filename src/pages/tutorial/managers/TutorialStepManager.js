@@ -63,6 +63,8 @@ const LEVEL_FOUR_STEP_IDS = [
   'refill-mana-tonic-cauldron',
 ];
 
+const LEVEL_FIVE_STEP_IDS = ['find-theme-settings'];
+
 const SEEDING_LESSON_STEP_IDS = [
   'intro-welcome',
   'intro-username',
@@ -79,12 +81,14 @@ const MARKET_LESSON_STEP_IDS = LEVEL_ONE_STEP_IDS.filter(
 
 const GARDENING_LESSON_STEP_IDS = [...LEVEL_TWO_STEP_IDS, ...LEVEL_THREE_STEP_IDS];
 const BREWING_LESSON_STEP_IDS = LEVEL_FOUR_STEP_IDS;
+const SETTINGS_LESSON_STEP_IDS = LEVEL_FIVE_STEP_IDS;
 
 const LESSON_TITLE_BY_STEP_ID = new Map([
   ...SEEDING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 1: introduction']),
   ...MARKET_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 2: market']),
   ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 3: gardening']),
   ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 4: brewing']),
+  ...SETTINGS_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 5: settings']),
 ]);
 
 export const TUTORIAL_STEP_IDS = [
@@ -92,6 +96,7 @@ export const TUTORIAL_STEP_IDS = [
   ...LEVEL_TWO_STEP_IDS,
   ...LEVEL_THREE_STEP_IDS,
   ...LEVEL_FOUR_STEP_IDS,
+  ...LEVEL_FIVE_STEP_IDS,
 ];
 
 const REVEAL_TOP = ['top'];
@@ -321,7 +326,8 @@ export const TUTORIAL_STEPS = [
     pageId: 'shop',
     targetId: 'shop:directSell',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'open fast sell',
+    getObjectiveText: ({ currentPageId }) =>
+      currentPageId === 'shop' ? 'open fast sell' : 'open market',
     text: 'fast sell',
     getProgress: ({ dom }) => ({
       value: dom.isShopDirectSellPopupOpen?.() ? 1 : 0,
@@ -1116,6 +1122,20 @@ export const TUTORIAL_STEPS = [
       hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY) ||
       isActiveManaTonicBrew(snapshot),
   },
+  {
+    id: 'find-theme-settings',
+    kind: 'objective',
+    cueMode: 'passive',
+    objectiveText: 'you can change themes in settings. open settings, then use the theme tab.',
+    getTargetId: ({ dom }) =>
+      dom?.isSettingsThemeTabVisible?.() ? 'top:settings:theme-tab' : 'top:username',
+    getHintText: ({ dom }) =>
+      dom?.isSettingsThemeTabVisible?.() ? 'theme tab' : 'open settings',
+    getReminderKey: () => 'level-five-theme-settings',
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 5,
+    isComplete: ({ dom, snapshot }) =>
+      getCurrentLevel(snapshot) >= 6 || Boolean(dom?.isThemeSettingsTabOpen?.()),
+  },
 ];
 
 export class TutorialStepManager {
@@ -1184,12 +1204,19 @@ export class TutorialStepManager {
       return;
     }
 
-    if (currentLevel >= 5) {
+    if (currentLevel >= 6) {
       this.completeSteps(TUTORIAL_STEP_IDS);
       return;
     }
 
-    if (currentLevel >= 4) {
+    if (currentLevel >= 5) {
+      this.completeSteps([
+        ...LEVEL_ONE_STEP_IDS,
+        ...LEVEL_TWO_STEP_IDS,
+        ...LEVEL_THREE_STEP_IDS,
+        ...LEVEL_FOUR_STEP_IDS,
+      ]);
+    } else if (currentLevel >= 4) {
       this.completeSteps([...LEVEL_ONE_STEP_IDS, ...LEVEL_TWO_STEP_IDS, ...LEVEL_THREE_STEP_IDS]);
     } else if (currentLevel >= 3) {
       this.completeSteps([...LEVEL_ONE_STEP_IDS, ...LEVEL_TWO_STEP_IDS]);

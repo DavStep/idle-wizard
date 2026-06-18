@@ -48,7 +48,10 @@ export class ShopPageFacade {
       gameplayFacade,
       getBuyQuoteOverride: getNpcStockBuyQuoteOverride,
     });
-    this.playerRequestManager = new ShopPlayerRequestManager({ gameplayFacade });
+    this.playerRequestManager = new ShopPlayerRequestManager({
+      gameplayFacade,
+      playerShopFacade,
+    });
     this.playerShelfManager = new ShopPlayerShelfManager({
       gameplayFacade,
       playerShopFacade,

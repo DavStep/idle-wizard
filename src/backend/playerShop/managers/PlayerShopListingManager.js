@@ -78,6 +78,75 @@ export class PlayerShopListingManager {
     }
   }
 
+  async setSlotRequest(slot) {
+    const setPlayerShopRequest = this.findReducer(
+      'setPlayerShopRequest',
+      'set_player_shop_request',
+    );
+    const priceGold = normalizePositiveGoldPrice(slot.priceGold);
+
+    if (!setPlayerShopRequest) {
+      return {
+        ok: false,
+        reason: 'offline',
+      };
+    }
+
+    if (priceGold === null) {
+      return {
+        ok: false,
+        reason: 'invalid_price',
+      };
+    }
+
+    try {
+      await setPlayerShopRequest({
+        slotNumber: slot.slotNumber,
+        itemKey: slot.itemKey,
+        itemLabel: slot.itemLabel,
+        itemKind: slot.itemKind,
+        quantity: slot.quantity,
+        priceGold,
+      });
+
+      return {
+        ok: true,
+      };
+    } catch {
+      return {
+        ok: false,
+        reason: 'publish_failed',
+      };
+    }
+  }
+
+  async clearSlotRequest(slotNumber) {
+    const clearPlayerShopRequest = this.findReducer(
+      'clearPlayerShopRequest',
+      'clear_player_shop_request',
+    );
+
+    if (!clearPlayerShopRequest) {
+      return {
+        ok: false,
+        reason: 'offline',
+      };
+    }
+
+    try {
+      await clearPlayerShopRequest({ slotNumber });
+
+      return {
+        ok: true,
+      };
+    } catch {
+      return {
+        ok: false,
+        reason: 'clear_failed',
+      };
+    }
+  }
+
   async buyListing({ listingKey, quantity = 1 }) {
     const buyPlayerShopListing = this.findReducer(
       'buyPlayerShopListing',
@@ -141,8 +210,12 @@ export class PlayerShopListingManager {
       'claimPlayerShopProceeds',
       'claim_player_shop_proceeds',
     );
+    const clearPlayerShopRequest = this.findReducer(
+      'clearPlayerShopRequest',
+      'clear_player_shop_request',
+    );
 
-    if (!clearPlayerShopSlot && !claimPlayerShopProceeds) {
+    if (!clearPlayerShopSlot && !claimPlayerShopProceeds && !clearPlayerShopRequest) {
       return {
         ok: false,
         reason: 'offline',
@@ -155,6 +228,16 @@ export class PlayerShopListingManager {
       for (let slotNumber = 1; slotNumber <= MAX_PLAYER_SHOP_SLOTS; slotNumber += 1) {
         try {
           await clearPlayerShopSlot({ slotNumber });
+        } catch {
+          failed = true;
+        }
+      }
+    }
+
+    if (clearPlayerShopRequest) {
+      for (let slotNumber = 1; slotNumber <= MAX_PLAYER_SHOP_SLOTS; slotNumber += 1) {
+        try {
+          await clearPlayerShopRequest({ slotNumber });
         } catch {
           failed = true;
         }

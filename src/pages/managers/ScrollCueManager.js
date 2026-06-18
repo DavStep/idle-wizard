@@ -24,6 +24,14 @@ const SCROLL_CUE_SELECTOR = [
 
 const SCROLL_PROGRESS_PROPERTY = '--style-scroll-progress';
 
+function setClassState(element, className, enabled) {
+  if (element.classList.contains(className) === enabled) {
+    return;
+  }
+
+  element.classList.toggle(className, enabled);
+}
+
 export function updateScrollCueState({
   scrollElement,
   cueElement = scrollElement,
@@ -48,7 +56,7 @@ export function updateScrollCueState({
       scrollElement.style.setProperty(SCROLL_PROGRESS_PROPERTY, percentText);
     }
 
-    cueElement.classList.toggle('has-scroll-overflow', hasScrollOverflow);
+    setClassState(cueElement, 'has-scroll-overflow', hasScrollOverflow);
   }
 
   if (progressFill && progressFill.style.width !== percentText) {
@@ -56,10 +64,13 @@ export function updateScrollCueState({
   }
 
   if (progressElement) {
-    progressElement.hidden = !hasScrollOverflow;
+    const hidden = !hasScrollOverflow;
+    if (progressElement.hidden !== hidden) {
+      progressElement.hidden = hidden;
+    }
   }
 
-  cueElement.classList.toggle('has-bottom-overflow', hasBottomOverflow);
+  setClassState(cueElement, 'has-bottom-overflow', hasBottomOverflow);
 
   return {
     maxScroll,
@@ -164,7 +175,7 @@ export class ScrollCueManager {
     this.observer = null;
     this.cues = new Map();
     this.scanFrame = 0;
-    this.handleMutation = () => this.scheduleScan();
+    this.handleMutation = (mutations) => this.handleMutations(mutations);
     this.handleResize = () => this.scheduleUpdates();
   }
 
@@ -231,6 +242,91 @@ export class ScrollCueManager {
 
     cancelAnimationFrame(this.scanFrame);
     this.scanFrame = 0;
+  }
+
+  handleMutations(mutations = []) {
+    let shouldScan = false;
+    let shouldUpdate = false;
+
+    for (const mutation of mutations) {
+      if (this.mutationMayChangeCueRegistration(mutation)) {
+        shouldScan = true;
+        break;
+      }
+
+      if (this.mutationMayChangeCueLayout(mutation)) {
+        shouldUpdate = true;
+      }
+    }
+
+    if (shouldScan) {
+      this.scheduleScan();
+      return;
+    }
+
+    if (shouldUpdate) {
+      this.scheduleUpdates();
+    }
+  }
+
+  mutationMayChangeCueRegistration(mutation) {
+    if (mutation.type === 'attributes') {
+      return (
+        mutation.attributeName === 'class' &&
+        this.elementMatchesOrContainsCue(mutation.target)
+      );
+    }
+
+    if (mutation.type !== 'childList') {
+      return false;
+    }
+
+    return [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+      this.elementMatchesOrContainsCue(node),
+    );
+  }
+
+  mutationMayChangeCueLayout(mutation) {
+    if (mutation.type === 'attributes') {
+      return this.elementRelatesToManagedCue(mutation.target);
+    }
+
+    if (mutation.type !== 'childList') {
+      return false;
+    }
+
+    return (
+      this.elementRelatesToManagedCue(mutation.target) ||
+      [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+        this.elementRelatesToManagedCue(node),
+      )
+    );
+  }
+
+  elementMatchesOrContainsCue(node) {
+    if (!this.isElement(node)) {
+      return false;
+    }
+
+    return node.matches?.(this.selector) || Boolean(node.querySelector?.(this.selector));
+  }
+
+  elementRelatesToManagedCue(node) {
+    if (!this.isElement(node)) {
+      return false;
+    }
+
+    for (const element of this.cues.keys()) {
+      if (element === node || element.contains(node) || node.contains(element)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  isElement(node) {
+    return node?.nodeType === 1;
   }
 
   scan() {

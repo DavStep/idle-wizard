@@ -4,7 +4,7 @@ import { PlayerShopSubscriptionManager } from './managers/PlayerShopSubscription
 
 export class PlayerShopBackendFacade {
   static explain =
-    'Shares player market listings through the server so one player can buy another player\'s listed items.';
+    'Shares player market listings and request rows through the server so players can see each other\'s market offers.';
 
   constructor() {
     this.stateObserverManager = new PlayerShopStateObserverManager();
@@ -56,6 +56,14 @@ export class PlayerShopBackendFacade {
 
   clearSlotListing(slotNumber) {
     return this.listingManager.clearSlotListing(slotNumber);
+  }
+
+  setSlotRequest(slot) {
+    return this.listingManager.setSlotRequest(slot);
+  }
+
+  clearSlotRequest(slotNumber) {
+    return this.listingManager.clearSlotRequest(slotNumber);
   }
 
   buyListing(listing) {

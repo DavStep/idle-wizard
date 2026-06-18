@@ -1,5 +1,6 @@
 import { PAGE_UNLOCK_REQUIREMENTS } from '../../managers/PageUnlockManager.js';
 import {
+  WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
   WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
   WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
 } from './WorkshopSecondaryActionGateManager.js';
@@ -40,15 +41,15 @@ const TOTAL_PAYOFFS = [
 const WORKSHOP_UNLOCKS = [
   {
     requiredLevel: WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
-    label: 'workshop',
-    value: 'logs, discoveries, leaderboard, alliance',
-    notice: 'logs, discoveries, leaderboard, alliance available',
+    values: ['logs', 'leaderboard'],
+  },
+  {
+    requiredLevel: WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
+    values: ['discoveries', 'alliance'],
   },
   {
     requiredLevel: WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
-    label: 'workshop',
-    value: 'prestige',
-    notice: 'prestige available',
+    values: ['prestige'],
   },
 ];
 
@@ -61,8 +62,7 @@ export function getLevelPayoffRows(snapshot, { fromLevel, toLevel } = {}) {
   }
 
   return [
-    ...getPageUnlockRows(levelBefore, levelAfter),
-    ...getWorkshopUnlockRows(levelBefore, levelAfter),
+    ...getUnlockRows(levelBefore, levelAfter),
     ...getPlayerLevelDeltaRows(snapshot, levelBefore, levelAfter),
     ...getCrystalRows(snapshot, levelAfter),
   ];
@@ -81,7 +81,27 @@ export function formatLevelUpNotice(level, rows = []) {
   return `level ${safeLevel} reached: ${notices.join(', ')}`;
 }
 
-function getPageUnlockRows(levelBefore, levelAfter) {
+function getUnlockRows(levelBefore, levelAfter) {
+  const unlocks = [
+    ...getPageUnlocks(levelBefore, levelAfter),
+    ...getWorkshopUnlocks(levelBefore, levelAfter),
+  ];
+
+  if (!unlocks.length) {
+    return [];
+  }
+
+  return [
+    {
+      label: 'unlocks',
+      value: unlocks.map((unlock) => `-${unlock.value}`).join('\n'),
+      valueLines: unlocks.map((unlock) => `-${unlock.value}`),
+      notice: unlocks.map((unlock) => unlock.notice).join(', '),
+    },
+  ];
+}
+
+function getPageUnlocks(levelBefore, levelAfter) {
   return Object.values(PAGE_UNLOCK_REQUIREMENTS)
     .filter(
       (unlock) =>
@@ -92,21 +112,21 @@ function getPageUnlockRows(levelBefore, levelAfter) {
     .map((unlock) => {
       const value = unlock.label ?? 'room';
       return {
-        label: 'unlocks',
         value,
         notice: `${value} unlocked`,
       };
     });
 }
 
-function getWorkshopUnlockRows(levelBefore, levelAfter) {
+function getWorkshopUnlocks(levelBefore, levelAfter) {
   return WORKSHOP_UNLOCKS.filter(
     (unlock) => levelBefore < unlock.requiredLevel && levelAfter >= unlock.requiredLevel,
-  ).map((unlock) => ({
-    label: unlock.label,
-    value: unlock.value,
-    notice: unlock.notice,
-  }));
+  ).flatMap((unlock) =>
+    unlock.values.map((value) => ({
+      value,
+      notice: `${value} available`,
+    })),
+  );
 }
 
 function getPlayerLevelDeltaRows(snapshot, levelBefore, levelAfter) {

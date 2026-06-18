@@ -24,6 +24,7 @@ const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
 const ENABLE_CLIENT_POTION_DISCOVERY = true;
 const ENABLE_PLAYER_SHOP_EXCHANGE = true;
 const ENABLE_NPC_MARKET_PRESSURE = true;
+const WORLD_CHAT_UNLOCK_LEVEL = 3;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
 const MAX_MAINTENANCE_MESSAGE_LENGTH = 160;
@@ -2837,6 +2838,30 @@ const spacetimedb = schema({
       priceScale: t.u32().default(1),
     },
   ),
+  playerShopRequest: table(
+    {
+      name: 'player_shop_request',
+      public: true,
+      indexes: [
+        { accessor: 'byRequesterIdentity', algorithm: 'btree', columns: ['requesterIdentity'] },
+        { accessor: 'byQuantity', algorithm: 'btree', columns: ['quantity'] },
+        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+      ],
+    },
+    {
+      requestKey: t.string().primaryKey(),
+      requesterIdentity: t.identity(),
+      username: t.string(),
+      slotNumber: t.u8(),
+      itemKey: t.string(),
+      itemLabel: t.string(),
+      itemKind: t.string(),
+      quantity: t.u32(),
+      priceGold: t.u64(),
+      updatedAt: t.timestamp(),
+      priceScale: t.u32().default(1),
+    },
+  ),
   playerShopProceeds: table(
     {
       name: 'player_shop_proceeds',
@@ -3260,6 +3285,21 @@ const publicPlayerShopListingResult = t.array(
     priceScale: t.u32(),
   }),
 );
+const publicPlayerShopRequestResult = t.array(
+  t.row('PublicPlayerShopRequestResult', {
+    requestKey: t.string().primaryKey(),
+    requesterIdentity: t.identity(),
+    username: t.string(),
+    slotNumber: t.u8(),
+    itemKey: t.string(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    quantity: t.u32(),
+    priceGold: t.u64(),
+    updatedAt: t.timestamp(),
+    priceScale: t.u32(),
+  }),
+);
 const ownPlayerShopProceedsResult = t.option(
   t.row('OwnPlayerShopProceedsResult', {
     sellerIdentity: t.identity().primaryKey(),
@@ -3382,6 +3422,23 @@ export const own_player_shop_listing = spacetimedb.view(
   { name: 'own_player_shop_listing', public: true },
   publicPlayerShopListingResult,
   (ctx) => Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(ctx.sender)),
+);
+
+export const public_player_shop_request = spacetimedb.view(
+  { name: 'public_player_shop_request', public: true },
+  publicPlayerShopRequestResult,
+  (ctx) =>
+    Array.from(
+      ctx.db.playerShopRequest.byQuantity.filter(
+        new Range({ tag: 'excluded', value: 0 }),
+      ),
+    ),
+);
+
+export const own_player_shop_request = spacetimedb.view(
+  { name: 'own_player_shop_request', public: true },
+  publicPlayerShopRequestResult,
+  (ctx) => Array.from(ctx.db.playerShopRequest.byRequesterIdentity.filter(ctx.sender)),
 );
 
 export const own_player_shop_proceeds = spacetimedb.view(
@@ -4027,6 +4084,14 @@ function getPlayerShopListingKey(ctx: IdleWizardReducerCtx, slotNumber: number):
 }
 
 function getPlayerShopListingKeyForIdentity(identity: Identity, slotNumber: number): string {
+  return `${identity.toHexString()}:${slotNumber}`;
+}
+
+function getPlayerShopRequestKey(ctx: IdleWizardReducerCtx, slotNumber: number): string {
+  return getPlayerShopRequestKeyForIdentity(ctx.sender, slotNumber);
+}
+
+function getPlayerShopRequestKeyForIdentity(identity: Identity, slotNumber: number): string {
   return `${identity.toHexString()}:${slotNumber}`;
 }
 
@@ -8421,6 +8486,12 @@ function getPlayerInfoSummaryRows(ctx: any) {
     }
   }
 
+  for (const request of ctx.db.playerShopRequest.byQuantity.filter(new Range())) {
+    if (Number(request.quantity) > 0) {
+      addIdentity(request.requesterIdentity);
+    }
+  }
+
   for (const trade of getRecentPlayerShopTrades(ctx)) {
     addIdentity(trade.buyerIdentity);
     addIdentity(trade.sellerIdentity);
@@ -9529,6 +9600,10 @@ function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
     ctx.db.playerShopListing.delete(listing);
   }
 
+  for (const request of Array.from(ctx.db.playerShopRequest.iter())) {
+    ctx.db.playerShopRequest.delete(request);
+  }
+
   for (const proceeds of Array.from(ctx.db.playerShopProceeds.iter())) {
     ctx.db.playerShopProceeds.delete(proceeds);
   }
@@ -9545,6 +9620,12 @@ function deletePlayerShopProgressionForIdentity(
   for (const listing of Array.from(ctx.db.playerShopListing.iter())) {
     if (listing.sellerIdentity.isEqual(identity)) {
       ctx.db.playerShopListing.delete(listing);
+    }
+  }
+
+  for (const request of Array.from(ctx.db.playerShopRequest.iter())) {
+    if (request.requesterIdentity.isEqual(identity)) {
+      ctx.db.playerShopRequest.delete(request);
     }
   }
 
@@ -9961,6 +10042,27 @@ function moveAdminPlayerShopRows(
       ...listing,
       listingKey: targetKey,
       sellerIdentity: targetIdentity,
+      username: targetUsername,
+      updatedAt: ctx.timestamp,
+    });
+  }
+
+  for (const request of Array.from(ctx.db.playerShopRequest.iter())) {
+    if (!request.requesterIdentity.isEqual(sourceIdentity)) {
+      continue;
+    }
+
+    const targetKey = getPlayerShopRequestKeyForIdentity(targetIdentity, request.slotNumber);
+    const existingTarget = ctx.db.playerShopRequest.requestKey.find(targetKey);
+    if (existingTarget) {
+      ctx.db.playerShopRequest.delete(existingTarget);
+    }
+
+    ctx.db.playerShopRequest.delete(request);
+    ctx.db.playerShopRequest.insert({
+      ...request,
+      requestKey: targetKey,
+      requesterIdentity: targetIdentity,
       username: targetUsername,
       updatedAt: ctx.timestamp,
     });
@@ -10976,9 +11078,12 @@ export const send_world_chat_message = spacetimedb.reducer(
       return;
     }
 
-    assertWorldChatRateLimit(ctx);
-
     const player = ensurePlayer(ctx);
+    if (normalizePlayerLevel(player.playerLevel) < WORLD_CHAT_UNLOCK_LEVEL) {
+      throw new Error(`World chat unlocks at level ${WORLD_CHAT_UNLOCK_LEVEL}.`);
+    }
+
+    assertWorldChatRateLimit(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
 
     ctx.db.worldChat.insert({
@@ -11922,6 +12027,80 @@ export const clear_player_shop_slot = spacetimedb.reducer(
     }
 
     ctx.db.playerShopListing.delete(existingListing);
+  },
+);
+
+export const set_player_shop_request = spacetimedb.reducer(
+  {
+    slotNumber: t.u8(),
+    itemKey: t.string(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    quantity: t.u32(),
+    priceGold: t.f64(),
+  },
+  (ctx, { slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
+    assertActivePlayerSession(ctx);
+
+    if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
+      throw new Error('Player shop exchange requires server inventory.');
+    }
+
+    const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
+    const catalogItem = getPlayerShopCatalogItem(itemKey);
+    const safeItemKey = catalogItem.itemKey;
+    const safeItemLabel = catalogItem.itemLabel;
+    const safeItemKind = catalogItem.itemKind;
+    const safeQuantity = validatePlayerShopQuantity(quantity);
+    const safePriceGold = validatePlayerShopPriceGold(priceGold);
+
+    if (
+      normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !== safeItemLabel ||
+      normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH) !== safeItemKind
+    ) {
+      throw new Error('Player shop item is required.');
+    }
+
+    const player = ensurePlayer(ctx);
+    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber);
+    const existingRequest = ctx.db.playerShopRequest.requestKey.find(requestKey);
+    const nextRequest = {
+      requestKey,
+      requesterIdentity: ctx.sender,
+      username: player.username,
+      slotNumber: safeSlotNumber,
+      itemKey: safeItemKey,
+      itemLabel: safeItemLabel,
+      itemKind: safeItemKind,
+      quantity: safeQuantity,
+      priceGold: toStoredGoldPrice(safePriceGold),
+      priceScale: GOLD_PRICE_SCALE,
+      updatedAt: ctx.timestamp,
+    };
+
+    if (existingRequest) {
+      ctx.db.playerShopRequest.requestKey.update(nextRequest);
+      return;
+    }
+
+    ctx.db.playerShopRequest.insert(nextRequest);
+  },
+);
+
+export const clear_player_shop_request = spacetimedb.reducer(
+  { slotNumber: t.u8() },
+  (ctx, { slotNumber }) => {
+    assertActivePlayerSession(ctx);
+
+    const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
+    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber);
+    const existingRequest = ctx.db.playerShopRequest.requestKey.find(requestKey);
+
+    if (!existingRequest || !existingRequest.requesterIdentity.isEqual(ctx.sender)) {
+      return;
+    }
+
+    ctx.db.playerShopRequest.delete(existingRequest);
   },
 );
 

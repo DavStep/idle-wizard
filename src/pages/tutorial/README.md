@@ -4,7 +4,7 @@ Elara Starbrew teaches through one lesson surface. A small Elara button stays on
 
 Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` chooses and normalizes the current step, step definitions own reveal tokens and effects, `TutorialReminderManager` owns timing, and `TutorialLogicManager` returns the single view state the facade renders. Keep new tutorial flow rules in that path instead of branching directly inside `TutorialFacade`.
 
-The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage herb and sage seed tasks, level 3 seed research, and level 4 Brewing recipe research. It has no skip state.
+The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage herb and sage seed tasks, level 3 seed research, level 4 Brewing recipe research, and a passive level 5 settings/theme reminder. It has no skip state.
 
 When later level-up gold goals already have the fast-sell popup open and an item selected, Elara switches to copy-only amount guidance instead of a pointer cue. The popup amount resets to `1` on open so the first sell read stays clear.
 
@@ -14,4 +14,4 @@ Lesson 3 starts by showing the first sage grow directly at `0/3`, so players see
 
 Tutorial-owned market pricing stays active until FTUE finishes. Fast sell uses fixed tutorial quotes and local gold/item mutations instead of the live NPC market backend, so tutorial goals do not depend on shared market pressure or offline quotes. Passive market rows may also show tutorial fallback prices when live backend prices are missing.
 
-Players already past level 4 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.
+Players already past level 5 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.

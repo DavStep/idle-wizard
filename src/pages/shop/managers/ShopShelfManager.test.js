@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ShopMarketTabsManager } from './ShopMarketTabsManager.js';
 import { ShopPlayerShelfManager } from './ShopPlayerShelfManager.js';
@@ -27,6 +27,10 @@ function withPointerEvent(callback) {
       window.PointerEvent = previousPointerEvent;
     }
   }
+}
+
+function flushPromises() {
+  return Promise.resolve().then(() => Promise.resolve());
 }
 
 function createRequestGameplayFacadeFake() {
@@ -214,6 +218,8 @@ describe('ShopShelfManager', () => {
       ['4.', 'empty request', 'locked'],
       ['5.', 'empty request', 'locked'],
     ]);
+    expect(requestRows[0].getAttribute('aria-pressed')).toBe('true');
+    expect(requestRows[0].classList.contains('is-selected')).toBe(false);
     expect(
       [...stage.querySelectorAll('.shop-page__player-request-button')].map(
         (button) => button.textContent,
@@ -316,6 +322,64 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('publishes player market requests when backend requests are available', async () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const playerShopFacade = {
+      getSnapshot: () => ({ connected: true }),
+      setSlotRequest: vi.fn(async () => ({ ok: true })),
+      clearSlotRequest: vi.fn(async () => ({ ok: true })),
+    };
+    const manager = new ShopPlayerRequestManager({
+      gameplayFacade: createRequestGameplayFacadeFake(),
+      playerShopFacade,
+    });
+
+    manager.mount(stage, popupLayer);
+    stage
+      .querySelector('.shop-page__player-request-row')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.shop-page__request-popup');
+    [...popup.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent === 'mint seed (4)')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const [quantityInput, goldInput] =
+      popup.querySelectorAll('.shop-page__request-input');
+    quantityInput.value = '4';
+    goldInput.value = '3.25';
+    popup
+      .querySelector('.shop-page__request-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+
+    expect(playerShopFacade.setSlotRequest).toHaveBeenCalledWith({
+      slotNumber: 1,
+      itemKey: 'mintSeed',
+      itemLabel: 'mint seed',
+      itemKind: 'seed',
+      quantity: 4,
+      priceGold: 3.25,
+    });
+    expect(popup.hidden).toBe(true);
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      '1.mint seed (4) 3.25 gold',
+    );
+
+    stage
+      .querySelector('.shop-page__player-request-clear-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+
+    expect(playerShopFacade.clearSlotRequest).toHaveBeenCalledWith(1);
+    expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
+      '1.empty requestrequest item',
+    );
+
+    manager.unmount();
+  });
+
   it('deselects a player market request item when selected again', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -406,6 +470,9 @@ describe('ShopShelfManager', () => {
     const unlockButtonRule = baseCss.match(
       /\.shop-page__slot-unlock-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const rowTouchRule = baseCss.match(
+      /@media \(hover: none\)\s*\{(?<body>[^{}]*\.shop-page__player-request-row\.shop-page__slot-row--interactive\s*\n\s*\.shop-page__request-row-item[^{}]*)\{/,
+    )?.groups?.body;
 
     expect(firstSlotRule).toBeDefined();
     expect(firstSlotRule).toMatch(
@@ -415,6 +482,19 @@ describe('ShopShelfManager', () => {
     expect(unlockButtonRule).toMatch(/\bdisplay:\s*grid;/);
     expect(unlockButtonRule).toMatch(/\bgrid-column:\s*1 \/ -1;/);
     expect(unlockButtonRule).toMatch(/\btouch-action:\s*manipulation;/);
+    expect(rowTouchRule).toBeDefined();
+    expect(rowTouchRule).toContain(
+      '.shop-page__shelf .shop-page__slot-row--interactive .shop-page__slot-item-value',
+    );
+    expect(rowTouchRule).toContain(
+      '.shop-page__player-shelf .shop-page__slot-row--interactive .shop-page__slot-item-value',
+    );
+    expect(rowTouchRule).toContain(
+      '.shop-page__player-request-row.shop-page__slot-row--interactive',
+    );
+    expect(baseCss.slice(baseCss.indexOf(rowTouchRule))).toMatch(
+      /\btext-decoration:\s*none;/,
+    );
   });
 
   it('formats NPC market stand buy costs as compact gold text', () => {
@@ -479,6 +559,7 @@ describe('ShopShelfManager', () => {
     expect(rows[0].querySelector('.shop-page__slot-empty-rule')).not.toBeNull();
     expect(rows[0].querySelector('.shop-page__slot-item-value')?.getAttribute('aria-pressed'))
       .toBe('true');
+    expect(rows[0].classList.contains('is-selected')).toBe(false);
     expect(rows[1].querySelector('.shop-page__slot-item-value')?.getAttribute('aria-pressed'))
       .toBeNull();
 
@@ -1144,6 +1225,20 @@ describe('ShopShelfManager', () => {
         },
       ],
       ownListings: [],
+      requests: [
+        {
+          requestKey: 'requester:1',
+          requesterIdentity: 'requester',
+          username: 'Hershel',
+          slotNumber: 1,
+          itemKey: 'mintSeed',
+          itemLabel: 'mint seed',
+          itemKind: 'seed',
+          quantity: 4,
+          priceGold: 3.25,
+        },
+      ],
+      ownRequests: [],
       proceedsGold: 0,
     };
     const playerShopFacade = {
@@ -1173,9 +1268,11 @@ describe('ShopShelfManager', () => {
     tabButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tabButtons[1].getAttribute('aria-selected')).toBe('true');
-    expect(popup.querySelector('.shop-page__market-seller')).toBeNull();
-    expect(popup.querySelector('.shop-page__market-message')?.textContent).toBe(
-      'no buy requests',
+    expect(popup.querySelector('.shop-page__market-seller-name')?.textContent).toBe(
+      'Hershel',
+    );
+    expect(popup.querySelector('.shop-page__market-request-row')?.textContent).toContain(
+      '- mint seed (4) 3.25 gold',
     );
 
     manager.unmount();
@@ -1234,6 +1331,7 @@ describe('ShopShelfManager', () => {
       ['5.', 'empty stand', 'locked'],
     ]);
     expect(rows[0].getAttribute('aria-pressed')).toBe('true');
+    expect(rows[0].classList.contains('is-selected')).toBe(false);
     expect(rows[1].getAttribute('aria-pressed')).toBeNull();
     expect(stage.querySelector('.shop-page__player-proceeds-row')).toBeNull();
 

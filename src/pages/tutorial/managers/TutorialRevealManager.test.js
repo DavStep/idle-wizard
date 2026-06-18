@@ -60,10 +60,12 @@ describe('TutorialRevealManager', () => {
     manager.update({
       step: {
         id: 'open-market',
+        targetId: 'page:shop',
         revealTokens: ['mana', 'summon', 'tasks', 'top', 'rooms'],
       },
     });
     expect(stage.dataset.tutorialReveal).toBe('mana summon tasks top rooms');
+    expect(stage.dataset.tutorialTargetId).toBe('page:shop');
   });
 
   it('clears reveal restrictions after the first workflow', () => {
@@ -77,5 +79,6 @@ describe('TutorialRevealManager', () => {
     });
 
     expect(stage.dataset.tutorialReveal).toBeUndefined();
+    expect(stage.dataset.tutorialTargetId).toBeUndefined();
   });
 });
