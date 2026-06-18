@@ -491,7 +491,7 @@ describe('TutorialHintManager', () => {
       expect(lesson?.classList.contains('is-hiding')).toBe(true);
       expect(button?.classList.contains('is-collapsing')).toBe(true);
 
-      vi.advanceTimersByTime(150);
+      vi.advanceTimersByTime(230);
 
       expect(lesson?.hidden).toBe(true);
       expect(lesson?.classList.contains('is-hiding')).toBe(false);
@@ -721,7 +721,7 @@ describe('TutorialHintManager', () => {
       expect(button?.classList.contains('is-collapsing')).toBe(true);
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
 
-      vi.advanceTimersByTime(150);
+      vi.advanceTimersByTime(230);
 
       expect(lesson?.hidden).toBe(true);
       expect(lesson?.classList.contains('is-hiding')).toBe(false);

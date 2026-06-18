@@ -106,6 +106,8 @@ describe('ScrollCueManager', () => {
     manager.mount(root);
     await flushAnimationFrame();
     await flushAnimationFrame();
+    await flushAnimationFrame();
+    await flushAnimationFrame();
 
     scrollHeightReads = 0;
     unrelated.textContent = 'typing elsewhere';

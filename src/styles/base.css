@@ -1317,7 +1317,8 @@ body {
 }
 
 .tutorial-layer__objective-button:not([hidden]) {
-  animation: tutorial-elara-objective-enter 240ms var(--style-motion-ease) both;
+  animation: tutorial-elara-objective-enter var(--style-motion-expand)
+    var(--style-motion-ease-soft) both;
 }
 
 .tutorial-layer__objective-button::after {
@@ -1389,7 +1390,7 @@ body {
   pointer-events: none;
   filter: drop-shadow(0 1px 0 var(--style-surface));
   transform-origin: 48% 78%;
-  transition: transform var(--style-motion-normal) var(--style-motion-ease);
+  transition: transform var(--style-motion-expand) var(--style-motion-ease-rubber);
 }
 
 .tutorial-layer__objective-button[aria-expanded="false"] .tutorial-layer__objective-button-image {
@@ -1420,8 +1421,15 @@ body {
 }
 
 .tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-image {
-  animation: tutorial-elara-objective-collapse 150ms var(--style-motion-ease) both;
+  animation: tutorial-elara-objective-collapse var(--style-motion-expand)
+    var(--style-motion-ease-soft) both;
   will-change: transform;
+}
+
+.tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-label {
+  transform-origin: center;
+  animation: tutorial-elara-help-label-snap var(--style-motion-expand)
+    var(--style-motion-ease-soft) both;
 }
 
 .tutorial-layer__objective-button[data-notification="true"]::before {
@@ -1609,14 +1617,16 @@ body {
 
 .tutorial-layer__objective:not([hidden]),
 .tutorial-layer__lesson:not([hidden]) {
-  animation: tutorial-objective-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: tutorial-objective-enter var(--style-motion-expand) var(--style-motion-ease-soft)
+    both;
 }
 
 .tutorial-layer__objective.is-hiding,
 .tutorial-layer__lesson.is-hiding {
   pointer-events: none;
   will-change: transform, opacity;
-  animation: tutorial-objective-hide 150ms var(--style-motion-ease) both;
+  animation: tutorial-objective-hide var(--style-motion-expand) var(--style-motion-ease-soft)
+    both;
 }
 
 .tutorial-layer__objective[hidden],
@@ -1754,6 +1764,7 @@ body {
   .tutorial-layer__objective.is-hiding,
   .tutorial-layer__lesson.is-hiding,
   .tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-image,
+  .tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-label,
   .tutorial-layer__pointer,
   .tutorial-layer__pointer-image,
   .tutorial-layer__portrait[data-speaking],
@@ -8277,14 +8288,21 @@ div.workshop-page__discovery-row {
 }
 
 @keyframes tutorial-objective-enter {
-  from {
+  0% {
     opacity: 0.01;
-    scale: 0.82;
+    scale: 0.84;
     translate: var(--tutorial-lesson-enter-x, -8px)
       var(--tutorial-lesson-enter-y, 10px);
   }
 
-  to {
+  68% {
+    opacity: 1;
+    scale: 1.025;
+    translate: calc(var(--tutorial-lesson-enter-x, -8px) * -0.08)
+      calc(var(--tutorial-lesson-enter-y, 10px) * -0.08);
+  }
+
+  100% {
     opacity: 1;
     scale: 1;
     translate: 0 0;
@@ -8292,35 +8310,67 @@ div.workshop-page__discovery-row {
 }
 
 @keyframes tutorial-objective-hide {
-  from {
+  0% {
     opacity: 1;
     transform: translate(0, 0) scale(1);
   }
 
-  to {
+  68% {
+    opacity: 0.8;
+    transform: translate(-3px, 3px) scale(0.18);
+  }
+
+  100% {
     opacity: 0.01;
-    transform: translate(0, 0) scale(0.18);
+    transform: translate(-2px, 2px) scale(0.2);
   }
 }
 
 @keyframes tutorial-elara-objective-collapse {
-  from {
+  0% {
     transform: translate(-6px, -17px) scale(1.52);
   }
 
-  to {
+  68% {
+    transform: translate(2px, 2px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes tutorial-elara-help-label-snap {
+  0% {
+    opacity: 0;
+    transform: translate(4px, -4px) scale(0.82);
+  }
+
+  68% {
+    opacity: 1;
+    transform: translate(-1px, 1px) scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
     transform: translate(0, 0) scale(1);
   }
 }
 
 @keyframes tutorial-elara-objective-enter {
-  from {
+  0% {
     opacity: 0.01;
     scale: 0.84;
     translate: -8px 10px;
   }
 
-  to {
+  68% {
+    opacity: 1;
+    scale: 1.04;
+    translate: 1px -1px;
+  }
+
+  100% {
     opacity: 1;
     scale: 1;
     translate: 0 0;
