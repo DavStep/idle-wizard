@@ -3778,7 +3778,7 @@ describe('PagesFacade', () => {
     expect(usernameButton?.textContent).toBe('Merlin');
     expect(avatar?.hidden).toBe(false);
     expect(avatar?.dataset.character).toBe('mira');
-    expect(avatar?.getAttribute('src')).toContain('mira.png');
+    expect(avatar?.getAttribute('src')).toContain('mira.webp');
 
     playerFacade.setIconMode('none');
 
@@ -3789,7 +3789,7 @@ describe('PagesFacade', () => {
 
     expect(avatar?.hidden).toBe(true);
     expect(avatar?.dataset.character).toBe('rowan');
-    expect(avatar?.getAttribute('src')).toContain('rowan.png');
+    expect(avatar?.getAttribute('src')).toContain('rowan.webp');
 
     playerFacade.setIconMode('icons');
 
@@ -6813,7 +6813,7 @@ describe('PagesFacade', () => {
     ).toEqual(['user', '1. [DAY] Daily Ada (3)']);
     expect(
       popup.querySelector('.workshop-page__leaderboard-character-icon')?.getAttribute('src'),
-    ).toContain('rowan.png');
+    ).toContain('rowan.webp');
     expect(
       [...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val')].map(
         (row) => row.textContent,
@@ -8027,7 +8027,7 @@ describe('PagesFacade', () => {
     expect(popup.querySelectorAll('.workshop-page__world-chat-character-icon')).toHaveLength(3);
     expect(
       popup.querySelector('.workshop-page__world-chat-character-icon')?.getAttribute('src'),
-    ).toContain('mira.png');
+    ).toContain('mira.webp');
 
     const input = popup.querySelector('.workshop-page__world-chat-input');
     const form = popup.querySelector('.workshop-page__world-chat-form');

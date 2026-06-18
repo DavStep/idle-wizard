@@ -189,6 +189,7 @@
 - When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
 - Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.
+- Tiny shared character icons should use small derived assets, not full 864x1080 portrait PNGs; full portraits can push Discord APK uploads over the size limit.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
