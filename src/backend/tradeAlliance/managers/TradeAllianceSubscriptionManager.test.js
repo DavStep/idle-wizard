@@ -80,7 +80,20 @@ describe('TradeAllianceSubscriptionManager', () => {
         },
       ]),
       contributions: createTable(),
-      chat: createTable(),
+      chat: createTable([
+        {
+          messageId: 'message-1',
+          allianceId: 'alliance-1',
+          allianceTag: 'VOID',
+          allianceTagColor: 'violet',
+          senderIdentity: 'self',
+          username: 'wizard',
+          character: 'rowan',
+          playerLevel: 3,
+          body: 'alliance hello',
+          sentAt: 1,
+        },
+      ]),
       rewards: createTable([
         {
           rewardKey: '2026-W24:allianceIncomeEasy:self',
@@ -110,6 +123,11 @@ describe('TradeAllianceSubscriptionManager', () => {
     expect(manager.getSnapshot().ownAlliance).toMatchObject({
       tag: 'VOID',
       tagColor: 'violet',
+    });
+    expect(manager.getSnapshot().allianceChatMessages[0]).toMatchObject({
+      username: 'wizard',
+      character: 'rowan',
+      body: 'alliance hello',
     });
   });
 });

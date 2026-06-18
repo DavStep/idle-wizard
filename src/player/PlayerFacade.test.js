@@ -15,6 +15,7 @@ describe('PlayerFacade', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       iconMode: 'icons',
       progressBar: 'regular',
     });
@@ -32,6 +33,7 @@ describe('PlayerFacade', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       iconMode: 'icons',
       progressBar: 'regular',
     });
@@ -132,6 +134,20 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');
   });
 
+  it('normalizes character', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setCharacter('mira');
+
+    expect(playerFacade.getSnapshot().character).toBe('mira');
+
+    playerFacade.setCharacter('witch-guide');
+    expect(playerFacade.getSnapshot().character).toBe('elara');
+
+    playerFacade.setCharacter('unknown');
+    expect(playerFacade.getSnapshot().character).toBe('elara');
+  });
+
   it('normalizes progress bar', () => {
     const playerFacade = new PlayerFacade();
 
@@ -166,6 +182,7 @@ describe('PlayerFacade', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'resources',
+      character: 'mira',
       iconMode: 'icons',
       progressBar: 'gradient',
       usernamePromptSeen: true,
@@ -177,6 +194,7 @@ describe('PlayerFacade', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'resources',
+      character: 'mira',
       iconMode: 'icons',
       progressBar: 'gradient',
     });

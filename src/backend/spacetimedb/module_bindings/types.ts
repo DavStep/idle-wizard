@@ -74,6 +74,7 @@ export const LeaderboardSummaryResult = __t.object("LeaderboardSummaryResult", {
   username: __t.string(),
   allianceTag: __t.string(),
   allianceTagColor: __t.string(),
+  character: __t.string(),
   totalIncome: __t.u64(),
   income: __t.u64(),
   dailyIncome: __t.u64(),
@@ -93,6 +94,45 @@ export const MaintenanceState = __t.object("MaintenanceState", {
   appliedAt: __t.timestamp(),
 });
 export type MaintenanceState = __Infer<typeof MaintenanceState>;
+
+export const MarketDemandDaily = __t.object("MarketDemandDaily", {
+  analyticsKey: __t.string(),
+  dayKey: __t.string(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  npcBoughtQuantity: __t.u64(),
+  npcSoldQuantity: __t.u64(),
+  marketPriceGold: __t.u64(),
+  npcStock: __t.u64(),
+  targetStock: __t.u64(),
+  demandScore: __t.u64(),
+  supplyScore: __t.u64(),
+  updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+});
+export type MarketDemandDaily = __Infer<typeof MarketDemandDaily>;
+
+export const MarketDemandDailySnapshot = __t.object("MarketDemandDailySnapshot", {});
+export type MarketDemandDailySnapshot = __Infer<typeof MarketDemandDailySnapshot>;
+
+export const MarketDemandDailySnapshotResult = __t.object("MarketDemandDailySnapshotResult", {
+  analyticsKey: __t.string(),
+  dayKey: __t.string(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  npcBoughtQuantity: __t.u64(),
+  npcSoldQuantity: __t.u64(),
+  marketPriceGold: __t.u64(),
+  npcStock: __t.u64(),
+  targetStock: __t.u64(),
+  demandScore: __t.u64(),
+  supplyScore: __t.u64(),
+  updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+});
+export type MarketDemandDailySnapshotResult = __Infer<typeof MarketDemandDailySnapshotResult>;
 
 export const NpcMarketAdmin = __t.object("NpcMarketAdmin", {
   identity: __t.identity(),
@@ -199,6 +239,7 @@ export const OwnTradeAllianceChatResult = __t.object("OwnTradeAllianceChatResult
   allianceTagColor: __t.string(),
   senderIdentity: __t.identity(),
   username: __t.string(),
+  character: __t.string(),
   playerLevel: __t.u32(),
   body: __t.string(),
   sentAt: __t.timestamp(),
@@ -268,6 +309,7 @@ export const Player = __t.object("Player", {
   colorMode: __t.string(),
   usernamePromptSeen: __t.bool(),
   font: __t.string(),
+  character: __t.string(),
 });
 export type Player = __Infer<typeof Player>;
 
@@ -318,6 +360,7 @@ export const PlayerProfileResult = __t.object("PlayerProfileResult", {
   colorMode: __t.string(),
   usernamePromptSeen: __t.bool(),
   font: __t.string(),
+  character: __t.string(),
 });
 export type PlayerProfileResult = __Infer<typeof PlayerProfileResult>;
 
@@ -707,6 +750,7 @@ export const WorldChatRecentResult = __t.object("WorldChatRecentResult", {
   messageId: __t.uuid(),
   senderIdentity: __t.identity(),
   username: __t.string(),
+  character: __t.string(),
   playerLevel: __t.u32(),
   body: __t.string(),
   sentAt: __t.timestamp(),

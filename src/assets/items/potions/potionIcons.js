@@ -19,6 +19,16 @@ export const potionIconFrameNamesByKey = Object.freeze({
   dragonCourage: 'potion:dragonCourage',
   deepDreamVision: 'potion:deepDreamVision',
   pactWard: 'potion:pactWard',
+  ashenMemory: 'potion:ashenMemory',
+  silverleafQuiet: 'potion:silverleafQuiet',
+  emberSight: 'potion:emberSight',
+  thornSleep: 'potion:thornSleep',
+  glassMoonElixir: 'potion:glassMoonElixir',
+  rootboundResolve: 'potion:rootboundResolve',
+  nightOrchardTonic: 'potion:nightOrchardTonic',
+  starlessCourage: 'potion:starlessCourage',
+  frostveinDraught: 'potion:frostveinDraught',
+  bloodlightWard: 'potion:bloodlightWard',
 });
 
 const potionIconKeysByLabel = Object.freeze({

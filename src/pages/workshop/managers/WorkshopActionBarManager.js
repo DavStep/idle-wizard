@@ -172,12 +172,14 @@ export class WorkshopActionBarManager {
 
   onSummonSeed() {
     const result = this.gameplayFacade.summonSeed();
-    this.render(this.gameplayFacade.getSnapshot());
+    const snapshot = this.gameplayFacade.getSnapshot();
+    this.render(snapshot);
 
     if (result.ok) {
       if (!this.rewardEventsAvailable) {
         this.onSummonNotice?.(this.getSuccessMessage(result));
       }
+      this.showManaSpendNotice(result, snapshot);
       return this.canContinueSummonHold();
     }
 
@@ -266,6 +268,24 @@ export class WorkshopActionBarManager {
     return `${result.seedCounts
       .map((seedCount) => this.formatSeedCount(seedCount))
       .join(', ')} found`;
+  }
+
+  showManaSpendNotice(result, snapshot) {
+    const message = this.getManaSpendMessage(result, snapshot);
+
+    if (message) {
+      this.onSummonNotice?.(message);
+    }
+  }
+
+  getManaSpendMessage(result, snapshot) {
+    const cost = Number(result?.cost ?? snapshot?.seedSummoning?.cost);
+
+    if (!Number.isFinite(cost) || cost <= 0) {
+      return null;
+    }
+
+    return `-${cost} mana`;
   }
 
   formatSeedCount({ seed, quantity = 1 } = {}) {

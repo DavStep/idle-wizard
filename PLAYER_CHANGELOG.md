@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.4
+
+- Added selectable player character portraits in Account settings and the top panel.
+- Show player portraits in world chat, alliance chat, and leaderboards when icons are enabled.
+- Added icons for newly revealed potion names so later potion rows no longer fall back to generic art.
+- Improved Workshop summon feedback with stacked reward notices and visible mana spend text.
+- Added daily NPC market demand tracking on the backend for future market balancing.
+
 ## 0.2.3
 
 - Raised the playable level cap to 100 with new level requirements and backend config support.

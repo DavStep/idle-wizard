@@ -1,3 +1,4 @@
+import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 
 const WORLD_CHAT_QUERY = 'SELECT * FROM world_chat_recent';
@@ -94,6 +95,9 @@ export class WorldChatSubscriptionManager {
       id: this.toId(row.messageId ?? row.message_id),
       senderIdentity: this.toId(row.senderIdentity ?? row.sender_identity),
       username: typeof row.username === 'string' ? row.username : 'wizard',
+      character: normalizePlayerCharacter(
+        row.character ?? row.playerCharacter ?? row.player_character,
+      ),
       playerLevel: this.toPlayerLevel(
         row.playerLevel ?? row.player_level,
         row.username === 'system' ? null : 1,

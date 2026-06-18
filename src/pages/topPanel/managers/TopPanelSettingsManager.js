@@ -3,6 +3,10 @@ import {
   normalizePlayerColorMode,
 } from '../../../player/playerColorModes.js';
 import {
+  DEFAULT_PLAYER_CHARACTER,
+  normalizePlayerCharacter,
+} from '../../../player/playerCharacters.js';
+import {
   DEFAULT_PLAYER_FONT,
   normalizePlayerFont,
 } from '../../../player/playerFonts.js';
@@ -19,6 +23,7 @@ import {
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
 import { getDefaultPlayerVisualSettingsResearched } from '../../../player/playerVisualSettings.js';
+import { getPlayerCharacterImageUrl } from '../../shared/playerCharacterIcon.js';
 import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
@@ -151,6 +156,16 @@ export class TopPanelSettingsManager {
         event.currentTarget.dataset.colorMode,
       );
     };
+    this.handleCharacterClick = (event) => {
+      this.selectVisualSetting('character', event.currentTarget.dataset.character);
+    };
+    this.handleCharacterPressStart = (event) => {
+      this.selectVisualSettingFromPressStart(
+        event,
+        'character',
+        event.currentTarget.dataset.character,
+      );
+    };
     this.handleIconModeClick = (event) => {
       this.selectVisualSetting('icons', event.currentTarget.dataset.iconMode);
     };
@@ -251,6 +266,11 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleColorModeClick);
     }
 
+    for (const button of this.refs.characterButtons) {
+      button.addEventListener('pointerdown', this.handleCharacterPressStart);
+      button.addEventListener('click', this.handleCharacterClick);
+    }
+
     for (const button of this.refs.progressBarButtons) {
       button.addEventListener('pointerdown', this.handleProgressBarPressStart);
       button.addEventListener('click', this.handleProgressBarClick);
@@ -278,6 +298,7 @@ export class TopPanelSettingsManager {
         theme: DEFAULT_PLAYER_THEME,
         font: DEFAULT_PLAYER_FONT,
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
+        character: DEFAULT_PLAYER_CHARACTER,
         iconMode: DEFAULT_PLAYER_ICON_MODE,
         progressBar: DEFAULT_PLAYER_PROGRESS_BAR,
       });
@@ -380,6 +401,11 @@ export class TopPanelSettingsManager {
         button.removeEventListener('click', this.handleColorModeClick);
       }
 
+      for (const button of this.refs.characterButtons) {
+        button.removeEventListener('pointerdown', this.handleCharacterPressStart);
+        button.removeEventListener('click', this.handleCharacterClick);
+      }
+
       for (const button of this.refs.progressBarButtons) {
         button.removeEventListener('pointerdown', this.handleProgressBarPressStart);
         button.removeEventListener('click', this.handleProgressBarClick);
@@ -454,9 +480,9 @@ export class TopPanelSettingsManager {
     this.feedbackKind = this.normalizeFeedbackKind(feedbackKind);
     this.applyMode();
     this.refs.usernameInput.value =
-      usernamePromptMode && this.refs.usernameButton.textContent === DEFAULT_USERNAME
+      usernamePromptMode && this.getVisibleUsername() === DEFAULT_USERNAME
         ? ''
-        : this.refs.usernameButton.textContent;
+        : this.getVisibleUsername();
     this.primeUsernameSelection = this.refs.usernameInput.value.length > 0;
     this.reselectUsernameOnClick = false;
     this.clearUsernameError();
@@ -557,13 +583,15 @@ export class TopPanelSettingsManager {
 
     this.playerSnapshot = snapshot;
 
-    if (this.refs.usernameButton.textContent !== snapshot.username) {
-      this.refs.usernameButton.textContent = snapshot.username;
+    if (this.refs.usernameLabel.textContent !== snapshot.username) {
+      this.refs.usernameLabel.textContent = snapshot.username;
     }
 
+    this.renderUsernameAvatar(snapshot);
     this.applyThemeSelection(snapshot.theme);
     this.applyFontSelection(snapshot.font);
     this.applyColorModeSelection(snapshot.colorMode);
+    this.applyCharacterSelection(snapshot.character);
     this.applyIconModeSelection(snapshot.iconMode);
     this.applyProgressBarSelection(snapshot.progressBar);
     this.renderVisualSettingPrices();
@@ -614,6 +642,23 @@ export class TopPanelSettingsManager {
     button.setAttribute('aria-label', `${name} ${label}`);
   }
 
+  renderUsernameAvatar(snapshot) {
+    if (!this.refs?.usernameAvatar) {
+      return;
+    }
+
+    const selectedCharacter = normalizePlayerCharacter(snapshot.character);
+    const showAvatar = normalizePlayerIconMode(snapshot.iconMode) === 'icons';
+
+    if (this.refs.usernameAvatar.dataset.character !== selectedCharacter) {
+      this.refs.usernameAvatar.src = getPlayerCharacterImageUrl(selectedCharacter);
+      this.refs.usernameAvatar.dataset.character = selectedCharacter;
+    }
+
+    this.refs.usernameAvatar.hidden = !showAvatar;
+    this.refs.usernameButton.classList.toggle('has-avatar', showAvatar);
+  }
+
   applyThemeSelection(theme) {
     const selectedTheme = normalizePlayerTheme(theme);
 
@@ -639,6 +684,16 @@ export class TopPanelSettingsManager {
 
     for (const button of this.refs.fontButtons) {
       const selected = button.dataset.font === selectedFont;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-checked', selected ? 'true' : 'false');
+    }
+  }
+
+  applyCharacterSelection(character) {
+    const selectedCharacter = normalizePlayerCharacter(character);
+
+    for (const button of this.refs.characterButtons) {
+      const selected = button.dataset.character === selectedCharacter;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
     }
@@ -737,6 +792,11 @@ export class TopPanelSettingsManager {
       return;
     }
 
+    if (categoryKey === 'character') {
+      this.playerFacade?.setCharacter?.(optionKey);
+      return;
+    }
+
     if (categoryKey === 'progressBar') {
       this.playerFacade?.setProgressBar?.(optionKey);
       return;
@@ -812,6 +872,10 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'color') {
       return normalizePlayerColorMode(this.playerSnapshot?.colorMode) === optionKey;
+    }
+
+    if (categoryKey === 'character') {
+      return normalizePlayerCharacter(this.playerSnapshot?.character) === optionKey;
     }
 
     if (categoryKey === 'progressBar') {
@@ -1084,6 +1148,10 @@ export class TopPanelSettingsManager {
 
   getFocusTarget() {
     return this.refs.settingsPanel ?? this.refs.settingsDialog;
+  }
+
+  getVisibleUsername() {
+    return this.refs?.usernameLabel?.textContent ?? this.refs?.usernameButton?.textContent ?? '';
   }
 
   selectUsernameOnFirstFocus() {

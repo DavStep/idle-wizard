@@ -210,6 +210,23 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
+  it('stacks older text flyouts above the newest without offsetting visual-only notices', () => {
+    const host = document.createElement('section');
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    const hidden = manager.show('visual seed found', { visualOnly: true });
+    const first = manager.show('sage seed found');
+    const second = manager.show('-10 mana');
+
+    expect(hidden?.style.getPropertyValue('--style-flyout-offset')).toBe('');
+    expect(first?.style.getPropertyValue('--style-flyout-offset')).toBe('-16px');
+    expect(second?.style.getPropertyValue('--style-flyout-offset')).toBe('0px');
+
+    manager.unmount();
+  });
+
   it('starts herb drops from the end of the garden progress bar', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');

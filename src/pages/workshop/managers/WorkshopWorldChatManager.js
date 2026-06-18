@@ -1,4 +1,5 @@
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { WorkshopSecondaryActionGateManager } from './WorkshopSecondaryActionGateManager.js';
 
@@ -592,12 +593,20 @@ export class WorkshopWorldChatManager {
     }
 
     nodes.push(
+      createPlayerCharacterIcon(
+        message?.character,
+        'workshop-page__world-chat-character-icon',
+      ),
+    );
+
+    nodes.push(
       createPlayerInfoLink(
         {
           identity: message?.senderIdentity,
           username,
           allianceTag: message?.allianceTag,
           allianceTagColor: message?.allianceTagColor,
+          character: message?.character,
           playerLevel,
         },
         {

@@ -22,6 +22,33 @@ describe('item icon labels', () => {
     expect(icon?.dataset.assetAtlasFrame).toBe('potion:manaTonic');
   });
 
+  it('marks revealed hidden potion labels with their own potion icons', () => {
+    const hiddenPotions = [
+      ['ashen memory', 'ashenMemory'],
+      ['silverleaf quiet', 'silverleafQuiet'],
+      ['ember sight', 'emberSight'],
+      ['thorn sleep', 'thornSleep'],
+      ['glass moon elixir', 'glassMoonElixir'],
+      ['rootbound resolve', 'rootboundResolve'],
+      ['night orchard tonic', 'nightOrchardTonic'],
+      ['starless courage', 'starlessCourage'],
+      ['frostvein draught', 'frostveinDraught'],
+      ['bloodlight ward', 'bloodlightWard'],
+    ];
+
+    for (const [label, key] of hiddenPotions) {
+      const element = document.createElement('span');
+      element.textContent = label;
+
+      setItemIconLabel(element, 'potion', key);
+
+      const icon = element.querySelector('.style-potion-label__icon');
+      expect(element.textContent).toBe(label);
+      expect(icon).not.toBeNull();
+      expect(icon?.dataset.assetAtlasFrame).toBe(`potion:${key}`);
+    }
+  });
+
   it('marks herb labels with their herb icon while preserving text', () => {
     const element = document.createElement('span');
     element.textContent = 'sage (6)';

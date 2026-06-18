@@ -17,6 +17,7 @@ export default __t.row({
   allianceTagColor: __t.string().name("alliance_tag_color"),
   senderIdentity: __t.identity().name("sender_identity"),
   username: __t.string(),
+  character: __t.string(),
   playerLevel: __t.u32().name("player_level"),
   body: __t.string(),
   sentAt: __t.timestamp().name("sent_at"),

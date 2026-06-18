@@ -53,6 +53,16 @@ const POTION_ASSETS = [
   ['potion:dragonCourage', 'src/assets/items/potions/potion-dragon-courage.png'],
   ['potion:deepDreamVision', 'src/assets/items/potions/potion-deep-dream-vision.png'],
   ['potion:pactWard', 'src/assets/items/potions/potion-pact-ward.png'],
+  ['potion:ashenMemory', 'src/assets/items/potions/potion-ashen-memory.png'],
+  ['potion:silverleafQuiet', 'src/assets/items/potions/potion-silverleaf-quiet.png'],
+  ['potion:emberSight', 'src/assets/items/potions/potion-ember-sight.png'],
+  ['potion:thornSleep', 'src/assets/items/potions/potion-thorn-sleep.png'],
+  ['potion:glassMoonElixir', 'src/assets/items/potions/potion-glass-moon-elixir.png'],
+  ['potion:rootboundResolve', 'src/assets/items/potions/potion-rootbound-resolve.png'],
+  ['potion:nightOrchardTonic', 'src/assets/items/potions/potion-night-orchard-tonic.png'],
+  ['potion:starlessCourage', 'src/assets/items/potions/potion-starless-courage.png'],
+  ['potion:frostveinDraught', 'src/assets/items/potions/potion-frostvein-draught.png'],
+  ['potion:bloodlightWard', 'src/assets/items/potions/potion-bloodlight-ward.png'],
   ['potion:generic', 'src/assets/items/potions/potion-generic.png'],
 ];
 

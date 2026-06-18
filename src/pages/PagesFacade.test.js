@@ -71,6 +71,14 @@ function createGameplayFacadeFake() {
         theme: { white: 0, black: 0, midnight: 0, witchcraft: 0 },
         font: { lexend: 0, 'comic-sans-mono': 0 },
         color: { monochrome: 0, resources: 0 },
+        character: {
+          elara: 0,
+          mira: 0,
+          bramble: 0,
+          corvin: 0,
+          juniper: 0,
+          rowan: 0,
+        },
         progressBar: { regular: 0, gradient: 0 },
         icons: { none: 0, icons: 0 },
       },
@@ -81,6 +89,14 @@ function createGameplayFacadeFake() {
           'comic-sans-mono': false,
         },
         color: { monochrome: true, resources: false },
+        character: {
+          elara: true,
+          mira: true,
+          bramble: true,
+          corvin: true,
+          juniper: true,
+          rowan: true,
+        },
         progressBar: { regular: true, gradient: false },
         icons: { none: true, icons: true },
       },
@@ -795,6 +811,7 @@ function createGameplayFacadeFake() {
         {
           name: 'Ada',
           allianceTag: 'VOID',
+          character: 'mira',
           playerLevel: 2,
           income: 3,
           totalGeneratedGold: 0,
@@ -2676,6 +2693,7 @@ function createPlayerFacadeFake(
     shouldPromptForUsername = false,
     initialColorMode = 'monochrome',
     initialFont = 'lexend',
+    initialCharacter = 'elara',
     initialIconMode = 'icons',
     initialProgressBar = 'regular',
   } = {},
@@ -2685,6 +2703,7 @@ function createPlayerFacadeFake(
     theme: initialTheme,
     font: initialFont,
     colorMode: initialColorMode,
+    character: initialCharacter,
     iconMode: initialIconMode,
     progressBar: initialProgressBar,
     shouldPromptForUsername,
@@ -2768,6 +2787,25 @@ function createPlayerFacadeFake(
       snapshot = {
         ...snapshot,
         colorMode: normalizedColorMode,
+      };
+
+      publish();
+      return snapshot;
+    },
+    setCharacter: (character) => {
+      const normalizedCharacter = [
+        'elara',
+        'mira',
+        'bramble',
+        'corvin',
+        'juniper',
+        'rowan',
+      ].includes(character)
+        ? character
+        : 'elara';
+      snapshot = {
+        ...snapshot,
+        character: normalizedCharacter,
       };
 
       publish();
@@ -3719,6 +3757,43 @@ describe('PagesFacade', () => {
     expect(goldValue?.textContent).toBe('0 gold');
     expect(manaKey?.querySelector('.style-resource-label--mana')).toBeNull();
     expect(goldValue?.querySelector('.style-resource-label--gold')).not.toBeNull();
+  });
+
+  it('shows the selected character avatar in the top panel only when icons are enabled', () => {
+    const stage = document.createElement('section');
+    const playerFacade = createPlayerFacadeFake('Merlin', 'white', {
+      initialCharacter: 'mira',
+      initialIconMode: 'icons',
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const avatar = usernameButton?.querySelector('.room-top-panel__username-avatar');
+
+    expect(usernameButton?.textContent).toBe('Merlin');
+    expect(avatar?.hidden).toBe(false);
+    expect(avatar?.dataset.character).toBe('mira');
+    expect(avatar?.getAttribute('src')).toContain('mira.png');
+
+    playerFacade.setIconMode('none');
+
+    expect(usernameButton?.textContent).toBe('Merlin');
+    expect(avatar?.hidden).toBe(true);
+
+    playerFacade.setCharacter('rowan');
+
+    expect(avatar?.hidden).toBe(true);
+    expect(avatar?.dataset.character).toBe('rowan');
+    expect(avatar?.getAttribute('src')).toContain('rowan.png');
+
+    playerFacade.setIconMode('icons');
+
+    expect(avatar?.hidden).toBe(false);
   });
 
   it('mounts the FTUE guide shell for fresh level 1 players', () => {
@@ -5228,7 +5303,11 @@ describe('PagesFacade', () => {
       .querySelector('.workshop-page__summon-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe('sage seed found');
+    expect(
+      [...stage.querySelectorAll('.workshop-page__flyout')].map(
+        (flyout) => flyout.textContent,
+      ),
+    ).toEqual(['sage seed found', '-10 mana']);
     expect(stage.querySelector('.workshop-page__action-bar')?.textContent).not.toContain('found');
   });
 
@@ -5304,9 +5383,11 @@ describe('PagesFacade', () => {
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
-      'sage seed x2 found',
-    );
+    expect(
+      [...stage.querySelectorAll('.workshop-page__flyout')].map(
+        (flyout) => flyout.textContent,
+      ),
+    ).toEqual(['sage seed x2 found', '-20 mana']);
   });
 
   it('shows settings from the username and changes username there', () => {
@@ -5376,6 +5457,28 @@ describe('PagesFacade', () => {
       ),
     ).toEqual(['monochrome', 'resources']);
     expect(
+      [...settings.querySelectorAll('.room-top-panel__character-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['elara', 'mira', 'bramble', 'corvin', 'juniper', 'rowan']);
+    expect(
+      [
+        ...settings.querySelectorAll(
+          '#room-top-panel-settings-account .room-top-panel__character-button',
+        ),
+      ].map((button) => button.textContent),
+    ).toEqual(['elara', 'mira', 'bramble', 'corvin', 'juniper', 'rowan']);
+    expect(
+      settings.querySelector(
+        '#room-top-panel-settings-theme .room-top-panel__character-section',
+      ),
+    ).toBeNull();
+    expect(
+      settings.querySelectorAll(
+        '#room-top-panel-settings-account .room-top-panel__character-section .room-top-panel__visual-option-price',
+      ),
+    ).toHaveLength(0);
+    expect(
       [...settings.querySelectorAll('.room-top-panel__progress-bar-button')].map(
         (button) => button.textContent,
       ),
@@ -5386,7 +5489,11 @@ describe('PagesFacade', () => {
       ),
     ).toEqual(['no icons', 'icons']);
     expect(
-      [...settings.querySelectorAll('.room-top-panel__visual-option-price')].map(
+      [
+        ...settings.querySelectorAll(
+          '#room-top-panel-settings-theme .room-top-panel__visual-option-price',
+        ),
+      ].map(
         (price) => price.textContent,
       ),
     ).toEqual([
@@ -5832,6 +5939,39 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().progressBar).toBe('gradient');
     expect(gradientButton.getAttribute('aria-checked')).toBe('true');
     expect(regularButton.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('changes character from settings', () => {
+    const stage = document.createElement('section');
+    const playerFacade = createPlayerFacadeFake('Merlin');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const elaraButton = stage.querySelector(
+      '.room-top-panel__character-button[data-character="elara"]',
+    );
+    const miraButton = stage.querySelector(
+      '.room-top-panel__character-button[data-character="mira"]',
+    );
+
+    expect(elaraButton.getAttribute('aria-checked')).toBe('true');
+    expect(miraButton.getAttribute('aria-checked')).toBe('false');
+    expect(miraButton.querySelector('.room-top-panel__character-option-icon')).not.toBeNull();
+
+    miraButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().character).toBe('mira');
+    expect(miraButton.getAttribute('aria-checked')).toBe('true');
+    expect(elaraButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes icon mode from settings', () => {
@@ -6586,6 +6726,7 @@ describe('PagesFacade', () => {
       {
         name: 'Daily Ada',
         allianceTag: 'DAY',
+        character: 'rowan',
         playerLevel: 3,
         dailyIncome: 17,
         weeklyIncome: 18,
@@ -6656,6 +6797,9 @@ describe('PagesFacade', () => {
     ].map((row) => row.textContent);
     expect(rowLabels).toEqual(['user', '1. [VOID] Ada (2)', '2. Merlin (10)']);
     expect(rowValues).toEqual(['all time', '120', '75']);
+    expect(
+      popup.querySelectorAll('.workshop-page__leaderboard-character-icon'),
+    ).toHaveLength(2);
 
     const dailyButton = periodButtons.find((tabButton) => tabButton.textContent === 'daily');
 
@@ -6667,6 +6811,9 @@ describe('PagesFacade', () => {
         (row) => row.textContent,
       ),
     ).toEqual(['user', '1. [DAY] Daily Ada (3)']);
+    expect(
+      popup.querySelector('.workshop-page__leaderboard-character-icon')?.getAttribute('src'),
+    ).toContain('rowan.png');
     expect(
       [...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val')].map(
         (row) => row.textContent,
@@ -7824,6 +7971,7 @@ describe('PagesFacade', () => {
           id: '1',
           senderIdentity: 'sender-a',
           username: 'Ada',
+          character: 'mira',
           playerLevel: 3,
           body: 'old hello',
           sentAtMs: 1_000,
@@ -7832,6 +7980,7 @@ describe('PagesFacade', () => {
           id: '2',
           senderIdentity: 'sender-b',
           username: 'Lin',
+          character: 'rowan',
           playerLevel: 4,
           body: 'second hello',
           sentAtMs: 2_000,
@@ -7840,6 +7989,7 @@ describe('PagesFacade', () => {
           id: '3',
           senderIdentity: 'sender-c',
           username: 'Mo',
+          character: 'juniper',
           playerLevel: 5,
           body: 'third hello',
           sentAtMs: 3_000,
@@ -7863,6 +8013,7 @@ describe('PagesFacade', () => {
     expect(box.textContent).toContain('Lin(4): second hello');
     expect(box.textContent).toContain('Mo(5): third hello');
     expect(box.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(2);
+    expect(box.querySelectorAll('.workshop-page__world-chat-character-icon')).toHaveLength(2);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -7873,6 +8024,10 @@ describe('PagesFacade', () => {
     expect(popup.textContent).toContain('old hello');
     expect(popup.textContent).toContain('Lin(4): second hello');
     expect(popup.textContent).toContain('Mo(5): third hello');
+    expect(popup.querySelectorAll('.workshop-page__world-chat-character-icon')).toHaveLength(3);
+    expect(
+      popup.querySelector('.workshop-page__world-chat-character-icon')?.getAttribute('src'),
+    ).toContain('mira.png');
 
     const input = popup.querySelector('.workshop-page__world-chat-input');
     const form = popup.querySelector('.workshop-page__world-chat-form');
@@ -8200,6 +8355,7 @@ describe('PagesFacade', () => {
     expect(row?.querySelector('.workshop-page__world-chat-name')?.textContent).toBe(
       'system: ',
     );
+    expect(row?.querySelector('.workshop-page__world-chat-character-icon')).toBeNull();
     expect(row?.textContent).toContain('system: Ada researched mana tonic');
     expect(row?.querySelector('.workshop-page__world-chat-age')).not.toBeNull();
   });

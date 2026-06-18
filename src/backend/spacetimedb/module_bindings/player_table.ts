@@ -21,4 +21,5 @@ export default __t.row({
   colorMode: __t.string().name("color_mode"),
   usernamePromptSeen: __t.bool().name("username_prompt_seen"),
   font: __t.string(),
+  character: __t.string(),
 });

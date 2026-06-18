@@ -7,7 +7,7 @@ export const gameAssetAtlasSize = Object.freeze({
 });
 export const gameAssetAtlasFrames = Object.freeze({
   "herb:bloodroseHerb": {
-    "x": 312,
+    "x": 1893,
     "y": 555,
     "width": 92,
     "height": 128,
@@ -16,8 +16,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-bloodrose.png"
   },
   "herb:briarHerb": {
-    "x": 920,
-    "y": 555,
+    "x": 516,
+    "y": 715,
     "width": 81,
     "height": 128,
     "originalWidth": 87,
@@ -25,8 +25,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-briar.png"
   },
   "herb:dragonpepperHerb": {
-    "x": 1443,
-    "y": 555,
+    "x": 1039,
+    "y": 715,
     "width": 60,
     "height": 128,
     "originalWidth": 74,
@@ -34,8 +34,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-dragonpepper.png"
   },
   "herb:dreambellHerb": {
-    "x": 1145,
-    "y": 555,
+    "x": 741,
+    "y": 715,
     "width": 76,
     "height": 128,
     "originalWidth": 92,
@@ -43,8 +43,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-dreambell.png"
   },
   "herb:frostmossHerb": {
-    "x": 1807,
-    "y": 555,
+    "x": 1403,
+    "y": 715,
     "width": 84,
     "height": 112,
     "originalWidth": 84,
@@ -52,7 +52,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-frostmoss.png"
   },
   "herb:glowcapHerb": {
-    "x": 32,
+    "x": 1519,
     "y": 715,
     "width": 95,
     "height": 109,
@@ -61,8 +61,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-glowcap.png"
   },
   "herb:lavenderHerb": {
-    "x": 1253,
-    "y": 555,
+    "x": 849,
+    "y": 715,
     "width": 63,
     "height": 128,
     "originalWidth": 80,
@@ -70,8 +70,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-lavender.png"
   },
   "herb:mandrakeHerb": {
-    "x": 1033,
-    "y": 555,
+    "x": 629,
+    "y": 715,
     "width": 80,
     "height": 128,
     "originalWidth": 107,
@@ -79,8 +79,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-mandrake.png"
   },
   "herb:mintHerb": {
-    "x": 1792,
-    "y": 395,
+    "x": 1472,
+    "y": 555,
     "width": 109,
     "height": 128,
     "originalWidth": 109,
@@ -88,7 +88,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-mint.png"
   },
   "herb:moonflowerHerb": {
-    "x": 173,
+    "x": 1754,
     "y": 555,
     "width": 107,
     "height": 128,
@@ -97,8 +97,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-moonflower.png"
   },
   "herb:nettleHerb": {
-    "x": 1535,
-    "y": 555,
+    "x": 1131,
+    "y": 715,
     "width": 98,
     "height": 126,
     "originalWidth": 98,
@@ -106,7 +106,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-nettle.png"
   },
   "herb:sageHerb": {
-    "x": 32,
+    "x": 1613,
     "y": 555,
     "width": 109,
     "height": 128,
@@ -115,8 +115,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-sage.png"
   },
   "herb:starAniseHerb": {
-    "x": 1665,
-    "y": 555,
+    "x": 1261,
+    "y": 715,
     "width": 110,
     "height": 115,
     "originalWidth": 110,
@@ -124,16 +124,34 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-star-anise.png"
   },
   "herb:sunrootHerb": {
-    "x": 1348,
-    "y": 555,
+    "x": 944,
+    "y": 715,
     "width": 63,
     "height": 128,
     "originalWidth": 80,
     "originalHeight": 163,
     "source": "src/assets/items/herbs/herb-sunroot.png"
   },
-  "potion:briarWard": {
+  "potion:ashenMemory": {
     "x": 832,
+    "y": 32,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-ashen-memory.png"
+  },
+  "potion:bloodlightWard": {
+    "x": 992,
+    "y": 32,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-bloodlight-ward.png"
+  },
+  "potion:briarWard": {
+    "x": 1152,
     "y": 32,
     "width": 128,
     "height": 128,
@@ -142,7 +160,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-briar-ward.png"
   },
   "potion:calmingDraught": {
-    "x": 992,
+    "x": 1312,
     "y": 32,
     "width": 128,
     "height": 128,
@@ -151,7 +169,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-calming-draught.png"
   },
   "potion:deepDreamVision": {
-    "x": 1152,
+    "x": 1472,
     "y": 32,
     "width": 128,
     "height": 128,
@@ -160,7 +178,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-deep-dream-vision.png"
   },
   "potion:dragonCourage": {
-    "x": 1312,
+    "x": 1632,
     "y": 32,
     "width": 128,
     "height": 128,
@@ -169,7 +187,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-dragon-courage.png"
   },
   "potion:elixirOfLife": {
-    "x": 1472,
+    "x": 1792,
     "y": 32,
     "width": 128,
     "height": 128,
@@ -177,26 +195,53 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 128,
     "source": "src/assets/items/potions/potion-elixir.png"
   },
+  "potion:emberSight": {
+    "x": 32,
+    "y": 395,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-ember-sight.png"
+  },
   "potion:frostmossCleanse": {
-    "x": 1632,
-    "y": 32,
+    "x": 192,
+    "y": 395,
     "width": 128,
     "height": 128,
     "originalWidth": 128,
     "originalHeight": 128,
     "source": "src/assets/items/potions/potion-frost-cleanse.png"
   },
+  "potion:frostveinDraught": {
+    "x": 352,
+    "y": 395,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-frostvein-draught.png"
+  },
   "potion:generic": {
-    "x": 1792,
-    "y": 32,
+    "x": 512,
+    "y": 395,
     "width": 128,
     "height": 128,
     "originalWidth": 128,
     "originalHeight": 128,
     "source": "src/assets/items/potions/potion-generic.png"
   },
+  "potion:glassMoonElixir": {
+    "x": 672,
+    "y": 395,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-glass-moon-elixir.png"
+  },
   "potion:healingPotion": {
-    "x": 32,
+    "x": 832,
     "y": 395,
     "width": 128,
     "height": 128,
@@ -205,7 +250,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-healing.png"
   },
   "potion:lanternTonic": {
-    "x": 192,
+    "x": 992,
     "y": 395,
     "width": 128,
     "height": 128,
@@ -214,7 +259,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-lantern-tonic.png"
   },
   "potion:manaTonic": {
-    "x": 352,
+    "x": 1152,
     "y": 395,
     "width": 128,
     "height": 128,
@@ -223,7 +268,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-mana-tonic.png"
   },
   "potion:minorHealingPotion": {
-    "x": 512,
+    "x": 1312,
     "y": 395,
     "width": 128,
     "height": 128,
@@ -232,7 +277,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-minor-healing.png"
   },
   "potion:moonlitFocus": {
-    "x": 672,
+    "x": 1472,
     "y": 395,
     "width": 128,
     "height": 128,
@@ -241,7 +286,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-moon-focus.png"
   },
   "potion:nettleVigor": {
-    "x": 832,
+    "x": 1632,
     "y": 395,
     "width": 128,
     "height": 128,
@@ -249,18 +294,45 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 128,
     "source": "src/assets/items/potions/potion-nettle-vigor.png"
   },
-  "potion:pactWard": {
-    "x": 992,
+  "potion:nightOrchardTonic": {
+    "x": 1792,
     "y": 395,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-night-orchard-tonic.png"
+  },
+  "potion:pactWard": {
+    "x": 32,
+    "y": 555,
     "width": 128,
     "height": 128,
     "originalWidth": 128,
     "originalHeight": 128,
     "source": "src/assets/items/potions/potion-pact-ward.png"
   },
+  "potion:rootboundResolve": {
+    "x": 192,
+    "y": 555,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-rootbound-resolve.png"
+  },
+  "potion:silverleafQuiet": {
+    "x": 352,
+    "y": 555,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-silverleaf-quiet.png"
+  },
   "potion:simpleAntidote": {
-    "x": 1152,
-    "y": 395,
+    "x": 512,
+    "y": 555,
     "width": 128,
     "height": 128,
     "originalWidth": 128,
@@ -268,17 +340,26 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-antidote.png"
   },
   "potion:sleepDraught": {
-    "x": 1312,
-    "y": 395,
+    "x": 672,
+    "y": 555,
     "width": 128,
     "height": 128,
     "originalWidth": 128,
     "originalHeight": 128,
     "source": "src/assets/items/potions/potion-sleep-draught.png"
   },
-  "potion:starLuckPhiltre": {
-    "x": 803,
+  "potion:starlessCourage": {
+    "x": 832,
     "y": 555,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-starless-courage.png"
+  },
+  "potion:starLuckPhiltre": {
+    "x": 399,
+    "y": 715,
     "width": 85,
     "height": 128,
     "originalWidth": 695,
@@ -286,17 +367,26 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-star-luck.png"
   },
   "potion:sunrootStamina": {
-    "x": 1472,
-    "y": 395,
+    "x": 992,
+    "y": 555,
     "width": 128,
     "height": 128,
     "originalWidth": 128,
     "originalHeight": 128,
     "source": "src/assets/items/potions/potion-stamina.png"
   },
+  "potion:thornSleep": {
+    "x": 1152,
+    "y": 555,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/potions/potion-thorn-sleep.png"
+  },
   "potion:venomDraught": {
-    "x": 1632,
-    "y": 395,
+    "x": 1312,
+    "y": 555,
     "width": 128,
     "height": 128,
     "originalWidth": 256,
@@ -304,7 +394,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-venom-draught.png"
   },
   "resource:gold": {
-    "x": 159,
+    "x": 1646,
     "y": 715,
     "width": 92,
     "height": 92,
@@ -313,7 +403,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-gold-coin.png"
   },
   "resource:mana": {
-    "x": 283,
+    "x": 1770,
     "y": 715,
     "width": 65,
     "height": 82,
@@ -322,8 +412,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-mana-drop.png"
   },
   "seed:black": {
-    "x": 559,
-    "y": 555,
+    "x": 155,
+    "y": 715,
     "width": 90,
     "height": 128,
     "originalWidth": 119,
@@ -331,8 +421,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-black.png"
   },
   "seed:gray": {
-    "x": 681,
-    "y": 555,
+    "x": 277,
+    "y": 715,
     "width": 90,
     "height": 128,
     "originalWidth": 119,
@@ -340,8 +430,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-gray.png"
   },
   "seed:regular": {
-    "x": 436,
-    "y": 555,
+    "x": 32,
+    "y": 715,
     "width": 91,
     "height": 128,
     "originalWidth": 119,

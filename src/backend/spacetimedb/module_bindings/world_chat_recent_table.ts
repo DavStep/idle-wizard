@@ -14,6 +14,7 @@ export default __t.row({
   messageId: __t.uuid().primaryKey().name("message_id"),
   senderIdentity: __t.identity().name("sender_identity"),
   username: __t.string(),
+  character: __t.string(),
   playerLevel: __t.u32().name("player_level"),
   body: __t.string(),
   sentAt: __t.timestamp().name("sent_at"),

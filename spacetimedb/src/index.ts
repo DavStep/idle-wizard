@@ -15,6 +15,7 @@ const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
 const DEFAULT_PLAYER_FONT = 'lexend';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
+const DEFAULT_PLAYER_CHARACTER = 'elara';
 const DEFAULT_PLAYER_ICON_MODE = 'icons';
 const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
 const MAX_REPORTED_PLAYER_LEVEL = 100;
@@ -54,6 +55,7 @@ const MAX_RESEARCH_GROUP_ID_LENGTH = 32;
 const MAX_MAINTENANCE_KEY_LENGTH = 96;
 const WORLD_CHAT_HISTORY_LIMIT = 200;
 const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
+const MARKET_DEMAND_DAILY_HISTORY_LIMIT = 180;
 const MAX_PLAYER_SHOP_SLOTS = 5;
 const MAX_PLAYER_SHOP_LISTING_QUANTITY = 1_000;
 const MAX_PLAYER_SHOP_PRICE_GOLD = 1_000_000;
@@ -148,6 +150,14 @@ const PLAYER_FONT_ALIASES = new Map([
   ['google-lexend', 'lexend'],
 ]);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
+const PLAYER_CHARACTERS = new Set([
+  'elara',
+  'mira',
+  'bramble',
+  'corvin',
+  'juniper',
+  'rowan',
+]);
 const PLAYER_ICON_MODES = new Set(['none', 'icons']);
 const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient']);
 const DEFAULT_SAVE_COMPLETED_RESEARCH_IDS = new Set(['unlockSeed:sageSeed']);
@@ -4233,6 +4243,14 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       monochrome: 0,
       resources: 0,
     },
+    character: {
+      elara: 0,
+      mira: 0,
+      bramble: 0,
+      corvin: 0,
+      juniper: 0,
+      rowan: 0,
+    },
     progressBar: {
       regular: 0,
       gradient: 0,
@@ -4280,6 +4298,7 @@ const spacetimedb = schema({
       colorMode: t.string().default(DEFAULT_PLAYER_COLOR_MODE),
       usernamePromptSeen: t.bool().default(false),
       font: t.string().default(DEFAULT_PLAYER_FONT),
+      character: t.string().default(DEFAULT_PLAYER_CHARACTER),
     },
   ),
   playerGameplaySave: table(
@@ -4654,6 +4673,32 @@ const spacetimedb = schema({
       priceScale: t.u32().default(1),
     },
   ),
+  marketDemandDaily: table(
+    {
+      name: 'market_demand_daily',
+      public: true,
+      indexes: [
+        { accessor: 'byDayKey', algorithm: 'btree', columns: ['dayKey'] },
+        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+      ],
+    },
+    {
+      analyticsKey: t.string().primaryKey(),
+      dayKey: t.string(),
+      itemKey: t.string(),
+      itemLabel: t.string(),
+      itemKind: t.string(),
+      npcBoughtQuantity: t.u64().default(0n),
+      npcSoldQuantity: t.u64().default(0n),
+      marketPriceGold: t.u64(),
+      npcStock: t.u64(),
+      targetStock: t.u64(),
+      demandScore: t.u64(),
+      supplyScore: t.u64(),
+      updatedAt: t.timestamp(),
+      priceScale: t.u32().default(1),
+    },
+  ),
   npcMarketItemConfig: table(
     {
       name: 'npc_market_item_config',
@@ -4748,6 +4793,7 @@ const playerProfileResult = t.option(
     colorMode: t.string(),
     usernamePromptSeen: t.bool(),
     font: t.string(),
+    character: t.string(),
   }),
 );
 const adminPlayerGameplaySaveResult = t.array(
@@ -4774,6 +4820,7 @@ const leaderboardSummaryResult = t.array(
     username: t.string(),
     allianceTag: t.string(),
     allianceTagColor: t.string(),
+    character: t.string(),
     totalIncome: t.u64(),
     income: t.u64(),
     dailyIncome: t.u64(),
@@ -4839,6 +4886,7 @@ const ownTradeAllianceChatResult = t.array(
     allianceTagColor: t.string(),
     senderIdentity: t.identity(),
     username: t.string(),
+    character: t.string(),
     playerLevel: t.u32(),
     body: t.string(),
     sentAt: t.timestamp(),
@@ -4863,6 +4911,7 @@ const worldChatRecentResult = t.array(
     messageId: t.uuid().primaryKey(),
     senderIdentity: t.identity(),
     username: t.string(),
+    character: t.string(),
     playerLevel: t.u32(),
     body: t.string(),
     sentAt: t.timestamp(),
@@ -4918,6 +4967,24 @@ const npcMarketPriceSnapshotResult = t.array(
     npcNeed: t.u64(),
     targetNeed: t.u64(),
     maxNeed: t.u64(),
+    priceScale: t.u32(),
+  }),
+);
+const marketDemandDailySnapshotResult = t.array(
+  t.row('MarketDemandDailySnapshotResult', {
+    analyticsKey: t.string().primaryKey(),
+    dayKey: t.string(),
+    itemKey: t.string(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    npcBoughtQuantity: t.u64(),
+    npcSoldQuantity: t.u64(),
+    marketPriceGold: t.u64(),
+    npcStock: t.u64(),
+    targetStock: t.u64(),
+    demandScore: t.u64(),
+    supplyScore: t.u64(),
+    updatedAt: t.timestamp(),
     priceScale: t.u32(),
   }),
 );
@@ -5080,6 +5147,7 @@ export const own_player_profile = spacetimedb.view(
       colorMode: normalizePlayerColorMode(player.colorMode),
       usernamePromptSeen: Boolean(player.usernamePromptSeen),
       font: normalizePlayerFont(player.font),
+      character: normalizePlayerCharacter(player.character),
     };
   },
 );
@@ -5100,6 +5168,15 @@ export const npc_market_price_snapshot = spacetimedb.view(
   { name: 'npc_market_price_snapshot', public: true },
   npcMarketPriceSnapshotResult,
   (ctx) => Array.from(ctx.db.npcMarketPrice.byItemKind.filter(new Range())),
+);
+
+export const market_demand_daily_snapshot = spacetimedb.view(
+  { name: 'market_demand_daily_snapshot', public: true },
+  marketDemandDailySnapshotResult,
+  (ctx) =>
+    Array.from(ctx.db.marketDemandDaily.byUpdatedAt.filter(new Range()))
+      .slice(-MARKET_DEMAND_DAILY_HISTORY_LIMIT)
+      .reverse(),
 );
 
 export const trade_alliance_snapshot = spacetimedb.view(
@@ -5323,14 +5400,39 @@ export const own_trade_alliance_chat = spacetimedb.view(
 
         return left.messageId.compareTo(right.messageId);
       })
-      .slice(-40);
+      .slice(-40)
+      .map((message) => ({
+        messageId: message.messageId,
+        allianceId: message.allianceId,
+        allianceTag: message.allianceTag,
+        allianceTagColor: normalizeTradeAllianceTagColor(message.allianceTagColor),
+        senderIdentity: message.senderIdentity,
+        username: message.username,
+        character: getPlayerCharacterForIdentity(ctx, message.senderIdentity),
+        playerLevel: message.playerLevel,
+        body: message.body,
+        sentAt: message.sentAt,
+      }));
   },
 );
 
 export const world_chat_recent = spacetimedb.view(
   { name: 'world_chat_recent', public: true },
   worldChatRecentResult,
-  (ctx) => Array.from(ctx.db.worldChat.bySentAt.filter(new Range())).slice(-40),
+  (ctx) =>
+    Array.from(ctx.db.worldChat.bySentAt.filter(new Range()))
+      .slice(-40)
+      .map((message) => ({
+        messageId: message.messageId,
+        senderIdentity: message.senderIdentity,
+        username: message.username,
+        character: getPlayerCharacterForIdentity(ctx, message.senderIdentity),
+        playerLevel: message.playerLevel,
+        body: message.body,
+        sentAt: message.sentAt,
+        allianceTag: message.allianceTag,
+        allianceTagColor: normalizeTradeAllianceTagColor(message.allianceTagColor),
+      })),
 );
 
 export const potion_recipe_discovery_snapshot = spacetimedb.view(
@@ -5416,6 +5518,17 @@ function normalizePlayerFont(font: string): string {
 function normalizePlayerColorMode(colorMode: string): string {
   const value = String(colorMode ?? '').trim();
   return PLAYER_COLOR_MODES.has(value) ? value : DEFAULT_PLAYER_COLOR_MODE;
+}
+
+function normalizePlayerCharacter(character: unknown): string {
+  const value = String(character ?? '').trim().toLowerCase();
+  return PLAYER_CHARACTERS.has(value) ? value : DEFAULT_PLAYER_CHARACTER;
+}
+
+function getPlayerCharacterForIdentity(ctx: { db: any }, identity: Identity): string {
+  return normalizePlayerCharacter(
+    ctx.db.player.identity.find(identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+  );
 }
 
 function assertUsernameAvailableForIdentity(
@@ -7358,6 +7471,12 @@ function normalizeSaveVisualSettings(
         PLAYER_COLOR_MODES,
         DEFAULT_PLAYER_COLOR_MODE,
         player ? normalizePlayerColorMode(player.colorMode) : null,
+      ),
+      character: normalizeSaveVisualSettingCategory(
+        researched.character,
+        PLAYER_CHARACTERS,
+        DEFAULT_PLAYER_CHARACTER,
+        player ? normalizePlayerCharacter(player.character) : null,
       ),
       progressBar: normalizeSaveVisualSettingCategory(
         researched.progressBar,
@@ -9777,7 +9896,7 @@ function validateVisualSettingsGameConfig(value: unknown) {
     throw new Error('Invalid visual settings config.');
   }
 
-  for (const category of ['theme', 'font', 'color']) {
+  for (const category of ['theme', 'font', 'color', 'character', 'progressBar', 'icons']) {
     try {
       validateCostRecord(costsCrystal[category], BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
     } catch {
@@ -10211,6 +10330,9 @@ function getLeaderboardSummaryRows(ctx: any) {
       username: entry.username,
       allianceTag: getSenderTradeAllianceTag(ctx, entry.identity),
       allianceTagColor: getSenderTradeAllianceTagColor(ctx, entry.identity),
+      character: normalizePlayerCharacter(
+        ctx.db.player.identity.find(entry.identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+      ),
       totalIncome: toBigInt(entry.totalIncome),
       income: toBigInt(entry.totalIncome),
       dailyIncome: toBigInt(entry.dailyIncome),
@@ -11012,6 +11134,7 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
     const theme = normalizePlayerTheme(player.theme);
     const font = normalizePlayerFont(player.font);
     const colorMode = normalizePlayerColorMode(player.colorMode);
+    const character = normalizePlayerCharacter(player.character);
     const usernamePromptSeen = Boolean(player.usernamePromptSeen);
 
     if (
@@ -11020,6 +11143,7 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
       player.theme === theme &&
       player.font === font &&
       player.colorMode === colorMode &&
+      player.character === character &&
       player.usernamePromptSeen === usernamePromptSeen
     ) {
       continue;
@@ -11032,6 +11156,7 @@ function sanitizeSharedPlayerRows(ctx: IdleWizardReducerCtx) {
       theme,
       font,
       colorMode,
+      character,
       usernamePromptSeen,
       lastSeenAt: ctx.timestamp,
     });
@@ -11336,6 +11461,9 @@ function ensurePlayer(
   const colorMode = normalizePlayerColorMode(
     existingPlayer?.colorMode ?? DEFAULT_PLAYER_COLOR_MODE,
   );
+  const character = normalizePlayerCharacter(
+    existingPlayer?.character ?? DEFAULT_PLAYER_CHARACTER,
+  );
   const usernamePromptSeen = Boolean(existingPlayer?.usernamePromptSeen);
 
   if (existingPlayer) {
@@ -11347,6 +11475,7 @@ function ensurePlayer(
       existingPlayer.theme !== theme ||
       existingPlayer.font !== font ||
       existingPlayer.colorMode !== colorMode ||
+      existingPlayer.character !== character ||
       Boolean(existingPlayer.usernamePromptSeen) !== usernamePromptSeen ||
       existingPlayer.connected !== true ||
       lastSeenAt.microsSinceUnixEpoch !== existingPlayer.lastSeenAt.microsSinceUnixEpoch;
@@ -11362,6 +11491,7 @@ function ensurePlayer(
       theme,
       font,
       colorMode,
+      character,
       usernamePromptSeen,
       connected: true,
       lastSeenAt,
@@ -11375,6 +11505,7 @@ function ensurePlayer(
     theme: DEFAULT_PLAYER_THEME,
     font: DEFAULT_PLAYER_FONT,
     colorMode: DEFAULT_PLAYER_COLOR_MODE,
+    character: DEFAULT_PLAYER_CHARACTER,
     usernamePromptSeen: false,
     connected: true,
     createdAt: ctx.timestamp,
@@ -11706,6 +11837,7 @@ function resetAllPlayerSharedProgress(ctx: IdleWizardReducerCtx) {
       theme: normalizePlayerTheme(player.theme),
       font: normalizePlayerFont(player.font),
       colorMode: normalizePlayerColorMode(player.colorMode),
+      character: normalizePlayerCharacter(player.character),
       usernamePromptSeen: Boolean(player.usernamePromptSeen),
       lastSeenAt: ctx.timestamp,
     });
@@ -11723,6 +11855,7 @@ function resetPlayerSharedProgress(
     theme: normalizePlayerTheme(player.theme),
     font: normalizePlayerFont(player.font),
     colorMode: normalizePlayerColorMode(player.colorMode),
+    character: normalizePlayerCharacter(player.character),
     usernamePromptSeen: Boolean(player.usernamePromptSeen),
     connected: false,
     lastSeenAt: ctx.timestamp,
@@ -12300,6 +12433,73 @@ function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function getMarketDemandDailyKey(dayKey: string, itemKey: string): string {
+  return `${dayKey}:${itemKey}`;
+}
+
+function recordMarketDemandDaily(
+  ctx: IdleWizardReducerCtx,
+  row: any,
+  {
+    npcBoughtQuantity = 0n,
+    npcSoldQuantity = 0n,
+    marketPriceGold,
+    npcStock,
+    targetStock,
+    demandScore,
+    supplyScore,
+  }: {
+    npcBoughtQuantity?: bigint;
+    npcSoldQuantity?: bigint;
+    marketPriceGold: number;
+    npcStock: bigint;
+    targetStock: bigint;
+    demandScore: bigint;
+    supplyScore: bigint;
+  },
+) {
+  const dayKey = getDailyPeriodKey(ctx);
+  const itemKey = String(row.itemKey ?? '');
+  const analyticsKey = getMarketDemandDailyKey(dayKey, itemKey);
+  const existing = ctx.db.marketDemandDaily.analyticsKey.find(analyticsKey);
+  const nextRow = {
+    analyticsKey,
+    dayKey,
+    itemKey,
+    itemLabel: String(row.itemLabel ?? itemKey),
+    itemKind: String(row.itemKind ?? ''),
+    npcBoughtQuantity: toBigInt(existing?.npcBoughtQuantity ?? 0n) + npcBoughtQuantity,
+    npcSoldQuantity: toBigInt(existing?.npcSoldQuantity ?? 0n) + npcSoldQuantity,
+    marketPriceGold: toStoredGoldPrice(marketPriceGold),
+    npcStock,
+    targetStock,
+    demandScore,
+    supplyScore,
+    updatedAt: ctx.timestamp,
+    priceScale: GOLD_PRICE_SCALE,
+  };
+
+  if (existing) {
+    ctx.db.marketDemandDaily.analyticsKey.update(nextRow);
+    return;
+  }
+
+  ctx.db.marketDemandDaily.insert(nextRow);
+  pruneMarketDemandDailyHistory(ctx);
+}
+
+function pruneMarketDemandDailyHistory(ctx: IdleWizardReducerCtx) {
+  const rows = Array.from(ctx.db.marketDemandDaily.byUpdatedAt.filter(new Range()));
+
+  while (rows.length > MARKET_DEMAND_DAILY_HISTORY_LIMIT) {
+    const row = rows.shift();
+
+    if (row) {
+      ctx.db.marketDemandDaily.delete(row);
+    }
+  }
+}
+
 function getRecentPlayerShopTrades(ctx: { db: any }) {
   return Array.from<any>(ctx.db.playerShopTrade.byTradedAt.filter(new Range()))
     .slice(-PLAYER_SHOP_TRADE_HISTORY_LIMIT)
@@ -12446,6 +12646,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       theme: normalizePlayerTheme(existingPlayer.theme),
       font: normalizePlayerFont(existingPlayer.font),
       colorMode: normalizePlayerColorMode(existingPlayer.colorMode),
+      character: normalizePlayerCharacter(existingPlayer.character),
       usernamePromptSeen:
         Boolean(existingPlayer.usernamePromptSeen) ||
         normalizedUsername !== DEFAULT_USERNAME,
@@ -12459,6 +12660,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       theme: DEFAULT_PLAYER_THEME,
       font: DEFAULT_PLAYER_FONT,
       colorMode: DEFAULT_PLAYER_COLOR_MODE,
+      character: DEFAULT_PLAYER_CHARACTER,
       usernamePromptSeen: normalizedUsername !== DEFAULT_USERNAME,
       connected: true,
       createdAt: ctx.timestamp,
@@ -12477,14 +12679,16 @@ export const set_player_profile = spacetimedb.reducer(
     colorMode: t.string(),
     usernamePromptSeen: t.bool(),
     font: t.string(),
+    character: t.string(),
   },
-  (ctx, { username, theme, colorMode, usernamePromptSeen, font }) => {
+  (ctx, { username, theme, colorMode, usernamePromptSeen, font, character }) => {
     assertActivePlayerSession(ctx);
 
     const normalizedUsername = normalizeUsername(username);
     const safeTheme = normalizePlayerTheme(theme);
     const safeFont = normalizePlayerFont(font);
     const safeColorMode = normalizePlayerColorMode(colorMode);
+    const safeCharacter = normalizePlayerCharacter(character);
     const incomingUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
     const existingPlayer = ctx.db.player.identity.find(ctx.sender);
@@ -12497,6 +12701,7 @@ export const set_player_profile = spacetimedb.reducer(
       normalizePlayerTheme(existingPlayer.theme) === safeTheme &&
       normalizePlayerFont(existingPlayer.font) === safeFont &&
       normalizePlayerColorMode(existingPlayer.colorMode) === safeColorMode &&
+      normalizePlayerCharacter(existingPlayer.character) === safeCharacter &&
       Boolean(existingPlayer.usernamePromptSeen) === nextUsernamePromptSeen
     ) {
       return;
@@ -12514,6 +12719,7 @@ export const set_player_profile = spacetimedb.reducer(
         theme: safeTheme,
         font: safeFont,
         colorMode: safeColorMode,
+        character: safeCharacter,
         usernamePromptSeen: nextUsernamePromptSeen,
         lastSeenAt: ctx.timestamp,
       });
@@ -12525,6 +12731,7 @@ export const set_player_profile = spacetimedb.reducer(
         theme: safeTheme,
         font: safeFont,
         colorMode: safeColorMode,
+        character: safeCharacter,
         usernamePromptSeen: incomingUsernamePromptSeen,
         connected: true,
         createdAt: ctx.timestamp,
@@ -12596,6 +12803,7 @@ export const set_admin_player_data = spacetimedb.reducer(
       theme: safeTheme,
       colorMode: safeColorMode,
       font: safeFont,
+      character: normalizePlayerCharacter(player.character),
       usernamePromptSeen: safeUsernamePromptSeen,
       lastSeenAt: ctx.timestamp,
     });
@@ -12660,6 +12868,7 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
       theme: normalizePlayerTheme(sourcePlayer.theme),
       colorMode: normalizePlayerColorMode(sourcePlayer.colorMode),
       font: normalizePlayerFont(sourcePlayer.font),
+      character: normalizePlayerCharacter(sourcePlayer.character),
       usernamePromptSeen:
         Boolean(targetPlayer.usernamePromptSeen) ||
         Boolean(sourcePlayer.usernamePromptSeen) ||
@@ -14177,6 +14386,14 @@ export const sell_to_npc = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
       lastTickAt: ctx.timestamp,
     });
+    recordMarketDemandDaily(ctx, row, {
+      npcSoldQuantity: tradeQuantity,
+      marketPriceGold: nextMarketPriceGold,
+      npcStock: nextNpcStock,
+      targetStock: marketConfig.targetStock,
+      demandScore: tunedMarket.demandScore,
+      supplyScore: tunedMarket.supplyScore,
+    });
     grantPotionDiscoveryPassiveGold(
       ctx,
       itemKey,
@@ -14235,6 +14452,14 @@ export const buy_from_npc = spacetimedb.reducer(
       supplyScore: tunedMarket.supplyScore,
       updatedAt: ctx.timestamp,
       lastTickAt: ctx.timestamp,
+    });
+    recordMarketDemandDaily(ctx, row, {
+      npcBoughtQuantity: tradeQuantity,
+      marketPriceGold: nextMarketPriceGold,
+      npcStock: nextNpcStock,
+      targetStock: marketConfig.targetStock,
+      demandScore: tunedMarket.demandScore,
+      supplyScore: tunedMarket.supplyScore,
     });
   },
 );

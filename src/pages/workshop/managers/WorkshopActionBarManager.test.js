@@ -149,4 +149,24 @@ describe('WorkshopActionBarManager', () => {
 
     manager.unmount();
   });
+
+  it('reports mana spent after a successful summon', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const notices = [];
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      onSummonNotice: (message) => notices.push(message),
+    });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    parent
+      .querySelector('.workshop-page__summon-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(notices).toEqual(['sage seed found', '-10 mana']);
+
+    manager.unmount();
+  });
 });

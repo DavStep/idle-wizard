@@ -96,6 +96,8 @@ import GameConfigRow from "./game_config_table";
 import GameConfigSnapshotRow from "./game_config_snapshot_table";
 import LeaderboardRow from "./leaderboard_table";
 import LeaderboardSummaryRow from "./leaderboard_summary_table";
+import MarketDemandDailyRow from "./market_demand_daily_table";
+import MarketDemandDailySnapshotRow from "./market_demand_daily_snapshot_table";
 import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketItemConfigRow from "./npc_market_item_config_table";
 import NpcMarketPriceRow from "./npc_market_price_table";
@@ -177,6 +179,23 @@ const tablesSchema = __schema({
       { name: 'leaderboard_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, LeaderboardRow),
+  marketDemandDaily: __table({
+    name: 'market_demand_daily',
+    indexes: [
+      { accessor: 'analyticsKey', name: 'market_demand_daily_analytics_key_idx_btree', algorithm: 'btree', columns: [
+        'analyticsKey',
+      ] },
+      { accessor: 'byDayKey', name: 'market_demand_daily_day_key_idx_btree', algorithm: 'btree', columns: [
+        'dayKey',
+      ] },
+      { accessor: 'byUpdatedAt', name: 'market_demand_daily_updated_at_idx_btree', algorithm: 'btree', columns: [
+        'updatedAt',
+      ] },
+    ],
+    constraints: [
+      { name: 'market_demand_daily_analytics_key_key', constraint: 'unique', columns: ['analyticsKey'] },
+    ],
+  }, MarketDemandDailyRow),
   npcMarketAdmin: __table({
     name: 'npc_market_admin',
     indexes: [
@@ -468,6 +487,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, LeaderboardSummaryRow),
+  market_demand_daily_snapshot: __table({
+    name: 'market_demand_daily_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MarketDemandDailySnapshotRow),
   npc_market_price_snapshot: __table({
     name: 'npc_market_price_snapshot',
     indexes: [

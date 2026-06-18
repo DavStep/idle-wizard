@@ -1,5 +1,7 @@
+import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 
 const LEADERBOARD_SCOPES = [
@@ -485,6 +487,7 @@ export class WorkshopLeaderboardManager {
       allianceTagColor: normalizeTradeAllianceTagColor(
         user.allianceTagColor ?? user.alliance_tag_color,
       ),
+      character: normalizePlayerCharacter(user.character),
       playerLevel: this.normalizePlayerLevel(user.playerLevel),
       income: this.normalizeMetric(user.income),
       dailyIncome: this.normalizeMetric(user.dailyIncome),
@@ -633,6 +636,7 @@ export class WorkshopLeaderboardManager {
       {
         identity: user.identity,
         username: user.name,
+        character: user.character,
         allianceTag: user.allianceTag,
         allianceTagColor: user.allianceTagColor,
         playerLevel: user.playerLevel,
@@ -645,10 +649,19 @@ export class WorkshopLeaderboardManager {
         className: 'workshop-page__leaderboard-player-link',
       },
     );
+    const player = document.createElement('span');
+    player.className = 'workshop-page__leaderboard-player';
+    player.append(
+      createPlayerCharacterIcon(
+        user.character,
+        'workshop-page__leaderboard-character-icon',
+      ),
+      name,
+    );
     return [
       document.createTextNode(`${rank}. `),
       ...(tag ? [tag, document.createTextNode(' ')] : []),
-      name,
+      player,
       document.createTextNode(` (${this.normalizePlayerLevel(user.playerLevel)})`),
     ];
   }

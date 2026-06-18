@@ -82,6 +82,7 @@ describe('WorldChatSubscriptionManager', () => {
         messageId: 'b',
         senderIdentity: 'sender-b',
         username: 'Mira',
+        character: 'mira',
         playerLevel: 4,
         body: 'second',
         sentAt: createTimestamp(2_000),
@@ -108,6 +109,7 @@ describe('WorldChatSubscriptionManager', () => {
           id: 'a',
           senderIdentity: 'sender-a',
           username: 'Ada',
+          character: 'elara',
           playerLevel: 2,
           allianceTag: '',
           allianceTagColor: 'ink',
@@ -118,6 +120,7 @@ describe('WorldChatSubscriptionManager', () => {
           id: 'b',
           senderIdentity: 'sender-b',
           username: 'Mira',
+          character: 'mira',
           playerLevel: 4,
           allianceTag: '',
           allianceTagColor: 'ink',
@@ -145,6 +148,7 @@ describe('WorldChatSubscriptionManager', () => {
 
     expect(manager.getSnapshot().messages[0]).toMatchObject({
       username: 'Ada',
+      character: 'elara',
       playerLevel: 1,
     });
   });

@@ -9,6 +9,7 @@ import { getSeedIconFrameName, seedIconVariantFrameNames } from '../../assets/it
 import { formatGoldPriceText } from '../../shared/goldPrice.js';
 
 const FLYOUT_LIFETIME_MS = 1200;
+const FLYOUT_STACK_GAP_PX = 16;
 const ITEM_DROP_LIFETIME_MS = 1300;
 const GOLD_TARGET_PULSE_MS = 520;
 
@@ -46,6 +47,7 @@ export class RewardFlyoutManager {
     flyout.setAttribute('role', 'status');
     appendTextWithItemIcons(flyout, message);
     this.root.append(flyout);
+    this.layoutTextFlyouts();
 
     const timeoutId = window.setTimeout(() => {
       this.timeouts.delete(timeoutId);
@@ -54,6 +56,28 @@ export class RewardFlyoutManager {
 
     this.timeouts.add(timeoutId);
     return flyout;
+  }
+
+  layoutTextFlyouts() {
+    const flyouts = this.getTextFlyouts();
+    const newestIndex = flyouts.length - 1;
+
+    for (const [index, flyout] of flyouts.entries()) {
+      flyout.style.setProperty(
+        '--style-flyout-offset',
+        `${(index - newestIndex) * FLYOUT_STACK_GAP_PX}px`,
+      );
+    }
+  }
+
+  getTextFlyouts() {
+    if (!this.root) {
+      return [];
+    }
+
+    return [...this.root.children].filter(
+      (child) => !child.classList?.contains('is-visual-only'),
+    );
   }
 
   showReward(event) {

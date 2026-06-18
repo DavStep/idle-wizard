@@ -10,6 +10,7 @@ function createPlayerFacade(username) {
     theme: 'white',
     font: 'lexend',
     colorMode: 'monochrome',
+    character: 'elara',
   };
 
   return {
@@ -73,6 +74,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: true,
     });
   });
@@ -99,6 +101,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: true,
     });
   });
@@ -136,6 +139,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'black',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: true,
     });
   });
@@ -174,6 +178,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: true,
     });
   });
@@ -197,6 +202,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: false,
     });
     setPlayerProfile.mockClear();
@@ -209,6 +215,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'midnight',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: false,
     });
 
@@ -217,6 +224,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: false,
     });
 

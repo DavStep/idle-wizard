@@ -1,3 +1,4 @@
+import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 
 const TOP_USER_LIMIT = 100;
@@ -102,6 +103,7 @@ export class LeaderboardSubscriptionManager {
         allianceTagColor: normalizeTradeAllianceTagColor(
           row.allianceTagColor ?? row.alliance_tag_color,
         ),
+        ...(row.character ? { character: normalizePlayerCharacter(row.character) } : {}),
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
         dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
@@ -191,6 +193,10 @@ export class LeaderboardSubscriptionManager {
       totalGeneratedGold: user.totalGeneratedGold,
       totalIncome: user.totalIncome,
     };
+
+    if (user.character) {
+      snapshotUser.character = user.character;
+    }
 
     if (user.allianceTag) {
       snapshotUser.allianceTag = user.allianceTag;

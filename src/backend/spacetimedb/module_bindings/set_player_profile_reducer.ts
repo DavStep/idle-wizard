@@ -16,4 +16,5 @@ export default {
   colorMode: __t.string(),
   usernamePromptSeen: __t.bool(),
   font: __t.string(),
+  character: __t.string(),
 };

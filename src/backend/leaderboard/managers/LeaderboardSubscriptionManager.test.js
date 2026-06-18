@@ -301,6 +301,25 @@ describe('LeaderboardSubscriptionManager', () => {
     });
   });
 
+  it('publishes character keys for leaderboard users', () => {
+    const rows = [
+      {
+        username: 'Character Mage',
+        playerLevel: 2,
+        totalIncome: 12n,
+        character: 'mira',
+      },
+    ];
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)));
+
+    expect(manager.getSnapshot().topUsers[0]).toMatchObject({
+      name: 'Character Mage',
+      character: 'mira',
+    });
+  });
+
   it('publishes the connected player rank when they are outside a top list', () => {
     const rows = Array.from({ length: 101 }, (_value, index) => ({
       identity: `other-${index + 1}`,

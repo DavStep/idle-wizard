@@ -77,6 +77,7 @@ describe('PlayerProfileSubscriptionManager', () => {
         theme: 'black',
         font: 'comic-sans-mono',
         colorMode: 'resources',
+        character: 'mira',
         usernamePromptSeen: true,
       },
     ]);
@@ -91,6 +92,7 @@ describe('PlayerProfileSubscriptionManager', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'resources',
+      character: 'mira',
       usernamePromptSeen: true,
     });
   });
@@ -114,6 +116,7 @@ describe('PlayerProfileSubscriptionManager', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
+      character: 'elara',
       usernamePromptSeen: false,
     });
   });
@@ -186,6 +189,7 @@ describe('PlayerProfileSubscriptionManager', () => {
         theme: 'black',
         font: 'comic-sans-mono',
         color_mode: 'resources',
+        character: 'rowan',
         username_prompt_seen: true,
       },
     );
@@ -195,6 +199,7 @@ describe('PlayerProfileSubscriptionManager', () => {
       theme: 'black',
       font: 'comic-sans-mono',
       colorMode: 'resources',
+      character: 'rowan',
       usernamePromptSeen: true,
     });
   });

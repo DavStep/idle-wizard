@@ -1,4 +1,5 @@
 import { PlayerColorModeManager } from './managers/PlayerColorModeManager.js';
+import { PlayerCharacterManager } from './managers/PlayerCharacterManager.js';
 import { PlayerFontManager } from './managers/PlayerFontManager.js';
 import { PlayerIconModeManager } from './managers/PlayerIconModeManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
@@ -8,13 +9,14 @@ import { PlayerThemeManager } from './managers/PlayerThemeManager.js';
 
 export class PlayerFacade {
   static explain =
-    'Keeps the player name shown in the room header, so the game can greet the right wizard.';
+    'Keeps the player profile choices shown in shared UI, so the game can identify the right wizard.';
 
   constructor() {
     this.nameManager = new PlayerNameManager();
     this.themeManager = new PlayerThemeManager();
     this.fontManager = new PlayerFontManager();
     this.colorModeManager = new PlayerColorModeManager();
+    this.characterManager = new PlayerCharacterManager();
     this.iconModeManager = new PlayerIconModeManager();
     this.progressBarManager = new PlayerProgressBarManager();
     this.stateObserverManager = new PlayerStateObserverManager();
@@ -37,6 +39,7 @@ export class PlayerFacade {
     this.themeManager.applyServerTheme(profile?.theme);
     this.fontManager.applyServerFont(profile?.font);
     this.colorModeManager.applyServerColorMode(profile?.colorMode);
+    this.characterManager.applyServerCharacter(profile?.character);
     if (Object.hasOwn(profile ?? {}, 'iconMode')) {
       this.iconModeManager.applyServerIconMode(profile.iconMode);
     }
@@ -89,6 +92,16 @@ export class PlayerFacade {
     return this.colorModeManager.getColorModeOptions();
   }
 
+  setCharacter(character) {
+    this.characterManager.setCharacter(character);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  getCharacterOptions() {
+    return this.characterManager.getCharacterOptions();
+  }
+
   setIconMode(iconMode) {
     this.iconModeManager.setIconMode(iconMode);
     this.publishSnapshot();
@@ -117,6 +130,7 @@ export class PlayerFacade {
       theme: this.themeManager.getTheme(),
       font: this.fontManager.getFont(),
       colorMode: this.colorModeManager.getColorMode(),
+      character: this.characterManager.getCharacter(),
       iconMode: this.iconModeManager.getIconMode(),
       progressBar: this.progressBarManager.getProgressBar(),
     };
@@ -130,6 +144,7 @@ export class PlayerFacade {
       theme: snapshot.theme,
       font: snapshot.font,
       colorMode: snapshot.colorMode,
+      character: snapshot.character,
       iconMode: snapshot.iconMode,
       progressBar: snapshot.progressBar,
     };
