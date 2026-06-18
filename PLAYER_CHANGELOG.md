@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.1
+
+- Fixed mobile taps that could make popups open and close immediately after pressing a button.
+- Made touch press feedback clear more reliably, including the Workshop summon seed button.
+
 ## 0.2.0
 
 - Added the first Pixi-backed rendering layer and asset atlas path so future visuals can run smoother on mobile.

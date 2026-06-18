@@ -512,6 +512,7 @@
 - Workshop task progress rails use shared content-box `.style-progress`; subtract `2 * --style-border-width` from rail width when its outer edge must align with the task row/action button.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
+- Synthetic mobile tap clicks need descendant and same-coordinate retarget suppression; otherwise the native follow-up click can hit a newly opened popup backdrop and close it immediately.
 - Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.
 - Hidden popups should not reuse another popup's action button class; broad selectors and clicks can hit hidden controls first.
 - Cauldron ingredient remove buttons also need stable DOM nodes across snapshot renders; mobile click fires after touchend and can miss replaced targets.

@@ -1,5 +1,6 @@
 const PRESS_FEEDBACK_CLASS = 'is-pressing';
 const SYNTHETIC_CLICK_SUPPRESSION_MS = 450;
+const SYNTHETIC_CLICK_RETARGET_SUPPRESSION_PX = 32;
 const PRESS_MOVE_CANCEL_PX = 12;
 
 const PRESS_FEEDBACK_TARGET_SELECTOR = [
@@ -52,6 +53,8 @@ export class PressFeedbackManager {
     this.pressMoved = false;
     this.suppressedClickElement = null;
     this.suppressedClickUntilMs = 0;
+    this.suppressedClickX = null;
+    this.suppressedClickY = null;
     this.isDispatchingSyntheticClick = false;
     this.handlePointerDown = (event) => this.onPointerDown(event);
     this.handlePointerMove = (event) => this.onPointerMove(event);
@@ -155,7 +158,7 @@ export class PressFeedbackManager {
       return;
     }
 
-    this.dispatchSyntheticClick(pressedElement);
+    this.dispatchSyntheticClick(pressedElement, event);
   }
 
   onClick(event) {
@@ -163,7 +166,7 @@ export class PressFeedbackManager {
       return;
     }
 
-    if (this.suppressedClickElement && event.target !== this.suppressedClickElement) {
+    if (!this.shouldSuppressClick(event)) {
       return;
     }
 
@@ -192,9 +195,42 @@ export class PressFeedbackManager {
     return this.getPressTarget(document?.elementFromPoint?.(clientX, clientY));
   }
 
-  dispatchSyntheticClick(element) {
+  shouldSuppressClick(event) {
+    const targetElement = getElementFromEventTarget(event.target);
+
+    if (
+      this.suppressedClickElement &&
+      targetElement &&
+      (targetElement === this.suppressedClickElement ||
+        this.suppressedClickElement.contains(targetElement))
+    ) {
+      return true;
+    }
+
+    return this.isNearSuppressedClickPoint(event);
+  }
+
+  isNearSuppressedClickPoint(event) {
+    if (
+      !Number.isFinite(this.suppressedClickX) ||
+      !Number.isFinite(this.suppressedClickY) ||
+      !Number.isFinite(event.clientX) ||
+      !Number.isFinite(event.clientY)
+    ) {
+      return false;
+    }
+
+    return (
+      Math.hypot(event.clientX - this.suppressedClickX, event.clientY - this.suppressedClickY) <=
+      SYNTHETIC_CLICK_RETARGET_SUPPRESSION_PX
+    );
+  }
+
+  dispatchSyntheticClick(element, event = {}) {
     this.suppressedClickElement = element;
     this.suppressedClickUntilMs = Date.now() + SYNTHETIC_CLICK_SUPPRESSION_MS;
+    this.suppressedClickX = Number.isFinite(event.clientX) ? event.clientX : null;
+    this.suppressedClickY = Number.isFinite(event.clientY) ? event.clientY : null;
     this.isDispatchingSyntheticClick = true;
 
     try {
@@ -221,5 +257,7 @@ export class PressFeedbackManager {
   clearClickSuppression() {
     this.suppressedClickElement = null;
     this.suppressedClickUntilMs = 0;
+    this.suppressedClickX = null;
+    this.suppressedClickY = null;
   }
 }

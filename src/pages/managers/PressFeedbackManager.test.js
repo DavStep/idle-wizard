@@ -81,6 +81,107 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
+  it('suppresses duplicate native clicks that target a child inside the pressed control', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const label = document.createElement('span');
+    const clicks = [];
+    button.className = 'style-button';
+    label.textContent = 'summon seed';
+    button.append(label);
+    button.addEventListener('click', (event) => {
+      clicks.push(event.target === button ? 'synthetic' : 'native-child');
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(label, 'pointerdown');
+    dispatchPointer(document, 'pointerup');
+    label.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+      }),
+    );
+
+    expect(clicks).toEqual(['synthetic']);
+
+    manager.unmount();
+  });
+
+  it('suppresses duplicate native clicks retargeted to a popup opened by the press', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const popup = document.createElement('section');
+    let opens = 0;
+    let backdropClicks = 0;
+    button.className = 'style-button';
+    button.addEventListener('click', () => {
+      opens += 1;
+      popup.hidden = false;
+    });
+    popup.hidden = true;
+    popup.addEventListener('click', () => {
+      backdropClicks += 1;
+    });
+    root.append(button, popup);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { clientX: 80, clientY: 120 });
+    dispatchPointer(document, 'pointerup', { clientX: 80, clientY: 120 });
+    popup.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        clientX: 82,
+        clientY: 119,
+      }),
+    );
+
+    expect(opens).toBe(1);
+    expect(backdropClicks).toBe(0);
+
+    manager.unmount();
+  });
+
+  it('does not suppress a separate tap away from the synthetic click point', () => {
+    const root = document.createElement('div');
+    const first = document.createElement('button');
+    const second = document.createElement('button');
+    let secondClicks = 0;
+    first.className = 'style-button';
+    second.className = 'style-button';
+    second.addEventListener('click', () => {
+      secondClicks += 1;
+    });
+    root.append(first, second);
+    document.body.append(root);
+    document.elementFromPoint = () => first;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(first, 'pointerdown', { clientX: 20, clientY: 20 });
+    dispatchPointer(document, 'pointerup', { clientX: 20, clientY: 20 });
+    second.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        clientX: 160,
+        clientY: 20,
+      }),
+    );
+
+    expect(secondClicks).toBe(1);
+
+    manager.unmount();
+  });
+
   it('does not activate when the pointer moves like a drag', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');
