@@ -59,6 +59,7 @@
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
+- Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE lesson panels have no visible `close` border label; players collapse them with the Elara portrait button.
 - FTUE paused/wait states should collapse to a stable Elara help anchor instead of hiding entirely; show explicit `help` on the collapsed Elara toggle and `hide` on the open Elara toggle, with the label chip kept left of the lesson box so it does not overlap the panel edge.

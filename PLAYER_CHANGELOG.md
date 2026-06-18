@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.1.28
+
+- Smoothed Elara's objective collapse and lesson hide motion so guide transitions feel cleaner on mobile.
+- Tuned tutorial reward burst timing for a sharper but less distracting guide feedback effect.
+
 ## 0.1.27
 
 - Added buyable extra Brewing cauldrons so potion work can expand through player progress instead of appearing all at once.
