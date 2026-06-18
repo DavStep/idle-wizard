@@ -1,9 +1,10 @@
-import goldIconUrl from '../../assets/icons/icon-gold-coin.png';
+import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
 
 export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
 
-const RESOURCE_ICON_URLS = Object.freeze({
-  gold: goldIconUrl,
+const RESOURCE_ICON_FRAME_NAMES = Object.freeze({
+  gold: 'resource:gold',
+  mana: 'resource:mana',
 });
 
 const RESOURCE_WORD_PATTERN = /\bgold\b/;
@@ -32,20 +33,16 @@ export function setResourceIconText(element, text) {
 
 export function createResourceIconLabel(resource, label = resource) {
   const normalizedResource = normalizeResource(resource);
-  const iconUrl = RESOURCE_ICON_URLS[normalizedResource];
+  const frameName = RESOURCE_ICON_FRAME_NAMES[normalizedResource];
 
-  if (!iconUrl) {
+  if (!frameName) {
     return document.createTextNode(String(label ?? ''));
   }
 
   const root = document.createElement('span');
   root.className = `${RESOURCE_ICON_LABEL_CLASS} ${RESOURCE_ICON_LABEL_CLASS}--${normalizedResource}`;
 
-  const icon = document.createElement('img');
-  icon.className = `${RESOURCE_ICON_LABEL_CLASS}__icon`;
-  icon.src = iconUrl;
-  icon.alt = '';
-  icon.setAttribute('aria-hidden', 'true');
+  const icon = createAssetAtlasSprite(`${RESOURCE_ICON_LABEL_CLASS}__icon`, frameName);
 
   const text = document.createElement('span');
   text.className = `${RESOURCE_ICON_LABEL_CLASS}__text`;

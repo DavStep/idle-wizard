@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
+
 import { describe, expect, it } from 'vitest';
 
 import { GardenPlotManager } from './GardenPlotManager.js';
@@ -498,6 +501,10 @@ describe('GardenPlotManager', () => {
     plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
+    expect(plotRow.classList.contains('is-empty')).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
+      'seed',
+    );
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('no seeds');
 
     plotRow
@@ -505,6 +512,24 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
+  });
+
+  it('keeps selected empty plot seed labels in resource color', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const suppressionIndex = baseCss.indexOf(
+      '[data-resource-color] {\n  color: inherit;',
+    );
+    const overrideIndex = baseCss.indexOf(
+      '.garden-page__plot-row.is-empty\n  .garden-page__plot-label[data-resource-color="seed"]',
+    );
+    const rule = baseCss.match(
+      /\.garden-page__plot-row\.is-empty\s+\.garden-page__plot-label\[data-resource-color="seed"\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(suppressionIndex).toBeGreaterThan(-1);
+    expect(overrideIndex).toBeGreaterThan(suppressionIndex);
+    expect(rule).toBeDefined();
+    expect(rule).toMatch(/\bcolor:\s*var\(--style-resource-seed\);/);
   });
 
   it('confirms canceling active plot progress and returns the seed', () => {
@@ -691,7 +716,9 @@ describe('GardenPlotManager', () => {
 
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvest');
     expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(false);
-    expect(plotRow.querySelector('.garden-page__plot-progress-fill')?.style.width).toBe('100%');
+    expect(plotRow.querySelector('.garden-page__plot-progress-fill')?.style.transform).toBe(
+      'scaleX(1)',
+    );
     expect(plotRow.querySelector('.garden-page__plot-progress-text')?.textContent).toBe('');
   });
 });

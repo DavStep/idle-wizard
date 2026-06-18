@@ -18,6 +18,7 @@ import {
   DEFAULT_PAGE_SWIPE_ORDER,
   PageSwipeNavigationManager,
 } from './managers/PageSwipeNavigationManager.js';
+import { PressFeedbackManager } from './managers/PressFeedbackManager.js';
 import { ScrollCueManager } from './managers/ScrollCueManager.js';
 
 const FTUE_ENABLED = true;
@@ -60,6 +61,7 @@ export class PagesFacade {
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
     });
+    this.pressFeedbackManager = new PressFeedbackManager();
     this.scrollCueManager = new ScrollCueManager();
     this.bottomPanelFacade = new BottomPanelFacade({
       getCurrentPageId: () => this.getCurrentPageId(),
@@ -149,6 +151,7 @@ export class PagesFacade {
 
   mount(stage) {
     this.stage = stage;
+    this.pressFeedbackManager.mount(stage);
     this.currentPageManager.mount(stage);
     this.swipeNavigationManager.mount(stage);
     this.bottomPanelFacade.mount(stage);
@@ -179,6 +182,7 @@ export class PagesFacade {
     this.bottomPanelFacade.unmount();
     this.swipeNavigationManager.unmount();
     this.currentPageManager.unmount();
+    this.pressFeedbackManager.unmount();
     this.stage = null;
   }
 

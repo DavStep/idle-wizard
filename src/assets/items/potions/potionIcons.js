@@ -1,42 +1,24 @@
-import antidotePotionIconUrl from './potion-antidote.png';
-import briarWardPotionIconUrl from './potion-briar-ward.png';
-import calmingDraughtPotionIconUrl from './potion-calming-draught.png';
-import deepDreamVisionPotionIconUrl from './potion-deep-dream-vision.png';
-import dragonCouragePotionIconUrl from './potion-dragon-courage.png';
-import elixirPotionIconUrl from './potion-elixir.png';
-import frostmossCleansePotionIconUrl from './potion-frost-cleanse.png';
-import genericPotionIconUrl from './potion-generic.png';
-import healingPotionIconUrl from './potion-healing.png';
-import lanternTonicPotionIconUrl from './potion-lantern-tonic.png';
-import manaTonicPotionIconUrl from './potion-mana-tonic.png';
-import minorHealingPotionIconUrl from './potion-minor-healing.png';
-import moonFocusPotionIconUrl from './potion-moon-focus.png';
-import nettleVigorPotionIconUrl from './potion-nettle-vigor.png';
-import pactWardPotionIconUrl from './potion-pact-ward.png';
-import sleepDraughtPotionIconUrl from './potion-sleep-draught.png';
-import staminaPotionIconUrl from './potion-stamina.png';
-import starLuckPotionIconUrl from './potion-star-luck.png';
-import venomDraughtPotionIconUrl from './potion-venom-draught.png';
+export const GENERIC_POTION_ICON_FRAME_NAME = 'potion:generic';
 
-export const potionIconUrlsByKey = Object.freeze({
-  manaTonic: manaTonicPotionIconUrl,
-  minorHealingPotion: minorHealingPotionIconUrl,
-  nettleVigor: nettleVigorPotionIconUrl,
-  calmingDraught: calmingDraughtPotionIconUrl,
-  simpleAntidote: antidotePotionIconUrl,
-  venomDraught: venomDraughtPotionIconUrl,
-  briarWard: briarWardPotionIconUrl,
-  lanternTonic: lanternTonicPotionIconUrl,
-  healingPotion: healingPotionIconUrl,
-  moonlitFocus: moonFocusPotionIconUrl,
-  sunrootStamina: staminaPotionIconUrl,
-  frostmossCleanse: frostmossCleansePotionIconUrl,
-  sleepDraught: sleepDraughtPotionIconUrl,
-  elixirOfLife: elixirPotionIconUrl,
-  starLuckPhiltre: starLuckPotionIconUrl,
-  dragonCourage: dragonCouragePotionIconUrl,
-  deepDreamVision: deepDreamVisionPotionIconUrl,
-  pactWard: pactWardPotionIconUrl,
+export const potionIconFrameNamesByKey = Object.freeze({
+  manaTonic: 'potion:manaTonic',
+  minorHealingPotion: 'potion:minorHealingPotion',
+  nettleVigor: 'potion:nettleVigor',
+  calmingDraught: 'potion:calmingDraught',
+  simpleAntidote: 'potion:simpleAntidote',
+  venomDraught: 'potion:venomDraught',
+  briarWard: 'potion:briarWard',
+  lanternTonic: 'potion:lanternTonic',
+  healingPotion: 'potion:healingPotion',
+  moonlitFocus: 'potion:moonlitFocus',
+  sunrootStamina: 'potion:sunrootStamina',
+  frostmossCleanse: 'potion:frostmossCleanse',
+  sleepDraught: 'potion:sleepDraught',
+  elixirOfLife: 'potion:elixirOfLife',
+  starLuckPhiltre: 'potion:starLuckPhiltre',
+  dragonCourage: 'potion:dragonCourage',
+  deepDreamVision: 'potion:deepDreamVision',
+  pactWard: 'potion:pactWard',
 });
 
 const potionIconKeysByLabel = Object.freeze({
@@ -78,8 +60,8 @@ const potionIconLabelEntries = Object.freeze(
     .sort((first, second) => second.label.length - first.label.length),
 );
 
-export function getPotionIconUrl(itemKey) {
-  return potionIconUrlsByKey[itemKey] ?? genericPotionIconUrl;
+export function getPotionIconFrameName(itemKey) {
+  return potionIconFrameNamesByKey[itemKey] ?? GENERIC_POTION_ICON_FRAME_NAME;
 }
 
 export function getPotionIconKeyByLabel(label) {

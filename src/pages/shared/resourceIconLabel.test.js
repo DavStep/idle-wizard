@@ -16,6 +16,10 @@ describe('resource icon labels', () => {
     expect(
       element.querySelector('.style-resource-label--gold .style-resource-label__icon'),
     ).not.toBeNull();
+    expect(
+      element.querySelector('.style-resource-label--gold .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:gold');
   });
 
   it('keeps already-marked unchanged text stable', () => {

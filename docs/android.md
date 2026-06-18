@@ -29,6 +29,10 @@ npm run android:open
 
 `mobile:sync` builds the Vite app, then copies `dist/` into the Android project.
 
+Normal device builds should load the packaged `dist/` assets. Do not set
+`server.url` in `capacitor.config.json` for build/install testing, because
+Capacitor will load that remote page instead of the bundled APK content.
+
 The debug APK is produced under:
 
 ```txt

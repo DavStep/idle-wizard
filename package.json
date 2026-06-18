@@ -1,14 +1,18 @@
 {
   "name": "idle-wizard",
-  "version": "0.1.28",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "assets:atlas": "node scripts/build-asset-atlas.js",
+    "predev": "npm run assets:atlas",
     "dev": "vite --host 0.0.0.0 --port 55173 --strictPort",
     "dev:status": "sh -c 'lsof -nP -sTCP:LISTEN -iTCP:55173 || true; ps -axo pid=,ppid=,stat=,command= | grep \"$PWD/node_modules/.bin/vite\" | grep -v grep || true'",
     "dev:kill": "sh -c 'ps -axo pid=,command= | while read pid command; do case \"$command\" in *\"$PWD/node_modules/.bin/vite\"*) test \"$pid\" = \"$$\" || kill \"$pid\" ;; esac; done; pids=$(lsof -tiTCP:55173 -sTCP:LISTEN); test -z \"$pids\" || kill $pids'",
     "build": "npm run build:prod --",
+    "prebuild:dev": "npm run assets:atlas",
     "build:dev": "vite build --mode development",
+    "prebuild:prod": "npm run assets:atlas",
     "build:prod": "vite build --mode production",
     "preview": "vite preview --host 0.0.0.0 --port 55174 --strictPort",
     "lint": "eslint .",
@@ -44,9 +48,11 @@
     "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.4.0",
     "@capacitor/ios": "^8.4.0",
+    "@esotericsoftware/spine-pixi-v8": "^4.3.7",
     "@fontsource/lexend": "^5.2.11",
     "bitecs": "^0.4.0",
     "oidc-client-ts": "^3.5.0",
+    "pixi.js": "^8.19.0",
     "spacetimedb": "^2.4.1"
   },
   "devDependencies": {
@@ -54,6 +60,7 @@
     "@eslint/js": "^9.39.1",
     "eslint": "^9.39.1",
     "jsdom": "^29.1.1",
+    "pngjs": "^7.0.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.16",
     "vitest": "^4.0.15"

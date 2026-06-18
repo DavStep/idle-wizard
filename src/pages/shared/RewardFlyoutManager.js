@@ -1,8 +1,11 @@
 import { appendTextWithItemIcons } from './itemIconLabel.js';
-import goldIconUrl from '../../assets/icons/icon-gold-coin.png';
-import { getHerbIconKeyByLabel, getHerbIconUrl } from '../../assets/items/herbs/herbIcons.js';
-import { getPotionIconKeyByLabel, getPotionIconUrl } from '../../assets/items/potions/potionIcons.js';
-import { getSeedIconUrl, seedIconVariantUrls } from '../../assets/items/seeds/seedIcons.js';
+import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
+import { getHerbIconFrameName, getHerbIconKeyByLabel } from '../../assets/items/herbs/herbIcons.js';
+import {
+  getPotionIconFrameName,
+  getPotionIconKeyByLabel,
+} from '../../assets/items/potions/potionIcons.js';
+import { getSeedIconFrameName, seedIconVariantFrameNames } from '../../assets/items/seeds/seedIcons.js';
 import { formatGoldPriceText } from '../../shared/goldPrice.js';
 
 const FLYOUT_LIFETIME_MS = 1200;
@@ -253,28 +256,28 @@ export class RewardFlyoutManager {
 
   getSeedDropSource(seed) {
     const herbKey = this.getHerbKeyForSeed(seed);
-    const itemSrc = herbKey ? getHerbIconUrl(herbKey) : null;
+    const itemFrameName = herbKey ? getHerbIconFrameName(herbKey) : null;
 
-    if (!itemSrc) {
-      return getSeedIconUrl();
+    if (!itemFrameName) {
+      return getSeedIconFrameName();
     }
 
     return {
-      packSrc: this.getSeedPackBaseSrc(seed),
-      itemSrc,
+      packFrameName: this.getSeedPackBaseFrameName(seed),
+      itemFrameName,
     };
   }
 
-  getSeedPackBaseSrc(seed) {
+  getSeedPackBaseFrameName(seed) {
     if (seed?.rarity === 'legendary') {
-      return seedIconVariantUrls.black;
+      return seedIconVariantFrameNames.black;
     }
 
     if (seed?.rarity === 'rare') {
-      return seedIconVariantUrls.gray;
+      return seedIconVariantFrameNames.gray;
     }
 
-    return seedIconVariantUrls.regular;
+    return seedIconVariantFrameNames.regular;
   }
 
   getHerbKeyForSeed(seed) {
@@ -297,12 +300,12 @@ export class RewardFlyoutManager {
 
     if (normalizedKind === 'herb') {
       const key = item?.key ?? getHerbIconKeyByLabel(item?.label);
-      return getHerbIconUrl(key);
+      return getHerbIconFrameName(key);
     }
 
     if (normalizedKind === 'potion') {
       const key = item?.key ?? getPotionIconKeyByLabel(item?.label);
-      return getPotionIconUrl(key);
+      return getPotionIconFrameName(key);
     }
 
     return null;
@@ -319,7 +322,7 @@ export class RewardFlyoutManager {
         return source.length > 0;
       }
 
-      return source?.packSrc && source?.itemSrc;
+      return source?.packFrameName && source?.itemFrameName;
     });
 
     if (sources.length === 0) {
@@ -438,28 +441,14 @@ export class RewardFlyoutManager {
       : `room-item-drop${Math.random() < 0.5 ? ' is-angle-left' : ''}`;
 
     if (typeof source === 'string') {
-      const image = document.createElement('img');
-      image.className = dropClassName;
-      image.src = source;
-      image.alt = '';
-      image.draggable = false;
-      return image;
+      return createAssetAtlasSprite(dropClassName, source);
     }
 
     const compositeDrop = document.createElement('span');
     compositeDrop.className = `${dropClassName} room-seed-pack-composite`;
 
-    const pack = document.createElement('img');
-    pack.className = 'room-seed-pack-base';
-    pack.src = source.packSrc;
-    pack.alt = '';
-    pack.draggable = false;
-
-    const item = document.createElement('img');
-    item.className = 'room-seed-pack-item';
-    item.src = source.itemSrc;
-    item.alt = '';
-    item.draggable = false;
+    const pack = createAssetAtlasSprite('room-seed-pack-base', source.packFrameName);
+    const item = createAssetAtlasSprite('room-seed-pack-item', source.itemFrameName);
 
     compositeDrop.append(pack, item);
     return compositeDrop;
@@ -536,9 +525,7 @@ export class RewardFlyoutManager {
       const name = `room-coin-fly-${eventUid}-${index}`;
       keyframeBlocks.push(this.buildCoinFlyKeyframes(name, bx, by, ctrlX, ctrlY, dx, dy, rot));
 
-      const coin = document.createElement('div');
-      coin.className = 'room-coin-particle';
-      coin.style.backgroundImage = `url(${goldIconUrl})`;
+      const coin = createAssetAtlasSprite('room-coin-particle', 'resource:gold');
       coin.style.animationName = name;
       coin.style.animationDuration = `${dur}ms`;
       coin.style.animationDelay = `${delay}ms`;

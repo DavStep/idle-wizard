@@ -125,6 +125,7 @@ export class GameplayFacade {
     this.lastFrameSnapshotPublishTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotBuildTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotKey = '';
+    this.lastFrameHadTimerWork = false;
   }
 
   setPersistenceStorage(storageManager) {
@@ -976,22 +977,28 @@ export class GameplayFacade {
       return true;
     }
 
+    const hasTimerWork = this.hasFrameTimerWork();
+    const timerWorkCompleted = this.lastFrameHadTimerWork && !hasTimerWork;
+
     if (
+      !timerWorkCompleted &&
       time >= this.lastFrameSnapshotPublishTime &&
       time - this.lastFrameSnapshotPublishTime < GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS
     ) {
+      this.lastFrameHadTimerWork = hasTimerWork;
       return false;
     }
 
     this.lastFrameSnapshotPublishTime = time;
     const snapshotKey = this.getFrameSnapshotKey();
-    const shouldRefresh = this.shouldRefreshFrameSnapshot(time);
+    const shouldRefresh = this.shouldRefreshFrameSnapshot(time, hasTimerWork);
 
-    if (snapshotKey === this.lastFrameSnapshotKey && !shouldRefresh) {
+    if (snapshotKey === this.lastFrameSnapshotKey && !shouldRefresh && !timerWorkCompleted) {
+      this.lastFrameHadTimerWork = hasTimerWork;
       return false;
     }
 
-    this.publishSnapshotObject(this.getSnapshot(), snapshotKey, time);
+    this.publishSnapshotObject(this.getSnapshot(), snapshotKey, time, hasTimerWork);
     return true;
   }
 
@@ -999,9 +1006,11 @@ export class GameplayFacade {
     snapshot,
     frameSnapshotKey = this.getFrameSnapshotKey(),
     frameTime = this.getCurrentFrameTime(),
+    hasTimerWork = this.hasFrameTimerWork(),
   ) {
     this.lastFrameSnapshotKey = frameSnapshotKey;
     this.lastFrameSnapshotBuildTime = frameTime;
+    this.lastFrameHadTimerWork = hasTimerWork;
     this.stateObserverManager.publish(snapshot);
   }
 
@@ -1014,8 +1023,8 @@ export class GameplayFacade {
     });
   }
 
-  shouldRefreshFrameSnapshot(time) {
-    if (!this.hasFrameTimerWork()) {
+  shouldRefreshFrameSnapshot(time, hasTimerWork = this.hasFrameTimerWork()) {
+    if (!hasTimerWork) {
       return false;
     }
 

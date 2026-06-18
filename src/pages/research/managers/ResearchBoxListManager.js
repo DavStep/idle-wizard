@@ -1,7 +1,11 @@
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
-import { setResourceColorFromText } from '../../shared/resourceColor.js';
+import {
+  setResourceColor,
+  setResourceColorFromText,
+} from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setProgressFill } from '../../shared/progressFill.js';
 
 const maxLockedResearchesPerBox = 3;
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
@@ -434,14 +438,12 @@ export class ResearchBoxListManager {
   }
 
   createResearchLabelParts(research) {
+    const itemKind = this.getResearchItemKind(research);
     const name = document.createElement('span');
     name.className = 'research-page__research-name';
     name.textContent = research.label;
-    setItemIconLabel(
-      name,
-      this.getResearchItemKind(research),
-      this.getResearchItemKey(research),
-    );
+    setItemIconLabel(name, itemKind, this.getResearchItemKey(research));
+    setResourceColor(name, itemKind);
 
     if (!research.showEffect) {
       return [name];
@@ -534,18 +536,27 @@ export class ResearchBoxListManager {
           continue;
         }
 
-        const percent = this.getProgressPercent(research.progress);
+        const progressRatio = this.getProgressRatio(research.progress);
+        const percent = this.getProgressPercent(progressRatio);
+        const remainingMs = Number.isFinite(research.remainingMs) ? research.remainingMs : 0;
         this.setResearchValueStatus(ref, research);
-        this.setStyleWidth(ref.progressFill, `${percent}%`);
+        setProgressFill(ref.progressFill, progressRatio, {
+          smooth: Boolean(research.inProgress) && remainingMs > 0,
+          remainingMs,
+        });
         this.setText(ref.progressText, '');
         this.setAttribute(ref.progress, 'aria-valuenow', String(percent));
       }
     }
   }
 
-  getProgressPercent(progress) {
+  getProgressRatio(progress) {
     const safeProgress = Number.isFinite(progress) ? progress : 0;
-    return Math.round(Math.max(0, Math.min(1, safeProgress)) * 100);
+    return Math.max(0, Math.min(1, safeProgress));
+  }
+
+  getProgressPercent(progress) {
+    return Math.round(this.getProgressRatio(progress) * 100);
   }
 
   setResearchValueStatus(ref, research) {
@@ -612,9 +623,4 @@ export class ResearchBoxListManager {
     }
   }
 
-  setStyleWidth(element, value) {
-    if (element.style.width !== value) {
-      element.style.width = value;
-    }
-  }
 }

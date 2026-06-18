@@ -22,6 +22,8 @@
 - This is an Android-first mobile JavaScript game.
 - The authored game viewport is `1080x2170`.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
+- Height animations inside scaled room UI should write layout pixels from `offsetHeight`/`scrollHeight`, not `getBoundingClientRect()` screen pixels, or the element expands by the UI scale.
+- Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
@@ -63,8 +65,10 @@
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE lesson panels have no visible `close` border label; players collapse them with the Elara portrait button.
 - FTUE paused/wait states should collapse to a stable Elara help anchor instead of hiding entirely; show explicit `help` on the collapsed Elara toggle and `hide` on the open Elara toggle, with the label chip kept left of the lesson box so it does not overlap the panel edge.
+- Iconless collapsed Elara still drags a 70px invisible button; left clamp must account for the visible `help` label's right-anchored offset so the chip can align with the 16px room inset.
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
-- FTUE target cues should keep the plain hand asset; swapping in a Spine click-effect pointer adds noisy blobs and weakens the cue.
+- FTUE target cues use the Spine pointer with the PNG fallback until ready; preserve diagonal placement math and rotate the Spine shell by placement so the authored upward tap points at the same target anchor.
+- Pointer-local Pixi canvases inside the scaled tutorial layer must use `devicePixelRatio * --style-ui-scale` resolution; DPR-only backing stores look pixelated after the room UI scale transform.
 - FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then mana sphere, then summon, then tasks and room chrome.
 - Room section entry animations must opt out while `data-tutorial-reveal` is present; opacity/translate animations can override FTUE reveal gates.
 - FTUE intro-only reveal needs an empty `data-tutorial-reveal` attribute; clearing the attribute makes all gated room controls appear.
@@ -90,6 +94,7 @@
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
+- Expanded Workshop requirements outside-press collapse must ignore `.tutorial-layer` targets; otherwise dragging Elara closes the requirements panel.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
 - FTUE level-5 theme/settings guidance is passive; it should point to the username settings opener first, then the `theme` settings tab when settings is open.
@@ -98,14 +103,16 @@
 - Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Elara disappears while tasks remain.
 - Level-3 FTUE should be passive: no automatic target popups; show Elara attention only after idle/stuck time, then reveal target guidance on player request.
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
+- FTUE lesson body copy typewrites only until the player has seen that exact step/copy once; reopening an already revealed guide shows full text immediately.
 - FTUE lesson panels should measure final copy/progress first and set box size before typewriter text appears; do not let panels resize as copy reveals.
 - FTUE target cues should be pointer-only while the lesson panel is open or the player asks with `show me`; never stack a target hint box with a lesson box.
 - When FTUE points to a bottom page tab while Workshop tasks are expanded, keep the bottom tab panel undimmed; the task-expanded chrome opacity makes the target read disabled.
-- FTUE pointer animation should keep opacity stable and use one gentle `1-2px` source-distance push with a long rest; authored source movement scales up on mobile.
-- FTUE pointer motion should keep target positioning on a stable container and animate a child hand image with a tiny placement-specific margin offset; animated transform paths can collapse to near-zero live motion in the in-app browser.
-- FTUE pointer child motion can use individual CSS `translate`; it keeps rotation/scale transforms intact and samples smoothly in the in-app browser.
+- FTUE PNG pointer fallback animation should keep opacity stable and use one gentle `1-2px` source-distance push with a long rest; authored source movement scales up on mobile.
+- FTUE PNG pointer fallback motion should keep target positioning on a stable container and animate a child hand image with a tiny placement-specific margin offset; animated transform paths can collapse to near-zero live motion in the in-app browser.
+- FTUE PNG pointer fallback child motion can use individual CSS `translate`; it keeps rotation/scale transforms intact and samples smoothly in the in-app browser.
 - FTUE pointer rendering must not rewrite unchanged placement/style on every render; repeated DOM writes restart the cue animation before it can move.
 - Open FTUE lesson refreshes should let `applyCue` own target-cue visibility; hiding the cue during `showLesson` and showing it again resets pointer motion every refresh.
+- FTUE pointer placement should anchor the hand on the target element itself; do not treat the target's row container as a protected pointer collision rect or row labels look offset.
 - Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
 - Brewing FTUE lesson placement must protect the herbs box, cauldron, and bottom brewing controls so Elara never hides brew status/progress.
@@ -115,8 +122,13 @@
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` stays hidden until level 7.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
-- Workshop task drag-sort spans a fixed summary row plus list rows; use a drag ghost plus placeholder and commit priority only on drop, not render-on-pointermove.
+- Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
+- Workshop task drag-sort thresholds must compare the lifted row center, not pointer Y; grab offset otherwise makes rows swap too early or late.
+- Workshop task drag-sort should not render an empty placeholder gap; players expect neighboring rows to shift only after the dragged row crosses their center.
+- Workshop task drag-sort needs expanded-content overflow visible during drag; otherwise list rows clip under the summary row and look like they lose top-layer order.
 - Workshop summon button text must overlay the summon circle, not stack below it; stacking drops the label into the secondary action row.
+- Workshop summon button press feedback must not use generic `transform: scale(...)`; it needs to preserve its `translate(-50%, -50%)` centering or pointer release can miss the moved button.
+- Workshop summon button press feedback must also override generic `.style-button` active backgrounds; otherwise a rectangular active-surface box appears behind the circle.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 
@@ -125,7 +137,21 @@
 - Use full ECS for gameplay.
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
+- During Pixi migration, hidden DOM managers can still receive gameplay reward events; route feedback through one visible renderer per event or duplicate notices appear.
+- Pixi migration should not replace page facades with duplicated page logic before parity; keep existing DOM managers as the source of truth and mirror/render their state until visuals and interactions match.
+- Pixi DOM mirroring should be opt-in/debug only; hiding live DOM and repainting a canvas snapshot caps visible motion and burns mobile frame budget.
+- Pixi DOM mirror must render `.style-dialog::after`; popup border and shadow live there while the real dialog border is transparent.
+- Pixi `autoDensity` can write inline canvas pixel sizes; reassert `width/height: 100%` after init so the authored 1080x2170 canvas fits the scaled stage.
+- Pixi text rasterizes before parent scale; wait for web fonts and render text textures at source-scale resolution or the UI looks like wrong/blurry fonts.
+- Spine Pixi runtime major/minor must match the Spine Editor major/minor used to export skeletons; current `@esotericsoftware/spine-pixi-v8` needs Pixi `>=8.16`.
+- Pixi DOM mirror must schedule renders on pointerdown/up/cancel; interval-only rendering can miss short `:active` button press states.
+- Atlas sprites in DOM should use inline SVG `viewBox` crops instead of CSS background positioning; they scale like images and keep Pixi mirror frame lookup simple.
+- Generated atlases need transparent-pixel alpha bleed and edge extrusion; raw RGB garbage or blank padding can show as seams when Pixi/SVG scales sprites.
+- Inline SVG atlas crops used as text-size item icons need wide gutters; 2px padding lets adjacent herb frames bleed into minified sprites.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
+- `capacitor.config.json` must not set `server.url` for packaged APK QA; Capacitor loads that remote page instead of bundled `dist`, hiding local UI/CSS changes.
+- Android WebView press feedback should not rely on CSS `:active` alone; mirror it with a pointer-driven `.is-pressing` class for stable touch scale.
+- Android WebView touch actions should activate from validated `pointerup` and suppress the following native click; long holds can otherwise show press feedback but drop the action.
 - When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
 - Local app DB name can come from `.env.local`, while SpacetimeDB CLI defaults to `spacetime.json`; use `--no-config` or the env database name when querying/publishing Codex local DBs.
 - Signed release APK handoff files should be named `idle-wizard-<package-version>-release.apk`; unsigned release APKs keep `-unsigned` in the filename.
@@ -135,6 +161,8 @@
 - Live browser/tutorial QA on the shared dev server can hit the `server required` single-account gate after reload if another client owns the session; close the other client or use a fresh local session before screenshot work.
 - When the shared single-account gate blocks local UI QA, mount the affected facade in a temporary localhost HTML harness instead of clearing browser storage or touching the live player save.
 - The in-app browser blocks `data:` QA harnesses; serve temporary module harnesses through Vite on `127.0.0.1:55173` so source imports stay same-origin.
+- Temporary Vite UI harnesses must define `--design-width` and `--design-height`; app bootstrap normally supplies them, and `.game-stage` can collapse without them.
+- If the in-app browser cannot reach `127.0.0.1:55173` or `localhost:55173`, use the Vite network URL printed by `npm run dev`; shell checks can still use localhost.
 - Before release, verify `package.json` has been bumped beyond the latest pushed release; release automation reuses the current version and will not bump it.
 - Before running release automation, verify the current `PLAYER_CHANGELOG.md` section exists; the script commits/pushes before Discord upload fails on a missing changelog.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
@@ -150,6 +178,7 @@
 - Player-facing event logs belong in gameplay/logs; page code should only render snapshot logs.
 - Completion logs for timed systems should come from system-manager callbacks, not from page button clicks.
 - Timed gameplay should consume uncapped `frame.timerDeltaSeconds`; keep capped `frame.deltaSeconds` only for render/UI stability.
+- Frame snapshot throttling must publish once when timer work drops to none; otherwise final countdown labels can stick at `1s`.
 - Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
@@ -200,6 +229,7 @@
 - NPC market auto-sell uses one shelf-level timer; changing a selected stand item resets that shared timer, and each completed cycle attempts all eligible selected stands.
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
+- SpacetimeDB subscription cleanup must be locally idempotent; `isEnded()` can still be false after `unsubscribe()` was requested, and a second call throws.
 - Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
 - For Pixel/WebView perf checks, keep the phone awake and profile CPU: Android adaptive refresh can make raw rAF look capped when static, while full gameplay snapshot construction can still be the actual hot path.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
@@ -337,6 +367,8 @@
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
+- Room UI animation should use sine-ish interpolation; keep rubber from tiny keyframe overshoot, not y>1 easing curves.
+- Shared press/release motion should use individual `scale`/`translate`, not `transform`, so centered or positioned controls keep their existing transforms.
 - Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
 - Player-facing UI labels should stay lowercase, including seed, herb, potion, research, notice, and task labels; preserve user-entered names as typed.
 - Project typography uses `Lexend` at `13px` source size with tabular lining numerals for values.
@@ -477,6 +509,7 @@
 - Workshop tasks reserve collapsed height in normal flow, then expanded requirements overlay lower Workshop content; do not push `mana sphere` or action controls down.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
+- Workshop task progress rails use shared content-box `.style-progress`; subtract `2 * --style-border-width` from rail width when its outer edge must align with the task row/action button.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
 - Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.
@@ -488,7 +521,10 @@
 - Logs popup shows newest entries first, starts at top, and uses scroll progress plus bottom fade instead of showing a native scrollbar.
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
+- Smooth timed progress bars with compositor `transform` transitions from the latest snapshot to completion; do not raise gameplay snapshot cadence just to reduce visible stepping.
 - Brewing selected recipe guide renders inside the cauldron; do not add a separate guide box back to the bottom of the room.
+- Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; keep resource-color overrides scoped so zero-count selected seeds can still show seed color.
+- Research item-name spans need their own `data-resource-color`; item icons alone do not color the text, and locked rows rely on the unavailable ancestor to suppress that color.
 
 ## Development Operations
 

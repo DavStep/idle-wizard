@@ -20,6 +20,7 @@ export class GameConfigSubscriptionManager {
     this.bootstrapResearchConfigs = [];
     this.bootstrapGameConfigs = [];
     this.subscriptions = [];
+    this.unsubscribeRequests = new WeakSet();
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
   }
@@ -85,9 +86,7 @@ export class GameConfigSubscriptionManager {
     this.unbindTable(this.maintenanceTable);
 
     for (const subscription of this.subscriptions) {
-      if (!subscription.isEnded?.()) {
-        subscription.unsubscribe();
-      }
+      this.unsubscribeOnce(subscription);
     }
 
     this.connection = null;
@@ -169,18 +168,36 @@ export class GameConfigSubscriptionManager {
       .onApplied(() => {
         applied = true;
         onApplied?.();
-        if (!subscription?.isEnded?.()) {
-          subscription?.unsubscribe?.();
-        }
+        this.unsubscribeOnce(subscription);
       })
       .onError(() => this.publishFromTables())
       .subscribe(query);
 
-    if (applied && !subscription?.isEnded?.()) {
-      subscription?.unsubscribe?.();
+    if (applied) {
+      this.unsubscribeOnce(subscription);
     }
 
     return subscription;
+  }
+
+  unsubscribeOnce(subscription) {
+    if (!subscription || this.unsubscribeRequests.has(subscription) || subscription.isEnded?.()) {
+      return;
+    }
+
+    this.unsubscribeRequests.add(subscription);
+
+    try {
+      subscription.unsubscribe?.();
+    } catch (error) {
+      const message = String(error?.message ?? error ?? '');
+      if (message.includes('Unsubscribe has already been called')) {
+        return;
+      }
+
+      this.unsubscribeRequests.delete(subscription);
+      throw error;
+    }
   }
 
   subscribeLiveQuery(query, onApplied) {

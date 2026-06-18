@@ -36,13 +36,18 @@
   --style-scroll-fade-opacity: 72%;
   --style-scroll-cue-height: 64px;
   --style-scroll-progress-gap: 10px;
-  --style-scroll-progress-height: calc(var(--style-progress-height) + 2px);
+  --style-border-width: 2px;
+  --style-border-strong-width: 2px;
+  --style-scroll-progress-height: calc(
+    var(--style-progress-height) + (var(--style-border-width) * 2)
+  );
   --style-scroll-progress-block-size: calc(
     var(--style-scroll-progress-gap) + var(--style-scroll-progress-height)
   );
-  --style-border: 1px solid var(--style-stroke);
+  --style-border: var(--style-border-width) solid var(--style-stroke);
   --style-tab-border: var(--style-border-strong);
-  --style-border-strong: 2px solid var(--style-stroke);
+  --style-border-strong: var(--style-border-strong-width) solid
+    var(--style-stroke);
   --style-font-size: 13px;
   --style-dialog-title-font-size: 14px;
   --style-panel-padding: 5px 10px;
@@ -60,7 +65,9 @@
   --style-box-title-top: -12px;
   --style-box-border-label-font-size: 11px;
   --style-box-border-label-line-height: 14px;
-  --style-page-tab-button-height: calc(var(--style-box-border-label-line-height) * 2);
+  --style-page-tab-button-height: calc(
+    var(--style-box-border-label-line-height) * 2
+  );
   --style-box-border-label-offset: -7px;
   --style-box-border-label-padding-x: 2px;
   --style-tiny-font-size: 10px;
@@ -91,12 +98,27 @@
   --style-room-content-edge: 16px;
   --style-room-content-top: 88px;
   --style-reward-flyout-top: calc(var(--style-room-content-top) + 182px);
-  --style-item-drop-size: clamp(34px, calc(var(--app-stage-width, 100vw) * 0.072), 78px);
-  --style-herb-drop-size: clamp(38px, calc(var(--app-stage-width, 100vw) * 0.084), 90px);
-  --style-potion-drop-size: clamp(36px, calc(var(--app-stage-width, 100vw) * 0.078), 84px);
-  --style-room-chat-bottom: 50px;
+  --style-item-drop-size: clamp(
+    34px,
+    calc(var(--app-stage-width, 100vw) * 0.072),
+    78px
+  );
+  --style-herb-drop-size: clamp(
+    38px,
+    calc(var(--app-stage-width, 100vw) * 0.084),
+    90px
+  );
+  --style-potion-drop-size: clamp(
+    36px,
+    calc(var(--app-stage-width, 100vw) * 0.078),
+    84px
+  );
+  --style-room-chat-bottom: 64px;
   --style-room-chat-source-height: calc(
-    (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
+    (
+        var(--style-world-chat-row-height) *
+          var(--style-world-chat-preview-lines)
+      ) +
       var(--style-world-chat-row-gap) + 12px
   );
   --style-room-chat-title-overhang: 12px;
@@ -109,53 +131,66 @@
   --style-room-nav-button-width: 100px;
   --brewing-page-guide-sequence-height: var(--style-row-min-height);
   --brewing-page-guide-panel-height: calc(
-    var(--style-row-min-height) + 3px + var(--brewing-page-guide-sequence-height) +
-      12px
+    var(--style-row-min-height) + 3px +
+      var(--brewing-page-guide-sequence-height) + 12px
   );
   --brewing-page-guide-controls-gap: 8px;
-  --brewing-page-footer-controls-height: calc(var(--style-row-min-height) + 7px);
+  --brewing-page-footer-controls-height: calc(
+    var(--style-row-min-height) + 7px
+  );
   --brewing-page-footer-controls-clearance: calc(
     var(--brewing-page-footer-controls-height) +
       (var(--brewing-page-guide-controls-gap) * 2)
   );
   --brewing-page-guide-controls-bottom: calc(
     var(--style-room-chat-clearance) + var(--brewing-page-guide-panel-height) +
-      var(--style-room-chat-title-overhang) + var(--brewing-page-guide-controls-gap)
+      var(--style-room-chat-title-overhang) +
+      var(--brewing-page-guide-controls-gap)
   );
   --brewing-page-herb-rows-height: 132px;
   --brewing-page-herbs-box-reserved-height: calc(
-    var(--brewing-page-herb-rows-height) + var(--style-scroll-progress-block-size) + 12px
+    var(--brewing-page-herb-rows-height) +
+      var(--style-scroll-progress-block-size) + 12px
   );
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
   --garden-page-plot-row-min-height: calc(
-    var(--style-row-min-height) + 2px + var(--garden-page-plot-progress-slot-height)
+    var(--style-row-min-height) + 2px +
+      var(--garden-page-plot-progress-slot-height)
   );
   --garden-page-plot-rows-height: 220px;
   --garden-page-herb-rows-height: 210px;
   --garden-page-seed-rows-height: 360px;
-  --garden-page-plot-box-height: calc(var(--garden-page-plot-rows-height) + 16px);
+  --garden-page-plot-box-height: calc(
+    var(--garden-page-plot-rows-height) + 16px
+  );
   --style-motion-fast: 140ms;
-  --style-motion-normal: 190ms;
-  --style-motion-expand: 230ms;
-  --style-motion-dialog: 250ms;
-  --style-motion-section: 230ms;
-  --style-motion-section-step: 28ms;
-  --style-motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --style-motion-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
-  --style-motion-ease-rubber: cubic-bezier(0.2, 1.32, 0.36, 1);
+  --style-motion-press: 165ms;
+  --style-press-scale: 0.97;
+  --style-motion-normal: 205ms;
+  --style-motion-expand: 225ms;
+  --style-motion-dialog: 225ms;
+  --style-motion-section: 225ms;
+  --style-motion-section-step: 24ms;
+  --style-motion-ease: cubic-bezier(0.37, 0, 0.63, 1);
+  --style-motion-ease-soft: cubic-bezier(0.39, 0.575, 0.565, 1);
+  --style-motion-ease-rubber: cubic-bezier(0.39, 0.575, 0.565, 1);
+  --style-motion-ease-expand-rubber: cubic-bezier(0.2, 1.12, 0.36, 1);
   --style-block-shadow: 5px 5px 5px var(--style-muted);
   --style-overlay-shadow: 5px 5px 5px var(--style-muted);
   --style-tooltip-shadow: -1px 3px 2px var(--style-muted);
   --style-ui-scale: 3;
   --app-viewport-width: 100vw;
   --app-viewport-height: 100vh;
-  --app-visible-stage-height: var(--app-stage-height, var(--app-viewport-height));
+  --app-visible-stage-height: var(
+    --app-stage-height,
+    var(--app-viewport-height)
+  );
   --app-keyboard-inset: 0px;
   --style-font:
-    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   color-scheme: light;
   background: var(--style-bg);
   color: var(--style-text);
@@ -172,14 +207,15 @@
 
 :root[data-style-font="comic-sans-mono"] {
   --style-font:
-    "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS", "Comic Sans",
-    ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS",
+    "Comic Sans", ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono",
+    Menlo, monospace;
 }
 
 :root[data-style-font="lexend"] {
   --style-font:
-    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 :root[data-style-theme="black"] {
@@ -322,7 +358,8 @@
   color: var(--style-resource-herb);
 }
 
-:root :is(
+:root
+  :is(
     [aria-disabled="true"],
     :disabled,
     .is-disabled,
@@ -336,7 +373,8 @@
   color: inherit;
 }
 
-:root [data-resource-color]:is(
+:root
+  [data-resource-color]:is(
     [aria-disabled="true"],
     :disabled,
     .is-disabled,
@@ -443,15 +481,17 @@ body {
   height: var(--app-viewport-height);
   place-items: center;
   background: var(--style-bg);
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .game-stage {
   position: relative;
   width: min(
     var(--app-viewport-width),
-    calc(var(--app-viewport-height) * var(--design-width) / var(--design-height))
+    calc(
+      var(--app-viewport-height) * var(--design-width) / var(--design-height)
+    )
   );
   height: min(
     var(--app-viewport-height),
@@ -471,7 +511,8 @@ body {
 
 .game-stage.is-control-revealing :where(button, [role="button"]) {
   pointer-events: none;
-  animation: stage-control-reveal var(--style-motion-expand) var(--style-motion-ease-soft) both;
+  animation: stage-control-reveal var(--style-motion-expand)
+    var(--style-motion-ease-rubber) both;
 }
 
 .game-stage.is-control-revealing
@@ -491,7 +532,10 @@ body {
 }
 
 .game-stage.is-control-revealing
-  :where(.room-bottom-panel-layer button, .room-bottom-panel-layer [role="button"]) {
+  :where(
+    .room-bottom-panel-layer button,
+    .room-bottom-panel-layer [role="button"]
+  ) {
   animation-delay: 260ms;
 }
 
@@ -509,8 +553,23 @@ body {
   user-select: none;
 }
 
-.game-stage :where(input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]),
-.game-stage :where(input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]) * {
+.game-stage
+  :where(
+    input,
+    textarea,
+    select,
+    [contenteditable="true"],
+    [contenteditable="plaintext-only"]
+  ),
+.game-stage
+  :where(
+    input,
+    textarea,
+    select,
+    [contenteditable="true"],
+    [contenteditable="plaintext-only"]
+  )
+  * {
   -webkit-touch-callout: default;
   -webkit-user-select: text;
   user-select: text;
@@ -569,23 +628,29 @@ body {
 }
 
 .app-account-link-choice:not([hidden]) {
-  animation: style-overlay-enter var(--style-motion-dialog) var(--style-motion-ease) both;
+  animation: style-overlay-enter var(--style-motion-dialog)
+    var(--style-motion-ease) both;
 }
 
 .app-account-link-choice__panel {
-  width: calc(260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(
+    260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
   max-width: 100%;
   outline: none;
 }
 
 .app-account-link-choice:not([hidden]) .app-account-link-choice__panel {
   animation: app-account-link-choice-dialog-enter var(--style-motion-dialog)
-    var(--style-motion-ease) both;
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
 }
 
 .style-dialog.app-account-link-choice__dialog {
   width: 260px;
-  max-width: calc(100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px);
+  max-width: calc(
+    100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px
+  );
   margin-inline: auto;
 }
 
@@ -661,23 +726,29 @@ body {
 }
 
 .app-fresh-start-choice:not([hidden]) {
-  animation: style-overlay-enter var(--style-motion-dialog) var(--style-motion-ease) both;
+  animation: style-overlay-enter var(--style-motion-dialog)
+    var(--style-motion-ease) both;
 }
 
 .app-fresh-start-choice__panel {
-  width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(
+    300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
   max-width: 100%;
   outline: none;
 }
 
 .app-fresh-start-choice:not([hidden]) .app-fresh-start-choice__panel {
   animation: app-account-link-choice-dialog-enter var(--style-motion-dialog)
-    var(--style-motion-ease) both;
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
 }
 
 .style-dialog.app-fresh-start-choice__dialog {
   width: 300px;
-  max-width: calc(100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px);
+  max-width: calc(
+    100% - var(--style-dialog-padding) - var(--style-dialog-padding) - 4px
+  );
   margin-inline: auto;
 }
 
@@ -775,13 +846,31 @@ body {
   pointer-events: none;
 }
 
+.game-stage[data-pixi-mirror="true"]
+  :where(
+    .workshop-page,
+    .brewing-page,
+    .garden-page,
+    .research-page,
+    .shop-page,
+    .room-page__popup-layer,
+    .room-top-panel-layer,
+    .room-bottom-panel-layer,
+    .room-world-chat-layer,
+    .room-player-info-popup,
+    .room-alliance-info-popup
+  ) {
+  filter: opacity(0);
+}
+
 .workshop-page {
   position: absolute;
   inset: 0;
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: room-page-enter var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
 }
 
 .brewing-page {
@@ -790,7 +879,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: room-page-enter var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
 }
 
 .garden-page {
@@ -799,7 +889,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: room-page-enter var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
 }
 
 .shop-page {
@@ -808,7 +899,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: room-page-enter var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
 }
 
 .research-page {
@@ -817,7 +909,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: room-page-enter var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
 }
 
 .workshop-page__wall {
@@ -1046,8 +1139,11 @@ body {
     .shop-page__market-panel > .style-panel
   ):not([hidden]) {
   transform-origin: center top;
-  animation: room-section-enter var(--style-motion-section) var(--style-motion-ease) both;
-  animation-delay: calc(var(--room-section-index, 0) * var(--style-motion-section-step));
+  animation: room-section-enter var(--style-motion-section)
+    var(--style-motion-ease-rubber) both;
+  animation-delay: calc(
+    var(--room-section-index, 0) * var(--style-motion-section-step)
+  );
 }
 
 .workshop-page__mana-sphere,
@@ -1105,7 +1201,7 @@ body {
 .tutorial-layer {
   position: absolute;
   inset: 0;
-  z-index: 7;
+  z-index: 89;
   width: calc(100% / var(--style-ui-scale));
   height: calc(100% / var(--style-ui-scale));
   pointer-events: none;
@@ -1117,7 +1213,8 @@ body {
   display: none;
 }
 
-.game-stage[data-tutorial-reveal] :where(
+.game-stage[data-tutorial-reveal]
+  :where(
     .room-top-panel-layer,
     .room-bottom-panel-layer,
     .room-world-chat-layer,
@@ -1133,10 +1230,9 @@ body {
     translate var(--style-motion-normal) var(--style-motion-ease);
 }
 
-.game-stage[data-tutorial-reveal] :where(
-    .room-top-panel-layer,
-    .room-bottom-panel-layer
-  ) :where(button, [role="button"], input, select, textarea) {
+.game-stage[data-tutorial-reveal]
+  :where(.room-top-panel-layer, .room-bottom-panel-layer)
+  :where(button, [role="button"], input, select, textarea) {
   pointer-events: none;
 }
 
@@ -1153,17 +1249,12 @@ body {
   translate: 0;
 }
 
-.game-stage[data-tutorial-reveal~="top"] .room-top-panel-layer :where(
-    button,
-    [role="button"],
-    input,
-    select,
-    textarea
-  ),
-.game-stage[data-tutorial-reveal~="rooms"] .room-bottom-panel-layer :where(
-    button,
-    [role="button"]
-  ),
+.game-stage[data-tutorial-reveal~="top"]
+  .room-top-panel-layer
+  :where(button, [role="button"], input, select, textarea),
+.game-stage[data-tutorial-reveal~="rooms"]
+  .room-bottom-panel-layer
+  :where(button, [role="button"]),
 .game-stage[data-tutorial-reveal~="mana"] .workshop-page__mana-sphere,
 .game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
 .game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
@@ -1209,13 +1300,47 @@ body {
   height: auto;
   margin: 0;
   image-rendering: auto;
-  filter:
-    drop-shadow(0 1px 0 var(--style-surface))
+  filter: drop-shadow(0 1px 0 var(--style-surface))
     drop-shadow(0 2px 1px rgb(0 0 0 / 30%));
-  transform:
-    rotate(var(--tutorial-pointer-rotation, 0deg))
+  transform: rotate(var(--tutorial-pointer-rotation, 0deg))
     scaleX(var(--tutorial-pointer-scale-x, 1));
   transform-origin: 50% 50%;
+}
+
+.tutorial-layer__pointer-spine-shell {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: none;
+  width: 76px;
+  height: 90px;
+  margin: 0;
+  pointer-events: none;
+  translate: -50% -50%;
+  transform: rotate(var(--tutorial-pointer-spine-rotation, 0deg));
+  transform-origin: 50% 50%;
+}
+
+.tutorial-layer__pointer-spine-shell[hidden] {
+  display: none;
+}
+
+.tutorial-layer__pointer-spine {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  filter: drop-shadow(0 1px 0 var(--style-surface))
+    drop-shadow(0 2px 1px rgb(0 0 0 / 30%));
+}
+
+.tutorial-layer__pointer[data-spine-ready="true"] .tutorial-layer__pointer-image {
+  visibility: hidden;
+}
+
+.tutorial-layer__pointer[data-spine-ready="true"]
+  .tutorial-layer__pointer-spine-shell {
+  display: block;
 }
 
 .tutorial-layer__pointer.is-hiding {
@@ -1234,11 +1359,19 @@ body {
   --tutorial-pointer-push-y: 3.4px;
 }
 
+.tutorial-layer__pointer[data-placement="top-left"] {
+  --tutorial-pointer-spine-rotation: 135deg;
+}
+
 .tutorial-layer__pointer[data-placement="top-right"] .tutorial-layer__pointer-image {
   --tutorial-pointer-rest-x: 1.4px;
   --tutorial-pointer-rest-y: -1.4px;
   --tutorial-pointer-push-x: -3.4px;
   --tutorial-pointer-push-y: 3.4px;
+}
+
+.tutorial-layer__pointer[data-placement="top-right"] {
+  --tutorial-pointer-spine-rotation: -135deg;
 }
 
 .tutorial-layer__pointer[data-placement="bottom-left"] .tutorial-layer__pointer-image {
@@ -1248,6 +1381,10 @@ body {
   --tutorial-pointer-push-y: -3.4px;
 }
 
+.tutorial-layer__pointer[data-placement="bottom-left"] {
+  --tutorial-pointer-spine-rotation: 45deg;
+}
+
 .tutorial-layer__pointer[data-placement="bottom-right"] .tutorial-layer__pointer-image {
   --tutorial-pointer-rest-x: 1.4px;
   --tutorial-pointer-rest-y: 1.4px;
@@ -1255,8 +1392,13 @@ body {
   --tutorial-pointer-push-y: -3.4px;
 }
 
+.tutorial-layer__pointer[data-placement="bottom-right"] {
+  --tutorial-pointer-spine-rotation: -45deg;
+}
+
 .tutorial-layer__pointer[data-placement] .tutorial-layer__pointer-image {
-  animation: tutorial-pointer-point 1450ms cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  animation: tutorial-pointer-point 1450ms cubic-bezier(0.37, 0, 0.63, 1)
+    infinite;
   will-change: translate;
 }
 
@@ -1286,7 +1428,8 @@ body {
 }
 
 .tutorial-layer__portrait[data-speaking] {
-  animation: tutorial-elara-portrait-talk 560ms cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  animation: tutorial-elara-portrait-talk 560ms cubic-bezier(0.25, 1, 0.5, 1)
+    infinite;
   will-change: translate, rotate;
 }
 
@@ -1314,6 +1457,13 @@ body {
 
 .tutorial-layer__objective-button.is-dragging {
   cursor: grabbing;
+}
+
+.tutorial-layer__objective-button.is-auto-moving,
+.tutorial-layer__objective.is-auto-moving,
+.tutorial-layer__lesson.is-auto-moving {
+  transition: translate var(--style-motion-expand) var(--style-motion-ease-soft);
+  will-change: translate;
 }
 
 .tutorial-layer__objective-button:not([hidden]) {
@@ -1378,6 +1528,45 @@ body {
   display: none;
 }
 
+.tutorial-layer__objective-button-drag-yell {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  z-index: 3;
+  display: block;
+  max-width: 68px;
+  padding: 0;
+  overflow: hidden;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: 10px;
+  font-weight: normal;
+  line-height: 13px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  translate: -50% 1px;
+  transition:
+    opacity var(--style-motion-fast) var(--style-motion-ease),
+    translate var(--style-motion-fast) var(--style-motion-ease-rubber);
+}
+
+.tutorial-layer__objective-button[aria-expanded="false"]
+  .tutorial-layer__objective-button-drag-yell {
+  top: 22px;
+  max-width: 58px;
+}
+
+.tutorial-layer__objective-button.is-dragging
+  .tutorial-layer__objective-button-drag-yell {
+  opacity: 1;
+  translate: -50% 0;
+}
+
 .tutorial-layer__objective-button-image {
   position: relative;
   z-index: 1;
@@ -1390,10 +1579,20 @@ body {
   pointer-events: none;
   filter: drop-shadow(0 1px 0 var(--style-surface));
   transform-origin: 48% 78%;
-  transition: transform var(--style-motion-expand) var(--style-motion-ease-rubber);
+  transition:
+    transform var(--style-motion-expand) var(--style-motion-ease-rubber),
+    scale var(--style-motion-fast) var(--style-motion-ease-rubber),
+    translate var(--style-motion-fast) var(--style-motion-ease-rubber);
 }
 
-.tutorial-layer__objective-button[aria-expanded="false"] .tutorial-layer__objective-button-image {
+.tutorial-layer__objective-button.is-dragging
+  .tutorial-layer__objective-button-image {
+  scale: 1.02;
+  translate: 0 -1px;
+}
+
+.tutorial-layer__objective-button[aria-expanded="false"]
+  .tutorial-layer__objective-button-image {
   position: absolute;
   right: 7px;
   bottom: 3px;
@@ -1402,31 +1601,59 @@ body {
   object-position: center bottom;
 }
 
+:root[data-style-icons="none"] .tutorial-layer__objective-button-image {
+  display: none;
+}
+
+:root[data-style-icons="none"] .tutorial-layer__objective-button:focus-visible {
+  outline: none;
+}
+
+:root[data-style-icons="none"]
+  .tutorial-layer__objective-button:focus-visible
+  .tutorial-layer__objective-button-label {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .tutorial-layer__objective-button-image[hidden] {
   display: none;
 }
 
-.tutorial-layer__objective-button[data-attention="true"] .tutorial-layer__objective-button-image {
+.tutorial-layer__objective-button[data-attention="true"]
+  .tutorial-layer__objective-button-image {
   animation: tutorial-elara-shake 2600ms cubic-bezier(0.25, 1, 0.5, 1) infinite;
-  filter:
-    drop-shadow(0 1px 0 var(--style-surface))
-    drop-shadow(0 0 4px var(--style-notification-current, var(--style-notification)))
+  filter: drop-shadow(0 1px 0 var(--style-surface))
+    drop-shadow(
+      0 0 4px var(--style-notification-current, var(--style-notification))
+    )
     drop-shadow(0 0 8px rgb(193 18 31 / 34%));
   transform-origin: 50% 78%;
 }
 
-.tutorial-layer__objective-button[data-speaking] .tutorial-layer__objective-button-image {
-  animation: tutorial-elara-portrait-talk 560ms cubic-bezier(0.25, 1, 0.5, 1) infinite;
+.tutorial-layer__objective-button[data-speaking]
+  .tutorial-layer__objective-button-image {
+  animation: tutorial-elara-portrait-talk 560ms cubic-bezier(0.25, 1, 0.5, 1)
+    infinite;
   will-change: translate, rotate;
 }
 
-.tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-image {
+.tutorial-layer__objective-button.is-dragging
+  .tutorial-layer__objective-button-image {
+  animation: tutorial-elara-drag-swing 320ms var(--style-motion-ease-rubber)
+    infinite;
+  will-change: rotate, translate;
+}
+
+.tutorial-layer__objective-button.is-collapsing
+  .tutorial-layer__objective-button-image {
   animation: tutorial-elara-objective-collapse var(--style-motion-expand)
     var(--style-motion-ease-rubber) both;
   will-change: transform;
 }
 
-.tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-label {
+.tutorial-layer__objective-button.is-collapsing
+  .tutorial-layer__objective-button-label {
   transform-origin: center;
   animation: tutorial-elara-help-label-snap var(--style-motion-expand)
     var(--style-motion-ease-rubber) both;
@@ -1617,16 +1844,16 @@ body {
 
 .tutorial-layer__objective:not([hidden]),
 .tutorial-layer__lesson:not([hidden]) {
-  animation: tutorial-objective-enter var(--style-motion-expand) var(--style-motion-ease-soft)
-    both;
+  animation: tutorial-objective-enter var(--style-motion-expand)
+    var(--style-motion-ease-soft) both;
 }
 
 .tutorial-layer__objective.is-hiding,
 .tutorial-layer__lesson.is-hiding {
   pointer-events: none;
   will-change: transform, opacity;
-  animation: tutorial-objective-hide var(--style-motion-expand) var(--style-motion-ease-rubber)
-    both;
+  animation: tutorial-objective-hide var(--style-motion-expand)
+    var(--style-motion-ease-rubber) both;
 }
 
 .tutorial-layer__objective[hidden],
@@ -1742,13 +1969,25 @@ body {
   }
 }
 
+@keyframes tutorial-elara-drag-swing {
+  0%,
+  100% {
+    rotate: -3.4deg;
+  }
+
+  50% {
+    rotate: 3.8deg;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .game-stage.is-control-revealing :where(button, [role="button"]) {
     pointer-events: auto;
     animation: none;
   }
 
-  .game-stage[data-tutorial-reveal] :where(
+  .game-stage[data-tutorial-reveal]
+    :where(
       .room-top-panel-layer,
       .room-bottom-panel-layer,
       .room-world-chat-layer,
@@ -1763,14 +2002,22 @@ body {
   .tutorial-layer__objective:not([hidden]),
   .tutorial-layer__objective.is-hiding,
   .tutorial-layer__lesson.is-hiding,
-  .tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-image,
-  .tutorial-layer__objective-button.is-collapsing .tutorial-layer__objective-button-label,
+  .room-bottom-panel__lock-popup.is-entering,
+  .room-bottom-panel__lock-popup.is-entering .room-bottom-panel__lock-dialog,
+  .tutorial-layer__objective-button.is-collapsing
+    .tutorial-layer__objective-button-image,
+  .tutorial-layer__objective-button.is-collapsing
+    .tutorial-layer__objective-button-label,
   .tutorial-layer__pointer,
   .tutorial-layer__pointer-image,
   .tutorial-layer__portrait[data-speaking],
-  .tutorial-layer__objective-button[data-speaking] .tutorial-layer__objective-button-image,
+  .tutorial-layer__objective-button[data-speaking]
+    .tutorial-layer__objective-button-image,
+  .tutorial-layer__objective-button.is-dragging
+    .tutorial-layer__objective-button-image,
   .tutorial-layer__objective-button[data-attention="true"]::after,
-  .tutorial-layer__objective-button[data-attention="true"] .tutorial-layer__objective-button-image,
+  .tutorial-layer__objective-button[data-attention="true"]
+    .tutorial-layer__objective-button-image,
   .game-stage .is-tutorial-target-emphasized {
     animation: none;
   }
@@ -1786,6 +2033,13 @@ body {
     will-change: auto;
   }
 
+  .room-bottom-panel__lock-popup.is-entering,
+  .room-bottom-panel__lock-popup.is-entering .room-bottom-panel__lock-dialog {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+
   .tutorial-layer__pointer-image {
     will-change: auto;
   }
@@ -1793,22 +2047,38 @@ body {
   .tutorial-layer__objective-button[data-attention="true"]::after {
     opacity: 0.48;
   }
+
+  .tutorial-layer__objective-button.is-dragging
+    .tutorial-layer__objective-button-image {
+    scale: 1;
+    translate: 0 0;
+  }
+
+  .tutorial-layer__objective-button.is-auto-moving,
+  .tutorial-layer__objective.is-auto-moving,
+  .tutorial-layer__lesson.is-auto-moving {
+    transition: none;
+    will-change: auto;
+  }
 }
 
 @keyframes stage-control-reveal {
   0% {
     opacity: 0;
-    scale: 0.985;
+    scale: 0.988;
+    translate: 0 2px;
   }
 
-  70% {
+  72% {
     opacity: 1;
-    scale: 1.025;
+    scale: 1.012;
+    translate: 0 -0.5px;
   }
 
   100% {
     opacity: 1;
     scale: 1;
+    translate: 0 0;
   }
 }
 
@@ -2085,7 +2355,10 @@ body {
 
 .research-page__row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(var(--style-research-value-width), max-content);
+  grid-template-columns: minmax(0, 1fr) minmax(
+      var(--style-research-value-width),
+      max-content
+    );
   align-items: start;
   min-height: var(--style-research-row-height);
   clear: both;
@@ -2104,7 +2377,10 @@ body {
 
 .shop-page__slot-row {
   display: grid;
-  grid-template-columns: 2ch minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(
+      var(--style-row-right-slot-width),
+      max-content
+    );
   align-items: center;
   column-gap: var(--style-row-column-gap);
   min-height: var(--style-row-min-height);
@@ -2125,7 +2401,10 @@ body {
 .shop-page__slot-unlock-button {
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: 2ch minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(
+      var(--style-row-right-slot-width),
+      max-content
+    );
   align-items: center;
   width: 100%;
   min-height: var(--style-row-min-height);
@@ -2299,7 +2578,9 @@ body {
 .mystery-text {
   display: inline-block;
   min-width: 6ch;
-  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family:
+    ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+    monospace;
   font-variant-numeric: tabular-nums lining-nums;
   letter-spacing: 0;
   white-space: pre;
@@ -2396,7 +2677,8 @@ body {
     text-decoration: underline;
   }
 
-  .shop-page__slot-unlock-button:not(:disabled):hover .shop-page__slot-unlock-action {
+  .shop-page__slot-unlock-button:not(:disabled):hover
+    .shop-page__slot-unlock-action {
     text-decoration: underline;
   }
 }
@@ -2546,8 +2828,16 @@ body {
   z-index: 21;
 }
 
+.workshop-page__tasks.is-expanding {
+  z-index: 21;
+}
+
 .workshop-page__tasks.is-collapsing {
   z-index: 21;
+}
+
+.workshop-page__tasks.is-task-dragging {
+  z-index: 22;
 }
 
 .workshop-page__tasks-backdrop {
@@ -2564,7 +2854,8 @@ body {
   background: rgb(var(--style-backdrop-rgb) / 48%);
   border: 0;
   border-radius: 0;
-  animation: style-overlay-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: style-overlay-enter var(--style-motion-normal)
+    var(--style-motion-ease) both;
 }
 
 .workshop-page__tasks-backdrop[hidden] {
@@ -2583,18 +2874,28 @@ body {
   height: 0;
   opacity: 0;
   overflow: hidden;
-  transition:
-    height var(--style-motion-expand) var(--style-motion-ease),
-    opacity var(--style-motion-fast) linear;
+  transition: height var(--style-motion-expand)
+    var(--style-motion-ease-expand-rubber);
 }
 
 .workshop-page__tasks-expanded-content-body {
   overflow: hidden;
 }
 
+.workshop-page__tasks.is-expanding .workshop-page__tasks-expanded-content,
+.workshop-page__tasks.is-collapsing .workshop-page__tasks-expanded-content {
+  opacity: 1;
+  will-change: height;
+}
+
 .workshop-page__tasks.is-expanded .workshop-page__tasks-expanded-content {
   height: auto;
   opacity: 1;
+}
+
+.workshop-page__tasks.is-task-dragging .workshop-page__tasks-expanded-content,
+.workshop-page__tasks.is-task-dragging .workshop-page__tasks-expanded-content-body {
+  overflow: visible;
 }
 
 .workshop-page__tasks-title {
@@ -2656,12 +2957,6 @@ body {
   display: none;
 }
 
-.workshop-page__task-list:not([hidden]) {
-  transform-origin: top center;
-  animation: style-expand-list-enter var(--style-motion-expand) var(--style-motion-ease-soft)
-    both;
-}
-
 .workshop-page__tasks-toggle {
   position: absolute;
   bottom: var(--style-box-border-label-offset);
@@ -2689,10 +2984,10 @@ body {
 
 .workshop-page__task-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 66px 68px;
+  grid-template-columns: minmax(0, 1fr) minmax(52px, max-content) 78px;
   align-items: center;
   min-height: var(--style-row-min-height);
-  gap: 5px;
+  column-gap: 16px;
 }
 
 .workshop-page__task.is-draggable .workshop-page__task-row {
@@ -2726,22 +3021,18 @@ body {
 }
 
 .workshop-page__task.is-dragging {
-  opacity: 0.9;
+  opacity: 0.96;
 }
 
-.workshop-page__task-drag-ghost {
-  position: fixed;
-  z-index: 97;
-  box-sizing: border-box;
+.workshop-page__task.is-drag-lifted {
+  position: relative;
+  z-index: 98;
+  box-sizing: content-box;
   pointer-events: none;
   background: var(--style-surface);
-  opacity: 0.9;
+  opacity: 0.96;
+  transform-origin: center center;
   will-change: transform;
-}
-
-.workshop-page__task-drag-placeholder {
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .workshop-page__task.is-requirement-updated .workshop-page__task-progress-fill {
@@ -2764,8 +3055,9 @@ body {
 }
 
 .workshop-page__level-rewards {
-  margin-top: 5px;
-  padding-top: 5px;
+  position: relative;
+  margin-top: 9px;
+  padding-top: 9px;
   border-top: 1px solid var(--style-disabled);
 }
 
@@ -2778,28 +3070,35 @@ body {
 }
 
 .workshop-page__level-payoff-title {
-  font-size: var(--style-tiny-font-size);
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  left: 0;
+  padding-right: 3px;
+  color: var(--style-text);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
 }
 
 .workshop-page__level-payoff-rows {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  margin-top: 2px;
+  gap: 0;
   font-size: var(--style-tiny-font-size);
   line-height: var(--style-tiny-line-height);
 }
 
 .workshop-page__level-payoff-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: var(--style-row-column-gap);
   align-items: baseline;
+  min-height: var(--style-tiny-line-height);
 }
 
 .workshop-page__level-payoff-row--list {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
+  align-items: start;
 }
 
 .workshop-page__level-payoff-label {
@@ -2812,6 +3111,7 @@ body {
 .workshop-page__level-payoff-value {
   min-width: 0;
   font-variant-numeric: tabular-nums lining-nums;
+  justify-self: end;
   text-align: right;
   white-space: nowrap;
 }
@@ -2819,6 +3119,7 @@ body {
 .workshop-page__level-payoff-value--list {
   display: flex;
   flex-direction: column;
+  justify-self: start;
   align-items: flex-start;
   text-align: left;
   white-space: normal;
@@ -2871,7 +3172,8 @@ body {
 }
 
 .style-button.workshop-page__task-button {
-  width: 58px;
+  justify-self: end;
+  width: 78px;
   padding: 1px 4px;
   margin-bottom: 0;
   font-size: var(--style-tiny-font-size);
@@ -2891,6 +3193,7 @@ body {
 }
 
 .workshop-page__task-progress {
+  width: calc(100% - (var(--style-border-width) * 2));
   margin-top: 2px;
 }
 
@@ -2904,7 +3207,8 @@ body {
   top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
   bottom: calc(
-    var(--style-room-chat-clearance) + var(--brewing-page-footer-controls-clearance)
+    var(--style-room-chat-clearance) +
+      var(--brewing-page-footer-controls-clearance)
   );
   left: var(--style-room-content-edge);
   display: flex;
@@ -3218,7 +3522,9 @@ body {
   line-height: inherit;
 }
 
-.style-button.brewing-page__action-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.brewing-page__action-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-active-surface);
 }
 
@@ -3227,8 +3533,10 @@ body {
   border-color: transparent;
 }
 
-.style-button.brewing-page__action-button[aria-disabled="true"] .brewing-page__action-button-cost,
-.style-button.brewing-page__action-button:disabled .brewing-page__action-button-cost {
+.style-button.brewing-page__action-button[aria-disabled="true"]
+  .brewing-page__action-button-cost,
+.style-button.brewing-page__action-button:disabled
+  .brewing-page__action-button-cost {
   color: inherit;
 }
 
@@ -3261,7 +3569,9 @@ body {
 }
 
 .style-box
-  .brewing-page__cauldron-select-recipe-text:not(:disabled):not([aria-disabled="true"]) {
+  .brewing-page__cauldron-select-recipe-text:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   cursor: pointer;
 }
 
@@ -3325,7 +3635,9 @@ body {
 .style-button.brewing-page__potions-button {
   position: absolute;
   top: auto;
-  bottom: calc(var(--style-room-chat-clearance) + var(--brewing-page-guide-controls-gap));
+  bottom: calc(
+    var(--style-room-chat-clearance) + var(--brewing-page-guide-controls-gap)
+  );
   width: 132px;
   margin-bottom: 0;
   left: 50%;
@@ -3403,13 +3715,26 @@ body {
   width: 132px;
 }
 
+.style-button[class*="workshop-page__"]:not(
+    .workshop-page__summon-button
+  ):active:not(:disabled):not(.is-disabled),
+.workshop-page__world-chat-button:active:not(:disabled):not(.is-disabled) {
+  transform: scale(var(--style-press-scale));
+}
+
 .game-stage:has(.workshop-page__tasks.is-expanded)
-  :where(.room-top-panel-layer, .room-bottom-panel-layer, .room-world-chat-layer) {
+  :where(
+    .room-top-panel-layer,
+    .room-bottom-panel-layer,
+    .room-world-chat-layer
+  ) {
   opacity: 0.58;
   transition: opacity var(--style-motion-normal) var(--style-motion-ease);
 }
 
-.game-stage[data-tutorial-target-id^="page:"]:has(.workshop-page__tasks.is-expanded)
+.game-stage[data-tutorial-target-id^="page:"]:has(
+    .workshop-page__tasks.is-expanded
+  )
   .room-bottom-panel-layer {
   opacity: 1;
 }
@@ -3592,7 +3917,8 @@ body {
 .workshop-page__discoveries-rows {
   padding-top: 19px;
   height: calc(
-    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+    var(--style-tabbed-dialog-content-height) -
+      var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -3606,8 +3932,8 @@ body {
 .workshop-page__bag-rows {
   padding-top: 4px;
   height: calc(
-    var(--style-tabbed-dialog-content-height) - 4px - var(--style-scroll-progress-height) -
-      6px
+    var(--style-tabbed-dialog-content-height) - 4px -
+      var(--style-scroll-progress-height) - 6px
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -3621,9 +3947,11 @@ body {
 }
 
 .workshop-page__discovery-recipe-row.is-unknown,
-.workshop-page__discovery-recipe-row.is-unknown .brewing-page__recipe-ingredients-title,
+.workshop-page__discovery-recipe-row.is-unknown
+  .brewing-page__recipe-ingredients-title,
 .workshop-page__discovery-recipe-row.is-unknown .brewing-page__recipe-meta,
-.workshop-page__discovery-recipe-row .brewing-page__recipe-ingredient-row.is-unknown {
+.workshop-page__discovery-recipe-row
+  .brewing-page__recipe-ingredient-row.is-unknown {
   color: var(--style-disabled);
 }
 
@@ -3815,7 +4143,8 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__world-chat-message--recipe-discovery,
-.workshop-page__world-chat-message--recipe-discovery .workshop-page__world-chat-name {
+.workshop-page__world-chat-message--recipe-discovery
+  .workshop-page__world-chat-name {
   color: var(--style-announcement-gold);
 }
 
@@ -3830,7 +4159,10 @@ div.workshop-page__discovery-row {
   flex-direction: column;
   gap: var(--style-world-chat-row-gap);
   height: calc(
-    (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
+    (
+        var(--style-world-chat-row-height) *
+          var(--style-world-chat-preview-lines)
+      ) +
       var(--style-world-chat-row-gap)
   );
   overflow: hidden;
@@ -3855,7 +4187,10 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
   display: grid;
   height: calc(
-    (var(--style-world-chat-row-height) * var(--style-world-chat-preview-lines)) +
+    (
+        var(--style-world-chat-row-height) *
+          var(--style-world-chat-preview-lines)
+      ) +
       var(--style-world-chat-row-gap)
   );
   text-align: center;
@@ -3994,7 +4329,8 @@ div.workshop-page__discovery-row {
   min-height: var(--style-row-min-height);
 }
 
-.workshop-page__trade-alliance-list-row + .workshop-page__trade-alliance-list-row {
+.workshop-page__trade-alliance-list-row
+  + .workshop-page__trade-alliance-list-row {
   border-top: var(--style-border);
 }
 
@@ -4390,8 +4726,13 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-row {
   display: grid;
-  grid-template-columns: 2ch minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
-  grid-template-rows: var(--style-row-min-height) var(--garden-page-plot-progress-slot-height);
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(
+      var(--style-row-right-slot-width),
+      max-content
+    );
+  grid-template-rows: var(--style-row-min-height) var(
+      --garden-page-plot-progress-slot-height
+    );
   column-gap: var(--style-row-column-gap);
   row-gap: 2px;
   align-items: center;
@@ -4427,7 +4768,13 @@ div.workshop-page__discovery-row {
   cursor: pointer;
 }
 
-.garden-page__plot-row.is-empty.is-selected-without-seeds .garden-page__plot-action {
+.garden-page__plot-row.is-empty
+  .garden-page__plot-label[data-resource-color="seed"] {
+  color: var(--style-resource-seed);
+}
+
+.garden-page__plot-row.is-empty.is-selected-without-seeds
+  .garden-page__plot-action {
   cursor: default;
 }
 
@@ -4886,7 +5233,9 @@ div.workshop-page__discovery-row {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.style-button.research-page__research-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.research-page__research-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-active-surface);
 }
 
@@ -4979,19 +5328,39 @@ div.workshop-page__discovery-row {
   border: 0;
 }
 
-.style-button.brewing-page__recipes-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.brewing-page__potions-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.workshop-page__bag-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.workshop-page__prestige-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.workshop-page__world-chat-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.workshop-page__trade-alliance-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.shop-page__request-close:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.brewing-page__recipes-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.brewing-page__potions-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.workshop-page__bag-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.workshop-page__prestige-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.workshop-page__world-chat-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.workshop-page__trade-alliance-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.shop-page__request-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
 .style-button.shop-page__crystal-support-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
-.style-button.shop-page__direct-sell-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.shop-page__stock-buy-close:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.room-bottom-panel__lock-close:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__direct-sell-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.shop-page__stock-buy-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.room-bottom-panel__lock-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-surface);
 }
 
@@ -5307,16 +5676,20 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__trade-alliance-panel {
-  width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(
+    300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
 }
 
 .workshop-page__world-chat-panel {
   top: 48%;
   --workshop-world-chat-visible-center: calc(
-    var(--app-visible-stage-height, var(--app-stage-height)) / var(--style-ui-scale) /
-      2
+    var(--app-visible-stage-height, var(--app-stage-height)) /
+      var(--style-ui-scale) / 2
   );
-  width: calc(286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(
+    286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
 }
 
 .workshop-page__world-chat-popup:focus-within .workshop-page__world-chat-panel {
@@ -5327,7 +5700,9 @@ div.workshop-page__discovery-row {
 .shop-page__direct-sell-panel,
 .shop-page__demand-panel,
 .shop-page__market-popup-panel {
-  width: calc(300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(
+    300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
 }
 
 .shop-page__direct-sell-panel {
@@ -5505,7 +5880,8 @@ div.workshop-page__discovery-row {
 
 .shop-page__trade-history-rows {
   height: calc(
-    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+    var(--style-tabbed-dialog-content-height) -
+      var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -5518,7 +5894,8 @@ div.workshop-page__discovery-row {
 
 .shop-page__demand-rows {
   height: calc(
-    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+    var(--style-tabbed-dialog-content-height) -
+      var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -5582,7 +5959,10 @@ div.workshop-page__discovery-row {
 
 .shop-page__stock-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(var(--style-row-right-slot-width), max-content);
+  grid-template-columns: minmax(0, 1fr) minmax(
+      var(--style-row-right-slot-width),
+      max-content
+    );
   align-items: center;
   column-gap: var(--style-row-column-gap);
   min-height: var(--style-row-min-height);
@@ -5733,7 +6113,8 @@ div.workshop-page__discovery-row {
 .shop-page__direct-sell-selected-label[aria-pressed="true"],
 .shop-page__sell-item-button:hover .shop-page__direct-sell-target-label,
 .shop-page__sell-item-button:focus .shop-page__direct-sell-target-label,
-.shop-page__sell-item-button[aria-pressed="true"] .shop-page__direct-sell-target-label {
+.shop-page__sell-item-button[aria-pressed="true"]
+  .shop-page__direct-sell-target-label {
   text-decoration: underline;
 }
 
@@ -5796,7 +6177,9 @@ div.workshop-page__discovery-row {
   border-color: transparent;
 }
 
-.style-button.amount-selection-row__step:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.amount-selection-row__step:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-active-surface);
 }
 
@@ -5985,7 +6368,8 @@ div.workshop-page__discovery-row {
 
 .shop-page__sell-item-list {
   height: calc(
-    var(--style-tabbed-dialog-content-height) - var(--style-scroll-progress-block-size)
+    var(--style-tabbed-dialog-content-height) -
+      var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -6159,7 +6543,7 @@ div.workshop-page__discovery-row {
   touch-action: manipulation;
   cursor: pointer;
   background: transparent;
-  border: 1px solid transparent;
+  border: var(--style-border-width) solid transparent;
   border-radius: 0;
   -webkit-user-drag: none;
 }
@@ -6174,7 +6558,8 @@ div.workshop-page__discovery-row {
   outline: none;
 }
 
-.room-bottom-panel__tab:active {
+.room-bottom-panel__tab:active,
+.room-bottom-panel__tab.is-pressing {
   background: var(--style-active-surface);
 }
 
@@ -6199,6 +6584,7 @@ div.workshop-page__discovery-row {
   position: absolute;
   inset: 0;
   display: block;
+  opacity: 1;
   pointer-events: auto;
 }
 
@@ -6207,6 +6593,8 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__lock-panel {
+  --room-bottom-lock-enter-x: 0px;
+  --room-bottom-lock-origin-x: 50%;
   position: absolute;
   right: var(--style-room-chrome-edge);
   bottom: 46px;
@@ -6216,8 +6604,43 @@ div.workshop-page__discovery-row {
   outline: none;
 }
 
+.room-bottom-panel__lock-popup[data-page-id="brewing"]
+  .room-bottom-panel__lock-panel {
+  --room-bottom-lock-enter-x: -7px;
+  --room-bottom-lock-origin-x: 8%;
+}
+
+.room-bottom-panel__lock-popup[data-page-id="garden"]
+  .room-bottom-panel__lock-panel {
+  --room-bottom-lock-enter-x: -3px;
+  --room-bottom-lock-origin-x: 28%;
+}
+
+.room-bottom-panel__lock-popup[data-page-id="research"]
+  .room-bottom-panel__lock-panel {
+  --room-bottom-lock-enter-x: 3px;
+  --room-bottom-lock-origin-x: 72%;
+}
+
+.room-bottom-panel__lock-popup[data-page-id="shop"]
+  .room-bottom-panel__lock-panel {
+  --room-bottom-lock-enter-x: 7px;
+  --room-bottom-lock-origin-x: 92%;
+}
+
 .style-dialog.room-bottom-panel__lock-dialog {
   width: 190px;
+  transform-origin: var(--room-bottom-lock-origin-x) calc(100% + 8px);
+}
+
+.room-bottom-panel__lock-popup.is-entering {
+  animation: room-bottom-lock-popup-enter var(--style-motion-fast)
+    var(--style-motion-ease-soft) both;
+}
+
+.room-bottom-panel__lock-popup.is-entering .room-bottom-panel__lock-dialog {
+  animation: room-bottom-lock-dialog-enter var(--style-motion-dialog)
+    var(--style-motion-ease-rubber) both;
 }
 
 .room-bottom-panel__lock-message {
@@ -6296,7 +6719,10 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__resources {
   display: grid;
-  grid-template-columns: minmax(104px, 1.35fr) minmax(66px, 1fr) minmax(80px, 1fr);
+  grid-template-columns: minmax(104px, 1.35fr) minmax(66px, 1fr) minmax(
+      80px,
+      1fr
+    );
   column-gap: 10px;
   font-size: var(--room-top-panel-resource-font-size, var(--style-font-size));
   row-gap: 2px;
@@ -6361,13 +6787,18 @@ div.workshop-page__discovery-row {
   position: absolute;
   top: 72px;
   left: 50%;
-  width: calc(240px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(
+    240px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
   outline: none;
   transform: translateX(-50%);
 }
 
-.room-top-panel__settings:not(.is-username-prompt) .room-top-panel__settings-panel {
-  width: calc(310px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+.room-top-panel__settings:not(.is-username-prompt)
+  .room-top-panel__settings-panel {
+  width: calc(
+    310px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
 }
 
 .style-dialog.room-top-panel__settings-dialog {
@@ -6386,7 +6817,9 @@ div.workshop-page__discovery-row {
   top: 72px;
   left: 50%;
   z-index: 20;
-  width: calc(286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px);
+  width: calc(
+    286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+  );
   outline: none;
   transform: translateX(-50%);
 }
@@ -6532,9 +6965,11 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.room-top-panel__settings:not(.is-username-prompt) .room-top-panel__settings-pane {
+.room-top-panel__settings:not(.is-username-prompt)
+  .room-top-panel__settings-pane {
   height: calc(
-    var(--room-top-panel-settings-content-height) - var(--style-scroll-progress-block-size)
+    var(--room-top-panel-settings-content-height) -
+      var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -6584,7 +7019,8 @@ div.workshop-page__discovery-row {
   caret-color: var(--style-text);
 }
 
-.room-top-panel__username-section:focus-within .style-input.room-top-panel__username-input {
+.room-top-panel__username-section:focus-within
+  .style-input.room-top-panel__username-input {
   background: var(--style-active-surface);
 }
 
@@ -6706,15 +7142,22 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__visual-options {
   display: grid;
-  gap: 6px;
+  gap: 0;
 }
 
 .room-top-panel__visual-option {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: 2px;
   align-items: start;
   min-height: var(--style-row-min-height);
+}
+
+.room-top-panel__visual-option + .room-top-panel__visual-option {
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid var(--style-stroke);
 }
 
 .room-top-panel__visual-option-name,
@@ -6742,13 +7185,19 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__font-button[data-font="comic-sans-mono"] {
   font-family:
-    "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS", "Comic Sans",
-    ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS",
+    "Comic Sans", ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono",
+    Menlo, monospace;
 }
 
 .room-top-panel__font-button[data-font="lexend"] {
   font-family:
-    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Lexend,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
 }
 
@@ -6811,7 +7260,9 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__theme-preview-box {
   position: relative;
-  min-height: calc(var(--style-row-min-height) + var(--style-scroll-progress-height) + 8px);
+  min-height: calc(
+    var(--style-row-min-height) + var(--style-scroll-progress-height) + 8px
+  );
   padding: 5px 10px;
   color: var(--theme-preview-text);
   background: var(--theme-preview-surface);
@@ -6839,7 +7290,10 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__visual-preview .room-top-panel__preview-progress {
   height: var(--style-progress-height);
-  background: var(--theme-preview-surface, var(--style-progress-rail-background));
+  background: var(
+    --theme-preview-surface,
+    var(--style-progress-rail-background)
+  );
   border: 1px solid var(--theme-preview-stroke, var(--style-stroke));
 }
 
@@ -6899,7 +7353,9 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
-:root .room-top-panel__color-preview[data-preview-color="monochrome"] [data-resource-color] {
+:root
+  .room-top-panel__color-preview[data-preview-color="monochrome"]
+  [data-resource-color] {
   color: var(--style-text);
 }
 
@@ -6940,7 +7396,8 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
-:root .room-top-panel__icon-preview[data-preview-icons="none"]
+:root
+  .room-top-panel__icon-preview[data-preview-icons="none"]
   :where(
     .style-resource-label__icon,
     .style-seed-label__icon,
@@ -6950,7 +7407,8 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-:root .room-top-panel__icon-preview[data-preview-icons="none"]
+:root
+  .room-top-panel__icon-preview[data-preview-icons="none"]
   :where(
     .style-resource-label__text,
     .style-seed-label__text,
@@ -6960,7 +7418,8 @@ div.workshop-page__discovery-row {
   display: inline;
 }
 
-:root .room-top-panel__icon-preview[data-preview-icons="icons"]
+:root
+  .room-top-panel__icon-preview[data-preview-icons="icons"]
   :where(
     .style-resource-label__icon,
     .style-seed-label__icon,
@@ -6970,12 +7429,19 @@ div.workshop-page__discovery-row {
   display: inline-block;
 }
 
-:root .room-top-panel__icon-preview[data-preview-icons="icons"] .style-resource-label__text {
+:root
+  .room-top-panel__icon-preview[data-preview-icons="icons"]
+  .style-resource-label__text {
   display: none;
 }
 
-:root .room-top-panel__icon-preview[data-preview-icons="icons"]
-  :where(.style-seed-label__text, .style-herb-label__text, .style-potion-label__text) {
+:root
+  .room-top-panel__icon-preview[data-preview-icons="icons"]
+  :where(
+    .style-seed-label__text,
+    .style-herb-label__text,
+    .style-potion-label__text
+  ) {
   display: inline;
 }
 
@@ -7315,10 +7781,13 @@ div.workshop-page__discovery-row {
   background: var(--style-surface);
   border: var(--style-border);
   border-radius: 0;
+  transform-origin: center;
   transition:
     color var(--style-motion-fast) linear,
     border-color var(--style-motion-fast) linear,
-    background-color var(--style-motion-fast) linear;
+    background-color var(--style-motion-fast) linear,
+    scale var(--style-motion-press) var(--style-motion-ease-rubber),
+    translate var(--style-motion-press) var(--style-motion-ease-rubber);
   user-select: none;
 }
 
@@ -7345,6 +7814,7 @@ div.workshop-page__discovery-row {
   text-align: center;
   text-shadow: 0 1px 0 rgb(255 255 255 / 70%);
   transform: translate(-50%, -50%);
+  transform-origin: center;
   white-space: normal;
 }
 
@@ -7354,6 +7824,11 @@ div.workshop-page__discovery-row {
   font-size: var(--style-box-border-label-font-size);
   line-height: normal;
   border: 0;
+}
+
+.game-stage:not([data-tutorial-reveal])
+  .style-button.workshop-page__summon-button:not([hidden]) {
+  transform-origin: center;
 }
 
 .workshop-page__summon-circle {
@@ -7415,7 +7890,8 @@ div.workshop-page__discovery-row {
   box-shadow: 0 0 0 1px var(--style-surface);
 }
 
-.style-button.workshop-page__summon-button:disabled .workshop-page__summon-button-text,
+.style-button.workshop-page__summon-button:disabled
+  .workshop-page__summon-button-text,
 .style-button.workshop-page__summon-button[aria-disabled="true"]
   .workshop-page__summon-button-text {
   color: var(--style-text);
@@ -7445,12 +7921,15 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.workshop-page__summon-button:hover .workshop-page__summon-circle,
-.style-button.workshop-page__summon-button:focus-visible .workshop-page__summon-circle {
+.style-button.workshop-page__summon-button:focus-visible
+  .workshop-page__summon-circle {
   filter: brightness(1.05);
 }
 
-.style-button.workshop-page__summon-button:hover .workshop-page__summon-button-label,
-.style-button.workshop-page__summon-button:focus-visible .workshop-page__summon-button-label {
+.style-button.workshop-page__summon-button:hover
+  .workshop-page__summon-button-label,
+.style-button.workshop-page__summon-button:focus-visible
+  .workshop-page__summon-button-label {
   text-decoration: underline;
 }
 
@@ -7464,14 +7943,7 @@ div.workshop-page__discovery-row {
     [aria-disabled="true"]
   )
   .workshop-page__summon-button-text {
-  background: var(--style-active-surface);
-}
-
-.style-button.workshop-page__summon-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  )
-  .workshop-page__summon-circle {
-  transform: scale(0.985);
+  background: var(--style-surface);
 }
 
 .style-button.shop-page__buy-slot-button {
@@ -7505,8 +7977,12 @@ div.workshop-page__discovery-row {
   border: 0;
 }
 
-.style-button.shop-page__other-shops-button:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.shop-page__trade-history-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__other-shops-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.shop-page__trade-history-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-active-surface);
 }
 
@@ -7601,8 +8077,12 @@ div.workshop-page__discovery-row {
   white-space: normal;
 }
 
-.style-button.shop-page__demand-button:active:not(:disabled):not([aria-disabled="true"]),
-.style-button.shop-page__direct-sell-button:active:not(:disabled):not([aria-disabled="true"]),
+.style-button.shop-page__demand-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.shop-page__direct-sell-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
 .style-button.shop-page__direct-sell-help-button:active:not(:disabled):not(
     [aria-disabled="true"]
   ) {
@@ -7644,7 +8124,9 @@ div.workshop-page__discovery-row {
   border-color: transparent;
 }
 
-.style-button.shop-page__stock-buy-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__stock-buy-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-active-surface);
 }
 
@@ -7722,7 +8204,9 @@ div.workshop-page__discovery-row {
   border: 0;
 }
 
-.style-button.shop-page__stock-type-button:active:not(:disabled):not([aria-disabled="true"]) {
+.style-button.shop-page__stock-type-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
   background: var(--style-active-surface);
 }
 
@@ -7779,7 +8263,8 @@ div.workshop-page__discovery-row {
   touch-action: manipulation;
 }
 
-.shop-page__slot-item-value :where(
+.shop-page__slot-item-value
+  :where(
     .style-resource-label__icon,
     .style-resource-label__text,
     .style-seed-label__icon,
@@ -7789,7 +8274,8 @@ div.workshop-page__discovery-row {
     .style-potion-label__icon,
     .style-potion-label__text
   ),
-.shop-page__sell-item-button :where(
+.shop-page__sell-item-button
+  :where(
     .style-resource-label__icon,
     .style-resource-label__text,
     .style-seed-label__icon,
@@ -7879,8 +8365,10 @@ div.workshop-page__discovery-row {
   .workshop-page__tasks-title,
   .workshop-page__tasks-toggle,
   .shop-page__slot-row--interactive .shop-page__slot-item-value,
-  .shop-page__sell-item-button:not(:disabled):not([aria-disabled="true"]) .row_key,
-  .garden-page__plot-row.is-empty:not(.is-selected-without-seeds) .garden-page__plot-action,
+  .shop-page__sell-item-button:not(:disabled):not([aria-disabled="true"])
+    .row_key,
+  .garden-page__plot-row.is-empty:not(.is-selected-without-seeds)
+    .garden-page__plot-action,
   .garden-page__plot-row.is-processing .garden-page__plot-action,
   .garden-page__plot-row.is-ready .garden-page__plot-action,
   .garden-page__seed-button:not(:disabled) .row_key,
@@ -7898,8 +8386,59 @@ div.workshop-page__discovery-row {
   }
 }
 
-.style-button:active:not(:disabled):not([aria-disabled="true"]) {
+:where(
+  button,
+  [role="button"],
+  .room-bottom-panel__tab,
+  .room-top-panel__username,
+  .room-top-panel__level,
+  .workshop-page__row--interactive,
+  .workshop-page__tasks-title,
+  .workshop-page__tasks-toggle,
+  .shop-page__slot-row--interactive,
+  .shop-page__slot-unlock-button,
+  .shop-page__sell-item-button,
+  .garden-page__plot-row,
+  .garden-page__seed-button,
+  .research-page__research-label-button
+) {
+  transform-origin: center;
+  transition:
+    background-color var(--style-motion-fast) linear,
+    scale var(--style-motion-press) var(--style-motion-ease-rubber),
+    translate var(--style-motion-press) var(--style-motion-ease-rubber);
+}
+
+:where(
+    button,
+    [role="button"],
+    .room-bottom-panel__tab,
+    .room-top-panel__username,
+    .room-top-panel__level,
+    .workshop-page__row--interactive,
+    .workshop-page__tasks-title,
+    .workshop-page__tasks-toggle,
+    .shop-page__slot-row--interactive,
+    .shop-page__slot-unlock-button,
+    .shop-page__sell-item-button,
+    .garden-page__plot-row,
+    .garden-page__seed-button,
+    .research-page__research-label-button
+  ):is(:active, .is-pressing):not(:disabled):not(.is-disabled):not(.is-selected):not(
+    .is-locked
+  ) {
+  scale: var(--style-press-scale);
+}
+
+.style-button:is(:active, .is-pressing):not(:disabled):not(.is-disabled) {
   background: var(--style-active-surface);
+  scale: var(--style-press-scale);
+}
+
+.style-button.workshop-page__summon-button:is(:active, .is-pressing):not(:disabled) {
+  background: transparent;
+  scale: 1;
+  transform: translate(-50%, -50%) scale(var(--style-press-scale));
 }
 
 .style-button[aria-disabled="true"],
@@ -7924,15 +8463,18 @@ div.workshop-page__discovery-row {
   border-color: transparent;
 }
 
-.workshop-page__action-bar .style-button.workshop-page__summon-button[aria-disabled="true"],
+.workshop-page__action-bar
+  .style-button.workshop-page__summon-button[aria-disabled="true"],
 .workshop-page__action-bar .style-button.workshop-page__summon-button:disabled {
   border-color: transparent;
   color: var(--style-disabled);
   text-shadow: 0 1px 0 rgb(255 255 255 / 55%);
 }
 
-.style-button.workshop-page__summon-button[aria-disabled="true"] .workshop-page__summon-circle,
-.style-button.workshop-page__summon-button:disabled .workshop-page__summon-circle {
+.style-button.workshop-page__summon-button[aria-disabled="true"]
+  .workshop-page__summon-circle,
+.style-button.workshop-page__summon-button:disabled
+  .workshop-page__summon-circle {
   filter: grayscale(1);
   opacity: 0.38;
 }
@@ -7999,6 +8541,16 @@ div.workshop-page__discovery-row {
   height: 100%;
   background: var(--style-progress-fill-background);
   box-shadow: var(--style-progress-fill-shadow);
+  transform-origin: left center;
+}
+
+.style-progress__fill.is-smooth-progress-fill {
+  width: 100%;
+  transform: scaleX(var(--style-progress-fill-scale, 0));
+}
+
+.style-progress__fill.is-progress-running {
+  will-change: transform;
 }
 
 .style-progress__fill.workshop-page__logs-progress-fill {
@@ -8094,12 +8646,14 @@ div.workshop-page__discovery-row {
 .room-top-panel__settings:not([hidden]),
 .room-top-panel__level-popup:not([hidden]) {
   background: rgb(var(--style-backdrop-rgb) / 68%);
-  animation: style-overlay-enter var(--style-motion-dialog) var(--style-motion-ease) both;
+  animation: style-overlay-enter var(--style-motion-dialog)
+    var(--style-motion-ease) both;
 }
 
 .game-stage:has(.workshop-page__bag-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__leaderboard-popup:not([hidden])) .workshop-page,
-.game-stage:has(.workshop-page__trade-alliance-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__trade-alliance-popup:not([hidden]))
+  .workshop-page,
 .game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
@@ -8138,31 +8692,40 @@ div.workshop-page__discovery-row {
 .garden-page__seed-popup:not([hidden]) .style-dialog,
 .garden-page__cancel-popup:not([hidden]) .style-dialog,
 .research-page__info-popup:not([hidden]) .style-dialog {
-  animation: style-dialog-enter var(--style-motion-dialog) var(--style-motion-ease) both;
+  animation: style-dialog-enter var(--style-motion-dialog)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
 }
 
 .room-top-panel__settings:not([hidden]) .room-top-panel__settings-panel {
-  animation: style-dialog-top-enter var(--style-motion-dialog) var(--style-motion-ease) both;
-  transform-origin: top center;
+  animation: style-dialog-top-enter var(--style-motion-dialog)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
 }
 
 .room-alliance-info-popup:not([hidden]) .room-alliance-info-dialog,
 .room-player-info-popup:not([hidden]) .room-player-info-dialog {
-  animation: style-dialog-enter var(--style-motion-dialog) var(--style-motion-ease) both;
+  animation: style-dialog-enter var(--style-motion-dialog)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
 }
 
 .room-top-panel__level-popup:not([hidden]) .room-top-panel__level-panel {
-  animation: style-dialog-top-enter var(--style-motion-dialog) var(--style-motion-ease) both;
-  transform-origin: top center;
+  animation: style-dialog-top-enter var(--style-motion-dialog)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
 }
 
-.workshop-page__leaderboard-popup:not([hidden]) .workshop-page__leaderboard-panel,
-.workshop-page__trade-alliance-popup:not([hidden]) .workshop-page__trade-alliance-panel,
+.workshop-page__leaderboard-popup:not([hidden])
+  .workshop-page__leaderboard-panel,
+.workshop-page__trade-alliance-popup:not([hidden])
+  .workshop-page__trade-alliance-panel,
 .workshop-page__trade-alliance-member-popup:not([hidden])
   .workshop-page__trade-alliance-member-dialog,
 .workshop-page__world-chat-popup:not([hidden]) .workshop-page__world-chat-panel,
 .workshop-page__bag-popup:not([hidden]) .workshop-page__bag-panel,
-.workshop-page__discoveries-popup:not([hidden]) .workshop-page__discoveries-panel,
+.workshop-page__discoveries-popup:not([hidden])
+  .workshop-page__discoveries-panel,
 .workshop-page__prestige-popup:not([hidden]) .workshop-page__prestige-panel,
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
@@ -8170,21 +8733,25 @@ div.workshop-page__discovery-row {
 .shop-page__trade-history-popup:not([hidden]) .shop-page__trade-history-panel,
 .shop-page__direct-sell-popup:not([hidden]) .shop-page__direct-sell-panel,
 .shop-page__demand-popup:not([hidden]) .shop-page__demand-panel,
-.shop-page__crystal-support-popup:not([hidden]) .shop-page__crystal-support-dialog,
+.shop-page__crystal-support-popup:not([hidden])
+  .shop-page__crystal-support-dialog,
 .shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog,
 .room-player-info-popup:not([hidden]) .room-player-info-dialog {
-  animation: style-dialog-enter var(--style-motion-dialog) var(--style-motion-ease) both;
+  animation: style-dialog-enter var(--style-motion-dialog)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
 }
 
 .brewing-page__message.is-updated {
-  animation: style-feedback-enter var(--style-motion-normal) var(--style-motion-ease) both;
+  animation: style-feedback-enter var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
 }
 
 @keyframes room-page-enter {
   0% {
     opacity: 0.96;
     scale: 0.998;
-    translate: 0 5px;
+    translate: 0 4px;
   }
 
   72% {
@@ -8202,14 +8769,14 @@ div.workshop-page__discovery-row {
 
 @keyframes room-section-enter {
   0% {
-    opacity: 0.72;
-    scale: 0.985;
+    opacity: 0.76;
+    scale: 0.99;
     translate: 0 5px;
   }
 
-  70% {
+  72% {
     opacity: 1;
-    scale: 1.012;
+    scale: 1.006;
     translate: 0 -1px;
   }
 
@@ -8230,17 +8797,47 @@ div.workshop-page__discovery-row {
   }
 }
 
+@keyframes room-bottom-lock-popup-enter {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes room-bottom-lock-dialog-enter {
+  0% {
+    opacity: 0;
+    scale: 0.986;
+    translate: var(--room-bottom-lock-enter-x) 7px;
+  }
+
+  72% {
+    opacity: 1;
+    scale: 1.008;
+    translate: 0 -1px;
+  }
+
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
 @keyframes style-dialog-enter {
   0% {
     opacity: 0;
-    scale: 0.965;
-    translate: 0 6px;
+    scale: 0.982;
+    translate: 0 0;
   }
 
-  62% {
+  72% {
     opacity: 1;
-    scale: 1.018;
-    translate: 0 -2px;
+    scale: 1.008;
+    translate: 0 0;
   }
 
   100% {
@@ -8253,31 +8850,31 @@ div.workshop-page__discovery-row {
 @keyframes app-account-link-choice-dialog-enter {
   0% {
     opacity: 0;
-    transform: translateY(6px) scale(0.965);
+    transform: scale(0.982);
   }
 
-  62% {
+  72% {
     opacity: 1;
-    transform: translateY(-2px) scale(1.018);
+    transform: scale(1.008);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
 }
 
 @keyframes style-dialog-top-enter {
   0% {
     opacity: 0;
-    scale: 0.965;
-    translate: 0 -5px;
+    scale: 0.982;
+    translate: 0 0;
   }
 
-  62% {
+  72% {
     opacity: 1;
-    scale: 1.014;
-    translate: 0 1px;
+    scale: 1.006;
+    translate: 0 0;
   }
 
   100% {
@@ -8391,43 +8988,20 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes style-expand-list-enter {
-  0% {
-    clip-path: inset(0 0 100% 0);
-    opacity: 0.01;
-    scale: 1 0.94;
-    translate: 0 -4px;
-  }
-
-  68% {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-    scale: 1 1.025;
-    translate: 0 1px;
-  }
-
-  100% {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-    scale: 1;
-    translate: 0 0;
-  }
-}
-
 @keyframes workshop-requirement-progress-update {
   0% {
     opacity: 1;
     scale: 1 1;
   }
 
-  34% {
-    opacity: 0.45;
-    scale: 1.035 1;
+  38% {
+    opacity: 0.62;
+    scale: 1.018 1;
   }
 
-  70% {
+  72% {
     opacity: 1;
-    scale: 0.99 1;
+    scale: 0.995 1;
   }
 
   100% {
@@ -8438,13 +9012,13 @@ div.workshop-page__discovery-row {
 
 @keyframes style-feedback-enter {
   0% {
-    opacity: 0.45;
-    transform: translateY(3px) scale(0.98);
+    opacity: 0.55;
+    transform: translateY(2px) scale(0.985);
   }
 
-  64% {
+  72% {
     opacity: 1;
-    transform: translateY(-1px) scale(1.03);
+    transform: translateY(-1px) scale(1.012);
   }
 
   100% {
@@ -8587,8 +9161,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.089),
         calc(var(--toss-peak) * 0.43)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.07));
+      scale(1) rotate(calc(var(--toss-ry) * 0.07));
     animation-timing-function: linear;
   }
 
@@ -8598,8 +9171,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.179),
         calc(var(--toss-peak) * 0.75)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.16));
+      scale(1) rotate(calc(var(--toss-ry) * 0.16));
     animation-timing-function: linear;
   }
 
@@ -8609,16 +9181,14 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.268),
         calc(var(--toss-peak) * 0.93)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.27));
+      scale(1) rotate(calc(var(--toss-ry) * 0.27));
     animation-timing-function: linear;
   }
 
   24% {
     opacity: 1;
     transform: translate(calc(var(--toss-tx) * 0.357), var(--toss-peak))
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.4));
+      scale(1) rotate(calc(var(--toss-ry) * 0.4));
     animation-timing-function: linear;
   }
 
@@ -8628,8 +9198,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.429),
         calc(var(--toss-peak) * 0.98)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.47));
+      scale(1) rotate(calc(var(--toss-ry) * 0.47));
     animation-timing-function: linear;
   }
 
@@ -8639,8 +9208,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.518),
         calc(var(--toss-peak) * 0.91)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.55));
+      scale(1) rotate(calc(var(--toss-ry) * 0.55));
     animation-timing-function: linear;
   }
 
@@ -8650,8 +9218,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.607),
         calc(var(--toss-peak) * 0.77)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.62));
+      scale(1) rotate(calc(var(--toss-ry) * 0.62));
     animation-timing-function: linear;
   }
 
@@ -8661,8 +9228,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.679),
         calc(var(--toss-peak) * 0.61)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.7));
+      scale(1) rotate(calc(var(--toss-ry) * 0.7));
     animation-timing-function: linear;
   }
 
@@ -8672,8 +9238,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.768),
         calc(var(--toss-peak) * 0.39)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.78));
+      scale(1) rotate(calc(var(--toss-ry) * 0.78));
     animation-timing-function: linear;
   }
 
@@ -8683,8 +9248,7 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.839),
         calc(var(--toss-peak) * 0.16)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.85));
+      scale(1) rotate(calc(var(--toss-ry) * 0.85));
     animation-timing-function: linear;
   }
 
@@ -8694,14 +9258,14 @@ div.workshop-page__discovery-row {
         calc(var(--toss-tx) * 0.929),
         calc(var(--toss-peak) * -0.18)
       )
-      scale(1)
-      rotate(calc(var(--toss-ry) * 0.93));
+      scale(1) rotate(calc(var(--toss-ry) * 0.93));
     animation-timing-function: linear;
   }
 
   60% {
     opacity: 1;
-    transform: translate(var(--toss-tx), 22px) scale(1.1, 0.9) rotate(var(--toss-ry));
+    transform: translate(var(--toss-tx), 22px) scale(1.1, 0.9)
+      rotate(var(--toss-ry));
     animation-timing-function: cubic-bezier(0.61, 1, 0.88, 1);
   }
 
@@ -8713,7 +9277,8 @@ div.workshop-page__discovery-row {
 
   71% {
     opacity: 1;
-    transform: translate(var(--toss-tx), 22px) scale(1.05, 0.95) rotate(var(--toss-ry));
+    transform: translate(var(--toss-tx), 22px) scale(1.05, 0.95)
+      rotate(var(--toss-ry));
     animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   }
 
@@ -8731,7 +9296,8 @@ div.workshop-page__discovery-row {
 
   100% {
     opacity: 0;
-    transform: translate(var(--toss-tx), 22px) scale(0.95) rotate(var(--toss-ry));
+    transform: translate(var(--toss-tx), 22px) scale(0.95)
+      rotate(var(--toss-ry));
   }
 }
 
@@ -8773,14 +9339,14 @@ div.workshop-page__discovery-row {
     text-shadow: 0 0 0 rgb(255 215 106 / 0%);
   }
 
-  42% {
-    transform: translateY(-1px) scale(1.055);
-    text-shadow: 0 0 0.45em rgb(255 215 106 / 50%);
+  45% {
+    transform: translateY(-1px) scale(1.025);
+    text-shadow: 0 0 0.32em rgb(255 215 106 / 42%);
   }
 
-  72% {
-    transform: scale(0.995);
-    text-shadow: 0 0 0.2em rgb(255 215 106 / 28%);
+  78% {
+    transform: translateY(0) scale(0.995);
+    text-shadow: 0 0 0.14em rgb(255 215 106 / 20%);
   }
 
   100% {
@@ -8792,15 +9358,15 @@ div.workshop-page__discovery-row {
 @keyframes style-flyout-enter {
   0% {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(5px) scale(0.985);
   }
 
-  12% {
+  16% {
     opacity: 1;
-    transform: translateY(-1px) scale(1.04);
+    transform: translateY(-1px) scale(1.025);
   }
 
-  38% {
+  40% {
     opacity: 1;
     transform: translateY(-2px) scale(1);
   }
@@ -8814,17 +9380,17 @@ div.workshop-page__discovery-row {
 @keyframes style-reward-icon-drop {
   0% {
     opacity: 0;
-    transform: translateY(-8px) scale(0.92);
+    transform: translateY(-6px) scale(0.94);
   }
 
-  42% {
+  50% {
     opacity: 1;
-    transform: translateY(2px) scale(1.08, 0.94);
+    transform: translateY(1px) scale(1.035, 0.97);
   }
 
-  72% {
+  78% {
     opacity: 1;
-    transform: translateY(-1px) scale(0.98, 1.02);
+    transform: translateY(0) scale(0.995, 1.005);
   }
 
   100% {
@@ -8892,7 +9458,8 @@ div.workshop-page__discovery-row {
     transform: none;
   }
 
-  .workshop-page__task.is-requirement-updated .workshop-page__task-progress-fill {
+  .workshop-page__task.is-requirement-updated
+    .workshop-page__task-progress-fill {
     animation: none;
     opacity: 0.65;
   }

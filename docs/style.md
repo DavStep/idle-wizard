@@ -33,7 +33,7 @@ This project should use the same kind of minimal text-game language, without cop
 
 ## Boxes
 
-- Ordinary non-dialog boxes use `1px solid black`.
+- Ordinary non-dialog boxes use `2px solid black`.
 - No border radius.
 - Ordinary box padding follows A Dark Room's stores spacing: `5px 10px` in source UI units.
 - Box titles sit over the top border on white background, like A Dark Room's simple store boxes.
@@ -43,7 +43,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Theme popup/dialog shadows should stay visible by contrasting with the active surface: dark on white, light on black.
 - Tabbed dialogs use a fixed panel height. If tab content is taller than that height, keep the bottom tabs fixed and scroll the content with the shared scroll cue.
 - Shared scroll progress rails use the logs dialog pattern: a separate `style-progress` rail below the scroll frame, never over the last row.
-- Tooltips may use `1px solid black`, white background, and a small offset gray shadow.
+- Tooltips may use `2px solid black`, white background, and a small offset gray shadow.
 - Ordinary room/page surfaces should not use shadows.
 
 ## Buttons

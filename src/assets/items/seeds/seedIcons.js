@@ -1,13 +1,9 @@
-import seedPackBlackIconUrl from './seed-pack-black.png';
-import seedPackGrayIconUrl from './seed-pack-gray.png';
-import seedPackRegularIconUrl from './seed-pack-regular.png';
-
-export const seedIconVariantUrls = Object.freeze({
-  black: seedPackBlackIconUrl,
-  gray: seedPackGrayIconUrl,
-  regular: seedPackRegularIconUrl,
+export const seedIconVariantFrameNames = Object.freeze({
+  black: 'seed:black',
+  gray: 'seed:gray',
+  regular: 'seed:regular',
 });
 
-export function getSeedIconUrl() {
-  return seedPackRegularIconUrl;
+export function getSeedIconFrameName() {
+  return seedIconVariantFrameNames.regular;
 }

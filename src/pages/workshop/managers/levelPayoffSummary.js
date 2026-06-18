@@ -91,11 +91,13 @@ function getUnlockRows(levelBefore, levelAfter) {
     return [];
   }
 
+  const unlockValues = unlocks.map((unlock) => unlock.value);
+
   return [
     {
       label: 'unlocks',
-      value: unlocks.map((unlock) => `-${unlock.value}`).join('\n'),
-      valueLines: unlocks.map((unlock) => `-${unlock.value}`),
+      value: unlockValues.join(', '),
+      valueLines: unlockValues,
       notice: unlocks.map((unlock) => unlock.notice).join(', '),
     },
   ];

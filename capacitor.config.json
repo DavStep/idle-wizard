@@ -4,7 +4,6 @@
   "webDir": "dist",
   "backgroundColor": "#0e1116",
   "server": {
-    "url": "https://davstep.github.io/idle-wizard/",
     "androidScheme": "https",
     "cleartext": false
   },

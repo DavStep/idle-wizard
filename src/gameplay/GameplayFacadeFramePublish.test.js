@@ -90,6 +90,31 @@ describe('GameplayFacade frame publishing', () => {
     expect(getSnapshot).not.toHaveBeenCalled();
   });
 
+  it('publishes once when timer work completes and the frame key is unchanged', () => {
+    const gameplayFacade = createGameplayFacade();
+    const listener = vi.fn();
+    let hasTimerWork = true;
+
+    vi.spyOn(gameplayFacade, 'hasFrameTimerWork').mockImplementation(() => hasTimerWork);
+    gameplayFacade.subscribe(listener);
+    gameplayFacade.publishSnapshot();
+
+    expect(
+      gameplayFacade.publishFrameSnapshot({
+        time: GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS,
+      }),
+    ).toBe(false);
+
+    hasTimerWork = false;
+
+    expect(
+      gameplayFacade.publishFrameSnapshot({
+        time: GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS + 1,
+      }),
+    ).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps explicit publishes immediate for player actions', () => {
     const gameplayFacade = createGameplayFacade();
     const listener = vi.fn();

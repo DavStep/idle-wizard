@@ -1,8 +1,8 @@
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { getSeedSummonNotification } from '../../notifications/managers/PageNotificationStateManager.js';
-import summonCircleUrl from '../../../assets/ui/summon-circle.png';
 
 export class WorkshopActionBarManager {
   constructor({
@@ -62,12 +62,10 @@ export class WorkshopActionBarManager {
     button.type = 'button';
     button.dataset.tutorialId = 'workshop:summonSeed';
 
-    const circle = document.createElement('img');
-    circle.className = 'workshop-page__summon-circle';
-    circle.src = summonCircleUrl;
-    circle.alt = '';
-    circle.draggable = false;
-    circle.setAttribute('aria-hidden', 'true');
+    const circle = createAssetAtlasSprite(
+      'workshop-page__summon-circle',
+      'ui:summonCircle',
+    );
 
     const text = document.createElement('span');
     text.className = 'workshop-page__summon-button-text';

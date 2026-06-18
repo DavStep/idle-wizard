@@ -15,7 +15,7 @@ describe('item icon labels', () => {
     expect(element.textContent).toBe('mana tonic (2)');
     expect(element.classList.contains('style-potion-label')).toBe(true);
     expect(icon).not.toBeNull();
-    expect(icon?.getAttribute('src')).toContain('potion-mana-tonic');
+    expect(icon?.dataset.assetAtlasFrame).toBe('potion:manaTonic');
   });
 
   it('marks herb labels with their herb icon while preserving text', () => {
@@ -28,7 +28,7 @@ describe('item icon labels', () => {
     expect(element.textContent).toBe('sage (6)');
     expect(element.classList.contains('style-herb-label')).toBe(true);
     expect(icon).not.toBeNull();
-    expect(icon?.getAttribute('src')).toContain('herb-sage');
+    expect(icon?.dataset.assetAtlasFrame).toBe('herb:sageHerb');
   });
 
   it('marks seed labels with the seed pack icon while preserving text', () => {
@@ -41,7 +41,7 @@ describe('item icon labels', () => {
     expect(element.textContent).toBe('sage seed (3)');
     expect(element.classList.contains('style-seed-label')).toBe(true);
     expect(icon).not.toBeNull();
-    expect(icon?.getAttribute('src')).toContain('seed-pack-regular');
+    expect(icon?.dataset.assetAtlasFrame).toBe('seed:regular');
   });
 
   it('adds potion, herb, seed, and gold icons inside mixed text', () => {

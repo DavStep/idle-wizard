@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.0
+
+- Added the first Pixi-backed rendering layer and asset atlas path so future visuals can run smoother on mobile.
+- Upgraded Elara's pointer guidance with animated Spine support and steadier placement around targets.
+- Added item icon labels across rooms for clearer seeds, herbs, potions, and resource rows.
+- Improved mobile press feedback, task progress fills, and tutorial guide movement so taps and guidance feel more responsive.
+
 ## 0.1.28
 
 - Smoothed Elara's objective collapse and lesson hide motion so guide transitions feel cleaner on mobile.

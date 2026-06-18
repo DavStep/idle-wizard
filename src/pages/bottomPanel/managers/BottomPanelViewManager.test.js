@@ -62,16 +62,22 @@ describe('BottomPanelViewManager', () => {
 
     brewingTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    const popup = stage.querySelector('.room-bottom-panel__lock-popup');
+
     expect(onShowPage).not.toHaveBeenCalled();
-    expect(stage.querySelector('.room-bottom-panel__lock-popup')?.hidden).toBe(false);
-    expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
-      'brewing unlocks at level 4',
-    );
+    expect(popup?.hidden).toBe(false);
+    expect(popup?.classList.contains('is-entering')).toBe(true);
+    expect(popup?.dataset.pageId).toBe('brewing');
+    expect(
+      stage.querySelector('.room-bottom-panel__lock-message')?.textContent,
+    ).toBe('brewing unlocks at level 4');
 
     stage
       .querySelector('.room-bottom-panel__lock-close')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.room-bottom-panel__lock-popup')?.hidden).toBe(true);
+    expect(popup?.hidden).toBe(true);
+    expect(popup?.classList.contains('is-entering')).toBe(false);
+    expect(popup?.dataset.pageId).toBeUndefined();
   });
 });

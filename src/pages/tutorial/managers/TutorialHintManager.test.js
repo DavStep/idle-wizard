@@ -1,5 +1,7 @@
 /* @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { TutorialHintManager } from './TutorialHintManager.js';
@@ -115,6 +117,45 @@ describe('TutorialHintManager', () => {
     expect(pointer?.hidden).toBe(false);
   });
 
+  it('mounts and pauses the Spine pointer with target cue visibility', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const pointerSpineManager = {
+      mount: vi.fn(),
+      unmount: vi.fn(),
+      setMotionEnabled: vi.fn(),
+      setVisible: vi.fn(),
+    };
+    const manager = new TutorialHintManager({ pointerSpineManager });
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 16,
+        top: 100,
+        width: 120,
+        height: 30,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showTargetCue({ target });
+    manager.hideTargetCue({ immediate: true });
+    manager.unmount();
+
+    expect(pointerSpineManager.mount).toHaveBeenCalledWith(
+      expect.objectContaining({ className: 'tutorial-layer__pointer' }),
+    );
+    expect(pointerSpineManager.setMotionEnabled).toHaveBeenCalledWith(true);
+    expect(pointerSpineManager.setVisible).toHaveBeenCalledWith(true);
+    expect(pointerSpineManager.setVisible).toHaveBeenCalledWith(false);
+    expect(pointerSpineManager.unmount).toHaveBeenCalled();
+  });
+
   it('angles the pointer from the best fitting diagonal corner', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');
@@ -143,8 +184,8 @@ describe('TutorialHintManager', () => {
 
     expect(pointer?.hidden).toBe(false);
     expect(pointer?.dataset.placement).toBe('bottom-right');
-    expect(pointer?.style.left).toBe('85px');
-    expect(pointer?.style.top).toBe('55px');
+    expect(pointer?.style.left).toBe('50px');
+    expect(pointer?.style.top).toBe('35px');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('-1');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
@@ -193,8 +234,8 @@ describe('TutorialHintManager', () => {
 
       expect(requestAnimationFrame).not.toHaveBeenCalled();
       expect(pointer?.dataset.placement).toBe('bottom-right');
-      expect(pointer?.style.left).toBe('85px');
-      expect(pointer?.style.top).toBe('55px');
+      expect(pointer?.style.left).toBe('50px');
+      expect(pointer?.style.top).toBe('35px');
     } finally {
       if (hadRequestAnimationFrame) {
         Object.defineProperty(window, 'requestAnimationFrame', {
@@ -236,13 +277,13 @@ describe('TutorialHintManager', () => {
 
     expect(pointer?.hidden).toBe(false);
     expect(pointer?.dataset.placement).toBe('top-left');
-    expect(pointer?.style.left).toBe('279px');
-    expect(pointer?.style.top).toBe('629px');
+    expect(pointer?.style.left).toBe('310px');
+    expect(pointer?.style.top).toBe('651px');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('1');
     expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
 
-  it('keeps the pointer outside the active research row', () => {
+  it('keeps the pointer anchored to the target inside an active research row', () => {
     const stage = document.createElement('section');
     const row = document.createElement('div');
     const target = document.createElement('button');
@@ -295,7 +336,10 @@ describe('TutorialHintManager', () => {
     };
 
     expect(pointer?.hidden).toBe(false);
-    expect(overlaps(pointerRect, activeRow)).toBe(false);
+    expect(pointer?.dataset.placement).toBe('bottom-left');
+    expect(pointer?.style.left).toBe('294px');
+    expect(pointer?.style.top).toBe('290px');
+    expect(overlaps(pointerRect, activeRow)).toBe(true);
   });
 
   it('types lesson text while border actions appear immediately', () => {
@@ -338,6 +382,89 @@ describe('TutorialHintManager', () => {
       expect(text?.textContent).toBe('abc');
       expect(advance?.textContent).toBe('next');
       expect(button?.hasAttribute('data-speaking')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not type lesson text again after the player has seen the full copy', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const manager = new TutorialHintManager();
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'intro-welcome',
+        title: 'lesson 1: introduction',
+        text: 'abc',
+        stepLabel: '1/25',
+        advanceOnClick: true,
+      });
+
+      const text = stage.querySelector('.tutorial-layer__lesson-text');
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+
+      vi.advanceTimersByTime(24);
+      expect(text?.textContent).toBe('abc');
+      expect(button?.hasAttribute('data-speaking')).toBe(false);
+
+      button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(230);
+      expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+
+      button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(text?.textContent).toBe('abc');
+      expect(button?.hasAttribute('data-speaking')).toBe(false);
+
+      vi.advanceTimersByTime(12);
+      expect(text?.textContent).toBe('abc');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('types lesson text again if the panel was hidden before the copy completed', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const manager = new TutorialHintManager();
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'intro-welcome',
+        title: 'lesson 1: introduction',
+        text: 'abcd',
+        stepLabel: '1/25',
+        advanceOnClick: true,
+      });
+
+      const text = stage.querySelector('.tutorial-layer__lesson-text');
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+
+      vi.advanceTimersByTime(12);
+      expect(text?.textContent).toBe('ab');
+
+      button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(230);
+      button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(text?.textContent).toBe('');
+      expect(button?.hasAttribute('data-speaking')).toBe(true);
+
+      vi.advanceTimersByTime(12);
+      expect(text?.textContent).toBe('ab');
     } finally {
       vi.useRealTimers();
     }
@@ -520,6 +647,7 @@ describe('TutorialHintManager', () => {
 
     const button = stage.querySelector('.tutorial-layer__lesson-button');
     const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const dragYell = button?.querySelector('.tutorial-layer__objective-button-drag-yell');
     const startLeft = Number.parseFloat(button?.style.left ?? '0');
     const startTop = Number.parseFloat(button?.style.top ?? '0');
     const dragStart = {
@@ -543,6 +671,11 @@ describe('TutorialHintManager', () => {
         clientY: dragEnd.y,
       }),
     );
+
+    expect(button?.classList.contains('is-dragging')).toBe(true);
+    expect(dragYell?.textContent).toBe('AAAAAA!!!');
+    expect(dragYell?.getAttribute('aria-hidden')).toBe('true');
+
     document.dispatchEvent(
       createPointerEvent('pointerup', {
         clientX: dragEnd.x,
@@ -590,6 +723,358 @@ describe('TutorialHintManager', () => {
 
     nextManager.unmount();
     nextStage.remove();
+  });
+
+  it('lets Elara trail the gesture during drag, then settle on the saved placement', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+    const hadCancelAnimationFrame = 'cancelAnimationFrame' in window;
+    const frames = new Map();
+    let nextFrame = 1;
+    const requestAnimationFrame = vi.fn((callback) => {
+      const frame = nextFrame;
+      nextFrame += 1;
+      frames.set(frame, callback);
+      return frame;
+    });
+    const cancelAnimationFrame = vi.fn((frame) => {
+      frames.delete(frame);
+    });
+    const flushFrames = (limit = 30) => {
+      for (let count = 0; count < limit && frames.size > 0; count += 1) {
+        const pending = [...frames.values()];
+        frames.clear();
+        pending.forEach((callback) => callback(count));
+      }
+    };
+
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+      writable: true,
+    });
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: cancelAnimationFrame,
+      writable: true,
+    });
+
+    try {
+      const storage = createMemoryStorage();
+      const stage = document.createElement('section');
+      const manager = new TutorialHintManager({ storage });
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'drag-trail-test',
+        title: 'lesson',
+        text: 'move me',
+        stepLabel: '1/1',
+      });
+
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
+      const startLeft = Number.parseFloat(button?.style.left ?? '0');
+      const startTop = Number.parseFloat(button?.style.top ?? '0');
+      const dragStart = {
+        x: (startLeft + 10) * UI_SCALE,
+        y: (startTop + 20) * UI_SCALE,
+      };
+      const dragEnd = {
+        x: dragStart.x,
+        y: dragStart.y - 30 * UI_SCALE,
+      };
+
+      button?.dispatchEvent(
+        createPointerEvent('pointerdown', {
+          clientX: dragStart.x,
+          clientY: dragStart.y,
+        }),
+      );
+      document.dispatchEvent(
+        createPointerEvent('pointermove', {
+          clientX: dragEnd.x,
+          clientY: dragEnd.y,
+        }),
+      );
+
+      expect(button?.style.top).toBe(`${startTop - 30}px`);
+      expect(button?.style.translate).toBe('0px 18px');
+      expect(lesson?.style.translate).toBe('0px 18px');
+
+      document.dispatchEvent(
+        createPointerEvent('pointerup', {
+          clientX: dragEnd.x,
+          clientY: dragEnd.y,
+        }),
+      );
+      flushFrames();
+
+      expect(button?.style.translate).toBe('');
+      expect(lesson?.style.translate).toBe('');
+      expect(JSON.parse(storage.getItem('idle-wizard.tutorial.elaraPlacement.v1'))).toEqual({
+        buttonLeft: startLeft,
+        buttonTop: startTop - 30,
+      });
+
+      manager.unmount();
+      stage.remove();
+    } finally {
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+
+      if (hadCancelAnimationFrame) {
+        Object.defineProperty(window, 'cancelAnimationFrame', {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'cancelAnimationFrame');
+      }
+    }
+  });
+
+  it('temporarily moves an open lesson away from its target, then returns', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    const originalSetTimeout = window.setTimeout;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+    const hadCancelAnimationFrame = 'cancelAnimationFrame' in window;
+    const frames = [];
+    const requestAnimationFrame = vi.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cancelAnimationFrame = vi.fn();
+
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+      writable: true,
+    });
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: cancelAnimationFrame,
+      writable: true,
+    });
+    Object.defineProperty(window, 'setTimeout', {
+      configurable: true,
+      value: vi.fn((callback) => {
+        callback();
+        return 1;
+      }),
+      writable: true,
+    });
+
+    try {
+      const storage = createMemoryStorage();
+      const stage = document.createElement('section');
+      const target = document.createElement('button');
+      const manager = new TutorialHintManager({ storage });
+
+      target.dataset.tutorialId = 'workshop:summon';
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      setClientRect(
+        target,
+        toClientRect({
+          left: 100,
+          top: 530,
+          width: 92,
+          height: 24,
+        }),
+      );
+      stage.append(target);
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'auto-move-base',
+        title: 'lesson',
+        text: 'look here',
+        stepLabel: '1/1',
+        canShowTarget: true,
+      });
+
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
+      const baseButtonTop = Number.parseFloat(button?.style.top ?? '0');
+      const baseLessonRect = getLessonRect(lesson);
+
+      manager.guideDragManager.setPlacement({
+        buttonLeft: Number.parseFloat(button?.style.left ?? '0'),
+        buttonTop: baseButtonTop,
+      });
+      manager.showLesson({
+        id: 'auto-move-target',
+        title: 'lesson',
+        text: 'look here',
+        stepLabel: '1/1',
+        canShowTarget: true,
+        target,
+      });
+
+      const movedLessonRect = getLessonRect(lesson);
+
+      expect(overlaps(movedLessonRect, { left: 92, top: 522, right: 200, bottom: 562 })).toBe(
+        false,
+      );
+      expect(Number.parseFloat(button?.style.top ?? '0')).not.toBe(baseButtonTop);
+      expect(button?.classList.contains('is-auto-moving')).toBe(true);
+      expect(lesson?.classList.contains('is-auto-moving')).toBe(true);
+
+      frames.splice(0).forEach((callback) => callback(0));
+
+      manager.showLesson({
+        id: 'auto-move-clear',
+        title: 'lesson',
+        text: 'look here',
+        stepLabel: '1/1',
+        canShowTarget: true,
+      });
+
+      expect(Number.parseFloat(button?.style.top ?? '0')).toBe(baseButtonTop);
+      expect(getLessonRect(lesson)).toEqual(baseLessonRect);
+
+      manager.unmount();
+      stage.remove();
+    } finally {
+      Object.defineProperty(window, 'setTimeout', {
+        configurable: true,
+        value: originalSetTimeout,
+        writable: true,
+      });
+
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+
+      if (hadCancelAnimationFrame) {
+        Object.defineProperty(window, 'cancelAnimationFrame', {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'cancelAnimationFrame');
+      }
+    }
+  });
+
+  it('keeps the player dragged position after an automatic target dodge', () => {
+    const storage = createMemoryStorage();
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager({ storage });
+
+    target.dataset.tutorialId = 'workshop:summon';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 100,
+        top: 530,
+        width: 92,
+        height: 24,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'auto-drag-base',
+      title: 'lesson',
+      text: 'look here',
+      stepLabel: '1/1',
+      canShowTarget: true,
+    });
+
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const baseButtonTop = Number.parseFloat(button?.style.top ?? '0');
+
+    manager.guideDragManager.setPlacement({
+      buttonLeft: Number.parseFloat(button?.style.left ?? '0'),
+      buttonTop: baseButtonTop,
+    });
+    manager.showLesson({
+      id: 'auto-drag-target',
+      title: 'lesson',
+      text: 'look here',
+      stepLabel: '1/1',
+      canShowTarget: true,
+      target,
+    });
+
+    const autoButtonTop = Number.parseFloat(button?.style.top ?? '0');
+    const dragStart = {
+      x: (Number.parseFloat(button?.style.left ?? '0') + 10) * UI_SCALE,
+      y: (autoButtonTop + 20) * UI_SCALE,
+    };
+    const dragEnd = {
+      x: dragStart.x,
+      y: dragStart.y - 18 * UI_SCALE,
+    };
+
+    button?.dispatchEvent(
+      createPointerEvent('pointerdown', {
+        clientX: dragStart.x,
+        clientY: dragStart.y,
+      }),
+    );
+    document.dispatchEvent(
+      createPointerEvent('pointermove', {
+        clientX: dragEnd.x,
+        clientY: dragEnd.y,
+      }),
+    );
+    document.dispatchEvent(
+      createPointerEvent('pointerup', {
+        clientX: dragEnd.x,
+        clientY: dragEnd.y,
+      }),
+    );
+
+    const savedPlacement = JSON.parse(storage.getItem('idle-wizard.tutorial.elaraPlacement.v1'));
+
+    expect(savedPlacement).toEqual({
+      buttonLeft: 4,
+      buttonTop: autoButtonTop - 18,
+    });
+
+    manager.showLesson({
+      id: 'auto-drag-clear',
+      title: 'lesson',
+      text: 'look here',
+      stepLabel: '1/1',
+      canShowTarget: true,
+    });
+
+    expect(Number.parseFloat(button?.style.top ?? '0')).toBe(autoButtonTop - 18);
+    expect(Number.parseFloat(button?.style.top ?? '0')).not.toBe(baseButtonTop);
+
+    manager.unmount();
+    stage.remove();
   });
 
   it('lets the collapsed Elara button move slightly past the left edge', () => {
@@ -641,8 +1126,37 @@ describe('TutorialHintManager', () => {
       }),
     );
 
-    expect(button?.style.left).toBe('-8px');
+    expect(button?.style.left).toBe('-20px');
     expect(button?.style.top).toBe(`${startTop}px`);
+
+    manager.unmount();
+    stage.remove();
+  });
+
+  it('maps the old collapsed Elara left stop to the wider draggable range', () => {
+    const storage = createMemoryStorage({
+      'idle-wizard.tutorial.elaraPlacement.v1': JSON.stringify({
+        buttonLeft: -8,
+        buttonTop: 552,
+      }),
+    });
+    const stage = document.createElement('section');
+    const manager = new TutorialHintManager({ storage });
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'legacy-collapsed-left-stop',
+      title: 'lesson',
+      text: 'move me',
+      stepLabel: '1/1',
+      autoOpen: false,
+    });
+
+    expect(stage.querySelector('.tutorial-layer__lesson-button')?.style.left).toBe('-20px');
 
     manager.unmount();
     stage.remove();
@@ -778,6 +1292,54 @@ describe('TutorialHintManager', () => {
     );
     expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
       'hide',
+    );
+  });
+
+  it('hides the Elara lesson button image when icon mode is off', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rule = baseCss.match(
+      /:root\[data-style-icons="none"\]\s+\.tutorial-layer__objective-button-image\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const focusRule = baseCss.match(
+      /:root\[data-style-icons="none"\]\s+\.tutorial-layer__objective-button:focus-visible\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rule).toBeDefined();
+    expect(rule).toMatch(/\bdisplay:\s*none;/);
+    expect(focusRule).toBeDefined();
+    expect(focusRule).toMatch(/\boutline:\s*none;/);
+  });
+
+  it('swings Elara only during drag and disables that animation for reduced motion', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const dragYellRule = baseCss.match(
+      /\.tutorial-layer__objective-button-drag-yell\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const collapsedDragYellRule = baseCss.match(
+      /\.tutorial-layer__objective-button\[aria-expanded="false"\]\s+\.tutorial-layer__objective-button-drag-yell\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const draggingYellRule = baseCss.match(
+      /\.tutorial-layer__objective-button\.is-dragging\s+\.tutorial-layer__objective-button-drag-yell\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const dragImageRules = [
+      ...baseCss.matchAll(
+        /\.tutorial-layer__objective-button\.is-dragging\s+\.tutorial-layer__objective-button-image\s*\{(?<body>[^}]*)\}/g,
+      ),
+    ].map((match) => match.groups?.body ?? '');
+
+    expect(dragYellRule).toBeDefined();
+    expect(dragYellRule).toMatch(/\btop:\s*9px;/);
+    expect(dragYellRule).toMatch(/\bborder:\s*0;/);
+    expect(dragYellRule).toMatch(/\bbackground:\s*transparent;/);
+    expect(collapsedDragYellRule).toBeDefined();
+    expect(collapsedDragYellRule).toMatch(/\btop:\s*22px;/);
+    expect(collapsedDragYellRule).toMatch(/\bmax-width:\s*58px;/);
+    expect(draggingYellRule).toBeDefined();
+    expect(draggingYellRule).toMatch(/\bopacity:\s*1;/);
+    expect(dragImageRules.some((rule) => /tutorial-elara-drag-swing/.test(rule))).toBe(true);
+    expect(baseCss).toMatch(/@keyframes tutorial-elara-drag-swing/);
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.tutorial-layer__objective-button\.is-dragging\s+\.tutorial-layer__objective-button-image[\s\S]*animation:\s*none;/,
     );
   });
 

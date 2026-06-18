@@ -4028,14 +4028,17 @@ describe('PagesFacade', () => {
     );
     expect(
       [...rewards.querySelectorAll('.workshop-page__level-payoff-row')].map(
-        (row) => row.textContent,
+        (row) => [
+          row.querySelector('.workshop-page__level-payoff-label')?.textContent,
+          row.querySelector('.workshop-page__level-payoff-value')?.textContent,
+        ],
       ),
     ).toEqual([
-      'unlocks-garden',
-      'garden plots+1',
-      'mana cap+50',
-      'mana regen+1/sec',
-      'crystal+1',
+      ['unlocks', 'garden'],
+      ['garden plots', '+1'],
+      ['mana cap', '+50'],
+      ['mana regen', '+1/sec'],
+      ['crystal', '+1'],
     ]);
     expect(stage.querySelector('.workshop-page__tasks-helper')).toBeNull();
     expect(infoPopup?.hidden).toBe(true);
@@ -4171,6 +4174,66 @@ describe('PagesFacade', () => {
     expect(backdrop.hidden).toBe(true);
   });
 
+  it('keeps expanded Workshop tasks open while dragging Elara', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 2;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createMemoryStorage(),
+    });
+
+    stage.style.setProperty('--style-ui-scale', '3');
+    document.body.append(stage);
+
+    try {
+      pagesFacade.mount(stage);
+      pagesFacade.tutorialFacade.hintManager.showLesson({
+        id: 'elara-expanded-tasks-drag',
+        title: 'lesson',
+        text: 'move me',
+        stepLabel: 'qa',
+      });
+
+      const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+      const list = stage.querySelector('.workshop-page__task-list');
+      const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
+
+      toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(list.hidden).toBe(false);
+      expect(backdrop.hidden).toBe(false);
+
+      button.dispatchEvent(createPointerEvent('pointerdown', { clientX: 20, clientY: 300 }));
+      document.dispatchEvent(createPointerEvent('pointermove', { clientX: 20, clientY: 340 }));
+      document.dispatchEvent(createPointerEvent('pointerup', { clientX: 20, clientY: 340 }));
+
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(list.hidden).toBe(false);
+      expect(backdrop.hidden).toBe(false);
+      expect(lesson.hidden).toBe(false);
+    } finally {
+      pagesFacade.unmount();
+      stage.remove();
+    }
+  });
+
   it('keeps Workshop tasks expanded across page swaps', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -4266,6 +4329,11 @@ describe('PagesFacade', () => {
 
       return makeRect(0);
     };
+    document.dispatchEvent(
+      new window.MouseEvent('pointerdown', { bubbles: true, cancelable: true }),
+    );
+    document.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    document.body.append(stage);
 
     let pagesFacade = null;
 
@@ -4292,9 +4360,10 @@ describe('PagesFacade', () => {
 
       expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
       expect(stage.querySelector('.workshop-page__task-drag')).toBeNull();
+      expect(document.body.querySelector('.workshop-page__task-drag-ghost')).toBeNull();
 
-      const mintRow = list.querySelector('.workshop-page__task');
-      mintRow.dispatchEvent(
+      const movedMintRow = list.querySelector('.workshop-page__task');
+      movedMintRow.dispatchEvent(
         new window.MouseEvent('pointerdown', {
           bubbles: true,
           cancelable: true,
@@ -4311,13 +4380,22 @@ describe('PagesFacade', () => {
         }),
       );
 
-      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).not.toBeNull();
-      expect(getFlowLabels()).toEqual(['sage seed', 'nettle seed']);
+      expect(stage.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
+      expect(getFlowLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
+      const draggedRow = list.querySelector(
+        '.workshop-page__task.is-dragging.is-drag-lifted',
+      );
+      expect(draggedRow?.querySelector('.workshop-page__task-label')?.textContent).toBe(
+        'mint seed',
+      );
+      expect(draggedRow?.style.position).toBe('relative');
+      expect(draggedRow?.style.zIndex).toBe('98');
+      expect(draggedRow?.style.display).not.toBe('none');
+      expect(document.body.querySelector('.workshop-page__task-drag-ghost')).toBeNull();
       expect(
-        document.body.querySelector(
-          '.workshop-page__task-drag-ghost .workshop-page__task-label',
-        )?.textContent,
-      ).toBe('mint seed');
+        summary.querySelector('.workshop-page__task.is-reordering .workshop-page__task-label')
+          ?.textContent,
+      ).toBe('sage seed');
 
       document.dispatchEvent(
         new window.MouseEvent('pointerup', {
@@ -4329,19 +4407,333 @@ describe('PagesFacade', () => {
       );
 
       expect(getVisibleLabels()).toEqual(['mint seed', 'sage seed', 'nettle seed']);
-      expect(document.body.querySelector('.workshop-page__task-drag-ghost')).toBeNull();
+      expect(stage.querySelector('.workshop-page__task.is-drag-lifted')).toBeNull();
 
-      const sageRow = list.querySelector('.workshop-page__task');
-      sageRow.dispatchEvent(
+      const mintSummaryRow = summary.querySelector('.workshop-page__task');
+      mintSummaryRow.dispatchEvent(
+        new window.MouseEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 70,
+        }),
+      );
+      document.dispatchEvent(
+        new window.MouseEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 110,
+        }),
+      );
+      document.dispatchEvent(
+        new window.MouseEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 110,
+        }),
+      );
+
+      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
+      expect(summary.querySelector('.workshop-page__task.is-reordering')).toBeNull();
+
+      const mintRow = list.querySelector('.workshop-page__task');
+      mintRow.dispatchEvent(
         new window.KeyboardEvent('keydown', {
           bubbles: true,
           key: 'ArrowDown',
         }),
       );
 
-      expect(getVisibleLabels()).toEqual(['mint seed', 'nettle seed', 'sage seed']);
+      expect(getVisibleLabels()).toEqual(['sage seed', 'nettle seed', 'mint seed']);
     } finally {
       pagesFacade?.unmount();
+      stage.remove();
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
+  });
+
+  it('keeps Workshop task drag above rows and commits fast downward drops', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 4;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+      {
+        ...baseTask,
+        taskId: 'level1-nettle-seeds',
+        itemKey: 'nettleSeed',
+        itemLabel: 'nettle seed',
+        requiredQuantity: 8,
+        remainingQuantity: 8,
+      },
+      {
+        ...baseTask,
+        taskId: 'level1-lavender-seeds',
+        itemKey: 'lavenderSeed',
+        itemLabel: 'lavender seed',
+        requiredQuantity: 9,
+        remainingQuantity: 9,
+      },
+    ];
+
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
+    const makeRect = (top) => ({
+      x: 0,
+      y: top,
+      top,
+      left: 0,
+      right: 240,
+      bottom: top + 22,
+      width: 240,
+      height: 22,
+      toJSON: () => ({}),
+    });
+
+    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      if (this.classList?.contains('workshop-page__task')) {
+        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
+          return makeRect(60);
+        }
+
+        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
+          const rows = [
+            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
+          ];
+          return makeRect(90 + rows.indexOf(this) * 30);
+        }
+      }
+
+      return makeRect(0);
+    };
+    document.body.append(stage);
+    let pagesFacade = null;
+
+    try {
+      pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake(),
+      });
+
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__tasks-toggle')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const summary = stage.querySelector('.workshop-page__tasks-summary');
+      const list = stage.querySelector('.workshop-page__task-list');
+      const getVisibleLabels = () => [
+        summary.querySelector('.workshop-page__task-label')?.textContent,
+        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
+          (label) => label.textContent,
+        ),
+      ];
+      const mintRow = list.querySelector('.workshop-page__task');
+
+      expect(getVisibleLabels()).toEqual([
+        'sage seed',
+        'mint seed',
+        'nettle seed',
+        'lavender seed',
+      ]);
+
+      mintRow.dispatchEvent(
+        new window.MouseEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 100,
+        }),
+      );
+      document.dispatchEvent(
+        new window.MouseEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 170,
+        }),
+      );
+
+      const draggedRow = list.querySelector('.workshop-page__task.is-drag-lifted');
+      const movedRows = [...list.querySelectorAll('.workshop-page__task.is-reordering')].map(
+        (row) => row.querySelector('.workshop-page__task-label')?.textContent,
+      );
+
+      expect(draggedRow?.querySelector('.workshop-page__task-label')?.textContent).toBe(
+        'mint seed',
+      );
+      expect(draggedRow?.style.zIndex).toBe('98');
+      expect(draggedRow?.style.transition).toBe('none');
+      expect(movedRows).toEqual(['nettle seed', 'lavender seed']);
+      expect(stage.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
+
+      document.dispatchEvent(
+        new window.MouseEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 170,
+        }),
+      );
+
+      expect(getVisibleLabels()).toEqual([
+        'sage seed',
+        'nettle seed',
+        'lavender seed',
+        'mint seed',
+      ]);
+      expect(stage.querySelector('.workshop-page__task.is-drag-lifted')).toBeNull();
+    } finally {
+      pagesFacade?.unmount();
+      stage.remove();
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
+  });
+
+  it('moves Workshop task rows when the dragged row center crosses another row center', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 3;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+      {
+        ...baseTask,
+        taskId: 'level1-nettle-seeds',
+        itemKey: 'nettleSeed',
+        itemLabel: 'nettle seed',
+        requiredQuantity: 8,
+        remainingQuantity: 8,
+      },
+    ];
+
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
+    const makeRect = (top) => ({
+      x: 0,
+      y: top,
+      top,
+      left: 0,
+      right: 240,
+      bottom: top + 22,
+      width: 240,
+      height: 22,
+      toJSON: () => ({}),
+    });
+
+    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      if (this.classList?.contains('workshop-page__task')) {
+        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
+          return makeRect(60);
+        }
+
+        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
+          const rows = [
+            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
+          ];
+          return makeRect(90 + rows.indexOf(this) * 30);
+        }
+      }
+
+      return makeRect(0);
+    };
+    document.body.append(stage);
+    let pagesFacade = null;
+
+    try {
+      pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake(),
+      });
+
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__tasks-toggle')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const summary = stage.querySelector('.workshop-page__tasks-summary');
+      const list = stage.querySelector('.workshop-page__task-list');
+      const getVisibleLabels = () => [
+        summary.querySelector('.workshop-page__task-label')?.textContent,
+        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
+          (label) => label.textContent,
+        ),
+      ];
+      const mintRow = list.querySelector('.workshop-page__task');
+
+      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
+
+      mintRow.dispatchEvent(
+        new window.MouseEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 111,
+        }),
+      );
+
+      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
+      expect(list.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
+
+      document.dispatchEvent(
+        new window.MouseEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 82,
+        }),
+      );
+
+      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
+      expect(summary.querySelector('.workshop-page__task.is-reordering')).toBeNull();
+
+      document.dispatchEvent(
+        new window.MouseEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 80,
+        }),
+      );
+
+      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
+      expect(
+        summary.querySelector('.workshop-page__task.is-reordering .workshop-page__task-label')
+          ?.textContent,
+      ).toBe('sage seed');
+
+      document.dispatchEvent(
+        new window.MouseEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 80,
+        }),
+      );
+
+      expect(getVisibleLabels()).toEqual(['mint seed', 'sage seed', 'nettle seed']);
+    } finally {
+      pagesFacade?.unmount();
+      stage.remove();
       window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     }
   });
@@ -4449,7 +4841,7 @@ describe('PagesFacade', () => {
       expect(mintRow.classList.contains('is-completed')).toBe(true);
       expect(mintRow.classList.contains('is-first-completed')).toBe(true);
       expect(mintRow.classList.contains('is-reordering')).toBe(true);
-      expect(mintRow.style.transition).toContain('transform 260ms');
+      expect(mintRow.style.transition).toContain('transform 225ms');
     } finally {
       pagesFacade?.unmount();
       stage.remove();
@@ -4499,17 +4891,20 @@ describe('PagesFacade', () => {
     const payoffTitle = rewards?.querySelector('.workshop-page__level-payoff-title');
     const payoffRows = [
       ...rewards.querySelectorAll('.workshop-page__level-payoff-row'),
-    ].map((row) => row.textContent);
+    ].map((row) => [
+      row.querySelector('.workshop-page__level-payoff-label')?.textContent,
+      row.querySelector('.workshop-page__level-payoff-value')?.textContent,
+    ]);
 
     expect(completion?.hidden).toBe(false);
     expect(rewards?.hidden).toBe(false);
     expect(payoffTitle?.textContent).toBe('level 2 rewards');
     expect(payoffRows).toEqual([
-      'unlocks-garden',
-      'garden plots+1',
-      'mana cap+50',
-      'mana regen+1/sec',
-      'crystal+1',
+      ['unlocks', 'garden'],
+      ['garden plots', '+1'],
+      ['mana cap', '+50'],
+      ['mana regen', '+1/sec'],
+      ['crystal', '+1'],
     ]);
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
     expect(button?.textContent).toBe('level up20 gold');
@@ -8947,7 +9342,9 @@ describe('PagesFacade', () => {
     expect(progressBar?.classList.contains('style-progress--timer')).toBe(true);
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('0');
     expect(stage.querySelector('.brewing-page__active-progress-text')?.textContent).toBe('');
-    expect(stage.querySelector('.brewing-page__active-progress-fill')?.style.width).toBe('0%');
+    expect(stage.querySelector('.brewing-page__active-progress-fill')?.style.transform).toBe(
+      'scaleX(0)',
+    );
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('brew');
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
 
@@ -9305,8 +9702,8 @@ describe('PagesFacade', () => {
     expect(progressBar?.getAttribute('role')).toBe('progressbar');
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('25');
     expect(
-      progressBar?.querySelector('.research-page__research-progress-fill')?.style.width,
-    ).toBe('25%');
+      progressBar?.querySelector('.research-page__research-progress-fill')?.style.transform,
+    ).toBe('scaleX(0.25)');
 
     research.remainingMs = 2_000;
     research.progress = 0.8;
@@ -9317,8 +9714,8 @@ describe('PagesFacade', () => {
     );
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('80');
     expect(
-      progressBar?.querySelector('.research-page__research-progress-fill')?.style.width,
-    ).toBe('80%');
+      progressBar?.querySelector('.research-page__research-progress-fill')?.style.transform,
+    ).toBe('scaleX(0.8)');
   });
 
   it('marks unaffordable and locked research rows unavailable', () => {

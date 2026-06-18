@@ -4,7 +4,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 
 ## Box Construction
 
-- Ordinary room boxes use `1px` black borders, compact padding, and no shadow.
+- Ordinary room boxes use `2px` black borders, compact padding, and no shadow.
 - Box titles sit embedded over the top border on the white surface.
 - Secondary border labels, such as counts, close/current controls, actions, and tabs, use smaller normal-weight text centered on the border line.
 - Popup/dialog boxes use the thicker dialog treatment: `2px` border, `20px` padding, and bottom-right shadow.

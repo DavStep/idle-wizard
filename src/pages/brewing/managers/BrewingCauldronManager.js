@@ -7,6 +7,7 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
 import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
@@ -593,8 +594,15 @@ export class BrewingCauldronManager {
       const progress = Number.isFinite(brewing.activeBrew.progress)
         ? brewing.activeBrew.progress
         : 0;
-      const percent = Math.round(Math.max(0, Math.min(100, progress * 100)));
-      this.setStyleWidth(refs.activeProgressFill, `${percent}%`);
+      const progressRatio = Math.max(0, Math.min(1, progress));
+      const percent = Math.round(progressRatio * 100);
+      const remainingMs = Number.isFinite(brewing.activeBrew.remainingMs)
+        ? brewing.activeBrew.remainingMs
+        : 0;
+      setProgressFill(refs.activeProgressFill, progressRatio, {
+        smooth: remainingMs > 0,
+        remainingMs,
+      });
       this.setText(refs.activeProgressText, '');
       this.setAttribute(
         refs.activeProgress,
@@ -605,7 +613,7 @@ export class BrewingCauldronManager {
     } else {
       this.setHidden(refs.active, true);
       this.setText(refs.activeText, '');
-      this.setStyleWidth(refs.activeProgressFill, '0%');
+      stopProgressFill(refs.activeProgressFill, 0);
       this.setText(refs.activeProgressText, '');
       this.setAttribute(refs.activeProgress, 'aria-valuenow', '0');
     }
@@ -634,7 +642,7 @@ export class BrewingCauldronManager {
     this.hideExtraIngredientRows(refs, 0);
     this.setHidden(refs.active, true);
     this.setText(refs.activeText, '');
-    this.setStyleWidth(refs.activeProgressFill, '0%');
+    stopProgressFill(refs.activeProgressFill, 0);
     this.setText(refs.activeProgressText, '');
     this.setAttribute(refs.activeProgress, 'aria-valuenow', '0');
   }
@@ -1948,12 +1956,6 @@ export class BrewingCauldronManager {
   removeAttribute(element, name) {
     if (element.hasAttribute(name)) {
       element.removeAttribute(name);
-    }
-  }
-
-  setStyleWidth(element, value) {
-    if (element.style.width !== value) {
-      element.style.width = value;
     }
   }
 

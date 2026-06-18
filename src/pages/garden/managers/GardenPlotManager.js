@@ -10,6 +10,7 @@ import {
 } from '../../shared/resourceColor.js';
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 
@@ -381,7 +382,7 @@ export class GardenPlotManager {
     );
 
     if (tile.process) {
-      this.renderProgress(refs, tile.process.progress);
+      this.renderProgress(refs, tile.process);
     } else if (tile.phase === 'ready') {
       this.renderProgress(refs, 1);
     } else {
@@ -406,14 +407,24 @@ export class GardenPlotManager {
   }
 
   renderProgress(refs, progress) {
+    const progressValue =
+      progress && typeof progress === 'object' ? progress.progress : progress;
+    const remainingMs =
+      progress && typeof progress === 'object' && Number.isFinite(progress.remainingMs)
+        ? progress.remainingMs
+        : 0;
+
     refs.progress.hidden = false;
-    refs.fill.style.width = `${Math.round(progress * 100)}%`;
+    setProgressFill(refs.fill, progressValue, {
+      smooth: remainingMs > 0,
+      remainingMs,
+    });
     this.setText(refs.progressText, '');
   }
 
   hideProgress(refs) {
     refs.progress.hidden = true;
-    refs.fill.style.width = '0%';
+    stopProgressFill(refs.fill, 0);
     this.setText(refs.progressText, '');
   }
 

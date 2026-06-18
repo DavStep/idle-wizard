@@ -40,6 +40,64 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ResearchBoxListManager', () => {
+  it('colors completed seed unlock research names as seed resources', () => {
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 4,
+      },
+      research: {
+        boxes: [
+          {
+            id: 'seedUnlocks',
+            label: 'seed unlock researches',
+            researches: [
+              {
+                id: 'unlockSeed:sageSeed',
+                label: 'sage seed',
+                value: 'researched',
+                completed: true,
+              },
+              {
+                id: 'unlockSeed:mintSeed',
+                label: 'mint seed',
+                value: 'researched',
+                completed: true,
+              },
+              {
+                id: 'unlockSeed:nettleSeed',
+                label: 'nettle seed',
+                value: 'locked',
+                completed: false,
+                canResearch: false,
+                locked: true,
+              },
+            ],
+          },
+        ],
+        completedResearchIds: ['unlockSeed:sageSeed', 'unlockSeed:mintSeed'],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    const rows = [...stage.querySelectorAll('.research-page__row')];
+    const researchedNames = rows
+      .filter((row) => row.textContent?.includes('researched'))
+      .map((row) => row.querySelector('.research-page__research-name'));
+    const lockedRow = rows.find((row) => row.textContent?.includes('nettle seed'));
+
+    expect(researchedNames).toHaveLength(2);
+    expect(researchedNames.map((name) => name?.dataset.resourceColor)).toEqual([
+      'seed',
+      'seed',
+    ]);
+    expect(lockedRow?.classList.contains('is-unavailable')).toBe(true);
+  });
+
   it('opens locked research info on row tap and explains missing requirements', () => {
     const onShowResearchInfo = vi.fn();
     const snapshot = {

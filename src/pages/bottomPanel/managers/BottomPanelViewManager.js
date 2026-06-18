@@ -43,6 +43,11 @@ export class BottomPanelViewManager {
         this.hideLockedPageMessage();
       }
     };
+    this.handleLockPopupAnimationEnd = (event) => {
+      if (event.animationName === 'room-bottom-lock-popup-enter') {
+        this.refs.lockPopup?.classList.remove('is-entering');
+      }
+    };
     this.handleKeydown = (event) => {
       if (this.refs.lockPopup?.hidden || event.key !== 'Escape') {
         return;
@@ -216,6 +221,7 @@ export class BottomPanelViewManager {
     popup.hidden = true;
     popup.setAttribute('aria-hidden', 'true');
     popup.addEventListener('click', this.handleLockPopupClick);
+    popup.addEventListener('animationend', this.handleLockPopupAnimationEnd);
 
     const panel = document.createElement('div');
     panel.className = 'room-bottom-panel__lock-panel';
@@ -261,8 +267,10 @@ export class BottomPanelViewManager {
 
     this.previousFocus = document.activeElement;
     this.refs.lockMessage.textContent = this.getLockedMessage(tab, state);
+    this.refs.lockPopup.dataset.pageId = tab.id;
     this.refs.lockPopup.hidden = false;
     this.refs.lockPopup.setAttribute('aria-hidden', 'false');
+    this.restartLockedPageMessageAnimation();
     this.refs.lockPanel?.focus?.({ preventScroll: true });
   }
 
@@ -274,12 +282,24 @@ export class BottomPanelViewManager {
     const wasVisible = !this.refs.lockPopup.hidden;
     this.refs.lockPopup.hidden = true;
     this.refs.lockPopup.setAttribute('aria-hidden', 'true');
+    this.refs.lockPopup.classList.remove('is-entering');
+    delete this.refs.lockPopup.dataset.pageId;
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
       this.previousFocus.focus?.({ preventScroll: true });
     }
 
     this.previousFocus = null;
+  }
+
+  restartLockedPageMessageAnimation() {
+    if (!this.refs.lockPopup) {
+      return;
+    }
+
+    this.refs.lockPopup.classList.remove('is-entering');
+    void this.refs.lockPopup.offsetWidth;
+    this.refs.lockPopup.classList.add('is-entering');
   }
 
   getLockedMessage(tab, state) {

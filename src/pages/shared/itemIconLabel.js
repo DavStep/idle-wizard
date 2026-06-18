@@ -1,13 +1,14 @@
-import { getSeedIconUrl } from '../../assets/items/seeds/seedIcons.js';
+import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
+import { getSeedIconFrameName } from '../../assets/items/seeds/seedIcons.js';
 import {
   getHerbIconKeyByLabel,
   getHerbIconLabelEntries,
-  getHerbIconUrl,
+  getHerbIconFrameName,
 } from '../../assets/items/herbs/herbIcons.js';
 import {
   getPotionIconKeyByLabel,
   getPotionIconLabelEntries,
-  getPotionIconUrl,
+  getPotionIconFrameName,
 } from '../../assets/items/potions/potionIcons.js';
 import { createResourceIconLabel } from './resourceIconLabel.js';
 
@@ -32,7 +33,7 @@ export function setItemIconLabel(element, kind, itemKey = null) {
       itemKey,
       kind: 'seed',
       className: SEED_ICON_LABEL_CLASS,
-      getIconUrl: getSeedIconUrl,
+      getIconFrameName: getSeedIconFrameName,
     });
     return;
   }
@@ -44,7 +45,7 @@ export function setItemIconLabel(element, kind, itemKey = null) {
       itemKey,
       kind: 'herb',
       className: HERB_ICON_LABEL_CLASS,
-      getIconUrl: getHerbIconUrl,
+      getIconFrameName: getHerbIconFrameName,
     });
     return;
   }
@@ -56,7 +57,7 @@ export function setItemIconLabel(element, kind, itemKey = null) {
       itemKey: normalizePotionIconKey(itemKey, element.textContent),
       kind: 'potion',
       className: POTION_ICON_LABEL_CLASS,
-      getIconUrl: getPotionIconUrl,
+      getIconFrameName: getPotionIconFrameName,
     });
     return;
   }
@@ -114,13 +115,13 @@ function setImageItemIconLabel({
   itemKey = null,
   kind,
   className,
-  getIconUrl,
+  getIconFrameName,
 }) {
   const value = String(text ?? '');
   const normalizedKey = String(itemKey ?? '').trim();
-  const iconUrl = getIconUrl(normalizedKey);
+  const frameName = getIconFrameName(normalizedKey);
 
-  if (!iconUrl) {
+  if (!frameName) {
     clearImageItemIconLabel(element);
     if (element.textContent !== value) {
       element.textContent = value;
@@ -142,7 +143,7 @@ function setImageItemIconLabel({
   }
 
   element.replaceChildren(
-    createImageItemIconImage(className, iconUrl),
+    createImageItemIconSprite(className, frameName),
     createImageItemText(className, value),
   );
 }
@@ -244,7 +245,7 @@ function createSeedIconLabel(seedName) {
   label.className = SEED_ICON_LABEL_CLASS;
   label.dataset.itemIconKind = 'seed';
   label.append(
-    createImageItemIconImage(SEED_ICON_LABEL_CLASS, getSeedIconUrl()),
+    createImageItemIconSprite(SEED_ICON_LABEL_CLASS, getSeedIconFrameName()),
     createImageItemText(SEED_ICON_LABEL_CLASS, seedName),
   );
   return label;
@@ -269,20 +270,15 @@ function createPotionIconLabel(text, itemKey = null) {
 }
 
 function createHerbIconImage(itemKey) {
-  return createImageItemIconImage(HERB_ICON_LABEL_CLASS, getHerbIconUrl(itemKey));
+  return createImageItemIconSprite(HERB_ICON_LABEL_CLASS, getHerbIconFrameName(itemKey));
 }
 
 function createPotionIconImage(itemKey) {
-  return createImageItemIconImage(POTION_ICON_LABEL_CLASS, getPotionIconUrl(itemKey));
+  return createImageItemIconSprite(POTION_ICON_LABEL_CLASS, getPotionIconFrameName(itemKey));
 }
 
-function createImageItemIconImage(className, iconUrl) {
-  const icon = document.createElement('img');
-  icon.className = `${className}__icon`;
-  icon.src = iconUrl;
-  icon.alt = '';
-  icon.setAttribute('aria-hidden', 'true');
-  return icon;
+function createImageItemIconSprite(className, frameName) {
+  return createAssetAtlasSprite(`${className}__icon`, frameName);
 }
 
 function createPotionText(text) {

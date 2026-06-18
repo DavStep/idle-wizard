@@ -12,7 +12,10 @@ import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js
 const INITIAL_REQUIREMENTS_LABEL = formatLevelRequirementsLabel();
 const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
-const EXPANDED_CONTENT_COLLAPSE_MS = 230;
+const EXPANDED_CONTENT_MOTION_MS = 225;
+const TASK_REORDER_MOTION_MS = 225;
+const TASK_REORDER_TRANSITION =
+  'transform 225ms cubic-bezier(0.2, 1.12, 0.36, 1), opacity 140ms linear';
 
 export class WorkshopTaskManager {
   constructor({ gameplayFacade, onLevelUpNotice } = {}) {
@@ -33,10 +36,13 @@ export class WorkshopTaskManager {
     this.currentRequirementTargetLevel = null;
     this.taskPriorityByLevel = new Map();
     this.dragState = null;
+    this.skipNextRowAnimationTaskId = null;
+    this.skipNextRowAnimationRoot = null;
     this.expanded = false;
+    this.expandingExpandedContent = false;
     this.collapsingExpandedContent = false;
-    this.collapseAnimationTimeoutId = null;
-    this.collapseAnimationFrameId = null;
+    this.expandedContentAnimationTimeoutId = null;
+    this.expandedContentAnimationFrameId = null;
     this.canToggleTasks = false;
     this.infoVisible = false;
     this.previousFocus = null;
@@ -66,6 +72,10 @@ export class WorkshopTaskManager {
       }
 
       const target = event.target;
+
+      if (target?.closest?.('.tutorial-layer')) {
+        return;
+      }
 
       if (target && this.root?.contains(target)) {
         return;
@@ -104,7 +114,7 @@ export class WorkshopTaskManager {
         event.target === this.refs.expandedContent &&
         event.propertyName === 'height'
       ) {
-        this.finishExpandedContentCollapse();
+        this.finishExpandedContentMotion();
       }
     };
   }
@@ -214,7 +224,7 @@ export class WorkshopTaskManager {
     this.refs.infoPopup?.removeEventListener('click', this.handleInfoPopupClick);
     this.refs.backdrop?.removeEventListener('pointerdown', this.handleBackdropPress);
     this.refs.backdrop?.removeEventListener('click', this.handleBackdropPress);
-    this.cancelExpandedContentCollapse();
+    this.cancelExpandedContentMotion();
     this.stopTaskDragListeners();
     this.clearTaskDragPreview(this.dragState);
     this.cancelRowAnimations();
@@ -234,10 +244,13 @@ export class WorkshopTaskManager {
     this.currentFirstCompletedTaskId = null;
     this.currentRequirementsLabel = INITIAL_REQUIREMENTS_LABEL;
     this.currentRequirementTargetLevel = null;
+    this.expandingExpandedContent = false;
     this.collapsingExpandedContent = false;
     this.infoVisible = false;
     this.previousFocus = null;
     this.dragState = null;
+    this.skipNextRowAnimationTaskId = null;
+    this.skipNextRowAnimationRoot = null;
   }
 
   toggleExpanded() {
@@ -246,19 +259,38 @@ export class WorkshopTaskManager {
 
   setExpanded(expanded) {
     const nextExpanded = Boolean(expanded);
-    const shouldAnimateCollapse =
-      this.expanded && !nextExpanded && this.shouldAnimateExpandedContentCollapse();
 
-    if (nextExpanded) {
-      this.cancelExpandedContentCollapse();
+    if (nextExpanded === this.expanded) {
+      this.syncExpansionState();
+      return;
     }
 
-    this.expanded = nextExpanded;
+    const canAnimateExpandedContent = this.shouldAnimateExpandedContentMotion();
+    const shouldAnimateExpand = !this.expanded && nextExpanded && canAnimateExpandedContent;
+    const shouldAnimateCollapse = this.expanded && !nextExpanded && canAnimateExpandedContent;
+
+    if (shouldAnimateExpand) {
+      const startHeight = this.collapsingExpandedContent
+        ? this.getExpandedContentHeight()
+        : 0;
+
+      this.expanded = true;
+      this.syncExpansionState();
+      this.startExpandedContentExpand(startHeight);
+      return;
+    }
 
     if (shouldAnimateCollapse) {
-      this.startExpandedContentCollapse();
+      const startHeight = this.getExpandedContentHeight();
+
+      this.startExpandedContentCollapse(startHeight);
+      this.expanded = false;
+      this.syncExpansionState();
+      return;
     }
 
+    this.cancelExpandedContentMotion();
+    this.expanded = nextExpanded;
     this.syncExpansionState();
   }
 
@@ -294,6 +326,10 @@ export class WorkshopTaskManager {
     const rowMovement = this.ensureRows(listTasks);
     this.setCanToggleTasks(listTasks.length > 0);
 
+    if (!activeDragState) {
+      this.ensureSummaryTaskInFlow();
+    }
+
     this.renderSummaryTask(summaryTask, taskSnapshot.completedAllLevels);
     this.setText(
       this.refs.count,
@@ -316,6 +352,8 @@ export class WorkshopTaskManager {
     this.renderLevelRewards();
     this.syncExpansionState();
     this.animateMovedRows(rowMovement);
+    this.skipNextRowAnimationTaskId = null;
+    this.skipNextRowAnimationRoot = null;
 
     if (activeDragState && this.dragState === activeDragState) {
       this.syncTaskDragPreview();
@@ -876,6 +914,10 @@ export class WorkshopTaskManager {
         const root = document.createElement('div');
         root.className = 'workshop-page__level-payoff-row';
         root.classList.toggle('workshop-page__level-payoff-row--list', valueLines.length > 0);
+        root.setAttribute(
+          'aria-label',
+          `${row.label}: ${valueLines.length > 0 ? valueLines.join(', ') : row.value}`,
+        );
 
         const label = document.createElement('span');
         label.className = 'workshop-page__level-payoff-label';
@@ -963,12 +1005,16 @@ export class WorkshopTaskManager {
       pointerId: event.pointerId,
       lastY: event.clientY,
       grabOffsetY: event.clientY - rect.top,
+      dragHeight: rect.height,
+      initialIndex,
+      initialTop: rect.top,
+      initialRects: this.getInitialTaskDragRects(),
       taskIds,
       targetIndex: initialIndex,
       root,
-      ghost: this.createTaskDragGhost(root, rect),
-      placeholder: this.createTaskDragPlaceholder(rect),
+      dragNode: this.liftTaskDragNode(root, rect),
     };
+    this.prepareTaskDragSiblingTransitions(this.dragState);
     this.startTaskDragListeners();
     this.syncTaskDragPreview();
   }
@@ -981,9 +1027,7 @@ export class WorkshopTaskManager {
     event.preventDefault();
     this.dragState.lastY = event.clientY;
     this.updateTaskDragGhost(event.clientY);
-    this.placeTaskDragPlaceholder(
-      this.getTaskDropIndex(this.dragState.taskId, event.clientY),
-    );
+    this.placeTaskDragPreview(this.getTaskDropIndex(this.dragState.taskId, event.clientY));
   }
 
   onTaskDragDocumentPointerUp(event) {
@@ -1042,32 +1086,61 @@ export class WorkshopTaskManager {
     const taskId = dragState.taskId;
     const targetIndex = commit
       ? this.getTaskDropIndex(taskId, clientY)
-      : dragState.targetIndex;
+      : dragState.initialIndex;
+    dragState.targetIndex = targetIndex;
     this.dragState = null;
     this.stopTaskDragListeners();
-    this.clearTaskDragPreview(dragState);
 
     if (commit) {
-      this.moveTaskToIndex(taskId, targetIndex);
+      const moved = this.moveTaskToIndex(taskId, targetIndex, {
+        render: false,
+      });
+
+      this.clearTaskDragPreview(dragState, { restoreFlow: false });
+
+      if (moved) {
+        this.skipNextRowAnimationTaskId = taskId;
+        this.skipNextRowAnimationRoot = dragState.dragNode ?? dragState.root;
+        this.render(this.gameplayFacade.getSnapshot());
+      }
     } else {
+      this.clearTaskDragPreview(dragState);
       this.render(this.gameplayFacade.getSnapshot());
     }
   }
 
   getTaskDropIndex(taskId, clientY) {
     const entries = this.getTaskDropEntries(taskId);
+    const dragCenterY = this.getTaskDragCenterY(clientY);
     let targetIndex = 0;
 
     for (const entry of entries) {
       const rect = entry.rect;
       const centerY = rect.top + rect.height / 2;
 
-      if (clientY > centerY) {
+      if (dragCenterY > centerY) {
         targetIndex += 1;
       }
     }
 
     return this.clampTaskTargetIndex(taskId, targetIndex);
+  }
+
+  getTaskDragCenterY(clientY) {
+    const pointerY = Number(clientY);
+
+    if (!Number.isFinite(pointerY)) {
+      return pointerY;
+    }
+
+    const offsetY = Number.isFinite(this.dragState?.grabOffsetY)
+      ? this.dragState.grabOffsetY
+      : 0;
+    const dragHeight = Number.isFinite(this.dragState?.dragHeight)
+      ? this.dragState.dragHeight
+      : 0;
+
+    return pointerY - offsetY + dragHeight / 2;
   }
 
   getTaskDropEntries(taskId) {
@@ -1078,7 +1151,9 @@ export class WorkshopTaskManager {
       .filter((candidateTaskId) => candidateTaskId !== taskId)
       .map((candidateTaskId) => {
         const row = this.getVisibleTaskRow(candidateTaskId);
-        const rect = row?.root?.getBoundingClientRect();
+        const rect =
+          this.dragState?.initialRects?.get(candidateTaskId) ??
+          row?.root?.getBoundingClientRect();
 
         if (!rect || (!rect.width && !rect.height)) {
           return null;
@@ -1103,7 +1178,7 @@ export class WorkshopTaskManager {
     this.moveTaskToIndex(taskId, currentIndex + offset);
   }
 
-  moveTaskToIndex(taskId, targetIndex) {
+  moveTaskToIndex(taskId, targetIndex, { render = true } = {}) {
     const currentIndex = this.currentDisplayTasks.findIndex((task) => task.taskId === taskId);
 
     if (currentIndex < 0) {
@@ -1120,7 +1195,11 @@ export class WorkshopTaskManager {
     const [movedTask] = nextTasks.splice(currentIndex, 1);
     nextTasks.splice(clampedTargetIndex, 0, movedTask);
     this.setTaskPriorityOrder(nextTasks);
-    this.render(this.gameplayFacade.getSnapshot());
+
+    if (render) {
+      this.render(this.gameplayFacade.getSnapshot());
+    }
+
     return true;
   }
 
@@ -1166,7 +1245,12 @@ export class WorkshopTaskManager {
   getVisibleTaskEntries() {
     const entries = [];
 
-    if (this.refs.summaryTask?.root && !this.refs.summaryTask.root.hidden) {
+    if (
+      this.refs.summaryTask?.root &&
+      !this.refs.summaryTask.root.hidden &&
+      (this.refs.summary?.contains(this.refs.summaryTask.root) ||
+        this.refs.list?.contains(this.refs.summaryTask.root))
+    ) {
       entries.push({
         taskId: this.refs.summaryTask.root.dataset.taskId,
         root: this.refs.summaryTask.root,
@@ -1175,7 +1259,7 @@ export class WorkshopTaskManager {
 
     if (this.refs.list && !this.refs.list.hidden) {
       for (const [taskId, row] of this.rowsByTaskId.entries()) {
-        if (!row.root.hidden) {
+        if (!row.root.hidden && this.refs.list.contains(row.root)) {
           entries.push({ taskId, root: row.root });
         }
       }
@@ -1204,30 +1288,75 @@ export class WorkshopTaskManager {
     document.removeEventListener('pointercancel', this.handleTaskDragDocumentCancel, true);
   }
 
-  createTaskDragGhost(root, rect) {
-    const ghost = root.cloneNode(true);
-    ghost.classList.add('workshop-page__task-drag-ghost', 'is-dragging');
-    ghost.classList.remove('is-reordering', 'is-first-completed');
-    ghost.setAttribute('aria-hidden', 'true');
-    ghost.style.left = `${rect.left}px`;
-    ghost.style.top = '0';
-    ghost.style.width = `${rect.width}px`;
-    ghost.style.height = `${rect.height}px`;
+  getInitialTaskDragRects() {
+    const rects = new Map();
 
-    for (const button of ghost.querySelectorAll('button')) {
+    for (const { taskId, root } of this.getVisibleTaskEntries()) {
+      const rect = root.getBoundingClientRect();
+
+      if (rect.width || rect.height) {
+        rects.set(taskId, rect);
+      }
+    }
+
+    return rects;
+  }
+
+  liftTaskDragNode(root, rect) {
+    const scale = this.getTaskDragScale(root, rect);
+
+    root.classList.add('is-drag-lifted');
+    root.classList.remove('is-reordering');
+    root.setAttribute('aria-hidden', 'true');
+    root.style.position = 'relative';
+    root.style.zIndex = '98';
+    root.style.pointerEvents = 'none';
+    root.style.transformOrigin = 'center center';
+    root.style.transition = 'none';
+    root.style.setProperty('--workshop-task-drag-scale', `${scale}`);
+
+    for (const button of root.querySelectorAll('button')) {
       button.tabIndex = -1;
     }
 
-    document.body.append(ghost);
-    return ghost;
+    return root;
   }
 
-  createTaskDragPlaceholder(rect) {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'workshop-page__task workshop-page__task-drag-placeholder';
-    placeholder.setAttribute('aria-hidden', 'true');
-    placeholder.style.height = `${rect.height}px`;
-    return placeholder;
+  getTaskDragScale(root, rect) {
+    const sourceWidth = root.offsetWidth;
+
+    if (sourceWidth > 0 && rect.width > 0) {
+      return rect.width / sourceWidth;
+    }
+
+    const sourceHeight = root.offsetHeight;
+
+    if (sourceHeight > 0 && rect.height > 0) {
+      return rect.height / sourceHeight;
+    }
+
+    return 1;
+  }
+
+  prepareTaskDragSiblingTransitions(dragState = this.dragState) {
+    for (const taskId of dragState?.taskIds ?? []) {
+      if (taskId === dragState.taskId) {
+        continue;
+      }
+
+      const row = this.getVisibleTaskRow(taskId);
+
+      if (!row?.root) {
+        continue;
+      }
+
+      this.cancelRowAnimation(taskId);
+      row.root.style.transition = this.prefersReducedMotion()
+        ? 'none'
+        : TASK_REORDER_TRANSITION;
+    }
+
+    this.root?.getBoundingClientRect();
   }
 
   syncTaskDragPreview() {
@@ -1245,87 +1374,207 @@ export class WorkshopTaskManager {
 
     if (dragState.root && dragState.root !== row.root) {
       dragState.root.classList.remove('is-dragging');
-      dragState.root.style.display = '';
     }
 
     dragState.root = row.root;
     this.cancelRowAnimation(dragState.taskId);
     row.root.classList.add('is-dragging');
-    row.root.style.display = 'none';
+
+    if (!row.root.classList.contains('is-drag-lifted')) {
+      dragState.dragNode = this.liftTaskDragNode(row.root, row.root.getBoundingClientRect());
+    }
+
     this.root?.classList.add('is-task-dragging');
-    this.placeTaskDragPlaceholder(dragState.targetIndex);
+    this.placeTaskDragPreview(dragState.targetIndex);
     this.updateTaskDragGhost(dragState.lastY);
   }
 
-  placeTaskDragPlaceholder(targetIndex) {
+  placeTaskDragPreview(targetIndex) {
     const dragState = this.dragState;
 
-    if (!dragState?.placeholder || !this.refs.summary || !this.refs.list) {
+    if (!dragState || !this.refs.summary || !this.refs.list) {
       return;
     }
 
     const clampedTargetIndex = this.clampTaskTargetIndex(dragState.taskId, targetIndex);
-    const orderedTaskIds = dragState.taskIds.filter(
-      (taskId) =>
-        taskId !== dragState.taskId &&
-        this.currentDisplayTasks.some((task) => task.taskId === taskId),
-    );
-    orderedTaskIds.splice(
-      Math.min(clampedTargetIndex, orderedTaskIds.length),
-      0,
-      dragState.taskId,
-    );
-    const roots = orderedTaskIds
-      .map((taskId) =>
-        taskId === dragState.taskId
-          ? dragState.placeholder
-          : this.getVisibleTaskRow(taskId)?.root,
-      )
-      .filter(Boolean);
+
+    if (dragState.targetIndex === clampedTargetIndex) {
+      return;
+    }
 
     dragState.targetIndex = clampedTargetIndex;
-    this.refs.summary.replaceChildren(...roots.slice(0, 1));
-    this.refs.list.replaceChildren(...roots.slice(1));
+    this.updateTaskDragSiblingTransforms(dragState);
+  }
+
+  updateTaskDragSiblingTransforms(dragState = this.dragState) {
+    if (!dragState?.initialRects || !dragState.taskIds) {
+      return;
+    }
+
+    const initialIndex = Number.isInteger(dragState.initialIndex)
+      ? dragState.initialIndex
+      : dragState.taskIds.indexOf(dragState.taskId);
+    const targetIndex = Number.isInteger(dragState.targetIndex)
+      ? dragState.targetIndex
+      : initialIndex;
+
+    for (let index = 0; index < dragState.taskIds.length; index += 1) {
+      const taskId = dragState.taskIds[index];
+
+      if (taskId === dragState.taskId) {
+        continue;
+      }
+
+      const row = this.getVisibleTaskRow(taskId);
+
+      if (!row?.root) {
+        continue;
+      }
+
+      const fromRect = dragState.initialRects.get(taskId);
+      let toRect = null;
+
+      if (targetIndex > initialIndex && index > initialIndex && index <= targetIndex) {
+        toRect = dragState.initialRects.get(dragState.taskIds[index - 1]);
+      } else if (targetIndex < initialIndex && index >= targetIndex && index < initialIndex) {
+        toRect = dragState.initialRects.get(dragState.taskIds[index + 1]);
+      }
+
+      this.setTaskDragSiblingTransform(taskId, row.root, fromRect, toRect);
+    }
+  }
+
+  setTaskDragSiblingTransform(taskId, root, fromRect, toRect) {
+    if (!fromRect || !toRect) {
+      this.resetTaskDragSiblingTransform(root);
+      return;
+    }
+
+    const deltaY = toRect.top - fromRect.top;
+
+    if (Math.abs(deltaY) < 0.5) {
+      this.resetTaskDragSiblingTransform(root);
+      return;
+    }
+
+    const scale = this.getTaskDragScale(root, fromRect);
+    const dragScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+
+    this.cancelRowAnimation(taskId);
+    root.classList.add('is-reordering');
+    root.style.transition =
+      root.style.transition ||
+      (this.prefersReducedMotion() ? 'none' : TASK_REORDER_TRANSITION);
+    root.style.transform = `translate3d(0, ${deltaY / dragScale}px, 0)`;
+    root.style.opacity = '1';
+  }
+
+  clearTaskDragSiblingTransforms(dragState = this.dragState) {
+    for (const taskId of dragState?.taskIds ?? []) {
+      if (taskId === dragState.taskId) {
+        continue;
+      }
+
+      const row = this.getVisibleTaskRow(taskId);
+
+      if (row?.root) {
+        this.clearTaskDragSiblingTransform(row.root);
+      }
+    }
+  }
+
+  resetTaskDragSiblingTransform(root) {
+    root.classList.remove('is-reordering');
+    root.style.transform = '';
+    root.style.opacity = '';
+  }
+
+  clearTaskDragSiblingTransform(root) {
+    root.classList.remove('is-reordering');
+    root.style.transition = '';
+    root.style.transform = '';
+    root.style.opacity = '';
   }
 
   updateTaskDragGhost(clientY = this.dragState?.lastY) {
     const dragState = this.dragState;
 
-    if (!dragState?.ghost || !Number.isFinite(clientY)) {
+    if (!dragState?.dragNode || !Number.isFinite(clientY)) {
       return;
     }
 
     const offsetY = Number.isFinite(dragState.grabOffsetY) ? dragState.grabOffsetY : 0;
-    dragState.ghost.style.transform = `translate3d(0, ${clientY - offsetY}px, 0)`;
+    const scale = Number(dragState.dragNode.style.getPropertyValue('--workshop-task-drag-scale'));
+    const dragScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const initialTop = Number.isFinite(dragState.initialTop) ? dragState.initialTop : 0;
+    dragState.dragNode.style.transform = `translate3d(0, ${
+      (clientY - offsetY - initialTop) / dragScale
+    }px, 0)`;
   }
 
-  restoreTaskDragFlow(dragState = this.dragState) {
-    dragState?.placeholder?.remove();
-
-    if (dragState?.root) {
-      dragState.root.style.display = '';
-    }
-
+  restoreTaskDragFlow() {
     if (this.refs.summary && this.refs.summaryTask?.root) {
       this.refs.summary.replaceChildren(this.refs.summaryTask.root);
     }
+
+    if (this.refs.list) {
+      const listRoots = this.currentDisplayTasks
+        .slice(1)
+        .map((task) => this.rowsByTaskId.get(task.taskId)?.root)
+        .filter(Boolean);
+      this.refs.list.replaceChildren(...listRoots);
+    }
   }
 
-  clearTaskDragPreview(dragState = this.dragState) {
+  clearTaskDragPreview(dragState = this.dragState, { restoreFlow = true } = {}) {
     if (!dragState) {
       return;
     }
 
-    dragState.ghost?.remove();
-    dragState.placeholder?.remove();
     dragState.root?.classList.remove('is-dragging');
-
-    if (dragState.root) {
-      dragState.root.style.display = '';
-    }
+    this.clearTaskDragSiblingTransforms(dragState);
+    this.resetTaskDragNode(dragState);
 
     this.root?.classList.remove('is-task-dragging');
-    this.restoreTaskDragFlow(dragState);
+
+    if (restoreFlow) {
+      this.restoreTaskDragFlow(dragState);
+    }
+  }
+
+  resetTaskDragNode(dragState = this.dragState) {
+    const root = dragState?.dragNode ?? dragState?.root;
+
+    if (!root) {
+      return;
+    }
+
+    root.classList.remove('is-dragging', 'is-drag-lifted');
+    root.removeAttribute('aria-hidden');
+    root.style.position = '';
+    root.style.left = '';
+    root.style.top = '';
+    root.style.width = '';
+    root.style.height = '';
+    root.style.zIndex = '';
+    root.style.pointerEvents = '';
+    root.style.transformOrigin = '';
+    root.style.transform = '';
+    root.style.removeProperty('--workshop-task-drag-scale');
+
+    for (const button of root.querySelectorAll('button')) {
+      button.tabIndex = 0;
+    }
+  }
+
+  ensureSummaryTaskInFlow() {
+    if (
+      this.refs.summary &&
+      this.refs.summaryTask?.root &&
+      !this.refs.summary.contains(this.refs.summaryTask.root)
+    ) {
+      this.refs.summary.replaceChildren(this.refs.summaryTask.root);
+    }
   }
 
   canReorderVisibleTasks() {
@@ -1380,7 +1629,11 @@ export class WorkshopTaskManager {
   }
 
   isExpandedContentVisible() {
-    return Boolean(this.isTaskListExpanded() || this.collapsingExpandedContent);
+    return Boolean(
+      this.isTaskListExpanded() ||
+        this.expandingExpandedContent ||
+        this.collapsingExpandedContent,
+    );
   }
 
   syncExpansionState() {
@@ -1392,6 +1645,7 @@ export class WorkshopTaskManager {
 
     this.root?.classList.toggle('is-expanded', hasExpandedContent);
     this.root?.classList.toggle('is-collapsed', !hasExpandedContent);
+    this.root?.classList.toggle('is-expanding', this.expandingExpandedContent);
     this.root?.classList.toggle('is-collapsing', this.collapsingExpandedContent);
     this.refs.toggleButton?.setAttribute('aria-expanded', listExpanded ? 'true' : 'false');
     this.refs.toggleButton?.setAttribute(
@@ -1418,7 +1672,7 @@ export class WorkshopTaskManager {
     this.updateToggleNotification();
   }
 
-  shouldAnimateExpandedContentCollapse() {
+  shouldAnimateExpandedContentMotion() {
     return Boolean(
       this.canToggleTasks &&
         this.root?.isConnected &&
@@ -1427,14 +1681,52 @@ export class WorkshopTaskManager {
     );
   }
 
-  startExpandedContentCollapse() {
-    this.cancelExpandedContentCollapse();
+  startExpandedContentExpand(startHeight = 0) {
     const content = this.refs.expandedContent;
-    const contentHeight = content?.getBoundingClientRect().height ?? 0;
+    const targetHeight = this.getExpandedContentScrollHeight();
 
-    if (content && contentHeight > 0) {
-      content.style.height = `${contentHeight}px`;
-      content.style.opacity = '1';
+    this.cancelExpandedContentMotion({ clearInlineStyles: false });
+
+    if (!content || targetHeight <= 0) {
+      this.finishExpandedContentMotion();
+      return;
+    }
+
+    this.expandingExpandedContent = true;
+    this.root?.classList.add('is-expanding');
+    content.style.height = `${Math.max(0, startHeight)}px`;
+    content.style.overflow = 'hidden';
+    content.getBoundingClientRect();
+    content.addEventListener('transitionend', this.handleExpandedContentTransitionEnd);
+
+    this.expandedContentAnimationFrameId =
+      window.requestAnimationFrame?.(() => {
+        this.expandedContentAnimationFrameId = null;
+
+        if (!this.expandingExpandedContent) {
+          return;
+        }
+
+        content.style.height = `${targetHeight}px`;
+      }) ?? null;
+
+    if (this.expandedContentAnimationFrameId === null) {
+      content.style.height = `${targetHeight}px`;
+    }
+
+    this.expandedContentAnimationTimeoutId = window.setTimeout(
+      () => this.finishExpandedContentMotion(),
+      EXPANDED_CONTENT_MOTION_MS + 50,
+    );
+  }
+
+  startExpandedContentCollapse(startHeight = this.getExpandedContentHeight()) {
+    const content = this.refs.expandedContent;
+
+    this.cancelExpandedContentMotion({ clearInlineStyles: false });
+
+    if (content && startHeight > 0) {
+      content.style.height = `${startHeight}px`;
       content.style.overflow = 'hidden';
       content.getBoundingClientRect();
     }
@@ -1445,61 +1737,80 @@ export class WorkshopTaskManager {
       'transitionend',
       this.handleExpandedContentTransitionEnd,
     );
-    this.collapseAnimationFrameId =
+    this.expandedContentAnimationFrameId =
       window.requestAnimationFrame?.(() => {
-        this.collapseAnimationFrameId = null;
+        this.expandedContentAnimationFrameId = null;
 
         if (!this.collapsingExpandedContent || !content) {
           return;
         }
 
         content.style.height = '0px';
-        content.style.opacity = '0.01';
       }) ?? null;
 
-    if (this.collapseAnimationFrameId === null && content) {
+    if (this.expandedContentAnimationFrameId === null && content) {
       content.style.height = '0px';
-      content.style.opacity = '0.01';
     }
 
-    this.collapseAnimationTimeoutId = window.setTimeout(
-      () => this.finishExpandedContentCollapse(),
-      EXPANDED_CONTENT_COLLAPSE_MS + 40,
+    this.expandedContentAnimationTimeoutId = window.setTimeout(
+      () => this.finishExpandedContentMotion(),
+      EXPANDED_CONTENT_MOTION_MS + 50,
     );
   }
 
-  finishExpandedContentCollapse() {
-    if (!this.collapsingExpandedContent) {
+  finishExpandedContentMotion() {
+    if (!this.expandingExpandedContent && !this.collapsingExpandedContent) {
       return;
     }
 
-    this.cancelExpandedContentCollapse();
+    this.cancelExpandedContentMotion();
     this.syncExpansionState();
   }
 
-  cancelExpandedContentCollapse() {
-    if (this.collapseAnimationTimeoutId !== null) {
-      window.clearTimeout(this.collapseAnimationTimeoutId);
-      this.collapseAnimationTimeoutId = null;
+  cancelExpandedContentMotion({ clearInlineStyles = true } = {}) {
+    if (this.expandedContentAnimationTimeoutId !== null) {
+      window.clearTimeout(this.expandedContentAnimationTimeoutId);
+      this.expandedContentAnimationTimeoutId = null;
     }
 
-    if (this.collapseAnimationFrameId !== null) {
-      window.cancelAnimationFrame?.(this.collapseAnimationFrameId);
-      this.collapseAnimationFrameId = null;
+    if (this.expandedContentAnimationFrameId !== null) {
+      window.cancelAnimationFrame?.(this.expandedContentAnimationFrameId);
+      this.expandedContentAnimationFrameId = null;
     }
 
     this.refs.expandedContent?.removeEventListener(
       'transitionend',
       this.handleExpandedContentTransitionEnd,
     );
+    this.expandingExpandedContent = false;
     this.collapsingExpandedContent = false;
+    this.root?.classList.remove('is-expanding');
     this.root?.classList.remove('is-collapsing');
 
-    if (this.refs.expandedContent) {
+    if (clearInlineStyles && this.refs.expandedContent) {
       this.refs.expandedContent.style.height = '';
-      this.refs.expandedContent.style.opacity = '';
       this.refs.expandedContent.style.overflow = '';
     }
+  }
+
+  getExpandedContentHeight() {
+    const content = this.refs.expandedContent;
+
+    if (!content) {
+      return 0;
+    }
+
+    return content.offsetHeight || content.scrollHeight || 0;
+  }
+
+  getExpandedContentScrollHeight() {
+    const content = this.refs.expandedContent;
+
+    if (!content) {
+      return 0;
+    }
+
+    return Math.max(content.scrollHeight, this.refs.expandedContentBody?.scrollHeight ?? 0);
   }
 
   shouldAnimateRows() {
@@ -1541,8 +1852,12 @@ export class WorkshopTaskManager {
       return;
     }
 
-    for (const [taskId, row] of this.rowsByTaskId.entries()) {
-      if (taskId === this.dragState?.taskId) {
+    for (const { taskId, root } of this.getVisibleTaskEntries()) {
+      if (
+        taskId === this.dragState?.taskId ||
+        taskId === this.skipNextRowAnimationTaskId ||
+        root === this.skipNextRowAnimationRoot
+      ) {
         this.cancelRowAnimation(taskId);
         continue;
       }
@@ -1553,7 +1868,7 @@ export class WorkshopTaskManager {
         continue;
       }
 
-      const lastRect = row.root.getBoundingClientRect();
+      const lastRect = root.getBoundingClientRect();
       const deltaX = firstRect.left - lastRect.left;
       const deltaY = firstRect.top - lastRect.top;
 
@@ -1561,8 +1876,39 @@ export class WorkshopTaskManager {
         continue;
       }
 
-      this.animateRowFromDelta(taskId, row.root, deltaX, deltaY);
+      this.animateRowFromDelta(taskId, root, deltaX, deltaY);
     }
+  }
+
+  animateTaskFlowChange(change) {
+    if (!this.shouldAnimateRows()) {
+      change();
+      return;
+    }
+
+    const firstRects = this.getCurrentVisibleTaskRowRects({
+      excludeTaskId: this.dragState?.taskId,
+    });
+    change();
+    this.animateMovedRows(firstRects);
+  }
+
+  getCurrentVisibleTaskRowRects({ excludeTaskId = null } = {}) {
+    const rects = new Map();
+
+    for (const { taskId, root } of this.getVisibleTaskEntries()) {
+      if (taskId === excludeTaskId) {
+        continue;
+      }
+
+      const rect = root.getBoundingClientRect();
+
+      if (rect.width || rect.height) {
+        rects.set(taskId, rect);
+      }
+    }
+
+    return rects;
   }
 
   animateRowFromDelta(taskId, root, deltaX, deltaY) {
@@ -1593,12 +1939,11 @@ export class WorkshopTaskManager {
         cleanup();
       }
     };
-    const timeoutId = window.setTimeout(cleanup, 310);
+    const timeoutId = window.setTimeout(cleanup, TASK_REORDER_MOTION_MS + 50);
 
     this.rowAnimations.set(taskId, { cleanup, onTransitionEnd, root, timeoutId });
     root.addEventListener('transitionend', onTransitionEnd);
-    root.style.transition =
-      'transform 260ms cubic-bezier(0.2, 1.32, 0.36, 1), opacity 140ms linear';
+    root.style.transition = TASK_REORDER_TRANSITION;
     root.style.transform = 'translate(0, 0)';
     root.style.opacity = '1';
   }

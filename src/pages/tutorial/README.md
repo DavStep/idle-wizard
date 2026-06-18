@@ -8,7 +8,7 @@ The guide covers level 1 seed task, tutorial market sale, level 1 level-up, leve
 
 When later level-up gold goals already have the fast-sell popup open and an item selected, Elara switches to copy-only amount guidance instead of a pointer cue. The popup amount resets to `1` on open so the first sell read stays clear.
 
-The target cue keeps the same diagonal placement math and uses the plain pointing-hand asset, with the small source-scale nudge animation handled in CSS.
+The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas, with the old pointing-hand PNG as a fallback until Spine is ready. Rotate the Spine shell by placement so the authored upward tap points at the same target anchor as the PNG fallback.
 
 Lesson 3 starts by showing the first sage grow directly at `0/3`, so players see the summon/plant loop once. The level 2 gardening lesson fills the visible sage herb task before circling back to the sage seed task. After that first grow, later sage objectives go back to plain objectives first and delay target pointer help for a short idle window, then point only when the player appears stuck.
 

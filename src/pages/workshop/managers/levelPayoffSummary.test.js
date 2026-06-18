@@ -85,8 +85,8 @@ describe('levelPayoffSummary', () => {
     expect(getLevelPayoffRows(snapshot, { fromLevel: 1, toLevel: 2 })).toEqual([
       {
         label: 'unlocks',
-        value: '-garden',
-        valueLines: ['-garden'],
+        value: 'garden',
+        valueLines: ['garden'],
         notice: 'garden unlocked',
       },
       {
@@ -118,8 +118,8 @@ describe('levelPayoffSummary', () => {
     expect(rows).toEqual([
       {
         label: 'unlocks',
-        value: '-research\n-logs\n-leaderboard',
-        valueLines: ['-research', '-logs', '-leaderboard'],
+        value: 'research, logs, leaderboard',
+        valueLines: ['research', 'logs', 'leaderboard'],
         notice: 'research unlocked, logs available, leaderboard available',
       },
       {
@@ -149,8 +149,8 @@ describe('levelPayoffSummary', () => {
     expect(rows).toEqual([
       {
         label: 'unlocks',
-        value: '-brewing\n-discoveries\n-alliance',
-        valueLines: ['-brewing', '-discoveries', '-alliance'],
+        value: 'brewing, discoveries, alliance',
+        valueLines: ['brewing', 'discoveries', 'alliance'],
         notice: 'brewing unlocked, discoveries available, alliance available',
       },
       {
