@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AppOnlineGateManager } from './AppOnlineGateManager.js';
 
@@ -66,5 +66,25 @@ describe('AppOnlineGateManager', () => {
 
     manager.hide();
     expect(gate.hidden).toBe(true);
+  });
+
+  it('reloads the tab when play here is pressed from account-in-use gate', () => {
+    const stage = document.createElement('section');
+    const reload = vi.fn();
+    const manager = new AppOnlineGateManager({ reload });
+
+    manager.mount(stage);
+    manager.showOffline('account_in_use');
+
+    const action = stage.querySelector('.app-online-gate__action');
+    expect(action.hidden).toBe(false);
+    expect(action.textContent).toBe('play here');
+
+    action.click();
+
+    expect(reload).toHaveBeenCalledTimes(1);
+
+    manager.showOffline('server_paused');
+    expect(action.hidden).toBe(true);
   });
 });

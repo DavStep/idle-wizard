@@ -52,7 +52,8 @@ const LEADERBOARD_PERIODS = [
   },
 ];
 
-const LEADERBOARD_VISIBLE_USER_LIMIT = 10;
+const LEADERBOARD_VISIBLE_USER_LIMIT = 100;
+const LEADERBOARD_VISIBLE_ALLIANCE_LIMIT = 10;
 const DEFAULT_SCOPE_ID = 'singlePlayer';
 const DEFAULT_PERIOD_ID = 'allTime';
 
@@ -331,6 +332,9 @@ export class WorkshopLeaderboardManager {
           : this.createUserLabel(row, index),
         this.formatValue(row[activePeriod.valueKey]),
         {
+          current: !isAllianceScope
+            ? this.isCurrentUserRow(row, currentUser, index)
+            : false,
           onActivate: isAllianceScope ? () => this.openAllianceInfo(row) : null,
         },
       ),
@@ -412,7 +416,7 @@ export class WorkshopLeaderboardManager {
       .map((alliance) => this.normalizeAlliance(alliance))
       .filter(Boolean)
       .sort((left, right) => right[period.valueKey] - left[period.valueKey])
-      .slice(0, LEADERBOARD_VISIBLE_USER_LIMIT)
+      .slice(0, LEADERBOARD_VISIBLE_ALLIANCE_LIMIT)
       .map((alliance, index) => ({
         ...alliance,
         rank: alliance.rank ?? index + 1,
@@ -553,6 +557,24 @@ export class WorkshopLeaderboardManager {
     const rank = this.normalizeRank(currentUser?.rank);
 
     return rank !== null && rank > users.length;
+  }
+
+  isCurrentUserRow(row, currentUser, index) {
+    if (!currentUser) {
+      return false;
+    }
+
+    const rowIdentity = String(row?.identity ?? '');
+    const currentIdentity = String(currentUser?.identity ?? '');
+
+    if (rowIdentity && currentIdentity) {
+      return rowIdentity === currentIdentity;
+    }
+
+    const currentRank = this.normalizeRank(currentUser?.rank);
+    const rowRank = this.normalizeRank(row?.rank) ?? index + 1;
+
+    return currentRank !== null && currentRank === rowRank;
   }
 
   normalizePlayerLevel(playerLevel) {

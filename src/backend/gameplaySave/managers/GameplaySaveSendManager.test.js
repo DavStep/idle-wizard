@@ -124,6 +124,35 @@ describe('GameplaySaveSendManager', () => {
     await Promise.resolve();
   });
 
+  it('discards pending and in-flight saves after an account takeover', () => {
+    const firstSetPlayerGameplaySave = vi.fn(() => new Promise(() => {}));
+    const secondSetPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave: firstSetPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+    manager.save({ version: 2, gold: { current: 3 } });
+    manager.save({ version: 2, gold: { current: 4 } });
+
+    manager.discardPendingSaves();
+    manager.disconnect();
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave: secondSetPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+
+    expect(firstSetPlayerGameplaySave).toHaveBeenCalledTimes(1);
+    expect(secondSetPlayerGameplaySave).not.toHaveBeenCalled();
+    expect(manager.pendingSaveJson).toBeNull();
+    expect(manager.inFlightSaveJson).toBeNull();
+  });
+
   it('times out a stuck reducer ack and keeps the newest pending save', async () => {
     let timeoutCallback;
     const setTimeoutFn = vi.fn((callback) => {

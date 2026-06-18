@@ -19,9 +19,10 @@ function createGameplay({
   instantResearch = true,
   persistenceStorage,
   persistenceNow = () => 0,
+  shopNow = () => 0,
 } = {}) {
   const ecsFacade = new EcsFacade();
-  const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow });
+  const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow, shopNow });
   ecsFacade.createWorld();
   gameplayFacade.initialize(ecsFacade);
   if (instantResearch) {
@@ -331,7 +332,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay();
     const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
 
-    expect(gameplayFacade.getSnapshot().tasks.maxLevel).toBe(44);
+    expect(gameplayFacade.getSnapshot().tasks.maxLevel).toBe(100);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(1);
     gameplayFacade.itemsFacade.addItem(task.itemTypeId, 4);
 
@@ -2802,7 +2803,10 @@ describe('GameplayFacade', () => {
   });
 
   it('buys NPC market stands with costs from shop balance', () => {
-    const { ecsFacade, gameplayFacade } = createGameplay();
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      shopNow: () => shopNowMs,
+    });
     setShopAutoSellSeconds(gameplayFacade, 5);
 
     expect(gameplayFacade.getSnapshot().shop.shelf).toMatchObject({
@@ -2845,6 +2849,7 @@ describe('GameplayFacade', () => {
       },
     });
 
+    shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(11);
@@ -3507,7 +3512,10 @@ describe('GameplayFacade', () => {
   });
 
   it('auto sells selected NPC market item over time', () => {
-    const { ecsFacade, gameplayFacade } = createGameplay();
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      shopNow: () => shopNowMs,
+    });
     setShopAutoSellSeconds(gameplayFacade, 5);
     openFirstNpcMarketStand(gameplayFacade);
 
@@ -3517,11 +3525,13 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(summonResult.seed.id, 10);
     gameplayFacade.setSelectedShopShelfSlotSellItem(summonResult.seed.id);
 
+    shopNowMs = 4_000;
     ecsFacade.update({ deltaSeconds: 4 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
     expect(gameplayFacade.getSnapshot().inventory).toHaveLength(1);
 
+    shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(11);
@@ -3537,7 +3547,10 @@ describe('GameplayFacade', () => {
   });
 
   it('uses one NPC market timer for the whole shop', () => {
-    const { ecsFacade, gameplayFacade } = createGameplay();
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      shopNow: () => shopNowMs,
+    });
     setShopAutoSellSeconds(gameplayFacade, 5);
 
     openFirstNpcMarketStand(gameplayFacade);
@@ -3552,6 +3565,7 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(2, 1);
     gameplayFacade.setSelectedShopShelfSlotSellItem(1);
 
+    shopNowMs = 4_000;
     ecsFacade.update({ deltaSeconds: 4 });
 
     expect(gameplayFacade.getSnapshot().shop.shelf.sellProgressSeconds).toBe(4);
@@ -3560,31 +3574,12 @@ describe('GameplayFacade', () => {
     gameplayFacade.selectShopShelfSlot(2);
     gameplayFacade.setSelectedShopShelfSlotSellItem(2);
 
-    expect(gameplayFacade.getSnapshot().shop.shelf.sellProgressSeconds).toBe(0);
-    expect(gameplayFacade.getSnapshot().shop.shelf.slots[0].sellProgressSeconds).toBe(0);
-    expect(gameplayFacade.getSnapshot().shop.shelf.slots[1].sellProgressSeconds).toBe(0);
+    expect(gameplayFacade.getSnapshot().shop.shelf.sellProgressSeconds).toBe(4);
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[0].sellProgressSeconds).toBe(4);
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[1].sellProgressSeconds).toBe(4);
 
+    shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
-
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
-    expect(gameplayFacade.getSnapshot().inventory).toEqual([
-      {
-        itemTypeId: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-        quantity: 1,
-      },
-      {
-        itemTypeId: 2,
-        key: 'mintSeed',
-        label: 'mint seed',
-        kind: 'seed',
-        quantity: 1,
-      },
-    ]);
-
-    ecsFacade.update({ deltaSeconds: 4 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(2);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
@@ -3714,7 +3709,10 @@ describe('GameplayFacade', () => {
   });
 
   it('excludes cauldron-staged herbs from NPC market sales', () => {
-    const { ecsFacade, gameplayFacade } = createGameplay();
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      shopNow: () => shopNowMs,
+    });
     setShopAutoSellSeconds(gameplayFacade, 5);
     openFirstNpcMarketStand(gameplayFacade);
 
@@ -3733,6 +3731,7 @@ describe('GameplayFacade', () => {
       sellQuantity: 1,
     });
 
+    shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(6);
@@ -3752,6 +3751,7 @@ describe('GameplayFacade', () => {
         availableQuantity: 0,
       });
 
+    shopNowMs = 10_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(6);
@@ -3768,12 +3768,16 @@ describe('GameplayFacade', () => {
   });
 
   it('clears selected NPC market item', () => {
-    const { ecsFacade, gameplayFacade } = createGameplay();
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      shopNow: () => shopNowMs,
+    });
     openFirstNpcMarketStand(gameplayFacade);
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.setSelectedShopShelfSlotSellItem(1);
 
+    shopNowMs = 4_000;
     ecsFacade.update({ deltaSeconds: 4 });
 
     expect(gameplayFacade.clearSelectedShopShelfSlotSellItem()).toEqual({
@@ -3786,9 +3790,9 @@ describe('GameplayFacade', () => {
       sellItemTypeId: null,
       sellKind: null,
       sellLabel: null,
-      sellProgressSeconds: 0,
     });
 
+    shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
@@ -3942,7 +3946,10 @@ describe('GameplayFacade', () => {
   });
 
   it('auto sells only the selected item type', () => {
-    const { ecsFacade, gameplayFacade } = createGameplay();
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      shopNow: () => shopNowMs,
+    });
     setShopAutoSellSeconds(gameplayFacade, 5);
     openFirstNpcMarketStand(gameplayFacade);
 
@@ -3950,6 +3957,7 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(2, 1);
     gameplayFacade.setSelectedShopShelfSlotSellItem(2);
 
+    shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(1);

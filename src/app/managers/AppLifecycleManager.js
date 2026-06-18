@@ -7,6 +7,7 @@ import {
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
   AppFreshStartChoiceManager,
 } from './AppFreshStartChoiceManager.js';
+import { AppInteractionLockManager } from './AppInteractionLockManager.js';
 
 export class AppLifecycleManager {
   constructor({
@@ -22,6 +23,7 @@ export class AppLifecycleManager {
     onlineGateManager,
     accountLinkChoiceManager = new AppAccountLinkChoiceManager(),
     freshStartChoiceManager = new AppFreshStartChoiceManager(),
+    interactionLockManager = new AppInteractionLockManager(),
     connectionRetryManager = new AppConnectionRetryManager(),
     deployRefreshManager,
     appThemeManager,
@@ -39,6 +41,7 @@ export class AppLifecycleManager {
     this.onlineGateManager = onlineGateManager;
     this.accountLinkChoiceManager = accountLinkChoiceManager;
     this.freshStartChoiceManager = freshStartChoiceManager;
+    this.interactionLockManager = interactionLockManager;
     this.connectionRetryManager = connectionRetryManager;
     this.deployRefreshManager = deployRefreshManager;
     this.appThemeManager = appThemeManager;
@@ -65,6 +68,8 @@ export class AppLifecycleManager {
     const shell = this.shellManager.mount();
     this.appThemeManager?.mount(this.playerFacade);
     const stage = this.viewportFacade.mount(shell);
+    this.interactionLockManager.mount(stage);
+    this.interactionLockManager.lock('connecting');
     this.onlineGateManager.mount(stage);
     this.accountLinkChoiceManager.mount(stage);
     this.freshStartChoiceManager.mount(stage);
@@ -364,6 +369,7 @@ export class AppLifecycleManager {
     }
 
     this.backendOnline = false;
+    this.interactionLockManager.lock(reason ?? 'offline');
     this.stopFrameLoop();
 
     if (this.isMaintenanceActive()) {
@@ -417,6 +423,7 @@ export class AppLifecycleManager {
     }
 
     if (this.isMaintenanceActive()) {
+      this.interactionLockManager.lock('maintenance');
       this.stopFrameLoop();
 
       if (this.maintenanceSnapshot.mode === 'drain' && this.backendOnline) {
@@ -433,6 +440,7 @@ export class AppLifecycleManager {
 
     if (this.backendOnline) {
       this.onlineGateManager.hide();
+      this.interactionLockManager.unlock();
       this.startFrameLoop();
     }
   }
@@ -529,6 +537,7 @@ export class AppLifecycleManager {
     this.freshStartChoiceManager.unmount();
     this.accountLinkChoiceManager.unmount();
     this.onlineGateManager.unmount();
+    this.interactionLockManager.unmount();
     this.appThemeManager?.unmount();
     this.renderFacade.unmount();
     this.pagesFacade.unmount();

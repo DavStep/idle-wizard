@@ -135,6 +135,7 @@ export class NpcMarketSubscriptionManager {
       demandScore: this.toNumber(row.demandScore ?? row.demand_score),
       supplyScore: this.toNumber(row.supplyScore ?? row.supply_score),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
+      lastTickAtMs: this.toTimestampMs(row.lastTickAt ?? row.last_tick_at),
     };
   }
 

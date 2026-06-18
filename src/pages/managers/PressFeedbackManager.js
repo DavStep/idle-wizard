@@ -43,14 +43,17 @@ function isPressFeedbackTargetDisabled(element) {
 }
 
 export class PressFeedbackManager {
-  constructor() {
+  constructor({ hapticsFacade = null, uiClickSoundFacade = null } = {}) {
     this.root = null;
+    this.hapticsFacade = hapticsFacade;
+    this.uiClickSoundFacade = uiClickSoundFacade;
     this.pressedElement = null;
     this.pressPointerId = null;
     this.pressPointerType = '';
     this.pressStartX = 0;
     this.pressStartY = 0;
     this.pressMoved = false;
+    this.pointerSoundElement = null;
     this.suppressedClickElement = null;
     this.suppressedClickUntilMs = 0;
     this.suppressedClickX = null;
@@ -59,7 +62,10 @@ export class PressFeedbackManager {
     this.handlePointerDown = (event) => this.onPointerDown(event);
     this.handlePointerMove = (event) => this.onPointerMove(event);
     this.handlePointerUp = (event) => this.onPointerUp(event);
-    this.handlePointerCancel = () => this.clearPressedElement();
+    this.handlePointerCancel = () => {
+      this.clearPressedElement();
+      this.pointerSoundElement = null;
+    };
     this.handleClick = (event) => this.onClick(event);
     this.handleVisibilityChange = () => this.clearPressedElement();
   }
@@ -114,6 +120,7 @@ export class PressFeedbackManager {
     }
 
     this.clearPressedElement();
+    this.pointerSoundElement = null;
     this.pressPointerId = event.pointerId;
     this.pressPointerType = event.pointerType ?? '';
     this.pressStartX = event.clientX;
@@ -121,6 +128,12 @@ export class PressFeedbackManager {
     this.pressMoved = false;
     this.pressedElement = nextElement;
     this.pressedElement?.classList.add(PRESS_FEEDBACK_CLASS);
+
+    this.uiClickSoundFacade?.unlock?.();
+    if (this.pressPointerType !== 'mouse') {
+      this.playClickSound(nextElement);
+      this.pointerSoundElement = nextElement;
+    }
   }
 
   onPointerMove(event) {
@@ -137,6 +150,7 @@ export class PressFeedbackManager {
 
     this.pressMoved = true;
     this.pressedElement?.classList.remove(PRESS_FEEDBACK_CLASS);
+    this.pointerSoundElement = null;
   }
 
   onPointerUp(event) {
@@ -155,14 +169,23 @@ export class PressFeedbackManager {
     this.clearPressedElement();
 
     if (!shouldActivate) {
+      this.pointerSoundElement = null;
       return;
     }
 
+    this.hapticsFacade?.playUiTap?.();
     this.dispatchSyntheticClick(pressedElement, event);
   }
 
   onClick(event) {
-    if (this.isDispatchingSyntheticClick || Date.now() > this.suppressedClickUntilMs) {
+    if (this.isDispatchingSyntheticClick) {
+      this.playClickSoundForEvent(event);
+      this.pointerSoundElement = null;
+      return;
+    }
+
+    if (Date.now() > this.suppressedClickUntilMs) {
+      this.playClickSoundForEvent(event);
       return;
     }
 
@@ -173,6 +196,24 @@ export class PressFeedbackManager {
     event.preventDefault();
     event.stopPropagation();
     this.clearClickSuppression();
+  }
+
+  playClickSoundForEvent(event) {
+    const target = this.getPressTarget(event.target);
+
+    if (!target) {
+      return;
+    }
+
+    this.playClickSound(target);
+  }
+
+  playClickSound(target) {
+    if (!target || target === this.pointerSoundElement) {
+      return;
+    }
+
+    this.uiClickSoundFacade?.playClick?.();
   }
 
   getPressTarget(target) {
@@ -259,5 +300,6 @@ export class PressFeedbackManager {
     this.suppressedClickUntilMs = 0;
     this.suppressedClickX = null;
     this.suppressedClickY = null;
+    this.pointerSoundElement = null;
   }
 }

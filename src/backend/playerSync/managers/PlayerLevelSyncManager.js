@@ -7,6 +7,7 @@ export class PlayerLevelSyncManager {
     this.pendingPlayerLevel = null;
     this.pendingPlayerLevelWasHydrated = false;
     this.syncPromise = null;
+    this.syncAttemptId = 0;
     this.readyToSync = false;
     this.hydratedLevelSource = false;
   }
@@ -93,11 +94,18 @@ export class PlayerLevelSyncManager {
       return;
     }
 
+    const attemptId = this.beginSyncAttempt();
     this.syncPromise = Promise.resolve(syncResult)
       .catch(() => {
-        this.restorePending(playerLevel, playerLevelWasHydrated);
+        if (this.isCurrentSyncAttempt(attemptId)) {
+          this.restorePending(playerLevel, playerLevelWasHydrated);
+        }
       })
       .finally(() => {
+        if (!this.isCurrentSyncAttempt(attemptId)) {
+          return;
+        }
+
         this.syncPromise = null;
         this.flush();
       });
@@ -116,6 +124,12 @@ export class PlayerLevelSyncManager {
 
     this.pendingPlayerLevel = null;
     this.lastObservedPlayerLevel = null;
+    this.pendingPlayerLevelWasHydrated = false;
+  }
+
+  discardPendingLevel() {
+    this.cancelSyncAttempt();
+    this.pendingPlayerLevel = null;
     this.pendingPlayerLevelWasHydrated = false;
   }
 
@@ -148,5 +162,19 @@ export class PlayerLevelSyncManager {
   findSetPlayerLevelReducer() {
     const reducers = this.connection?.reducers;
     return reducers?.setPlayerLevel ?? reducers?.set_player_level ?? null;
+  }
+
+  beginSyncAttempt() {
+    this.syncAttemptId += 1;
+    return this.syncAttemptId;
+  }
+
+  cancelSyncAttempt() {
+    this.syncAttemptId += 1;
+    this.syncPromise = null;
+  }
+
+  isCurrentSyncAttempt(attemptId) {
+    return this.syncAttemptId === attemptId;
   }
 }

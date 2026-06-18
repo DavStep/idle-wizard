@@ -302,12 +302,12 @@ describe('LeaderboardSubscriptionManager', () => {
   });
 
   it('publishes the connected player rank when they are outside a top list', () => {
-    const rows = Array.from({ length: 11 }, (_value, index) => ({
+    const rows = Array.from({ length: 101 }, (_value, index) => ({
       identity: `other-${index + 1}`,
       username: `Other ${index + 1}`,
       playerLevel: 1,
-      income: BigInt(index),
-      totalIncome: BigInt(100 - index),
+      income: BigInt(index % 50),
+      totalIncome: BigInt(200 - index),
     }));
     rows.push({
       identity: { toHexString: () => 'mine' },
@@ -320,7 +320,7 @@ describe('LeaderboardSubscriptionManager', () => {
 
     manager.connect(createConnection(createLeaderboardTable(rows)), 'mine');
 
-    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(10);
+    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(100);
     expect(manager.getSnapshot().currentGeneratedGoldUser).toEqual({
       name: 'Mine',
       playerLevel: 4,
@@ -330,7 +330,7 @@ describe('LeaderboardSubscriptionManager', () => {
       monthlyIncome: 0,
       totalGeneratedGold: 1,
       totalIncome: 1,
-      rank: 12,
+      rank: 102,
     });
     expect(manager.getSnapshot().currentIncomeUser).toEqual({
       name: 'Mine',
@@ -346,7 +346,7 @@ describe('LeaderboardSubscriptionManager', () => {
   });
 
   it('uses server ranks when the subscribed summary only includes top rows and the player row', () => {
-    const rows = Array.from({ length: 10 }, (_value, index) => ({
+    const rows = Array.from({ length: 100 }, (_value, index) => ({
       identity: `top-${index + 1}`,
       username: `Top ${index + 1}`,
       playerLevel: 1,
@@ -378,7 +378,7 @@ describe('LeaderboardSubscriptionManager', () => {
 
     manager.connect(createConnection(createLeaderboardTable(rows)), 'mine');
 
-    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(10);
+    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(100);
     expect(manager.getSnapshot().currentGeneratedGoldUser).toMatchObject({ name: 'Mine', rank: 25 });
     expect(manager.getSnapshot().currentIncomeUser).toMatchObject({ name: 'Mine', rank: 25 });
     expect(manager.getSnapshot().currentDailyUser).toMatchObject({ name: 'Mine', rank: 22 });

@@ -27,6 +27,7 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
       return true;
     }),
     discardPreHydrationSave: vi.fn(),
+    discardPendingSaves: vi.fn(),
     disconnect: vi.fn(),
     setReadyToSend: vi.fn(),
     setSyncUnhealthyHandler: vi.fn((handler) => {
@@ -65,6 +66,7 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
     setGameplayFacade: vi.fn(),
     setLevelSyncReady: vi.fn(),
     discardPreHydrationPlayerLevel: vi.fn(),
+    discardPendingPlayerLevel: vi.fn(),
     markGameplaySaveHydrated: vi.fn(),
     connect: vi.fn(),
     disconnect: vi.fn(),
@@ -273,6 +275,8 @@ describe('BackendFacade', () => {
 
     onInactive();
 
+    expect(backendFacade.gameplaySaveFacade.discardPendingSaves).toHaveBeenCalledTimes(1);
+    expect(backendFacade.playerSyncFacade.discardPendingPlayerLevel).toHaveBeenCalledTimes(1);
     expect(backendFacade.accountSessionFacade.disconnect).toHaveBeenCalled();
     expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalled();
     expect(backendFacade.spacetimeDbFacade.disconnect).toHaveBeenCalledTimes(1);

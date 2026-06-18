@@ -39,6 +39,7 @@ export class TopPanelResourceDisplayManager {
     const goldText = formatGoldPriceText(gold);
 
     this.setText(this.refs.manaValue, `${Math.floor(mana.current ?? 0)}/${mana.cap ?? 0}`);
+    this.setText(this.refs.manaRateValue, formatManaRate(mana.perSecond));
     this.setResourceText(this.refs.goldValue, goldText);
     this.renderContextCurrency(snapshot);
     this.setText(this.refs.levelValue, `level ${level}`);
@@ -80,12 +81,20 @@ export class TopPanelResourceDisplayManager {
   }
 
   setText(element, text) {
+    if (!element) {
+      return;
+    }
+
     if (element.textContent !== text) {
       element.textContent = text;
     }
   }
 
   setResourceText(element, text) {
+    if (!element) {
+      return;
+    }
+
     if (element.textContent !== text) {
       setResourceIconText(element, text);
     }
@@ -96,4 +105,13 @@ export class TopPanelResourceDisplayManager {
       element.setAttribute(name, value);
     }
   }
+}
+
+function formatManaRate(perSecond) {
+  const safePerSecond = Math.max(0, Number(perSecond) || 0);
+  const roundedPerSecond = Number.isInteger(safePerSecond)
+    ? safePerSecond
+    : Number(safePerSecond.toFixed(2));
+
+  return `+${roundedPerSecond}/s`;
 }

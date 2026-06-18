@@ -3445,15 +3445,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__wall')).not.toBeNull();
     expect(stage.querySelector('.workshop-page__floor')).not.toBeNull();
     expect(stage.querySelector('.workshop-page__ui-layer')).not.toBeNull();
-    expect(stage.querySelector('.workshop-page__mana-sphere')).not.toBeNull();
+    expect(stage.querySelector('.workshop-page__mana-sphere')).toBeNull();
     expect(stage.querySelector('.workshop-page__seed-block')).toBeNull();
     expect(stage.querySelector('.workshop-page__action-bar')).not.toBeNull();
-    expect(stage.querySelector('.workshop-page__mana-sphere')?.textContent).not.toContain(
-      'seeds',
-    );
-    expect(stage.querySelector('.workshop-page__mana-sphere')?.textContent).toContain(
-      'mana0/50',
-    );
     expect(
       stage.querySelector('.workshop-page__summon-button-label')?.textContent,
     ).toBe('summon seed');
@@ -3489,9 +3483,6 @@ describe('PagesFacade', () => {
       'discoveries',
     );
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
-    expect(
-      stage.querySelector('.workshop-page__mana-sphere .workshop-page__summon-button'),
-    ).toBeNull();
     expect(stage.querySelector('.workshop-page__bag-popup')).not.toBeNull();
     expect(stage.querySelector('.workshop-page__prestige-popup')).not.toBeNull();
     expect(stage.querySelector('.workshop-page__flyouts')).not.toBeNull();
@@ -3528,6 +3519,10 @@ describe('PagesFacade', () => {
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain(
       'mana 0/50',
     );
+    expect(topPanel.querySelector('.room-top-panel__mana-rate')?.textContent).toBe('+1/s');
+    expect(
+      topPanel.querySelector('[data-tutorial-id="top:mana"]')?.getAttribute('aria-label'),
+    ).toBe('mana');
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain('0 gold');
     expect(
       topPanel
@@ -3683,6 +3678,27 @@ describe('PagesFacade', () => {
     expect(gold?.textContent).toBe('308.33 gold');
     expect(value?.textContent).toBe('308.33 gold');
     expect(gold?.querySelector('.room-top-panel__resource-key')).toBeNull();
+  });
+
+  it('shows top panel mana regen under the mana amount', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.mana.current = 200;
+    snapshot.mana.cap = 200;
+    snapshot.mana.perSecond = 4;
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const mana = stage.querySelector('.room-top-panel__resource[aria-label="mana"]');
+
+    expect(mana?.querySelector('.room-top-panel__resource-val')?.textContent).toBe('200/200');
+    expect(mana?.querySelector('.room-top-panel__mana-rate')?.textContent).toBe('+4/s');
+    expect(stage.querySelector('.workshop-page__mana-sphere')).toBeNull();
   });
 
   it('marks top panel gold but keeps mana plain for icon mode', () => {
@@ -4044,16 +4060,21 @@ describe('PagesFacade', () => {
     const infoPopup = stage.querySelector('.workshop-page__tasks-info-popup');
     const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
     const count = stage.querySelector('.workshop-page__tasks-count');
+    const pinButton = stage.querySelector('.workshop-page__tasks-pin');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
     const rewards = stage.querySelector('.workshop-page__level-rewards');
+    const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
 
     expect(tasks).not.toBeNull();
     expect(tasks.parentElement?.classList.contains('workshop-page__tasks-slot')).toBe(true);
     expect(title?.textContent).toBe('level 2 requirements');
     expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
     expect(rewards?.hidden).toBe(false);
+    expect(rewardsToggle?.hidden).toBe(false);
+    expect(rewardsToggle?.textContent).toBe('hide rewards');
+    expect(rewardsToggle?.getAttribute('aria-expanded')).toBe('true');
     expect(rewards?.querySelector('.workshop-page__level-payoff-title')?.textContent).toBe(
       'level 2 rewards',
     );
@@ -4079,6 +4100,8 @@ describe('PagesFacade', () => {
     ).toBe('0%');
     expect(stage.querySelector('.workshop-page__tasks-level')).toBeNull();
     expect(count?.textContent).toBe('0/1');
+    expect(pinButton?.hidden).toBe(true);
+    expect(pinButton?.disabled).toBe(true);
     expect(toggle?.hidden).toBe(true);
     expect(toggle?.disabled).toBe(true);
     expect(toggle?.dataset.tutorialId).toBeUndefined();
@@ -4086,6 +4109,19 @@ describe('PagesFacade', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(list?.hidden).toBe(true);
     expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(0);
+
+    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(rewards?.hidden).toBe(true);
+    expect(rewardsToggle.textContent).toBe('show rewards');
+    expect(rewardsToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(list.hidden).toBe(true);
+
+    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(rewards.hidden).toBe(false);
+    expect(rewardsToggle.textContent).toBe('hide rewards');
 
     summary.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -4137,10 +4173,12 @@ describe('PagesFacade', () => {
     const infoPopup = stage.querySelector('.workshop-page__tasks-info-popup');
     const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
     const count = stage.querySelector('.workshop-page__tasks-count');
+    const pinButton = stage.querySelector('.workshop-page__tasks-pin');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
     const rewards = stage.querySelector('.workshop-page__level-rewards');
+    const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
 
     expect(tasks).not.toBeNull();
     expect(title?.textContent).toBe('level 2 requirements');
@@ -4149,6 +4187,9 @@ describe('PagesFacade', () => {
     expect(infoPopup?.hidden).toBe(true);
     expect(backdrop?.hidden).toBe(true);
     expect(count?.textContent).toBe('0/2');
+    expect(pinButton?.hidden).toBe(false);
+    expect(pinButton?.textContent).toBe('pin');
+    expect(pinButton?.getAttribute('aria-pressed')).toBe('false');
     expect(toggle?.hidden).toBe(false);
     expect(toggle?.textContent).toBe('expand');
     expect(toggle?.dataset.tutorialId).toBe('workshop:tasks');
@@ -4157,6 +4198,40 @@ describe('PagesFacade', () => {
     expect(list?.hidden).toBe(true);
     expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(1);
     expect(rewards?.hidden).toBe(true);
+    expect(rewardsToggle?.hidden).toBe(true);
+
+    pinButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.textContent).toBe('collapse');
+    expect(pinButton.textContent).toBe('unpin');
+    expect(pinButton.getAttribute('aria-pressed')).toBe('true');
+    expect(tasks.classList.contains('is-pinned')).toBe(true);
+    expect(backdrop.hidden).toBe(true);
+    expect(list.hidden).toBe(false);
+    expect(rewards?.hidden).toBe(false);
+
+    document.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(tasks.classList.contains('is-pinned')).toBe(true);
+    expect(backdrop.hidden).toBe(true);
+
+    pinButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(pinButton.textContent).toBe('pin');
+    expect(pinButton.getAttribute('aria-pressed')).toBe('false');
+    expect(tasks.classList.contains('is-pinned')).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(backdrop.hidden).toBe(false);
+
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(pinButton.textContent).toBe('pin');
+    expect(pinButton.getAttribute('aria-pressed')).toBe('false');
+    expect(backdrop.hidden).toBe(true);
+    expect(list.hidden).toBe(true);
 
     toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -4170,8 +4245,28 @@ describe('PagesFacade', () => {
     expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
     expect(rewards?.hidden).toBe(false);
     expect(rewards?.textContent).toContain('level 2 rewards');
+    expect(rewardsToggle?.hidden).toBe(false);
+    expect(rewardsToggle?.textContent).toBe('hide rewards');
+    expect(rewardsToggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(pinButton?.textContent).toBe('pin');
+    expect(pinButton?.getAttribute('aria-pressed')).toBe('false');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
+
+    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(rewards.hidden).toBe(true);
+    expect(rewardsToggle.textContent).toBe('show rewards');
+    expect(rewardsToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.textContent).toBe('collapse');
+    expect(list.hidden).toBe(false);
+    expect(backdrop.hidden).toBe(false);
+    expect(tasks.classList.contains('is-expanded')).toBe(true);
+
+    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(rewards.hidden).toBe(false);
+    expect(rewardsToggle.textContent).toBe('hide rewards');
 
     toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -4181,6 +4276,9 @@ describe('PagesFacade', () => {
     expect(list.hidden).toBe(true);
     expect(backdrop.hidden).toBe(true);
     expect(rewards?.hidden).toBe(true);
+    expect(pinButton.hidden).toBe(false);
+    expect(pinButton.textContent).toBe('pin');
+    expect(rewardsToggle.hidden).toBe(true);
     expect(tasks.classList.contains('is-collapsed')).toBe(true);
 
     toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -4625,6 +4723,11 @@ describe('PagesFacade', () => {
         'mint seed',
       ]);
       expect(stage.querySelector('.workshop-page__task.is-drag-lifted')).toBeNull();
+      const droppedMintRow = [...list.querySelectorAll('.workshop-page__task')].find(
+        (row) => row.querySelector('.workshop-page__task-label')?.textContent === 'mint seed',
+      );
+      expect(droppedMintRow?.classList.contains('is-reordering')).toBe(true);
+      expect(droppedMintRow?.style.transition).toContain('transform 225ms');
     } finally {
       pagesFacade?.unmount();
       stage.remove();
@@ -4632,7 +4735,161 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('moves Workshop task rows when the dragged row center crosses another row center', () => {
+  it('keeps completed Workshop tasks fixed below active drag sorting', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    const createTask = ({ taskId, itemLabel, completed = false }) => ({
+      ...baseTask,
+      taskId,
+      itemLabel,
+      progressQuantity: completed ? baseTask.requiredQuantity : 0,
+      remainingQuantity: completed ? 0 : baseTask.requiredQuantity,
+      progress: completed ? 1 : 0,
+      maxed: completed,
+      completed,
+      canFill: false,
+      canComplete: false,
+    });
+
+    snapshot.tasks.level.completedTasks = 1;
+    snapshot.tasks.level.totalTasks = 3;
+    snapshot.tasks.level.tasks = [
+      createTask({ taskId: 'level1-sage-seeds', itemLabel: 'sage seed' }),
+      createTask({ taskId: 'level1-mint-seeds', itemLabel: 'mint seed' }),
+      createTask({
+        taskId: 'level1-lavender-seeds',
+        itemLabel: 'lavender seed',
+        completed: true,
+      }),
+    ];
+
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
+    const makeRect = (top) => ({
+      x: 0,
+      y: top,
+      top,
+      left: 0,
+      right: 240,
+      bottom: top + 22,
+      width: 240,
+      height: 22,
+      toJSON: () => ({}),
+    });
+
+    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      if (this.classList?.contains('workshop-page__task')) {
+        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
+          return makeRect(60);
+        }
+
+        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
+          const rows = [
+            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
+          ];
+          return makeRect(90 + rows.indexOf(this) * 30);
+        }
+      }
+
+      return makeRect(0);
+    };
+    document.body.append(stage);
+    let pagesFacade = null;
+
+    try {
+      pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake(),
+      });
+
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__tasks-toggle')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const summary = stage.querySelector('.workshop-page__tasks-summary');
+      const list = stage.querySelector('.workshop-page__task-list');
+      const getVisibleLabels = () => [
+        summary.querySelector('.workshop-page__task-label')?.textContent,
+        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
+          (label) => label.textContent,
+        ),
+      ];
+      const getTaskRow = (itemLabel) =>
+        [...stage.querySelectorAll('.workshop-page__task')].find(
+          (row) => row.querySelector('.workshop-page__task-label')?.textContent === itemLabel,
+        );
+      const lavenderRow = getTaskRow('lavender seed');
+
+      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'lavender seed']);
+      expect(lavenderRow?.classList.contains('is-draggable')).toBe(false);
+      expect(lavenderRow?.tabIndex).toBe(-1);
+
+      lavenderRow.dispatchEvent(
+        new window.MouseEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 130,
+        }),
+      );
+      document.dispatchEvent(
+        new window.MouseEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 40,
+        }),
+      );
+      lavenderRow.dispatchEvent(
+        new window.KeyboardEvent('keydown', {
+          bubbles: true,
+          key: 'ArrowUp',
+        }),
+      );
+
+      expect(stage.querySelector('.workshop-page__task.is-drag-lifted')).toBeNull();
+      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'lavender seed']);
+
+      const sageRow = getTaskRow('sage seed');
+      sageRow.dispatchEvent(
+        new window.MouseEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 70,
+        }),
+      );
+      document.dispatchEvent(
+        new window.MouseEvent('pointermove', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 220,
+        }),
+      );
+
+      expect(lavenderRow.classList.contains('is-reordering')).toBe(false);
+
+      document.dispatchEvent(
+        new window.MouseEvent('pointerup', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientY: 220,
+        }),
+      );
+
+      expect(getVisibleLabels()).toEqual(['mint seed', 'sage seed', 'lavender seed']);
+    } finally {
+      pagesFacade?.unmount();
+      stage.remove();
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    }
+  });
+
+  it('moves Workshop task rows shortly before the dragged row center crosses another row center', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -4730,7 +4987,7 @@ describe('PagesFacade', () => {
           bubbles: true,
           cancelable: true,
           button: 0,
-          clientY: 82,
+          clientY: 86,
         }),
       );
 
@@ -4742,7 +4999,7 @@ describe('PagesFacade', () => {
           bubbles: true,
           cancelable: true,
           button: 0,
-          clientY: 80,
+          clientY: 85,
         }),
       );
 
@@ -4757,7 +5014,7 @@ describe('PagesFacade', () => {
           bubbles: true,
           cancelable: true,
           button: 0,
-          clientY: 80,
+          clientY: 85,
         }),
       );
 
@@ -5090,7 +5347,7 @@ describe('PagesFacade', () => {
     ).toEqual([
       ['account', 'true'],
       ['report', 'false'],
-      ['theme', 'false'],
+      ['configurations', 'false'],
     ]);
     expect(stage.querySelector('.room-top-panel__auth-section')?.hidden).toBe(false);
     expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
@@ -6516,17 +6773,17 @@ describe('PagesFacade', () => {
     expect(infoPopup.textContent).toContain('Merlin');
   });
 
-  it('shows the current player rank below the leaderboard when outside the top ten', () => {
+  it('shows the current player rank below the leaderboard when outside the top 100', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().leaderboard = {
-      topGeneratedGoldUsers: Array.from({ length: 10 }, (_value, index) => ({
+      topGeneratedGoldUsers: Array.from({ length: 100 }, (_value, index) => ({
         name: `Player ${index + 1}`,
         playerLevel: index + 1,
         income: 0,
-        totalGeneratedGold: 100 - index,
-        totalIncome: 100 - index,
+        totalGeneratedGold: 200 - index,
+        totalIncome: 200 - index,
       })),
       topIncomeUsers: [],
       currentGeneratedGoldUser: {
@@ -6536,7 +6793,7 @@ describe('PagesFacade', () => {
         income: 0,
         totalGeneratedGold: 1,
         totalIncome: 1,
-        rank: 12,
+        rank: 102,
       },
     };
     const pagesFacade = new PagesFacade({ gameplayFacade });
@@ -6553,34 +6810,31 @@ describe('PagesFacade', () => {
       ...stage.querySelectorAll('.workshop-page__leaderboard-rows .row_val'),
     ].map((row) => row.textContent);
 
-    expect(rowLabels).toEqual([
-      'user',
-      '1. Player 1 (1)',
-      '2. Player 2 (2)',
-      '3. Player 3 (3)',
-      '4. Player 4 (4)',
-      '5. Player 5 (5)',
-      '6. Player 6 (6)',
-      '7. Player 7 (7)',
-      '8. Player 8 (8)',
-      '9. Player 9 (9)',
-      '10. Player 10 (10)',
-      '12. [SELF] Mine (4)',
-    ]);
+    expect(rowLabels).toHaveLength(102);
+    expect(rowLabels[0]).toBe('user');
+    expect(rowLabels[1]).toBe('1. Player 1 (1)');
+    expect(rowLabels[100]).toBe('100. Player 100 (100)');
+    expect(rowLabels[101]).toBe('102. [SELF] Mine (4)');
+    expect(rowValues[100]).toBe('101');
     expect(rowValues.at(-1)).toBe('1');
+    expect(
+      stage
+        .querySelector('.workshop-page__leaderboard-row:last-child')
+        ?.classList.contains('workshop-page__leaderboard-current'),
+    ).toBe(true);
   });
 
-  it('does not add a separate current rank when the player is already in the top ten', () => {
+  it('does not add a separate current rank when the player is already in the top 100', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().leaderboard = {
-      topGeneratedGoldUsers: Array.from({ length: 10 }, (_value, index) => ({
+      topGeneratedGoldUsers: Array.from({ length: 100 }, (_value, index) => ({
         name: index === 2 ? 'Mine' : `Player ${index + 1}`,
         playerLevel: index + 1,
         income: 0,
-        totalGeneratedGold: 100 - index,
-        totalIncome: 100 - index,
+        totalGeneratedGold: 200 - index,
+        totalIncome: 200 - index,
       })),
       topIncomeUsers: [],
       currentGeneratedGoldUser: {
@@ -6604,6 +6858,9 @@ describe('PagesFacade', () => {
     ].filter((row) => row.textContent === '3. Mine (3)');
 
     expect(mineRows).toHaveLength(1);
+    expect(
+      mineRows[0]?.parentElement?.classList.contains('workshop-page__leaderboard-current'),
+    ).toBe(true);
   });
 
   it('hides leaderboard popup with Escape or outside click', () => {
@@ -9312,6 +9569,137 @@ describe('PagesFacade', () => {
     expect(pagesFacade.getCurrentPageId()).toBe('research');
   });
 
+  it('shows the locked room notice when a swipe targets a locked adjacent room', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    dispatchTouchSwipe(stage);
+
+    const popup = stage.querySelector('.room-bottom-panel__lock-popup');
+
+    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
+    expect(stage.querySelector('.workshop-page')).not.toBeNull();
+    expect(stage.querySelector('.research-page')).toBeNull();
+    expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
+      'workshop',
+    );
+    expect(popup?.hidden).toBe(false);
+    expect(popup?.dataset.pageId).toBe('research');
+    expect(
+      stage.querySelector('.room-bottom-panel__tab[data-page-id="research"]')?.classList.contains(
+        'is-swipe-bumped',
+      ),
+    ).toBe(true);
+    expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
+      'research unlocks at level 3',
+    );
+  });
+
+  it('updates bottom-panel swipe target feedback while dragging', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const startTouch = createTouch(7, 320, 360, stage);
+    const moveTouch = createTouch(7, 220, 360, stage);
+    const endTouch = createTouch(7, 120, 360, stage);
+    const researchTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="research"]');
+
+    stage.dispatchEvent(
+      createTouchEvent('touchstart', {
+        touches: [startTouch],
+        changedTouches: [startTouch],
+      }),
+    );
+    stage.dispatchEvent(
+      createTouchEvent('touchmove', {
+        touches: [moveTouch],
+        changedTouches: [moveTouch],
+      }),
+    );
+
+    expect(stage.dataset.pageSwipeActive).toBe('true');
+    expect(stage.style.getPropertyValue('--page-swipe-offset')).not.toBe('');
+    expect(researchTab?.classList.contains('is-swipe-target')).toBe(true);
+
+    stage.dispatchEvent(
+      createTouchEvent('touchend', {
+        touches: [],
+        changedTouches: [endTouch],
+      }),
+    );
+
+    expect(pagesFacade.getCurrentPageId()).toBe('research');
+    expect(stage.dataset.pageSwipeActive).toBeUndefined();
+    expect(stage.style.getPropertyValue('--page-swipe-offset')).toBe('');
+    expect(researchTab?.classList.contains('is-selected')).toBe(true);
+    expect(researchTab?.classList.contains('is-swipe-target')).toBe(false);
+  });
+
+  it('accepts intentional diagonal swipes without taking vertical drags', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    dispatchTouchSwipe(stage, { endY: 520 });
+
+    expect(pagesFacade.getCurrentPageId()).toBe('research');
+
+    dispatchTouchSwipe(stage, { startX: 320, endX: 120, startY: 360, endY: 700 });
+
+    expect(pagesFacade.getCurrentPageId()).toBe('research');
+  });
+
+  it('uses pointer swipes when TouchEvent is present', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+    const originalTouchEvent = window.TouchEvent;
+
+    Object.defineProperty(window, 'TouchEvent', {
+      configurable: true,
+      value: function TouchEvent() {},
+    });
+
+    try {
+      pagesFacade.mount(stage);
+      dispatchPointerSwipe(stage);
+
+      expect(pagesFacade.getCurrentPageId()).toBe('research');
+    } finally {
+      if (originalTouchEvent) {
+        Object.defineProperty(window, 'TouchEvent', {
+          configurable: true,
+          value: originalTouchEvent,
+        });
+      } else {
+        delete window.TouchEvent;
+      }
+    }
+  });
+
   it('allows planting after swiping into the Garden', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -9726,6 +10114,9 @@ describe('PagesFacade', () => {
     const ingredientRow = stage.querySelector('.brewing-page__ingredient-row');
 
     expect(ingredientRow?.textContent).toBe('- 1 sageremove');
+    expect(ingredientRow?.dataset.resourceColor).toBeUndefined();
+    expect(ingredientRow?.querySelector('.row_key')?.dataset.resourceColor).toBe('herb');
+    expect(ingredientRow?.querySelector('.row_val')?.dataset.resourceColor).toBeUndefined();
 
     gameplayFacade.setMana(5);
 

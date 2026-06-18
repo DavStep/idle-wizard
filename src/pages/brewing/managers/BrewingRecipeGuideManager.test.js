@@ -65,9 +65,13 @@ describe('BrewingRecipeGuideManager', () => {
     const labels = [...parent.querySelectorAll('.brewing-page__guide-step .row_key')].map(
       (row) => row.textContent,
     );
+    const firstLabel = parent.querySelector('.brewing-page__guide-step .row_key');
     const guide = parent.querySelector('.brewing-page__guide');
 
     expect(labels).toEqual(['- 2 sage', '- 1 mint']);
+    expect(firstLabel?.childNodes[0]?.textContent).toBe('- 2 ');
+    expect(firstLabel?.childNodes[1]?.classList.contains('style-herb-label')).toBe(true);
+    expect(firstLabel?.querySelector('.style-herb-label__icon')).not.toBeNull();
     expect(labels).not.toContain('1. sage');
     expect(labels).not.toContain('2. sage');
     expect(guide.style.getPropertyValue('--brewing-page-guide-sequence-height')).toBe(

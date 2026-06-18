@@ -88,6 +88,8 @@ export class TopPanelViewManager {
     setResourceIconText(val, value);
 
     if (label === 'mana') {
+      resource.classList.add('room-top-panel__resource--mana');
+      resource.dataset.tutorialId = 'top:mana';
       this.refs.manaValue = val;
     }
 
@@ -109,6 +111,19 @@ export class TopPanelViewManager {
     const key = document.createElement('span');
     key.className = 'room-top-panel__resource-key';
     setResourceIconText(key, `${label} `);
+
+    if (label === 'mana') {
+      const line = document.createElement('span');
+      line.className = 'room-top-panel__resource-line';
+      line.append(key, val);
+
+      this.refs.manaRateValue = document.createElement('span');
+      this.refs.manaRateValue.className = 'room-top-panel__mana-rate';
+      this.refs.manaRateValue.textContent = '+0/s';
+
+      resource.append(line, this.refs.manaRateValue);
+      return resource;
+    }
 
     if (label === 'crystal') {
       this.refs.contextCurrencyKey = key;
@@ -193,6 +208,7 @@ export class TopPanelViewManager {
       'room-top-panel__settings-pane room-top-panel__theme-pane';
     this.refs.themePane.setAttribute('role', 'tabpanel');
 
+    const deviceSection = this.createDevicePreferenceSection();
     const themeSection = this.createVisualSettingSection('theme');
     const fontSection = this.createVisualSettingSection('font');
     const colorSection = this.createVisualSettingSection('color');
@@ -204,6 +220,7 @@ export class TopPanelViewManager {
     this.refs.visualSettingStatus.hidden = true;
 
     this.refs.themePane.append(
+      deviceSection,
       themeSection,
       fontSection,
       colorSection,
@@ -310,7 +327,11 @@ export class TopPanelViewManager {
 
     versionSection.append(versionLabel, this.refs.versionValue);
 
-    this.refs.accountPane.append(usernameSection, this.refs.authSection, versionSection);
+    this.refs.accountPane.append(
+      usernameSection,
+      this.refs.authSection,
+      versionSection,
+    );
     this.refs.reportPane.append(feedbackSection, this.refs.feedbackForm);
 
     this.refs.settingsTabs = document.createElement('div');
@@ -322,7 +343,7 @@ export class TopPanelViewManager {
     for (const tab of [
       { key: 'account', label: 'account', controls: this.refs.accountPane.id },
       { key: 'report', label: 'report', controls: this.refs.reportPane.id },
-      { key: 'theme', label: 'theme', controls: this.refs.themePane.id },
+      { key: 'theme', label: 'configurations', controls: this.refs.themePane.id },
     ]) {
       const button = document.createElement('button');
       button.id = `room-top-panel-settings-${tab.key}-tab`;
@@ -355,6 +376,69 @@ export class TopPanelViewManager {
     this.refs.settings.append(this.refs.settingsPanel);
 
     return this.refs.settings;
+  }
+
+  createDevicePreferenceSection() {
+    const section = document.createElement('section');
+    section.className =
+      'room-top-panel__settings-section room-top-panel__device-section style-box';
+
+    const title = document.createElement('div');
+    title.className = 'style-box__title';
+    title.textContent = 'device';
+
+    section.append(
+      title,
+      this.createPreferenceRow({
+        label: 'haptics',
+        ref: 'hapticsToggleButton',
+        rowClassName: 'room-top-panel__haptics-row',
+        labelClassName: 'room-top-panel__haptics-label',
+        toggleClassName: 'room-top-panel__haptics-toggle',
+      }),
+      this.createPreferenceRow({
+        label: 'music',
+        ref: 'musicToggleButton',
+      }),
+      this.createPreferenceRow({
+        label: 'sfx',
+        ref: 'sfxToggleButton',
+      }),
+    );
+
+    return section;
+  }
+
+  createPreferenceRow({
+    label,
+    ref,
+    rowClassName = '',
+    labelClassName = '',
+    toggleClassName = '',
+  }) {
+    const row = document.createElement('div');
+    row.className = ['room-top-panel__preference-row', rowClassName]
+      .filter(Boolean)
+      .join(' ');
+
+    const name = document.createElement('span');
+    name.className = ['room-top-panel__preference-label', labelClassName]
+      .filter(Boolean)
+      .join(' ');
+    name.textContent = label;
+
+    const button = document.createElement('button');
+    button.className = ['style-button', 'room-top-panel__preference-toggle', toggleClassName]
+      .filter(Boolean)
+      .join(' ');
+    button.type = 'button';
+    button.textContent = 'on';
+    button.setAttribute('aria-pressed', 'true');
+    button.setAttribute('aria-label', `${label} on`);
+
+    this.refs[ref] = button;
+    row.append(name, button);
+    return row;
   }
 
   createVisualSettingSection(categoryKey) {

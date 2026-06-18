@@ -5,11 +5,29 @@ import { describe, expect, it } from 'vitest';
 import { TopPanelViewManager } from './TopPanelViewManager.js';
 
 describe('TopPanelViewManager', () => {
-  it('renders visual setting previews in the theme tab', () => {
+  it('renders visual setting previews in the configurations tab', () => {
     const stage = document.createElement('section');
     const manager = new TopPanelViewManager();
 
     manager.mount(stage);
+
+    expect(
+      stage.querySelector(
+        '#room-top-panel-settings-theme .room-top-panel__device-section',
+      ),
+    ).not.toBeNull();
+    expect(
+      stage.querySelector(
+        '#room-top-panel-settings-account .room-top-panel__device-section',
+      ),
+    ).toBeNull();
+    expect(
+      [
+        ...stage.querySelectorAll(
+          '.room-top-panel__device-section .room-top-panel__preference-label',
+        ),
+      ].map((label) => label.textContent),
+    ).toEqual(['haptics', 'music', 'sfx']);
 
     expect(
       [...stage.querySelectorAll('.room-top-panel__theme-preview')].map(

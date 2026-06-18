@@ -83,6 +83,8 @@ export class BackendFacade {
 
           accountSessionInactive = true;
           this.accountSessionInactive = true;
+          this.gameplaySaveFacade.discardPendingSaves();
+          this.playerSyncFacade.discardPendingPlayerLevel();
           this.disconnectBackendFacades();
           this.spacetimeDbFacade.disconnect();
           onOffline?.({ reason: 'account_in_use' });

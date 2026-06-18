@@ -31,4 +31,12 @@ export class BottomPanelFacade {
   setNotifications(notifications) {
     this.viewManager.setNotifications(notifications);
   }
+
+  setSwipeTargetPageId(pageId) {
+    this.viewManager.setSwipeTargetPageId(pageId);
+  }
+
+  showLockedPage(pageId) {
+    return this.viewManager.showLockedPage(pageId);
+  }
 }

@@ -20,6 +20,7 @@ export class BottomPanelViewManager {
     this.root = null;
     this.tabButtons = new Map();
     this.notifications = {};
+    this.swipeTargetPageId = null;
     this.pageStates = new Map(
       tabs.map((tab) => [
         tab.id,
@@ -82,6 +83,7 @@ export class BottomPanelViewManager {
     this.root?.remove();
     this.root = null;
     this.tabButtons.clear();
+    this.swipeTargetPageId = null;
     this.refs = {
       lockPopup: null,
       lockPanel: null,
@@ -150,6 +152,10 @@ export class BottomPanelViewManager {
 
       const locked = !state.unlocked;
       button.classList.toggle('is-locked', locked);
+      button.classList.toggle(
+        'is-swipe-target-locked',
+        locked && this.swipeTargetPageId === tab.id,
+      );
       button.removeAttribute('aria-disabled');
 
       if (locked) {
@@ -170,6 +176,33 @@ export class BottomPanelViewManager {
     for (const tab of this.tabs) {
       this.syncTabNotification(tab);
     }
+  }
+
+  setSwipeTargetPageId(pageId) {
+    this.swipeTargetPageId =
+      typeof pageId === 'string' && this.tabButtons.has(pageId) ? pageId : null;
+
+    for (const tab of this.tabs) {
+      const button = this.tabButtons.get(tab.id);
+      const selected = tab.id === this.swipeTargetPageId;
+      const locked = this.pageStates.get(tab.id)?.unlocked === false;
+
+      button?.classList.toggle('is-swipe-target', selected);
+      button?.classList.toggle('is-swipe-target-locked', selected && locked);
+    }
+  }
+
+  showLockedPage(pageId) {
+    const tab = this.tabs.find((candidate) => candidate.id === pageId);
+    const state = this.pageStates.get(pageId);
+
+    if (!tab || !state || state.unlocked !== false) {
+      return false;
+    }
+
+    this.restartSwipeTabFeedback(pageId);
+    this.showLockedPageMessage(tab, state);
+    return true;
   }
 
   createPanel() {
@@ -300,6 +333,18 @@ export class BottomPanelViewManager {
     this.refs.lockPopup.classList.remove('is-entering');
     void this.refs.lockPopup.offsetWidth;
     this.refs.lockPopup.classList.add('is-entering');
+  }
+
+  restartSwipeTabFeedback(pageId) {
+    const button = this.tabButtons.get(pageId);
+
+    if (!button) {
+      return;
+    }
+
+    button.classList.remove('is-swipe-bumped');
+    void button.offsetWidth;
+    button.classList.add('is-swipe-bumped');
   }
 
   getLockedMessage(tab, state) {

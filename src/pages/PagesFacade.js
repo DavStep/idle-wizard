@@ -37,6 +37,9 @@ export class PagesFacade {
     playerInfoFacade,
     playerShopFacade,
     authFacade,
+    hapticsFacade,
+    soundSettingsFacade,
+    uiClickSoundFacade,
     tutorialStorage,
     defaultPageId = 'workshop',
   } = {}) {
@@ -59,9 +62,13 @@ export class PagesFacade {
     this.swipeNavigationManager = new PageSwipeNavigationManager({
       pageOrder: DEFAULT_PAGE_SWIPE_ORDER,
       getCurrentPageId: () => this.getCurrentPageId(),
-      onShowPage: (pageId) => this.show(pageId),
+      onShowPage: (pageId) => this.showFromSwipe(pageId),
+      onSwipeTargetChange: (pageId) => this.bottomPanelFacade.setSwipeTargetPageId(pageId),
     });
-    this.pressFeedbackManager = new PressFeedbackManager();
+    this.pressFeedbackManager = new PressFeedbackManager({
+      hapticsFacade,
+      uiClickSoundFacade,
+    });
     this.scrollCueManager = new ScrollCueManager();
     this.bottomPanelFacade = new BottomPanelFacade({
       getCurrentPageId: () => this.getCurrentPageId(),
@@ -77,6 +84,8 @@ export class PagesFacade {
       playerFacade,
       authFacade,
       feedbackFacade,
+      hapticsFacade,
+      soundSettingsFacade,
     });
     this.playerInfoDialogFacade = new PlayerInfoDialogFacade({
       playerInfoFacade,
@@ -193,6 +202,15 @@ export class PagesFacade {
     this.tutorialFacade?.scheduleRefresh();
   }
 
+  showFromSwipe(pageId) {
+    if (this.unlockedPageIds.includes(pageId)) {
+      this.show(pageId);
+      return;
+    }
+
+    this.bottomPanelFacade.showLockedPage(pageId);
+  }
+
   resetTutorialProgress() {
     this.tutorialFacade?.resetProgress();
   }
@@ -212,7 +230,7 @@ export class PagesFacade {
       .filter((page) => page.unlocked)
       .map((page) => page.id);
     this.bottomPanelFacade.setPageStates(this.pageStates);
-    this.swipeNavigationManager.setPageOrder(this.unlockedPageIds);
+    this.swipeNavigationManager.setPageOrder(this.pageStates.map((page) => page.id));
 
     if (this.unlockedPageIds.includes(this.getCurrentPageId())) {
       return;

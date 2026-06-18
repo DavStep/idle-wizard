@@ -1,0 +1,4 @@
+interface:
+  display_name: "Idle Wizard Haptics"
+  short_description: "Implement tactile mobile feedback"
+  default_prompt: "Use -wizard-haptics to add or review haptic feedback in Idle Wizard."

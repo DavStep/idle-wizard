@@ -147,6 +147,8 @@
       var(--style-room-chat-title-overhang) +
       var(--brewing-page-guide-controls-gap)
   );
+  --brewing-page-cauldron-height: 96px;
+  --brewing-page-cauldron-scroll-height: 48px;
   --brewing-page-herb-rows-height: 132px;
   --brewing-page-herbs-box-reserved-height: calc(
     var(--brewing-page-herb-rows-height) +
@@ -611,6 +613,15 @@ body {
   animation: app-online-gate-progress 1100ms var(--style-motion-ease) infinite;
 }
 
+.style-button.app-online-gate__action {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.style-button.app-online-gate__action[hidden] {
+  display: none;
+}
+
 .app-account-link-choice {
   position: absolute;
   inset: 0;
@@ -914,6 +925,13 @@ body {
     var(--style-motion-ease-rubber) both;
 }
 
+.game-stage[data-page-swipe-active="true"]
+  :where(.workshop-page, .brewing-page, .garden-page, .research-page, .shop-page) {
+  animation: none;
+  translate: var(--page-swipe-offset, 0px) 0;
+  transition: translate 80ms var(--style-motion-ease-soft);
+}
+
 .workshop-page__wall {
   position: absolute;
   inset: 0 0 38%;
@@ -1119,7 +1137,6 @@ body {
 
 .game-stage:not([data-tutorial-reveal])
   :where(
-    .workshop-page__mana-sphere,
     .workshop-page__tasks,
     .workshop-page__summon-button,
     .workshop-page__bag-button,
@@ -1147,7 +1164,7 @@ body {
   );
 }
 
-.workshop-page__mana-sphere,
+.workshop-page__tasks,
 .brewing-page__herbs,
 .garden-page__plot,
 .research-page__tabs,
@@ -1155,7 +1172,7 @@ body {
   --room-section-index: 0;
 }
 
-.workshop-page__tasks,
+.workshop-page__summon-button,
 .brewing-page__cauldrons > .style-box:nth-child(1),
 .garden-page__herbs,
 .research-page__box-list > .style-box:nth-child(1),
@@ -1163,31 +1180,30 @@ body {
   --room-section-index: 1;
 }
 
-.workshop-page__summon-button,
+.workshop-page__prestige-button,
+.workshop-page__bag-button,
 .brewing-page__cauldrons > .style-box:nth-child(2),
 .research-page__box-list > .style-box:nth-child(2),
 .shop-page__market-panel > :where(.style-box, .style-panel):nth-child(2) {
   --room-section-index: 2;
 }
 
-.workshop-page__prestige-button,
-.workshop-page__bag-button,
+.workshop-page__leaderboard-button,
+.workshop-page__trade-alliance-button,
 .brewing-page__cauldrons > .style-box:nth-child(3),
 .research-page__box-list > .style-box:nth-child(3),
 .shop-page__market-panel > :where(.style-box, .style-panel):nth-child(3) {
   --room-section-index: 3;
 }
 
-.workshop-page__leaderboard-button,
-.workshop-page__trade-alliance-button,
+.workshop-page__logs-button,
+.workshop-page__discoveries-button,
 .brewing-page__cauldrons > .style-box:nth-child(4),
 .research-page__box-list > .style-box:nth-child(4),
 .shop-page__market-panel > :where(.style-box, .style-panel):nth-child(4) {
   --room-section-index: 4;
 }
 
-.workshop-page__logs-button,
-.workshop-page__discoveries-button,
 .brewing-page__cauldrons > .style-box:nth-child(n + 5),
 .research-page__box-list > .style-box:nth-child(n + 5),
 .shop-page__market-panel > :where(.style-box, .style-panel):nth-child(n + 5) {
@@ -1219,10 +1235,18 @@ body {
     .room-top-panel-layer,
     .room-bottom-panel-layer,
     .room-world-chat-layer,
-    .workshop-page__mana-sphere,
     .workshop-page__action-bar > .style-button,
     .workshop-page__tasks
   ) {
+  opacity: 0;
+  pointer-events: none;
+  translate: 0 4px;
+  transition:
+    opacity var(--style-motion-normal) var(--style-motion-ease),
+    translate var(--style-motion-normal) var(--style-motion-ease);
+}
+
+.game-stage[data-tutorial-reveal] .room-top-panel__resource[aria-label="mana"] {
   opacity: 0;
   pointer-events: none;
   translate: 0 4px;
@@ -1243,7 +1267,7 @@ body {
 
 .game-stage[data-tutorial-reveal~="top"] .room-top-panel-layer,
 .game-stage[data-tutorial-reveal~="rooms"] .room-bottom-panel-layer,
-.game-stage[data-tutorial-reveal~="mana"] .workshop-page__mana-sphere,
+.game-stage[data-tutorial-reveal~="mana"] .room-top-panel__resource[aria-label="mana"],
 .game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
 .game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
   opacity: 1;
@@ -1256,7 +1280,7 @@ body {
 .game-stage[data-tutorial-reveal~="rooms"]
   .room-bottom-panel-layer
   :where(button, [role="button"]),
-.game-stage[data-tutorial-reveal~="mana"] .workshop-page__mana-sphere,
+.game-stage[data-tutorial-reveal~="mana"] .room-top-panel__resource[aria-label="mana"],
 .game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
 .game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
   pointer-events: auto;
@@ -1472,7 +1496,6 @@ body {
 .tutorial-layer__objective-button.is-auto-moving,
 .tutorial-layer__objective.is-auto-moving,
 .tutorial-layer__lesson.is-auto-moving {
-  transition: translate var(--style-motion-expand) var(--style-motion-ease-soft);
   will-change: translate;
 }
 
@@ -1532,6 +1555,7 @@ body {
   background: var(--style-surface);
   border: var(--style-border);
   pointer-events: none;
+  transition: translate var(--style-motion-press) var(--style-motion-ease-rubber);
 }
 
 .tutorial-layer__objective-button-label[hidden] {
@@ -1601,6 +1625,17 @@ body {
   translate: 0 -1px;
 }
 
+.tutorial-layer__objective-button:is(:active, .is-pressing):not(.is-dragging)
+  .tutorial-layer__objective-button-image {
+  scale: 0.965;
+  translate: 0 1px;
+}
+
+.tutorial-layer__objective-button:is(:active, .is-pressing):not(.is-dragging)
+  .tutorial-layer__objective-button-label {
+  translate: 0 1px;
+}
+
 .tutorial-layer__objective-button[aria-expanded="false"]
   .tutorial-layer__objective-button-image {
   position: absolute;
@@ -1657,16 +1692,21 @@ body {
 
 .tutorial-layer__objective-button.is-collapsing
   .tutorial-layer__objective-button-image {
-  animation: tutorial-elara-objective-collapse var(--style-motion-expand)
-    var(--style-motion-ease-rubber) both;
+  position: relative;
+  right: auto;
+  bottom: auto;
+  width: 70px;
+  height: 91px;
+  animation: tutorial-elara-objective-collapse 250ms var(--style-motion-ease-rubber)
+    both;
   will-change: transform;
 }
 
 .tutorial-layer__objective-button.is-collapsing
   .tutorial-layer__objective-button-label {
   transform-origin: center;
-  animation: tutorial-elara-help-label-snap var(--style-motion-expand)
-    var(--style-motion-ease-rubber) both;
+  animation: tutorial-elara-help-label-snap 155ms var(--style-motion-ease-rubber)
+    95ms both;
 }
 
 .tutorial-layer__objective-button[data-notification="true"]::before {
@@ -2001,7 +2041,7 @@ body {
       .room-top-panel-layer,
       .room-bottom-panel-layer,
       .room-world-chat-layer,
-      .workshop-page__mana-sphere,
+      .room-top-panel__resource[aria-label="mana"],
       .workshop-page__action-bar > .style-button,
       .workshop-page__tasks
     ) {
@@ -2127,13 +2167,16 @@ body {
 .room-world-chat-layer,
 .room-world-chat-layer *,
 .room-world-chat-layer *::before,
-.room-world-chat-layer *::after {
+.room-world-chat-layer *::after,
+.room-player-info-popup,
+.room-player-info-popup *,
+.room-player-info-popup *::before,
+.room-player-info-popup *::after,
+.room-alliance-info-popup,
+.room-alliance-info-popup *,
+.room-alliance-info-popup *::before,
+.room-alliance-info-popup *::after {
   box-sizing: content-box;
-}
-
-.workshop-page__mana-sphere {
-  position: relative;
-  margin: 36px var(--style-room-content-edge) 0;
 }
 
 .workshop-page__action-bar {
@@ -2848,7 +2891,12 @@ body {
   margin: 0;
 }
 
-.workshop-page__tasks.is-expanded {
+.style-box.workshop-page__tasks.is-pinned {
+  position: relative;
+  z-index: 11;
+}
+
+.workshop-page__tasks.is-expanded:not(.is-pinned) {
   z-index: 21;
 }
 
@@ -2946,12 +2994,18 @@ body {
   background: var(--style-active-surface);
 }
 
+.workshop-page__tasks-pin:hover,
+.workshop-page__tasks-pin:focus-visible,
 .workshop-page__tasks-toggle:hover,
-.workshop-page__tasks-toggle:focus-visible {
+.workshop-page__tasks-toggle:focus-visible,
+.workshop-page__level-rewards-toggle:hover,
+.workshop-page__level-rewards-toggle:focus-visible {
   text-decoration: underline;
 }
 
-.workshop-page__tasks-toggle:focus {
+.workshop-page__tasks-pin:focus,
+.workshop-page__tasks-toggle:focus,
+.workshop-page__level-rewards-toggle:focus {
   outline: none;
 }
 
@@ -3003,6 +3057,62 @@ body {
 }
 
 .workshop-page__tasks-toggle:active {
+  background: var(--style-active-surface);
+}
+
+.workshop-page__tasks-pin {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: var(--style-box-title-left);
+  z-index: 1;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+}
+
+.workshop-page__tasks-pin[hidden] {
+  display: none;
+}
+
+.workshop-page__tasks-pin:active {
+  background: var(--style-active-surface);
+}
+
+.workshop-page__level-rewards-toggle {
+  position: absolute;
+  right: var(--style-box-title-left);
+  bottom: var(--style-box-border-label-offset);
+  z-index: 1;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+}
+
+.workshop-page__level-rewards-toggle[hidden] {
+  display: none;
+}
+
+.workshop-page__level-rewards-toggle:active {
   background: var(--style-active-surface);
 }
 
@@ -3356,7 +3466,9 @@ body {
 
 .style-box.brewing-page__cauldron {
   position: relative;
-  min-height: 96px;
+  height: var(--brewing-page-cauldron-height);
+  min-height: var(--brewing-page-cauldron-height);
+  max-height: var(--brewing-page-cauldron-height);
   padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
 
@@ -3429,7 +3541,15 @@ body {
 }
 
 .brewing-page__cauldron-items {
-  min-height: 48px;
+  height: var(--brewing-page-cauldron-scroll-height);
+  min-height: var(--brewing-page-cauldron-scroll-height);
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.brewing-page__cauldron-items::-webkit-scrollbar {
+  display: none;
 }
 
 .brewing-page__cauldron-guide {
@@ -3437,7 +3557,7 @@ body {
 }
 
 .brewing-page__cauldron-guide-sequence {
-  max-height: calc(var(--style-row-min-height) * 5);
+  max-height: var(--brewing-page-cauldron-scroll-height);
   margin-top: 3px;
   overflow: hidden auto;
   scrollbar-width: none;
@@ -3746,7 +3866,7 @@ body {
   transform: scale(var(--style-press-scale));
 }
 
-.game-stage:has(.workshop-page__tasks.is-expanded)
+.game-stage:has(.workshop-page__tasks.is-expanded:not(.is-pinned))
   :where(
     .room-top-panel-layer,
     .room-bottom-panel-layer,
@@ -3757,7 +3877,7 @@ body {
 }
 
 .game-stage[data-tutorial-target-id^="page:"]:has(
-    .workshop-page__tasks.is-expanded
+    .workshop-page__tasks.is-expanded:not(.is-pinned)
   )
   .room-bottom-panel-layer {
   opacity: 1;
@@ -3822,12 +3942,20 @@ body {
   position: absolute;
   inset: 0;
   z-index: 95;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
 }
 
 .room-alliance-info-popup {
   position: absolute;
   inset: 0;
   z-index: 96;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
 }
 
 .workshop-page__leaderboard-popup[hidden],
@@ -3877,6 +4005,10 @@ body {
 
 .workshop-page__leaderboard-header {
   font-weight: bold;
+}
+
+.workshop-page__leaderboard-row.workshop-page__leaderboard-current {
+  background: var(--style-active-surface);
 }
 
 .workshop-page__leaderboard-tabs {
@@ -6594,8 +6726,25 @@ div.workshop-page__discovery-row {
   cursor: default;
 }
 
+.room-bottom-panel__tab.is-swipe-target:not(.is-selected) {
+  background: var(--style-active-surface);
+  border-color: var(--style-stroke);
+  text-decoration: underline;
+}
+
 .room-bottom-panel__tab.is-locked {
   color: var(--style-disabled);
+}
+
+.room-bottom-panel__tab.is-swipe-target-locked:not(.is-selected) {
+  background: transparent;
+  border-color: var(--style-disabled);
+  text-decoration: underline;
+}
+
+.room-bottom-panel__tab.is-swipe-bumped {
+  animation: room-bottom-tab-swipe-bump var(--style-motion-fast)
+    var(--style-motion-ease-soft) both;
 }
 
 .room-bottom-panel__tab.is-locked:hover,
@@ -6763,6 +6912,19 @@ div.workshop-page__discovery-row {
   gap: 4px;
 }
 
+.room-top-panel__resource--mana {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.room-top-panel__resource-line {
+  display: flex;
+  max-width: 100%;
+  min-width: 0;
+  gap: 4px;
+}
+
 .room-top-panel__resource[hidden] {
   display: none;
 }
@@ -6786,6 +6948,13 @@ div.workshop-page__discovery-row {
   font-weight: bold;
   font-variant-numeric: tabular-nums lining-nums;
   text-overflow: ellipsis;
+}
+
+.room-top-panel__mana-rate {
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: var(--style-box-border-label-line-height);
 }
 
 .room-top-panel__settings {
@@ -7100,6 +7269,33 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.room-top-panel__username-save {
+  box-sizing: border-box;
+  width: 58px;
+  min-height: var(--style-row-min-height);
+  padding: 5px 4px;
+  margin: 0;
+}
+
+.room-top-panel__preference-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px;
+  column-gap: 8px;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+}
+
+.room-top-panel__preference-row + .room-top-panel__preference-row {
+  margin-top: 4px;
+}
+
+.room-top-panel__preference-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-button.room-top-panel__preference-toggle {
   box-sizing: border-box;
   width: 58px;
   min-height: var(--style-row-min-height);
@@ -8392,7 +8588,9 @@ div.workshop-page__discovery-row {
   .room-top-panel__username,
   .room-top-panel__level,
   .workshop-page__tasks-title,
+  .workshop-page__tasks-pin,
   .workshop-page__tasks-toggle,
+  .workshop-page__level-rewards-toggle,
   .shop-page__slot-row--interactive .shop-page__slot-item-value,
   .shop-page__sell-item-button:not(:disabled):not([aria-disabled="true"])
     .row_key,
@@ -8423,7 +8621,9 @@ div.workshop-page__discovery-row {
   .room-top-panel__level,
   .workshop-page__row--interactive,
   .workshop-page__tasks-title,
+  .workshop-page__tasks-pin,
   .workshop-page__tasks-toggle,
+  .workshop-page__level-rewards-toggle,
   .shop-page__slot-row--interactive,
   .shop-page__slot-unlock-button,
   .shop-page__sell-item-button,
@@ -8446,7 +8646,9 @@ div.workshop-page__discovery-row {
     .room-top-panel__level,
     .workshop-page__row--interactive,
     .workshop-page__tasks-title,
+    .workshop-page__tasks-pin,
     .workshop-page__tasks-toggle,
+    .workshop-page__level-rewards-toggle,
     .shop-page__slot-row--interactive,
     .shop-page__slot-unlock-button,
     .shop-page__sell-item-button,
@@ -8612,7 +8814,9 @@ div.workshop-page__discovery-row {
 }
 
 .style-box .workshop-page__tasks-count,
-.style-box .workshop-page__tasks-toggle {
+.style-box .workshop-page__tasks-pin,
+.style-box .workshop-page__tasks-toggle,
+.style-box .workshop-page__level-rewards-toggle {
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
 }
@@ -8809,6 +9013,20 @@ div.workshop-page__discovery-row {
   }
 }
 
+@keyframes room-bottom-tab-swipe-bump {
+  0% {
+    translate: 0 0;
+  }
+
+  55% {
+    translate: 0 -1px;
+  }
+
+  100% {
+    translate: 0 0;
+  }
+}
+
 @keyframes room-section-enter {
   0% {
     opacity: 0.76;
@@ -8972,19 +9190,19 @@ div.workshop-page__discovery-row {
 
 @keyframes tutorial-elara-objective-collapse {
   0% {
-    transform: translate(-6px, -17px) scale(1.52);
+    transform: translate(0, 0) scale(1);
   }
 
-  52% {
-    transform: translate(3px, 3px) scale(0.84);
+  56% {
+    transform: translate(7px, 5px) scale(0.61);
   }
 
-  76% {
-    transform: translate(-1px, -1px) scale(1.06);
+  78% {
+    transform: translate(4.7px, 3.1px) scale(0.69);
   }
 
   100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(5.5px, 3.7px) scale(0.657);
   }
 }
 
@@ -9469,9 +9687,14 @@ div.workshop-page__discovery-row {
     animation: none;
   }
 
+  .game-stage[data-page-swipe-active="true"]
+    :where(.workshop-page, .brewing-page, .garden-page, .research-page, .shop-page) {
+    translate: 0 0;
+    transition: none;
+  }
+
   .game-stage
     :where(
-      .workshop-page__mana-sphere,
       .workshop-page__tasks,
       .workshop-page__summon-button,
       .workshop-page__bag-button,

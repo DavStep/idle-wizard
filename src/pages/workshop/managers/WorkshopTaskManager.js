@@ -14,6 +14,7 @@ const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
 const EXPANDED_CONTENT_MOTION_MS = 225;
 const TASK_REORDER_MOTION_MS = 225;
+const TASK_REORDER_EARLY_THRESHOLD_RATIO = 0.2;
 const TASK_REORDER_TRANSITION =
   'transform 225ms cubic-bezier(0.2, 1.12, 0.36, 1), opacity 140ms linear';
 
@@ -44,6 +45,8 @@ export class WorkshopTaskManager {
     this.expandedContentAnimationTimeoutId = null;
     this.expandedContentAnimationFrameId = null;
     this.canToggleTasks = false;
+    this.pinned = false;
+    this.rewardsHidden = false;
     this.infoVisible = false;
     this.previousFocus = null;
     this.suppressNextOutsideClick = false;
@@ -67,7 +70,7 @@ export class WorkshopTaskManager {
         this.suppressNextOutsideClick = false;
       }
 
-      if (!this.isTaskListExpanded() || this.infoVisible) {
+      if (!this.isTaskListExpanded() || this.pinned || this.infoVisible) {
         return;
       }
 
@@ -176,7 +179,17 @@ export class WorkshopTaskManager {
     this.refs.toggleButton.setAttribute('aria-controls', 'workshop-task-list');
     this.refs.toggleButton.addEventListener('click', () => this.toggleExpanded());
 
+    this.refs.pinButton = document.createElement('button');
+    this.refs.pinButton.className = 'workshop-page__tasks-pin';
+    this.refs.pinButton.type = 'button';
+    this.refs.pinButton.addEventListener('click', () => this.togglePinned());
+
     this.refs.levelRewards = this.createLevelRewardsPanel();
+    this.refs.levelRewardsToggle = document.createElement('button');
+    this.refs.levelRewardsToggle.className = 'workshop-page__level-rewards-toggle';
+    this.refs.levelRewardsToggle.type = 'button';
+    this.refs.levelRewardsToggle.setAttribute('aria-controls', 'workshop-level-rewards');
+    this.refs.levelRewardsToggle.addEventListener('click', () => this.toggleLevelRewards());
     this.refs.levelComplete = this.createLevelCompleteRow();
 
     this.refs.expandedContent = document.createElement('div');
@@ -197,7 +210,9 @@ export class WorkshopTaskManager {
       this.refs.count,
       this.refs.summary,
       this.refs.expandedContent,
+      this.refs.pinButton,
       this.refs.toggleButton,
+      this.refs.levelRewardsToggle,
     );
     this.refs.slot.append(this.root);
     parent.append(this.refs.backdrop, this.refs.slot);
@@ -246,6 +261,8 @@ export class WorkshopTaskManager {
     this.currentRequirementTargetLevel = null;
     this.expandingExpandedContent = false;
     this.collapsingExpandedContent = false;
+    this.pinned = false;
+    this.rewardsHidden = false;
     this.infoVisible = false;
     this.previousFocus = null;
     this.dragState = null;
@@ -257,8 +274,34 @@ export class WorkshopTaskManager {
     this.setExpanded(!this.expanded);
   }
 
+  togglePinned() {
+    this.setPinned(!this.pinned);
+  }
+
+  setPinned(pinned) {
+    const nextPinned = Boolean(pinned && this.canToggleTasks);
+
+    if (nextPinned && !this.expanded) {
+      this.pinned = true;
+      this.setExpanded(true);
+      return;
+    }
+
+    this.pinned = nextPinned;
+    this.syncExpansionState();
+  }
+
+  toggleLevelRewards() {
+    this.rewardsHidden = !this.rewardsHidden;
+    this.syncExpansionState();
+  }
+
   setExpanded(expanded) {
     const nextExpanded = Boolean(expanded);
+
+    if (!nextExpanded) {
+      this.pinned = false;
+    }
 
     if (nextExpanded === this.expanded) {
       this.syncExpansionState();
@@ -571,6 +614,7 @@ export class WorkshopTaskManager {
   createLevelRewardsPanel() {
     const root = document.createElement('div');
     root.className = 'workshop-page__level-rewards';
+    root.id = 'workshop-level-rewards';
 
     const title = document.createElement('div');
     title.className = 'workshop-page__level-payoff-title';
@@ -690,8 +734,14 @@ export class WorkshopTaskManager {
 
   setRequirementContext(taskSnapshot) {
     const requirementsLabel = formatLevelRequirementsLabel(taskSnapshot);
+    const requirementTargetLevel = getLevelRequirementTargetLevel(taskSnapshot);
+
+    if (this.currentRequirementTargetLevel !== requirementTargetLevel) {
+      this.rewardsHidden = false;
+    }
+
     this.currentRequirementsLabel = requirementsLabel;
-    this.currentRequirementTargetLevel = getLevelRequirementTargetLevel(taskSnapshot);
+    this.currentRequirementTargetLevel = requirementTargetLevel;
     this.root.setAttribute('aria-label', requirementsLabel);
     this.setText(this.refs.title, requirementsLabel);
     this.refs.title.setAttribute('aria-label', `show ${requirementsLabel} info`);
@@ -772,7 +822,7 @@ export class WorkshopTaskManager {
     row.root.dataset.taskId = task.taskId;
     row.root.setAttribute(
       'aria-label',
-      `move ${task.itemLabel} requirement priority with arrow keys or drag`,
+      this.getTaskRowAriaLabel(task, this.canReorderTask(task.taskId)),
     );
     row.button.dataset.taskId = task.taskId;
     row.button.dataset.tutorialId = `task:${task.taskId}`;
@@ -794,34 +844,54 @@ export class WorkshopTaskManager {
       return;
     }
 
-    const currentLevel =
-      this.currentLevelCompletion?.level ?? this.currentSnapshot?.tasks?.level?.level;
-    const nextLevel = Number.isInteger(currentLevel) ? currentLevel + 1 : null;
-    const maxLevel = Math.floor(
-      Number(
-        this.currentSnapshot?.tasks?.maxLevel ?? this.currentSnapshot?.playerLevel?.maxLevel,
-      ),
-    );
-    const insideLevelRange = !Number.isInteger(maxLevel) || nextLevel <= maxLevel;
-    const show =
-      Number.isInteger(nextLevel) &&
-      insideLevelRange &&
-      (!this.canToggleTasks || this.isExpandedContentVisible()) &&
-      this.currentSnapshot?.tasks?.completedAllLevels !== true &&
-      this.currentLevelCompletion?.completedAllLevels !== true;
-
+    const show = this.shouldShowLevelRewards();
     row.root.hidden = !show;
 
     if (!show) {
       return;
     }
 
+    const currentLevel = this.getLevelRewardsCurrentLevel();
+    const nextLevel = this.getLevelRewardsTargetLevel();
     const payoffRows = this.getLevelPayoffRows(currentLevel, nextLevel);
     const payoffPreview = this.getLevelPayoffPreview(nextLevel, payoffRows);
 
     this.setText(row.title, `level ${nextLevel} rewards`);
     this.renderLevelPayoffRows(payoffRows, row.rows);
     row.root.setAttribute('aria-label', payoffPreview);
+  }
+
+  getLevelRewardsCurrentLevel() {
+    return this.currentLevelCompletion?.level ?? this.currentSnapshot?.tasks?.level?.level;
+  }
+
+  getLevelRewardsTargetLevel() {
+    const currentLevel = this.getLevelRewardsCurrentLevel();
+    return Number.isInteger(currentLevel) ? currentLevel + 1 : null;
+  }
+
+  shouldOfferLevelRewards() {
+    const nextLevel = this.getLevelRewardsTargetLevel();
+    const maxLevel = Math.floor(
+      Number(
+        this.currentSnapshot?.tasks?.maxLevel ?? this.currentSnapshot?.playerLevel?.maxLevel,
+      ),
+    );
+    const insideLevelRange = !Number.isInteger(maxLevel) || nextLevel <= maxLevel;
+    return Boolean(
+      Number.isInteger(nextLevel) &&
+      insideLevelRange &&
+      this.currentSnapshot?.tasks?.completedAllLevels !== true &&
+      this.currentLevelCompletion?.completedAllLevels !== true
+    );
+  }
+
+  shouldShowLevelRewards() {
+    return Boolean(
+      this.shouldOfferLevelRewards() &&
+        (!this.canToggleTasks || this.isExpandedContentVisible()) &&
+        !this.rewardsHidden,
+    );
   }
 
   renderLevelComplete() {
@@ -974,6 +1044,22 @@ export class WorkshopTaskManager {
     return `${buttonText} ${task.itemLabel} requirement for ${this.getRequirementTargetText()}`;
   }
 
+  getTaskRowAriaLabel(task, canReorder = false) {
+    if (!task) {
+      return this.currentRequirementsLabel;
+    }
+
+    if (canReorder) {
+      return `move ${task.itemLabel} requirement priority with arrow keys or drag`;
+    }
+
+    if (task.completed) {
+      return `${task.itemLabel} requirement done for ${this.getRequirementTargetText()}`;
+    }
+
+    return `${task.itemLabel} required for ${this.getRequirementTargetText()}`;
+  }
+
   onTaskDragPointerDown(event, rowRoot) {
     if ((event.button ?? 0) !== 0 || !this.canReorderVisibleTasks()) {
       return;
@@ -986,7 +1072,7 @@ export class WorkshopTaskManager {
     const root = rowRoot?.closest?.('.workshop-page__task');
     const taskId = root?.dataset.taskId;
 
-    if (!taskId || !root) {
+    if (!taskId || !root || !this.canReorderTask(taskId)) {
       return;
     }
 
@@ -1055,7 +1141,7 @@ export class WorkshopTaskManager {
 
     const taskId = rowRoot?.dataset.taskId;
 
-    if (!taskId) {
+    if (!taskId || !this.canReorderTask(taskId)) {
       return;
     }
 
@@ -1084,6 +1170,7 @@ export class WorkshopTaskManager {
     }
 
     const taskId = dragState.taskId;
+    const settleFromRect = this.getTaskDragVisualRect(dragState);
     const targetIndex = commit
       ? this.getTaskDropIndex(taskId, clientY)
       : dragState.initialIndex;
@@ -1103,22 +1190,27 @@ export class WorkshopTaskManager {
         this.skipNextRowAnimationRoot = dragState.dragNode ?? dragState.root;
         this.render(this.gameplayFacade.getSnapshot());
       }
+
+      this.animateDroppedTaskFromRect(taskId, settleFromRect);
     } else {
       this.clearTaskDragPreview(dragState);
       this.render(this.gameplayFacade.getSnapshot());
+      this.animateDroppedTaskFromRect(taskId, settleFromRect);
     }
   }
 
   getTaskDropIndex(taskId, clientY) {
     const entries = this.getTaskDropEntries(taskId);
     const dragCenterY = this.getTaskDragCenterY(clientY);
+    const initialIndex = Number.isInteger(this.dragState?.initialIndex)
+      ? this.dragState.initialIndex
+      : this.currentDisplayTasks.findIndex((task) => task.taskId === taskId);
     let targetIndex = 0;
 
     for (const entry of entries) {
-      const rect = entry.rect;
-      const centerY = rect.top + rect.height / 2;
+      const thresholdY = this.getTaskDropThresholdY(entry, initialIndex);
 
-      if (dragCenterY > centerY) {
+      if (dragCenterY > thresholdY) {
         targetIndex += 1;
       }
     }
@@ -1146,13 +1238,29 @@ export class WorkshopTaskManager {
   getTaskDropEntries(taskId) {
     const taskIds =
       this.dragState?.taskIds ?? this.currentDisplayTasks.map((task) => task.taskId);
+    const tasksById = new Map(this.currentDisplayTasks.map((task) => [task.taskId, task]));
+    const draggedTask = tasksById.get(taskId);
+
+    if (!draggedTask || draggedTask.completed) {
+      return [];
+    }
 
     return taskIds
-      .filter((candidateTaskId) => candidateTaskId !== taskId)
-      .map((candidateTaskId) => {
-        const row = this.getVisibleTaskRow(candidateTaskId);
+      .map((candidateTaskId, index) => ({
+        taskId: candidateTaskId,
+        task: tasksById.get(candidateTaskId),
+        index,
+      }))
+      .filter(
+        (entry) =>
+          entry.taskId !== taskId &&
+          entry.task &&
+          entry.task.completed === draggedTask.completed,
+      )
+      .map((entry) => {
+        const row = this.getVisibleTaskRow(entry.taskId);
         const rect =
-          this.dragState?.initialRects?.get(candidateTaskId) ??
+          this.dragState?.initialRects?.get(entry.taskId) ??
           row?.root?.getBoundingClientRect();
 
         if (!rect || (!rect.width && !rect.height)) {
@@ -1160,7 +1268,8 @@ export class WorkshopTaskManager {
         }
 
         return {
-          taskId: candidateTaskId,
+          taskId: entry.taskId,
+          index: entry.index,
           rect,
         };
       })
@@ -1168,10 +1277,28 @@ export class WorkshopTaskManager {
       .sort((left, right) => left.rect.top - right.rect.top);
   }
 
+  getTaskDropThresholdY(entry, initialIndex) {
+    const rect = entry.rect;
+    const centerY = rect.top + rect.height / 2;
+    const earlyOffset = Math.max(0, rect.height * TASK_REORDER_EARLY_THRESHOLD_RATIO);
+
+    if (Number.isInteger(initialIndex)) {
+      if (entry.index < initialIndex) {
+        return centerY + earlyOffset;
+      }
+
+      if (entry.index > initialIndex) {
+        return centerY - earlyOffset;
+      }
+    }
+
+    return centerY;
+  }
+
   moveTaskByOffset(taskId, offset) {
     const currentIndex = this.currentDisplayTasks.findIndex((task) => task.taskId === taskId);
 
-    if (currentIndex < 0) {
+    if (currentIndex < 0 || this.currentDisplayTasks[currentIndex]?.completed) {
       return;
     }
 
@@ -1181,7 +1308,7 @@ export class WorkshopTaskManager {
   moveTaskToIndex(taskId, targetIndex, { render = true } = {}) {
     const currentIndex = this.currentDisplayTasks.findIndex((task) => task.taskId === taskId);
 
-    if (currentIndex < 0) {
+    if (currentIndex < 0 || this.currentDisplayTasks[currentIndex]?.completed) {
       return false;
     }
 
@@ -1211,6 +1338,10 @@ export class WorkshopTaskManager {
     }
 
     const task = this.currentDisplayTasks[currentIndex];
+    if (task.completed) {
+      return currentIndex;
+    }
+
     const groupStart = this.currentDisplayTasks.findIndex(
       (candidate) => candidate.completed === task.completed,
     );
@@ -1578,10 +1709,18 @@ export class WorkshopTaskManager {
   }
 
   canReorderVisibleTasks() {
+    const incompleteTaskCount = this.currentDisplayTasks.filter((task) => !task.completed).length;
+
     return Boolean(
-      this.currentDisplayTasks.length > 1 &&
+      incompleteTaskCount > 1 &&
         (!this.canToggleTasks || this.isTaskListExpanded()),
     );
+  }
+
+  canReorderTask(taskId) {
+    const task = this.currentDisplayTasks.find((candidate) => candidate.taskId === taskId);
+
+    return Boolean(task && !task.completed && this.canReorderVisibleTasks());
   }
 
   syncTaskDragState() {
@@ -1591,10 +1730,13 @@ export class WorkshopTaskManager {
     this.root?.classList.toggle('has-task-drag', canReorder);
 
     for (const row of rows) {
-      row.root.classList.toggle('is-drag-disabled', !canReorder);
-      row.root.classList.toggle('is-draggable', canReorder);
-      row.root.tabIndex = canReorder ? 0 : -1;
-      row.root.setAttribute('aria-disabled', canReorder ? 'false' : 'true');
+      const task = this.currentTasksById.get(row.root.dataset.taskId);
+      const canReorderRow = this.canReorderTask(row.root.dataset.taskId);
+      row.root.classList.toggle('is-drag-disabled', !canReorderRow);
+      row.root.classList.toggle('is-draggable', canReorderRow);
+      row.root.tabIndex = canReorderRow ? 0 : -1;
+      row.root.setAttribute('aria-disabled', canReorderRow ? 'false' : 'true');
+      row.root.setAttribute('aria-label', this.getTaskRowAriaLabel(task, canReorderRow));
     }
   }
 
@@ -1611,8 +1753,14 @@ export class WorkshopTaskManager {
       return;
     }
 
+    if (!this.canToggleTasks) {
+      this.pinned = false;
+    }
+
     this.refs.toggleButton.hidden = !this.canToggleTasks;
     this.refs.toggleButton.disabled = !this.canToggleTasks;
+    this.refs.pinButton.hidden = !this.canToggleTasks;
+    this.refs.pinButton.disabled = !this.canToggleTasks;
     this.root?.classList.toggle('has-task-toggle', this.canToggleTasks);
 
     if (this.canToggleTasks) {
@@ -1647,6 +1795,16 @@ export class WorkshopTaskManager {
     this.root?.classList.toggle('is-collapsed', !hasExpandedContent);
     this.root?.classList.toggle('is-expanding', this.expandingExpandedContent);
     this.root?.classList.toggle('is-collapsing', this.collapsingExpandedContent);
+    this.root?.classList.toggle('is-pinned', this.pinned);
+    this.refs.slot?.classList.toggle('is-pinned', this.pinned);
+    this.refs.pinButton?.setAttribute('aria-pressed', this.pinned ? 'true' : 'false');
+    this.refs.pinButton?.setAttribute(
+      'aria-label',
+      this.pinned
+        ? `unpin ${this.currentRequirementsLabel}`
+        : `pin ${this.currentRequirementsLabel}`,
+    );
+    this.setText(this.refs.pinButton, this.pinned ? 'unpin' : 'pin');
     this.refs.toggleButton?.setAttribute('aria-expanded', listExpanded ? 'true' : 'false');
     this.refs.toggleButton?.setAttribute(
       'aria-label',
@@ -1657,8 +1815,9 @@ export class WorkshopTaskManager {
     this.setText(this.refs.toggleButton, listExpanded ? 'collapse' : 'expand');
 
     if (this.refs.backdrop) {
-      this.refs.backdrop.hidden = !listExpanded;
-      this.refs.backdrop.setAttribute('aria-hidden', listExpanded ? 'false' : 'true');
+      const showBackdrop = listExpanded && !this.pinned;
+      this.refs.backdrop.hidden = !showBackdrop;
+      this.refs.backdrop.setAttribute('aria-hidden', showBackdrop ? 'false' : 'true');
       this.refs.backdrop.setAttribute('aria-label', `collapse ${this.currentRequirementsLabel}`);
     }
 
@@ -1669,7 +1828,32 @@ export class WorkshopTaskManager {
     this.syncTaskDragState();
     this.renderLevelRewards();
     this.renderLevelComplete();
+    this.syncLevelRewardsToggle();
     this.updateToggleNotification();
+  }
+
+  syncLevelRewardsToggle() {
+    const button = this.refs.levelRewardsToggle;
+
+    if (!button) {
+      return;
+    }
+
+    const availableInLayout = Boolean(
+      this.shouldOfferLevelRewards() &&
+        (!this.canToggleTasks || this.isExpandedContentVisible()),
+    );
+    const targetLevel = this.getLevelRewardsTargetLevel();
+    const actionText = this.rewardsHidden ? 'show' : 'hide';
+    const levelText = Number.isInteger(targetLevel)
+      ? `level ${targetLevel} rewards`
+      : 'level rewards';
+
+    button.hidden = !availableInLayout;
+    button.disabled = !availableInLayout;
+    this.setText(button, `${actionText} rewards`);
+    button.setAttribute('aria-expanded', this.rewardsHidden ? 'false' : 'true');
+    button.setAttribute('aria-label', `${actionText} ${levelText}`);
   }
 
   shouldAnimateExpandedContentMotion() {
@@ -1911,12 +2095,42 @@ export class WorkshopTaskManager {
     return rects;
   }
 
-  animateRowFromDelta(taskId, root, deltaX, deltaY) {
+  animateDroppedTaskFromRect(taskId, firstRect) {
+    if (!firstRect || !this.shouldAnimateRows()) {
+      return;
+    }
+
+    const root = this.getVisibleTaskRow(taskId)?.root;
+
+    if (!root) {
+      return;
+    }
+
+    const lastRect = root.getBoundingClientRect();
+    const deltaX = firstRect.left - lastRect.left;
+    const deltaY = firstRect.top - lastRect.top;
+
+    if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
+      return;
+    }
+
+    this.animateRowFromDelta(taskId, root, deltaX, deltaY, {
+      startOpacity: '0.96',
+    });
+  }
+
+  getTaskDragVisualRect(dragState = this.dragState) {
+    const root = dragState?.dragNode ?? dragState?.root;
+
+    return root?.getBoundingClientRect?.() ?? null;
+  }
+
+  animateRowFromDelta(taskId, root, deltaX, deltaY, { startOpacity = '0.9' } = {}) {
     this.cancelRowAnimation(taskId);
     root.classList.add('is-reordering');
     root.style.transition = 'none';
     root.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-    root.style.opacity = '0.9';
+    root.style.opacity = startOpacity;
     root.getBoundingClientRect();
 
     const cleanup = () => {

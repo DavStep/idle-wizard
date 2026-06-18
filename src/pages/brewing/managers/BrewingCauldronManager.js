@@ -3,7 +3,7 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
-import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setItemIconLabel, setTextWithItemIcons } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
@@ -668,9 +668,11 @@ export class BrewingCauldronManager {
       const rowRefs = this.ensureIngredientRow(refs, index);
       this.setHidden(rowRefs.row, false);
       this.setAttribute(rowRefs.row, 'data-slot-index', String(ingredient.slotIndex));
+      this.setRemoveIngredientTutorialId(rowRefs.row, ingredient);
       this.setAttribute(rowRefs.row, 'aria-label', `remove one ${ingredient.label} from cauldron`);
-      setResourceColor(rowRefs.row, 'herb');
-      this.setText(rowRefs.label, `- ${ingredient.quantity} ${ingredient.label}`);
+      setResourceColor(rowRefs.row, null);
+      setResourceColor(rowRefs.label, 'herb');
+      this.setTextWithItemIcons(rowRefs.label, `- ${ingredient.quantity} ${ingredient.label}`);
       this.setText(rowRefs.action, 'remove');
     }
 
@@ -683,7 +685,9 @@ export class BrewingCauldronManager {
       this.setHidden(rowRefs.row, true);
       this.removeAttribute(rowRefs.row, 'aria-label');
       this.removeAttribute(rowRefs.row, 'data-slot-index');
+      this.removeAttribute(rowRefs.row, 'data-tutorial-id');
       setResourceColor(rowRefs.row, null);
+      setResourceColor(rowRefs.label, null);
       this.setText(rowRefs.label, '');
       this.setText(rowRefs.action, '');
     }
@@ -732,6 +736,7 @@ export class BrewingCauldronManager {
         label: this.formatIngredientGroup(ingredient),
         value: 'remove',
         removeSlotIndex: ingredient.slotIndex + ingredient.quantity - 1,
+        tutorialId: this.getRemoveIngredientTutorialId(ingredient),
         isPlaced: false,
         isNext: false,
         isMismatch: true,
@@ -776,7 +781,7 @@ export class BrewingCauldronManager {
 
   renderCauldronGuideRow(refs, rowState) {
     this.setHidden(refs.row, false);
-    this.setText(refs.label, rowState.label);
+    this.setTextWithItemIcons(refs.label, rowState.label);
     this.setText(refs.value, rowState.value);
     refs.row.classList.toggle('is-placed', rowState.isPlaced);
     refs.row.classList.toggle('is-next', rowState.isNext);
@@ -787,6 +792,7 @@ export class BrewingCauldronManager {
       this.setAttribute(refs.row, 'data-slot-index', String(rowState.removeSlotIndex));
       this.setAttribute(refs.row, 'aria-disabled', 'false');
       this.setAttribute(refs.row, 'aria-label', `remove ${rowState.label} from cauldron`);
+      this.setOptionalAttribute(refs.row, 'data-tutorial-id', rowState.tutorialId);
       return;
     }
 
@@ -794,6 +800,7 @@ export class BrewingCauldronManager {
     this.removeAttribute(refs.row, 'data-slot-index');
     this.setAttribute(refs.row, 'aria-disabled', 'true');
     this.removeAttribute(refs.row, 'aria-label');
+    this.removeAttribute(refs.row, 'data-tutorial-id');
   }
 
   hideExtraCauldronGuideRows(cauldronRefs, visibleCount) {
@@ -803,6 +810,7 @@ export class BrewingCauldronManager {
       this.setDisabled(rowRefs.row, true);
       this.removeAttribute(rowRefs.row, 'data-slot-index');
       this.removeAttribute(rowRefs.row, 'aria-label');
+      this.removeAttribute(rowRefs.row, 'data-tutorial-id');
       this.setAttribute(rowRefs.row, 'aria-disabled', 'true');
       rowRefs.row.classList.remove('is-placed', 'is-next', 'is-mismatch');
       this.setText(rowRefs.label, '');
@@ -1035,7 +1043,9 @@ export class BrewingCauldronManager {
       groups.push({
         slotIndex: index,
         itemTypeId: ingredient.itemTypeId,
+        key: ingredient.key,
         label: ingredient.label,
+        kind: ingredient.kind,
         quantity: 1,
       });
     }
@@ -1905,6 +1915,22 @@ export class BrewingCauldronManager {
     return `fill ${recipeLabel} recipe`;
   }
 
+  setRemoveIngredientTutorialId(element, ingredient) {
+    this.setOptionalAttribute(
+      element,
+      'data-tutorial-id',
+      this.getRemoveIngredientTutorialId(ingredient),
+    );
+  }
+
+  getRemoveIngredientTutorialId(ingredient) {
+    if (typeof ingredient?.key !== 'string' || ingredient.key.length === 0) {
+      return null;
+    }
+
+    return `brewing:remove:${ingredient.key}`;
+  }
+
   flashMessage(cauldronIndex = this.selectedCauldronIndex) {
     const message = this.cauldronRefs.get(cauldronIndex)?.actions?.message;
 
@@ -1921,6 +1947,10 @@ export class BrewingCauldronManager {
     if (element.textContent !== text) {
       element.textContent = text;
     }
+  }
+
+  setTextWithItemIcons(element, text) {
+    setTextWithItemIcons(element, text);
   }
 
   setResourceText(element, text) {
@@ -1951,6 +1981,15 @@ export class BrewingCauldronManager {
     if (element.getAttribute(name) !== value) {
       element.setAttribute(name, value);
     }
+  }
+
+  setOptionalAttribute(element, name, value) {
+    if (value === null || value === undefined || value === '') {
+      this.removeAttribute(element, name);
+      return;
+    }
+
+    this.setAttribute(element, name, value);
   }
 
   removeAttribute(element, name) {

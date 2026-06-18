@@ -35,21 +35,29 @@ const OPEN_POPUP_SELECTOR = [
   '.room-top-panel__settings:not([hidden])',
 ].join(',');
 
+const SWIPE_COMMIT_AXIS_RATIO = 1.15;
+const SWIPE_FEEDBACK_MAX_PX = 18;
+const SWIPE_FEEDBACK_RESISTANCE = 0.08;
+const SWIPE_EDGE_FEEDBACK_RESISTANCE = 0.035;
+
 export class PageSwipeNavigationManager {
   constructor({
     pageOrder = DEFAULT_PAGE_SWIPE_ORDER,
     getCurrentPageId,
     onShowPage,
+    onSwipeTargetChange,
     swipeThresholdPx = 48,
     axisLockPx = 12,
   } = {}) {
     this.pageOrder = pageOrder;
     this.getCurrentPageId = getCurrentPageId;
     this.onShowPage = onShowPage;
+    this.onSwipeTargetChange = onSwipeTargetChange;
     this.swipeThresholdPx = swipeThresholdPx;
     this.axisLockPx = axisLockPx;
     this.stage = null;
     this.gesture = null;
+    this.swipeTargetPageId = null;
     this.suppressClickUntilMs = 0;
 
     this.handlePointerDown = (event) => this.onPointerDown(event);
@@ -100,8 +108,8 @@ export class PageSwipeNavigationManager {
     this.stage.removeEventListener('touchend', this.handleTouchEnd, true);
     this.stage.removeEventListener('touchcancel', this.handleTouchCancel, true);
     this.stage.removeEventListener('click', this.handleClick, true);
-    this.stage = null;
     this.resetGesture();
+    this.stage = null;
   }
 
   setPageOrder(pageOrder = []) {
@@ -119,10 +127,6 @@ export class PageSwipeNavigationManager {
     }
 
     this.clearClickSuppression();
-
-    if (this.shouldUseTouchEventsForTouchPointers()) {
-      return;
-    }
 
     this.startGesture(event, {
       id: event.pointerId,
@@ -150,7 +154,7 @@ export class PageSwipeNavigationManager {
   onTouchStart(event) {
     const touch = event.touches?.[0];
 
-    if (!touch) {
+    if (!touch || this.gesture) {
       return;
     }
 
@@ -207,7 +211,10 @@ export class PageSwipeNavigationManager {
       lastX: point.clientX,
       lastY: point.clientY,
       isHorizontal: false,
+      isVertical: false,
     };
+
+    this.capturePointer(source, id);
   }
 
   moveGesture(point, originalEvent = point) {
@@ -221,6 +228,21 @@ export class PageSwipeNavigationManager {
     const absX = Math.abs(this.gesture.lastX - this.gesture.startX);
     const absY = Math.abs(this.gesture.lastY - this.gesture.startY);
 
+    if (
+      !this.gesture.isHorizontal &&
+      !this.gesture.isVertical &&
+      absY >= this.axisLockPx &&
+      absY > absX
+    ) {
+      this.gesture.isVertical = true;
+      this.clearSwipeFeedback();
+      return;
+    }
+
+    if (this.gesture.isVertical) {
+      return;
+    }
+
     if (!this.gesture.isHorizontal && absX >= this.axisLockPx && absX > absY) {
       this.gesture.isHorizontal = true;
     }
@@ -228,6 +250,10 @@ export class PageSwipeNavigationManager {
     if (this.gesture.isHorizontal && originalEvent.cancelable) {
       originalEvent.preventDefault();
       originalEvent.stopPropagation?.();
+    }
+
+    if (this.gesture.isHorizontal) {
+      this.updateSwipeFeedback(this.gesture.lastX - this.gesture.startX);
     }
   }
 
@@ -240,8 +266,15 @@ export class PageSwipeNavigationManager {
     const deltaY = point.clientY - this.gesture.startY;
     const absX = Math.abs(deltaX);
     const absY = Math.abs(deltaY);
+    const isSwipe =
+      !this.gesture.isVertical &&
+      (this.gesture.isHorizontal || absX >= this.axisLockPx) &&
+      absX >= this.getSwipeThreshold() &&
+      absX > absY * SWIPE_COMMIT_AXIS_RATIO;
 
-    if (absX >= this.getSwipeThreshold() && absX > absY * 1.4) {
+    this.resetGesture();
+
+    if (isSwipe) {
       if (originalEvent.cancelable) {
         originalEvent.preventDefault();
       }
@@ -250,19 +283,10 @@ export class PageSwipeNavigationManager {
       this.suppressClickUntilMs = Date.now() + 450;
       this.showAdjacentPage(deltaX < 0 ? 1 : -1);
     }
-
-    this.resetGesture();
   }
 
   showAdjacentPage(offset) {
-    const currentPageId = this.getCurrentPageId?.();
-    const currentIndex = this.pageOrder.indexOf(currentPageId);
-
-    if (currentIndex === -1) {
-      return;
-    }
-
-    const nextPageId = this.pageOrder[currentIndex + offset];
+    const nextPageId = this.getAdjacentPageId(offset);
 
     if (!nextPageId) {
       return;
@@ -274,6 +298,17 @@ export class PageSwipeNavigationManager {
   getSwipeThreshold() {
     const stageWidth = this.stage?.clientWidth || 0;
     return Math.max(this.swipeThresholdPx, Math.min(96, stageWidth * 0.14));
+  }
+
+  getAdjacentPageId(offset) {
+    const currentPageId = this.getCurrentPageId?.();
+    const currentIndex = this.pageOrder.indexOf(currentPageId);
+
+    if (currentIndex === -1) {
+      return null;
+    }
+
+    return this.pageOrder[currentIndex + offset] ?? null;
   }
 
   isMatchingPointer(event) {
@@ -301,12 +336,68 @@ export class PageSwipeNavigationManager {
     return Boolean(this.stage?.querySelector(OPEN_POPUP_SELECTOR));
   }
 
-  shouldUseTouchEventsForTouchPointers() {
-    return typeof window.TouchEvent === 'function';
+  updateSwipeFeedback(deltaX) {
+    const offset = deltaX < 0 ? 1 : -1;
+    const targetPageId = this.getAdjacentPageId(offset);
+    const resistance = targetPageId ? SWIPE_FEEDBACK_RESISTANCE : SWIPE_EDGE_FEEDBACK_RESISTANCE;
+    const feedbackOffset = Math.max(
+      -SWIPE_FEEDBACK_MAX_PX,
+      Math.min(SWIPE_FEEDBACK_MAX_PX, deltaX * resistance),
+    );
+
+    if (this.stage?.dataset) {
+      this.stage.dataset.pageSwipeActive = 'true';
+    }
+    this.stage?.style?.setProperty('--page-swipe-offset', `${feedbackOffset.toFixed(2)}px`);
+    this.setSwipeTarget(targetPageId);
+  }
+
+  setSwipeTarget(pageId) {
+    if (this.swipeTargetPageId === pageId) {
+      return;
+    }
+
+    this.swipeTargetPageId = pageId;
+    this.onSwipeTargetChange?.(pageId);
+  }
+
+  clearSwipeFeedback() {
+    if (this.stage?.dataset) {
+      delete this.stage.dataset.pageSwipeActive;
+    }
+
+    this.stage?.style?.removeProperty('--page-swipe-offset');
+    this.setSwipeTarget(null);
+  }
+
+  capturePointer(source, id) {
+    if (source !== 'pointer' || id === undefined) {
+      return;
+    }
+
+    try {
+      this.stage?.setPointerCapture?.(id);
+    } catch {
+      // Some WebViews expose pointer capture but reject it for synthetic or stale ids.
+    }
+  }
+
+  releasePointer() {
+    if (this.gesture?.source !== 'pointer' || this.gesture.id === undefined) {
+      return;
+    }
+
+    try {
+      this.stage?.releasePointerCapture?.(this.gesture.id);
+    } catch {
+      // Pointer capture may already be gone after cancel/up.
+    }
   }
 
   resetGesture() {
+    this.releasePointer();
     this.gesture = null;
+    this.clearSwipeFeedback();
   }
 
   clearClickSuppression() {

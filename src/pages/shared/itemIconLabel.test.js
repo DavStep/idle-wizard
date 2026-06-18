@@ -2,7 +2,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { appendTextWithItemIcons, setItemIconLabel } from './itemIconLabel.js';
+import {
+  appendTextWithItemIcons,
+  setItemIconLabel,
+  setTextWithItemIcons,
+} from './itemIconLabel.js';
 
 describe('item icon labels', () => {
   it('marks potion labels with their potion icon while preserving text', () => {
@@ -71,5 +75,16 @@ describe('item icon labels', () => {
 
     expect(element.textContent).toBe('potions');
     expect(element.querySelector('.style-potion-label')).toBeNull();
+  });
+
+  it('keeps quantity prefixes before herb icons', () => {
+    const element = document.createElement('span');
+
+    setTextWithItemIcons(element, '- 3 sage');
+
+    expect(element.textContent).toBe('- 3 sage');
+    expect(element.childNodes[0]?.textContent).toBe('- 3 ');
+    expect(element.childNodes[1]?.classList.contains('style-herb-label')).toBe(true);
+    expect(element.querySelector('.style-herb-label__icon')).not.toBeNull();
   });
 });

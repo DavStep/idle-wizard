@@ -50,13 +50,23 @@ const FEEDBACK_KIND_CONFIG = {
 };
 
 export class TopPanelSettingsManager {
-  constructor({ playerFacade, gameplayFacade, feedbackFacade } = {}) {
+  constructor({
+    playerFacade,
+    gameplayFacade,
+    feedbackFacade,
+    hapticsFacade,
+    soundSettingsFacade,
+  } = {}) {
     this.playerFacade = playerFacade;
     this.gameplayFacade = gameplayFacade;
     this.feedbackFacade = feedbackFacade;
+    this.hapticsFacade = hapticsFacade;
+    this.soundSettingsFacade = soundSettingsFacade;
     this.refs = null;
     this.unsubscribe = null;
     this.gameplayUnsubscribe = null;
+    this.hapticsUnsubscribe = null;
+    this.soundSettingsUnsubscribe = null;
     this.playerSnapshot = null;
     this.gameplaySnapshot = null;
     this.visible = false;
@@ -169,6 +179,9 @@ export class TopPanelSettingsManager {
     };
     this.handleSettingsTabClick = (event) =>
       this.selectSettingsTab(event.currentTarget.dataset.settingsTab);
+    this.handleHapticsToggleClick = () => this.toggleHaptics();
+    this.handleMusicToggleClick = () => this.toggleMusic();
+    this.handleSfxToggleClick = () => this.toggleSfx();
     this.handleFeedbackOpenClick = (event) =>
       this.selectFeedbackKind(event.currentTarget.dataset.feedbackKind);
     this.handleFeedbackSubmit = (event) => {
@@ -211,6 +224,9 @@ export class TopPanelSettingsManager {
     for (const button of this.refs.settingsTabButtons) {
       button.addEventListener('click', this.handleSettingsTabClick);
     }
+    this.refs.hapticsToggleButton.addEventListener('click', this.handleHapticsToggleClick);
+    this.refs.musicToggleButton.addEventListener('click', this.handleMusicToggleClick);
+    this.refs.sfxToggleButton.addEventListener('click', this.handleSfxToggleClick);
     for (const button of this.refs.feedbackOpenButtons) {
       button.addEventListener('click', this.handleFeedbackOpenClick);
     }
@@ -282,6 +298,24 @@ export class TopPanelSettingsManager {
       });
     }
 
+    if (this.hapticsFacade) {
+      this.hapticsUnsubscribe = this.hapticsFacade.subscribe((snapshot) =>
+        this.renderHapticsSnapshot(snapshot),
+      );
+      this.renderHapticsSnapshot(this.hapticsFacade.getSnapshot());
+    } else {
+      this.renderHapticsSnapshot({ enabled: true });
+    }
+
+    if (this.soundSettingsFacade) {
+      this.soundSettingsUnsubscribe = this.soundSettingsFacade.subscribe((snapshot) =>
+        this.renderSoundSettingsSnapshot(snapshot),
+      );
+      this.renderSoundSettingsSnapshot(this.soundSettingsFacade.getSnapshot());
+    } else {
+      this.renderSoundSettingsSnapshot({ musicEnabled: true, sfxEnabled: true });
+    }
+
     this.applyVisibility();
   }
 
@@ -290,6 +324,10 @@ export class TopPanelSettingsManager {
     this.unsubscribe = null;
     this.gameplayUnsubscribe?.();
     this.gameplayUnsubscribe = null;
+    this.hapticsUnsubscribe?.();
+    this.hapticsUnsubscribe = null;
+    this.soundSettingsUnsubscribe?.();
+    this.soundSettingsUnsubscribe = null;
 
     if (this.refs) {
       this.refs.usernameButton.removeEventListener('click', this.handleUsernameClick);
@@ -312,6 +350,12 @@ export class TopPanelSettingsManager {
       for (const button of this.refs.settingsTabButtons) {
         button.removeEventListener('click', this.handleSettingsTabClick);
       }
+      this.refs.hapticsToggleButton.removeEventListener(
+        'click',
+        this.handleHapticsToggleClick,
+      );
+      this.refs.musicToggleButton.removeEventListener('click', this.handleMusicToggleClick);
+      this.refs.sfxToggleButton.removeEventListener('click', this.handleSfxToggleClick);
       for (const button of this.refs.feedbackOpenButtons) {
         button.removeEventListener('click', this.handleFeedbackOpenClick);
       }
@@ -540,6 +584,34 @@ export class TopPanelSettingsManager {
 
     this.gameplaySnapshot = snapshot;
     this.renderVisualSettingPrices();
+  }
+
+  renderHapticsSnapshot(snapshot = {}) {
+    if (!this.refs?.hapticsToggleButton) {
+      return;
+    }
+
+    this.renderToggleButton(this.refs.hapticsToggleButton, 'haptics', snapshot.enabled !== false);
+  }
+
+  renderSoundSettingsSnapshot(snapshot = {}) {
+    if (!this.refs?.musicToggleButton || !this.refs?.sfxToggleButton) {
+      return;
+    }
+
+    this.renderToggleButton(
+      this.refs.musicToggleButton,
+      'music',
+      snapshot.musicEnabled !== false,
+    );
+    this.renderToggleButton(this.refs.sfxToggleButton, 'sfx', snapshot.sfxEnabled !== false);
+  }
+
+  renderToggleButton(button, name, enabled) {
+    const label = enabled ? 'on' : 'off';
+    button.textContent = label;
+    button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    button.setAttribute('aria-label', `${name} ${label}`);
   }
 
   applyThemeSelection(theme) {
@@ -835,6 +907,18 @@ export class TopPanelSettingsManager {
 
     this.settingsTab = nextTab;
     this.applyMode();
+  }
+
+  toggleHaptics() {
+    this.hapticsFacade?.toggleEnabled?.();
+  }
+
+  toggleMusic() {
+    this.soundSettingsFacade?.toggleMusicEnabled?.();
+  }
+
+  toggleSfx() {
+    this.soundSettingsFacade?.toggleSfxEnabled?.();
   }
 
   selectFeedbackKind(feedbackKind) {

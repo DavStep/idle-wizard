@@ -104,8 +104,6 @@ export class ShopShelfEntityManager {
 
     const slotEntityId = this.getSlotEntityId(slotNumber);
     ShopShelfSlot.sellItemTypeId[slotEntityId] = itemTypeId;
-    ShopShelfSlot.sellProgressSeconds[slotEntityId] = 0;
-    this.setSellProgressSeconds(0);
     return true;
   }
 

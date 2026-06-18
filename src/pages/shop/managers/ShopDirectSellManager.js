@@ -458,7 +458,9 @@ export class ShopDirectSellManager {
     const quantity = this.clampSellQuantity(this.sellQuantity, item);
 
     if (!item || !quantity) {
-      this.statusText = 'bad amount';
+      this.statusText = item
+        ? this.getSellFailureText(this.getNoSellReason(item), null, item)
+        : 'bad amount';
       this.renderDetails();
       return;
     }
@@ -466,7 +468,7 @@ export class ShopDirectSellManager {
     const quote = this.getSellQuote(item, quantity);
 
     if (!quote.ok) {
-      this.statusText = this.getSellFailureText(quote.reason);
+      this.statusText = this.getSellFailureText(quote.reason, quote, item);
       this.renderDetails();
       return;
     }
@@ -487,7 +489,9 @@ export class ShopDirectSellManager {
         return;
       }
 
-      this.statusText = overrideResult.message ?? this.getSellFailureText(overrideResult.reason);
+      this.statusText =
+        overrideResult.message ??
+        this.getSellFailureText(overrideResult.reason, overrideResult, item);
       this.render();
       return;
     }
@@ -505,7 +509,7 @@ export class ShopDirectSellManager {
       return;
     }
 
-    this.statusText = this.getSellFailureText(result.reason);
+    this.statusText = this.getSellFailureText(result.reason, result, item);
     this.render();
   }
 
@@ -564,7 +568,7 @@ export class ShopDirectSellManager {
     delete refs.button.dataset.tutorialId;
     delete refs.label.dataset.tutorialId;
     refs.targetLabel.dataset.tutorialId = `shop:directSell:${item.key}`;
-    refs.targetLabel.textContent = `${display.label} (${display.quantity})`;
+    refs.targetLabel.textContent = `${display.label} x${display.quantity}`;
     setItemIconLabel(refs.targetLabel, item.kind, item.key);
     setResourceColor(refs.targetLabel, item.kind);
     setResourceIconText(refs.value, this.formatSellGold(this.getDisplayPriceGold(item)));
@@ -597,10 +601,16 @@ export class ShopDirectSellManager {
       return;
     }
 
-    const maxQuantity = Math.max(1, this.getMaxSellQuantity(item));
-    const quantity = this.clampSellQuantity(this.sellQuantity, item) ?? 1;
-    const displayQuote = this.getDisplaySellQuote(item, quantity);
-    const quote = this.getSellQuote(item, quantity);
+    const maxQuantity = this.getMaxSellQuantity(item);
+    const quantity = maxQuantity > 0
+      ? this.clampSellQuantity(this.sellQuantity, item) ?? 1
+      : 0;
+    const displayQuote = quantity > 0
+      ? this.getDisplaySellQuote(item, quantity)
+      : { ok: false, reason: this.getNoSellReason(item) };
+    const quote = quantity > 0
+      ? this.getSellQuote(item, quantity)
+      : { ok: false, reason: this.getNoSellReason(item), need: this.getSellNeed(item) };
     const selling = this.sellingItemTypeId === item.itemTypeId;
     const canSell = quote.ok && !selling;
     const display = getItemDisplay(this.lastSnapshot, item, item.quantity);
@@ -610,8 +620,14 @@ export class ShopDirectSellManager {
     this.refs.selectedItem.label.setAttribute('aria-disabled', 'false');
     this.refs.selectedItem.label.setAttribute('aria-pressed', 'true');
     this.refs.selectedItem.label.setAttribute('aria-label', `deselect ${display.label}`);
+    this.refs.quantityField.input.min = maxQuantity > 0 ? '1' : '0';
     this.refs.quantityField.input.max = String(maxQuantity);
     this.refs.quantityField.setValue(quantity);
+    this.refs.quantityField.valueButton.disabled = maxQuantity <= 0 || selling;
+    this.refs.quantityField.valueButton.setAttribute(
+      'aria-disabled',
+      this.refs.quantityField.valueButton.disabled ? 'true' : 'false',
+    );
 
     for (const [delta, button] of this.refs.quantityField.stepButtons) {
       const nextQuantity = this.clampSteppedSellQuantity(quantity + delta, item);
@@ -620,15 +636,12 @@ export class ShopDirectSellManager {
       button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     }
 
-    this.refs.selectedItem.label.textContent = `${display.label} (${display.quantity})`;
+    this.refs.selectedItem.label.textContent = `${display.label} x${display.quantity}`;
     setItemIconLabel(this.refs.selectedItem.label, item.kind, item.key);
     setResourceColor(this.refs.selectedItem.label, item.kind);
 
-    setResourceIconText(
-      this.refs.selectedItem.value,
-      this.formatSellGold(this.getDisplayPriceGold(item)),
-    );
-    setResourceColor(this.refs.selectedItem.value, 'gold');
+    this.refs.selectedItem.value.textContent = this.formatDemandText(item);
+    setResourceColor(this.refs.selectedItem.value, null);
 
     const totalText = displayQuote.ok
       ? formatGoldPriceText(displayQuote.totalPriceGold)
@@ -647,7 +660,7 @@ export class ShopDirectSellManager {
 
     const status =
       this.statusText ||
-      (!quote.ok ? this.getSellFailureText(quote.reason) : '');
+      (!quote.ok ? this.getSellFailureText(quote.reason, quote, item) : '');
     this.renderStatus(status);
   }
 
@@ -808,7 +821,39 @@ export class ShopDirectSellManager {
 
   getMaxSellQuantity(item) {
     const quantity = Number.isFinite(item?.quantity) ? Math.floor(item.quantity) : 0;
-    return Math.min(quantity, 10_000);
+    const sellNeed = this.getSellNeed(item);
+    return Math.min(quantity, sellNeed ?? quantity, 10_000);
+  }
+
+  getNoSellReason(item) {
+    const quantity = Number.isFinite(item?.quantity) ? Math.floor(item.quantity) : 0;
+
+    if (quantity <= 0) {
+      return 'not_enough_items';
+    }
+
+    const sellNeed = this.getSellNeed(item);
+
+    if (sellNeed !== null && sellNeed <= 0) {
+      return 'demand_too_low';
+    }
+
+    return 'invalid_quantity';
+  }
+
+  getSellNeed(item) {
+    const sellNeed = Math.floor(Number(item?.sellNeed));
+
+    if (!Number.isInteger(sellNeed) || sellNeed < 0) {
+      return null;
+    }
+
+    return sellNeed;
+  }
+
+  formatDemandText(item) {
+    const sellNeed = this.getSellNeed(item);
+    return sellNeed === null ? 'demand ?' : `demand ${sellNeed}`;
   }
 
   getFastSellGold(item) {
@@ -867,13 +912,14 @@ export class ShopDirectSellManager {
     return formatGoldPriceText(sellGold);
   }
 
-  getSellFailureText(reason) {
+  getSellFailureText(reason, quote = null, item = null) {
     if (reason === 'not_enough_items') {
       return 'not enough items';
     }
 
     if (reason === 'demand_too_low') {
-      return 'demand too low';
+      const need = Math.floor(Number(quote?.need ?? this.getSellNeed(item)));
+      return Number.isInteger(need) && need >= 0 ? `demand ${need}` : 'demand too low';
     }
 
     if (reason === 'invalid_quantity') {

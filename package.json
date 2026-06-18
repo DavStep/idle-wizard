@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -47,6 +47,7 @@
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.4.0",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.4.0",
     "@esotericsoftware/spine-pixi-v8": "^4.3.7",
     "@fontsource/lexend": "^5.2.11",

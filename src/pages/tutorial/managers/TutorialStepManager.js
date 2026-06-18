@@ -9,6 +9,8 @@ const MANA_TONIC_KEY = 'manaTonic';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
 const DIRECT_SELL_POPUP_CLASS = 'shop-page__direct-sell-popup';
 const MANA_TONIC_SAGE_COUNT = 3;
+const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
+const MANA_READOUT_TARGET_ID = 'top:mana';
 const LEVEL_ONE_SEED_TASK_ID = 'level1-sage-seeds';
 const LEVEL_ONE_GOLD_TARGET = 10;
 const TUTORIAL_SELL_GOLD_EACH = LEVEL_ONE_GOLD_TARGET;
@@ -141,9 +143,9 @@ export const TUTORIAL_STEPS = [
     id: 'intro-mana-sphere',
     kind: 'prompt',
     pageId: 'workshop',
-    targetId: 'workshop:manaSphere',
+    targetId: MANA_READOUT_TARGET_ID,
     revealTokens: REVEAL_MANA,
-    text: 'this is the mana sphere. mana fills over time, up to the cap shown here.',
+    text: 'this is your mana. it fills over time, up to the cap shown here.',
     advanceOnClick: true,
     showPointer: false,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
@@ -233,7 +235,7 @@ export const TUTORIAL_STEPS = [
         return `task:${task.taskId}`;
       }
 
-      return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+      return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
     },
     getHintText: ({ dom, snapshot }) => {
       if (!dom.isTasksExpanded()) {
@@ -282,7 +284,7 @@ export const TUTORIAL_STEPS = [
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'summon one seed to sell',
     getTargetId: ({ snapshot }) =>
-      snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere',
+      snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID,
     getHintText: ({ snapshot }) =>
       snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana',
     getProgress: ({ snapshot }) => ({
@@ -393,7 +395,9 @@ export const TUTORIAL_STEPS = [
           return 'page:workshop';
         }
 
-        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+        return snapshot?.seedSummoning?.canSummon
+          ? 'workshop:summonSeed'
+          : MANA_READOUT_TARGET_ID;
       }
 
       if (currentPageId !== 'shop') {
@@ -510,7 +514,9 @@ export const TUTORIAL_STEPS = [
           return 'page:workshop';
         }
 
-        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+        return snapshot?.seedSummoning?.canSummon
+          ? 'workshop:summonSeed'
+          : MANA_READOUT_TARGET_ID;
       }
 
       if (isGrowSageWaitState(snapshot)) {
@@ -981,14 +987,25 @@ export const TUTORIAL_STEPS = [
       }
 
       const brewing = getPrimaryBrewingState(snapshot);
-      const activeAction = getActiveBrewingAction(brewing);
+      const activeAction = isActiveManaTonicBrew(snapshot)
+        ? getActiveBrewingAction(brewing)
+        : null;
+      const recoveryAction = brewing?.activeBrew ? getActiveBrewingAction(brewing) : null;
 
       if (activeAction) {
         return 'brewing:action';
       }
 
-      if (brewing?.ingredients?.length > 0) {
-        return brewing.canBrew ? 'brewing:action' : null;
+      if (brewing?.activeBrew) {
+        return recoveryAction ? 'brewing:action' : null;
+      }
+
+      if (hasExtraManaTonicSage(snapshot)) {
+        return MANA_TONIC_EXTRA_SAGE_TARGET_ID;
+      }
+
+      if (isManaTonicCauldronReady(snapshot)) {
+        return 'brewing:action';
       }
 
       return canAddManaTonicSage(snapshot) ? `brewing:herb:${SAGE_HERB_KEY}` : null;
@@ -1003,7 +1020,9 @@ export const TUTORIAL_STEPS = [
       }
 
       const brewing = getPrimaryBrewingState(snapshot);
-      const activeAction = getActiveBrewingAction(brewing);
+      const activeAction = isActiveManaTonicBrew(snapshot)
+        ? getActiveBrewingAction(brewing)
+        : null;
 
       if (activeAction === 'collect') {
         return 'collect mana tonic';
@@ -1013,8 +1032,30 @@ export const TUTORIAL_STEPS = [
         return 'bottle mana tonic';
       }
 
-      if (brewing?.ingredients?.length > 0) {
-        return brewing.canBrew ? 'brew mana tonic' : 'wait for ingredients';
+      if (brewing?.activeBrew) {
+        const recoveryAction = getActiveBrewingAction(brewing);
+
+        if (recoveryAction === 'collect') {
+          return 'collect current brew';
+        }
+
+        if (recoveryAction === 'bottle') {
+          return 'bottle current brew';
+        }
+
+        return 'wait for current brew';
+      }
+
+      if (hasExtraManaTonicSage(snapshot)) {
+        return 'remove extra sage';
+      }
+
+      if (isManaTonicCauldronReady(snapshot)) {
+        return 'brew mana tonic';
+      }
+
+      if (getManaTonicCauldronFillCount(snapshot) > 0) {
+        return 'add sage. recipes care about order';
       }
 
       return 'tap sage to fill cauldron. recipes care about order';
@@ -1057,6 +1098,10 @@ export const TUTORIAL_STEPS = [
         return 'brewing:action';
       }
 
+      if (hasExtraManaTonicSage(snapshot)) {
+        return MANA_TONIC_EXTRA_SAGE_TARGET_ID;
+      }
+
       return canAddManaTonicSage(snapshot) ? `brewing:herb:${SAGE_HERB_KEY}` : null;
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
@@ -1093,6 +1138,10 @@ export const TUTORIAL_STEPS = [
         return 'brew again';
       }
 
+      if (hasExtraManaTonicSage(snapshot)) {
+        return 'remove extra sage';
+      }
+
       const progress = getManaTonicCauldronFillCount(snapshot);
 
       return progress > 0
@@ -1126,11 +1175,12 @@ export const TUTORIAL_STEPS = [
     id: 'find-theme-settings',
     kind: 'objective',
     cueMode: 'passive',
-    objectiveText: 'you can change themes in settings. open settings, then use the theme tab.',
+    objectiveText:
+      'you can change themes in settings. open settings, then use the configurations tab.',
     getTargetId: ({ dom }) =>
       dom?.isSettingsThemeTabVisible?.() ? 'top:settings:theme-tab' : 'top:username',
     getHintText: ({ dom }) =>
-      dom?.isSettingsThemeTabVisible?.() ? 'theme tab' : 'open settings',
+      dom?.isSettingsThemeTabVisible?.() ? 'configurations tab' : 'open settings',
     getReminderKey: () => 'level-five-theme-settings',
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 5,
     isComplete: ({ dom, snapshot }) =>
@@ -1798,7 +1848,7 @@ function getSeedTaskTargetId({ currentPageId, dom, snapshot, itemKey, researchId
     return 'page:workshop';
   }
 
-  return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+  return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
 }
 
 function getSeedTaskHintText({ currentPageId, dom, snapshot, itemKey, researchId = null }) {
@@ -1869,7 +1919,7 @@ function getHerbObtainTargetId({ currentPageId, dom, snapshot, seedKey, research
       return 'page:workshop';
     }
 
-    return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : 'workshop:manaSphere';
+    return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
   }
 
   if (currentPageId !== 'garden') {
@@ -2055,10 +2105,18 @@ function isActiveManaTonicBrew(snapshot) {
 }
 
 function isManaTonicCauldronReady(snapshot) {
+  const brewing = getPrimaryBrewingState(snapshot);
+
   return (
     getManaTonicCauldronFillCount(snapshot) >= MANA_TONIC_SAGE_COUNT &&
-    Boolean(getPrimaryBrewingState(snapshot)?.canBrew)
+    Boolean(brewing?.canBrew) &&
+    brewing?.match?.key === MANA_TONIC_KEY &&
+    brewing?.match?.unlocked === true
   );
+}
+
+function hasExtraManaTonicSage(snapshot) {
+  return getManaTonicCauldronSageCount(snapshot) > MANA_TONIC_SAGE_COUNT;
 }
 
 function canAddManaTonicSage(snapshot) {
@@ -2075,11 +2133,12 @@ function canAddManaTonicSage(snapshot) {
 }
 
 function getManaTonicCauldronFillCount(snapshot) {
-  const ingredients = getPrimaryBrewingState(snapshot)?.ingredients ?? [];
-  const stagedSageCount = ingredients.filter((ingredient) => ingredient?.key === SAGE_HERB_KEY)
-    .length;
+  return Math.min(MANA_TONIC_SAGE_COUNT, getManaTonicCauldronSageCount(snapshot));
+}
 
-  return Math.min(MANA_TONIC_SAGE_COUNT, stagedSageCount);
+function getManaTonicCauldronSageCount(snapshot) {
+  const ingredients = getPrimaryBrewingState(snapshot)?.ingredients ?? [];
+  return ingredients.filter((ingredient) => ingredient?.key === SAGE_HERB_KEY).length;
 }
 
 function getCurrentLevel(snapshot) {

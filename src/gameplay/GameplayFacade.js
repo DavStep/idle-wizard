@@ -26,7 +26,7 @@ export class GameplayFacade {
   static explain =
     'Runs the player resources and actions: mana fills up, actions spend it, and owned things change.';
 
-  constructor({ persistenceStorage, persistenceNow } = {}) {
+  constructor({ persistenceStorage, persistenceNow, shopNow } = {}) {
     this.stateObserverManager = new GameplayStateObserverManager();
     this.rewardEventManager = new GameplayRewardEventManager();
     this.itemsFacade = new ItemsFacade();
@@ -82,6 +82,7 @@ export class GameplayFacade {
       researchFacade: this.researchFacade,
       getReservedItemQuantity: (itemTypeId) => this.getReservedShopItemQuantity(itemTypeId),
       onItemSold: (event) => this.handleItemSold(event),
+      now: shopNow,
     });
     this.gardenFacade = new GardenFacade({
       goldFacade: this.goldFacade,

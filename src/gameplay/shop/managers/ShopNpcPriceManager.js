@@ -1,4 +1,5 @@
 import { normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
+import { getNpcMarketPriceState } from './npcMarketPricing.js';
 
 export class ShopNpcPriceManager {
   constructor({ npcMarketFacade = null } = {}) {
@@ -10,29 +11,31 @@ export class ShopNpcPriceManager {
   }
 
   getNpcBuyPriceGold(item) {
-    const dynamicPrice = this.npcMarketFacade?.getNpcBuyPriceGold?.(item.key);
-    const priceGold = normalizePositiveGoldPrice(dynamicPrice);
+    const priceState = this.getNpcPrice(item);
+    const priceGold = normalizePositiveGoldPrice(priceState?.npcBuyPriceGold);
 
     if (priceGold !== null) {
       return priceGold;
     }
 
-    return null;
+    return normalizePositiveGoldPrice(this.npcMarketFacade?.getNpcBuyPriceGold?.(item.key));
   }
 
   getNpcSellPriceGold(item) {
-    const dynamicPrice = this.npcMarketFacade?.getNpcSellPriceGold?.(item.key);
-    const priceGold = normalizePositiveGoldPrice(dynamicPrice);
+    const priceState = this.getNpcPrice(item);
+    const priceGold = normalizePositiveGoldPrice(priceState?.npcSellPriceGold);
 
     if (priceGold !== null) {
       return priceGold;
     }
 
-    return null;
+    return normalizePositiveGoldPrice(this.npcMarketFacade?.getNpcSellPriceGold?.(item.key));
   }
 
   getNpcPrice(item) {
-    return this.npcMarketFacade?.getPrice?.(item.key) ?? null;
+    return getNpcMarketPriceState(
+      this.npcMarketFacade?.getPrice?.(item.key) ?? null,
+    );
   }
 
   getNpcStock(item) {
@@ -48,7 +51,9 @@ export class ShopNpcPriceManager {
   }
 
   getNpcNeed(item) {
-    const npcNeed = this.npcMarketFacade?.getNpcNeed?.(item.key);
+    const npcNeed =
+      this.getNpcPrice(item)?.npcNeed ??
+      this.npcMarketFacade?.getNpcNeed?.(item.key);
 
     if (Number.isFinite(npcNeed) && npcNeed >= 0) {
       return Math.floor(npcNeed);

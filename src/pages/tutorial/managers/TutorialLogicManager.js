@@ -1,6 +1,8 @@
 import { TutorialReminderManager } from './TutorialReminderManager.js';
 import { TutorialStepManager } from './TutorialStepManager.js';
 
+const MANA_READOUT_TARGET_ID = 'top:mana';
+
 export class TutorialLogicManager {
   constructor({
     progressManager,
@@ -226,7 +228,7 @@ export class TutorialLogicManager {
   }
 
   shouldShowPointer(step) {
-    return step?.showPointer !== false && step?.targetId !== 'workshop:manaSphere';
+    return step?.showPointer !== false && step?.targetId !== MANA_READOUT_TARGET_ID;
   }
 
   shouldAutoOpen(step) {

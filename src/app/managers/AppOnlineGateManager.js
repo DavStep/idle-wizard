@@ -1,5 +1,6 @@
 export class AppOnlineGateManager {
-  constructor() {
+  constructor({ reload = () => globalThis.location?.reload?.() } = {}) {
+    this.reload = reload;
     this.root = null;
     this.refs = null;
   }
@@ -40,8 +41,13 @@ export class AppOnlineGateManager {
     const progressText = document.createElement('span');
     progressText.className = 'style-progress__text app-online-gate__progress-text';
 
+    const actionButton = document.createElement('button');
+    actionButton.type = 'button';
+    actionButton.className = 'app-online-gate__action style-button';
+    actionButton.hidden = true;
+
     progress.append(progressFill, progressText);
-    dialog.append(title, message, progress);
+    dialog.append(title, message, progress, actionButton);
     root.append(dialog);
     stage.append(root);
 
@@ -50,6 +56,7 @@ export class AppOnlineGateManager {
       title,
       message,
       progress,
+      actionButton,
     };
 
     return root;
@@ -83,6 +90,8 @@ export class AppOnlineGateManager {
       title: 'server required',
       message,
       progress: message === 'connecting to server...',
+      actionLabel: reason === 'account_in_use' ? 'play here' : '',
+      onAction: reason === 'account_in_use' ? () => this.reload() : null,
     });
   }
 
@@ -113,7 +122,7 @@ export class AppOnlineGateManager {
     this.refs = null;
   }
 
-  show({ title, message, progress = false }) {
+  show({ title, message, progress = false, actionLabel = '', onAction = null }) {
     if (!this.root || !this.refs) {
       return;
     }
@@ -129,7 +138,26 @@ export class AppOnlineGateManager {
       this.refs.progress.removeAttribute('aria-valuetext');
     }
 
+    this.configureAction(actionLabel, onAction);
     this.root.hidden = false;
+  }
+
+  configureAction(label, handler) {
+    const button = this.refs?.actionButton;
+    if (!button) {
+      return;
+    }
+
+    if (label && typeof handler === 'function') {
+      this.setText(button, label);
+      button.onclick = handler;
+      button.hidden = false;
+      return;
+    }
+
+    button.onclick = null;
+    button.hidden = true;
+    this.setText(button, '');
   }
 
   setText(element, text) {

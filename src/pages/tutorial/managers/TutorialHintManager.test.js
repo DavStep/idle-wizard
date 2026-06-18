@@ -415,7 +415,7 @@ describe('TutorialHintManager', () => {
       expect(button?.hasAttribute('data-speaking')).toBe(false);
 
       button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-      vi.advanceTimersByTime(230);
+      vi.advanceTimersByTime(260);
       expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
 
       button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -457,7 +457,7 @@ describe('TutorialHintManager', () => {
       expect(text?.textContent).toBe('ab');
 
       button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-      vi.advanceTimersByTime(230);
+      vi.advanceTimersByTime(260);
       button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
       expect(text?.textContent).toBe('');
@@ -470,7 +470,7 @@ describe('TutorialHintManager', () => {
     }
   });
 
-  it('sizes the lesson for final copy before the typewriter reveals it', () => {
+  it('keeps the lesson width fixed while sizing height for final copy', () => {
     vi.useFakeTimers();
 
     try {
@@ -518,7 +518,8 @@ describe('TutorialHintManager', () => {
       expect(text?.getAttribute('aria-label')).toBe(
         'summon seeds and sell them for level-up gold',
       );
-      expect(longSize.width).toBeGreaterThanOrEqual(shortSize.width);
+      expect(shortSize.width).toBe(190);
+      expect(longSize.width).toBe(shortSize.width);
       expect(longSize.height).toBeGreaterThan(shortSize.height);
     } finally {
       vi.useRealTimers();
@@ -618,7 +619,7 @@ describe('TutorialHintManager', () => {
       expect(lesson?.classList.contains('is-hiding')).toBe(true);
       expect(button?.classList.contains('is-collapsing')).toBe(true);
 
-      vi.advanceTimersByTime(230);
+      vi.advanceTimersByTime(260);
 
       expect(lesson?.hidden).toBe(true);
       expect(lesson?.classList.contains('is-hiding')).toBe(false);
@@ -723,6 +724,94 @@ describe('TutorialHintManager', () => {
 
     nextManager.unmount();
     nextStage.remove();
+  });
+
+  it('cycles Elara drag yells while dragging repeatedly', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+
+    try {
+      const stage = document.createElement('section');
+      const manager = new TutorialHintManager();
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'drag-yell-test',
+        title: 'lesson',
+        text: 'move me',
+        stepLabel: '1/1',
+      });
+
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const dragYell = button?.querySelector('.tutorial-layer__objective-button-drag-yell');
+      const dragOnce = () => {
+        const startLeft = Number.parseFloat(button?.style.left ?? '0');
+        const startTop = Number.parseFloat(button?.style.top ?? '0');
+        const dragStart = {
+          x: (startLeft + 10) * UI_SCALE,
+          y: (startTop + 20) * UI_SCALE,
+        };
+        const dragEnd = {
+          x: dragStart.x + 30 * UI_SCALE,
+          y: dragStart.y - 15 * UI_SCALE,
+        };
+
+        button?.dispatchEvent(
+          createPointerEvent('pointerdown', {
+            clientX: dragStart.x,
+            clientY: dragStart.y,
+          }),
+        );
+        document.dispatchEvent(
+          createPointerEvent('pointermove', {
+            clientX: dragEnd.x,
+            clientY: dragEnd.y,
+          }),
+        );
+
+        const text = dragYell?.textContent;
+
+        document.dispatchEvent(
+          createPointerEvent('pointerup', {
+            clientX: dragEnd.x,
+            clientY: dragEnd.y,
+          }),
+        );
+
+        return text;
+      };
+
+      expect([dragOnce(), dragOnce(), dragOnce(), dragOnce(), dragOnce()]).toEqual([
+        'AAAAAA!!!',
+        'Put me down!',
+        'Let me go!',
+        'Hey, careful!',
+        'AAAAAA!!!',
+      ]);
+
+      manager.unmount();
+      stage.remove();
+    } finally {
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+    }
   });
 
   it('lets Elara trail the gesture during drag, then settle on the saved placement', () => {
@@ -859,6 +948,11 @@ describe('TutorialHintManager', () => {
       return frames.length;
     });
     const cancelAnimationFrame = vi.fn();
+    const flushFrames = (...timestamps) => {
+      timestamps.forEach((timestamp) => {
+        frames.splice(0).forEach((callback) => callback(timestamp));
+      });
+    };
 
     Object.defineProperty(window, 'requestAnimationFrame', {
       configurable: true,
@@ -913,6 +1007,7 @@ describe('TutorialHintManager', () => {
       const lesson = stage.querySelector('.tutorial-layer__lesson');
       const baseButtonTop = Number.parseFloat(button?.style.top ?? '0');
       const baseLessonRect = getLessonRect(lesson);
+      const targetProtectedRect = { left: 92, top: 522, right: 200, bottom: 562 };
 
       manager.guideDragManager.setPlacement({
         buttonLeft: Number.parseFloat(button?.style.left ?? '0'),
@@ -927,16 +1022,43 @@ describe('TutorialHintManager', () => {
         target,
       });
 
-      const movedLessonRect = getLessonRect(lesson);
-
-      expect(overlaps(movedLessonRect, { left: 92, top: 522, right: 200, bottom: 562 })).toBe(
-        false,
-      );
-      expect(Number.parseFloat(button?.style.top ?? '0')).not.toBe(baseButtonTop);
+      expect(Number.parseFloat(button?.style.top ?? '0')).toBe(baseButtonTop);
+      expect(getLessonRect(lesson)).toEqual(baseLessonRect);
       expect(button?.classList.contains('is-auto-moving')).toBe(true);
       expect(lesson?.classList.contains('is-auto-moving')).toBe(true);
+      expect(button?.style.translate).toBe('');
+      expect(lesson?.style.translate).toBe('');
 
-      frames.splice(0).forEach((callback) => callback(0));
+      manager.showLesson({
+        id: 'auto-move-target',
+        title: 'lesson',
+        text: 'look here',
+        stepLabel: '1/1',
+        canShowTarget: true,
+        target,
+      });
+
+      expect(Number.parseFloat(button?.style.top ?? '0')).toBe(baseButtonTop);
+      expect(getLessonRect(lesson)).toEqual(baseLessonRect);
+
+      flushFrames(0, 112);
+
+      expect(Number.parseFloat(button?.style.top ?? '0')).not.toBe(baseButtonTop);
+      expect(getLessonRect(lesson)).not.toEqual(baseLessonRect);
+      expect(button?.style.translate).toBe('');
+      expect(lesson?.style.translate).toBe('');
+
+      flushFrames(225);
+
+      const movedLessonRect = getLessonRect(lesson);
+      const movedButtonTop = Number.parseFloat(button?.style.top ?? '0');
+
+      expect(overlaps(movedLessonRect, targetProtectedRect)).toBe(false);
+      expect(movedButtonTop).not.toBe(baseButtonTop);
+      expect(button?.style.translate).toBe('');
+      expect(lesson?.style.translate).toBe('');
+      expect(button?.classList.contains('is-auto-moving')).toBe(false);
+      expect(lesson?.classList.contains('is-auto-moving')).toBe(false);
 
       manager.showLesson({
         id: 'auto-move-clear',
@@ -946,8 +1068,28 @@ describe('TutorialHintManager', () => {
         canShowTarget: true,
       });
 
+      expect(Number.parseFloat(button?.style.top ?? '0')).toBe(movedButtonTop);
+      expect(getLessonRect(lesson)).toEqual(movedLessonRect);
+      expect(button?.classList.contains('is-auto-moving')).toBe(true);
+      expect(lesson?.classList.contains('is-auto-moving')).toBe(true);
+
+      manager.showLesson({
+        id: 'auto-move-clear',
+        title: 'lesson',
+        text: 'look here',
+        stepLabel: '1/1',
+        canShowTarget: true,
+      });
+
+      expect(Number.parseFloat(button?.style.top ?? '0')).toBe(movedButtonTop);
+      expect(getLessonRect(lesson)).toEqual(movedLessonRect);
+
+      flushFrames(225, 450);
+
       expect(Number.parseFloat(button?.style.top ?? '0')).toBe(baseButtonTop);
       expect(getLessonRect(lesson)).toEqual(baseLessonRect);
+      expect(button?.style.translate).toBe('');
+      expect(lesson?.style.translate).toBe('');
 
       manager.unmount();
       stage.remove();
@@ -1235,7 +1377,7 @@ describe('TutorialHintManager', () => {
       expect(button?.classList.contains('is-collapsing')).toBe(true);
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
 
-      vi.advanceTimersByTime(230);
+      vi.advanceTimersByTime(260);
 
       expect(lesson?.hidden).toBe(true);
       expect(lesson?.classList.contains('is-hiding')).toBe(false);
@@ -1310,6 +1452,48 @@ describe('TutorialHintManager', () => {
     expect(focusRule).toMatch(/\boutline:\s*none;/);
   });
 
+  it('marks Elara as pressing until a tap releases', () => {
+    const stage = document.createElement('section');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'press-test',
+      title: 'lesson',
+      text: 'press me',
+      stepLabel: '1/1',
+    });
+
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const startLeft = Number.parseFloat(button?.style.left ?? '0');
+    const startTop = Number.parseFloat(button?.style.top ?? '0');
+
+    button?.dispatchEvent(
+      createPointerEvent('pointerdown', {
+        clientX: (startLeft + 10) * UI_SCALE,
+        clientY: (startTop + 20) * UI_SCALE,
+      }),
+    );
+
+    expect(button?.classList.contains('is-pressing')).toBe(true);
+
+    document.dispatchEvent(
+      createPointerEvent('pointerup', {
+        clientX: (startLeft + 10) * UI_SCALE,
+        clientY: (startTop + 20) * UI_SCALE,
+      }),
+    );
+
+    expect(button?.classList.contains('is-pressing')).toBe(false);
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('swings Elara only during drag and disables that animation for reduced motion', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const dragYellRule = baseCss.match(
@@ -1326,6 +1510,12 @@ describe('TutorialHintManager', () => {
         /\.tutorial-layer__objective-button\.is-dragging\s+\.tutorial-layer__objective-button-image\s*\{(?<body>[^}]*)\}/g,
       ),
     ].map((match) => match.groups?.body ?? '');
+    const pressImageRule = baseCss.match(
+      /\.tutorial-layer__objective-button:is\(:active, \.is-pressing\):not\(\.is-dragging\)\s+\.tutorial-layer__objective-button-image\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const pressLabelRule = baseCss.match(
+      /\.tutorial-layer__objective-button:is\(:active, \.is-pressing\):not\(\.is-dragging\)\s+\.tutorial-layer__objective-button-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(dragYellRule).toBeDefined();
     expect(dragYellRule).toMatch(/\btop:\s*9px;/);
@@ -1337,9 +1527,52 @@ describe('TutorialHintManager', () => {
     expect(draggingYellRule).toBeDefined();
     expect(draggingYellRule).toMatch(/\bopacity:\s*1;/);
     expect(dragImageRules.some((rule) => /tutorial-elara-drag-swing/.test(rule))).toBe(true);
+    expect(pressImageRule).toBeDefined();
+    expect(pressImageRule).toMatch(/\bscale:\s*0\.965;/);
+    expect(pressImageRule).toMatch(/\btranslate:\s*0 1px;/);
+    expect(pressLabelRule).toBeDefined();
+    expect(pressLabelRule).toMatch(/\btranslate:\s*0 1px;/);
     expect(baseCss).toMatch(/@keyframes tutorial-elara-drag-swing/);
     expect(baseCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.tutorial-layer__objective-button\.is-dragging\s+\.tutorial-layer__objective-button-image[\s\S]*animation:\s*none;/,
+    );
+  });
+
+  it('shrinks Elara from the expanded portrait anchor into the help button', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const collapseStart = baseCss.indexOf(
+      '@keyframes tutorial-elara-objective-collapse',
+    );
+    const collapseEnd = baseCss.indexOf('@keyframes tutorial-elara-help-label-snap');
+    const collapseKeyframes = baseCss.slice(collapseStart, collapseEnd);
+    const labelRule = baseCss.match(
+      /\.tutorial-layer__objective-button\.is-collapsing\s+\.tutorial-layer__objective-button-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const imageRule = baseCss.match(
+      /\.tutorial-layer__objective-button\.is-collapsing\s+\.tutorial-layer__objective-button-image\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(collapseStart).toBeGreaterThan(-1);
+    expect(collapseEnd).toBeGreaterThan(collapseStart);
+    expect(imageRule).toBeDefined();
+    expect(imageRule).toMatch(/\bposition:\s*relative;/);
+    expect(imageRule).toMatch(/\bwidth:\s*70px;/);
+    expect(imageRule).toMatch(/\bheight:\s*91px;/);
+    expect(imageRule).toMatch(
+      /animation:\s*tutorial-elara-objective-collapse 250ms var\(--style-motion-ease-rubber\)\s+both;/,
+    );
+    expect(collapseKeyframes).toContain(
+      'transform: translate(0, 0) scale(1);',
+    );
+    expect(collapseKeyframes).toContain(
+      'transform: translate(7px, 5px) scale(0.61);',
+    );
+    expect(collapseKeyframes).toContain(
+      'transform: translate(5.5px, 3.7px) scale(0.657);',
+    );
+    expect(labelRule).toBeDefined();
+    expect(labelRule).toMatch(
+      /animation:\s*tutorial-elara-help-label-snap 155ms var\(--style-motion-ease-rubber\)\s+95ms both;/,
     );
   });
 

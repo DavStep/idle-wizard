@@ -1,9 +1,12 @@
 import { BackendFacade } from '../backend/BackendFacade.js';
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { GameplayFacade } from '../gameplay/GameplayFacade.js';
+import { HapticsFacade } from './haptics/HapticsFacade.js';
 import { PagesFacade } from '../pages/PagesFacade.js';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { RenderFacade } from '../rendering/RenderFacade.js';
+import { SoundSettingsFacade } from '../audio/soundSettings/SoundSettingsFacade.js';
+import { UiClickSoundFacade } from '../audio/uiClicks/UiClickSoundFacade.js';
 import { ViewportFacade } from '../viewport/ViewportFacade.js';
 import { AppDeployRefreshManager } from './managers/AppDeployRefreshManager.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
@@ -21,7 +24,12 @@ export class AppFacade {
     this.renderFacade = new RenderFacade();
     this.ecsFacade = new EcsFacade();
     this.gameplayFacade = new GameplayFacade();
+    this.hapticsFacade = new HapticsFacade();
     this.playerFacade = new PlayerFacade();
+    this.uiClickSoundFacade = new UiClickSoundFacade();
+    this.soundSettingsFacade = new SoundSettingsFacade({
+      uiClickSoundFacade: this.uiClickSoundFacade,
+    });
     this.backendFacade = new BackendFacade();
     this.onlineGateManager = new AppOnlineGateManager();
     this.deployRefreshManager = new AppDeployRefreshManager({
@@ -45,6 +53,9 @@ export class AppFacade {
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
       authFacade: this.backendFacade.getAuthFacade(),
+      hapticsFacade: this.hapticsFacade,
+      soundSettingsFacade: this.soundSettingsFacade,
+      uiClickSoundFacade: this.uiClickSoundFacade,
     });
 
     this.lifecycleManager = new AppLifecycleManager({
@@ -69,5 +80,8 @@ export class AppFacade {
 
   stop() {
     this.lifecycleManager.stop();
+    this.soundSettingsFacade.destroy();
+    this.uiClickSoundFacade.destroy();
+    this.hapticsFacade.destroy();
   }
 }

@@ -17,8 +17,7 @@ const OBJECTIVE_HEIGHT = DIALOG_HEIGHT;
 const OBJECTIVE_CONTENT_HEIGHT = 74;
 const OBJECTIVE_HORIZONTAL_CHROME = OBJECTIVE_PADDED_WIDTH - OBJECTIVE_WIDTH;
 const OBJECTIVE_VERTICAL_CHROME = OBJECTIVE_HEIGHT - OBJECTIVE_CONTENT_HEIGHT;
-const LESSON_MIN_WIDTH = 136;
-const LESSON_MAX_WIDTH = DIALOG_WIDTH;
+const LESSON_WIDTH = OBJECTIVE_WIDTH;
 const LESSON_MIN_HEIGHT = 34;
 const LESSON_MAX_HEIGHT = 126;
 const LESSON_ESTIMATED_CHAR_WIDTH = 6.4;
@@ -32,7 +31,7 @@ const GUIDE_DRAG_MAX_LAG = 18;
 const GUIDE_DRAG_SETTLE_DISTANCE = 0.2;
 const GUIDE_AUTO_MOVE_MS = 225;
 const GUIDE_AUTO_MOVE_TARGET_GAP = HINT_GAP;
-const LESSON_HIDE_MS = 230;
+const LESSON_HIDE_MS = 260;
 const POINTER_HIDE_MS = 180;
 const TARGET_EMPHASIS_MS = 560;
 const TARGET_EMPHASIS_REDUCED_MS = 420;
@@ -40,7 +39,7 @@ const TARGET_EMPHASIS_CLASS = 'is-tutorial-target-emphasized';
 const TARGET_EMPHASIS_ATTR = 'data-tutorial-target-emphasis';
 const OBJECTIVE_BUTTON_COLLAPSED_LABEL = 'help';
 const OBJECTIVE_BUTTON_EXPANDED_LABEL = 'hide';
-const OBJECTIVE_BUTTON_DRAG_YELL = 'AAAAAA!!!';
+const OBJECTIVE_BUTTON_DRAG_YELLS = ['AAAAAA!!!', 'Put me down!', 'Let me go!', 'Hey, careful!'];
 const PORTRAIT_WIDTH = 70;
 const PORTRAIT_HEIGHT = 91;
 const PORTRAIT_LEFT_GAP = 4;
@@ -124,6 +123,7 @@ export class TutorialHintManager {
     this.objectiveButtonImage = null;
     this.objectiveButtonLabel = null;
     this.objectiveButtonDragYell = null;
+    this.objectiveButtonDragYellIndex = 0;
     this.objective = null;
     this.objectiveTitle = null;
     this.objectiveText = null;
@@ -154,6 +154,7 @@ export class TutorialHintManager {
     this.guideAutoMove = null;
     this.guideAutoMoveFrame = null;
     this.guideAutoMoveTimeout = null;
+    this.guideAutoMoveAnimationPlacement = null;
     this.guideAutoMoveManualOverrideKey = null;
     this.suppressObjectiveButtonClick = false;
     this.onAdvance = null;
@@ -277,7 +278,7 @@ export class TutorialHintManager {
 
     this.objectiveButtonDragYell = document.createElement('span');
     this.objectiveButtonDragYell.className = 'tutorial-layer__objective-button-drag-yell';
-    this.objectiveButtonDragYell.textContent = OBJECTIVE_BUTTON_DRAG_YELL;
+    this.objectiveButtonDragYell.textContent = OBJECTIVE_BUTTON_DRAG_YELLS[0];
     this.objectiveButtonDragYell.setAttribute('aria-hidden', 'true');
 
     this.objectiveButton.append(
@@ -392,6 +393,7 @@ export class TutorialHintManager {
     this.objectiveButtonImage = null;
     this.objectiveButtonLabel = null;
     this.objectiveButtonDragYell = null;
+    this.objectiveButtonDragYellIndex = 0;
     this.objective = null;
     this.objectiveTitle = null;
     this.objectiveText = null;
@@ -577,14 +579,7 @@ export class TutorialHintManager {
     advanceOnClick,
     canShowTarget,
   } = {}) {
-    const width = this.estimateLessonWidth({
-      title,
-      text,
-      stepLabel,
-      progressLabel,
-      advanceOnClick,
-      canShowTarget,
-    });
+    const width = LESSON_WIDTH;
     const estimatedHeight = this.estimateLessonHeight({
       text,
       width,
@@ -683,28 +678,6 @@ export class TutorialHintManager {
     measure.remove();
 
     return contentHeight > 0 ? contentHeight : null;
-  }
-
-  estimateLessonWidth({
-    title,
-    text,
-    stepLabel,
-    progressLabel,
-    advanceOnClick,
-    canShowTarget,
-  }) {
-    const titleWidth =
-      estimateInlineWidth(title ?? 'lesson') + estimateInlineWidth(stepLabel ?? '') + HINT_GAP * 3;
-    const actionLabel = advanceOnClick ? 'next' : canShowTarget ? 'show me' : '';
-    const actionWidth = actionLabel ? estimateInlineWidth(actionLabel) + HINT_GAP * 2 : 0;
-    const textWidth = Math.min(estimateInlineWidth(text ?? ''), LESSON_MAX_WIDTH);
-    const progressWidth = estimateInlineWidth(progressLabel ?? '');
-
-    return clamp(
-      Math.ceil(Math.max(titleWidth, actionWidth, textWidth, progressWidth, LESSON_MIN_WIDTH)),
-      LESSON_MIN_WIDTH,
-      LESSON_MAX_WIDTH,
-    );
   }
 
   estimateLessonHeight({ text, width, progress, progressLabel }) {
@@ -1354,13 +1327,7 @@ export class TutorialHintManager {
   }
 
   applyObjectivePlacement(placement, { animate = false } = {}) {
-    const previousPlacement = this.getCurrentObjectivePlacement();
-    const { objectiveLeft, objectiveTop, buttonLeft, buttonTop } = placement;
-
-    this.objective.style.left = `${objectiveLeft}px`;
-    this.objective.style.top = `${objectiveTop}px`;
-    this.objectiveButton.style.left = `${buttonLeft}px`;
-    this.objectiveButton.style.top = `${buttonTop}px`;
+    const previousPlacement = this.getCurrentObjectiveVisualPlacement();
 
     if (
       animate &&
@@ -1373,7 +1340,19 @@ export class TutorialHintManager {
       return;
     }
 
+    if (this.isGuideAutoMoveAnimationForPlacement(placement)) {
+      return;
+    }
+
+    this.writeObjectivePlacement(placement);
     this.clearGuideAutoMoveAnimation();
+  }
+
+  writeObjectivePlacement({ objectiveLeft, objectiveTop, buttonLeft, buttonTop }) {
+    this.objective.style.left = `${objectiveLeft}px`;
+    this.objective.style.top = `${objectiveTop}px`;
+    this.objectiveButton.style.left = `${buttonLeft}px`;
+    this.objectiveButton.style.top = `${buttonTop}px`;
   }
 
   resolveManualObjectivePlacement({ bounds }) {
@@ -1780,6 +1759,7 @@ export class TutorialHintManager {
     };
 
     this.objectiveButton.setPointerCapture?.(event.pointerId);
+    this.objectiveButton.classList.add('is-pressing');
     document.addEventListener('pointermove', this.handleDocumentPointerMove);
     document.addEventListener('pointerup', this.handleDocumentPointerUp);
     document.addEventListener('pointercancel', this.handleDocumentPointerCancel);
@@ -1802,6 +1782,8 @@ export class TutorialHintManager {
 
       this.guideDrag.dragging = true;
       this.markGuideAutoMoveManuallyOverridden();
+      this.objectiveButton?.classList.remove('is-pressing');
+      this.showNextObjectiveButtonDragYell();
       this.objectiveButton?.classList.add('is-dragging');
     }
 
@@ -1854,11 +1836,24 @@ export class TutorialHintManager {
   }
 
   cancelGuideDrag() {
-    this.objectiveButton?.classList.remove('is-dragging');
+    this.objectiveButton?.classList.remove('is-dragging', 'is-pressing');
     this.guideDrag = null;
     this.cancelGuideDragFrame();
     this.clearGuideDragVisualOffset();
     this.removeGuideDragListeners();
+  }
+
+  showNextObjectiveButtonDragYell() {
+    if (!this.objectiveButtonDragYell) {
+      return;
+    }
+
+    const yell =
+      OBJECTIVE_BUTTON_DRAG_YELLS[
+        this.objectiveButtonDragYellIndex % OBJECTIVE_BUTTON_DRAG_YELLS.length
+      ];
+    this.objectiveButtonDragYell.textContent = yell;
+    this.objectiveButtonDragYellIndex += 1;
   }
 
   markGuideAutoMoveManuallyOverridden() {
@@ -1909,6 +1904,24 @@ export class TutorialHintManager {
     };
   }
 
+  getCurrentObjectiveVisualPlacement() {
+    const placement = this.getCurrentObjectivePlacement();
+
+    if (!placement) {
+      return null;
+    }
+
+    const objectiveOffset = parseSourceTranslate(this.objective?.style.translate ?? '');
+    const buttonOffset = parseSourceTranslate(this.objectiveButton?.style.translate ?? '');
+
+    return {
+      objectiveLeft: placement.objectiveLeft + objectiveOffset.x,
+      objectiveTop: placement.objectiveTop + objectiveOffset.y,
+      buttonLeft: placement.buttonLeft + buttonOffset.x,
+      buttonTop: placement.buttonTop + buttonOffset.y,
+    };
+  }
+
   animateObjectivePlacement(previousPlacement, nextPlacement) {
     const buttonOffsetX = previousPlacement.buttonLeft - nextPlacement.buttonLeft;
     const buttonOffsetY = previousPlacement.buttonTop - nextPlacement.buttonTop;
@@ -1917,28 +1930,62 @@ export class TutorialHintManager {
     const view = this.getWindow();
 
     this.clearGuideAutoMoveAnimation();
-    this.objectiveButton.style.translate = formatTranslate(buttonOffsetX, buttonOffsetY);
-    this.objective.style.translate = formatTranslate(objectiveOffsetX, objectiveOffsetY);
-    void this.objectiveButton.offsetWidth;
-    this.objectiveButton.classList.add('is-auto-moving');
-    this.objective.classList.add('is-auto-moving');
 
-    if (typeof view?.requestAnimationFrame !== 'function') {
-      this.objectiveButton.style.translate = '';
-      this.objective.style.translate = '';
+    if (
+      typeof view?.requestAnimationFrame !== 'function' ||
+      !this.objectiveButton ||
+      !this.objective
+    ) {
+      this.writeObjectivePlacement(nextPlacement);
       this.clearGuideAutoMoveAnimation();
       return;
     }
 
-    this.guideAutoMoveFrame = view.requestAnimationFrame(() => {
-      this.guideAutoMoveFrame = null;
-      this.objectiveButton.style.translate = '';
-      this.objective.style.translate = '';
-      this.guideAutoMoveTimeout = view.setTimeout?.(() => {
-        this.guideAutoMoveTimeout = null;
+    this.objectiveButton.classList.add('is-auto-moving');
+    this.objective.classList.add('is-auto-moving');
+    this.guideAutoMoveAnimationPlacement = { ...nextPlacement };
+    this.writeObjectivePlacement(previousPlacement);
+
+    let startTime = null;
+    const step = (timestamp = 0) => {
+      if (!this.objectiveButton || !this.objective) {
         this.clearGuideAutoMoveAnimation();
-      }, GUIDE_AUTO_MOVE_MS);
-    });
+        return;
+      }
+
+      if (startTime === null) {
+        startTime = timestamp;
+      }
+
+      const progress = clamp((timestamp - startTime) / GUIDE_AUTO_MOVE_MS, 0, 1);
+      const eased = easeOutCubic(progress);
+
+      this.writeObjectivePlacement({
+        objectiveLeft: previousPlacement.objectiveLeft - objectiveOffsetX * eased,
+        objectiveTop: previousPlacement.objectiveTop - objectiveOffsetY * eased,
+        buttonLeft: previousPlacement.buttonLeft - buttonOffsetX * eased,
+        buttonTop: previousPlacement.buttonTop - buttonOffsetY * eased,
+      });
+
+      if (progress >= 1) {
+        this.guideAutoMoveFrame = null;
+        this.writeObjectivePlacement(nextPlacement);
+        this.clearGuideAutoMoveAnimation();
+        return;
+      }
+
+      this.guideAutoMoveFrame = view.requestAnimationFrame(step);
+    };
+
+    this.guideAutoMoveFrame = view.requestAnimationFrame(step);
+  }
+
+  isGuideAutoMoveAnimationForPlacement(placement) {
+    return Boolean(
+      this.guideAutoMoveAnimationPlacement &&
+        this.guideAutoMoveFrame !== null &&
+        placementsEqual(this.guideAutoMoveAnimationPlacement, placement),
+    );
   }
 
   getGuideDragTargetPlacement({ deltaX, deltaY }) {
@@ -2089,6 +2136,7 @@ export class TutorialHintManager {
 
     this.objectiveButton?.classList.remove('is-auto-moving');
     this.objective?.classList.remove('is-auto-moving');
+    this.guideAutoMoveAnimationPlacement = null;
     if (this.objectiveButton) {
       this.objectiveButton.style.translate = '';
     }
@@ -2430,11 +2478,19 @@ function formatSourcePixel(value) {
   return `${Math.round(value * 100) / 100}px`;
 }
 
-function formatTranslate(offsetX, offsetY) {
-  const x = Math.abs(offsetX) <= GUIDE_DRAG_SETTLE_DISTANCE ? 0 : offsetX;
-  const y = Math.abs(offsetY) <= GUIDE_DRAG_SETTLE_DISTANCE ? 0 : offsetY;
+function parseSourceTranslate(value) {
+  const [rawX, rawY] = String(value ?? '').trim().split(/\s+/);
+  const x = Number.parseFloat(rawX);
+  const y = Number.parseFloat(rawY);
 
-  return x || y ? `${formatSourcePixel(x)} ${formatSourcePixel(y)}` : '';
+  return {
+    x: Number.isFinite(x) ? x : 0,
+    y: Number.isFinite(y) ? y : 0,
+  };
+}
+
+function easeOutCubic(progress) {
+  return 1 - (1 - progress) ** 3;
 }
 
 function placementsEqual(a, b) {

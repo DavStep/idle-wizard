@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.3
+
+- Raised the playable level cap to 100 with new level requirements and backend config support.
+- Added local haptics and UI sound settings, plus tap feedback for mobile controls.
+- Improved server reconnect/account-in-use handling so the game blocks stale taps and offers a clearer `play here` action.
+- Tuned NPC market pricing, demand recovery, and auto-sell timing so prices and stand timers stay more consistent.
+- Smoothed page swipes, Workshop requirement sorting, Brewing guide rows, and Elara tutorial targeting.
+
 ## 0.2.2
 
 - Made holding the Workshop summon seed button repeat summons while mana is available.

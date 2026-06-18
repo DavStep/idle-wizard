@@ -1,5 +1,5 @@
 {
-  "maxLevel": 44,
+  "maxLevel": 100,
   "mana": {
     "baseMaxManaCap": 50,
     "maxManaCapPerLevel": 50,

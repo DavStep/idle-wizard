@@ -117,6 +117,12 @@ function createLifecycle({
       choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
       unmount: vi.fn(),
     },
+    interactionLockManager: {
+      mount: vi.fn(),
+      lock: vi.fn(),
+      unlock: vi.fn(),
+      unmount: vi.fn(),
+    },
     connectionRetryManager: {
       reset: vi.fn(),
       clear: vi.fn(),
@@ -151,12 +157,15 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
 
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.interactionLockManager.mount).toHaveBeenCalledWith(stage);
+    expect(lifecycle.interactionLockManager.lock).toHaveBeenCalledWith('connecting');
     expect(lifecycle.deployRefreshManager.mount).toHaveBeenCalledWith(stage);
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
 
     getBackendCallbacks().onOnline();
 
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
+    expect(lifecycle.interactionLockManager.unlock).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(1);
   });
 
@@ -168,6 +177,9 @@ describe('AppLifecycleManager', () => {
     getBackendCallbacks().onOnline();
     getBackendCallbacks().onOffline({ reason: 'disconnect' });
 
+    expect(lifecycle.interactionLockManager.lock).toHaveBeenLastCalledWith(
+      'disconnect',
+    );
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
@@ -206,6 +218,9 @@ describe('AppLifecycleManager', () => {
     getBackendCallbacks().onOnline();
     getBackendCallbacks().onOffline({ reason: 'account_in_use' });
 
+    expect(lifecycle.interactionLockManager.lock).toHaveBeenLastCalledWith(
+      'account_in_use',
+    );
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showOffline).toHaveBeenCalledWith(
       'account_in_use',
@@ -239,6 +254,7 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
     lifecycle.stop();
 
+    expect(lifecycle.interactionLockManager.unmount).toHaveBeenCalledTimes(1);
     expect(lifecycle.deployRefreshManager.unmount).toHaveBeenCalledTimes(1);
   });
 
@@ -319,6 +335,9 @@ describe('AppLifecycleManager', () => {
       updatedAtMs: 11,
     });
 
+    expect(lifecycle.interactionLockManager.lock).toHaveBeenLastCalledWith(
+      'maintenance',
+    );
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush).not.toHaveBeenCalled();
     expect(lifecycle.onlineGateManager.showMaintenance).toHaveBeenLastCalledWith(

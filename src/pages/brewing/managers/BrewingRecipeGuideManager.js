@@ -1,3 +1,5 @@
+import { setTextWithItemIcons } from '../../shared/itemIconLabel.js';
+
 export class BrewingRecipeGuideManager {
   constructor({ gameplayFacade, getSelectedRecipeKey, onSelectRecipe } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -235,7 +237,7 @@ export class BrewingRecipeGuideManager {
     for (const [index, ingredient] of ingredientGroups.entries()) {
       const refs = this.ensureIngredientStep(index);
       refs.row.hidden = false;
-      this.setText(refs.label, this.formatIngredientGroup(ingredient));
+      setTextWithItemIcons(refs.label, this.formatIngredientGroup(ingredient));
       this.setText(refs.value, this.formatStepValue(ingredient, match));
       refs.row.classList.toggle('is-placed', ingredient.endIndex <= match.matchedCount);
       refs.row.classList.toggle(

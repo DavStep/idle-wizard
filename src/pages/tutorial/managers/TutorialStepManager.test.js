@@ -264,7 +264,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('highlights mana sphere after the welcome', () => {
+  it('highlights top-panel mana after the welcome', () => {
     expect(
       getStep({
         completed: completedThrough('intro-username-return'),
@@ -272,7 +272,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'intro-mana-sphere',
       kind: 'prompt',
-      targetId: 'workshop:manaSphere',
+      targetId: 'top:mana',
       advanceOnClick: true,
       showPointer: false,
       revealTokens: ['top', 'mana'],
@@ -448,7 +448,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('points seed task objective at mana sphere while waiting for summon mana', () => {
+  it('points seed task objective at top-panel mana while waiting for summon mana', () => {
     const snapshot = createSnapshot({
       seedSummoning: {
         canSummon: false,
@@ -483,7 +483,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'finish-seed-task',
       kind: 'objective',
-      targetId: 'workshop:manaSphere',
+      targetId: 'top:mana',
       hintText: 'wait for mana',
     });
   });
@@ -1688,6 +1688,105 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('keeps adding sage instead of brewing a one-sage wasted mix', () => {
+    const snapshot = createSnapshot({
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        ingredients: [{ key: 'sageHerb' }],
+        match: null,
+        canBrew: true,
+        canAddIngredient: true,
+        activeBrew: null,
+        herbs: [
+          {
+            key: 'sageHerb',
+            availableQuantity: 2,
+          },
+        ],
+      },
+    });
+
+    expect(getStep({ pageId: 'brewing', snapshot })).toMatchObject({
+      id: 'brew-mana-tonic',
+      targetId: 'brewing:herb:sageHerb',
+      hintText: 'add sage. recipes care about order',
+      stepLabel: '25/27',
+    });
+  });
+
+  it('asks to remove extra sage before brewing mana tonic', () => {
+    const snapshot = createSnapshot({
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        ingredients: [
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+        ],
+        match: null,
+        canBrew: true,
+        canAddIngredient: true,
+        activeBrew: null,
+        herbs: [
+          {
+            key: 'sageHerb',
+            availableQuantity: 12,
+          },
+        ],
+      },
+    });
+
+    expect(getStep({ pageId: 'brewing', snapshot })).toMatchObject({
+      id: 'brew-mana-tonic',
+      targetId: 'brewing:remove:sageHerb',
+      hintText: 'remove extra sage',
+      stepLabel: '25/27',
+    });
+  });
+
+  it('points at brew only once the cauldron matches unlocked mana tonic', () => {
+    const snapshot = createSnapshot({
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        ingredients: [
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+        ],
+        match: {
+          key: 'manaTonic',
+          unlocked: true,
+        },
+        canBrew: true,
+        canAddIngredient: true,
+        activeBrew: null,
+        herbs: [
+          {
+            key: 'sageHerb',
+            availableQuantity: 0,
+          },
+        ],
+      },
+    });
+
+    expect(getStep({ pageId: 'brewing', snapshot })).toMatchObject({
+      id: 'brew-mana-tonic',
+      targetId: 'brewing:action',
+      hintText: 'brew mana tonic',
+      stepLabel: '25/27',
+    });
+  });
+
   it('points at recipe dialog close after mana tonic is selected', () => {
     const snapshot = createSnapshot({
       tasks: { currentLevel: 4, level: { tasks: [] } },
@@ -1801,6 +1900,48 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('asks to remove extra sage during the refill cauldron objective', () => {
+    const snapshot = createSnapshot({
+      inventory: [{ key: 'manaTonic', quantity: 1 }],
+      tasks: { currentLevel: 4, level: { tasks: [] } },
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+      },
+      brewing: {
+        canBrew: true,
+        canAddIngredient: true,
+        activeBrew: null,
+        herbs: [
+          {
+            key: 'sageHerb',
+            quantity: 15,
+            availableQuantity: 11,
+          },
+        ],
+        ingredients: [
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+          { key: 'sageHerb' },
+        ],
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'brewing',
+        snapshot,
+        completed: completedThrough('brew-mana-tonic'),
+      }),
+    ).toMatchObject({
+      id: 'refill-mana-tonic-cauldron',
+      targetId: 'brewing:remove:sageHerb',
+      hintText: 'remove extra sage',
+      progressLabel: '3/3 sage',
+      stepLabel: '26/27',
+    });
+  });
+
   it('points at brew again once the mana tonic cauldron is full', () => {
     const snapshot = createSnapshot({
       inventory: [{ key: 'manaTonic', quantity: 1 }],
@@ -1811,6 +1952,10 @@ describe('TutorialStepManager', () => {
       brewing: {
         canBrew: true,
         canAddIngredient: true,
+        match: {
+          key: 'manaTonic',
+          unlocked: true,
+        },
         activeBrew: null,
         herbs: [
           {
@@ -1855,14 +2000,15 @@ describe('TutorialStepManager', () => {
     expect(getStep({ snapshot })).toMatchObject({
       id: 'find-theme-settings',
       targetId: 'top:username',
-      objectiveText: 'you can change themes in settings. open settings, then use the theme tab.',
+      objectiveText:
+        'you can change themes in settings. open settings, then use the configurations tab.',
       hintText: 'open settings',
       cueMode: 'passive',
       stepLabel: '27/27',
     });
   });
 
-  it('points level five theme guidance at the settings theme tab when settings is open', () => {
+  it('points level five theme guidance at the settings configurations tab when settings is open', () => {
     const snapshot = createSnapshot({
       tasks: {
         currentLevel: 5,
@@ -1880,12 +2026,12 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'find-theme-settings',
       targetId: 'top:settings:theme-tab',
-      hintText: 'theme tab',
+      hintText: 'configurations tab',
       cueMode: 'passive',
     });
   });
 
-  it('completes level five theme guidance when the theme tab is selected', () => {
+  it('completes level five theme guidance when the configurations tab is selected', () => {
     const progress = createProgressFake();
     const manager = new TutorialStepManager({
       progressManager: progress,

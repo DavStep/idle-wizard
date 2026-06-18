@@ -1,6 +1,6 @@
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 
-const TOP_USER_LIMIT = 10;
+const TOP_USER_LIMIT = 100;
 const LEADERBOARD_QUERY = 'SELECT * FROM leaderboard_summary';
 const EMPTY_SNAPSHOT = {
   topUsers: [],

@@ -110,7 +110,7 @@ The server module defines:
 - `player`: one row per SpacetimeDB identity, with `username`, visual preferences, player level, connection state, and timestamps.
 - `player_gameplay_save`: one row per identity, with the full gameplay save JSON and update time.
 - `leaderboard`: one row per identity, with `username`, player level, all-time `totalIncome`, current daily/weekly/monthly income counters, and period keys.
-- `leaderboard_summary`: public indexed view returning each period top ten plus the subscribing player's own row, alliance tag, and rank fields.
+- `leaderboard_summary`: public indexed view returning each period top 100 plus the subscribing player's own row, alliance tag, and rank fields.
 - `world_chat`: one row per chat message, with sender identity, username, sender player level, alliance tag, body, and timestamp. `world_chat_recent` exposes only the latest 40 messages for the client.
 - `trade_alliance`: one row per alliance, with unique tag, leader identity, join mode, member count, all-time/daily/weekly/monthly income totals, and period keys.
 - `trade_alliance_member`: one row per member identity, with alliance id, username/player-level snapshot, role, lifetime contribution, and current weekly contribution in the legacy `dailyContribution` column.
@@ -189,7 +189,7 @@ SELECT * FROM own_trade_alliance_chat
 SELECT * FROM own_trade_alliance_reward_inbox
 ```
 
-The own `player` profile view is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals call throttled `set_total_generated_gold`, and the server stores capped income values on `leaderboard`. The client subscribes to `leaderboard_summary`, not the raw leaderboard table, so it receives daily, weekly, monthly, and all-time top-ten rows plus the current player's rank row for the Workshop leaderboard popup.
+The own `player` profile view is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals call throttled `set_total_generated_gold`, and the server stores capped income values on `leaderboard`. The client subscribes to `leaderboard_summary`, not the raw leaderboard table, so it receives daily, weekly, monthly, and all-time top 100 rows plus the current player's rank row for the Workshop leaderboard popup.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.
 

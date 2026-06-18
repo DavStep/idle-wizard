@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PressFeedbackManager } from './PressFeedbackManager.js';
 
 let originalElementFromPoint;
@@ -77,6 +77,98 @@ describe('PressFeedbackManager', () => {
     );
 
     expect(clicks).toEqual(['synthetic']);
+
+    manager.unmount();
+  });
+
+  it('plays click sound once for touch activation with a duplicate native click', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const clicks = [];
+    const uiClickSoundFacade = {
+      playClick: vi.fn(),
+      unlock: vi.fn(),
+    };
+    button.className = 'style-button';
+    button.addEventListener('click', (event) => {
+      clicks.push(event.isTrusted ? 'native' : 'synthetic');
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager({ uiClickSoundFacade });
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown');
+    dispatchPointer(document, 'pointerup');
+    button.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+      }),
+    );
+
+    expect(clicks).toEqual(['synthetic']);
+    expect(uiClickSoundFacade.unlock).toHaveBeenCalledTimes(1);
+    expect(uiClickSoundFacade.playClick).toHaveBeenCalledTimes(1);
+
+    manager.unmount();
+  });
+
+  it('plays haptics once after a confirmed touch activation', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const hapticsFacade = {
+      playUiTap: vi.fn(),
+    };
+    button.className = 'style-button';
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager({ hapticsFacade });
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown');
+    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+
+    dispatchPointer(document, 'pointerup');
+    button.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+      }),
+    );
+
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
+
+    manager.unmount();
+  });
+
+  it('plays click sound for mouse clicks after the real click fires', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const uiClickSoundFacade = {
+      playClick: vi.fn(),
+      unlock: vi.fn(),
+    };
+    button.className = 'style-button';
+    root.append(button);
+    document.body.append(root);
+
+    const manager = new PressFeedbackManager({ uiClickSoundFacade });
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { pointerType: 'mouse' });
+    expect(uiClickSoundFacade.playClick).not.toHaveBeenCalled();
+
+    button.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+      }),
+    );
+
+    expect(uiClickSoundFacade.unlock).toHaveBeenCalledTimes(1);
+    expect(uiClickSoundFacade.playClick).toHaveBeenCalledTimes(1);
 
     manager.unmount();
   });
@@ -185,6 +277,9 @@ describe('PressFeedbackManager', () => {
   it('does not activate when the pointer moves like a drag', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');
+    const hapticsFacade = {
+      playUiTap: vi.fn(),
+    };
     let clicks = 0;
     button.className = 'style-button';
     button.addEventListener('click', () => {
@@ -194,7 +289,7 @@ describe('PressFeedbackManager', () => {
     document.body.append(root);
     document.elementFromPoint = () => button;
 
-    const manager = new PressFeedbackManager();
+    const manager = new PressFeedbackManager({ hapticsFacade });
     manager.mount(root);
 
     dispatchPointer(button, 'pointerdown', { clientX: 10, clientY: 10 });
@@ -203,6 +298,7 @@ describe('PressFeedbackManager', () => {
 
     expect(button.classList.contains('is-pressing')).toBe(false);
     expect(clicks).toBe(0);
+    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
 
     manager.unmount();
   });

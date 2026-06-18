@@ -111,6 +111,15 @@ export class GameplaySaveSendManager {
     this.pendingSaveContentKey = null;
   }
 
+  discardPendingSaves() {
+    this.cancelSyncAttempt('gameplay_save_discarded');
+    this.clearSyncTimer();
+    this.pendingSaveJson = null;
+    this.pendingSaveWasHydrated = false;
+    this.pendingSaveContentKey = null;
+    this.clearInFlightSave();
+  }
+
   flush({ force = false } = {}) {
     if (
       !this.readyToSend ||

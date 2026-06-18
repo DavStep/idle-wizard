@@ -17,7 +17,7 @@ flowchart TD
   S01["1. intro-welcome<br/>lesson 1: introduction"]
   S02["2. intro-username<br/>target: username"]
   S03["3. intro-username-return<br/>greet entered name"]
-  S04["4. intro-mana-sphere<br/>target: mana sphere"]
+  S04["4. intro-mana-sphere<br/>target: top-panel mana"]
   S05["5. first-summon-seed<br/>target: summon"]
   S06["6. first-fill-seed-task<br/>target: task fill"]
   S07["7. finish-seed-task<br/>objective: seed task"]

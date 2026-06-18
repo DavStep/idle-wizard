@@ -126,7 +126,7 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ShopDirectSellManager', () => {
-  it('opens fast sell, recalculates totals, and blocks sales above NPC need', async () => {
+  it('opens fast sell, recalculates totals, and clamps sales to NPC need', async () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');
     const snapshot = {
@@ -210,7 +210,7 @@ describe('ShopDirectSellManager', () => {
       popup.querySelector('.shop-page__direct-sell-selected-label')?.getAttribute('aria-pressed'),
     ).toBe('true');
     expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
-      'sage seed (5)1.12 gold',
+      'sage seed x5demand 3',
     );
     expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(false);
     expect(popup.querySelector('.shop-page__direct-sell-confirm')?.hidden).toBe(false);
@@ -243,21 +243,22 @@ describe('ShopDirectSellManager', () => {
     herbsTab.click();
 
     expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
-      'sage seed (5)1.12 gold',
+      'sage seed x5demand 3',
     );
 
     const input = popup.querySelector('.shop-page__direct-sell-input');
     input.value = '4';
     input.dispatchEvent(new window.Event('input', { bubbles: true }));
 
-    expect(gameplayFacade.quoteNpcMarketSell).toHaveBeenLastCalledWith(1, 4);
-    expect(popup.textContent).toContain('demand too low');
-    expect(popup.querySelector('.shop-page__direct-sell-confirm')?.disabled).toBe(true);
+    expect(gameplayFacade.quoteNpcMarketSell).toHaveBeenLastCalledWith(1, 3);
+    expect(popup.textContent).not.toContain('demand too low');
+    expect(popup.querySelector('.amount-selection-row__value')?.textContent).toBe('3');
+    expect(popup.querySelector('.shop-page__direct-sell-confirm')?.disabled).toBe(false);
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-label')?.textContent).toBe(
-      'sell x4',
+      'sell x3',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '?',
+      '3.36 gold',
     );
 
     input.value = '2';
@@ -319,7 +320,7 @@ describe('ShopDirectSellManager', () => {
     expect(onSelectItemSpy).toHaveBeenCalledTimes(1);
     expect(
       popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
-    ).toBe('sage seed (5)1.12 gold');
+    ).toBe('sage seed x5demand 3');
     expect(
       popupParent.querySelector('.shop-page__direct-sell-item-button')?.getAttribute('aria-pressed'),
     ).toBe('true');
@@ -364,7 +365,7 @@ describe('ShopDirectSellManager', () => {
 
       expect(
         popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
-      ).toBe('sage seed (5)1.12 gold');
+      ).toBe('sage seed x5demand 3');
       expect(
         popupParent.querySelector('.shop-page__direct-sell-item-button')?.getAttribute(
           'aria-pressed',
@@ -413,7 +414,7 @@ describe('ShopDirectSellManager', () => {
     itemButton?.click();
 
     expect(itemButton?.getAttribute('aria-pressed')).toBe('true');
-    expect(selectedLabel?.textContent).toBe('sage seed (5)');
+    expect(selectedLabel?.textContent).toBe('sage seed x5');
     expect(selectedLabel?.getAttribute('aria-pressed')).toBe('true');
     expect(quantityField?.hidden).toBe(false);
     expect(confirmButton?.hidden).toBe(false);
@@ -680,7 +681,7 @@ describe('ShopDirectSellManager', () => {
     itemButton?.click();
 
     expect(popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
-      'sage seed (2)10 gold',
+      'sage seed x2demand 3',
     );
     expect(
       popupParent.querySelector('.shop-page__direct-sell-confirm-label')?.textContent,

@@ -30,7 +30,7 @@ describe('TutorialRevealManager', () => {
     expect(stage.dataset.tutorialReveal).toBe('top');
   });
 
-  it('reveals the mana sphere before the rest of the room UI', () => {
+  it('reveals top-panel mana before the rest of the room UI', () => {
     const stage = document.createElement('section');
     const manager = new TutorialRevealManager();
 

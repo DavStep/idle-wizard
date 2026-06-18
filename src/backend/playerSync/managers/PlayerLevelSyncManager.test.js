@@ -218,4 +218,35 @@ describe('PlayerLevelSyncManager', () => {
     expect(setPlayerLevel).toHaveBeenCalledTimes(1);
     expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 7 });
   });
+
+  it('discards pending and in-flight levels after an account takeover', async () => {
+    const firstSetPlayerLevel = vi.fn(() => new Promise(() => {}));
+    const secondSetPlayerLevel = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(6);
+    const manager = new PlayerLevelSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.markGameplaySaveHydrated();
+    manager.connect({
+      reducers: {
+        setPlayerLevel: firstSetPlayerLevel,
+      },
+    });
+    manager.setReadyToSync(true);
+    gameplayFacade.publishPlayerLevel(7);
+    manager.discardPendingLevel();
+    manager.disconnect();
+    manager.connect({
+      reducers: {
+        setPlayerLevel: secondSetPlayerLevel,
+      },
+    });
+    manager.markGameplaySaveHydrated();
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+
+    expect(firstSetPlayerLevel).toHaveBeenCalledTimes(1);
+    expect(secondSetPlayerLevel).not.toHaveBeenCalled();
+    expect(manager.pendingPlayerLevel).toBeNull();
+  });
 });

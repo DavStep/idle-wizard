@@ -41,9 +41,9 @@
     "fileName": "04-intro-mana-sphere.png",
     "source": "real-game",
     "step": "intro-mana-sphere",
-    "lesson": "this is the mana sphere. mana fills over time, up to the cap shown here.",
+    "lesson": "this is your mana. it fills over time, up to the cap shown here.",
     "progress": "",
-    "targetId": "workshop:manaSphere",
+    "targetId": "top:mana",
     "page": "workshop",
     "pointerVisible": false
   },

@@ -107,6 +107,21 @@ export function appendTextWithItemIcons(element, text) {
   element.replaceChildren(...parts);
 }
 
+export function setTextWithItemIcons(element, text) {
+  if (!element) {
+    return;
+  }
+
+  const value = String(text ?? '');
+
+  if (element.dataset.itemIconRichText === value && element.textContent === value) {
+    return;
+  }
+
+  appendTextWithItemIcons(element, value);
+  element.dataset.itemIconRichText = value;
+}
+
 export const appendTextWithSeedIcons = appendTextWithItemIcons;
 
 function setImageItemIconLabel({

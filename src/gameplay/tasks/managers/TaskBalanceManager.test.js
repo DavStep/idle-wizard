@@ -55,7 +55,7 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
-  it('uses reduced level 4 nettle requirements with a different seed family', () => {
+  it('uses low-tier rounded target level 5 requirements', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -65,55 +65,79 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level4-nettle-seeds', itemKey: 'mintSeed', requiredQuantity: 81 },
-      { id: 'level4-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 52 },
-      { id: 'level4-sage-herb', itemKey: 'sageHerb', requiredQuantity: 16 },
-      { id: 'level4-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 3 },
+      { id: 'level4-nettle-seeds', itemKey: 'sageSeed', requiredQuantity: 50 },
+      { id: 'level4-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 40 },
+      { id: 'level4-sage-herb', itemKey: 'mintHerb', requiredQuantity: 20 },
+      { id: 'level4-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 5 },
     ]);
   });
 
-  it('moves level 5 onto lavender and the second recipe tier', () => {
+  it('uses one potion through target level 10', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
-      taskBalanceManager.getLevelTasks(5).map((task) => ({
+      taskBalanceManager.getLevelTasks(9).map((task) => ({
         id: task.id,
         itemKey: task.itemKey,
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level5-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 120 },
-      { id: 'level5-lavender-seeds', itemKey: 'mintSeed', requiredQuantity: 131 },
-      { id: 'level5-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 75 },
-      {
-        id: 'level5-minor-healing-potion',
-        itemKey: 'minorHealingPotion',
-        requiredQuantity: 9,
-      },
-      { id: 'level5-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 8 },
+      { id: 'level9-briar-seeds', itemKey: 'lavenderSeed', requiredQuantity: 100 },
+      { id: 'level9-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 80 },
+      { id: 'level9-glowcap-herb', itemKey: 'briarHerb', requiredQuantity: 40 },
+      { id: 'level9-calming-draught', itemKey: 'calmingDraught', requiredQuantity: 10 },
     ]);
   });
 
-  it('moves level 6 onto nettle vigor without recipe skips', () => {
+  it('uses lower-medium target level 11 requirements with two potions', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
-      taskBalanceManager.getLevelTasks(6).map((task) => ({
+      taskBalanceManager.getLevelTasks(10).map((task) => ({
         id: task.id,
         itemKey: task.itemKey,
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level6-nettle-vigor', itemKey: 'nettleVigor', requiredQuantity: 11 },
-      { id: 'level6-lavender-seeds', itemKey: 'mintSeed', requiredQuantity: 152 },
-      { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 88 },
-      {
-        id: 'level6-minor-healing-potion',
-        itemKey: 'minorHealingPotion',
-        requiredQuantity: 10,
-      },
-      { id: 'level6-nettle-seeds', itemKey: 'sageSeed', requiredQuantity: 144 },
+      { id: 'level10-briar-ward', itemKey: 'nettleSeed', requiredQuantity: 132 },
+      { id: 'level10-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 99 },
+      { id: 'level10-glowcap-herb', itemKey: 'lavenderHerb', requiredQuantity: 66 },
+      { id: 'level10-calming-draught', itemKey: 'briarWard', requiredQuantity: 11 },
+      { id: 'level10-briar-seeds', itemKey: 'calmingDraught', requiredQuantity: 8 },
     ]);
+  });
+
+  it('extends the task curve to level 100 with hard-tier quantities', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(taskBalanceManager.getMaxLevel()).toBe(100);
+    expect(
+      taskBalanceManager.getLevelTasks(99).map((task) => ({
+        itemKey: task.itemKey,
+        requiredQuantity: task.requiredQuantity,
+      })),
+    ).toEqual([
+      { itemKey: 'starAniseSeed', requiredQuantity: 2200 },
+      { itemKey: 'dragonpepperHerb', requiredQuantity: 1700 },
+      { itemKey: 'bloodroseHerb', requiredQuantity: 1300 },
+      { itemKey: 'dragonCourage', requiredQuantity: 200 },
+      { itemKey: 'pactWard', requiredQuantity: 150 },
+    ]);
+  });
+
+  it('uses one potion for target levels 5-10 and two potions from target level 11 onward', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    for (const level of taskBalanceManager.getLevels()) {
+      if (level.level < 4) {
+        continue;
+      }
+
+      const targetLevel = Math.min(level.level + 1, taskBalanceManager.getMaxLevel());
+      const expectedTaskCount = targetLevel <= 10 ? 4 : 5;
+
+      expect(level.tasks, `config level ${level.level}`).toHaveLength(expectedTaskCount);
+    }
   });
 
   it('keeps seed requirements on a different family than same-level items after tutorial levels', () => {

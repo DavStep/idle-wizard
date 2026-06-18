@@ -75,14 +75,14 @@ describe('TutorialTargetManager', () => {
     const stage = document.createElement('section');
     const settings = document.createElement('section');
     const input = document.createElement('input');
-    const manaSphere = document.createElement('button');
+    const manaReadout = document.createElement('span');
     const manager = new TutorialTargetManager({ stage });
 
     settings.className = 'room-top-panel__settings';
     input.dataset.tutorialId = 'top:username-input';
-    manaSphere.dataset.tutorialId = 'workshop:manaSphere';
+    manaReadout.dataset.tutorialId = 'top:mana';
     settings.append(input);
-    stage.append(settings, manaSphere);
+    stage.append(settings, manaReadout);
     document.body.append(stage);
 
     expect(manager.getDomState().isUsernameSettingsOpen()).toBe(true);
@@ -94,7 +94,7 @@ describe('TutorialTargetManager', () => {
     expect(
       manager
         .getDomState()
-        .isBlockingDialogOpenForStep({ targetId: 'workshop:manaSphere' }, manaSphere),
+        .isBlockingDialogOpenForStep({ targetId: 'top:mana' }, manaReadout),
     ).toBe(true);
 
     settings.hidden = true;

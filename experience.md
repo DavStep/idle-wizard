@@ -22,6 +22,7 @@
 - This is an Android-first mobile JavaScript game.
 - The authored game viewport is `1080x2170`.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
+- Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
 - Height animations inside scaled room UI should write layout pixels from `offsetHeight`/`scrollHeight`, not `getBoundingClientRect()` screen pixels, or the element expands by the UI scale.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
@@ -32,7 +33,13 @@
 - The first page is `Workshop`.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
 - Show all five room pages in a shared bottom tab panel; underline the current page tab.
+- Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
+- Weekly events should be framed as `weekly world notice` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
+- Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
+- Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, donate, and deliver, not random chores pasted under a headline.
+- Weekly event v1 should stay mostly solo with light utility rewards; no new combat mode, map mode, event-only economy, or mandatory weekly power gate.
+- Weekly event resolution should avoid hard fail: the world resolves, and player contribution changes weak/decent/strong outcome text plus archive/history flavor.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
@@ -41,7 +48,8 @@
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
 - Current NPC market source has no scheduled 5-minute demand regen despite older docs mentioning one; demand/stock move through sell/buy reducers, reset, and initial row creation.
-- NPC demand market auto-sell uses one shared timer; render it as a box-level bottom border label, not inside each stand row.
+- NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
+- NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
@@ -71,7 +79,7 @@
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
 - FTUE target cues use the Spine pointer with the PNG fallback until ready; preserve diagonal placement math and rotate the Spine shell by placement so the authored upward tap points at the same target anchor.
 - Pointer-local Pixi canvases inside the scaled tutorial layer must use `devicePixelRatio * --style-ui-scale` resolution; DPR-only backing stores look pixelated after the room UI scale transform.
-- FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then mana sphere, then summon, then tasks and room chrome.
+- FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then the top-panel mana readout, then summon, then tasks and room chrome.
 - Room section entry animations must opt out while `data-tutorial-reveal` is present; opacity/translate animations can override FTUE reveal gates.
 - FTUE intro-only reveal needs an empty `data-tutorial-reveal` attribute; clearing the attribute makes all gated room controls appear.
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
@@ -88,6 +96,7 @@
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
 - FTUE mana tonic recipe guidance should point to the recipe popup `close` label after the recipe is selected; do not keep cueing the selected row.
+- FTUE mana tonic brew guidance must require an unlocked `manaTonic` cauldron match, not just `canBrew`; `canBrew` is also true for wasted mixes. Overfilled sage should target the remove row before brew.
 - FTUE should actively show the first `grow sage` loop at `0/3`; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
 - FTUE level-2 task order should match the visible level-2 task row order; showing `sage` before `sage seed` keeps the gardening lesson coherent.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
@@ -118,27 +127,34 @@
 - Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
 - Brewing FTUE lesson placement must protect the herbs box, cauldron, and bottom brewing controls so Elara never hides brew status/progress.
+- Brewing cauldron boxes keep a fixed source height; scroll ingredient/recipe rows inside instead of letting the box resize.
 - FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
 - FTUE lesson collapse animations need a temporary exit class before setting `hidden`; full tutorial hides still clear immediately to prevent stale flashes.
+- FTUE guide auto-move should use source-pixel rAF interpolation from the current visual offset to the desired placement; CSS transitions after writing final `left`/`top` can still paint as a teleport in target browsers.
+- FTUE guide auto-move should not rely on inline `style.translate` for the moving wrapper, because active CSS keyframe animations that also set `translate` can override it and make the guide jump.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` stays hidden until level 7.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
+- Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
 - Workshop task drag-sort thresholds must compare the lifted row center, not pointer Y; grab offset otherwise makes rows swap too early or late.
-- Workshop task drag-sort should not render an empty placeholder gap; players expect neighboring rows to shift only after the dragged row crosses their center.
+- Workshop task drag-sort should not render an empty placeholder gap; shift neighboring rows slightly before the lifted row crosses their center for smoother ordering.
+- Workshop task drag-sort is only for incomplete requirements; completed requirements stay fixed below the active group and are not draggable.
 - Workshop task drag-sort needs expanded-content overflow visible during drag; otherwise list rows clip under the summary row and look like they lose top-layer order.
 - Workshop summon button text must overlay the summon circle, not stack below it; stacking drops the label into the secondary action row.
 - Workshop summon button press feedback must not use generic `transform: scale(...)`; it needs to preserve its `translate(-50%, -50%)` centering or pointer release can miss the moved button.
 - Workshop summon button press feedback must also override generic `.style-button` active backgrounds; otherwise a rectangular active-surface box appears behind the circle.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
+- Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, and fire tap haptics only after `PressFeedbackManager` confirms touch release on the original target.
 
 ## Architecture
 
 - Use full ECS for gameplay.
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
+- UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
 - During Pixi migration, hidden DOM managers can still receive gameplay reward events; route feedback through one visible renderer per event or duplicate notices appear.
 - Pixi migration should not replace page facades with duplicated page logic before parity; keep existing DOM managers as the source of truth and mirror/render their state until visuals and interactions match.
 - Pixi DOM mirroring should be opt-in/debug only; hiding live DOM and repainting a canvas snapshot caps visible motion and burns mobile frame budget.
@@ -205,6 +221,7 @@
 - Google ID-token parsing must bind browser `atob` to its owning window and decode JWT payload bytes as UTF-8; raw `atob` strings can make valid tokens look invalid.
 - Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
 - All player-owned SpacetimeDB write reducers should call `assertActivePlayerSession(ctx)` before mutating rows; the single-account lock is only as strong as its least-guarded reducer.
+- Account-in-use gates must not rely on visible overlay DOM; keep a stage-level input lock active and discard pending save/level sync when a newer connection takes over.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Username prompt seen is monotonic; stale client/server profile echoes must not turn it false or the first-run name dialog can reopen after dismissal.
 - First-run account choice happens before `onOnline`; hide the server gate before awaiting that dialog or new players can look stuck at `connecting to server...`.
@@ -222,6 +239,7 @@
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
 - Crystal earn-back floors must subtract committed automation research, not only completed automation research; otherwise reload can refund crystal while in-progress research keeps ticking.
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
+- If SpacetimeDB logs say `External attempt to call nonexistent reducer`, the deployed backend is stale relative to generated client bindings; publish the backend before debugging UI flow.
 - SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
 - Global client subscriptions should target indexed server views (`*_snapshot`, own views, or top/recent views), not raw public tables; `SELECT *` on base tables can keep sequential-scan warnings alive even when tables are small.
 - SpacetimeDB energy warnings can still name tables that already have indexes when many clients subscribe to full snapshot views; verify deployed schema before adding duplicate indexes.
@@ -231,7 +249,7 @@
 - SpacetimeDB identity subscription filters use `0x${identity.toHexString()}` literals; quote camel-case column names such as `"sellerIdentity"` in raw SQL strings.
 - Global background work like NPC market ticks should be scheduled or single-owner server work, not one reducer interval per connected client.
 - NPC market replenishment is owned by the SpacetimeDB `npc_market_tick_schedule` table; clients should not call market tick reducers on connect or intervals.
-- NPC market auto-sell uses one shelf-level timer; changing a selected stand item resets that shared timer, and each completed cycle attempts all eligible selected stands.
+- NPC market auto-sell uses one shelf-level wall-clock timer; changing a selected stand item does not reset it, and each completed cycle attempts all eligible selected stands.
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
 - SpacetimeDB subscription cleanup must be locally idempotent; `isEnded()` can still be false after `unsubscribe()` was requested, and a second call throws.
@@ -393,7 +411,7 @@
 - Popup/dialog panels can use the thicker event-panel treatment: `2px` border and `5px 5px 5px #666` shadow in source UI units.
 - Shared chrome overlays with the same z-index paint by DOM order; visible bottom-panel lock notices must raise the bottom panel layer above the passive chat preview.
 - Popup/dialog shadow tokens must contrast with the active theme: dark shadow on white surfaces, light shadow on black surfaces.
-- The Workshop mana-only resource block is called `mana sphere`.
+- Mana amount and regen live in the top panel; Workshop no longer has a separate mana resource box.
 - Workshop no longer has a separate `seeds` block; `summon` and `bag` sit above world chat.
 - Workshop `bag` opens a tabbed popup for currencies, seeds, herbs, and potions.
 - Do not add decorative visuals unless the user explicitly asks.
@@ -450,7 +468,7 @@
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Top panel gold should keep amount and `gold` in the same fitted value span; a separate suffix can leave clipped values like `308... gold`.
 - Clicking the top-panel username opens settings; username editing and visual theme choices live there.
-- Settings use bottom tabs outside the popup border: `account`, `report`, and `theme`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
+- Settings use bottom tabs outside the popup border: `account`, `report`, and `configurations`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
 - Settings account controls should stay visible: label the tab `account`, and keep `connect account` visible disabled with `login unavailable` when OIDC config is missing.
 - Account data conflict dialogs should put row-local `select` actions next to `this device` and `account`; the account row should include the account username.
 - Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
@@ -512,7 +530,7 @@
 - Workshop collapsed task summary should preview the first incomplete task in level order; expanded task display keeps incomplete rows before completed rows.
 - Reuse the Workshop-style box expansion pattern for future boxes: one summary row remains visible, top-right border label shows progress/count, bottom-center border label toggles `expand`/`collapse`, and expanded rows appear in normal flow inside the same box.
 - Workshop task border labels need higher-specificity or late CSS overrides because generic `.style-box` padding and `.style-box :where(button, ...)` font-size rules otherwise override component styles.
-- Workshop tasks reserve collapsed height in normal flow, then expanded requirements overlay lower Workshop content; do not push `mana sphere` or action controls down.
+- Workshop tasks reserve collapsed height in normal flow, then expanded requirements overlay lower Workshop content; do not push action controls down.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
 - Workshop task progress rails use shared content-box `.style-progress`; subtract `2 * --style-border-width` from rail width when its outer edge must align with the task row/action button.

@@ -3,10 +3,12 @@ import {
   normalizeGoldPrice,
   normalizePositiveGoldPrice,
 } from '../../../shared/goldPrice.js';
-
-const NPC_MARKET_BUY_BPS = 8_000;
-const NPC_MARKET_SELL_BPS = 12_000;
-const NPC_MARKET_MAX_TRADE_QUANTITY = 10_000;
+import {
+  getNpcMarketPriceFromNeed,
+  getNpcSellPriceGold as getNpcSellMarketPriceGold,
+  normalizeCount,
+  NPC_MARKET_MAX_TRADE_QUANTITY,
+} from './npcMarketPricing.js';
 
 export class ShopStockPriceQuoteManager {
   constructor({ shopNpcPriceManager } = {}) {
@@ -80,10 +82,10 @@ export class ShopStockPriceQuoteManager {
   getMarginalTotalPriceGold({ item, quantity, fallbackPriceGold }) {
     const priceState = this.shopNpcPriceManager.getNpcPrice?.(item) ?? item;
     const basePriceGold = normalizePositiveGoldPrice(priceState?.basePriceGold);
-    const npcNeed = this.normalizeCount(priceState?.npcNeed);
+    const npcNeed = normalizeCount(priceState?.npcNeed);
     const targetNeed =
-      this.normalizeCount(priceState?.targetNeed) ??
-      this.normalizeCount(priceState?.targetStock);
+      normalizeCount(priceState?.targetNeed) ??
+      normalizeCount(priceState?.targetStock);
 
     if (
       basePriceGold === null ||
@@ -97,58 +99,22 @@ export class ShopStockPriceQuoteManager {
     let totalCents = 0;
 
     for (let offset = 0; offset < quantity; offset += 1) {
-      const marketPriceGold = this.getNpcMarketPriceFromNeed({
+      const marketPriceGold = getNpcMarketPriceFromNeed({
         basePriceGold,
+        itemKind: priceState?.itemKind ?? item?.kind,
         npcNeed: npcNeed + offset,
         targetNeed,
+        volatilityBps: priceState?.volatilityBps,
       });
-      const unitPriceGold = this.getNpcSellPriceGold(marketPriceGold);
+      const unitPriceGold = getNpcSellMarketPriceGold(marketPriceGold);
+
+      if (unitPriceGold === null) {
+        return multiplyGoldPrice(fallbackPriceGold, quantity);
+      }
+
       totalCents += Math.round(unitPriceGold * 100);
     }
 
     return normalizeGoldPrice(totalCents / 100);
-  }
-
-  normalizeCount(value) {
-    const count = Math.floor(Number(value));
-
-    if (!Number.isInteger(count) || count < 0) {
-      return null;
-    }
-
-    return count;
-  }
-
-  getNpcMarketPriceFromNeed({ basePriceGold, npcNeed, targetNeed }) {
-    const safeNeed = Math.max(0, npcNeed);
-    const pressure = safeNeed / targetNeed;
-    const marketPriceGold = basePriceGold * pressure;
-
-    return this.roundGoldPrice(Math.max(0.01, marketPriceGold));
-  }
-
-  getNpcSellPriceGold(marketPriceGold) {
-    const buyPriceGold = this.getNpcBuyPriceGold(marketPriceGold);
-    const spreadPriceGold = this.roundGoldPrice(
-      (marketPriceGold * NPC_MARKET_SELL_BPS) / 10_000,
-    );
-
-    return spreadPriceGold > buyPriceGold
-      ? spreadPriceGold
-      : this.roundGoldPrice(buyPriceGold + 0.01);
-  }
-
-  getNpcBuyPriceGold(marketPriceGold) {
-    return Math.min(
-      Math.max(
-        this.roundGoldPrice((marketPriceGold * NPC_MARKET_BUY_BPS) / 10_000),
-        0.01,
-      ),
-      marketPriceGold,
-    );
-  }
-
-  roundGoldPrice(value) {
-    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }

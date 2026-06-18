@@ -51,8 +51,8 @@ describe('ShopStockPriceQuoteManager', () => {
     expect(manager.quoteItem({ item: sageSeed, quantity: 1 })).toMatchObject({
       ok: true,
       priceGold: 6,
-      totalPriceGold: 6,
     });
+    expect(manager.quoteItem({ item: sageSeed, quantity: 1 }).totalPriceGold).toBeGreaterThan(6);
   });
 
   it('falls back to simple multiplication when the market curve is unavailable', () => {

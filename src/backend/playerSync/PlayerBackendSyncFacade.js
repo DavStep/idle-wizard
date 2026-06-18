@@ -30,6 +30,10 @@ export class PlayerBackendSyncFacade {
     this.levelSyncManager.discardPreHydrationLevel();
   }
 
+  discardPendingPlayerLevel() {
+    this.levelSyncManager.discardPendingLevel();
+  }
+
   markGameplaySaveHydrated() {
     this.levelSyncManager.markGameplaySaveHydrated();
   }

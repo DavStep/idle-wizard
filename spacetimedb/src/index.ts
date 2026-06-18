@@ -17,7 +17,7 @@ const DEFAULT_PLAYER_FONT = 'lexend';
 const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
 const DEFAULT_PLAYER_ICON_MODE = 'icons';
 const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
-const MAX_REPORTED_PLAYER_LEVEL = 44;
+const MAX_REPORTED_PLAYER_LEVEL = 100;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
 const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
 const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
@@ -72,11 +72,16 @@ const NPC_MARKET_MAX_TARGET_STOCK = 10_000_000n;
 const NPC_MARKET_MAX_VOLATILITY_BPS = 10_000n;
 const NPC_MARKET_DEFAULT_CUSTOM_TARGET_STOCK = 100n;
 const NPC_MARKET_DEFAULT_CUSTOM_VOLATILITY_BPS = 800n;
+const NPC_MARKET_SOFTNESS_BPS = 1_500;
+const NPC_MARKET_DEMAND_RECOVERY_HALF_LIFE_MICROS = 2n * 60n * 60n * 1_000_000n;
+const NPC_MARKET_AUTO_TUNE_WINDOW_BPS = 500n;
+const NPC_MARKET_AUTO_TUNE_MIN_SIGNAL_QUANTITY = 10n;
+const NPC_MARKET_AUTO_TUNE_MAX_STEP_BPS = 250;
 const MAX_RESEARCH_COST_GOLD = 1_000_000_000n;
 const MAX_RESEARCH_DURATION_SECONDS = 10n * 60n;
 const MAX_GAME_CONFIG_KEY_LENGTH = 48;
 const MAX_GAME_CONFIG_JSON_LENGTH = 80_000;
-const MAX_GAME_CONFIG_LEVELS = 44;
+const MAX_GAME_CONFIG_LEVELS = 100;
 const MAX_GAME_CONFIG_TASKS_PER_LEVEL = 5;
 const MAX_GAME_CONFIG_TASK_QUANTITY = 1_000_000;
 const MAX_GAME_CONFIG_RESOURCE_LIMIT = 1_000_000;
@@ -94,6 +99,7 @@ const MAX_PLAYER_SAVE_CURRENT_RUBY = 10_000;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
+const LEADERBOARD_SUMMARY_LIMIT = 100;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const PERIOD_DAY_MICROS = 86_400_000_000n;
 const PERIOD_WEEK_DAYS = 7n;
@@ -245,23 +251,23 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level4-nettle-seeds",
-          "itemKey": "mintSeed",
-          "quantity": 81
+          "itemKey": "sageSeed",
+          "quantity": 50
         },
         {
           "id": "level4-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 52
+          "quantity": 40
         },
         {
           "id": "level4-sage-herb",
-          "itemKey": "sageHerb",
-          "quantity": 16
+          "itemKey": "mintHerb",
+          "quantity": 20
         },
         {
           "id": "level4-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 3
+          "quantity": 5
         }
       ]
     },
@@ -271,28 +277,23 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level5-nettle-seeds",
-          "itemKey": "nettleSeed",
-          "quantity": 120
+          "itemKey": "mintSeed",
+          "quantity": 60
         },
         {
           "id": "level5-lavender-seeds",
-          "itemKey": "mintSeed",
-          "quantity": 131
+          "itemKey": "lavenderHerb",
+          "quantity": 48
         },
         {
           "id": "level5-lavender-herb",
-          "itemKey": "lavenderHerb",
-          "quantity": 75
+          "itemKey": "nettleHerb",
+          "quantity": 24
         },
         {
           "id": "level5-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 9
-        },
-        {
-          "id": "level5-mana-tonic",
-          "itemKey": "manaTonic",
-          "quantity": 8
+          "quantity": 6
         }
       ]
     },
@@ -302,28 +303,23 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level6-nettle-vigor",
-          "itemKey": "nettleVigor",
-          "quantity": 11
+          "itemKey": "sageSeed",
+          "quantity": 70
         },
         {
           "id": "level6-lavender-seeds",
-          "itemKey": "mintSeed",
-          "quantity": 152
+          "itemKey": "lavenderHerb",
+          "quantity": 56
         },
         {
           "id": "level6-lavender-herb",
-          "itemKey": "lavenderHerb",
-          "quantity": 88
+          "itemKey": "mintHerb",
+          "quantity": 28
         },
         {
           "id": "level6-minor-healing-potion",
-          "itemKey": "minorHealingPotion",
-          "quantity": 10
-        },
-        {
-          "id": "level6-nettle-seeds",
-          "itemKey": "sageSeed",
-          "quantity": 144
+          "itemKey": "nettleVigor",
+          "quantity": 7
         }
       ]
     },
@@ -333,28 +329,23 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level7-lavender-seeds",
-          "itemKey": "lavenderSeed",
-          "quantity": 210
+          "itemKey": "mintSeed",
+          "quantity": 80
         },
         {
           "id": "level7-briar-seeds",
-          "itemKey": "mintSeed",
-          "quantity": 220
+          "itemKey": "briarHerb",
+          "quantity": 64
         },
         {
           "id": "level7-briar-herb",
-          "itemKey": "briarHerb",
-          "quantity": 130
+          "itemKey": "lavenderHerb",
+          "quantity": 32
         },
         {
           "id": "level7-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 15
-        },
-        {
-          "id": "level7-minor-healing-potion",
-          "itemKey": "minorHealingPotion",
-          "quantity": 14
+          "quantity": 8
         }
       ]
     },
@@ -364,28 +355,23 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level8-calming-draught",
-          "itemKey": "calmingDraught",
-          "quantity": 18
+          "itemKey": "nettleSeed",
+          "quantity": 90
         },
         {
           "id": "level8-briar-seeds",
-          "itemKey": "mintSeed",
-          "quantity": 240
+          "itemKey": "briarHerb",
+          "quantity": 72
         },
         {
           "id": "level8-briar-herb",
-          "itemKey": "briarHerb",
-          "quantity": 140
+          "itemKey": "lavenderHerb",
+          "quantity": 36
         },
         {
           "id": "level8-nettle-vigor",
-          "itemKey": "nettleVigor",
-          "quantity": 17
-        },
-        {
-          "id": "level8-lavender-seeds",
-          "itemKey": "lavenderSeed",
-          "quantity": 225
+          "itemKey": "calmingDraught",
+          "quantity": 9
         }
       ]
     },
@@ -395,28 +381,23 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level9-briar-seeds",
-          "itemKey": "briarSeed",
-          "quantity": 255
+          "itemKey": "lavenderSeed",
+          "quantity": 100
         },
         {
           "id": "level9-glowcap-seeds",
-          "itemKey": "lavenderSeed",
-          "quantity": 270
+          "itemKey": "glowcapHerb",
+          "quantity": 80
         },
         {
           "id": "level9-glowcap-herb",
-          "itemKey": "glowcapHerb",
-          "quantity": 160
+          "itemKey": "briarHerb",
+          "quantity": 40
         },
         {
           "id": "level9-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 19
-        },
-        {
-          "id": "level9-nettle-vigor",
-          "itemKey": "nettleVigor",
-          "quantity": 18
+          "quantity": 10
         }
       ]
     },
@@ -426,28 +407,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level10-briar-ward",
-          "itemKey": "briarWard",
-          "quantity": 21
+          "itemKey": "nettleSeed",
+          "quantity": 132
         },
         {
           "id": "level10-glowcap-seeds",
-          "itemKey": "lavenderSeed",
-          "quantity": 285
+          "itemKey": "glowcapHerb",
+          "quantity": 99
         },
         {
           "id": "level10-glowcap-herb",
-          "itemKey": "glowcapHerb",
-          "quantity": 170
+          "itemKey": "lavenderHerb",
+          "quantity": 66
         },
         {
           "id": "level10-calming-draught",
-          "itemKey": "calmingDraught",
-          "quantity": 20
+          "itemKey": "briarWard",
+          "quantity": 11
         },
         {
           "id": "level10-briar-seeds",
-          "itemKey": "nettleSeed",
-          "quantity": 275
+          "itemKey": "calmingDraught",
+          "quantity": 8
         }
       ]
     },
@@ -457,28 +438,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level11-glowcap-seeds",
-          "itemKey": "glowcapSeed",
-          "quantity": 305
+          "itemKey": "lavenderSeed",
+          "quantity": 144
         },
         {
           "id": "level11-mandrake-seeds",
-          "itemKey": "lavenderSeed",
-          "quantity": 315
+          "itemKey": "mandrakeHerb",
+          "quantity": 108
         },
         {
           "id": "level11-mandrake-herb",
-          "itemKey": "mandrakeHerb",
-          "quantity": 190
+          "itemKey": "glowcapHerb",
+          "quantity": 72
         },
         {
           "id": "level11-briar-ward",
           "itemKey": "briarWard",
-          "quantity": 22
+          "quantity": 12
         },
         {
           "id": "level11-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 21
+          "quantity": 9
         }
       ]
     },
@@ -488,28 +469,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level12-lantern-tonic",
-          "itemKey": "lanternTonic",
-          "quantity": 25
+          "itemKey": "lavenderSeed",
+          "quantity": 156
         },
         {
           "id": "level12-mandrake-seeds",
-          "itemKey": "lavenderSeed",
-          "quantity": 335
+          "itemKey": "mandrakeHerb",
+          "quantity": 117
         },
         {
           "id": "level12-mandrake-herb",
-          "itemKey": "mandrakeHerb",
-          "quantity": 200
+          "itemKey": "glowcapHerb",
+          "quantity": 78
         },
         {
           "id": "level12-briar-ward",
-          "itemKey": "briarWard",
-          "quantity": 23
+          "itemKey": "lanternTonic",
+          "quantity": 13
         },
         {
           "id": "level12-glowcap-seeds",
-          "itemKey": "glowcapSeed",
-          "quantity": 325
+          "itemKey": "briarWard",
+          "quantity": 10
         }
       ]
     },
@@ -519,28 +500,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level13-mandrake-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 355
+          "itemKey": "glowcapSeed",
+          "quantity": 168
         },
         {
           "id": "level13-sunroot-seeds",
-          "itemKey": "glowcapSeed",
-          "quantity": 365
+          "itemKey": "sunrootHerb",
+          "quantity": 126
         },
         {
           "id": "level13-sunroot-herb",
-          "itemKey": "sunrootHerb",
-          "quantity": 220
+          "itemKey": "mandrakeHerb",
+          "quantity": 84
         },
         {
           "id": "level13-lantern-tonic",
           "itemKey": "lanternTonic",
-          "quantity": 26
+          "quantity": 14
         },
         {
           "id": "level13-briar-ward",
           "itemKey": "briarWard",
-          "quantity": 25
+          "quantity": 10
         }
       ]
     },
@@ -550,28 +531,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level14-simple-antidote",
-          "itemKey": "simpleAntidote",
-          "quantity": 28
+          "itemKey": "glowcapSeed",
+          "quantity": 180
         },
         {
           "id": "level14-sunroot-seeds",
-          "itemKey": "glowcapSeed",
-          "quantity": 385
+          "itemKey": "sunrootHerb",
+          "quantity": 135
         },
         {
           "id": "level14-sunroot-herb",
-          "itemKey": "sunrootHerb",
-          "quantity": 230
+          "itemKey": "mandrakeHerb",
+          "quantity": 90
         },
         {
           "id": "level14-lantern-tonic",
-          "itemKey": "lanternTonic",
-          "quantity": 27
+          "itemKey": "simpleAntidote",
+          "quantity": 15
         },
         {
           "id": "level14-mandrake-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 370
+          "itemKey": "lanternTonic",
+          "quantity": 11
         }
       ]
     },
@@ -582,27 +563,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level15-sunroot-seeds",
           "itemKey": "glowcapSeed",
-          "quantity": 400
+          "quantity": 192
         },
         {
           "id": "level15-sunroot-herb",
           "itemKey": "sunrootHerb",
-          "quantity": 240
+          "quantity": 144
         },
         {
           "id": "level15-simple-antidote",
-          "itemKey": "simpleAntidote",
-          "quantity": 29
+          "itemKey": "mandrakeHerb",
+          "quantity": 96
         },
         {
           "id": "level15-lantern-tonic",
-          "itemKey": "lanternTonic",
-          "quantity": 28
+          "itemKey": "simpleAntidote",
+          "quantity": 16
         },
         {
           "id": "level15-mandrake-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 390
+          "itemKey": "lanternTonic",
+          "quantity": 12
         }
       ]
     },
@@ -612,28 +593,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level16-sunroot-seeds",
-          "itemKey": "sunrootSeed",
-          "quantity": 420
+          "itemKey": "mandrakeSeed",
+          "quantity": 204
         },
         {
           "id": "level16-moonflower-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 430
+          "itemKey": "moonflowerHerb",
+          "quantity": 153
         },
         {
           "id": "level16-moonflower-herb",
-          "itemKey": "moonflowerHerb",
-          "quantity": 255
+          "itemKey": "sunrootHerb",
+          "quantity": 102
         },
         {
           "id": "level16-venom-draught",
           "itemKey": "venomDraught",
-          "quantity": 32
+          "quantity": 17
         },
         {
           "id": "level16-simple-antidote",
           "itemKey": "simpleAntidote",
-          "quantity": 30
+          "quantity": 12
         }
       ]
     },
@@ -644,27 +625,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level17-moonflower-seeds",
           "itemKey": "mandrakeSeed",
-          "quantity": 450
+          "quantity": 216
         },
         {
           "id": "level17-moonflower-herb",
           "itemKey": "moonflowerHerb",
-          "quantity": 265
+          "quantity": 162
         },
         {
           "id": "level17-venom-draught",
-          "itemKey": "venomDraught",
-          "quantity": 33
+          "itemKey": "sunrootHerb",
+          "quantity": 108
         },
         {
           "id": "level17-simple-antidote",
-          "itemKey": "simpleAntidote",
-          "quantity": 31
+          "itemKey": "venomDraught",
+          "quantity": 18
         },
         {
           "id": "level17-sunroot-seeds",
-          "itemKey": "sunrootSeed",
-          "quantity": 435
+          "itemKey": "simpleAntidote",
+          "quantity": 13
         }
       ]
     },
@@ -674,28 +655,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level18-healing-potion",
-          "itemKey": "healingPotion",
-          "quantity": 35
+          "itemKey": "mandrakeSeed",
+          "quantity": 228
         },
         {
           "id": "level18-moonflower-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 465
+          "itemKey": "moonflowerHerb",
+          "quantity": 171
         },
         {
           "id": "level18-moonflower-herb",
-          "itemKey": "moonflowerHerb",
-          "quantity": 275
+          "itemKey": "sunrootHerb",
+          "quantity": 114
         },
         {
           "id": "level18-venom-draught",
-          "itemKey": "venomDraught",
-          "quantity": 34
+          "itemKey": "healingPotion",
+          "quantity": 19
         },
         {
           "id": "level18-sunroot-seeds",
-          "itemKey": "sunrootSeed",
-          "quantity": 455
+          "itemKey": "venomDraught",
+          "quantity": 14
         }
       ]
     },
@@ -705,28 +686,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level19-moonflower-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 485
+          "itemKey": "sunrootSeed",
+          "quantity": 240
         },
         {
           "id": "level19-frostmoss-seeds",
-          "itemKey": "sunrootSeed",
-          "quantity": 495
+          "itemKey": "frostmossHerb",
+          "quantity": 180
         },
         {
           "id": "level19-frostmoss-herb",
-          "itemKey": "frostmossHerb",
-          "quantity": 295
+          "itemKey": "moonflowerHerb",
+          "quantity": 120
         },
         {
           "id": "level19-healing-potion",
           "itemKey": "healingPotion",
-          "quantity": 36
+          "quantity": 20
         },
         {
           "id": "level19-venom-draught",
           "itemKey": "venomDraught",
-          "quantity": 35
+          "quantity": 14
         }
       ]
     },
@@ -736,28 +717,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level20-sunroot-stamina",
-          "itemKey": "sunrootStamina",
-          "quantity": 39
+          "itemKey": "mandrakeSeed",
+          "quantity": 252
         },
         {
           "id": "level20-frostmoss-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 515
+          "itemKey": "frostmossHerb",
+          "quantity": 189
         },
         {
           "id": "level20-frostmoss-herb",
-          "itemKey": "frostmossHerb",
-          "quantity": 305
+          "itemKey": "moonflowerHerb",
+          "quantity": 126
         },
         {
           "id": "level20-healing-potion",
-          "itemKey": "healingPotion",
-          "quantity": 37
+          "itemKey": "sunrootStamina",
+          "quantity": 21
         },
         {
           "id": "level20-moonflower-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 505
+          "itemKey": "healingPotion",
+          "quantity": 15
         }
       ]
     },
@@ -768,27 +749,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level21-frostmoss-seeds",
           "itemKey": "mandrakeSeed",
-          "quantity": 535
+          "quantity": 264
         },
         {
           "id": "level21-frostmoss-herb",
           "itemKey": "frostmossHerb",
-          "quantity": 315
+          "quantity": 198
         },
         {
           "id": "level21-sunroot-stamina",
-          "itemKey": "sunrootStamina",
-          "quantity": 40
+          "itemKey": "moonflowerHerb",
+          "quantity": 132
         },
         {
           "id": "level21-healing-potion",
-          "itemKey": "healingPotion",
-          "quantity": 38
+          "itemKey": "sunrootStamina",
+          "quantity": 22
         },
         {
           "id": "level21-moonflower-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 520
+          "itemKey": "healingPotion",
+          "quantity": 16
         }
       ]
     },
@@ -798,28 +779,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level22-frostmoss-seeds",
-          "itemKey": "frostmossSeed",
-          "quantity": 550
+          "itemKey": "moonflowerSeed",
+          "quantity": 276
         },
         {
           "id": "level22-dreambell-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 565
+          "itemKey": "dreambellHerb",
+          "quantity": 207
         },
         {
           "id": "level22-dreambell-herb",
-          "itemKey": "dreambellHerb",
-          "quantity": 335
+          "itemKey": "frostmossHerb",
+          "quantity": 138
         },
         {
           "id": "level22-sunroot-stamina",
           "itemKey": "sunrootStamina",
-          "quantity": 41
+          "quantity": 23
         },
         {
           "id": "level22-healing-potion",
           "itemKey": "healingPotion",
-          "quantity": 39
+          "quantity": 17
         }
       ]
     },
@@ -829,28 +810,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level23-moonlit-focus",
-          "itemKey": "moonlitFocus",
-          "quantity": 43
+          "itemKey": "moonflowerSeed",
+          "quantity": 288
         },
         {
           "id": "level23-dreambell-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 580
+          "itemKey": "dreambellHerb",
+          "quantity": 216
         },
         {
           "id": "level23-dreambell-herb",
-          "itemKey": "dreambellHerb",
-          "quantity": 345
+          "itemKey": "frostmossHerb",
+          "quantity": 144
         },
         {
           "id": "level23-sunroot-stamina",
-          "itemKey": "sunrootStamina",
-          "quantity": 42
+          "itemKey": "moonlitFocus",
+          "quantity": 24
         },
         {
           "id": "level23-frostmoss-seeds",
-          "itemKey": "frostmossSeed",
-          "quantity": 570
+          "itemKey": "sunrootStamina",
+          "quantity": 17
         }
       ]
     },
@@ -861,27 +842,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level24-dreambell-seeds",
           "itemKey": "moonflowerSeed",
-          "quantity": 600
+          "quantity": 300
         },
         {
           "id": "level24-dreambell-herb",
           "itemKey": "dreambellHerb",
-          "quantity": 355
+          "quantity": 225
         },
         {
           "id": "level24-moonlit-focus",
-          "itemKey": "moonlitFocus",
-          "quantity": 44
+          "itemKey": "frostmossHerb",
+          "quantity": 150
         },
         {
           "id": "level24-sunroot-stamina",
-          "itemKey": "sunrootStamina",
-          "quantity": 43
+          "itemKey": "moonlitFocus",
+          "quantity": 25
         },
         {
           "id": "level24-frostmoss-seeds",
-          "itemKey": "frostmossSeed",
-          "quantity": 585
+          "itemKey": "sunrootStamina",
+          "quantity": 18
         }
       ]
     },
@@ -891,28 +872,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level25-dreambell-seeds",
-          "itemKey": "dreambellSeed",
-          "quantity": 615
+          "itemKey": "frostmossSeed",
+          "quantity": 312
         },
         {
           "id": "level25-star-anise-seeds",
-          "itemKey": "frostmossSeed",
-          "quantity": 630
+          "itemKey": "starAniseHerb",
+          "quantity": 234
         },
         {
           "id": "level25-star-anise-herb",
-          "itemKey": "starAniseHerb",
-          "quantity": 375
+          "itemKey": "dreambellHerb",
+          "quantity": 156
         },
         {
           "id": "level25-moonlit-focus",
           "itemKey": "moonlitFocus",
-          "quantity": 45
+          "quantity": 26
         },
         {
           "id": "level25-sunroot-stamina",
           "itemKey": "sunrootStamina",
-          "quantity": 44
+          "quantity": 19
         }
       ]
     },
@@ -922,28 +903,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level26-frostmoss-cleanse",
-          "itemKey": "frostmossCleanse",
-          "quantity": 48
+          "itemKey": "moonflowerSeed",
+          "quantity": 324
         },
         {
           "id": "level26-star-anise-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 645
+          "itemKey": "starAniseHerb",
+          "quantity": 243
         },
         {
           "id": "level26-star-anise-herb",
-          "itemKey": "starAniseHerb",
-          "quantity": 385
+          "itemKey": "dreambellHerb",
+          "quantity": 162
         },
         {
           "id": "level26-moonlit-focus",
-          "itemKey": "moonlitFocus",
-          "quantity": 46
+          "itemKey": "frostmossCleanse",
+          "quantity": 27
         },
         {
           "id": "level26-dreambell-seeds",
-          "itemKey": "dreambellSeed",
-          "quantity": 635
+          "itemKey": "moonlitFocus",
+          "quantity": 19
         }
       ]
     },
@@ -954,27 +935,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level27-star-anise-seeds",
           "itemKey": "moonflowerSeed",
-          "quantity": 665
+          "quantity": 336
         },
         {
           "id": "level27-star-anise-herb",
           "itemKey": "starAniseHerb",
-          "quantity": 395
+          "quantity": 252
         },
         {
           "id": "level27-frostmoss-cleanse",
-          "itemKey": "frostmossCleanse",
-          "quantity": 49
+          "itemKey": "dreambellHerb",
+          "quantity": 168
         },
         {
           "id": "level27-moonlit-focus",
-          "itemKey": "moonlitFocus",
-          "quantity": 47
+          "itemKey": "frostmossCleanse",
+          "quantity": 28
         },
         {
           "id": "level27-dreambell-seeds",
-          "itemKey": "dreambellSeed",
-          "quantity": 655
+          "itemKey": "moonlitFocus",
+          "quantity": 20
         }
       ]
     },
@@ -984,28 +965,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level28-star-anise-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 685
+          "itemKey": "dreambellSeed",
+          "quantity": 348
         },
         {
           "id": "level28-bloodrose-seeds",
-          "itemKey": "dreambellSeed",
-          "quantity": 695
+          "itemKey": "bloodroseHerb",
+          "quantity": 261
         },
         {
           "id": "level28-bloodrose-herb",
-          "itemKey": "bloodroseHerb",
-          "quantity": 415
+          "itemKey": "starAniseHerb",
+          "quantity": 174
         },
         {
           "id": "level28-frostmoss-cleanse",
           "itemKey": "frostmossCleanse",
-          "quantity": 50
+          "quantity": 29
         },
         {
           "id": "level28-moonlit-focus",
           "itemKey": "moonlitFocus",
-          "quantity": 49
+          "quantity": 21
         }
       ]
     },
@@ -1015,28 +996,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level29-sleep-draught",
-          "itemKey": "sleepDraught",
-          "quantity": 52
+          "itemKey": "dreambellSeed",
+          "quantity": 360
         },
         {
           "id": "level29-bloodrose-seeds",
-          "itemKey": "dreambellSeed",
-          "quantity": 715
+          "itemKey": "bloodroseHerb",
+          "quantity": 270
         },
         {
           "id": "level29-bloodrose-herb",
-          "itemKey": "bloodroseHerb",
-          "quantity": 425
+          "itemKey": "starAniseHerb",
+          "quantity": 180
         },
         {
           "id": "level29-frostmoss-cleanse",
-          "itemKey": "frostmossCleanse",
-          "quantity": 51
+          "itemKey": "sleepDraught",
+          "quantity": 30
         },
         {
           "id": "level29-star-anise-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 700
+          "itemKey": "frostmossCleanse",
+          "quantity": 21
         }
       ]
     },
@@ -1047,27 +1028,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level30-bloodrose-seeds",
           "itemKey": "dreambellSeed",
-          "quantity": 730
+          "quantity": 465
         },
         {
           "id": "level30-bloodrose-herb",
           "itemKey": "bloodroseHerb",
-          "quantity": 435
+          "quantity": 341
         },
         {
           "id": "level30-sleep-draught",
-          "itemKey": "sleepDraught",
-          "quantity": 53
+          "itemKey": "starAniseHerb",
+          "quantity": 248
         },
         {
           "id": "level30-frostmoss-cleanse",
-          "itemKey": "frostmossCleanse",
-          "quantity": 52
+          "itemKey": "sleepDraught",
+          "quantity": 38
         },
         {
           "id": "level30-star-anise-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 720
+          "itemKey": "frostmossCleanse",
+          "quantity": 31
         }
       ]
     },
@@ -1077,28 +1058,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level31-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 750
+          "itemKey": "starAniseSeed",
+          "quantity": 480
         },
         {
           "id": "level31-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 760
+          "itemKey": "dragonpepperHerb",
+          "quantity": 352
         },
         {
           "id": "level31-dragonpepper-herb",
-          "itemKey": "dragonpepperHerb",
-          "quantity": 450
+          "itemKey": "bloodroseHerb",
+          "quantity": 256
         },
         {
           "id": "level31-sleep-draught",
           "itemKey": "sleepDraught",
-          "quantity": 54
+          "quantity": 39
         },
         {
           "id": "level31-frostmoss-cleanse",
           "itemKey": "frostmossCleanse",
-          "quantity": 53
+          "quantity": 32
         }
       ]
     },
@@ -1108,28 +1089,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level32-elixir-of-life",
-          "itemKey": "elixirOfLife",
-          "quantity": 57
+          "itemKey": "starAniseSeed",
+          "quantity": 495
         },
         {
           "id": "level32-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 780
+          "itemKey": "dragonpepperHerb",
+          "quantity": 363
         },
         {
           "id": "level32-dragonpepper-herb",
-          "itemKey": "dragonpepperHerb",
-          "quantity": 460
+          "itemKey": "bloodroseHerb",
+          "quantity": 264
         },
         {
           "id": "level32-sleep-draught",
-          "itemKey": "sleepDraught",
-          "quantity": 55
+          "itemKey": "elixirOfLife",
+          "quantity": 40
         },
         {
           "id": "level32-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 765
+          "itemKey": "sleepDraught",
+          "quantity": 33
         }
       ]
     },
@@ -1140,27 +1121,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level33-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 795
+          "quantity": 510
         },
         {
           "id": "level33-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 470
+          "quantity": 374
         },
         {
           "id": "level33-elixir-of-life",
-          "itemKey": "elixirOfLife",
-          "quantity": 58
+          "itemKey": "bloodroseHerb",
+          "quantity": 272
         },
         {
           "id": "level33-sleep-draught",
-          "itemKey": "sleepDraught",
-          "quantity": 57
+          "itemKey": "elixirOfLife",
+          "quantity": 41
         },
         {
           "id": "level33-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 785
+          "itemKey": "sleepDraught",
+          "quantity": 34
         }
       ]
     },
@@ -1171,27 +1152,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level34-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 815
+          "quantity": 525
         },
         {
           "id": "level34-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 480
+          "quantity": 385
         },
         {
           "id": "level34-elixir-of-life",
-          "itemKey": "elixirOfLife",
-          "quantity": 59
+          "itemKey": "bloodroseHerb",
+          "quantity": 280
         },
         {
           "id": "level34-sleep-draught",
-          "itemKey": "sleepDraught",
-          "quantity": 58
+          "itemKey": "elixirOfLife",
+          "quantity": 42
         },
         {
           "id": "level34-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 805
+          "itemKey": "sleepDraught",
+          "quantity": 35
         }
       ]
     },
@@ -1201,28 +1182,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level35-star-luck-philtre",
-          "itemKey": "starLuckPhiltre",
-          "quantity": 61
+          "itemKey": "starAniseSeed",
+          "quantity": 540
         },
         {
           "id": "level35-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 835
+          "itemKey": "dragonpepperHerb",
+          "quantity": 396
         },
         {
           "id": "level35-dragonpepper-herb",
-          "itemKey": "dragonpepperHerb",
-          "quantity": 490
+          "itemKey": "bloodroseHerb",
+          "quantity": 288
         },
         {
           "id": "level35-elixir-of-life",
-          "itemKey": "elixirOfLife",
-          "quantity": 60
+          "itemKey": "starLuckPhiltre",
+          "quantity": 44
         },
         {
           "id": "level35-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 820
+          "itemKey": "elixirOfLife",
+          "quantity": 36
         }
       ]
     },
@@ -1233,27 +1214,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level36-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 850
+          "quantity": 555
         },
         {
           "id": "level36-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 500
+          "quantity": 407
         },
         {
           "id": "level36-star-luck-philtre",
-          "itemKey": "starLuckPhiltre",
-          "quantity": 62
+          "itemKey": "bloodroseHerb",
+          "quantity": 296
         },
         {
           "id": "level36-elixir-of-life",
-          "itemKey": "elixirOfLife",
-          "quantity": 61
+          "itemKey": "starLuckPhiltre",
+          "quantity": 45
         },
         {
           "id": "level36-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 840
+          "itemKey": "elixirOfLife",
+          "quantity": 37
         }
       ]
     },
@@ -1264,27 +1245,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level37-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 870
+          "quantity": 570
         },
         {
           "id": "level37-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 510
+          "quantity": 418
         },
         {
           "id": "level37-star-luck-philtre",
-          "itemKey": "starLuckPhiltre",
-          "quantity": 63
+          "itemKey": "bloodroseHerb",
+          "quantity": 304
         },
         {
           "id": "level37-elixir-of-life",
-          "itemKey": "elixirOfLife",
-          "quantity": 62
+          "itemKey": "starLuckPhiltre",
+          "quantity": 46
         },
         {
           "id": "level37-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 855
+          "itemKey": "elixirOfLife",
+          "quantity": 38
         }
       ]
     },
@@ -1294,28 +1275,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level38-deep-dream-vision",
-          "itemKey": "deepDreamVision",
-          "quantity": 66
+          "itemKey": "starAniseSeed",
+          "quantity": 585
         },
         {
           "id": "level38-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 885
+          "itemKey": "dragonpepperHerb",
+          "quantity": 429
         },
         {
           "id": "level38-dragonpepper-herb",
-          "itemKey": "dragonpepperHerb",
-          "quantity": 520
+          "itemKey": "bloodroseHerb",
+          "quantity": 312
         },
         {
           "id": "level38-star-luck-philtre",
-          "itemKey": "starLuckPhiltre",
-          "quantity": 65
+          "itemKey": "deepDreamVision",
+          "quantity": 47
         },
         {
           "id": "level38-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 875
+          "itemKey": "starLuckPhiltre",
+          "quantity": 39
         }
       ]
     },
@@ -1326,27 +1307,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level39-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 905
+          "quantity": 600
         },
         {
           "id": "level39-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 530
+          "quantity": 440
         },
         {
           "id": "level39-deep-dream-vision",
-          "itemKey": "deepDreamVision",
-          "quantity": 67
+          "itemKey": "bloodroseHerb",
+          "quantity": 320
         },
         {
           "id": "level39-star-luck-philtre",
-          "itemKey": "starLuckPhiltre",
-          "quantity": 66
+          "itemKey": "deepDreamVision",
+          "quantity": 48
         },
         {
           "id": "level39-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 895
+          "itemKey": "starLuckPhiltre",
+          "quantity": 40
         }
       ]
     },
@@ -1357,27 +1338,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level40-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 925
+          "quantity": 615
         },
         {
           "id": "level40-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 540
+          "quantity": 451
         },
         {
           "id": "level40-deep-dream-vision",
-          "itemKey": "deepDreamVision",
-          "quantity": 68
+          "itemKey": "bloodroseHerb",
+          "quantity": 328
         },
         {
           "id": "level40-star-luck-philtre",
-          "itemKey": "starLuckPhiltre",
-          "quantity": 67
+          "itemKey": "deepDreamVision",
+          "quantity": 50
         },
         {
           "id": "level40-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 910
+          "itemKey": "starLuckPhiltre",
+          "quantity": 41
         }
       ]
     },
@@ -1387,28 +1368,28 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level41-pact-ward",
-          "itemKey": "pactWard",
-          "quantity": 70
+          "itemKey": "starAniseSeed",
+          "quantity": 630
         },
         {
           "id": "level41-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 940
+          "itemKey": "dragonpepperHerb",
+          "quantity": 462
         },
         {
           "id": "level41-dragonpepper-herb",
-          "itemKey": "dragonpepperHerb",
-          "quantity": 550
+          "itemKey": "bloodroseHerb",
+          "quantity": 336
         },
         {
           "id": "level41-deep-dream-vision",
-          "itemKey": "deepDreamVision",
-          "quantity": 69
+          "itemKey": "pactWard",
+          "quantity": 51
         },
         {
           "id": "level41-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 930
+          "itemKey": "deepDreamVision",
+          "quantity": 42
         }
       ]
     },
@@ -1419,27 +1400,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level42-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 960
+          "quantity": 645
         },
         {
           "id": "level42-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 560
+          "quantity": 473
         },
         {
           "id": "level42-pact-ward",
-          "itemKey": "pactWard",
-          "quantity": 71
+          "itemKey": "bloodroseHerb",
+          "quantity": 344
         },
         {
           "id": "level42-deep-dream-vision",
-          "itemKey": "deepDreamVision",
-          "quantity": 70
+          "itemKey": "pactWard",
+          "quantity": 52
         },
         {
           "id": "level42-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 945
+          "itemKey": "deepDreamVision",
+          "quantity": 43
         }
       ]
     },
@@ -1450,27 +1431,27 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level43-dragonpepper-seeds",
           "itemKey": "starAniseSeed",
-          "quantity": 975
+          "quantity": 660
         },
         {
           "id": "level43-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 570
+          "quantity": 484
         },
         {
           "id": "level43-pact-ward",
-          "itemKey": "pactWard",
-          "quantity": 73
+          "itemKey": "bloodroseHerb",
+          "quantity": 352
         },
         {
           "id": "level43-deep-dream-vision",
-          "itemKey": "deepDreamVision",
-          "quantity": 71
+          "itemKey": "pactWard",
+          "quantity": 53
         },
         {
           "id": "level43-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 965
+          "itemKey": "deepDreamVision",
+          "quantity": 44
         }
       ]
     },
@@ -1480,28 +1461,1764 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level44-dragon-courage",
-          "itemKey": "dragonCourage",
-          "quantity": 75
+          "itemKey": "starAniseSeed",
+          "quantity": 675
         },
         {
           "id": "level44-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 995
+          "itemKey": "dragonpepperHerb",
+          "quantity": 495
         },
         {
           "id": "level44-dragonpepper-herb",
-          "itemKey": "dragonpepperHerb",
-          "quantity": 580
+          "itemKey": "bloodroseHerb",
+          "quantity": 360
         },
         {
           "id": "level44-pact-ward",
-          "itemKey": "pactWard",
-          "quantity": 74
+          "itemKey": "dragonCourage",
+          "quantity": 54
         },
         {
           "id": "level44-bloodrose-seeds",
-          "itemKey": "bloodroseSeed",
-          "quantity": 985
+          "itemKey": "pactWard",
+          "quantity": 45
+        }
+      ]
+    },
+    {
+      "level": 45,
+      "completionCostGold": 20250,
+      "tasks": [
+        {
+          "id": "level45-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 690
+        },
+        {
+          "id": "level45-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 506
+        },
+        {
+          "id": "level45-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 368
+        },
+        {
+          "id": "level45-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 56
+        },
+        {
+          "id": "level45-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 46
+        }
+      ]
+    },
+    {
+      "level": 46,
+      "completionCostGold": 21160,
+      "tasks": [
+        {
+          "id": "level46-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 705
+        },
+        {
+          "id": "level46-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 517
+        },
+        {
+          "id": "level46-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 376
+        },
+        {
+          "id": "level46-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 57
+        },
+        {
+          "id": "level46-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 47
+        }
+      ]
+    },
+    {
+      "level": 47,
+      "completionCostGold": 22090,
+      "tasks": [
+        {
+          "id": "level47-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 720
+        },
+        {
+          "id": "level47-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 528
+        },
+        {
+          "id": "level47-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 384
+        },
+        {
+          "id": "level47-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 58
+        },
+        {
+          "id": "level47-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 48
+        }
+      ]
+    },
+    {
+      "level": 48,
+      "completionCostGold": 23040,
+      "tasks": [
+        {
+          "id": "level48-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 735
+        },
+        {
+          "id": "level48-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 539
+        },
+        {
+          "id": "level48-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 392
+        },
+        {
+          "id": "level48-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 59
+        },
+        {
+          "id": "level48-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 49
+        }
+      ]
+    },
+    {
+      "level": 49,
+      "completionCostGold": 24010,
+      "tasks": [
+        {
+          "id": "level49-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 750
+        },
+        {
+          "id": "level49-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 550
+        },
+        {
+          "id": "level49-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 400
+        },
+        {
+          "id": "level49-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 60
+        },
+        {
+          "id": "level49-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 50
+        }
+      ]
+    },
+    {
+      "level": 50,
+      "completionCostGold": 25000,
+      "tasks": [
+        {
+          "id": "level50-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 765
+        },
+        {
+          "id": "level50-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 561
+        },
+        {
+          "id": "level50-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 408
+        },
+        {
+          "id": "level50-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 62
+        },
+        {
+          "id": "level50-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 51
+        }
+      ]
+    },
+    {
+      "level": 51,
+      "completionCostGold": 26010,
+      "tasks": [
+        {
+          "id": "level51-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 780
+        },
+        {
+          "id": "level51-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 572
+        },
+        {
+          "id": "level51-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 416
+        },
+        {
+          "id": "level51-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 63
+        },
+        {
+          "id": "level51-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 52
+        }
+      ]
+    },
+    {
+      "level": 52,
+      "completionCostGold": 27040,
+      "tasks": [
+        {
+          "id": "level52-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 795
+        },
+        {
+          "id": "level52-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 583
+        },
+        {
+          "id": "level52-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 424
+        },
+        {
+          "id": "level52-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 64
+        },
+        {
+          "id": "level52-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 53
+        }
+      ]
+    },
+    {
+      "level": 53,
+      "completionCostGold": 28090,
+      "tasks": [
+        {
+          "id": "level53-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 810
+        },
+        {
+          "id": "level53-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 594
+        },
+        {
+          "id": "level53-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 432
+        },
+        {
+          "id": "level53-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 65
+        },
+        {
+          "id": "level53-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 54
+        }
+      ]
+    },
+    {
+      "level": 54,
+      "completionCostGold": 29160,
+      "tasks": [
+        {
+          "id": "level54-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 825
+        },
+        {
+          "id": "level54-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 605
+        },
+        {
+          "id": "level54-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 440
+        },
+        {
+          "id": "level54-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 66
+        },
+        {
+          "id": "level54-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 55
+        }
+      ]
+    },
+    {
+      "level": 55,
+      "completionCostGold": 30250,
+      "tasks": [
+        {
+          "id": "level55-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 840
+        },
+        {
+          "id": "level55-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 616
+        },
+        {
+          "id": "level55-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 448
+        },
+        {
+          "id": "level55-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 68
+        },
+        {
+          "id": "level55-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 56
+        }
+      ]
+    },
+    {
+      "level": 56,
+      "completionCostGold": 31360,
+      "tasks": [
+        {
+          "id": "level56-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 855
+        },
+        {
+          "id": "level56-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 627
+        },
+        {
+          "id": "level56-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 456
+        },
+        {
+          "id": "level56-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 69
+        },
+        {
+          "id": "level56-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 57
+        }
+      ]
+    },
+    {
+      "level": 57,
+      "completionCostGold": 32490,
+      "tasks": [
+        {
+          "id": "level57-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 870
+        },
+        {
+          "id": "level57-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 638
+        },
+        {
+          "id": "level57-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 464
+        },
+        {
+          "id": "level57-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 70
+        },
+        {
+          "id": "level57-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 58
+        }
+      ]
+    },
+    {
+      "level": 58,
+      "completionCostGold": 33640,
+      "tasks": [
+        {
+          "id": "level58-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 885
+        },
+        {
+          "id": "level58-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 649
+        },
+        {
+          "id": "level58-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 472
+        },
+        {
+          "id": "level58-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 71
+        },
+        {
+          "id": "level58-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 59
+        }
+      ]
+    },
+    {
+      "level": 59,
+      "completionCostGold": 34810,
+      "tasks": [
+        {
+          "id": "level59-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 900
+        },
+        {
+          "id": "level59-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 660
+        },
+        {
+          "id": "level59-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 480
+        },
+        {
+          "id": "level59-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 72
+        },
+        {
+          "id": "level59-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 60
+        }
+      ]
+    },
+    {
+      "level": 60,
+      "completionCostGold": 36000,
+      "tasks": [
+        {
+          "id": "level60-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1098
+        },
+        {
+          "id": "level60-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 854
+        },
+        {
+          "id": "level60-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 610
+        },
+        {
+          "id": "level60-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 92
+        },
+        {
+          "id": "level60-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 74
+        }
+      ]
+    },
+    {
+      "level": 61,
+      "completionCostGold": 37210,
+      "tasks": [
+        {
+          "id": "level61-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1116
+        },
+        {
+          "id": "level61-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 868
+        },
+        {
+          "id": "level61-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 620
+        },
+        {
+          "id": "level61-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 93
+        },
+        {
+          "id": "level61-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 75
+        }
+      ]
+    },
+    {
+      "level": 62,
+      "completionCostGold": 38440,
+      "tasks": [
+        {
+          "id": "level62-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1134
+        },
+        {
+          "id": "level62-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 882
+        },
+        {
+          "id": "level62-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 630
+        },
+        {
+          "id": "level62-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 95
+        },
+        {
+          "id": "level62-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 76
+        }
+      ]
+    },
+    {
+      "level": 63,
+      "completionCostGold": 39690,
+      "tasks": [
+        {
+          "id": "level63-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1152
+        },
+        {
+          "id": "level63-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 896
+        },
+        {
+          "id": "level63-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 640
+        },
+        {
+          "id": "level63-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 96
+        },
+        {
+          "id": "level63-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 77
+        }
+      ]
+    },
+    {
+      "level": 64,
+      "completionCostGold": 40960,
+      "tasks": [
+        {
+          "id": "level64-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1170
+        },
+        {
+          "id": "level64-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 910
+        },
+        {
+          "id": "level64-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 650
+        },
+        {
+          "id": "level64-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 98
+        },
+        {
+          "id": "level64-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 78
+        }
+      ]
+    },
+    {
+      "level": 65,
+      "completionCostGold": 42250,
+      "tasks": [
+        {
+          "id": "level65-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1188
+        },
+        {
+          "id": "level65-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 924
+        },
+        {
+          "id": "level65-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 660
+        },
+        {
+          "id": "level65-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 99
+        },
+        {
+          "id": "level65-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 80
+        }
+      ]
+    },
+    {
+      "level": 66,
+      "completionCostGold": 43560,
+      "tasks": [
+        {
+          "id": "level66-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1206
+        },
+        {
+          "id": "level66-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 938
+        },
+        {
+          "id": "level66-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 670
+        },
+        {
+          "id": "level66-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 101
+        },
+        {
+          "id": "level66-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 81
+        }
+      ]
+    },
+    {
+      "level": 67,
+      "completionCostGold": 44890,
+      "tasks": [
+        {
+          "id": "level67-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1224
+        },
+        {
+          "id": "level67-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 952
+        },
+        {
+          "id": "level67-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 680
+        },
+        {
+          "id": "level67-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 102
+        },
+        {
+          "id": "level67-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 82
+        }
+      ]
+    },
+    {
+      "level": 68,
+      "completionCostGold": 46240,
+      "tasks": [
+        {
+          "id": "level68-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1242
+        },
+        {
+          "id": "level68-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 966
+        },
+        {
+          "id": "level68-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 690
+        },
+        {
+          "id": "level68-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 104
+        },
+        {
+          "id": "level68-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 83
+        }
+      ]
+    },
+    {
+      "level": 69,
+      "completionCostGold": 47610,
+      "tasks": [
+        {
+          "id": "level69-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1260
+        },
+        {
+          "id": "level69-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 980
+        },
+        {
+          "id": "level69-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 700
+        },
+        {
+          "id": "level69-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 105
+        },
+        {
+          "id": "level69-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 84
+        }
+      ]
+    },
+    {
+      "level": 70,
+      "completionCostGold": 49000,
+      "tasks": [
+        {
+          "id": "level70-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1278
+        },
+        {
+          "id": "level70-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 994
+        },
+        {
+          "id": "level70-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 710
+        },
+        {
+          "id": "level70-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 107
+        },
+        {
+          "id": "level70-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 86
+        }
+      ]
+    },
+    {
+      "level": 71,
+      "completionCostGold": 50410,
+      "tasks": [
+        {
+          "id": "level71-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1296
+        },
+        {
+          "id": "level71-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1008
+        },
+        {
+          "id": "level71-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 720
+        },
+        {
+          "id": "level71-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 108
+        },
+        {
+          "id": "level71-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 87
+        }
+      ]
+    },
+    {
+      "level": 72,
+      "completionCostGold": 51840,
+      "tasks": [
+        {
+          "id": "level72-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1314
+        },
+        {
+          "id": "level72-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1022
+        },
+        {
+          "id": "level72-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 730
+        },
+        {
+          "id": "level72-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 110
+        },
+        {
+          "id": "level72-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 88
+        }
+      ]
+    },
+    {
+      "level": 73,
+      "completionCostGold": 53290,
+      "tasks": [
+        {
+          "id": "level73-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1332
+        },
+        {
+          "id": "level73-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1036
+        },
+        {
+          "id": "level73-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 740
+        },
+        {
+          "id": "level73-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 111
+        },
+        {
+          "id": "level73-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 89
+        }
+      ]
+    },
+    {
+      "level": 74,
+      "completionCostGold": 54760,
+      "tasks": [
+        {
+          "id": "level74-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1350
+        },
+        {
+          "id": "level74-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1050
+        },
+        {
+          "id": "level74-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 750
+        },
+        {
+          "id": "level74-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 113
+        },
+        {
+          "id": "level74-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 90
+        }
+      ]
+    },
+    {
+      "level": 75,
+      "completionCostGold": 56250,
+      "tasks": [
+        {
+          "id": "level75-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1368
+        },
+        {
+          "id": "level75-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1064
+        },
+        {
+          "id": "level75-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 760
+        },
+        {
+          "id": "level75-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 114
+        },
+        {
+          "id": "level75-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 92
+        }
+      ]
+    },
+    {
+      "level": 76,
+      "completionCostGold": 57760,
+      "tasks": [
+        {
+          "id": "level76-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1386
+        },
+        {
+          "id": "level76-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1078
+        },
+        {
+          "id": "level76-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 770
+        },
+        {
+          "id": "level76-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 116
+        },
+        {
+          "id": "level76-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 93
+        }
+      ]
+    },
+    {
+      "level": 77,
+      "completionCostGold": 59290,
+      "tasks": [
+        {
+          "id": "level77-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1404
+        },
+        {
+          "id": "level77-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1092
+        },
+        {
+          "id": "level77-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 780
+        },
+        {
+          "id": "level77-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 117
+        },
+        {
+          "id": "level77-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 94
+        }
+      ]
+    },
+    {
+      "level": 78,
+      "completionCostGold": 60840,
+      "tasks": [
+        {
+          "id": "level78-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1422
+        },
+        {
+          "id": "level78-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1106
+        },
+        {
+          "id": "level78-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 790
+        },
+        {
+          "id": "level78-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 119
+        },
+        {
+          "id": "level78-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 95
+        }
+      ]
+    },
+    {
+      "level": 79,
+      "completionCostGold": 62410,
+      "tasks": [
+        {
+          "id": "level79-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1440
+        },
+        {
+          "id": "level79-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1120
+        },
+        {
+          "id": "level79-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 800
+        },
+        {
+          "id": "level79-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 120
+        },
+        {
+          "id": "level79-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 96
+        }
+      ]
+    },
+    {
+      "level": 80,
+      "completionCostGold": 64000,
+      "tasks": [
+        {
+          "id": "level80-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1782
+        },
+        {
+          "id": "level80-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1377
+        },
+        {
+          "id": "level80-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1053
+        },
+        {
+          "id": "level80-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 162
+        },
+        {
+          "id": "level80-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 122
+        }
+      ]
+    },
+    {
+      "level": 81,
+      "completionCostGold": 65610,
+      "tasks": [
+        {
+          "id": "level81-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1804
+        },
+        {
+          "id": "level81-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1394
+        },
+        {
+          "id": "level81-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1066
+        },
+        {
+          "id": "level81-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 164
+        },
+        {
+          "id": "level81-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 123
+        }
+      ]
+    },
+    {
+      "level": 82,
+      "completionCostGold": 67240,
+      "tasks": [
+        {
+          "id": "level82-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1826
+        },
+        {
+          "id": "level82-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1411
+        },
+        {
+          "id": "level82-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1079
+        },
+        {
+          "id": "level82-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 166
+        },
+        {
+          "id": "level82-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 125
+        }
+      ]
+    },
+    {
+      "level": 83,
+      "completionCostGold": 68890,
+      "tasks": [
+        {
+          "id": "level83-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1848
+        },
+        {
+          "id": "level83-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1428
+        },
+        {
+          "id": "level83-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1092
+        },
+        {
+          "id": "level83-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 168
+        },
+        {
+          "id": "level83-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 126
+        }
+      ]
+    },
+    {
+      "level": 84,
+      "completionCostGold": 70560,
+      "tasks": [
+        {
+          "id": "level84-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1870
+        },
+        {
+          "id": "level84-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1445
+        },
+        {
+          "id": "level84-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1105
+        },
+        {
+          "id": "level84-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 170
+        },
+        {
+          "id": "level84-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 128
+        }
+      ]
+    },
+    {
+      "level": 85,
+      "completionCostGold": 72250,
+      "tasks": [
+        {
+          "id": "level85-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1892
+        },
+        {
+          "id": "level85-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1462
+        },
+        {
+          "id": "level85-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1118
+        },
+        {
+          "id": "level85-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 172
+        },
+        {
+          "id": "level85-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 129
+        }
+      ]
+    },
+    {
+      "level": 86,
+      "completionCostGold": 73960,
+      "tasks": [
+        {
+          "id": "level86-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1914
+        },
+        {
+          "id": "level86-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1479
+        },
+        {
+          "id": "level86-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1131
+        },
+        {
+          "id": "level86-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 174
+        },
+        {
+          "id": "level86-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 131
+        }
+      ]
+    },
+    {
+      "level": 87,
+      "completionCostGold": 75690,
+      "tasks": [
+        {
+          "id": "level87-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1936
+        },
+        {
+          "id": "level87-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1496
+        },
+        {
+          "id": "level87-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1144
+        },
+        {
+          "id": "level87-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 176
+        },
+        {
+          "id": "level87-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 132
+        }
+      ]
+    },
+    {
+      "level": 88,
+      "completionCostGold": 77440,
+      "tasks": [
+        {
+          "id": "level88-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1958
+        },
+        {
+          "id": "level88-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1513
+        },
+        {
+          "id": "level88-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1157
+        },
+        {
+          "id": "level88-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 178
+        },
+        {
+          "id": "level88-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 134
+        }
+      ]
+    },
+    {
+      "level": 89,
+      "completionCostGold": 79210,
+      "tasks": [
+        {
+          "id": "level89-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 1980
+        },
+        {
+          "id": "level89-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1530
+        },
+        {
+          "id": "level89-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1170
+        },
+        {
+          "id": "level89-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 180
+        },
+        {
+          "id": "level89-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 135
+        }
+      ]
+    },
+    {
+      "level": 90,
+      "completionCostGold": 81000,
+      "tasks": [
+        {
+          "id": "level90-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2002
+        },
+        {
+          "id": "level90-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1547
+        },
+        {
+          "id": "level90-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1183
+        },
+        {
+          "id": "level90-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 182
+        },
+        {
+          "id": "level90-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 137
+        }
+      ]
+    },
+    {
+      "level": 91,
+      "completionCostGold": 82810,
+      "tasks": [
+        {
+          "id": "level91-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2024
+        },
+        {
+          "id": "level91-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1564
+        },
+        {
+          "id": "level91-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1196
+        },
+        {
+          "id": "level91-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 184
+        },
+        {
+          "id": "level91-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 138
+        }
+      ]
+    },
+    {
+      "level": 92,
+      "completionCostGold": 84640,
+      "tasks": [
+        {
+          "id": "level92-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2046
+        },
+        {
+          "id": "level92-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1581
+        },
+        {
+          "id": "level92-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1209
+        },
+        {
+          "id": "level92-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 186
+        },
+        {
+          "id": "level92-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 140
+        }
+      ]
+    },
+    {
+      "level": 93,
+      "completionCostGold": 86490,
+      "tasks": [
+        {
+          "id": "level93-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2068
+        },
+        {
+          "id": "level93-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1598
+        },
+        {
+          "id": "level93-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1222
+        },
+        {
+          "id": "level93-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 188
+        },
+        {
+          "id": "level93-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 141
+        }
+      ]
+    },
+    {
+      "level": 94,
+      "completionCostGold": 88360,
+      "tasks": [
+        {
+          "id": "level94-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2090
+        },
+        {
+          "id": "level94-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1615
+        },
+        {
+          "id": "level94-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1235
+        },
+        {
+          "id": "level94-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 190
+        },
+        {
+          "id": "level94-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 143
+        }
+      ]
+    },
+    {
+      "level": 95,
+      "completionCostGold": 90250,
+      "tasks": [
+        {
+          "id": "level95-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2112
+        },
+        {
+          "id": "level95-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1632
+        },
+        {
+          "id": "level95-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1248
+        },
+        {
+          "id": "level95-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 192
+        },
+        {
+          "id": "level95-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 144
+        }
+      ]
+    },
+    {
+      "level": 96,
+      "completionCostGold": 92160,
+      "tasks": [
+        {
+          "id": "level96-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2134
+        },
+        {
+          "id": "level96-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1649
+        },
+        {
+          "id": "level96-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1261
+        },
+        {
+          "id": "level96-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 194
+        },
+        {
+          "id": "level96-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 146
+        }
+      ]
+    },
+    {
+      "level": 97,
+      "completionCostGold": 94090,
+      "tasks": [
+        {
+          "id": "level97-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2156
+        },
+        {
+          "id": "level97-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1666
+        },
+        {
+          "id": "level97-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1274
+        },
+        {
+          "id": "level97-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 196
+        },
+        {
+          "id": "level97-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 147
+        }
+      ]
+    },
+    {
+      "level": 98,
+      "completionCostGold": 96040,
+      "tasks": [
+        {
+          "id": "level98-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2178
+        },
+        {
+          "id": "level98-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1683
+        },
+        {
+          "id": "level98-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1287
+        },
+        {
+          "id": "level98-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 198
+        },
+        {
+          "id": "level98-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 149
+        }
+      ]
+    },
+    {
+      "level": 99,
+      "completionCostGold": 98010,
+      "tasks": [
+        {
+          "id": "level99-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2200
+        },
+        {
+          "id": "level99-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1700
+        },
+        {
+          "id": "level99-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1300
+        },
+        {
+          "id": "level99-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 200
+        },
+        {
+          "id": "level99-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 150
+        }
+      ]
+    },
+    {
+      "level": 100,
+      "completionCostGold": 100000,
+      "tasks": [
+        {
+          "id": "level100-star-anise--seeds-1",
+          "itemKey": "starAniseSeed",
+          "quantity": 2200
+        },
+        {
+          "id": "level100-dragonpepper--herb-2",
+          "itemKey": "dragonpepperHerb",
+          "quantity": 1700
+        },
+        {
+          "id": "level100-bloodrose--herb-3",
+          "itemKey": "bloodroseHerb",
+          "quantity": 1300
+        },
+        {
+          "id": "level100-dragon-courage-4",
+          "itemKey": "dragonCourage",
+          "quantity": 200
+        },
+        {
+          "id": "level100-pact-ward-5",
+          "itemKey": "pactWard",
+          "quantity": 150
         }
       ]
     }
@@ -1510,7 +3227,7 @@ const DEFAULT_TASKS_CONFIG = {
 const DEFAULT_TASKS_CONFIG_JSON = JSON.stringify(DEFAULT_TASKS_CONFIG);
 const DEFAULT_CURRENT_TASKS_CONFIG_JSON = DEFAULT_TASKS_CONFIG_JSON;
 const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = JSON.stringify({
-  "maxLevel": 44,
+  "maxLevel": 100,
   "mana": {
     "baseMaxManaCap": 50,
     "maxManaCapPerLevel": 50,
@@ -1864,6 +3581,10 @@ const researchDefaultDurationOverrideSecondsById: Record<string, bigint> = {
   'unlockRecipe:manaTonic': 60n,
 };
 
+const researchLegacyCostGoldById: Record<string, readonly bigint[]> = {
+  'unlockRecipe:manaTonic': [150n, 80n],
+};
+
 const researchLegacyDurationSecondsById: Record<string, bigint> = {
   'unlockRecipe:manaTonic': 600n,
 };
@@ -2181,12 +3902,16 @@ const unknownPotionCatalogByKey = new Map(
   unknownPotionCatalog.map((potion) => [potion.key, potion]),
 );
 
+function getSeedMarketBasePriceGold(herb: (typeof herbCatalog)[number]): number {
+  return roundGoldPrice((herbMarketBasePriceGoldByKey[herb.key] ?? 2) * 0.4);
+}
+
 const npcMarketCatalog = [
   ...herbCatalog.map((herb) => ({
     itemKey: `${herb.key}Seed`,
     itemLabel: `${herb.label} seed`,
     itemKind: 'seed',
-    basePriceGold: 1,
+    basePriceGold: getSeedMarketBasePriceGold(herb),
     targetStock: 1_000n,
     volatilityBps: 1_200n,
   })),
@@ -4583,6 +6308,21 @@ function normalizeResearchCostGold(value: bigint | number, fallback: bigint): bi
   return safeValue;
 }
 
+function normalizeStoredResearchCostGold(
+  researchId: string,
+  value: bigint | number,
+  fallback: bigint,
+): bigint {
+  const costGold = normalizeResearchCostGold(value, fallback);
+  const legacyCostGoldValues = researchLegacyCostGoldById[researchId] ?? [];
+
+  if (legacyCostGoldValues.some((legacyCostGold) => costGold === legacyCostGold)) {
+    return fallback;
+  }
+
+  return costGold;
+}
+
 function validateResearchCostGold(costGold: bigint | number): bigint {
   const safeCostGold = toBigInt(costGold);
 
@@ -4717,6 +6457,41 @@ function normalizeGameConfigJson(
   if (configKey === 'research' && isRecord(parsedConfig)) {
     const normalizedResearchConfig = { ...parsedConfig };
     let changed = false;
+    const defaultResearchCostsGold = toNumberRecord(researchDefaultCostGoldById);
+
+    if (isRecord(parsedConfig.researchCostsGold)) {
+      const existingCostsGold = parsedConfig.researchCostsGold;
+      const missingGoldCost = Object.keys(defaultResearchCostsGold).some(
+        (researchId) => existingCostsGold[researchId] === undefined,
+      );
+      const nextCostsGold = {
+        ...defaultResearchCostsGold,
+        ...existingCostsGold,
+      };
+      const replacedLegacyGoldCost = Object.entries(researchLegacyCostGoldById).some(
+        ([researchId, legacyCostGoldValues]) => {
+          const currentCostGold = Number(nextCostsGold[researchId]);
+          if (
+            !legacyCostGoldValues.some(
+              (legacyCostGold) => currentCostGold === Number(legacyCostGold),
+            )
+          ) {
+            return false;
+          }
+
+          nextCostsGold[researchId] = defaultResearchCostsGold[researchId];
+          return true;
+        },
+      );
+
+      if (missingGoldCost || replacedLegacyGoldCost) {
+        normalizedResearchConfig.researchCostsGold = nextCostsGold;
+        changed = true;
+      }
+    } else {
+      normalizedResearchConfig.researchCostsGold = defaultResearchCostsGold;
+      changed = true;
+    }
 
     if (isRecord(parsedConfig.researchCostsRuby)) {
       const existingCostsRuby = parsedConfig.researchCostsRuby;
@@ -8415,7 +10190,7 @@ function getLeaderboardSummaryRows(ctx: any) {
   addRanks(allTimeRanked, 'allTimeRank');
 
   for (const ranked of [dailyRanked, weeklyRanked, monthlyRanked, allTimeRanked]) {
-    ranked.slice(0, 10).forEach(addVisible);
+    ranked.slice(0, LEADERBOARD_SUMMARY_LIMIT).forEach(addVisible);
   }
 
   const ownEntry = ctx.db.leaderboard.identity.find(ctx.sender) as any;
@@ -8648,20 +10423,11 @@ function normalizeGameConfigJsonOrDefault(
 }
 
 function getNpcBuyPriceGold(marketPriceGold: number): number {
-  return clampNumber(
-    roundGoldPrice((marketPriceGold * NPC_MARKET_BUY_BPS) / 10_000),
-    0.01,
-    marketPriceGold,
-  );
+  return roundGoldPrice((marketPriceGold * NPC_MARKET_BUY_BPS) / 10_000);
 }
 
 function getNpcSellPriceGold(marketPriceGold: number): number {
-  const buyPriceGold = getNpcBuyPriceGold(marketPriceGold);
-  const spreadPriceGold = roundGoldPrice((marketPriceGold * NPC_MARKET_SELL_BPS) / 10_000);
-
-  return spreadPriceGold > buyPriceGold
-    ? spreadPriceGold
-    : roundGoldPrice(buyPriceGold + 0.01);
+  return roundGoldPrice((marketPriceGold * NPC_MARKET_SELL_BPS) / 10_000);
 }
 
 function getNpcMarketMaxNeed(_targetNeed: bigint): bigint {
@@ -8689,20 +10455,76 @@ function getNpcMarketStock(row: any): bigint {
 }
 
 function getNpcMarketPriceFromNeed(
-  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold'>,
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'>,
   npcNeed: bigint,
   targetNeed: bigint,
   _maxNeed: bigint,
 ): number {
   const safeNeed = Number(npcNeed > 0n ? npcNeed : 0n);
   const safeTargetNeed = Number(targetNeed > 0n ? targetNeed : 1n);
-  const pressure = safeNeed / safeTargetNeed;
+  const softness = Math.max(1, (safeTargetNeed * NPC_MARKET_SOFTNESS_BPS) / 10_000);
+  const pressure = (safeNeed + softness) / (safeTargetNeed + softness);
+  const elasticity = getNpcMarketPriceElasticity(marketConfig);
 
-  return roundGoldPrice(Math.max(0.01, marketConfig.basePriceGold * pressure));
+  return roundGoldPrice(marketConfig.basePriceGold * Math.pow(pressure, elasticity));
+}
+
+function getNpcMarketPriceElasticity(
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'volatilityBps'>,
+): number {
+  const volatilityBps = Number(
+    clampBigInt(toBigInt(marketConfig.volatilityBps), 0n, NPC_MARKET_MAX_VOLATILITY_BPS),
+  );
+
+  return 1 + volatilityBps / 10_000;
+}
+
+function getNpcMarketRecoveredNeedState(
+  ctx: IdleWizardReducerCtx,
+  row: any,
+  targetNeed: bigint,
+) {
+  const needState = getNpcMarketNeedState(row, targetNeed);
+  const lastTickMicros =
+    row.lastTickAt?.microsSinceUnixEpoch ??
+    row.updatedAt?.microsSinceUnixEpoch ??
+    getContextTimestampMicros(ctx);
+  const elapsedMicros = getContextTimestampMicros(ctx) - lastTickMicros;
+
+  if (elapsedMicros <= 0n) {
+    return {
+      ...needState,
+      lastTickAt: row.lastTickAt ?? ctx.timestamp,
+      recovered: false,
+    };
+  }
+
+  const recoveryShare = 1 - Math.pow(
+    0.5,
+    Number(elapsedMicros) / Number(NPC_MARKET_DEMAND_RECOVERY_HALF_LIFE_MICROS),
+  );
+  let nextNpcNeed = needState.npcNeed;
+
+  if (needState.npcNeed < needState.targetNeed) {
+    const gap = needState.targetNeed - needState.npcNeed;
+    const recovered = BigInt(Math.floor(Number(gap) * recoveryShare));
+    nextNpcNeed = needState.npcNeed + recovered;
+  } else if (needState.npcNeed > needState.targetNeed) {
+    const gap = needState.npcNeed - needState.targetNeed;
+    const recovered = BigInt(Math.floor(Number(gap) * recoveryShare));
+    nextNpcNeed = needState.npcNeed - recovered;
+  }
+
+  return {
+    ...needState,
+    npcNeed: nextNpcNeed,
+    lastTickAt: nextNpcNeed === needState.npcNeed ? row.lastTickAt ?? ctx.timestamp : ctx.timestamp,
+    recovered: nextNpcNeed !== needState.npcNeed,
+  };
 }
 
 function getNpcMarketSellTotalGold(
-  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold'>,
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'>,
   needState: ReturnType<typeof getNpcMarketNeedState>,
   quantity: number,
 ): number {
@@ -8721,6 +10543,64 @@ function getNpcMarketSellTotalGold(
   }
 
   return roundGoldPrice(totalCents / 100);
+}
+
+function getNpcMarketAutoTuneThreshold(targetStock: bigint): bigint {
+  const stockWindow = (targetStock * NPC_MARKET_AUTO_TUNE_WINDOW_BPS) / 10_000n;
+  return stockWindow > NPC_MARKET_AUTO_TUNE_MIN_SIGNAL_QUANTITY
+    ? stockWindow
+    : NPC_MARKET_AUTO_TUNE_MIN_SIGNAL_QUANTITY;
+}
+
+function applyNpcMarketAutoTune(
+  ctx: IdleWizardReducerCtx,
+  marketConfig: ReturnType<typeof normalizeNpcMarketRuntimeConfig>,
+  demandScore: bigint,
+  supplyScore: bigint,
+) {
+  const totalSignal = demandScore + supplyScore;
+
+  if (totalSignal < getNpcMarketAutoTuneThreshold(marketConfig.targetStock)) {
+    return {
+      marketConfig,
+      demandScore,
+      supplyScore,
+    };
+  }
+
+  const imbalance = Number(demandScore - supplyScore) / Number(totalSignal);
+  const stepBps = Math.round(imbalance * NPC_MARKET_AUTO_TUNE_MAX_STEP_BPS);
+  const nextBasePriceGold = roundGoldPrice(
+    (marketConfig.basePriceGold * (10_000 + stepBps)) / 10_000,
+  );
+
+  if (stepBps !== 0 && nextBasePriceGold !== marketConfig.basePriceGold) {
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(marketConfig.itemKey);
+
+    if (existingConfig) {
+      ctx.db.npcMarketItemConfig.itemKey.update({
+        ...existingConfig,
+        basePriceGold: toStoredGoldPrice(nextBasePriceGold),
+        priceScale: GOLD_PRICE_SCALE,
+        updatedAt: ctx.timestamp,
+      });
+    }
+
+    return {
+      marketConfig: {
+        ...marketConfig,
+        basePriceGold: nextBasePriceGold,
+      },
+      demandScore: 0n,
+      supplyScore: 0n,
+    };
+  }
+
+  return {
+    marketConfig,
+    demandScore: 0n,
+    supplyScore: 0n,
+  };
 }
 
 function getNpcMarketRowWithQuotes(row: any, marketPriceGold: number) {
@@ -8746,11 +10626,21 @@ function ensureNpcMarketItemConfig(
     const itemKind =
       normalizePlayerShopText(existingConfig.itemKind, MAX_ITEM_KIND_LENGTH) ||
       catalogItem.itemKind;
-    const basePriceGold = normalizeNpcMarketBasePriceGold(
-      existingConfig.basePriceGold,
+    const previousDefaultBasePriceGold = normalizeNpcMarketBasePriceGold(
+      existingConfig.defaultBasePriceGold,
       catalogItem.basePriceGold,
       existingConfig.priceScale,
     );
+    const storedBasePriceGold = normalizeNpcMarketBasePriceGold(
+      existingConfig.basePriceGold,
+      previousDefaultBasePriceGold,
+      existingConfig.priceScale,
+    );
+    const basePriceGold =
+      previousDefaultBasePriceGold !== catalogItem.basePriceGold &&
+      storedBasePriceGold === previousDefaultBasePriceGold
+        ? catalogItem.basePriceGold
+        : storedBasePriceGold;
     const targetStock = normalizeNpcMarketTargetStock(
       existingConfig.targetStock,
       catalogItem.targetStock,
@@ -8874,7 +10764,11 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
   const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.itemKey);
 
   if (existingRow) {
-    const needState = getNpcMarketNeedState(existingRow, marketConfig.targetStock);
+    const needState = getNpcMarketRecoveredNeedState(
+      ctx,
+      existingRow,
+      marketConfig.targetStock,
+    );
     const marketPriceGold = getNpcMarketPriceFromNeed(
       marketConfig,
       needState.npcNeed,
@@ -8898,7 +10792,8 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
       normalizedRow.npcStock === getNpcMarketStock(existingRow) &&
       normalizedRow.npcNeed === needState.npcNeed &&
       normalizedRow.targetNeed === needState.targetNeed &&
-      normalizedRow.maxNeed === needState.maxNeed
+      normalizedRow.maxNeed === needState.maxNeed &&
+      normalizedRow.lastTickAt === needState.lastTickAt
     ) {
       return normalizedRow;
     }
@@ -8915,6 +10810,7 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
       targetNeed: needState.targetNeed,
       maxNeed: needState.maxNeed,
       updatedAt: ctx.timestamp,
+      lastTickAt: needState.lastTickAt,
     });
   }
 
@@ -8974,7 +10870,8 @@ function ensureResearchConfig(
       normalizeResearchLabel(existingConfig.label) || catalogResearch.label;
     const groupId =
       normalizeResearchGroupId(existingConfig.groupId) || catalogResearch.groupId;
-    const costGold = normalizeResearchCostGold(
+    const costGold = normalizeStoredResearchCostGold(
+      catalogResearch.researchId,
       existingConfig.costGold,
       catalogResearch.defaultCostGold,
     );
@@ -12240,6 +14137,7 @@ export const sell_to_npc = spacetimedb.reducer(
     const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
     const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
     const npcStock = getNpcMarketStock(row);
+    const demandScore = toBigInt(row.demandScore);
     const supplyScore = toBigInt(row.supplyScore);
 
     if (needState.npcNeed < tradeQuantity) {
@@ -12248,8 +14146,14 @@ export const sell_to_npc = spacetimedb.reducer(
 
     const nextNpcStock = npcStock + tradeQuantity;
     const nextNpcNeed = needState.npcNeed - tradeQuantity;
-    const nextMarketPriceGold = getNpcMarketPriceFromNeed(
+    const tunedMarket = applyNpcMarketAutoTune(
+      ctx,
       marketConfig,
+      demandScore,
+      supplyScore + tradeQuantity,
+    );
+    const nextMarketPriceGold = getNpcMarketPriceFromNeed(
+      tunedMarket.marketConfig,
       nextNpcNeed,
       needState.targetNeed,
       needState.maxNeed,
@@ -12262,12 +14166,16 @@ export const sell_to_npc = spacetimedb.reducer(
 
     ctx.db.npcMarketPrice.itemKey.update({
       ...getNpcMarketRowWithQuotes(row, nextMarketPriceGold),
+      basePriceGold: toStoredGoldPrice(tunedMarket.marketConfig.basePriceGold),
+      priceScale: GOLD_PRICE_SCALE,
       npcStock: nextNpcStock,
       npcNeed: nextNpcNeed,
       targetNeed: needState.targetNeed,
       maxNeed: needState.maxNeed,
-      supplyScore: supplyScore + tradeQuantity,
+      demandScore: tunedMarket.demandScore,
+      supplyScore: tunedMarket.supplyScore,
       updatedAt: ctx.timestamp,
+      lastTickAt: ctx.timestamp,
     });
     grantPotionDiscoveryPassiveGold(
       ctx,
@@ -12302,8 +14210,14 @@ export const buy_from_npc = spacetimedb.reducer(
 
     const nextNpcStock = npcStock - tradeQuantity;
     const nextNpcNeed = needState.npcNeed + tradeQuantity;
-    const nextMarketPriceGold = getNpcMarketPriceFromNeed(
+    const tunedMarket = applyNpcMarketAutoTune(
+      ctx,
       marketConfig,
+      demandScore + tradeQuantity,
+      toBigInt(row.supplyScore),
+    );
+    const nextMarketPriceGold = getNpcMarketPriceFromNeed(
+      tunedMarket.marketConfig,
       nextNpcNeed,
       needState.targetNeed,
       needState.maxNeed,
@@ -12311,12 +14225,16 @@ export const buy_from_npc = spacetimedb.reducer(
 
     ctx.db.npcMarketPrice.itemKey.update({
       ...getNpcMarketRowWithQuotes(row, nextMarketPriceGold),
+      basePriceGold: toStoredGoldPrice(tunedMarket.marketConfig.basePriceGold),
+      priceScale: GOLD_PRICE_SCALE,
       npcStock: nextNpcStock,
       npcNeed: nextNpcNeed,
       targetNeed: needState.targetNeed,
       maxNeed: needState.maxNeed,
-      demandScore: demandScore + tradeQuantity,
+      demandScore: tunedMarket.demandScore,
+      supplyScore: tunedMarket.supplyScore,
       updatedAt: ctx.timestamp,
+      lastTickAt: ctx.timestamp,
     });
   },
 );

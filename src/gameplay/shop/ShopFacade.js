@@ -30,6 +30,7 @@ export class ShopFacade {
     npcMarketFacade,
     onItemSold,
     getReservedItemQuantity,
+    now,
   } = {}) {
     this.shopBalanceManager = new ShopBalanceManager();
     this.shopNpcPriceManager = new ShopNpcPriceManager({
@@ -125,6 +126,7 @@ export class ShopFacade {
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
       onItemSold,
+      now,
     });
     this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;

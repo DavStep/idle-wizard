@@ -1,5 +1,4 @@
 import { WorkshopRoomViewManager } from './managers/WorkshopRoomViewManager.js';
-import { WorkshopManaSphereManager } from './managers/WorkshopManaSphereManager.js';
 import { WorkshopBagManager } from './managers/WorkshopBagManager.js';
 import { WorkshopActionBarManager } from './managers/WorkshopActionBarManager.js';
 import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManager.js';
@@ -67,7 +66,6 @@ export class WorkshopPageFacade {
       gameplayFacade,
       onOpenPlayerInfo,
     });
-    this.manaSphereManager = new WorkshopManaSphereManager({ gameplayFacade });
     this.taskManager = new WorkshopTaskManager({
       gameplayFacade,
       onLevelUpNotice: ({ message }) => this.flyoutManager.show(message),
@@ -80,7 +78,6 @@ export class WorkshopPageFacade {
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.requirementConnectionManager.mount(uiLayer);
     this.taskManager.mount(uiLayer, popupLayer);
-    this.manaSphereManager.mount(uiLayer);
     this.actionBarManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
@@ -115,7 +112,6 @@ export class WorkshopPageFacade {
     this.taskManager.unmount();
     this.actionBarManager.unmount();
     this.flyoutManager.unmount();
-    this.manaSphereManager.unmount();
     this.roomViewManager.unmount();
   }
 

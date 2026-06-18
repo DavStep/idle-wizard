@@ -8,6 +8,7 @@ export class ShopAutoSellManager {
     shopSellAvailabilityManager,
     shopShelfEntityManager,
     onItemSold,
+    now = () => Date.now(),
   }) {
     this.goldFacade = goldFacade;
     this.itemsFacade = itemsFacade;
@@ -17,6 +18,7 @@ export class ShopAutoSellManager {
     this.shopSellAvailabilityManager = shopSellAvailabilityManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
     this.onItemSold = onItemSold;
+    this.now = now;
     this.registered = false;
   }
 
@@ -33,31 +35,64 @@ export class ShopAutoSellManager {
 
   update(deltaSeconds) {
     const autoSellSeconds = this.shopBalanceManager.getAutoSellSeconds();
+    const nowSeconds = this.getNowSeconds();
+    const progressSeconds = this.getGlobalProgressSeconds(autoSellSeconds, nowSeconds);
     const activeSlots = this.shopShelfEntityManager
       .getSlotSnapshots()
       .filter((slot) => slot.unlocked && slot.sellItemTypeId);
 
     if (activeSlots.length <= 0) {
-      this.shopShelfEntityManager.setSellProgressSeconds(0);
+      this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
       return;
     }
 
-    let progressSeconds =
-      this.shopShelfEntityManager.getSellProgressSeconds() +
-      (Number.isFinite(deltaSeconds) && deltaSeconds > 0 ? deltaSeconds : 0);
+    const cycleCount = this.getElapsedCycleCount({
+      autoSellSeconds,
+      deltaSeconds,
+      nowSeconds,
+    });
 
-    while (progressSeconds >= autoSellSeconds) {
+    for (let cycleIndex = 0; cycleIndex < cycleCount; cycleIndex += 1) {
       const soldAny = this.sellShopCycle(activeSlots);
 
       if (!soldAny) {
-        progressSeconds = autoSellSeconds;
         break;
       }
-
-      progressSeconds -= autoSellSeconds;
     }
 
     this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
+  }
+
+  getNowSeconds() {
+    const nowMs = this.now?.();
+
+    return Number.isFinite(nowMs) ? Math.max(0, nowMs / 1000) : 0;
+  }
+
+  getGlobalProgressSeconds(autoSellSeconds, nowSeconds = this.getNowSeconds()) {
+    if (!Number.isFinite(autoSellSeconds) || autoSellSeconds <= 0) {
+      return 0;
+    }
+
+    return nowSeconds % autoSellSeconds;
+  }
+
+  getElapsedCycleCount({ autoSellSeconds, deltaSeconds, nowSeconds }) {
+    if (
+      !Number.isFinite(autoSellSeconds) ||
+      autoSellSeconds <= 0 ||
+      !Number.isFinite(deltaSeconds) ||
+      deltaSeconds <= 0 ||
+      !Number.isFinite(nowSeconds)
+    ) {
+      return 0;
+    }
+
+    const previousNowSeconds = Math.max(0, nowSeconds - deltaSeconds);
+    const previousCycle = Math.floor(previousNowSeconds / autoSellSeconds);
+    const currentCycle = Math.floor(nowSeconds / autoSellSeconds);
+
+    return Math.max(0, currentCycle - previousCycle);
   }
 
   sellShopCycle(slots) {
