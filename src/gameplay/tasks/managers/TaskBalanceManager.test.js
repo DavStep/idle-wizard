@@ -55,7 +55,7 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
-  it('uses reduced level 4 nettle requirements', () => {
+  it('uses reduced level 4 nettle requirements with a different seed family', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -65,7 +65,7 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level4-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 81 },
+      { id: 'level4-nettle-seeds', itemKey: 'mintSeed', requiredQuantity: 81 },
       { id: 'level4-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 52 },
       { id: 'level4-sage-herb', itemKey: 'sageHerb', requiredQuantity: 16 },
       { id: 'level4-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 3 },
@@ -83,7 +83,7 @@ describe('TaskBalanceManager', () => {
       })),
     ).toEqual([
       { id: 'level5-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 120 },
-      { id: 'level5-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 131 },
+      { id: 'level5-lavender-seeds', itemKey: 'mintSeed', requiredQuantity: 131 },
       { id: 'level5-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 75 },
       {
         id: 'level5-minor-healing-potion',
@@ -105,15 +105,43 @@ describe('TaskBalanceManager', () => {
       })),
     ).toEqual([
       { id: 'level6-nettle-vigor', itemKey: 'nettleVigor', requiredQuantity: 11 },
-      { id: 'level6-lavender-seeds', itemKey: 'lavenderSeed', requiredQuantity: 152 },
+      { id: 'level6-lavender-seeds', itemKey: 'mintSeed', requiredQuantity: 152 },
       { id: 'level6-lavender-herb', itemKey: 'lavenderHerb', requiredQuantity: 88 },
       {
         id: 'level6-minor-healing-potion',
         itemKey: 'minorHealingPotion',
         requiredQuantity: 10,
       },
-      { id: 'level6-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 144 },
+      { id: 'level6-nettle-seeds', itemKey: 'sageSeed', requiredQuantity: 144 },
     ]);
+  });
+
+  it('keeps seed requirements on a different family than same-level items after tutorial levels', () => {
+    const itemsFacade = new ItemsFacade();
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade });
+    const seedDefinitions = itemsFacade.getSeedDefinitions();
+    const seedFamilyLabelsByKey = new Map(
+      seedDefinitions.map((seed) => [seed.key, seed.label.replace(/ seed$/, '')]),
+    );
+
+    for (const level of taskBalanceManager.getLevels()) {
+      if (level.level < 4) {
+        continue;
+      }
+
+      const itemLabels = level.tasks
+        .filter((task) => task.itemKind !== itemKinds.seed)
+        .map((task) => task.itemLabel);
+
+      for (const seedTask of level.tasks.filter((task) => task.itemKind === itemKinds.seed)) {
+        const seedFamilyLabel = seedFamilyLabelsByKey.get(seedTask.itemKey);
+
+        expect(
+          itemLabels.some((itemLabel) => itemLabel.includes(seedFamilyLabel)),
+          `level ${level.level} should not pair ${seedTask.itemLabel} with same-family item`,
+        ).toBe(false);
+      }
+    }
   });
 
   it('does not skip seed or recipe research order in level tasks', () => {

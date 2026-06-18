@@ -113,10 +113,10 @@ describe('ResearchBoxListManager', () => {
               {
                 id: 'unlockRecipe:manaTonic',
                 label: 'mana tonic',
-                value: '150 gold',
+                value: 'free',
                 effect: 'brew',
                 description: 'allows valid cauldron ingredients to brew mana tonic.',
-                costGold: 150,
+                costGold: 0,
                 completed: false,
                 canResearch: true,
                 requiredPlayerLevel: 4,

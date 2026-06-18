@@ -64,10 +64,11 @@ export class ShopShelfManager {
     this.root.setAttribute('aria-label', 'NPC demand market');
 
     this.refs.title = this.createTitle();
+    this.refs.timer = this.createTimer();
     this.refs.rows = [];
     this.refs.popup = this.createSellPopup();
 
-    this.root.append(this.refs.title);
+    this.root.append(this.refs.title, this.refs.timer);
     parent.append(this.root);
     popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
@@ -103,6 +104,14 @@ export class ShopShelfManager {
     return title;
   }
 
+  createTimer() {
+    const timer = document.createElement('span');
+    timer.className = 'shop-page__shelf-timer';
+    timer.setAttribute('aria-label', 'npc demand market timer');
+    timer.hidden = true;
+    return timer;
+  }
+
   createSlotRow(slotNumber) {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
@@ -133,9 +142,6 @@ export class ShopShelfManager {
 
     const priceValue = document.createElement('span');
     priceValue.className = 'shop-page__slot-price-value';
-
-    const timerValue = document.createElement('span');
-    timerValue.className = 'shop-page__slot-timer-value';
 
     const emptyRule = document.createElement('span');
     emptyRule.className = 'shop-page__slot-empty-rule';
@@ -194,7 +200,6 @@ export class ShopShelfManager {
       unlockAction,
       itemValue,
       priceValue,
-      timerValue,
       emptyRule,
     };
   }
@@ -574,6 +579,8 @@ export class ShopShelfManager {
         value.replaceChildren(refs.itemValue, refs.priceValue);
       }
     });
+
+    this.renderShelfTimer(shelf);
   }
 
   isRenderVisible() {
@@ -598,16 +605,14 @@ export class ShopShelfManager {
       if (refs.emptyRule.parentElement !== refs.priceValue) {
         refs.priceValue.replaceChildren(refs.emptyRule);
       }
-      this.setText(refs.timerValue, '');
       return;
     }
 
     if (
       refs.itemValue.parentElement !== refs.value ||
-      refs.priceValue.parentElement !== refs.value ||
-      refs.timerValue.parentElement !== refs.value
+      refs.priceValue.parentElement !== refs.value
     ) {
-      refs.value.replaceChildren(refs.itemValue, refs.priceValue, refs.timerValue);
+      refs.value.replaceChildren(refs.itemValue, refs.priceValue);
     }
 
     this.setText(refs.itemValue, parts.itemText);
@@ -616,7 +621,13 @@ export class ShopShelfManager {
 
     setResourceIconText(refs.priceValue, parts.priceText ? ` ${parts.priceText}` : '');
     setResourceColor(refs.priceValue, parts.priceResource ?? null);
-    this.setText(refs.timerValue, parts.timerText);
+  }
+
+  renderShelfTimer(shelf) {
+    const timerText = this.formatShelfTimer(shelf);
+
+    this.refs.timer.hidden = !timerText;
+    this.setText(this.refs.timer, timerText ? `timer ${timerText}` : '');
   }
 
   formatLockedSlotAction(shelf, cost) {
@@ -788,7 +799,6 @@ export class ShopShelfManager {
         itemKind: displayItem.kind,
         priceText: 'offline',
         priceResource: null,
-        timerText: this.formatBulkSellTimer(slot, shelf),
       };
     }
 
@@ -798,19 +808,32 @@ export class ShopShelfManager {
       itemKind: displayItem.kind,
       priceText: this.formatSellGold(sellGold),
       priceResource: 'gold',
-      timerText: this.formatBulkSellTimer(slot, shelf),
     };
   }
 
-  formatBulkSellTimer(slot, shelf) {
+  formatShelfTimer(shelf) {
+    const activeSlot = shelf.slots?.find((slot) => slot.unlocked && slot.sellItemTypeId);
+
+    if (!activeSlot) {
+      return '';
+    }
+
+    return this.formatBulkSellTimer(shelf, activeSlot);
+  }
+
+  formatBulkSellTimer(shelf, fallbackSlot = null) {
     const autoSellSeconds = Number(shelf.autoSellSeconds);
     if (!Number.isFinite(autoSellSeconds) || autoSellSeconds <= 0) {
       return '';
     }
 
-    const progressSeconds = Number.isFinite(slot.sellProgressSeconds)
-      ? Math.max(0, slot.sellProgressSeconds)
-      : 0;
+    let progressSeconds = 0;
+    if (Number.isFinite(shelf.sellProgressSeconds)) {
+      progressSeconds = Math.max(0, shelf.sellProgressSeconds);
+    } else if (Number.isFinite(fallbackSlot?.sellProgressSeconds)) {
+      progressSeconds = Math.max(0, fallbackSlot.sellProgressSeconds);
+    }
+
     const remainingSeconds = Math.max(0, autoSellSeconds - progressSeconds);
 
     if (remainingSeconds <= 0) {

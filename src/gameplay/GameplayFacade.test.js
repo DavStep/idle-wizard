@@ -1633,13 +1633,13 @@ describe('GameplayFacade', () => {
     expect(levelFourResearch.boxes[2].researches[0]).toEqual({
       id: 'unlockRecipe:manaTonic',
       label: 'mana tonic',
-      value: '150 gold',
+      value: 'free',
       effect: 'brew',
       requiredPlayerLevel: 4,
       description: 'allows valid cauldron ingredients to brew mana tonic.',
-      costGold: 150,
+      costGold: 0,
       completed: false,
-      canResearch: false,
+      canResearch: true,
     });
   });
 
@@ -2145,7 +2145,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.buyResearch('unlockRecipe:manaTonic')).toEqual({
       ok: true,
       researchId: 'unlockRecipe:manaTonic',
-      cost: 150,
+      cost: 0,
     });
     advanceToLevel(gameplayFacade, 5);
     expect(getResearch('unlockRecipe:minorHealingPotion')).toMatchObject({

@@ -264,6 +264,38 @@ describe('GameplaySaveSendManager', () => {
     });
   });
 
+  it('uses a short default sync interval so reloads lose less recent progress', async () => {
+    let nowMs = 1_000;
+    let scheduledDelayMs = null;
+    const setTimeoutFn = vi.fn((callback, delayMs) => {
+      scheduledDelayMs = delayMs;
+      return { callback, delayMs };
+    });
+    const setPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      setTimeoutFn,
+      now: () => nowMs,
+    });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+    manager.save({ version: 2, gold: { current: 1 } });
+    await manager.syncPromise;
+    await Promise.resolve();
+
+    nowMs += 1_000;
+    manager.save({ version: 2, gold: { current: 2 } });
+    await Promise.resolve();
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
+    expect(scheduledDelayMs).toBe(4_000);
+  });
+
   it('bypasses the sync interval when a flush is forced', async () => {
     let nowMs = 1_000;
     const setPlayerGameplaySave = vi.fn(() => Promise.resolve());

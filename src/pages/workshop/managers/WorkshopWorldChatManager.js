@@ -191,9 +191,35 @@ export class WorkshopWorldChatManager {
     this.refs.sendButton.className = 'style-button workshop-page__world-chat-send';
     this.refs.sendButton.type = 'submit';
     this.refs.sendButton.textContent = 'send';
+    this.bindSubmitPressStart(this.refs.sendButton, form);
 
     form.append(this.refs.input, this.refs.sendButton);
     return form;
+  }
+
+  bindSubmitPressStart(button, form) {
+    const submit = (event) => {
+      if (button.disabled) {
+        return;
+      }
+
+      event.preventDefault();
+      this.submitForm(form);
+    };
+
+    button.addEventListener('pointerdown', submit);
+    if (typeof window.PointerEvent !== 'function') {
+      button.addEventListener('touchstart', submit, { passive: false });
+    }
+  }
+
+  submitForm(form) {
+    if (typeof form.requestSubmit === 'function') {
+      form.requestSubmit();
+      return;
+    }
+
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
   }
 
   createTabs() {
@@ -229,8 +255,8 @@ export class WorkshopWorldChatManager {
   async onSubmit(event) {
     event.preventDefault();
 
-    const facade = this.getSelectedSendFacade();
-    if (this.sending || !facade) {
+    const sendMessage = this.getSelectedSendAction();
+    if (this.sending || !sendMessage) {
       return;
     }
 
@@ -245,7 +271,7 @@ export class WorkshopWorldChatManager {
     this.setStatus('sending');
     this.updateFormState();
 
-    const result = await facade.sendMessage(body);
+    const result = await sendMessage(body);
 
     this.sending = false;
 
@@ -620,14 +646,14 @@ export class WorkshopWorldChatManager {
     }
 
     const snapshot = this.getSelectedSnapshot();
-    const facade = this.getSelectedSendFacade();
+    const sendMessage = this.getSelectedSendAction();
     const canSend =
-      Boolean(facade) &&
+      Boolean(sendMessage) &&
       Boolean(snapshot.connected) &&
       !this.sending &&
       Boolean(this.refs.input.value.trim());
 
-    this.refs.input.disabled = !facade || !snapshot.connected || this.sending;
+    this.refs.input.disabled = !sendMessage || !snapshot.connected || this.sending;
     this.refs.sendButton.disabled = !canSend;
   }
 
@@ -644,6 +670,14 @@ export class WorkshopWorldChatManager {
 
     if (reason === 'offline') {
       return 'offline';
+    }
+
+    if (reason === 'rate_limited') {
+      return 'wait before sending';
+    }
+
+    if (reason === 'global_rate_limited') {
+      return 'chat busy';
     }
 
     return 'could not send';
@@ -734,12 +768,16 @@ export class WorkshopWorldChatManager {
     return this.worldChatSnapshot ?? { ...EMPTY_CHAT_SNAPSHOT };
   }
 
-  getSelectedSendFacade() {
+  getSelectedSendAction() {
     if (this.selectedChannelId === 'alliance') {
-      return this.tradeAllianceFacade;
+      return typeof this.tradeAllianceFacade?.sendChatMessage === 'function'
+        ? (body) => this.tradeAllianceFacade.sendChatMessage(body)
+        : null;
     }
 
-    return this.worldChatFacade;
+    return typeof this.worldChatFacade?.sendMessage === 'function'
+      ? (body) => this.worldChatFacade.sendMessage(body)
+      : null;
   }
 
   hasAllianceChat() {

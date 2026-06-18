@@ -101,7 +101,10 @@ export class AuthOidcManager {
     }
 
     if (this.shouldUseWebGoogleIdentity()) {
-      this.user = this.loadWebGoogleUser();
+      const handledRedirectCallback = await this.handleWebRedirectCallback();
+      if (!handledRedirectCallback) {
+        this.user = this.loadWebGoogleUser() ?? (await this.loadOidcUser());
+      }
       this.publish();
       return this.getSnapshot();
     }
@@ -145,6 +148,68 @@ export class AuthOidcManager {
 
     this.user = this.user ?? (await this.getUserManager().getUser());
     return this.user?.id_token;
+  }
+
+  async handleWebRedirectCallback() {
+    if (!this.isCallbackHref(this.windowRef?.location?.href)) {
+      return false;
+    }
+
+    const manager = this.getUserManager();
+    const handled = await this.handleCallbackUrl(manager);
+    if (handled && !this.error) {
+      this.user = this.user ?? (await this.loadOidcUser());
+      this.saveWebGoogleUser(this.user);
+    }
+
+    return handled;
+  }
+
+  async loadOidcUser() {
+    try {
+      return this.normalizeOidcUser(await this.getUserManager().getUser());
+    } catch {
+      return null;
+    }
+  }
+
+  async clearOidcUser() {
+    try {
+      await this.getUserManager().removeUser?.();
+    } catch {
+      // Web Google storage is the primary auth state in this mode.
+    }
+  }
+
+  normalizeOidcUser(user) {
+    if (!user?.id_token) {
+      return null;
+    }
+
+    const expiresAt = this.getOidcUserExpiresAt(user);
+    if (this.isTokenExpired(expiresAt)) {
+      return null;
+    }
+
+    return {
+      ...user,
+      expires_at: expiresAt,
+      profile: user.profile ?? {},
+    };
+  }
+
+  getOidcUserExpiresAt(user) {
+    const tokenExpiresAt = this.getJwtExpiresAt(user.id_token);
+    if (Number.isFinite(tokenExpiresAt)) {
+      return tokenExpiresAt;
+    }
+
+    const userExpiresAt = Number(user.expires_at);
+    if (!Number.isFinite(userExpiresAt)) {
+      return null;
+    }
+
+    return userExpiresAt < 1_000_000_000_000 ? userExpiresAt * 1_000 : userExpiresAt;
   }
 
   async signIn({ pendingAccountLinkAttemptId } = {}) {
@@ -211,6 +276,7 @@ export class AuthOidcManager {
 
     if (this.shouldUseWebGoogleIdentity()) {
       this.getGoogleIdentityClient()?.accounts?.id?.disableAutoSelect?.();
+      await this.clearOidcUser();
       this.user = null;
       this.error = null;
       this.cancelled = false;
@@ -889,6 +955,7 @@ export class AuthOidcManager {
     if (handled) {
       this.cleanCallbackUrl();
     }
+    return handled;
   }
 
   async handleNativeLaunchUrl(manager) {
@@ -930,23 +997,13 @@ export class AuthOidcManager {
   }
 
   async handleCallbackHref(manager, href) {
-    if (!href) {
-      return false;
-    }
-
-    const params = this.getCallbackParams(href);
-    if (
-      !params?.has('state') ||
-      (!params.has('code') &&
-        !params.has('id_token') &&
-        !params.has('access_token') &&
-        !params.has('error'))
-    ) {
+    if (!this.isCallbackHref(href)) {
       return false;
     }
 
     try {
-      this.user = await manager.signinCallback(href);
+      const callbackUser = await manager.signinCallback(href);
+      this.user = this.normalizeOidcUser(callbackUser) ?? callbackUser;
       this.user = this.withAccountLinkAttempt(
         this.user,
         this.loadActiveAccountLinkAttemptId(),
@@ -958,6 +1015,21 @@ export class AuthOidcManager {
     }
 
     return true;
+  }
+
+  isCallbackHref(href) {
+    if (!href) {
+      return false;
+    }
+
+    const params = this.getCallbackParams(href);
+    return Boolean(
+      params?.has('state') &&
+        (params.has('code') ||
+          params.has('id_token') ||
+          params.has('access_token') ||
+          params.has('error')),
+    );
   }
 
   getCallbackParams(href) {

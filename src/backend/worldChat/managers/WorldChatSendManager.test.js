@@ -32,4 +32,27 @@ describe('WorldChatSendManager', () => {
       reason: 'offline',
     });
   });
+
+  it('returns rate-limit reasons from rejected reducer calls', async () => {
+    const sendWorldChatMessage = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('World chat is rate limited.'))
+      .mockRejectedValueOnce(new Error('World chat is globally rate limited.'));
+    const manager = new WorldChatSendManager();
+
+    manager.connect({
+      reducers: {
+        sendWorldChatMessage,
+      },
+    });
+
+    await expect(manager.sendMessage('first')).resolves.toEqual({
+      ok: false,
+      reason: 'rate_limited',
+    });
+    await expect(manager.sendMessage('second')).resolves.toEqual({
+      ok: false,
+      reason: 'global_rate_limited',
+    });
+  });
 });

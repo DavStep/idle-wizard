@@ -26,6 +26,8 @@ export class GameplayPersistenceFacade {
     gardenFacade,
     tasksFacade,
     now = () => Date.now(),
+    windowRef = globalThis,
+    documentRef = globalThis.document,
   }) {
     this.storageManager = storageManager ?? new GameplayStorageManager({ storage });
     this.migrationManager = new GameplayMigrationManager();
@@ -61,9 +63,12 @@ export class GameplayPersistenceFacade {
       tasksFacade,
     });
     this.now = now;
+    this.windowRef = windowRef;
+    this.documentRef = documentRef;
     this.offlineDeltaSeconds = 0;
     this.autosaveElapsedSeconds = 0;
     this.boundSave = () => this.saveAndFlush();
+    this.boundVisibilitySave = () => this.saveWhenHidden();
   }
 
   load() {
@@ -129,17 +134,28 @@ export class GameplayPersistenceFacade {
   }
 
   start() {
-    if (typeof globalThis.addEventListener === 'function') {
-      globalThis.addEventListener('pagehide', this.boundSave);
-    }
+    this.windowRef?.addEventListener?.('pagehide', this.boundSave);
+    this.windowRef?.addEventListener?.('beforeunload', this.boundSave);
+    this.documentRef?.addEventListener?.('visibilitychange', this.boundVisibilitySave);
   }
 
   stop() {
     this.saveAndFlush();
 
-    if (typeof globalThis.removeEventListener === 'function') {
-      globalThis.removeEventListener('pagehide', this.boundSave);
+    this.windowRef?.removeEventListener?.('pagehide', this.boundSave);
+    this.windowRef?.removeEventListener?.('beforeunload', this.boundSave);
+    this.documentRef?.removeEventListener?.(
+      'visibilitychange',
+      this.boundVisibilitySave,
+    );
+  }
+
+  saveWhenHidden() {
+    if (this.documentRef?.visibilityState !== 'hidden') {
+      return false;
     }
+
+    return this.saveAndFlush();
   }
 
   consumeOfflineDeltaSeconds() {

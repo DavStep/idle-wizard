@@ -2867,7 +2867,7 @@ function createFeedbackFacadeFake() {
   };
 }
 
-function createWorldChatFacadeFake({ messages } = {}) {
+function createWorldChatFacadeFake({ messages, sendResult = null } = {}) {
   const snapshot = {
     connected: true,
     messages: messages ?? [
@@ -2900,6 +2900,10 @@ function createWorldChatFacadeFake({ messages } = {}) {
     },
     sendMessage: async (body) => {
       const message = body.trim().replace(/\s+/g, ' ');
+      if (sendResult) {
+        return sendResult;
+      }
+
       sentMessages.push(message);
       snapshot.messages.push({
         id: String(snapshot.messages.length + 1),
@@ -2937,11 +2941,13 @@ function createPlayerInfoFacadeFake({ players = [] } = {}) {
 
 function createTradeAllianceFacadeFake({
   alliances = [],
+  allianceChatMessages = [],
   memberCount = 1,
   members = [],
   quests = [],
   contributions = [],
   rewardInbox = [],
+  sendChatResult = null,
   canManageRoles = undefined,
   ownAlliance = undefined,
   ownMember = undefined,
@@ -2955,6 +2961,7 @@ function createTradeAllianceFacadeFake({
   const kickedMembers = [];
   const joinRequests = [];
   const applyRequests = [];
+  const sentAllianceMessages = [];
   let leaveCount = 0;
   const defaultOwnAlliance = {
     allianceId: 'alliance-1',
@@ -2996,6 +3003,7 @@ function createTradeAllianceFacadeFake({
     canManageApplications: canManageApplications ?? resolvedOwnRole === 'tradeMaster',
     members,
     applications: [],
+    allianceChatMessages,
     quests,
     contributions,
     rewardInbox,
@@ -3016,6 +3024,7 @@ function createTradeAllianceFacadeFake({
     getKickedMembers: () => kickedMembers,
     getJoinRequests: () => joinRequests,
     getApplyRequests: () => applyRequests,
+    getSentAllianceMessages: () => sentAllianceMessages,
     getLeaveCount: () => leaveCount,
     subscribe: (listener) => {
       listeners.add(listener);
@@ -3023,6 +3032,28 @@ function createTradeAllianceFacadeFake({
       return () => listeners.delete(listener);
     },
     retainPublicData: () => () => {},
+    sendChatMessage: async (body) => {
+      const message = body.trim().replace(/\s+/g, ' ');
+      if (sendChatResult) {
+        return sendChatResult;
+      }
+
+      sentAllianceMessages.push(message);
+      snapshot.allianceChatMessages.push({
+        id: String(snapshot.allianceChatMessages.length + 1),
+        senderIdentity: 'sender-self',
+        username: 'wizard',
+        playerLevel: 2,
+        body: message,
+        allianceTag: snapshot.ownAlliance?.tag ?? '',
+        sentAtMs: 2_000,
+      });
+      publish();
+      return {
+        ok: true,
+        body: message,
+      };
+    },
     updateProfile: async (profile) => {
       profileUpdates.push(profile);
       snapshot = {
@@ -7619,6 +7650,131 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(true);
+  });
+
+  it('sends world chat on press start before mobile keyboard blur can move layout', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
+    const worldChatFacade = createWorldChatFacadeFake({ messages: [] });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__world-chat-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const input = popup.querySelector('.workshop-page__world-chat-input');
+    const sendButton = popup.querySelector('.workshop-page__world-chat-send');
+    const pointerDown = new window.Event('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    input.value = '  tapped   send  ';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    sendButton.dispatchEvent(pointerDown);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(pointerDown.defaultPrevented).toBe(true);
+    expect(worldChatFacade.getSentMessages()).toEqual(['tapped send']);
+    expect(input.value).toBe('');
+  });
+
+  it('shows world chat rate-limit failures without clearing the typed message', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [],
+      sendResult: {
+        ok: false,
+        reason: 'rate_limited',
+      },
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__world-chat-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const input = popup.querySelector('.workshop-page__world-chat-input');
+    const form = popup.querySelector('.workshop-page__world-chat-form');
+
+    input.value = 'too fast';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(worldChatFacade.getSentMessages()).toEqual([]);
+    expect(input.value).toBe('too fast');
+    expect(popup.querySelector('.workshop-page__world-chat-status')?.textContent).toBe(
+      'wait before sending',
+    );
+  });
+
+  it('sends alliance chat through the alliance chat reducer facade', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
+    const worldChatFacade = createWorldChatFacadeFake({ messages: [] });
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      allianceChatMessages: [
+        {
+          id: '1',
+          senderIdentity: 'sender-a',
+          username: 'Ada',
+          playerLevel: 4,
+          body: 'alliance hello',
+          allianceTag: 'VOID',
+          sentAtMs: 1_000,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__world-chat-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const allianceTab = [...popup.querySelectorAll('.workshop-page__world-chat-tab-button')]
+      .find((button) => button.textContent === 'alliance chat');
+    allianceTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const input = popup.querySelector('.workshop-page__world-chat-input');
+    const form = popup.querySelector('.workshop-page__world-chat-form');
+
+    input.value = '  hello   alliance  ';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(worldChatFacade.getSentMessages()).toEqual([]);
+    expect(tradeAllianceFacade.getSentAllianceMessages()).toEqual(['hello alliance']);
+    expect(input.value).toBe('');
+    expect(popup.textContent).toContain('alliance hello');
+    expect(popup.textContent).toContain('hello alliance');
   });
 
   it('scrolls world chat popup to the newest message after opening', () => {

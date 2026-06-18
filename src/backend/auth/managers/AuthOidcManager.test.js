@@ -357,6 +357,100 @@ describe('AuthOidcManager', () => {
     });
   });
 
+  it('handles redirect callback before web Google Identity mode after fallback', async () => {
+    const storage = createMemoryStorage();
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+    });
+    const user = {
+      id_token: idToken,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      profile: {
+        email: 'dav@example.com',
+        name: 'Dav',
+      },
+    };
+    const replaceState = vi.fn();
+    const oidcClient = {
+      signinCallback: vi.fn(() => Promise.resolve(user)),
+      getUser: vi.fn(() => Promise.resolve(null)),
+    };
+    storage.setItem('idle-wizard.account-link.active-attempt', 'attempt-1');
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      basePath: '/idle-wizard/',
+      storage,
+      windowRef: {
+        atob: globalThis.atob,
+        document: {
+          title: 'Idle Wizard',
+          createElement: vi.fn(),
+        },
+        history: { replaceState },
+        location: {
+          origin: 'https://davstep.github.io',
+          pathname: '/idle-wizard/',
+          search: '?code=abc&state=def',
+          hash: '',
+          href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
+        },
+      },
+      createUserManager: () => oidcClient,
+    });
+
+    await expect(manager.prepare()).resolves.toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+
+    expect(oidcClient.signinCallback).toHaveBeenCalledWith(
+      'https://davstep.github.io/idle-wizard/?code=abc&state=def',
+    );
+    expect(storage.getItem('idle-wizard.web-google.user')).toContain(idToken);
+    expect(storage.getItem('idle-wizard.web-google.user')).toContain('attempt-1');
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBeNull();
+    expect(replaceState).toHaveBeenCalledWith({}, 'Idle Wizard', '/idle-wizard/');
+    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
+
+    const removeUser = vi.fn(() => Promise.resolve());
+    const reloadedManager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      windowRef: {
+        atob: globalThis.atob,
+        document: {
+          createElement: vi.fn(),
+        },
+        location: {
+          origin: 'https://davstep.github.io',
+          pathname: '/idle-wizard/',
+          search: '',
+          hash: '',
+          href: 'https://davstep.github.io/idle-wizard/',
+        },
+      },
+      createUserManager: () => ({
+        getUser: vi.fn(() => Promise.resolve(null)),
+        removeUser,
+      }),
+    });
+
+    await expect(reloadedManager.prepare()).resolves.toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+    await expect(reloadedManager.getConnectionToken()).resolves.toBe(idToken);
+
+    await expect(reloadedManager.signOut()).resolves.toEqual({ ok: true });
+    expect(removeUser).toHaveBeenCalledTimes(1);
+    expect(storage.getItem('idle-wizard.web-google.user')).toBeNull();
+    await expect(reloadedManager.getConnectionToken()).resolves.toBeUndefined();
+  });
+
   it('cleans the redirect URL when callback handling fails', async () => {
     const replaceState = vi.fn();
     const oidcClient = {

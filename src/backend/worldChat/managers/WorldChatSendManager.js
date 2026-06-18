@@ -38,12 +38,26 @@ export class WorldChatSendManager {
         ok: true,
         body: message,
       };
-    } catch {
+    } catch (error) {
       return {
         ok: false,
-        reason: 'send_failed',
+        reason: this.getFailureReason(error),
       };
     }
+  }
+
+  getFailureReason(error) {
+    const message = String(error?.message ?? error ?? '').toLowerCase();
+
+    if (message.includes('globally rate limited')) {
+      return 'global_rate_limited';
+    }
+
+    if (message.includes('rate limited')) {
+      return 'rate_limited';
+    }
+
+    return 'send_failed';
   }
 
   normalizeMessage(body) {

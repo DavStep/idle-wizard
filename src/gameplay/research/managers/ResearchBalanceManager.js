@@ -26,7 +26,7 @@ const DEFAULT_RESEARCH_BALANCE = {
     'summonSeedsX3': 1800,
     'summonSeedsX4': 4500,
     'summonSeedsX5': 10000,
-    'unlockRecipe:manaTonic': 150,
+    'unlockRecipe:manaTonic': 0,
     'unlockRecipe:minorHealingPotion': 350,
     'unlockRecipe:nettleVigor': 750,
     'unlockRecipe:calmingDraught': 1300,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { WorkshopActionBarManager } from './WorkshopActionBarManager.js';
 
@@ -39,6 +39,20 @@ function createGameplayFacadeFake(overrides = {}) {
   };
 }
 
+function dispatchPointer(target, type, { pointerId = 1, pointerType = 'touch' } = {}) {
+  const event = new window.MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+  });
+
+  Object.defineProperty(event, 'pointerId', { value: pointerId });
+  Object.defineProperty(event, 'pointerType', { value: pointerType });
+  Object.defineProperty(event, 'isPrimary', { value: true });
+  target.dispatchEvent(event);
+  return event;
+}
+
 describe('WorkshopActionBarManager', () => {
   it('keeps the summon seed dot immediate in early levels', () => {
     const gameplayFacade = createGameplayFacadeFake({
@@ -74,6 +88,64 @@ describe('WorkshopActionBarManager', () => {
 
     expect(button?.dataset.notification).toBe('true');
     expect(button?.dataset.notificationTone).toBe('orange');
+
+    manager.unmount();
+  });
+
+  it('summons repeatedly while the summon button is held and stops on release', () => {
+    vi.useFakeTimers();
+    try {
+      const gameplayFacade = createGameplayFacadeFake();
+      const summons = [];
+      gameplayFacade.summonSeed = () => {
+        summons.push('summon');
+        return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
+      };
+      const manager = new WorkshopActionBarManager({ gameplayFacade });
+      const parent = document.createElement('div');
+
+      manager.mount(parent);
+
+      const button = parent.querySelector('.workshop-page__summon-button');
+      dispatchPointer(button, 'pointerdown');
+
+      expect(summons).toHaveLength(1);
+
+      vi.advanceTimersByTime(540);
+
+      expect(summons.length).toBeGreaterThan(1);
+
+      dispatchPointer(document, 'pointerup');
+      const summonsAfterRelease = summons.length;
+
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      vi.advanceTimersByTime(540);
+
+      expect(summons).toHaveLength(summonsAfterRelease);
+
+      manager.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps normal click summon activation when no hold started', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    let summons = 0;
+    gameplayFacade.summonSeed = () => {
+      summons += 1;
+      return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
+    };
+    const manager = new WorkshopActionBarManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    parent
+      .querySelector('.workshop-page__summon-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(summons).toBe(1);
 
     manager.unmount();
   });

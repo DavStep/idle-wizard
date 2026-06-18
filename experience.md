@@ -40,6 +40,8 @@
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
+- Current NPC market source has no scheduled 5-minute demand regen despite older docs mentioning one; demand/stock move through sell/buy reducers, reset, and initial row creation.
+- NPC demand market auto-sell uses one shared timer; render it as a box-level bottom border label, not inside each stand row.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
@@ -183,8 +185,10 @@
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
+- Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/gold progress look reset after refresh.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
 - Web Google account linking should fall back to OIDC redirect when Google Identity prompt cannot display; `web_unavailable` should not leave players stuck.
+- Web Google Identity fallback must handle OIDC redirect callbacks before the GIS shortcut, then persist the redirect user for the next reload.
 - If a level 1 device save links into a Google account with a save above level 1, keep the Google account automatically and skip the choice prompt.
 - Account-link pending saves need attempt scoping and visible failure handling; silent `localStorage` failure can drop device progress when linking into an existing account.
 - Account linking should use Google OIDC directly, not SpacetimeAuth, so the player sees only the Google account picker/consent before returning to the game.
@@ -209,6 +213,7 @@
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
 - Server save sanitation must merge previous completed research into non-prestige saves; stale clients can omit newer research ids and otherwise get stuck behind the anti-downgrade guard.
 - Server task-save sanitation must treat `tasks.currentLevel` as the paid player level; completed task rows only mean level-ready and must not infer a level-up.
+- Task retunes should keep existing task ids stable when only changing required items; task ids are persisted progress keys.
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
 - Prestige reset saves intentionally lower run level, gold, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
@@ -233,6 +238,7 @@
 - Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
 - For Pixel/WebView perf checks, keep the phone awake and profile CPU: Android adaptive refresh can make raw rAF look capped when static, while full gameplay snapshot construction can still be the actual hot path.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
+- The shared Workshop chat popup multiplexes world/alliance chat; world sends call `sendMessage`, alliance sends call `sendChatMessage`.
 - All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
 - Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
 - Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.

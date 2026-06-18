@@ -167,6 +167,7 @@
   );
   --style-motion-fast: 140ms;
   --style-motion-press: 165ms;
+  --style-motion-press-return: 120ms;
   --style-press-scale: 0.97;
   --style-motion-normal: 205ms;
   --style-motion-expand: 225ms;
@@ -1316,7 +1317,8 @@ body {
   height: 90px;
   margin: 0;
   pointer-events: none;
-  translate: -50% -50%;
+  translate: calc(-50% + var(--tutorial-pointer-spine-nudge-x, 0px))
+    calc(-50% + var(--tutorial-pointer-spine-nudge-y, 0px));
   transform: rotate(var(--tutorial-pointer-spine-rotation, 0deg));
   transform-origin: 50% 50%;
 }
@@ -1360,6 +1362,8 @@ body {
 }
 
 .tutorial-layer__pointer[data-placement="top-left"] {
+  --tutorial-pointer-spine-nudge-x: 6px;
+  --tutorial-pointer-spine-nudge-y: 6px;
   --tutorial-pointer-spine-rotation: 135deg;
 }
 
@@ -1371,6 +1375,8 @@ body {
 }
 
 .tutorial-layer__pointer[data-placement="top-right"] {
+  --tutorial-pointer-spine-nudge-x: -6px;
+  --tutorial-pointer-spine-nudge-y: 6px;
   --tutorial-pointer-spine-rotation: -135deg;
 }
 
@@ -1382,6 +1388,8 @@ body {
 }
 
 .tutorial-layer__pointer[data-placement="bottom-left"] {
+  --tutorial-pointer-spine-nudge-x: 6px;
+  --tutorial-pointer-spine-nudge-y: -6px;
   --tutorial-pointer-spine-rotation: 45deg;
 }
 
@@ -1393,6 +1401,8 @@ body {
 }
 
 .tutorial-layer__pointer[data-placement="bottom-right"] {
+  --tutorial-pointer-spine-nudge-x: -6px;
+  --tutorial-pointer-spine-nudge-y: -6px;
   --tutorial-pointer-spine-rotation: -45deg;
 }
 
@@ -2435,7 +2445,7 @@ body {
 
 .shop-page__slot-value {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: baseline;
   column-gap: var(--style-row-column-gap);
   min-width: 0;
@@ -2463,7 +2473,6 @@ body {
 }
 
 .shop-page__slot-price-value,
-.shop-page__slot-timer-value,
 .shop-page__request-row-price {
   justify-self: end;
   font-variant-numeric: tabular-nums lining-nums;
@@ -2471,8 +2480,23 @@ body {
   white-space: nowrap;
 }
 
-.shop-page__slot-timer-value {
+.shop-page__shelf-timer {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  display: inline-block;
+  padding: 0 var(--style-box-border-label-padding-x);
+  font-size: var(--style-box-border-label-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: var(--style-box-border-label-line-height);
   color: var(--style-muted);
+  white-space: nowrap;
+  background: var(--style-surface);
+  transform: translateX(-50%);
+}
+
+.shop-page__shelf-timer[hidden] {
+  display: none;
 }
 
 .shop-page__slot-empty-rule {
@@ -7815,6 +7839,11 @@ div.workshop-page__discovery-row {
   text-shadow: 0 1px 0 rgb(255 255 255 / 70%);
   transform: translate(-50%, -50%);
   transform-origin: center;
+  transition:
+    color var(--style-motion-fast) linear,
+    border-color var(--style-motion-fast) linear,
+    background-color var(--style-motion-fast) linear,
+    transform var(--style-motion-press) var(--style-motion-ease-rubber);
   white-space: normal;
 }
 
@@ -8428,17 +8457,30 @@ div.workshop-page__discovery-row {
     .is-locked
   ) {
   scale: var(--style-press-scale);
+  transition:
+    background-color var(--style-motion-fast) linear,
+    scale var(--style-motion-press-return) var(--style-motion-ease-rubber),
+    translate var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
 .style-button:is(:active, .is-pressing):not(:disabled):not(.is-disabled) {
   background: var(--style-active-surface);
   scale: var(--style-press-scale);
+  transition:
+    color var(--style-motion-fast) linear,
+    border-color var(--style-motion-fast) linear,
+    background-color var(--style-motion-fast) linear,
+    scale var(--style-motion-press-return) var(--style-motion-ease-rubber),
+    translate var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
 .style-button.workshop-page__summon-button:is(:active, .is-pressing):not(:disabled) {
   background: transparent;
   scale: 1;
   transform: translate(-50%, -50%) scale(var(--style-press-scale));
+  transition:
+    background-color var(--style-motion-fast) linear,
+    transform var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
 .style-button[aria-disabled="true"],

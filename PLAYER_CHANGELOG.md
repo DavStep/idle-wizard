@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.2
+
+- Made holding the Workshop summon seed button repeat summons while mana is available.
+- Moved the NPC market sell timer into one shared label so stand rows stay cleaner.
+- Improved Google sign-in callback handling and world chat send feedback on mobile.
+
 ## 0.2.1
 
 - Fixed mobile taps that could make popups open and close immediately after pressing a button.

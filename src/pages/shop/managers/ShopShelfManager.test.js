@@ -1592,7 +1592,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('shows remaining bulk sell time on selected NPC market stands', () => {
+  it('shows remaining bulk sell time on the NPC market bottom line', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
@@ -1601,6 +1601,7 @@ describe('ShopShelfManager', () => {
       shop: {
         shelf: {
           autoSellSeconds: 1_800,
+          sellProgressSeconds: 900,
           maxSlots: 1,
           selectedSlotNumber: 1,
           slotCosts: [0],
@@ -1627,7 +1628,6 @@ describe('ShopShelfManager', () => {
               sellQuantity: 4,
               sellGold: 1,
               sellNeed: 1000,
-              sellProgressSeconds: 900,
             },
           ],
         },
@@ -1646,12 +1646,59 @@ describe('ShopShelfManager', () => {
 
     manager.mount(stage, popupLayer);
 
-    expect(stage.querySelector('.shop-page__slot-timer-value')?.textContent).toBe('15m');
+    expect(stage.querySelector('.shop-page__shelf-timer')?.textContent).toBe(
+      'timer 15m',
+    );
+    expect(stage.querySelector('.shop-page__slot-timer-value')).toBeNull();
+    expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
+      'sage seed (4) 1 gold',
+    );
 
-    gameplaySnapshot.shop.shelf.slots[0].sellProgressSeconds = 1_800;
+    gameplaySnapshot.shop.shelf.sellProgressSeconds = 1_800;
     manager.render(gameplaySnapshot);
 
-    expect(stage.querySelector('.shop-page__slot-timer-value')?.textContent).toBe('ready');
+    expect(stage.querySelector('.shop-page__shelf-timer')?.textContent).toBe(
+      'timer ready',
+    );
+
+    manager.unmount();
+  });
+
+  it('hides the NPC market bottom timer when no stand has an item', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      shop: {
+        shelf: {
+          autoSellSeconds: 1_800,
+          sellProgressSeconds: 900,
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [],
+          slots: [{ slotNumber: 1, unlocked: true }],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const timer = stage.querySelector('.shop-page__shelf-timer');
+
+    expect(timer?.hidden).toBe(true);
+    expect(timer?.textContent).toBe('');
 
     manager.unmount();
   });

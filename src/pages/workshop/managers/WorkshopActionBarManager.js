@@ -4,6 +4,9 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { getSeedSummonNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 
+const SUMMON_HOLD_REPEAT_MS = 110;
+const SUMMON_CLICK_SUPPRESSION_MS = 550;
+
 export class WorkshopActionBarManager {
   constructor({
     gameplayFacade,
@@ -20,6 +23,15 @@ export class WorkshopActionBarManager {
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
+    this.summonHoldTimer = null;
+    this.summonHoldPointerId = null;
+    this.suppressSummonClickUntilMs = 0;
+    this.handleSummonPointerDown = (event) => this.onSummonPointerDown(event);
+    this.handleSummonClick = (event) => this.onSummonClick(event);
+    this.handleDocumentPointerUp = (event) => this.onDocumentPointerUp(event);
+    this.handleDocumentPointerCancel = (event) => this.onDocumentPointerCancel(event);
+    this.handleWindowBlur = () => this.stopSummonHold();
+    this.handleVisibilityChange = () => this.stopSummonHold();
   }
 
   mount(parent) {
@@ -49,6 +61,7 @@ export class WorkshopActionBarManager {
   }
 
   unmount() {
+    this.stopSummonHold({ suppressClick: false });
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.root?.remove();
@@ -80,7 +93,8 @@ export class WorkshopActionBarManager {
 
     text.append(this.refs.summonButtonLabel, this.refs.summonButtonCost);
     button.append(circle, text);
-    button.addEventListener('click', () => this.onSummonSeed());
+    button.addEventListener('pointerdown', this.handleSummonPointerDown);
+    button.addEventListener('click', this.handleSummonClick);
     return button;
   }
 
@@ -110,6 +124,52 @@ export class WorkshopActionBarManager {
     return button;
   }
 
+  onSummonClick(event) {
+    if (this.shouldSuppressSummonClick()) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.suppressSummonClickUntilMs = 0;
+      return;
+    }
+
+    this.onSummonSeed();
+  }
+
+  onSummonPointerDown(event) {
+    if (event.button > 0 || event.isPrimary === false) {
+      return;
+    }
+
+    event.preventDefault();
+    this.stopSummonHold({ suppressClick: false });
+    this.summonHoldPointerId = event.pointerId;
+    this.suppressNextSummonClick();
+    this.addSummonHoldListeners();
+
+    if (this.onSummonSeed()) {
+      this.scheduleNextSummon();
+      return;
+    }
+
+    this.stopSummonHold();
+  }
+
+  onDocumentPointerUp(event) {
+    if (event.pointerId !== this.summonHoldPointerId) {
+      return;
+    }
+
+    this.stopSummonHold();
+  }
+
+  onDocumentPointerCancel(event) {
+    if (event.pointerId !== this.summonHoldPointerId) {
+      return;
+    }
+
+    this.stopSummonHold();
+  }
+
   onSummonSeed() {
     const result = this.gameplayFacade.summonSeed();
     this.render(this.gameplayFacade.getSnapshot());
@@ -118,10 +178,80 @@ export class WorkshopActionBarManager {
       if (!this.rewardEventsAvailable) {
         this.onSummonNotice?.(this.getSuccessMessage(result));
       }
-      return;
+      return this.canContinueSummonHold();
     }
 
     this.onSummonNotice?.(this.getFailureMessage(result.reason));
+    return false;
+  }
+
+  scheduleNextSummon() {
+    this.clearSummonHoldTimer();
+    this.summonHoldTimer = window.setTimeout(() => {
+      this.summonHoldTimer = null;
+
+      if (this.summonHoldPointerId === null) {
+        return;
+      }
+
+      if (this.onSummonSeed()) {
+        this.scheduleNextSummon();
+        return;
+      }
+
+      this.stopSummonHold();
+    }, SUMMON_HOLD_REPEAT_MS);
+  }
+
+  canContinueSummonHold() {
+    return this.gameplayFacade.getSnapshot()?.seedSummoning?.canSummon === true;
+  }
+
+  addSummonHoldListeners() {
+    const document = this.root?.ownerDocument;
+    const window = document?.defaultView;
+
+    document?.addEventListener('pointerup', this.handleDocumentPointerUp, true);
+    document?.addEventListener('pointercancel', this.handleDocumentPointerCancel, true);
+    document?.addEventListener('visibilitychange', this.handleVisibilityChange);
+    window?.addEventListener('blur', this.handleWindowBlur);
+  }
+
+  removeSummonHoldListeners() {
+    const document = this.root?.ownerDocument;
+    const window = document?.defaultView;
+
+    document?.removeEventListener('pointerup', this.handleDocumentPointerUp, true);
+    document?.removeEventListener('pointercancel', this.handleDocumentPointerCancel, true);
+    document?.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    window?.removeEventListener('blur', this.handleWindowBlur);
+  }
+
+  stopSummonHold({ suppressClick = true } = {}) {
+    this.clearSummonHoldTimer();
+    this.removeSummonHoldListeners();
+    this.summonHoldPointerId = null;
+
+    if (suppressClick) {
+      this.suppressNextSummonClick();
+    }
+  }
+
+  clearSummonHoldTimer() {
+    if (this.summonHoldTimer === null) {
+      return;
+    }
+
+    window.clearTimeout(this.summonHoldTimer);
+    this.summonHoldTimer = null;
+  }
+
+  suppressNextSummonClick() {
+    this.suppressSummonClickUntilMs = Date.now() + SUMMON_CLICK_SUPPRESSION_MS;
+  }
+
+  shouldSuppressSummonClick() {
+    return Date.now() < this.suppressSummonClickUntilMs;
   }
 
   getSuccessMessage(result) {
