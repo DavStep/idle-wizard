@@ -89,6 +89,18 @@ export class BrewingProcessEntityManager {
     return this.getActiveBrewEntityId(cauldronIndex) !== null;
   }
 
+  hasRunningTimer() {
+    return this.getActiveBrewEntityIds().some((entityId) => {
+      const phase = ActiveBrew.phase[entityId] ?? activeBrewPhases.brewing;
+      const remainingSeconds = ActiveBrew.remainingSeconds[entityId] ?? 0;
+
+      return (
+        remainingSeconds > 0 &&
+        (phase === activeBrewPhases.brewing || phase === activeBrewPhases.bottling)
+      );
+    });
+  }
+
   reduceRemainingSeconds(deltaSeconds, cauldronIndex = 0) {
     const entityId = this.getActiveBrewEntityId(cauldronIndex);
 

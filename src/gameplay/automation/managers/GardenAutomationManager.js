@@ -8,6 +8,10 @@ export class GardenAutomationManager {
   }
 
   update() {
+    if (!this.hasAnyGardenAutomationResearch()) {
+      return;
+    }
+
     this.autoHarvestReadyPlants();
     this.autoPlantEmptyTiles();
   }
@@ -50,5 +54,21 @@ export class GardenAutomationManager {
 
   hasResearch(researchId) {
     return this.researchFacade?.hasCompletedResearch(researchId) === true;
+  }
+
+  hasAnyGardenAutomationResearch() {
+    return (
+      this.researchFacade?.hasCompletedResearchMatching?.((researchId) =>
+        this.isGardenAutomationResearchId(researchId),
+      ) === true
+    );
+  }
+
+  isGardenAutomationResearchId(researchId) {
+    return (
+      typeof researchId === 'string' &&
+      (researchId.startsWith('automation:autoPlantTile:') ||
+        researchId.startsWith('automation:autoHarvestPlant:'))
+    );
   }
 }

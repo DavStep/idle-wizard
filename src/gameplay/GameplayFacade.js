@@ -20,6 +20,7 @@ import { TasksFacade } from './tasks/TasksFacade.js';
 import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
 
 export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
+export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 1_000;
 
 export class GameplayFacade {
   static explain =
@@ -122,6 +123,7 @@ export class GameplayFacade {
     this.gameConfigUnsubscribe = null;
     this.initialized = false;
     this.lastFrameSnapshotPublishTime = Number.NEGATIVE_INFINITY;
+    this.lastFrameSnapshotBuildTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotKey = '';
   }
 
@@ -982,38 +984,62 @@ export class GameplayFacade {
     }
 
     this.lastFrameSnapshotPublishTime = time;
-    const snapshot = this.getSnapshot();
-    const snapshotKey = this.getFrameSnapshotKey(snapshot);
+    const snapshotKey = this.getFrameSnapshotKey();
+    const shouldRefresh = this.shouldRefreshFrameSnapshot(time);
 
-    if (snapshotKey === this.lastFrameSnapshotKey) {
+    if (snapshotKey === this.lastFrameSnapshotKey && !shouldRefresh) {
       return false;
     }
 
-    this.publishSnapshotObject(snapshot, snapshotKey);
+    this.publishSnapshotObject(this.getSnapshot(), snapshotKey, time);
     return true;
   }
 
-  publishSnapshotObject(snapshot, frameSnapshotKey = this.getFrameSnapshotKey(snapshot)) {
+  publishSnapshotObject(
+    snapshot,
+    frameSnapshotKey = this.getFrameSnapshotKey(),
+    frameTime = this.getCurrentFrameTime(),
+  ) {
     this.lastFrameSnapshotKey = frameSnapshotKey;
+    this.lastFrameSnapshotBuildTime = frameTime;
     this.stateObserverManager.publish(snapshot);
   }
 
-  getFrameSnapshotKey(snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') {
-      return '';
+  getFrameSnapshotKey() {
+    const mana = this.manaFacade.getSnapshot();
+    return JSON.stringify({
+      manaCurrent: Math.floor(Number(mana.current) || 0),
+      manaCap: Number(mana.cap) || 0,
+      manaPerSecond: Number(mana.perSecond) || 0,
+    });
+  }
+
+  shouldRefreshFrameSnapshot(time) {
+    if (!this.hasFrameTimerWork()) {
+      return false;
     }
 
-    const mana = snapshot.mana
-      ? {
-          ...snapshot.mana,
-          current: Math.floor(Number(snapshot.mana.current) || 0),
-        }
-      : snapshot.mana;
+    if (!Number.isFinite(this.lastFrameSnapshotBuildTime)) {
+      return true;
+    }
 
-    return JSON.stringify({
-      ...snapshot,
-      mana,
-    });
+    return (
+      time >= this.lastFrameSnapshotBuildTime &&
+      time - this.lastFrameSnapshotBuildTime >= GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS
+    );
+  }
+
+  getCurrentFrameTime() {
+    const now = globalThis.performance?.now?.();
+    return Number.isFinite(now) ? now : 0;
+  }
+
+  hasFrameTimerWork() {
+    return (
+      this.brewingFacade.hasFrameTimerWork() ||
+      this.gardenFacade.hasFrameTimerWork() ||
+      this.researchFacade.hasFrameTimerWork()
+    );
   }
 
   publishAndSaveSnapshot() {

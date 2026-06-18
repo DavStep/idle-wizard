@@ -106,6 +106,10 @@ export class GardenFacade {
     return this.gardenSnapshotManager.getSnapshot();
   }
 
+  hasFrameTimerWork() {
+    return this.gardenTileEntityManager.hasProcessingTiles();
+  }
+
   getPersistenceSnapshot() {
     return {
       unlockedTiles: this.gardenTileEntityManager.getUnlockedTiles(),

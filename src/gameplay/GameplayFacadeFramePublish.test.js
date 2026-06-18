@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import {
   GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS,
+  GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS,
   GameplayFacade,
 } from './GameplayFacade.js';
 
@@ -56,6 +57,37 @@ describe('GameplayFacade frame publishing', () => {
     ).toBe(true);
 
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not build full snapshots for skipped automatic frames', () => {
+    const gameplayFacade = createGameplayFacade();
+
+    gameplayFacade.manaFacade.setCurrent(1.1);
+    expect(gameplayFacade.publishFrameSnapshot({ time: GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS })).toBe(
+      true,
+    );
+
+    const getSnapshot = vi.spyOn(gameplayFacade, 'getSnapshot');
+    gameplayFacade.manaFacade.setCurrent(1.9);
+
+    expect(
+      gameplayFacade.publishFrameSnapshot({
+        time: GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS * 2,
+      }),
+    ).toBe(false);
+    expect(getSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('does not refresh full snapshots by time when no gameplay timers are active', () => {
+    const gameplayFacade = createGameplayFacade();
+    const getSnapshot = vi.spyOn(gameplayFacade, 'getSnapshot');
+
+    expect(
+      gameplayFacade.publishFrameSnapshot({
+        time: GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS * 2,
+      }),
+    ).toBe(false);
+    expect(getSnapshot).not.toHaveBeenCalled();
   });
 
   it('keeps explicit publishes immediate for player actions', () => {

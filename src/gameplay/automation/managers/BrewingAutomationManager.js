@@ -8,6 +8,10 @@ export class BrewingAutomationManager {
   }
 
   update() {
+    if (!this.hasAnyBrewingAutomationResearch()) {
+      return;
+    }
+
     const cauldronNumbers = this.getCauldronNumbers();
 
     for (const cauldronNumber of cauldronNumbers) {
@@ -67,6 +71,23 @@ export class BrewingAutomationManager {
 
   hasResearch(researchId) {
     return this.researchFacade?.hasCompletedResearch(researchId) === true;
+  }
+
+  hasAnyBrewingAutomationResearch() {
+    return (
+      this.researchFacade?.hasCompletedResearchMatching?.((researchId) =>
+        this.isBrewingAutomationResearchId(researchId),
+      ) === true
+    );
+  }
+
+  isBrewingAutomationResearchId(researchId) {
+    return (
+      typeof researchId === 'string' &&
+      (researchId.startsWith('automation:autoBrewCauldron:') ||
+        researchId.startsWith('automation:autoBottleCauldron:') ||
+        researchId.startsWith('automation:autoCollectCauldron:'))
+    );
   }
 
   getCauldronSnapshot(cauldronNumber) {

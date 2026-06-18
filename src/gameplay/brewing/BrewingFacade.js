@@ -324,6 +324,10 @@ export class BrewingFacade {
     return this.brewingSnapshotManager.getSnapshot();
   }
 
+  hasFrameTimerWork() {
+    return this.brewingProcessEntityManager.hasRunningTimer();
+  }
+
   getPersistenceSnapshot() {
     const activeBrew = this.brewingProcessEntityManager.getActiveBrewSnapshot();
     const unlockedCauldrons = this.brewingSnapshotManager.getUnlockedCauldrons();

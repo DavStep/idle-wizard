@@ -223,6 +223,18 @@ export class ResearchStateEntityManager {
     return inProgressResearches;
   }
 
+  hasInProgressResearches() {
+    this.syncResearchEntities();
+
+    for (const entityId of this.entityIdsByResearchId.values()) {
+      if (PlayerResearch.isInProgress[entityId] === 1) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   getProgressSnapshot(researchId) {
     this.syncResearchEntities();
     const entityId = this.getEntityId(this.normalizeResearchId(researchId));

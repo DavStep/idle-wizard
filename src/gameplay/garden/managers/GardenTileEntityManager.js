@@ -268,6 +268,10 @@ export class GardenTileEntityManager {
     });
   }
 
+  hasProcessingTiles() {
+    return this.getProcessingTileEntityIds().length > 0;
+  }
+
   getActiveTileEntityIds() {
     return this.tileEntityIds.filter((tileEntityId) => GardenTile.tileNumber[tileEntityId] <= this.maxTiles);
   }

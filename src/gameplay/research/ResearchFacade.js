@@ -102,6 +102,14 @@ export class ResearchFacade {
     return this.researchStateEntityManager.isCompleted(researchId);
   }
 
+  hasCompletedResearchMatching(predicate) {
+    if (typeof predicate !== 'function') {
+      return false;
+    }
+
+    return this.researchStateEntityManager.getCompletedResearchIds().some(predicate);
+  }
+
   getResearchLabel(researchId) {
     return this.researchDefinitionManager.getResearch(researchId)?.label ?? researchId;
   }
@@ -214,6 +222,10 @@ export class ResearchFacade {
 
   getSnapshot() {
     return this.researchSnapshotManager.getSnapshot();
+  }
+
+  hasFrameTimerWork() {
+    return this.researchStateEntityManager.hasInProgressResearches();
   }
 
   getPersistenceSnapshot() {

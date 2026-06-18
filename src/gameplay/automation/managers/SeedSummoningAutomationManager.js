@@ -42,6 +42,10 @@ export class SeedSummoningAutomationManager {
   }
 
   getReservedManaForAutoBrew() {
+    if (!this.hasAnyAutoBrewResearch()) {
+      return 0;
+    }
+
     const cauldronNumber = this.brewingFacade?.getSnapshot?.().cauldronNumber ?? 1;
 
     if (!this.hasResearch(automationResearchIds.autoBrewCauldron(cauldronNumber))) {
@@ -51,5 +55,15 @@ export class SeedSummoningAutomationManager {
     const pendingCost = this.brewingFacade?.getPendingAutoBrewManaCost?.() ?? 0;
 
     return Number.isFinite(pendingCost) ? Math.max(0, pendingCost) : 0;
+  }
+
+  hasAnyAutoBrewResearch() {
+    return (
+      this.researchFacade?.hasCompletedResearchMatching?.(
+        (researchId) =>
+          typeof researchId === 'string' &&
+          researchId.startsWith('automation:autoBrewCauldron:'),
+      ) === true
+    );
   }
 }
