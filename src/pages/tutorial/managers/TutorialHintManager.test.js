@@ -87,6 +87,10 @@ function overlaps(a, b) {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
+function useFixedLessonSize(manager, { width = 190, height = 74 } = {}) {
+  manager.measureLessonSize = () => ({ width, height });
+}
+
 describe('TutorialHintManager', () => {
   it('uses the pointer without drawing a target rectangle', () => {
     const stage = document.createElement('section');
@@ -1604,6 +1608,7 @@ describe('TutorialHintManager', () => {
       };
     });
     const manager = new TutorialHintManager();
+    useFixedLessonSize(manager);
 
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
@@ -1662,6 +1667,7 @@ describe('TutorialHintManager', () => {
       };
     });
     const manager = new TutorialHintManager();
+    useFixedLessonSize(manager);
 
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
