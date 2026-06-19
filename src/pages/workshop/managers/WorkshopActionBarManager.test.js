@@ -133,6 +133,9 @@ describe('WorkshopActionBarManager', () => {
 
   it('presses the summon seed label without moving the icon', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const genericPressRule = baseCss.match(
+      /\.style-button:is\(:active, \.is-pressing\):not\(:disabled\):not\(\s*\[aria-disabled="true"\]\s*\):not\(\.is-disabled\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const summonPressRule = baseCss.match(
       /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(\s*:disabled\s*\):not\(\[aria-disabled="true"\]\)\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -144,6 +147,8 @@ describe('WorkshopActionBarManager', () => {
       /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(\s*:disabled\s*\):not\(\[aria-disabled="true"\]\)\s+\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
+    expect(genericPressRule).toBeDefined();
+    expect(genericPressRule).toMatch(/\bbackground:\s*var\(--style-active-surface\);/);
     expect(summonPressRule).toBeDefined();
     expect(summonPressRule).toMatch(/\bbackground:\s*transparent;/);
     expect(summonPressRule).toMatch(/\bscale:\s*1;/);

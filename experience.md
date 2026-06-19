@@ -149,6 +149,7 @@
 - Workshop summon button press feedback must not use generic `transform: scale(...)`; it needs to preserve its `translate(-50%, -50%)` centering or pointer release can miss the moved button.
 - Workshop summon button press feedback should keep `.is-pressing` on the real button, like leaderboard, then CSS-route the visual press to the `summon seed` label only.
 - Workshop summon button press feedback must keep the outer `.style-button` transparent and unscaled so the summon sign/circle icon stays visually stable.
+- Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward flyout stacks should keep the newest text flyout at the base anchor and move older active flyouts upward; positive offsets make rapid presses drift downward.

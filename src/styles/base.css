@@ -8831,7 +8831,9 @@ div.workshop-page__discovery-row {
     translate var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
-.style-button:is(:active, .is-pressing):not(:disabled):not(.is-disabled) {
+.style-button:is(:active, .is-pressing):not(:disabled):not(
+    [aria-disabled="true"]
+  ):not(.is-disabled) {
   background: var(--style-active-surface);
   scale: var(--style-press-scale);
   transition:
