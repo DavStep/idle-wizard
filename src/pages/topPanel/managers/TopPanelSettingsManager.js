@@ -657,6 +657,7 @@ export class TopPanelSettingsManager {
 
     this.refs.usernameAvatar.hidden = !showAvatar;
     this.refs.usernameButton.classList.toggle('has-avatar', showAvatar);
+    this.refs.resources?.classList.toggle('has-username-avatar', showAvatar);
   }
 
   applyThemeSelection(theme) {

@@ -941,6 +941,76 @@ describe('ShopShelfManager', () => {
     });
   });
 
+  it('keeps NPC market sell picker open when the touch-open click retargets to the backdrop', () => {
+    withPointerEvent(() => {
+      const stage = document.createElement('section');
+      const popupLayer = document.createElement('section');
+      let selectCount = 0;
+      const gameplaySnapshot = {
+        gold: { current: 0 },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          shelf: {
+            maxSlots: 1,
+            selectedSlotNumber: 1,
+            slotCosts: [0],
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 1,
+                sellGold: 8,
+                sellNeed: 12,
+              },
+            ],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                sellItemTypeId: null,
+              },
+            ],
+          },
+        },
+      };
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+        selectShopShelfSlot(slotNumber) {
+          selectCount += 1;
+          gameplaySnapshot.shop.shelf.selectedSlotNumber = slotNumber;
+          return { ok: true, slotNumber };
+        },
+      };
+      const manager = new ShopShelfManager({ gameplayFacade });
+
+      manager.mount(stage, popupLayer);
+
+      const itemValue = stage.querySelector('.shop-page__slot-item-value');
+      const popup = popupLayer.querySelector('.shop-page__sell-popup');
+
+      itemValue?.dispatchEvent(createTouchStartEvent());
+      popup?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(popup?.hidden).toBe(false);
+      expect(selectCount).toBe(1);
+
+      popup?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(popup?.hidden).toBe(true);
+
+      manager.unmount();
+    });
+  });
+
   it('keeps NPC market tutorial targets on item names, not prices', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');

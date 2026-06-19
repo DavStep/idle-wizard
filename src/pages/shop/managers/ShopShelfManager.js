@@ -29,6 +29,7 @@ export class ShopShelfManager {
     this.previousFocus = null;
     this.handledBuyPressStart = false;
     this.handledSelectSlotPressStartSlotNumber = null;
+    this.handledSelectSlotPressStartReset = null;
     this.handledSellItemPressStartKey = null;
     this.handledSellItemPressStartReset = null;
     this.lastTouchLikePressStart = {
@@ -37,6 +38,13 @@ export class ShopShelfManager {
     };
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
+        if (this.handledSelectSlotPressStartSlotNumber !== null) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.clearHandledSelectSlotPressStartSlotNumber();
+          return;
+        }
+
         this.hideSellPopup();
       }
     };
@@ -84,6 +92,7 @@ export class ShopShelfManager {
     this.unsubscribe?.();
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
+    this.clearHandledSelectSlotPressStartSlotNumber();
     this.clearHandledSellItemPressStartKey();
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.root?.remove();
@@ -93,6 +102,8 @@ export class ShopShelfManager {
     this.selectedSellTab = 'seed';
     this.visible = false;
     this.previousFocus = null;
+    this.handledSelectSlotPressStartSlotNumber = null;
+    this.handledSelectSlotPressStartReset = null;
     this.handledSellItemPressStartKey = null;
     this.handledSellItemPressStartReset = null;
   }
@@ -293,7 +304,7 @@ export class ShopShelfManager {
       event.type === 'click' &&
       this.handledSelectSlotPressStartSlotNumber === slotNumber
     ) {
-      this.handledSelectSlotPressStartSlotNumber = null;
+      this.clearHandledSelectSlotPressStartSlotNumber();
       return;
     }
 
@@ -333,7 +344,8 @@ export class ShopShelfManager {
     }
 
     event.preventDefault();
-    this.handledSelectSlotPressStartSlotNumber = slotNumber;
+    event.stopPropagation();
+    this.setHandledSelectSlotPressStartSlotNumber(slotNumber);
     this.onSelectSlot(event, slotNumber);
   }
 
@@ -974,6 +986,28 @@ export class ShopShelfManager {
     }
 
     this.handledSellItemPressStartKey = null;
+  }
+
+  setHandledSelectSlotPressStartSlotNumber(slotNumber) {
+    this.clearHandledSelectSlotPressStartSlotNumber();
+    this.handledSelectSlotPressStartSlotNumber = slotNumber;
+    this.handledSelectSlotPressStartReset = globalThis.setTimeout(() => {
+      if (this.handledSelectSlotPressStartSlotNumber === slotNumber) {
+        this.handledSelectSlotPressStartSlotNumber = null;
+      }
+
+      this.handledSelectSlotPressStartReset = null;
+    }, TOUCH_LIKE_CLICK_DEDUPE_RESET_MS);
+    this.handledSelectSlotPressStartReset?.unref?.();
+  }
+
+  clearHandledSelectSlotPressStartSlotNumber() {
+    if (this.handledSelectSlotPressStartReset !== null) {
+      globalThis.clearTimeout(this.handledSelectSlotPressStartReset);
+      this.handledSelectSlotPressStartReset = null;
+    }
+
+    this.handledSelectSlotPressStartSlotNumber = null;
   }
 
   applyPopupVisibility() {

@@ -3,17 +3,43 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   HAPTIC_MIN_INTERVAL_MS,
   HapticPulseManager,
+  UI_TAP_HAPTIC_AMPLITUDE,
   UI_TAP_HAPTIC_DURATION_MS,
 } from './HapticPulseManager.js';
 
 describe('HapticPulseManager', () => {
-  it('uses native Capacitor haptics before web vibration', () => {
+  it('uses native constant-amplitude haptics before Capacitor and web vibration', () => {
+    const nativeConstantHaptics = { playConstant: vi.fn(() => Promise.resolve()) };
+    const nativeHaptics = { vibrate: vi.fn(() => Promise.resolve()) };
+    const webVibrate = vi.fn(() => true);
+    const manager = new HapticPulseManager({
+      preferenceManager: enabledPreference(true),
+      nativeConstantHaptics,
+      nativeHaptics,
+      isNativePlatform: () => true,
+      isNativeConstantPluginAvailable: () => true,
+      isNativePluginAvailable: () => true,
+      navigatorProvider: () => activeNavigator(webVibrate),
+    });
+
+    expect(manager.playUiTap()).toBe(true);
+
+    expect(nativeConstantHaptics.playConstant).toHaveBeenCalledWith({
+      durationMs: UI_TAP_HAPTIC_DURATION_MS,
+      amplitude: UI_TAP_HAPTIC_AMPLITUDE,
+    });
+    expect(nativeHaptics.vibrate).not.toHaveBeenCalled();
+    expect(webVibrate).not.toHaveBeenCalled();
+  });
+
+  it('falls back to native Capacitor haptics before web vibration', () => {
     const nativeHaptics = { vibrate: vi.fn(() => Promise.resolve()) };
     const webVibrate = vi.fn(() => true);
     const manager = new HapticPulseManager({
       preferenceManager: enabledPreference(true),
       nativeHaptics,
       isNativePlatform: () => true,
+      isNativeConstantPluginAvailable: () => false,
       isNativePluginAvailable: () => true,
       navigatorProvider: () => activeNavigator(webVibrate),
     });
@@ -31,6 +57,7 @@ describe('HapticPulseManager', () => {
     const manager = new HapticPulseManager({
       preferenceManager: enabledPreference(true),
       isNativePlatform: () => false,
+      isNativeConstantPluginAvailable: () => false,
       isNativePluginAvailable: () => false,
       navigatorProvider: () => activeNavigator(webVibrate),
     });
@@ -44,12 +71,14 @@ describe('HapticPulseManager', () => {
     const disabledManager = new HapticPulseManager({
       preferenceManager: enabledPreference(false),
       isNativePlatform: () => false,
+      isNativeConstantPluginAvailable: () => false,
       isNativePluginAvailable: () => false,
       navigatorProvider: () => activeNavigator(webVibrate),
     });
     const inactiveManager = new HapticPulseManager({
       preferenceManager: enabledPreference(true),
       isNativePlatform: () => false,
+      isNativeConstantPluginAvailable: () => false,
       isNativePluginAvailable: () => false,
       navigatorProvider: () => ({
         vibrate: webVibrate,
@@ -68,6 +97,7 @@ describe('HapticPulseManager', () => {
     const manager = new HapticPulseManager({
       preferenceManager: enabledPreference(true),
       isNativePlatform: () => false,
+      isNativeConstantPluginAvailable: () => false,
       isNativePluginAvailable: () => false,
       navigatorProvider: () => activeNavigator(webVibrate),
       now: () => now,

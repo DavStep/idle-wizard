@@ -78,6 +78,7 @@ export const DEFAULT_PLAYER_LEVEL_BALANCE = {
 
 export class PlayerLevelBalanceManager {
   constructor({ balance = DEFAULT_PLAYER_LEVEL_BALANCE } = {}) {
+    this.revision = 0;
     this.balance = balance;
     this.setBalance(balance);
   }
@@ -97,6 +98,11 @@ export class PlayerLevelBalanceManager {
     this.manaProgression = manaProgression;
     this.crystalRewards = crystalRewards;
     this.milestones = milestones;
+    this.revision += 1;
+  }
+
+  getRevision() {
+    return this.revision;
   }
 
   getLevels() {

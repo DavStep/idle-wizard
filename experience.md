@@ -48,6 +48,7 @@
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
 - Dialog/open-only controls should opt into `data-press-start-click="true"` so touch opens on press-start; do not use it for spend/buy/sell/complete gameplay actions.
+- NPC market stand press-start opens must ignore the immediate retargeted backdrop click; otherwise the `sell` picker flashes open and closes on mobile/WebView.
 - Current NPC market source has no scheduled 5-minute demand regen despite older docs mentioning one; demand/stock move through sell/buy reducers, reset, and initial row creation.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
@@ -152,6 +153,7 @@
 - Reward flyout stacks should keep the newest text flyout at the base anchor and move older active flyouts upward; positive offsets make rapid presses drift downward.
 - Reward flyout stack spacing must use measured live flyout height, not one fixed step, or taller/wrapped notices can overlap each other.
 - Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, fire touch haptic/sound on valid press start, and repeat both only when a held press releases on the original target.
+- Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.5` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
 
 ## Architecture
 
@@ -207,6 +209,7 @@
 - Completion logs for timed systems should come from system-manager callbacks, not from page button clicks.
 - Timed gameplay should consume uncapped `frame.timerDeltaSeconds`; keep capped `frame.deltaSeconds` only for render/UI stability.
 - Frame snapshot throttling must publish once when timer work drops to none; otherwise final countdown labels can stick at `1s`.
+- Full gameplay snapshots are expensive on mobile; page mount/show bursts should reuse one scoped snapshot, and heavy sub-snapshots should cache by real invalidation keys.
 - Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.

@@ -3549,7 +3549,7 @@ describe('PagesFacade', () => {
     const topPanel = stage.querySelector('.room-top-panel');
     expect(topPanel).not.toBeNull();
     expect(topPanel.children[0]?.className).toBe('room-top-panel__identity-row');
-    expect(topPanel.children[1]?.className).toBe('room-top-panel__resources');
+    expect(topPanel.children[1]?.classList.contains('room-top-panel__resources')).toBe(true);
     expect(
       topPanel.querySelector('.room-top-panel__identity-row .room-top-panel__username')
         ?.textContent,
@@ -3774,16 +3774,19 @@ describe('PagesFacade', () => {
 
     const usernameButton = stage.querySelector('.room-top-panel__username');
     const avatar = usernameButton?.querySelector('.room-top-panel__username-avatar');
+    const resources = stage.querySelector('.room-top-panel__resources');
 
     expect(usernameButton?.textContent).toBe('Merlin');
     expect(avatar?.hidden).toBe(false);
     expect(avatar?.dataset.character).toBe('mira');
     expect(avatar?.getAttribute('src')).toContain('mira.webp');
+    expect(resources?.classList.contains('has-username-avatar')).toBe(true);
 
     playerFacade.setIconMode('none');
 
     expect(usernameButton?.textContent).toBe('Merlin');
     expect(avatar?.hidden).toBe(true);
+    expect(resources?.classList.contains('has-username-avatar')).toBe(false);
 
     playerFacade.setCharacter('rowan');
 
@@ -3794,6 +3797,7 @@ describe('PagesFacade', () => {
     playerFacade.setIconMode('icons');
 
     expect(avatar?.hidden).toBe(false);
+    expect(resources?.classList.contains('has-username-avatar')).toBe(true);
   });
 
   it('mounts the FTUE guide shell for fresh level 1 players', () => {

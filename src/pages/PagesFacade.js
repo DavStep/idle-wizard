@@ -159,22 +159,24 @@ export class PagesFacade {
   }
 
   mount(stage) {
-    this.stage = stage;
-    this.pressFeedbackManager.mount(stage);
-    this.currentPageManager.mount(stage);
-    this.swipeNavigationManager.mount(stage);
-    this.bottomPanelFacade.mount(stage);
-    this.notificationFacade.mount();
-    this.worldChatManager.mount(stage);
-    this.topPanelFacade.mount(stage);
-    this.playerInfoDialogFacade.mount(stage);
-    this.allianceInfoDialogFacade.mount(stage);
-    this.syncTopPanelResourceContext();
-    this.syncPageUnlocks(this.getGameplaySnapshot());
-    this.pageUnlockUnsubscribe =
-      this.gameplayFacade?.subscribe?.((snapshot) => this.syncPageUnlocks(snapshot)) ?? null;
-    this.tutorialFacade?.mount(stage);
-    this.scrollCueManager.mount(stage);
+    this.withGameplaySnapshotCache(() => {
+      this.stage = stage;
+      this.pressFeedbackManager.mount(stage);
+      this.currentPageManager.mount(stage);
+      this.swipeNavigationManager.mount(stage);
+      this.bottomPanelFacade.mount(stage);
+      this.notificationFacade.mount();
+      this.worldChatManager.mount(stage);
+      this.topPanelFacade.mount(stage);
+      this.playerInfoDialogFacade.mount(stage);
+      this.allianceInfoDialogFacade.mount(stage);
+      this.syncTopPanelResourceContext();
+      this.syncPageUnlocks(this.getGameplaySnapshot());
+      this.pageUnlockUnsubscribe =
+        this.gameplayFacade?.subscribe?.((snapshot) => this.syncPageUnlocks(snapshot)) ?? null;
+      this.tutorialFacade?.mount(stage);
+      this.scrollCueManager.mount(stage);
+    });
   }
 
   unmount() {
@@ -196,9 +198,11 @@ export class PagesFacade {
   }
 
   show(pageId) {
-    this.currentPageManager.show(this.getUnlockedPageId(pageId));
-    this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
-    this.syncTopPanelResourceContext();
+    this.withGameplaySnapshotCache(() => {
+      this.currentPageManager.show(this.getUnlockedPageId(pageId));
+      this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
+      this.syncTopPanelResourceContext();
+    });
     this.tutorialFacade?.scheduleRefresh();
   }
 
@@ -236,9 +240,11 @@ export class PagesFacade {
       return;
     }
 
-    this.currentPageManager.show(this.getFallbackPageId());
-    this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
-    this.syncTopPanelResourceContext();
+    this.withGameplaySnapshotCache(() => {
+      this.currentPageManager.show(this.getFallbackPageId());
+      this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
+      this.syncTopPanelResourceContext();
+    });
     this.tutorialFacade?.scheduleRefresh();
   }
 
@@ -256,6 +262,14 @@ export class PagesFacade {
 
   getGameplaySnapshot() {
     return this.gameplayFacade?.getSnapshot?.() ?? {};
+  }
+
+  withGameplaySnapshotCache(callback) {
+    if (typeof this.gameplayFacade?.withSnapshotCache !== 'function') {
+      return callback();
+    }
+
+    return this.gameplayFacade.withSnapshotCache(callback);
   }
 
   syncTopPanelResourceContext() {

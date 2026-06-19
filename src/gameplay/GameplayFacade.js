@@ -127,6 +127,8 @@ export class GameplayFacade {
     this.lastFrameSnapshotBuildTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotKey = '';
     this.lastFrameHadTimerWork = false;
+    this.snapshotCacheDepth = 0;
+    this.cachedSnapshot = null;
   }
 
   setPersistenceStorage(storageManager) {
@@ -940,9 +942,13 @@ export class GameplayFacade {
   }
 
   getSnapshot() {
+    if (this.snapshotCacheDepth > 0 && this.cachedSnapshot) {
+      return this.cachedSnapshot;
+    }
+
     const seedSummoning = this.seedSummoningFacade.getSnapshot();
 
-    return {
+    const snapshot = {
       mana: this.manaFacade.getSnapshot(),
       gold: this.goldFacade.getSnapshot(),
       crystal: this.crystalFacade.getSnapshot(),
@@ -964,6 +970,30 @@ export class GameplayFacade {
       shop: this.shopFacade.getSnapshot(),
       garden: this.gardenFacade.getSnapshot(),
     };
+
+    if (this.snapshotCacheDepth > 0) {
+      this.cachedSnapshot = snapshot;
+    }
+
+    return snapshot;
+  }
+
+  withSnapshotCache(callback) {
+    if (typeof callback !== 'function') {
+      return undefined;
+    }
+
+    this.snapshotCacheDepth += 1;
+
+    try {
+      return callback();
+    } finally {
+      this.snapshotCacheDepth = Math.max(0, this.snapshotCacheDepth - 1);
+
+      if (this.snapshotCacheDepth === 0) {
+        this.cachedSnapshot = null;
+      }
+    }
   }
 
   publishSnapshot() {

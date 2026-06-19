@@ -88,8 +88,8 @@
   --style-world-chat-row-height: 14px;
   --style-world-chat-row-gap: 4px;
   --style-world-chat-preview-lines: 2;
-  --style-world-chat-preview-font-size: 9px;
-  --style-world-chat-preview-icon-size: 9px;
+  --style-world-chat-preview-font-size: 10px;
+  --style-world-chat-preview-icon-size: 10px;
   --style-world-chat-title-font-size: var(--style-box-border-label-font-size);
   --style-world-chat-popup-font-size: 11px;
   --style-world-chat-popup-line-height: 18px;
@@ -496,8 +496,8 @@ body {
 
 .app-fps-display {
   position: fixed;
-  top: 2px;
-  left: calc(env(safe-area-inset-left) + 4px);
+  top: 40px;
+  left: calc(env(safe-area-inset-left) + 50px);
   z-index: 130;
   color: var(--style-text);
   font-family: var(--style-font);
@@ -6709,6 +6709,8 @@ div.workshop-page__discovery-row {
 }
 
 .style-panel.room-top-panel {
+  --room-top-panel-avatar-gap: 6px;
+  --room-top-panel-avatar-size: 24px;
   position: absolute;
   top: 10px;
   right: var(--style-room-chrome-edge);
@@ -6888,7 +6890,7 @@ div.workshop-page__discovery-row {
   display: inline-flex;
   align-items: center;
   flex: 0 1 auto;
-  column-gap: 4px;
+  column-gap: var(--room-top-panel-avatar-gap);
   min-width: 0;
   width: auto;
   max-width: 100%;
@@ -6909,8 +6911,9 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__username-avatar {
-  width: 18px;
-  height: 18px;
+  flex: 0 0 var(--room-top-panel-avatar-size);
+  width: var(--room-top-panel-avatar-size);
+  height: var(--room-top-panel-avatar-size);
   vertical-align: -4px;
 }
 
@@ -6979,6 +6982,12 @@ div.workshop-page__discovery-row {
   font-size: var(--room-top-panel-resource-font-size, var(--style-font-size));
   row-gap: 2px;
   white-space: nowrap;
+}
+
+.room-top-panel__resources.has-username-avatar {
+  margin-left: calc(
+    var(--room-top-panel-avatar-size) + var(--room-top-panel-avatar-gap)
+  );
 }
 
 .room-top-panel__resources:not(.has-special-currency) {
@@ -8989,8 +8998,9 @@ div.workshop-page__discovery-row {
 .style-box .workshop-page__tasks-count,
 .style-box .workshop-page__tasks-pin,
 .style-box .workshop-page__tasks-toggle,
-.style-box .workshop-page__level-rewards-toggle {
-  font-size: var(--style-box-border-label-font-size);
+.style-box .workshop-page__level-rewards-toggle,
+.style-box .workshop-page__world-chat-title {
+  font-size: var(--style-world-chat-title-font-size);
   line-height: var(--style-box-border-label-line-height);
 }
 
