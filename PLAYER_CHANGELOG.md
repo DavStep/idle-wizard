@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.6
+
+- Added character portraits to player info popups and cleaned portrait plus alliance tag order in leaderboard and chat labels.
+- Improved world chat and alliance chat send failures so locked chat, maintenance, account-in-use, and offline states show clearer status text.
+- Tightened mobile summon feedback and stacked reward notices, and kept fast-sell controls visible but disabled until an item is selected.
+
 ## 0.2.5
 
 - Improved character portrait icon assets so Account, chat, leaderboard, and alliance views load smaller images.

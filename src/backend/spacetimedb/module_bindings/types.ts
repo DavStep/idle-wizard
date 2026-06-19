@@ -349,6 +349,7 @@ export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
   playerLevel: __t.u32(),
   prestigeCount: __t.u32(),
   updatedAt: __t.timestamp(),
+  character: __t.string(),
 });
 export type PlayerInfoSummaryResult = __Infer<typeof PlayerInfoSummaryResult>;
 

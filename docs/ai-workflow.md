@@ -32,6 +32,7 @@ Before local runtime QA, confirm both services:
 
 - `npm run dev:status`
 - `lsof -nP -sTCP:LISTEN -iTCP:3000`
+- If the shared runtime should survive terminal closes, start `npm run local:keepalive` once. It detaches a watchdog that keeps Vite `55173` and SpacetimeDB `3000` up.
 
 If neither service is up and live QA is needed, prefer `npm run stdb:dev` from the primary worktree. If Vite is already up, start the backend with `npm run stdb:start`, publish with `npm run stdb:publish`, and regenerate bindings with `npm run stdb:generate` when schema or bindings changed.
 

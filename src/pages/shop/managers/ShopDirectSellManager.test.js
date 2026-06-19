@@ -185,8 +185,24 @@ describe('ShopDirectSellManager', () => {
     expect(popup?.textContent).toContain('fast sell');
     expect(popup?.textContent).toContain('no item selected');
     expect(popup?.textContent).toContain('select item');
-    expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(true);
-    expect(popup.querySelector('.shop-page__direct-sell-confirm')?.hidden).toBe(true);
+    expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(false);
+    expect(popup.querySelector('.amount-selection-row__value')?.textContent).toBe('1');
+    expect(popup.querySelector('.amount-selection-row__value')?.hasAttribute('disabled')).toBe(
+      true,
+    );
+    expect(
+      [...popup.querySelectorAll('.shop-page__direct-sell-step')].every(
+        (button) => button.disabled,
+      ),
+    ).toBe(true);
+    expect(popup.querySelector('.shop-page__direct-sell-confirm')?.hidden).toBe(false);
+    expect(popup.querySelector('.shop-page__direct-sell-confirm')?.disabled).toBe(true);
+    expect(
+      popup.querySelector('.shop-page__direct-sell-confirm-label')?.textContent,
+    ).toBe('sell x1');
+    expect(
+      popup.querySelector('.shop-page__direct-sell-confirm-value')?.textContent,
+    ).toBe('');
 
     const itemRow = popup.querySelector('.shop-page__direct-sell-row');
     const itemButton = popup.querySelector('.shop-page__direct-sell-item-button');
@@ -425,8 +441,15 @@ describe('ShopDirectSellManager', () => {
     expect(selectedLabel?.textContent).toBe('no item selected');
     expect(selectedLabel?.getAttribute('aria-pressed')).toBe('false');
     expect(selectedLabel?.hasAttribute('disabled')).toBe(true);
-    expect(quantityField?.hidden).toBe(true);
-    expect(confirmButton?.hidden).toBe(true);
+    expect(quantityField?.hidden).toBe(false);
+    expect(quantityField?.querySelector('.amount-selection-row__value')?.textContent).toBe('1');
+    expect(
+      [...(quantityField?.querySelectorAll('.shop-page__direct-sell-step') ?? [])].every(
+        (button) => button.disabled,
+      ),
+    ).toBe(true);
+    expect(confirmButton?.hidden).toBe(false);
+    expect(confirmButton?.disabled).toBe(true);
 
     itemButton?.click();
 
@@ -439,8 +462,10 @@ describe('ShopDirectSellManager', () => {
     expect(selectedLabel?.textContent).toBe('no item selected');
     expect(selectedLabel?.getAttribute('aria-pressed')).toBe('false');
     expect(selectedLabel?.hasAttribute('disabled')).toBe(true);
-    expect(quantityField?.hidden).toBe(true);
-    expect(confirmButton?.hidden).toBe(true);
+    expect(quantityField?.hidden).toBe(false);
+    expect(quantityField?.querySelector('.amount-selection-row__value')?.textContent).toBe('1');
+    expect(confirmButton?.hidden).toBe(false);
+    expect(confirmButton?.disabled).toBe(true);
 
     manager.unmount();
   });

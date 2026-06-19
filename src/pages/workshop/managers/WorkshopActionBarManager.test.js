@@ -134,10 +134,10 @@ describe('WorkshopActionBarManager', () => {
   it('presses the summon circle without scaling the label sign', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const summonPressRule = baseCss.match(
-      /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(:disabled\)\s*\{(?<body>[^}]*)\}/,
+      /\.style-button\.workshop-page__summon-button:active:not\(:disabled\)\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const circlePressRule = baseCss.match(
-      /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(:disabled\)\s+\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__summon-circle\.is-pressing\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(summonPressRule).toBeDefined();
@@ -149,6 +149,20 @@ describe('WorkshopActionBarManager', () => {
     expect(circlePressRule).toMatch(
       /\btransform:\s*scale\(var\(--style-press-scale\)\);/,
     );
+  });
+
+  it('routes summon press feedback to the circle art instead of the label sign', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new WorkshopActionBarManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.workshop-page__summon-button')?.dataset.pressFeedbackTarget).toBe(
+      '.workshop-page__summon-circle',
+    );
+
+    manager.unmount();
   });
 
   it('keeps normal click summon activation when no hold started', () => {

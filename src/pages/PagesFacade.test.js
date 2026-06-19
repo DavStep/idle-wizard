@@ -6800,6 +6800,17 @@ describe('PagesFacade', () => {
     expect(
       popup.querySelectorAll('.workshop-page__leaderboard-character-icon'),
     ).toHaveLength(2);
+    const adaPlayerLabel = popup.querySelector('.workshop-page__leaderboard-player');
+    expect(
+      [...adaPlayerLabel.childNodes].map((node) =>
+        node.nodeType === window.Node.TEXT_NODE ? node.textContent : node.className,
+      ),
+    ).toEqual([
+      'style-player-character-icon workshop-page__leaderboard-character-icon',
+      'workshop-page__alliance-tag',
+      ' ',
+      'room-player-info-link workshop-page__leaderboard-player-link',
+    ]);
 
     const dailyButton = periodButtons.find((tabButton) => tabButton.textContent === 'daily');
 
@@ -8138,6 +8149,56 @@ describe('PagesFacade', () => {
     );
   });
 
+  it('shows actionable world chat send failures', async () => {
+    const failures = [
+      ['chat_locked', 'level syncing'],
+      ['account_in_use', 'open elsewhere'],
+      ['maintenance', 'maintenance'],
+      ['send_failed', 'try again'],
+    ];
+
+    for (const [reason, statusText] of failures) {
+      const stage = document.createElement('section');
+      const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
+      const worldChatFacade = createWorldChatFacadeFake({
+        messages: [],
+        sendResult: {
+          ok: false,
+          reason,
+        },
+      });
+      const pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake(),
+        worldChatFacade,
+      });
+
+      pagesFacade.mount(stage);
+
+      stage
+        .querySelector('.workshop-page__world-chat-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__world-chat-popup');
+      const input = popup.querySelector('.workshop-page__world-chat-input');
+      const form = popup.querySelector('.workshop-page__world-chat-form');
+
+      input.value = 'hello';
+      input.dispatchEvent(new window.Event('input', { bubbles: true }));
+      form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(worldChatFacade.getSentMessages()).toEqual([]);
+      expect(input.value).toBe('hello');
+      expect(popup.querySelector('.workshop-page__world-chat-status')?.textContent).toBe(
+        statusText,
+      );
+
+      pagesFacade.unmount();
+    }
+  });
+
   it('sends alliance chat through the alliance chat reducer facade', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
@@ -8187,6 +8248,19 @@ describe('PagesFacade', () => {
     expect(input.value).toBe('');
     expect(popup.textContent).toContain('alliance hello');
     expect(popup.textContent).toContain('hello alliance');
+    const senderLabel = popup.querySelector('.workshop-page__world-chat-name');
+    expect(
+      [...senderLabel.childNodes].map((node) =>
+        node.nodeType === window.Node.TEXT_NODE ? node.textContent : node.className,
+      ),
+    ).toEqual([
+      'style-player-character-icon workshop-page__world-chat-character-icon',
+      'workshop-page__alliance-tag',
+      ' ',
+      'room-player-info-link workshop-page__world-chat-player-link',
+      '(4)',
+      ': ',
+    ]);
   });
 
   it('scrolls world chat popup to the newest message after opening', () => {

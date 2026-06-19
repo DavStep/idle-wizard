@@ -583,11 +583,10 @@ export class WorkshopWorldChatManager {
     const tag = createAllianceTagSpan(message?.allianceTag, message?.allianceTagColor);
     const nodes = [];
 
-    if (tag) {
-      nodes.push(tag, document.createTextNode(' '));
-    }
-
     if (this.isSystemMessage(message)) {
+      if (tag) {
+        nodes.push(tag, document.createTextNode(' '));
+      }
       nodes.push(document.createTextNode(username));
       return nodes;
     }
@@ -598,6 +597,10 @@ export class WorkshopWorldChatManager {
         'workshop-page__world-chat-character-icon',
       ),
     );
+
+    if (tag) {
+      nodes.push(tag, document.createTextNode(' '));
+    }
 
     nodes.push(
       createPlayerInfoLink(
@@ -689,7 +692,23 @@ export class WorkshopWorldChatManager {
       return 'chat busy';
     }
 
-    return 'could not send';
+    if (reason === 'chat_locked') {
+      return 'level syncing';
+    }
+
+    if (reason === 'no_alliance') {
+      return 'join alliance first';
+    }
+
+    if (reason === 'account_in_use') {
+      return 'open elsewhere';
+    }
+
+    if (reason === 'maintenance') {
+      return 'maintenance';
+    }
+
+    return 'try again';
   }
 
   scrollMessagesToBottom({ afterLayout = false } = {}) {

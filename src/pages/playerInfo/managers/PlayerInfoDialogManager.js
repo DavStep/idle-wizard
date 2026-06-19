@@ -1,4 +1,9 @@
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import {
+  createPlayerCharacterIcon,
+  getPlayerCharacterImageUrl,
+} from '../../shared/playerCharacterIcon.js';
+import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 
 const EMPTY_SNAPSHOT = {
   connected: false,
@@ -75,10 +80,15 @@ export class PlayerInfoDialogManager {
     this.refs.closeButton.type = 'button';
     this.refs.closeButton.textContent = 'close';
     this.refs.closeButton.addEventListener('click', () => this.hide());
+    this.refs.content = document.createElement('div');
+    this.refs.content.className = 'room-player-info-content';
+    this.refs.character = createPlayerCharacterIcon('elara', 'room-player-info-character');
+    this.refs.character.loading = 'eager';
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'room-player-info-rows';
 
-    dialog.append(this.refs.title, this.refs.closeButton, this.refs.rows);
+    this.refs.content.append(this.refs.character, this.refs.rows);
+    dialog.append(this.refs.title, this.refs.closeButton, this.refs.content);
     popup.append(dialog);
     return popup;
   }
@@ -132,6 +142,7 @@ export class PlayerInfoDialogManager {
     this.activePlayer = player;
     this.refs.title.textContent = player.username;
     this.refs.dialog.setAttribute('aria-label', `${player.username} player information`);
+    this.refs.character.src = getPlayerCharacterImageUrl(player.character);
     this.refs.rows.replaceChildren(
       this.createAllianceRow(player),
       this.createTextRow('total produced gold', this.formatNumber(player.totalProducedGold)),
@@ -201,6 +212,7 @@ export class PlayerInfoDialogManager {
       allianceName: player?.allianceName ?? fallback.allianceName,
       allianceTag: player?.allianceTag ?? fallback.allianceTag,
       allianceTagColor: player?.allianceTagColor ?? fallback.allianceTagColor,
+      character: player?.character ?? fallback.character,
       playerLevel: player?.playerLevel ?? fallback.playerLevel,
     });
   }
@@ -235,6 +247,7 @@ export class PlayerInfoDialogManager {
       allianceName: String(player.allianceName ?? player.alliance_name ?? '').trim(),
       allianceTag: normalizeAllianceTag(player.allianceTag ?? player.alliance_tag),
       allianceTagColor: player.allianceTagColor ?? player.alliance_tag_color,
+      character: normalizePlayerCharacter(player.character),
       totalProducedGold: this.normalizeMetric(
         player.totalProducedGold,
         player.totalGeneratedGold,

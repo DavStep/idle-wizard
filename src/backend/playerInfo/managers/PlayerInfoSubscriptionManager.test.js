@@ -74,6 +74,7 @@ describe('PlayerInfoSubscriptionManager', () => {
       {
         identity: { toHexString: () => 'identity-ada' },
         username: 'Ada',
+        character: 'mira',
         allianceTag: 'tap',
         allianceTagColor: 'red',
         totalProducedGold: 1234n,
@@ -95,6 +96,7 @@ describe('PlayerInfoSubscriptionManager', () => {
         {
           identity: 'identity-ada',
           username: 'Ada',
+          character: 'mira',
           allianceTag: 'TAP',
           totalProducedGold: 1234,
           playerLevel: 14,

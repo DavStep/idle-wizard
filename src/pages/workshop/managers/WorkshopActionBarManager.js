@@ -74,6 +74,7 @@ export class WorkshopActionBarManager {
     button.className = 'style-button workshop-page__summon-button';
     button.type = 'button';
     button.dataset.tutorialId = 'workshop:summonSeed';
+    button.dataset.pressFeedbackTarget = '.workshop-page__summon-circle';
 
     const circle = createAssetAtlasSprite(
       'workshop-page__summon-circle',

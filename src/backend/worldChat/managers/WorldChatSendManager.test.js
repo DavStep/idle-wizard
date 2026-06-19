@@ -37,7 +37,8 @@ describe('WorldChatSendManager', () => {
     const sendWorldChatMessage = vi
       .fn()
       .mockRejectedValueOnce(new Error('World chat is rate limited.'))
-      .mockRejectedValueOnce(new Error('World chat is globally rate limited.'));
+      .mockRejectedValueOnce(new Error('World chat is globally rate limited.'))
+      .mockRejectedValueOnce(new Error('World chat is rate-limited.'));
     const manager = new WorldChatSendManager();
 
     manager.connect({
@@ -53,6 +54,48 @@ describe('WorldChatSendManager', () => {
     await expect(manager.sendMessage('second')).resolves.toEqual({
       ok: false,
       reason: 'global_rate_limited',
+    });
+    await expect(manager.sendMessage('third')).resolves.toEqual({
+      ok: false,
+      reason: 'rate_limited',
+    });
+  });
+
+  it('returns known send failure reasons from reducer errors', async () => {
+    const sendWorldChatMessage = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('World chat unlocks at level 3.'))
+      .mockRejectedValueOnce(new Error('Account is open on another device.'))
+      .mockRejectedValueOnce(new Error('Server maintenance is active.'))
+      .mockRejectedValueOnce(new Error('WebSocket connection closed.'))
+      .mockRejectedValueOnce(new Error('Unexpected reducer failure.'));
+    const manager = new WorldChatSendManager();
+
+    manager.connect({
+      reducers: {
+        sendWorldChatMessage,
+      },
+    });
+
+    await expect(manager.sendMessage('locked')).resolves.toEqual({
+      ok: false,
+      reason: 'chat_locked',
+    });
+    await expect(manager.sendMessage('elsewhere')).resolves.toEqual({
+      ok: false,
+      reason: 'account_in_use',
+    });
+    await expect(manager.sendMessage('maintenance')).resolves.toEqual({
+      ok: false,
+      reason: 'maintenance',
+    });
+    await expect(manager.sendMessage('offline')).resolves.toEqual({
+      ok: false,
+      reason: 'offline',
+    });
+    await expect(manager.sendMessage('unknown')).resolves.toEqual({
+      ok: false,
+      reason: 'send_failed',
     });
   });
 });

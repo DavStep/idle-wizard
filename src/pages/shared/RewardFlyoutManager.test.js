@@ -227,6 +227,28 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
+  it('uses measured flyout height when stacking taller notices', () => {
+    const host = document.createElement('section');
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    const first = manager.show('older notice');
+    const second = manager.show('newer wrapped notice');
+
+    Object.defineProperty(second, 'offsetHeight', {
+      configurable: true,
+      value: 34,
+    });
+
+    manager.layoutTextFlyouts();
+
+    expect(first?.style.getPropertyValue('--style-flyout-offset')).toBe('-34px');
+    expect(second?.style.getPropertyValue('--style-flyout-offset')).toBe('0px');
+
+    manager.unmount();
+  });
+
   it('starts herb drops from the end of the garden progress bar', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');

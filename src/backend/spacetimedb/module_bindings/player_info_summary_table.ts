@@ -19,4 +19,5 @@ export default __t.row({
   playerLevel: __t.u32().name("player_level"),
   prestigeCount: __t.u32().name("prestige_count"),
   updatedAt: __t.timestamp().name("updated_at"),
+  character: __t.string(),
 });

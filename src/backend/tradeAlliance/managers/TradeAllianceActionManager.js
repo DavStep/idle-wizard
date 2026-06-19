@@ -1,4 +1,5 @@
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+import { getChatFailureReason } from '../../shared/chatFailureReasons.js';
 
 const MAX_MESSAGE_LENGTH = 160;
 const ROLE_IDS = new Set(['tradeMaster', 'quartermaster', 'factor', 'broker', 'trader']);
@@ -113,7 +114,7 @@ export class TradeAllianceActionManager {
       'sendTradeAllianceChatMessage',
       'send_trade_alliance_chat_message',
       { body: message },
-      { reason: 'send_failed' },
+      { failureReason: getChatFailureReason, reason: 'send_failed' },
     );
   }
 
@@ -143,7 +144,12 @@ export class TradeAllianceActionManager {
     });
   }
 
-  async callReducer(camelName, snakeName, payload, { reason = 'publish_failed' } = {}) {
+  async callReducer(
+    camelName,
+    snakeName,
+    payload,
+    { failureReason = null, reason = 'publish_failed' } = {},
+  ) {
     const reducer = this.findReducer(camelName, snakeName);
 
     if (!reducer) {
@@ -158,10 +164,10 @@ export class TradeAllianceActionManager {
       return {
         ok: true,
       };
-    } catch {
+    } catch (error) {
       return {
         ok: false,
-        reason,
+        reason: typeof failureReason === 'function' ? failureReason(error) : reason,
       };
     }
   }

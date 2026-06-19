@@ -656,11 +656,11 @@ export class WorkshopLeaderboardManager {
         user.character,
         'workshop-page__leaderboard-character-icon',
       ),
+      ...(tag ? [tag, document.createTextNode(' ')] : []),
       name,
     );
     return [
       document.createTextNode(`${rank}. `),
-      ...(tag ? [tag, document.createTextNode(' ')] : []),
       player,
       document.createTextNode(` (${this.normalizePlayerLevel(user.playerLevel)})`),
     ];

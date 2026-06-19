@@ -53,6 +53,38 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
+  it('can delegate press feedback to a child node while keeping button activation on the control', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const circle = document.createElement('span');
+    let clicks = 0;
+    button.className = 'style-button';
+    button.dataset.pressFeedbackTarget = '.press-circle';
+    circle.className = 'press-circle';
+    button.append(circle);
+    button.addEventListener('click', () => {
+      clicks += 1;
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(circle, 'pointerdown');
+
+    expect(button.classList.contains('is-pressing')).toBe(false);
+    expect(circle.classList.contains('is-pressing')).toBe(true);
+
+    dispatchPointer(document, 'pointerup');
+
+    expect(circle.classList.contains('is-pressing')).toBe(false);
+    expect(clicks).toBe(1);
+
+    manager.unmount();
+  });
+
   it('activates the pressed touch target on pointer release and suppresses the duplicate native click', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');

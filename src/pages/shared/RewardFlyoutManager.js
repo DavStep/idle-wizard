@@ -52,6 +52,7 @@ export class RewardFlyoutManager {
     const timeoutId = window.setTimeout(() => {
       this.timeouts.delete(timeoutId);
       flyout.remove();
+      this.layoutTextFlyouts();
     }, FLYOUT_LIFETIME_MS);
 
     this.timeouts.add(timeoutId);
@@ -60,14 +61,21 @@ export class RewardFlyoutManager {
 
   layoutTextFlyouts() {
     const flyouts = this.getTextFlyouts();
-    const newestIndex = flyouts.length - 1;
+    let offset = 0;
 
-    for (const [index, flyout] of flyouts.entries()) {
-      flyout.style.setProperty(
-        '--style-flyout-offset',
-        `${(index - newestIndex) * FLYOUT_STACK_GAP_PX}px`,
-      );
+    for (let index = flyouts.length - 1; index >= 0; index -= 1) {
+      const flyout = flyouts[index];
+      flyout.style.setProperty('--style-flyout-offset', `${offset}px`);
+      offset -= this.getFlyoutStackStep(flyout);
     }
+  }
+
+  getFlyoutStackStep(flyout) {
+    const rectHeight = Number(flyout?.getBoundingClientRect?.().height) || 0;
+    const offsetHeight = Number(flyout?.offsetHeight) || 0;
+    const scrollHeight = Number(flyout?.scrollHeight) || 0;
+
+    return Math.max(FLYOUT_STACK_GAP_PX, rectHeight, offsetHeight, scrollHeight);
   }
 
   getTextFlyouts() {

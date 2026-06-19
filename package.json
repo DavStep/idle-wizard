@@ -1,10 +1,13 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "private": true,
   "type": "module",
   "scripts": {
     "assets:atlas": "node scripts/build-asset-atlas.js",
+    "local:keepalive": "node scripts/local-runtime.js start",
+    "local:keepalive:status": "node scripts/local-runtime.js status",
+    "local:keepalive:stop": "node scripts/local-runtime.js stop",
     "predev": "npm run assets:atlas",
     "dev": "vite --host 0.0.0.0 --port 55173 --strictPort",
     "dev:status": "sh -c 'lsof -nP -sTCP:LISTEN -iTCP:55173 || true; ps -axo pid=,ppid=,stat=,command= | grep \"$PWD/node_modules/.bin/vite\" | grep -v grep || true'",

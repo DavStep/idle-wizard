@@ -4844,6 +4844,7 @@ const playerInfoSummaryResult = t.array(
     playerLevel: t.u32(),
     prestigeCount: t.u32(),
     updatedAt: t.timestamp(),
+    character: t.string(),
   }),
 );
 const ownTradeAllianceOverviewResult = t.option(
@@ -10462,6 +10463,7 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
       player?.lastSeenAt ??
       save?.updatedAt ??
       new Timestamp(getContextTimestampMicros(ctx)),
+    character: normalizePlayerCharacter(player?.character ?? DEFAULT_PLAYER_CHARACTER),
   };
 }
 

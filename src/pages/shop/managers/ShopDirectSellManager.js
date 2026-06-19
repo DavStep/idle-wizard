@@ -581,13 +581,12 @@ export class ShopDirectSellManager {
     }
 
     const item = this.getSelectedItem();
-    const hasItem = Boolean(item);
-
-    this.refs.quantityField.field.hidden = !hasItem;
-    this.refs.actionRow.hidden = !hasItem;
-    this.refs.confirmButton.hidden = !hasItem;
+    this.refs.quantityField.field.hidden = false;
+    this.refs.actionRow.hidden = false;
+    this.refs.confirmButton.hidden = false;
 
     if (!item) {
+      this.sellQuantity = 1;
       this.refs.selectedItem.label.disabled = true;
       this.refs.selectedItem.label.setAttribute('aria-disabled', 'true');
       this.refs.selectedItem.label.setAttribute('aria-pressed', 'false');
@@ -597,6 +596,23 @@ export class ShopDirectSellManager {
       setResourceColor(this.refs.selectedItem.label, null);
       this.refs.selectedItem.value.textContent = '';
       setResourceColor(this.refs.selectedItem.value, null);
+      this.refs.quantityField.hideInput();
+      this.refs.quantityField.input.min = '1';
+      this.refs.quantityField.input.max = '1';
+      this.refs.quantityField.input.disabled = true;
+      this.refs.quantityField.setValue(1);
+      this.refs.quantityField.valueButton.disabled = true;
+      this.refs.quantityField.valueButton.setAttribute('aria-disabled', 'true');
+      for (const button of this.refs.quantityField.stepButtons.values()) {
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+      }
+      this.refs.confirmButtonLabel.textContent = 'sell x1';
+      setResourceIconText(this.refs.confirmButtonValue, '');
+      setResourceColor(this.refs.confirmButtonValue, null);
+      this.refs.confirmButton.setAttribute('aria-label', 'select item to sell');
+      this.refs.confirmButton.disabled = true;
+      this.refs.confirmButton.setAttribute('aria-disabled', 'true');
       this.renderStatus('select item');
       return;
     }
@@ -622,6 +638,7 @@ export class ShopDirectSellManager {
     this.refs.selectedItem.label.setAttribute('aria-label', `deselect ${display.label}`);
     this.refs.quantityField.input.min = maxQuantity > 0 ? '1' : '0';
     this.refs.quantityField.input.max = String(maxQuantity);
+    this.refs.quantityField.input.disabled = maxQuantity <= 0 || selling;
     this.refs.quantityField.setValue(quantity);
     this.refs.quantityField.valueButton.disabled = maxQuantity <= 0 || selling;
     this.refs.quantityField.valueButton.setAttribute(

@@ -174,12 +174,20 @@ describe('ScrollCueManager', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const progressRule = baseCss.match(/\.style-progress\s*\{(?<body>[^}]*)\}/)
       ?.groups?.body;
+    const progressOverlayRule = baseCss.match(
+      /\.style-progress::after\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const rule = baseCss.match(/(?:^|\n)\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/)
       ?.groups?.body;
 
     expect(progressRule).toBeDefined();
+    expect(progressOverlayRule).toBeDefined();
     expect(progressRule).toMatch(/\bflex:\s*0 0 auto;/);
-    expect(progressRule).toMatch(/\bbox-sizing:\s*content-box;/);
+    expect(progressRule).toMatch(/\bbox-sizing:\s*border-box;/);
+    expect(progressRule).not.toMatch(/\bborder\s*:/);
+    expect(progressOverlayRule).toMatch(
+      /\bborder:\s*var\(--style-progress-rail-border\);/,
+    );
     expect(rule).toBeDefined();
     expect(rule).not.toMatch(/\bheight\s*:/);
     expect(rule).not.toMatch(/\bbox-sizing\s*:/);

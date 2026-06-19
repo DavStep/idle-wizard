@@ -38,9 +38,11 @@
   --style-scroll-progress-gap: 10px;
   --style-border-width: 2px;
   --style-border-strong-width: 2px;
-  --style-scroll-progress-height: calc(
-    var(--style-progress-height) + (var(--style-border-width) * 2)
+  --style-progress-rail-border-width: var(--style-border-width);
+  --style-progress-total-height: calc(
+    var(--style-progress-height) + (var(--style-progress-rail-border-width) * 2)
   );
+  --style-scroll-progress-height: var(--style-progress-total-height);
   --style-scroll-progress-block-size: calc(
     var(--style-scroll-progress-gap) + var(--style-scroll-progress-height)
   );
@@ -73,9 +75,10 @@
   --style-tiny-font-size: 10px;
   --style-tiny-line-height: 12px;
   --style-progress-height: 3px;
-  --style-progress-timer-height: var(--style-progress-height);
+  --style-progress-timer-height: var(--style-progress-total-height);
   --style-progress-rail-background: var(--style-surface);
-  --style-progress-rail-border: var(--style-border);
+  --style-progress-rail-border: var(--style-progress-rail-border-width) solid
+    var(--style-stroke);
   --style-progress-rail-shadow: none;
   --style-progress-fill-background: var(--style-text);
   --style-progress-fill-shadow: none;
@@ -7500,12 +7503,13 @@ div.workshop-page__discovery-row {
   object-position: 50% 13%;
   vertical-align: -4px;
   background: transparent;
-  border: 1px solid var(--style-stroke);
+  border: 0;
 }
 
 .room-top-panel__character-option-icon {
   width: 72px;
   height: 72px;
+  object-position: 50% 52%;
   border-width: 2px;
   vertical-align: 0;
 }
@@ -7544,6 +7548,7 @@ div.workshop-page__discovery-row {
   --theme-preview-surface: var(--style-surface);
   --theme-preview-text: var(--style-text);
   --theme-preview-stroke: var(--style-stroke);
+  --theme-preview-border-width: 1px;
   --theme-preview-muted: var(--style-muted);
   padding: 5px;
   margin: 1px 0 2px;
@@ -7556,6 +7561,7 @@ div.workshop-page__discovery-row {
   --theme-preview-surface: #dedede;
   --theme-preview-text: #1a1a1a;
   --theme-preview-stroke: #1a1a1a;
+  --theme-preview-border-width: 0.75px;
   --theme-preview-muted: #5e5e5e;
 }
 
@@ -7564,6 +7570,7 @@ div.workshop-page__discovery-row {
   --theme-preview-surface: #202020;
   --theme-preview-text: #e8e8e8;
   --theme-preview-stroke: #6a6a6a;
+  --theme-preview-border-width: 0.75px;
   --theme-preview-muted: #a6a6a6;
 }
 
@@ -7591,7 +7598,7 @@ div.workshop-page__discovery-row {
   padding: 5px 10px;
   color: var(--theme-preview-text);
   background: var(--theme-preview-surface);
-  border: 1px solid var(--theme-preview-stroke);
+  border: var(--theme-preview-border-width) solid var(--theme-preview-stroke);
 }
 
 .room-top-panel__theme-preview-title {
@@ -7614,12 +7621,13 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__visual-preview .room-top-panel__preview-progress {
-  height: var(--style-progress-height);
-  background: var(
+  --style-progress-rail-border-width: var(--theme-preview-border-width, 1px);
+  --style-progress-rail-background: var(
     --theme-preview-surface,
-    var(--style-progress-rail-background)
+    var(--style-surface)
   );
-  border: 1px solid var(--theme-preview-stroke, var(--style-stroke));
+  --style-progress-rail-border: var(--style-progress-rail-border-width) solid
+    var(--theme-preview-stroke, var(--style-stroke));
 }
 
 .room-top-panel__visual-preview .room-top-panel__preview-progress-fill {
@@ -7996,6 +8004,20 @@ div.workshop-page__discovery-row {
 .room-player-info-rows {
   display: grid;
   gap: 4px;
+}
+
+.room-player-info-content {
+  display: grid;
+  gap: 10px;
+}
+
+.room-player-info-character {
+  display: block;
+  justify-self: center;
+  width: 72px;
+  height: 72px;
+  object-position: 50% 28%;
+  vertical-align: 0;
 }
 
 .room-player-info-row {
@@ -8782,7 +8804,7 @@ div.workshop-page__discovery-row {
     translate var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
-.style-button.workshop-page__summon-button:is(:active, .is-pressing):not(:disabled) {
+.style-button.workshop-page__summon-button:active:not(:disabled) {
   background: transparent;
   scale: 1;
   transform: translate(-50%, -50%);
@@ -8791,8 +8813,16 @@ div.workshop-page__discovery-row {
     transform var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
-.style-button.workshop-page__summon-button:is(:active, .is-pressing):not(:disabled)
+.style-button.workshop-page__summon-button:active:not(:disabled)
   .workshop-page__summon-circle {
+  transform: scale(var(--style-press-scale));
+  transition:
+    filter var(--style-motion-fast) linear,
+    opacity var(--style-motion-fast) linear,
+    transform var(--style-motion-press-return) var(--style-motion-ease-rubber);
+}
+
+.workshop-page__summon-circle.is-pressing {
   transform: scale(var(--style-press-scale));
   transition:
     filter var(--style-motion-fast) linear,
@@ -8848,12 +8878,19 @@ div.workshop-page__discovery-row {
   position: relative;
   display: block;
   flex: 0 0 auto;
-  box-sizing: content-box;
-  height: var(--style-progress-height);
+  box-sizing: border-box;
+  height: var(--style-progress-total-height);
   overflow: hidden;
   background: var(--style-progress-rail-background);
-  border: var(--style-progress-rail-border);
   box-shadow: var(--style-progress-rail-shadow);
+}
+
+.style-progress::after {
+  position: absolute;
+  inset: 0;
+  border: var(--style-progress-rail-border);
+  pointer-events: none;
+  content: "";
 }
 
 .style-scroll-cue {

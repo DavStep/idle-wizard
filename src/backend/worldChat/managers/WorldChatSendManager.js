@@ -1,3 +1,5 @@
+import { getChatFailureReason } from '../../shared/chatFailureReasons.js';
+
 const MAX_MESSAGE_LENGTH = 160;
 
 export class WorldChatSendManager {
@@ -47,17 +49,7 @@ export class WorldChatSendManager {
   }
 
   getFailureReason(error) {
-    const message = String(error?.message ?? error ?? '').toLowerCase();
-
-    if (message.includes('globally rate limited')) {
-      return 'global_rate_limited';
-    }
-
-    if (message.includes('rate limited')) {
-      return 'rate_limited';
-    }
-
-    return 'send_failed';
+    return getChatFailureReason(error);
   }
 
   normalizeMessage(body) {

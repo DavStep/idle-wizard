@@ -1,4 +1,5 @@
 const PRESS_FEEDBACK_CLASS = 'is-pressing';
+const PRESS_FEEDBACK_TARGET_ATTRIBUTE = 'data-press-feedback-target';
 const SYNTHETIC_CLICK_SUPPRESSION_MS = 450;
 const SYNTHETIC_CLICK_RETARGET_SUPPRESSION_PX = 32;
 const PRESS_MOVE_CANCEL_PX = 12;
@@ -48,6 +49,7 @@ export class PressFeedbackManager {
     this.hapticsFacade = hapticsFacade;
     this.uiClickSoundFacade = uiClickSoundFacade;
     this.pressedElement = null;
+    this.pressedFeedbackElement = null;
     this.pressPointerId = null;
     this.pressPointerType = '';
     this.pressStartX = 0;
@@ -127,7 +129,8 @@ export class PressFeedbackManager {
     this.pressStartY = event.clientY;
     this.pressMoved = false;
     this.pressedElement = nextElement;
-    this.pressedElement?.classList.add(PRESS_FEEDBACK_CLASS);
+    this.pressedFeedbackElement = this.getPressFeedbackElement(nextElement);
+    this.pressedFeedbackElement?.classList.add(PRESS_FEEDBACK_CLASS);
 
     this.uiClickSoundFacade?.unlock?.();
     if (this.pressPointerType !== 'mouse') {
@@ -149,7 +152,7 @@ export class PressFeedbackManager {
     }
 
     this.pressMoved = true;
-    this.pressedElement?.classList.remove(PRESS_FEEDBACK_CLASS);
+    this.pressedFeedbackElement?.classList.remove(PRESS_FEEDBACK_CLASS);
     this.pointerSoundElement = null;
   }
 
@@ -236,6 +239,27 @@ export class PressFeedbackManager {
     return this.getPressTarget(document?.elementFromPoint?.(clientX, clientY));
   }
 
+  getPressFeedbackElement(pressTarget) {
+    if (!pressTarget) {
+      return null;
+    }
+
+    const targetSelector = pressTarget.getAttribute(PRESS_FEEDBACK_TARGET_ATTRIBUTE);
+
+    if (!targetSelector) {
+      return pressTarget;
+    }
+
+    try {
+      const feedbackElement = pressTarget.querySelector(targetSelector);
+      return feedbackElement && pressTarget.contains(feedbackElement)
+        ? feedbackElement
+        : pressTarget;
+    } catch {
+      return pressTarget;
+    }
+  }
+
   shouldSuppressClick(event) {
     const targetElement = getElementFromEventTarget(event.target);
 
@@ -286,8 +310,9 @@ export class PressFeedbackManager {
   }
 
   clearPressedElement() {
-    this.pressedElement?.classList.remove(PRESS_FEEDBACK_CLASS);
+    this.pressedFeedbackElement?.classList.remove(PRESS_FEEDBACK_CLASS);
     this.pressedElement = null;
+    this.pressedFeedbackElement = null;
     this.pressPointerId = null;
     this.pressPointerType = '';
     this.pressStartX = 0;

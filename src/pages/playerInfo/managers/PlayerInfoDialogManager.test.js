@@ -26,6 +26,7 @@ describe('PlayerInfoDialogManager', () => {
         {
           identity: 'identity-ada',
           username: 'Ada',
+          character: 'mira',
           allianceTag: 'TAP',
           totalProducedGold: 1234,
           playerLevel: 14,
@@ -49,6 +50,9 @@ describe('PlayerInfoDialogManager', () => {
     const popup = stage.querySelector('.room-player-info-popup');
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('.style-box__title')?.textContent).toBe('Ada');
+    expect(popup.querySelector('.room-player-info-character')?.getAttribute('src')).toContain(
+      'mira.webp',
+    );
     expect(popup.textContent).toContain('alliance[TAP]');
     expect(popup.textContent).toContain('total produced gold1234');
     expect(popup.textContent).toContain('level14');
@@ -66,6 +70,7 @@ describe('PlayerInfoDialogManager', () => {
         {
           identity: 'identity-ada',
           username: 'Ada',
+          character: 'mira',
           allianceTag: 'TAP',
           allianceTagColor: 'blue',
           totalProducedGold: 1234,

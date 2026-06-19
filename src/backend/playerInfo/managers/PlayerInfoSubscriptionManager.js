@@ -1,4 +1,5 @@
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 
 const PLAYER_INFO_QUERY = 'SELECT * FROM player_info_summary';
 const EMPTY_SNAPSHOT = {
@@ -83,6 +84,9 @@ export class PlayerInfoSubscriptionManager {
     return {
       identity: this.toIdentityKey(row.identity),
       username: typeof username === 'string' ? username : 'wizard',
+      character: normalizePlayerCharacter(
+        row.character ?? row.playerCharacter ?? row.player_character,
+      ),
       allianceId: this.toIdentityKey(row.allianceId ?? row.alliance_id),
       allianceName: String(row.allianceName ?? row.alliance_name ?? ''),
       allianceTag: this.normalizeAllianceTag(row.allianceTag ?? row.alliance_tag),
