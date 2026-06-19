@@ -250,7 +250,6 @@ export class ShopStockManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__stock-buy-button';
     button.type = 'button';
-    button.dataset.pressStartClick = 'true';
     button.addEventListener('click', () => this.onBuyItem(itemTypeId));
 
     value.append(button);

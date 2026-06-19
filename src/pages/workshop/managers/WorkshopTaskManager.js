@@ -151,7 +151,6 @@ export class WorkshopTaskManager {
     this.refs.title = document.createElement('button');
     this.refs.title.className = 'style-box__title workshop-page__tasks-title';
     this.refs.title.type = 'button';
-    this.refs.title.dataset.pressStartClick = 'true';
     this.refs.title.textContent = this.currentRequirementsLabel;
     this.refs.title.setAttribute('aria-label', `show ${this.currentRequirementsLabel} info`);
     this.refs.title.setAttribute('aria-expanded', 'false');
@@ -222,7 +221,7 @@ export class WorkshopTaskManager {
     document.addEventListener('pointerdown', this.handleOutsidePress, true);
     document.addEventListener('click', this.handleOutsidePress, true);
     document.addEventListener('keydown', this.handleKeydown);
-    this.setCanToggleTasks(false);
+    this.setCanToggleTasks(false, { preservePinned: true });
     this.syncExpansionState();
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -262,7 +261,6 @@ export class WorkshopTaskManager {
     this.currentRequirementTargetLevel = null;
     this.expandingExpandedContent = false;
     this.collapsingExpandedContent = false;
-    this.pinned = false;
     this.rewardsHidden = false;
     this.infoVisible = false;
     this.previousFocus = null;
@@ -1747,14 +1745,14 @@ export class WorkshopTaskManager {
     }
   }
 
-  setCanToggleTasks(canToggleTasks) {
+  setCanToggleTasks(canToggleTasks, { preservePinned = false } = {}) {
     this.canToggleTasks = Boolean(canToggleTasks);
 
     if (!this.refs.toggleButton) {
       return;
     }
 
-    if (!this.canToggleTasks) {
+    if (!this.canToggleTasks && !preservePinned) {
       this.pinned = false;
     }
 

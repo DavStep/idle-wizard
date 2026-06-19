@@ -139,7 +139,6 @@ export class ShopCrystalOfferManager {
     const price = document.createElement('button');
     price.className = 'shop-page__crystal-price';
     price.type = 'button';
-    price.dataset.pressStartClick = 'true';
     price.textContent = offer.priceLabel;
     price.setAttribute(
       'aria-label',

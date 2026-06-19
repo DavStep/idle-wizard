@@ -2728,7 +2728,7 @@ body {
 }
 
 .shop-page__slot-row--interactive {
-  cursor: default;
+  cursor: pointer;
 }
 
 .shop-page__slot-row.is-unlockable {
@@ -2740,7 +2740,8 @@ body {
   cursor: default;
 }
 
-.shop-page__slot-row--interactive .shop-page__slot-item-value {
+.shop-page__slot-row--interactive
+  :where(.shop-page__slot-item-value, .shop-page__slot-price-value) {
   cursor: pointer;
 }
 
@@ -2749,7 +2750,8 @@ body {
   text-decoration: underline;
 }
 
-.shop-page__slot-row--interactive:focus .shop-page__slot-item-value {
+.shop-page__slot-row--interactive:focus
+  :where(.shop-page__slot-item-value, .shop-page__slot-price-value) {
   text-decoration: underline;
 }
 
@@ -2760,7 +2762,8 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .shop-page__slot-row--interactive .shop-page__slot-item-value:hover {
+  .shop-page__slot-row--interactive:hover
+    :where(.shop-page__slot-item-value, .shop-page__slot-price-value) {
     text-decoration: underline;
   }
 
@@ -6710,7 +6713,7 @@ div.workshop-page__discovery-row {
 
 .style-panel.room-top-panel {
   --room-top-panel-avatar-gap: 6px;
-  --room-top-panel-avatar-size: 24px;
+  --room-top-panel-avatar-size: 30px;
   position: absolute;
   top: 10px;
   right: var(--style-room-chrome-edge);

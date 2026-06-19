@@ -116,14 +116,16 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
-  it('activates marked open controls on touch press start and suppresses release clicks', () => {
+  it('activates marked non-button open controls on touch press start and suppresses release clicks', () => {
     const root = document.createElement('div');
-    const button = document.createElement('button');
+    const button = document.createElement('div');
     const popup = document.createElement('section');
     const clicks = [];
     let backdropClicks = 0;
     let nowMs = 1000;
     button.className = 'style-button';
+    button.setAttribute('role', 'button');
+    button.tabIndex = 0;
     button.dataset.pressStartClick = 'true';
     button.addEventListener('click', (event) => {
       clicks.push(event.isTrusted ? 'native' : 'synthetic');
@@ -157,6 +159,38 @@ describe('PressFeedbackManager', () => {
 
     expect(clicks).toEqual(['synthetic']);
     expect(backdropClicks).toBe(0);
+
+    manager.unmount();
+  });
+
+  it('activates marked native buttons on touch release', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const clicks = [];
+    button.className = 'style-button';
+    button.dataset.pressStartClick = 'true';
+    button.addEventListener('click', (event) => {
+      clicks.push(event.isTrusted ? 'native' : 'synthetic');
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown');
+
+    expect(clicks).toEqual([]);
+
+    dispatchPointer(document, 'pointerup');
+    button.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+      }),
+    );
+
+    expect(clicks).toEqual(['synthetic']);
 
     manager.unmount();
   });

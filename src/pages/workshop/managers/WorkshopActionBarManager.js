@@ -102,7 +102,6 @@ export class WorkshopActionBarManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__bag-button';
     button.type = 'button';
-    button.dataset.pressStartClick = 'true';
     button.textContent = 'bag';
     button.setAttribute('aria-label', 'open bag');
     button.addEventListener('click', () => this.onBagClick?.());
@@ -113,7 +112,6 @@ export class WorkshopActionBarManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__prestige-button';
     button.type = 'button';
-    button.dataset.pressStartClick = 'true';
     button.textContent = 'prestige';
     button.setAttribute('aria-label', 'open prestige');
     button.addEventListener('click', () => {

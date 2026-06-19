@@ -86,7 +86,6 @@ export class ShopTradeHistoryManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__trade-history-button';
     button.type = 'button';
-    button.dataset.pressStartClick = 'true';
     button.textContent = 'trade history';
     button.addEventListener('click', () => this.show());
     return button;

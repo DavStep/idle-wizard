@@ -4482,6 +4482,51 @@ describe('PagesFacade', () => {
     expect(tasks?.classList.contains('is-expanded')).toBe(true);
   });
 
+  it('keeps pinned Workshop tasks pinned across page swaps', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 2;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.workshop-page__tasks-pin')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    pagesFacade.show('brewing');
+    pagesFacade.show('workshop');
+
+    const tasks = stage.querySelector('.workshop-page__tasks');
+    const pinButton = stage.querySelector('.workshop-page__tasks-pin');
+    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+    const list = stage.querySelector('.workshop-page__task-list');
+    const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
+
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(list?.hidden).toBe(false);
+    expect(pinButton?.textContent).toBe('unpin');
+    expect(pinButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(tasks?.classList.contains('is-pinned')).toBe(true);
+    expect(backdrop?.hidden).toBe(true);
+  });
+
   it('lets expanded Workshop tasks be dragged from the row to change priority', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -10883,8 +10928,10 @@ describe('PagesFacade', () => {
     expect(visibleRows[0].classList.contains('shop-page__sell-empty-row')).toBe(false);
     emptyButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain('1.select');
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('1. select');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
+      '1.empty standselect',
+    );
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('1.select');
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 

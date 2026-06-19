@@ -47,12 +47,13 @@
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
-- Dialog/open-only controls should opt into `data-press-start-click="true"` so touch opens on press-start; do not use it for spend/buy/sell/complete gameplay actions.
+- Native dialog/open buttons should activate on validated pointerup; reserve `data-press-start-click="true"` for non-button row/text hit targets with mobile click misses.
 - NPC market stand press-start opens must ignore the immediate retargeted backdrop click; otherwise the `sell` picker flashes open and closes on mobile/WebView.
 - Current NPC market source has no scheduled 5-minute demand regen despite older docs mentioning one; demand/stock move through sell/buy reducers, reset, and initial row creation.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
+- Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
@@ -547,6 +548,7 @@
 - Workshop task border labels need higher-specificity or late CSS overrides because generic `.style-box` padding and `.style-box :where(button, ...)` font-size rules otherwise override component styles.
 - Workshop tasks reserve collapsed height in normal flow, then expanded requirements overlay lower Workshop content; do not push action controls down.
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
+- Pinned Workshop tasks must also persist across room page swaps; temporary mount setup should not clear `pinned`.
 - Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
 - Workshop task progress rails use shared content-box `.style-progress`; subtract `2 * --style-border-width` from rail width when its outer edge must align with the task row/action button.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.

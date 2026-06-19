@@ -550,18 +550,16 @@ describe('ShopShelfManager', () => {
       row.querySelector('.shop-page__slot-item-value')?.textContent,
       row.querySelector('.shop-page__slot-price-value')?.textContent,
     ])).toEqual([
-      ['1.', 'select', ''],
+      ['1.', 'empty stand', 'select'],
       ['2.', 'empty stand', 'level 3'],
       ['3.', 'empty stand', 'locked'],
       ['4.', 'empty stand', 'locked'],
       ['5.', 'empty stand', 'locked'],
     ]);
-    expect(rows[0].querySelector('.shop-page__slot-empty-rule')).not.toBeNull();
-    expect(rows[0].querySelector('.shop-page__slot-item-value')?.getAttribute('aria-pressed'))
-      .toBe('true');
+    expect(rows[0].querySelector('.shop-page__slot-empty-rule')).toBeNull();
+    expect(rows[0].getAttribute('aria-pressed')).toBe('true');
     expect(rows[0].classList.contains('is-selected')).toBe(false);
-    expect(rows[1].querySelector('.shop-page__slot-item-value')?.getAttribute('aria-pressed'))
-      .toBeNull();
+    expect(rows[1].getAttribute('aria-pressed')).toBeNull();
 
     manager.unmount();
   });
@@ -792,7 +790,7 @@ describe('ShopShelfManager', () => {
     });
   });
 
-  it('opens NPC market sell picker only from the stand item text', () => {
+  it('opens NPC market sell picker from the stand row', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     let selectCount = 0;
@@ -855,16 +853,22 @@ describe('ShopShelfManager', () => {
     const priceValue = row.querySelector('.shop-page__slot-price-value');
     const popup = popupLayer.querySelector('.shop-page__sell-popup');
 
-    row.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
     priceValue.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(popup.hidden).toBe(true);
-    expect(selectCount).toBe(0);
-
-    itemValue.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
     expect(selectCount).toBe(1);
+
+    manager.hideSellPopup();
+    row.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+
+    expect(popup.hidden).toBe(false);
+    expect(selectCount).toBe(2);
+
+    manager.hideSellPopup();
+    itemValue.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.hidden).toBe(false);
+    expect(selectCount).toBe(3);
 
     manager.unmount();
   });

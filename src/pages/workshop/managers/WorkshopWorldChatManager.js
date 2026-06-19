@@ -119,7 +119,6 @@ export class WorkshopWorldChatManager {
     const button = document.createElement('button');
     button.className = 'workshop-page__world-chat-button workshop-page__world-chat-title style-box__title';
     button.type = 'button';
-    button.dataset.pressStartClick = 'true';
     button.textContent = 'world chat';
     button.addEventListener('click', () => this.show());
     return button;

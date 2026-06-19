@@ -11,8 +11,8 @@ import {
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 
-const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
-const EMPTY_UNLOCKED_STAND_LABEL = 'select';
+const EMPTY_STAND_LABEL = 'empty stand';
+const EMPTY_STAND_ACTION_LABEL = 'select';
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
 
@@ -127,6 +127,18 @@ export class ShopShelfManager {
     const row = document.createElement('div');
     row.className = 'shop-page__slot-row';
     row.dataset.shopSlotNumber = String(slotNumber);
+    this.bindTouchLikePressStart(row, `select-slot:${slotNumber}`, (event) =>
+      this.onSelectSlotPressStart(event, slotNumber),
+    );
+    row.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
+    row.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      event.preventDefault();
+      this.onSelectSlot(event, slotNumber);
+    });
 
     const label = document.createElement('span');
     label.className = 'row_key';
@@ -138,25 +150,9 @@ export class ShopShelfManager {
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
     itemValue.dataset.tutorialId = `shop:stand:${slotNumber}`;
-    this.bindTouchLikePressStart(itemValue, `select-slot:${slotNumber}`, (event) =>
-      this.onSelectSlotPressStart(event, slotNumber),
-    );
-    itemValue.addEventListener('click', (event) => this.onSelectSlot(event, slotNumber));
-    itemValue.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') {
-        return;
-      }
-
-      event.preventDefault();
-      this.onSelectSlot(event, slotNumber);
-    });
 
     const priceValue = document.createElement('span');
     priceValue.className = 'shop-page__slot-price-value';
-
-    const emptyRule = document.createElement('span');
-    emptyRule.className = 'shop-page__slot-empty-rule';
-    emptyRule.setAttribute('aria-hidden', 'true');
 
     const unlockButton = document.createElement('button');
     unlockButton.className = 'shop-page__slot-unlock-button';
@@ -211,7 +207,6 @@ export class ShopShelfManager {
       unlockAction,
       itemValue,
       priceValue,
-      emptyRule,
     };
   }
 
@@ -308,7 +303,7 @@ export class ShopShelfManager {
       return;
     }
 
-    if (event.target?.tagName === 'BUTTON') {
+    if (event.target?.closest?.('button')) {
       return;
     }
 
@@ -518,13 +513,14 @@ export class ShopShelfManager {
         }
         row.classList.add('shop-page__slot-row--interactive');
         row.classList.remove('is-unlockable');
-        row.removeAttribute('role');
-        row.removeAttribute('aria-label');
-        row.removeAttribute('tabindex');
-        refs.itemValue.setAttribute('role', 'button');
-        refs.itemValue.tabIndex = 0;
-        refs.itemValue.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
-        refs.itemValue.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        row.setAttribute('role', 'button');
+        row.tabIndex = 0;
+        row.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
+        row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        refs.itemValue.removeAttribute('role');
+        refs.itemValue.removeAttribute('aria-label');
+        refs.itemValue.removeAttribute('tabindex');
+        refs.itemValue.removeAttribute('aria-pressed');
         setNotificationBadge(row, !slot.sellItemTypeId && hasSellableItem);
         setNotificationBadge(unlockButton, false);
         this.renderSlotSellValue(refs, slot, shelf, snapshot);
@@ -561,7 +557,7 @@ export class ShopShelfManager {
         }
         setNotificationBadge(row, false);
         setNotificationBadge(unlockButton, !unlockButton.disabled);
-        this.setText(refs.unlockItemValue, EMPTY_LOCKED_STAND_LABEL);
+        this.setText(refs.unlockItemValue, EMPTY_STAND_LABEL);
         setItemIconLabel(refs.unlockItemValue, null);
         setResourceColor(refs.unlockItemValue, null);
 
@@ -582,7 +578,7 @@ export class ShopShelfManager {
       refs.itemValue.removeAttribute('aria-pressed');
       setNotificationBadge(row, false);
       setNotificationBadge(unlockButton, false);
-      this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
+      this.setText(refs.itemValue, EMPTY_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
       this.setText(refs.priceValue, 'locked');
@@ -610,13 +606,11 @@ export class ShopShelfManager {
         refs.value.replaceChildren(refs.itemValue, refs.priceValue);
       }
 
-      this.setText(refs.itemValue, EMPTY_UNLOCKED_STAND_LABEL);
+      this.setText(refs.itemValue, EMPTY_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
-      setResourceColorFromText(refs.itemValue, refs.itemValue.textContent);
-      setResourceColor(refs.priceValue, null);
-      if (refs.emptyRule.parentElement !== refs.priceValue) {
-        refs.priceValue.replaceChildren(refs.emptyRule);
-      }
+      setResourceColor(refs.itemValue, null);
+      this.setText(refs.priceValue, EMPTY_STAND_ACTION_LABEL);
+      setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       return;
     }
 

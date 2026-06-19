@@ -129,7 +129,6 @@ export class WorkshopTradeAllianceManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__trade-alliance-button';
     button.type = 'button';
-    button.dataset.pressStartClick = 'true';
     button.textContent = 'alliance';
     button.addEventListener('click', () => this.show());
     return button;

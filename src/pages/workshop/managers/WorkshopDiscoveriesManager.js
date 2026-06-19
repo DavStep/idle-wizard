@@ -69,7 +69,6 @@ export class WorkshopDiscoveriesManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__discoveries-button';
     button.type = 'button';
-    button.dataset.pressStartClick = 'true';
     button.textContent = 'discoveries';
     button.addEventListener('click', () => this.show());
     return button;
