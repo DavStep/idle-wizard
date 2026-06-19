@@ -89,6 +89,7 @@ function overlaps(a, b) {
 
 function useFixedLessonSize(manager, { width = 190, height = 74 } = {}) {
   manager.measureLessonSize = () => ({ width, height });
+  manager.getUiScale = () => UI_SCALE;
 }
 
 describe('TutorialHintManager', () => {
