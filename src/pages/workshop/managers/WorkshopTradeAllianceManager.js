@@ -47,6 +47,8 @@ const ITEM_FILL_QUEST_TYPE = 'itemFill';
 const QUEST_PERIOD_ANCHOR_MS = 1_780_876_800_000;
 const QUEST_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
 const QUEST_TIMER_INTERVAL_MS = 1000;
+const QUEST_SCROLL_ON_OPEN = 'open';
+const QUEST_SCROLL_AFTER_CLAIM = 'afterClaim';
 
 export class WorkshopTradeAllianceManager {
   constructor({
@@ -73,6 +75,7 @@ export class WorkshopTradeAllianceManager {
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
     this.questTimer = null;
+    this.pendingQuestScroll = null;
     this.handleRootClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -241,6 +244,10 @@ export class WorkshopTradeAllianceManager {
     this.visible = true;
     this.applyVisibility();
     this.refs.dialog?.focus();
+    if (this.lastSnapshot.ownAlliance && this.selectedMemberTabId === 'quests') {
+      this.requestQuestScroll(QUEST_SCROLL_ON_OPEN);
+      this.applyPendingQuestScroll();
+    }
   }
 
   isButtonAvailable() {
@@ -289,6 +296,7 @@ export class WorkshopTradeAllianceManager {
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
     this.questTimer = null;
+    this.pendingQuestScroll = null;
   }
 
   render(snapshot) {
@@ -303,6 +311,9 @@ export class WorkshopTradeAllianceManager {
     this.renderTitle(ownAlliance);
     this.refs.status.textContent = this.status;
     this.syncQuestTimer();
+    this.refs.dialog.dataset.activeTab = ownAlliance
+      ? this.selectedMemberTabId
+      : this.selectedSoloTabId;
 
     if (ownAlliance) {
       this.renderTabs(MEMBER_TABS, this.selectedMemberTabId);
@@ -330,6 +341,8 @@ export class WorkshopTradeAllianceManager {
             this.selectedSoloTabId = tab.id;
           } else {
             this.selectedMemberTabId = tab.id;
+            this.pendingQuestScroll =
+              tab.id === 'quests' ? QUEST_SCROLL_ON_OPEN : null;
           }
           this.status = '';
           this.render(this.lastSnapshot);
@@ -558,11 +571,33 @@ export class WorkshopTradeAllianceManager {
     if (!quests.length) {
       rows.append(this.createEmptyRow('no quests'));
       this.refs.content.replaceChildren(rows);
+      this.applyPendingQuestScroll();
       return;
     }
 
-    rows.append(...quests.map((quest) => this.createQuestRow(quest, { locked: Boolean(questLock) })));
+    rows.append(
+      ...this.sortQuestsForDisplay(quests).map((quest) =>
+        this.createQuestRow(quest, { locked: Boolean(questLock) }),
+      ),
+    );
     this.refs.content.replaceChildren(rows);
+    this.applyPendingQuestScroll();
+  }
+
+  sortQuestsForDisplay(quests) {
+    return quests
+      .map((quest, index) => ({ quest, index }))
+      .sort((left, right) => {
+        const leftClaimed = Number(Boolean(left.quest.claimed));
+        const rightClaimed = Number(Boolean(right.quest.claimed));
+
+        if (leftClaimed !== rightClaimed) {
+          return leftClaimed - rightClaimed;
+        }
+
+        return left.index - right.index;
+      })
+      .map(({ quest }) => quest);
   }
 
   createQuestRow(quest, { locked = false } = {}) {
@@ -570,8 +605,13 @@ export class WorkshopTradeAllianceManager {
     const itemFillQuest = this.isItemFillQuest(quest);
     const questComplete = quest.progress >= quest.target;
     const questClaimed = Boolean(quest.claimed);
+    const questClaimable = this.isQuestClaimable(quest, { locked });
     const row = document.createElement('div');
     row.className = 'workshop-page__trade-alliance-quest-row';
+    row.dataset.questId = quest.questId;
+    if (questClaimable) {
+      row.dataset.questClaimable = 'true';
+    }
 
     const main = document.createElement('div');
     main.className = 'workshop-page__trade-alliance-quest-main';
@@ -613,14 +653,103 @@ export class WorkshopTradeAllianceManager {
       action.addEventListener('click', () => void this.runAction(() => this.fillItemQuest(quest)));
     } else {
       action.disabled = quest.progress < quest.target || contribution < quest.minContribution;
-      action.addEventListener('click', () =>
-        void this.runAction(() => this.tradeAllianceFacade.claimQuestReward(quest.questId)),
-      );
+      action.addEventListener('click', () => void this.claimQuestReward(quest));
     }
 
     main.append(progress);
     row.append(main, action);
     return row;
+  }
+
+  isQuestClaimable(quest, { locked = false } = {}) {
+    if (locked || !quest || quest.claimed) {
+      return false;
+    }
+
+    return (
+      quest.progress >= quest.target &&
+      this.getOwnContribution(quest) >= quest.minContribution
+    );
+  }
+
+  async claimQuestReward(quest) {
+    this.requestQuestScroll(QUEST_SCROLL_AFTER_CLAIM);
+    const result = await this.runAction(() =>
+      this.tradeAllianceFacade.claimQuestReward(quest.questId),
+    );
+
+    if (!result?.ok && this.pendingQuestScroll === QUEST_SCROLL_AFTER_CLAIM) {
+      this.pendingQuestScroll = null;
+    }
+
+    return result;
+  }
+
+  requestQuestScroll(intent) {
+    this.pendingQuestScroll = intent;
+  }
+
+  applyPendingQuestScroll() {
+    const intent = this.pendingQuestScroll;
+    if (!intent || this.selectedMemberTabId !== 'quests') {
+      return;
+    }
+
+    this.pendingQuestScroll = null;
+    const target = this.refs.content?.querySelector('[data-quest-claimable="true"]');
+    if (target) {
+      this.scrollContentToElement(target);
+      return;
+    }
+
+    if (intent === QUEST_SCROLL_ON_OPEN) {
+      this.scrollQuestContentToTop();
+    }
+  }
+
+  scrollQuestContentToTop() {
+    if (!this.refs.content) {
+      return;
+    }
+
+    this.refs.content.scrollTop = 0;
+    this.dispatchContentScrollEvent();
+  }
+
+  scrollContentToElement(element) {
+    if (!this.refs.content || !element) {
+      return;
+    }
+
+    const targetTop = Math.max(
+      0,
+      this.getElementPageOffsetTop(element) - this.getElementPageOffsetTop(this.refs.content),
+    );
+    const maxScroll = Math.max(0, this.refs.content.scrollHeight - this.refs.content.clientHeight);
+    this.refs.content.scrollTop =
+      maxScroll > 0 ? Math.min(targetTop, maxScroll) : targetTop;
+    this.dispatchContentScrollEvent();
+  }
+
+  getElementPageOffsetTop(element) {
+    let top = 0;
+    let node = element;
+
+    while (node) {
+      top += Number(node.offsetTop) || 0;
+      node = node.offsetParent;
+    }
+
+    return top;
+  }
+
+  dispatchContentScrollEvent() {
+    if (!this.refs.content) {
+      return;
+    }
+
+    const EventCtor = this.refs.content.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+    this.refs.content.dispatchEvent(new EventCtor('scroll'));
   }
 
   renderMembersView() {

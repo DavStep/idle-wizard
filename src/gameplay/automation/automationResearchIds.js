@@ -5,6 +5,4 @@ export const automationResearchIds = Object.freeze({
   autoBrewCauldron: (cauldronNumber) => `automation:autoBrewCauldron:${cauldronNumber}`,
   autoBottleCauldron: (cauldronNumber) =>
     `automation:autoBottleCauldron:${cauldronNumber}`,
-  autoCollectCauldron: (cauldronNumber) =>
-    `automation:autoCollectCauldron:${cauldronNumber}`,
 });

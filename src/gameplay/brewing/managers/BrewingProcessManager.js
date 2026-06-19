@@ -1,6 +1,7 @@
 export class BrewingProcessManager {
-  constructor({ brewingProcessEntityManager } = {}) {
+  constructor({ brewingProcessEntityManager, collectReadyBrews } = {}) {
     this.brewingProcessEntityManager = brewingProcessEntityManager;
+    this.collectReadyBrews = collectReadyBrews;
     this.registered = false;
   }
 
@@ -17,6 +18,7 @@ export class BrewingProcessManager {
 
   update(deltaSeconds) {
     this.brewingProcessEntityManager.advanceTime(deltaSeconds);
+    this.collectReadyBrews?.();
   }
 
   getTimerDeltaSeconds(frame = {}) {

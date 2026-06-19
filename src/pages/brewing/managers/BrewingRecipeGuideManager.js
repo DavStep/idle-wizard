@@ -60,8 +60,6 @@ export class BrewingRecipeGuideManager {
     this.refs = {};
     this.stepRows = [];
     this.emptyStep = null;
-    this.selectedRecipeKeys.clear();
-    this.currentCauldronIndex = 0;
     this.latestSnapshot = null;
   }
 

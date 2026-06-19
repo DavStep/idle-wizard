@@ -84,7 +84,6 @@ export class BrewingCauldronManager {
     this.herbRowsSignature = '';
     this.cauldronRefs.clear();
     this.cauldronRefsSignature = '';
-    this.selectedCauldronIndex = 0;
     this.herbsExpanded = false;
     this.message = null;
     this.draggedItemTypeId = null;
@@ -1227,19 +1226,6 @@ export class BrewingCauldronManager {
     }
 
     if (brewing.activeBrew) {
-      if (brewing.activeBrew.canCollect || brewing.activeBrew.phase === 'ready') {
-        const canCollect = Boolean(brewing.activeBrew.canCollect);
-        return {
-          id: 'collect',
-          label: 'collect',
-          hasCost: false,
-          disabled: !canCollect,
-          ariaLabel: canCollect
-            ? `collect ${brewing.activeBrew.label}`
-            : 'collect potion',
-        };
-      }
-
       if (
         brewing.activeBrew.canStartBottling ||
         brewing.activeBrew.phase === 'brewed' ||
@@ -1377,11 +1363,6 @@ export class BrewingCauldronManager {
 
     this.selectCauldron(safeCauldronIndex);
 
-    if (action === 'collect') {
-      this.onCollect(safeCauldronIndex);
-      return;
-    }
-
     if (action === 'bottle') {
       this.onBottle(safeCauldronIndex);
       return;
@@ -1449,33 +1430,6 @@ export class BrewingCauldronManager {
         cauldronIndex: safeCauldronIndex,
         text: `bottling ${result.potion.label}`,
       };
-    } else {
-      this.message = {
-        cauldronIndex: safeCauldronIndex,
-        text: this.formatResultMessage(result),
-      };
-    }
-
-    this.render(this.gameplayFacade.getSnapshot());
-    this.flashMessage(safeCauldronIndex);
-  }
-
-  onCollect(cauldronIndex = this.selectedCauldronIndex) {
-    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
-    const result = this.gameplayFacade.collectBrewingPotion(safeCauldronIndex);
-
-    if (result.ok) {
-      this.message = {
-        cauldronIndex: safeCauldronIndex,
-        text: `collected ${result.potion.label}`,
-      };
-      if (!this.rewardEventsAvailable) {
-        this.onRewardNotice?.({
-          type: 'potion_collected',
-          potion: result.potion,
-          quantity: result.quantity,
-        });
-      }
     } else {
       this.message = {
         cauldronIndex: safeCauldronIndex,
@@ -1772,7 +1726,7 @@ export class BrewingCauldronManager {
     }
 
     if (result.reason === 'bottling_done') {
-      return 'collect potion';
+      return 'bottling complete';
     }
 
     if (result.reason === 'bottling_not_done') {
@@ -1780,7 +1734,7 @@ export class BrewingCauldronManager {
     }
 
     if (result.reason === 'no_brew') {
-      return 'nothing to collect';
+      return 'no brew';
     }
 
     return 'cannot brew';

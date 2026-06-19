@@ -32,6 +32,7 @@ export class ShopPageFacade {
     this.rewardEventsUnsubscribe = null;
     this.marketTabsManager = new ShopMarketTabsManager({
       gameplayFacade,
+      playerShopFacade,
       onActiveTabChange: () => this.renderActiveMarketTab(),
     });
     this.shelfManager = new ShopShelfManager({

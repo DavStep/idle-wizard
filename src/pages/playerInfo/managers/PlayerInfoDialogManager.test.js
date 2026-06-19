@@ -56,11 +56,11 @@ describe('PlayerInfoDialogManager', () => {
     expect(popup.querySelector('.room-player-info-summary')?.firstElementChild).toBe(
       popup.querySelector('.room-player-info-character'),
     );
-    expect(popup.querySelector('.room-player-info-identity-label')?.textContent).toContain(
-      '[TAP]',
-    );
-    expect(popup.querySelector('.room-player-info-identity-label')?.textContent).not.toContain(
-      'Ada',
+    const nameLine = popup.querySelector('.room-player-info-name-line');
+    expect(nameLine?.parentElement).toBe(popup.querySelector('.room-player-info-main-rows'));
+    expect(nameLine?.textContent).toBe('[TAP]Ada');
+    expect(popup.querySelector('.room-player-info-main-rows')?.firstElementChild).toBe(
+      nameLine,
     );
     expect(popup.querySelector('.room-player-info-main-rows')?.textContent).toContain(
       'level14',
@@ -68,7 +68,7 @@ describe('PlayerInfoDialogManager', () => {
     expect(popup.querySelector('.room-player-info-main-rows')?.textContent).toContain(
       'prestige2 times',
     );
-    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).not.toContain(
       'nameAda',
     );
     expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
@@ -118,7 +118,7 @@ describe('PlayerInfoDialogManager', () => {
     });
   });
 
-  it('shows the player name in the detail rows when no alliance tag exists', () => {
+  it('shows the player name above level when no alliance tag exists', () => {
     const stage = document.createElement('section');
     const manager = new PlayerInfoDialogManager({
       playerInfoFacade: createPlayerInfoFacade({
@@ -140,8 +140,8 @@ describe('PlayerInfoDialogManager', () => {
     manager.show({ username: 'wizard' });
 
     const popup = stage.querySelector('.room-player-info-popup');
-    expect(popup.querySelector('.room-player-info-identity-label')?.hidden).toBe(true);
-    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+    expect(popup.querySelector('.room-player-info-name-line')?.textContent).toBe('wizard');
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).not.toContain(
       'namewizard',
     );
   });

@@ -289,18 +289,7 @@ export class ResearchDefinitionManager {
           getId: automationResearchIds.autoBottleCauldron,
           label: (cauldronNumber) => `auto bottle cauldron ${cauldronNumber}`,
           description: (cauldronNumber) =>
-            `cauldron ${cauldronNumber} starts bottling finished brews without a tap.`,
-        }),
-      },
-      {
-        id: 'autoCollectCauldrons',
-        label: 'auto collect cauldron research',
-        researches: this.getNumberedResearches({
-          count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
-          getId: automationResearchIds.autoCollectCauldron,
-          label: (cauldronNumber) => `auto collect cauldron ${cauldronNumber}`,
-          description: (cauldronNumber) =>
-            `cauldron ${cauldronNumber} moves bottled potions into inventory without a tap.`,
+            `cauldron ${cauldronNumber} starts bottling finished brews without a tap. potions enter inventory when bottling ends.`,
         }),
       },
     ];

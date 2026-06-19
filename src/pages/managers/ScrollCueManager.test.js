@@ -199,7 +199,11 @@ describe('ScrollCueManager', () => {
     )?.groups?.body;
 
     expect(baseCss).not.toMatch(/--style-world-chat-scroll-progress-height:/);
-    expect(rule).toBeUndefined();
+    expect(rule).toBeDefined();
+    expect(rule).not.toMatch(/\bheight\s*:/);
+    expect(rule).not.toMatch(/\bbox-sizing\s*:/);
+    expect(rule).toMatch(/\bmargin-top:\s*var\(--style-world-chat-progress-gap\);/);
+    expect(rule).toMatch(/\bmargin-bottom:\s*var\(--style-world-chat-progress-gap\);/);
   });
 
   it('shares progress math with framed scroll views', () => {

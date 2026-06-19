@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.9
+
+- Simplified Brewing so finished bottles enter inventory automatically, with auto-bottle research covering the full flow.
+- Kept early Market demand and prices fake until level 4, then switched to the real shared NPC market.
+- Improved Market tab notification dots and NPC stand value labels so sell rows show stack totals more clearly.
+- Polished alliance quests, player info, seed drop preference controls, and wizard character art for steadier mobile play.
+
 ## 0.2.8
 
 - Added automatic seed summoning controls with an optional mana reserve.

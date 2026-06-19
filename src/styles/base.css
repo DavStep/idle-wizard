@@ -93,6 +93,7 @@
   --style-world-chat-title-font-size: var(--style-box-border-label-font-size);
   --style-world-chat-popup-font-size: 11px;
   --style-world-chat-popup-line-height: 18px;
+  --style-world-chat-progress-gap: 6px;
   --style-log-font-size: var(--style-world-chat-popup-font-size);
   --style-log-line-height: var(--style-world-chat-popup-line-height);
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
@@ -2638,12 +2639,26 @@ body {
   );
 }
 
+.brewing-page__herb-button[data-notification="true"] {
+  --brewing-page-notification-row-min-height: max(
+    var(--style-row-min-height),
+    calc(var(--style-notification-size) + (var(--style-notification-offset) * 2))
+  );
+  min-height: var(--brewing-page-notification-row-min-height);
+}
+
+.brewing-page__herb-button[data-notification="true"]::before {
+  top: calc(
+    (var(--brewing-page-notification-row-min-height) - var(--style-notification-size)) /
+      2
+  );
+}
+
 .room-bottom-panel__tab[data-notification="true"],
 .style-button[class*="tab-button"][data-notification="true"] {
   overflow: visible;
 }
 
-.brewing-page__herb-rows:has([data-notification="true"]),
 .garden-page__plot-rows:has([data-notification="true"]),
 .garden-page__seed-rows:has([data-notification="true"]),
 .research-page__content:has([data-notification="true"]),
@@ -4243,6 +4258,26 @@ body {
   }
 }
 
+.workshop-page__summon-info-weight-button[data-drop-weight-color="none"],
+.workshop-page__summon-info-weight-option[data-drop-weight-color="none"] {
+  color: var(--style-resource-ruby);
+}
+
+.workshop-page__summon-info-weight-button[data-drop-weight-color="low"],
+.workshop-page__summon-info-weight-option[data-drop-weight-color="low"] {
+  color: var(--style-resource-seed);
+}
+
+.workshop-page__summon-info-weight-button[data-drop-weight-color="medium"],
+.workshop-page__summon-info-weight-option[data-drop-weight-color="medium"] {
+  color: var(--style-resource-gold);
+}
+
+.workshop-page__summon-info-weight-button[data-drop-weight-color="high"],
+.workshop-page__summon-info-weight-option[data-drop-weight-color="high"] {
+  color: var(--style-resource-herb);
+}
+
 .workshop-page__summon-info-chance[data-drop-rate-color="none"] {
   color: var(--style-resource-ruby);
 }
@@ -4464,10 +4499,15 @@ div.workshop-page__discovery-row {
     (var(--style-world-chat-row-height) * 2) + var(--style-world-chat-row-gap)
   );
   height: auto;
-  margin-bottom: 5px;
+  margin-bottom: 0;
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+}
+
+.workshop-page__world-chat-messages + .style-scroll-cue-progress {
+  margin-top: var(--style-world-chat-progress-gap);
+  margin-bottom: var(--style-world-chat-progress-gap);
 }
 
 .workshop-page__world-chat-messages::-webkit-scrollbar {
@@ -4707,6 +4747,10 @@ div.workshop-page__discovery-row {
   color: var(--style-muted);
 }
 
+.workshop-page__world-chat-status:empty {
+  min-height: 0;
+}
+
 .workshop-page__world-chat-form {
   flex: 0 0 auto;
   display: flex;
@@ -4720,6 +4764,17 @@ div.workshop-page__discovery-row {
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+}
+
+.workshop-page__trade-alliance-panel[data-active-tab="quests"]
+  .style-dialog.workshop-page__trade-alliance-dialog {
+  height: auto;
+}
+
+.workshop-page__trade-alliance-panel[data-active-tab="quests"]
+  .workshop-page__trade-alliance-content {
+  height: auto;
+  max-height: var(--style-tabbed-dialog-content-height);
 }
 
 .workshop-page__trade-alliance-content::-webkit-scrollbar {
@@ -4755,6 +4810,10 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-status,
 .workshop-page__trade-alliance-section-label {
   min-height: var(--style-row-min-height);
+}
+
+.workshop-page__trade-alliance-status:empty {
+  min-height: 0;
 }
 
 .workshop-page__trade-alliance-paragraph {
@@ -8255,7 +8314,7 @@ div.workshop-page__discovery-row {
   flex-direction: column;
   position: relative;
   width: 286px;
-  height: var(--style-tabbed-dialog-content-height);
+  height: calc(var(--style-tabbed-dialog-content-height) + 8px);
 }
 
 .style-dialog.workshop-page__logs-dialog {
@@ -8334,9 +8393,32 @@ div.workshop-page__discovery-row {
 
 .room-player-info-main-rows {
   display: grid;
-  gap: 4px;
-  align-content: center;
+  gap: 2px;
+  align-self: end;
+  align-content: end;
   min-width: 0;
+  padding-bottom: 1px;
+}
+
+.room-player-info-name-line {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  min-width: 0;
+  min-height: 18px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.room-player-info-name-line .room-player-info-alliance-link,
+.room-player-info-name-line .workshop-page__alliance-tag {
+  flex: 0 0 auto;
+}
+
+.room-player-info-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .room-player-info-character {
@@ -8350,31 +8432,8 @@ div.workshop-page__discovery-row {
 
 .room-player-info-details {
   position: relative;
-  padding-top: calc(var(--style-box-border-label-line-height) - 1px);
+  padding-top: 6px;
   border-top: var(--style-border);
-}
-
-.room-player-info-identity-label {
-  position: absolute;
-  top: var(--style-box-border-label-offset);
-  left: 0;
-  display: inline-flex;
-  max-width: 100%;
-  gap: 4px;
-  align-items: center;
-  min-height: var(--style-box-border-label-line-height);
-  padding: 0 4px 0 0;
-  overflow: hidden;
-  font-size: var(--style-box-border-label-font-size);
-  line-height: var(--style-box-border-label-line-height);
-  white-space: nowrap;
-  background: var(--style-surface);
-}
-
-.room-player-info-identity-label .workshop-page__alliance-tag {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .room-player-info-row {
@@ -8383,6 +8442,10 @@ div.workshop-page__discovery-row {
   gap: var(--style-row-column-gap);
   align-items: baseline;
   min-height: var(--style-row-min-height);
+}
+
+.room-player-info-main-rows .room-player-info-row {
+  min-height: 18px;
 }
 
 .room-player-info-row .row_key {

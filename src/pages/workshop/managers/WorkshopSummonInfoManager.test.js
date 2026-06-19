@@ -202,11 +202,91 @@ describe('WorkshopSummonInfoManager', () => {
     manager.unmount();
   });
 
+  it('marks drop weight preferences with color buckets', () => {
+    const gameplayFacade = createGameplayFacadeFake({
+      seedSummoning: {
+        dropChances: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            label: 'sage seed',
+            kind: 'seed',
+            dropPreference: 'none',
+            dropChance: 0,
+          },
+          {
+            itemTypeId: 2,
+            key: 'mintSeed',
+            label: 'mint seed',
+            kind: 'seed',
+            dropPreference: 'low',
+            dropChance: 0.25,
+          },
+          {
+            itemTypeId: 3,
+            key: 'nettleSeed',
+            label: 'nettle seed',
+            kind: 'seed',
+            dropPreference: 'medium',
+            dropChance: 0.5,
+          },
+          {
+            itemTypeId: 4,
+            key: 'lavenderSeed',
+            label: 'lavender seed',
+            kind: 'seed',
+            dropPreference: 'high',
+            dropChance: 0.75,
+          },
+        ],
+      },
+    });
+    const manager = new WorkshopSummonInfoManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+    manager.show();
+
+    const weights = [
+      ...parent.querySelectorAll('.workshop-page__summon-info-weight-button'),
+    ];
+
+    expect(weights.map((weight) => weight.textContent)).toEqual([
+      'none',
+      'low',
+      'medium',
+      'high',
+    ]);
+    expect(weights.map((weight) => weight.dataset.dropWeightColor)).toEqual([
+      'none',
+      'low',
+      'medium',
+      'high',
+    ]);
+
+    manager.unmount();
+  });
+
   it('routes drop chance color buckets through color-mode resource variables', async () => {
     const css = await readFile(path.join(cwd(), 'src/styles/base.css'), 'utf8');
 
     expect(css).toContain(
       '.workshop-page__summon-info-chance[data-drop-rate-color="none"]',
+    );
+    expect(css).toContain('color: var(--style-resource-ruby);');
+    expect(css).toContain('color: var(--style-resource-seed);');
+    expect(css).toContain('color: var(--style-resource-gold);');
+    expect(css).toContain('color: var(--style-resource-herb);');
+  });
+
+  it('routes drop weight color buckets through color-mode resource variables', async () => {
+    const css = await readFile(path.join(cwd(), 'src/styles/base.css'), 'utf8');
+
+    expect(css).toContain(
+      '.workshop-page__summon-info-weight-button[data-drop-weight-color="none"]',
+    );
+    expect(css).toContain(
+      '.workshop-page__summon-info-weight-option[data-drop-weight-color="high"]',
     );
     expect(css).toContain('color: var(--style-resource-ruby);');
     expect(css).toContain('color: var(--style-resource-seed);');

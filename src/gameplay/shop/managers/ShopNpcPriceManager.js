@@ -1,9 +1,13 @@
 import { normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
 import { getNpcMarketPriceState } from './npcMarketPricing.js';
 
+const REAL_NPC_MARKET_MIN_LEVEL = 4;
+const FAKE_NPC_MARKET_DEMAND = 1000;
+
 export class ShopNpcPriceManager {
-  constructor({ npcMarketFacade = null } = {}) {
+  constructor({ npcMarketFacade = null, playerLevelFacade = null } = {}) {
     this.npcMarketFacade = npcMarketFacade;
+    this.playerLevelFacade = playerLevelFacade;
   }
 
   setNpcMarketFacade(npcMarketFacade) {
@@ -11,6 +15,10 @@ export class ShopNpcPriceManager {
   }
 
   getNpcBuyPriceGold(item) {
+    if (this.isUsingFakeMarket()) {
+      return this.getFakeNpcBuyPriceGold(item);
+    }
+
     const priceState = this.getNpcPrice(item);
     const priceGold = normalizePositiveGoldPrice(priceState?.npcBuyPriceGold);
 
@@ -22,6 +30,10 @@ export class ShopNpcPriceManager {
   }
 
   getNpcSellPriceGold(item) {
+    if (this.isUsingFakeMarket()) {
+      return null;
+    }
+
     const priceState = this.getNpcPrice(item);
     const priceGold = normalizePositiveGoldPrice(priceState?.npcSellPriceGold);
 
@@ -33,12 +45,20 @@ export class ShopNpcPriceManager {
   }
 
   getNpcPrice(item) {
+    if (this.isUsingFakeMarket()) {
+      return null;
+    }
+
     return getNpcMarketPriceState(
       this.npcMarketFacade?.getPrice?.(item.key) ?? null,
     );
   }
 
   getNpcStock(item) {
+    if (this.isUsingFakeMarket()) {
+      return null;
+    }
+
     const npcStock =
       this.npcMarketFacade?.getNpcStock?.(item.key) ??
       this.npcMarketFacade?.getPrice?.(item.key)?.npcStock;
@@ -51,6 +71,10 @@ export class ShopNpcPriceManager {
   }
 
   getNpcNeed(item) {
+    if (this.isUsingFakeMarket()) {
+      return this.getFakeNpcBuyPriceGold(item) === null ? null : FAKE_NPC_MARKET_DEMAND;
+    }
+
     const npcNeed =
       this.getNpcPrice(item)?.npcNeed ??
       this.npcMarketFacade?.getNpcNeed?.(item.key);
@@ -75,6 +99,13 @@ export class ShopNpcPriceManager {
   }
 
   recordSellToNpc(item, quantity = 1) {
+    if (this.isUsingFakeMarket()) {
+      return Promise.resolve({
+        ok: true,
+        fake: true,
+      });
+    }
+
     return this.npcMarketFacade?.sellToNpc?.({
       itemKey: item.key,
       quantity,
@@ -100,6 +131,13 @@ export class ShopNpcPriceManager {
   }
 
   recordBuyFromNpc(item, quantity = 1) {
+    if (this.isUsingFakeMarket()) {
+      return Promise.resolve({
+        ok: true,
+        fake: true,
+      });
+    }
+
     return this.npcMarketFacade?.buyFromNpc?.({
       itemKey: item.key,
       quantity,
@@ -107,5 +145,27 @@ export class ShopNpcPriceManager {
       ok: false,
       reason: 'offline',
     });
+  }
+
+  isUsingFakeMarket() {
+    return this.getPlayerLevel() < REAL_NPC_MARKET_MIN_LEVEL;
+  }
+
+  getPlayerLevel() {
+    const level =
+      this.playerLevelFacade?.getSnapshot?.().currentLevel ??
+      this.playerLevelFacade?.getCurrentLevel?.() ??
+      null;
+    const safeLevel = Math.floor(Number(level));
+
+    if (!Number.isInteger(safeLevel) || safeLevel <= 0) {
+      return REAL_NPC_MARKET_MIN_LEVEL;
+    }
+
+    return safeLevel;
+  }
+
+  getFakeNpcBuyPriceGold(item = {}) {
+    return normalizePositiveGoldPrice(item.baseSellPrice);
   }
 }

@@ -83,15 +83,15 @@ export class PlayerInfoDialogManager {
     this.refs.character.loading = 'eager';
     this.refs.mainRows = document.createElement('div');
     this.refs.mainRows.className = 'room-player-info-main-rows';
+    this.refs.nameLine = document.createElement('div');
+    this.refs.nameLine.className = 'room-player-info-name-line';
     this.refs.details = document.createElement('div');
     this.refs.details.className = 'room-player-info-details';
-    this.refs.identityLabel = document.createElement('div');
-    this.refs.identityLabel.className = 'room-player-info-identity-label';
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'room-player-info-rows';
 
     this.refs.summary.append(this.refs.character, this.refs.mainRows);
-    this.refs.details.append(this.refs.identityLabel, this.refs.rows);
+    this.refs.details.append(this.refs.rows);
     this.refs.content.append(this.refs.summary, this.refs.details);
     dialog.append(this.refs.title, this.refs.closeButton, this.refs.content);
     popup.append(dialog);
@@ -179,20 +179,18 @@ export class PlayerInfoDialogManager {
     this.activePlayer = player;
     this.refs.dialog.setAttribute('aria-label', `${player.username} player information`);
     this.refs.character.src = getPlayerCharacterImageUrl(player.character);
-    const identityLabelContent = this.createIdentityLabelContent(player);
-    this.refs.identityLabel.replaceChildren(...identityLabelContent);
-    this.refs.identityLabel.hidden = identityLabelContent.length <= 0;
+    this.refs.nameLine.replaceChildren(...this.createNameLineContent(player));
     this.refs.mainRows.replaceChildren(
+      this.refs.nameLine,
       this.createTextRow('level', this.formatNumber(player.playerLevel)),
       this.createTextRow('prestige', this.formatPrestige(player.prestigeCount)),
     );
     this.refs.rows.replaceChildren(
-      this.createTextRow('name', player.username),
       this.createTextRow('total produced gold', this.formatNumber(player.totalProducedGold)),
     );
   }
 
-  createIdentityLabelContent(player) {
+  createNameLineContent(player) {
     const nodes = [];
     const tag = createAllianceTagSpan(player.allianceTag, player.allianceTagColor);
 
@@ -216,6 +214,11 @@ export class PlayerInfoDialogManager {
     } else if (tag) {
       nodes.push(tag);
     }
+
+    const name = document.createElement('span');
+    name.className = 'room-player-info-name';
+    name.textContent = player.username;
+    nodes.push(name);
 
     return nodes;
   }

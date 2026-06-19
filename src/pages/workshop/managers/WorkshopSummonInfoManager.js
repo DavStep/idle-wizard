@@ -351,6 +351,7 @@ export class WorkshopSummonInfoManager {
     button.setAttribute('aria-haspopup', 'listbox');
     button.setAttribute('aria-expanded', 'false');
     button.setAttribute('aria-controls', this.getWeightDropdownMenuId(seed.key));
+    button.dataset.dropWeightColor = preference;
     button.addEventListener('click', () => this.toggleWeightDropdown(seed.key));
     button.addEventListener('keydown', (event) =>
       this.handleWeightButtonKeydown(event, seed.key),
@@ -373,6 +374,7 @@ export class WorkshopSummonInfoManager {
       option.className = 'workshop-page__summon-info-weight-option';
       option.type = 'button';
       option.dataset.preference = optionValue;
+      option.dataset.dropWeightColor = optionValue;
       option.setAttribute('role', 'option');
       option.setAttribute('aria-selected', 'false');
       option.append(this.createWeightDropdownText(optionValue));

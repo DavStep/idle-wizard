@@ -925,23 +925,6 @@ function createGameplayFacadeFake() {
         },
       ],
     },
-    {
-      id: 'autoCollectCauldrons',
-      label: 'auto collect cauldron research',
-      researches: [
-        {
-          id: 'automation:autoCollectCauldron:1',
-          label: 'auto collect cauldron 1',
-          value: '1 crystal',
-          effect: 'auto',
-          costGold: 0,
-          costCrystal: 1,
-          costCurrency: 'crystal',
-          completed: false,
-          canResearch: false,
-        },
-      ],
-    },
   ];
   const advancedResearchBoxes = [
     {
@@ -2097,35 +2080,6 @@ function createGameplayFacadeFake() {
         durationMs: activeBrew.totalMs,
       };
     },
-    collectBrewingPotion: () => {
-      if (!snapshot.brewing.activeBrew?.canCollect) {
-        return {
-          ok: false,
-          reason: 'bottling_not_done',
-        };
-      }
-
-      const activeBrew = snapshot.brewing.activeBrew;
-      const potion = {
-        itemTypeId: activeBrew.resultItemTypeId,
-        key: activeBrew.key,
-        label: activeBrew.label,
-        kind: 'potion',
-      };
-      snapshot.inventory.push({
-        ...potion,
-        quantity: 1,
-      });
-      snapshot.brewing.activeBrew = null;
-      updateBrewing();
-      publish();
-
-      return {
-        ok: true,
-        potion,
-        quantity: 1,
-      };
-    },
     setBrewingAutoBrewRecipe: (recipeKey) => {
       const recipe = snapshot.brewing.recipes.find(
         (candidate) => candidate.key === recipeKey && candidate.unlocked,
@@ -2183,6 +2137,7 @@ function createGameplayFacadeFake() {
       slot.sellQuantity = item.quantity;
       slot.sellGold = item.sellGold;
       slot.sellNeed = item.sellNeed;
+      publish();
       return {
         ok: true,
         slotNumber,
@@ -2202,6 +2157,7 @@ function createGameplayFacadeFake() {
       slot.sellGold = null;
       slot.sellNeed = null;
       slot.sellProgressSeconds = 0;
+      publish();
       return {
         ok: true,
         slotNumber,
@@ -3256,6 +3212,34 @@ function createTradeAllianceFacadeFake({
   };
 }
 
+function installQuestOffsetTopGetter(offsetsByQuestId) {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    window.HTMLElement.prototype,
+    'offsetTop',
+  );
+
+  Object.defineProperty(window.HTMLElement.prototype, 'offsetTop', {
+    get() {
+      const questId = this.dataset?.questId;
+      if (Object.prototype.hasOwnProperty.call(offsetsByQuestId, questId)) {
+        return offsetsByQuestId[questId];
+      }
+
+      return 0;
+    },
+    configurable: true,
+  });
+
+  return () => {
+    if (originalDescriptor) {
+      Object.defineProperty(window.HTMLElement.prototype, 'offsetTop', originalDescriptor);
+      return;
+    }
+
+    Reflect.deleteProperty(window.HTMLElement.prototype, 'offsetTop');
+  };
+}
+
 function createPlayerShopFacadeFake() {
   const snapshot = {
     connected: true,
@@ -3838,6 +3822,32 @@ describe('PagesFacade', () => {
     expect(avatarButton?.hidden).toBe(false);
     expect(avatar?.hidden).toBe(false);
     expect(topPanel?.classList.contains('has-avatar')).toBe(true);
+  });
+
+  it('shows dashboard-only wizard avatar without listing it as a player choice', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('Merlin', 'white', {
+        initialCharacter: 'wizard',
+        initialIconMode: 'icons',
+      }),
+    });
+
+    pagesFacade.mount(stage);
+
+    const avatar = stage.querySelector('.room-top-panel__username-avatar');
+
+    expect(avatar?.dataset.character).toBe('wizard');
+    expect(avatar?.getAttribute('src')).toContain('wizard.webp');
+
+    stage
+      .querySelector('.room-top-panel__username')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      stage.querySelector('.room-top-panel__character-button[data-character="wizard"]'),
+    ).toBeNull();
   });
 
   it('mounts the FTUE guide shell for fresh level 1 players', () => {
@@ -7522,6 +7532,9 @@ describe('PagesFacade', () => {
       questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
       expect(
+        popup.querySelector('.workshop-page__trade-alliance-panel')?.dataset.activeTab,
+      ).toBe('quests');
+      expect(
         popup.querySelector('.workshop-page__trade-alliance-reset-row .row_key')?.textContent,
       ).toBe('quests reset');
       expect(
@@ -7530,6 +7543,199 @@ describe('PagesFacade', () => {
     } finally {
       pagesFacade.unmount();
       nowSpy.mockRestore();
+    }
+  });
+
+  it('scrolls alliance quests to the first claimable row on tab open', () => {
+    const restoreOffsetTop = installQuestOffsetTopGetter({
+      'blocked-route': 40,
+      'claim-route': 95,
+      'claim-late': 150,
+    });
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'blocked-route',
+          label: 'slow route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 500,
+          progress: 100,
+          progressRatio: 0.2,
+          minContribution: 25,
+          crystalReward: 1,
+        },
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'claim-route',
+          label: 'fast route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 500,
+          progress: 500,
+          progressRatio: 1,
+          minContribution: 25,
+          crystalReward: 1,
+        },
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'claim-late',
+          label: 'long route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 500,
+          progress: 500,
+          progressRatio: 1,
+          minContribution: 25,
+          crystalReward: 1,
+        },
+      ],
+      contributions: [
+        {
+          allianceId: 'alliance-1',
+          questId: 'claim-route',
+          dayKey: '2026-W24',
+          contributorIdentity: 'self',
+          contribution: 25,
+        },
+        {
+          allianceId: 'alliance-1',
+          questId: 'claim-late',
+          dayKey: '2026-W24',
+          contributorIdentity: 'self',
+          contribution: 25,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__trade-alliance-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+      const content = popup.querySelector('.workshop-page__trade-alliance-content');
+      let scrollTop = 12;
+      Object.defineProperty(content, 'clientHeight', { value: 100, configurable: true });
+      Object.defineProperty(content, 'scrollHeight', { value: 300, configurable: true });
+      Object.defineProperty(content, 'scrollTop', {
+        get: () => scrollTop,
+        set: (value) => {
+          scrollTop = value;
+        },
+        configurable: true,
+      });
+
+      const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+        .find((button) => button.textContent === 'quests');
+      questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(content.scrollTop).toBe(95);
+    } finally {
+      pagesFacade.unmount();
+      restoreOffsetTop();
+    }
+  });
+
+  it('scrolls alliance quests to top on tab open when no quest is claimable', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'slow-route',
+          label: 'slow route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 500,
+          progress: 100,
+          progressRatio: 0.2,
+          minContribution: 25,
+          crystalReward: 1,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__trade-alliance-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+      const content = popup.querySelector('.workshop-page__trade-alliance-content');
+      let scrollTop = 80;
+      Object.defineProperty(content, 'scrollTop', {
+        get: () => scrollTop,
+        set: (value) => {
+          scrollTop = value;
+        },
+        configurable: true,
+      });
+
+      const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+        .find((button) => button.textContent === 'quests');
+      questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(content.scrollTop).toBe(0);
+    } finally {
+      pagesFacade.unmount();
+    }
+  });
+
+  it('scrolls alliance quests to top on tab open when the quest list is empty', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({ quests: [] });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__trade-alliance-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+      const content = popup.querySelector('.workshop-page__trade-alliance-content');
+      let scrollTop = 120;
+      Object.defineProperty(content, 'scrollTop', {
+        get: () => scrollTop,
+        set: (value) => {
+          scrollTop = value;
+        },
+        configurable: true,
+      });
+
+      const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+        .find((button) => button.textContent === 'quests');
+      questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(content.scrollTop).toBe(0);
+    } finally {
+      pagesFacade.unmount();
     }
   });
 
@@ -7612,6 +7818,95 @@ describe('PagesFacade', () => {
     }
   });
 
+  it('moves claimed trade alliance quest rewards below unclaimed quests', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'allianceIncomeHard',
+          label: 'hard route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 10000,
+          progress: 10000,
+          progressRatio: 1,
+          minContribution: 500,
+          crystalReward: 2,
+          claimed: true,
+        },
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'allianceIncomeGrand',
+          label: 'grand route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 250000,
+          progress: 86027,
+          progressRatio: 0.34,
+          minContribution: 12500,
+          crystalReward: 12,
+        },
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'allianceIncomeBulk',
+          label: 'bulk route',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 50000,
+          progress: 50000,
+          progressRatio: 1,
+          minContribution: 2500,
+          crystalReward: 5,
+        },
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'itemFill:manaTonic',
+          label: 'fill 500 mana tonic',
+          questType: 'itemFill',
+          itemKey: 'manaTonic',
+          target: 500,
+          progress: 500,
+          progressRatio: 1,
+          minContribution: 25,
+          crystalReward: 5,
+          claimed: true,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+      .find((button) => button.textContent === 'quests');
+    questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      [...popup.querySelectorAll('.workshop-page__trade-alliance-quest-row')].map(
+        (row) => row.querySelector('.row_key')?.textContent,
+      ),
+    ).toEqual([
+      'grand route',
+      'bulk route',
+      'hard route',
+      'fill 500 mana tonic',
+    ]);
+  });
+
   it('marks a trade alliance quest claimed after claiming reward', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -7674,6 +7969,105 @@ describe('PagesFacade', () => {
         collected: true,
       }),
     );
+  });
+
+  it('scrolls to the next claimable alliance quest after claiming reward', async () => {
+    const restoreOffsetTop = installQuestOffsetTopGetter({
+      'claim-first': 70,
+      'claim-next': 135,
+    });
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const quests = [
+      {
+        allianceId: 'alliance-1',
+        dayKey: '2026-W24',
+        questId: 'claim-first',
+        label: 'first route',
+        questType: 'allianceIncome',
+        itemKey: '',
+        target: 500,
+        progress: 500,
+        progressRatio: 1,
+        minContribution: 25,
+        crystalReward: 1,
+      },
+      {
+        allianceId: 'alliance-1',
+        dayKey: '2026-W24',
+        questId: 'claim-next',
+        label: 'next route',
+        questType: 'allianceIncome',
+        itemKey: '',
+        target: 500,
+        progress: 500,
+        progressRatio: 1,
+        minContribution: 25,
+        crystalReward: 1,
+      },
+    ];
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests,
+      contributions: quests.map((quest) => ({
+        allianceId: 'alliance-1',
+        questId: quest.questId,
+        dayKey: '2026-W24',
+        contributorIdentity: 'self',
+        contribution: 25,
+      })),
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__trade-alliance-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+      const content = popup.querySelector('.workshop-page__trade-alliance-content');
+      let scrollTop = 0;
+      Object.defineProperty(content, 'clientHeight', { value: 100, configurable: true });
+      Object.defineProperty(content, 'scrollHeight', { value: 300, configurable: true });
+      Object.defineProperty(content, 'scrollTop', {
+        get: () => scrollTop,
+        set: (value) => {
+          scrollTop = value;
+        },
+        configurable: true,
+      });
+
+      const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+        .find((button) => button.textContent === 'quests');
+      questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(content.scrollTop).toBe(70);
+
+      const getClaimButtons = () =>
+        [...popup.querySelectorAll('.workshop-page__trade-alliance-quest-action')]
+          .filter((button) => button.textContent === 'claim' && !button.disabled);
+
+      getClaimButtons()[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(content.scrollTop).toBe(135);
+
+      scrollTop = 48;
+      getClaimButtons()[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(content.scrollTop).toBe(48);
+      expect(tradeAllianceFacade.getSnapshot().rewardInbox).toHaveLength(2);
+    } finally {
+      pagesFacade.unmount();
+      restoreOffsetTop();
+    }
   });
 
   it('opens trade alliance member actions from a manageable member row', async () => {
@@ -9487,7 +9881,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage1');
   });
 
-  it('refills a remembered Brewing recipe from the primary action after collecting', () => {
+  it('refills a remembered Brewing recipe from the primary action after bottling completes', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -9514,24 +9908,16 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const snapshot = gameplayFacade.getSnapshot();
-    snapshot.brewing.activeBrew = {
-      resultItemTypeId: 2001,
+    snapshot.brewing.activeBrew = null;
+    snapshot.brewing.canCollectPotion = false;
+    snapshot.inventory.push({
+      itemTypeId: 2001,
       key: 'manaTonic',
       label: 'mana tonic',
-      phase: 'ready',
-      canStartBottling: false,
-      canCollect: true,
-      remainingMs: 0,
-      totalMs: 0,
-      bottlingTotalMs: 2_000,
-      progress: 1,
-    };
-    snapshot.brewing.canCollectPotion = true;
+      kind: 'potion',
+      quantity: 1,
+    });
     gameplayFacade.publishSnapshot();
-
-    stage
-      .querySelector('.brewing-page__action-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'fill recipe',
@@ -9596,6 +9982,67 @@ describe('PagesFacade', () => {
     const selectButton = stage.querySelector('.brewing-page__recipe-select-button');
 
     expect(selectButton?.textContent).toBe('selected');
+  });
+
+  it('keeps the Brewing fill recipe action for the current cauldron after switching room tabs', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    gameplayFacade.setGold(3);
+    gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+    const brewing = gameplayFacade.getSnapshot().brewing;
+    brewing.unlockedCauldrons = 2;
+    brewing.maxCauldrons = 2;
+    brewing.nextCauldronNumber = null;
+    brewing.nextCauldronCost = null;
+    brewing.cauldrons = [0, 1].map((cauldronIndex) => ({
+      ...brewing,
+      cauldronIndex,
+      cauldronNumber: cauldronIndex + 1,
+      ingredients: [],
+      activeBrew: null,
+      canAddIngredient: true,
+      canBrew: false,
+    }));
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'brewing');
+
+    const getCauldron = () =>
+      stage.querySelector('.brewing-page__cauldron[data-cauldron-index="1"]');
+    const getActionButton = () =>
+      getCauldron()?.querySelector('.brewing-page__action-button');
+
+    getCauldron()
+      ?.querySelector('.brewing-page__cauldron-select-recipe-text')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.brewing-page__recipe-select-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    brewing.ingredients = [];
+    for (const herb of brewing.herbs) {
+      herb.stagedQuantity = 0;
+      herb.availableQuantity = herb.quantity;
+    }
+    gameplayFacade.publishSnapshot();
+
+    expect(getCauldron()?.classList.contains('is-current')).toBe(true);
+    expect(getActionButton()?.textContent).toBe('fill recipe');
+    expect(getActionButton()?.disabled).toBe(false);
+
+    clickRoomTab(stage, 'garden');
+    expect(pagesFacade.getCurrentPageId()).toBe('garden');
+
+    clickRoomTab(stage, 'brewing');
+
+    expect(getCauldron()?.classList.contains('is-current')).toBe(true);
+    expect(getActionButton()?.textContent).toBe('fill recipe');
+    expect(getActionButton()?.disabled).toBe(false);
   });
 
   it('keeps Brewing cauldron guide step DOM stable across snapshot renders', () => {
@@ -10338,7 +10785,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__active-progress-fill')?.style.transform).toBe(
       'scaleX(0)',
     );
-    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('brew');
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).not.toBe('collect');
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
 
     const snapshot = gameplayFacade.getSnapshot();
@@ -10377,33 +10824,21 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
-    snapshot.brewing.activeBrew = {
-      resultItemTypeId: 2001,
+    snapshot.brewing.activeBrew = null;
+    snapshot.brewing.canCollectPotion = false;
+    snapshot.inventory.push({
+      itemTypeId: 2001,
       key: 'manaTonic',
       label: 'mana tonic',
-      phase: 'ready',
-      canStartBottling: false,
-      canCollect: true,
-      remainingMs: 0,
-      totalMs: 0,
-      bottlingTotalMs: 2_000,
-      progress: 1,
-    };
-    snapshot.brewing.canCollectPotion = true;
+      kind: 'potion',
+      quantity: 1,
+    });
     gameplayFacade.publishSnapshot();
 
-    expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
-      'bottled mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__active-brew')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('collect');
-    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
-    expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
-
-    stage
-      .querySelector('.brewing-page__action-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).not.toBe('collect');
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({

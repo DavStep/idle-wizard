@@ -9,7 +9,7 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatGoldPriceText, normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
 const EMPTY_STAND_LABEL = 'empty stand';
 const EMPTY_STAND_ACTION_LABEL = 'select';
@@ -800,13 +800,17 @@ export class ShopShelfManager {
       kind: slot.sellKind,
       label: slot.sellLabel,
     };
-    const sellGold = this.getDisplaySellGold(displayItem, slot.sellGold ?? sellItem?.sellGold);
+    const fallbackSellGold = slot.sellGold ?? sellItem?.sellGold;
+    const sellGold = this.getDisplaySellGold(displayItem, fallbackSellGold);
+    const totalSellGold = this.getDisplayTotalSellGold(sellGold, quantity, {
+      useUnitForZeroQuantity: Number(quantity) <= 0 && Number.isFinite(sellGold),
+    });
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
       : { label: slot.sellLabel, quantity: String(quantity) };
     const itemText = `${display.label} (${display.quantity})`;
 
-    if (!Number.isFinite(sellGold)) {
+    if (!Number.isFinite(totalSellGold)) {
       return {
         itemKey: displayItem.key,
         itemText,
@@ -820,7 +824,7 @@ export class ShopShelfManager {
       itemKey: displayItem.key,
       itemText,
       itemKind: displayItem.kind,
-      priceText: this.formatSellGold(sellGold),
+      priceText: this.formatSellGold(totalSellGold),
       priceResource: 'gold',
     };
   }
@@ -928,6 +932,17 @@ export class ShopShelfManager {
     }
 
     return fallbackSellGold;
+  }
+
+  getDisplayTotalSellGold(sellGold, quantity, { useUnitForZeroQuantity = false } = {}) {
+    const safeQuantity = Math.max(0, Math.floor(Number(quantity)));
+
+    if (!Number.isFinite(sellGold) || sellGold <= 0 || !Number.isFinite(safeQuantity)) {
+      return null;
+    }
+
+    const totalQuantity = safeQuantity > 0 || !useUnitForZeroQuantity ? safeQuantity : 1;
+    return normalizeGoldPrice(sellGold * totalQuantity);
   }
 
   canSelectSellItem(snapshot, item) {

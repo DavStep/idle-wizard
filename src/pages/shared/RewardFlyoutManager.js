@@ -295,10 +295,7 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'potion_collected') {
-      return (
-        this.root.parentElement?.querySelector('.brewing-page__action-button[data-action="collect"]') ??
-        this.root.parentElement?.querySelector('.brewing-page__cauldron')
-      );
+      return this.root.parentElement?.querySelector('.brewing-page__cauldron');
     }
 
     if (event.type === 'item_sold' && Number.isInteger(event.slotNumber)) {

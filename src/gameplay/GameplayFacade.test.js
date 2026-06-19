@@ -985,7 +985,6 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ deltaSeconds: 6 });
     gameplayFacade.startBrewingBottling();
     ecsFacade.update({ deltaSeconds: 2 });
-    gameplayFacade.collectBrewingPotion();
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.plantGardenSeed(1, 1);
@@ -1139,19 +1138,6 @@ describe('GameplayFacade', () => {
 
     second.ecsFacade.update({ deltaSeconds: 2 });
 
-    expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
-      phase: 'ready',
-      canCollect: true,
-    });
-    expect(second.gameplayFacade.collectBrewingPotion()).toMatchObject({
-      ok: true,
-      potion: {
-        itemTypeId: 2001,
-        key: 'manaTonic',
-        label: 'mana tonic',
-        kind: 'potion',
-      },
-    });
     expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(second.gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
@@ -1501,7 +1487,6 @@ describe('GameplayFacade', () => {
       'autoHarvestTiles',
       'autoBrewCauldrons',
       'autoBottleCauldrons',
-      'autoCollectCauldrons',
     ]);
     expect(research.tabs[1].boxes[0].researches[0]).toEqual({
       id: automationResearchIds.autoSeedSpawn(),
@@ -1550,9 +1535,6 @@ describe('GameplayFacade', () => {
     ]);
     expect(research.tabs[1].boxes[4].researches.map((research) => research.id)).toEqual([
       automationResearchIds.autoBottleCauldron(1),
-    ]);
-    expect(research.tabs[1].boxes[5].researches.map((research) => research.id)).toEqual([
-      automationResearchIds.autoCollectCauldron(1),
     ]);
     expect(research.tabs[1].boxes[3].researches[0]).toMatchObject({
       id: automationResearchIds.autoBrewCauldron(1),
@@ -1715,9 +1697,6 @@ describe('GameplayFacade', () => {
     expect(getAutomationBoxResearchIds('autoBottleCauldrons')).toEqual([
       automationResearchIds.autoBottleCauldron(1),
     ]);
-    expect(getAutomationBoxResearchIds('autoCollectCauldrons')).toEqual([
-      automationResearchIds.autoCollectCauldron(1),
-    ]);
 
     finishCurrentTaskLevel(gameplayFacade);
     finishCurrentTaskLevel(gameplayFacade);
@@ -1748,11 +1727,6 @@ describe('GameplayFacade', () => {
       automationResearchIds.autoBottleCauldron(1),
       automationResearchIds.autoBottleCauldron(2),
       automationResearchIds.autoBottleCauldron(3),
-    ]);
-    expect(getAutomationBoxResearchIds('autoCollectCauldrons')).toEqual([
-      automationResearchIds.autoCollectCauldron(1),
-      automationResearchIds.autoCollectCauldron(2),
-      automationResearchIds.autoCollectCauldron(3),
     ]);
   });
 
@@ -1988,6 +1962,52 @@ describe('GameplayFacade', () => {
       totalPriceGold: 0.95,
       fastSellPercent: 95,
     });
+  });
+
+  it('keeps NPC demand and prices fake until player reaches level 4', async () => {
+    const { gameplayFacade } = createGameplay();
+    const backendSells = [];
+    gameplayFacade.setNpcMarketFacade({
+      getNpcBuyPriceGold: () => 7,
+      getNpcNeed: () => 12,
+      sellToNpc({ itemKey, quantity }) {
+        backendSells.push({ itemKey, quantity });
+        return Promise.resolve({ ok: true });
+      },
+    });
+
+    gameplayFacade.itemsFacade.addItem(1, 2);
+
+    expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find(
+      (item) => item.key === 'sageSeed',
+    )).toMatchObject({
+      sellGold: 1,
+      fastSellGold: 0.8,
+      sellNeed: 1000,
+    });
+    await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
+      ok: true,
+      priceGold: 0.8,
+      totalPriceGold: 1.6,
+    });
+    expect(backendSells).toEqual([]);
+
+    advanceToLevel(gameplayFacade, 4);
+    gameplayFacade.itemsFacade.addItem(1, 2);
+
+    expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find(
+      (item) => item.key === 'sageSeed',
+    )).toMatchObject({
+      sellGold: 7,
+      fastSellGold: 5.6,
+      sellNeed: 12,
+    });
+    await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
+      ok: true,
+      priceGold: 5.6,
+      totalPriceGold: 11.2,
+    });
+    expect(backendSells).toEqual([{ itemKey: 'sageSeed', quantity: 2 }]);
   });
 
   it('advanced speed research lowers plot growth and cauldron brewing timers', () => {
@@ -2422,21 +2442,6 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 2 });
 
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
-      phase: 'ready',
-      canCollect: true,
-    });
-    expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
-    expect(gameplayFacade.collectBrewingPotion()).toMatchObject({
-      ok: true,
-      potion: {
-        itemTypeId: 2001,
-        key: 'manaTonic',
-        label: 'mana tonic',
-        kind: 'potion',
-      },
-      quantity: 1,
-    });
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
@@ -2709,7 +2714,7 @@ describe('GameplayFacade', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.goldFacade.add(80);
-    gameplayFacade.crystalFacade.add(3);
+    gameplayFacade.crystalFacade.add(2);
     unlockRecipeResearch(gameplayFacade);
     expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1))).toMatchObject({
       ok: true,
@@ -2717,11 +2722,6 @@ describe('GameplayFacade', () => {
       costCurrency: 'crystal',
     });
     expect(gameplayFacade.buyResearch(automationResearchIds.autoBottleCauldron(1))).toMatchObject({
-      ok: true,
-      cost: 1,
-      costCurrency: 'crystal',
-    });
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoCollectCauldron(1))).toMatchObject({
       ok: true,
       cost: 1,
       costCurrency: 'crystal',
@@ -2848,21 +2848,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 2 });
 
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
-      phase: 'ready',
-      canCollect: true,
-    });
-    expect(gameplayFacade.collectBrewingPotion()).toMatchObject({
-      ok: true,
-      potion: {
-        itemTypeId: 2029,
-        key: 'wastedPotion',
-        label: 'wasted potion',
-        kind: 'potion',
-      },
-      quantity: 1,
-    });
-
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 2029,
@@ -4060,6 +4046,7 @@ describe('GameplayFacade', () => {
       rewardEvents.push(event);
     });
 
+    advanceToLevel(gameplayFacade, 4);
     gameplayFacade.setNpcMarketFacade({
       getNpcBuyPriceGold: () => 1,
       getNpcNeed: () => 1000,

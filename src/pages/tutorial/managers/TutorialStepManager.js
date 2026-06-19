@@ -1024,20 +1024,12 @@ export const TUTORIAL_STEPS = [
         ? getActiveBrewingAction(brewing)
         : null;
 
-      if (activeAction === 'collect') {
-        return 'collect mana tonic';
-      }
-
       if (activeAction === 'bottle') {
         return 'bottle mana tonic';
       }
 
       if (brewing?.activeBrew) {
         const recoveryAction = getActiveBrewingAction(brewing);
-
-        if (recoveryAction === 'collect') {
-          return 'collect current brew';
-        }
 
         if (recoveryAction === 'bottle') {
           return 'bottle current brew';
@@ -1125,10 +1117,6 @@ export const TUTORIAL_STEPS = [
       const activeAction = isActiveManaTonicBrew(snapshot)
         ? getActiveBrewingAction(brewing)
         : null;
-
-      if (activeAction === 'collect') {
-        return 'collect mana tonic';
-      }
 
       if (activeAction === 'bottle') {
         return 'bottle mana tonic';
@@ -2191,7 +2179,7 @@ function getActiveBrewingAction(brewing) {
   }
 
   if (activeBrew.canCollect || activeBrew.phase === 'ready') {
-    return activeBrew.canCollect ? 'collect' : null;
+    return null;
   }
 
   if (

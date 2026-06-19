@@ -28,6 +28,7 @@
 - Timer progress fills that transition `transform` toward full need a computed-style flush after applying the current scale; remounted bars can otherwise paint full before the transition starts.
 - Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
 - Garden plot notification dots need row-specific vertical placement; the generic negative top offset can land the next row's dot on the previous row's progress rail.
+- Brewing herb notification dots must stay row-local; parent `:has([data-notification])` bleed padding makes the herbs box taller.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
@@ -56,6 +57,7 @@
 - NPC market stand press-start opens must ignore the immediate retargeted backdrop click; otherwise the `sell` picker flashes open and closes on mobile/WebView.
 - Current NPC market source has no scheduled 5-minute demand regen despite older docs mentioning one; demand/stock move through sell/buy reducers, reset, and initial row creation.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
+- NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 fast-sell against backend NPC rows.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
@@ -315,6 +317,7 @@
 - Brewing overflow herb rows must not be native-draggable on touch/coarse pointers; tap-to-add should preserve native list scrolling.
 - Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
+- Brewing page unmounts should clear DOM/subscriptions only; selected recipe and current cauldron state must survive room swaps so `fill recipe` stays available after bottling.
 - Brewing recipe selection comes from the recipes popup; selecting stages full ingredients when owned, otherwise the cauldron guide shows missing counts.
 - Brewing `fill recipe` is only actionable before a brew starts; active brew phases must not show it or its notification dot because gameplay rejects recipe prep as `brew_in_progress`.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 sage`), not expanded numbered slots.
@@ -360,6 +363,7 @@
 - NPC market `basePriceGold` is not the visible sell payout; neutral `npcBuyPriceGold` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
 - NPC market demand stays in the backend/snapshot and gates sales, but current NPC market UI hides demand; visible labels show item plus sell price only.
 - NPC market stand and sell-picker labels include available quantity as `<item> (N)` before the sell price.
+- NPC market selected stand rows show the total value for the current quantity; `quoteNpcMarketSell` is fast-sell priced and should not drive stand row totals.
 - NPC market demand is player-visible only through the `demand` top-border popup, grouped by `seed`/`herb`/`potion`, with locked rows gray below a divider.
 - NPC market selected stands should keep need available from slot snapshots internally, because selected items may be hidden from picker rows.
 - NPC market sell picker should allow selecting zero-demand items; auto-sell already pauses when backend need is zero.
@@ -536,6 +540,7 @@
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
+- Market sub-tab notification dots should derive from `PageNotificationStateManager` shop children so `player market` mirrors the orange player-listing/proceeds/listing badges instead of only the bottom Market tab showing them.
 - FTUE notification suppression is a visible badge policy only; keep gameplay notification state intact and allow only the current tutorial target during non-passive blocking steps.
 - Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
 - Notification dots sit at each notified control's top-right corner, offset out by 3px.

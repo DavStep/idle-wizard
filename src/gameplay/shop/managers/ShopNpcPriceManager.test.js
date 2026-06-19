@@ -4,8 +4,18 @@ import { ShopNpcPriceManager } from './ShopNpcPriceManager.js';
 
 const sageSeed = {
   key: 'sageSeed',
+  label: 'sage seed',
   kind: 'seed',
+  baseSellPrice: 1,
 };
+
+function createPlayerLevelFacade(level) {
+  return {
+    getSnapshot: () => ({
+      currentLevel: level,
+    }),
+  };
+}
 
 describe('ShopNpcPriceManager', () => {
   it('returns no NPC buy price when backend price is missing', () => {
@@ -22,6 +32,60 @@ describe('ShopNpcPriceManager', () => {
     });
 
     expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(7);
+  });
+
+  it('uses fake NPC demand and prices before level 4', async () => {
+    const sellToNpc = vi.fn().mockResolvedValue({ ok: true });
+    const buyFromNpc = vi.fn().mockResolvedValue({ ok: true });
+    const manager = new ShopNpcPriceManager({
+      playerLevelFacade: createPlayerLevelFacade(3),
+      npcMarketFacade: {
+        getNpcBuyPriceGold: () => 7,
+        getNpcSellPriceGold: () => 9,
+        getNpcNeed: () => 12,
+        getNpcStock: () => 4,
+        sellToNpc,
+        buyFromNpc,
+      },
+    });
+
+    expect(manager.getNpcPrice(sageSeed)).toBeNull();
+    expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(1);
+    expect(manager.getNpcSellPriceGold(sageSeed)).toBeNull();
+    expect(manager.getNpcNeed(sageSeed)).toBe(1000);
+    expect(manager.getNpcStock(sageSeed)).toBeNull();
+
+    await expect(manager.recordSellToNpc(sageSeed, 3)).resolves.toMatchObject({
+      ok: true,
+      fake: true,
+    });
+    await expect(manager.recordBuyFromNpc(sageSeed, 2)).resolves.toMatchObject({
+      ok: true,
+      fake: true,
+    });
+    expect(sellToNpc).not.toHaveBeenCalled();
+    expect(buyFromNpc).not.toHaveBeenCalled();
+  });
+
+  it('uses backend NPC demand and prices from level 4', async () => {
+    const sellToNpc = vi.fn().mockResolvedValue({ ok: true });
+    const manager = new ShopNpcPriceManager({
+      playerLevelFacade: createPlayerLevelFacade(4),
+      npcMarketFacade: {
+        getNpcBuyPriceGold: () => 7,
+        getNpcNeed: () => 12,
+        sellToNpc,
+      },
+    });
+
+    expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(7);
+    expect(manager.getNpcNeed(sageSeed)).toBe(12);
+
+    await expect(manager.recordSellToNpc(sageSeed, 3)).resolves.toEqual({ ok: true });
+    expect(sellToNpc).toHaveBeenCalledWith({
+      itemKey: 'sageSeed',
+      quantity: 3,
+    });
   });
 
   it('keeps decimal NPC buy prices to cents', () => {

@@ -51,9 +51,7 @@ export class PageNotificationStateManager {
       action:
         brewing.canBrew === true ||
         brewing.canStartBottling === true ||
-        brewing.canCollectPotion === true ||
-        brewing.activeBrew?.canStartBottling === true ||
-        brewing.activeBrew?.canCollect === true,
+        brewing.activeBrew?.canStartBottling === true,
     });
   }
 

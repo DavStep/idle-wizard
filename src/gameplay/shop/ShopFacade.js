@@ -35,6 +35,7 @@ export class ShopFacade {
     this.shopBalanceManager = new ShopBalanceManager();
     this.shopNpcPriceManager = new ShopNpcPriceManager({
       npcMarketFacade,
+      playerLevelFacade,
     });
     this.shopSellKindManager = new ShopSellKindManager();
     this.shopSellItemVisibilityManager = new ShopSellItemVisibilityManager({

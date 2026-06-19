@@ -74,11 +74,6 @@ const DEFAULT_RESEARCH_BALANCE = {
     'automation:autoBottleCauldron:3': 3,
     'automation:autoBottleCauldron:4': 4,
     'automation:autoBottleCauldron:5': 5,
-    'automation:autoCollectCauldron:1': 1,
-    'automation:autoCollectCauldron:2': 2,
-    'automation:autoCollectCauldron:3': 3,
-    'automation:autoCollectCauldron:4': 4,
-    'automation:autoCollectCauldron:5': 5,
   },
   researchCostsCrystal: {
     'automation:autoSeedSpawn': 10,
@@ -112,11 +107,6 @@ const DEFAULT_RESEARCH_BALANCE = {
     'automation:autoBottleCauldron:3': 3,
     'automation:autoBottleCauldron:4': 4,
     'automation:autoBottleCauldron:5': 5,
-    'automation:autoCollectCauldron:1': 1,
-    'automation:autoCollectCauldron:2': 2,
-    'automation:autoCollectCauldron:3': 3,
-    'automation:autoCollectCauldron:4': 4,
-    'automation:autoCollectCauldron:5': 5,
   },
   researchCostsRuby: createDefaultAdvancedRubyCosts(),
 };

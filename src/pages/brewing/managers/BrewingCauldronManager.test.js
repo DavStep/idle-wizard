@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
+
 import { describe, expect, it } from 'vitest';
 
 import { BrewingCauldronManager } from './BrewingCauldronManager.js';
+
+const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
 function createGameplayFacadeFake(snapshot) {
   return {
@@ -15,6 +20,25 @@ function createGameplayFacadeFake(snapshot) {
 }
 
 describe('BrewingCauldronManager', () => {
+  it('keeps herb notification dots from resizing the herbs box', () => {
+    const herbButtonRule = baseCss.match(
+      /\.brewing-page__herb-button\[data-notification="true"\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const herbDotRule = baseCss.match(
+      /\.brewing-page__herb-button\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(baseCss).not.toContain(
+      '.brewing-page__herb-rows:has([data-notification="true"])',
+    );
+    expect(herbButtonRule).toContain('--brewing-page-notification-row-min-height');
+    expect(herbButtonRule).toContain(
+      'min-height: var(--brewing-page-notification-row-min-height);',
+    );
+    expect(herbDotRule).toContain('top: calc(');
+    expect(herbDotRule).toContain('--brewing-page-notification-row-min-height');
+  });
+
   it('keeps cauldron ingredient quantity prefixes before herb icons', () => {
     const snapshot = {
       brewing: {

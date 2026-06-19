@@ -1,3 +1,4 @@
+import { PageNotificationStateManager } from '../../notifications/managers/PageNotificationStateManager.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 const MARKET_TABS = [
@@ -7,11 +8,16 @@ const MARKET_TABS = [
 ];
 
 export class ShopMarketTabsManager {
-  constructor({ gameplayFacade, onActiveTabChange } = {}) {
+  constructor({ gameplayFacade, playerShopFacade, onActiveTabChange } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.playerShopFacade = playerShopFacade;
     this.onActiveTabChange = onActiveTabChange;
+    this.notificationStateManager = new PageNotificationStateManager();
     this.root = null;
-    this.unsubscribe = null;
+    this.unsubscribeGameplay = null;
+    this.unsubscribePlayerShop = null;
+    this.lastGameplaySnapshot = null;
+    this.lastPlayerShopSnapshot = null;
     this.refs = {
       buttons: new Map(),
       panels: new Map(),
@@ -48,19 +54,32 @@ export class ShopMarketTabsManager {
     this.root.prepend(this.refs.tabs);
     parent.append(this.root);
     this.render();
-    this.unsubscribe = this.gameplayFacade?.subscribe?.((snapshot) =>
-      this.renderNotifications(snapshot),
+    this.unsubscribeGameplay = this.gameplayFacade?.subscribe?.((snapshot) => {
+      this.lastGameplaySnapshot = snapshot;
+      this.renderNotifications();
+    }) ?? null;
+    this.unsubscribePlayerShop = this.playerShopFacade?.subscribe?.((snapshot) => {
+      this.lastPlayerShopSnapshot = snapshot;
+      this.renderNotifications();
+    }) ?? null;
+    this.lastGameplaySnapshot = this.gameplayFacade?.getSnapshot?.() ?? this.lastGameplaySnapshot;
+    this.lastPlayerShopSnapshot = (
+      this.playerShopFacade?.getSnapshot?.() ?? this.lastPlayerShopSnapshot
     ) ?? null;
-    this.renderNotifications(this.gameplayFacade?.getSnapshot?.());
+    this.renderNotifications();
 
     return this.root;
   }
 
   unmount() {
-    this.unsubscribe?.();
-    this.unsubscribe = null;
+    this.unsubscribeGameplay?.();
+    this.unsubscribePlayerShop?.();
+    this.unsubscribeGameplay = null;
+    this.unsubscribePlayerShop = null;
     this.root?.remove();
     this.root = null;
+    this.lastGameplaySnapshot = null;
+    this.lastPlayerShopSnapshot = null;
     this.refs = {
       buttons: new Map(),
       panels: new Map(),
@@ -125,10 +144,32 @@ export class ShopMarketTabsManager {
     }
   }
 
-  renderNotifications(snapshot) {
+  renderNotifications() {
+    const shopNotifications = this.notificationStateManager.getSnapshot(
+      this.lastGameplaySnapshot,
+      { playerShop: this.lastPlayerShopSnapshot },
+    ).pages.shop;
+    const children = shopNotifications.children ?? {};
+
     setNotificationBadge(
-      this.refs.buttons.get('crystals'),
-      snapshot?.shop?.goldOffer?.canCollect === true,
+      this.refs.buttons.get('npm'),
+      this.createTabNotification(children, ['npcStand', 'npcListing']),
+    );
+    setNotificationBadge(
+      this.refs.buttons.get('player'),
+      this.createTabNotification(children, [
+        'playerStand',
+        'playerListing',
+        'playerProceeds',
+        'playerMarket',
+      ]),
+    );
+    setNotificationBadge(this.refs.buttons.get('crystals'), children.crystals);
+  }
+
+  createTabNotification(children, keys) {
+    return this.notificationStateManager.createPage(
+      Object.fromEntries(keys.map((key) => [key, children[key]])),
     );
   }
 }

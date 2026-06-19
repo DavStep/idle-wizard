@@ -12,7 +12,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class BrewingFacade {
   static explain =
-    'Brewing lets the wizard place herbs into a cauldron, spend mana, bottle the result, and collect the potion.';
+    'Brewing lets the wizard place herbs into a cauldron, spend mana, and bottle the result into inventory.';
 
   constructor({
     goldFacade,
@@ -52,15 +52,16 @@ export class BrewingFacade {
       manaFacade,
       researchFacade,
     });
-    this.brewingProcessManager = new BrewingProcessManager({
-      brewingProcessEntityManager: this.brewingProcessEntityManager,
-    });
     this.brewingBottlingManager = new BrewingBottlingManager({
       brewingProcessEntityManager: this.brewingProcessEntityManager,
     });
     this.brewingCollectManager = new BrewingCollectManager({
       brewingProcessEntityManager: this.brewingProcessEntityManager,
       itemsFacade,
+    });
+    this.brewingProcessManager = new BrewingProcessManager({
+      brewingProcessEntityManager: this.brewingProcessEntityManager,
+      collectReadyBrews: () => this.collectReadyBrews(),
     });
     this.autoBrewEnabledByCauldron = new Map();
     this.autoBrewRecipeKeysByCauldron = new Map();
@@ -320,6 +321,23 @@ export class BrewingFacade {
     return result;
   }
 
+  collectReadyBrews() {
+    const readyBrews = this.brewingProcessEntityManager
+      .getActiveBrewSnapshots()
+      .filter((activeBrew) => activeBrew?.canCollect === true);
+    const collected = [];
+
+    for (const activeBrew of readyBrews) {
+      const result = this.collect(activeBrew.cauldronIndex);
+
+      if (result.ok) {
+        collected.push(result);
+      }
+    }
+
+    return collected;
+  }
+
   getSnapshot() {
     return this.brewingSnapshotManager.getSnapshot();
   }
@@ -409,6 +427,8 @@ export class BrewingFacade {
       this.restoreCauldronItems(savedCauldron?.cauldronItemKeys, itemsFacade, cauldronIndex);
       this.restoreActiveBrew(savedCauldron?.activeBrew, itemsFacade, cauldronIndex);
     }
+
+    this.collectReadyBrews();
   }
 
   clampUnlockedCauldronsByLevel(unlockedCauldrons) {

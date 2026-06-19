@@ -614,12 +614,6 @@ export class GameplayFacade {
     return result;
   }
 
-  collectBrewingPotion(cauldronIndex = 0) {
-    const result = this.brewingFacade.collect(cauldronIndex);
-    this.publishAndSaveSnapshot();
-    return result;
-  }
-
   selectShopShelfSlot(slotNumber) {
     const result = this.shopFacade.selectShelfSlot(slotNumber);
     this.publishAndSaveSnapshot();

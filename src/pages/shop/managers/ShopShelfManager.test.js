@@ -206,6 +206,87 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('shows child notifications on market tab buttons', () => {
+    const stage = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          nextSlotNumber: 2,
+          nextSlotCost: 1,
+          nextSlotLockedByLevel: false,
+          sellItems: [],
+          slots: [],
+        },
+        playerShelf: {
+          nextSlotNumber: 2,
+          nextSlotCost: 1,
+          nextSlotLockedByLevel: false,
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 1,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              itemTypeId: null,
+            },
+          ],
+        },
+        goldOffer: {
+          canCollect: true,
+        },
+      },
+    };
+    const playerShopSnapshot = {
+      connected: true,
+      listings: [],
+      proceedsGold: 0,
+    };
+    const manager = new ShopMarketTabsManager({
+      gameplayFacade: {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+      },
+      playerShopFacade: {
+        subscribe(callback) {
+          callback(playerShopSnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return playerShopSnapshot;
+        },
+      },
+    });
+
+    manager.mount(stage);
+
+    const buttons = [...stage.querySelectorAll('.shop-page__market-tab-button')];
+    const playerTab = buttons.find((button) => button.textContent === 'player market');
+    const crystalsTab = buttons.find((button) => button.textContent === 'crystals');
+    const npcTab = buttons.find((button) => button.textContent === 'npc market');
+
+    expect(playerTab?.dataset.notification).toBe('true');
+    expect(playerTab?.dataset.notificationTone).toBe('orange');
+    expect(crystalsTab?.dataset.notification).toBe('true');
+    expect(crystalsTab?.dataset.notificationTone).toBe('red');
+    expect(npcTab?.dataset.notification).toBeUndefined();
+
+    manager.unmount();
+  });
+
   it('stores local player market requests by slot', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -1678,6 +1759,65 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('shows unit price for selected NPC market items with zero quantity', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 0,
+              sellGold: 8,
+              sellNeed: null,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'sage seed',
+              sellQuantity: 0,
+              sellGold: 8,
+              sellNeed: null,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
+      'sage seed (0) 8 gold',
+    );
+
+    manager.unmount();
+  });
+
   it('shows tutorial fallback stand prices while FTUE market pricing is active', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -1801,7 +1941,7 @@ describe('ShopShelfManager', () => {
     );
     expect(stage.querySelector('.shop-page__slot-timer-value')).toBeNull();
     expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
-      'sage seed (4) 1 gold',
+      'sage seed (4) 4 gold',
     );
 
     gameplaySnapshot.shop.shelf.sellProgressSeconds = 1_800;
