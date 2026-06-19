@@ -74,7 +74,6 @@ export class WorkshopActionBarManager {
     button.className = 'style-button workshop-page__summon-button';
     button.type = 'button';
     button.dataset.tutorialId = 'workshop:summonSeed';
-    button.dataset.pressFeedbackTarget = '.workshop-page__summon-circle';
 
     const circle = createAssetAtlasSprite(
       'workshop-page__summon-circle',
@@ -103,6 +102,7 @@ export class WorkshopActionBarManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__bag-button';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'bag';
     button.setAttribute('aria-label', 'open bag');
     button.addEventListener('click', () => this.onBagClick?.());
@@ -113,6 +113,7 @@ export class WorkshopActionBarManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__prestige-button';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'prestige';
     button.setAttribute('aria-label', 'open prestige');
     button.addEventListener('click', () => {
@@ -275,7 +276,7 @@ export class WorkshopActionBarManager {
     const message = this.getManaSpendMessage(result, snapshot);
 
     if (message) {
-      this.onSummonNotice?.(message);
+      this.onSummonNotice?.(message, { flyoutKey: 'workshop-mana-spend' });
     }
   }
 

@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PressFeedbackManager } from './PressFeedbackManager.js';
+import {
+  HELD_RELEASE_FEEDBACK_MS,
+  PressFeedbackManager,
+} from './PressFeedbackManager.js';
 
 let originalElementFromPoint;
 
@@ -113,6 +116,51 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
+  it('activates marked open controls on touch press start and suppresses release clicks', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const popup = document.createElement('section');
+    const clicks = [];
+    let backdropClicks = 0;
+    let nowMs = 1000;
+    button.className = 'style-button';
+    button.dataset.pressStartClick = 'true';
+    button.addEventListener('click', (event) => {
+      clicks.push(event.isTrusted ? 'native' : 'synthetic');
+      popup.hidden = false;
+    });
+    popup.hidden = true;
+    popup.addEventListener('click', () => {
+      backdropClicks += 1;
+    });
+    root.append(button, popup);
+    document.body.append(root);
+    document.elementFromPoint = () => popup;
+
+    const manager = new PressFeedbackManager({ now: () => nowMs });
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { clientX: 80, clientY: 120 });
+
+    expect(clicks).toEqual(['synthetic']);
+    expect(popup.hidden).toBe(false);
+
+    nowMs += HELD_RELEASE_FEEDBACK_MS + 200;
+    dispatchPointer(document, 'pointerup', { clientX: 80, clientY: 120 });
+    popup.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        clientX: 82,
+        clientY: 119,
+      }),
+    );
+
+    expect(clicks).toEqual(['synthetic']);
+    expect(backdropClicks).toBe(0);
+
+    manager.unmount();
+  });
+
   it('plays click sound once for touch activation with a duplicate native click', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');
@@ -147,7 +195,7 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
-  it('plays haptics once after a confirmed touch activation', () => {
+  it('plays haptics on touch press and skips fast release feedback', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');
     const hapticsFacade = {
@@ -162,7 +210,7 @@ describe('PressFeedbackManager', () => {
     manager.mount(root);
 
     dispatchPointer(button, 'pointerdown');
-    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
 
     dispatchPointer(document, 'pointerup');
     button.dispatchEvent(
@@ -172,6 +220,52 @@ describe('PressFeedbackManager', () => {
     );
 
     expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
+
+    manager.unmount();
+  });
+
+  it('plays touch feedback again when a held press releases on the same control', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const clicks = [];
+    const hapticsFacade = {
+      playUiTap: vi.fn(),
+    };
+    const uiClickSoundFacade = {
+      playClick: vi.fn(),
+      unlock: vi.fn(),
+    };
+    let nowMs = 1000;
+    button.className = 'style-button';
+    button.addEventListener('click', (event) => {
+      clicks.push(event.isTrusted ? 'native' : 'synthetic');
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager({
+      hapticsFacade,
+      uiClickSoundFacade,
+      now: () => nowMs,
+    });
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown');
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
+    expect(uiClickSoundFacade.playClick).toHaveBeenCalledTimes(1);
+
+    nowMs += HELD_RELEASE_FEEDBACK_MS;
+    dispatchPointer(document, 'pointerup');
+    button.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+      }),
+    );
+
+    expect(clicks).toEqual(['synthetic']);
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(2);
+    expect(uiClickSoundFacade.playClick).toHaveBeenCalledTimes(2);
 
     manager.unmount();
   });
@@ -330,7 +424,7 @@ describe('PressFeedbackManager', () => {
 
     expect(button.classList.contains('is-pressing')).toBe(false);
     expect(clicks).toBe(0);
-    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
 
     manager.unmount();
   });

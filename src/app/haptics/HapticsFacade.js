@@ -3,7 +3,7 @@ import { HapticPulseManager } from './managers/HapticPulseManager.js';
 
 export class HapticsFacade {
   static explain =
-    'Adds tiny phone vibrations to confirmed taps, so touch controls feel responsive without changing game rules.';
+    'Adds tiny phone vibrations to touch controls, so presses feel responsive without changing game rules.';
 
   constructor({ preferenceManager, pulseManager } = {}) {
     this.preferenceManager = preferenceManager ?? new HapticPreferenceManager();

@@ -357,6 +357,54 @@ describe('AuthOidcManager', () => {
     });
   });
 
+  it('falls back to redirect when the web Google Identity script cannot load', async () => {
+    const storage = createMemoryStorage();
+    const oidcClient = {
+      signinRedirect: vi.fn(() => Promise.resolve()),
+    };
+    const scriptListeners = new Map();
+    const script = {
+      parentNode: null,
+      addEventListener: vi.fn((eventName, listener) => {
+        scriptListeners.set(eventName, listener);
+      }),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      windowRef: {
+        document: {
+          createElement: vi.fn(() => script),
+          head: {
+            append: vi.fn(() => {
+              scriptListeners.get('error')?.();
+            }),
+          },
+        },
+        location: {
+          origin: 'https://davstep.github.io',
+        },
+        setTimeout: vi.fn(() => 1),
+        clearTimeout: vi.fn(),
+      },
+      createUserManager: () => oidcClient,
+    });
+
+    await expect(
+      manager.signIn({ pendingAccountLinkAttemptId: 'attempt-1' }),
+    ).resolves.toEqual({ ok: true });
+
+    expect(oidcClient.signinRedirect).toHaveBeenCalledTimes(1);
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBe(
+      'attempt-1',
+    );
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      error: null,
+      cancelled: false,
+    });
+  });
+
   it('handles redirect callback before web Google Identity mode after fallback', async () => {
     const storage = createMemoryStorage();
     const idToken = createFakeJwt({

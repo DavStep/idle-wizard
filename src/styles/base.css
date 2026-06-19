@@ -88,6 +88,9 @@
   --style-world-chat-row-height: 14px;
   --style-world-chat-row-gap: 4px;
   --style-world-chat-preview-lines: 2;
+  --style-world-chat-preview-font-size: 9px;
+  --style-world-chat-preview-icon-size: 9px;
+  --style-world-chat-title-font-size: var(--style-box-border-label-font-size);
   --style-world-chat-popup-font-size: 11px;
   --style-world-chat-popup-line-height: 18px;
   --style-log-font-size: var(--style-world-chat-popup-font-size);
@@ -489,6 +492,20 @@ body {
   background: var(--style-bg);
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.app-fps-display {
+  position: fixed;
+  top: 2px;
+  left: calc(env(safe-area-inset-left) + 4px);
+  z-index: 130;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: 11px;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums lining-nums;
+  pointer-events: none;
+  user-select: none;
 }
 
 .game-stage {
@@ -3832,7 +3849,8 @@ body {
   appearance: none;
   color: var(--style-text);
   font-family: var(--style-font);
-  line-height: normal;
+  font-size: var(--style-world-chat-title-font-size);
+  line-height: var(--style-box-border-label-line-height);
   text-align: left;
   cursor: pointer;
   border: 0;
@@ -4349,7 +4367,7 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
   min-height: var(--style-world-chat-row-height);
   max-height: var(--style-world-chat-row-height);
-  font-size: var(--style-box-border-label-font-size);
+  font-size: var(--style-world-chat-preview-font-size);
   line-height: var(--style-world-chat-row-height);
   display: block;
   overflow: hidden;
@@ -4359,6 +4377,13 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-box .workshop-page__world-chat-age {
   display: none;
+}
+
+.workshop-page__world-chat-box .workshop-page__world-chat-character-icon {
+  width: var(--style-world-chat-preview-icon-size);
+  height: var(--style-world-chat-preview-icon-size);
+  margin-right: 2px;
+  vertical-align: -1px;
 }
 
 .workshop-page__world-chat-box .workshop-page__world-chat-empty {
@@ -8215,7 +8240,10 @@ div.workshop-page__discovery-row {
   box-sizing: border-box;
   text-shadow: none;
   transform: translateY(18px);
-  transition: none;
+  transform-origin: center;
+  transition:
+    background-color var(--style-motion-fast) linear,
+    scale var(--style-motion-press) var(--style-motion-ease-rubber);
   text-transform: lowercase;
   white-space: nowrap;
 }
@@ -8286,17 +8314,15 @@ div.workshop-page__discovery-row {
   text-decoration: underline;
 }
 
-.style-button.workshop-page__summon-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  ) {
-  background: transparent;
-}
-
-.style-button.workshop-page__summon-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  )
+.style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"])
   .workshop-page__summon-button-text {
-  background: var(--style-surface);
+  background: var(--style-active-surface);
+  scale: var(--style-press-scale);
+  transition:
+    background-color var(--style-motion-fast) linear,
+    scale var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
 .style-button.shop-page__buy-slot-button {
@@ -8804,7 +8830,9 @@ div.workshop-page__discovery-row {
     translate var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
-.style-button.workshop-page__summon-button:active:not(:disabled) {
+.style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]) {
   background: transparent;
   scale: 1;
   transform: translate(-50%, -50%);
@@ -8813,17 +8841,10 @@ div.workshop-page__discovery-row {
     transform var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 
-.style-button.workshop-page__summon-button:active:not(:disabled)
+.style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"])
   .workshop-page__summon-circle {
-  transform: scale(var(--style-press-scale));
-  transition:
-    filter var(--style-motion-fast) linear,
-    opacity var(--style-motion-fast) linear,
-    transform var(--style-motion-press-return) var(--style-motion-ease-rubber);
-}
-
-.workshop-page__summon-circle.is-pressing {
-  transform: scale(var(--style-press-scale));
   transition:
     filter var(--style-motion-fast) linear,
     opacity var(--style-motion-fast) linear,

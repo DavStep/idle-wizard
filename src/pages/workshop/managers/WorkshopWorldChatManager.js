@@ -106,6 +106,10 @@ export class WorkshopWorldChatManager {
     this.refs.button = this.createButton();
     this.refs.buttonPreview = document.createElement('div');
     this.refs.buttonPreview.className = 'workshop-page__world-chat-preview';
+    this.refs.buttonPreview.dataset.pressStartClick = 'true';
+    this.refs.buttonPreview.setAttribute('role', 'button');
+    this.refs.buttonPreview.tabIndex = 0;
+    this.refs.buttonPreview.addEventListener('click', () => this.show());
 
     box.append(this.refs.button, this.refs.buttonPreview);
     return box;
@@ -115,6 +119,7 @@ export class WorkshopWorldChatManager {
     const button = document.createElement('button');
     button.className = 'workshop-page__world-chat-button workshop-page__world-chat-title style-box__title';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'world chat';
     button.addEventListener('click', () => this.show());
     return button;
@@ -391,7 +396,7 @@ export class WorkshopWorldChatManager {
     }
   }
 
-  createMessage(message) {
+  createMessage(message, { interactiveSender = true } = {}) {
     const row = document.createElement('div');
     row.className = 'workshop-page__world-chat-message';
     const isSystemMessage = this.isSystemMessage(message);
@@ -406,7 +411,10 @@ export class WorkshopWorldChatManager {
 
     const name = document.createElement('span');
     name.className = 'workshop-page__world-chat-name';
-    name.append(...this.createSenderContent(message), document.createTextNode(': '));
+    name.append(
+      ...this.createSenderContent(message, { interactiveSender }),
+      document.createTextNode(': '),
+    );
 
     const body = document.createElement('span');
     body.className = 'workshop-page__world-chat-body';
@@ -453,7 +461,7 @@ export class WorkshopWorldChatManager {
     }
 
     this.refs.buttonPreview.replaceChildren(
-      ...messages.map((message) => this.createMessage(message)),
+      ...messages.map((message) => this.createMessage(message, { interactiveSender: false })),
     );
     this.refs.button.setAttribute(
       'aria-label',
@@ -576,7 +584,7 @@ export class WorkshopWorldChatManager {
     return normalizeAllianceTag(tag);
   }
 
-  createSenderContent(message) {
+  createSenderContent(message, { interactiveSender = true } = {}) {
     const username = message?.username || 'wizard';
     const fallbackLevel = this.isSystemMessage(message) ? null : 1;
     const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
@@ -602,23 +610,27 @@ export class WorkshopWorldChatManager {
       nodes.push(tag, document.createTextNode(' '));
     }
 
-    nodes.push(
-      createPlayerInfoLink(
-        {
-          identity: message?.senderIdentity,
-          username,
-          allianceTag: message?.allianceTag,
-          allianceTagColor: message?.allianceTagColor,
-          character: message?.character,
-          playerLevel,
-        },
-        {
-          onOpenPlayerInfo: this.onOpenPlayerInfo,
-          text: username,
-          className: 'workshop-page__world-chat-player-link',
-        },
-      ),
-    );
+    if (interactiveSender) {
+      nodes.push(
+        createPlayerInfoLink(
+          {
+            identity: message?.senderIdentity,
+            username,
+            allianceTag: message?.allianceTag,
+            allianceTagColor: message?.allianceTagColor,
+            character: message?.character,
+            playerLevel,
+          },
+          {
+            onOpenPlayerInfo: this.onOpenPlayerInfo,
+            text: username,
+            className: 'workshop-page__world-chat-player-link',
+          },
+        ),
+      );
+    } else {
+      nodes.push(document.createTextNode(username));
+    }
 
     if (playerLevel) {
       nodes.push(document.createTextNode(`(${playerLevel})`));

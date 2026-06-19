@@ -131,13 +131,17 @@ describe('WorkshopActionBarManager', () => {
     }
   });
 
-  it('presses the summon circle without scaling the label sign', () => {
+  it('presses the summon seed label without moving the icon', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const summonPressRule = baseCss.match(
-      /\.style-button\.workshop-page__summon-button:active:not\(:disabled\)\s*\{(?<body>[^}]*)\}/,
+      /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(\s*:disabled\s*\):not\(\[aria-disabled="true"\]\)\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const labelPressRule =
+      baseCss.match(
+        /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(\s*:disabled\s*\):not\(\[aria-disabled="true"\]\)\s+\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
+      )?.groups?.body ?? '';
     const circlePressRule = baseCss.match(
-      /\.workshop-page__summon-circle\.is-pressing\s*\{(?<body>[^}]*)\}/,
+      /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(\s*:disabled\s*\):not\(\[aria-disabled="true"\]\)\s+\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(summonPressRule).toBeDefined();
@@ -145,22 +149,22 @@ describe('WorkshopActionBarManager', () => {
     expect(summonPressRule).toMatch(/\bscale:\s*1;/);
     expect(summonPressRule).toMatch(/\btransform:\s*translate\(-50%, -50%\);/);
     expect(summonPressRule).not.toMatch(/scale\(var\(--style-press-scale\)\)/);
+    expect(labelPressRule).toMatch(/\bbackground:\s*var\(--style-active-surface\);/);
+    expect(labelPressRule).toMatch(/\bscale:\s*var\(--style-press-scale\);/);
     expect(circlePressRule).toBeDefined();
-    expect(circlePressRule).toMatch(
-      /\btransform:\s*scale\(var\(--style-press-scale\)\);/,
-    );
+    expect(circlePressRule).not.toMatch(/scale\(var\(--style-press-scale\)\)/);
   });
 
-  it('routes summon press feedback to the circle art instead of the label sign', () => {
+  it('keeps summon press feedback on the real button', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopActionBarManager({ gameplayFacade });
     const parent = document.createElement('div');
 
     manager.mount(parent);
 
-    expect(parent.querySelector('.workshop-page__summon-button')?.dataset.pressFeedbackTarget).toBe(
-      '.workshop-page__summon-circle',
-    );
+    expect(
+      parent.querySelector('.workshop-page__summon-button')?.dataset.pressFeedbackTarget,
+    ).toBeUndefined();
 
     manager.unmount();
   });

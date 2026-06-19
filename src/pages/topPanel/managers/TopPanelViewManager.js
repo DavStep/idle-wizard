@@ -50,6 +50,7 @@ export class TopPanelViewManager {
     this.refs.usernameButton = document.createElement('button');
     this.refs.usernameButton.className = 'room-top-panel__username';
     this.refs.usernameButton.type = 'button';
+    this.refs.usernameButton.dataset.pressStartClick = 'true';
     this.refs.usernameButton.dataset.tutorialId = 'top:username';
     this.refs.usernameButton.setAttribute('aria-label', 'open settings');
 
@@ -69,6 +70,7 @@ export class TopPanelViewManager {
     this.refs.levelButton = document.createElement('button');
     this.refs.levelButton.className = 'room-top-panel__level';
     this.refs.levelButton.type = 'button';
+    this.refs.levelButton.dataset.pressStartClick = 'true';
     this.refs.levelButton.textContent = 'level 1';
     this.refs.levelButton.setAttribute('aria-label', 'open level rewards');
     this.refs.levelValue = this.refs.levelButton;

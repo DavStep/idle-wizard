@@ -1,8 +1,10 @@
 const PRESS_FEEDBACK_CLASS = 'is-pressing';
 const PRESS_FEEDBACK_TARGET_ATTRIBUTE = 'data-press-feedback-target';
+const PRESS_START_CLICK_ATTRIBUTE = 'data-press-start-click';
 const SYNTHETIC_CLICK_SUPPRESSION_MS = 450;
 const SYNTHETIC_CLICK_RETARGET_SUPPRESSION_PX = 32;
 const PRESS_MOVE_CANCEL_PX = 12;
+export const HELD_RELEASE_FEEDBACK_MS = 350;
 
 const PRESS_FEEDBACK_TARGET_SELECTOR = [
   'button',
@@ -44,16 +46,19 @@ function isPressFeedbackTargetDisabled(element) {
 }
 
 export class PressFeedbackManager {
-  constructor({ hapticsFacade = null, uiClickSoundFacade = null } = {}) {
+  constructor({ hapticsFacade = null, uiClickSoundFacade = null, now = () => Date.now() } = {}) {
     this.root = null;
     this.hapticsFacade = hapticsFacade;
     this.uiClickSoundFacade = uiClickSoundFacade;
+    this.now = now;
     this.pressedElement = null;
     this.pressedFeedbackElement = null;
     this.pressPointerId = null;
     this.pressPointerType = '';
     this.pressStartX = 0;
     this.pressStartY = 0;
+    this.pressStartedAtMs = 0;
+    this.pressStartClickElement = null;
     this.pressMoved = false;
     this.pointerSoundElement = null;
     this.suppressedClickElement = null;
@@ -123,10 +128,16 @@ export class PressFeedbackManager {
 
     this.clearPressedElement();
     this.pointerSoundElement = null;
+
+    if (!nextElement) {
+      return;
+    }
+
     this.pressPointerId = event.pointerId;
     this.pressPointerType = event.pointerType ?? '';
     this.pressStartX = event.clientX;
     this.pressStartY = event.clientY;
+    this.pressStartedAtMs = this.now();
     this.pressMoved = false;
     this.pressedElement = nextElement;
     this.pressedFeedbackElement = this.getPressFeedbackElement(nextElement);
@@ -134,8 +145,13 @@ export class PressFeedbackManager {
 
     this.uiClickSoundFacade?.unlock?.();
     if (this.pressPointerType !== 'mouse') {
-      this.playClickSound(nextElement);
-      this.pointerSoundElement = nextElement;
+      this.playTouchFeedback(nextElement);
+    }
+
+    if (this.shouldClickOnPressStart(nextElement)) {
+      event.preventDefault();
+      this.pressStartClickElement = nextElement;
+      this.dispatchSyntheticClick(nextElement, event);
     }
   }
 
@@ -162,12 +178,16 @@ export class PressFeedbackManager {
     }
 
     const pressedElement = this.pressedElement;
+    const didClickOnPressStart = pressedElement && this.pressStartClickElement === pressedElement;
     const shouldActivate =
       pressedElement &&
       !this.pressMoved &&
       this.pressPointerType !== 'mouse' &&
-      this.getPressTargetFromPoint(event.clientX, event.clientY) === pressedElement &&
+      (didClickOnPressStart ||
+        this.getPressTargetFromPoint(event.clientX, event.clientY) === pressedElement) &&
       !isPressFeedbackTargetDisabled(pressedElement);
+    const shouldPlayHeldReleaseFeedback =
+      shouldActivate && this.now() - this.pressStartedAtMs >= HELD_RELEASE_FEEDBACK_MS;
 
     this.clearPressedElement();
 
@@ -176,8 +196,15 @@ export class PressFeedbackManager {
       return;
     }
 
-    this.hapticsFacade?.playUiTap?.();
-    this.dispatchSyntheticClick(pressedElement, event);
+    if (shouldPlayHeldReleaseFeedback) {
+      this.playTouchFeedback(pressedElement, { forceSound: true });
+    }
+
+    if (didClickOnPressStart) {
+      this.suppressNextNativeClick(pressedElement, event);
+    } else {
+      this.dispatchSyntheticClick(pressedElement, event);
+    }
   }
 
   onClick(event) {
@@ -187,7 +214,7 @@ export class PressFeedbackManager {
       return;
     }
 
-    if (Date.now() > this.suppressedClickUntilMs) {
+    if (this.now() > this.suppressedClickUntilMs) {
       this.playClickSoundForEvent(event);
       return;
     }
@@ -219,6 +246,20 @@ export class PressFeedbackManager {
     this.uiClickSoundFacade?.playClick?.();
   }
 
+  playTouchFeedback(target, { forceSound = false } = {}) {
+    if (!target) {
+      return;
+    }
+
+    this.hapticsFacade?.playUiTap?.();
+
+    if (forceSound || target !== this.pointerSoundElement) {
+      this.uiClickSoundFacade?.playClick?.();
+    }
+
+    this.pointerSoundElement = target;
+  }
+
   getPressTarget(target) {
     const element = getElementFromEventTarget(target);
     const pressTarget = element?.closest(PRESS_FEEDBACK_TARGET_SELECTOR) ?? null;
@@ -237,6 +278,13 @@ export class PressFeedbackManager {
   getPressTargetFromPoint(clientX, clientY) {
     const document = this.root?.ownerDocument;
     return this.getPressTarget(document?.elementFromPoint?.(clientX, clientY));
+  }
+
+  shouldClickOnPressStart(element) {
+    return (
+      this.pressPointerType !== 'mouse' &&
+      element?.getAttribute?.(PRESS_START_CLICK_ATTRIBUTE) === 'true'
+    );
   }
 
   getPressFeedbackElement(pressTarget) {
@@ -292,10 +340,7 @@ export class PressFeedbackManager {
   }
 
   dispatchSyntheticClick(element, event = {}) {
-    this.suppressedClickElement = element;
-    this.suppressedClickUntilMs = Date.now() + SYNTHETIC_CLICK_SUPPRESSION_MS;
-    this.suppressedClickX = Number.isFinite(event.clientX) ? event.clientX : null;
-    this.suppressedClickY = Number.isFinite(event.clientY) ? event.clientY : null;
+    this.suppressNextNativeClick(element, event);
     this.isDispatchingSyntheticClick = true;
 
     try {
@@ -303,6 +348,13 @@ export class PressFeedbackManager {
     } finally {
       this.isDispatchingSyntheticClick = false;
     }
+  }
+
+  suppressNextNativeClick(element, event = {}) {
+    this.suppressedClickElement = element;
+    this.suppressedClickUntilMs = this.now() + SYNTHETIC_CLICK_SUPPRESSION_MS;
+    this.suppressedClickX = Number.isFinite(event.clientX) ? event.clientX : null;
+    this.suppressedClickY = Number.isFinite(event.clientY) ? event.clientY : null;
   }
 
   isMatchingPointer(event) {
@@ -317,6 +369,8 @@ export class PressFeedbackManager {
     this.pressPointerType = '';
     this.pressStartX = 0;
     this.pressStartY = 0;
+    this.pressStartedAtMs = 0;
+    this.pressStartClickElement = null;
     this.pressMoved = false;
   }
 

@@ -1,8 +1,16 @@
-const CLICK_DURATION_SECONDS = 0.045;
-const CLICK_MASTER_GAIN = 0.24;
-const CLICK_MIN_INTERVAL_MS = 24;
-const CLICK_START_FREQUENCY = 920;
-const CLICK_END_FREQUENCY = 430;
+const CLICK_SAMPLE_URL = new URL('../assets/ui-click-pop.wav', import.meta.url)
+  .href;
+const CLICK_MASTER_GAIN = 0.58;
+const CLICK_MIN_INTERVAL_MS = 42;
+const CLICK_SAMPLE_GAIN = 0.16;
+const CLICK_SAMPLE_PLAYBACK_RATE_MIN = 1.28;
+const CLICK_SAMPLE_PLAYBACK_RATE_MAX = 1.44;
+const CLICK_TONE_DURATION_SECONDS = 0.034;
+const CLICK_TONE_GAIN = 0.045;
+const CLICK_TONE_START_FREQUENCY_MIN = 520;
+const CLICK_TONE_START_FREQUENCY_MAX = 590;
+const CLICK_TONE_END_FREQUENCY_MIN = 650;
+const CLICK_TONE_END_FREQUENCY_MAX = 740;
 
 function getAudioContextConstructor(windowRef) {
   return windowRef?.AudioContext ?? windowRef?.webkitAudioContext ?? null;
@@ -18,20 +26,28 @@ function isContextClosed(context) {
 
 export class UiClickSoundManager {
   constructor({
+    clickSampleUrl = CLICK_SAMPLE_URL,
     windowRef = typeof window === 'undefined' ? null : window,
     now = () => Date.now(),
+    random = Math.random,
     logger = null,
   } = {}) {
+    this.clickSampleUrl = clickSampleUrl;
     this.windowRef = windowRef;
     this.now = now;
+    this.random = random;
     this.logger = logger;
     this.enabled = true;
     this.context = null;
     this.masterGain = null;
     this.clickBuffer = null;
+    this.clickBufferPromise = null;
+    this.clickSampleData = null;
+    this.clickSampleDataPromise = null;
     this.audioUnavailable = false;
     this.resumePromise = null;
     this.lastPlayAtMs = Number.NEGATIVE_INFINITY;
+    void this.prefetchClickSampleData();
   }
 
   setEnabled(enabled) {
@@ -83,6 +99,9 @@ export class UiClickSoundManager {
     this.context = null;
     this.masterGain = null;
     this.clickBuffer = null;
+    this.clickBufferPromise = null;
+    this.clickSampleData = null;
+    this.clickSampleDataPromise = null;
     this.resumePromise = null;
 
     if (!context || isContextClosed(context)) {
@@ -120,7 +139,7 @@ export class UiClickSoundManager {
       this.masterGain = this.context.createGain();
       this.masterGain.connect(this.context.destination);
       this.syncMasterGain();
-      this.clickBuffer = this.createClickBuffer(this.context);
+      void this.loadClickBuffer(this.context);
       return this.context;
     } catch (error) {
       this.audioUnavailable = true;
@@ -166,13 +185,51 @@ export class UiClickSoundManager {
   }
 
   playClickNow(context) {
-    const buffer = this.clickBuffer ?? this.createClickBuffer(context);
-    this.clickBuffer = buffer;
+    if (this.clickBuffer) {
+      this.playLayeredClick(context, this.clickBuffer);
+      return;
+    }
 
+    if (!this.clickSampleUrl) {
+      this.playToneClick(context);
+      return;
+    }
+
+    if (!this.clickSampleData && this.clickSampleDataPromise) {
+      this.playToneClick(context);
+      void this.loadClickBuffer(context);
+      return;
+    }
+
+    void this.loadClickBuffer(context).then((buffer) => {
+      if (this.enabled && this.context === context && isContextRunning(context)) {
+        this.playLayeredClick(context, buffer);
+      }
+    });
+  }
+
+  playLayeredClick(context, buffer) {
+    if (buffer) {
+      this.scheduleSampleLayer(context, buffer);
+    }
+
+    this.playToneClick(context);
+  }
+
+  scheduleSampleLayer(context, buffer) {
     const source = context.createBufferSource();
     const gain = context.createGain();
+    const startAt = context.currentTime ?? 0;
+    const playbackRate = this.randomBetween(
+      CLICK_SAMPLE_PLAYBACK_RATE_MIN,
+      CLICK_SAMPLE_PLAYBACK_RATE_MAX,
+    );
+    const stopAt = startAt + buffer.duration / Math.max(0.01, playbackRate) + 0.04;
     source.buffer = buffer;
-    gain.gain.value = 1;
+    setAudioParamValue(source.playbackRate, playbackRate, startAt);
+    setAudioParamValue(gain.gain, 0.0001, startAt);
+    rampAudioParamValue(gain.gain, CLICK_SAMPLE_GAIN, startAt + 0.006);
+    rampAudioParamValue(gain.gain, 0.0001, Math.max(startAt + 0.012, stopAt - 0.01));
     source.connect(gain);
     gain.connect(this.masterGain ?? context.destination);
 
@@ -181,26 +238,146 @@ export class UiClickSoundManager {
       gain.disconnect?.();
     };
 
-    source.start();
+    source.start(startAt);
+    source.stop?.(stopAt);
   }
 
-  createClickBuffer(context) {
-    const sampleRate = context.sampleRate || 48000;
-    const length = Math.max(1, Math.floor(sampleRate * CLICK_DURATION_SECONDS));
-    const buffer = context.createBuffer(1, length, sampleRate);
-    const samples = buffer.getChannelData(0);
-
-    for (let i = 0; i < length; i += 1) {
-      const t = i / sampleRate;
-      const progress = i / length;
-      const frequency =
-        CLICK_START_FREQUENCY +
-        (CLICK_END_FREQUENCY - CLICK_START_FREQUENCY) * progress;
-      const envelope = Math.exp(-85 * t) * (1 - progress);
-      const phase = 2 * Math.PI * frequency * t;
-      samples[i] = Math.sin(phase) * envelope;
+  playToneClick(context) {
+    if (!context.createOscillator) {
+      return;
     }
 
-    return buffer;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const startAt = context.currentTime ?? 0;
+    const endAt = startAt + CLICK_TONE_DURATION_SECONDS;
+    const startFrequency = this.randomBetween(
+      CLICK_TONE_START_FREQUENCY_MIN,
+      CLICK_TONE_START_FREQUENCY_MAX,
+    );
+    const endFrequency = this.randomBetween(
+      CLICK_TONE_END_FREQUENCY_MIN,
+      CLICK_TONE_END_FREQUENCY_MAX,
+    );
+
+    oscillator.type = 'triangle';
+    setAudioParamValue(oscillator.frequency, startFrequency, startAt);
+    rampAudioParamValue(oscillator.frequency, endFrequency, endAt);
+    setAudioParamValue(gain.gain, 0.0001, startAt);
+    rampAudioParamValue(gain.gain, CLICK_TONE_GAIN, startAt + 0.012);
+    rampAudioParamValue(gain.gain, 0.0001, Math.max(startAt + 0.024, endAt - 0.012));
+
+    oscillator.connect(gain);
+    gain.connect(this.masterGain ?? context.destination);
+
+    oscillator.onended = () => {
+      oscillator.disconnect?.();
+      gain.disconnect?.();
+    };
+
+    oscillator.start(startAt);
+    oscillator.stop(endAt + 0.02);
   }
+
+  prefetchClickSampleData() {
+    if (!this.clickSampleUrl || this.clickSampleData) {
+      return Promise.resolve(this.clickSampleData);
+    }
+
+    if (this.clickSampleDataPromise) {
+      return this.clickSampleDataPromise;
+    }
+
+    const fetchRef = this.windowRef?.fetch ?? globalThis.fetch;
+
+    if (!fetchRef) {
+      return Promise.resolve(null);
+    }
+
+    this.clickSampleDataPromise = Promise.resolve()
+      .then(() => fetchRef.call(this.windowRef ?? globalThis, this.clickSampleUrl))
+      .then((response) => {
+        if (!response || response.ok === false) {
+          return null;
+        }
+
+        return response.arrayBuffer();
+      })
+      .then((data) => {
+        this.clickSampleData = data;
+        return data;
+      })
+      .catch((error) => {
+        this.logger?.warn?.('Unable to load UI click sample.', error);
+        return null;
+      })
+      .finally(() => {
+        this.clickSampleDataPromise = null;
+      });
+
+    return this.clickSampleDataPromise;
+  }
+
+  loadClickBuffer(context) {
+    if (this.clickBuffer) {
+      return Promise.resolve(this.clickBuffer);
+    }
+
+    if (this.clickBufferPromise) {
+      return this.clickBufferPromise;
+    }
+
+    if (!this.clickSampleUrl || !context.decodeAudioData) {
+      return Promise.resolve(null);
+    }
+
+    this.clickBufferPromise = this.prefetchClickSampleData()
+      .then((data) => {
+        if (!data || this.context !== context || isContextClosed(context)) {
+          return null;
+        }
+
+        return context.decodeAudioData(data.slice(0));
+      })
+      .then((buffer) => {
+        if (buffer && !isContextClosed(context)) {
+          this.clickBuffer = buffer;
+        }
+
+        return buffer;
+      })
+      .catch((error) => {
+        this.logger?.warn?.('Unable to decode UI click sample.', error);
+        return null;
+      })
+      .finally(() => {
+        this.clickBufferPromise = null;
+      });
+
+    return this.clickBufferPromise;
+  }
+
+  randomBetween(min, max) {
+    return min + (max - min) * this.random();
+  }
+}
+
+function setAudioParamValue(param, value, atTime) {
+  if (param?.setValueAtTime) {
+    param.setValueAtTime(value, atTime);
+    return;
+  }
+
+  if (param) {
+    param.value = value;
+  }
+}
+
+function rampAudioParamValue(param, value, atTime) {
+  if (param?.exponentialRampToValueAtTime) {
+    param.exponentialRampToValueAtTime(Math.max(0.0001, value), atTime);
+    return;
+  }
+
+  setAudioParamValue(param, value, atTime);
 }

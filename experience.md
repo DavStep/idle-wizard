@@ -47,6 +47,7 @@
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
+- Dialog/open-only controls should opt into `data-press-start-click="true"` so touch opens on press-start; do not use it for spend/buy/sell/complete gameplay actions.
 - Current NPC market source has no scheduled 5-minute demand regen despite older docs mentioning one; demand/stock move through sell/buy reducers, reset, and initial row creation.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
@@ -144,13 +145,13 @@
 - Workshop task drag-sort needs expanded-content overflow visible during drag; otherwise list rows clip under the summary row and look like they lose top-layer order.
 - Workshop summon button text must overlay the summon circle, not stack below it; stacking drops the label into the secondary action row.
 - Workshop summon button press feedback must not use generic `transform: scale(...)`; it needs to preserve its `translate(-50%, -50%)` centering or pointer release can miss the moved button.
-- Workshop summon button press feedback must also override generic `.style-button` active backgrounds; otherwise a rectangular active-surface box appears behind the circle.
-- Workshop summon press feedback should scale the circle art, not the label sign; the label must stay visually stable.
+- Workshop summon button press feedback should keep `.is-pressing` on the real button, like leaderboard, then CSS-route the visual press to the `summon seed` label only.
+- Workshop summon button press feedback must keep the outer `.style-button` transparent and unscaled so the summon sign/circle icon stays visually stable.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward flyout stacks should keep the newest text flyout at the base anchor and move older active flyouts upward; positive offsets make rapid presses drift downward.
 - Reward flyout stack spacing must use measured live flyout height, not one fixed step, or taller/wrapped notices can overlap each other.
-- Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, and fire tap haptics only after `PressFeedbackManager` confirms touch release on the original target.
+- Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, fire touch haptic/sound on valid press start, and repeat both only when a held press releases on the original target.
 
 ## Architecture
 
@@ -159,6 +160,7 @@
 - Big features need facades with compact non-programmer explanations.
 - `PressFeedbackManager` can route the `.is-pressing` class to a child selector via `data-press-feedback-target`; use it when a control's art should press without moving its label/sign container.
 - UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
+- Idle Witch Craft's button tap cue uses `idlefarmer-mouth-pop.wav` plus a short triangle tone; Idle Wizard mirrors that in `src/audio/uiClicks/assets/ui-click-pop.wav`.
 - During Pixi migration, hidden DOM managers can still receive gameplay reward events; route feedback through one visible renderer per event or duplicate notices appear.
 - Pixi migration should not replace page facades with duplicated page logic before parity; keep existing DOM managers as the source of truth and mirror/render their state until visuals and interactions match.
 - Pixi DOM mirroring should be opt-in/debug only; hiding live DOM and repainting a canvas snapshot caps visible motion and burns mobile frame budget.
@@ -212,6 +214,7 @@
 - Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/gold progress look reset after refresh.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
 - Web Google account linking should fall back to OIDC redirect when Google Identity prompt cannot display; `web_unavailable` should not leave players stuck.
+- Web Google Identity script load/init failures should also be treated as `web_unavailable`, so blocked GIS can fall back to top-level OIDC redirect.
 - Web Google Identity fallback must handle OIDC redirect callbacks before the GIS shortcut, then persist the redirect user for the next reload.
 - If a level 1 device save links into a Google account with a save above level 1, keep the Google account automatically and skip the choice prompt.
 - Account-link pending saves need attempt scoping and visible failure handling; silent `localStorage` failure can drop device progress when linking into an existing account.

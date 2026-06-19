@@ -8025,6 +8025,7 @@ describe('PagesFacade', () => {
     expect(box.textContent).toContain('Mo(5): third hello');
     expect(box.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(2);
     expect(box.querySelectorAll('.workshop-page__world-chat-character-icon')).toHaveLength(2);
+    expect(box.querySelector('.room-player-info-link')).toBeNull();
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -8032,6 +8033,7 @@ describe('PagesFacade', () => {
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(popup.querySelector('.style-dialog')).not.toBeNull();
     expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(3);
+    expect(popup.querySelectorAll('.room-player-info-link')).toHaveLength(3);
     expect(popup.textContent).toContain('old hello');
     expect(popup.textContent).toContain('Lin(4): second hello');
     expect(popup.textContent).toContain('Mo(5): third hello');
@@ -8323,7 +8325,7 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('keeps empty world chat preview static', () => {
+  it('opens world chat popup from empty preview', () => {
     const stage = document.createElement('section');
     const worldChatFacade = createWorldChatFacadeFake({ messages: [] });
     const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
@@ -8337,15 +8339,55 @@ describe('PagesFacade', () => {
 
     const popup = stage.querySelector('.workshop-page__world-chat-popup');
     const preview = stage.querySelector('.workshop-page__world-chat-preview');
-    const button = stage.querySelector('.workshop-page__world-chat-button');
 
     expect(preview.textContent).toBe('no messages yet');
 
     preview.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    expect(popup.hidden).toBe(false);
+  });
+
+  it('opens world chat popup from preview message rows', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [
+        {
+          id: '1',
+          senderIdentity: 'sender-a',
+          username: 'Ada',
+          character: 'mira',
+          playerLevel: 3,
+          body: 'old hello',
+          sentAtMs: 1_000,
+        },
+        {
+          id: '2',
+          senderIdentity: 'sender-b',
+          username: 'Lin',
+          character: 'rowan',
+          playerLevel: 4,
+          body: 'second hello',
+          sentAtMs: 2_000,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      worldChatFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const preview = stage.querySelector('.workshop-page__world-chat-preview');
+    const previewRow = preview.querySelector('.workshop-page__world-chat-message');
+
+    expect(preview.querySelector('.room-player-info-link')).toBeNull();
     expect(popup.hidden).toBe(true);
 
-    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    previewRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
   });

@@ -148,6 +148,7 @@ export class WorkshopLeaderboardManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__leaderboard-button';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'leaderboard';
     button.addEventListener('click', () => this.show());
     return button;

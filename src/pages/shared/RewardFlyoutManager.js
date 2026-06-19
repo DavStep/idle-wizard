@@ -36,13 +36,18 @@ export class RewardFlyoutManager {
     return this.root;
   }
 
-  show(message, { visualOnly = false } = {}) {
+  show(message, { flyoutKey = null, visualOnly = false } = {}) {
     if (!this.root || !message) {
       return null;
     }
 
+    this.removeKeyedFlyouts(flyoutKey);
+
     const flyout = document.createElement('div');
     flyout.className = this.flyoutClassName;
+    if (flyoutKey) {
+      flyout.dataset.flyoutKey = flyoutKey;
+    }
     flyout.classList.toggle('is-visual-only', visualOnly);
     flyout.setAttribute('role', 'status');
     appendTextWithItemIcons(flyout, message);
@@ -57,6 +62,20 @@ export class RewardFlyoutManager {
 
     this.timeouts.add(timeoutId);
     return flyout;
+  }
+
+  removeKeyedFlyouts(flyoutKey) {
+    if (!this.root || !flyoutKey) {
+      return;
+    }
+
+    const keyedFlyouts = [...this.root.children].filter(
+      (child) => child instanceof window.HTMLElement && child.dataset.flyoutKey === flyoutKey,
+    );
+
+    for (const flyout of keyedFlyouts) {
+      flyout.remove();
+    }
   }
 
   layoutTextFlyouts() {

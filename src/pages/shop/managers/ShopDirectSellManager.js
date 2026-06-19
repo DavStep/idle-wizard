@@ -158,6 +158,7 @@ export class ShopDirectSellManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__direct-sell-button';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'fast sell';
     button.dataset.tutorialId = 'shop:directSell';
     button.setAttribute('aria-label', 'fast sell to npc');

@@ -8,9 +8,26 @@ function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
     bufferLength: 0,
     closeCount: 0,
     contextCreateCount: 0,
+    decodeCount: 0,
+    lastOscillatorType: '',
+    lastSourcePlaybackRate: 0,
     resumeCount: 0,
+    oscillatorStartCount: 0,
     sourceStartCount: 0,
   };
+
+  function makeAudioParam(initialValue = 0) {
+    const param = {
+      value: initialValue,
+      exponentialRampToValueAtTime: vi.fn((value) => {
+        param.value = value;
+      }),
+      setValueAtTime: vi.fn((value) => {
+        param.value = value;
+      }),
+    };
+    return param;
+  }
 
   class FakeAudioContext {
     constructor() {
@@ -25,9 +42,7 @@ function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
       return {
         connect: vi.fn(),
         disconnect: vi.fn(),
-        gain: {
-          value: 0,
-        },
+        gain: makeAudioParam(0),
       };
     }
 
@@ -48,12 +63,39 @@ function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
         connect: vi.fn(),
         disconnect: vi.fn(),
         onended: null,
+        playbackRate: makeAudioParam(1),
         start: vi.fn(() => {
+          stats.lastSourcePlaybackRate = source.playbackRate.value;
           stats.sourceStartCount += 1;
           source.onended?.();
         }),
+        stop: vi.fn(),
       };
       return source;
+    }
+
+    createOscillator() {
+      const oscillator = {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        frequency: makeAudioParam(0),
+        onended: null,
+        start: vi.fn(() => {
+          stats.lastOscillatorType = oscillator.type;
+          stats.oscillatorStartCount += 1;
+          oscillator.onended?.();
+        }),
+        stop: vi.fn(),
+        type: 'sine',
+      };
+      return oscillator;
+    }
+
+    decodeAudioData(data) {
+      stats.decodeCount += 1;
+      return Promise.resolve({
+        duration: data.byteLength / 1000,
+      });
     }
 
     resume() {
@@ -75,6 +117,15 @@ function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
   };
 }
 
+function makeFakeFetch(data = new ArrayBuffer(64)) {
+  return vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(data),
+    }),
+  );
+}
+
 async function flushPromises() {
   await Promise.resolve();
   await Promise.resolve();
@@ -90,18 +141,28 @@ describe('UiClickSoundManager', () => {
     vi.clearAllMocks();
   });
 
-  it('plays a short generated click through Web Audio', () => {
+  it('plays the Witch Craft pop sample with a short tone', async () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
+    const fetch = makeFakeFetch();
     const manager = new UiClickSoundManager({
+      clickSampleUrl: '/ui-click-pop.wav',
+      random: () => 0.5,
       windowRef: {
         AudioContext: AudioContextConstructor,
+        fetch,
       },
     });
 
+    await flushPromises();
     manager.playClick();
+    await flushPromises();
 
-    expect(stats.bufferLength).toBe(45);
+    expect(fetch).toHaveBeenCalledWith('/ui-click-pop.wav');
+    expect(stats.decodeCount).toBe(1);
     expect(stats.sourceStartCount).toBe(1);
+    expect(stats.oscillatorStartCount).toBe(1);
+    expect(stats.lastOscillatorType).toBe('triangle');
+    expect(stats.lastSourcePlaybackRate).toBeCloseTo(1.36);
   });
 
   it('resumes a suspended context before playing the first click', async () => {
@@ -109,23 +170,25 @@ describe('UiClickSoundManager', () => {
       initialState: 'suspended',
     });
     const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
       windowRef: {
         AudioContext: AudioContextConstructor,
       },
     });
 
     manager.playClick();
-    expect(stats.sourceStartCount).toBe(0);
+    expect(stats.oscillatorStartCount).toBe(0);
 
     await flushPromises();
 
     expect(stats.resumeCount).toBe(1);
-    expect(stats.sourceStartCount).toBe(1);
+    expect(stats.oscillatorStartCount).toBe(1);
   });
 
   it('does not create audio work while disabled', () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
       windowRef: {
         AudioContext: AudioContextConstructor,
       },
@@ -134,12 +197,14 @@ describe('UiClickSoundManager', () => {
     manager.setEnabled(false);
     manager.playClick();
 
+    expect(stats.oscillatorStartCount).toBe(0);
     expect(stats.sourceStartCount).toBe(0);
   });
 
   it('does not unlock audio while disabled', () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
       windowRef: {
         AudioContext: AudioContextConstructor,
       },
@@ -155,6 +220,7 @@ describe('UiClickSoundManager', () => {
     let now = 1000;
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
       now: () => now,
       windowRef: {
         AudioContext: AudioContextConstructor,
@@ -164,15 +230,16 @@ describe('UiClickSoundManager', () => {
     manager.playClick();
     now += 10;
     manager.playClick();
-    now += 24;
+    now += 42;
     manager.playClick();
 
-    expect(stats.sourceStartCount).toBe(2);
+    expect(stats.oscillatorStartCount).toBe(2);
   });
 
   it('closes the audio context on destroy', async () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
       windowRef: {
         AudioContext: AudioContextConstructor,
       },

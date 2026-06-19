@@ -213,6 +213,7 @@ export class ShopPlayerShelfManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__other-shops-button';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'browse market';
     button.addEventListener('click', () => this.showMarketPopup());
     return button;

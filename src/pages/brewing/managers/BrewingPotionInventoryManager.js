@@ -69,6 +69,7 @@ export class BrewingPotionInventoryManager {
     const button = document.createElement('button');
     button.className = 'style-button brewing-page__potions-button';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'bag';
     button.setAttribute('aria-label', 'open bag');
     button.addEventListener('click', () => this.show());

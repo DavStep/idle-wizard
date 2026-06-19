@@ -499,7 +499,7 @@ export class AuthOidcManager {
           this.clearActiveAccountLinkAttemptId();
           this.error = error?.message ?? String(error);
           this.cancelled = false;
-          finish({ ok: false, reason: 'web_failed' });
+          finish({ ok: false, reason: 'web_unavailable' });
         }
       });
     } catch (error) {
@@ -507,7 +507,7 @@ export class AuthOidcManager {
       this.error = error?.message ?? String(error);
       this.cancelled = false;
       this.publish();
-      return { ok: false, reason: 'web_failed' };
+      return { ok: false, reason: 'web_unavailable' };
     }
   }
 

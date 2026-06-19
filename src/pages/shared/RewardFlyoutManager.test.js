@@ -249,6 +249,26 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
+  it('reuses keyed flyouts instead of stacking them', () => {
+    const host = document.createElement('section');
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.show('-10 mana', { flyoutKey: 'mana-spend' });
+    const replacement = manager.show('-20 mana', { flyoutKey: 'mana-spend' });
+
+    const textFlyouts = [...host.querySelectorAll('.room-reward-flyout')].filter(
+      (node) => !node.classList.contains('is-visual-only'),
+    );
+
+    expect(textFlyouts).toHaveLength(1);
+    expect(replacement?.textContent).toBe('-20 mana');
+    expect(replacement?.style.getPropertyValue('--style-flyout-offset')).toBe('0px');
+
+    manager.unmount();
+  });
+
   it('starts herb drops from the end of the garden progress bar', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');

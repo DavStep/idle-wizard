@@ -151,6 +151,7 @@ export class WorkshopTaskManager {
     this.refs.title = document.createElement('button');
     this.refs.title.className = 'style-box__title workshop-page__tasks-title';
     this.refs.title.type = 'button';
+    this.refs.title.dataset.pressStartClick = 'true';
     this.refs.title.textContent = this.currentRequirementsLabel;
     this.refs.title.setAttribute('aria-label', `show ${this.currentRequirementsLabel} info`);
     this.refs.title.setAttribute('aria-expanded', 'false');

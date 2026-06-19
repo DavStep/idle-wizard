@@ -149,6 +149,7 @@ export class BrewingCauldronManager {
     const selectRecipeButton = document.createElement('button');
     selectRecipeButton.className = 'brewing-page__cauldron-select-recipe-text';
     selectRecipeButton.type = 'button';
+    selectRecipeButton.dataset.pressStartClick = 'true';
     selectRecipeButton.textContent = 'select recipe';
     selectRecipeButton.setAttribute('aria-haspopup', 'dialog');
     selectRecipeButton.addEventListener('click', () => {

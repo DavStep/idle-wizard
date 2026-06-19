@@ -56,6 +56,7 @@ export class WorkshopLogDialogManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__logs-button';
     button.type = 'button';
+    button.dataset.pressStartClick = 'true';
     button.textContent = 'logs';
     button.addEventListener('click', () => this.show());
     return button;

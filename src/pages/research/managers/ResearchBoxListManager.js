@@ -346,6 +346,7 @@ export class ResearchBoxListManager {
     const key = document.createElement('button');
     key.className = 'row_key research-page__research-label research-page__research-label-button';
     key.type = 'button';
+    key.dataset.pressStartClick = 'true';
     key.setAttribute('aria-haspopup', 'dialog');
     key.setAttribute('aria-label', `show information for ${this.formatResearchName(research)}`);
     key.addEventListener('click', () => this.onShowResearchInfo?.(research));
