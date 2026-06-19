@@ -1610,6 +1610,8 @@ describe('TutorialHintManager', () => {
     });
     const manager = new TutorialHintManager();
     useFixedLessonSize(manager);
+    manager.getObjectiveProtectedRects = () => controls;
+    manager.getObjectiveTargetProtectedRects = () => [];
 
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
@@ -1669,6 +1671,8 @@ describe('TutorialHintManager', () => {
     });
     const manager = new TutorialHintManager();
     useFixedLessonSize(manager);
+    manager.getObjectiveProtectedRects = () => tabs;
+    manager.getObjectiveTargetProtectedRects = () => [];
 
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
