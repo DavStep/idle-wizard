@@ -8,15 +8,18 @@ import {
   NOTIFICATION_TONE_ORANGE,
   NOTIFICATION_TONE_RED,
 } from '../../shared/notificationBadge.js';
+import { WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL } from '../../workshop/managers/WorkshopSecondaryActionGateManager.js';
+import { hasClaimableTradeAllianceQuest } from '../../workshop/managers/tradeAllianceQuestStatus.js';
 
 export class PageNotificationStateManager {
-  getSnapshot(gameplaySnapshot = {}, { playerShop = {} } = {}) {
+  getSnapshot(gameplaySnapshot = {}, { playerShop = {}, tradeAlliance = {} } = {}) {
     const snapshot = gameplaySnapshot ?? {};
     const playerShopSnapshot = playerShop ?? {};
+    const tradeAllianceSnapshot = tradeAlliance ?? {};
     const pages = {
       brewing: this.getBrewingPage(snapshot),
       garden: this.getGardenPage(snapshot),
-      workshop: this.getWorkshopPage(snapshot),
+      workshop: this.getWorkshopPage(snapshot, tradeAllianceSnapshot),
       research: this.getResearchPage(snapshot),
       shop: this.getShopPage(snapshot, playerShopSnapshot),
     };
@@ -27,12 +30,13 @@ export class PageNotificationStateManager {
     };
   }
 
-  getWorkshopPage(snapshot) {
+  getWorkshopPage(snapshot, tradeAlliance = {}) {
     return this.createPage({
       seeds: getSeedSummonNotification(snapshot),
       tasks: (snapshot.tasks?.level?.tasks ?? []).some(
         (task) => task.canFill === true || task.canComplete === true,
       ),
+      alliance: getTradeAllianceQuestNotification(snapshot, tradeAlliance),
     });
   }
 
@@ -86,35 +90,23 @@ export class PageNotificationStateManager {
   getShopPage(snapshot, playerShop = {}) {
     const shop = snapshot.shop ?? {};
     const npcSellItems = shop.shelf?.sellItems ?? [];
-    const playerSellItems = shop.playerShelf?.sellItems ?? npcSellItems;
     const hasNpcSellItem = this.getVisibleActionItems(snapshot, npcSellItems).some(
-      (item) => item.quantity > 0,
-    );
-    const hasPlayerSellItem = this.getVisibleActionItems(snapshot, playerSellItems).some(
       (item) => item.quantity > 0,
     );
     const hasNpcEmptyStand = (shop.shelf?.slots ?? []).some(
       (slot) => slot.unlocked && !slot.sellItemTypeId,
     );
-    const hasPlayerEmptyStand = (shop.playerShelf?.slots ?? []).some(
-      (slot) => slot.unlocked && !slot.itemTypeId,
-    );
-    const hasAffordableListing = (playerShop.listings ?? []).some(
-      (listing) => (snapshot.gold?.current ?? 0) >= (listing.priceGold ?? Infinity),
-    );
 
     return this.createPage({
       npcStand: canBuyNextSlot(snapshot, shop.shelf),
       npcListing: hasNpcEmptyStand && hasNpcSellItem,
-      playerStand: canBuyNextSlot(snapshot, shop.playerShelf),
-      playerListing:
-        playerShop.connected === true && hasPlayerEmptyStand && hasPlayerSellItem
-          ? NOTIFICATION_TONE_ORANGE
-          : false,
+      playerStand: false,
+      playerListing: false,
       playerProceeds:
         playerShop.connected === true && (playerShop.proceedsGold ?? 0) > 0,
       playerMarket:
-        playerShop.connected === true && hasAffordableListing,
+        playerShop.connected === true &&
+        hasListingForOwnPlayerRequest(playerShop, snapshot.gold?.current),
       crystals: shop.goldOffer?.canCollect === true,
     });
   }
@@ -158,6 +150,17 @@ export function getSeedSummonNotification(snapshot = {}) {
   }
 
   return isManaCapped(snapshot?.mana) ? NOTIFICATION_TONE_ORANGE : false;
+}
+
+export function getTradeAllianceQuestNotification(
+  gameplaySnapshot = {},
+  tradeAllianceSnapshot = {},
+) {
+  if (getCurrentTaskLevel(gameplaySnapshot) < WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL) {
+    return false;
+  }
+
+  return hasClaimableTradeAllianceQuest(tradeAllianceSnapshot);
 }
 
 export function getResearchTabs(snapshot) {
@@ -260,4 +263,39 @@ function isManaCapped(mana = {}) {
   const cap = Number(mana?.cap);
 
   return Number.isFinite(current) && Number.isFinite(cap) && cap > 0 && current >= cap;
+}
+
+function hasListingForOwnPlayerRequest(playerShop = {}, currentGold = 0) {
+  const ownRequests = (playerShop.ownRequests ?? []).filter(
+    (request) =>
+      request?.itemKey &&
+      (request.quantity ?? 0) > 0 &&
+      (request.priceGold ?? 0) > 0,
+  );
+
+  if (ownRequests.length === 0) {
+    return false;
+  }
+
+  const gold = Number(currentGold) || 0;
+
+  return (playerShop.listings ?? []).some((listing) => {
+    const priceGold = Number(listing?.priceGold);
+
+    if (
+      !listing?.itemKey ||
+      (listing.quantity ?? 0) <= 0 ||
+      !Number.isFinite(priceGold) ||
+      priceGold > gold
+    ) {
+      return false;
+    }
+
+    return ownRequests.some(
+      (request) =>
+        request.itemKey === listing.itemKey &&
+        (!request.itemKind || request.itemKind === listing.itemKind) &&
+        Number(request.priceGold) >= priceGold,
+    );
+  });
 }

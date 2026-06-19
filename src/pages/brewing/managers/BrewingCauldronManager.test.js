@@ -20,23 +20,62 @@ function createGameplayFacadeFake(snapshot) {
 }
 
 describe('BrewingCauldronManager', () => {
-  it('keeps herb notification dots from resizing the herbs box', () => {
-    const herbButtonRule = baseCss.match(
-      /\.brewing-page__herb-button\[data-notification="true"\]\s*\{(?<body>[^}]*)\}/,
+  it('anchors herb notification dots to the herb name instead of the quantity edge', () => {
+    const herbLabelRule = baseCss.match(
+      /\.brewing-page__herb-label\[data-notification="true"\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const herbDotRule = baseCss.match(
-      /\.brewing-page__herb-button\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+      /\.brewing-page__herb-label\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(baseCss).not.toContain(
       '.brewing-page__herb-rows:has([data-notification="true"])',
     );
-    expect(herbButtonRule).toContain('--brewing-page-notification-row-min-height');
-    expect(herbButtonRule).toContain(
-      'min-height: var(--brewing-page-notification-row-min-height);',
-    );
-    expect(herbDotRule).toContain('top: calc(');
-    expect(herbDotRule).toContain('--brewing-page-notification-row-min-height');
+    expect(herbLabelRule).toContain('position: relative;');
+    expect(herbDotRule).toContain('right: calc(-1 * var(--style-notification-size));');
+    expect(herbDotRule).not.toContain('--brewing-page-notification-row-min-height');
+  });
+
+  it('puts active herb notification state on the herb label', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 3,
+            availableQuantity: 3,
+          },
+        ],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const button = parent.querySelector('.brewing-page__herb-button');
+    const label = parent.querySelector('.brewing-page__herb-label');
+
+    expect(button?.dataset.notification).toBeUndefined();
+    expect(label?.dataset.notification).toBe('true');
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('keeps cauldron ingredient quantity prefixes before herb icons', () => {

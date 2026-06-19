@@ -20,6 +20,7 @@ export class ShopAutoSellManager {
     this.onItemSold = onItemSold;
     this.now = now;
     this.registered = false;
+    this.pendingCycleCount = 0;
   }
 
   register(systemManager) {
@@ -40,27 +41,27 @@ export class ShopAutoSellManager {
     const activeSlots = this.shopShelfEntityManager
       .getSlotSnapshots()
       .filter((slot) => slot.unlocked && slot.sellItemTypeId);
+    this.syncPriceRetention(activeSlots);
 
     if (activeSlots.length <= 0) {
+      this.pendingCycleCount = 0;
       this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
       return;
     }
 
-    const cycleCount = this.getElapsedCycleCount({
+    this.pendingCycleCount += this.getElapsedCycleCount({
       autoSellSeconds,
       deltaSeconds,
       nowSeconds,
     });
 
-    for (let cycleIndex = 0; cycleIndex < cycleCount; cycleIndex += 1) {
-      const soldAny = this.sellShopCycle(activeSlots);
-
-      if (!soldAny) {
-        break;
-      }
-    }
+    this.processPendingCycles(activeSlots);
 
     this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
+  }
+
+  syncPriceRetention(activeSlots) {
+    this.shopNpcPriceManager?.syncPriceRetention?.(activeSlots.length > 0);
   }
 
   getNowSeconds() {
@@ -97,44 +98,93 @@ export class ShopAutoSellManager {
 
   sellShopCycle(slots) {
     let soldAny = false;
+    let blocked = false;
 
     for (const slot of slots) {
-      if (this.sellSlot(slot)) {
+      const result = this.sellSlot(slot);
+
+      if (result.sold) {
         soldAny = true;
+      }
+
+      if (result.blocked) {
+        blocked = true;
       }
     }
 
-    return soldAny;
+    return { soldAny, blocked };
+  }
+
+  processPendingCycles(activeSlots) {
+    while (this.pendingCycleCount > 0) {
+      const result = this.sellShopCycle(activeSlots);
+
+      if (result.soldAny) {
+        this.pendingCycleCount -= 1;
+        continue;
+      }
+
+      if (result.blocked) {
+        return;
+      }
+
+      this.pendingCycleCount = 0;
+      return;
+    }
   }
 
   sellSlot(slot) {
     const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
-    const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
+    const availableQuantity = this.getAvailableQuantity(slot.sellItemTypeId);
 
-    if (
-      !Number.isFinite(gold) ||
-      gold <= 0 ||
-      this.shopNpcPriceManager.canSellToNpc?.(item) === false
-    ) {
-      return false;
+    if (availableQuantity <= 0) {
+      return { sold: false, blocked: false };
     }
 
-    const quantity = this.getBulkSellQuantity(slot.sellItemTypeId);
+    const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
+
+    if (!Number.isFinite(gold)) {
+      return { sold: false, blocked: this.isPriceDataPending() };
+    }
+
+    if (gold <= 0) {
+      return { sold: false, blocked: false };
+    }
+
+    const npcNeed = this.getNpcNeedForItem(item);
+
+    if (!Number.isFinite(npcNeed)) {
+      return { sold: false, blocked: this.isPriceDataPending() };
+    }
+
+    if (npcNeed <= 0) {
+      return { sold: false, blocked: false };
+    }
+
+    const quantity = this.getBulkSellQuantity(slot.sellItemTypeId, {
+      availableQuantity,
+      npcNeed,
+    });
 
     if (quantity <= 0 || !this.canSellItem(slot.sellItemTypeId, quantity)) {
-      return false;
+      return { sold: false, blocked: false };
     }
 
     const quote = this.quoteSale(item, quantity, gold);
 
     if (!quote.ok) {
-      return false;
+      return {
+        sold: false,
+        blocked:
+          this.isPriceDataPending() &&
+          (quote.reason === 'missing_price' || quote.reason === 'missing_need'),
+      };
     }
 
     const soldItem = this.itemsFacade.removeItem(slot.sellItemTypeId, quantity);
 
     if (!soldItem) {
-      return false;
+      return { sold: false, blocked: false };
     }
 
     const totalGold = quote.totalPriceGold;
@@ -146,7 +196,7 @@ export class ShopAutoSellManager {
       quantity,
       slotNumber: slot.slotNumber,
     });
-    return true;
+    return { sold: true, blocked: false };
   }
 
   getTimerDeltaSeconds(frame = {}) {
@@ -159,30 +209,56 @@ export class ShopAutoSellManager {
     return this.shopSellAvailabilityManager?.canRemoveItem(itemTypeId, quantity) ?? true;
   }
 
-  getBulkSellQuantity(itemTypeId) {
-    const availableQuantity =
-      this.shopSellAvailabilityManager?.getAvailableQuantity?.(itemTypeId) ??
-      this.itemsFacade?.getItemQuantity?.(itemTypeId) ??
-      0;
-    const npcNeed = this.getNpcNeed(itemTypeId);
+  isPriceDataPending() {
+    return this.shopNpcPriceManager?.needsBackendPrices?.() !== false;
+  }
 
-    if (!Number.isFinite(availableQuantity) || availableQuantity <= 0) {
+  getBulkSellQuantity(itemTypeId, {
+    availableQuantity = this.getAvailableQuantity(itemTypeId),
+    npcNeed = this.getNpcNeed(itemTypeId),
+  } = {}) {
+    if (
+      !Number.isFinite(availableQuantity) ||
+      availableQuantity <= 0 ||
+      !Number.isFinite(npcNeed)
+    ) {
       return 0;
     }
 
     return Math.max(0, Math.min(10_000, Math.floor(availableQuantity), npcNeed));
   }
 
+  getAvailableQuantity(itemTypeId) {
+    const availableQuantity =
+      this.shopSellAvailabilityManager?.getAvailableQuantity?.(itemTypeId) ??
+      this.itemsFacade?.getItemQuantity?.(itemTypeId) ??
+      0;
+
+    if (!Number.isFinite(availableQuantity) || availableQuantity <= 0) {
+      return 0;
+    }
+
+    return Math.floor(availableQuantity);
+  }
+
   getNpcNeed(itemTypeId) {
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
 
+    return this.getNpcNeedForItem(item);
+  }
+
+  getNpcNeedForItem(item) {
     if (typeof this.shopNpcPriceManager.getNpcNeed !== 'function') {
       return 10_000;
     }
 
     const need = this.shopNpcPriceManager.getNpcNeed?.(item);
 
-    if (!Number.isFinite(need) || need <= 0) {
+    if (!Number.isFinite(need)) {
+      return null;
+    }
+
+    if (need <= 0) {
       return 0;
     }
 

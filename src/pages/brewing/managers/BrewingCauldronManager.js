@@ -493,7 +493,7 @@ export class BrewingCauldronManager {
       );
 
       const label = document.createElement('span');
-      label.className = 'row_key';
+      label.className = 'brewing-page__herb-label row_key';
 
       const quantity = document.createElement('span');
       quantity.className = 'row_val';
@@ -526,7 +526,8 @@ export class BrewingCauldronManager {
       this.setDraggable(refs.button, !disabled && this.canUseNativeHerbDrag());
       this.setAttribute(refs.button, 'aria-disabled', disabled ? 'true' : 'false');
       this.setAttribute(refs.button, 'aria-label', `add ${herb.label} to cauldron`);
-      setNotificationBadge(refs.button, !disabled);
+      setNotificationBadge(refs.button, false);
+      setNotificationBadge(refs.label, !disabled);
     }
 
     this.renderHerbsToggle(brewing.herbs.length);

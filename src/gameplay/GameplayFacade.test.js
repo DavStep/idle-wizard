@@ -570,7 +570,9 @@ describe('GameplayFacade', () => {
       },
       currentRuby: 1,
     });
-    expect(snapshot.tasks.currentLevel).toBe(1);
+    expect(snapshot.tasks.currentLevel).toBe(5);
+    expect(snapshot.tasks.level.level).toBe(5);
+    expect(snapshot.playerLevel.currentLevel).toBe(5);
     expect(snapshot.prestige.completedLevels).toEqual([10]);
     expect(snapshot.prestige.earnedRuby).toBe(1);
     expect(snapshot.ruby.current).toBe(1);
@@ -584,8 +586,8 @@ describe('GameplayFacade', () => {
     expect(snapshot.visualSettings.researched.theme.black).toBe(true);
     expect(snapshot.mana).toMatchObject({
       current: 0,
-      cap: 50,
-      perSecond: 1,
+      cap: 250,
+      perSecond: 5,
     });
   }, 30_000);
 
@@ -640,7 +642,7 @@ describe('GameplayFacade', () => {
         },
       },
       tasks: {
-        currentLevel: 1,
+        currentLevel: 5,
       },
     });
   }, 30_000);

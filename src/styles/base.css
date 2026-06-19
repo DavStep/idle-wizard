@@ -20,6 +20,7 @@
   --style-resource-ruby: var(--style-text);
   --style-resource-seed: var(--style-text);
   --style-resource-herb: var(--style-text);
+  --style-resource-potion: var(--style-text);
   --style-alliance-tag-ink: var(--style-text);
   --style-alliance-tag-red: oklch(42% 0.15 25);
   --style-alliance-tag-amber: oklch(43% 0.12 75);
@@ -313,6 +314,7 @@
   --style-resource-ruby: oklch(42% 0.16 25);
   --style-resource-seed: oklch(45% 0.08 58);
   --style-resource-herb: oklch(42% 0.12 145);
+  --style-resource-potion: oklch(44% 0.13 345);
 }
 
 :root[data-style-theme="black"][data-style-color="resources"] {
@@ -323,6 +325,7 @@
   --style-resource-ruby: oklch(76% 0.14 25);
   --style-resource-seed: oklch(78% 0.08 58);
   --style-resource-herb: oklch(75% 0.11 145);
+  --style-resource-potion: oklch(77% 0.13 345);
 }
 
 :root[data-style-theme="midnight"][data-style-color="resources"] {
@@ -333,6 +336,7 @@
   --style-resource-ruby: oklch(78% 0.14 25);
   --style-resource-seed: oklch(79% 0.08 58);
   --style-resource-herb: oklch(77% 0.11 145);
+  --style-resource-potion: oklch(79% 0.13 345);
 }
 
 :root[data-style-theme="witchcraft"][data-style-color="resources"] {
@@ -343,6 +347,7 @@
   --style-resource-ruby: #df7653;
   --style-resource-seed: #e8c878;
   --style-resource-herb: #8fce48;
+  --style-resource-potion: #ff8bb4;
 }
 
 :root [data-resource-color="mana"] {
@@ -367,6 +372,10 @@
 
 :root [data-resource-color="herb"] {
   color: var(--style-resource-herb);
+}
+
+:root [data-resource-color="potion"] {
+  color: var(--style-resource-potion);
 }
 
 :root
@@ -463,7 +472,11 @@
     .is-empty,
     .is-unknown
   )
-  .style-seed-label__icon {
+  :where(
+    .style-seed-label__icon,
+    .style-herb-label__icon,
+    .style-potion-label__icon
+  ) {
   filter: grayscale(1);
   opacity: 0.45;
 }
@@ -2639,19 +2652,29 @@ body {
   );
 }
 
-.brewing-page__herb-button[data-notification="true"] {
-  --brewing-page-notification-row-min-height: max(
-    var(--style-row-min-height),
-    calc(var(--style-notification-size) + (var(--style-notification-offset) * 2))
-  );
-  min-height: var(--brewing-page-notification-row-min-height);
+.brewing-page__herb-label[data-notification="true"] {
+  position: relative;
+  overflow: visible;
+  --style-notification-current: var(--style-notification);
 }
 
-.brewing-page__herb-button[data-notification="true"]::before {
-  top: calc(
-    (var(--brewing-page-notification-row-min-height) - var(--style-notification-size)) /
-      2
-  );
+.brewing-page__herb-label[data-notification-tone="orange"] {
+  --style-notification-current: var(--style-notification-orange);
+}
+
+.brewing-page__herb-label[data-notification="true"]::before {
+  position: absolute;
+  top: calc(-1 * var(--style-notification-offset));
+  right: calc(-1 * var(--style-notification-size));
+  z-index: 2;
+  width: var(--style-notification-size);
+  height: var(--style-notification-size);
+  pointer-events: none;
+  content: "";
+  background: var(--style-notification-current);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--style-surface);
+  transform: none;
 }
 
 .room-bottom-panel__tab[data-notification="true"],
@@ -3300,7 +3323,7 @@ body {
 }
 
 .workshop-page__task-progress {
-  width: calc(100% - (var(--style-border-width) * 2));
+  width: 100%;
   margin-top: 2px;
 }
 
@@ -6355,6 +6378,14 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.shop-page__market-request-detail {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--style-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .shop-page__market-row-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -8032,6 +8063,7 @@ div.workshop-page__discovery-row {
   --color-preview-gold: oklch(45% 0.13 96);
   --color-preview-seed: oklch(45% 0.08 58);
   --color-preview-herb: oklch(42% 0.12 145);
+  --color-preview-potion: oklch(44% 0.13 345);
   display: flex;
   flex-wrap: wrap;
   gap: 2px 9px;
@@ -8046,6 +8078,7 @@ div.workshop-page__discovery-row {
   --color-preview-gold: oklch(83% 0.14 96);
   --color-preview-seed: oklch(78% 0.08 58);
   --color-preview-herb: oklch(76% 0.11 145);
+  --color-preview-potion: oklch(77% 0.13 345);
 }
 
 :root[data-style-theme="witchcraft"] .room-top-panel__color-preview {
@@ -8053,6 +8086,7 @@ div.workshop-page__discovery-row {
   --color-preview-gold: #ffd76a;
   --color-preview-seed: #e8c878;
   --color-preview-herb: #8fce48;
+  --color-preview-potion: #ff8bb4;
 }
 
 .room-top-panel__color-preview-item {
@@ -8087,6 +8121,12 @@ div.workshop-page__discovery-row {
   .room-top-panel__color-preview[data-preview-color="resources"]
   [data-resource-color="herb"] {
   color: var(--color-preview-herb);
+}
+
+:root
+  .room-top-panel__color-preview[data-preview-color="resources"]
+  [data-resource-color="potion"] {
+  color: var(--color-preview-potion);
 }
 
 .room-top-panel__icon-preview {

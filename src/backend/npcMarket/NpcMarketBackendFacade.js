@@ -30,7 +30,6 @@ export class NpcMarketBackendFacade {
 
   disconnect() {
     this.connection = null;
-    this.priceRetainCount = 0;
     this.pricesActive = false;
     this.tradeManager.disconnect();
     this.subscriptionManager.disconnect();

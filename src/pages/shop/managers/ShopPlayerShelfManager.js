@@ -12,7 +12,6 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import {
-  NOTIFICATION_TONE_ORANGE,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
@@ -694,6 +693,81 @@ export class ShopPlayerShelfManager {
     this.renderMarketRowBuyState(row, listing);
   }
 
+  onMarketRequestQuantityInput(row, request) {
+    this.setMarketStatus('');
+    this.renderMarketRequestRowActionState(row, request);
+  }
+
+  onMarketRequestQuantityStep(row, request, delta) {
+    const match = this.getMarketRequestMatch(request);
+    const quantity = this.clampListingQuantity(row.quantityInput.value, match.maxQuantity) ?? 1;
+    const nextQuantity = this.clampSteppedListingQuantity(quantity + delta, match.maxQuantity);
+
+    if (!nextQuantity || nextQuantity === quantity) {
+      return;
+    }
+
+    row.quantityField.setValue(nextQuantity);
+    row.quantityField.hideInput();
+    this.setMarketStatus('');
+    this.renderMarketRequestRowActionState(row, request);
+  }
+
+  onMatchMarketRequest(request, quantity = 1) {
+    const match = this.getMarketRequestMatch(request);
+
+    if (!this.lastPlayerShopSnapshot.connected) {
+      this.setMarketStatus('offline');
+      return;
+    }
+
+    if (match.isOwnRequest) {
+      this.setMarketStatus('own request');
+      return;
+    }
+
+    if (!match.item || match.item.quantity <= 0) {
+      this.setMarketStatus('no item');
+      return;
+    }
+
+    if (!match.slot) {
+      this.setMarketStatus('empty stand needed');
+      return;
+    }
+
+    const listQuantity = this.clampListingQuantity(quantity, match.maxQuantity);
+
+    if (!listQuantity) {
+      this.setMarketStatus('bad quantity');
+      return;
+    }
+
+    const selectResult = this.gameplayFacade.selectPlayerShopShelfSlot(match.slot.slotNumber);
+
+    if (!selectResult?.ok) {
+      this.setMarketStatus('stand locked');
+      this.render();
+      return;
+    }
+
+    this.lastGameplaySnapshot = this.gameplayFacade.getSnapshot();
+    this.selectedSellTab = match.item.kind;
+    this.draftListingSlotNumber = match.slot.slotNumber;
+    this.draftListingItemTypeId = match.item.itemTypeId;
+
+    if (this.refs.quantityInput) {
+      this.refs.quantityInput.value = String(listQuantity);
+    }
+
+    if (this.refs.priceInput) {
+      this.refs.priceInput.value = formatGoldPrice(request.priceGold || 1);
+    }
+
+    this.hideMarketPopup();
+    this.showListingPopup();
+  }
+
   showListingPopup() {
     this.previousFocus = document.activeElement;
     this.listingPopupVisible = true;
@@ -757,7 +831,7 @@ export class ShopPlayerShelfManager {
       this.renderMarketRows();
     }
 
-    setNotificationBadge(this.refs.otherShopsButton, this.hasAffordableMarketListing());
+    setNotificationBadge(this.refs.otherShopsButton, this.hasRequestedMarketListing());
   }
 
   isRenderVisible() {
@@ -769,12 +843,6 @@ export class ShopPlayerShelfManager {
   }
 
   renderRows(shelf) {
-    const hasListableItem = shelf.sellItems.some(
-      (item) =>
-        item.quantity > 0 &&
-        shouldShowItemInActionList(this.lastGameplaySnapshot, item, item.quantity),
-    );
-
     this.refs.rows.forEach((refs, index) => {
       const { row, value, button } = refs;
       const slotNumber = index + 1;
@@ -792,11 +860,7 @@ export class ShopPlayerShelfManager {
         row.tabIndex = 0;
         row.setAttribute('aria-label', `select player market stand ${slotNumber}`);
         row.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        setNotificationBadge(
-          row,
-          this.lastPlayerShopSnapshot.connected && !slot.itemTypeId && hasListableItem,
-          NOTIFICATION_TONE_ORANGE,
-        );
+        setNotificationBadge(row, false);
         setNotificationBadge(button, false);
         this.renderPlayerSlotValue(refs, slot, shelf, this.lastGameplaySnapshot);
         return;
@@ -813,7 +877,7 @@ export class ShopPlayerShelfManager {
         button.disabled = shelf.nextSlotLockedByLevel || this.lastGameplaySnapshot.gold.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
         setNotificationBadge(row, false);
-        setNotificationBadge(button, !button.disabled);
+        setNotificationBadge(button, false);
         this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
         setItemIconLabel(refs.itemValue, null);
         setResourceColor(refs.itemValue, null);
@@ -860,6 +924,7 @@ export class ShopPlayerShelfManager {
       this.setText(refs.itemValue, EMPTY_LOCKED_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
+      refs.itemValue.classList.remove('is-empty');
       this.setText(refs.priceValue, EMPTY_STAND_ACTION_LABEL);
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       return;
@@ -874,6 +939,7 @@ export class ShopPlayerShelfManager {
 
     this.setText(refs.itemValue, parts.itemText);
     setItemIconLabel(refs.itemValue, parts.itemKind, parts.itemKey);
+    refs.itemValue.classList.toggle('is-empty', parts.itemEmpty);
     this.applyPlayerSlotItemColor(refs.itemValue, parts);
 
     setResourceIconText(refs.priceValue, parts.priceText ? ` ${parts.priceText}` : '');
@@ -1200,11 +1266,48 @@ export class ShopPlayerShelfManager {
     const label = document.createElement('span');
     label.className = 'row_key';
 
-    const price = document.createElement('span');
-    price.className = 'row_val shop-page__market-request-price';
+    const detail = document.createElement('span');
+    detail.className = 'shop-page__market-request-detail';
 
-    row.append(label, price);
-    return { row, label, price };
+    const controls = document.createElement('span');
+    controls.className = 'row_val shop-page__market-row-controls shop-page__market-request-controls';
+
+    let rowState = null;
+    const quantityField = createAmountSelectionRow({
+      ariaLabel: 'sell quantity',
+      className: 'shop-page__market-amount-field',
+      inputClassName: 'shop-page__market-quantity-input',
+      stepClassName: 'shop-page__market-quantity-step',
+      valueClassName: 'shop-page__market-quantity-value',
+      onInput: () => {
+        if (row._marketRequest && rowState) {
+          this.onMarketRequestQuantityInput(rowState, row._marketRequest);
+        }
+      },
+      onStep: (delta) => {
+        if (row._marketRequest && rowState) {
+          this.onMarketRequestQuantityStep(rowState, row._marketRequest, delta);
+        }
+      },
+    });
+
+    const button = document.createElement('button');
+    button.className = 'style-button shop-page__market-buy-button shop-page__market-request-sell-button';
+    button.type = 'button';
+
+    controls.append(quantityField.field, button);
+    row.append(label, detail, controls);
+
+    rowState = {
+      row,
+      label,
+      detail,
+      quantityField,
+      quantityInput: quantityField.input,
+      button,
+    };
+    row._marketRequestRow = rowState;
+    return rowState;
   }
 
   renderMarketRow(row, listing) {
@@ -1232,14 +1335,35 @@ export class ShopPlayerShelfManager {
 
   renderMarketRequestRow(row, request) {
     const quantity = Math.max(0, Math.floor(Number(request.quantity) || 0));
-    const label = `- ${request.itemLabel} (${quantity})`;
+    const label = `- ${request.itemLabel}`;
+    const match = this.getMarketRequestMatch(request);
+    const detail = `wants ${quantity} · ${formatGoldPriceText(request.priceGold)} each · you ${match.ownedQuantity}`;
+    const previousRequestKey = row.row.dataset.shopMarketRequestKey;
 
     if (row.label.textContent !== label) {
       appendTextWithSeedIcons(row.label, label);
     }
     setResourceColor(row.label, request.itemKind);
-    setResourceIconText(row.price, ` ${formatGoldPriceText(request.priceGold)}`);
-    setResourceColor(row.price, 'gold');
+
+    if (row.detail.textContent !== detail) {
+      setResourceIconText(row.detail, detail);
+      setResourceColor(row.detail, null);
+    }
+
+    row.row.dataset.shopMarketRequestKey = String(request.requestKey ?? '');
+    row.row.dataset.shopMarketItemKey = String(request.itemKey ?? '');
+    row.row._marketRequest = request;
+    row.quantityInput.max = String(Math.max(1, match.maxQuantity));
+
+    if (document.activeElement !== row.quantityInput) {
+      const currentQuantity = previousRequestKey === request.requestKey
+        ? this.clampListingQuantity(row.quantityInput.value, match.maxQuantity)
+        : null;
+      const defaultQuantity = Math.max(1, match.maxQuantity || 1);
+      row.quantityField.setValue(currentQuantity || defaultQuantity);
+    }
+
+    this.renderMarketRequestRowActionState(row, request);
   }
 
   renderMarketRowBuyState(row, listing) {
@@ -1260,7 +1384,7 @@ export class ShopPlayerShelfManager {
 
     row.button.disabled = disabled;
     row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-    setNotificationBadge(row.button, !disabled);
+    setNotificationBadge(row.button, !disabled && this.isRequestedMarketListing(listing));
     row.button.onclick = () => this.onBuyListing(listing, row.quantityInput.value);
 
     const currentQuantity = quantity ?? 1;
@@ -1275,14 +1399,82 @@ export class ShopPlayerShelfManager {
     }
   }
 
-  hasAffordableMarketListing() {
+  renderMarketRequestRowActionState(row, request) {
+    const match = this.getMarketRequestMatch(request);
+    const quantity = this.clampListingQuantity(row.quantityInput.value, match.maxQuantity);
+    const totalPriceGold = quantity
+      ? multiplyGoldPrice(request.priceGold, quantity)
+      : request.priceGold;
+    let label = totalPriceGold === null
+      ? 'sell'
+      : `sell (${formatGoldPriceText(totalPriceGold)})`;
+    let disabled =
+      !quantity ||
+      totalPriceGold === null ||
+      !match.item ||
+      match.ownedQuantity <= 0 ||
+      !match.slot ||
+      match.isOwnRequest;
+
+    if (match.isOwnRequest) {
+      label = 'own';
+    } else if (!match.item || match.ownedQuantity <= 0) {
+      label = 'no item';
+    } else if (!match.slot) {
+      label = 'no stand';
+    }
+
+    if (row.button.textContent !== label) {
+      setResourceIconText(row.button, label);
+      setResourceColorFromText(row.button, label);
+    }
+
+    row.button.disabled = disabled;
+    row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    setNotificationBadge(row.button, false);
+    row.button.onclick = () => this.onMatchMarketRequest(request, row.quantityInput.value);
+
+    const currentQuantity = quantity ?? 1;
+    for (const [delta, stepButton] of row.quantityField.stepButtons) {
+      const nextQuantity = this.clampSteppedListingQuantity(
+        currentQuantity + delta,
+        match.maxQuantity,
+      );
+      const stepDisabled = !nextQuantity || nextQuantity === currentQuantity;
+      stepButton.disabled = stepDisabled;
+      stepButton.setAttribute('aria-disabled', stepDisabled ? 'true' : 'false');
+    }
+  }
+
+  hasRequestedMarketListing() {
     if (!this.lastPlayerShopSnapshot.connected) {
       return false;
     }
 
-    const gold = this.lastGameplaySnapshot?.gold?.current ?? 0;
-    return (this.lastPlayerShopSnapshot.listings ?? []).some(
-      (listing) => gold >= (listing.priceGold ?? Infinity),
+    return (this.lastPlayerShopSnapshot.listings ?? []).some((listing) =>
+      this.isRequestedMarketListing(listing),
+    );
+  }
+
+  isRequestedMarketListing(listing) {
+    const priceGold = Number(listing?.priceGold);
+    const gold = Number(this.lastGameplaySnapshot?.gold?.current) || 0;
+
+    if (
+      !listing?.itemKey ||
+      (listing.quantity ?? 0) <= 0 ||
+      !Number.isFinite(priceGold) ||
+      priceGold > gold
+    ) {
+      return false;
+    }
+
+    return (this.lastPlayerShopSnapshot.ownRequests ?? []).some(
+      (request) =>
+        request?.itemKey === listing.itemKey &&
+        (!request.itemKind || request.itemKind === listing.itemKind) &&
+        (request.quantity ?? 0) > 0 &&
+        Number(request.priceGold) >= priceGold,
     );
   }
 
@@ -1315,6 +1507,35 @@ export class ShopPlayerShelfManager {
 
   getMarketParticipantKey(row) {
     return row.sellerIdentity ?? row.requesterIdentity ?? row.username ?? 'unknown';
+  }
+
+  getMarketRequestMatch(request) {
+    const shelf = this.lastGameplaySnapshot?.shop?.playerShelf;
+    const ownRequestKeys = new Set(
+      (this.lastPlayerShopSnapshot.ownRequests ?? []).map((ownRequest) => ownRequest.requestKey),
+    );
+    const item = shelf?.sellItems?.find(
+      (candidate) =>
+        candidate.key === request.itemKey &&
+        (!request.itemKind || candidate.kind === request.itemKind),
+    ) ?? null;
+    const ownedQuantity = Math.max(0, Math.floor(Number(item?.quantity) || 0));
+    const requestQuantity = Math.max(0, Math.floor(Number(request.quantity) || 0));
+    const maxQuantity = Math.min(ownedQuantity, requestQuantity);
+    const slot = this.getFirstEmptyPlayerShelfSlot(shelf);
+
+    return {
+      item,
+      ownedQuantity,
+      requestQuantity,
+      maxQuantity,
+      slot,
+      isOwnRequest: ownRequestKeys.has(request.requestKey),
+    };
+  }
+
+  getFirstEmptyPlayerShelfSlot(shelf) {
+    return shelf?.slots?.find((slot) => slot.unlocked && !slot.itemTypeId) ?? null;
   }
 
   setMarketMessage(message) {
@@ -1462,12 +1683,13 @@ export class ShopPlayerShelfManager {
       itemKey: displayItem.key,
       itemText: `${display.label} (${display.quantity})`,
       itemKind: displayItem.kind,
+      itemEmpty: display.empty,
       priceText: formatGoldPriceText(slot.priceGold),
     };
   }
 
   applyPlayerSlotItemColor(element, parts) {
-    if (parts.itemKind === 'seed' || parts.itemKind === 'herb') {
+    if (parts.itemKind === 'seed' || parts.itemKind === 'herb' || parts.itemKind === 'potion') {
       setResourceColor(element, parts.itemKind);
       return;
     }

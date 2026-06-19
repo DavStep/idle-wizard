@@ -312,4 +312,125 @@ describe('ShopAutoSellManager', () => {
     expect(removeItem).not.toHaveBeenCalled();
     expect(addGold).not.toHaveBeenCalled();
   });
+
+  it('keeps a completed cycle pending until backend NPC prices are ready', () => {
+    let nowMs = 5_000;
+    let priceGold = null;
+    let npcNeed = null;
+    const addGold = vi.fn();
+    const removeItem = vi.fn().mockReturnValue({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'sage seed',
+      kind: 'seed',
+      quantity: 3,
+    });
+    const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
+    const manager = new ShopAutoSellManager({
+      goldFacade: {
+        add: addGold,
+      },
+      itemsFacade: {
+        getItemDefinition: () => ({
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+        }),
+        getItemQuantity: () => 3,
+        removeItem,
+      },
+      shopBalanceManager: {
+        getAutoSellSeconds: () => 5,
+      },
+      shopNpcPriceManager: {
+        getNpcBuyPriceGold: () => priceGold,
+        getNpcNeed: () => npcNeed,
+        recordSellToNpc,
+        syncPriceRetention: vi.fn(),
+      },
+      shopShelfEntityManager: createSlotManager(),
+      now: () => nowMs,
+    });
+
+    manager.update(5);
+
+    expect(removeItem).not.toHaveBeenCalled();
+    expect(addGold).not.toHaveBeenCalled();
+
+    priceGold = 4;
+    npcNeed = 10;
+    nowMs = 6_000;
+    manager.update(1);
+
+    expect(removeItem).toHaveBeenCalledWith(1, 3);
+    expect(addGold).toHaveBeenCalledWith(12);
+    expect(recordSellToNpc).toHaveBeenCalledWith(
+      {
+        id: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+      },
+      3,
+    );
+  });
+
+  it('retains backend NPC prices only while a stand has an item selected', () => {
+    let slots = [
+      {
+        slotNumber: 1,
+        unlocked: true,
+        sellItemTypeId: 1,
+      },
+    ];
+    const syncPriceRetention = vi.fn();
+    let progressSeconds = 0;
+    const slotManager = {
+      getSlotSnapshots: () => slots,
+      getSellProgressSeconds: () => progressSeconds,
+      setSellProgressSeconds: (nextProgressSeconds) => {
+        progressSeconds = nextProgressSeconds;
+      },
+    };
+    const manager = new ShopAutoSellManager({
+      goldFacade: {
+        add: vi.fn(),
+      },
+      itemsFacade: {
+        getItemDefinition: () => ({
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+        }),
+        getItemQuantity: () => 0,
+        removeItem: vi.fn(),
+      },
+      shopBalanceManager: {
+        getAutoSellSeconds: () => 5,
+      },
+      shopNpcPriceManager: {
+        getNpcBuyPriceGold: () => 4,
+        recordSellToNpc: vi.fn(),
+        syncPriceRetention,
+      },
+      shopShelfEntityManager: slotManager,
+    });
+
+    manager.update(0);
+
+    slots = [
+      {
+        slotNumber: 1,
+        unlocked: true,
+        sellItemTypeId: null,
+      },
+    ];
+
+    manager.update(0);
+
+    expect(syncPriceRetention).toHaveBeenNthCalledWith(1, true);
+    expect(syncPriceRetention).toHaveBeenNthCalledWith(2, false);
+  });
 });

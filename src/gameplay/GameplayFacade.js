@@ -21,6 +21,7 @@ import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
 
 export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
 export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 1_000;
+export const PRESTIGE_RESET_LEVEL = 5;
 
 export class GameplayFacade {
   static explain =
@@ -446,7 +447,7 @@ export class GameplayFacade {
       brewing: {},
       garden: {},
       tasks: {
-        currentLevel: 1,
+        currentLevel: PRESTIGE_RESET_LEVEL,
         tasks: [],
       },
     });

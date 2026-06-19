@@ -2,6 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { PRESTIGE_RESET_LEVEL } from '../gameplay/GameplayFacade.js';
 import packageJson from '../../package.json';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { PagesFacade } from './PagesFacade.js';
@@ -1497,9 +1498,9 @@ function createGameplayFacadeFake() {
       snapshot.prestige.completedLevels.push(level);
       snapshot.prestige.earnedRuby += milestone.rewardRuby;
       snapshot.ruby.current = snapshot.prestige.earnedRuby;
-      snapshot.tasks.currentLevel = 1;
-      snapshot.playerLevel.currentLevel = 1;
-      snapshot.prestige.currentLevel = 1;
+      snapshot.tasks.currentLevel = PRESTIGE_RESET_LEVEL;
+      snapshot.playerLevel.currentLevel = PRESTIGE_RESET_LEVEL;
+      snapshot.prestige.currentLevel = PRESTIGE_RESET_LEVEL;
       publish();
 
       return {
@@ -6622,7 +6623,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
     expect(snapshot.prestige.completedLevels).toEqual([10]);
     expect(snapshot.ruby.current).toBe(1);
-    expect(snapshot.tasks.currentLevel).toBe(1);
+    expect(snapshot.tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
   });
 
   it('separates researched seed inventory rows from unresearched rows', () => {
@@ -7969,6 +7970,86 @@ describe('PagesFacade', () => {
         collected: true,
       }),
     );
+  });
+
+  it('shows alliance quest claim notifications on the workshop button and quests tab', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          dayKey: '2026-W24',
+          questId: 'allianceIncomeEasy',
+          label: 'small caravan',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 500,
+          progress: 500,
+          progressRatio: 1,
+          minContribution: 25,
+          crystalReward: 1,
+        },
+      ],
+      contributions: [
+        {
+          allianceId: 'alliance-1',
+          questId: 'allianceIncomeEasy',
+          dayKey: '2026-W24',
+          contributorIdentity: 'self',
+          contribution: 25,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+      tutorialStorage: createCompletedTutorialStorage(),
+    });
+
+    try {
+      pagesFacade.mount(stage);
+
+      const allianceButton = stage.querySelector('.workshop-page__trade-alliance-button');
+      expect(allianceButton?.dataset.notification).toBe('true');
+      expect(
+        stage.querySelector('.room-bottom-panel__tab[data-page-id="workshop"]')?.dataset
+          .notification,
+      ).toBe('true');
+
+      allianceButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+      const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+        .find((button) => button.textContent === 'quests');
+      expect(questsTab?.dataset.notification).toBe('true');
+
+      questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const claimButton = popup.querySelector('.workshop-page__trade-alliance-quest-action');
+      expect(claimButton?.dataset.notification).toBe('true');
+
+      claimButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const updatedQuestsTab = [
+        ...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button'),
+      ].find((button) => button.textContent === 'quests');
+
+      expect(allianceButton?.dataset.notification).toBeUndefined();
+      expect(updatedQuestsTab?.dataset.notification).toBeUndefined();
+      expect(
+        stage.querySelector('.room-bottom-panel__tab[data-page-id="workshop"]')?.dataset
+          .notification,
+      ).toBeUndefined();
+      expect(
+        popup.querySelector('.workshop-page__trade-alliance-quest-action')?.dataset.notification,
+      ).toBeUndefined();
+    } finally {
+      pagesFacade.unmount();
+    }
   });
 
   it('scrolls to the next claimable alliance quest after claiming reward', async () => {
@@ -11392,11 +11473,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       '1.sage seed (0) 1 gold',
     );
-    expect(
-      stage
-        .querySelector('.shop-page__slot-item-value')
-        ?.getAttribute('data-resource-color'),
-    ).toBe('seed');
+    const seedItemValue = stage.querySelector('.shop-page__slot-item-value');
+    expect(seedItemValue?.getAttribute('data-resource-color')).toBe('seed');
+    expect(seedItemValue?.classList.contains('is-empty')).toBe(true);
     expect(
       stage
         .querySelector('.shop-page__slot-price-value')
@@ -11437,7 +11516,8 @@ describe('PagesFacade', () => {
       '1.mana tonic (0) 5 gold',
     );
     expect(itemValue?.textContent).toBe('mana tonic (0)');
-    expect(itemValue?.getAttribute('data-resource-color')).toBe('mana');
+    expect(itemValue?.getAttribute('data-resource-color')).toBe('potion');
+    expect(itemValue?.classList.contains('is-empty')).toBe(true);
     expect(priceValue?.textContent).toBe(' 5 gold');
     expect(priceValue?.getAttribute('data-resource-color')).toBe('gold');
   });

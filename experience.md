@@ -29,6 +29,7 @@
 - Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
 - Garden plot notification dots need row-specific vertical placement; the generic negative top offset can land the next row's dot on the previous row's progress rail.
 - Brewing herb notification dots must stay row-local; parent `:has([data-notification])` bleed padding makes the herbs box taller.
+- Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
@@ -49,6 +50,7 @@
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
+- Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
@@ -59,6 +61,7 @@
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
 - NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 fast-sell against backend NPC rows.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
+- Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
@@ -259,6 +262,7 @@
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
 - Prestige reset saves intentionally lower run level, gold, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
+- Prestige reset baseline is paid player level 5; new prestige runs should not go back to level 1.
 - Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
 - After prestige, leaderboard and alliance income must advance from accepted save run-gold deltas; comparing new run `gold.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
@@ -411,7 +415,7 @@
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
 - Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
 - Progress bar style is a separate visual setting (`regular`/`gradient`), not part of a theme.
-- Shared progress rails should keep `.style-progress` as `content-box`; global/dialog `border-box` shrinks the 3px fill area.
+- Shared `.style-progress` rails are border-box; fills sit inside the bordered rail, so callers normally use `width: 100%`.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
@@ -564,7 +568,7 @@
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Pinned Workshop tasks must also persist across room page swaps; temporary mount setup should not clear `pinned`.
 - Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
-- Workshop task progress rails use shared content-box `.style-progress`; subtract `2 * --style-border-width` from rail width when its outer edge must align with the task row/action button.
+- Workshop task progress rails should stay `width: 100%`; subtracting `2 * --style-border-width` makes the rail end short of the task row/action button.
 - Workshop level-rewards hide/show is not the task collapse action; touch retarget/backdrop duplicate clicks after toggling rewards must be suppressed so expanded requirements stay open.
 - Workshop level-rewards hidden state should persist with expanded/pinned task state across room swaps, and reset only when the target requirement level changes.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.

@@ -568,6 +568,7 @@ export class ShopShelfManager {
         this.setText(refs.unlockItemValue, EMPTY_STAND_LABEL);
         setItemIconLabel(refs.unlockItemValue, null);
         setResourceColor(refs.unlockItemValue, null);
+        refs.unlockItemValue.classList.remove('is-empty');
 
         return;
       }
@@ -589,6 +590,7 @@ export class ShopShelfManager {
       this.setText(refs.itemValue, EMPTY_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
+      refs.itemValue.classList.remove('is-empty');
       this.setText(refs.priceValue, 'locked');
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       if (refs.priceValue.parentElement !== value) {
@@ -617,6 +619,7 @@ export class ShopShelfManager {
       this.setText(refs.itemValue, EMPTY_STAND_LABEL);
       setItemIconLabel(refs.itemValue, null);
       setResourceColor(refs.itemValue, null);
+      refs.itemValue.classList.remove('is-empty');
       this.setText(refs.priceValue, EMPTY_STAND_ACTION_LABEL);
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       return;
@@ -631,6 +634,7 @@ export class ShopShelfManager {
 
     this.setText(refs.itemValue, parts.itemText);
     setItemIconLabel(refs.itemValue, parts.itemKind, parts.itemKey);
+    refs.itemValue.classList.toggle('is-empty', parts.itemEmpty);
     this.applySlotItemColor(refs.itemValue, parts);
 
     setResourceIconText(refs.priceValue, parts.priceText ? ` ${parts.priceText}` : '');
@@ -815,6 +819,7 @@ export class ShopShelfManager {
         itemKey: displayItem.key,
         itemText,
         itemKind: displayItem.kind,
+        itemEmpty: display.empty,
         priceText: 'offline',
         priceResource: null,
       };
@@ -824,6 +829,7 @@ export class ShopShelfManager {
       itemKey: displayItem.key,
       itemText,
       itemKind: displayItem.kind,
+      itemEmpty: display.empty,
       priceText: this.formatSellGold(totalSellGold),
       priceResource: 'gold',
     };
@@ -882,7 +888,7 @@ export class ShopShelfManager {
   }
 
   applySlotItemColor(element, parts) {
-    if (parts.itemKind === 'seed' || parts.itemKind === 'herb') {
+    if (parts.itemKind === 'seed' || parts.itemKind === 'herb' || parts.itemKind === 'potion') {
       setResourceColor(element, parts.itemKind);
       return;
     }

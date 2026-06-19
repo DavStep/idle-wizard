@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.10
+
+- Improved NPC market auto-sell so backend prices stay retained while stands are active and pending sales resume when price data returns.
+- Added player market request matching so other players' requests can be filled from an empty stand with quantity controls.
+- Tightened Market, Brewing, and alliance notification dots so they point at claimable or directly useful actions instead of generic affordable rows.
+- Cleaned potion coloring, empty stand labels, and trade alliance quest reward states for clearer mobile screens.
+
 ## 0.2.9
 
 - Simplified Brewing so finished bottles enter inventory automatically, with auto-bottle research covering the full flow.

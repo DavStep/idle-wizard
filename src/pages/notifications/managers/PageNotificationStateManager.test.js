@@ -87,7 +87,7 @@ describe('PageNotificationStateManager', () => {
       pages: {
         brewing: { active: false, children: { herbs: false, action: false, cauldron: false } },
         garden: { active: false, children: { plots: false } },
-        workshop: { active: false, children: { seeds: false, tasks: false } },
+        workshop: { active: false, children: { seeds: false, tasks: false, alliance: false } },
         research: { active: false, children: { research: false } },
         shop: {
           active: false,
@@ -166,6 +166,57 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
+  it('rolls claimable alliance quests up to the workshop page after alliance unlock', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+    const tradeAlliance = {
+      ownAlliance: {
+        allianceId: 'alliance-1',
+      },
+      ownMember: {
+        memberIdentity: 'self',
+      },
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          questId: 'allianceIncomeEasy',
+          dayKey: '2026-W24',
+          target: 500,
+          progress: 500,
+          minContribution: 25,
+        },
+      ],
+      contributions: [
+        {
+          allianceId: 'alliance-1',
+          questId: 'allianceIncomeEasy',
+          dayKey: '2026-W24',
+          contributorIdentity: 'self',
+          contribution: 25,
+        },
+      ],
+    };
+
+    snapshot.tasks.currentLevel = 3;
+
+    expect(manager.getSnapshot(snapshot, { tradeAlliance }).pages.workshop).toMatchObject({
+      active: false,
+      children: {
+        alliance: false,
+      },
+    });
+
+    snapshot.tasks.currentLevel = 4;
+
+    expect(manager.getSnapshot(snapshot, { tradeAlliance }).pages.workshop).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        alliance: true,
+      },
+    });
+  });
+
   it('rolls ready garden harvests and affordable plot buys up to the garden page', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();
@@ -178,7 +229,7 @@ describe('PageNotificationStateManager', () => {
     expect(manager.getSnapshot(snapshot).pages.garden.active).toBe(true);
   });
 
-  it('marks empty player market stands as orange when no red shop action exists', () => {
+  it('does not mark empty player market stands as player-market notifications', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();
 
@@ -202,10 +253,74 @@ describe('PageNotificationStateManager', () => {
     expect(
       manager.getSnapshot(snapshot, { playerShop: { connected: true } }).pages.shop,
     ).toMatchObject({
-      active: true,
-      tone: 'orange',
+      active: false,
       children: {
-        playerListing: 'orange',
+        playerListing: false,
+      },
+    });
+  });
+
+  it('marks player market only when another listing matches an own request', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.gold.current = 10;
+
+    expect(
+      manager.getSnapshot(snapshot, {
+        playerShop: {
+          connected: true,
+          listings: [
+            {
+              listingKey: 'seller:1',
+              itemKey: 'mintSeed',
+              itemKind: 'seed',
+              quantity: 1,
+              priceGold: 3,
+            },
+          ],
+          ownRequests: [
+            {
+              requestKey: 'self:1',
+              itemKey: 'sageSeed',
+              itemKind: 'seed',
+              quantity: 1,
+              priceGold: 3,
+            },
+          ],
+        },
+      }).pages.shop.children.playerMarket,
+    ).toBe(false);
+
+    expect(
+      manager.getSnapshot(snapshot, {
+        playerShop: {
+          connected: true,
+          listings: [
+            {
+              listingKey: 'seller:1',
+              itemKey: 'sageSeed',
+              itemKind: 'seed',
+              quantity: 1,
+              priceGold: 3,
+            },
+          ],
+          ownRequests: [
+            {
+              requestKey: 'self:1',
+              itemKey: 'sageSeed',
+              itemKind: 'seed',
+              quantity: 1,
+              priceGold: 3,
+            },
+          ],
+        },
+      }).pages.shop,
+    ).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        playerMarket: true,
       },
     });
   });
@@ -239,7 +354,7 @@ describe('PageNotificationStateManager', () => {
       active: true,
       tone: 'red',
       children: {
-        playerListing: 'orange',
+        playerListing: false,
         playerProceeds: true,
       },
     });

@@ -88,6 +88,7 @@ describe('TopPanelViewManager', () => {
           ['34.4k gold', 'gold'],
           ['sage seed', 'seed'],
           ['sage', 'herb'],
+          ['mana tonic', 'potion'],
         ],
       },
       {
@@ -97,6 +98,7 @@ describe('TopPanelViewManager', () => {
           ['34.4k gold', 'gold'],
           ['sage seed', 'seed'],
           ['sage', 'herb'],
+          ['mana tonic', 'potion'],
         ],
       },
     ]);

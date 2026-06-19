@@ -1,4 +1,12 @@
-const RESOURCE_COLORS = new Set(['mana', 'gold', 'crystal', 'ruby', 'seed', 'herb']);
+const RESOURCE_COLORS = new Set([
+  'mana',
+  'gold',
+  'crystal',
+  'ruby',
+  'seed',
+  'herb',
+  'potion',
+]);
 
 export function setResourceColor(element, resource) {
   if (!element) {

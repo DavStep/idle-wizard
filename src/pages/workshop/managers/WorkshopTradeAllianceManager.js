@@ -7,8 +7,16 @@ import {
 import { formatGoldPriceText } from '../../../shared/goldPrice.js';
 import { createAllianceTagSpan } from '../../shared/allianceTagLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import {
+  getOwnTradeAllianceQuestContribution,
+  getTradeAllianceQuestParticipationLock,
+  getTradeAllianceQuestPeriodKey,
+  hasClaimableTradeAllianceQuest,
+  isTradeAllianceQuestClaimable,
+} from './tradeAllianceQuestStatus.js';
 
 const ROLE_LABELS = {
   tradeMaster: 'trade master',
@@ -311,6 +319,7 @@ export class WorkshopTradeAllianceManager {
     this.renderTitle(ownAlliance);
     this.refs.status.textContent = this.status;
     this.syncQuestTimer();
+    this.syncNotifications();
     this.refs.dialog.dataset.activeTab = ownAlliance
       ? this.selectedMemberTabId
       : this.selectedSoloTabId;
@@ -336,6 +345,12 @@ export class WorkshopTradeAllianceManager {
         button.textContent = tab.label;
         button.setAttribute('role', 'tab');
         button.setAttribute('aria-selected', selectedTabId === tab.id ? 'true' : 'false');
+        setNotificationBadge(
+          button,
+          tabs === MEMBER_TABS &&
+            tab.id === 'quests' &&
+            hasClaimableTradeAllianceQuest(this.lastSnapshot),
+        );
         button.addEventListener('click', () => {
           if (tabs === SOLO_TABS) {
             this.selectedSoloTabId = tab.id;
@@ -655,6 +670,7 @@ export class WorkshopTradeAllianceManager {
       action.disabled = quest.progress < quest.target || contribution < quest.minContribution;
       action.addEventListener('click', () => void this.claimQuestReward(quest));
     }
+    setNotificationBadge(action, questClaimable);
 
     main.append(progress);
     row.append(main, action);
@@ -662,14 +678,7 @@ export class WorkshopTradeAllianceManager {
   }
 
   isQuestClaimable(quest, { locked = false } = {}) {
-    if (locked || !quest || quest.claimed) {
-      return false;
-    }
-
-    return (
-      quest.progress >= quest.target &&
-      this.getOwnContribution(quest) >= quest.minContribution
-    );
+    return isTradeAllianceQuestClaimable(this.lastSnapshot, quest, { locked });
   }
 
   async claimQuestReward(quest) {
@@ -1299,65 +1308,11 @@ export class WorkshopTradeAllianceManager {
   }
 
   getOwnContribution(quest) {
-    const ownIdentity = this.lastSnapshot.ownMember?.memberIdentity;
-    const allianceId = quest?.allianceId;
-    const questId = quest?.questId;
-    const dayKey = quest?.dayKey;
-    const contribution = (this.lastSnapshot.contributions ?? []).find(
-      (row) =>
-        row.allianceId === allianceId &&
-        row.contributorIdentity === ownIdentity &&
-        row.questId === questId &&
-        row.dayKey === dayKey,
-    );
-    return contribution?.contribution ?? 0;
+    return getOwnTradeAllianceQuestContribution(this.lastSnapshot, quest);
   }
 
   getQuestParticipationLock() {
-    const ownIdentity = this.lastSnapshot.ownMember?.memberIdentity;
-    const currentAllianceId = this.lastSnapshot.ownAlliance?.allianceId;
-    const periodKey = this.getQuestPeriodKey();
-
-    if (!ownIdentity || !currentAllianceId || !periodKey) {
-      return null;
-    }
-
-    const otherContribution = (this.lastSnapshot.contributions ?? []).find(
-      (row) =>
-        row.contributorIdentity === ownIdentity &&
-        row.dayKey === periodKey &&
-        row.allianceId &&
-        row.allianceId !== currentAllianceId &&
-        Number(row.contribution ?? 0) > 0,
-    );
-
-    if (otherContribution) {
-      const alliance = (this.lastSnapshot.alliances ?? []).find(
-        (candidate) => candidate.allianceId === otherContribution.allianceId,
-      );
-
-      return {
-        allianceId: otherContribution.allianceId,
-        allianceName: alliance?.name || 'another alliance',
-      };
-    }
-
-    const otherReward = (this.lastSnapshot.rewardInbox ?? []).find(
-      (reward) =>
-        reward.recipientIdentity === ownIdentity &&
-        reward.dayKey === periodKey &&
-        reward.allianceId &&
-        reward.allianceId !== currentAllianceId,
-    );
-
-    if (!otherReward) {
-      return null;
-    }
-
-    return {
-      allianceId: otherReward.allianceId,
-      allianceName: otherReward.allianceName || 'another alliance',
-    };
+    return getTradeAllianceQuestParticipationLock(this.lastSnapshot);
   }
 
   getQuestLockMessage(questLock = this.getQuestParticipationLock()) {
@@ -1369,12 +1324,11 @@ export class WorkshopTradeAllianceManager {
   }
 
   getQuestPeriodKey() {
-    return (
-      this.lastSnapshot.ownAlliance?.seasonKey ||
-      this.lastSnapshot.ownMember?.dayKey ||
-      (this.lastSnapshot.quests ?? [])[0]?.dayKey ||
-      ''
-    );
+    return getTradeAllianceQuestPeriodKey(this.lastSnapshot);
+  }
+
+  syncNotifications() {
+    setNotificationBadge(this.refs.button, hasClaimableTradeAllianceQuest(this.lastSnapshot));
   }
 
   getQuestResetAtMs() {

@@ -8,9 +8,11 @@ export class ShopNpcPriceManager {
   constructor({ npcMarketFacade = null, playerLevelFacade = null } = {}) {
     this.npcMarketFacade = npcMarketFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.releasePriceRetention = null;
   }
 
   setNpcMarketFacade(npcMarketFacade) {
+    this.releaseRetainedPrices();
     this.npcMarketFacade = npcMarketFacade;
   }
 
@@ -149,6 +151,37 @@ export class ShopNpcPriceManager {
 
   isUsingFakeMarket() {
     return this.getPlayerLevel() < REAL_NPC_MARKET_MIN_LEVEL;
+  }
+
+  needsBackendPrices() {
+    return !this.isUsingFakeMarket();
+  }
+
+  syncPriceRetention(shouldRetain) {
+    if (shouldRetain && this.needsBackendPrices()) {
+      this.retainPrices();
+      return;
+    }
+
+    this.releaseRetainedPrices();
+  }
+
+  retainPrices() {
+    if (this.releasePriceRetention) {
+      return;
+    }
+
+    const release =
+      this.npcMarketFacade?.retainPrices?.() ??
+      this.npcMarketFacade?.retainPublicData?.() ??
+      null;
+
+    this.releasePriceRetention = typeof release === 'function' ? release : null;
+  }
+
+  releaseRetainedPrices() {
+    this.releasePriceRetention?.();
+    this.releasePriceRetention = null;
   }
 
   getPlayerLevel() {

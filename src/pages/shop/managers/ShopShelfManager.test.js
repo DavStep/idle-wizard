@@ -278,8 +278,8 @@ describe('ShopShelfManager', () => {
     const crystalsTab = buttons.find((button) => button.textContent === 'crystals');
     const npcTab = buttons.find((button) => button.textContent === 'npc market');
 
-    expect(playerTab?.dataset.notification).toBe('true');
-    expect(playerTab?.dataset.notificationTone).toBe('orange');
+    expect(playerTab?.dataset.notification).toBeUndefined();
+    expect(playerTab?.dataset.notificationTone).toBeUndefined();
     expect(crystalsTab?.dataset.notification).toBe('true');
     expect(crystalsTab?.dataset.notificationTone).toBe('red');
     expect(npcTab?.dataset.notification).toBeUndefined();
@@ -1425,7 +1425,15 @@ describe('ShopShelfManager', () => {
           selectedSlotNumber: 1,
           slotCosts: [0],
           sellKinds: [{ kind: 'seed', label: 'seeds' }],
-          sellItems: [],
+          sellItems: [
+            {
+              itemTypeId: 2,
+              key: 'mintSeed',
+              label: 'mint seed',
+              kind: 'seed',
+              quantity: 7,
+            },
+          ],
           slots: [{ slotNumber: 1, unlocked: true }],
         },
       },
@@ -1437,6 +1445,10 @@ describe('ShopShelfManager', () => {
       },
       getSnapshot() {
         return gameplaySnapshot;
+      },
+      selectPlayerShopShelfSlot(slotNumber) {
+        gameplaySnapshot.shop.playerShelf.selectedSlotNumber = slotNumber;
+        return { ok: true, slotNumber };
       },
       applyPlayerShopMarketSlotQuantity() {},
     };
@@ -1484,9 +1496,11 @@ describe('ShopShelfManager', () => {
     const manager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
 
     manager.mount(stage, popupLayer);
-    stage
-      .querySelector('.shop-page__other-shops-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const browseButton = stage.querySelector('.shop-page__other-shops-button');
+
+    expect(browseButton?.dataset.notification).toBeUndefined();
+
+    browseButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const popup = popupLayer.querySelector('.shop-page__market-popup');
     const tabButtons = [...popup.querySelectorAll('.shop-page__market-popup-tab-button')];
@@ -1495,6 +1509,9 @@ describe('ShopShelfManager', () => {
     expect(tabButtons[0].getAttribute('aria-selected')).toBe('true');
     expect(popup.querySelector('.shop-page__market-seller-name')?.textContent).toBe('Merlin');
     expect(popup.querySelector('.shop-page__market-message')?.hidden).toBe(true);
+    expect(
+      popup.querySelector('.shop-page__market-buy-button')?.dataset.notification,
+    ).toBeUndefined();
 
     tabButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -1502,9 +1519,109 @@ describe('ShopShelfManager', () => {
     expect(popup.querySelector('.shop-page__market-seller-name')?.textContent).toBe(
       'Hershel',
     );
-    expect(popup.querySelector('.shop-page__market-request-row')?.textContent).toContain(
-      '- mint seed (4) 3.25 gold',
+    const requestRow = popup.querySelector('.shop-page__market-request-row');
+    expect(requestRow?.querySelector('.shop-page__market-request-detail')?.textContent).toContain(
+      'wants 4',
     );
+    expect(requestRow?.querySelector('.shop-page__market-request-detail')?.textContent).toContain(
+      'you 7',
+    );
+    requestRow
+      ?.querySelector('.shop-page__market-request-sell-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const listingPopup = popupLayer.querySelector('.shop-page__player-listing-popup');
+    expect(listingPopup?.hidden).toBe(false);
+    expect(
+      listingPopup?.querySelector('.shop-page__player-listing-selected-item')?.textContent,
+    ).toBe('mint seed');
+    expect(listingPopup?.querySelector('.shop-page__player-listing-input')?.value).toBe('4');
+    expect(
+      listingPopup?.querySelectorAll('.shop-page__player-listing-input')?.[1]?.value,
+    ).toBe('3.25');
+
+    manager.unmount();
+  });
+
+  it('notifies browse market only when a listing matches an own request', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 10 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        playerShelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [],
+          sellItems: [],
+          slots: [{ slotNumber: 1, unlocked: true }],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      applyPlayerShopMarketSlotQuantity() {},
+    };
+    const playerShopSnapshot = {
+      connected: true,
+      listings: [
+        {
+          listingKey: 'seller:1',
+          sellerIdentity: 'seller',
+          username: 'Merlin',
+          slotNumber: 1,
+          itemKey: 'sageSeed',
+          itemLabel: 'sage seed',
+          itemKind: 'seed',
+          quantity: 2,
+          priceGold: 3,
+        },
+      ],
+      ownListings: [],
+      requests: [],
+      ownRequests: [
+        {
+          requestKey: 'self:1',
+          requesterIdentity: 'self',
+          username: 'wizard',
+          slotNumber: 1,
+          itemKey: 'sageSeed',
+          itemLabel: 'sage seed',
+          itemKind: 'seed',
+          quantity: 1,
+          priceGold: 3,
+        },
+      ],
+      proceedsGold: 0,
+    };
+    const playerShopFacade = {
+      subscribe(callback) {
+        callback(playerShopSnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return playerShopSnapshot;
+      },
+    };
+    const manager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const browseButton = stage.querySelector('.shop-page__other-shops-button');
+    expect(browseButton?.dataset.notification).toBe('true');
+
+    browseButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const buyButton = popupLayer.querySelector('.shop-page__market-buy-button');
+    expect(buyButton?.dataset.notification).toBe('true');
 
     manager.unmount();
   });
@@ -1814,6 +1931,72 @@ describe('ShopShelfManager', () => {
     expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
       'sage seed (0) 8 gold',
     );
+    expect(
+      stage
+        .querySelector('.shop-page__slot-item-value')
+        ?.classList.contains('is-empty'),
+    ).toBe(true);
+
+    manager.unmount();
+  });
+
+  it('colors selected NPC market potion labels by potion kind', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockRecipe:minorHealingPotion'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'potion', label: 'potions' }],
+          sellItems: [
+            {
+              itemTypeId: 2002,
+              key: 'minorHealingPotion',
+              label: 'minor healing potion',
+              kind: 'potion',
+              quantity: 2,
+              sellGold: 9,
+              sellNeed: null,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 2002,
+              sellKind: 'potion',
+              sellKey: 'minorHealingPotion',
+              sellLabel: 'minor healing potion',
+              sellQuantity: 2,
+              sellGold: 9,
+              sellNeed: null,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const itemValue = stage.querySelector('.shop-page__slot-item-value');
+
+    expect(itemValue?.textContent).toBe('minor healing potion (2)');
+    expect(itemValue?.getAttribute('data-resource-color')).toBe('potion');
+    expect(itemValue?.classList.contains('is-empty')).toBe(false);
 
     manager.unmount();
   });
@@ -2075,7 +2258,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('shows empty player market stand notifications as orange', () => {
+  it('does not show empty player market stand notifications', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
@@ -2136,8 +2319,8 @@ describe('ShopShelfManager', () => {
     manager.mount(stage, popupLayer);
 
     const row = stage.querySelector('.shop-page__player-slot-row');
-    expect(row?.dataset.notification).toBe('true');
-    expect(row?.dataset.notificationTone).toBe('orange');
+    expect(row?.dataset.notification).toBeUndefined();
+    expect(row?.dataset.notificationTone).toBeUndefined();
     expect(stage.querySelector('.shop-page__player-proceeds-row')).toBeNull();
     expect(stage.querySelector('.shop-page__claim-proceeds-button')?.hidden).toBe(true);
 

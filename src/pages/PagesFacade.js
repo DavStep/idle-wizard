@@ -81,6 +81,7 @@ export class PagesFacade {
     this.notificationFacade = new PageNotificationFacade({
       gameplayFacade,
       playerShopFacade,
+      tradeAllianceFacade,
       onChange: (snapshot) => this.bottomPanelFacade.setNotifications(snapshot.pages),
     });
     this.topPanelFacade = new TopPanelFacade({

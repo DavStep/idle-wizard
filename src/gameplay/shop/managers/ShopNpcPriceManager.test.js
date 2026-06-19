@@ -88,6 +88,37 @@ describe('ShopNpcPriceManager', () => {
     });
   });
 
+  it('retains backend price data only when real NPC market prices are needed', () => {
+    let level = 4;
+    const releasePrices = vi.fn();
+    const retainPrices = vi.fn(() => releasePrices);
+    const manager = new ShopNpcPriceManager({
+      playerLevelFacade: {
+        getSnapshot: () => ({
+          currentLevel: level,
+        }),
+      },
+      npcMarketFacade: {
+        retainPrices,
+      },
+    });
+
+    manager.syncPriceRetention(true);
+    manager.syncPriceRetention(true);
+
+    expect(retainPrices).toHaveBeenCalledTimes(1);
+    expect(releasePrices).not.toHaveBeenCalled();
+
+    level = 3;
+    manager.syncPriceRetention(true);
+
+    expect(releasePrices).toHaveBeenCalledTimes(1);
+
+    manager.syncPriceRetention(false);
+
+    expect(releasePrices).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps decimal NPC buy prices to cents', () => {
     const manager = new ShopNpcPriceManager({
       npcMarketFacade: {

@@ -661,6 +661,7 @@ export class TopPanelViewManager {
       this.createColorPreviewItem('34.4k gold', 'gold'),
       this.createColorPreviewItem('sage seed', 'seed'),
       this.createColorPreviewItem('sage', 'herb'),
+      this.createColorPreviewItem('mana tonic', 'potion'),
     );
 
     return preview;
