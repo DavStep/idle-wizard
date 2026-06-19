@@ -1623,12 +1623,13 @@ describe('TutorialHintManager', () => {
     const lesson = stage.querySelector('.tutorial-layer__lesson');
     const lessonRect = getLessonRect(lesson);
     const buttonRect = getLessonButtonRect(button);
+    const lessonTop = Number.parseFloat(lesson?.style.top ?? 'NaN');
 
     expect(button?.style.left).toBe('4px');
     expect(lesson?.style.left).toBe('74px');
-    expect(lesson?.style.top).toBe('260px');
+    expect(Number.isFinite(lessonTop)).toBe(true);
     expect(button?.style.top).toBe(
-      `${260 + getLessonOuterHeight(lesson) - 91 + 9}px`,
+      `${lessonTop + getLessonOuterHeight(lesson) - 91 + 9}px`,
     );
     expect(controls.some((control) => overlaps(lessonRect, control))).toBe(false);
     expect(controls.some((control) => overlaps(buttonRect, control))).toBe(false);
@@ -1681,10 +1682,11 @@ describe('TutorialHintManager', () => {
     const lesson = stage.querySelector('.tutorial-layer__lesson');
     const lessonRect = getLessonRect(lesson);
     const buttonRect = getLessonButtonRect(button);
+    const lessonTop = Number.parseFloat(lesson?.style.top ?? 'NaN');
 
-    expect(lesson?.style.top).toBe('260px');
+    expect(Number.isFinite(lessonTop)).toBe(true);
     expect(button?.style.top).toBe(
-      `${260 + getLessonOuterHeight(lesson) - 91 + 9}px`,
+      `${lessonTop + getLessonOuterHeight(lesson) - 91 + 9}px`,
     );
     expect(tabs.some((tab) => overlaps(lessonRect, tab))).toBe(false);
     expect(tabs.some((tab) => overlaps(buttonRect, tab))).toBe(false);

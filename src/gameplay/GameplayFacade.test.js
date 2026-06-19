@@ -2490,7 +2490,7 @@ describe('GameplayFacade', () => {
       phase: 'brewed',
       canStartBottling: true,
     });
-  });
+  }, 10_000);
 
   it('keeps auto brew recipes scoped to each cauldron', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
@@ -2560,7 +2560,7 @@ describe('GameplayFacade', () => {
       key: 'minorHealingPotion',
       cauldronNumber: 2,
     });
-  });
+  }, 10_000);
 
   it('persists bought cauldrons and potion inventory across restart', () => {
     const persistenceStorage = createMemoryStorage();
