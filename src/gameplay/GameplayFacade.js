@@ -110,6 +110,8 @@ export class GameplayFacade {
       gameplayLogFacade: this.gameplayLogFacade,
       itemsFacade: this.itemsFacade,
       researchFacade: this.researchFacade,
+      automationFacade: this.automationFacade,
+      seedSummoningFacade: this.seedSummoningFacade,
       prestigeFacade: this.prestigeFacade,
       visualSettingsFacade: this.visualSettingsFacade,
       shopFacade: this.shopFacade,
@@ -408,6 +410,8 @@ export class GameplayFacade {
   resetRunAfterPrestige() {
     const prestige = this.prestigeFacade.getPersistenceSnapshot();
     const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
+    const automation = this.automationFacade.getPersistenceSnapshot();
+    const seedSummoning = this.seedSummoningFacade.getPersistenceSnapshot();
 
     this.persistenceFacade.applyRuntimeSave({
       mana: {
@@ -434,6 +438,8 @@ export class GameplayFacade {
         completedIds: [],
         inProgress: [],
       },
+      automation,
+      seedSummoning,
       prestige,
       visualSettings,
       shop: {},
@@ -567,6 +573,30 @@ export class GameplayFacade {
 
   getBrewingAutoBrewRecipeKey(cauldronIndex = 0) {
     return this.brewingFacade.getAutoBrewRecipeKey(cauldronIndex);
+  }
+
+  setSeedSummoningAutoEnabled(enabled) {
+    const result = this.automationFacade.setSeedSummoningEnabled(enabled);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  toggleSeedSummoningAutoEnabled() {
+    const result = this.automationFacade.toggleSeedSummoningEnabled();
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setSeedSummoningManaReserve(manaReserve) {
+    const result = this.automationFacade.setSeedSummoningManaReserve(manaReserve);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setSeedDropPreference(seedKey, preference) {
+    const result = this.seedSummoningFacade.setSeedDropPreference(seedKey, preference);
+    this.publishAndSaveSnapshot();
+    return result;
   }
 
   brewCauldron(cauldronIndex = 0) {
@@ -972,7 +1002,11 @@ export class GameplayFacade {
       return this.cachedSnapshot;
     }
 
-    const seedSummoning = this.seedSummoningFacade.getSnapshot();
+    const automation = this.automationFacade.getSnapshot();
+    const seedSummoning = {
+      ...this.seedSummoningFacade.getSnapshot(),
+      autoSummoning: automation.seedSummoning,
+    };
 
     const snapshot = {
       mana: this.manaFacade.getSnapshot(),
@@ -982,6 +1016,7 @@ export class GameplayFacade {
       inventory: this.itemsFacade.getInventorySnapshot(),
       seedInventory: this.itemsFacade.getSeedInventorySnapshot(),
       seedSummoning,
+      automation,
       brewing: this.brewingFacade.getSnapshot(),
       discoveries: this.itemsFacade.getDiscoverySnapshot({
         getPotionDiscovery: (potionKey) =>

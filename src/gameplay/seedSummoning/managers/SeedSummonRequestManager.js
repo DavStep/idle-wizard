@@ -2,6 +2,7 @@ export class SeedSummonRequestManager {
   constructor({
     manaFacade,
     itemsFacade,
+    seedDropPreferenceManager,
     seedDropWeightManager,
     seedSummonCostManager,
     seedSummonEligibilityManager,
@@ -9,6 +10,7 @@ export class SeedSummonRequestManager {
   }) {
     this.manaFacade = manaFacade;
     this.itemsFacade = itemsFacade;
+    this.seedDropPreferenceManager = seedDropPreferenceManager;
     this.seedDropWeightManager = seedDropWeightManager;
     this.seedSummonCostManager = seedSummonCostManager;
     this.seedSummonEligibilityManager = seedSummonEligibilityManager;
@@ -16,7 +18,9 @@ export class SeedSummonRequestManager {
   }
 
   summonSeed() {
-    const summonableSeeds = this.seedSummonEligibilityManager.getSummonableSeeds();
+    const summonableSeeds = this.seedDropPreferenceManager.applyPreferences(
+      this.seedSummonEligibilityManager.getSummonableSeeds(),
+    );
     const visibleCost = this.seedSummonCostManager.getVisibleSummonCost();
     const quantity = this.seedSummonMultiplierManager?.getSummonQuantity() ?? 1;
 
@@ -24,6 +28,14 @@ export class SeedSummonRequestManager {
       return {
         ok: false,
         reason: 'no_summonable_seeds',
+        cost: visibleCost,
+      };
+    }
+
+    if (summonableSeeds.every((seed) => seed.effectiveDropWeight <= 0)) {
+      return {
+        ok: false,
+        reason: 'no_active_seed_weights',
         cost: visibleCost,
       };
     }
@@ -40,7 +52,16 @@ export class SeedSummonRequestManager {
 
     const seeds = Array.from({ length: quantity }, () =>
       this.seedDropWeightManager.pickSeed(summonableSeeds),
-    );
+    ).filter(Boolean);
+
+    if (seeds.length === 0) {
+      return {
+        ok: false,
+        reason: 'no_active_seed_weights',
+        cost,
+      };
+    }
+
     const seedCounts = this.getSeedCounts(seeds);
 
     for (const seedCount of seedCounts) {

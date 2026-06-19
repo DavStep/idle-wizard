@@ -596,6 +596,26 @@ describe('GardenPlotManager', () => {
     expect(rule).toMatch(/\bcolor:\s*var\(--style-resource-seed\);/);
   });
 
+  it('keeps plot notification dots on the text row instead of progress rails', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const genericRuleIndex = baseCss.indexOf(
+      ':where(button, [role="button"])[data-notification="true"]::before',
+    );
+    const plotRuleIndex = baseCss.indexOf(
+      '.garden-page__plot-row[data-notification="true"]::before',
+    );
+    const rule = baseCss.match(
+      /\.garden-page__plot-row\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(genericRuleIndex).toBeGreaterThan(-1);
+    expect(plotRuleIndex).toBeGreaterThan(genericRuleIndex);
+    expect(rule).toBeDefined();
+    expect(rule).toContain('top: calc(');
+    expect(rule).toContain('var(--style-row-min-height)');
+    expect(rule).toContain('var(--style-notification-size)');
+  });
+
   it('confirms canceling active plot progress and returns the seed', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

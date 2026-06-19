@@ -15,6 +15,7 @@ const MUTATING_ACTIONS = new Set([
   'reset-discord-post',
   'reset-player',
   'wipe-player-data',
+  'wipe-zero-income-player-data',
 ]);
 const SCHEMA_NAMES = [
   'set_maintenance_mode',
@@ -22,6 +23,7 @@ const SCHEMA_NAMES = [
   'admin_reset_player_progression_data',
   'admin_reset_player_progression_by_identity',
   'admin_wipe_all_player_data',
+  'admin_wipe_zero_income_player_data',
   'leaderboard_summary',
   'world_chat_recent',
 ];
@@ -113,6 +115,9 @@ switch (action) {
   case 'verify-player-data-wipe':
     verifyAllPlayerDataWipe();
     break;
+  case 'verify-zero-income-player-data-wipe':
+    verifyZeroIncomePlayerDataWipe();
+    break;
   case 'verify-player-reset':
     verifySinglePlayerProgressionReset();
     break;
@@ -130,6 +135,9 @@ switch (action) {
     break;
   case 'wipe-player-data':
     await wipeAllPlayerData();
+    break;
+  case 'wipe-zero-income-player-data':
+    wipeZeroIncomePlayerData();
     break;
   case 'publish':
     runSpacetime(['publish', database, '--server', server, '--module-path', './spacetimedb']);
@@ -178,12 +186,14 @@ function printHelp() {
   node scripts/maintenance.js verify
   node scripts/maintenance.js verify-reset
   node scripts/maintenance.js verify-player-data-wipe
+  node scripts/maintenance.js verify-zero-income-player-data-wipe
   node scripts/maintenance.js verify-player-reset --identity <hex>
   node scripts/maintenance.js migrate --key YYYY-MM-DD-maintenance --confirm-live
   node scripts/maintenance.js reset-discord-post --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js reset-progress --key YYYY-MM-DD-reset --post-discord --confirm-live
   node scripts/maintenance.js reset-player --identity <hex> --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js wipe-player-data --key YYYY-MM-DD-reset --post-discord --confirm-live
+  node scripts/maintenance.js wipe-zero-income-player-data --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js publish --confirm-live
   node scripts/maintenance.js off --confirm-live
 
@@ -420,6 +430,13 @@ function verifyAllPlayerDataWipe() {
   );
 }
 
+function verifyZeroIncomePlayerDataWipe() {
+  runSql('SELECT COUNT(*) AS zero_income_leaderboard_count FROM leaderboard WHERE total_income = 0');
+  runSql('SELECT COUNT(*) AS player_count FROM player');
+  runSql('SELECT COUNT(*) AS player_session_count FROM player_session');
+  runSql('SELECT COUNT(*) AS leaderboard_count FROM leaderboard');
+}
+
 function verifySinglePlayerProgressionReset() {
   const identityHex = getIdentityHex();
   const identitySql = getIdentitySqlLiteral(identityHex);
@@ -486,6 +503,17 @@ async function wipeAllPlayerData() {
   }
 
   callReducer('admin_wipe_all_player_data', [resetKey]);
+}
+
+function wipeZeroIncomePlayerData() {
+  const resetKey = getResetKey();
+
+  if (options['dry-run']) {
+    console.log(`Dry run: would call admin_wipe_zero_income_player_data ${shellQuote(resetKey)}`);
+    return;
+  }
+
+  callReducer('admin_wipe_zero_income_player_data', [resetKey]);
 }
 
 function resetSinglePlayerProgressionData() {

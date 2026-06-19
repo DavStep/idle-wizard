@@ -98,6 +98,7 @@ const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
 const MAX_PLAYER_SAVE_CURRENT_GOLD = 250_000;
 const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
 const MAX_PLAYER_SAVE_CURRENT_RUBY = 10_000;
+const MAX_PLAYER_SAVE_AUTO_SEED_MANA_RESERVE = MAX_PLAYER_SAVE_MANA_CURRENT;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
@@ -151,6 +152,15 @@ const PLAYER_FONT_ALIASES = new Map([
 ]);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
 const PLAYER_CHARACTERS = new Set([
+  'elara',
+  'mira',
+  'bramble',
+  'corvin',
+  'juniper',
+  'rowan',
+  'wizard',
+]);
+const PLAYER_SELECTABLE_CHARACTERS = new Set([
   'elara',
   'mira',
   'bramble',
@@ -5526,6 +5536,11 @@ function normalizePlayerCharacter(character: unknown): string {
   return PLAYER_CHARACTERS.has(value) ? value : DEFAULT_PLAYER_CHARACTER;
 }
 
+function normalizeSelectablePlayerCharacter(character: unknown): string {
+  const value = String(character ?? '').trim().toLowerCase();
+  return PLAYER_SELECTABLE_CHARACTERS.has(value) ? value : DEFAULT_PLAYER_CHARACTER;
+}
+
 function getPlayerCharacterForIdentity(ctx: { db: any }, identity: Identity): string {
   return normalizePlayerCharacter(
     ctx.db.player.identity.find(identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
@@ -7083,6 +7098,7 @@ function normalizePlayerGameplaySave(
   const itemCatalog = getSaveItemCatalog(ctx);
   const taskCatalog = getSaveTaskCatalog(ctx);
   const previousLevel = readSavedCurrentLevel(previousSaveJson);
+  const previousSave = parsePlayerGameplaySaveJson(previousSaveJson) ?? {};
   const tasks = normalizeSaveTasks(save.tasks, taskCatalog, previousLevel);
   const levelLimits = getSaveLevelLimits(ctx, tasks.currentLevel);
   const research = normalizeSaveResearch(save.research);
@@ -7104,6 +7120,15 @@ function normalizePlayerGameplaySave(
     logs: normalizeSaveLogs(save.logs),
     inventory: normalizeSaveInventory(save.inventory, itemCatalog),
     research,
+    automation: normalizeSaveAutomation(
+      Object.hasOwn(save, 'automation') ? save.automation : previousSave.automation,
+    ),
+    seedSummoning: normalizeSaveSeedSummoning(
+      Object.hasOwn(save, 'seedSummoning')
+        ? save.seedSummoning
+        : previousSave.seedSummoning,
+      itemCatalog,
+    ),
     prestige: normalizeSavePrestige(save.prestige),
     visualSettings: normalizeSaveVisualSettings(ctx, save.visualSettings, identity),
     shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
@@ -7423,6 +7448,66 @@ function normalizeSaveRuby(value: unknown) {
   return {
     current: clampSaveInteger(ruby.current, 0, MAX_PLAYER_SAVE_CURRENT_RUBY, 0),
   };
+}
+
+function normalizeSaveAutomation(value: unknown) {
+  const automation = isRecord(value) ? value : {};
+
+  return {
+    seedSummoning: normalizeSaveSeedSummoningAutomation(automation.seedSummoning),
+  };
+}
+
+function normalizeSaveSeedSummoningAutomation(value: unknown) {
+  const seedSummoning = isRecord(value) ? value : {};
+
+  return {
+    enabled: seedSummoning.enabled !== false,
+    manaReserve: clampSaveInteger(
+      seedSummoning.manaReserve,
+      0,
+      MAX_PLAYER_SAVE_AUTO_SEED_MANA_RESERVE,
+      0,
+    ),
+  };
+}
+
+function normalizeSaveSeedSummoning(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+) {
+  const seedSummoning = isRecord(value) ? value : {};
+
+  return {
+    dropPreferences: normalizeSaveSeedDropPreferences(
+      seedSummoning.dropPreferences,
+      itemCatalog,
+    ),
+  };
+}
+
+function normalizeSaveSeedDropPreferences(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+) {
+  const dropPreferences = isRecord(value) ? value : {};
+  const normalized: Record<string, string> = {};
+
+  for (const [seedKey, preference] of Object.entries(dropPreferences)) {
+    const itemKey = normalizeSaveItemKey(seedKey);
+
+    if (itemCatalog.get(itemKey) !== 'seed') {
+      continue;
+    }
+
+    normalized[itemKey] = normalizeSaveSeedDropPreference(preference);
+  }
+
+  return normalized;
+}
+
+function normalizeSaveSeedDropPreference(value: unknown) {
+  return value === 'none' || value === 'low' || value === 'high' ? value : 'medium';
 }
 
 function normalizeSavePrestige(value: unknown) {
@@ -11730,6 +11815,121 @@ function deletePlayerGameplaySaveForIdentity(
   }
 }
 
+function deleteLeaderboardForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  const entry = ctx.db.leaderboard.identity.find(identity);
+  if (entry) {
+    ctx.db.leaderboard.delete(entry);
+  }
+}
+
+function deleteMessageRowsForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  for (const row of Array.from(ctx.db.worldChat.iter())) {
+    if (row.senderIdentity.isEqual(identity)) {
+      ctx.db.worldChat.delete(row);
+    }
+  }
+
+  for (const row of Array.from(ctx.db.tradeAllianceChat.iter())) {
+    if (row.senderIdentity.isEqual(identity)) {
+      ctx.db.tradeAllianceChat.delete(row);
+    }
+  }
+}
+
+function deletePlayerFeedbackForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  for (const row of Array.from(ctx.db.playerFeedback.iter())) {
+    if (row.senderIdentity.isEqual(identity)) {
+      ctx.db.playerFeedback.delete(row);
+    }
+  }
+}
+
+function deletePotionDiscoveriesForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
+    if (discovery.discoveredByIdentity.isEqual(identity)) {
+      ctx.db.potionRecipeDiscovery.delete(discovery);
+    }
+  }
+}
+
+function deletePlayerShopDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  deletePlayerShopProgressionForIdentity(ctx, identity);
+
+  for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
+    if (trade.buyerIdentity.isEqual(identity) || trade.sellerIdentity.isEqual(identity)) {
+      ctx.db.playerShopTrade.delete(trade);
+    }
+  }
+}
+
+function deleteTradeAllianceDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  const affectedAllianceIds: any[] = [];
+
+  for (const alliance of Array.from(ctx.db.tradeAlliance.iter())) {
+    if (alliance.leaderIdentity.isEqual(identity)) {
+      addAdminAffectedAllianceId(affectedAllianceIds, alliance.allianceId);
+    }
+  }
+
+  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+    if (application.applicantIdentity.isEqual(identity)) {
+      ctx.db.tradeAllianceApplication.delete(application);
+    }
+  }
+
+  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+    if (contribution.contributorIdentity.isEqual(identity)) {
+      ctx.db.tradeAllianceQuestContribution.delete(contribution);
+    }
+  }
+
+  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
+    if (reward.recipientIdentity.isEqual(identity)) {
+      ctx.db.tradeAllianceRewardInbox.delete(reward);
+    }
+  }
+
+  const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
+  if (member) {
+    addAdminAffectedAllianceId(affectedAllianceIds, member.allianceId);
+    ctx.db.tradeAllianceMember.delete(member);
+  }
+
+  for (const allianceId of affectedAllianceIds) {
+    refreshAdminMergedAlliance(ctx, allianceId);
+  }
+}
+
+function deletePlayerDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  deletePlayerGameplaySaveForIdentity(ctx, identity);
+  deleteLeaderboardForIdentity(ctx, identity);
+  deleteMessageRowsForIdentity(ctx, identity);
+  deleteTradeAllianceDataForIdentity(ctx, identity);
+  deletePlayerShopDataForIdentity(ctx, identity);
+  deletePotionDiscoveriesForIdentity(ctx, identity);
+  deletePlayerFeedbackForIdentity(ctx, identity);
+  deleteAdminPlayerSession(ctx, identity);
+
+  const player = ctx.db.player.identity.find(identity);
+  if (player) {
+    ctx.db.player.delete(player);
+  }
+}
+
+function getZeroIncomePlayerIdentities(ctx: IdleWizardReducerCtx): Identity[] {
+  const identities = new Map<string, Identity>();
+
+  for (const entry of Array.from(ctx.db.leaderboard.iter())) {
+    if (toBigInt(entry.totalIncome) !== 0n) {
+      continue;
+    }
+
+    identities.set(getIdentityHex(entry.identity), entry.identity);
+  }
+
+  return Array.from(identities.values());
+}
+
 function deleteAllLeaderboardState(ctx: IdleWizardReducerCtx) {
   for (const entry of Array.from(ctx.db.leaderboard.iter())) {
     ctx.db.leaderboard.delete(entry);
@@ -12690,10 +12890,17 @@ export const set_player_profile = spacetimedb.reducer(
     const safeTheme = normalizePlayerTheme(theme);
     const safeFont = normalizePlayerFont(font);
     const safeColorMode = normalizePlayerColorMode(colorMode);
-    const safeCharacter = normalizePlayerCharacter(character);
+    const existingPlayer = ctx.db.player.identity.find(ctx.sender);
+    const requestedCharacter = normalizePlayerCharacter(character);
+    const existingCharacter = normalizePlayerCharacter(
+      existingPlayer?.character ?? DEFAULT_PLAYER_CHARACTER,
+    );
+    const safeCharacter =
+      requestedCharacter === 'wizard' && existingCharacter !== 'wizard'
+        ? normalizeSelectablePlayerCharacter(character)
+        : requestedCharacter;
     const incomingUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
-    const existingPlayer = ctx.db.player.identity.find(ctx.sender);
     const nextUsernamePromptSeen =
       Boolean(existingPlayer?.usernamePromptSeen) || incomingUsernamePromptSeen;
 
@@ -14890,6 +15097,28 @@ export const admin_wipe_all_player_data = spacetimedb.reducer(
     deleteAllPlayerSessions(ctx);
     deleteAllPlayerRows(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
+
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_wipe_zero_income_player_data = spacetimedb.reducer(
+  { resetKey: t.string() },
+  (ctx, { resetKey }) => {
+    assertGameConfigAdmin(ctx);
+    assertMaintenanceLocked(ctx);
+
+    const stateKey = `zero-income-player-data-wipe:${normalizeMaintenanceKey(resetKey)}`;
+    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+      return;
+    }
+
+    for (const identity of getZeroIncomePlayerIdentities(ctx)) {
+      deletePlayerDataForIdentity(ctx, identity);
+    }
 
     ctx.db.maintenanceState.insert({
       stateKey,

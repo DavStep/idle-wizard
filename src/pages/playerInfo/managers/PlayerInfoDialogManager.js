@@ -15,6 +15,8 @@ export class PlayerInfoDialogManager {
     this.playerInfoFacade = playerInfoFacade;
     this.onOpenAllianceInfo = onOpenAllianceInfo;
     this.unsubscribe = null;
+    this.releasePublicData = null;
+    this.publicDataRetained = false;
     this.refs = {};
     this.root = null;
     this.visible = false;
@@ -45,14 +47,6 @@ export class PlayerInfoDialogManager {
     parent.append(this.root);
     document.addEventListener('keydown', this.handleKeydown);
 
-    if (this.playerInfoFacade) {
-      this.unsubscribe = this.playerInfoFacade.subscribe((snapshot) => {
-        this.lastSnapshot = snapshot ?? { ...EMPTY_SNAPSHOT };
-        this.render();
-      });
-      this.lastSnapshot = this.playerInfoFacade.getSnapshot();
-    }
-
     this.applyVisibility();
     return this.root;
   }
@@ -75,6 +69,7 @@ export class PlayerInfoDialogManager {
     this.refs.dialog = dialog;
     this.refs.title = document.createElement('div');
     this.refs.title.className = 'style-box__title';
+    this.refs.title.textContent = 'player info';
     this.refs.closeButton = document.createElement('button');
     this.refs.closeButton.className = 'style-button room-player-info-close';
     this.refs.closeButton.type = 'button';
@@ -82,12 +77,22 @@ export class PlayerInfoDialogManager {
     this.refs.closeButton.addEventListener('click', () => this.hide());
     this.refs.content = document.createElement('div');
     this.refs.content.className = 'room-player-info-content';
+    this.refs.summary = document.createElement('div');
+    this.refs.summary.className = 'room-player-info-summary';
     this.refs.character = createPlayerCharacterIcon('elara', 'room-player-info-character');
     this.refs.character.loading = 'eager';
+    this.refs.mainRows = document.createElement('div');
+    this.refs.mainRows.className = 'room-player-info-main-rows';
+    this.refs.details = document.createElement('div');
+    this.refs.details.className = 'room-player-info-details';
+    this.refs.identityLabel = document.createElement('div');
+    this.refs.identityLabel.className = 'room-player-info-identity-label';
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'room-player-info-rows';
 
-    this.refs.content.append(this.refs.character, this.refs.rows);
+    this.refs.summary.append(this.refs.character, this.refs.mainRows);
+    this.refs.details.append(this.refs.identityLabel, this.refs.rows);
+    this.refs.content.append(this.refs.summary, this.refs.details);
     dialog.append(this.refs.title, this.refs.closeButton, this.refs.content);
     popup.append(dialog);
     return popup;
@@ -100,6 +105,7 @@ export class PlayerInfoDialogManager {
       return;
     }
 
+    this.startPlayerInfoSubscription();
     this.activePlayer = this.mergePlayer(fallback);
     this.previousFocus = document.activeElement;
     this.visible = true;
@@ -112,6 +118,7 @@ export class PlayerInfoDialogManager {
     const wasVisible = this.visible;
     this.visible = false;
     this.applyVisibility();
+    this.stopPlayerInfoSubscription();
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
       this.previousFocus.focus();
@@ -121,8 +128,7 @@ export class PlayerInfoDialogManager {
   }
 
   unmount() {
-    this.unsubscribe?.();
-    this.unsubscribe = null;
+    this.stopPlayerInfoSubscription();
     document.removeEventListener('keydown', this.handleKeydown);
     this.root?.remove();
     this.root = null;
@@ -133,6 +139,37 @@ export class PlayerInfoDialogManager {
     this.activePlayer = null;
   }
 
+  startPlayerInfoSubscription() {
+    if (!this.playerInfoFacade) {
+      return;
+    }
+
+    if (!this.publicDataRetained) {
+      const releasePublicData = this.playerInfoFacade.retainPublicData?.();
+      this.releasePublicData =
+        typeof releasePublicData === 'function' ? releasePublicData : null;
+      this.publicDataRetained = true;
+    }
+
+    if (!this.unsubscribe) {
+      this.unsubscribe = this.playerInfoFacade.subscribe((snapshot) => {
+        this.lastSnapshot = snapshot ?? { ...EMPTY_SNAPSHOT };
+        this.render();
+      });
+    }
+
+    this.lastSnapshot = this.playerInfoFacade.getSnapshot?.() ?? { ...EMPTY_SNAPSHOT };
+  }
+
+  stopPlayerInfoSubscription() {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    this.releasePublicData?.();
+    this.releasePublicData = null;
+    this.publicDataRetained = false;
+    this.lastSnapshot = { ...EMPTY_SNAPSHOT };
+  }
+
   render() {
     if (!this.root || !this.activePlayer) {
       return;
@@ -140,25 +177,23 @@ export class PlayerInfoDialogManager {
 
     const player = this.mergePlayer(this.activePlayer);
     this.activePlayer = player;
-    this.refs.title.textContent = player.username;
     this.refs.dialog.setAttribute('aria-label', `${player.username} player information`);
     this.refs.character.src = getPlayerCharacterImageUrl(player.character);
-    this.refs.rows.replaceChildren(
-      this.createAllianceRow(player),
-      this.createTextRow('total produced gold', this.formatNumber(player.totalProducedGold)),
+    const identityLabelContent = this.createIdentityLabelContent(player);
+    this.refs.identityLabel.replaceChildren(...identityLabelContent);
+    this.refs.identityLabel.hidden = identityLabelContent.length <= 0;
+    this.refs.mainRows.replaceChildren(
       this.createTextRow('level', this.formatNumber(player.playerLevel)),
       this.createTextRow('prestige', this.formatPrestige(player.prestigeCount)),
     );
+    this.refs.rows.replaceChildren(
+      this.createTextRow('name', player.username),
+      this.createTextRow('total produced gold', this.formatNumber(player.totalProducedGold)),
+    );
   }
 
-  createAllianceRow(player) {
-    const row = document.createElement('div');
-    row.className = 'room-player-info-row';
-    const key = document.createElement('span');
-    key.className = 'row_key';
-    key.textContent = 'alliance';
-    const val = document.createElement('span');
-    val.className = 'row_val';
+  createIdentityLabelContent(player) {
+    const nodes = [];
     const tag = createAllianceTagSpan(player.allianceTag, player.allianceTagColor);
 
     if (tag && typeof this.onOpenAllianceInfo === 'function') {
@@ -177,15 +212,12 @@ export class PlayerInfoDialogManager {
           tagColor: player.allianceTagColor,
         });
       });
-      val.append(button);
+      nodes.push(button);
     } else if (tag) {
-      val.append(tag);
-    } else {
-      val.textContent = 'none';
+      nodes.push(tag);
     }
 
-    row.append(key, val);
-    return row;
+    return nodes;
   }
 
   createTextRow(label, value) {

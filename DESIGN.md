@@ -2,12 +2,12 @@
 name: Idle Wizard
 description: Minimal text-first mobile idle game with sparse bordered room panels.
 colors:
-  room-bg: "#dedede"
-  room-surface: "#dedede"
+  room-bg: "#d6d6d6"
+  room-surface: "#d6d6d6"
   ink: "#1a1a1a"
   muted: "#5e5e5e"
   disabled: "#969696"
-  active-surface: "#d6d6d6"
+  active-surface: "{colors.room-surface}"
   notification-red: "#c1121f"
   notification-orange: "#d66a00"
   black-theme-bg: "#1a1a1a"
@@ -112,7 +112,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 - **Room Surface:** Room pages, panels, boxes, buttons, dialogs, and border-title backplates.
 - **Muted Text:** Secondary status, helper rows, dividers, and inactive system copy.
 - **Disabled Text:** Locked, empty, unavailable, disabled, and unrevealed rows.
-- **Active Surface:** Pressed button or temporary active control surface.
+- **Active Surface:** Same as room surface, so press and hover states never tint backgrounds.
 
 ### Named Rules
 
@@ -142,7 +142,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ## 4. Elevation
 
-Ordinary room UI is flat. Depth is communicated by 2px borders, title placement, and popup layering. Only dialogs, overlays, and tooltips use shadow, and those shadows are structural.
+Ordinary room UI is flat. In the white theme, depth is communicated by 1px borders, title placement, and popup layering; non-white themes use 2px ordinary borders for stronger themed strokes. Only dialogs, overlays, and tooltips use shadow, and those shadows are structural.
 
 ### Shadow Vocabulary
 - **Dialog Shadow** (`5px 5px 5px var(--style-muted)`): Popup/dialog panels only.
@@ -159,21 +159,21 @@ Ordinary room UI is flat. Depth is communicated by 2px borders, title placement,
 
 ### Buttons
 - **Shape:** Sharp text boxes with no radius (0).
-- **Default:** Room surface background, ink text, 2px ink border, 5px 10px padding.
+- **Default:** Room surface background, ink text, theme ordinary border, 5px 10px padding.
 - **Hover / Focus:** Underline the label; no glow, icon, scale, or color flourish.
-- **Active:** Flat active-surface fill.
+- **Active:** No background tint; keep labels stable and use existing text/border state only.
 - **Disabled:** Disabled gray text and border, no underline.
 
 ### Cards / Containers
 - **Corner Style:** Square corners (0).
 - **Background:** Room surface.
 - **Shadow Strategy:** No shadow for ordinary panels.
-- **Border:** 2px ink border for room boxes and panels.
+- **Border:** 1px ink border in the white theme; 2px ordinary border in non-white themes.
 - **Internal Padding:** Compact source padding (5px 10px).
 - **Title:** Embedded on the top border over the same surface, bold 13px.
 
 ### Inputs / Fields
-- **Style:** Same surface, same source typography, 2px border, no radius.
+- **Style:** Same surface, same source typography, theme ordinary border, no radius.
 - **Focus:** No decorative focus glow; preserve clear text entry and mobile keyboard behavior.
 - **Error / Disabled:** Error copy stays compact, disabled fields use disabled gray.
 
@@ -183,7 +183,7 @@ Ordinary room UI is flat. Depth is communicated by 2px borders, title placement,
 - **Page Names:** All five room page names stay visible in bottom chrome.
 
 ### Progress
-- **Rail:** 3px high, surface background, 2px ink border.
+- **Rail:** 3px high, surface background, theme ordinary border.
 - **Fill:** Ink fill, no timer text inside the rail.
 
 ### Signature Component
@@ -195,7 +195,7 @@ Ordinary room UI is flat. Depth is communicated by 2px borders, title placement,
 ### Do:
 - **Do** reuse `docs/ui-patterns.md` before creating any new row, box, popup, tab, or border-label treatment.
 - **Do** keep source typography at 13px body, 14px dialog title, and 11px border label.
-- **Do** use 2px borders for ordinary boxes, dialogs, and popup tabs.
+- **Do** use 1px ordinary borders in the white theme, 2px ordinary borders in non-white themes, and 2px borders for dialogs and popup tabs.
 - **Do** keep row actions inline and right-aligned with tabular numerals.
 - **Do** support reduced motion by removing nonessential transitions and animations.
 

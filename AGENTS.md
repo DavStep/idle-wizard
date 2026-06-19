@@ -28,7 +28,7 @@ Use A Dark Room's source UI proportions, including `16px` source text, inside th
 
 Source UI scale must follow the fitted viewport scale, not stay fixed at `3`, so both desktop web and mobile views fit.
 
-Ordinary non-dialog boxes stay simple: `1px` border, compact padding, no shadow. Reserve the thicker border and bottom-right shadow for popup/dialog panels. The Workshop resource/action block is called `mana sphere`; the summon seed button sits outside it. Clicking `seeds` in it opens the seed inventory breakdown. Page names sit at the bottom center of the room view.
+Ordinary non-dialog boxes stay simple: white theme uses `1px` borders; non-white themes use `2px` borders; all keep compact padding and no shadow. Reserve the thicker border and bottom-right shadow for popup/dialog panels. The Workshop resource/action block is called `mana sphere`; the summon seed button sits outside it. Clicking `seeds` in it opens the seed inventory breakdown. Page names sit at the bottom center of the room view.
 
 ## Experience Rules
 

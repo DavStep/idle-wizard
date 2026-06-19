@@ -49,14 +49,31 @@ describe('PlayerInfoDialogManager', () => {
 
     const popup = stage.querySelector('.room-player-info-popup');
     expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('.style-box__title')?.textContent).toBe('Ada');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe('player info');
     expect(popup.querySelector('.room-player-info-character')?.getAttribute('src')).toContain(
       'mira.webp',
     );
-    expect(popup.textContent).toContain('alliance[TAP]');
-    expect(popup.textContent).toContain('total produced gold1234');
-    expect(popup.textContent).toContain('level14');
-    expect(popup.textContent).toContain('prestige2 times');
+    expect(popup.querySelector('.room-player-info-summary')?.firstElementChild).toBe(
+      popup.querySelector('.room-player-info-character'),
+    );
+    expect(popup.querySelector('.room-player-info-identity-label')?.textContent).toContain(
+      '[TAP]',
+    );
+    expect(popup.querySelector('.room-player-info-identity-label')?.textContent).not.toContain(
+      'Ada',
+    );
+    expect(popup.querySelector('.room-player-info-main-rows')?.textContent).toContain(
+      'level14',
+    );
+    expect(popup.querySelector('.room-player-info-main-rows')?.textContent).toContain(
+      'prestige2 times',
+    );
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+      'nameAda',
+    );
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+      'total produced gold1234',
+    );
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(popup.hidden).toBe(true);
@@ -99,5 +116,61 @@ describe('PlayerInfoDialogManager', () => {
       tag: 'TAP',
       tagColor: 'blue',
     });
+  });
+
+  it('shows the player name in the detail rows when no alliance tag exists', () => {
+    const stage = document.createElement('section');
+    const manager = new PlayerInfoDialogManager({
+      playerInfoFacade: createPlayerInfoFacade({
+        connected: true,
+        players: [
+          {
+            username: 'wizard',
+            character: 'elara',
+            totalProducedGold: 414,
+            playerLevel: 4,
+            prestigeCount: 0,
+          },
+        ],
+      }),
+    });
+
+    document.body.append(stage);
+    manager.mount(stage);
+    manager.show({ username: 'wizard' });
+
+    const popup = stage.querySelector('.room-player-info-popup');
+    expect(popup.querySelector('.room-player-info-identity-label')?.hidden).toBe(true);
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+      'namewizard',
+    );
+  });
+
+  it('retains public player info only while the dialog is open', () => {
+    const stage = document.createElement('section');
+    const releasePublicData = vi.fn();
+    const unsubscribe = vi.fn();
+    const playerInfoFacade = {
+      getSnapshot: () => ({ connected: true, players: [] }),
+      retainPublicData: vi.fn(() => releasePublicData),
+      subscribe: vi.fn(() => unsubscribe),
+    };
+    const manager = new PlayerInfoDialogManager({ playerInfoFacade });
+
+    document.body.append(stage);
+    manager.mount(stage);
+
+    expect(playerInfoFacade.retainPublicData).not.toHaveBeenCalled();
+    expect(playerInfoFacade.subscribe).not.toHaveBeenCalled();
+
+    manager.show({ username: 'Ada' });
+
+    expect(playerInfoFacade.retainPublicData).toHaveBeenCalledTimes(1);
+    expect(playerInfoFacade.subscribe).toHaveBeenCalledTimes(1);
+
+    manager.hide();
+
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(releasePublicData).toHaveBeenCalledTimes(1);
   });
 });

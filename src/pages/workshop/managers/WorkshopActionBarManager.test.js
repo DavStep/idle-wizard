@@ -94,6 +94,28 @@ describe('WorkshopActionBarManager', () => {
     manager.unmount();
   });
 
+  it('pins the summon seed notification dot to the summon text box corner', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const outerBadgeRule = baseCss.match(
+      /\.style-button\.workshop-page__summon-button\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const textBoxBadgeRule = baseCss.match(
+      /\.style-button\.workshop-page__summon-button\[data-notification="true"\]\s+\.workshop-page__summon-button-text::after\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(outerBadgeRule).toMatch(/\bdisplay:\s*none;/);
+    expect(textBoxBadgeRule).toMatch(/\bposition:\s*absolute;/);
+    expect(textBoxBadgeRule).toMatch(
+      /\btop:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
+    );
+    expect(textBoxBadgeRule).toMatch(
+      /\bright:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
+    );
+    expect(baseCss).not.toMatch(
+      /\.style-button\.workshop-page__summon-button\[data-notification="true"\]\s+\.workshop-page__summon-button-label::after/,
+    );
+  });
+
   it('summons repeatedly while the summon button is held and stops on release', () => {
     vi.useFakeTimers();
     try {
@@ -292,6 +314,34 @@ describe('WorkshopActionBarManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(notices).toEqual(['sage seed found', '-10 mana']);
+
+    manager.unmount();
+  });
+
+  it('groups successful summon flyouts when a list callback is available', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const notices = [];
+    const noticeLists = [];
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      onSummonNotice: (message) => notices.push(message),
+      onSummonNoticeList: (messages) => noticeLists.push(messages),
+    });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    parent
+      .querySelector('.workshop-page__summon-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(notices).toEqual([]);
+    expect(noticeLists).toEqual([
+      [
+        { message: 'sage seed found' },
+        { message: '-10 mana', flyoutKey: 'workshop-mana-spend' },
+      ],
+    ]);
 
     manager.unmount();
   });

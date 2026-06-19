@@ -12,14 +12,26 @@ export class NpcMarketBackendFacade {
       onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
     });
     this.tradeManager = new NpcMarketTradeManager();
+    this.connection = null;
+    this.priceRetainCount = 0;
+    this.pricesActive = false;
   }
 
   connect(connection) {
-    this.subscriptionManager.connect(connection);
+    if (this.pricesActive) {
+      this.subscriptionManager.disconnect();
+      this.pricesActive = false;
+    }
+
+    this.connection = connection;
     this.tradeManager.connect(connection);
+    this.syncPriceSubscription();
   }
 
   disconnect() {
+    this.connection = null;
+    this.priceRetainCount = 0;
+    this.pricesActive = false;
     this.tradeManager.disconnect();
     this.subscriptionManager.disconnect();
   }
@@ -30,6 +42,41 @@ export class NpcMarketBackendFacade {
 
   subscribe(listener) {
     return this.stateObserverManager.subscribe(listener);
+  }
+
+  retainPrices() {
+    this.priceRetainCount += 1;
+    this.syncPriceSubscription();
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.priceRetainCount = Math.max(0, this.priceRetainCount - 1);
+      this.syncPriceSubscription();
+    };
+  }
+
+  retainPublicData() {
+    return this.retainPrices();
+  }
+
+  syncPriceSubscription() {
+    const shouldBeActive = Boolean(this.connection && this.priceRetainCount > 0);
+
+    if (shouldBeActive && !this.pricesActive) {
+      this.subscriptionManager.connect(this.connection);
+      this.pricesActive = true;
+      return;
+    }
+
+    if (!shouldBeActive && this.pricesActive) {
+      this.subscriptionManager.disconnect();
+      this.pricesActive = false;
+    }
   }
 
   getPrice(itemKey) {

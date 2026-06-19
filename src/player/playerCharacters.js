@@ -27,7 +27,11 @@ export const PLAYER_CHARACTER_OPTIONS = Object.freeze([
   }),
 ]);
 
-const CHARACTER_KEYS = new Set(PLAYER_CHARACTER_OPTIONS.map((character) => character.key));
+const SELECTABLE_CHARACTER_KEYS = new Set(
+  PLAYER_CHARACTER_OPTIONS.map((character) => character.key),
+);
+const SPECIAL_CHARACTER_KEYS = new Set(['wizard']);
+const CHARACTER_KEYS = new Set([...SELECTABLE_CHARACTER_KEYS, ...SPECIAL_CHARACTER_KEYS]);
 const CHARACTER_ALIASES = new Map([
   ['witch', 'elara'],
   ['witch-guide', 'elara'],
@@ -38,6 +42,14 @@ export function normalizePlayerCharacter(character) {
   const value = String(character ?? '').trim().toLowerCase();
   const normalizedValue = CHARACTER_ALIASES.get(value) ?? value;
   return CHARACTER_KEYS.has(normalizedValue) ? normalizedValue : DEFAULT_PLAYER_CHARACTER;
+}
+
+export function normalizeSelectablePlayerCharacter(character) {
+  const value = String(character ?? '').trim().toLowerCase();
+  const normalizedValue = CHARACTER_ALIASES.get(value) ?? value;
+  return SELECTABLE_CHARACTER_KEYS.has(normalizedValue)
+    ? normalizedValue
+    : DEFAULT_PLAYER_CHARACTER;
 }
 
 export function getPlayerCharacterOptions() {

@@ -9,6 +9,8 @@ export class GameplaySaveManager {
     gameplayLogFacade,
     itemsFacade,
     researchFacade,
+    automationFacade,
+    seedSummoningFacade,
     prestigeFacade,
     visualSettingsFacade,
     shopFacade,
@@ -24,6 +26,8 @@ export class GameplaySaveManager {
     this.gameplayLogFacade = gameplayLogFacade;
     this.itemsFacade = itemsFacade;
     this.researchFacade = researchFacade;
+    this.automationFacade = automationFacade;
+    this.seedSummoningFacade = seedSummoningFacade;
     this.prestigeFacade = prestigeFacade;
     this.visualSettingsFacade = visualSettingsFacade;
     this.shopFacade = shopFacade;
@@ -44,6 +48,8 @@ export class GameplaySaveManager {
       logs: this.gameplayLogFacade.getPersistenceSnapshot(),
       inventory: this.itemsFacade.getPersistenceSnapshot(),
       research: this.researchFacade.getPersistenceSnapshot(),
+      automation: this.automationFacade.getPersistenceSnapshot(),
+      seedSummoning: this.seedSummoningFacade.getPersistenceSnapshot(),
       prestige: this.prestigeFacade.getPersistenceSnapshot(),
       visualSettings: this.visualSettingsFacade.getPersistenceSnapshot(),
       shop: this.shopFacade.getPersistenceSnapshot(),

@@ -27,23 +27,23 @@ This project should use the same kind of minimal text-game language, without cop
 ## Color
 
 - Primary text: black.
-- Page and surface: white.
+- Page and surface: light gray, currently `#d6d6d6` in the white theme.
 - Disabled/secondary text and borders: medium gray.
 - No colored UI unless the user explicitly asks for it.
 
 ## Boxes
 
-- Ordinary non-dialog boxes use `2px solid black`.
+- White-theme ordinary non-dialog boxes use `1px solid black`; non-white themes use `2px` ordinary borders.
 - No border radius.
 - Ordinary box padding follows A Dark Room's stores spacing: `5px 10px` in source UI units.
-- Box titles sit over the top border on white background, like A Dark Room's simple store boxes.
+- Box titles sit over the top border on the same surface background, like A Dark Room's simple store boxes.
 - Do not put a separate heading inside a box when the label belongs in the border.
 - Non-title labels that sit on a box border, such as counts, close/current controls, bottom-edge actions, and tabs, should use smaller text with the line box centered on the border line.
 - Popup/dialog panels may use `2px solid black`, `20px` padding, and a bottom-right gray shadow: `5px 5px 5px #666` in source UI units.
 - Theme popup/dialog shadows should stay visible by contrasting with the active surface: dark on white, light on black.
 - Tabbed dialogs use a fixed panel height. If tab content is taller than that height, keep the bottom tabs fixed and scroll the content with the shared scroll cue.
 - Shared scroll progress rails use the logs dialog pattern: a separate `style-progress` rail below the scroll frame, never over the last row.
-- Tooltips may use `2px solid black`, white background, and a small offset gray shadow.
+- Tooltips follow the active theme's ordinary border width, active surface, and a small offset gray shadow.
 - Ordinary room/page surfaces should not use shadows.
 
 ## Buttons
@@ -52,6 +52,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Center label text.
 - Native buttons must be reset to look like text boxes, not platform controls.
 - Hover state is underline only.
+- Press/active state must not change the background color.
 - Disabled state changes text and border to gray and removes underline.
 - Cooldown/progress fills, if added later, should be flat light gray.
 

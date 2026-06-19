@@ -52,6 +52,7 @@ export class AppFacade {
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
+      npcMarketFacade: this.backendFacade.getNpcMarketFacade(),
       authFacade: this.backendFacade.getAuthFacade(),
       hapticsFacade: this.hapticsFacade,
       soundSettingsFacade: this.soundSettingsFacade,

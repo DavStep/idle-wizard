@@ -51,6 +51,7 @@ export class WorkshopPageFacade {
       onPrestigeClick: () => this.prestigeManager.toggle(),
       onSummonInfoClick: () => this.summonInfoManager.show(),
       onSummonNotice: (message, options) => this.flyoutManager.show(message, options),
+      onSummonNoticeList: (notices) => this.flyoutManager.showList(notices),
       rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
     this.leaderboardManager = new WorkshopLeaderboardManager({

@@ -46,10 +46,10 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
 
     expect(setTotalGeneratedGold).toHaveBeenCalledWith({ totalGeneratedGold: 12n });
 
-    gameplayFacade.publishGoldTotal(15);
+    gameplayFacade.publishGoldTotal(112);
     await Promise.resolve();
 
-    expect(setTotalGeneratedGold).toHaveBeenLastCalledWith({ totalGeneratedGold: 15n });
+    expect(setTotalGeneratedGold).toHaveBeenLastCalledWith({ totalGeneratedGold: 112n });
     expect(setTotalGeneratedGold).toHaveBeenCalledTimes(2);
   });
 
@@ -115,6 +115,31 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
     expect(setTotalGeneratedGold).toHaveBeenCalledWith({ totalGeneratedGold: 7n });
   });
 
+  it('does not report small generated gold deltas after the initial sync', async () => {
+    const setTotalGeneratedGold = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(10);
+    const manager = new LeaderboardGeneratedGoldSyncManager({ syncIntervalMs: 0 });
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setTotalGeneratedGold,
+      },
+    });
+    await Promise.resolve();
+
+    gameplayFacade.publishGoldTotal(99);
+    await Promise.resolve();
+
+    expect(setTotalGeneratedGold).toHaveBeenCalledTimes(1);
+
+    gameplayFacade.publishGoldTotal(110);
+    await Promise.resolve();
+
+    expect(setTotalGeneratedGold).toHaveBeenLastCalledWith({ totalGeneratedGold: 110n });
+    expect(setTotalGeneratedGold).toHaveBeenCalledTimes(2);
+  });
+
   it('throttles generated gold reports after the initial connection sync', async () => {
     let nowMs = 0;
     let scheduled = null;
@@ -141,7 +166,7 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    gameplayFacade.publishGoldTotal(12);
+    gameplayFacade.publishGoldTotal(110);
     await Promise.resolve();
 
     expect(setTotalGeneratedGold).toHaveBeenCalledTimes(1);
@@ -153,6 +178,6 @@ describe('LeaderboardGeneratedGoldSyncManager', () => {
     await Promise.resolve();
 
     expect(setTotalGeneratedGold).toHaveBeenCalledTimes(2);
-    expect(setTotalGeneratedGold).toHaveBeenLastCalledWith({ totalGeneratedGold: 12n });
+    expect(setTotalGeneratedGold).toHaveBeenLastCalledWith({ totalGeneratedGold: 110n });
   });
 });

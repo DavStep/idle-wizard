@@ -3,7 +3,6 @@ import { TutorialGuideDragManager } from './TutorialGuideDragManager.js';
 import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
 
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
-const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
 const GUIDE_NAME = 'Elara Starbrew';
 const HINT_WIDTH = 190;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
@@ -113,7 +112,6 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
-    this.pointerImage = null;
     this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
@@ -186,13 +184,6 @@ export class TutorialHintManager {
     this.pointer.hidden = true;
     this.pointer.setAttribute('aria-hidden', 'true');
 
-    this.pointerImage = document.createElement('img');
-    this.pointerImage.className = 'tutorial-layer__pointer-image';
-    this.pointerImage.src = POINTING_HAND_URL;
-    this.pointerImage.alt = '';
-    this.pointerImage.draggable = false;
-    this.pointerImage.setAttribute('aria-hidden', 'true');
-    this.pointer.append(this.pointerImage);
     this.pointerSpineManager.mount(this.pointer);
 
     this.portrait = document.createElement('img');
@@ -382,7 +373,6 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
-    this.pointerImage = null;
     this.pointerSpineManager.unmount();
     this.portrait = null;
     this.hint = null;
@@ -1041,16 +1031,12 @@ export class TutorialHintManager {
       placement: placement.id,
       x: placement.x,
       y: placement.y,
-      scaleX: placement.scaleX,
-      rotation: placement.rotation,
     };
     const pointerStateChanged =
       !this.pointerState ||
       this.pointerState.placement !== nextPointerState.placement ||
       this.pointerState.x !== nextPointerState.x ||
-      this.pointerState.y !== nextPointerState.y ||
-      this.pointerState.scaleX !== nextPointerState.scaleX ||
-      this.pointerState.rotation !== nextPointerState.rotation;
+      this.pointerState.y !== nextPointerState.y;
     const shouldRevealPointer =
       this.pointer.hidden ||
       !this.pointer.classList.contains('is-visible') ||
@@ -1066,8 +1052,6 @@ export class TutorialHintManager {
       this.pointer.dataset.placement = placement.id;
       this.pointer.style.left = `${placement.x}px`;
       this.pointer.style.top = `${placement.y}px`;
-      this.pointer.style.setProperty('--tutorial-pointer-scale-x', placement.scaleX);
-      this.pointer.style.setProperty('--tutorial-pointer-rotation', placement.rotation);
       this.pointerState = nextPointerState;
     }
 
@@ -1274,8 +1258,6 @@ export class TutorialHintManager {
     this.pointer.classList.remove('is-visible', 'is-hiding');
     this.pointer.hidden = true;
     delete this.pointer.dataset.placement;
-    this.pointer.style.removeProperty('--tutorial-pointer-scale-x');
-    this.pointer.style.removeProperty('--tutorial-pointer-rotation');
     this.pointerState = null;
     this.pointerSpineManager.setVisible(false);
   }
@@ -2534,29 +2516,21 @@ function createPointerCandidates(rect, targetGap) {
       id: 'top-left',
       x: centerX - diagonalOffset,
       y: centerY - diagonalOffset,
-      scaleX: '1',
-      rotation: '45deg',
     },
     {
       id: 'top-right',
       x: centerX + diagonalOffset,
       y: centerY - diagonalOffset,
-      scaleX: '-1',
-      rotation: '-45deg',
     },
     {
       id: 'bottom-left',
       x: centerX - diagonalOffset,
       y: centerY + diagonalOffset,
-      scaleX: '1',
-      rotation: '-45deg',
     },
     {
       id: 'bottom-right',
       x: centerX + diagonalOffset,
       y: centerY + diagonalOffset,
-      scaleX: '-1',
-      rotation: '45deg',
     },
   ];
 }

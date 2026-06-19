@@ -36,6 +36,7 @@ export class PagesFacade {
     feedbackFacade,
     playerInfoFacade,
     playerShopFacade,
+    npcMarketFacade,
     authFacade,
     hapticsFacade,
     soundSettingsFacade,
@@ -45,6 +46,9 @@ export class PagesFacade {
   } = {}) {
     this.stage = null;
     this.gameplayFacade = gameplayFacade;
+    this.npcMarketFacade = npcMarketFacade;
+    this.releaseNpcMarketPrices = null;
+    this.npcMarketPricesRetained = false;
     this.registryManager = new PageRegistryManager();
     this.pageUnlockManager = new PageUnlockManager({
       pageOrder: DEFAULT_PAGE_SWIPE_ORDER,
@@ -186,6 +190,9 @@ export class PagesFacade {
     this.tutorialFacade?.unmount();
     this.pageUnlockUnsubscribe?.();
     this.pageUnlockUnsubscribe = null;
+    this.releaseNpcMarketPrices?.();
+    this.releaseNpcMarketPrices = null;
+    this.npcMarketPricesRetained = false;
     this.topPanelFacade.unmount();
     this.allianceInfoDialogFacade.unmount();
     this.playerInfoDialogFacade.unmount();
@@ -203,6 +210,7 @@ export class PagesFacade {
       this.currentPageManager.show(this.getUnlockedPageId(pageId));
       this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
       this.syncTopPanelResourceContext();
+      this.syncNpcMarketPriceSubscription();
     });
     this.tutorialFacade?.scheduleRefresh();
   }
@@ -238,6 +246,7 @@ export class PagesFacade {
     this.swipeNavigationManager.setPageOrder(this.pageStates.map((page) => page.id));
 
     if (this.unlockedPageIds.includes(this.getCurrentPageId())) {
+      this.syncNpcMarketPriceSubscription();
       return;
     }
 
@@ -246,7 +255,34 @@ export class PagesFacade {
       this.bottomPanelFacade.setCurrentPageId(this.getCurrentPageId());
       this.syncTopPanelResourceContext();
     });
+    this.syncNpcMarketPriceSubscription();
     this.tutorialFacade?.scheduleRefresh();
+  }
+
+  syncNpcMarketPriceSubscription() {
+    const shouldRetain =
+      this.getCurrentPageId() === 'shop' && this.unlockedPageIds.includes('shop');
+
+    if (shouldRetain) {
+      if (!this.npcMarketPricesRetained) {
+        const release =
+          this.npcMarketFacade?.retainPrices?.() ??
+          this.npcMarketFacade?.retainPublicData?.() ??
+          null;
+        this.releaseNpcMarketPrices = typeof release === 'function' ? release : null;
+        this.npcMarketPricesRetained = true;
+      }
+
+      return;
+    }
+
+    if (!this.npcMarketPricesRetained) {
+      return;
+    }
+
+    this.releaseNpcMarketPrices?.();
+    this.releaseNpcMarketPrices = null;
+    this.npcMarketPricesRetained = false;
   }
 
   getUnlockedPageId(pageId) {

@@ -1,8 +1,10 @@
 const DEFAULT_SYNC_INTERVAL_MS = 60_000;
+const DEFAULT_MIN_SYNC_DELTA_GOLD = 100;
 
 export class LeaderboardGeneratedGoldSyncManager {
   constructor({
     syncIntervalMs = DEFAULT_SYNC_INTERVAL_MS,
+    minSyncDeltaGold = DEFAULT_MIN_SYNC_DELTA_GOLD,
     setTimeoutFn = globalThis.setTimeout?.bind(globalThis),
     clearTimeoutFn = globalThis.clearTimeout?.bind(globalThis),
     now = () => Date.now(),
@@ -11,9 +13,11 @@ export class LeaderboardGeneratedGoldSyncManager {
     this.gameplayFacade = null;
     this.unsubscribe = null;
     this.lastObservedTotalGeneratedGold = null;
+    this.lastQueuedTotalGeneratedGold = null;
     this.pendingTotalGeneratedGold = null;
     this.syncPromise = null;
     this.syncIntervalMs = syncIntervalMs;
+    this.minSyncDeltaGold = this.normalizeMinSyncDeltaGold(minSyncDeltaGold);
     this.setTimeoutFn = setTimeoutFn;
     this.clearTimeoutFn = clearTimeoutFn;
     this.now = now;
@@ -26,6 +30,7 @@ export class LeaderboardGeneratedGoldSyncManager {
     this.unsubscribe = null;
     this.gameplayFacade = gameplayFacade;
     this.lastObservedTotalGeneratedGold = null;
+    this.lastQueuedTotalGeneratedGold = null;
 
     if (!gameplayFacade) {
       return;
@@ -72,9 +77,36 @@ export class LeaderboardGeneratedGoldSyncManager {
     }
   }
 
-  queue(totalGeneratedGold) {
-    this.pendingTotalGeneratedGold = Math.max(this.pendingTotalGeneratedGold ?? 0, totalGeneratedGold);
+  queue(totalGeneratedGold, { force = false } = {}) {
+    if (!force && !this.shouldQueue(totalGeneratedGold)) {
+      return;
+    }
+
+    this.lastQueuedTotalGeneratedGold = Math.max(
+      this.lastQueuedTotalGeneratedGold ?? 0,
+      totalGeneratedGold,
+    );
+    this.pendingTotalGeneratedGold = Math.max(
+      this.pendingTotalGeneratedGold ?? 0,
+      totalGeneratedGold,
+    );
     this.flush();
+  }
+
+  shouldQueue(totalGeneratedGold) {
+    if (this.lastQueuedTotalGeneratedGold === null) {
+      return true;
+    }
+
+    if (totalGeneratedGold <= this.lastQueuedTotalGeneratedGold) {
+      return false;
+    }
+
+    if (this.minSyncDeltaGold <= 0) {
+      return true;
+    }
+
+    return totalGeneratedGold - this.lastQueuedTotalGeneratedGold >= this.minSyncDeltaGold;
   }
 
   flush({ force = false } = {}) {
@@ -151,7 +183,10 @@ export class LeaderboardGeneratedGoldSyncManager {
   }
 
   restorePending(totalGeneratedGold) {
-    this.pendingTotalGeneratedGold = Math.max(this.pendingTotalGeneratedGold ?? 0, totalGeneratedGold);
+    this.pendingTotalGeneratedGold = Math.max(
+      this.pendingTotalGeneratedGold ?? 0,
+      totalGeneratedGold,
+    );
   }
 
   queueCurrentTotalGeneratedGold() {
@@ -162,8 +197,14 @@ export class LeaderboardGeneratedGoldSyncManager {
 
     const flooredTotalGeneratedGold = Math.floor(totalGeneratedGold);
     if (flooredTotalGeneratedGold > 0) {
-      this.queue(flooredTotalGeneratedGold);
+      this.queue(flooredTotalGeneratedGold, { force: true });
     }
+  }
+
+  normalizeMinSyncDeltaGold(value) {
+    return Number.isFinite(value)
+      ? Math.max(0, Math.floor(value))
+      : DEFAULT_MIN_SYNC_DELTA_GOLD;
   }
 
   readTotalGeneratedGold(snapshot) {

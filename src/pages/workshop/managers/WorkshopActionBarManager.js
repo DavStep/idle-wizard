@@ -15,6 +15,7 @@ export class WorkshopActionBarManager {
     onPrestigeClick,
     onSummonInfoClick,
     onSummonNotice,
+    onSummonNoticeList,
     rewardEventsAvailable = false,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -23,6 +24,7 @@ export class WorkshopActionBarManager {
     this.onPrestigeClick = onPrestigeClick;
     this.onSummonInfoClick = onSummonInfoClick;
     this.onSummonNotice = onSummonNotice;
+    this.onSummonNoticeList = onSummonNoticeList;
     this.rewardEventsAvailable = rewardEventsAvailable;
     this.root = null;
     this.unsubscribe = null;
@@ -203,9 +205,13 @@ export class WorkshopActionBarManager {
       }
 
       if (!this.rewardEventsAvailable) {
-        this.onSummonNotice?.(this.getSuccessMessage(result));
+        this.showSummonNotices([
+          { message: this.getSuccessMessage(result) },
+          this.getManaSpendNotice(result, snapshot),
+        ]);
+      } else {
+        this.showSummonNotices([this.getManaSpendNotice(result, snapshot)]);
       }
-      this.showManaSpendNotice(result, snapshot);
       return this.canContinueSummonHold();
     }
 
@@ -305,12 +311,35 @@ export class WorkshopActionBarManager {
       .join(', ')} found`;
   }
 
-  showManaSpendNotice(result, snapshot) {
+  showSummonNotices(notices) {
+    const visibleNotices = notices.filter((notice) => notice?.message);
+
+    if (visibleNotices.length <= 0) {
+      return;
+    }
+
+    if (visibleNotices.length > 1 && this.onSummonNoticeList) {
+      this.onSummonNoticeList(visibleNotices);
+      return;
+    }
+
+    for (const notice of visibleNotices) {
+      const { message, ...options } = notice;
+      this.onSummonNotice?.(message, options);
+    }
+  }
+
+  getManaSpendNotice(result, snapshot) {
     const message = this.getManaSpendMessage(result, snapshot);
 
-    if (message) {
-      this.onSummonNotice?.(message, { flyoutKey: 'workshop-mana-spend' });
+    if (!message) {
+      return null;
     }
+
+    return {
+      message,
+      flyoutKey: 'workshop-mana-spend',
+    };
   }
 
   getManaSpendMessage(result, snapshot) {

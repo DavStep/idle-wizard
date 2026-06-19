@@ -9,7 +9,10 @@ import { getSeedIconFrameName, seedIconVariantFrameNames } from '../../assets/it
 import { formatGoldPriceText } from '../../shared/goldPrice.js';
 
 const FLYOUT_LIFETIME_MS = 1200;
-const FLYOUT_STACK_GAP_PX = 16;
+const FLYOUT_LIST_STAGGER_MS = 55;
+const FLYOUT_BURST_WINDOW_MS = 90;
+const MAX_FLYOUT_STAGGER_INDEX = 5;
+const MAX_POOLED_FLYOUTS = 12;
 const ITEM_DROP_LIFETIME_MS = 1300;
 const GOLD_TARGET_PULSE_MS = 520;
 const MAX_VISUAL_ITEM_DROPS = 12;
@@ -21,6 +24,10 @@ export class RewardFlyoutManager {
     this.root = null;
     this.timeouts = new Set();
     this.visualNodes = new Set();
+    this.flyoutPool = [];
+    this.flyoutTimeouts = new Map();
+    this.lastTextFlyoutAtMs = Number.NEGATIVE_INFINITY;
+    this.textFlyoutBurstIndex = 0;
   }
 
   mount(parent) {
@@ -37,37 +44,146 @@ export class RewardFlyoutManager {
     return this.root;
   }
 
-  show(message, { flyoutKey = null, visualOnly = false } = {}) {
+  show(message, { flyoutKey = null, visualOnly = false, delayMs = null } = {}) {
     if (!this.root || !message) {
       return null;
     }
 
-    this.removeKeyedFlyouts(flyoutKey);
+    const removedKeyedCount = this.removeKeyedFlyouts(flyoutKey);
 
-    const flyout = document.createElement('div');
-    flyout.className = this.flyoutClassName;
-    if (flyoutKey) {
-      flyout.dataset.flyoutKey = flyoutKey;
-    }
-    flyout.classList.toggle('is-visual-only', visualOnly);
-    flyout.setAttribute('role', 'status');
-    appendTextWithItemIcons(flyout, message);
+    const flyout = this.acquireFlyout();
+    const safeDelayMs =
+      delayMs === null || delayMs === undefined
+        ? this.getBurstDelay({ visualOnly, replacesExisting: removedKeyedCount > 0 })
+        : this.normalizeDelay(delayMs);
+    this.prepareFlyout(flyout, message, { flyoutKey, visualOnly, delayMs: safeDelayMs });
     this.root.append(flyout);
-    this.layoutTextFlyouts();
 
     const timeoutId = window.setTimeout(() => {
+      this.flyoutTimeouts.delete(flyout);
       this.timeouts.delete(timeoutId);
-      flyout.remove();
-      this.layoutTextFlyouts();
-    }, FLYOUT_LIFETIME_MS);
+      this.releaseFlyout(flyout);
+    }, FLYOUT_LIFETIME_MS + safeDelayMs);
 
     this.timeouts.add(timeoutId);
+    this.flyoutTimeouts.set(flyout, timeoutId);
     return flyout;
+  }
+
+  showList(items, { staggerMs = FLYOUT_LIST_STAGGER_MS } = {}) {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    const flyouts = [];
+    const safeStaggerMs = this.normalizeDelay(staggerMs);
+    let displayIndex = 0;
+
+    for (const item of items) {
+      const { message, options } = this.normalizeListItem(item);
+
+      if (!message) {
+        continue;
+      }
+
+      const delayMs = this.normalizeDelay(options.delayMs) + displayIndex * safeStaggerMs;
+      const flyout = this.show(message, { ...options, delayMs });
+
+      if (flyout) {
+        flyouts.push(flyout);
+        displayIndex += 1;
+      }
+    }
+
+    return flyouts;
+  }
+
+  normalizeListItem(item) {
+    if (typeof item === 'string') {
+      return { message: item, options: {} };
+    }
+
+    if (!item || typeof item !== 'object') {
+      return { message: '', options: {} };
+    }
+
+    const { message = '', ...options } = item;
+    return {
+      message: String(message),
+      options,
+    };
+  }
+
+  normalizeDelay(delayMs) {
+    const numericDelay = Number(delayMs);
+    return Number.isFinite(numericDelay) ? Math.max(0, numericDelay) : 0;
+  }
+
+  getBurstDelay({ visualOnly, replacesExisting }) {
+    if (visualOnly || replacesExisting) {
+      return 0;
+    }
+
+    const now = Date.now();
+
+    if (now - this.lastTextFlyoutAtMs > FLYOUT_BURST_WINDOW_MS) {
+      this.textFlyoutBurstIndex = 0;
+    } else {
+      this.textFlyoutBurstIndex += 1;
+    }
+
+    this.lastTextFlyoutAtMs = now;
+    return Math.min(this.textFlyoutBurstIndex, MAX_FLYOUT_STAGGER_INDEX) * FLYOUT_LIST_STAGGER_MS;
+  }
+
+  acquireFlyout() {
+    return this.flyoutPool.pop() ?? document.createElement('div');
+  }
+
+  prepareFlyout(flyout, message, { flyoutKey, visualOnly, delayMs }) {
+    flyout.replaceChildren();
+    flyout.removeAttribute('style');
+    flyout.className = this.flyoutClassName;
+    flyout.setAttribute('role', 'status');
+
+    if (flyoutKey) {
+      flyout.dataset.flyoutKey = flyoutKey;
+    } else {
+      delete flyout.dataset.flyoutKey;
+    }
+
+    flyout.classList.toggle('is-visual-only', visualOnly);
+
+    if (delayMs > 0) {
+      flyout.style.animationDelay = `${delayMs}ms`;
+    }
+
+    appendTextWithItemIcons(flyout, message);
+  }
+
+  releaseFlyout(flyout) {
+    const timeoutId = this.flyoutTimeouts.get(flyout);
+
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+      this.timeouts.delete(timeoutId);
+      this.flyoutTimeouts.delete(flyout);
+    }
+
+    flyout.remove();
+    flyout.replaceChildren();
+    flyout.removeAttribute('style');
+    delete flyout.dataset.flyoutKey;
+    flyout.className = this.flyoutClassName;
+
+    if (this.flyoutPool.length < MAX_POOLED_FLYOUTS) {
+      this.flyoutPool.push(flyout);
+    }
   }
 
   removeKeyedFlyouts(flyoutKey) {
     if (!this.root || !flyoutKey) {
-      return;
+      return 0;
     }
 
     const keyedFlyouts = [...this.root.children].filter(
@@ -75,37 +191,10 @@ export class RewardFlyoutManager {
     );
 
     for (const flyout of keyedFlyouts) {
-      flyout.remove();
-    }
-  }
-
-  layoutTextFlyouts() {
-    const flyouts = this.getTextFlyouts();
-    let offset = 0;
-
-    for (let index = flyouts.length - 1; index >= 0; index -= 1) {
-      const flyout = flyouts[index];
-      flyout.style.setProperty('--style-flyout-offset', `${offset}px`);
-      offset -= this.getFlyoutStackStep(flyout);
-    }
-  }
-
-  getFlyoutStackStep(flyout) {
-    const rectHeight = Number(flyout?.getBoundingClientRect?.().height) || 0;
-    const offsetHeight = Number(flyout?.offsetHeight) || 0;
-    const scrollHeight = Number(flyout?.scrollHeight) || 0;
-
-    return Math.max(FLYOUT_STACK_GAP_PX, rectHeight, offsetHeight, scrollHeight);
-  }
-
-  getTextFlyouts() {
-    if (!this.root) {
-      return [];
+      this.releaseFlyout(flyout);
     }
 
-    return [...this.root.children].filter(
-      (child) => !child.classList?.contains('is-visual-only'),
-    );
+    return keyedFlyouts.length;
   }
 
   showReward(event) {
@@ -856,6 +945,8 @@ export class RewardFlyoutManager {
     }
 
     this.timeouts.clear();
+    this.flyoutTimeouts.clear();
+    this.flyoutPool = [];
     for (const node of this.visualNodes) {
       node.remove();
     }

@@ -631,6 +631,7 @@ export class BrewingCauldronManager {
     this.setHidden(refs.guide, true);
     this.hideExtraCauldronGuideRows(refs, 0);
     this.ensureCauldronEmptyRow(refs);
+    this.setHidden(refs.items, false);
     refs.items.classList.add('is-empty');
     this.setHidden(refs.empty, false);
     this.setText(
@@ -650,6 +651,16 @@ export class BrewingCauldronManager {
   renderCauldronItems(refs, brewing) {
     this.ensureCauldronEmptyRow(refs);
 
+    if (brewing.activeBrew) {
+      this.setHidden(refs.items, true);
+      refs.items.classList.remove('is-empty');
+      this.setHidden(refs.empty, true);
+      this.setText(refs.empty, '');
+      this.hideExtraIngredientRows(refs, 0);
+      return;
+    }
+
+    this.setHidden(refs.items, false);
     const hasIngredients = brewing.ingredients.length > 0;
     const showGuideContents = Boolean(brewing.selectedRecipe && !brewing.activeBrew);
     const showEmpty = !hasIngredients && !brewing.activeBrew && !showGuideContents;

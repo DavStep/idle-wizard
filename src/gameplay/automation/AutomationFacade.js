@@ -1,6 +1,8 @@
 import { BrewingAutomationManager } from './managers/BrewingAutomationManager.js';
 import { GardenAutomationManager } from './managers/GardenAutomationManager.js';
 import { SeedSummoningAutomationManager } from './managers/SeedSummoningAutomationManager.js';
+import { SeedSummoningAutomationSettingsManager } from './managers/SeedSummoningAutomationSettingsManager.js';
+import { automationResearchIds } from './automationResearchIds.js';
 
 export class AutomationFacade {
   static explain =
@@ -15,12 +17,14 @@ export class AutomationFacade {
     researchFacade,
     seedSummoningFacade,
   } = {}) {
+    this.seedSummoningSettingsManager = new SeedSummoningAutomationSettingsManager();
     this.seedSummoningAutomationManager = new SeedSummoningAutomationManager({
       brewingFacade,
       gameplayLogFacade,
       onSeedSummoned,
       researchFacade,
       seedSummoningFacade,
+      seedSummoningSettingsManager: this.seedSummoningSettingsManager,
     });
     this.gardenAutomationManager = new GardenAutomationManager({
       gardenFacade,
@@ -33,6 +37,7 @@ export class AutomationFacade {
       researchFacade,
     });
     this.registered = false;
+    this.researchFacade = researchFacade;
   }
 
   initialize(ecsManagers) {
@@ -50,5 +55,40 @@ export class AutomationFacade {
     this.brewingAutomationManager.update();
     this.seedSummoningAutomationManager.update();
     this.gardenAutomationManager.update();
+  }
+
+  setSeedSummoningEnabled(enabled) {
+    return this.seedSummoningSettingsManager.setEnabled(enabled);
+  }
+
+  toggleSeedSummoningEnabled() {
+    return this.seedSummoningSettingsManager.toggleEnabled();
+  }
+
+  setSeedSummoningManaReserve(manaReserve) {
+    return this.seedSummoningSettingsManager.setManaReserve(manaReserve);
+  }
+
+  getSnapshot() {
+    return {
+      seedSummoning: this.seedSummoningSettingsManager.getSnapshot({
+        unlocked: this.hasSeedSummoningResearch(),
+      }),
+    };
+  }
+
+  getPersistenceSnapshot() {
+    return this.seedSummoningSettingsManager.getPersistenceSnapshot();
+  }
+
+  applyPersistenceSnapshot(snapshot = {}) {
+    this.seedSummoningSettingsManager.applyPersistenceSnapshot(snapshot);
+  }
+
+  hasSeedSummoningResearch() {
+    return (
+      this.researchFacade?.hasCompletedResearch?.(automationResearchIds.autoSeedSpawn()) ===
+      true
+    );
   }
 }

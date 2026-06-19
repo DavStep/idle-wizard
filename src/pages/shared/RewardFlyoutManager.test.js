@@ -246,7 +246,7 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
-  it('stacks older text flyouts above the newest without offsetting visual-only notices', () => {
+  it('keeps independent text flyouts on the same anchor', () => {
     const host = document.createElement('section');
     document.body.append(host);
 
@@ -257,30 +257,56 @@ describe('RewardFlyoutManager', () => {
     const second = manager.show('-10 mana');
 
     expect(hidden?.style.getPropertyValue('--style-flyout-offset')).toBe('');
-    expect(first?.style.getPropertyValue('--style-flyout-offset')).toBe('-16px');
-    expect(second?.style.getPropertyValue('--style-flyout-offset')).toBe('0px');
+    expect(first?.style.getPropertyValue('--style-flyout-offset')).toBe('');
+    expect(second?.style.getPropertyValue('--style-flyout-offset')).toBe('');
+    expect(hidden?.style.animationDelay).toBe('');
+    expect(first?.style.animationDelay).toBe('');
+    expect(second?.style.animationDelay).toBe('55ms');
 
     manager.unmount();
   });
 
-  it('uses measured flyout height when stacking taller notices', () => {
+  it('shows list flyouts together with a small stagger', () => {
+    const host = document.createElement('section');
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    const flyouts = manager.showList([
+      { message: 'sage seed found' },
+      { message: '-10 mana', flyoutKey: 'mana-spend' },
+    ]);
+
+    expect(flyouts.map((flyout) => flyout.textContent)).toEqual([
+      'sage seed found',
+      '-10 mana',
+    ]);
+    expect(host.querySelectorAll('.room-reward-flyout')).toHaveLength(2);
+    expect(flyouts[0]?.style.animationDelay).toBe('');
+    expect(flyouts[1]?.style.animationDelay).toBe('55ms');
+    expect(flyouts[1]?.dataset.flyoutKey).toBe('mana-spend');
+
+    manager.unmount();
+  });
+
+  it('reuses pooled text flyout nodes after they expire', () => {
     const host = document.createElement('section');
     document.body.append(host);
 
     const manager = new RewardFlyoutManager();
     manager.mount(host);
     const first = manager.show('older notice');
-    const second = manager.show('newer wrapped notice');
 
-    Object.defineProperty(second, 'offsetHeight', {
-      configurable: true,
-      value: 34,
-    });
+    vi.advanceTimersByTime(1200);
 
-    manager.layoutTextFlyouts();
+    expect(host.querySelector('.room-reward-flyout')).toBeNull();
 
-    expect(first?.style.getPropertyValue('--style-flyout-offset')).toBe('-34px');
-    expect(second?.style.getPropertyValue('--style-flyout-offset')).toBe('0px');
+    const second = manager.show('new notice');
+
+    expect(second).toBe(first);
+    expect(second?.textContent).toBe('new notice');
+    expect(second?.style.animationDelay).toBe('');
+    expect(host.querySelector('.room-reward-flyout')).toBe(second);
 
     manager.unmount();
   });
@@ -300,7 +326,7 @@ describe('RewardFlyoutManager', () => {
 
     expect(textFlyouts).toHaveLength(1);
     expect(replacement?.textContent).toBe('-20 mana');
-    expect(replacement?.style.getPropertyValue('--style-flyout-offset')).toBe('0px');
+    expect(replacement?.style.getPropertyValue('--style-flyout-offset')).toBe('');
 
     manager.unmount();
   });

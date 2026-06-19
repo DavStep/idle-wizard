@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.8
+
+- Added automatic seed summoning controls with an optional mana reserve.
+- Added seed drop preferences and a clearer Workshop summoning popup for tuned seed odds.
+- Improved reward flyouts, player info popups, and character portrait loading for steadier mobile UI.
+- Hardened backend save sanitation and maintenance cleanup around automation, seed preferences, and player data.
+
 ## 0.2.7
 
 - Added a Workshop drop-chance popup so researched seed odds can be checked before summoning.

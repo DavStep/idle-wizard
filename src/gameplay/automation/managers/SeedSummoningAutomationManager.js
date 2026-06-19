@@ -7,12 +7,14 @@ export class SeedSummoningAutomationManager {
     onSeedSummoned,
     researchFacade,
     seedSummoningFacade,
+    seedSummoningSettingsManager,
   } = {}) {
     this.brewingFacade = brewingFacade;
     this.gameplayLogFacade = gameplayLogFacade;
     this.onSeedSummoned = onSeedSummoned;
     this.researchFacade = researchFacade;
     this.seedSummoningFacade = seedSummoningFacade;
+    this.seedSummoningSettingsManager = seedSummoningSettingsManager;
   }
 
   update() {
@@ -20,7 +22,14 @@ export class SeedSummoningAutomationManager {
       return;
     }
 
-    const reservedMana = this.getReservedManaForAutoBrew();
+    if (this.seedSummoningSettingsManager?.isEnabled?.() === false) {
+      return;
+    }
+
+    const reservedMana = Math.max(
+      this.getReservedManaForAutoBrew(),
+      this.seedSummoningSettingsManager?.getManaReserve?.() ?? 0,
+    );
 
     if (!this.seedSummoningFacade?.canSummonSeed({ reservedMana })) {
       return;

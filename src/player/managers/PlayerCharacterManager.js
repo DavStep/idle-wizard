@@ -1,6 +1,7 @@
 import {
   getPlayerCharacterOptions,
   normalizePlayerCharacter,
+  normalizeSelectablePlayerCharacter,
 } from '../playerCharacters.js';
 
 const CHARACTER_STORAGE_KEY = 'idle-wizard.player.character';
@@ -8,7 +9,7 @@ const CHARACTER_STORAGE_KEY = 'idle-wizard.player.character';
 export class PlayerCharacterManager {
   constructor({ storage } = {}) {
     this.storage = storage ?? this.getDefaultStorage();
-    this.character = normalizePlayerCharacter(this.readStoredCharacter());
+    this.character = normalizeSelectablePlayerCharacter(this.readStoredCharacter());
   }
 
   getCharacter() {
@@ -20,7 +21,7 @@ export class PlayerCharacterManager {
   }
 
   setCharacter(character) {
-    this.character = normalizePlayerCharacter(character);
+    this.character = normalizeSelectablePlayerCharacter(character);
     this.writeStoredCharacter(this.character);
     return this.character;
   }

@@ -22,6 +22,8 @@ function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}
     gameplayLogFacade: resourceFacade,
     itemsFacade: resourceFacade,
     researchFacade: resourceFacade,
+    automationFacade: resourceFacade,
+    seedSummoningFacade: resourceFacade,
     prestigeFacade: resourceFacade,
     visualSettingsFacade: resourceFacade,
     shopFacade: resourceFacade,
@@ -35,6 +37,19 @@ function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}
 }
 
 describe('GameplayPersistenceFacade', () => {
+  it('autosaves once per minute during active play', () => {
+    const storageManager = {
+      save: vi.fn(() => true),
+    };
+    const facade = createPersistenceFacade({ storageManager });
+
+    expect(facade.afterUpdate({ deltaSeconds: 59 })).toBe(false);
+    expect(storageManager.save).not.toHaveBeenCalled();
+
+    expect(facade.afterUpdate({ deltaSeconds: 1 })).toBe(true);
+    expect(storageManager.save).toHaveBeenCalledTimes(1);
+  });
+
   it('flushes the latest save before page reload and when the page hides', () => {
     const windowListeners = new Map();
     const documentListeners = new Map();

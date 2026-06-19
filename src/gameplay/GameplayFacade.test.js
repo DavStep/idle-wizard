@@ -177,6 +177,9 @@ describe('GameplayFacade', () => {
     first.gameplayFacade.itemsFacade.addItem(1, 3);
     first.gameplayFacade.itemsFacade.addItem(1001, 2);
     first.gameplayFacade.buyVisualSettingOption('theme', 'black');
+    first.gameplayFacade.setSeedSummoningAutoEnabled(false);
+    first.gameplayFacade.setSeedSummoningManaReserve(25);
+    first.gameplayFacade.setSeedDropPreference('sageSeed', 'high');
     first.gameplayFacade.addBrewingIngredient(1001);
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
@@ -197,6 +200,15 @@ describe('GameplayFacade', () => {
     });
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
     expect(snapshot.visualSettings.researched.theme.black).toBe(true);
+    expect(snapshot.seedSummoning.autoSummoning).toMatchObject({
+      enabled: false,
+      manaReserve: 25,
+    });
+    expect(snapshot.seedSummoning.dropChances[0]).toMatchObject({
+      key: 'sageSeed',
+      dropPreference: 'high',
+      preferenceWeight: 3,
+    });
     expect(snapshot.brewing.ingredients).toEqual([
       {
         slotIndex: 0,
@@ -1378,13 +1390,23 @@ describe('GameplayFacade', () => {
       cost: 20,
       quantity: 2,
       canSummon: true,
+      autoSummoning: {
+        unlocked: false,
+        enabled: true,
+        manaReserve: 0,
+        maxManaReserve: 5000,
+      },
       dropChances: [
         {
           itemTypeId: 1,
           key: 'sageSeed',
           label: 'sage seed',
           kind: 'seed',
+          baseDropWeight: 1,
+          dropPreference: 'medium',
+          preferenceWeight: 2,
           dropWeight: 1,
+          effectiveDropWeight: 2,
           dropChance: 1,
         },
       ],
@@ -1860,6 +1882,45 @@ describe('GameplayFacade', () => {
       kind: 'seed',
       quantity: 1,
     });
+  });
+
+  it('lets auto seed summoning be disabled and reserve mana', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    unlockSageSeed(gameplayFacade);
+    gameplayFacade.crystalFacade.add(10);
+
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoSeedSpawn())).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.setSeedSummoningAutoEnabled(false)).toEqual({
+      ok: true,
+      enabled: false,
+    });
+
+    ecsFacade.update({ deltaSeconds: 20 });
+
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(20);
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
+
+    expect(gameplayFacade.setSeedSummoningAutoEnabled(true)).toEqual({
+      ok: true,
+      enabled: true,
+    });
+    expect(gameplayFacade.setSeedSummoningManaReserve(15)).toEqual({
+      ok: true,
+      manaReserve: 15,
+    });
+
+    ecsFacade.update({ deltaSeconds: 4 });
+
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(24);
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
+
+    ecsFacade.update({ deltaSeconds: 1 });
+
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(15);
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(1);
   });
 
   it('buys advanced speed research with ruby and reveals the next level', () => {

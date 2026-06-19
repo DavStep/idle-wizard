@@ -243,6 +243,42 @@ Expected post-wipe counts:
 - NPC market rows remain, but `npc_need`, `npc_stock`, `demand_score`, and
   `supply_score` should be neutral/reset values.
 
+## Zero-Income Player Data Wipe
+
+Use this only for deleting player-owned state for accounts with
+`leaderboard.total_income = 0`. It deletes the matching `player` rows and related
+save/session/feedback/leaderboard/chat/alliance/shop/discovery rows, but keeps
+nonzero-income players and global NPC market rows.
+
+The wipe requires `locked` maintenance mode and a one-time reset key. Before
+running it, drain active clients, lock writes, and take a full player-data backup:
+
+```sh
+node scripts/maintenance.js backup-player-data-wipe \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+Run the filtered wipe while still locked:
+
+```sh
+node scripts/maintenance.js wipe-zero-income-player-data \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --key YYYY-MM-DD-zero-income-cleanup --confirm-live
+```
+
+Then verify:
+
+```sh
+node scripts/maintenance.js verify-zero-income-player-data-wipe \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+Expected post-wipe counts:
+
+- `zero_income_leaderboard_count` is `0`.
+- `player_count` and `leaderboard_count` drop only by the matching zero-income
+  identity count.
+
 Run the idempotent player-save migration while still locked:
 
 ```sh

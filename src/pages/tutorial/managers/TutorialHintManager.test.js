@@ -196,8 +196,6 @@ describe('TutorialHintManager', () => {
     expect(pointer?.dataset.placement).toBe('bottom-right');
     expect(pointer?.style.left).toBe('50px');
     expect(pointer?.style.top).toBe('35px');
-    expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('-1');
-    expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
 
   it('does not restart the pointer animation when the same cue repeats', () => {
@@ -289,8 +287,6 @@ describe('TutorialHintManager', () => {
     expect(pointer?.dataset.placement).toBe('top-left');
     expect(pointer?.style.left).toBe('310px');
     expect(pointer?.style.top).toBe('651px');
-    expect(pointer?.style.getPropertyValue('--tutorial-pointer-scale-x')).toBe('1');
-    expect(pointer?.style.getPropertyValue('--tutorial-pointer-rotation')).toBe('45deg');
   });
 
   it('keeps the pointer anchored to the target inside an active research row', () => {

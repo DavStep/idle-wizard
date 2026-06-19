@@ -4,8 +4,8 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 
 ## Box Construction
 
-- Ordinary room boxes use `2px` black borders, compact padding, and no shadow.
-- Box titles sit embedded over the top border on the white surface.
+- Ordinary room boxes use compact padding and no shadow; the white theme uses `1px` borders, while non-white themes use `2px` ordinary borders.
+- Box titles sit embedded over the top border on the same room surface.
 - Secondary border labels, such as counts, close/current controls, actions, and tabs, use smaller normal-weight text centered on the border line.
 - Popup/dialog boxes use the thicker dialog treatment: `2px` border, `20px` padding, and bottom-right shadow.
 
@@ -22,6 +22,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 ## Inline Row Actions
 
 - Row actions are text controls on the line, not separate decorative cards.
+- Hover and press states must not tint row or button backgrounds; underline text or preserve selected borders instead.
 - Buy/place/claim prices stay right-aligned and use tabular numerals.
 - Disabled or locked right-side actions use muted text and keep the same row height as enabled rows.
 

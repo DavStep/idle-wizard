@@ -3,7 +3,7 @@ import { GameplayMigrationManager } from './managers/GameplayMigrationManager.js
 import { GameplaySaveManager } from './managers/GameplaySaveManager.js';
 import { GameplayStorageManager } from './managers/GameplayStorageManager.js';
 
-const AUTOSAVE_SECONDS = 30;
+const AUTOSAVE_SECONDS = 60;
 
 export class GameplayPersistenceFacade {
   static explain =
@@ -19,6 +19,8 @@ export class GameplayPersistenceFacade {
     gameplayLogFacade,
     itemsFacade,
     researchFacade,
+    automationFacade,
+    seedSummoningFacade,
     prestigeFacade,
     visualSettingsFacade,
     shopFacade,
@@ -39,6 +41,8 @@ export class GameplayPersistenceFacade {
       gameplayLogFacade,
       itemsFacade,
       researchFacade,
+      automationFacade,
+      seedSummoningFacade,
       prestigeFacade,
       visualSettingsFacade,
       shopFacade,
@@ -55,6 +59,8 @@ export class GameplayPersistenceFacade {
       gameplayLogFacade,
       itemsFacade,
       researchFacade,
+      automationFacade,
+      seedSummoningFacade,
       prestigeFacade,
       visualSettingsFacade,
       shopFacade,

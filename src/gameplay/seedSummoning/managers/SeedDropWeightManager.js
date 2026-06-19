@@ -4,11 +4,16 @@ export class SeedDropWeightManager {
   }
 
   pickSeed(seeds) {
-    const totalWeight = seeds.reduce((sum, seed) => sum + seed.dropWeight, 0);
+    const totalWeight = seeds.reduce((sum, seed) => sum + this.getWeight(seed), 0);
+
+    if (totalWeight <= 0) {
+      return null;
+    }
+
     let roll = this.random() * totalWeight;
 
     for (const seed of seeds) {
-      roll -= seed.dropWeight;
+      roll -= this.getWeight(seed);
 
       if (roll <= 0) {
         return seed;
@@ -19,15 +24,28 @@ export class SeedDropWeightManager {
   }
 
   getDropChances(seeds) {
-    const totalWeight = seeds.reduce((sum, seed) => sum + seed.dropWeight, 0);
+    const totalWeight = seeds.reduce((sum, seed) => sum + this.getWeight(seed), 0);
+
+    if (seeds.length <= 0) {
+      return [];
+    }
 
     if (totalWeight <= 0) {
-      return [];
+      return seeds.map((seed) => ({
+        ...seed,
+        dropChance: 0,
+      }));
     }
 
     return seeds.map((seed) => ({
       ...seed,
-      dropChance: seed.dropWeight / totalWeight,
+      dropChance: this.getWeight(seed) / totalWeight,
     }));
+  }
+
+  getWeight(seed) {
+    const weight = Number(seed.effectiveDropWeight ?? seed.dropWeight);
+
+    return Number.isFinite(weight) && weight > 0 ? weight : 0;
   }
 }

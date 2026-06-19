@@ -3618,6 +3618,40 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page')).not.toBeNull();
   });
 
+  it('retains NPC market prices only while Market is open', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const releasePrices = vi.fn();
+    const npcMarketFacade = {
+      retainPrices: vi.fn(() => releasePrices),
+    };
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      npcMarketFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    expect(npcMarketFacade.retainPrices).not.toHaveBeenCalled();
+
+    clickRoomTab(stage, 'shop');
+
+    expect(npcMarketFacade.retainPrices).toHaveBeenCalledTimes(1);
+
+    gameplayFacade.publishSnapshot();
+
+    expect(npcMarketFacade.retainPrices).toHaveBeenCalledTimes(1);
+
+    clickRoomTab(stage, 'workshop');
+
+    expect(releasePrices).toHaveBeenCalledTimes(1);
+
+    pagesFacade.unmount();
+
+    expect(releasePrices).toHaveBeenCalledTimes(1);
+  });
+
   it('reveals Workshop non-prestige secondary buttons by milestone level', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

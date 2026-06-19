@@ -308,4 +308,55 @@ describe('BrewingCauldronManager', () => {
     });
     expect(manager.canFillSelectedRecipe(brewing)).toBe(false);
   });
+
+  it('reuses the fixed cauldron content slot while brewing is active', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: false,
+        canBrew: false,
+        activeBrew: {
+          key: 'manaTonic',
+          label: 'mana tonic',
+          phase: 'brewing',
+          canStartBottling: false,
+          canCollect: false,
+          remainingMs: 28_000,
+          totalMs: 30_000,
+          bottlingTotalMs: 2_000,
+          progress: 0.1,
+        },
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const items = parent.querySelector('.brewing-page__cauldron-items');
+    const active = parent.querySelector('.brewing-page__active-brew');
+
+    expect(items?.hidden).toBe(true);
+    expect(active?.hidden).toBe(false);
+    expect(active?.textContent).toContain('brewing mana tonic');
+
+    snapshot.brewing.activeBrew = null;
+    snapshot.brewing.canAddIngredient = true;
+    manager.render(snapshot);
+
+    expect(items?.hidden).toBe(false);
+    expect(active?.hidden).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
 });
