@@ -95,4 +95,68 @@ describe('TopPanelSettingsManager', () => {
 
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
+
+  it('shows plot view in configurations and applies rows or boxes selection', () => {
+    const stage = document.createElement('section');
+    const viewManager = new TopPanelViewManager();
+    let playerSnapshot = {
+      username: 'wizard',
+      theme: 'white',
+      font: 'lexend',
+      colorMode: 'monochrome',
+      character: 'elara',
+      iconMode: 'icons',
+      progressBar: 'regular',
+      plotView: 'boxes',
+    };
+    const playerListeners = new Set();
+    const playerFacade = {
+      getSnapshot: vi.fn(() => playerSnapshot),
+      subscribe: vi.fn((listener) => {
+        playerListeners.add(listener);
+        listener(playerSnapshot);
+        return () => playerListeners.delete(listener);
+      }),
+      setPlotView: vi.fn((plotView) => {
+        playerSnapshot = { ...playerSnapshot, plotView };
+
+        for (const listener of playerListeners) {
+          listener(playerSnapshot);
+        }
+      }),
+    };
+    document.body.append(stage);
+    viewManager.mount(stage);
+
+    const manager = new TopPanelSettingsManager({ playerFacade });
+    manager.mount(viewManager.getRefs());
+    manager.showSettings();
+    viewManager
+      .getRefs()
+      .settingsTabButtons.find((button) => button.dataset.settingsTab === 'theme')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const plotViewButtons = viewManager.getRefs().plotViewButtons;
+
+    expect(
+      stage.querySelector('.room-top-panel__plotView-section .style-box__title')?.textContent,
+    ).toBe('plot view');
+    expect(plotViewButtons.map((button) => button.textContent)).toEqual(['rows', 'boxes']);
+    expect(plotViewButtons[1].getAttribute('aria-checked')).toBe('true');
+
+    plotViewButtons[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.setPlotView).toHaveBeenCalledWith('rows');
+    expect(playerSnapshot.plotView).toBe('rows');
+    expect(plotViewButtons[0].getAttribute('aria-checked')).toBe('true');
+
+    plotViewButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.setPlotView).toHaveBeenCalledWith('boxes');
+    expect(playerSnapshot.plotView).toBe('boxes');
+    expect(plotViewButtons[1].getAttribute('aria-checked')).toBe('true');
+
+    manager.unmount();
+    viewManager.unmount();
+  });
 });

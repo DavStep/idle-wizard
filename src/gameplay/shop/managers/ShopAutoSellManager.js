@@ -40,7 +40,7 @@ export class ShopAutoSellManager {
     const progressSeconds = this.getGlobalProgressSeconds(autoSellSeconds, nowSeconds);
     const activeSlots = this.shopShelfEntityManager
       .getSlotSnapshots()
-      .filter((slot) => slot.unlocked && slot.sellItemTypeId);
+      .filter((slot) => this.isActiveSellSlot(slot));
     this.syncPriceRetention(activeSlots);
 
     if (activeSlots.length <= 0) {
@@ -164,6 +164,7 @@ export class ShopAutoSellManager {
     const quantity = this.getBulkSellQuantity(slot.sellItemTypeId, {
       availableQuantity,
       npcNeed,
+      slot,
     });
 
     if (quantity <= 0 || !this.canSellItem(slot.sellItemTypeId, quantity)) {
@@ -189,6 +190,7 @@ export class ShopAutoSellManager {
 
     const totalGold = quote.totalPriceGold;
     this.goldFacade.add(totalGold);
+    this.shopShelfEntityManager.consumeSlotSellQuantityLimit?.(slot.slotNumber, quantity);
     void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
     this.onItemSold?.({
       item,
@@ -216,6 +218,7 @@ export class ShopAutoSellManager {
   getBulkSellQuantity(itemTypeId, {
     availableQuantity = this.getAvailableQuantity(itemTypeId),
     npcNeed = this.getNpcNeed(itemTypeId),
+    slot = null,
   } = {}) {
     if (
       !Number.isFinite(availableQuantity) ||
@@ -225,7 +228,17 @@ export class ShopAutoSellManager {
       return 0;
     }
 
-    return Math.max(0, Math.min(10_000, Math.floor(availableQuantity), npcNeed));
+    const slotQuantityLimit = this.getSlotQuantityLimit(slot);
+
+    return Math.max(
+      0,
+      Math.min(
+        10_000,
+        Math.floor(availableQuantity),
+        npcNeed,
+        slotQuantityLimit ?? Number.POSITIVE_INFINITY,
+      ),
+    );
   }
 
   getAvailableQuantity(itemTypeId) {
@@ -263,6 +276,27 @@ export class ShopAutoSellManager {
     }
 
     return Math.floor(need);
+  }
+
+  isActiveSellSlot(slot) {
+    return Boolean(
+      slot?.unlocked &&
+        slot.sellItemTypeId &&
+        (slot.sellLimitMode !== 'amount' || this.getSlotQuantityLimit(slot) > 0),
+    );
+  }
+
+  getSlotQuantityLimit(slot) {
+    if (slot?.sellLimitMode !== 'amount') {
+      return null;
+    }
+
+    const quantity = Math.floor(Number(slot.sellQuantityLimit));
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return 0;
+    }
+
+    return quantity;
   }
 
   quoteSale(item, quantity, fallbackPriceGold) {

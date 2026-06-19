@@ -331,7 +331,46 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
-  it('starts herb drops from the end of the garden progress bar', () => {
+  it('starts herb drops from the plant inside the garden plot', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const host = document.createElement('section');
+    const row = document.createElement('button');
+    row.className = 'garden-page__plot-row';
+    row.dataset.gardenTileNumber = '1';
+    setRect(row, { left: 100, top: 280, width: 360, height: 40 });
+
+    const frame = document.createElement('span');
+    frame.className = 'garden-page__plot-box-frame';
+    setRect(frame, { left: 180, top: 280, width: 120, height: 70 });
+
+    const plant = document.createElement('span');
+    plant.className = 'garden-page__plot-plant';
+    setRect(plant, { left: 222, top: 292, width: 36, height: 42 });
+
+    const progress = document.createElement('span');
+    progress.className = 'garden-page__plot-progress';
+    setRect(progress, { left: 160, top: 318, width: 280, height: 5 });
+
+    frame.append(plant);
+    row.append(frame, progress);
+    host.append(row);
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'herb_harvested',
+      herb: { key: 'sageHerb', label: 'sage', kind: 'herb' },
+      quantity: 1,
+      tileNumber: 1,
+    });
+
+    const anchor = document.querySelector('.room-item-drop-anchor.is-herb');
+    expect(anchor?.style.left).toBe('240px');
+    expect(anchor?.style.top).toBe('313px');
+  });
+
+  it('falls back to the garden progress rail when no plot plant is measurable', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');
     const row = document.createElement('button');

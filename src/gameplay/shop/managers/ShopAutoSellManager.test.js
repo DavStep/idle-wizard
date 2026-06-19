@@ -20,6 +20,16 @@ function createSlotManager({
     setSellProgressSeconds: (nextProgressSeconds) => {
       progressSeconds = nextProgressSeconds;
     },
+    consumeSlotSellQuantityLimit: (slotNumber, quantity) => {
+      const slot = slots.find((candidate) => candidate.slotNumber === slotNumber);
+
+      if (slot?.sellLimitMode !== 'amount') {
+        return null;
+      }
+
+      slot.sellQuantityLimit = Math.max(0, slot.sellQuantityLimit - quantity);
+      return slot.sellQuantityLimit;
+    },
   };
 }
 
@@ -129,6 +139,70 @@ describe('ShopAutoSellManager', () => {
     expect(removeItem).toHaveBeenCalledTimes(1);
     expect(addGold).toHaveBeenCalledTimes(1);
     expect(addGold).toHaveBeenCalledWith(6);
+  });
+
+  it('sells only the marked NPC stand amount and decrements it', () => {
+    let nowMs = 5_000;
+    let quantity = 5;
+    const addGold = vi.fn();
+    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
+      quantity -= removeQuantity;
+      return {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+        quantity: removeQuantity,
+      };
+    });
+    const slotManager = createSlotManager({
+      slots: [
+        {
+          slotNumber: 1,
+          unlocked: true,
+          sellItemTypeId: 1,
+          sellLimitMode: 'amount',
+          sellQuantityLimit: 2,
+        },
+      ],
+    });
+    const manager = new ShopAutoSellManager({
+      goldFacade: {
+        add: addGold,
+      },
+      itemsFacade: {
+        getItemDefinition: () => ({
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+        }),
+        getItemQuantity: () => quantity,
+        removeItem,
+      },
+      shopBalanceManager: {
+        getAutoSellSeconds: () => 5,
+      },
+      shopNpcPriceManager: {
+        getNpcBuyPriceGold: () => 4,
+        getNpcNeed: () => 10,
+        recordSellToNpc: vi.fn(),
+      },
+      shopShelfEntityManager: slotManager,
+      now: () => nowMs,
+    });
+
+    manager.update(5);
+
+    expect(removeItem).toHaveBeenCalledWith(1, 2);
+    expect(addGold).toHaveBeenCalledWith(8);
+    expect(quantity).toBe(3);
+    expect(slotManager.getSlotSnapshots()[0].sellQuantityLimit).toBe(0);
+
+    nowMs = 10_000;
+    manager.update(5);
+
+    expect(removeItem).toHaveBeenCalledTimes(1);
   });
 
   it('sells all eligible NPC stands on one shared shop timer', () => {

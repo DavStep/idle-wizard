@@ -18,6 +18,7 @@ describe('PlayerFacade', () => {
       character: 'elara',
       iconMode: 'icons',
       progressBar: 'regular',
+      plotView: 'boxes',
     });
   });
 
@@ -36,6 +37,7 @@ describe('PlayerFacade', () => {
       character: 'elara',
       iconMode: 'icons',
       progressBar: 'regular',
+      plotView: 'boxes',
     });
   });
 
@@ -180,6 +182,19 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().progressBar).toBe('regular');
   });
 
+  it('normalizes plot view', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setPlotView('rows');
+    expect(playerFacade.getSnapshot().plotView).toBe('rows');
+
+    playerFacade.setPlotView('box');
+    expect(playerFacade.getSnapshot().plotView).toBe('boxes');
+
+    playerFacade.setPlotView('unknown');
+    expect(playerFacade.getSnapshot().plotView).toBe('boxes');
+  });
+
   it('normalizes font', () => {
     const playerFacade = new PlayerFacade();
 
@@ -204,6 +219,7 @@ describe('PlayerFacade', () => {
       character: 'mira',
       iconMode: 'icons',
       progressBar: 'gradient',
+      plotView: 'rows',
       usernamePromptSeen: true,
     });
 
@@ -216,6 +232,7 @@ describe('PlayerFacade', () => {
       character: 'mira',
       iconMode: 'icons',
       progressBar: 'gradient',
+      plotView: 'rows',
     });
   });
 

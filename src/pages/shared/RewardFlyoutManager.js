@@ -443,6 +443,26 @@ export class RewardFlyoutManager {
     const row = this.root?.parentElement?.querySelector(
       `.garden-page__plot-row[data-garden-tile-number="${tileNumber}"]`,
     );
+    const plant = row?.querySelector('.garden-page__plot-plant:not([hidden])');
+    const plantRect = this.getElementRect(plant);
+
+    if (plantRect) {
+      return {
+        x: plantRect.left + plantRect.width / 2,
+        y: plantRect.top + plantRect.height / 2,
+      };
+    }
+
+    const boxFrame = row?.querySelector('.garden-page__plot-box-frame');
+    const boxFrameRect = this.getElementRect(boxFrame);
+
+    if (boxFrameRect) {
+      return {
+        x: boxFrameRect.left + boxFrameRect.width / 2,
+        y: boxFrameRect.top + boxFrameRect.height * 0.62,
+      };
+    }
+
     const progress = row?.querySelector('.garden-page__plot-progress');
     const progressRect =
       progress && !progress.hidden ? this.getElementRect(progress) : null;

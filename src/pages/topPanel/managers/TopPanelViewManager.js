@@ -236,6 +236,7 @@ export class TopPanelViewManager {
     const fontSection = this.createVisualSettingSection('font');
     const colorSection = this.createVisualSettingSection('color');
     const progressBarSection = this.createVisualSettingSection('progressBar');
+    const plotViewSection = this.createVisualSettingSection('plotView');
     const iconsSection = this.createVisualSettingSection('icons');
 
     this.refs.visualSettingStatus = document.createElement('div');
@@ -248,6 +249,7 @@ export class TopPanelViewManager {
       fontSection,
       colorSection,
       progressBarSection,
+      plotViewSection,
       iconsSection,
       this.refs.visualSettingStatus,
     );
@@ -505,6 +507,10 @@ export class TopPanelViewManager {
       this.refs.progressBarButtons = [];
     }
 
+    if (categoryKey === 'plotView') {
+      this.refs.plotViewButtons = [];
+    }
+
     if (categoryKey === 'icons') {
       this.refs.iconModeButtons = [];
     }
@@ -554,6 +560,10 @@ export class TopPanelViewManager {
         name.classList.add('room-top-panel__progress-bar-button');
         name.dataset.progressBar = option.key;
         this.refs.progressBarButtons.push(name);
+      } else if (categoryKey === 'plotView') {
+        name.classList.add('room-top-panel__plot-view-button');
+        name.dataset.plotView = option.key;
+        this.refs.plotViewButtons.push(name);
       } else {
         name.classList.add('room-top-panel__icon-button');
         name.dataset.iconMode = option.key;

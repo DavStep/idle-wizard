@@ -88,6 +88,7 @@ export class ShopFacade {
       itemsFacade,
       shopSellKindManager: this.shopSellKindManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
+      shopSellAvailabilityManager: this.shopSellAvailabilityManager,
     });
     this.shopPlayerShelfListingManager = new ShopPlayerShelfListingManager({
       goldFacade,
@@ -187,8 +188,8 @@ export class ShopFacade {
     return this.shopPlayerShelfListingManager.selectSlot(slotNumber);
   }
 
-  setSelectedShelfSlotSellItem(itemTypeId) {
-    return this.shopShelfSlotSelectionManager.setSelectedSlotSellItem(itemTypeId);
+  setSelectedShelfSlotSellItem(itemTypeId, sellLimit) {
+    return this.shopShelfSlotSelectionManager.setSelectedSlotSellItem(itemTypeId, sellLimit);
   }
 
   clearSelectedShelfSlotSellItem() {
@@ -388,6 +389,8 @@ export class ShopFacade {
           sellKey: null,
           sellLabel: null,
           sellQuantity: null,
+          sellLimitMode: 'all',
+          sellQuantityLimit: null,
           sellGold: null,
           sellNeed: null,
         };
@@ -402,6 +405,8 @@ export class ShopFacade {
         sellKey: item.key,
         sellLabel: item.label,
         sellQuantity: sellableItem?.quantity ?? 0,
+        sellLimitMode: slot.sellLimitMode ?? 'all',
+        sellQuantityLimit: slot.sellLimitMode === 'amount' ? slot.sellQuantityLimit ?? 0 : null,
         sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
         sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
       };
@@ -475,6 +480,8 @@ export class ShopFacade {
           sellItemKey: slot.sellItemTypeId
             ? this.itemsFacade.getItemDefinition(slot.sellItemTypeId).key
             : null,
+          sellLimitMode: slot.sellLimitMode ?? 'all',
+          sellQuantityLimit: slot.sellLimitMode === 'amount' ? slot.sellQuantityLimit ?? 0 : null,
           sellProgressSeconds: slot.sellProgressSeconds,
         })),
       },
@@ -515,6 +522,8 @@ export class ShopFacade {
             typeof slot.sellItemKey === 'string'
               ? this.itemsFacade.safeGetDefinitionByKey(slot.sellItemKey)?.id
               : 0,
+          sellLimitMode: slot.sellLimitMode,
+          sellQuantityLimit: slot.sellQuantityLimit,
           sellProgressSeconds: slot.sellProgressSeconds,
         }))
       : [];

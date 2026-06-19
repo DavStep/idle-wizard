@@ -117,12 +117,28 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { itemKey: 'starAniseSeed', requiredQuantity: 2200 },
+      { itemKey: 'moonflowerSeed', requiredQuantity: 2750 },
       { itemKey: 'dragonpepperHerb', requiredQuantity: 1700 },
       { itemKey: 'bloodroseHerb', requiredQuantity: 1300 },
       { itemKey: 'dragonCourage', requiredQuantity: 200 },
       { itemKey: 'pactWard', requiredQuantity: 150 },
     ]);
+  });
+
+  it('does not repeat the same material set for three consecutive levels', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+    const levels = taskBalanceManager.getLevels();
+
+    for (let index = 2; index < levels.length; index += 1) {
+      const materialSets = [levels[index - 2], levels[index - 1], levels[index]].map(
+        (level) => level.tasks.map((task) => task.itemKey).join('|'),
+      );
+
+      expect(
+        new Set(materialSets).size,
+        `levels ${levels[index - 2].level}-${levels[index].level} repeat ${materialSets[0]}`,
+      ).toBeGreaterThan(1);
+    }
   });
 
   it('uses one potion for target levels 5-10 and two potions from target level 11 onward', () => {

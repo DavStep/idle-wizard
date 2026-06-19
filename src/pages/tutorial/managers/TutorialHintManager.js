@@ -56,7 +56,7 @@ const GUIDE_BOX_LEFT_MIN = PORTRAIT_LEFT_GAP + PORTRAIT_WIDTH - PORTRAIT_BOX_OVE
 const OBJECTIVE_LEFT = GUIDE_BOX_LEFT_MIN;
 const OBJECTIVE_TOP = 520;
 const OBJECTIVE_BUTTON_LEFT = PORTRAIT_LEFT_GAP;
-const OBJECTIVE_BUTTON_LEFT_MIN = -20;
+const OBJECTIVE_BUTTON_LEFT_MIN = -32;
 const OBJECTIVE_BUTTON_LEGACY_LEFT_MIN = -HINT_GAP;
 const OBJECTIVE_BUTTON_TOP = OBJECTIVE_TOP + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9;
 const OBJECTIVE_BUTTON_WIDTH = PORTRAIT_WIDTH;
@@ -70,6 +70,7 @@ const OBJECTIVE_PROTECTED_SELECTORS = [
   '.workshop-page__logs-button',
   '.workshop-page__discoveries-button',
   '.research-page__tab-button',
+  '.shop-page__direct-sell-tab-button',
   '.brewing-page__herbs',
   '.brewing-page__cauldron',
   '.brewing-page__potions-button',
@@ -80,11 +81,15 @@ const OBJECTIVE_TARGET_CONTAINER_SELECTORS = [
   '.garden-page__plot-row',
   '.garden-page__seed-row',
   '.shop-page__slot-row',
+  '.shop-page__direct-sell-tabs',
   '.shop-page__direct-sell-item-button',
   '.brewing-page__recipe-row',
   '.brewing-page__herb-row',
   '.brewing-page__action-row',
 ];
+const TARGET_CUE_ANCHOR_SELECTORS = new Map([
+  ['workshop:levelUp', '.workshop-page__level-complete-button'],
+]);
 const OBJECTIVE_PLACEMENTS = [
   {
     objectiveLeft: OBJECTIVE_LEFT,
@@ -453,7 +458,7 @@ export class TutorialHintManager {
       return;
     }
 
-    const rect = this.getSourceRect(target);
+    const rect = this.getTargetCueSourceRect(target);
 
     if (!rect) {
       this.hideTargetCue();
@@ -949,6 +954,11 @@ export class TutorialHintManager {
       width: targetRect.width / scale,
       height: targetRect.height / scale,
     };
+  }
+
+  getTargetCueSourceRect(target) {
+    const cueAnchor = getTargetCueAnchor(target);
+    return this.getSourceRect(cueAnchor ?? target);
   }
 
   getUiScale() {
@@ -2626,6 +2636,18 @@ function isVisibleElement(element, root = null) {
   }
 
   return true;
+}
+
+function getTargetCueAnchor(target) {
+  const targetId = target?.dataset?.tutorialId ?? target?.getAttribute?.('data-tutorial-id');
+  const anchorSelector = TARGET_CUE_ANCHOR_SELECTORS.get(targetId);
+  const anchor = anchorSelector ? target?.querySelector?.(anchorSelector) : null;
+
+  if (anchor && isVisibleElement(anchor, target)) {
+    return anchor;
+  }
+
+  return target;
 }
 
 function getOverflowAmount(rect, bounds) {

@@ -239,16 +239,41 @@ describe('WorkshopActionBarManager', () => {
     expect(circlePressRule).not.toMatch(/scale\(var\(--style-press-scale\)\)/);
   });
 
-  it('keeps summon press feedback on the real button', () => {
+  it('keeps the summon sign outside the real button hit box', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const summonButtonRule = baseCss.match(
+      /\.style-button\.workshop-page__summon-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const actionBarButtonRule = baseCss.match(
+      /\.workshop-page__action-bar \.style-button\.workshop-page__summon-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const circleRule = baseCss.match(
+      /\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const textRule = baseCss.match(
+      /\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopActionBarManager({ gameplayFacade });
     const parent = document.createElement('div');
 
     manager.mount(parent);
 
+    const summonButton = parent.querySelector('.workshop-page__summon-button');
+    const summonCircle = parent.querySelector('.workshop-page__summon-circle');
+
     expect(
-      parent.querySelector('.workshop-page__summon-button')?.dataset.pressFeedbackTarget,
+      summonButton?.dataset.pressFeedbackTarget,
     ).toBeUndefined();
+    expect(summonCircle?.getAttribute('aria-hidden')).toBe('true');
+    expect(summonButtonRule).toMatch(/\btop:\s*calc\(55\.5% \+ 18px\);/);
+    expect(summonButtonRule).toMatch(/\bwidth:\s*auto;/);
+    expect(summonButtonRule).not.toMatch(/\bwidth:\s*196px;/);
+    expect(actionBarButtonRule).toMatch(/\bwidth:\s*auto;/);
+    expect(circleRule).toMatch(/\bposition:\s*absolute;/);
+    expect(circleRule).toMatch(/\bwidth:\s*196px;/);
+    expect(circleRule).toMatch(/\bpointer-events:\s*none;/);
+    expect(textRule).toMatch(/\btransform:\s*none;/);
 
     manager.unmount();
   });

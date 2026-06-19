@@ -129,6 +129,57 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isThemeSettingsTabOpen()).toBe(false);
   });
 
+  it('reads the selected fast-sell tab', () => {
+    const stage = document.createElement('section');
+    const popup = document.createElement('section');
+    const seedsTab = document.createElement('button');
+    const herbsTab = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    popup.className = 'shop-page__direct-sell-popup';
+    seedsTab.className = 'shop-page__direct-sell-tab-button';
+    seedsTab.dataset.directSellKind = 'seed';
+    seedsTab.setAttribute('aria-selected', 'true');
+    herbsTab.className = 'shop-page__direct-sell-tab-button';
+    herbsTab.dataset.directSellKind = 'herb';
+    herbsTab.setAttribute('aria-selected', 'false');
+    popup.append(seedsTab, herbsTab);
+    stage.append(popup);
+
+    expect(manager.getDomState().isShopDirectSellTabSelected('seed')).toBe(true);
+    expect(manager.getDomState().isShopDirectSellTabSelected('herb')).toBe(false);
+
+    seedsTab.setAttribute('aria-selected', 'false');
+    herbsTab.setAttribute('aria-selected', 'true');
+
+    expect(manager.getDomState().isShopDirectSellTabSelected('seed')).toBe(false);
+    expect(manager.getDomState().isShopDirectSellTabSelected('herb')).toBe(true);
+  });
+
+  it('reads the visible fast-sell quantity', () => {
+    const stage = document.createElement('section');
+    const popup = document.createElement('section');
+    const valueButton = document.createElement('button');
+    const input = document.createElement('input');
+    const manager = new TutorialTargetManager({ stage });
+
+    popup.className = 'shop-page__direct-sell-popup';
+    valueButton.className = 'amount-selection-row__value';
+    valueButton.textContent = '3';
+    input.className = 'shop-page__direct-sell-input';
+    input.value = '7';
+    input.hidden = true;
+    popup.append(valueButton, input);
+    stage.append(popup);
+
+    expect(manager.getDomState().getShopDirectSellQuantity()).toBe(3);
+
+    valueButton.hidden = true;
+    input.hidden = false;
+
+    expect(manager.getDomState().getShopDirectSellQuantity()).toBe(7);
+  });
+
   it('allows popup guidance when the active target is inside the open popup', () => {
     const stage = document.createElement('section');
     const popup = document.createElement('section');

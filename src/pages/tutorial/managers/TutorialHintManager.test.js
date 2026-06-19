@@ -348,6 +348,52 @@ describe('TutorialHintManager', () => {
     expect(overlaps(pointerRect, activeRow)).toBe(true);
   });
 
+  it('aims the level-up cue at the button inside the full completion row', () => {
+    const stage = document.createElement('section');
+    const row = document.createElement('div');
+    const button = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    row.className = 'workshop-page__level-complete';
+    row.dataset.tutorialId = 'workshop:levelUp';
+    button.className = 'style-button workshop-page__level-complete-button';
+    row.append(button);
+    stage.append(row);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      row,
+      toClientRect({
+        left: 30,
+        top: 190,
+        width: 300,
+        height: 52,
+      }),
+    );
+    setClientRect(
+      button,
+      toClientRect({
+        left: 250,
+        top: 210,
+        width: 70,
+        height: 24,
+      }),
+    );
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showTargetCue({
+      target: row,
+    });
+
+    const pointer = stage.querySelector('.tutorial-layer__pointer');
+
+    expect(pointer?.hidden).toBe(false);
+    expect(pointer?.dataset.placement).toBe('bottom-left');
+    expect(pointer?.style.left).toBe('269px');
+    expect(pointer?.style.top).toBe('238px');
+  });
+
   it('types lesson text while border actions appear immediately', () => {
     vi.useFakeTimers();
 
@@ -1128,6 +1174,135 @@ describe('TutorialHintManager', () => {
     }
   });
 
+  it('animates the open lesson away from the fast-sell tab strip target', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+    const hadCancelAnimationFrame = 'cancelAnimationFrame' in window;
+    const frames = [];
+    const requestAnimationFrame = vi.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cancelAnimationFrame = vi.fn();
+    const flushFrames = (...timestamps) => {
+      timestamps.forEach((timestamp) => {
+        frames.splice(0).forEach((callback) => callback(timestamp));
+      });
+    };
+
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+      writable: true,
+    });
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: cancelAnimationFrame,
+      writable: true,
+    });
+
+    try {
+      const stage = document.createElement('section');
+      const tabs = document.createElement('div');
+      const herbsTab = document.createElement('button');
+      const manager = new TutorialHintManager({ storage: createMemoryStorage() });
+      const tabStrip = {
+        left: 64,
+        top: 336,
+        right: 296,
+        bottom: 382,
+      };
+
+      tabs.className = 'shop-page__direct-sell-tabs';
+      herbsTab.className = 'style-button shop-page__direct-sell-tab-button';
+      herbsTab.dataset.tutorialId = 'shop:directSell:tab:herb';
+      tabs.append(herbsTab);
+      stage.append(tabs);
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      setClientRect(
+        tabs,
+        toClientRect({
+          left: tabStrip.left,
+          top: tabStrip.top,
+          width: tabStrip.right - tabStrip.left,
+          height: tabStrip.bottom - tabStrip.top,
+        }),
+      );
+      setClientRect(
+        herbsTab,
+        toClientRect({
+          left: 142,
+          top: 330,
+          width: 76,
+          height: 12,
+        }),
+      );
+      document.body.append(stage);
+
+      useFixedLessonSize(manager);
+      manager.mount(stage);
+      manager.guideDragManager.setPlacement({ buttonLeft: 4, buttonTop: 363 }, { save: false });
+      manager.showLesson({
+        id: 'fast-sell-tab-base',
+        title: 'lesson 3: gardening',
+        text: 'open herbs tab',
+        stepLabel: '19/27',
+        canShowTarget: true,
+      });
+
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
+      const baseLessonRect = getLessonRect(lesson);
+
+      expect(overlaps(baseLessonRect, tabStrip)).toBe(true);
+
+      manager.showLesson({
+        id: 'fast-sell-tab-target',
+        title: 'lesson 3: gardening',
+        text: 'open herbs tab',
+        stepLabel: '19/27',
+        canShowTarget: true,
+        target: herbsTab,
+      });
+
+      expect(getLessonRect(lesson)).toEqual(baseLessonRect);
+      expect(button?.classList.contains('is-auto-moving')).toBe(true);
+      expect(lesson?.classList.contains('is-auto-moving')).toBe(true);
+
+      flushFrames(0, 225);
+
+      expect(overlaps(getLessonRect(lesson), tabStrip)).toBe(false);
+      expect(overlaps(getLessonButtonRect(button), tabStrip)).toBe(false);
+      expect(button?.classList.contains('is-auto-moving')).toBe(false);
+      expect(lesson?.classList.contains('is-auto-moving')).toBe(false);
+
+      manager.unmount();
+      stage.remove();
+    } finally {
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+
+      if (hadCancelAnimationFrame) {
+        Object.defineProperty(window, 'cancelAnimationFrame', {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'cancelAnimationFrame');
+      }
+    }
+  });
+
   it('keeps the player dragged position after an automatic target dodge', () => {
     const storage = createMemoryStorage();
     const stage = document.createElement('section');
@@ -1274,7 +1449,7 @@ describe('TutorialHintManager', () => {
       }),
     );
 
-    expect(button?.style.left).toBe('-20px');
+    expect(button?.style.left).toBe('-32px');
     expect(button?.style.top).toBe(`${startTop}px`);
 
     manager.unmount();
@@ -1304,7 +1479,7 @@ describe('TutorialHintManager', () => {
       autoOpen: false,
     });
 
-    expect(stage.querySelector('.tutorial-layer__lesson-button')?.style.left).toBe('-20px');
+    expect(stage.querySelector('.tutorial-layer__lesson-button')?.style.left).toBe('-32px');
 
     manager.unmount();
     stage.remove();

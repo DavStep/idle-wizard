@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(IdleWizardHapticsPlugin.class);
         registerPlugin(NativeGoogleAuthPlugin.class);
+        registerPlugin(NativeAuthTokenStoragePlugin.class);
         super.onCreate(savedInstanceState);
         requestHighFrameRate();
     }

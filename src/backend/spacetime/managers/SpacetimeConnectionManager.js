@@ -20,7 +20,7 @@ export class SpacetimeConnectionManager {
     const auth = await this.getConnectionAuth();
     let retriedWithoutToken = false;
 
-    const buildConnection = ({ token, canRetryWithoutToken }) => {
+    const buildConnection = ({ token, canRetryWithoutToken, fallbackTokens = [] }) => {
       this.clearConnectTimeout();
       let activeConnection = null;
 
@@ -33,17 +33,28 @@ export class SpacetimeConnectionManager {
         activeConnection?.disconnect?.();
         this.connection = null;
 
+        const [fallbackToken, ...remainingFallbackTokens] = fallbackTokens;
+        if (fallbackToken) {
+          this.connection = buildConnection({
+            token: fallbackToken,
+            canRetryWithoutToken,
+            fallbackTokens: remainingFallbackTokens,
+          });
+          return;
+        }
+
         if (token && canRetryWithoutToken && !retriedWithoutToken) {
           retriedWithoutToken = true;
           this.connection = buildConnection({
             token: undefined,
             canRetryWithoutToken: false,
+            fallbackTokens: [],
           });
           return;
         }
 
         if (retriedWithoutToken) {
-          this.authSessionManager.clearSession?.();
+          void this.authSessionManager.clearSession?.();
         }
 
         onConnectError?.(error);
@@ -58,9 +69,32 @@ export class SpacetimeConnectionManager {
           }
 
           this.clearConnectTimeout();
-          this.connection = connection;
-          this.authSessionManager.acceptConnection({ identity, token });
-          onConnect?.(connection, identity, token);
+          const finishConnect = () => {
+            if (attemptId !== this.connectAttemptId) {
+              connection?.disconnect?.();
+              return;
+            }
+
+            this.connection = connection;
+            onConnect?.(connection, identity, token);
+          };
+
+          let acceptResult;
+          try {
+            acceptResult = this.authSessionManager.acceptConnection({ identity, token });
+          } catch (error) {
+            handleConnectFailure(error);
+            return;
+          }
+
+          if (!acceptResult || typeof acceptResult.then !== 'function') {
+            finishConnect();
+            return;
+          }
+
+          void acceptResult.then(finishConnect).catch((error) => {
+            handleConnectFailure(error);
+          });
         })
         .onConnectError((_context, error) => {
           handleConnectFailure(error);
@@ -86,7 +120,10 @@ export class SpacetimeConnectionManager {
       return activeConnection;
     };
 
-    this.connection = buildConnection(auth);
+    this.connection = buildConnection({
+      ...auth,
+      fallbackTokens: this.normalizeFallbackTokens(auth.fallbackTokens, auth.token),
+    });
     return this.connection;
   }
 
@@ -107,6 +144,16 @@ export class SpacetimeConnectionManager {
     this.clearConnectTimeout();
     this.connection?.disconnect();
     this.connection = null;
+  }
+
+  normalizeFallbackTokens(fallbackTokens = [], currentToken) {
+    return Array.from(
+      new Set(
+        fallbackTokens
+          .map((token) => String(token ?? '').trim())
+          .filter((token) => token && token !== currentToken),
+      ),
+    );
   }
 
   armConnectTimeout(callback) {

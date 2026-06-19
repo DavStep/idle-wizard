@@ -2,6 +2,9 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
+import { getHerbIconFrameName } from '../../../assets/items/herbs/herbIcons.js';
+import { normalizePlayerPlotView } from '../../../player/playerPlotViews.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import {
@@ -16,21 +19,28 @@ import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
+const BOX_PLOT_COLUMNS = 3;
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 export class GardenPlotManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, playerFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.playerFacade = playerFacade;
     this.cancelDialogManager = new GardenCancelDialogManager({
       onConfirm: (tileNumber) => this.onConfirmCancel(tileNumber),
     });
     this.root = null;
     this.unsubscribe = null;
+    this.playerUnsubscribe = null;
+    this.latestSnapshot = null;
+    this.plotView = normalizePlayerPlotView(playerFacade?.getSnapshot?.().plotView);
     this.refs = {};
     this.tileRefs = new Map();
     this.seedRefs = new Map();
     this.emptySeedRef = null;
     this.seedRowOrderKey = '';
     this.selectedTileNumber = null;
+    this.openSeedPopupAfterCancelTileNumber = null;
     this.visible = false;
     this.previousFocus = null;
     this.handledTileLabelPressStartTileNumber = null;
@@ -99,7 +109,10 @@ export class GardenPlotManager {
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
+    this.playerUnsubscribe =
+      this.playerFacade?.subscribe?.((snapshot) => this.renderPlayerSnapshot(snapshot)) ?? null;
     this.render(this.gameplayFacade.getSnapshot());
+    this.renderPlayerSnapshot(this.playerFacade?.getSnapshot?.());
     this.applyPopupVisibility();
 
     return this.root;
@@ -108,6 +121,8 @@ export class GardenPlotManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.playerUnsubscribe?.();
+    this.playerUnsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs.rows?.removeEventListener('scroll', this.handlePlotRowsScroll);
     this.refs.seedRows?.removeEventListener('scroll', this.handleSeedRowsScroll);
@@ -118,12 +133,14 @@ export class GardenPlotManager {
     this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
+    this.latestSnapshot = null;
     this.refs = {};
     this.tileRefs.clear();
     this.seedRefs.clear();
     this.emptySeedRef = null;
     this.seedRowOrderKey = '';
     this.selectedTileNumber = null;
+    this.openSeedPopupAfterCancelTileNumber = null;
     this.visible = false;
     this.previousFocus = null;
     this.handledTileLabelPressStartTileNumber = null;
@@ -212,9 +229,48 @@ export class GardenPlotManager {
     const progressText = document.createElement('span');
     progressText.className = 'style-progress__text garden-page__plot-progress-text';
 
+    const boxFrame = document.createElement('span');
+    boxFrame.className = 'garden-page__plot-box-frame';
+    boxFrame.setAttribute('aria-hidden', 'true');
+
+    const boxNumber = document.createElement('span');
+    boxNumber.className = 'garden-page__plot-box-number';
+
+    const boxLabel = document.createElement('span');
+    boxLabel.className = 'garden-page__plot-box-label';
+    boxLabel.addEventListener('pointerdown', (event) =>
+      this.onTileLabelPressStart(tileNumber, event),
+    );
+    boxLabel.addEventListener(
+      'touchstart',
+      (event) => this.onTileLabelPressStart(tileNumber, event),
+      {
+        passive: false,
+      },
+    );
+    boxLabel.addEventListener('click', (event) => this.onTileLabelClick(tileNumber, event));
+
+    const boxPlant = document.createElement('span');
+    boxPlant.className = 'garden-page__plot-plant';
+
+    const boxScissors = this.createScissorsIcon();
+
+    const boxAction = document.createElement('span');
+    boxAction.className = 'garden-page__plot-action garden-page__plot-box-action';
+
+    const boxActionLabel = document.createElement('span');
+    boxActionLabel.className = 'garden-page__plot-box-action-label';
+
+    const boxActionGap = document.createTextNode('');
+
+    const boxTimer = document.createElement('span');
+    boxTimer.className = 'garden-page__plot-box-timer';
+
     progress.append(fill, progressText);
     action.append(actionLabel, actionGap, actionTimer);
-    button.append(number, label, state, action, progress);
+    boxAction.append(boxActionLabel, boxActionGap, boxTimer);
+    boxFrame.append(boxNumber, boxLabel, boxPlant, boxScissors, boxAction);
+    button.append(number, label, state, action, boxFrame, progress);
     this.tileRefs.set(tileNumber, {
       button,
       label,
@@ -226,8 +282,44 @@ export class GardenPlotManager {
       progress,
       fill,
       progressText,
+      boxFrame,
+      boxNumber,
+      boxLabel,
+      boxPlant,
+      boxScissors,
+      boxAction,
+      boxActionLabel,
+      boxActionGap,
+      boxTimer,
     });
     this.refs.rows.append(button);
+  }
+
+  createScissorsIcon() {
+    const scissors = document.createElementNS(SVG_NAMESPACE, 'svg');
+    scissors.setAttribute('class', 'garden-page__plot-scissors');
+    scissors.setAttribute('viewBox', '0 0 14 14');
+    scissors.setAttribute('aria-hidden', 'true');
+    scissors.setAttribute('focusable', 'false');
+
+    const firstCircle = document.createElementNS(SVG_NAMESPACE, 'circle');
+    firstCircle.setAttribute('cx', '3.5');
+    firstCircle.setAttribute('cy', '10.5');
+    firstCircle.setAttribute('r', '2');
+
+    const secondCircle = document.createElementNS(SVG_NAMESPACE, 'circle');
+    secondCircle.setAttribute('cx', '10.5');
+    secondCircle.setAttribute('cy', '10.5');
+    secondCircle.setAttribute('r', '2');
+
+    const firstBlade = document.createElementNS(SVG_NAMESPACE, 'path');
+    firstBlade.setAttribute('d', 'M5 9 12 2');
+
+    const secondBlade = document.createElementNS(SVG_NAMESPACE, 'path');
+    secondBlade.setAttribute('d', 'M9 9 2 2');
+
+    scissors.append(firstCircle, secondCircle, firstBlade, secondBlade);
+    return scissors;
   }
 
   createSeedRow(seed) {
@@ -282,7 +374,35 @@ export class GardenPlotManager {
     this.refs.seedRows.append(row);
   }
 
+  renderPlayerSnapshot(snapshot) {
+    const nextPlotView = normalizePlayerPlotView(snapshot?.plotView);
+
+    if (this.plotView === nextPlotView) {
+      this.applyPlotView();
+      return;
+    }
+
+    this.plotView = nextPlotView;
+    this.applyPlotView();
+
+    if (this.latestSnapshot) {
+      this.render(this.latestSnapshot);
+    }
+  }
+
+  applyPlotView() {
+    if (!this.root || !this.refs.rows) {
+      return;
+    }
+
+    this.root.dataset.plotView = this.plotView;
+    this.refs.rows.dataset.plotView = this.plotView;
+    this.refs.rows.style.setProperty('--garden-page-plot-columns', String(BOX_PLOT_COLUMNS));
+  }
+
   render(snapshot) {
+    this.latestSnapshot = snapshot;
+    this.applyPlotView();
     const garden = snapshot.garden;
     const seeds = this.getSeedRows(snapshot);
     const seedQuantityById = new Map(
@@ -355,13 +475,19 @@ export class GardenPlotManager {
       const lockedTileAction = isNextLockedTile ? this.formatLockedTileAction(plot) : '';
       const lockedTileDisabled =
         !isNextLockedTile || plot.nextTileLockedByLevel || gold.current < plot.nextTileCost;
-      this.setText(refs.label, isNextLockedTile ? `plot ${tile.tileNumber}` : '');
+      const lockedTileLabel = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
+      this.setText(refs.label, lockedTileLabel);
       setItemIconLabel(refs.label, null);
       setResourceColor(refs.label, null);
       this.setText(refs.state, '');
       this.setTileAction(refs, {
         label: lockedTileAction,
         colorResource: !lockedTileDisabled,
+      });
+      this.setBoxTile(refs, tile, {
+        label: lockedTileLabel,
+        action: lockedTileAction,
+        actionColorResource: !lockedTileDisabled,
       });
       refs.button.disabled = lockedTileDisabled;
       refs.button.setAttribute(
@@ -379,12 +505,23 @@ export class GardenPlotManager {
     refs.button.setAttribute('aria-disabled', 'false');
 
     if (tile.phase === 'empty') {
-      this.setText(refs.label, tile.selectedSeedLabel ?? 'empty');
+      const emptyTileLabel = tile.selectedSeedLabel ?? 'empty';
+      const emptyTileAction = hasSelectedSeed
+        ? selectedSeedQuantity > 0
+          ? 'plant'
+          : 'no seeds'
+        : 'choose';
+      this.setText(refs.label, emptyTileLabel);
       setItemIconLabel(refs.label, hasSelectedSeed ? 'seed' : null);
       setResourceColor(refs.label, hasSelectedSeed ? 'seed' : null);
       this.setText(refs.state, '');
       this.setTileAction(refs, {
-        label: hasSelectedSeed ? (selectedSeedQuantity > 0 ? 'plant' : 'no seeds') : 'choose',
+        label: emptyTileAction,
+      });
+      this.setBoxTile(refs, tile, {
+        label: emptyTileLabel,
+        labelResource: hasSelectedSeed ? 'seed' : null,
+        action: emptyTileAction,
       });
       refs.button.setAttribute(
         'aria-label',
@@ -396,7 +533,9 @@ export class GardenPlotManager {
       return;
     }
 
-    this.setText(refs.label, tile.selectedSeedLabel ?? 'empty');
+    const activeTileLabel = tile.selectedSeedLabel ?? 'empty';
+    const activeTileAction = this.formatTileAction(tile);
+    this.setText(refs.label, activeTileLabel);
     setItemIconLabel(
       refs.label,
       tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
@@ -406,7 +545,14 @@ export class GardenPlotManager {
       tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
     );
     this.setText(refs.state, '');
-    this.setTileAction(refs, this.formatTileAction(tile));
+    this.setTileAction(refs, activeTileAction);
+    this.setBoxTile(refs, tile, {
+      label: activeTileLabel,
+      labelResource: tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
+      action: activeTileAction.label,
+      timer: this.formatBoxTimer(tile),
+      herbKey: tile.herbKey,
+    });
     const activeSeedLabel = tile.seedLabel ?? tile.selectedSeedLabel ?? 'seed';
     refs.button.setAttribute(
       'aria-label',
@@ -462,6 +608,92 @@ export class GardenPlotManager {
     refs.progress.hidden = true;
     stopProgressFill(refs.fill, 0);
     this.setText(refs.progressText, '');
+  }
+
+  setBoxTile(
+    refs,
+    tile,
+    {
+      label = '',
+      labelResource = null,
+      action = '',
+      timer = '',
+      actionColorResource = true,
+      herbKey = null,
+    } = {},
+  ) {
+    this.setText(refs.boxNumber, `${tile.tileNumber}.`);
+    this.setText(refs.boxLabel, label);
+    setResourceColor(refs.boxLabel, labelResource);
+    this.setResourceText(refs.boxActionLabel, action);
+
+    if (actionColorResource) {
+      setResourceColorFromText(refs.boxActionLabel, action);
+    } else {
+      setResourceColor(refs.boxActionLabel, null);
+    }
+
+    this.setText(refs.boxTimer, timer);
+    this.setText(refs.boxActionGap, timer ? ' ' : '');
+    refs.boxTimer.hidden = !timer;
+    refs.boxFrame.classList.toggle('has-plant', Boolean(herbKey));
+    refs.boxFrame.classList.toggle('is-harvesting', tile.phase === 'harvesting');
+    refs.boxFrame.classList.toggle('is-ready', tile.phase === 'ready');
+    refs.boxFrame.style.setProperty(
+      '--garden-page-plot-growth-scale',
+      this.formatGrowthScale(tile),
+    );
+    refs.boxFrame.style.setProperty(
+      '--garden-page-plot-ready-delay',
+      `${-((tile.tileNumber - 1) % BOX_PLOT_COLUMNS) * 140}ms`,
+    );
+    refs.boxScissors.toggleAttribute('hidden', tile.phase !== 'harvesting');
+    this.renderPlantIcon(refs, herbKey);
+  }
+
+  renderPlantIcon(refs, herbKey) {
+    const normalizedHerbKey = String(herbKey ?? '').trim();
+
+    if (refs.boxPlant.dataset.herbKey === normalizedHerbKey) {
+      refs.boxPlant.hidden = !normalizedHerbKey || !refs.boxPlant.firstChild;
+      return;
+    }
+
+    refs.boxPlant.dataset.herbKey = normalizedHerbKey;
+    refs.boxPlant.replaceChildren();
+
+    const frameName = getHerbIconFrameName(normalizedHerbKey);
+    const icon = frameName
+      ? createAssetAtlasSprite('garden-page__plot-plant-icon', frameName)
+      : null;
+
+    if (icon) {
+      refs.boxPlant.append(icon);
+    }
+
+    refs.boxPlant.hidden = !icon;
+  }
+
+  formatGrowthScale(tile) {
+    if (tile.phase !== 'growing') {
+      return '1';
+    }
+
+    const progress = Number.isFinite(tile.process?.progress)
+      ? tile.process.progress
+      : Number.isFinite(tile.progress)
+        ? tile.progress
+        : 0;
+    const clamped = Math.max(0, Math.min(1, progress));
+    return String(Number((0.42 + clamped * 0.58).toFixed(3)));
+  }
+
+  formatBoxTimer(tile) {
+    if (tile.process) {
+      return this.formatProcessTimer(tile.process);
+    }
+
+    return '';
   }
 
   renderSeeds(snapshot, seeds) {
@@ -574,7 +806,7 @@ export class GardenPlotManager {
     const garden = snapshot.garden;
     const tile = garden.plot.tiles.find((candidate) => candidate.tileNumber === tileNumber);
     const refs = this.tileRefs.get(tileNumber);
-    const clickedLabel = Boolean(event?.target?.closest?.('.garden-page__plot-label'));
+    const clickedLabel = this.isTileLabelClick(event);
     const clickedAction = this.isTileActionClick(event, refs);
     const keyboardRowAction =
       event?.target === event?.currentTarget && event?.detail === 0;
@@ -624,6 +856,7 @@ export class GardenPlotManager {
 
     if (tile.process) {
       if (clickedAction || keyboardRowAction) {
+        this.openSeedPopupAfterCancelTileNumber = null;
         this.cancelDialogManager.show(tile);
       }
 
@@ -636,6 +869,12 @@ export class GardenPlotManager {
         this.render(this.gameplayFacade.getSnapshot());
       }
     }
+  }
+
+  isTileLabelClick(event) {
+    return Boolean(
+      event?.target?.closest?.('.garden-page__plot-label, .garden-page__plot-box-label'),
+    );
   }
 
   isTileActionClick(event, refs) {
@@ -672,7 +911,7 @@ export class GardenPlotManager {
       return;
     }
 
-    if (this.showSeedPopupFromTileLabel(tileNumber)) {
+    if (this.handleTileLabelIntent(tileNumber)) {
       event.stopPropagation();
     }
   }
@@ -682,35 +921,53 @@ export class GardenPlotManager {
       return;
     }
 
-    event.preventDefault();
-    event.stopPropagation();
-
     if (this.isDuplicateTouchLikePressStart(event, `tile-label:${tileNumber}`)) {
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
 
-    if (this.showSeedPopupFromTileLabel(tileNumber)) {
+    if (this.handleTileLabelIntent(tileNumber)) {
+      event.preventDefault();
+      event.stopPropagation();
       this.setHandledTileLabelPressStartTileNumber(tileNumber);
     }
   }
 
-  showSeedPopupFromTileLabel(tileNumber) {
+  handleTileLabelIntent(tileNumber) {
     const snapshot = this.gameplayFacade.getSnapshot();
     const tile = snapshot.garden?.plot?.tiles.find(
       (candidate) => candidate.tileNumber === tileNumber,
     );
 
-    if (!tile?.unlocked || tile.phase !== 'empty') {
+    if (!tile?.unlocked) {
       return false;
     }
 
-    this.showSeedPopup(tileNumber);
-    return true;
+    if (tile.phase === 'empty') {
+      this.showSeedPopup(tileNumber);
+      return true;
+    }
+
+    if (tile.process) {
+      this.openSeedPopupAfterCancelTileNumber = tileNumber;
+      this.cancelDialogManager.show(tile);
+      return true;
+    }
+
+    return false;
   }
 
   onConfirmCancel(tileNumber) {
-    this.gameplayFacade.cancelGardenPlanting(tileNumber);
+    const openSeedPopupAfterCancel =
+      this.openSeedPopupAfterCancelTileNumber === tileNumber;
+    this.openSeedPopupAfterCancelTileNumber = null;
+    const result = this.gameplayFacade.cancelGardenPlanting(tileNumber);
     this.render(this.gameplayFacade.getSnapshot());
+
+    if (openSeedPopupAfterCancel && result?.ok) {
+      this.showSeedPopup(tileNumber);
+    }
   }
 
   onSelectSeedClick(event, seedTypeId) {

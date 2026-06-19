@@ -18,6 +18,7 @@ const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
 const DEFAULT_PLAYER_CHARACTER = 'elara';
 const DEFAULT_PLAYER_ICON_MODE = 'icons';
 const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
+const DEFAULT_PLAYER_PLOT_VIEW = 'boxes';
 const MAX_REPORTED_PLAYER_LEVEL = 100;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
 const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
@@ -170,6 +171,7 @@ const PLAYER_SELECTABLE_CHARACTERS = new Set([
 ]);
 const PLAYER_ICON_MODES = new Set(['none', 'icons']);
 const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient']);
+const PLAYER_PLOT_VIEWS = new Set(['rows', 'boxes']);
 const DEFAULT_SAVE_COMPLETED_RESEARCH_IDS = new Set(['unlockSeed:sageSeed']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
 const TRADE_ALLIANCE_QUEST_TYPE_INCOME = 'allianceIncome';
@@ -551,8 +553,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level14-simple-antidote",
-          "itemKey": "glowcapSeed",
-          "quantity": 180
+          "itemKey": "briarSeed",
+          "quantity": 225
         },
         {
           "id": "level14-sunroot-seeds",
@@ -644,8 +646,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level17-moonflower-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 216
+          "itemKey": "glowcapSeed",
+          "quantity": 270
         },
         {
           "id": "level17-moonflower-herb",
@@ -768,8 +770,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level21-frostmoss-seeds",
-          "itemKey": "mandrakeSeed",
-          "quantity": 264
+          "itemKey": "glowcapSeed",
+          "quantity": 330
         },
         {
           "id": "level21-frostmoss-herb",
@@ -861,8 +863,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level24-dreambell-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 300
+          "itemKey": "mandrakeSeed",
+          "quantity": 375
         },
         {
           "id": "level24-dreambell-herb",
@@ -954,8 +956,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level27-star-anise-seeds",
-          "itemKey": "moonflowerSeed",
-          "quantity": 336
+          "itemKey": "sunrootSeed",
+          "quantity": 420
         },
         {
           "id": "level27-star-anise-herb",
@@ -1047,8 +1049,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level30-bloodrose-seeds",
-          "itemKey": "dreambellSeed",
-          "quantity": 465
+          "itemKey": "moonflowerSeed",
+          "quantity": 585
         },
         {
           "id": "level30-bloodrose-herb",
@@ -1140,8 +1142,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level33-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 510
+          "itemKey": "dreambellSeed",
+          "quantity": 640
         },
         {
           "id": "level33-dragonpepper-herb",
@@ -1233,8 +1235,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level36-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 555
+          "itemKey": "dreambellSeed",
+          "quantity": 695
         },
         {
           "id": "level36-dragonpepper-herb",
@@ -1326,8 +1328,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level39-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 600
+          "itemKey": "moonflowerSeed",
+          "quantity": 750
         },
         {
           "id": "level39-dragonpepper-herb",
@@ -1419,8 +1421,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level42-dragonpepper-seeds",
-          "itemKey": "starAniseSeed",
-          "quantity": 645
+          "itemKey": "frostmossSeed",
+          "quantity": 810
         },
         {
           "id": "level42-dragonpepper-herb",
@@ -1512,8 +1514,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level45-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 690
+          "itemKey": "dreambellSeed",
+          "quantity": 865
         },
         {
           "id": "level45-dragonpepper--herb-2",
@@ -1605,8 +1607,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level48-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 735
+          "itemKey": "frostmossSeed",
+          "quantity": 920
         },
         {
           "id": "level48-dragonpepper--herb-2",
@@ -1698,8 +1700,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level51-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 780
+          "itemKey": "moonflowerSeed",
+          "quantity": 975
         },
         {
           "id": "level51-dragonpepper--herb-2",
@@ -1791,8 +1793,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level54-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 825
+          "itemKey": "sunrootSeed",
+          "quantity": 1035
         },
         {
           "id": "level54-dragonpepper--herb-2",
@@ -1884,8 +1886,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level57-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 870
+          "itemKey": "dreambellSeed",
+          "quantity": 1090
         },
         {
           "id": "level57-dragonpepper--herb-2",
@@ -1977,8 +1979,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level60-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1098
+          "itemKey": "frostmossSeed",
+          "quantity": 1375
         },
         {
           "id": "level60-dragonpepper--herb-2",
@@ -2070,8 +2072,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level63-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1152
+          "itemKey": "moonflowerSeed",
+          "quantity": 1440
         },
         {
           "id": "level63-dragonpepper--herb-2",
@@ -2163,8 +2165,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level66-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1206
+          "itemKey": "sunrootSeed",
+          "quantity": 1510
         },
         {
           "id": "level66-dragonpepper--herb-2",
@@ -2256,8 +2258,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level69-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1260
+          "itemKey": "dreambellSeed",
+          "quantity": 1575
         },
         {
           "id": "level69-dragonpepper--herb-2",
@@ -2349,8 +2351,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level72-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1314
+          "itemKey": "frostmossSeed",
+          "quantity": 1645
         },
         {
           "id": "level72-dragonpepper--herb-2",
@@ -2442,8 +2444,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level75-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1368
+          "itemKey": "moonflowerSeed",
+          "quantity": 1710
         },
         {
           "id": "level75-dragonpepper--herb-2",
@@ -2535,8 +2537,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level78-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1422
+          "itemKey": "sunrootSeed",
+          "quantity": 1780
         },
         {
           "id": "level78-dragonpepper--herb-2",
@@ -2628,8 +2630,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level81-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1804
+          "itemKey": "dreambellSeed",
+          "quantity": 2255
         },
         {
           "id": "level81-dragonpepper--herb-2",
@@ -2721,8 +2723,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level84-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1870
+          "itemKey": "frostmossSeed",
+          "quantity": 2340
         },
         {
           "id": "level84-dragonpepper--herb-2",
@@ -2814,8 +2816,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level87-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 1936
+          "itemKey": "moonflowerSeed",
+          "quantity": 2420
         },
         {
           "id": "level87-dragonpepper--herb-2",
@@ -2907,8 +2909,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level90-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 2002
+          "itemKey": "sunrootSeed",
+          "quantity": 2505
         },
         {
           "id": "level90-dragonpepper--herb-2",
@@ -3000,8 +3002,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level93-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 2068
+          "itemKey": "dreambellSeed",
+          "quantity": 2585
         },
         {
           "id": "level93-dragonpepper--herb-2",
@@ -3093,8 +3095,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level96-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 2134
+          "itemKey": "frostmossSeed",
+          "quantity": 2670
         },
         {
           "id": "level96-dragonpepper--herb-2",
@@ -3186,8 +3188,8 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level99-star-anise--seeds-1",
-          "itemKey": "starAniseSeed",
-          "quantity": 2200
+          "itemKey": "moonflowerSeed",
+          "quantity": 2750
         },
         {
           "id": "level99-dragonpepper--herb-2",
@@ -4264,6 +4266,10 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
     progressBar: {
       regular: 0,
       gradient: 0,
+    },
+    plotView: {
+      rows: 0,
+      boxes: 0,
     },
     icons: {
       none: 0,
@@ -6791,7 +6797,8 @@ function shouldResetTasksGameConfigToDefault(levels: unknown[]): boolean {
   return hasNonDefaultLevelOneTasks(levels) ||
     hasLegacyLevelTwoSageTasks(levels) ||
     hasLegacyShortTaskCatalog(levels) ||
-    hasSameFamilySeedItemRequirementsAfterTutorial(levels);
+    hasSameFamilySeedItemRequirementsAfterTutorial(levels) ||
+    hasLegacyRepetitiveTaskMaterialBands(levels);
 }
 
 function hasNonDefaultLevelOneTasks(levels: unknown[]): boolean {
@@ -6853,6 +6860,22 @@ function hasSameFamilySeedItemRequirementsAfterTutorial(levels: unknown[]): bool
   }
 
   return false;
+}
+
+function hasLegacyRepetitiveTaskMaterialBands(levels: unknown[]): boolean {
+  return hasTaskConfigValue(
+    levels,
+    14,
+    'level14-simple-antidote',
+    'glowcapSeed',
+    180,
+  ) || hasTaskConfigValue(
+    levels,
+    45,
+    'level45-star-anise--seeds-1',
+    'starAniseSeed',
+    690,
+  );
 }
 
 function normalizeLegacyLevel5Tasks(levels: unknown[]): unknown[] {
@@ -6922,6 +6945,22 @@ function hasTaskConfigId(levels: unknown[], taskId: string): boolean {
     isRecord(levelConfig) && Array.isArray(levelConfig.tasks)
       ? levelConfig.tasks.some((task) => isRecord(task) && String(task.id ?? '') === taskId)
       : false,
+  );
+}
+
+function hasTaskConfigValue(
+  levels: unknown[],
+  levelNumber: number,
+  taskId: string,
+  itemKey: string,
+  quantity: number,
+): boolean {
+  return getTaskConfigsForLevel(levels, levelNumber).some(
+    (taskConfig) =>
+      isRecord(taskConfig) &&
+      String(taskConfig.id ?? '') === taskId &&
+      String(taskConfig.itemKey ?? '') === itemKey &&
+      Number(taskConfig.quantity) === quantity,
   );
 }
 
@@ -7568,6 +7607,12 @@ function normalizeSaveVisualSettings(
         researched.progressBar,
         PLAYER_PROGRESS_BARS,
         DEFAULT_PLAYER_PROGRESS_BAR,
+        null,
+      ),
+      plotView: normalizeSaveVisualSettingCategory(
+        researched.plotView,
+        PLAYER_PLOT_VIEWS,
+        DEFAULT_PLAYER_PLOT_VIEW,
         null,
       ),
       icons: normalizeSaveVisualSettingCategory(
@@ -9982,7 +10027,15 @@ function validateVisualSettingsGameConfig(value: unknown) {
     throw new Error('Invalid visual settings config.');
   }
 
-  for (const category of ['theme', 'font', 'color', 'character', 'progressBar', 'icons']) {
+  for (const category of [
+    'theme',
+    'font',
+    'color',
+    'character',
+    'progressBar',
+    'plotView',
+    'icons',
+  ]) {
     try {
       validateCostRecord(costsCrystal[category], BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
     } catch {

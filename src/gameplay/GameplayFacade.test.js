@@ -1271,6 +1271,7 @@ describe('GameplayFacade', () => {
                 rowan: 0,
               },
               progressBar: { regular: 0, gradient: 0 },
+              plotView: { rows: 0, boxes: 0 },
               icons: { none: 0, icons: 0 },
             },
           }),
@@ -1295,6 +1296,7 @@ describe('GameplayFacade', () => {
         rowan: true,
       },
       progressBar: { regular: true, gradient: false },
+      plotView: { rows: true, boxes: true },
       icons: { none: true, icons: true },
     });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
@@ -2916,6 +2918,8 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.setSelectedShopShelfSlotSellItem(summonResult.seed.id)).toEqual({
       ok: true,
       slotNumber: 1,
+      sellLimitMode: 'all',
+      sellQuantityLimit: null,
       item: {
         itemTypeId: summonResult.seed.id,
         key: summonResult.seed.key,
@@ -3619,6 +3623,56 @@ describe('GameplayFacade', () => {
       sellLabel: summonResult.seed.label,
       sellQuantity: 0,
     });
+  });
+
+  it('auto sells only a fixed marked NPC market amount', () => {
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      shopNow: () => shopNowMs,
+    });
+    setShopAutoSellSeconds(gameplayFacade, 5);
+    openFirstNpcMarketStand(gameplayFacade);
+
+    unlockSageSeed(gameplayFacade);
+    ecsFacade.update({ deltaSeconds: 10 });
+    const summonResult = gameplayFacade.summonSeed();
+    gameplayFacade.itemsFacade.addItem(summonResult.seed.id, 10);
+    expect(
+      gameplayFacade.setSelectedShopShelfSlotSellItem(summonResult.seed.id, {
+        sellLimitMode: 'amount',
+        sellQuantityLimit: 7,
+      }),
+    ).toMatchObject({
+      ok: true,
+      sellLimitMode: 'amount',
+      sellQuantityLimit: 7,
+    });
+
+    shopNowMs = 5_000;
+    ecsFacade.update({ deltaSeconds: 5 });
+
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(7);
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([
+      {
+        itemTypeId: summonResult.seed.id,
+        key: summonResult.seed.key,
+        label: summonResult.seed.label,
+        kind: 'seed',
+        quantity: 4,
+      },
+    ]);
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
+      sellItemTypeId: summonResult.seed.id,
+      sellLimitMode: 'amount',
+      sellQuantityLimit: 0,
+      sellQuantity: 4,
+    });
+
+    shopNowMs = 10_000;
+    ecsFacade.update({ deltaSeconds: 5 });
+
+    expect(gameplayFacade.getSnapshot().gold.current).toBe(7);
+    expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(4);
   });
 
   it('uses one NPC market timer for the whole shop', () => {

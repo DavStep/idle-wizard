@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.11
+
+- Added a compact Garden box view with plant icons, growth motion, harvest cues, and a rows/boxes setting.
+- Added Market stand quantity marking so NPC auto-sell can sell all items or only a chosen amount.
+- Improved Android auth token storage so signed-in sessions survive WebView storage loss more reliably.
+- Retuned later level seed requirements and tightened Elara's Market gold guidance around fast-sell tabs, quantity, and sell targets.
+
 ## 0.2.10
 
 - Improved NPC market auto-sell so backend prices stay retained while stands are active and pending sales resume when price data returns.

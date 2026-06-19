@@ -100,6 +100,43 @@ describe('SpacetimeConnectionManager', () => {
     expect(onConnect).toHaveBeenCalledWith('connection-2', 'identity-2', 'token-2');
   });
 
+  it('retries a fallback stored token before connecting anonymously', async () => {
+    const { DbConnection, builders } = createFakeDbConnection();
+    const authSessionManager = {
+      getConnectionAuth: vi.fn(async () => ({
+        token: 'browser-token',
+        fallbackTokens: ['native-token'],
+        canRetryWithoutToken: true,
+      })),
+      acceptConnection: vi.fn(),
+      clearSession: vi.fn(),
+    };
+    const onConnect = vi.fn();
+    const onConnectError = vi.fn();
+    const manager = new SpacetimeConnectionManager({
+      uri: 'https://maincloud.spacetimedb.com',
+      databaseName: 'idle-wizard',
+      authSessionManager,
+    });
+
+    await manager.connect(DbConnection, { onConnect, onConnectError });
+    builders[0].callbacks.onConnectError({}, new Error('bad browser token'));
+
+    expect(builders).toHaveLength(2);
+    expect(builders[0].token).toBe('browser-token');
+    expect(builders[1].token).toBe('native-token');
+    expect(onConnectError).not.toHaveBeenCalled();
+
+    builders[1].callbacks.onConnect('connection-2', 'identity-2', 'token-2');
+    await Promise.resolve();
+
+    expect(authSessionManager.acceptConnection).toHaveBeenCalledWith({
+      identity: 'identity-2',
+      token: 'token-2',
+    });
+    expect(onConnect).toHaveBeenCalledWith('connection-2', 'identity-2', 'token-2');
+  });
+
   it('surfaces the retry error if anonymous connection also fails', async () => {
     const { DbConnection, builders } = createFakeDbConnection();
     const authSessionManager = {

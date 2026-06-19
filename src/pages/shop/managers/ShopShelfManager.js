@@ -9,6 +9,7 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { formatGoldPriceText, normalizeGoldPrice } from '../../../shared/goldPrice.js';
 
 const EMPTY_STAND_LABEL = 'empty stand';
@@ -25,6 +26,9 @@ export class ShopShelfManager {
     this.unsubscribe = null;
     this.refs = {};
     this.selectedSellTab = 'seed';
+    this.draftSellItemTypeId = null;
+    this.draftSellQuantity = 1;
+    this.statusText = '';
     this.visible = false;
     this.previousFocus = null;
     this.handledBuyPressStart = false;
@@ -100,6 +104,9 @@ export class ShopShelfManager {
     this.root = null;
     this.refs = {};
     this.selectedSellTab = 'seed';
+    this.draftSellItemTypeId = null;
+    this.draftSellQuantity = 1;
+    this.statusText = '';
     this.visible = false;
     this.previousFocus = null;
     this.handledSelectSlotPressStartSlotNumber = null;
@@ -210,10 +217,58 @@ export class ShopShelfManager {
     };
   }
 
+  createSelectedSellItemRow() {
+    const row = document.createElement('div');
+    row.className = 'shop-page__sell-selected-row';
+
+    const label = document.createElement('button');
+    label.className = 'row_key shop-page__sell-selected-label';
+    label.type = 'button';
+    label.addEventListener('click', () => this.clearDraftSellItem());
+
+    const value = document.createElement('span');
+    value.className = 'row_val';
+
+    row.append(label, value);
+    return { row, label, value };
+  }
+
   createSellControls() {
     const root = document.createElement('section');
     root.className = 'shop-page__sell-controls';
     root.setAttribute('aria-label', 'Select item to sell');
+
+    const selectedItem = this.createSelectedSellItemRow();
+    const quantityField = createAmountSelectionRow({
+      ariaLabel: 'mark amount',
+      className: 'shop-page__sell-field',
+      inputClassName: 'shop-page__sell-input',
+      stepClassName: 'shop-page__sell-step',
+      onInput: () => this.onMarkQuantityInput(),
+      onStep: (delta) => this.onMarkQuantityStep(delta),
+    });
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'shop-page__sell-action-row';
+
+    const markButton = document.createElement('button');
+    markButton.className = 'style-button shop-page__sell-mark-button';
+    markButton.type = 'button';
+    markButton.addEventListener('click', () => this.onMarkSellAmount());
+
+    const markAllButton = document.createElement('button');
+    markAllButton.className = 'style-button shop-page__sell-mark-all-button';
+    markAllButton.type = 'button';
+    markAllButton.textContent = 'mark all';
+    markAllButton.addEventListener('click', () => this.onMarkSellAll());
+
+    actionRow.append(markAllButton, markButton);
+
+    const status = document.createElement('div');
+    status.className = 'shop-page__sell-status';
+
+    const divider = document.createElement('div');
+    divider.className = 'shop-page__sell-divider';
 
     const itemList = document.createElement('div');
     itemList.className = 'shop-page__sell-item-list';
@@ -244,9 +299,15 @@ export class ShopShelfManager {
     const itemLabels = new Map();
     const itemQuantities = new Map();
 
-    root.append(itemList);
+    root.append(selectedItem.row, quantityField.field, actionRow, status, divider, itemList);
     return {
       root,
+      selectedItem,
+      quantityField,
+      actionRow,
+      markButton,
+      markAllButton,
+      status,
       emptyButton,
       itemList,
       tabButtons,
@@ -406,23 +467,112 @@ export class ShopShelfManager {
   }
 
   onSetSellItem(itemTypeId) {
-    const result = this.gameplayFacade.setSelectedShopShelfSlotSellItem(itemTypeId);
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const item = this.getSellItem(snapshot.shop.shelf, itemTypeId);
 
-    if (result.ok) {
-      this.selectedSellTab = result.item.kind;
-      this.hideSellPopup();
+    if (item) {
+      this.draftSellItemTypeId = itemTypeId;
+      this.draftSellQuantity = this.getDefaultMarkQuantity(item);
+      this.statusText = '';
+      this.selectedSellTab = item.kind;
     }
 
-    this.render(this.gameplayFacade.getSnapshot());
+    this.render(snapshot);
   }
 
   onClearSellItem() {
     const result = this.gameplayFacade.clearSelectedShopShelfSlotSellItem();
 
     if (result.ok) {
+      this.draftSellItemTypeId = null;
+      this.draftSellQuantity = 1;
+      this.statusText = '';
       this.hideSellPopup();
     }
 
+    this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  clearDraftSellItem() {
+    if (this.draftSellItemTypeId === null) {
+      return;
+    }
+
+    this.draftSellItemTypeId = null;
+    this.draftSellQuantity = 1;
+    this.statusText = '';
+    this.render(this.gameplayFacade.getSnapshot());
+    this.refs.sellControls?.quantityField?.hideInput();
+  }
+
+  onMarkQuantityInput() {
+    this.draftSellQuantity =
+      this.readPositiveInteger(this.refs.sellControls?.quantityField?.input.value) ?? 0;
+    this.statusText = '';
+    this.renderSellDraftDetails(this.gameplayFacade.getSnapshot().shop.shelf);
+  }
+
+  onMarkQuantityStep(delta) {
+    const item = this.getDraftSellItem(this.gameplayFacade.getSnapshot().shop.shelf);
+    const quantity = this.clampMarkQuantity(this.draftSellQuantity, item) ?? 1;
+    const nextQuantity = this.clampSteppedMarkQuantity(quantity + delta, item);
+
+    if (!nextQuantity || nextQuantity === quantity) {
+      return;
+    }
+
+    this.draftSellQuantity = nextQuantity;
+    this.statusText = '';
+    this.renderSellDraftDetails(this.gameplayFacade.getSnapshot().shop.shelf);
+  }
+
+  onMarkSellAmount() {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const item = this.getDraftSellItem(snapshot.shop.shelf);
+    const quantity = this.clampMarkQuantity(this.draftSellQuantity, item);
+
+    if (!item || !quantity) {
+      this.statusText = item ? 'bad amount' : 'select item';
+      this.renderSellDraftDetails(snapshot.shop.shelf);
+      return;
+    }
+
+    this.markSellItem(item, {
+      sellLimitMode: 'amount',
+      sellQuantityLimit: quantity,
+    });
+  }
+
+  onMarkSellAll() {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const item = this.getDraftSellItem(snapshot.shop.shelf);
+
+    if (!item) {
+      this.statusText = 'select item';
+      this.renderSellDraftDetails(snapshot.shop.shelf);
+      return;
+    }
+
+    this.markSellItem(item, {
+      sellLimitMode: 'all',
+    });
+  }
+
+  markSellItem(item, sellLimit) {
+    const result = this.gameplayFacade.setSelectedShopShelfSlotSellItem(
+      item.itemTypeId,
+      sellLimit,
+    );
+
+    if (result.ok) {
+      this.selectedSellTab = item.kind;
+      this.statusText = '';
+      this.hideSellPopup();
+      this.render(this.gameplayFacade.getSnapshot());
+      return;
+    }
+
+    this.statusText = this.getMarkFailureText(result.reason);
     this.render(this.gameplayFacade.getSnapshot());
   }
 
@@ -468,10 +618,13 @@ export class ShopShelfManager {
 
   showSellPopup() {
     this.previousFocus = document.activeElement;
+    this.syncDraftFromSelectedSlot();
+    this.statusText = '';
     this.visible = true;
     this.applyPopupVisibility();
     this.render(this.gameplayFacade.getSnapshot());
     this.refs.dialog?.focus();
+    this.refs.sellControls?.quantityField?.hideInput();
   }
 
   hideSellPopup() {
@@ -688,6 +841,9 @@ export class ShopShelfManager {
       this.isSlotEmpty(selectedSlot) ? 'true' : 'false',
     );
 
+    this.ensureDraftStillVisible(shelf);
+    this.renderSellDraftDetails(shelf);
+
     const visibleItemTypeIds = new Set(shelf.sellItems.map((item) => item.itemTypeId));
 
     for (const [itemTypeId, row] of this.refs.sellControls.itemRows) {
@@ -717,12 +873,128 @@ export class ShopShelfManager {
       button.setAttribute('aria-disabled', canSelectItem ? 'false' : 'true');
       button.setAttribute(
         'aria-pressed',
-        selectedSlot.sellItemTypeId === item.itemTypeId ? 'true' : 'false',
+        this.draftSellItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
       setNotificationBadge(button, canSelectItem && item.quantity > 0);
     }
 
     this.refs.sellControls.itemList.hidden = false;
+  }
+
+  renderSellDraftDetails(shelf) {
+    const controls = this.refs.sellControls;
+    if (!controls?.selectedItem) {
+      return;
+    }
+
+    const item = this.getDraftSellItem(shelf);
+    const selectedSlot = shelf.slots.find(
+      (slot) => slot.slotNumber === shelf.selectedSlotNumber,
+    );
+    controls.quantityField.field.hidden = false;
+    controls.actionRow.hidden = false;
+
+    if (!item) {
+      this.draftSellQuantity = 1;
+      controls.selectedItem.label.disabled = true;
+      controls.selectedItem.label.setAttribute('aria-disabled', 'true');
+      controls.selectedItem.label.setAttribute('aria-pressed', 'false');
+      controls.selectedItem.label.setAttribute('aria-label', 'no item selected');
+      controls.selectedItem.label.textContent = 'no item selected';
+      setItemIconLabel(controls.selectedItem.label, null);
+      setResourceColor(controls.selectedItem.label, null);
+      controls.selectedItem.value.textContent = '';
+      setResourceColor(controls.selectedItem.value, null);
+      controls.quantityField.hideInput();
+      controls.quantityField.input.min = '1';
+      controls.quantityField.input.max = '1';
+      controls.quantityField.input.disabled = true;
+      controls.quantityField.setValue(1);
+      controls.quantityField.valueButton.disabled = true;
+      controls.quantityField.valueButton.setAttribute('aria-disabled', 'true');
+      for (const button of controls.quantityField.stepButtons.values()) {
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+      }
+      controls.markButton.textContent = 'mark x1';
+      controls.markButton.setAttribute('aria-label', 'select item to mark');
+      controls.markButton.disabled = true;
+      controls.markButton.setAttribute('aria-disabled', 'true');
+      controls.markAllButton.disabled = true;
+      controls.markAllButton.setAttribute('aria-disabled', 'true');
+      controls.markAllButton.setAttribute('aria-pressed', 'false');
+      this.renderStatus('select item');
+      return;
+    }
+
+    const maxQuantity = this.getMaxMarkQuantity(item);
+    const quantity = maxQuantity > 0
+      ? this.clampMarkQuantity(this.draftSellQuantity, item) ?? maxQuantity
+      : 0;
+    const display = getItemDisplay(this.gameplayFacade.getSnapshot(), item, item.quantity);
+    const selectedSameItem = selectedSlot?.sellItemTypeId === item.itemTypeId;
+    const selectedAll = selectedSameItem && selectedSlot.sellLimitMode !== 'amount';
+    const selectedAmount = selectedSameItem && selectedSlot.sellLimitMode === 'amount';
+    const selectedLimit = Math.max(0, Math.floor(Number(selectedSlot?.sellQuantityLimit) || 0));
+
+    this.draftSellQuantity = quantity;
+    controls.selectedItem.label.disabled = false;
+    controls.selectedItem.label.setAttribute('aria-disabled', 'false');
+    controls.selectedItem.label.setAttribute('aria-pressed', 'true');
+    controls.selectedItem.label.setAttribute('aria-label', `deselect ${display.label}`);
+    controls.selectedItem.label.textContent = `${display.label} x${display.quantity}`;
+    setItemIconLabel(controls.selectedItem.label, item.kind, item.key);
+    setResourceColor(controls.selectedItem.label, item.kind);
+    controls.selectedItem.value.textContent = selectedAll
+      ? 'all'
+      : selectedAmount
+        ? `marked ${selectedLimit}`
+        : '';
+    setResourceColor(controls.selectedItem.value, null);
+
+    controls.quantityField.input.min = maxQuantity > 0 ? '1' : '0';
+    controls.quantityField.input.max = String(maxQuantity);
+    controls.quantityField.input.disabled = maxQuantity <= 0;
+    controls.quantityField.setValue(quantity);
+    controls.quantityField.valueButton.disabled = maxQuantity <= 0;
+    controls.quantityField.valueButton.setAttribute(
+      'aria-disabled',
+      controls.quantityField.valueButton.disabled ? 'true' : 'false',
+    );
+
+    for (const [delta, button] of controls.quantityField.stepButtons) {
+      const nextQuantity = this.clampSteppedMarkQuantity(quantity + delta, item);
+      const disabled = !nextQuantity || nextQuantity === quantity;
+      button.disabled = disabled;
+      button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    }
+
+    controls.markButton.textContent = `mark x${quantity || 0}`;
+    controls.markButton.setAttribute('aria-label', `mark ${quantity || 0}`);
+    controls.markButton.disabled = quantity <= 0;
+    controls.markButton.setAttribute(
+      'aria-disabled',
+      controls.markButton.disabled ? 'true' : 'false',
+    );
+    controls.markButton.setAttribute(
+      'aria-pressed',
+      selectedAmount && selectedLimit === quantity ? 'true' : 'false',
+    );
+    controls.markAllButton.disabled = false;
+    controls.markAllButton.setAttribute('aria-disabled', 'false');
+    controls.markAllButton.setAttribute('aria-pressed', selectedAll ? 'true' : 'false');
+    this.renderStatus(this.statusText);
+  }
+
+  renderStatus(message) {
+    const status = this.refs.sellControls?.status;
+    if (!status) {
+      return;
+    }
+
+    setResourceIconText(status, message);
+    status.hidden = !message;
+    setResourceColorFromText(status, message);
   }
 
   ensureSellTabButtons(sellKinds) {
@@ -797,7 +1069,7 @@ export class ShopShelfManager {
     }
 
     const sellItem = this.getSellItem(shelf, slot);
-    const quantity = Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
+    const quantity = this.getSlotDisplaySellQuantity(slot, sellItem);
     const displayItem = sellItem ?? {
       itemTypeId: slot.sellItemTypeId,
       key: slot.sellKey,
@@ -806,13 +1078,26 @@ export class ShopShelfManager {
     };
     const fallbackSellGold = slot.sellGold ?? sellItem?.sellGold;
     const sellGold = this.getDisplaySellGold(displayItem, fallbackSellGold);
+    const amountMode = slot.sellLimitMode === 'amount';
     const totalSellGold = this.getDisplayTotalSellGold(sellGold, quantity, {
-      useUnitForZeroQuantity: Number(quantity) <= 0 && Number.isFinite(sellGold),
+      useUnitForZeroQuantity:
+        !amountMode && Number(quantity) <= 0 && Number.isFinite(sellGold),
     });
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
       : { label: slot.sellLabel, quantity: String(quantity) };
     const itemText = `${display.label} (${display.quantity})`;
+
+    if (amountMode && quantity <= 0) {
+      return {
+        itemKey: displayItem.key,
+        itemText,
+        itemKind: displayItem.kind,
+        itemEmpty: true,
+        priceText: 'done',
+        priceResource: null,
+      };
+    }
 
     if (!Number.isFinite(totalSellGold)) {
       return {
@@ -836,7 +1121,7 @@ export class ShopShelfManager {
   }
 
   formatShelfTimer(shelf) {
-    const activeSlot = shelf.slots?.find((slot) => slot.unlocked && slot.sellItemTypeId);
+    const activeSlot = shelf.slots?.find((slot) => this.isActiveSellSlot(slot));
 
     if (!activeSlot) {
       return '';
@@ -914,6 +1199,131 @@ export class ShopShelfManager {
           (itemKey && item.key === itemKey),
       ) ?? null
     );
+  }
+
+  getDraftSellItem(shelf) {
+    if (this.draftSellItemTypeId === null) {
+      return null;
+    }
+
+    return this.getSellItem(shelf, this.draftSellItemTypeId);
+  }
+
+  syncDraftFromSelectedSlot() {
+    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
+    const selectedSlot = shelf?.slots?.find(
+      (slot) => slot.slotNumber === shelf.selectedSlotNumber,
+    );
+
+    if (!selectedSlot?.sellItemTypeId) {
+      this.draftSellItemTypeId = null;
+      this.draftSellQuantity = 1;
+      return;
+    }
+
+    const item = this.getSellItem(shelf, selectedSlot.sellItemTypeId);
+    this.draftSellItemTypeId = selectedSlot.sellItemTypeId;
+    this.draftSellQuantity =
+      selectedSlot.sellLimitMode === 'amount'
+        ? Math.max(0, Math.floor(Number(selectedSlot.sellQuantityLimit) || 0))
+        : this.getDefaultMarkQuantity(item);
+  }
+
+  ensureDraftStillVisible(shelf) {
+    if (this.draftSellItemTypeId === null) {
+      return;
+    }
+
+    if (this.getDraftSellItem(shelf)) {
+      return;
+    }
+
+    this.draftSellItemTypeId = null;
+    this.draftSellQuantity = 1;
+  }
+
+  getDefaultMarkQuantity(item) {
+    const maxQuantity = this.getMaxMarkQuantity(item);
+    return maxQuantity > 0 ? maxQuantity : 1;
+  }
+
+  readPositiveInteger(value) {
+    const integer = Math.floor(Number(value));
+
+    if (!Number.isInteger(integer) || integer <= 0) {
+      return null;
+    }
+
+    return integer;
+  }
+
+  clampMarkQuantity(quantity, item) {
+    const safeQuantity = this.readPositiveInteger(quantity);
+
+    if (!item || !safeQuantity) {
+      return null;
+    }
+
+    const maxQuantity = this.getMaxMarkQuantity(item);
+
+    if (maxQuantity <= 0) {
+      return null;
+    }
+
+    return Math.min(safeQuantity, maxQuantity);
+  }
+
+  clampSteppedMarkQuantity(quantity, item) {
+    const integer = Math.floor(Number(quantity));
+    const maxQuantity = this.getMaxMarkQuantity(item);
+
+    if (!Number.isInteger(integer) || maxQuantity <= 0) {
+      return null;
+    }
+
+    return Math.min(Math.max(1, integer), maxQuantity);
+  }
+
+  getMaxMarkQuantity(item) {
+    const quantity = Number.isFinite(item?.quantity) ? Math.floor(item.quantity) : 0;
+    return Math.min(Math.max(0, quantity), 10_000);
+  }
+
+  getSlotDisplaySellQuantity(slot, sellItem) {
+    if (slot.sellLimitMode === 'amount') {
+      return Math.max(0, Math.floor(Number(slot.sellQuantityLimit) || 0));
+    }
+
+    return Number.isFinite(slot.sellQuantity) ? slot.sellQuantity : sellItem?.quantity;
+  }
+
+  isActiveSellSlot(slot) {
+    return Boolean(
+      slot?.unlocked &&
+        slot.sellItemTypeId &&
+        (slot.sellLimitMode !== 'amount' ||
+          Math.max(0, Math.floor(Number(slot.sellQuantityLimit) || 0)) > 0),
+    );
+  }
+
+  getMarkFailureText(reason) {
+    if (reason === 'invalid_quantity') {
+      return 'bad amount';
+    }
+
+    if (reason === 'not_enough_items') {
+      return 'not enough items';
+    }
+
+    if (reason === 'item_not_sellable') {
+      return 'cannot sell';
+    }
+
+    if (reason === 'no_selected_slot') {
+      return 'no stand';
+    }
+
+    return 'mark failed';
   }
 
   formatSellGold(sellGold) {

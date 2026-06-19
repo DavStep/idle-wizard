@@ -8,6 +8,8 @@ const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
 const MANA_TONIC_KEY = 'manaTonic';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
 const DIRECT_SELL_POPUP_CLASS = 'shop-page__direct-sell-popup';
+const DIRECT_SELL_PLUS_ONE_TARGET_ID = 'shop:directSell:amount:+1';
+const DIRECT_SELL_CONFIRM_TARGET_ID = 'shop:directSell:sell';
 const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
 const MANA_READOUT_TARGET_ID = 'top:mana';
@@ -1509,10 +1511,6 @@ function getItemQuantity(snapshot, itemKey) {
     .reduce((total, item) => total + (Number(item.quantity) || 0), 0);
 }
 
-function hasAnyItemQuantity(snapshot, itemKeys) {
-  return itemKeys.some((itemKey) => getItemQuantity(snapshot, itemKey) > 0);
-}
-
 function getGold(snapshot) {
   return Math.max(0, Math.floor(Number(snapshot?.gold?.current) || 0));
 }
@@ -1547,8 +1545,14 @@ function getLevelUpGoldObjectiveText({
     return 'choose something to sell';
   }
 
+  if (state.kind === 'select-kind') {
+    return `open ${getDirectSellKindLabel(state.itemKind)} tab`;
+  }
+
   if (state.kind === 'set-amount') {
-    return 'amount starts at 1. press sell, or +1 if you have more to sell.';
+    return state.canIncrease
+      ? 'amount starts at 1. press sell, or +1 if you have more to sell.'
+      : 'press sell';
   }
 
   return 'earn level-up gold in market';
@@ -1580,8 +1584,12 @@ function getLevelUpGoldTargetId({
     return `shop:directSell:${state.itemKey}`;
   }
 
+  if (state.kind === 'select-kind') {
+    return `shop:directSell:tab:${state.itemKind}`;
+  }
+
   if (state.kind === 'set-amount') {
-    return null;
+    return state.canIncrease ? DIRECT_SELL_PLUS_ONE_TARGET_ID : DIRECT_SELL_CONFIRM_TARGET_ID;
   }
 
   if (state.kind !== 'obtain-item') {
@@ -1617,8 +1625,12 @@ function getLevelUpGoldHintText({
     return 'choose something to sell';
   }
 
+  if (state.kind === 'select-kind') {
+    return getDirectSellKindLabel(state.itemKind);
+  }
+
   if (state.kind === 'set-amount') {
-    return 'sell or +1';
+    return state.canIncrease ? '+1' : 'press sell';
   }
 
   if (state.kind !== 'obtain-item') {
@@ -1654,7 +1666,7 @@ function getLevelUpGoldMarketState({
   snapshot,
   sellItemKeys,
 }) {
-  if (!hasAnyItemQuantity(snapshot, sellItemKeys)) {
+  if (!hasAnyAvailableSellItemQuantity(snapshot, sellItemKeys)) {
     return { kind: 'obtain-item' };
   }
 
@@ -1666,21 +1678,133 @@ function getLevelUpGoldMarketState({
     return { kind: 'open-fast-sell' };
   }
 
-  if (getSelectedDirectSellItemKey(dom, sellItemKeys)) {
-    return { kind: 'set-amount' };
+  const selectedItemKey = getSelectedDirectSellItemKey(dom, sellItemKeys);
+
+  if (selectedItemKey && getAvailableSellItemQuantity(snapshot, selectedItemKey) > 0) {
+    const selectedQuantity = getSelectedDirectSellQuantity(dom);
+    return {
+      kind: 'set-amount',
+      canIncrease:
+        getSelectedDirectSellMaxQuantity(snapshot, selectedItemKey) > selectedQuantity &&
+        !doesSelectedSellQuantityCoverGoldShortfall({
+          snapshot,
+          itemKey: selectedItemKey,
+          quantity: selectedQuantity,
+        }),
+    };
   }
 
-  const itemKey = getFirstSellableItemKey(snapshot, sellItemKeys);
+  const item = getFirstAvailableSellItem(snapshot, sellItemKeys);
 
-  if (itemKey) {
-    return { kind: 'choose-item', itemKey };
+  if (!item) {
+    return { kind: 'obtain-item' };
   }
 
-  return { kind: 'open-fast-sell' };
+  if (item.kind && !dom?.isShopDirectSellTabSelected?.(item.kind)) {
+    return { kind: 'select-kind', itemKind: item.kind };
+  }
+
+  return { kind: 'choose-item', itemKey: item.key };
 }
 
-function getFirstSellableItemKey(snapshot, itemKeys) {
-  return itemKeys.find((itemKey) => getItemQuantity(snapshot, itemKey) > 0) ?? null;
+function hasAnyAvailableSellItemQuantity(snapshot, itemKeys) {
+  return itemKeys.some((itemKey) => getAvailableSellItemQuantity(snapshot, itemKey) > 0);
+}
+
+function getFirstAvailableSellItem(snapshot, itemKeys) {
+  const sellItems = snapshot?.shop?.shelf?.sellItems;
+
+  if (Array.isArray(sellItems)) {
+    return (
+      sellItems.find(
+        (item) => itemKeys.includes(item?.key) && getPositiveQuantity(item) > 0,
+      ) ?? null
+    );
+  }
+
+  const itemKey = itemKeys.find((key) => getItemQuantity(snapshot, key) > 0) ?? null;
+  return itemKey ? { key: itemKey, kind: null, quantity: getItemQuantity(snapshot, itemKey) } : null;
+}
+
+function getAvailableSellItemQuantity(snapshot, itemKey) {
+  const sellItems = snapshot?.shop?.shelf?.sellItems;
+
+  if (Array.isArray(sellItems)) {
+    return sellItems
+      .filter((item) => item?.key === itemKey)
+      .reduce((total, item) => total + getPositiveQuantity(item), 0);
+  }
+
+  return getItemQuantity(snapshot, itemKey);
+}
+
+function getPositiveQuantity(item) {
+  return Math.max(0, Math.floor(Number(item?.quantity) || 0));
+}
+
+function getSelectedDirectSellMaxQuantity(snapshot, itemKey) {
+  const sellItems = snapshot?.shop?.shelf?.sellItems;
+
+  if (!Array.isArray(sellItems)) {
+    return getAvailableSellItemQuantity(snapshot, itemKey);
+  }
+
+  return sellItems
+    .filter((item) => item?.key === itemKey)
+    .reduce((total, item) => total + getPositiveSellQuantity(item), 0);
+}
+
+function getSelectedDirectSellQuantity(dom) {
+  const quantity = Math.floor(Number(dom?.getShopDirectSellQuantity?.()));
+
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+}
+
+function doesSelectedSellQuantityCoverGoldShortfall({ snapshot, itemKey, quantity }) {
+  const unitGold = getDirectSellUnitGold(snapshot, itemKey);
+
+  if (!Number.isFinite(unitGold) || unitGold <= 0) {
+    return quantity > 1;
+  }
+
+  return unitGold * quantity >= getLevelCompletionCostGold(snapshot) - getGold(snapshot);
+}
+
+function getDirectSellUnitGold(snapshot, itemKey) {
+  const item = snapshot?.shop?.shelf?.sellItems?.find(
+    (sellItem) => sellItem?.key === itemKey,
+  );
+  const fastSellGold = Number(item?.fastSellGold);
+
+  if (Number.isFinite(fastSellGold) && fastSellGold > 0) {
+    return fastSellGold;
+  }
+
+  const sellGold = Number(item?.sellGold);
+  return Number.isFinite(sellGold) && sellGold > 0 ? sellGold : null;
+}
+
+function getPositiveSellQuantity(item) {
+  const quantity = getPositiveQuantity(item);
+  const sellNeed = Number(item?.sellNeed);
+
+  if (!Number.isFinite(sellNeed) || sellNeed < 0) {
+    return quantity;
+  }
+
+  return Math.min(quantity, Math.floor(sellNeed));
+}
+
+function getDirectSellKindLabel(kind) {
+  if (kind === 'herb') {
+    return 'herbs';
+  }
+
+  if (kind === 'potion') {
+    return 'potions';
+  }
+
+  return 'seeds';
 }
 
 function getSelectedDirectSellItemKey(dom, itemKeys) {

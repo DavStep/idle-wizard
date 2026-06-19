@@ -81,6 +81,7 @@ function createGameplayFacadeFake() {
           rowan: 0,
         },
         progressBar: { regular: 0, gradient: 0 },
+        plotView: { rows: 0, boxes: 0 },
         icons: { none: 0, icons: 0 },
       },
       researched: {
@@ -99,6 +100,7 @@ function createGameplayFacadeFake() {
           rowan: true,
         },
         progressBar: { regular: true, gradient: false },
+        plotView: { rows: true, boxes: true },
         icons: { none: true, icons: true },
       },
     },
@@ -2653,6 +2655,7 @@ function createPlayerFacadeFake(
     initialCharacter = 'elara',
     initialIconMode = 'icons',
     initialProgressBar = 'regular',
+    initialPlotView = 'boxes',
   } = {},
 ) {
   let snapshot = {
@@ -2663,6 +2666,7 @@ function createPlayerFacadeFake(
     character: initialCharacter,
     iconMode: initialIconMode,
     progressBar: initialProgressBar,
+    plotView: initialPlotView,
     shouldPromptForUsername,
   };
   const listeners = new Set();
@@ -2787,6 +2791,18 @@ function createPlayerFacadeFake(
       snapshot = {
         ...snapshot,
         progressBar: normalizedProgressBar,
+      };
+
+      publish();
+      return snapshot;
+    },
+    setPlotView: (plotView) => {
+      const normalizedPlotView = ['rows', 'row', 'current'].includes(plotView)
+        ? 'rows'
+        : 'boxes';
+      snapshot = {
+        ...snapshot,
+        plotView: normalizedPlotView,
       };
 
       publish();
@@ -5695,6 +5711,8 @@ describe('PagesFacade', () => {
       'free',
       'researched',
       'free',
+      'researched',
+      'researched',
       'researched',
       'researched',
     ]);
@@ -10493,14 +10511,22 @@ describe('PagesFacade', () => {
       .querySelector('.garden-page__plot-label')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    const cancelPopup = stage.querySelector('.garden-page__cancel-popup');
     expect(seedPopup.hidden).toBe(true);
-    expect(stage.querySelector('.garden-page__cancel-popup')?.hidden).toBe(true);
+    expect(cancelPopup?.hidden).toBe(false);
+    expect(stage.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
+      'cancel progress?',
+    );
+
+    cancelPopup
+      ?.querySelector('.garden-page__cancel-keep')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     rows[0]
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.garden-page__cancel-popup')?.hidden).toBe(false);
+    expect(cancelPopup?.hidden).toBe(false);
     expect(stage.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
       'cancel progress?',
     );
@@ -11469,6 +11495,9 @@ describe('PagesFacade', () => {
       (button) => button.textContent === 'sage seed (0) 1 gold',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.shop-page__sell-mark-all-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       '1.sage seed (0) 1 gold',
@@ -11507,6 +11536,9 @@ describe('PagesFacade', () => {
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.textContent === 'mana tonic (0) 5 gold')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.shop-page__sell-mark-all-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const itemValue = stage.querySelector('.shop-page__slot-item-value');
@@ -11555,6 +11587,9 @@ describe('PagesFacade', () => {
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.textContent === 'sage seed (0) 1 gold')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.shop-page__sell-mark-all-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       '1.sage seed (0) 1 gold',
@@ -11594,6 +11629,9 @@ describe('PagesFacade', () => {
       (button) => button.textContent === 'sage seed (0) 1 gold',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.shop-page__sell-mark-all-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     gameplayFacade.setShopSellGold('seed', 7);
 
@@ -11666,6 +11704,9 @@ describe('PagesFacade', () => {
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.textContent === 'sage seed (0) 1 gold')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.shop-page__sell-mark-all-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     gameplayFacade.setShopSellItems([]);

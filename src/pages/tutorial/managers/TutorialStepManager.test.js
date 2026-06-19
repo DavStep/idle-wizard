@@ -83,7 +83,9 @@ function createDomFake({
   selectedBrewingRecipeKey = null,
   shopSellPopupOpen = false,
   shopDirectSellPopupOpen = false,
+  directSellTabKind = 'seed',
   directSellItemKey = null,
+  directSellQuantity = 1,
   username = 'wizard',
   usernameSettingsOpen = false,
   settingsThemeTabVisible = false,
@@ -96,6 +98,8 @@ function createDomFake({
     isGardenSeedPopupOpen: () => seedPopupOpen,
     isShopDirectSellItemSelected: (itemKey) => directSellItemKey === itemKey,
     isShopDirectSellPopupOpen: () => shopDirectSellPopupOpen,
+    isShopDirectSellTabSelected: (kind) => directSellTabKind === kind,
+    getShopDirectSellQuantity: () => directSellQuantity,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isTasksExpanded: () => tasksExpanded,
     isUsernameSettingsOpen: () => usernameSettingsOpen,
@@ -1187,7 +1191,49 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('switches to copy-only amount guidance once a level two fast-sell item is selected', () => {
+  it('targets the herbs tab before a hidden herb row during level two gold guidance', () => {
+    const snapshot = createLevelTwoReadySnapshot({
+      shop: {
+        shelf: {
+          selectedSlotNumber: null,
+          slots: [],
+          sellItems: [
+            {
+              key: 'sageSeed',
+              kind: 'seed',
+              quantity: 0,
+            },
+            {
+              key: 'sageHerb',
+              kind: 'herb',
+              quantity: 1,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({
+          shopDirectSellPopupOpen: true,
+          directSellTabKind: 'seed',
+        }),
+      }),
+    ).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'shop:directSell:tab:herb',
+      hintText: 'herbs',
+      objectiveText: 'open herbs tab',
+      progressLabel: '10/40 gold',
+      stepLabel: '19/27',
+    });
+  });
+
+  it('targets sell once a single fast-sell item is selected', () => {
     const snapshot = createLevelTwoReadySnapshot();
 
     expect(
@@ -1202,11 +1248,82 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'level-up-two',
       kind: 'objective',
-      targetId: null,
+      targetId: 'shop:directSell:sell',
       allowedPopupClasses: ['shop-page__direct-sell-popup'],
-      hintText: 'sell or +1',
+      hintText: 'press sell',
+      objectiveText: 'press sell',
+      progressLabel: '10/40 gold',
+      stepLabel: '19/27',
+    });
+  });
+
+  it('targets +1 once multiple fast-sell items are selected', () => {
+    const snapshot = createLevelTwoReadySnapshot({
+      inventory: [{ key: 'sageHerb', quantity: 3 }],
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({
+          shopDirectSellPopupOpen: true,
+          directSellItemKey: 'sageHerb',
+        }),
+      }),
+    ).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'shop:directSell:amount:+1',
+      allowedPopupClasses: ['shop-page__direct-sell-popup'],
+      hintText: '+1',
       objectiveText: 'amount starts at 1. press sell, or +1 if you have more to sell.',
       progressLabel: '10/40 gold',
+      stepLabel: '19/27',
+    });
+  });
+
+  it('targets sell once the selected fast-sell amount covers the gold shortfall', () => {
+    const snapshot = createLevelTwoReadySnapshot({
+      inventory: [{ key: 'sageHerb', quantity: 3 }],
+      gold: {
+        current: 30,
+      },
+      shop: {
+        shelf: {
+          selectedSlotNumber: null,
+          slots: [],
+          sellItems: [
+            {
+              key: 'sageHerb',
+              kind: 'herb',
+              quantity: 3,
+              fastSellGold: 10,
+              sellNeed: 1000,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({
+          shopDirectSellPopupOpen: true,
+          directSellItemKey: 'sageHerb',
+          directSellQuantity: 3,
+        }),
+      }),
+    ).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'shop:directSell:sell',
+      allowedPopupClasses: ['shop-page__direct-sell-popup'],
+      hintText: 'press sell',
+      objectiveText: 'press sell',
+      progressLabel: '30/40 gold',
       stepLabel: '19/27',
     });
   });
@@ -1225,6 +1342,38 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:summonSeed',
       hintText: 'summon seed',
+      objectiveText: 'get sage to sell',
+      progressLabel: '10/40 gold',
+      stepLabel: '19/27',
+    });
+  });
+
+  it('does not target a zero-available fast-sell row during level two gold guidance', () => {
+    const snapshot = createLevelTwoReadySnapshot({
+      inventory: [{ key: 'sageSeed', quantity: 1 }],
+      shop: {
+        shelf: {
+          selectedSlotNumber: null,
+          slots: [],
+          sellItems: [
+            { key: 'sageSeed', quantity: 0 },
+            { key: 'sageHerb', quantity: 0 },
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({ shopDirectSellPopupOpen: true }),
+      }),
+    ).toMatchObject({
+      id: 'level-up-two',
+      kind: 'objective',
+      targetId: 'page:garden',
+      hintText: 'open garden',
       objectiveText: 'get sage to sell',
       progressLabel: '10/40 gold',
       stepLabel: '19/27',

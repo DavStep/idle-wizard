@@ -232,6 +232,8 @@ export class ShopDirectSellManager {
       onInput: () => this.onQuantityInput(),
       onStep: (delta) => this.onQuantityStep(delta),
     });
+    this.refs.quantityField.stepButtons.get(1).dataset.tutorialId =
+      'shop:directSell:amount:+1';
 
     const actionRow = document.createElement('div');
     actionRow.className = 'shop-page__direct-sell-action-row';
@@ -320,6 +322,8 @@ export class ShopDirectSellManager {
       button.className = 'style-button shop-page__direct-sell-tab-button';
       button.type = 'button';
       button.textContent = tab.label;
+      button.dataset.directSellKind = tab.kind;
+      button.dataset.tutorialId = `shop:directSell:tab:${tab.kind}`;
       button.setAttribute('role', 'tab');
       button.addEventListener('click', () => this.onSelectTab(tab.kind));
       this.refs.tabButtons.set(tab.kind, button);

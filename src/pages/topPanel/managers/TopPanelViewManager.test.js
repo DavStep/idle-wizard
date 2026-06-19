@@ -74,6 +74,32 @@ describe('TopPanelViewManager', () => {
     ]);
 
     expect(
+      [
+        ...stage.querySelectorAll(
+          '#room-top-panel-settings-theme > .room-top-panel__settings-section > .style-box__title',
+        ),
+      ].map((title) => title.textContent),
+    ).toEqual([
+      'device',
+      'theme',
+      'font',
+      'color',
+      'progress bar',
+      'plot view',
+      'icons',
+    ]);
+
+    expect(
+      [...stage.querySelectorAll('.room-top-panel__plot-view-button')].map((button) => [
+        button.dataset.plotView,
+        button.textContent,
+      ]),
+    ).toEqual([
+      ['rows', 'rows'],
+      ['boxes', 'boxes'],
+    ]);
+
+    expect(
       [...stage.querySelectorAll('.room-top-panel__color-preview')].map((preview) => ({
         mode: preview.dataset.previewColor,
         labels: [...preview.querySelectorAll('.room-top-panel__color-preview-item')].map(

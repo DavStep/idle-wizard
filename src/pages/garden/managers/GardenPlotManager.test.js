@@ -218,6 +218,27 @@ function createGameplayFacadeFake() {
   return gameplayFacade;
 }
 
+function createPlayerFacadeFake(initialPlotView = 'boxes') {
+  const listeners = new Set();
+  let snapshot = { plotView: initialPlotView };
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      listener(snapshot);
+      return () => listeners.delete(listener);
+    },
+    setPlotView: (plotView) => {
+      snapshot = { ...snapshot, plotView };
+
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
+  };
+}
+
 function setPlotActionHitBox(plotRow) {
   plotRow.querySelector('.garden-page__plot-action').getBoundingClientRect = () => ({
     left: 100,
@@ -239,6 +260,190 @@ function dispatchTouchLikePressStart(element) {
 }
 
 describe('GardenPlotManager', () => {
+  it('uses boxes as the default plot view with three fixed columns', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    gameplayFacade.getSnapshot().garden.plot.tilesPerRow = 8;
+
+    manager.mount(parent);
+
+    const plotRoot = parent.querySelector('.garden-page__plot');
+    const rows = parent.querySelector('.garden-page__plot-rows');
+
+    expect(plotRoot?.dataset.plotView).toBe('boxes');
+    expect(rows?.dataset.plotView).toBe('boxes');
+    expect(rows?.style.getPropertyValue('--garden-page-plot-columns')).toBe('3');
+  });
+
+  it('switches to rows and keeps current row action and timer behavior', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const playerFacade = createPlayerFacadeFake('boxes');
+    const manager = new GardenPlotManager({ gameplayFacade, playerFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'growing',
+      totalMs: 12_000,
+      remainingMs: 8_000,
+      progress: 0.333,
+      process: {
+        phase: 'growing',
+        totalMs: 12_000,
+        remainingMs: 8_000,
+        progress: 0.333,
+      },
+    });
+
+    manager.mount(parent);
+    playerFacade.setPlotView('rows');
+
+    const plotRoot = parent.querySelector('.garden-page__plot');
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    expect(plotRoot?.dataset.plotView).toBe('rows');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage seed');
+    expect(plotRow.querySelector('.garden-page__plot-action-label')?.textContent).toBe(
+      'growing',
+    );
+    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('8s');
+  });
+
+  it('shows a growing herb icon scaled by progress in boxes mode', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'growing',
+      totalMs: 12_000,
+      remainingMs: 6_000,
+      progress: 0.5,
+      process: {
+        phase: 'growing',
+        totalMs: 12_000,
+        remainingMs: 6_000,
+        progress: 0.5,
+      },
+    });
+
+    manager.mount(parent);
+
+    const boxFrame = parent.querySelector('.garden-page__plot-box-frame');
+    const plantIcon = parent.querySelector('.garden-page__plot-plant-icon');
+    const boxAction = parent.querySelector('.garden-page__plot-box-action');
+    const boxTimer = parent.querySelector('.garden-page__plot-box-timer');
+
+    expect(boxFrame?.classList.contains('has-plant')).toBe(true);
+    expect(boxFrame?.style.getPropertyValue('--garden-page-plot-growth-scale')).toBe('0.71');
+    expect(plantIcon?.dataset.assetAtlasFrame).toBe('herb:sageHerb');
+    expect(parent.querySelector('.garden-page__plot-scissors')?.hasAttribute('hidden')).toBe(
+      true,
+    );
+    expect(boxAction?.textContent).toBe('growing 6s');
+    expect(boxTimer?.parentElement).toBe(boxAction);
+    expect(boxTimer?.textContent).toBe('6s');
+  });
+
+  it('marks boxes ready to harvest with bounce class', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'ready',
+      totalMs: 0,
+      remainingMs: 0,
+      progress: 1,
+      process: null,
+    });
+
+    manager.mount(parent);
+
+    const boxFrame = parent.querySelector('.garden-page__plot-box-frame');
+
+    expect(boxFrame?.classList.contains('is-ready')).toBe(true);
+    expect(parent.querySelector('.garden-page__plot-box-action')?.textContent).toBe('harvest');
+    expect(parent.querySelector('.garden-page__plot-scissors')?.hasAttribute('hidden')).toBe(
+      true,
+    );
+    expect(parent.querySelector('.garden-page__plot-box-timer')?.textContent).toBe('');
+    expect(parent.querySelector('.garden-page__plot-box-timer')?.hidden).toBe(true);
+  });
+
+  it('shows harvesting scissors and timer next to status in boxes mode', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'harvesting',
+      totalMs: 3_000,
+      remainingMs: 3_000,
+      progress: 0,
+      process: {
+        phase: 'harvesting',
+        totalMs: 3_000,
+        remainingMs: 3_000,
+        progress: 0,
+      },
+    });
+
+    manager.mount(parent);
+
+    const boxFrame = parent.querySelector('.garden-page__plot-box-frame');
+    const scissors = parent.querySelector('.garden-page__plot-scissors');
+    const boxAction = parent.querySelector('.garden-page__plot-box-action');
+    const boxTimer = parent.querySelector('.garden-page__plot-box-timer');
+
+    expect(boxFrame?.classList.contains('is-harvesting')).toBe(true);
+    expect(scissors?.hasAttribute('hidden')).toBe(false);
+    expect(boxAction?.textContent).toBe('harvesting 3s');
+    expect(boxTimer?.textContent).toBe('3s');
+    expect(boxTimer?.parentElement).toBe(boxAction);
+  });
+
   it('shows zero-cost plot buys as free', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -418,6 +623,34 @@ describe('GardenPlotManager', () => {
     popup.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
 
     expect(popup.hidden).toBe(false);
+  });
+
+  it('opens seed choices from the visible box seed name on touch press start', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const tile = snapshot.garden.plot.tiles[0];
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 2,
+      selectedSeedKey: 'mintSeed',
+      selectedSeedLabel: 'mint seed',
+      phase: 'empty',
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const boxLabel = plotRow.querySelector('.garden-page__plot-box-label');
+
+    dispatchTouchLikePressStart(boxLabel);
+
+    const popup = parent.querySelector('.garden-page__seed-popup');
+
+    expect(popup.hidden).toBe(false);
+    expect(tile.phase).toBe('empty');
+    expect(plotRow.classList.contains('is-selected')).toBe(true);
   });
 
   it('keeps selected seed text stable across renders so taps can open choices', () => {
@@ -634,12 +867,6 @@ describe('GardenPlotManager', () => {
     const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
 
     plotRow
-      .querySelector('.garden-page__plot-label')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
-
-    expect(cancelPopup.hidden).toBe(true);
-
-    plotRow
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -670,6 +897,88 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
     expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(true);
+    expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
+      label: 'mint seed',
+      quantity: 1,
+    });
+  });
+
+  it('opens cancel from the visible plot name and returns to seed choices after confirming', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    parent
+      .querySelector('[aria-label="select mint seed, owned 1"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
+    const seedPopup = parent.querySelector('.garden-page__seed-popup');
+
+    plotRow
+      .querySelector('.garden-page__plot-box-label')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+
+    expect(cancelPopup.hidden).toBe(false);
+    expect(seedPopup.hidden).toBe(true);
+    expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
+      'return mint seed and empty plot 1.',
+    );
+
+    cancelPopup
+      .querySelector('.garden-page__cancel-confirm')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(cancelPopup.hidden).toBe(true);
+    expect(seedPopup.hidden).toBe(false);
+    expect(plotRow.classList.contains('is-selected')).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
+      label: 'mint seed',
+      quantity: 1,
+    });
+  });
+
+  it('does not reopen seed choices after keeping a name cancel and canceling from the action', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    parent
+      .querySelector('[aria-label="select mint seed, owned 1"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
+    const seedPopup = parent.querySelector('.garden-page__seed-popup');
+
+    plotRow
+      .querySelector('.garden-page__plot-box-label')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+    cancelPopup
+      .querySelector('.garden-page__cancel-keep')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    cancelPopup
+      .querySelector('.garden-page__cancel-confirm')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(seedPopup.hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
     expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
       label: 'mint seed',
       quantity: 1,

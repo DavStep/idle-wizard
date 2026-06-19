@@ -1242,7 +1242,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('selects an NPC market sell item from touchstart on the visible seed text', () => {
+  it('selects an NPC market sell item draft from touchstart on the visible seed text', () => {
     withPointerEvent(() => {
       const stage = document.createElement('section');
       const popupLayer = document.createElement('section');
@@ -1284,7 +1284,7 @@ describe('ShopShelfManager', () => {
         getSnapshot() {
           return gameplaySnapshot;
         },
-        setSelectedShopShelfSlotSellItem(itemTypeId) {
+        setSelectedShopShelfSlotSellItem(itemTypeId, sellLimit = {}) {
           const item = gameplaySnapshot.shop.shelf.sellItems[0];
           Object.assign(gameplaySnapshot.shop.shelf.slots[0], {
             sellItemTypeId: itemTypeId,
@@ -1292,6 +1292,8 @@ describe('ShopShelfManager', () => {
             sellKey: item.key,
             sellLabel: item.label,
             sellQuantity: item.quantity,
+            sellLimitMode: sellLimit.sellLimitMode ?? 'all',
+            sellQuantityLimit: sellLimit.sellQuantityLimit ?? null,
             sellGold: item.sellGold,
             sellNeed: item.sellNeed,
           });
@@ -1308,11 +1310,115 @@ describe('ShopShelfManager', () => {
       );
       visibleSeedText?.dispatchEvent(createTouchStartEvent());
 
-      expect(gameplaySnapshot.shop.shelf.slots[0].sellItemTypeId).toBe(1);
+      expect(gameplaySnapshot.shop.shelf.slots[0].sellItemTypeId).toBe(null);
+      expect(
+        popupLayer.querySelector('.shop-page__sell-selected-label')?.textContent,
+      ).toContain('sage seed');
+      expect(popupLayer.querySelector('.shop-page__sell-popup')?.hidden).toBe(false);
+
+      popupLayer
+        .querySelector('.shop-page__sell-mark-all-button')
+        ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(gameplaySnapshot.shop.shelf.slots[0]).toMatchObject({
+        sellItemTypeId: 1,
+        sellLimitMode: 'all',
+      });
       expect(popupLayer.querySelector('.shop-page__sell-popup')?.hidden).toBe(true);
 
       manager.unmount();
     });
+  });
+
+  it('marks a fixed NPC market sell amount from the picker', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 100,
+              sellGold: 8,
+              sellNeed: 120,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: null,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      setSelectedShopShelfSlotSellItem(itemTypeId, sellLimit = {}) {
+        const item = gameplaySnapshot.shop.shelf.sellItems[0];
+        Object.assign(gameplaySnapshot.shop.shelf.slots[0], {
+          sellItemTypeId: itemTypeId,
+          sellKind: item.kind,
+          sellKey: item.key,
+          sellLabel: item.label,
+          sellQuantity: item.quantity,
+          sellLimitMode: sellLimit.sellLimitMode ?? 'all',
+          sellQuantityLimit: sellLimit.sellQuantityLimit ?? null,
+          sellGold: item.sellGold,
+          sellNeed: item.sellNeed,
+        });
+        return {
+          ok: true,
+          item,
+          sellLimitMode: sellLimit.sellLimitMode ?? 'all',
+          sellQuantityLimit: sellLimit.sellQuantityLimit ?? null,
+        };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+    manager.showSellPopup();
+
+    const itemButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')].find(
+      (button) => button.textContent.includes('sage seed'),
+    );
+    itemButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const amountInput = popupLayer.querySelector('.shop-page__sell-input');
+    amountInput.value = '70';
+    amountInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    popupLayer
+      .querySelector('.shop-page__sell-mark-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplaySnapshot.shop.shelf.slots[0]).toMatchObject({
+      sellItemTypeId: 1,
+      sellLimitMode: 'amount',
+      sellQuantityLimit: 70,
+    });
+    expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
+      'sage seed (70) 560 gold',
+    );
+
+    manager.unmount();
   });
 
   it('keeps NPC market stand item text stable across renders so taps can open picker', () => {
@@ -2217,7 +2323,7 @@ describe('ShopShelfManager', () => {
       getSnapshot() {
         return gameplaySnapshot;
       },
-      setSelectedShopShelfSlotSellItem(itemTypeId) {
+      setSelectedShopShelfSlotSellItem(itemTypeId, sellLimit = {}) {
         const item = gameplaySnapshot.shop.shelf.sellItems.find(
           (sellItem) => sellItem.itemTypeId === itemTypeId,
         );
@@ -2227,6 +2333,8 @@ describe('ShopShelfManager', () => {
         slot.sellKey = item.key;
         slot.sellLabel = item.label;
         slot.sellQuantity = item.quantity;
+        slot.sellLimitMode = sellLimit.sellLimitMode ?? 'all';
+        slot.sellQuantityLimit = sellLimit.sellQuantityLimit ?? null;
         slot.sellGold = item.sellGold;
         slot.sellNeed = item.sellNeed;
 
@@ -2251,6 +2359,11 @@ describe('ShopShelfManager', () => {
     ).toBe(true);
 
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplaySnapshot.shop.shelf.slots[0].sellItemTypeId).toBe(null);
+    popupLayer
+      .querySelector('.shop-page__sell-mark-all-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplaySnapshot.shop.shelf.slots[0].sellItemTypeId).toBe(1);
     expect(popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(true);

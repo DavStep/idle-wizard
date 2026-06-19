@@ -7,12 +7,12 @@ export class GardenPageFacade {
   static explain =
     'Shows the garden room page, a quiet place between brewing and the workshop for later plant work.';
 
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, playerFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new GardenRoomViewManager();
     this.flyoutManager = new RewardFlyoutManager();
     this.rewardEventsUnsubscribe = null;
-    this.plotManager = new GardenPlotManager({ gameplayFacade });
+    this.plotManager = new GardenPlotManager({ gameplayFacade, playerFacade });
     this.herbInventoryManager = new GardenHerbInventoryManager({ gameplayFacade });
   }
 

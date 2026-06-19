@@ -71,12 +71,19 @@ export class TutorialTargetManager {
         Boolean(this.stage?.querySelector('.shop-page__sell-popup:not([hidden])')),
       isShopDirectSellPopupOpen: () =>
         Boolean(this.stage?.querySelector('.shop-page__direct-sell-popup:not([hidden])')),
+      isShopDirectSellTabSelected: (kind) =>
+        Boolean(
+          this.stage?.querySelector(
+            `.shop-page__direct-sell-tab-button[data-direct-sell-kind="${kind}"][aria-selected="true"]`,
+          ),
+        ),
       isShopDirectSellItemSelected: (itemKey) =>
         Boolean(
           this.stage?.querySelector(
             `.shop-page__direct-sell-item-button[data-direct-sell-item-key="${itemKey}"][aria-pressed="true"]`,
           ),
         ),
+      getShopDirectSellQuantity: () => getShopDirectSellQuantity(this.stage),
       getUsername: () =>
         this.stage
           ?.querySelector('[data-tutorial-id="top:username"]')
@@ -179,6 +186,16 @@ function isThemeSettingsTabOpen(stage) {
       !themeTab.closest('[hidden]') &&
       themeTab.getAttribute('aria-selected') === 'true',
   );
+}
+
+function getShopDirectSellQuantity(stage) {
+  const popup = stage?.querySelector('.shop-page__direct-sell-popup:not([hidden])');
+  const input = popup?.querySelector('.shop-page__direct-sell-input:not([hidden])');
+  const valueButton = popup?.querySelector('.amount-selection-row__value:not([hidden])');
+  const value = input?.value ?? valueButton?.textContent;
+  const quantity = Math.floor(Number(value));
+
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 }
 
 function getSelectedBrewingRecipeRow(stage, recipeKey) {

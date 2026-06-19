@@ -10,6 +10,7 @@ function createPlayerFacade(
   initialFont = 'lexend',
   initialIconMode = 'icons',
   initialProgressBar = 'regular',
+  initialPlotView = 'boxes',
 ) {
   let snapshot = {
     theme: initialTheme,
@@ -17,6 +18,7 @@ function createPlayerFacade(
     colorMode: initialColorMode,
     iconMode: initialIconMode,
     progressBar: initialProgressBar,
+    plotView: initialPlotView,
   };
   const listeners = new Set();
 
@@ -61,6 +63,13 @@ function createPlayerFacade(
         listener(snapshot);
       }
     },
+    setPlotView: (plotView) => {
+      snapshot = { ...snapshot, plotView };
+
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
   };
 }
 
@@ -71,6 +80,7 @@ describe('AppThemeManager', () => {
     delete document.documentElement.dataset.styleColor;
     delete document.documentElement.dataset.styleIcons;
     delete document.documentElement.dataset.styleProgress;
+    delete document.documentElement.dataset.stylePlotView;
   });
 
   it('applies current and changed player visual settings to the document root', () => {
@@ -80,6 +90,7 @@ describe('AppThemeManager', () => {
       'comic-sans-mono',
       'icons',
       'gradient',
+      'boxes',
     );
     const manager = new AppThemeManager();
 
@@ -90,16 +101,19 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleColor).toBe('resources');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
     expect(document.documentElement.dataset.styleProgress).toBe('gradient');
+    expect(document.documentElement.dataset.stylePlotView).toBe('boxes');
 
     playerFacade.setTheme('midnight');
     playerFacade.setFont('comic sans mono');
     playerFacade.setIconMode('none');
     playerFacade.setProgressBar('regular');
+    playerFacade.setPlotView('rows');
 
     expect(document.documentElement.dataset.styleTheme).toBe('midnight');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleIcons).toBe('none');
     expect(document.documentElement.dataset.styleProgress).toBe('regular');
+    expect(document.documentElement.dataset.stylePlotView).toBe('rows');
 
     playerFacade.setFont('google-lexend');
 
@@ -127,5 +141,6 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleColor).toBe('monochrome');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
     expect(document.documentElement.dataset.styleProgress).toBe('regular');
+    expect(document.documentElement.dataset.stylePlotView).toBe('boxes');
   });
 });

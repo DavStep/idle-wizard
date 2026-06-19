@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source routes the market lesson through `fast sell`. The screenshot set below predates that routing and should be refreshed the next time tutorial captures are regenerated.
+Current source routes the market lesson through `fast sell`. Gold-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates that routing and should be refreshed the next time tutorial captures are regenerated.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -40,6 +40,18 @@ flowchart TD
   S24["24. brew-mana-tonic<br/>objective: first potion"]
   S25["25. refill-mana-tonic-cauldron<br/>objective: refill cauldron"]
   Done["tutorial hidden / complete"]
+  G00["gold shortfall"]
+  G01{"available fast-sell quantity?"}
+  G02["no: obtain source<br/>sage or mint"]
+  G03{"on Market page?"}
+  G04["no: open Market"]
+  G05{"fast sell open?"}
+  G06["no: open fast sell"]
+  G07{"item selected and quantity > 0?"}
+  G08["yes: target sell if enough<br/>otherwise +1"]
+  G09{"matching tab open?"}
+  G10["no: open seeds/herbs/potions tab"]
+  G11["yes: choose first item<br/>with quantity > 0"]
 
   S01 -->|"next, top panel unlocks"| S02
   S02 -->|"username saved"| S03
@@ -69,8 +81,19 @@ flowchart TD
 
   S05 -. "paused while mana is not ready" .-> S05
   S07 -. "target can switch: tasks, task row, summon, mana" .-> S07
-  S18 -. "if gold short: Market stand" .-> S18
-  S22 -. "if gold short: Market stand" .-> S22
+  S18 -. "if gold short" .-> G00
+  S22 -. "if gold short" .-> G00
+  G00 --> G01
+  G01 -->|"no"| G02
+  G01 -->|"yes"| G03
+  G03 -->|"no"| G04
+  G03 -->|"yes"| G05
+  G05 -->|"no"| G06
+  G05 -->|"yes"| G07
+  G07 -->|"yes"| G08
+  G07 -->|"no"| G09
+  G09 -->|"no"| G10
+  G09 -->|"yes"| G11
 ```
 
 ## Screenshots

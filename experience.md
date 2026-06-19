@@ -66,6 +66,7 @@
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
 - Garden selected seed labels and picker rows need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening/changing the seed.
+- Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
@@ -78,7 +79,7 @@
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
-- When fast sell is already open with an item selected, FTUE should switch to copy-only amount guidance and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
+- When fast sell is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing gold, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
@@ -107,6 +108,8 @@
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
 - FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
+- FTUE level-up gold guidance should choose fast-sell targets from `shop.shelf.sellItems` available quantities, not raw inventory; reserved items can show `x0` and must route back to a source, while available items on another category should first target that tab.
+- Wide FTUE context rows can keep `data-tutorial-id` on the row while the pointer uses a child CTA anchor; otherwise the hand may point back to row center.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
 - FTUE mana tonic recipe guidance should point to the recipe popup `close` label after the recipe is selected; do not keep cueing the selected row.
@@ -118,6 +121,7 @@
 - FTUE grow-sage should stay visible during planted sage wait states; hide pointer/show-me guidance there, but do not pause Elara entirely.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
+- Elara objective placement must protect the whole fast-sell tab strip when targeting one tab; a single tab rect can leave the guide covering adjacent tab controls.
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
 - Expanded Workshop requirements outside-press collapse must ignore `.tutorial-layer` targets; otherwise dragging Elara closes the requirements panel.
 - FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
@@ -158,6 +162,7 @@
 - Workshop summon button press feedback must not use generic `transform: scale(...)`; it needs to preserve its `translate(-50%, -50%)` centering or pointer release can miss the moved button.
 - Workshop summon button press feedback should keep `.is-pressing` on the real button, like leaderboard, then CSS-route the visual press to the `summon seed` label only.
 - Workshop summon button press feedback must keep the outer `.style-button` transparent and unscaled so the summon sign/circle icon stays visually stable.
+- Workshop summon sign/circle art is visual only; the real summon hit box must be the bordered `summon seed` label box.
 - Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
@@ -201,6 +206,7 @@
 - When the shared single-account gate blocks local UI QA, mount the affected facade in a temporary localhost HTML harness instead of clearing browser storage or touching the live player save.
 - The in-app browser blocks `data:` QA harnesses; serve temporary module harnesses through Vite on `127.0.0.1:55173` so source imports stay same-origin.
 - Temporary Vite UI harnesses must define `--design-width` and `--design-height`; app bootstrap normally supplies them, and `.game-stage` can collapse without them.
+- Temporary Vite UI harnesses must set `--style-ui-scale` to `3 * min(width/1080, height/2170, 1)`; leaving the default `3` compresses source UI in desktop screenshots.
 - Put temporary Vite UI harness HTML at the repo root when it imports source modules or bare deps; `public/` serves raw HTML and bare imports fail.
 - If the in-app browser cannot reach `127.0.0.1:55173` or `localhost:55173`, use the Vite network URL printed by `npm run dev`; shell checks can still use localhost.
 - Before release, verify `package.json` has been bumped beyond the latest pushed release; release automation reuses the current version and will not bump it.
@@ -213,6 +219,7 @@
 - Tiny shared character icons should use small derived assets, not full 864x1080 portrait PNGs; full portraits can push Discord APK uploads over the size limit.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
+- Unlinked player saves depend on the anonymous SpacetimeDB token; mirror it into Android native SharedPreferences and retry backup token copies before anonymous reconnect.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
 - Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
@@ -403,7 +410,7 @@
 - Garden growth/harvest timer text belongs next to the right action label, not inside the progress rail.
 - Garden plot right-side action labels (`choose`, `no seeds`, `buy`, `growing`, `harvest`) should share the smaller growing-label size.
 - Garden plot row height must include the progress rail slot even when no progress is shown; hide the rail but keep the space.
-- Garden herb harvest reward drops should originate from the right end of the plot progress rail, not the row center.
+- Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 
 ## Style

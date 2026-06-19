@@ -137,6 +137,7 @@ export class PagesFacade {
       'garden',
       new GardenPageFacade({
         gameplayFacade,
+        playerFacade,
       }),
     );
     this.registryManager.register(

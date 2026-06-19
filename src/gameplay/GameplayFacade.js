@@ -627,8 +627,8 @@ export class GameplayFacade {
     return result;
   }
 
-  setSelectedShopShelfSlotSellItem(itemTypeId) {
-    const result = this.shopFacade.setSelectedShelfSlotSellItem(itemTypeId);
+  setSelectedShopShelfSlotSellItem(itemTypeId, sellLimit) {
+    const result = this.shopFacade.setSelectedShelfSlotSellItem(itemTypeId, sellLimit);
     this.publishAndSaveSnapshot();
     return result;
   }

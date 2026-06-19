@@ -242,6 +242,7 @@ describe('ShopDirectSellManager', () => {
     const incrementButton = [...popup.querySelectorAll('.shop-page__direct-sell-step')].find(
       (button) => button.textContent === '+1',
     );
+    expect(incrementButton.dataset.tutorialId).toBe('shop:directSell:amount:+1');
     incrementButton.click();
 
     expect(gameplayFacade.quoteNpcMarketSell).toHaveBeenLastCalledWith(1, 2);
@@ -256,6 +257,7 @@ describe('ShopDirectSellManager', () => {
     const herbsTab = [...popup.querySelectorAll('.shop-page__direct-sell-tab-button')].find(
       (button) => button.textContent === 'herbs',
     );
+    expect(herbsTab.dataset.tutorialId).toBe('shop:directSell:tab:herb');
     herbsTab.click();
 
     expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(

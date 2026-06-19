@@ -6,7 +6,9 @@ Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` 
 
 The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage herb and sage seed tasks, level 3 seed research, level 4 Brewing recipe research, and a passive level 5 settings/theme reminder. It has no skip state.
 
-When later level-up gold goals already have the fast-sell popup open and an item selected, Elara switches to copy-only amount guidance instead of a pointer cue. The popup amount resets to `1` on open so the first sell read stays clear.
+When later level-up gold goals already have the fast-sell popup open and an item selected, Elara points at `sell` if the current amount covers the missing gold, or at `+1` if the amount can still usefully increase. The popup amount resets to `1` on open so the first sell read stays clear.
+
+Level-up gold guidance must read Market `shop.shelf.sellItems` quantities before pointing at fast sell. Raw inventory can include items reserved by Garden, Brewing, or listings; if the matching fast-sell row would show `x0`, guide back to the next source instead of the disabled row. If a sellable item exists on another fast-sell type tab, point to that tab before pointing to the item row.
 
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 

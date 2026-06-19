@@ -7,6 +7,7 @@ export class AuthSessionManager {
 
   async prepare() {
     await this.oidcManager?.prepare();
+    await this.tokenStorageManager.loadConnectionAuth?.();
     return this.getSnapshot();
   }
 
@@ -27,21 +28,32 @@ export class AuthSessionManager {
       };
     }
 
-    const storedToken = this.tokenStorageManager.loadToken();
-    return {
-      token: storedToken,
-      canRetryWithoutToken: Boolean(storedToken),
+    const storedAuth =
+      (await this.tokenStorageManager.loadConnectionAuth?.()) ?? {
+        token: this.tokenStorageManager.loadToken(),
+        fallbackTokens: [],
+      };
+    const fallbackTokens = storedAuth.fallbackTokens ?? [];
+    const auth = {
+      token: storedAuth.token,
+      canRetryWithoutToken: Boolean(storedAuth.token),
     };
+
+    if (fallbackTokens.length > 0) {
+      auth.fallbackTokens = fallbackTokens;
+    }
+
+    return auth;
   }
 
-  acceptConnection({ identity, token }) {
+  async acceptConnection({ identity, token }) {
     this.identity = identity;
-    this.tokenStorageManager.saveToken(token);
+    await this.tokenStorageManager.saveToken(token);
   }
 
-  clearSession() {
+  async clearSession() {
     this.identity = undefined;
-    this.tokenStorageManager.clearToken();
+    await this.tokenStorageManager.clearToken();
   }
 
   async signInWithGoogle(options) {
@@ -50,7 +62,7 @@ export class AuthSessionManager {
 
   async signOut() {
     await this.oidcManager?.signOut();
-    this.clearSession();
+    await this.clearSession();
     return { ok: true };
   }
 

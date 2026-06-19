@@ -3,6 +3,7 @@ import { PlayerCharacterManager } from './managers/PlayerCharacterManager.js';
 import { PlayerFontManager } from './managers/PlayerFontManager.js';
 import { PlayerIconModeManager } from './managers/PlayerIconModeManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
+import { PlayerPlotViewManager } from './managers/PlayerPlotViewManager.js';
 import { PlayerProgressBarManager } from './managers/PlayerProgressBarManager.js';
 import { PlayerStateObserverManager } from './managers/PlayerStateObserverManager.js';
 import { PlayerThemeManager } from './managers/PlayerThemeManager.js';
@@ -18,6 +19,7 @@ export class PlayerFacade {
     this.colorModeManager = new PlayerColorModeManager();
     this.characterManager = new PlayerCharacterManager();
     this.iconModeManager = new PlayerIconModeManager();
+    this.plotViewManager = new PlayerPlotViewManager();
     this.progressBarManager = new PlayerProgressBarManager();
     this.stateObserverManager = new PlayerStateObserverManager();
   }
@@ -45,6 +47,9 @@ export class PlayerFacade {
     }
     if (Object.hasOwn(profile ?? {}, 'progressBar')) {
       this.progressBarManager.applyServerProgressBar(profile.progressBar);
+    }
+    if (Object.hasOwn(profile ?? {}, 'plotView')) {
+      this.plotViewManager.applyServerPlotView(profile.plotView);
     }
     this.publishSnapshot();
     return this.getSnapshot();
@@ -122,6 +127,16 @@ export class PlayerFacade {
     return this.progressBarManager.getProgressBarOptions();
   }
 
+  setPlotView(plotView) {
+    this.plotViewManager.setPlotView(plotView);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  getPlotViewOptions() {
+    return this.plotViewManager.getPlotViewOptions();
+  }
+
   getSnapshot() {
     return {
       username: this.nameManager.getUsername(),
@@ -133,6 +148,7 @@ export class PlayerFacade {
       character: this.characterManager.getCharacter(),
       iconMode: this.iconModeManager.getIconMode(),
       progressBar: this.progressBarManager.getProgressBar(),
+      plotView: this.plotViewManager.getPlotView(),
     };
   }
 
@@ -147,6 +163,7 @@ export class PlayerFacade {
       character: snapshot.character,
       iconMode: snapshot.iconMode,
       progressBar: snapshot.progressBar,
+      plotView: snapshot.plotView,
     };
   }
 

@@ -165,6 +165,11 @@
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
+  --garden-page-plot-box-frame-height: 70px;
+  --garden-page-plot-box-row-min-height: calc(
+    var(--garden-page-plot-box-frame-height) +
+      var(--garden-page-plot-progress-slot-height) + 3px
+  );
   --garden-page-plot-row-min-height: calc(
     var(--style-row-min-height) + 2px +
       var(--garden-page-plot-progress-slot-height)
@@ -2547,6 +2552,10 @@ body {
 
 .garden-page__seed-row,
 .shop-page__sell-controls,
+.shop-page__sell-selected-row,
+.shop-page__sell-field,
+.shop-page__sell-action-row,
+.shop-page__sell-status,
 .shop-page__sell-item-row,
 .shop-page__player-listing-item-row,
 .shop-page__player-listing-choice-row,
@@ -2573,6 +2582,10 @@ body {
 .shop-page__stock-status::after,
 .garden-page__seed-row::after,
 .shop-page__sell-controls::after,
+.shop-page__sell-selected-row::after,
+.shop-page__sell-field::after,
+.shop-page__sell-action-row::after,
+.shop-page__sell-status::after,
 .shop-page__sell-item-row::after,
 .shop-page__player-listing-item-row::after,
 .shop-page__player-listing-choice-row::after,
@@ -2650,6 +2663,12 @@ body {
   top: calc(
     (var(--style-row-min-height) - var(--style-notification-size)) / 2
   );
+}
+
+.garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row[data-notification="true"]::before {
+  top: 2px;
+  right: 2px;
 }
 
 .brewing-page__herb-label[data-notification="true"] {
@@ -5294,6 +5313,7 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot-row.is-empty .garden-page__plot-label,
+.garden-page__plot-row.is-empty .garden-page__plot-box-label,
 .garden-page__plot-row.is-empty .garden-page__plot-action {
   cursor: pointer;
 }
@@ -5313,6 +5333,8 @@ div.workshop-page__discovery-row {
   cursor: default;
 }
 
+.garden-page__plot-row.is-processing .garden-page__plot-label,
+.garden-page__plot-row.is-processing .garden-page__plot-box-label,
 .garden-page__plot-row.is-processing .garden-page__plot-action,
 .garden-page__plot-row.is-ready .garden-page__plot-action {
   cursor: pointer;
@@ -5331,7 +5353,8 @@ div.workshop-page__discovery-row {
   background: var(--style-active-surface);
 }
 
-.garden-page__plot-row.is-selected .garden-page__plot-label {
+.garden-page__plot-row.is-selected .garden-page__plot-label,
+.garden-page__plot-row.is-selected .garden-page__plot-box-label {
   text-decoration: underline;
 }
 
@@ -5346,7 +5369,10 @@ div.workshop-page__discovery-row {
 
   .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
     .garden-page__plot-label,
-  .garden-page__plot-row.is-empty .garden-page__plot-label:hover {
+  .garden-page__plot-row.is-empty .garden-page__plot-label:hover,
+  .garden-page__plot-row.is-empty .garden-page__plot-box-label:hover,
+  .garden-page__plot-row.is-processing .garden-page__plot-label:hover,
+  .garden-page__plot-row.is-processing .garden-page__plot-box-label:hover {
     text-decoration: underline;
   }
 
@@ -5463,6 +5489,240 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-progress-text {
   text-align: center;
+}
+
+.garden-page__plot-box-frame,
+.garden-page__plot-box-timer {
+  display: none;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-rows {
+  --style-scroll-padding-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(
+    var(--garden-page-plot-columns, 3),
+    minmax(0, 1fr)
+  );
+  gap: 8px 6px;
+  align-content: start;
+  padding-top: 8px;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows:
+    var(--garden-page-plot-box-frame-height)
+    var(--garden-page-plot-progress-slot-height);
+  row-gap: 3px;
+  align-items: stretch;
+  height: var(--garden-page-plot-box-row-min-height);
+  min-height: var(--garden-page-plot-box-row-min-height);
+  overflow: visible;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-row[hidden] {
+  display: none;
+}
+
+.garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row
+  > :where(
+    .garden-page__plot-number,
+    .garden-page__plot-label,
+    .garden-page__plot-state
+  ),
+.garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row
+  > .garden-page__plot-action:not(.garden-page__plot-box-action) {
+  display: none;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-box-frame {
+  position: relative;
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: var(--garden-page-plot-box-frame-height);
+  overflow: visible;
+  border: var(--style-border);
+  background: var(--style-surface);
+}
+
+.garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row:active:not(:disabled)
+  .garden-page__plot-box-frame {
+  background: var(--style-active-surface);
+}
+
+.garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row:focus-visible
+  .garden-page__plot-box-frame {
+  outline: 1px solid var(--style-text);
+  outline-offset: 2px;
+}
+
+.garden-page__plot-box-number,
+.garden-page__plot-box-label {
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  z-index: 1;
+  display: block;
+  max-width: calc(100% - 12px);
+  padding: 0 var(--style-box-border-label-padding-x);
+  overflow: hidden;
+  color: var(--style-text);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--style-surface);
+}
+
+.garden-page__plot-box-number {
+  left: 5px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.garden-page__plot-box-label {
+  right: 5px;
+  text-align: right;
+}
+
+.garden-page__plot-box-label[data-resource-color="seed"] {
+  color: var(--style-resource-seed);
+}
+
+.garden-page__plot-plant {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  display: inline-flex;
+  align-items: end;
+  justify-content: center;
+  width: 36px;
+  height: 42px;
+  transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
+  transform-origin: 50% 100%;
+  transition: transform var(--style-motion-normal) var(--style-motion-ease);
+}
+
+.garden-page__plot-plant[hidden] {
+  display: none;
+}
+
+.garden-page__plot-plant-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.garden-page__plot-box-frame.is-ready .garden-page__plot-plant {
+  animation: garden-page-plot-ready-bounce 1.12s
+    var(--style-motion-ease-rubber) infinite;
+  animation-delay: var(--garden-page-plot-ready-delay, 0ms);
+}
+
+.garden-page__plot-scissors {
+  position: absolute;
+  right: 2px;
+  bottom: 27px;
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--style-text);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.15px;
+  animation: garden-page-plot-scissors-snip 0.42s steps(2, end) infinite;
+}
+
+.garden-page__plot-scissors[hidden] {
+  display: none;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-box-action {
+  position: absolute;
+  right: 5px;
+  bottom: 3px;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  max-width: calc(100% - 10px);
+  overflow: hidden;
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: bold;
+  line-height: var(--style-box-border-label-line-height);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: none;
+}
+
+.garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row.is-processing
+  .garden-page__plot-box-action {
+  color: var(--style-muted);
+  font-weight: normal;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-progress {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-box-timer {
+  display: inline;
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.garden-page__plot[data-plot-view="boxes"] .garden-page__plot-box-timer[hidden] {
+  display: none;
+}
+
+@keyframes garden-page-plot-ready-bounce {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
+  }
+
+  26% {
+    transform: translateX(-50%) translateY(-4px)
+      scale(var(--garden-page-plot-growth-scale, 1)) scale(1.06);
+  }
+
+  42% {
+    transform: translateX(-50%) translateY(1px)
+      scale(var(--garden-page-plot-growth-scale, 1)) scaleX(1.1)
+      scaleY(0.88);
+  }
+
+  58% {
+    transform: translateX(-50%) translateY(-2px)
+      scale(var(--garden-page-plot-growth-scale, 1)) scaleX(0.98)
+      scaleY(1.04);
+  }
+
+  72% {
+    transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
+  }
+}
+
+@keyframes garden-page-plot-scissors-snip {
+  0%,
+  100% {
+    transform: translate(-20px, 0) rotate(-108deg);
+  }
+
+  50% {
+    transform: translate(-18px, -2px) rotate(-74deg);
+  }
 }
 
 .garden-page__seed-popup {
@@ -6616,20 +6876,31 @@ div.workshop-page__discovery-row {
   align-items: center;
 }
 
+.shop-page__sell-selected-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+}
+
 .shop-page__direct-sell-selected-row > .row_key,
-.shop-page__direct-sell-selected-row > .row_val {
+.shop-page__direct-sell-selected-row > .row_val,
+.shop-page__sell-selected-row > .row_key,
+.shop-page__sell-selected-row > .row_val {
   float: none;
   clear: none;
 }
 
-.shop-page__direct-sell-selected-row > .row_key {
+.shop-page__direct-sell-selected-row > .row_key,
+.shop-page__sell-selected-row > .row_key {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.shop-page__direct-sell-selected-label {
+.shop-page__direct-sell-selected-label,
+.shop-page__sell-selected-label {
   padding: 0;
   appearance: none;
   color: inherit;
@@ -6646,6 +6917,9 @@ div.workshop-page__discovery-row {
 .shop-page__direct-sell-selected-label:hover,
 .shop-page__direct-sell-selected-label:focus-visible,
 .shop-page__direct-sell-selected-label[aria-pressed="true"],
+.shop-page__sell-selected-label:hover,
+.shop-page__sell-selected-label:focus-visible,
+.shop-page__sell-selected-label[aria-pressed="true"],
 .shop-page__sell-item-button:hover .shop-page__direct-sell-target-label,
 .shop-page__sell-item-button:focus .shop-page__direct-sell-target-label,
 .shop-page__sell-item-button[aria-pressed="true"]
@@ -6654,30 +6928,38 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__direct-sell-selected-label:active:not(:disabled),
-.shop-page__direct-sell-selected-label[aria-pressed="true"]:not(:disabled) {
+.shop-page__direct-sell-selected-label[aria-pressed="true"]:not(:disabled),
+.shop-page__sell-selected-label:active:not(:disabled),
+.shop-page__sell-selected-label[aria-pressed="true"]:not(:disabled) {
   background: var(--style-active-surface);
 }
 
-.shop-page__direct-sell-selected-label:focus {
+.shop-page__direct-sell-selected-label:focus,
+.shop-page__sell-selected-label:focus {
   outline: none;
 }
 
 .shop-page__direct-sell-selected-label:disabled,
-.shop-page__direct-sell-selected-label[aria-disabled="true"] {
+.shop-page__direct-sell-selected-label[aria-disabled="true"],
+.shop-page__sell-selected-label:disabled,
+.shop-page__sell-selected-label[aria-disabled="true"] {
   cursor: default;
   text-decoration: none;
 }
 
-.shop-page__direct-sell-selected-row > .row_val {
+.shop-page__direct-sell-selected-row > .row_val,
+.shop-page__sell-selected-row > .row_val {
   justify-self: end;
   white-space: nowrap;
 }
 
-.shop-page__direct-sell-selected-row::after {
+.shop-page__direct-sell-selected-row::after,
+.shop-page__sell-selected-row::after {
   display: none;
 }
 
-.shop-page__direct-sell-divider {
+.shop-page__direct-sell-divider,
+.shop-page__sell-divider {
   flex: 0 0 auto;
   height: 0;
   margin: 7px 0 5px;
@@ -6685,9 +6967,16 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-buy-action-row,
-.shop-page__direct-sell-action-row {
+.shop-page__direct-sell-action-row,
+.shop-page__sell-action-row {
   margin-top: 8px;
   text-align: right;
+}
+
+.shop-page__sell-action-row {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .amount-selection-row {
@@ -6744,7 +7033,10 @@ div.workshop-page__discovery-row {
 
 .shop-page__direct-sell-field[hidden],
 .shop-page__direct-sell-action-row[hidden],
-.shop-page__direct-sell-status[hidden] {
+.shop-page__direct-sell-status[hidden],
+.shop-page__sell-field[hidden],
+.shop-page__sell-action-row[hidden],
+.shop-page__sell-status[hidden] {
   display: none;
 }
 
@@ -6755,7 +7047,8 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-buy-field,
-.shop-page__direct-sell-field {
+.shop-page__direct-sell-field,
+.shop-page__sell-field {
   margin-top: 5px;
 }
 
@@ -6909,6 +7202,14 @@ div.workshop-page__discovery-row {
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+}
+
+.shop-page__sell-controls:not(.shop-page__player-listing-controls)
+  .shop-page__sell-item-list {
+  height: calc(
+    var(--style-tabbed-dialog-content-height) - 112px -
+      var(--style-scroll-progress-block-size)
+  );
 }
 
 .shop-page__sell-item-list::-webkit-scrollbar {
@@ -8601,13 +8902,13 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-button {
   position: absolute;
-  top: 55.5%;
+  top: calc(55.5% + 18px);
   left: 50%;
-  display: grid;
+  display: inline-grid;
   place-items: center;
-  width: 196px;
-  min-width: 196px;
-  aspect-ratio: 1374 / 592;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   margin: 0;
   color: var(--style-text);
@@ -8632,7 +8933,7 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__action-bar .style-button.workshop-page__summon-button {
-  width: 196px;
+  width: auto;
   padding: 0;
   font-size: var(--style-box-border-label-font-size);
   line-height: normal;
@@ -8665,12 +8966,17 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__summon-circle {
+  position: absolute;
+  top: calc(50% - 18px);
+  left: 50%;
+  z-index: 0;
   display: block;
-  grid-area: 1 / 1;
-  width: 100%;
-  height: 100%;
+  width: 196px;
+  height: auto;
+  aspect-ratio: 1374 / 592;
   object-fit: contain;
   pointer-events: none;
+  transform: translate(-50%, -50%);
   transition:
     filter var(--style-motion-fast) linear,
     opacity var(--style-motion-fast) linear,
@@ -8696,7 +9002,7 @@ div.workshop-page__discovery-row {
   border: var(--style-border);
   box-sizing: border-box;
   text-shadow: none;
-  transform: translateY(18px);
+  transform: none;
   transform-origin: center;
   transition:
     background-color var(--style-motion-fast) linear,
@@ -8929,6 +9235,13 @@ div.workshop-page__discovery-row {
 
 .style-button.shop-page__player-listing-place-button {
   width: 100px;
+  padding: 1px 5px;
+  margin: 0;
+}
+
+.style-button.shop-page__sell-mark-button,
+.style-button.shop-page__sell-mark-all-button {
+  width: 86px;
   padding: 1px 5px;
   margin: 0;
 }
@@ -9209,6 +9522,10 @@ div.workshop-page__discovery-row {
     .row_key,
   .garden-page__plot-row.is-empty:not(.is-selected-without-seeds)
     .garden-page__plot-action,
+  .garden-page__plot-row.is-empty .garden-page__plot-label,
+  .garden-page__plot-row.is-empty .garden-page__plot-box-label,
+  .garden-page__plot-row.is-processing .garden-page__plot-label,
+  .garden-page__plot-row.is-processing .garden-page__plot-box-label,
   .garden-page__plot-row.is-processing .garden-page__plot-action,
   .garden-page__plot-row.is-ready .garden-page__plot-action,
   .garden-page__seed-button:not(:disabled) .row_key {
@@ -10357,5 +10674,18 @@ div.workshop-page__discovery-row {
     .workshop-page__task-progress-fill {
     animation: none;
     opacity: 0.65;
+  }
+
+  .garden-page__plot-box-frame.is-ready .garden-page__plot-plant,
+  .garden-page__plot-scissors {
+    animation: none;
+  }
+
+  .garden-page__plot-plant {
+    transition: none;
+  }
+
+  .garden-page__plot-scissors {
+    transform: translate(-20px, 0) rotate(-90deg);
   }
 }
