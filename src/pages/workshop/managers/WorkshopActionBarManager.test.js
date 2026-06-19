@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WorkshopActionBarManager } from './WorkshopActionBarManager.js';
@@ -127,6 +129,26 @@ describe('WorkshopActionBarManager', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('presses the summon circle without scaling the label sign', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const summonPressRule = baseCss.match(
+      /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(:disabled\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const circlePressRule = baseCss.match(
+      /\.style-button\.workshop-page__summon-button:is\(:active, \.is-pressing\):not\(:disabled\)\s+\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(summonPressRule).toBeDefined();
+    expect(summonPressRule).toMatch(/\bbackground:\s*transparent;/);
+    expect(summonPressRule).toMatch(/\bscale:\s*1;/);
+    expect(summonPressRule).toMatch(/\btransform:\s*translate\(-50%, -50%\);/);
+    expect(summonPressRule).not.toMatch(/scale\(var\(--style-press-scale\)\)/);
+    expect(circlePressRule).toBeDefined();
+    expect(circlePressRule).toMatch(
+      /\btransform:\s*scale\(var\(--style-press-scale\)\);/,
+    );
   });
 
   it('keeps normal click summon activation when no hold started', () => {

@@ -8785,9 +8785,18 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__summon-button:is(:active, .is-pressing):not(:disabled) {
   background: transparent;
   scale: 1;
-  transform: translate(-50%, -50%) scale(var(--style-press-scale));
+  transform: translate(-50%, -50%);
   transition:
     background-color var(--style-motion-fast) linear,
+    transform var(--style-motion-press-return) var(--style-motion-ease-rubber);
+}
+
+.style-button.workshop-page__summon-button:is(:active, .is-pressing):not(:disabled)
+  .workshop-page__summon-circle {
+  transform: scale(var(--style-press-scale));
+  transition:
+    filter var(--style-motion-fast) linear,
+    opacity var(--style-motion-fast) linear,
     transform var(--style-motion-press-return) var(--style-motion-ease-rubber);
 }
 

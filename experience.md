@@ -145,6 +145,7 @@
 - Workshop summon button text must overlay the summon circle, not stack below it; stacking drops the label into the secondary action row.
 - Workshop summon button press feedback must not use generic `transform: scale(...)`; it needs to preserve its `translate(-50%, -50%)` centering or pointer release can miss the moved button.
 - Workshop summon button press feedback must also override generic `.style-button` active backgrounds; otherwise a rectangular active-surface box appears behind the circle.
+- Workshop summon press feedback should scale the circle art, not the label sign; the label must stay visually stable.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward flyout stacks should keep the newest text flyout at the base anchor and move older active flyouts upward; positive offsets make rapid presses drift downward.
@@ -565,6 +566,7 @@
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.
 - Match verification to risk: tiny deterministic edits can use inspection or a focused check, while shared runtime/UI changes justify lint, tests, build, and browser/device checks.
+- Tutorial placement tests that create default `TutorialHintManager` instances must clear shared `localStorage`; saved Elara drag placement leaks across full-file CI runs.
 - If local shows `server unavailable`, check both Vite `55173` and SpacetimeDB `3000`; this workspace may target `.env.local` database `idle-wizard-codex-run`, so publish that DB directly when `npm run stdb:publish` is unauthorized for `idle-wizard`.
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.

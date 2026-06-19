@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TutorialHintManager } from './TutorialHintManager.js';
 
@@ -93,6 +93,11 @@ function useFixedLessonSize(manager, { width = 190, height = 74 } = {}) {
 }
 
 describe('TutorialHintManager', () => {
+  beforeEach(() => {
+    document.body.replaceChildren();
+    window.localStorage?.clear?.();
+  });
+
   it('uses the pointer without drawing a target rectangle', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');

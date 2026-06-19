@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.5
+
+- Improved character portrait icon assets so Account, chat, leaderboard, and alliance views load smaller images.
+- Trimmed some late potion icon atlas entries so the game package stays lighter.
+- Hardened release checks and tutorial placement stability so APK builds are less likely to ship with broken guide positioning.
+
 ## 0.2.4
 
 - Added selectable player character portraits in Account settings and the top panel.
