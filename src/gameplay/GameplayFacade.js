@@ -504,6 +504,17 @@ export class GameplayFacade {
     });
   }
 
+  publishItemBought(event) {
+    this.rewardEventManager.publish({
+      type: 'item_bought',
+      item: event.item,
+      gold: event.gold,
+      quantity: event.quantity ?? 1,
+      source: event.source,
+      listingKey: event.listingKey,
+    });
+  }
+
   handleGoldCollected(event) {
     this.rewardEventManager.publish({
       type: 'gold_collected',
@@ -635,6 +646,15 @@ export class GameplayFacade {
 
   buyPlayerShopListingItem(listing) {
     const result = this.shopFacade.buyPlayerShopListingItem(listing);
+    if (result.ok) {
+      this.publishItemBought({
+        item: result.item,
+        gold: result.totalPriceGold,
+        quantity: result.quantity,
+        source: 'player_market',
+        listingKey: listing?.listingKey,
+      });
+    }
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -647,6 +667,12 @@ export class GameplayFacade {
         item: result.item,
         gold: result.totalPriceGold,
         quantity: result.quantity,
+      });
+      this.publishItemBought({
+        item: result.item,
+        gold: result.totalPriceGold,
+        quantity: result.quantity,
+        source: 'npc_stock',
       });
     }
 

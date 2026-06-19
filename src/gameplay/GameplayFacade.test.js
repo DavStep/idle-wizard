@@ -1378,6 +1378,16 @@ describe('GameplayFacade', () => {
       cost: 20,
       quantity: 2,
       canSummon: true,
+      dropChances: [
+        {
+          itemTypeId: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+          dropWeight: 1,
+          dropChance: 1,
+        },
+      ],
     });
 
     const result = gameplayFacade.summonSeed();
@@ -3928,11 +3938,16 @@ describe('GameplayFacade', () => {
 
   it('buys player shop listings and claims sale proceeds through gameplay helpers', () => {
     const { gameplayFacade } = createGameplay();
+    const rewardEvents = [];
+    const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
+      rewardEvents.push(event);
+    });
 
     gameplayFacade.goldFacade.add(10);
 
     expect(
       gameplayFacade.buyPlayerShopListingItem({
+        listingKey: 'listing-1',
         itemKey: 'sageSeed',
         quantity: 2,
         priceGold: 3,
@@ -3953,12 +3968,73 @@ describe('GameplayFacade', () => {
         quantity: 2,
       },
     ]);
+    expect(rewardEvents).toEqual([
+      expect.objectContaining({
+        type: 'item_bought',
+        source: 'player_market',
+        listingKey: 'listing-1',
+        item: {
+          itemTypeId: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+        },
+        quantity: 2,
+        gold: 6,
+      }),
+    ]);
 
     expect(gameplayFacade.claimPlayerShopSaleProceeds(5)).toEqual({
       ok: true,
       gold: 5,
     });
     expect(gameplayFacade.getSnapshot().gold.current).toBe(9);
+    unsubscribeRewardEvents();
+  });
+
+  it('publishes bought-item reward events for NPC stock buys', async () => {
+    const { gameplayFacade } = createGameplay();
+    const rewardEvents = [];
+    const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
+      rewardEvents.push(event);
+    });
+
+    gameplayFacade.setNpcMarketFacade({
+      getNpcBuyPriceGold: () => 1,
+      getNpcNeed: () => 1000,
+      sellToNpc: () => Promise.resolve({ ok: true }),
+      getNpcSellPriceGold: () => 2,
+      getNpcStock: () => 20,
+      buyFromNpc: () => Promise.resolve({ ok: true }),
+    });
+    gameplayFacade.goldFacade.add(40);
+
+    await expect(gameplayFacade.buyNpcMarketStockItem(1, 15)).resolves.toMatchObject({
+      ok: true,
+      item: {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+      },
+      quantity: 15,
+      totalPriceGold: 30,
+    });
+    expect(rewardEvents).toEqual([
+      expect.objectContaining({
+        type: 'item_bought',
+        source: 'npc_stock',
+        item: {
+          itemTypeId: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+        },
+        quantity: 15,
+        gold: 30,
+      }),
+    ]);
+    unsubscribeRewardEvents();
   });
 
   it('auto sells only the selected item type', () => {

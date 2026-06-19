@@ -223,6 +223,7 @@ export class TopPanelSettingsManager {
 
   mount(refs) {
     this.refs = refs;
+    this.refs.usernameAvatarButton?.addEventListener('click', this.handleUsernameClick);
     this.refs.usernameButton.addEventListener('click', this.handleUsernameClick);
     this.refs.settingsCloseButton.addEventListener('click', this.handleCloseClick);
     this.refs.settings.addEventListener('click', this.handleOverlayClick);
@@ -351,6 +352,7 @@ export class TopPanelSettingsManager {
     this.soundSettingsUnsubscribe = null;
 
     if (this.refs) {
+      this.refs.usernameAvatarButton?.removeEventListener('click', this.handleUsernameClick);
       this.refs.usernameButton.removeEventListener('click', this.handleUsernameClick);
       this.refs.settingsCloseButton.removeEventListener('click', this.handleCloseClick);
       this.refs.settings.removeEventListener('click', this.handleOverlayClick);
@@ -656,8 +658,11 @@ export class TopPanelSettingsManager {
     }
 
     this.refs.usernameAvatar.hidden = !showAvatar;
+    if (this.refs.usernameAvatarButton) {
+      this.refs.usernameAvatarButton.hidden = !showAvatar;
+    }
+    this.refs.panel?.classList.toggle('has-avatar', showAvatar);
     this.refs.usernameButton.classList.toggle('has-avatar', showAvatar);
-    this.refs.resources?.classList.toggle('has-username-avatar', showAvatar);
   }
 
   applyThemeSelection(theme) {

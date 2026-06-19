@@ -12,6 +12,7 @@ const FLYOUT_LIFETIME_MS = 1200;
 const FLYOUT_STACK_GAP_PX = 16;
 const ITEM_DROP_LIFETIME_MS = 1300;
 const GOLD_TARGET_PULSE_MS = 520;
+const MAX_VISUAL_ITEM_DROPS = 12;
 
 export class RewardFlyoutManager {
   constructor({ rootClassName = 'room-reward-flyouts', flyoutClassName = 'room-reward-flyout' } = {}) {
@@ -171,6 +172,14 @@ export class RewardFlyoutManager {
       return itemDropCount + coinCount;
     }
 
+    if (event.type === 'item_bought') {
+      return this.playItemDrop(
+        this.getRepeatedItemDropSources(event.item, event.item?.kind, event.quantity),
+        this.getAnchorForEvent(event),
+        event.item?.kind,
+      );
+    }
+
     if (event.type === 'gold_collected') {
       const anchor = this.getAnchorForEvent(event);
       return this.animateCoinsToGold(
@@ -205,6 +214,10 @@ export class RewardFlyoutManager {
 
     if (event.type === 'item_sold' && Number.isInteger(event.slotNumber)) {
       return this.getShopSlotItemAnchor(event.slotNumber);
+    }
+
+    if (event.type === 'item_bought') {
+      return this.getShopBoughtItemAnchor(event);
     }
 
     if (event.type === 'gold_collected') {
@@ -265,6 +278,81 @@ export class RewardFlyoutManager {
     );
   }
 
+  getShopBoughtItemAnchor(event) {
+    if (event.source === 'npc_stock') {
+      return (
+        this.getNpcStockBuyDialogAnchor(event.item?.key) ??
+        this.getNpcStockRowAnchor(event.item?.key) ??
+        this.root?.parentElement?.querySelector('.shop-page__stock')
+      );
+    }
+
+    if (event.source === 'player_market') {
+      return (
+        this.getPlayerMarketListingAnchor(event.listingKey) ??
+        this.getPlayerMarketItemAnchor(event.item?.key) ??
+        this.root?.parentElement?.querySelector('.shop-page__market-dialog')
+      );
+    }
+
+    return this.root?.parentElement ?? null;
+  }
+
+  getNpcStockBuyDialogAnchor(itemKey) {
+    const popup = this.root?.parentElement?.querySelector(
+      '.shop-page__stock-buy-popup:not([hidden])',
+    );
+    return this.findElementByDataset(
+      popup,
+      '[data-shop-stock-item-key]',
+      'shopStockItemKey',
+      itemKey,
+    );
+  }
+
+  getNpcStockRowAnchor(itemKey) {
+    const row = this.findElementByDataset(
+      this.root?.parentElement,
+      '.shop-page__stock-row',
+      'shopStockItemKey',
+      itemKey,
+    );
+    return row?.querySelector('.row_key') ?? row;
+  }
+
+  getPlayerMarketListingAnchor(listingKey) {
+    const row = this.findElementByDataset(
+      this.root?.parentElement,
+      '.shop-page__market-row',
+      'shopMarketListingKey',
+      listingKey,
+    );
+    return row?.querySelector('.row_key') ?? row;
+  }
+
+  getPlayerMarketItemAnchor(itemKey) {
+    const row = this.findElementByDataset(
+      this.root?.parentElement,
+      '.shop-page__market-row',
+      'shopMarketItemKey',
+      itemKey,
+    );
+    return row?.querySelector('.row_key') ?? row;
+  }
+
+  findElementByDataset(root, selector, datasetKey, value) {
+    if (!root || value === null || value === undefined) {
+      return null;
+    }
+
+    const expectedValue = String(value);
+    return (
+      [...root.querySelectorAll(selector)].find(
+        (element) => element.dataset?.[datasetKey] === expectedValue,
+      ) ?? null
+    );
+  }
+
   getGardenHarvestAnchor(tileNumber) {
     const row = this.root?.parentElement?.querySelector(
       `.garden-page__plot-row[data-garden-tile-number="${tileNumber}"]`,
@@ -286,21 +374,27 @@ export class RewardFlyoutManager {
   getSeedDropSources(event) {
     const sources = [];
     const seedCounts = Array.isArray(event.seedCounts) ? event.seedCounts : [];
+    const visualQuantity = this.getVisualDropQuantity(event.quantity);
 
     for (const seedCount of seedCounts) {
-      const quantity = this.normalizeQuantity(seedCount.quantity);
+      const remaining = visualQuantity - sources.length;
+      const quantity = Math.min(this.normalizeQuantity(seedCount.quantity), remaining);
       const source = this.getSeedDropSource(seedCount.seed);
 
       for (let index = 0; index < quantity; index += 1) {
         sources.push(source);
       }
+
+      if (sources.length >= visualQuantity) {
+        break;
+      }
     }
 
     if (sources.length > 0) {
-      return sources.slice(0, this.normalizeQuantity(event.quantity));
+      return sources.slice(0, visualQuantity);
     }
 
-    return Array.from({ length: this.normalizeQuantity(event.quantity) }, () =>
+    return Array.from({ length: visualQuantity }, () =>
       this.getSeedDropSource(event.seed),
     );
   }
@@ -362,6 +456,16 @@ export class RewardFlyoutManager {
     return null;
   }
 
+  getRepeatedItemDropSources(item, kind, quantity = 1) {
+    const source = this.getItemDropSource(item, kind);
+
+    if (!source) {
+      return [];
+    }
+
+    return Array.from({ length: this.getVisualDropQuantity(quantity) }, () => source);
+  }
+
   playItemDrop(src, anchor, kind) {
     if (!src || !anchor) {
       return 0;
@@ -374,7 +478,7 @@ export class RewardFlyoutManager {
       }
 
       return source?.packFrameName && source?.itemFrameName;
-    });
+    }).slice(0, MAX_VISUAL_ITEM_DROPS);
 
     if (sources.length === 0) {
       return 0;
@@ -670,6 +774,10 @@ export class RewardFlyoutManager {
     return Number.isFinite(quantity) ? Math.max(1, Math.floor(quantity)) : 1;
   }
 
+  getVisualDropQuantity(quantity) {
+    return Math.min(MAX_VISUAL_ITEM_DROPS, this.normalizeQuantity(quantity));
+  }
+
   formatRewardMessage(event) {
     if (!event) {
       return '';
@@ -698,6 +806,13 @@ export class RewardFlyoutManager {
         event.quantity,
         ` for ${formatGoldPriceText(event.gold ?? 0)}`,
       );
+    }
+
+    if (event.type === 'item_bought') {
+      const trailingText = Number.isFinite(event.gold)
+        ? ` for ${formatGoldPriceText(event.gold)}`
+        : '';
+      return this.formatItemQuantity('bought', event.item, event.quantity, trailingText);
     }
 
     if (event.type === 'gold_collected') {

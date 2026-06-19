@@ -65,6 +65,7 @@ export class PressFeedbackManager {
     this.suppressedClickUntilMs = 0;
     this.suppressedClickX = null;
     this.suppressedClickY = null;
+    this.clickSuppressionTimeoutId = null;
     this.isDispatchingSyntheticClick = false;
     this.handlePointerDown = (event) => this.onPointerDown(event);
     this.handlePointerMove = (event) => this.onPointerMove(event);
@@ -74,6 +75,7 @@ export class PressFeedbackManager {
       this.pointerSoundElement = null;
     };
     this.handleClick = (event) => this.onClick(event);
+    this.handleDocumentClick = (event) => this.onDocumentClick(event);
     this.handleVisibilityChange = () => this.clearPressedElement();
   }
 
@@ -108,6 +110,7 @@ export class PressFeedbackManager {
       this.handlePointerCancel,
       true,
     );
+    this.clearClickSuppression();
     this.root.ownerDocument.removeEventListener(
       'visibilitychange',
       this.handleVisibilityChange,
@@ -225,6 +228,27 @@ export class PressFeedbackManager {
 
     event.preventDefault();
     event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    this.clearClickSuppression();
+  }
+
+  onDocumentClick(event) {
+    if (this.isDispatchingSyntheticClick) {
+      return;
+    }
+
+    if (this.now() > this.suppressedClickUntilMs) {
+      this.clearClickSuppression();
+      return;
+    }
+
+    if (!this.shouldSuppressClick(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
     this.clearClickSuppression();
   }
 
@@ -359,6 +383,21 @@ export class PressFeedbackManager {
     this.suppressedClickUntilMs = this.now() + SYNTHETIC_CLICK_SUPPRESSION_MS;
     this.suppressedClickX = Number.isFinite(event.clientX) ? event.clientX : null;
     this.suppressedClickY = Number.isFinite(event.clientY) ? event.clientY : null;
+
+    const document = this.root?.ownerDocument;
+    const window = document?.defaultView;
+    document?.removeEventListener('click', this.handleDocumentClick, true);
+    document?.addEventListener('click', this.handleDocumentClick, true);
+
+    if (this.clickSuppressionTimeoutId !== null) {
+      window?.clearTimeout?.(this.clickSuppressionTimeoutId);
+    }
+
+    this.clickSuppressionTimeoutId =
+      window?.setTimeout?.(
+        () => this.clearClickSuppression(),
+        SYNTHETIC_CLICK_SUPPRESSION_MS,
+      ) ?? null;
   }
 
   isMatchingPointer(event) {
@@ -379,10 +418,20 @@ export class PressFeedbackManager {
   }
 
   clearClickSuppression() {
+    const document = this.root?.ownerDocument;
+    const window = document?.defaultView;
+
+    document?.removeEventListener('click', this.handleDocumentClick, true);
+
+    if (this.clickSuppressionTimeoutId !== null) {
+      window?.clearTimeout?.(this.clickSuppressionTimeoutId);
+    }
+
     this.suppressedClickElement = null;
     this.suppressedClickUntilMs = 0;
     this.suppressedClickX = null;
     this.suppressedClickY = null;
+    this.clickSuppressionTimeoutId = null;
     this.pointerSoundElement = null;
   }
 }

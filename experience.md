@@ -24,6 +24,7 @@
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
 - Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
 - Height animations inside scaled room UI should write layout pixels from `offsetHeight`/`scrollHeight`, not `getBoundingClientRect()` screen pixels, or the element expands by the UI scale.
+- Timer progress fills that transition `transform` toward full need a computed-style flush after applying the current scale; remounted bars can otherwise paint full before the transition starts.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
@@ -55,6 +56,7 @@
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
+- Garden selected seed labels and picker rows need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening/changing the seed.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
@@ -552,6 +554,8 @@
 - Pinned Workshop tasks must also persist across room page swaps; temporary mount setup should not clear `pinned`.
 - Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
 - Workshop task progress rails use shared content-box `.style-progress`; subtract `2 * --style-border-width` from rail width when its outer edge must align with the task row/action button.
+- Workshop level-rewards hide/show is not the task collapse action; touch retarget/backdrop duplicate clicks after toggling rewards must be suppressed so expanded requirements stay open.
+- Workshop level-rewards hidden state should persist with expanded/pinned task state across room swaps, and reset only when the target requirement level changes.
 - Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
 - Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
 - Synthetic mobile tap clicks need descendant and same-coordinate retarget suppression; otherwise the native follow-up click can hit a newly opened popup backdrop and close it immediately.

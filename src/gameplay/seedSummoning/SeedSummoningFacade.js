@@ -57,6 +57,20 @@ export class SeedSummoningFacade {
       cost,
       quantity,
       canSummon: this.canSummonSeed(),
+      dropChances: this.getDropChances(),
     };
+  }
+
+  getDropChances() {
+    return this.seedDropWeightManager
+      .getDropChances(this.seedSummonEligibilityManager.getSummonableSeeds())
+      .map((seed) => ({
+        itemTypeId: seed.id,
+        key: seed.key,
+        label: seed.label,
+        kind: seed.kind,
+        dropWeight: seed.dropWeight,
+        dropChance: seed.dropChance,
+      }));
   }
 }

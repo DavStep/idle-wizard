@@ -22,6 +22,7 @@ describe('progressFill', () => {
 
   it('starts one compositor transition toward timer completion', () => {
     const fill = document.createElement('span');
+    const getComputedStyle = vi.spyOn(window, 'getComputedStyle');
     let frameCallback = null;
     const requestAnimationFrame = vi.fn((callback) => {
       frameCallback = callback;
@@ -40,6 +41,7 @@ describe('progressFill', () => {
 
     frameCallback();
 
+    expect(getComputedStyle).toHaveBeenCalledWith(fill);
     expect(fill.classList.contains('is-progress-running')).toBe(true);
     expect(fill.style.transition).toBe('transform 1500ms linear');
     expect(fill.style.transform).toBe('scaleX(1)');

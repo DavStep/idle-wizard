@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.7
+
+- Added a Workshop drop-chance popup so researched seed odds can be checked before summoning.
+- Added item-buy reward drops for NPC stock and player market purchases, with capped visuals for large stacks.
+- Improved mobile tap handling for Garden seed selection, Workshop rewards toggles, Market slot picks, and follow-up click suppression.
+- Cleaned top-panel portrait spacing so player status stays readable with larger character icons.
+
 ## 0.2.6
 
 - Added character portraits to player info popups and cleaned portrait plus alliance tag order in leaderboard and chat labels.

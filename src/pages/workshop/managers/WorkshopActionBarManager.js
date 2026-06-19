@@ -10,14 +10,18 @@ const SUMMON_CLICK_SUPPRESSION_MS = 550;
 export class WorkshopActionBarManager {
   constructor({
     gameplayFacade,
+    hapticsFacade,
     onBagClick,
     onPrestigeClick,
+    onSummonInfoClick,
     onSummonNotice,
     rewardEventsAvailable = false,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.hapticsFacade = hapticsFacade;
     this.onBagClick = onBagClick;
     this.onPrestigeClick = onPrestigeClick;
+    this.onSummonInfoClick = onSummonInfoClick;
     this.onSummonNotice = onSummonNotice;
     this.rewardEventsAvailable = rewardEventsAvailable;
     this.root = null;
@@ -25,6 +29,7 @@ export class WorkshopActionBarManager {
     this.refs = {};
     this.summonHoldTimer = null;
     this.summonHoldPointerId = null;
+    this.summonHoldPointerType = '';
     this.suppressSummonClickUntilMs = 0;
     this.handleSummonPointerDown = (event) => this.onSummonPointerDown(event);
     this.handleSummonClick = (event) => this.onSummonClick(event);
@@ -48,10 +53,16 @@ export class WorkshopActionBarManager {
     this.root.setAttribute('aria-label', 'Workshop actions');
 
     this.refs.summonButton = this.createSummonButton();
+    this.refs.summonInfoButton = this.createSummonInfoButton();
     this.refs.prestigeButton = this.createPrestigeButton();
     this.refs.bagButton = this.createBagButton();
 
-    this.root.append(this.refs.summonButton, this.refs.prestigeButton, this.refs.bagButton);
+    this.root.append(
+      this.refs.summonButton,
+      this.refs.summonInfoButton,
+      this.refs.prestigeButton,
+      this.refs.bagButton,
+    );
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -95,6 +106,16 @@ export class WorkshopActionBarManager {
     button.append(circle, text);
     button.addEventListener('pointerdown', this.handleSummonPointerDown);
     button.addEventListener('click', this.handleSummonClick);
+    return button;
+  }
+
+  createSummonInfoButton() {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__summon-info-button';
+    button.type = 'button';
+    button.textContent = '?';
+    button.setAttribute('aria-label', 'show seed drop chances');
+    button.addEventListener('click', () => this.onSummonInfoClick?.());
     return button;
   }
 
@@ -143,10 +164,11 @@ export class WorkshopActionBarManager {
     event.preventDefault();
     this.stopSummonHold({ suppressClick: false });
     this.summonHoldPointerId = event.pointerId;
+    this.summonHoldPointerType = event.pointerType ?? '';
     this.suppressNextSummonClick();
     this.addSummonHoldListeners();
 
-    if (this.onSummonSeed()) {
+    if (this.onSummonSeed({ playManualHaptic: this.shouldPlaySummonHoldHaptic() })) {
       this.scheduleNextSummon();
       return;
     }
@@ -170,12 +192,16 @@ export class WorkshopActionBarManager {
     this.stopSummonHold();
   }
 
-  onSummonSeed() {
+  onSummonSeed({ playManualHaptic = false } = {}) {
     const result = this.gameplayFacade.summonSeed();
     const snapshot = this.gameplayFacade.getSnapshot();
     this.render(snapshot);
 
     if (result.ok) {
+      if (playManualHaptic) {
+        this.playManualSummonHaptic();
+      }
+
       if (!this.rewardEventsAvailable) {
         this.onSummonNotice?.(this.getSuccessMessage(result));
       }
@@ -196,7 +222,7 @@ export class WorkshopActionBarManager {
         return;
       }
 
-      if (this.onSummonSeed()) {
+      if (this.onSummonSeed({ playManualHaptic: this.shouldPlaySummonHoldHaptic() })) {
         this.scheduleNextSummon();
         return;
       }
@@ -233,6 +259,7 @@ export class WorkshopActionBarManager {
     this.clearSummonHoldTimer();
     this.removeSummonHoldListeners();
     this.summonHoldPointerId = null;
+    this.summonHoldPointerType = '';
 
     if (suppressClick) {
       this.suppressNextSummonClick();
@@ -254,6 +281,14 @@ export class WorkshopActionBarManager {
 
   shouldSuppressSummonClick() {
     return Date.now() < this.suppressSummonClickUntilMs;
+  }
+
+  shouldPlaySummonHoldHaptic() {
+    return this.summonHoldPointerId !== null && this.summonHoldPointerType !== 'mouse';
+  }
+
+  playManualSummonHaptic() {
+    this.hapticsFacade?.playUiTap?.();
   }
 
   getSuccessMessage(result) {

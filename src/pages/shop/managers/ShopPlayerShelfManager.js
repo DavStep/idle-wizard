@@ -657,6 +657,7 @@ export class ShopPlayerShelfManager {
     }
 
     const result = this.gameplayFacade.buyPlayerShopListingItem({
+      listingKey: listing.listingKey,
       itemKey: listing.itemKey,
       quantity: buyQuantity,
       priceGold: listing.priceGold,
@@ -1209,6 +1210,9 @@ export class ShopPlayerShelfManager {
   renderMarketRow(row, listing) {
     const quantity = Math.max(0, Math.floor(Number(listing.quantity) || 0));
     const label = `- ${listing.itemLabel} (${quantity})`;
+
+    row.row.dataset.shopMarketListingKey = String(listing.listingKey ?? '');
+    row.row.dataset.shopMarketItemKey = String(listing.itemKey ?? '');
 
     if (row.label.textContent !== label) {
       appendTextWithSeedIcons(row.label, label);

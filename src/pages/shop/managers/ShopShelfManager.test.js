@@ -14,6 +14,15 @@ function createTouchStartEvent() {
   return new window.Event('touchstart', { bubbles: true, cancelable: true });
 }
 
+function createPointerDownEvent(pointerType = 'touch') {
+  const event = new window.Event('pointerdown', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'pointerType', {
+    configurable: true,
+    value: pointerType,
+  });
+  return event;
+}
+
 function withPointerEvent(callback) {
   const previousPointerEvent = window.PointerEvent;
   window.PointerEvent = function PointerEvent() {};
@@ -938,6 +947,73 @@ describe('ShopShelfManager', () => {
       itemValue?.dispatchEvent(createTouchStartEvent());
       itemValue?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+      expect(popup.hidden).toBe(false);
+      expect(selectCount).toBe(1);
+
+      manager.unmount();
+    });
+  });
+
+  it('keeps empty NPC market stand row taps to one picker open', () => {
+    withPointerEvent(() => {
+      const stage = document.createElement('section');
+      const popupLayer = document.createElement('section');
+      let selectCount = 0;
+      const gameplaySnapshot = {
+        gold: { current: 0 },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          shelf: {
+            maxSlots: 1,
+            selectedSlotNumber: 1,
+            slotCosts: [0],
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 1,
+                sellGold: 8,
+                sellNeed: 12,
+              },
+            ],
+            slots: [{ slotNumber: 1, unlocked: true, sellItemTypeId: null }],
+          },
+        },
+      };
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+        selectShopShelfSlot(slotNumber) {
+          selectCount += 1;
+          gameplaySnapshot.shop.shelf.selectedSlotNumber = slotNumber;
+          return { ok: true, slotNumber };
+        },
+      };
+      const manager = new ShopShelfManager({ gameplayFacade });
+
+      manager.mount(stage, popupLayer);
+
+      const itemValue = stage.querySelector('.shop-page__slot-item-value');
+      const popup = popupLayer.querySelector('.shop-page__sell-popup');
+      const duplicateTouchStart = createTouchStartEvent();
+      const nativeClick = new window.MouseEvent('click', { bubbles: true, cancelable: true });
+
+      expect(itemValue?.textContent).toBe('empty stand');
+
+      itemValue?.dispatchEvent(createPointerDownEvent());
+      itemValue?.dispatchEvent(duplicateTouchStart);
+      itemValue?.dispatchEvent(nativeClick);
+
+      expect(duplicateTouchStart.defaultPrevented).toBe(true);
+      expect(nativeClick.defaultPrevented).toBe(true);
       expect(popup.hidden).toBe(false);
       expect(selectCount).toBe(1);
 

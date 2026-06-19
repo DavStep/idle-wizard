@@ -14,6 +14,9 @@ import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js'
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 
+const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
+const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
+
 export class GardenPlotManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -30,8 +33,23 @@ export class GardenPlotManager {
     this.selectedTileNumber = null;
     this.visible = false;
     this.previousFocus = null;
+    this.handledTileLabelPressStartTileNumber = null;
+    this.handledTileLabelPressStartReset = null;
+    this.handledSeedPressStartKey = null;
+    this.handledSeedPressStartReset = null;
+    this.lastTouchLikePressStart = {
+      key: null,
+      timeStamp: Number.NEGATIVE_INFINITY,
+    };
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
+        if (this.handledTileLabelPressStartTileNumber !== null) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.clearHandledTileLabelPressStartTileNumber();
+          return;
+        }
+
         this.hideSeedPopup();
       }
     };
@@ -94,6 +112,8 @@ export class GardenPlotManager {
     this.refs.rows?.removeEventListener('scroll', this.handlePlotRowsScroll);
     this.refs.seedRows?.removeEventListener('scroll', this.handleSeedRowsScroll);
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
+    this.clearHandledTileLabelPressStartTileNumber();
+    this.clearHandledSeedPressStartKey();
     this.cancelDialogManager.unmount();
     this.root?.remove();
     this.refs.popup?.remove();
@@ -106,6 +126,10 @@ export class GardenPlotManager {
     this.selectedTileNumber = null;
     this.visible = false;
     this.previousFocus = null;
+    this.handledTileLabelPressStartTileNumber = null;
+    this.handledTileLabelPressStartReset = null;
+    this.handledSeedPressStartKey = null;
+    this.handledSeedPressStartReset = null;
   }
 
   createTitle() {
@@ -156,6 +180,12 @@ export class GardenPlotManager {
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';
     label.dataset.tutorialId = `garden:plot:${tileNumber}:label`;
+    label.addEventListener('pointerdown', (event) =>
+      this.onTileLabelPressStart(tileNumber, event),
+    );
+    label.addEventListener('touchstart', (event) => this.onTileLabelPressStart(tileNumber, event), {
+      passive: false,
+    });
     label.addEventListener('click', (event) => this.onTileLabelClick(tileNumber, event));
 
     const state = document.createElement('span');
@@ -209,7 +239,10 @@ export class GardenPlotManager {
     button.className = 'garden-page__seed-button';
     button.type = 'button';
     setResourceColor(button, 'seed');
-    button.addEventListener('click', () => this.onSelectSeed(seed.itemTypeId));
+    this.bindTouchLikePressStart(button, `seed:${seed.itemTypeId}`, (event) =>
+      this.onSelectSeedPressStart(event, seed.itemTypeId),
+    );
+    button.addEventListener('click', (event) => this.onSelectSeedClick(event, seed.itemTypeId));
 
     const label = document.createElement('span');
     label.className = 'row_key';
@@ -231,7 +264,10 @@ export class GardenPlotManager {
     const button = document.createElement('button');
     button.className = 'garden-page__seed-button';
     button.type = 'button';
-    button.addEventListener('click', () => this.onSelectSeed(null));
+    this.bindTouchLikePressStart(button, 'seed:empty', (event) =>
+      this.onSelectSeedPressStart(event, null),
+    );
+    button.addEventListener('click', (event) => this.onSelectSeedClick(event, null));
 
     const label = document.createElement('span');
     label.className = 'row_key';
@@ -547,6 +583,12 @@ export class GardenPlotManager {
       return;
     }
 
+    if (event?.type === 'click' && this.handledTileLabelPressStartTileNumber === tileNumber) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (!tile.unlocked) {
       if (tileNumber === garden.plot.nextTileNumber) {
         this.gameplayFacade.buyGardenTile();
@@ -623,22 +665,74 @@ export class GardenPlotManager {
   }
 
   onTileLabelClick(tileNumber, event) {
+    if (event?.type === 'click' && this.handledTileLabelPressStartTileNumber === tileNumber) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.clearHandledTileLabelPressStartTileNumber();
+      return;
+    }
+
+    if (this.showSeedPopupFromTileLabel(tileNumber)) {
+      event.stopPropagation();
+    }
+  }
+
+  onTileLabelPressStart(tileNumber, event) {
+    if (this.isMousePressStart(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.isDuplicateTouchLikePressStart(event, `tile-label:${tileNumber}`)) {
+      return;
+    }
+
+    if (this.showSeedPopupFromTileLabel(tileNumber)) {
+      this.setHandledTileLabelPressStartTileNumber(tileNumber);
+    }
+  }
+
+  showSeedPopupFromTileLabel(tileNumber) {
     const snapshot = this.gameplayFacade.getSnapshot();
     const tile = snapshot.garden?.plot?.tiles.find(
       (candidate) => candidate.tileNumber === tileNumber,
     );
 
     if (!tile?.unlocked || tile.phase !== 'empty') {
-      return;
+      return false;
     }
 
-    event.stopPropagation();
     this.showSeedPopup(tileNumber);
+    return true;
   }
 
   onConfirmCancel(tileNumber) {
     this.gameplayFacade.cancelGardenPlanting(tileNumber);
     this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  onSelectSeedClick(event, seedTypeId) {
+    const handledKey = this.getSeedPressStartKey(seedTypeId);
+
+    if (event?.type === 'click' && this.handledSeedPressStartKey === handledKey) {
+      event.preventDefault();
+      this.clearHandledSeedPressStartKey();
+      return;
+    }
+
+    this.onSelectSeed(seedTypeId);
+  }
+
+  onSelectSeedPressStart(event, seedTypeId) {
+    if (event.currentTarget?.disabled) {
+      return;
+    }
+
+    event.preventDefault();
+    this.setHandledSeedPressStartKey(this.getSeedPressStartKey(seedTypeId));
+    this.onSelectSeed(seedTypeId);
   }
 
   onSelectSeed(seedTypeId) {
@@ -759,6 +853,88 @@ export class GardenPlotManager {
     const hasOverflow = element.scrollHeight > element.clientHeight + 1;
     const isAtEnd = element.scrollTop + element.clientHeight >= element.scrollHeight - 1;
     element.classList.toggle('has-overflow', hasOverflow && !isAtEnd);
+  }
+
+  bindTouchLikePressStart(target, key, handler) {
+    target.addEventListener('pointerdown', (event) =>
+      this.onTouchLikePressStart(event, key, handler),
+    );
+    target.addEventListener(
+      'touchstart',
+      (event) => this.onTouchLikePressStart(event, key, handler),
+      { passive: false },
+    );
+  }
+
+  onTouchLikePressStart(event, key, handler) {
+    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+      return;
+    }
+
+    handler(event);
+  }
+
+  isMousePressStart(event) {
+    return event.type === 'pointerdown' && event.pointerType === 'mouse';
+  }
+
+  isDuplicateTouchLikePressStart(event, key) {
+    const timeStamp = Number.isFinite(event?.timeStamp) ? event.timeStamp : Date.now();
+    const isDuplicate =
+      this.lastTouchLikePressStart.key === key &&
+      Math.abs(timeStamp - this.lastTouchLikePressStart.timeStamp) <=
+        TOUCH_LIKE_PRESS_START_DEDUPE_MS;
+
+    this.lastTouchLikePressStart = { key, timeStamp };
+    return isDuplicate;
+  }
+
+  getSeedPressStartKey(seedTypeId) {
+    return seedTypeId === null ? 'seed:empty' : `seed:${seedTypeId}`;
+  }
+
+  setHandledTileLabelPressStartTileNumber(tileNumber) {
+    this.clearHandledTileLabelPressStartTileNumber();
+    this.handledTileLabelPressStartTileNumber = tileNumber;
+    this.handledTileLabelPressStartReset = globalThis.setTimeout(() => {
+      if (this.handledTileLabelPressStartTileNumber === tileNumber) {
+        this.handledTileLabelPressStartTileNumber = null;
+      }
+
+      this.handledTileLabelPressStartReset = null;
+    }, TOUCH_LIKE_CLICK_DEDUPE_RESET_MS);
+    this.handledTileLabelPressStartReset?.unref?.();
+  }
+
+  clearHandledTileLabelPressStartTileNumber() {
+    if (this.handledTileLabelPressStartReset !== null) {
+      globalThis.clearTimeout(this.handledTileLabelPressStartReset);
+      this.handledTileLabelPressStartReset = null;
+    }
+
+    this.handledTileLabelPressStartTileNumber = null;
+  }
+
+  setHandledSeedPressStartKey(key) {
+    this.clearHandledSeedPressStartKey();
+    this.handledSeedPressStartKey = key;
+    this.handledSeedPressStartReset = globalThis.setTimeout(() => {
+      if (this.handledSeedPressStartKey === key) {
+        this.handledSeedPressStartKey = null;
+      }
+
+      this.handledSeedPressStartReset = null;
+    }, TOUCH_LIKE_CLICK_DEDUPE_RESET_MS);
+    this.handledSeedPressStartReset?.unref?.();
+  }
+
+  clearHandledSeedPressStartKey() {
+    if (this.handledSeedPressStartReset !== null) {
+      globalThis.clearTimeout(this.handledSeedPressStartReset);
+      this.handledSeedPressStartReset = null;
+    }
+
+    this.handledSeedPressStartKey = null;
   }
 
   formatGold(value) {

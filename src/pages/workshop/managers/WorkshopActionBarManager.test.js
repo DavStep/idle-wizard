@@ -131,6 +131,63 @@ describe('WorkshopActionBarManager', () => {
     }
   });
 
+  it('plays haptics for each successful touch summon during a held summon press', () => {
+    vi.useFakeTimers();
+    try {
+      const gameplayFacade = createGameplayFacadeFake();
+      const hapticsFacade = { playUiTap: vi.fn() };
+      let summons = 0;
+      gameplayFacade.summonSeed = () => {
+        summons += 1;
+        return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
+      };
+      const manager = new WorkshopActionBarManager({ gameplayFacade, hapticsFacade });
+      const parent = document.createElement('div');
+
+      manager.mount(parent);
+
+      const button = parent.querySelector('.workshop-page__summon-button');
+      dispatchPointer(button, 'pointerdown', { pointerType: 'touch' });
+
+      expect(summons).toBe(1);
+      expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(330);
+
+      expect(summons).toBe(4);
+      expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(4);
+
+      dispatchPointer(document, 'pointerup');
+
+      manager.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not play summon haptics for non-touch summon clicks', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const hapticsFacade = { playUiTap: vi.fn() };
+    let summons = 0;
+    gameplayFacade.summonSeed = () => {
+      summons += 1;
+      return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
+    };
+    const manager = new WorkshopActionBarManager({ gameplayFacade, hapticsFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    parent
+      .querySelector('.workshop-page__summon-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(summons).toBe(1);
+    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+
+    manager.unmount();
+  });
+
   it('presses the summon seed label without moving the icon', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const genericPressRule = baseCss.match(
@@ -191,6 +248,30 @@ describe('WorkshopActionBarManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(summons).toBe(1);
+
+    manager.unmount();
+  });
+
+  it('opens summon drop chances from the sign question mark without summoning', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const onSummonInfoClick = vi.fn();
+    let summons = 0;
+    gameplayFacade.summonSeed = () => {
+      summons += 1;
+      return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
+    };
+    const manager = new WorkshopActionBarManager({ gameplayFacade, onSummonInfoClick });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    const button = parent.querySelector('.workshop-page__summon-info-button');
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(button.textContent).toBe('?');
+    expect(button.getAttribute('aria-label')).toBe('show seed drop chances');
+    expect(onSummonInfoClick).toHaveBeenCalledTimes(1);
+    expect(summons).toBe(0);
 
     manager.unmount();
   });

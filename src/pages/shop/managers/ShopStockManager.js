@@ -469,6 +469,7 @@ export class ShopStockManager {
     const buying = this.buyingItemTypeId === item.itemTypeId;
     const canBuy = this.canBuyItem(item);
 
+    refs.row.dataset.shopStockItemKey = item.key;
     refs.row.classList.toggle('is-empty', stock === 0);
     refs.row.classList.toggle('is-locked', display.locked);
     refs.row.classList.toggle('is-unknown', display.unknown);
@@ -527,6 +528,7 @@ export class ShopStockManager {
     }
 
     this.refs.buyItemValue.value.textContent = `${display.label} (${stock})`;
+    this.refs.buyItemValue.value.dataset.shopStockItemKey = item.key;
     setItemIconLabel(this.refs.buyItemValue.value, item.kind, item.key);
     setResourceColor(this.refs.buyItemValue.value, item.kind);
 

@@ -229,6 +229,15 @@ function setPlotActionHitBox(plotRow) {
   });
 }
 
+function dispatchTouchLikePressStart(element) {
+  element.dispatchEvent(
+    new window.MouseEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+}
+
 describe('GardenPlotManager', () => {
   it('shows zero-cost plot buys as free', () => {
     const parent = document.createElement('section');
@@ -377,6 +386,40 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 
+  it('opens seed choices from selected seed text on touch press start', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const tile = snapshot.garden.plot.tiles[0];
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 2,
+      selectedSeedKey: 'mintSeed',
+      selectedSeedLabel: 'mint seed',
+      phase: 'empty',
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const labelText = plotRow.querySelector(
+      '.garden-page__plot-label .style-seed-label__text',
+    );
+
+    dispatchTouchLikePressStart(labelText);
+
+    const popup = parent.querySelector('.garden-page__seed-popup');
+
+    expect(popup.hidden).toBe(false);
+    expect(tile.phase).toBe('empty');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('plant');
+
+    popup.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(popup.hidden).toBe(false);
+  });
+
   it('keeps selected seed text stable across renders so taps can open choices', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -409,6 +452,27 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
     expect(tile.phase).toBe('empty');
+  });
+
+  it('selects a seed choice on touch press start', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+    parent
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const mintButton = parent.querySelector('[aria-label="select mint seed, owned 1"]');
+
+    dispatchTouchLikePressStart(mintButton);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint seed');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 
   it('shows the selected plot and seed while the seed picker is open', () => {

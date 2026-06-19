@@ -44,8 +44,14 @@ export class TopPanelViewManager {
 
   createPanel() {
     const panel = document.createElement('section');
-    panel.className = 'room-top-panel style-panel';
+    panel.className = 'room-top-panel style-panel has-avatar';
     panel.setAttribute('aria-label', 'Player status');
+    this.refs.panel = panel;
+
+    this.refs.usernameAvatarButton = document.createElement('button');
+    this.refs.usernameAvatarButton.className = 'room-top-panel__avatar-button';
+    this.refs.usernameAvatarButton.type = 'button';
+    this.refs.usernameAvatarButton.setAttribute('aria-label', 'open settings');
 
     this.refs.usernameButton = document.createElement('button');
     this.refs.usernameButton.className = 'room-top-panel__username';
@@ -60,11 +66,13 @@ export class TopPanelViewManager {
     this.refs.usernameAvatar.dataset.character = 'elara';
     this.refs.usernameAvatar.loading = 'eager';
 
+    this.refs.usernameAvatarButton.append(this.refs.usernameAvatar);
+
     this.refs.usernameLabel = document.createElement('span');
     this.refs.usernameLabel.className = 'room-top-panel__username-label';
     this.refs.usernameLabel.textContent = 'wizard';
 
-    this.refs.usernameButton.append(this.refs.usernameAvatar, this.refs.usernameLabel);
+    this.refs.usernameButton.append(this.refs.usernameLabel);
 
     this.refs.levelButton = document.createElement('button');
     this.refs.levelButton.className = 'room-top-panel__level';
@@ -75,18 +83,18 @@ export class TopPanelViewManager {
 
     const identityRow = document.createElement('div');
     identityRow.className = 'room-top-panel__identity-row';
+    const contextCurrency = this.createResource('crystal', '0');
     identityRow.append(this.refs.usernameButton, this.refs.levelButton);
 
     this.refs.resources = document.createElement('div');
     this.refs.resources.className = 'room-top-panel__resources';
     this.refs.resources.setAttribute('aria-label', 'resources');
-    this.refs.resources.append(
-      this.createResource('mana', '0/0'),
-      this.createResource('gold', '0 gold'),
-      this.createResource('crystal', '0'),
-    );
+    const rightStatus = document.createElement('div');
+    rightStatus.className = 'room-top-panel__right-status';
+    rightStatus.append(this.createResource('gold', '0 gold'), contextCurrency);
+    this.refs.resources.append(this.createResource('mana', '0/0'), rightStatus);
 
-    panel.append(identityRow, this.refs.resources);
+    panel.append(this.refs.usernameAvatarButton, identityRow, this.refs.resources);
     return panel;
   }
 

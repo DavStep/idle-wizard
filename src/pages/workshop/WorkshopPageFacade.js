@@ -1,6 +1,7 @@
 import { WorkshopRoomViewManager } from './managers/WorkshopRoomViewManager.js';
 import { WorkshopBagManager } from './managers/WorkshopBagManager.js';
 import { WorkshopActionBarManager } from './managers/WorkshopActionBarManager.js';
+import { WorkshopSummonInfoManager } from './managers/WorkshopSummonInfoManager.js';
 import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManager.js';
 import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
 import { WorkshopLogDialogManager } from './managers/WorkshopLogDialogManager.js';
@@ -21,6 +22,7 @@ export class WorkshopPageFacade {
 
   constructor({
     gameplayFacade,
+    hapticsFacade,
     leaderboardFacade,
     tradeAllianceFacade,
     onOpenPlayerInfo,
@@ -41,10 +43,13 @@ export class WorkshopPageFacade {
     });
     this.bagManager = new WorkshopBagManager({ gameplayFacade });
     this.prestigeManager = new WorkshopPrestigeManager({ gameplayFacade });
+    this.summonInfoManager = new WorkshopSummonInfoManager({ gameplayFacade });
     this.actionBarManager = new WorkshopActionBarManager({
       gameplayFacade,
+      hapticsFacade,
       onBagClick: () => this.bagManager.toggle(),
       onPrestigeClick: () => this.prestigeManager.toggle(),
+      onSummonInfoClick: () => this.summonInfoManager.show(),
       onSummonNotice: (message, options) => this.flyoutManager.show(message, options),
       rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
@@ -91,6 +96,7 @@ export class WorkshopPageFacade {
     this.discoveriesManager.mount(uiLayer, popupLayer);
     this.bagManager.mount(popupLayer);
     this.prestigeManager.mount(popupLayer);
+    this.summonInfoManager.mount(popupLayer);
     this.secondaryActionGateUnsubscribe =
       this.gameplayFacade?.subscribe((snapshot) => this.applySecondaryActionGate(snapshot)) ??
       null;
@@ -103,6 +109,7 @@ export class WorkshopPageFacade {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
     this.requirementConnectionManager.unmount();
+    this.summonInfoManager.unmount();
     this.prestigeManager.unmount();
     this.bagManager.unmount();
     this.discoveriesManager.unmount();

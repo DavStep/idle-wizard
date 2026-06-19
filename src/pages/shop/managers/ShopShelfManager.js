@@ -299,6 +299,8 @@ export class ShopShelfManager {
       event.type === 'click' &&
       this.handledSelectSlotPressStartSlotNumber === slotNumber
     ) {
+      event.preventDefault();
+      event.stopPropagation();
       this.clearHandledSelectSlotPressStartSlotNumber();
       return;
     }
@@ -390,7 +392,13 @@ export class ShopShelfManager {
   }
 
   onTouchLikePressStart(event, key, handler) {
-    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+    if (this.isMousePressStart(event)) {
+      return;
+    }
+
+    if (this.isDuplicateTouchLikePressStart(event, key)) {
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
 

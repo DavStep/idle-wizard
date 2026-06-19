@@ -116,6 +116,42 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
+  it('suppresses duplicate native clicks retargeted outside the root', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    const backdrop = document.createElement('button');
+    let clicks = 0;
+    let backdropClicks = 0;
+    button.className = 'style-button';
+    button.addEventListener('click', () => {
+      clicks += 1;
+    });
+    backdrop.addEventListener('click', () => {
+      backdropClicks += 1;
+    });
+    root.append(button);
+    document.body.append(root, backdrop);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { clientX: 80, clientY: 120 });
+    dispatchPointer(document, 'pointerup', { clientX: 80, clientY: 120 });
+    backdrop.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        clientX: 82,
+        clientY: 119,
+      }),
+    );
+
+    expect(clicks).toBe(1);
+    expect(backdropClicks).toBe(0);
+
+    manager.unmount();
+  });
+
   it('activates marked non-button open controls on touch press start and suppresses release clicks', () => {
     const root = document.createElement('div');
     const button = document.createElement('div');

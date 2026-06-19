@@ -17,4 +17,17 @@ export class SeedDropWeightManager {
 
     return seeds[seeds.length - 1];
   }
+
+  getDropChances(seeds) {
+    const totalWeight = seeds.reduce((sum, seed) => sum + seed.dropWeight, 0);
+
+    if (totalWeight <= 0) {
+      return [];
+    }
+
+    return seeds.map((seed) => ({
+      ...seed,
+      dropChance: seed.dropWeight / totalWeight,
+    }));
+  }
 }

@@ -44,6 +44,16 @@ function applyScale(element, progress) {
   element.style.transform = `scaleX(${scale})`;
 }
 
+function commitCurrentStyle(element) {
+  const computedStyle = getView(element)?.getComputedStyle?.(element);
+
+  if (computedStyle) {
+    return computedStyle.transform;
+  }
+
+  return element.getBoundingClientRect();
+}
+
 function clearProgressState(element) {
   const state = progressStates.get(element);
 
@@ -129,6 +139,7 @@ export function setProgressFill(
       return;
     }
 
+    commitCurrentStyle(element);
     element.classList.add(RUNNING_PROGRESS_CLASS);
     element.style.transition = `transform ${Math.ceil(safeRemainingMs)}ms linear`;
     applyScale(element, 1);

@@ -94,6 +94,42 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-coin-amt-pop')).toBeNull();
   });
 
+  it('plays bought item drops from the market row and caps visual drops at twelve', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const host = document.createElement('section');
+    const popup = document.createElement('section');
+    popup.className = 'shop-page__stock-buy-popup';
+
+    const stockItem = document.createElement('span');
+    stockItem.dataset.shopStockItemKey = 'sageSeed';
+    setRect(stockItem, { left: 240, top: 360, width: 120, height: 30 });
+    popup.append(stockItem);
+    host.append(popup);
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'item_bought',
+      source: 'npc_stock',
+      item: { key: 'sageSeed', label: 'sage seed', kind: 'seed' },
+      quantity: 20,
+      gold: 40,
+    });
+
+    expect(document.querySelectorAll('.room-item-drop-anchor.is-seed')).toHaveLength(12);
+    expect(document.querySelector('.room-item-drop-anchor.is-seed')?.style.left).toBe('300px');
+    expect(document.querySelector('.room-item-drop-anchor.is-seed')?.style.top).toBe('375px');
+    expect(document.querySelector('.room-reward-flyout')?.textContent).toBe(
+      'bought sage seed x20 for 40 gold',
+    );
+    expect(document.querySelector('.room-reward-flyout')?.classList).toContain(
+      'is-visual-only',
+    );
+
+    manager.unmount();
+  });
+
   it('anchors seed drops to the stage and starts them a bit above summon', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const stage = document.createElement('section');

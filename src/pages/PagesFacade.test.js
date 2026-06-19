@@ -3548,8 +3548,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-page__nav')).toBeNull();
     const topPanel = stage.querySelector('.room-top-panel');
     expect(topPanel).not.toBeNull();
-    expect(topPanel.children[0]?.className).toBe('room-top-panel__identity-row');
-    expect(topPanel.children[1]?.classList.contains('room-top-panel__resources')).toBe(true);
+    expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
+    expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
+    expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
     expect(
       topPanel.querySelector('.room-top-panel__identity-row .room-top-panel__username')
         ?.textContent,
@@ -3772,32 +3773,37 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
+    const topPanel = stage.querySelector('.room-top-panel');
     const usernameButton = stage.querySelector('.room-top-panel__username');
-    const avatar = usernameButton?.querySelector('.room-top-panel__username-avatar');
-    const resources = stage.querySelector('.room-top-panel__resources');
+    const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
+    const avatar = avatarButton?.querySelector('.room-top-panel__username-avatar');
 
     expect(usernameButton?.textContent).toBe('Merlin');
+    expect(avatarButton?.hidden).toBe(false);
     expect(avatar?.hidden).toBe(false);
     expect(avatar?.dataset.character).toBe('mira');
     expect(avatar?.getAttribute('src')).toContain('mira.webp');
-    expect(resources?.classList.contains('has-username-avatar')).toBe(true);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
 
     playerFacade.setIconMode('none');
 
     expect(usernameButton?.textContent).toBe('Merlin');
+    expect(avatarButton?.hidden).toBe(true);
     expect(avatar?.hidden).toBe(true);
-    expect(resources?.classList.contains('has-username-avatar')).toBe(false);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(false);
 
     playerFacade.setCharacter('rowan');
 
+    expect(avatarButton?.hidden).toBe(true);
     expect(avatar?.hidden).toBe(true);
     expect(avatar?.dataset.character).toBe('rowan');
     expect(avatar?.getAttribute('src')).toContain('rowan.webp');
 
     playerFacade.setIconMode('icons');
 
+    expect(avatarButton?.hidden).toBe(false);
     expect(avatar?.hidden).toBe(false);
-    expect(resources?.classList.contains('has-username-avatar')).toBe(true);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
   });
 
   it('mounts the FTUE guide shell for fresh level 1 players', () => {
@@ -4382,6 +4388,82 @@ describe('PagesFacade', () => {
     expect(backdrop.hidden).toBe(true);
   });
 
+  it('keeps Workshop tasks expanded when a touch reward toggle retargets to the backdrop', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.playerLevel.currentLevel = 2;
+    snapshot.tasks.level.totalTasks = 2;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    document.body.append(stage);
+    pagesFacade.mount(stage);
+
+    const tasks = stage.querySelector('.workshop-page__tasks');
+    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+    const list = stage.querySelector('.workshop-page__task-list');
+    const rewards = stage.querySelector('.workshop-page__level-rewards');
+    const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
+    const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
+    const originalElementFromPoint = document.elementFromPoint;
+
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(rewards?.hidden).toBe(false);
+    expect(rewardsToggle?.textContent).toBe('hide rewards');
+
+    try {
+      document.elementFromPoint = () => rewardsToggle;
+      rewardsToggle.dispatchEvent(
+        createPointerEvent('pointerdown', { clientX: 900, clientY: 500 }),
+      );
+      document.dispatchEvent(
+        createPointerEvent('pointerup', { clientX: 900, clientY: 500 }),
+      );
+
+      expect(rewards.hidden).toBe(true);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+
+      backdrop.dispatchEvent(
+        new window.MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 902,
+          clientY: 502,
+        }),
+      );
+    } finally {
+      document.elementFromPoint = originalElementFromPoint;
+    }
+
+    expect(rewards.hidden).toBe(true);
+    expect(rewardsToggle.textContent).toBe('show rewards');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.textContent).toBe('collapse');
+    expect(list.hidden).toBe(false);
+    expect(backdrop.hidden).toBe(false);
+    expect(tasks.classList.contains('is-expanded')).toBe(true);
+
+    pagesFacade.unmount();
+    stage.remove();
+  });
+
   it('keeps expanded Workshop tasks open while dragging Elara', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -4487,6 +4569,7 @@ describe('PagesFacade', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
     const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.playerLevel.currentLevel = 2;
     snapshot.tasks.level.totalTasks = 2;
     snapshot.tasks.level.tasks = [
       baseTask,
@@ -4509,18 +4592,29 @@ describe('PagesFacade', () => {
     stage
       .querySelector('.workshop-page__tasks-pin')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.workshop-page__level-rewards-toggle')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    pagesFacade.show('brewing');
+    expect(stage.querySelector('.workshop-page__level-rewards')?.hidden).toBe(true);
+
+    pagesFacade.show('garden');
+    expect(pagesFacade.getCurrentPageId()).toBe('garden');
     pagesFacade.show('workshop');
 
     const tasks = stage.querySelector('.workshop-page__tasks');
     const pinButton = stage.querySelector('.workshop-page__tasks-pin');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
+    const rewards = stage.querySelector('.workshop-page__level-rewards');
+    const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
     const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
 
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(list?.hidden).toBe(false);
+    expect(rewards?.hidden).toBe(true);
+    expect(rewardsToggle?.textContent).toBe('show rewards');
+    expect(rewardsToggle?.getAttribute('aria-expanded')).toBe('false');
     expect(pinButton?.textContent).toBe('unpin');
     expect(pinButton?.getAttribute('aria-pressed')).toBe('true');
     expect(tasks?.classList.contains('is-pinned')).toBe(true);

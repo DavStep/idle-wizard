@@ -12,9 +12,10 @@ describe('TopPanelViewManager', () => {
     manager.mount(stage);
 
     const usernameButton = stage.querySelector('.room-top-panel__username');
+    const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
     expect(usernameButton?.textContent).toBe('wizard');
     expect(
-      usernameButton?.querySelector('.room-top-panel__username-avatar')?.dataset.character,
+      avatarButton?.querySelector('.room-top-panel__username-avatar')?.dataset.character,
     ).toBe('elara');
     expect(usernameButton?.querySelector('.room-top-panel__username-label')?.textContent).toBe(
       'wizard',

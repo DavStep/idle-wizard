@@ -85,11 +85,11 @@
   --style-row-min-height: 20px;
   --style-row-column-gap: 6px;
   --style-row-right-slot-width: 100px;
-  --style-world-chat-row-height: 14px;
-  --style-world-chat-row-gap: 4px;
+  --style-world-chat-row-height: 16px;
+  --style-world-chat-row-gap: 0px;
   --style-world-chat-preview-lines: 2;
-  --style-world-chat-preview-font-size: 10px;
-  --style-world-chat-preview-icon-size: 10px;
+  --style-world-chat-preview-font-size: 12px;
+  --style-world-chat-preview-icon-size: 14px;
   --style-world-chat-title-font-size: var(--style-box-border-label-font-size);
   --style-world-chat-popup-font-size: 11px;
   --style-world-chat-popup-line-height: 18px;
@@ -3962,6 +3962,12 @@ body {
   z-index: 30;
 }
 
+.workshop-page__summon-info-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
 .room-player-info-popup {
   position: absolute;
   inset: 0;
@@ -3991,6 +3997,7 @@ body {
 .workshop-page__discoveries-popup[hidden],
 .workshop-page__prestige-popup[hidden],
 .workshop-page__tasks-info-popup[hidden],
+.workshop-page__summon-info-popup[hidden],
 .room-player-info-popup[hidden],
 .room-alliance-info-popup[hidden] {
   display: none;
@@ -4004,12 +4011,21 @@ body {
   transform: translate(-50%, -50%);
 }
 
+.style-dialog.workshop-page__summon-info-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
+  transform: translate(-50%, -50%);
+}
+
 .workshop-page__tasks-info-copy {
   max-width: 260px;
   margin: 0;
 }
 
-.style-button.workshop-page__tasks-info-close {
+.style-button.workshop-page__tasks-info-close,
+.style-button.workshop-page__summon-info-close {
   position: absolute;
   right: var(--style-box-title-left);
   bottom: var(--style-box-border-label-offset);
@@ -4025,6 +4041,28 @@ body {
   background: var(--style-surface);
   border: 0;
   border-radius: 0;
+}
+
+.style-button.workshop-page__summon-info-close {
+  width: auto;
+  min-width: 0;
+}
+
+.workshop-page__summon-info-rows {
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__summon-info-row,
+.workshop-page__summon-info-empty {
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__summon-info-empty {
+  color: var(--style-disabled);
+}
+
+.workshop-page__summon-info-value {
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .workshop-page__leaderboard-header {
@@ -5379,7 +5417,7 @@ div.workshop-page__discovery-row {
 
 .research-page__research-label-button:hover,
 .research-page__research-label-button:focus {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .research-page__research-label-button:active {
@@ -6712,19 +6750,22 @@ div.workshop-page__discovery-row {
 }
 
 .style-panel.room-top-panel {
-  --room-top-panel-avatar-gap: 6px;
-  --room-top-panel-avatar-size: 30px;
+  --room-top-panel-avatar-size: 58px;
   position: absolute;
   top: 10px;
   right: var(--style-room-chrome-edge);
   left: var(--style-room-chrome-edge);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: var(--room-top-panel-avatar-size) minmax(0, 1fr) max-content;
+  grid-template-rows: auto auto;
   align-items: stretch;
-  justify-content: flex-start;
-  gap: 4px;
+  gap: 2px 8px;
   min-height: var(--style-row-min-height);
   pointer-events: auto;
+}
+
+.style-panel.room-top-panel:not(.has-avatar) {
+  grid-template-columns: minmax(0, 1fr) max-content;
 }
 
 .style-panel.room-bottom-panel {
@@ -6883,17 +6924,52 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__identity-row {
-  display: flex;
+  display: grid;
+  grid-column: 2 / 4;
+  grid-row: 1;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   column-gap: 10px;
   min-height: var(--style-row-min-height);
+}
+
+.style-panel.room-top-panel:not(.has-avatar) .room-top-panel__identity-row {
+  grid-column: 1 / 3;
+}
+
+.room-top-panel__avatar-button {
+  display: flex;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  align-items: center;
+  justify-content: center;
+  width: var(--room-top-panel-avatar-size);
+  height: var(--room-top-panel-avatar-size);
+  padding: 0;
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.room-top-panel__avatar-button[hidden] {
+  display: none;
+}
+
+.room-top-panel__avatar-button:hover,
+.room-top-panel__avatar-button:focus-visible {
+  background: var(--style-active-surface);
+}
+
+.room-top-panel__avatar-button:focus {
+  outline: none;
 }
 
 .room-top-panel__username {
   display: inline-flex;
   align-items: center;
   flex: 0 1 auto;
-  column-gap: var(--room-top-panel-avatar-gap);
   min-width: 0;
   width: auto;
   max-width: 100%;
@@ -6913,11 +6989,12 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.room-top-panel__username-avatar {
-  flex: 0 0 var(--room-top-panel-avatar-size);
+.room-top-panel__avatar-button .room-top-panel__username-avatar {
   width: var(--room-top-panel-avatar-size);
   height: var(--room-top-panel-avatar-size);
-  vertical-align: -4px;
+  object-fit: cover;
+  object-position: 50% 13%;
+  vertical-align: 0;
 }
 
 :root[data-style-icons="none"] .room-top-panel__username-avatar {
@@ -6947,12 +7024,12 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__level {
   flex: 0 0 auto;
-  margin-left: auto;
+  justify-self: end;
   padding: 0;
   appearance: none;
   color: var(--style-text);
   font-family: var(--style-font);
-  font-size: var(--style-font-size);
+  font-size: inherit;
   font-weight: bold;
   font-variant-numeric: tabular-nums lining-nums;
   white-space: nowrap;
@@ -6977,24 +7054,18 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__resources {
   display: grid;
-  grid-template-columns: minmax(104px, 1.35fr) minmax(66px, 1fr) minmax(
-      80px,
-      1fr
-    );
+  grid-column: 2 / 4;
+  grid-row: 2;
+  grid-template-columns: minmax(104px, 1fr) max-content;
+  align-items: start;
   column-gap: 10px;
   font-size: var(--room-top-panel-resource-font-size, var(--style-font-size));
   row-gap: 2px;
   white-space: nowrap;
 }
 
-.room-top-panel__resources.has-username-avatar {
-  margin-left: calc(
-    var(--room-top-panel-avatar-size) + var(--room-top-panel-avatar-gap)
-  );
-}
-
-.room-top-panel__resources:not(.has-special-currency) {
-  grid-template-columns: minmax(104px, 1.35fr) minmax(66px, 1fr);
+.style-panel.room-top-panel:not(.has-avatar) .room-top-panel__resources {
+  grid-column: 1 / 3;
 }
 
 .room-top-panel__resource {
@@ -7020,12 +7091,14 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.room-top-panel__resource:last-child {
+.room-top-panel__right-status {
+  display: inline-flex;
   justify-self: end;
+  align-items: baseline;
+  gap: 10px;
 }
 
-.room-top-panel__resources:not(.has-special-currency)
-  .room-top-panel__resource[aria-label="gold"] {
+.room-top-panel__right-status .room-top-panel__resource[aria-label="gold"] {
   justify-self: end;
 }
 
@@ -8216,6 +8289,26 @@ div.workshop-page__discovery-row {
   border: 0;
 }
 
+.style-button.workshop-page__summon-info-button {
+  position: absolute;
+  top: calc(55.5% - 32px);
+  left: calc(50% + 70px);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  margin: 0;
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: bold;
+  line-height: var(--style-box-border-label-line-height);
+  text-shadow: none;
+  touch-action: manipulation;
+}
+
 .game-stage:not([data-tutorial-reveal])
   .style-button.workshop-page__summon-button:not([hidden]) {
   transform-origin: center;
@@ -8764,8 +8857,7 @@ div.workshop-page__discovery-row {
     .garden-page__plot-action,
   .garden-page__plot-row.is-processing .garden-page__plot-action,
   .garden-page__plot-row.is-ready .garden-page__plot-action,
-  .garden-page__seed-button:not(:disabled) .row_key,
-  .research-page__research-label-button:not(:disabled) {
+  .garden-page__seed-button:not(:disabled) .row_key {
     text-decoration: underline;
   }
 }
@@ -9062,6 +9154,7 @@ div.workshop-page__discovery-row {
 .workshop-page__discoveries-popup:not([hidden]),
 .workshop-page__prestige-popup:not([hidden]),
 .workshop-page__tasks-info-popup:not([hidden]),
+.workshop-page__summon-info-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
 .garden-page__seed-popup:not([hidden]),
@@ -9093,6 +9186,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__prestige-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__tasks-info-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__summon-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
@@ -9121,6 +9215,7 @@ div.workshop-page__discovery-row {
 
 .workshop-page__logs-popup:not([hidden]) .style-dialog,
 .workshop-page__tasks-info-popup:not([hidden]) .style-dialog,
+.workshop-page__summon-info-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,

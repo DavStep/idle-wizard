@@ -15,6 +15,7 @@ const COMPLETE_TEXT = 'complete';
 const EXPANDED_CONTENT_MOTION_MS = 225;
 const TASK_REORDER_MOTION_MS = 225;
 const TASK_REORDER_EARLY_THRESHOLD_RATIO = 0.2;
+const DUPLICATE_TOUCH_CLICK_SUPPRESSION_MS = 450;
 const TASK_REORDER_TRANSITION =
   'transform 225ms cubic-bezier(0.2, 1.12, 0.36, 1), opacity 140ms linear';
 
@@ -44,16 +45,27 @@ export class WorkshopTaskManager {
     this.collapsingExpandedContent = false;
     this.expandedContentAnimationTimeoutId = null;
     this.expandedContentAnimationFrameId = null;
+    this.duplicateTouchClickSuppressionTimeoutId = null;
     this.canToggleTasks = false;
     this.pinned = false;
     this.rewardsHidden = false;
+    this.levelRewardsTogglePressPointerType = '';
+    this.suppressNextLevelRewardsOutsideClick = false;
     this.infoVisible = false;
     this.previousFocus = null;
     this.suppressNextOutsideClick = false;
     this.handleBackdropPress = (event) => {
+      if (this.suppressLevelRewardsOutsideClick(event)) {
+        return;
+      }
+
       this.collapseFromOutsidePress(event);
     };
     this.handleOutsidePress = (event) => {
+      if (this.suppressLevelRewardsOutsideClick(event)) {
+        return;
+      }
+
       if (event.type === 'click' && this.suppressNextOutsideClick) {
         this.suppressNextOutsideClick = false;
         const target = event.target;
@@ -61,8 +73,10 @@ export class WorkshopTaskManager {
         if (!target || !this.root?.contains(target)) {
           event.preventDefault();
           event.stopPropagation();
+          event.stopImmediatePropagation?.();
         }
 
+        this.clearDuplicateTouchClickSuppression();
         return;
       }
 
@@ -94,6 +108,12 @@ export class WorkshopTaskManager {
       if (event.target === this.refs.infoPopup) {
         this.hideInfo();
       }
+    };
+    this.handleLevelRewardsTogglePointerDown = (event) => {
+      this.trackLevelRewardsTogglePress(event);
+    };
+    this.handleLevelRewardsToggleClick = () => {
+      this.toggleLevelRewards();
     };
     this.handleKeydown = (event) => {
       if (!this.infoVisible || event.key !== 'Escape') {
@@ -189,7 +209,11 @@ export class WorkshopTaskManager {
     this.refs.levelRewardsToggle.className = 'workshop-page__level-rewards-toggle';
     this.refs.levelRewardsToggle.type = 'button';
     this.refs.levelRewardsToggle.setAttribute('aria-controls', 'workshop-level-rewards');
-    this.refs.levelRewardsToggle.addEventListener('click', () => this.toggleLevelRewards());
+    this.refs.levelRewardsToggle.addEventListener(
+      'pointerdown',
+      this.handleLevelRewardsTogglePointerDown,
+    );
+    this.refs.levelRewardsToggle.addEventListener('click', this.handleLevelRewardsToggleClick);
     this.refs.levelComplete = this.createLevelCompleteRow();
 
     this.refs.expandedContent = document.createElement('div');
@@ -239,7 +263,13 @@ export class WorkshopTaskManager {
     this.refs.infoPopup?.removeEventListener('click', this.handleInfoPopupClick);
     this.refs.backdrop?.removeEventListener('pointerdown', this.handleBackdropPress);
     this.refs.backdrop?.removeEventListener('click', this.handleBackdropPress);
+    this.refs.levelRewardsToggle?.removeEventListener(
+      'pointerdown',
+      this.handleLevelRewardsTogglePointerDown,
+    );
+    this.refs.levelRewardsToggle?.removeEventListener('click', this.handleLevelRewardsToggleClick);
     this.cancelExpandedContentMotion();
+    this.clearDuplicateTouchClickSuppression();
     this.stopTaskDragListeners();
     this.clearTaskDragPreview(this.dragState);
     this.cancelRowAnimations();
@@ -258,10 +288,11 @@ export class WorkshopTaskManager {
     this.currentSnapshot = null;
     this.currentFirstCompletedTaskId = null;
     this.currentRequirementsLabel = INITIAL_REQUIREMENTS_LABEL;
-    this.currentRequirementTargetLevel = null;
     this.expandingExpandedContent = false;
     this.collapsingExpandedContent = false;
-    this.rewardsHidden = false;
+    this.duplicateTouchClickSuppressionTimeoutId = null;
+    this.levelRewardsTogglePressPointerType = '';
+    this.suppressNextLevelRewardsOutsideClick = false;
     this.infoVisible = false;
     this.previousFocus = null;
     this.dragState = null;
@@ -291,8 +322,16 @@ export class WorkshopTaskManager {
   }
 
   toggleLevelRewards() {
+    const shouldSuppressDuplicateTouchClick =
+      this.levelRewardsTogglePressPointerType &&
+      this.levelRewardsTogglePressPointerType !== 'mouse';
+    this.levelRewardsTogglePressPointerType = '';
     this.rewardsHidden = !this.rewardsHidden;
     this.syncExpansionState();
+
+    if (shouldSuppressDuplicateTouchClick) {
+      this.suppressDuplicateTouchClick();
+    }
   }
 
   setExpanded(expanded) {
@@ -340,6 +379,59 @@ export class WorkshopTaskManager {
     event?.preventDefault?.();
     event?.stopPropagation?.();
     this.setExpanded(false);
+  }
+
+  trackLevelRewardsTogglePress(event) {
+    if (event?.button > 0 || event?.isPrimary === false) {
+      return;
+    }
+
+    this.levelRewardsTogglePressPointerType = event?.pointerType ?? '';
+  }
+
+  suppressDuplicateTouchClick() {
+    this.suppressNextLevelRewardsOutsideClick = true;
+    this.clearDuplicateTouchClickSuppression({ preserveSuppression: true });
+
+    const window = this.root?.ownerDocument?.defaultView;
+    if (!window?.setTimeout) {
+      return;
+    }
+
+    this.duplicateTouchClickSuppressionTimeoutId = window.setTimeout(() => {
+      this.suppressNextLevelRewardsOutsideClick = false;
+      this.duplicateTouchClickSuppressionTimeoutId = null;
+    }, DUPLICATE_TOUCH_CLICK_SUPPRESSION_MS);
+  }
+
+  clearDuplicateTouchClickSuppression({ preserveSuppression = false } = {}) {
+    const window = this.root?.ownerDocument?.defaultView;
+
+    if (this.duplicateTouchClickSuppressionTimeoutId !== null) {
+      window?.clearTimeout?.(this.duplicateTouchClickSuppressionTimeoutId);
+      this.duplicateTouchClickSuppressionTimeoutId = null;
+    }
+
+    if (!preserveSuppression) {
+      this.suppressNextLevelRewardsOutsideClick = false;
+    }
+  }
+
+  suppressLevelRewardsOutsideClick(event) {
+    if (event?.type !== 'click' || !this.suppressNextLevelRewardsOutsideClick) {
+      return false;
+    }
+
+    const target = event.target;
+    if (target && this.root?.contains(target)) {
+      return false;
+    }
+
+    event.preventDefault?.();
+    event.stopPropagation?.();
+    event.stopImmediatePropagation?.();
+    this.clearDuplicateTouchClickSuppression();
+    return true;
   }
 
   render(snapshot) {
