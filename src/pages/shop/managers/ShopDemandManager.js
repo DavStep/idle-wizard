@@ -1,5 +1,10 @@
 import { getItemDisplay } from '../../shared/itemResearchStatus.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import {
+  getNextNpcDemandWaveInfo,
+  getNpcMarketDemandCap,
+  normalizeCount,
+} from '../../../gameplay/shop/managers/npcMarketPricing.js';
 
 const DEMAND_TABS = [
   { kind: 'seed', label: 'seed' },
@@ -9,10 +14,12 @@ const DEMAND_TABS = [
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 
 export class ShopDemandManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, now = () => Date.now() } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.now = typeof now === 'function' ? now : () => Date.now();
     this.refs = {};
     this.unsubscribe = null;
+    this.clockTimer = null;
     this.visible = false;
     this.selectedTab = 'seed';
     this.previousFocus = null;
@@ -64,6 +71,7 @@ export class ShopDemandManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.stopClock();
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs.popup?.removeEventListener('click', this.handleRootClick);
     this.refs.button?.remove();
@@ -117,9 +125,11 @@ export class ShopDemandManager {
 
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'shop-page__demand-rows';
+    this.refs.summary = document.createElement('div');
+    this.refs.summary.className = 'shop-page__demand-summary';
     this.refs.tabs = this.createTabs();
 
-    dialog.append(title, this.refs.rows);
+    dialog.append(title, this.refs.summary, this.refs.rows);
     panel.append(dialog, this.refs.tabs);
     popup.append(panel);
     this.refs.dialog = panel;
@@ -161,6 +171,7 @@ export class ShopDemandManager {
     this.visible = true;
     this.render();
     this.applyVisibility();
+    this.startClock();
     this.refs.dialog?.focus();
   }
 
@@ -168,6 +179,7 @@ export class ShopDemandManager {
     const wasVisible = this.visible;
     this.visible = false;
     this.applyVisibility();
+    this.stopClock();
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
       this.previousFocus.focus();
@@ -191,10 +203,12 @@ export class ShopDemandManager {
     const shelf = this.lastSnapshot?.shop?.shelf;
 
     if (!shelf?.sellItems?.length) {
+      this.renderSummary(null);
       this.renderMessage('empty');
       return;
     }
 
+    this.renderSummary(this.getDemandContext(shelf.sellItems));
     const demandGroups = this.getDemandGroups(this.lastSnapshot, shelf.sellItems);
     const primaryRows = demandGroups.primary.map((item) => this.createDemandRow(item));
     const lockedRows = demandGroups.locked.map((item) => this.createDemandRow(item));
@@ -227,9 +241,10 @@ export class ShopDemandManager {
     for (const item of items) {
       const display = getItemDisplay(snapshot, item, item.quantity);
       const demandItem = {
+        key: item.key,
         label: display.label,
         kind: item.kind,
-        demand: this.formatDemand(item.sellNeed),
+        demand: this.formatDemand(item),
         locked: display.locked,
       };
 
@@ -261,12 +276,124 @@ export class ShopDemandManager {
     return row;
   }
 
-  formatDemand(sellNeed) {
-    if (!Number.isFinite(sellNeed)) {
+  getDemandContext(sellItems) {
+    const item = sellItems.find((candidate) =>
+      candidate?.kind === this.selectedTab &&
+      normalizeCount(candidate.targetNeed) !== null
+    );
+    const targetNeed = normalizeCount(item?.targetNeed);
+
+    if (targetNeed === null || targetNeed <= 0) {
+      return null;
+    }
+
+    return getNextNpcDemandWaveInfo({
+      targetNeed,
+      maxNeed: this.getPositiveCount(item?.maxNeed) ?? getNpcMarketDemandCap(targetNeed),
+      nowMs: this.now(),
+    });
+  }
+
+  renderSummary(context) {
+    if (!this.refs.summary) {
+      return;
+    }
+
+    if (!context) {
+      this.refs.summary.hidden = true;
+      this.refs.summary.replaceChildren();
+      return;
+    }
+
+    this.refs.summary.hidden = false;
+    const buyersRow = this.createSummaryRow(
+      context.isBigWave ? 'large crowd returns' : 'buyers return',
+      this.formatDuration(context.nextWaveAtMs - this.now()),
+    );
+    const nextRow = this.createSummaryRow(
+      'next buyers',
+      `+${context.nextWaveAmount}, cap ${context.maxNeed}`,
+    );
+
+    this.refs.summary.replaceChildren(buyersRow, nextRow);
+  }
+
+  createSummaryRow(labelText, valueText) {
+    const row = document.createElement('div');
+    row.className = 'shop-page__demand-summary-row';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+    label.textContent = labelText;
+
+    const value = document.createElement('span');
+    value.className = 'row_val';
+    value.textContent = valueText;
+
+    row.append(label, value);
+    return row;
+  }
+
+  formatDemand(item) {
+    const sellNeed = normalizeCount(item?.sellNeed);
+
+    if (sellNeed === null) {
       return '?';
     }
 
-    return String(Math.floor(sellNeed));
+    if (sellNeed <= 0) {
+      return 'no buyers';
+    }
+
+    const maxNeed =
+      this.getPositiveCount(item?.maxNeed) ??
+      (normalizeCount(item?.targetNeed) === null
+        ? null
+        : getNpcMarketDemandCap(item.targetNeed));
+
+    if (maxNeed === null) {
+      return String(sellNeed);
+    }
+
+    if (sellNeed >= maxNeed) {
+      return 'full demand';
+    }
+
+    return `${sellNeed} / ${maxNeed}`;
+  }
+
+  formatDuration(durationMs) {
+    const totalMinutes = Math.max(1, Math.ceil(Math.max(0, durationMs) / 60_000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours <= 0) {
+      return `${minutes}m`;
+    }
+
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+
+  startClock() {
+    if (this.clockTimer !== null) {
+      return;
+    }
+
+    this.clockTimer = globalThis.setInterval(() => this.render(), 30_000);
+  }
+
+  stopClock() {
+    if (this.clockTimer === null) {
+      return;
+    }
+
+    globalThis.clearInterval(this.clockTimer);
+    this.clockTimer = null;
+  }
+
+  getPositiveCount(value) {
+    const count = normalizeCount(value);
+    return count === null || count <= 0 ? null : count;
   }
 
   onShowPressStart(event) {

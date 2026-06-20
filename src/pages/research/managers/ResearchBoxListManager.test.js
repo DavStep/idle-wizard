@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import { ResearchBoxListManager } from './ResearchBoxListManager.js';
@@ -96,6 +99,79 @@ describe('ResearchBoxListManager', () => {
       'seed',
     ]);
     expect(lockedRow?.classList.contains('is-unavailable')).toBe(true);
+  });
+
+  it('colors completed advanced research names and values as crystal resources', () => {
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 9,
+      },
+      research: {
+        tabs: [
+          {
+            id: 'advanced',
+            label: 'advanced research',
+            boxes: [
+              {
+                id: 'advancedAutomation',
+                label: 'advanced research',
+                researches: [
+                  {
+                    id: 'advanced:plotGrowth:1:1',
+                    label: 'auto plant tile 1',
+                    value: 'researched',
+                    completed: true,
+                  },
+                  {
+                    id: 'advanced:plotGrowth:2:1',
+                    label: 'auto plant tile 2',
+                    value: '1 ruby',
+                    completed: false,
+                    canResearch: true,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        completedResearchIds: ['advanced:plotGrowth:1:1'],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    const completedRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
+      row.textContent?.includes('auto plant tile 1'),
+    );
+    const availableRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
+      row.textContent?.includes('auto plant tile 2'),
+    );
+
+    expect(
+      completedRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
+    ).toBe('crystal');
+    expect(
+      completedRow?.querySelector('.research-page__research-value')?.dataset.resourceColor,
+    ).toBe('crystal');
+    expect(
+      availableRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
+    ).toBeUndefined();
+    expect(
+      availableRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
+    ).toBe('ruby');
+  });
+
+  it('lets completed advanced research values use crystal color styling', () => {
+    const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+
+    expect(css).toContain(
+      '.research-page__research-value[data-resource-color="crystal"]',
+    );
+    expect(css).toContain('color: var(--style-resource-crystal);');
   });
 
   it('opens locked research info on row tap and explains missing requirements', () => {

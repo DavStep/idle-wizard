@@ -4260,27 +4260,9 @@ describe('PagesFacade', () => {
     expect(tasks.parentElement?.classList.contains('workshop-page__tasks-slot')).toBe(true);
     expect(title?.textContent).toBe('level 2 requirements');
     expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
-    expect(rewards?.hidden).toBe(false);
-    expect(rewardsToggle?.hidden).toBe(false);
-    expect(rewardsToggle?.textContent).toBe('hide rewards');
-    expect(rewardsToggle?.getAttribute('aria-expanded')).toBe('true');
-    expect(rewards?.querySelector('.workshop-page__level-payoff-title')?.textContent).toBe(
-      'level 2 rewards',
-    );
-    expect(
-      [...rewards.querySelectorAll('.workshop-page__level-payoff-row')].map(
-        (row) => [
-          row.querySelector('.workshop-page__level-payoff-label')?.textContent,
-          row.querySelector('.workshop-page__level-payoff-value')?.textContent,
-        ],
-      ),
-    ).toEqual([
-      ['unlocks', 'garden'],
-      ['garden plots', '+1'],
-      ['mana cap', '+50'],
-      ['mana regen', '+1/sec'],
-      ['crystal', '+1'],
-    ]);
+    expect(rewards?.hidden).toBe(true);
+    expect(rewardsToggle?.hidden).toBe(true);
+    expect(rewardsToggle?.disabled).toBe(true);
     expect(stage.querySelector('.workshop-page__tasks-helper')).toBeNull();
     expect(infoPopup?.hidden).toBe(true);
     expect(backdrop?.hidden).toBe(true);
@@ -4298,19 +4280,6 @@ describe('PagesFacade', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(list?.hidden).toBe(true);
     expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(0);
-
-    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(rewards?.hidden).toBe(true);
-    expect(rewardsToggle.textContent).toBe('show rewards');
-    expect(rewardsToggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(list.hidden).toBe(true);
-
-    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(rewards.hidden).toBe(false);
-    expect(rewardsToggle.textContent).toBe('hide rewards');
 
     summary.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -4434,28 +4403,12 @@ describe('PagesFacade', () => {
     expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
     expect(rewards?.hidden).toBe(false);
     expect(rewards?.textContent).toContain('level 2 rewards');
-    expect(rewardsToggle?.hidden).toBe(false);
-    expect(rewardsToggle?.textContent).toBe('hide rewards');
-    expect(rewardsToggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(rewardsToggle?.hidden).toBe(true);
+    expect(rewardsToggle?.disabled).toBe(true);
     expect(pinButton?.textContent).toBe('pin');
     expect(pinButton?.getAttribute('aria-pressed')).toBe('false');
     expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
     expect(tasks.classList.contains('is-expanded')).toBe(true);
-
-    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(rewards.hidden).toBe(true);
-    expect(rewardsToggle.textContent).toBe('show rewards');
-    expect(rewardsToggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle.textContent).toBe('collapse');
-    expect(list.hidden).toBe(false);
-    expect(backdrop.hidden).toBe(false);
-    expect(tasks.classList.contains('is-expanded')).toBe(true);
-
-    rewardsToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(rewards.hidden).toBe(false);
-    expect(rewardsToggle.textContent).toBe('hide rewards');
 
     toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -4497,6 +4450,9 @@ describe('PagesFacade', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
     const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.currentLevel = 2;
+    snapshot.tasks.level.level = 2;
+    snapshot.tasks.level.completion.level = 2;
     snapshot.playerLevel.currentLevel = 2;
     snapshot.tasks.level.totalTasks = 2;
     snapshot.tasks.level.tasks = [
@@ -4673,6 +4629,9 @@ describe('PagesFacade', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
     const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.currentLevel = 2;
+    snapshot.tasks.level.level = 2;
+    snapshot.tasks.level.completion.level = 2;
     snapshot.playerLevel.currentLevel = 2;
     snapshot.tasks.level.totalTasks = 2;
     snapshot.tasks.level.tasks = [

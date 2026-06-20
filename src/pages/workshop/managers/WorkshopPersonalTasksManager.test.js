@@ -88,7 +88,7 @@ function createGameplayFacadeFake(snapshot = createPersonalTasksSnapshot()) {
 }
 
 describe('WorkshopPersonalTasksManager', () => {
-  it('renders the unlocked summary and popup task rows', () => {
+  it('renders the unlocked character button and popup task rows', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopPersonalTasksManager({ gameplayFacade });
     const parent = document.createElement('div');
@@ -97,13 +97,27 @@ describe('WorkshopPersonalTasksManager', () => {
     manager.mount(parent, popupParent);
 
     expect(parent.querySelector('.workshop-page__personal-tasks').hidden).toBe(false);
-    expect(parent.textContent).toContain('daily');
-    expect(parent.textContent).toContain('1/7');
+    expect(parent.querySelector('.workshop-page__personal-tasks.style-box')).toBeNull();
+    const openButton = parent.querySelector('.workshop-page__personal-tasks-open');
+    expect(openButton?.textContent).toBe('tasks');
+    expect(openButton?.getAttribute('aria-label')).toContain(
+      'daily 1/7, weekly 0/7',
+    );
+    expect(
+      openButton?.querySelector('.workshop-page__personal-tasks-character')?.getAttribute('src'),
+    ).toContain('miso.webp');
+    expect(parent.textContent).not.toContain('daily');
+    expect(parent.textContent).not.toContain('weekly');
 
-    parent.querySelector('.workshop-page__personal-tasks-open').click();
+    openButton.click();
 
     const popup = popupParent.querySelector('.workshop-page__personal-tasks-popup');
     expect(popup.hidden).toBe(false);
+    expect(
+      popup
+        .querySelector('.workshop-page__personal-tasks-dialog-character')
+        ?.getAttribute('src'),
+    ).toContain('miso.webp');
     expect(popup.querySelectorAll('.workshop-page__personal-task-row')).toHaveLength(8);
     expect(popup.querySelectorAll('.workshop-page__personal-task')).toHaveLength(8);
     expect(popup.querySelectorAll('.workshop-page__personal-task-bar')).toHaveLength(8);

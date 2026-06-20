@@ -789,6 +789,72 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('opens level two requirements before sending the player to garden', () => {
+    const snapshot = createSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costGold: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 3,
+              progressQuantity: 0,
+              remainingQuantity: 3,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+            {
+              taskId: 'level2-sage-seeds',
+              itemKey: 'sageSeed',
+              requiredQuantity: 10,
+              progressQuantity: 0,
+              remainingQuantity: 10,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'workshop:tasks',
+      hintText: 'open level 3 requirements',
+      objectiveText:
+        "now level 3 requires 3 sages and 10 sage seeds to level up. fussy little list. let's start growing sage.",
+      autoPageId: null,
+      progressLabel: '0/3 sage',
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+      }),
+    ).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'page:garden',
+      hintText: 'open garden',
+      autoPageId: 'garden',
+      objectiveText:
+        "now level 3 requires 3 sages and 10 sage seeds to level up. fussy little list. let's start growing sage.",
+    });
+
+    expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'garden:plot:1:label',
+      hintText: 'choose sage seed',
+      objectiveText:
+        "now level 3 requires 3 sages and 10 sage seeds to level up. fussy little list. let's start growing sage.",
+    });
+  });
+
   it('keeps the grow sage objective until three sage are grown', () => {
     const snapshot = createSnapshot({
       tasks: {

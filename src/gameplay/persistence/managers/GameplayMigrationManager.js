@@ -143,7 +143,7 @@ export class GameplayMigrationManager {
 
     if (!migratedSave.worldNotice) {
       migratedSave.worldNotice = {
-        version: 1,
+        version: 2,
         current: null,
         archive: [],
       };

@@ -1,3 +1,5 @@
+import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
+
 export class WorkshopWorldNoticeManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -32,24 +34,28 @@ export class WorkshopWorldNoticeManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'workshop-page__world-notice style-box';
+    this.root.className = 'workshop-page__world-notice';
     this.root.setAttribute('aria-label', 'world notice');
-
-    this.refs.title = document.createElement('div');
-    this.refs.title.className = 'style-box__title';
-    this.refs.title.textContent = 'world notice';
-
-    this.refs.summary = document.createElement('div');
-    this.refs.summary.className = 'workshop-page__world-notice-summary';
 
     this.refs.openButton = document.createElement('button');
     this.refs.openButton.className = 'workshop-page__world-notice-open';
     this.refs.openButton.type = 'button';
-    this.refs.openButton.textContent = 'open';
     this.refs.openButton.setAttribute('aria-haspopup', 'dialog');
     this.refs.openButton.addEventListener('click', () => this.show());
 
-    this.root.append(this.refs.title, this.refs.summary, this.refs.openButton);
+    this.refs.openLabel = document.createElement('span');
+    this.refs.openLabel.className = 'workshop-page__feature-character-label';
+    this.refs.openLabel.textContent = 'notice';
+
+    this.refs.openButton.append(
+      createWorkshopCharacterPortrait(
+        'worldNotice',
+        'workshop-page__world-notice-character',
+      ),
+      this.refs.openLabel,
+    );
+
+    this.root.append(this.refs.openButton);
     parent.append(this.root);
 
     this.refs.popup = this.createPopup();
@@ -146,37 +152,23 @@ export class WorkshopWorldNoticeManager {
       return;
     }
 
-    this.renderSummary(worldNotice.current);
+    this.renderCharacter(worldNotice.current);
 
     if (this.visible) {
       this.renderPopup(worldNotice);
     }
   }
 
-  renderSummary(notice) {
+  renderCharacter(notice) {
     if (!notice) {
-      this.refs.summary.textContent = 'no notice';
+      this.refs.openButton?.setAttribute('aria-label', 'open world notice, no notice');
       return;
     }
 
-    const headline = document.createElement('div');
-    headline.className = 'workshop-page__world-notice-summary-headline';
-    headline.textContent = notice.headline;
-
-    const meta = document.createElement('div');
-    meta.className = 'workshop-page__world-notice-summary-meta';
-
-    const count = document.createElement('span');
-    count.textContent = `${notice.completedRequests}/${notice.totalRequests}`;
-
-    const response = document.createElement('span');
-    response.textContent = notice.responseLabel;
-
-    const reset = document.createElement('span');
-    reset.textContent = notice.resetLabel;
-
-    meta.append(count, response, reset);
-    this.refs.summary.replaceChildren(headline, meta);
+    this.refs.openButton?.setAttribute(
+      'aria-label',
+      `open world notice, ${notice.headline}, ${notice.completedRequests}/${notice.totalRequests}, ${notice.responseLabel}, ${notice.resetLabel}`,
+    );
   }
 
   renderPopup(worldNotice) {
@@ -206,15 +198,24 @@ export class WorkshopWorldNoticeManager {
     const header = document.createElement('div');
     header.className = 'workshop-page__world-notice-header';
 
+    const portrait = createWorkshopCharacterPortrait(
+      'worldNotice',
+      'workshop-page__world-notice-dialog-character',
+    );
+
+    const copy = document.createElement('div');
+    copy.className = 'workshop-page__world-notice-header-copy';
+
     const headline = document.createElement('div');
     headline.className = 'workshop-page__world-notice-headline';
     headline.textContent = notice.headline;
 
     const meta = document.createElement('div');
     meta.className = 'workshop-page__world-notice-meta';
-    meta.textContent = `${notice.completedRequests}/${notice.totalRequests} requests, ${notice.responseLabel}, ${notice.resetLabel}`;
+    meta.textContent = `${notice.completedRequests}/${notice.totalRequests} answers, ${notice.responseLabel}, ${notice.resetLabel}`;
 
-    header.append(headline, meta);
+    copy.append(headline, meta);
+    header.append(portrait, copy);
     return header;
   }
 

@@ -36,6 +36,8 @@ function createSnapshot() {
             kind: 'seed',
             quantity: 1,
             sellNeed: 235,
+            targetNeed: 1000,
+            maxNeed: 1500,
           },
           {
             itemTypeId: 2,
@@ -43,7 +45,9 @@ function createSnapshot() {
             label: 'mint seed',
             kind: 'seed',
             quantity: 0,
-            sellNeed: 623,
+            sellNeed: 0,
+            targetNeed: 1000,
+            maxNeed: 1500,
           },
           {
             itemTypeId: 1001,
@@ -52,6 +56,8 @@ function createSnapshot() {
             kind: 'herb',
             quantity: 0,
             sellNeed: 412,
+            targetNeed: 800,
+            maxNeed: 1200,
           },
         ],
       },
@@ -73,7 +79,7 @@ describe('ShopDemandManager', () => {
         return snapshot;
       },
     };
-    const manager = new ShopDemandManager({ gameplayFacade });
+    const manager = new ShopDemandManager({ gameplayFacade, now: () => 0 });
 
     manager.mount({ buttonParent, popupParent });
     const button = buttonParent.querySelector('.shop-page__demand-button');
@@ -81,6 +87,7 @@ describe('ShopDemandManager', () => {
 
     const popup = popupParent.querySelector('.shop-page__demand-popup');
     const rows = [...popup.querySelectorAll('.shop-page__demand-row')];
+    const summaryRows = [...popup.querySelectorAll('.shop-page__demand-summary-row')];
     const tabs = popup.querySelector('.shop-page__demand-tabs');
 
     expect(button.textContent).toBe('demand');
@@ -91,13 +98,20 @@ describe('ShopDemandManager', () => {
     expect([...tabs.querySelectorAll('.shop-page__demand-tab-button')].map(
       (tab) => tab.textContent,
     )).toEqual(['seed', 'herb', 'potion']);
+    expect(summaryRows.map((row) => [
+      row.querySelector('.row_key')?.textContent,
+      row.querySelector('.row_val')?.textContent,
+    ])).toEqual([
+      ['buyers return', '6h'],
+      ['next buyers', '+800, cap 1500'],
+    ]);
     expect(rows.map((row) => [
       row.querySelector('.row_key')?.textContent,
       row.querySelector('.row_val')?.textContent,
       row.classList.contains('is-locked'),
     ])).toEqual([
-      ['sage seed', '235', false],
-      ['mint seed', '623', true],
+      ['sage seed', '235 / 1500', false],
+      ['mint seed', 'no buyers', true],
     ]);
     expect(popup.querySelector('.shop-page__demand-divider')).toBeNull();
 
@@ -117,7 +131,7 @@ describe('ShopDemandManager', () => {
         return snapshot;
       },
     };
-    const manager = new ShopDemandManager({ gameplayFacade });
+    const manager = new ShopDemandManager({ gameplayFacade, now: () => 0 });
 
     manager.mount({ buttonParent, popupParent });
     buttonParent.querySelector('.shop-page__demand-button')?.click();
@@ -130,7 +144,10 @@ describe('ShopDemandManager', () => {
     expect(rows.map((row) => [
       row.querySelector('.row_key')?.textContent,
       row.querySelector('.row_val')?.textContent,
-    ])).toEqual([['sage', '412']]);
+    ])).toEqual([['sage', '412 / 1200']]);
+    expect(
+      popupParent.querySelector('.shop-page__demand-summary-row .row_val')?.textContent,
+    ).toBe('6h');
     expect(herbTab.getAttribute('aria-selected')).toBe('true');
 
     manager.unmount();
@@ -150,7 +167,7 @@ describe('ShopDemandManager', () => {
           return snapshot;
         },
       };
-      const manager = new ShopDemandManager({ gameplayFacade });
+      const manager = new ShopDemandManager({ gameplayFacade, now: () => 0 });
 
       manager.mount({ buttonParent, popupParent });
       const button = buttonParent.querySelector('.shop-page__demand-button');

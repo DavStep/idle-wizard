@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.18
+
+- Added Workshop character entry buttons for personal tasks and world notices, with clearer popup headers.
+- Changed NPC market demand recovery into periodic buyer waves and added demand popup details for the next wave and demand cap.
+- Refined weekly world notice requests so more events ask for research or supplies instead of direct coin funding.
+- Improved Elara's level-2 gardening guidance, advanced research coloring, and level reward row behavior.
+
 ## 0.2.17
 
 - Rebuilt the latest APK under version 0.2.17 so Android devices and Discord testers can identify the newest build.

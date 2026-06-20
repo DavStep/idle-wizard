@@ -1,5 +1,6 @@
 import {
   WORLD_NOTICE_ACTIONS,
+  WORLD_NOTICE_STATE_VERSION,
   WORLD_NOTICE_UNLOCK_LEVEL,
   WorldNoticeCatalogManager,
 } from './managers/WorldNoticeCatalogManager.js';
@@ -159,7 +160,7 @@ export class WorldNoticeFacade {
     }
 
     this.state = {
-      version: 1,
+      version: WORLD_NOTICE_STATE_VERSION,
       current: this.catalogManager.sanitizeNotice(snapshot.current),
       archive: Array.isArray(snapshot.archive)
         ? snapshot.archive
@@ -174,12 +175,15 @@ export class WorldNoticeFacade {
     const currentPeriod = this.periodManager.getCurrentPeriod();
     const storedNotice = this.state.current;
 
-    if (storedNotice?.periodKey === currentPeriod.periodKey) {
+    if (
+      storedNotice?.periodKey === currentPeriod.periodKey &&
+      storedNotice.version === WORLD_NOTICE_STATE_VERSION
+    ) {
       storedNotice.resetAtMs = currentPeriod.resetAtMs;
       return storedNotice;
     }
 
-    if (storedNotice) {
+    if (storedNotice && storedNotice.version === WORLD_NOTICE_STATE_VERSION) {
       this.archiveNotice(storedNotice);
     }
 
@@ -199,7 +203,7 @@ export class WorldNoticeFacade {
     const resetLabel = this.periodManager.formatResetLabel(notice.resetAtMs);
 
     return {
-      version: 1,
+      version: WORLD_NOTICE_STATE_VERSION,
       periodKey: notice.periodKey,
       weekIndex: notice.weekIndex,
       resetAtMs: notice.resetAtMs,
@@ -258,7 +262,7 @@ export class WorldNoticeFacade {
     }
 
     if (request.actionType === WORLD_NOTICE_ACTIONS.DONATE_GOLD) {
-      return canDonate ? 'donate' : 'need gold';
+      return canDonate ? 'send coin' : 'need coin';
     }
 
     return this.rewardManager.formatRewardText(request.reward);
@@ -382,7 +386,7 @@ export class WorldNoticeFacade {
 
   createEmptyState() {
     return {
-      version: 1,
+      version: WORLD_NOTICE_STATE_VERSION,
       current: null,
       archive: [],
     };

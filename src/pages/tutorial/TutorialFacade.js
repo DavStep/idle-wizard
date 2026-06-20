@@ -17,8 +17,10 @@ export class TutorialFacade {
     storage,
     now,
     onNotificationVisibilityPolicyChange,
+    onShowPage,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.onShowPage = typeof onShowPage === 'function' ? onShowPage : null;
     this.stage = null;
     this.unsubscribe = null;
     this.getNow = typeof now === 'function' ? now : () => Date.now();
@@ -247,6 +249,10 @@ export class TutorialFacade {
     this.revealManager.update(viewState);
 
     if (viewState.kind === 'lesson') {
+      if (this.applyAutoPage(viewState.step)) {
+        return;
+      }
+
       this.hintManager.showLesson({
         ...viewState.lesson,
         hideTargetCue: false,
@@ -289,6 +295,20 @@ export class TutorialFacade {
     this.clearRequestedTargetGuidance();
     this.hintManager.hideTargetCue();
     this.scheduleRefresh();
+  }
+
+  applyAutoPage(step) {
+    const pageId = step?.autoPageId;
+
+    if (!pageId || !this.onShowPage) {
+      return false;
+    }
+
+    this.clearRequestedTargetGuidance();
+    this.hintManager.hideTargetCue({ immediate: true });
+    this.onShowPage(pageId);
+    this.scheduleRefresh();
+    return true;
   }
 
   pressActiveLesson({ source } = {}) {

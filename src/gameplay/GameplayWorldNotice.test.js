@@ -37,24 +37,24 @@ function advanceToLevel(gameplayFacade, targetLevel) {
 }
 
 describe('Gameplay world notice integration', () => {
-  it('unlocks world notices at level 4 and donates gold through gameplay', () => {
+  it('unlocks world notices at level 4 and tracks normal gameplay actions', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.getSnapshot().worldNotice.unlocked).toBe(false);
 
     advanceToLevel(gameplayFacade, 4);
-    gameplayFacade.goldFacade.add(1000);
 
-    const donateRequest = gameplayFacade
-      .getSnapshot()
-      .worldNotice.current.requests.find(
-        (request) => request.actionType === WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-      );
-    const result = gameplayFacade.donateWorldNoticeGold(donateRequest.requestId);
+    const request = gameplayFacade.getSnapshot().worldNotice.current.requests[0];
+    expect(request.actionType).not.toBe(WORLD_NOTICE_ACTIONS.DONATE_GOLD);
+
+    const result = gameplayFacade.recordWorldNoticeAction(
+      request.actionType,
+      request.requiredQuantity,
+    );
     const updatedRequest = gameplayFacade
       .getSnapshot()
       .worldNotice.current.requests.find(
-        (request) => request.requestId === donateRequest.requestId,
+        (candidate) => candidate.requestId === request.requestId,
       );
 
     expect(result.ok).toBe(true);

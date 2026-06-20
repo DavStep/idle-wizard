@@ -1,4 +1,5 @@
 export const WORLD_NOTICE_UNLOCK_LEVEL = 4;
+export const WORLD_NOTICE_STATE_VERSION = 2;
 
 export const WORLD_NOTICE_ACTIONS = Object.freeze({
   BREW_POTIONS: 'brew_potions',
@@ -32,9 +33,9 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         label: 'brew fever tonics',
       },
       {
-        requestKey: 'waterCarts',
-        actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-        label: 'fund clean water carts',
+        requestKey: 'waterTests',
+        actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
+        label: 'test clean water',
       },
     ],
     outcomes: {
@@ -51,7 +52,7 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     headline: 'siege at stonebridge',
     body: [
       'messengers arrive with mud on their boots.',
-      'stonebridge asks every alchemist for field bottles and hard coin.',
+      'stonebridge asks every alchemist for field bottles, spare stores, and useful notes.',
     ],
     requests: [
       {
@@ -65,9 +66,9 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         label: 'move spare supplies',
       },
       {
-        requestKey: 'wallFund',
-        actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-        label: 'fund the wall watch',
+        requestKey: 'siegeNotes',
+        actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
+        label: 'study siege notes',
       },
     ],
     outcomes: {
@@ -84,7 +85,7 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     headline: 'king dethroned',
     body: [
       'the royal seal changes before the ink dries.',
-      'trade guilds ask for calm shelves and enough coin to keep roads open.',
+      'trade guilds ask for calm shelves, steady trade, and a review of old road charters.',
     ],
     requests: [
       {
@@ -98,9 +99,9 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         label: 'supply the guild stores',
       },
       {
-        requestKey: 'roadCoin',
-        actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-        label: 'fund road messengers',
+        requestKey: 'roadCharters',
+        actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
+        label: 'review road charters',
       },
     ],
     outcomes: {
@@ -117,7 +118,7 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     headline: 'dungeon under the old road',
     body: [
       'a cart wheel breaks through stone that was not on any map.',
-      'expedition clerks need potions, notes, and steady hands.',
+      'expedition clerks need potions, notes, and packed herbs.',
     ],
     requests: [
       {
@@ -131,9 +132,9 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         label: 'study old markings',
       },
       {
-        requestKey: 'expeditionFunds',
-        actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-        label: 'fund rope and lamps',
+        requestKey: 'packedHerbs',
+        actionType: WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
+        label: 'pack expedition herbs',
       },
     ],
     outcomes: {
@@ -197,15 +198,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         label: 'brew scout draughts',
       },
       {
-        requestKey: 'searchFund',
-        actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-        label: 'fund search lanterns',
+        requestKey: 'searchRoutes',
+        actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
+        label: 'mark search routes',
       },
     ],
     outcomes: {
       small: 'one wagon returns. the others remain rumor.',
       steady: 'the market opens thin but orderly.',
-      strong: 'the last wagon finds the road by your lantern fund.',
+      strong: 'the last wagon finds the road by your marked route.',
     },
     archive: 'black pine kept its mud, but trade resumed.',
   },
@@ -249,7 +250,7 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     headline: 'new king crowned',
     body: [
       'bells ring from towers that disagreed yesterday.',
-      'new clerks ask every workshop to prove the town still moves.',
+      'new clerks ask every workshop to prove the town still moves and read the new edicts.',
     ],
     requests: [
       {
@@ -263,9 +264,9 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         label: 'supply crown stores',
       },
       {
-        requestKey: 'messengerFees',
-        actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-        label: 'fund oath messengers',
+        requestKey: 'edictReview',
+        actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
+        label: 'review new edicts',
       },
     ],
     outcomes: {
@@ -315,7 +316,7 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     headline: 'bandits on the north road',
     body: [
       'north road merchants arrive in pairs now.',
-      'the watch needs supplies, bottle courage, and enough coin to patrol.',
+      'the watch needs supplies, bottle courage, and road poultices.',
     ],
     requests: [
       {
@@ -329,9 +330,9 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         label: 'move road supplies',
       },
       {
-        requestKey: 'patrolFund',
-        actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
-        label: 'fund north patrols',
+        requestKey: 'roadPoultices',
+        actionType: WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
+        label: 'gather road poultices',
       },
     ],
     outcomes: {
@@ -355,7 +356,7 @@ export class WorldNoticeCatalogManager {
     const baseGold = Math.max(0, Math.floor(Number(completionCostGold) || level * level * 10));
 
     return {
-      version: 1,
+      version: WORLD_NOTICE_STATE_VERSION,
       periodKey,
       weekIndex: Math.max(0, Math.floor(Number(weekIndex) || 0)),
       resetAtMs: Number.isFinite(resetAtMs) ? resetAtMs : 0,
@@ -409,7 +410,7 @@ export class WorldNoticeCatalogManager {
       case WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH:
         return 1;
       case WORLD_NOTICE_ACTIONS.DONATE_GOLD:
-        return this.roundToFive(Math.max(25, completionCost * 0.25));
+        return this.roundToFive(Math.max(15, completionCost * 0.08));
       case WORLD_NOTICE_ACTIONS.EARN_GOLD:
         return this.roundToFive(Math.max(50, completionCost * 0.5));
       case WORLD_NOTICE_ACTIONS.HARVEST_HERBS:
@@ -440,12 +441,12 @@ export class WorldNoticeCatalogManager {
       this.getEventForWeek(notice.weekIndex);
     const periodKey = typeof notice.periodKey === 'string' ? notice.periodKey : '';
 
-    if (!periodKey) {
+    if (!periodKey || notice.version !== WORLD_NOTICE_STATE_VERSION) {
       return null;
     }
 
     return {
-      version: 1,
+      version: WORLD_NOTICE_STATE_VERSION,
       periodKey,
       weekIndex: Math.max(0, Math.floor(Number(notice.weekIndex) || 0)),
       resetAtMs: Number.isFinite(notice.resetAtMs) ? notice.resetAtMs : 0,

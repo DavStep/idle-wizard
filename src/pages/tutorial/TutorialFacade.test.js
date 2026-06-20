@@ -141,6 +141,24 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
   };
 }
 
+const LEVEL_ONE_COMPLETED_STEP_IDS = [
+  'intro-welcome',
+  'intro-username',
+  'intro-username-return',
+  'intro-mana-sphere',
+  'first-summon-seed',
+  'first-fill-seed-task',
+  'finish-seed-task',
+  'intro-market',
+  'prepare-seed-sale',
+  'open-market',
+  'select-market-stand',
+  'select-sage-seed-sale',
+  'earn-tutorial-gold',
+  'unselect-sage-seed-sale',
+  'level-up-one',
+];
+
 describe('TutorialFacade', () => {
   afterEach(() => {
     setNotificationVisibilityPolicy(null);
@@ -652,6 +670,77 @@ describe('TutorialFacade', () => {
     expect(facade.activeStep?.id).toBe('grow-sage');
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+
+    facade.unmount();
+  });
+
+  it('moves to garden after level two requirements are expanded', () => {
+    let currentPageId = 'workshop';
+    const shownPages = [];
+    const snapshot = createLevelTwoSageTaskSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costGold: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 3,
+              progressQuantity: 0,
+              remainingQuantity: 3,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+            {
+              taskId: 'level2-sage-seeds',
+              itemKey: 'sageSeed',
+              requiredQuantity: 10,
+              progressQuantity: 0,
+              remainingQuantity: 10,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+    const stage = document.createElement('section');
+    const tasksToggle = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => currentPageId,
+      onShowPage: (pageId) => {
+        shownPages.push(pageId);
+        currentPageId = pageId;
+      },
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: LEVEL_ONE_COMPLETED_STEP_IDS,
+        }),
+      }),
+    });
+
+    tasksToggle.className = 'workshop-page__tasks-toggle';
+    tasksToggle.dataset.tutorialId = 'workshop:tasks';
+    tasksToggle.setAttribute('aria-expanded', 'true');
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    stage.append(tasksToggle);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('grow-sage');
+    expect(shownPages).toEqual(['garden']);
 
     facade.unmount();
   });

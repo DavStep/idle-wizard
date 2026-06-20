@@ -8,7 +8,7 @@ Fast sell is the manual NPC sale path. It uses the same marginal NPC quote and d
 
 Shared `market stock` also comes from the backend quote snapshot. Buying spends local gold, adds local items, and calls the backend stock reducer first so all players pull from the same NPC stock. Batch buys sum marginal NPC sell prices across the backend need curve instead of multiplying the current visible price.
 
-NPC market prices use progression-aware base values, a soft demand curve, and no hard live price floor/cap. Demand moves back toward its target lazily when a row is touched instead of through a scheduled reducer. Base prices autotune on sell/buy reducers after enough real trade volume: sell-heavy windows nudge base price down, buy-heavy windows nudge it up, then the pressure counters reset.
+NPC market prices use progression-aware base values, a soft demand curve, and a capped live demand value. Demand is not a hard daily reset: buyer waves add demand lazily when a row is touched. The UTC wave cadence is a large wave at day start, then smaller waves every six hours; unused demand caps at 1.5x target. Base prices autotune on sell/buy reducers after enough real trade volume: sell-heavy windows nudge base price down, buy-heavy windows nudge it up, then the pressure counters reset.
 
 The player market uses the same stand costs and item groups. A listed player stand reserves the chosen item quantity from inventory and stores a per-item gold value. Clearing a stand returns the reserved quantity. Market purchases from other players spend local gold and add the bought item; claimed sale proceeds add local gold.
 

@@ -874,7 +874,16 @@ export class ShopDirectSellManager {
 
   formatDemandText(item) {
     const sellNeed = this.getSellNeed(item);
-    return sellNeed === null ? 'demand ?' : `demand ${sellNeed}`;
+
+    if (sellNeed === null) {
+      return 'demand ?';
+    }
+
+    if (sellNeed <= 0) {
+      return 'no buyers';
+    }
+
+    return `demand ${sellNeed}`;
   }
 
   getFastSellGold(item) {
@@ -940,7 +949,12 @@ export class ShopDirectSellManager {
 
     if (reason === 'demand_too_low') {
       const need = Math.floor(Number(quote?.need ?? this.getSellNeed(item)));
-      return Number.isInteger(need) && need >= 0 ? `demand ${need}` : 'demand too low';
+
+      if (!Number.isInteger(need) || need <= 0) {
+        return 'no buyers';
+      }
+
+      return `only ${need} buyers`;
     }
 
     if (reason === 'invalid_quantity') {

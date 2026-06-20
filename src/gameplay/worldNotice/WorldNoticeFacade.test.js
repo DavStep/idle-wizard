@@ -89,6 +89,106 @@ describe('WorldNoticeFacade', () => {
     expect(snapshot.current.requests.map((request) => request.label)).not.toContain(
       'bring random mint',
     );
+    expect(snapshot.current.requests.map((request) => request.actionType)).not.toContain(
+      WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+    );
+  });
+
+  it('keeps default notices on normal workshop actions instead of raw funding', () => {
+    for (let weekIndex = 0; weekIndex < 10; weekIndex += 1) {
+      const { facade } = createFacade({
+        level: 4,
+        now: () => Date.UTC(2026, 5, 8 + weekIndex * 7, 12, 0, 0, 0),
+      });
+      const requestTypes = facade
+        .getSnapshot()
+        .current.requests.map((request) => request.actionType);
+
+      expect(requestTypes).not.toContain(WORLD_NOTICE_ACTIONS.DONATE_GOLD);
+      expect(new Set(requestTypes).size).toBe(requestTypes.length);
+    }
+  });
+
+  it('replaces stale saved funding notices with the current catalog', () => {
+    const { facade } = createFacade({ level: 4 });
+    facade.applyPersistenceSnapshot({
+      version: 1,
+      current: {
+        version: 1,
+        periodKey: 'weekly-1',
+        weekIndex: 1,
+        resetAtMs: Date.UTC(2026, 5, 22, 0, 0, 0, 0),
+        anchorLevel: 4,
+        eventId: 'siege-stonebridge',
+        requests: [
+          {
+            requestId: 'weekly-1:siege-stonebridge:wallFund',
+            requestKey: 'wallFund',
+            actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+            label: 'fund the wall watch',
+            requiredQuantity: 160,
+            progressQuantity: 0,
+            completed: false,
+            reward: {
+              gold: 10,
+            },
+            rewardClaimed: false,
+          },
+        ],
+      },
+      archive: [],
+    });
+
+    const snapshot = facade.getSnapshot();
+
+    expect(snapshot.current.requests.map((request) => request.label)).not.toContain(
+      'fund the wall watch',
+    );
+    expect(snapshot.current.requests.map((request) => request.actionType)).not.toContain(
+      WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+    );
+  });
+
+  it('replaces stale in-memory funding notices from hot reload state', () => {
+    const { facade } = createFacade({ level: 4 });
+    facade.state.current = {
+      version: 1,
+      periodKey: 'weekly-1',
+      weekIndex: 1,
+      resetAtMs: Date.UTC(2026, 5, 22, 0, 0, 0, 0),
+      anchorLevel: 4,
+      eventId: 'siege-stonebridge',
+      headline: 'siege at stonebridge',
+      body: ['stonebridge asks every alchemist for field bottles and hard coin.'],
+      requests: [
+        {
+          requestId: 'weekly-1:siege-stonebridge:wallFund',
+          requestKey: 'wallFund',
+          actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+          label: 'fund the wall watch',
+          requiredQuantity: 160,
+          progressQuantity: 0,
+          completed: false,
+          reward: {
+            gold: 10,
+          },
+          rewardClaimed: false,
+        },
+      ],
+      outcomes: {
+        small: 'old',
+        steady: 'old',
+        strong: 'old',
+      },
+      archive: 'old',
+    };
+
+    const snapshot = facade.getSnapshot();
+
+    expect(snapshot.current.body.join(' ')).not.toContain('hard coin');
+    expect(snapshot.current.requests.map((request) => request.label)).not.toContain(
+      'fund the wall watch',
+    );
   });
 
   it('records matching action progress and grants light gold on completion', () => {
@@ -116,8 +216,35 @@ describe('WorldNoticeFacade', () => {
     expect(goldFacade.current).toBeGreaterThan(0);
   });
 
-  it('donates gold into manual notice requests', () => {
+  it('donates gold into explicit manual notice requests', () => {
     const { facade, goldFacade } = createFacade({ level: 4, gold: 1000 });
+    facade.applyPersistenceSnapshot({
+      version: 2,
+      current: {
+        version: 2,
+        periodKey: 'weekly-1',
+        weekIndex: 1,
+        resetAtMs: Date.UTC(2026, 5, 22, 0, 0, 0, 0),
+        anchorLevel: 4,
+        eventId: 'siege-stonebridge',
+        requests: [
+          {
+            requestId: 'weekly-1:siege-stonebridge:bridgeCoin',
+            requestKey: 'bridgeCoin',
+            actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+            label: 'send bridge coin',
+            requiredQuantity: 30,
+            progressQuantity: 0,
+            completed: false,
+            reward: {
+              gold: 10,
+            },
+            rewardClaimed: false,
+          },
+        ],
+      },
+      archive: [],
+    });
     const donateRequest = facade
       .getSnapshot()
       .current.requests.find(

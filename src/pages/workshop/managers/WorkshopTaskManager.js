@@ -326,6 +326,11 @@ export class WorkshopTaskManager {
       this.levelRewardsTogglePressPointerType &&
       this.levelRewardsTogglePressPointerType !== 'mouse';
     this.levelRewardsTogglePressPointerType = '';
+
+    if (!this.canToggleLevelRewards() || !this.hasLevelRewardsLayout()) {
+      return;
+    }
+
     this.rewardsHidden = !this.rewardsHidden;
     this.syncExpansionState();
 
@@ -982,11 +987,26 @@ export class WorkshopTaskManager {
   }
 
   shouldShowLevelRewards() {
+    const hiddenByUser = this.canToggleLevelRewards() && this.rewardsHidden;
+
     return Boolean(
       this.shouldOfferLevelRewards() &&
-        (!this.canToggleTasks || this.isExpandedContentVisible()) &&
-        !this.rewardsHidden,
+        this.hasLevelRewardsLayout() &&
+        !hiddenByUser,
     );
+  }
+
+  hasLevelRewardsLayout() {
+    return Boolean(
+      this.canToggleTasks
+        ? this.isExpandedContentVisible()
+        : this.shouldShowLevelComplete(),
+    );
+  }
+
+  canToggleLevelRewards() {
+    const currentLevel = this.getLevelRewardsCurrentLevel();
+    return Number.isInteger(currentLevel) ? currentLevel > 1 : true;
   }
 
   renderLevelComplete() {
@@ -1984,7 +2004,8 @@ export class WorkshopTaskManager {
 
     const availableInLayout = Boolean(
       this.shouldOfferLevelRewards() &&
-        (!this.canToggleTasks || this.isExpandedContentVisible()),
+        this.hasLevelRewardsLayout() &&
+        this.canToggleLevelRewards(),
     );
     const targetLevel = this.getLevelRewardsTargetLevel();
     const actionText = this.rewardsHidden ? 'show' : 'hide';

@@ -468,7 +468,7 @@ export class ResearchBoxListManager {
     name.className = 'research-page__research-name';
     name.textContent = research.label;
     setItemIconLabel(name, itemKind, this.getResearchItemKey(research));
-    setResourceColor(name, itemKind);
+    setResourceColor(name, this.getResearchNameResourceColor(research, itemKind));
 
     if (!research.showEffect) {
       return [name];
@@ -479,6 +479,14 @@ export class ResearchBoxListManager {
     setResourceIconText(effect, research.effect);
     setResourceColorFromText(effect, research.effect);
     return [name, effect];
+  }
+
+  getResearchNameResourceColor(research, itemKind) {
+    if (this.isCompletedAdvancedResearch(research)) {
+      return 'crystal';
+    }
+
+    return itemKind;
   }
 
   getResearchItemKind(research) {
@@ -493,6 +501,10 @@ export class ResearchBoxListManager {
     return null;
   }
 
+  isCompletedAdvancedResearch(research) {
+    return Boolean(research?.completed) && research.id?.startsWith('advanced:');
+  }
+
   getResearchItemKey(research) {
     return research.id?.startsWith('unlockRecipe:')
       ? research.id.slice('unlockRecipe:'.length)
@@ -505,7 +517,7 @@ export class ResearchBoxListManager {
 
     if (!research.inProgress) {
       setResourceIconText(val, research.value);
-      setResourceColorFromText(val, research.value);
+      this.setResearchValueResourceColor(val, research);
       return val;
     }
 
@@ -530,8 +542,17 @@ export class ResearchBoxListManager {
     const val = document.createElement('span');
     val.className = 'row_val research-page__research-value';
     setResourceIconText(val, research.value);
-    setResourceColorFromText(val, research.value);
+    this.setResearchValueResourceColor(val, research);
     return val;
+  }
+
+  setResearchValueResourceColor(element, research) {
+    if (this.isCompletedAdvancedResearch(research)) {
+      setResourceColor(element, 'crystal');
+      return;
+    }
+
+    setResourceColorFromText(element, research.value);
   }
 
   createProgress(research) {

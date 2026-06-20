@@ -4,6 +4,7 @@ import {
   createResourceIconLabel,
   setResourceIconText,
 } from '../../shared/resourceIconLabel.js';
+import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 const PERSONAL_TASK_RESOURCE_BY_ACTION = new Map([
   ['summon_seeds', 'seed'],
@@ -58,24 +59,28 @@ export class WorkshopPersonalTasksManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'workshop-page__personal-tasks style-box';
+    this.root.className = 'workshop-page__personal-tasks';
     this.root.setAttribute('aria-label', 'personal tasks');
-
-    this.refs.title = document.createElement('div');
-    this.refs.title.className = 'style-box__title';
-    this.refs.title.textContent = 'personal tasks';
-
-    this.refs.summary = document.createElement('div');
-    this.refs.summary.className = 'workshop-page__personal-tasks-summary';
 
     this.refs.openButton = document.createElement('button');
     this.refs.openButton.className = 'workshop-page__personal-tasks-open';
     this.refs.openButton.type = 'button';
-    this.refs.openButton.textContent = 'open';
     this.refs.openButton.setAttribute('aria-haspopup', 'dialog');
     this.refs.openButton.addEventListener('click', () => this.show());
 
-    this.root.append(this.refs.title, this.refs.summary, this.refs.openButton);
+    this.refs.openLabel = document.createElement('span');
+    this.refs.openLabel.className = 'workshop-page__feature-character-label';
+    this.refs.openLabel.textContent = 'tasks';
+
+    this.refs.openButton.append(
+      createWorkshopCharacterPortrait(
+        'personalTasks',
+        'workshop-page__personal-tasks-character',
+      ),
+      this.refs.openLabel,
+    );
+
+    this.root.append(this.refs.openButton);
     parent.append(this.root);
 
     this.refs.popup = this.createPopup();
@@ -111,6 +116,16 @@ export class WorkshopPersonalTasksManager {
     this.refs.periodLabel = document.createElement('div');
     this.refs.periodLabel.className = 'workshop-page__personal-tasks-period';
 
+    this.refs.header = document.createElement('div');
+    this.refs.header.className = 'workshop-page__personal-tasks-header';
+    this.refs.header.append(
+      createWorkshopCharacterPortrait(
+        'personalTasks',
+        'workshop-page__personal-tasks-dialog-character',
+      ),
+      this.refs.periodLabel,
+    );
+
     this.refs.frame = document.createElement('div');
     this.refs.frame.className = 'workshop-page__personal-tasks-frame';
 
@@ -144,7 +159,7 @@ export class WorkshopPersonalTasksManager {
 
     this.refs.dialog.append(
       title,
-      this.refs.periodLabel,
+      this.refs.header,
       this.refs.frame,
       this.refs.closeButton,
     );
@@ -215,40 +230,20 @@ export class WorkshopPersonalTasksManager {
       return;
     }
 
-    this.renderSummary(personalTasks);
+    this.renderCharacter(personalTasks);
 
     if (this.visible) {
       this.renderPopup(personalTasks);
     }
   }
 
-  renderSummary(personalTasks) {
+  renderCharacter(personalTasks) {
     const daily = personalTasks?.daily;
     const weekly = personalTasks?.weekly;
-    this.refs.summary.replaceChildren(
-      this.createSummaryRow('daily', daily),
-      this.createSummaryRow('weekly', weekly),
+    this.refs.openButton?.setAttribute(
+      'aria-label',
+      `open personal tasks, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, weekly ${weekly?.completedTasks ?? 0}/${weekly?.totalTasks ?? 0}`,
     );
-  }
-
-  createSummaryRow(label, period) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__personal-tasks-summary-row';
-
-    const name = document.createElement('span');
-    name.className = 'workshop-page__personal-tasks-summary-name';
-    name.textContent = label;
-
-    const count = document.createElement('span');
-    count.className = 'workshop-page__personal-tasks-summary-count';
-    count.textContent = `${period?.completedTasks ?? 0}/${period?.totalTasks ?? 0}`;
-
-    const reset = document.createElement('span');
-    reset.className = 'workshop-page__personal-tasks-summary-reset';
-    reset.textContent = period?.resetLabel ?? '';
-
-    row.append(name, count, reset);
-    return row;
   }
 
   renderPopup(personalTasks) {

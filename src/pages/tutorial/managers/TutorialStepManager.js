@@ -1,4 +1,7 @@
-import { formatOpenLevelRequirementsLabel } from '../../shared/levelRequirementsLabel.js';
+import {
+  formatOpenLevelRequirementsLabel,
+  getLevelRequirementTargetLevel,
+} from '../../shared/levelRequirementsLabel.js';
 
 const SAGE_SEED_KEY = 'sageSeed';
 const SAGE_HERB_KEY = 'sageHerb';
@@ -501,12 +504,16 @@ export const TUTORIAL_STEPS = [
       }
 
       return getLessonSageGrowCount(snapshot) <= 0
-        ? 'sage seed grows into sage. plant one, then harvest it.'
+        ? getLevelTwoRequirementIntroText(snapshot)
         : 'keep going. grow sage 3 times.';
     },
     getCueMode: ({ snapshot }) =>
       getLessonSageGrowCount(snapshot) <= 0 ? 'active' : 'delayed-target',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
+      if (shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot })) {
+        return 'workshop:tasks';
+      }
+
       if (
         getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 &&
         !hasGrownEnoughSageForLesson(snapshot) &&
@@ -550,6 +557,10 @@ export const TUTORIAL_STEPS = [
       return `garden:plot:${tile.tileNumber}:label`;
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
+      if (shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot })) {
+        return getOpenLevelRequirementsText(snapshot);
+      }
+
       if (
         getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0 &&
         !hasGrownEnoughSageForLesson(snapshot) &&
@@ -584,6 +595,10 @@ export const TUTORIAL_STEPS = [
         ? `wait for ${getTileHerbHintName(tile, 'sage')} to grow`
         : 'choose sage seed';
     },
+    getAutoPageId: ({ currentPageId, dom, snapshot }) =>
+      shouldMoveToGardenAfterLevelTwoRequirements({ currentPageId, dom, snapshot })
+        ? 'garden'
+        : null,
     getProgress: ({ snapshot }) => ({
       value: getLessonSageGrowCount(snapshot),
       max: LEVEL_TWO_SAGE_GROW_TARGET,
@@ -1386,6 +1401,7 @@ export class TutorialStepManager {
         allowedPopupClasses: [],
         allowTargetClick: step.allowTargetClick === true,
         cueMode: getCueMode(step, context),
+        autoPageId: getAutoPageId(step, context),
         effect: step.effect,
         sale: step.sale,
       };
@@ -1414,6 +1430,7 @@ export class TutorialStepManager {
       revealTokens: getRevealTokens(step),
       allowedPopupClasses: getAllowedPopupClasses(step, { ...context, targetId, text, hintText }),
       cueMode: getCueMode(step, { ...context, targetId, text, hintText }),
+      autoPageId: getAutoPageId(step, { ...context, targetId, text, hintText }),
       effect: step.effect,
       sale: step.sale,
     };
@@ -1495,6 +1512,11 @@ function getAllowedPopupClasses(step, context) {
 function getCueMode(step, context) {
   const cueMode = step?.getCueMode?.(context) ?? step?.cueMode ?? 'active';
   return cueMode || 'active';
+}
+
+function getAutoPageId(step, context) {
+  const pageId = step?.getAutoPageId?.(context) ?? step?.autoPageId ?? null;
+  return typeof pageId === 'string' && pageId.length > 0 ? pageId : null;
 }
 
 function hasCompletedResearch(snapshot, researchId) {
@@ -2164,6 +2186,76 @@ function hasTaskProgressForItem(snapshot, itemKey) {
 
 function hasCompletedTaskForItem(snapshot, itemKey) {
   return getCurrentTasks(snapshot).some((task) => task.itemKey === itemKey && task.completed);
+}
+
+function shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot }) {
+  return (
+    getCurrentLevel(snapshot) === 2 &&
+    currentPageId === 'workshop' &&
+    getLessonSageGrowCount(snapshot) <= 0 &&
+    hasLevelTwoSageRequirements(snapshot) &&
+    !dom?.isTasksExpanded?.()
+  );
+}
+
+function shouldMoveToGardenAfterLevelTwoRequirements({ currentPageId, dom, snapshot }) {
+  return (
+    getCurrentLevel(snapshot) === 2 &&
+    currentPageId !== 'garden' &&
+    getLessonSageGrowCount(snapshot) <= 0 &&
+    hasLevelTwoSageRequirements(snapshot) &&
+    Boolean(dom?.isTasksExpanded?.()) &&
+    (getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 || hasActiveCrop(snapshot, SAGE_SEED_KEY))
+  );
+}
+
+function hasLevelTwoSageRequirements(snapshot) {
+  return Boolean(
+    getCurrentTaskForItem(snapshot, SAGE_HERB_KEY) &&
+      getCurrentTaskForItem(snapshot, SAGE_SEED_KEY),
+  );
+}
+
+function getLevelTwoRequirementIntroText(snapshot) {
+  const requirementText = formatLevelTwoSageRequirementList(snapshot);
+
+  if (!requirementText) {
+    return 'sage seed grows into sage. plant one, then harvest it.';
+  }
+
+  const targetLevel = getLevelRequirementTargetLevel(snapshot?.tasks);
+  const levelText = targetLevel ? `level ${targetLevel}` : 'the next level';
+
+  return `now ${levelText} requires ${requirementText} to level up. fussy little list. let's start growing sage.`;
+}
+
+function formatLevelTwoSageRequirementList(snapshot) {
+  const requirements = [
+    formatRequirementQuantity(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY), {
+      singular: 'sage',
+      plural: 'sages',
+    }),
+    formatRequirementQuantity(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY), {
+      singular: 'sage seed',
+      plural: 'sage seeds',
+    }),
+  ].filter(Boolean);
+
+  if (requirements.length <= 1) {
+    return requirements[0] ?? '';
+  }
+
+  return `${requirements.slice(0, -1).join(', ')} and ${requirements[requirements.length - 1]}`;
+}
+
+function formatRequirementQuantity(task, labels) {
+  const quantity = Math.max(0, Math.floor(Number(task?.requiredQuantity) || 0));
+
+  if (!quantity) {
+    return '';
+  }
+
+  return `${quantity} ${quantity === 1 ? labels.singular : labels.plural}`;
 }
 
 function getLessonSageGrowCount(snapshot) {

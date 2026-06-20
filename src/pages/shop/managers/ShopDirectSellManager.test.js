@@ -126,6 +126,14 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ShopDirectSellManager', () => {
+  it('formats empty demand as no buyers', () => {
+    const manager = new ShopDirectSellManager();
+
+    expect(manager.formatDemandText({ sellNeed: 0 })).toBe('no buyers');
+    expect(manager.getSellFailureText('demand_too_low', { need: 0 })).toBe('no buyers');
+    expect(manager.getSellFailureText('demand_too_low', { need: 2 })).toBe('only 2 buyers');
+  });
+
   it('opens fast sell, recalculates totals, and clamps sales to NPC need', async () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');

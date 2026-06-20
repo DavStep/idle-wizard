@@ -76,7 +76,17 @@ const NPC_MARKET_MAX_VOLATILITY_BPS = 10_000n;
 const NPC_MARKET_DEFAULT_CUSTOM_TARGET_STOCK = 100n;
 const NPC_MARKET_DEFAULT_CUSTOM_VOLATILITY_BPS = 800n;
 const NPC_MARKET_SOFTNESS_BPS = 1_500;
-const NPC_MARKET_DEMAND_RECOVERY_HALF_LIFE_MICROS = 2n * 60n * 60n * 1_000_000n;
+const NPC_MARKET_DEMAND_WAVE_INTERVAL_MICROS = 6n * 60n * 60n * 1_000_000n;
+const NPC_MARKET_DEMAND_DAILY_BUDGET_BPS = 40_000n;
+const NPC_MARKET_DEMAND_CAP_BPS = 15_000n;
+const NPC_MARKET_DEMAND_BIG_WAVE_BPS = 4_000n;
+const NPC_MARKET_DEMAND_SMALL_WAVE_BPS = 2_000n;
+const NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT = [
+  NPC_MARKET_DEMAND_BIG_WAVE_BPS,
+  NPC_MARKET_DEMAND_SMALL_WAVE_BPS,
+  NPC_MARKET_DEMAND_SMALL_WAVE_BPS,
+  NPC_MARKET_DEMAND_SMALL_WAVE_BPS,
+];
 const NPC_MARKET_AUTO_TUNE_WINDOW_BPS = 500n;
 const NPC_MARKET_AUTO_TUNE_MIN_SIGNAL_QUANTITY = 10n;
 const NPC_MARKET_AUTO_TUNE_MAX_STEP_BPS = 250;
@@ -10906,8 +10916,13 @@ function getNpcSellPriceGold(marketPriceGold: number): number {
   return roundGoldPrice((marketPriceGold * NPC_MARKET_SELL_BPS) / 10_000);
 }
 
-function getNpcMarketMaxNeed(_targetNeed: bigint): bigint {
-  return 0n;
+function getNpcMarketMaxNeed(targetNeed: bigint): bigint {
+  if (targetNeed <= 0n) {
+    return 1n;
+  }
+
+  const maxNeed = (targetNeed * NPC_MARKET_DEMAND_CAP_BPS) / 10_000n;
+  return maxNeed > 0n ? maxNeed : 1n;
 }
 
 function getNpcMarketNeedState(row: any, targetNeed: bigint) {
@@ -10920,7 +10935,7 @@ function getNpcMarketNeedState(row: any, targetNeed: bigint) {
       : safeTargetNeed;
 
   return {
-    npcNeed: rawNeed > 0n ? rawNeed : 0n,
+    npcNeed: clampBigInt(rawNeed > 0n ? rawNeed : 0n, 0n, maxNeed),
     targetNeed: safeTargetNeed,
     maxNeed,
   };
@@ -10975,28 +10990,70 @@ function getNpcMarketRecoveredNeedState(
     };
   }
 
-  const recoveryShare = 1 - Math.pow(
-    0.5,
-    Number(elapsedMicros) / Number(NPC_MARKET_DEMAND_RECOVERY_HALF_LIFE_MICROS),
+  const waveRecovery = getNpcMarketDemandWaveRecovery(
+    needState.targetNeed,
+    lastTickMicros,
+    getContextTimestampMicros(ctx),
   );
-  let nextNpcNeed = needState.npcNeed;
-
-  if (needState.npcNeed < needState.targetNeed) {
-    const gap = needState.targetNeed - needState.npcNeed;
-    const recovered = BigInt(Math.floor(Number(gap) * recoveryShare));
-    nextNpcNeed = needState.npcNeed + recovered;
-  } else if (needState.npcNeed > needState.targetNeed) {
-    const gap = needState.npcNeed - needState.targetNeed;
-    const recovered = BigInt(Math.floor(Number(gap) * recoveryShare));
-    nextNpcNeed = needState.npcNeed - recovered;
-  }
+  const nextNpcNeed = clampBigInt(
+    needState.npcNeed + waveRecovery,
+    0n,
+    needState.maxNeed,
+  );
+  const processedWave = waveRecovery > 0n;
 
   return {
     ...needState,
     npcNeed: nextNpcNeed,
-    lastTickAt: nextNpcNeed === needState.npcNeed ? row.lastTickAt ?? ctx.timestamp : ctx.timestamp,
-    recovered: nextNpcNeed !== needState.npcNeed,
+    lastTickAt:
+      processedWave || nextNpcNeed !== needState.npcNeed
+        ? ctx.timestamp
+        : row.lastTickAt ?? ctx.timestamp,
+    recovered: processedWave || nextNpcNeed !== needState.npcNeed,
   };
+}
+
+function getNpcMarketDemandWaveRecovery(
+  targetNeed: bigint,
+  fromMicros: bigint,
+  toMicros: bigint,
+): bigint {
+  if (targetNeed <= 0n || toMicros <= fromMicros) {
+    return 0n;
+  }
+
+  const firstWaveIndex = fromMicros / NPC_MARKET_DEMAND_WAVE_INTERVAL_MICROS + 1n;
+  const lastWaveIndex = toMicros / NPC_MARKET_DEMAND_WAVE_INTERVAL_MICROS;
+
+  if (lastWaveIndex < firstWaveIndex) {
+    return 0n;
+  }
+
+  const waveCycleLength = BigInt(NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT.length);
+  const waveCount = lastWaveIndex - firstWaveIndex + 1n;
+  const fullDays = waveCount / waveCycleLength;
+  const remainingWaves = Number(waveCount % waveCycleLength);
+  let recovery =
+    (targetNeed * NPC_MARKET_DEMAND_DAILY_BUDGET_BPS * fullDays) / 10_000n;
+
+  for (let offset = 0; offset < remainingWaves; offset += 1) {
+    const waveIndex = firstWaveIndex + fullDays * waveCycleLength + BigInt(offset);
+    recovery += getNpcMarketDemandWaveAmount(targetNeed, waveIndex);
+  }
+
+  return recovery;
+}
+
+function getNpcMarketDemandWaveAmount(targetNeed: bigint, waveIndex: bigint): bigint {
+  const waveSlot = Number(waveIndex % BigInt(NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT.length));
+  const waveBps =
+    NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT[waveSlot] ?? NPC_MARKET_DEMAND_SMALL_WAVE_BPS;
+
+  return (
+    (targetNeed * NPC_MARKET_DEMAND_DAILY_BUDGET_BPS * waveBps) /
+    10_000n /
+    10_000n
+  );
 }
 
 function getNpcMarketSellTotalGold(
@@ -14907,7 +14964,11 @@ export const buy_from_npc = spacetimedb.reducer(
     }
 
     const nextNpcStock = npcStock - tradeQuantity;
-    const nextNpcNeed = needState.npcNeed + tradeQuantity;
+    const nextNpcNeed = clampBigInt(
+      needState.npcNeed + tradeQuantity,
+      0n,
+      needState.maxNeed,
+    );
     const tunedMarket = applyNpcMarketAutoTune(
       ctx,
       marketConfig,

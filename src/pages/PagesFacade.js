@@ -111,6 +111,7 @@ export class PagesFacade {
       ? new TutorialFacade({
           gameplayFacade,
           getCurrentPageId: () => this.getCurrentPageId(),
+          onShowPage: (pageId) => this.show(pageId),
           storage: tutorialStorage,
           onNotificationVisibilityPolicyChange: (policy) =>
             this.applyTutorialNotificationVisibilityPolicy(policy),

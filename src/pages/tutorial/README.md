@@ -12,7 +12,7 @@ Level-up gold guidance must read Market `shop.shelf.sellItems` quantities before
 
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 
-Lesson 3 starts by showing the first sage grow directly at `0/3`, so players see the summon/plant loop once. The level 2 gardening lesson fills the visible sage herb task before circling back to the sage seed task. After that first grow, later sage objectives go back to plain objectives first and delay target pointer help for a short idle window, then point only when the player appears stuck.
+Lesson 3 starts by opening the level 3 requirements when both sage and sage seed tasks are visible, then sends players to Garden for the first sage grow at `0/3`, so they see why the summon/plant loop matters. The level 2 gardening lesson fills the visible sage herb task before circling back to the sage seed task. After that first grow, later sage objectives go back to plain objectives first and delay target pointer help for a short idle window, then point only when the player appears stuck.
 
 Tutorial-owned market pricing stays active until FTUE finishes. Fast sell uses fixed tutorial quotes and local gold/item mutations instead of the live NPC market backend, so tutorial goals do not depend on shared market pressure or offline quotes. Passive market rows may also show tutorial fallback prices when live backend prices are missing.
 

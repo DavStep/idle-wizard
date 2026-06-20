@@ -58,15 +58,14 @@ function createWorldNoticeSnapshot() {
           {
             requestId: 'weekly-1:fever:water',
             requestKey: 'water',
-            actionType: 'donate_gold',
-            label: 'fund clean water carts',
-            requiredQuantity: 40,
-            progressQuantity: 10,
-            progress: 0.25,
+            actionType: 'complete_research',
+            label: 'test clean water',
+            requiredQuantity: 1,
+            progressQuantity: 0,
+            progress: 0,
             completed: false,
-            manual: true,
-            canDonate: true,
-            actionText: 'donate',
+            manual: false,
+            actionText: '+15 gold',
             reward: {
               gold: 15,
               text: '+15 gold',
@@ -105,7 +104,7 @@ function createGameplayFacadeFake(snapshot = createWorldNoticeSnapshot()) {
 }
 
 describe('WorkshopWorldNoticeManager', () => {
-  it('renders the unlocked summary and popup requests', () => {
+  it('renders the unlocked character button and popup requests', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
     const parent = document.createElement('div');
@@ -114,13 +113,27 @@ describe('WorkshopWorldNoticeManager', () => {
     manager.mount(parent, popupParent);
 
     expect(parent.querySelector('.workshop-page__world-notice').hidden).toBe(false);
-    expect(parent.textContent).toContain('fever in the lower quarter');
-    expect(parent.textContent).toContain('1/3');
+    expect(parent.querySelector('.workshop-page__world-notice.style-box')).toBeNull();
+    const openButton = parent.querySelector('.workshop-page__world-notice-open');
+    expect(openButton?.textContent).toBe('notice');
+    expect(openButton?.getAttribute('aria-label')).toContain(
+      'fever in the lower quarter, 1/3',
+    );
+    expect(
+      openButton?.querySelector('.workshop-page__world-notice-character')?.getAttribute('src'),
+    ).toContain('guild-secretary.webp');
+    expect(parent.textContent).not.toContain('fever in the lower quarter');
+    expect(parent.textContent).not.toContain('1/3');
 
-    parent.querySelector('.workshop-page__world-notice-open').click();
+    openButton.click();
 
     const popup = popupParent.querySelector('.workshop-page__world-notice-popup');
     expect(popup.hidden).toBe(false);
+    expect(
+      popup
+        .querySelector('.workshop-page__world-notice-dialog-character')
+        ?.getAttribute('src'),
+    ).toContain('guild-secretary.webp');
     expect(popup.textContent).toContain('lanterns stay lit past midnight');
     expect(popup.textContent).toContain('brew fever tonics');
     expect(popup.textContent).toContain('past notices');
@@ -129,10 +142,57 @@ describe('WorkshopWorldNoticeManager', () => {
       popup.querySelector('.workshop-page__world-notice-request-fill')?.style.width,
     ).toBe('100%');
 
-    popup.querySelector('.workshop-page__world-notice-request-action').click();
+    expect(popup.textContent).toContain('1/3 answers');
+  });
+
+  it('sends coin only for explicit manual notice rows', () => {
+    const gameplayFacade = createGameplayFacadeFake({
+      worldNotice: {
+        unlocked: true,
+        unlockLevel: 4,
+        current: {
+          periodKey: 'weekly-1',
+          resetLabel: 'resolves 3d',
+          headline: 'siege at stonebridge',
+          body: ['the bridge watch keeps a sealed coin box.'],
+          completedRequests: 0,
+          totalRequests: 1,
+          responseLabel: 'small response',
+          requests: [
+            {
+              requestId: 'weekly-1:siege:coin',
+              requestKey: 'coin',
+              actionType: 'donate_gold',
+              label: 'send bridge coin',
+              requiredQuantity: 30,
+              progressQuantity: 0,
+              progress: 0,
+              completed: false,
+              manual: true,
+              canDonate: true,
+              actionText: 'send coin',
+              reward: {
+                gold: 10,
+                text: '+10 gold',
+              },
+              rewardClaimed: false,
+            },
+          ],
+        },
+        archive: [],
+      },
+    });
+    const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    manager.mount(parent, popupParent);
+    parent.querySelector('.workshop-page__world-notice-open').click();
+
+    popupParent.querySelector('.workshop-page__world-notice-request-action').click();
 
     expect(gameplayFacade.donateWorldNoticeGold).toHaveBeenCalledWith(
-      'weekly-1:fever:water',
+      'weekly-1:siege:coin',
     );
   });
 
