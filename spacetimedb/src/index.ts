@@ -13688,7 +13688,12 @@ export const send_world_chat_message = spacetimedb.reducer(
       return;
     }
 
-    const player = ensurePlayer(ctx);
+    let player = ensurePlayer(ctx);
+    const gameplaySave = ctx.db.playerGameplaySave.identity.find(ctx.sender);
+    if (gameplaySave) {
+      player = syncPlayerLevelFromGameplaySave(ctx, player, gameplaySave.saveJson);
+    }
+
     if (normalizePlayerLevel(player.playerLevel) < WORLD_CHAT_UNLOCK_LEVEL) {
       throw new Error(`World chat unlocks at level ${WORLD_CHAT_UNLOCK_LEVEL}.`);
     }

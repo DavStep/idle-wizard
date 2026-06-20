@@ -301,6 +301,7 @@
 - World chat can have live preview data while still hidden/disabled by the level-3 Workshop secondary-action gate or first-run account gate; check those before debugging transport.
 - World chat sends must wait for backend player-level sync before calling `send_world_chat_message`; the reducer gates on server `player.playerLevel`, not just local Workshop unlock state.
 - Explicit pre-chat player-level flushes must requeue the current gameplay snapshot level even if observers already saw that value; otherwise stale server `playerLevel` can reject unlocked chat sends.
+- `send_world_chat_message` should also heal `player.playerLevel` from the accepted `player_gameplay_save` before the level gate; old clients or stale `set_player_level` calls can otherwise leave level-3+ saves unable to chat.
 - All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
 - Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
 - Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.
