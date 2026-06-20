@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.17
+
+- Rebuilt the latest APK under version 0.2.17 so Android devices and Discord testers can identify the newest build.
+
 ## 0.2.16
 
 - Added weekly world notices in the Workshop with normal action requests, gold donations, rewards, and past notice history.
