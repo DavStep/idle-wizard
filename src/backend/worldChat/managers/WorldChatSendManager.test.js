@@ -20,6 +20,57 @@ describe('WorldChatSendManager', () => {
     expect(sendWorldChatMessage).toHaveBeenCalledWith({ body: 'hello world' });
   });
 
+  it('waits for player level sync before sending', async () => {
+    let finishBeforeSend;
+    const beforeSendMessage = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finishBeforeSend = resolve;
+        }),
+    );
+    const sendWorldChatMessage = vi.fn().mockResolvedValue(undefined);
+    const manager = new WorldChatSendManager({ beforeSendMessage });
+
+    manager.connect({
+      reducers: {
+        sendWorldChatMessage,
+      },
+    });
+
+    const send = manager.sendMessage('hello');
+    await Promise.resolve();
+
+    expect(beforeSendMessage).toHaveBeenCalledTimes(1);
+    expect(sendWorldChatMessage).not.toHaveBeenCalled();
+
+    finishBeforeSend(true);
+
+    await expect(send).resolves.toEqual({
+      ok: true,
+      body: 'hello',
+    });
+    expect(sendWorldChatMessage).toHaveBeenCalledWith({ body: 'hello' });
+  });
+
+  it('does not send while player level sync is still blocked', async () => {
+    const sendWorldChatMessage = vi.fn().mockResolvedValue(undefined);
+    const manager = new WorldChatSendManager({
+      beforeSendMessage: vi.fn().mockResolvedValue(false),
+    });
+
+    manager.connect({
+      reducers: {
+        sendWorldChatMessage,
+      },
+    });
+
+    await expect(manager.sendMessage('hello')).resolves.toEqual({
+      ok: false,
+      reason: 'chat_locked',
+    });
+    expect(sendWorldChatMessage).not.toHaveBeenCalled();
+  });
+
   it('fails softly when offline or empty', async () => {
     const manager = new WorldChatSendManager();
 

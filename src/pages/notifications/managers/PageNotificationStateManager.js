@@ -229,6 +229,7 @@ function canBuyNextTile({ tile, plot, gold }) {
   return (
     tile.tileNumber === plot?.nextTileNumber &&
     plot?.nextTileLockedByLevel !== true &&
+    plot?.nextTileLockedByResearch !== true &&
     Number.isFinite(plot?.nextTileCost) &&
     (gold?.current ?? 0) >= plot.nextTileCost
   );
@@ -238,6 +239,7 @@ function canBuyNextCauldron(snapshot, brewing) {
   return (
     Number.isInteger(brewing?.nextCauldronNumber) &&
     brewing?.nextCauldronLockedByLevel !== true &&
+    brewing?.nextCauldronLockedByResearch !== true &&
     Number.isFinite(brewing?.nextCauldronCost) &&
     (snapshot.gold?.current ?? 0) >= brewing.nextCauldronCost
   );

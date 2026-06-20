@@ -48,6 +48,7 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
   backendFacade.worldChatFacade = {
     connect: vi.fn(),
     disconnect: vi.fn(),
+    setBeforeSendMessage: vi.fn(),
   };
   backendFacade.feedbackFacade = {
     connect: vi.fn(),
@@ -68,6 +69,7 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
     discardPreHydrationPlayerLevel: vi.fn(),
     discardPendingPlayerLevel: vi.fn(),
     markGameplaySaveHydrated: vi.fn(),
+    flushPlayerLevelSync: vi.fn(() => Promise.resolve(true)),
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
@@ -190,6 +192,28 @@ describe('BackendFacade', () => {
       backendFacade.tradeAllianceFacade.setRewardProcessingReady.mock.invocationCallOrder[1],
     );
     expect(onOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('wires world chat sends through player level sync', async () => {
+    const { backendFacade } = createBackendWithFakes();
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+    });
+    await flushPromises();
+
+    expect(backendFacade.worldChatFacade.setBeforeSendMessage).toHaveBeenCalledWith(
+      expect.any(Function),
+    );
+
+    const beforeSendMessage =
+      backendFacade.worldChatFacade.setBeforeSendMessage.mock.calls.at(-1)?.[0];
+
+    await expect(beforeSendMessage()).resolves.toBe(true);
+    expect(backendFacade.playerSyncFacade.flushPlayerLevelSync).toHaveBeenCalledTimes(1);
   });
 
   it('waits for gameplay save choice before enabling server save sends', async () => {

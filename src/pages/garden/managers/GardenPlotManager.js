@@ -214,7 +214,7 @@ export class GardenPlotManager {
 
     const number = document.createElement('span');
     number.className = 'garden-page__plot-number';
-    number.textContent = `${tileNumber}.`;
+    number.textContent = String(tileNumber);
 
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';
@@ -497,7 +497,10 @@ export class GardenPlotManager {
     if (!tile.unlocked) {
       const lockedTileAction = isNextLockedTile ? this.formatLockedTileAction(plot) : '';
       const lockedTileDisabled =
-        !isNextLockedTile || plot.nextTileLockedByLevel || gold.current < plot.nextTileCost;
+        !isNextLockedTile ||
+        plot.nextTileLockedByLevel ||
+        plot.nextTileLockedByResearch ||
+        gold.current < plot.nextTileCost;
       const lockedTileLabel = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
       this.setText(refs.label, lockedTileLabel);
       setItemIconLabel(refs.label, null);
@@ -639,12 +642,20 @@ export class GardenPlotManager {
       return `level ${plot.nextTileRequiresLevel}`;
     }
 
+    if (plot.nextTileLockedByResearch) {
+      return 'research';
+    }
+
     return `buy ${this.formatGold(plot.nextTileCost)}`;
   }
 
   formatLockedTileAriaLabel(tile, plot) {
     if (plot.nextTileLockedByLevel) {
       return `garden tile ${tile.tileNumber} requires level ${plot.nextTileRequiresLevel}`;
+    }
+
+    if (plot.nextTileLockedByResearch) {
+      return `garden tile ${tile.tileNumber} requires research`;
     }
 
     return `buy garden tile ${tile.tileNumber}`;
@@ -684,7 +695,7 @@ export class GardenPlotManager {
       herbKey = null,
     } = {},
   ) {
-    this.setText(refs.boxNumber, `${tile.tileNumber}.`);
+    this.setText(refs.boxNumber, String(tile.tileNumber));
     this.setText(refs.boxLabel, label);
     setResourceColor(refs.boxLabel, labelResource);
     this.setResourceText(refs.boxActionLabel, action);

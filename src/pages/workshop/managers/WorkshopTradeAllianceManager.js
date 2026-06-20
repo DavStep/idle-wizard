@@ -618,9 +618,9 @@ export class WorkshopTradeAllianceManager {
   createQuestRow(quest, { locked = false } = {}) {
     const contribution = this.getOwnContribution(quest);
     const itemFillQuest = this.isItemFillQuest(quest);
-    const questComplete = quest.progress >= quest.target;
     const questClaimed = Boolean(quest.claimed);
     const questClaimable = this.isQuestClaimable(quest, { locked });
+    const itemFillNeeded = itemFillQuest && this.needsItemQuestFill(quest, contribution);
     const row = document.createElement('div');
     row.className = 'workshop-page__trade-alliance-quest-row';
     row.dataset.questId = quest.questId;
@@ -654,7 +654,7 @@ export class WorkshopTradeAllianceManager {
       actionText = 'claimed';
     } else if (locked) {
       actionText = 'locked';
-    } else if (itemFillQuest && !questComplete) {
+    } else if (itemFillNeeded) {
       actionText = 'fill';
     }
     action.textContent = actionText;
@@ -663,7 +663,7 @@ export class WorkshopTradeAllianceManager {
       action.disabled = true;
     } else if (locked) {
       action.disabled = true;
-    } else if (itemFillQuest && !questComplete) {
+    } else if (itemFillNeeded) {
       action.disabled = !this.canFillItemQuest(quest);
       action.addEventListener('click', () => void this.runAction(() => this.fillItemQuest(quest)));
     } else {
@@ -1438,6 +1438,19 @@ export class WorkshopTradeAllianceManager {
     return quest?.questType === ITEM_FILL_QUEST_TYPE && Boolean(quest.itemKey);
   }
 
+  needsItemQuestFill(quest, contribution = this.getOwnContribution(quest)) {
+    if (!this.isItemFillQuest(quest)) {
+      return false;
+    }
+
+    const remainingQuestFill = Math.max(0, Number(quest.target ?? 0) - Number(quest.progress ?? 0));
+    const missingOwnFill = Math.max(
+      0,
+      Number(quest.minContribution ?? 0) - Number(contribution ?? 0),
+    );
+    return Math.max(remainingQuestFill, missingOwnFill) > 0;
+  }
+
   canFillItemQuest(quest) {
     if (!this.gameplayFacade || !this.isItemFillQuest(quest)) {
       return false;
@@ -1459,7 +1472,10 @@ export class WorkshopTradeAllianceManager {
       };
     }
 
-    const fill = this.gameplayFacade.fillTradeAllianceItemQuest(quest);
+    const fill = this.gameplayFacade.fillTradeAllianceItemQuest({
+      ...quest,
+      ownContribution: this.getOwnContribution(quest),
+    });
 
     if (!fill.ok) {
       return fill;

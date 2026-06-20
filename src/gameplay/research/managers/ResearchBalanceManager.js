@@ -1,5 +1,12 @@
 import { advancedResearchIds, advancedResearchMaxLevel } from '../advancedResearchIds.js';
 import {
+  capacityResearchIds,
+  cauldronCapacityEndCauldronNumber,
+  cauldronCapacityStartCauldronNumber,
+  plotCapacityEndPlotNumber,
+  plotCapacityStartPlotNumber,
+} from '../capacityResearchIds.js';
+import {
   fastSellResearchCostsRuby,
   fastSellResearchIds,
 } from '../fastSellResearch.js';
@@ -136,6 +143,22 @@ function createDefaultAdvancedRubyCosts() {
     for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
       costs[advancedResearchIds.plotGrowth(plotNumber, level)] = level;
     }
+  }
+
+  for (
+    let plotNumber = plotCapacityStartPlotNumber;
+    plotNumber <= plotCapacityEndPlotNumber;
+    plotNumber += 1
+  ) {
+    costs[capacityResearchIds.plot(plotNumber)] = 1;
+  }
+
+  for (
+    let cauldronNumber = cauldronCapacityStartCauldronNumber;
+    cauldronNumber <= cauldronCapacityEndCauldronNumber;
+    cauldronNumber += 1
+  ) {
+    costs[capacityResearchIds.cauldron(cauldronNumber)] = 1;
   }
 
   return costs;

@@ -12,6 +12,8 @@ export class AutomationFacade {
     brewingFacade,
     gardenFacade,
     gameplayLogFacade,
+    onBrewStarted,
+    onGardenSeedPlanted,
     onSeedSummoned,
     onPotionRecipeDiscovery,
     researchFacade,
@@ -29,10 +31,12 @@ export class AutomationFacade {
     this.gardenAutomationManager = new GardenAutomationManager({
       gardenFacade,
       gameplayLogFacade,
+      onGardenSeedPlanted,
       researchFacade,
     });
     this.brewingAutomationManager = new BrewingAutomationManager({
       brewingFacade,
+      onBrewStarted,
       onPotionRecipeDiscovery,
       researchFacade,
     });

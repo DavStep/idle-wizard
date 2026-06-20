@@ -198,8 +198,19 @@ export class TutorialFacade {
 
   refresh() {
     this.cancelReminderRefresh();
-    const dom = this.targetManager.getDomState();
     const snapshot = this.gameplayFacade?.getSnapshot?.();
+
+    this.stepManager.syncSnapshotProgress(snapshot);
+
+    if (this.stepManager.hasCompletedAllSteps()) {
+      const viewState = this.logicManager.createEmptyState('hidden');
+      this.syncRequestedTargetGuidance(viewState, this.hintManager.isLessonPanelOpen());
+      this.activeStep = null;
+      this.applyViewState(viewState);
+      return;
+    }
+
+    const dom = this.targetManager.getDomState();
     const lessonPanelOpen = this.hintManager.isLessonPanelOpen();
     const viewState = this.logicManager.getViewState({
       snapshot,

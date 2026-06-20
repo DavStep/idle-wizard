@@ -15,6 +15,7 @@ export class GameplayLoadManager {
     brewingFacade,
     gardenFacade,
     tasksFacade,
+    personalTasksFacade,
   }) {
     this.manaFacade = manaFacade;
     this.goldFacade = goldFacade;
@@ -31,6 +32,7 @@ export class GameplayLoadManager {
     this.brewingFacade = brewingFacade;
     this.gardenFacade = gardenFacade;
     this.tasksFacade = tasksFacade;
+    this.personalTasksFacade = personalTasksFacade;
   }
 
   applySave(save) {
@@ -53,6 +55,7 @@ export class GameplayLoadManager {
     this.shopFacade.applyPersistenceSnapshot(save.shop);
     this.brewingFacade.applyPersistenceSnapshot(save.brewing, this.itemsFacade);
     this.gardenFacade.applyPersistenceSnapshot(save.garden);
+    this.personalTasksFacade.applyPersistenceSnapshot(save.personalTasks);
     return true;
   }
 }

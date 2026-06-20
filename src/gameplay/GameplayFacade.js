@@ -10,6 +10,10 @@ import { GameplayStateObserverManager } from './managers/GameplayStateObserverMa
 import { LevelUpCrystalRewardManager } from './managers/LevelUpCrystalRewardManager.js';
 import { GameplayLogFacade } from './logs/GameplayLogFacade.js';
 import { GameplayPersistenceFacade } from './persistence/GameplayPersistenceFacade.js';
+import {
+  PERSONAL_TASK_ACTIONS,
+  PersonalTasksFacade,
+} from './personalTasks/PersonalTasksFacade.js';
 import { PlayerLevelFacade } from './playerLevel/PlayerLevelFacade.js';
 import { PrestigeFacade } from './prestige/PrestigeFacade.js';
 import { ResearchFacade } from './research/ResearchFacade.js';
@@ -55,7 +59,16 @@ export class GameplayFacade {
       manaFacade: this.manaFacade,
       onResearchComplete: (event) => this.handleResearchComplete(event),
       playerLevelFacade: this.playerLevelFacade,
+      prestigeFacade: this.prestigeFacade,
       rubyFacade: this.rubyFacade,
+    });
+    this.personalTasksFacade = new PersonalTasksFacade({
+      crystalFacade: this.crystalFacade,
+      goldFacade: this.goldFacade,
+      playerLevelFacade: this.playerLevelFacade,
+      researchFacade: this.researchFacade,
+      tasksFacade: this.tasksFacade,
+      now: persistenceNow,
     });
     this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
       crystalFacade: this.crystalFacade,
@@ -96,6 +109,8 @@ export class GameplayFacade {
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
       gameplayLogFacade: this.gameplayLogFacade,
+      onBrewStarted: (result) => this.handleBrewStarted(result),
+      onGardenSeedPlanted: (result) => this.handleGardenSeedPlanted(result),
       onSeedSummoned: (result) => this.handleSeedSummoned(result),
       onPotionRecipeDiscovery: (potionKey) =>
         void this.potionDiscoveryFacade?.discoverPotionRecipe(potionKey),
@@ -119,6 +134,7 @@ export class GameplayFacade {
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
       tasksFacade: this.tasksFacade,
+      personalTasksFacade: this.personalTasksFacade,
       now: persistenceNow,
     });
     this.potionDiscoveryFacade = null;
@@ -301,6 +317,9 @@ export class GameplayFacade {
 
   completeTask(taskId) {
     const result = this.tasksFacade.completeTask(taskId);
+    if (result.ok) {
+      this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
+    }
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -410,6 +429,7 @@ export class GameplayFacade {
 
   resetRunAfterPrestige() {
     const prestige = this.prestigeFacade.getPersistenceSnapshot();
+    const completedCapacityResearchIds = this.researchFacade.getPermanentCompletedResearchIds();
     const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
     const automation = this.automationFacade.getPersistenceSnapshot();
     const seedSummoning = this.seedSummoningFacade.getPersistenceSnapshot();
@@ -436,7 +456,7 @@ export class GameplayFacade {
       },
       inventory: [],
       research: {
-        completedIds: [],
+        completedIds: completedCapacityResearchIds,
         inProgress: [],
       },
       automation,
@@ -449,6 +469,10 @@ export class GameplayFacade {
       tasks: {
         currentLevel: PRESTIGE_RESET_LEVEL,
         tasks: [],
+      },
+      personalTasks: {
+        version: 1,
+        periods: {},
       },
     });
     this.syncPlayerLevelManaEffects();
@@ -465,6 +489,7 @@ export class GameplayFacade {
   }
 
   handleResearchComplete({ label }) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH, 1);
     this.gameplayLogFacade.logResearchBought({
       label,
     });
@@ -472,6 +497,8 @@ export class GameplayFacade {
   }
 
   handleSeedSummoned(result) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, result.quantity);
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, result.cost);
     this.gameplayLogFacade.logSeedSummoned(result);
     this.rewardEventManager.publish({
       type: 'seed_summoned',
@@ -481,7 +508,12 @@ export class GameplayFacade {
     });
   }
 
+  handleBrewStarted(event) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, event?.manaCost);
+  }
+
   handleBrewComplete(event) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.BREW_POTIONS, event.quantity);
     this.gameplayLogFacade.logBrewCompleted(event);
     this.rewardEventManager.publish({
       type: 'potion_collected',
@@ -491,6 +523,7 @@ export class GameplayFacade {
   }
 
   handleGardenHarvestComplete(event) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.HARVEST_HERBS, event.quantity);
     this.gameplayLogFacade.logGardenHarvestCompleted(event);
     this.rewardEventManager.publish({
       type: 'herb_harvested',
@@ -500,7 +533,17 @@ export class GameplayFacade {
     });
   }
 
+  handleGardenSeedPlanted(event) {
+    if (!event?.ok && event?.planted !== true) {
+      return;
+    }
+
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.PLANT_SEEDS, 1);
+  }
+
   handleItemSold(event) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_GOLD, event.gold);
     this.gameplayLogFacade.logItemSold(event);
     this.rewardEventManager.publish({
       type: 'item_sold',
@@ -523,11 +566,16 @@ export class GameplayFacade {
   }
 
   handleGoldCollected(event) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_GOLD, event.gold);
     this.rewardEventManager.publish({
       type: 'gold_collected',
       gold: event.gold,
       source: event.source,
     });
+  }
+
+  recordPersonalTaskAction(actionType, quantity = 1) {
+    return this.personalTasksFacade.recordAction(actionType, quantity);
   }
 
   addBrewingIngredient(itemTypeId, cauldronIndex = 0) {
@@ -602,6 +650,9 @@ export class GameplayFacade {
 
   brewCauldron(cauldronIndex = 0) {
     const result = this.brewingFacade.brew(cauldronIndex);
+    if (result.ok) {
+      this.handleBrewStarted(result);
+    }
     if (result.ok && result.discovery?.potionKey) {
       void this.potionDiscoveryFacade?.discoverPotionRecipe(result.discovery.potionKey);
     }
@@ -850,9 +901,13 @@ export class GameplayFacade {
     const itemKey = String(quest?.itemKey ?? '').trim();
     const target = Math.max(0, Math.floor(Number(quest?.target) || 0));
     const progress = Math.max(0, Math.floor(Number(quest?.progress) || 0));
+    const minContribution = Math.max(0, Math.floor(Number(quest?.minContribution) || 0));
+    const ownContribution = Math.max(0, Math.floor(Number(quest?.ownContribution) || 0));
     const remainingQuantity = Math.max(0, target - progress);
+    const missingContribution = Math.max(0, minContribution - ownContribution);
+    const fillGoalQuantity = Math.max(remainingQuantity, missingContribution);
 
-    if (!itemKey || remainingQuantity <= 0) {
+    if (!itemKey || fillGoalQuantity <= 0) {
       return {
         ok: false,
         reason: 'not_ready',
@@ -871,7 +926,7 @@ export class GameplayFacade {
     }
 
     const ownedQuantity = this.itemsFacade.getItemQuantity(itemDefinition.id);
-    const fillQuantity = Math.min(ownedQuantity, remainingQuantity);
+    const fillQuantity = Math.min(ownedQuantity, fillGoalQuantity);
 
     if (fillQuantity <= 0) {
       return {
@@ -932,6 +987,7 @@ export class GameplayFacade {
   plantGardenSeed(tileNumber, seedTypeId) {
     const result = this.gardenFacade.plantSeed(tileNumber, seedTypeId);
     if (result.ok) {
+      this.handleGardenSeedPlanted(result);
       this.gameplayLogFacade.logGardenSeedPlanted(result);
     }
     this.publishAndSaveSnapshot();
@@ -941,6 +997,7 @@ export class GameplayFacade {
   selectGardenSeed(tileNumber, seedTypeId) {
     const result = this.gardenFacade.selectSeed(tileNumber, seedTypeId);
     if (result.planted) {
+      this.handleGardenSeedPlanted(result);
       this.gameplayLogFacade.logGardenSeedPlanted(result);
     }
     this.publishAndSaveSnapshot();
@@ -950,6 +1007,7 @@ export class GameplayFacade {
   plantSelectedGardenSeed(tileNumber) {
     const result = this.gardenFacade.plantSelectedSeed(tileNumber);
     if (result.ok) {
+      this.handleGardenSeedPlanted(result);
       this.gameplayLogFacade.logGardenSeedPlanted(result);
     }
     this.publishAndSaveSnapshot();
@@ -959,6 +1017,7 @@ export class GameplayFacade {
   replaceGardenSeed(tileNumber, seedTypeId) {
     const result = this.gardenFacade.replaceSeed(tileNumber, seedTypeId);
     if (result.ok) {
+      this.handleGardenSeedPlanted(result);
       this.gameplayLogFacade.logGardenSeedPlanted(result);
     }
     this.publishAndSaveSnapshot();
@@ -1029,6 +1088,7 @@ export class GameplayFacade {
       logs: this.gameplayLogFacade.getSnapshot(),
       playerLevel: this.playerLevelFacade.getSnapshot(),
       tasks: this.tasksFacade.getSnapshot(),
+      personalTasks: this.personalTasksFacade.getSnapshot(),
       prestige: this.prestigeFacade.getSnapshot(),
       research: this.researchFacade.getSnapshot(),
       visualSettings: this.visualSettingsFacade.getSnapshot(),

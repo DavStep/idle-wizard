@@ -7,6 +7,7 @@ export class BrewingSnapshotManager {
     itemsFacade,
     manaFacade,
     playerLevelFacade,
+    researchFacade,
     getAutoBrewEnabled,
     getAutoBrewRecipeKey,
   }) {
@@ -17,6 +18,7 @@ export class BrewingSnapshotManager {
     this.itemsFacade = itemsFacade;
     this.manaFacade = manaFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.researchFacade = researchFacade;
     this.getAutoBrewEnabled = getAutoBrewEnabled;
     this.getAutoBrewRecipeKey = getAutoBrewRecipeKey;
   }
@@ -32,8 +34,16 @@ export class BrewingSnapshotManager {
     );
     const nextCauldronNumber = unlockedCauldrons + 1;
     const nextCauldronCost = this.brewingBalanceManager.getCauldronCost(nextCauldronNumber);
+    const nextCauldronRequiresResearchId =
+      this.getRequiredCapacityResearchId(nextCauldronNumber);
     const nextCauldronLockedByLevel =
-      nextCauldronCost !== null && nextCauldronNumber > maxCauldrons;
+      nextCauldronCost !== null &&
+      nextCauldronNumber > maxCauldrons &&
+      !nextCauldronRequiresResearchId;
+    const nextCauldronLockedByResearch =
+      nextCauldronCost !== null &&
+      nextCauldronNumber > maxCauldrons &&
+      Boolean(nextCauldronRequiresResearchId);
     const primaryCauldron = cauldrons[0] ?? this.getCauldronSnapshot(0, herbs);
     const legacyPrimaryCauldron = {
       ...primaryCauldron,
@@ -58,8 +68,12 @@ export class BrewingSnapshotManager {
       nextCauldronNumber: nextCauldronCost === null ? null : nextCauldronNumber,
       nextCauldronCost,
       nextCauldronLockedByLevel,
+      nextCauldronLockedByResearch,
       nextCauldronRequiresLevel: nextCauldronLockedByLevel
         ? this.playerLevelFacade?.getRequiredLevelForCauldron?.(nextCauldronNumber) ?? null
+        : null,
+      nextCauldronRequiresResearchId: nextCauldronLockedByResearch
+        ? nextCauldronRequiresResearchId
         : null,
       autoBrewEnabled: this.getAutoBrewEnabled?.(0) === true,
       autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(0) ?? null,
@@ -151,7 +165,18 @@ export class BrewingSnapshotManager {
       Number.isInteger(safeMaxCauldrons) && safeMaxCauldrons > 0
         ? safeMaxCauldrons
         : 1;
-    return Math.min(this.brewingBalanceManager.getMaxCauldrons(), maxCauldronsByLevel);
+    return Math.min(
+      this.brewingBalanceManager.getMaxCauldrons(),
+      this.researchFacade?.getMaxCauldronsWithCapacity?.(maxCauldronsByLevel) ??
+        maxCauldronsByLevel,
+    );
+  }
+
+  getRequiredCapacityResearchId(cauldronNumber) {
+    return (
+      this.researchFacade?.getRequiredCauldronCapacityResearchId?.(cauldronNumber) ??
+      null
+    );
   }
 
   getUnlockedCauldrons() {

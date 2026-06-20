@@ -1,8 +1,9 @@
 import { automationResearchIds } from '../automationResearchIds.js';
 
 export class BrewingAutomationManager {
-  constructor({ brewingFacade, onPotionRecipeDiscovery, researchFacade } = {}) {
+  constructor({ brewingFacade, onBrewStarted, onPotionRecipeDiscovery, researchFacade } = {}) {
     this.brewingFacade = brewingFacade;
+    this.onBrewStarted = onBrewStarted;
     this.onPotionRecipeDiscovery = onPotionRecipeDiscovery;
     this.researchFacade = researchFacade;
   }
@@ -47,6 +48,10 @@ export class BrewingAutomationManager {
     }
 
     const result = this.brewingFacade.autoBrew(cauldronNumber - 1);
+
+    if (result.ok) {
+      this.onBrewStarted?.(result);
+    }
 
     if (result.ok && result.discovery?.potionKey) {
       this.onPotionRecipeDiscovery?.(result.discovery.potionKey);

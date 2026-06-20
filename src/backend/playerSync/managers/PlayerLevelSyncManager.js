@@ -95,20 +95,46 @@ export class PlayerLevelSyncManager {
     }
 
     const attemptId = this.beginSyncAttempt();
-    this.syncPromise = Promise.resolve(syncResult)
-      .catch(() => {
-        if (this.isCurrentSyncAttempt(attemptId)) {
-          this.restorePending(playerLevel, playerLevelWasHydrated);
-        }
-      })
-      .finally(() => {
+    this.syncPromise = Promise.resolve(syncResult).then(
+      () => {
         if (!this.isCurrentSyncAttempt(attemptId)) {
-          return;
+          return false;
         }
 
         this.syncPromise = null;
         this.flush();
-      });
+        return true;
+      },
+      () => {
+        if (!this.isCurrentSyncAttempt(attemptId)) {
+          return false;
+        }
+
+        this.restorePending(playerLevel, playerLevelWasHydrated);
+        this.syncPromise = null;
+        this.flush();
+        return false;
+      },
+    );
+  }
+
+  async flushAndWait() {
+    this.observe(this.gameplayFacade?.getSnapshot?.());
+
+    while (true) {
+      this.flush();
+
+      if (!this.syncPromise) {
+        break;
+      }
+
+      const synced = await this.syncPromise;
+      if (!synced) {
+        break;
+      }
+    }
+
+    return this.pendingPlayerLevel === null && !this.syncPromise;
   }
 
   restorePending(playerLevel, playerLevelWasHydrated = true) {

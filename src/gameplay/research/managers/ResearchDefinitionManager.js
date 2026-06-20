@@ -9,6 +9,15 @@ import {
   fastSellResearchMaxLevel,
   getFastSellPercent,
 } from '../fastSellResearch.js';
+import {
+  capacityResearchIds,
+  cauldronCapacityEndCauldronNumber,
+  cauldronCapacityStartCauldronNumber,
+  getCauldronCapacityPrestigeRequirement,
+  getPlotCapacityPrestigeRequirement,
+  plotCapacityEndPlotNumber,
+  plotCapacityStartPlotNumber,
+} from '../capacityResearchIds.js';
 
 const summonSeedResearches = [
   {
@@ -102,9 +111,10 @@ const maxAutomationGardenTiles = 10;
 const maxAutomationCauldrons = 5;
 
 export class ResearchDefinitionManager {
-  constructor({ itemsFacade, playerLevelFacade, researchBalanceManager }) {
+  constructor({ itemsFacade, playerLevelFacade, prestigeFacade, researchBalanceManager }) {
     this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.prestigeFacade = prestigeFacade;
     this.researchBalanceManager = researchBalanceManager;
   }
 
@@ -303,6 +313,16 @@ export class ResearchDefinitionManager {
         researches: this.getFastSellResearches(),
       },
       {
+        id: 'plotCapacity',
+        label: 'plot capacity research',
+        researches: this.getPlotCapacityResearches(),
+      },
+      {
+        id: 'cauldronCapacity',
+        label: 'cauldron capacity research',
+        researches: this.getCauldronCapacityResearches(),
+      },
+      {
         id: 'cauldronBrewing',
         label: 'cauldron brewing research',
         researches: this.getAdvancedSlotResearches({
@@ -328,6 +348,60 @@ export class ResearchDefinitionManager {
         }),
       },
     ];
+  }
+
+  getPlotCapacityResearches() {
+    return this.getCapacityResearches({
+      start: plotCapacityStartPlotNumber,
+      end: plotCapacityEndPlotNumber,
+      getId: capacityResearchIds.plot,
+      getPrestigeRequirement: getPlotCapacityPrestigeRequirement,
+      seriesId: 'advanced:plotCapacity',
+      label: (plotNumber) => `plot ${plotNumber} capacity`,
+      value: '+1 plot',
+      description: (plotNumber) => `raises garden plot capacity to ${plotNumber}.`,
+    });
+  }
+
+  getCauldronCapacityResearches() {
+    return this.getCapacityResearches({
+      start: cauldronCapacityStartCauldronNumber,
+      end: cauldronCapacityEndCauldronNumber,
+      getId: capacityResearchIds.cauldron,
+      getPrestigeRequirement: getCauldronCapacityPrestigeRequirement,
+      seriesId: 'advanced:cauldronCapacity',
+      label: (cauldronNumber) => `cauldron ${cauldronNumber} capacity`,
+      value: '+1 cauldron',
+      description: (cauldronNumber) => `raises cauldron capacity to ${cauldronNumber}.`,
+    });
+  }
+
+  getCapacityResearches({
+    start,
+    end,
+    getId,
+    getPrestigeRequirement,
+    seriesId,
+    label,
+    value,
+    description,
+  }) {
+    const researches = [];
+
+    for (let targetNumber = start; targetNumber <= end; targetNumber += 1) {
+      researches.push({
+        id: getId(targetNumber),
+        label: label(targetNumber),
+        value,
+        showEffect: true,
+        seriesId,
+        requiredPrestigeCount: getPrestigeRequirement(targetNumber),
+        requiredResearchIds: targetNumber > start ? [getId(targetNumber - 1)] : [],
+        description: description(targetNumber),
+      });
+    }
+
+    return researches;
   }
 
   getFastSellResearches() {
@@ -463,8 +537,24 @@ export class ResearchDefinitionManager {
     return this.getCurrentPlayerLevel() >= requiredPlayerLevel ? null : requiredPlayerLevel;
   }
 
+  getMissingRequiredPrestigeCount(researchId) {
+    const requiredPrestigeCount = this.getResearch(researchId)?.requiredPrestigeCount;
+
+    if (!Number.isInteger(requiredPrestigeCount)) {
+      return null;
+    }
+
+    return this.getCurrentPrestigeCount() >= requiredPrestigeCount
+      ? null
+      : requiredPrestigeCount;
+  }
+
   getCurrentPlayerLevel() {
     return this.playerLevelFacade?.getSnapshot?.().currentLevel ?? 1;
+  }
+
+  getCurrentPrestigeCount() {
+    return this.prestigeFacade?.getCompletedCount?.() ?? 0;
   }
 
   normalizeResearchId(researchId) {

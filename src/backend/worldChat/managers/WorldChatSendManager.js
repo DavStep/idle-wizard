@@ -3,8 +3,9 @@ import { getChatFailureReason } from '../../shared/chatFailureReasons.js';
 const MAX_MESSAGE_LENGTH = 160;
 
 export class WorldChatSendManager {
-  constructor() {
+  constructor({ beforeSendMessage = null } = {}) {
     this.connection = null;
+    this.beforeSendMessage = beforeSendMessage;
   }
 
   connect(connection) {
@@ -13,6 +14,11 @@ export class WorldChatSendManager {
 
   disconnect() {
     this.connection = null;
+  }
+
+  setBeforeSendMessage(beforeSendMessage) {
+    this.beforeSendMessage =
+      typeof beforeSendMessage === 'function' ? beforeSendMessage : null;
   }
 
   async sendMessage(body) {
@@ -34,6 +40,11 @@ export class WorldChatSendManager {
       };
     }
 
+    const beforeSendResult = await this.runBeforeSendMessage();
+    if (!beforeSendResult.ok) {
+      return beforeSendResult;
+    }
+
     try {
       await sendWorldChatMessage({ body: message });
       return {
@@ -50,6 +61,37 @@ export class WorldChatSendManager {
 
   getFailureReason(error) {
     return getChatFailureReason(error);
+  }
+
+  async runBeforeSendMessage() {
+    if (!this.beforeSendMessage) {
+      return { ok: true };
+    }
+
+    try {
+      const result = await this.beforeSendMessage();
+
+      if (result === false) {
+        return {
+          ok: false,
+          reason: 'chat_locked',
+        };
+      }
+
+      if (result?.ok === false) {
+        return {
+          ok: false,
+          reason: result.reason ?? 'chat_locked',
+        };
+      }
+
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: this.getFailureReason(error),
+      };
+    }
   }
 
   normalizeMessage(body) {

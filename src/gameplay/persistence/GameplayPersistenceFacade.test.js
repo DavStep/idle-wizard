@@ -30,6 +30,7 @@ function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}
     brewingFacade: resourceFacade,
     gardenFacade: resourceFacade,
     tasksFacade: resourceFacade,
+    personalTasksFacade: resourceFacade,
     now: () => 123,
     windowRef,
     documentRef,
@@ -100,7 +101,7 @@ describe('GameplayPersistenceFacade', () => {
 
     expect(storageManager.saveAndFlush).toHaveBeenCalledTimes(2);
     expect(storageManager.saveAndFlush.mock.calls[0][0]).toMatchObject({
-      version: 3,
+      version: 4,
       savedAt: 123,
     });
 

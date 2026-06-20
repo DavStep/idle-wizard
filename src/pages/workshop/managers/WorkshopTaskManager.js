@@ -471,7 +471,8 @@ export class WorkshopTaskManager {
         ? 'done'
         : `${taskSnapshot.level.completedTasks}/${taskSnapshot.level.totalTasks}`,
     );
-    this.refs.count.setAttribute(
+    this.setAttribute(
+      this.refs.count,
       'aria-label',
       taskSnapshot.completedAllLevels
         ? `all ${this.currentRequirementsLabel} met`
@@ -580,8 +581,9 @@ export class WorkshopTaskManager {
     }
 
     if (!task) {
-      this.refs.summaryTask.root.hidden = true;
-      this.refs.summary.setAttribute(
+      this.setHidden(this.refs.summaryTask.root, true);
+      this.setAttribute(
+        this.refs.summary,
         'aria-label',
         completedAllLevels
           ? `all ${this.currentRequirementsLabel} met`
@@ -590,8 +592,9 @@ export class WorkshopTaskManager {
       return;
     }
 
-    this.refs.summaryTask.root.hidden = false;
-    this.refs.summary.setAttribute(
+    this.setHidden(this.refs.summaryTask.root, false);
+    this.setAttribute(
+      this.refs.summary,
       'aria-label',
       `${task.itemLabel} required for ${this.getRequirementTargetText()}`,
     );
@@ -833,10 +836,10 @@ export class WorkshopTaskManager {
 
     this.currentRequirementsLabel = requirementsLabel;
     this.currentRequirementTargetLevel = requirementTargetLevel;
-    this.root.setAttribute('aria-label', requirementsLabel);
+    this.setAttribute(this.root, 'aria-label', requirementsLabel);
     this.setText(this.refs.title, requirementsLabel);
-    this.refs.title.setAttribute('aria-label', `show ${requirementsLabel} info`);
-    this.refs.infoDialog?.setAttribute('aria-label', `${requirementsLabel} information`);
+    this.setAttribute(this.refs.title, 'aria-label', `show ${requirementsLabel} info`);
+    this.setAttribute(this.refs.infoDialog, 'aria-label', `${requirementsLabel} information`);
     this.setText(this.refs.infoTitle, requirementsLabel);
     this.setText(this.refs.infoBody, this.getTasksHelperText());
   }
@@ -910,22 +913,23 @@ export class WorkshopTaskManager {
     row.root.classList.toggle('is-completed', task.completed);
     row.root.classList.toggle('is-maxed', task.maxed);
     row.root.classList.toggle('is-first-completed', isFirstCompleted);
-    row.root.dataset.taskId = task.taskId;
-    row.root.setAttribute(
+    this.setDataset(row.root, 'taskId', task.taskId);
+    this.setAttribute(
+      row.root,
       'aria-label',
       this.getTaskRowAriaLabel(task, this.canReorderTask(task.taskId)),
     );
-    row.button.dataset.taskId = task.taskId;
-    row.button.dataset.tutorialId = `task:${task.taskId}`;
+    this.setDataset(row.button, 'taskId', task.taskId);
+    this.setDataset(row.button, 'tutorialId', `task:${task.taskId}`);
     this.setText(row.label, task.itemLabel);
     setItemIconLabel(row.label, task.itemKind, task.itemKey);
     this.setText(row.quantity, quantityText);
     this.setText(row.button, buttonText);
-    row.button.disabled = disabled;
-    row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-    row.button.setAttribute('aria-label', this.getTaskButtonAriaLabel(task, buttonText));
+    this.setDisabled(row.button, disabled);
+    this.setAttribute(row.button, 'aria-disabled', disabled ? 'true' : 'false');
+    this.setAttribute(row.button, 'aria-label', this.getTaskButtonAriaLabel(task, buttonText));
     setNotificationBadge(row.button, !disabled);
-    row.fill.style.width = `${Math.max(0, Math.min(1, task.progress)) * 100}%`;
+    this.setStyleWidth(row.fill, `${Math.max(0, Math.min(1, task.progress)) * 100}%`);
   }
 
   renderLevelRewards() {
@@ -936,7 +940,7 @@ export class WorkshopTaskManager {
     }
 
     const show = this.shouldShowLevelRewards();
-    row.root.hidden = !show;
+    this.setHidden(row.root, !show);
 
     if (!show) {
       return;
@@ -949,7 +953,7 @@ export class WorkshopTaskManager {
 
     this.setText(row.title, `level ${nextLevel} rewards`);
     this.renderLevelPayoffRows(payoffRows, row.rows);
-    row.root.setAttribute('aria-label', payoffPreview);
+    this.setAttribute(row.root, 'aria-label', payoffPreview);
   }
 
   getLevelRewardsCurrentLevel() {
@@ -995,7 +999,7 @@ export class WorkshopTaskManager {
     const show =
       this.shouldShowLevelComplete() &&
       (!this.canToggleTasks || this.isExpandedContentVisible());
-    row.root.hidden = !show;
+    this.setHidden(row.root, !show);
 
     if (!show) {
       return;
@@ -1008,13 +1012,15 @@ export class WorkshopTaskManager {
     const payoffPreview = this.getLevelPayoffPreview(nextLevel, payoffRows);
 
     setResourceIconText(row.cost, costText);
-    row.button.disabled = disabled;
-    row.button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-    row.button.setAttribute(
+    this.setDisabled(row.button, disabled);
+    this.setAttribute(row.button, 'aria-disabled', disabled ? 'true' : 'false');
+    this.setAttribute(
+      row.button,
       'aria-label',
       `level up to ${nextLevel} for ${costText}. ${payoffPreview}`,
     );
-    row.root.setAttribute(
+    this.setAttribute(
+      row.root,
       'aria-label',
       `level up to ${nextLevel} for ${costText}. ${payoffPreview}`,
     );
@@ -1825,15 +1831,59 @@ export class WorkshopTaskManager {
       const canReorderRow = this.canReorderTask(row.root.dataset.taskId);
       row.root.classList.toggle('is-drag-disabled', !canReorderRow);
       row.root.classList.toggle('is-draggable', canReorderRow);
-      row.root.tabIndex = canReorderRow ? 0 : -1;
-      row.root.setAttribute('aria-disabled', canReorderRow ? 'false' : 'true');
-      row.root.setAttribute('aria-label', this.getTaskRowAriaLabel(task, canReorderRow));
+      this.setTabIndex(row.root, canReorderRow ? 0 : -1);
+      this.setAttribute(row.root, 'aria-disabled', canReorderRow ? 'false' : 'true');
+      this.setAttribute(row.root, 'aria-label', this.getTaskRowAriaLabel(task, canReorderRow));
     }
   }
 
   setText(element, text) {
     if (element.textContent !== text) {
       element.textContent = text;
+    }
+  }
+
+  setHidden(element, hidden) {
+    if (element && element.hidden !== hidden) {
+      element.hidden = hidden;
+    }
+  }
+
+  setDisabled(element, disabled) {
+    if (element && element.disabled !== disabled) {
+      element.disabled = disabled;
+    }
+  }
+
+  setTabIndex(element, tabIndex) {
+    if (element && element.tabIndex !== tabIndex) {
+      element.tabIndex = tabIndex;
+    }
+  }
+
+  setDataset(element, key, value) {
+    const nextValue = String(value);
+
+    if (element?.dataset?.[key] !== nextValue) {
+      element.dataset[key] = nextValue;
+    }
+  }
+
+  setAttribute(element, name, value) {
+    if (element && element.getAttribute(name) !== value) {
+      element.setAttribute(name, value);
+    }
+  }
+
+  removeAttribute(element, name) {
+    if (element?.hasAttribute?.(name)) {
+      element.removeAttribute(name);
+    }
+  }
+
+  setStyleWidth(element, value) {
+    if (element?.style?.width !== value) {
+      element.style.width = value;
     }
   }
 
@@ -1848,18 +1898,18 @@ export class WorkshopTaskManager {
       this.pinned = false;
     }
 
-    this.refs.toggleButton.hidden = !this.canToggleTasks;
-    this.refs.toggleButton.disabled = !this.canToggleTasks;
-    this.refs.pinButton.hidden = !this.canToggleTasks;
-    this.refs.pinButton.disabled = !this.canToggleTasks;
+    this.setHidden(this.refs.toggleButton, !this.canToggleTasks);
+    this.setDisabled(this.refs.toggleButton, !this.canToggleTasks);
+    this.setHidden(this.refs.pinButton, !this.canToggleTasks);
+    this.setDisabled(this.refs.pinButton, !this.canToggleTasks);
     this.root?.classList.toggle('has-task-toggle', this.canToggleTasks);
 
     if (this.canToggleTasks) {
-      this.refs.toggleButton.dataset.tutorialId = 'workshop:tasks';
-      this.refs.toggleButton.setAttribute('aria-controls', 'workshop-task-list');
+      this.setDataset(this.refs.toggleButton, 'tutorialId', 'workshop:tasks');
+      this.setAttribute(this.refs.toggleButton, 'aria-controls', 'workshop-task-list');
     } else {
       delete this.refs.toggleButton.dataset.tutorialId;
-      this.refs.toggleButton.removeAttribute('aria-controls');
+      this.removeAttribute(this.refs.toggleButton, 'aria-controls');
     }
   }
 
@@ -1888,16 +1938,18 @@ export class WorkshopTaskManager {
     this.root?.classList.toggle('is-collapsing', this.collapsingExpandedContent);
     this.root?.classList.toggle('is-pinned', this.pinned);
     this.refs.slot?.classList.toggle('is-pinned', this.pinned);
-    this.refs.pinButton?.setAttribute('aria-pressed', this.pinned ? 'true' : 'false');
-    this.refs.pinButton?.setAttribute(
+    this.setAttribute(this.refs.pinButton, 'aria-pressed', this.pinned ? 'true' : 'false');
+    this.setAttribute(
+      this.refs.pinButton,
       'aria-label',
       this.pinned
         ? `unpin ${this.currentRequirementsLabel}`
         : `pin ${this.currentRequirementsLabel}`,
     );
     this.setText(this.refs.pinButton, this.pinned ? 'unpin' : 'pin');
-    this.refs.toggleButton?.setAttribute('aria-expanded', listExpanded ? 'true' : 'false');
-    this.refs.toggleButton?.setAttribute(
+    this.setAttribute(this.refs.toggleButton, 'aria-expanded', listExpanded ? 'true' : 'false');
+    this.setAttribute(
+      this.refs.toggleButton,
       'aria-label',
       listExpanded
         ? `collapse ${this.currentRequirementsLabel}`
@@ -1907,13 +1959,13 @@ export class WorkshopTaskManager {
 
     if (this.refs.backdrop) {
       const showBackdrop = listExpanded && !this.pinned;
-      this.refs.backdrop.hidden = !showBackdrop;
-      this.refs.backdrop.setAttribute('aria-hidden', showBackdrop ? 'false' : 'true');
-      this.refs.backdrop.setAttribute('aria-label', `collapse ${this.currentRequirementsLabel}`);
+      this.setHidden(this.refs.backdrop, !showBackdrop);
+      this.setAttribute(this.refs.backdrop, 'aria-hidden', showBackdrop ? 'false' : 'true');
+      this.setAttribute(this.refs.backdrop, 'aria-label', `collapse ${this.currentRequirementsLabel}`);
     }
 
     if (this.refs.list) {
-      this.refs.list.hidden = !expandedContentVisible;
+      this.setHidden(this.refs.list, !expandedContentVisible);
     }
 
     this.syncTaskDragState();
@@ -1940,11 +1992,11 @@ export class WorkshopTaskManager {
       ? `level ${targetLevel} rewards`
       : 'level rewards';
 
-    button.hidden = !availableInLayout;
-    button.disabled = !availableInLayout;
+    this.setHidden(button, !availableInLayout);
+    this.setDisabled(button, !availableInLayout);
     this.setText(button, `${actionText} rewards`);
-    button.setAttribute('aria-expanded', this.rewardsHidden ? 'false' : 'true');
-    button.setAttribute('aria-label', `${actionText} ${levelText}`);
+    this.setAttribute(button, 'aria-expanded', this.rewardsHidden ? 'false' : 'true');
+    this.setAttribute(button, 'aria-label', `${actionText} ${levelText}`);
   }
 
   shouldAnimateExpandedContentMotion() {

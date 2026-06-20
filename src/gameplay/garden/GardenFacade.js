@@ -21,6 +21,7 @@ export class GardenFacade {
   }) {
     this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.researchFacade = researchFacade;
     this.gardenBalanceManager = new GardenBalanceManager();
     this.gardenTileEntityManager = new GardenTileEntityManager({
       initialUnlockedTiles: this.gardenBalanceManager.getInitialUnlockedTiles(),
@@ -31,6 +32,7 @@ export class GardenFacade {
       gardenBalanceManager: this.gardenBalanceManager,
       gardenTileEntityManager: this.gardenTileEntityManager,
       playerLevelFacade,
+      researchFacade,
     });
     this.gardenPlantingManager = new GardenPlantingManager({
       gardenBalanceManager: this.gardenBalanceManager,
@@ -52,6 +54,7 @@ export class GardenFacade {
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
       playerLevelFacade,
+      researchFacade,
     });
   }
 
@@ -149,7 +152,17 @@ export class GardenFacade {
       return unlockedTiles;
     }
 
-    return Math.min(unlockedTiles, this.playerLevelFacade?.getMaxGardenTiles?.() ?? unlockedTiles);
+    return Math.min(unlockedTiles, this.getMaxUnlockedTilesByProgression(unlockedTiles));
+  }
+
+  getMaxUnlockedTilesByProgression(fallback = this.gardenBalanceManager.getMaxTiles()) {
+    const maxTilesByLevel = this.playerLevelFacade?.getMaxGardenTiles?.() ?? fallback;
+
+    return Math.min(
+      this.gardenBalanceManager.getMaxTiles(),
+      this.researchFacade?.getMaxGardenTilesWithCapacity?.(maxTilesByLevel) ??
+        maxTilesByLevel,
+    );
   }
 
   restoreTile(tile) {

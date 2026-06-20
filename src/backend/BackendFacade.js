@@ -71,6 +71,9 @@ export class BackendFacade {
     this.playerSyncFacade.setLevelSyncReady(false);
     this.playerSyncFacade.setPlayerFacade(playerFacade);
     this.playerSyncFacade.setGameplayFacade(gameplayFacade);
+    this.worldChatFacade.setBeforeSendMessage?.(() =>
+      this.playerSyncFacade.flushPlayerLevelSync(),
+    );
 
     return this.spacetimeDbFacade.connectGeneratedBindings({
       onConnect: (connection, identity) => {
@@ -179,6 +182,7 @@ export class BackendFacade {
     this.leaderboardFacade.setGameplayFacade(null);
     this.tradeAllianceFacade.setGameplayFacade(null);
     this.playerSyncFacade.setGameplayFacade(null);
+    this.worldChatFacade.setBeforeSendMessage?.(null);
     this.authFacade.stop();
     this.spacetimeDbFacade.disconnect();
   }

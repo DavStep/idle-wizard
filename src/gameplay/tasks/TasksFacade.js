@@ -62,6 +62,10 @@ export class TasksFacade {
     return this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot();
   }
 
+  getLevelCompletionCostGold(levelNumber) {
+    return this.taskBalanceManager.getLevelCompletionCostGold(levelNumber);
+  }
+
   completeCurrentLevel() {
     return this.taskLevelCompletionManager.completeCurrentLevel();
   }

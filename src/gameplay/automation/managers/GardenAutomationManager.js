@@ -1,9 +1,10 @@
 import { automationResearchIds } from '../automationResearchIds.js';
 
 export class GardenAutomationManager {
-  constructor({ gardenFacade, gameplayLogFacade, researchFacade } = {}) {
+  constructor({ gardenFacade, gameplayLogFacade, onGardenSeedPlanted, researchFacade } = {}) {
     this.gardenFacade = gardenFacade;
     this.gameplayLogFacade = gameplayLogFacade;
+    this.onGardenSeedPlanted = onGardenSeedPlanted;
     this.researchFacade = researchFacade;
   }
 
@@ -47,6 +48,7 @@ export class GardenAutomationManager {
       const result = this.gardenFacade.plantSelectedSeed(tile.tileNumber);
 
       if (result.ok) {
+        this.onGardenSeedPlanted?.(result);
         this.gameplayLogFacade?.logGardenSeedPlanted(result);
       }
     }

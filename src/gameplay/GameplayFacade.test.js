@@ -5,6 +5,7 @@ import { automationResearchIds } from './automation/automationResearchIds.js';
 import { GameplayFacade } from './GameplayFacade.js';
 import { DEFAULT_PLAYER_LEVEL_BALANCE } from './playerLevel/managers/PlayerLevelBalanceManager.js';
 import { advancedResearchIds } from './research/advancedResearchIds.js';
+import { capacityResearchIds } from './research/capacityResearchIds.js';
 import { fastSellResearchIds } from './research/fastSellResearch.js';
 
 function createMemoryStorage() {
@@ -119,6 +120,22 @@ function finishCurrentTaskLevel(gameplayFacade) {
 function advanceToLevel(gameplayFacade, targetLevel) {
   while (gameplayFacade.getSnapshot().tasks.currentLevel < targetLevel) {
     finishCurrentTaskLevel(gameplayFacade);
+  }
+}
+
+function buyGardenTilesThrough(gameplayFacade, targetTileCount) {
+  while (gameplayFacade.getSnapshot().garden.plot.unlockedTiles < targetTileCount) {
+    const { nextTileCost } = gameplayFacade.getSnapshot().garden.plot;
+    gameplayFacade.goldFacade.add(nextTileCost);
+    expect(gameplayFacade.buyGardenTile()).toMatchObject({ ok: true });
+  }
+}
+
+function buyCauldronsThrough(gameplayFacade, targetCauldronCount) {
+  while (gameplayFacade.getSnapshot().brewing.unlockedCauldrons < targetCauldronCount) {
+    const { nextCauldronCost } = gameplayFacade.getSnapshot().brewing;
+    gameplayFacade.goldFacade.add(nextCauldronCost);
+    expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({ ok: true });
   }
 }
 
@@ -588,6 +605,71 @@ describe('GameplayFacade', () => {
       current: 0,
       cap: 250,
       perSecond: 5,
+    });
+  }, 30_000);
+
+  it('uses prestige-gated permanent research for extra plots and cauldrons', () => {
+    const { gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 17);
+    buyGardenTilesThrough(gameplayFacade, 10);
+    buyCauldronsThrough(gameplayFacade, 5);
+
+    expect(gameplayFacade.getSnapshot().garden.plot).toMatchObject({
+      unlockedTiles: 10,
+      nextTileNumber: 11,
+      nextTileLockedByResearch: true,
+      nextTileRequiresResearchId: capacityResearchIds.plot(11),
+    });
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      unlockedCauldrons: 5,
+      nextCauldronNumber: 6,
+      nextCauldronLockedByResearch: true,
+      nextCauldronRequiresResearchId: capacityResearchIds.cauldron(6),
+    });
+    expect(gameplayFacade.buyResearch(capacityResearchIds.plot(11))).toMatchObject({
+      ok: false,
+      reason: 'missing_required_prestige',
+      requiredPrestigeCount: 1,
+      cost: 1,
+      costCurrency: 'ruby',
+    });
+
+    gameplayFacade.completePrestigeMilestone(10);
+    advanceToLevel(gameplayFacade, 17);
+    expect(gameplayFacade.buyResearch(capacityResearchIds.plot(11))).toMatchObject({
+      ok: true,
+      cost: 1,
+      costCurrency: 'ruby',
+    });
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(0);
+    buyGardenTilesThrough(gameplayFacade, 11);
+    expect(gameplayFacade.getSnapshot().garden.plot).toMatchObject({
+      unlockedTiles: 11,
+      nextTileNumber: 12,
+      nextTileLockedByResearch: true,
+      nextTileRequiresResearchId: capacityResearchIds.plot(12),
+    });
+
+    advanceToLevel(gameplayFacade, 20);
+    gameplayFacade.completePrestigeMilestone(20);
+    expect(gameplayFacade.getSnapshot().research.completedResearchIds).toContain(
+      capacityResearchIds.plot(11),
+    );
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(1);
+
+    advanceToLevel(gameplayFacade, 17);
+    expect(gameplayFacade.buyResearch(capacityResearchIds.cauldron(6))).toMatchObject({
+      ok: true,
+      cost: 1,
+      costCurrency: 'ruby',
+    });
+    buyCauldronsThrough(gameplayFacade, 6);
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      unlockedCauldrons: 6,
+      nextCauldronNumber: 7,
+      nextCauldronLockedByResearch: true,
+      nextCauldronRequiresResearchId: capacityResearchIds.cauldron(7),
     });
   }, 30_000);
 
@@ -1552,6 +1634,8 @@ describe('GameplayFacade', () => {
     });
     expect(research.tabs[2].boxes.map((box) => box.id)).toEqual([
       'fastSell',
+      'plotCapacity',
+      'cauldronCapacity',
       'cauldronBrewing',
       'plotGrowth',
     ]);
@@ -1570,9 +1654,41 @@ describe('GameplayFacade', () => {
       costCurrency: 'ruby',
     });
     expect(research.tabs[2].boxes[1].researches.map((research) => research.id)).toEqual([
-      advancedResearchIds.cauldronBrewing(1, 1),
+      capacityResearchIds.plot(11),
     ]);
     expect(research.tabs[2].boxes[1].researches[0]).toMatchObject({
+      id: capacityResearchIds.plot(11),
+      label: 'plot 11 capacity',
+      value: 'locked',
+      effect: '+1 plot',
+      showEffect: true,
+      requiredPrestigeCount: 1,
+      requiredResearchIds: [],
+      locked: true,
+      costGold: 0,
+      costRuby: 1,
+      costCurrency: 'ruby',
+    });
+    expect(research.tabs[2].boxes[2].researches.map((research) => research.id)).toEqual([
+      capacityResearchIds.cauldron(6),
+    ]);
+    expect(research.tabs[2].boxes[2].researches[0]).toMatchObject({
+      id: capacityResearchIds.cauldron(6),
+      label: 'cauldron 6 capacity',
+      value: 'locked',
+      effect: '+1 cauldron',
+      showEffect: true,
+      requiredPrestigeCount: 2,
+      requiredResearchIds: [],
+      locked: true,
+      costGold: 0,
+      costRuby: 1,
+      costCurrency: 'ruby',
+    });
+    expect(research.tabs[2].boxes[3].researches.map((research) => research.id)).toEqual([
+      advancedResearchIds.cauldronBrewing(1, 1),
+    ]);
+    expect(research.tabs[2].boxes[3].researches[0]).toMatchObject({
       id: advancedResearchIds.cauldronBrewing(1, 1),
       label: 'cauldron 1 brewing lvl 1',
       value: '1 ruby',
@@ -1583,7 +1699,7 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[2].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
       advancedResearchIds.plotGrowth(1, 1),
       advancedResearchIds.plotGrowth(2, 1),
     ]);
@@ -2969,14 +3085,20 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().garden.plot).toMatchObject({
       unlockedTiles: 1,
-      maxTiles: 10,
+      maxTiles: 20,
       maxUnlockedTilesByLevel: 2,
+      maxUnlockedTilesByProgression: 2,
       tilesPerRow: 4,
-      tileCosts: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
+      tileCosts: [
+        0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000, 14000,
+        19000, 25000, 32000, 40000, 50000, 62000, 76000,
+      ],
       nextTileNumber: 2,
       nextTileCost: 25,
       nextTileLockedByLevel: false,
+      nextTileLockedByResearch: false,
       nextTileRequiresLevel: null,
+      nextTileRequiresResearchId: null,
       harvestSeconds: 3,
     });
     expect(gameplayFacade.getSnapshot().garden.herbs).toContainEqual({

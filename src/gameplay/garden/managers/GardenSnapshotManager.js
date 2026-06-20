@@ -1,32 +1,55 @@
 export class GardenSnapshotManager {
-  constructor({ gardenBalanceManager, gardenTileEntityManager, itemsFacade, playerLevelFacade }) {
+  constructor({
+    gardenBalanceManager,
+    gardenTileEntityManager,
+    itemsFacade,
+    playerLevelFacade,
+    researchFacade,
+  }) {
     this.gardenBalanceManager = gardenBalanceManager;
     this.gardenTileEntityManager = gardenTileEntityManager;
     this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.researchFacade = researchFacade;
   }
 
   getSnapshot() {
     const unlockedTiles = this.gardenTileEntityManager.getUnlockedTiles();
     const maxTiles = this.gardenBalanceManager.getMaxTiles();
     const maxUnlockedTilesByLevel = Math.min(maxTiles, this.getMaxTilesByLevel());
+    const maxUnlockedTilesByProgression = Math.min(
+      maxTiles,
+      this.getMaxTilesByProgression(maxUnlockedTilesByLevel),
+    );
     const nextTileNumber = unlockedTiles + 1;
     const nextTileCost = this.gardenBalanceManager.getTileCost(nextTileNumber);
     const nextTileLockedByLevel =
-      nextTileCost !== null && nextTileNumber > maxUnlockedTilesByLevel;
+      nextTileCost !== null &&
+      nextTileNumber > maxUnlockedTilesByProgression &&
+      nextTileNumber <= maxUnlockedTilesByLevel + 1 &&
+      !this.getRequiredCapacityResearchId(nextTileNumber);
+    const nextTileLockedByResearch =
+      nextTileCost !== null &&
+      nextTileNumber > maxUnlockedTilesByProgression &&
+      Boolean(this.getRequiredCapacityResearchId(nextTileNumber));
 
     return {
       plot: {
         unlockedTiles,
         maxTiles,
         maxUnlockedTilesByLevel,
+        maxUnlockedTilesByProgression,
         tilesPerRow: this.gardenBalanceManager.getTilesPerRow(),
         tileCosts: this.gardenBalanceManager.getTileCosts(),
         nextTileNumber: nextTileCost === null ? null : nextTileNumber,
         nextTileCost,
         nextTileLockedByLevel,
+        nextTileLockedByResearch,
         nextTileRequiresLevel: nextTileLockedByLevel
           ? this.playerLevelFacade?.getRequiredLevelForGardenTile(nextTileNumber) ?? null
+          : null,
+        nextTileRequiresResearchId: nextTileLockedByResearch
+          ? this.getRequiredCapacityResearchId(nextTileNumber)
           : null,
         harvestSeconds: this.gardenBalanceManager.getHarvestSeconds(),
         tiles: this.getTileSnapshots(),
@@ -38,6 +61,17 @@ export class GardenSnapshotManager {
 
   getMaxTilesByLevel() {
     return this.playerLevelFacade?.getMaxGardenTiles?.() ?? this.gardenBalanceManager.getMaxTiles();
+  }
+
+  getMaxTilesByProgression(maxTilesByLevel = this.getMaxTilesByLevel()) {
+    return (
+      this.researchFacade?.getMaxGardenTilesWithCapacity?.(maxTilesByLevel) ??
+      maxTilesByLevel
+    );
+  }
+
+  getRequiredCapacityResearchId(tileNumber) {
+    return this.researchFacade?.getRequiredGardenCapacityResearchId?.(tileNumber) ?? null;
   }
 
   getTileSnapshots() {

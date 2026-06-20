@@ -3572,6 +3572,8 @@ const FAST_SELL_RESEARCH_MAX_LEVEL = 3;
 const fastSellResearchCostsRuby = [2, 5, 10];
 const advancedResearchCauldronNumbers = [1, 2, 3, 4, 5];
 const advancedResearchPlotNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const plotCapacityResearchNumbers = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+const cauldronCapacityResearchNumbers = [6, 7, 8, 9, 10];
 
 function getAdvancedResearchCostRubyById(): Record<string, number> {
   const costs: Record<string, number> = {};
@@ -3590,6 +3592,14 @@ function getAdvancedResearchCostRubyById(): Record<string, number> {
     for (let level = 1; level <= ADVANCED_RESEARCH_MAX_LEVEL; level += 1) {
       costs[`advanced:plotGrowth:${plotNumber}:${level}`] = level;
     }
+  }
+
+  for (const plotNumber of plotCapacityResearchNumbers) {
+    costs[`advanced:plotCapacity:${plotNumber}`] = 1;
+  }
+
+  for (const cauldronNumber of cauldronCapacityResearchNumbers) {
+    costs[`advanced:cauldronCapacity:${cauldronNumber}`] = 1;
   }
 
   return costs;
@@ -4037,6 +4047,16 @@ const advancedResearchCatalog = [
       };
     }),
   ),
+  ...plotCapacityResearchNumbers.map((plotNumber) => ({
+    id: `advanced:plotCapacity:${plotNumber}`,
+    label: `plot ${plotNumber} capacity`,
+    groupId: 'plotCapacity',
+  })),
+  ...cauldronCapacityResearchNumbers.map((cauldronNumber) => ({
+    id: `advanced:cauldronCapacity:${cauldronNumber}`,
+    label: `cauldron ${cauldronNumber} capacity`,
+    groupId: 'cauldronCapacity',
+  })),
 ];
 
 const researchCatalog = [
@@ -4139,7 +4159,10 @@ function getDefaultItemsConfig() {
 const DEFAULT_GARDEN_CONFIG_JSON = toGameConfigJson({
   garden: {
     initialUnlockedTiles: 1,
-    tileCostsGold: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
+    tileCostsGold: [
+      0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000, 14000,
+      19000, 25000, 32000, 40000, 50000, 62000, 76000,
+    ],
     tilesPerRow: 4,
     harvestSeconds: 3,
   },
@@ -4163,7 +4186,7 @@ const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
   bottlingDurationMs: 2_000,
   maxCauldronIngredients: 5,
   initialUnlockedCauldrons: 1,
-  cauldronCostsGold: [0, 25, 75, 175, 400],
+  cauldronCostsGold: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
   wastedPotionKey: 'wastedPotion',
 });
 const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
@@ -6672,6 +6695,14 @@ function normalizeGameConfigJson(
     return changed ? JSON.stringify(normalizedResearchConfig) : originalJson;
   }
 
+  if (configKey === 'garden' && isRecord(parsedConfig)) {
+    return normalizeGardenGameConfigJson(parsedConfig, originalJson);
+  }
+
+  if (configKey === 'brewing' && isRecord(parsedConfig)) {
+    return normalizeBrewingGameConfigJson(parsedConfig, originalJson);
+  }
+
   if (configKey !== 'playerLevel' || !isRecord(parsedConfig)) {
     return originalJson;
   }
@@ -6689,6 +6720,65 @@ function normalizeGameConfigJson(
       perLevel: DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL,
     },
   });
+}
+
+function normalizeGardenGameConfigJson(
+  parsedConfig: Record<string, unknown>,
+  originalJson: string,
+): string {
+  const garden = isRecord(parsedConfig.garden) ? parsedConfig.garden : null;
+  const defaultConfig = JSON.parse(DEFAULT_GARDEN_CONFIG_JSON) as {
+    garden?: { tileCostsGold?: number[] };
+  };
+  const defaultTileCosts = defaultConfig.garden?.tileCostsGold;
+
+  if (
+    !garden ||
+    !Array.isArray(garden.tileCostsGold) ||
+    !Array.isArray(defaultTileCosts) ||
+    !shouldExtendDefaultNumberList(garden.tileCostsGold, defaultTileCosts)
+  ) {
+    return originalJson;
+  }
+
+  return JSON.stringify({
+    ...parsedConfig,
+    garden: {
+      ...garden,
+      tileCostsGold: defaultTileCosts,
+    },
+  });
+}
+
+function normalizeBrewingGameConfigJson(
+  parsedConfig: Record<string, unknown>,
+  originalJson: string,
+): string {
+  const defaultConfig = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as {
+    cauldronCostsGold?: number[];
+  };
+  const defaultCauldronCosts = defaultConfig.cauldronCostsGold;
+
+  if (
+    !Array.isArray(parsedConfig.cauldronCostsGold) ||
+    !Array.isArray(defaultCauldronCosts) ||
+    !shouldExtendDefaultNumberList(parsedConfig.cauldronCostsGold, defaultCauldronCosts)
+  ) {
+    return originalJson;
+  }
+
+  return JSON.stringify({
+    ...parsedConfig,
+    cauldronCostsGold: defaultCauldronCosts,
+  });
+}
+
+function shouldExtendDefaultNumberList(existing: unknown[], defaults: number[]): boolean {
+  return (
+    existing.length > 0 &&
+    existing.length < defaults.length &&
+    existing.every((value, index) => Number(value) === defaults[index])
+  );
 }
 
 function isLegacyTradeAllianceGameConfig(parsedConfig: unknown): boolean {
@@ -7139,8 +7229,12 @@ function normalizePlayerGameplaySave(
   const previousLevel = readSavedCurrentLevel(previousSaveJson);
   const previousSave = parsePlayerGameplaySaveJson(previousSaveJson) ?? {};
   const tasks = normalizeSaveTasks(save.tasks, taskCatalog, previousLevel);
-  const levelLimits = getSaveLevelLimits(ctx, tasks.currentLevel);
-  const research = normalizeSaveResearch(save.research);
+  const prestige = normalizeSavePrestige(save.prestige);
+  const research = normalizeSaveResearch(save.research, prestige.completedLevels.length);
+  const levelLimits = applySaveCapacityResearchLimits(
+    getSaveLevelLimits(ctx, tasks.currentLevel),
+    research,
+  );
   const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(
     ctx,
     tasks.currentLevel,
@@ -7168,7 +7262,7 @@ function normalizePlayerGameplaySave(
         : previousSave.seedSummoning,
       itemCatalog,
     ),
-    prestige: normalizeSavePrestige(save.prestige),
+    prestige,
     visualSettings: normalizeSaveVisualSettings(ctx, save.visualSettings, identity),
     shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
     brewing: normalizeSaveBrewing(save.brewing, itemCatalog, levelLimits.maxCauldrons),
@@ -7857,7 +7951,7 @@ function normalizeSaveInventory(value: unknown, itemCatalog: Map<string, string>
   }));
 }
 
-function normalizeSaveResearch(value: unknown) {
+function normalizeSaveResearch(value: unknown, prestigeCount = 0) {
   const completedIds = isRecord(value) && Array.isArray(value.completedIds)
     ? value.completedIds
         .map((researchId) => normalizeResearchId(String(researchId ?? '')))
@@ -7871,6 +7965,10 @@ function normalizeSaveResearch(value: unknown) {
       continue;
     }
 
+    if (getSaveRequiredPrestigeCount(research.researchId) > prestigeCount) {
+      continue;
+    }
+
     const requiredIds = getSaveRequiredResearchIds(research.researchId);
     if (requiredIds.every((requiredId) => accepted.has(requiredId))) {
       accepted.add(research.researchId);
@@ -7879,11 +7977,15 @@ function normalizeSaveResearch(value: unknown) {
 
   return {
     completedIds: [...accepted],
-    inProgress: normalizeSaveInProgressResearches(value, accepted),
+    inProgress: normalizeSaveInProgressResearches(value, accepted, prestigeCount),
   };
 }
 
-function normalizeSaveInProgressResearches(value: unknown, completedIds: Set<string>) {
+function normalizeSaveInProgressResearches(
+  value: unknown,
+  completedIds: Set<string>,
+  prestigeCount = 0,
+) {
   if (!isRecord(value) || !Array.isArray(value.inProgress)) {
     return [];
   }
@@ -7901,7 +8003,8 @@ function normalizeSaveInProgressResearches(value: unknown, completedIds: Set<str
     if (
       !researchCatalogById.has(researchId) ||
       completedIds.has(researchId) ||
-      inProgressIds.has(researchId)
+      inProgressIds.has(researchId) ||
+      getSaveRequiredPrestigeCount(researchId) > prestigeCount
     ) {
       continue;
     }
@@ -7980,7 +8083,41 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
       : [];
   }
 
+  const plotCapacityMatch = /^advanced:plotCapacity:(\d+)$/.exec(researchId);
+  if (plotCapacityMatch) {
+    const plotNumber = Number(plotCapacityMatch[1]);
+    return plotNumber > plotCapacityResearchNumbers[0]
+      ? [`advanced:plotCapacity:${plotNumber - 1}`]
+      : [];
+  }
+
+  const cauldronCapacityMatch = /^advanced:cauldronCapacity:(\d+)$/.exec(researchId);
+  if (cauldronCapacityMatch) {
+    const cauldronNumber = Number(cauldronCapacityMatch[1]);
+    return cauldronNumber > cauldronCapacityResearchNumbers[0]
+      ? [`advanced:cauldronCapacity:${cauldronNumber - 1}`]
+      : [];
+  }
+
   return [];
+}
+
+function getSaveRequiredPrestigeCount(researchId: string): number {
+  const plotCapacityMatch = /^advanced:plotCapacity:(\d+)$/.exec(researchId);
+  if (plotCapacityMatch) {
+    const plotNumber = Number(plotCapacityMatch[1]);
+    return plotCapacityResearchNumbers.includes(plotNumber) ? plotNumber - 10 : 0;
+  }
+
+  const cauldronCapacityMatch = /^advanced:cauldronCapacity:(\d+)$/.exec(researchId);
+  if (cauldronCapacityMatch) {
+    const cauldronNumber = Number(cauldronCapacityMatch[1]);
+    return cauldronCapacityResearchNumbers.includes(cauldronNumber)
+      ? (cauldronNumber - 5) * 2
+      : 0;
+  }
+
+  return 0;
 }
 
 function normalizeSaveTasks(
@@ -8619,6 +8756,58 @@ function getSaveLevelLimits(ctx: IdleWizardReducerCtx, currentLevel: number) {
   return limits;
 }
 
+function applySaveCapacityResearchLimits(
+  limits: ReturnType<typeof getSaveLevelLimits>,
+  research: ReturnType<typeof normalizeSaveResearch>,
+) {
+  const nextLimits = { ...limits };
+
+  if (nextLimits.maxGardenTiles >= plotCapacityResearchNumbers[0] - 1) {
+    nextLimits.maxGardenTiles = Math.min(
+      MAX_GAME_CONFIG_RESOURCE_LIMIT,
+      nextLimits.maxGardenTiles +
+        countSequentialCompletedResearch(
+          research.completedIds,
+          plotCapacityResearchNumbers,
+          (plotNumber) => `advanced:plotCapacity:${plotNumber}`,
+        ),
+    );
+  }
+
+  if (nextLimits.maxCauldrons >= cauldronCapacityResearchNumbers[0] - 1) {
+    nextLimits.maxCauldrons = Math.min(
+      MAX_PLAYER_SAVE_CAULDRONS,
+      nextLimits.maxCauldrons +
+        countSequentialCompletedResearch(
+          research.completedIds,
+          cauldronCapacityResearchNumbers,
+          (cauldronNumber) => `advanced:cauldronCapacity:${cauldronNumber}`,
+        ),
+    );
+  }
+
+  return nextLimits;
+}
+
+function countSequentialCompletedResearch(
+  completedIds: string[],
+  targetNumbers: number[],
+  getResearchId: (targetNumber: number) => string,
+) {
+  const completed = new Set(completedIds);
+  let count = 0;
+
+  for (const targetNumber of targetNumbers) {
+    if (!completed.has(getResearchId(targetNumber))) {
+      break;
+    }
+
+    count += 1;
+  }
+
+  return count;
+}
+
 function getParsedGameConfig(
   ctx: IdleWizardReducerCtx,
   configKey: string,
@@ -9018,15 +9207,37 @@ function applyTradeAllianceItemFillDelta(
     throw new Error('Alliance quest not found.');
   }
 
-  if (progress.progress + delta > progress.target) {
-    throw new Error('Alliance quest fill exceeds target.');
+  const contributionKey = getTradeAllianceContributionKey(
+    alliance.allianceId,
+    alliance.seasonKey,
+    quest.id,
+    member.memberIdentity,
+  );
+  const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
+    contributionKey,
+  );
+  const currentContribution = toBigInt(contribution?.contribution ?? 0n);
+  const remainingProgress =
+    progress.progress < progress.target ? progress.target - progress.progress : 0n;
+  const missingContribution =
+    currentContribution < progress.minContribution
+      ? progress.minContribution - currentContribution
+      : 0n;
+  const maxFill = remainingProgress > missingContribution ? remainingProgress : missingContribution;
+
+  if (delta > maxFill) {
+    throw new Error('Alliance quest fill exceeds needed amount.');
   }
 
-  ctx.db.tradeAllianceQuestProgress.questKey.update({
-    ...progress,
-    progress: progress.progress + delta,
-    updatedAt: ctx.timestamp,
-  });
+  const nextProgress =
+    progress.progress + delta > progress.target ? progress.target : progress.progress + delta;
+  if (nextProgress !== progress.progress) {
+    ctx.db.tradeAllianceQuestProgress.questKey.update({
+      ...progress,
+      progress: nextProgress,
+      updatedAt: ctx.timestamp,
+    });
+  }
   member = ctx.db.tradeAllianceMember.memberIdentity.update({
     ...member,
     username: player.username,

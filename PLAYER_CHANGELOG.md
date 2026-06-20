@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.13
+
+- Added personal daily and weekly tasks in the Workshop with automatic gold and crystal rewards.
+- Added permanent capacity research so prestiges can unlock more Garden plots and Brewing cauldrons.
+- Expanded Garden plot and Brewing cauldron purchase tracks for late-run growth.
+- Improved world chat sending so player level sync is flushed first and chat errors report more clearly.
+
 ## 0.2.12
 
 - Added seed inventory drag-and-drop so seeds can be dragged onto growing Garden plots to swap crops.

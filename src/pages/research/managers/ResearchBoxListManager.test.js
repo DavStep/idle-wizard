@@ -166,4 +166,58 @@ describe('ResearchBoxListManager', () => {
       }),
     );
   });
+
+  it('explains prestige-locked research requirements', () => {
+    const onShowResearchInfo = vi.fn();
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 17,
+      },
+      prestige: {
+        completedLevels: [10],
+      },
+      research: {
+        boxes: [
+          {
+            id: 'cauldronCapacity',
+            label: 'cauldron capacity research',
+            researches: [
+              {
+                id: 'advanced:cauldronCapacity:6',
+                label: 'cauldron 6 capacity',
+                value: 'locked',
+                effect: '+1 cauldron',
+                description: 'raises cauldron capacity to 6.',
+                costRuby: 1,
+                costCurrency: 'ruby',
+                completed: false,
+                locked: true,
+                canResearch: false,
+                requiredPrestigeCount: 2,
+                requiredResearchIds: [],
+              },
+            ],
+          },
+        ],
+        completedResearchIds: [],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+      onShowResearchInfo,
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    const row = stage.querySelector('.research-page__row');
+    row.dispatchEvent(createTouchEvent('touchstart', row));
+
+    expect(onShowResearchInfo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'advanced:cauldronCapacity:6',
+        lockReason: 'requires 2 prestiges.',
+      }),
+    );
+  });
 });

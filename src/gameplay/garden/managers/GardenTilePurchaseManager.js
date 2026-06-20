@@ -1,9 +1,16 @@
 export class GardenTilePurchaseManager {
-  constructor({ goldFacade, gardenBalanceManager, gardenTileEntityManager, playerLevelFacade }) {
+  constructor({
+    goldFacade,
+    gardenBalanceManager,
+    gardenTileEntityManager,
+    playerLevelFacade,
+    researchFacade,
+  }) {
     this.goldFacade = goldFacade;
     this.gardenBalanceManager = gardenBalanceManager;
     this.gardenTileEntityManager = gardenTileEntityManager;
     this.playerLevelFacade = playerLevelFacade;
+    this.researchFacade = researchFacade;
   }
 
   buyNextTile() {
@@ -17,7 +24,18 @@ export class GardenTilePurchaseManager {
       };
     }
 
-    if (nextTileNumber > this.getMaxTilesByLevel()) {
+    if (nextTileNumber > this.getMaxTilesByProgression()) {
+      const requiredResearchId = this.getRequiredCapacityResearchId(nextTileNumber);
+
+      if (requiredResearchId) {
+        return {
+          ok: false,
+          reason: 'research_locked',
+          requiredResearchId,
+          tileNumber: nextTileNumber,
+        };
+      }
+
       return {
         ok: false,
         reason: 'level_locked',
@@ -46,5 +64,19 @@ export class GardenTilePurchaseManager {
 
   getMaxTilesByLevel() {
     return this.playerLevelFacade?.getMaxGardenTiles?.() ?? this.gardenBalanceManager.getMaxTiles();
+  }
+
+  getMaxTilesByProgression() {
+    const maxTilesByLevel = this.getMaxTilesByLevel();
+
+    return Math.min(
+      this.gardenBalanceManager.getMaxTiles(),
+      this.researchFacade?.getMaxGardenTilesWithCapacity?.(maxTilesByLevel) ??
+        maxTilesByLevel,
+    );
+  }
+
+  getRequiredCapacityResearchId(tileNumber) {
+    return this.researchFacade?.getRequiredGardenCapacityResearchId?.(tileNumber) ?? null;
   }
 }

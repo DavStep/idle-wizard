@@ -15,6 +15,14 @@ import {
   fastSellResearchMaxLevel,
   getFastSellPercent as getFastSellPercentForLevel,
 } from './fastSellResearch.js';
+import {
+  capacityResearchIds,
+  cauldronCapacityEndCauldronNumber,
+  cauldronCapacityStartCauldronNumber,
+  isCapacityResearchId,
+  plotCapacityEndPlotNumber,
+  plotCapacityStartPlotNumber,
+} from './capacityResearchIds.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ResearchFacade {
@@ -28,12 +36,14 @@ export class ResearchFacade {
     manaFacade,
     onResearchComplete,
     playerLevelFacade,
+    prestigeFacade,
     rubyFacade,
   }) {
     this.researchBalanceManager = new ResearchBalanceManager();
     this.researchDefinitionManager = new ResearchDefinitionManager({
       itemsFacade,
       playerLevelFacade,
+      prestigeFacade,
       researchBalanceManager: this.researchBalanceManager,
     });
     this.researchStateEntityManager = new ResearchStateEntityManager({
@@ -181,6 +191,56 @@ export class ResearchFacade {
     });
   }
 
+  getCompletedPlotCapacityBonus() {
+    return this.getCompletedCapacityBonus({
+      start: plotCapacityStartPlotNumber,
+      end: plotCapacityEndPlotNumber,
+      getId: capacityResearchIds.plot,
+    });
+  }
+
+  getMaxGardenTilesWithCapacity(baseMaxGardenTiles) {
+    return this.getMaxCapacityWithBonus({
+      baseMax: baseMaxGardenTiles,
+      baseCapacity: plotCapacityStartPlotNumber - 1,
+      bonus: this.getCompletedPlotCapacityBonus(),
+    });
+  }
+
+  getRequiredGardenCapacityResearchId(tileNumber) {
+    return this.getRequiredCapacityResearchId({
+      targetNumber: tileNumber,
+      start: plotCapacityStartPlotNumber,
+      end: plotCapacityEndPlotNumber,
+      getId: capacityResearchIds.plot,
+    });
+  }
+
+  getCompletedCauldronCapacityBonus() {
+    return this.getCompletedCapacityBonus({
+      start: cauldronCapacityStartCauldronNumber,
+      end: cauldronCapacityEndCauldronNumber,
+      getId: capacityResearchIds.cauldron,
+    });
+  }
+
+  getMaxCauldronsWithCapacity(baseMaxCauldrons) {
+    return this.getMaxCapacityWithBonus({
+      baseMax: baseMaxCauldrons,
+      baseCapacity: cauldronCapacityStartCauldronNumber - 1,
+      bonus: this.getCompletedCauldronCapacityBonus(),
+    });
+  }
+
+  getRequiredCauldronCapacityResearchId(cauldronNumber) {
+    return this.getRequiredCapacityResearchId({
+      targetNumber: cauldronNumber,
+      start: cauldronCapacityStartCauldronNumber,
+      end: cauldronCapacityEndCauldronNumber,
+      getId: capacityResearchIds.cauldron,
+    });
+  }
+
   getReducedPlotGrowthDurationMs(plotNumber, durationMs) {
     return applyAdvancedResearchTimeReduction(
       durationMs,
@@ -220,6 +280,45 @@ export class ResearchFacade {
     return completedLevel;
   }
 
+  getCompletedCapacityBonus({ start, end, getId }) {
+    let completed = 0;
+
+    for (let targetNumber = start; targetNumber <= end; targetNumber += 1) {
+      if (!this.researchStateEntityManager.isCompleted(getId(targetNumber))) {
+        break;
+      }
+
+      completed += 1;
+    }
+
+    return completed;
+  }
+
+  getMaxCapacityWithBonus({ baseMax, baseCapacity, bonus }) {
+    const safeBaseMax = Math.max(0, Math.floor(Number(baseMax) || 0));
+    const safeBonus = Math.max(0, Math.floor(Number(bonus) || 0));
+
+    if (safeBaseMax < baseCapacity) {
+      return safeBaseMax;
+    }
+
+    return safeBaseMax + safeBonus;
+  }
+
+  getRequiredCapacityResearchId({ targetNumber, start, end, getId }) {
+    const safeTargetNumber = Math.floor(Number(targetNumber));
+
+    if (
+      !Number.isInteger(safeTargetNumber) ||
+      safeTargetNumber < start ||
+      safeTargetNumber > end
+    ) {
+      return null;
+    }
+
+    return getId(safeTargetNumber);
+  }
+
   getSnapshot() {
     return this.researchSnapshotManager.getSnapshot();
   }
@@ -233,6 +332,12 @@ export class ResearchFacade {
       completedIds: this.researchStateEntityManager.getCompletedResearchIds(),
       inProgress: this.researchStateEntityManager.getInProgressResearches(),
     };
+  }
+
+  getPermanentCompletedResearchIds() {
+    return this.researchStateEntityManager
+      .getCompletedResearchIds()
+      .filter((researchId) => isCapacityResearchId(researchId));
   }
 
   applyPersistenceSnapshot(snapshot = {}) {

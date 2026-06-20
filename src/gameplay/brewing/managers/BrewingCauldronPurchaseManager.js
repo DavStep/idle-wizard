@@ -4,11 +4,13 @@ export class BrewingCauldronPurchaseManager {
     brewingBalanceManager,
     brewingCauldronEntityManager,
     playerLevelFacade,
+    researchFacade,
   }) {
     this.goldFacade = goldFacade;
     this.brewingBalanceManager = brewingBalanceManager;
     this.brewingCauldronEntityManager = brewingCauldronEntityManager;
     this.playerLevelFacade = playerLevelFacade;
+    this.researchFacade = researchFacade;
   }
 
   buyNextCauldron() {
@@ -22,7 +24,18 @@ export class BrewingCauldronPurchaseManager {
       };
     }
 
-    if (nextCauldronNumber > this.getMaxCauldronsByLevel()) {
+    if (nextCauldronNumber > this.getMaxCauldronsByProgression()) {
+      const requiredResearchId = this.getRequiredCapacityResearchId(nextCauldronNumber);
+
+      if (requiredResearchId) {
+        return {
+          ok: false,
+          reason: 'research_locked',
+          requiredResearchId,
+          cauldronNumber: nextCauldronNumber,
+        };
+      }
+
       return {
         ok: false,
         reason: 'level_locked',
@@ -55,5 +68,19 @@ export class BrewingCauldronPurchaseManager {
       this.brewingBalanceManager.getMaxCauldrons(),
       this.playerLevelFacade?.getMaxCauldrons?.() ?? this.brewingBalanceManager.getMaxCauldrons(),
     );
+  }
+
+  getMaxCauldronsByProgression() {
+    const maxCauldronsByLevel = this.getMaxCauldronsByLevel();
+
+    return Math.min(
+      this.brewingBalanceManager.getMaxCauldrons(),
+      this.researchFacade?.getMaxCauldronsWithCapacity?.(maxCauldronsByLevel) ??
+        maxCauldronsByLevel,
+    );
+  }
+
+  getRequiredCapacityResearchId(cauldronNumber) {
+    return this.researchFacade?.getRequiredCauldronCapacityResearchId?.(cauldronNumber) ?? null;
   }
 }

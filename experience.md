@@ -43,6 +43,7 @@
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Weekly events should be framed as `weekly world notice` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
+- Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
 - Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, donate, and deliver, not random chores pasted under a headline.
 - Weekly event v1 should stay mostly solo with light utility rewards; no new combat mode, map mode, event-only economy, or mandatory weekly power gate.
@@ -139,6 +140,7 @@
 - When FTUE points to a bottom page tab while Workshop tasks are expanded, keep the bottom tab panel undimmed; the task-expanded chrome opacity makes the target read disabled.
 - FTUE pointer rendering must not rewrite unchanged placement/style on every render; repeated DOM writes restart the cue animation before it can move.
 - Open FTUE lesson refreshes should let `applyCue` own target-cue visibility; hiding the cue during `showLesson` and showing it again resets pointer motion every refresh.
+- Completed FTUE should fast-path to hidden without target DOM scans; per-snapshot tutorial refresh work is visible mobile frame budget.
 - FTUE pointer placement should anchor the hand on the target element itself; do not treat the target's row container as a protected pointer collision rect or row labels look offset.
 - Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
@@ -214,6 +216,7 @@
 - Before running release automation, verify the current `PLAYER_CHANGELOG.md` section exists; the script commits/pushes before Discord upload fails on a missing changelog.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
 - Raising playable max level needs matching SpacetimeDB caps (`MAX_REPORTED_PLAYER_LEVEL`, `MAX_GAME_CONFIG_LEVELS`) plus prod `playerLevel` and `tasks` config rows; otherwise prod clips/rejects the new curve.
+- Permanent prestige capacity upgrades should preserve only capacity research IDs through prestige reset; ordinary ruby speed research remains run-scoped.
 - When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
 - Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.
@@ -295,6 +298,8 @@
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
 - The shared Workshop chat popup multiplexes world/alliance chat; world sends call `sendMessage`, alliance sends call `sendChatMessage`.
 - World/alliance chat send reducers can reject for rate, level-sync, session, membership, or maintenance reasons; backend managers should preserve those reasons so the shared popup can show specific status text instead of a vague failure.
+- World chat can have live preview data while still hidden/disabled by the level-3 Workshop secondary-action gate or first-run account gate; check those before debugging transport.
+- World chat sends must wait for backend player-level sync before calling `send_world_chat_message`; the reducer gates on server `player.playerLevel`, not just local Workshop unlock state.
 - All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
 - Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
 - Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.

@@ -2456,7 +2456,12 @@ function createGameplayFacadeFake() {
     fillTradeAllianceItemQuest: (quest) => {
       const item = getItemDefinitionByKey(quest.itemKey);
       const remainingQuantity = Math.max(0, quest.target - quest.progress);
-      const quantity = Math.min(getItemQuantity(item.id), remainingQuantity);
+      const missingContribution = Math.max(
+        0,
+        Number(quest.minContribution ?? 0) - Number(quest.ownContribution ?? 0),
+      );
+      const targetQuantity = Math.max(remainingQuantity, missingContribution);
+      const quantity = Math.min(getItemQuantity(item.id), targetQuantity);
 
       if (quantity <= 0) {
         return {
@@ -3195,7 +3200,8 @@ function createTradeAllianceFacadeFake({
       }
 
       const acceptedQuantity = Math.floor(Number(quantity) || 0);
-      quest.progress += acceptedQuantity;
+      quest.progress = Math.min(quest.target, quest.progress + acceptedQuantity);
+      quest.progressRatio = quest.target > 0 ? Math.min(quest.progress / quest.target, 1) : 0;
       let contribution = snapshot.contributions.find(
         (candidate) =>
           candidate.questId === questId &&
@@ -7467,7 +7473,7 @@ describe('PagesFacade', () => {
       key: 'manaTonic',
       label: 'mana tonic',
       kind: 'potion',
-      quantity: 12,
+      quantity: 30,
     });
     const quest = {
       allianceId: 'alliance-1',
@@ -7507,14 +7513,14 @@ describe('PagesFacade', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(4);
+    expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(5);
     expect(quest.progress).toBe(500);
     expect(tradeAllianceFacade.getSnapshot().contributions).toContainEqual({
       allianceId: 'alliance-1',
       questId: 'itemFill:manaTonic',
       dayKey: '2026-W24',
       contributorIdentity: 'self',
-      contribution: 8,
+      contribution: 25,
     });
     expect(popup.querySelector('.workshop-page__trade-alliance-quest-action').textContent).toBe(
       'claim',
@@ -7523,7 +7529,80 @@ describe('PagesFacade', () => {
       [...popup.querySelectorAll('.workshop-page__trade-alliance-row .row_key')].map(
         (row) => row.textContent,
       ),
-    ).toContain('your fill 8/25');
+    ).toContain('your fill 25/25');
+  });
+
+  it('lets a player fill missing contribution after an item quest is complete', async () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    gameplayFacade.getSnapshot().inventory.push({
+      itemTypeId: 2001,
+      key: 'manaTonic',
+      label: 'mana tonic',
+      kind: 'potion',
+      quantity: 20,
+    });
+    const quest = {
+      allianceId: 'alliance-1',
+      dayKey: '2026-W24',
+      questId: 'itemFill:manaTonic',
+      label: 'fill 500 mana tonic',
+      questType: 'itemFill',
+      itemKey: 'manaTonic',
+      target: 500,
+      progress: 500,
+      progressRatio: 1,
+      minContribution: 25,
+      crystalReward: 5,
+    };
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      quests: [quest],
+      contributions: [
+        {
+          allianceId: 'alliance-1',
+          questId: 'itemFill:manaTonic',
+          dayKey: '2026-W24',
+          contributorIdentity: 'self',
+          contribution: 8,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      tradeAllianceFacade,
+    });
+
+    pagesFacade.mount(stage);
+    stage
+      .querySelector('.workshop-page__trade-alliance-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
+    const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')]
+      .find((button) => button.textContent === 'quests');
+    questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const fillButton = popup.querySelector('.workshop-page__trade-alliance-quest-action');
+    expect(fillButton.textContent).toBe('fill');
+    expect(fillButton.disabled).toBe(false);
+
+    fillButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(3);
+    expect(quest.progress).toBe(500);
+    expect(tradeAllianceFacade.getSnapshot().contributions).toContainEqual({
+      allianceId: 'alliance-1',
+      questId: 'itemFill:manaTonic',
+      dayKey: '2026-W24',
+      contributorIdentity: 'self',
+      contribution: 25,
+    });
+    expect(popup.querySelector('.workshop-page__trade-alliance-quest-action').textContent).toBe(
+      'claim',
+    );
   });
 
   it('shows alliance quest reset timer', () => {
@@ -9097,6 +9176,22 @@ describe('PagesFacade', () => {
           senderIdentity: 'sender-b',
           username: 'Lin',
           playerLevel: 4,
+          body: 'hour hello',
+          sentAtMs: nowMs - 89 * 60_000,
+        },
+        {
+          id: '3',
+          senderIdentity: 'sender-c',
+          username: 'Mira',
+          playerLevel: 5,
+          body: 'minute hello',
+          sentAtMs: nowMs - 59 * 60_000,
+        },
+        {
+          id: '4',
+          senderIdentity: 'sender-d',
+          username: 'Sol',
+          playerLevel: 6,
           body: 'fresh hello',
           sentAtMs: nowMs - 59_000,
         },
@@ -9115,12 +9210,20 @@ describe('PagesFacade', () => {
       const rows = popup.querySelectorAll('.workshop-page__world-chat-message');
 
       expect(rows[0].querySelector('.workshop-page__world-chat-age')?.textContent).toBe(
-        '3d 1m ago',
+        '3d ago',
       );
       expect(rows[0].querySelector('.workshop-page__world-chat-content')?.textContent).toBe(
         'Ada(3): old hello',
       );
-      expect(rows[1].querySelector('.workshop-page__world-chat-age')?.textContent).toBe('now');
+      expect(rows[1].querySelector('.workshop-page__world-chat-age')?.textContent).toBe(
+        '1h ago',
+      );
+      expect(rows[2].querySelector('.workshop-page__world-chat-age')?.textContent).toBe(
+        '59m ago',
+      );
+      expect(rows[3].querySelector('.workshop-page__world-chat-age')?.textContent).toBe(
+        'now',
+      );
     } finally {
       pagesFacade.unmount();
       nowSpy.mockRestore();
@@ -10572,7 +10675,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__plot')?.textContent).not.toContain('locked');
     expect(stage.querySelector('.garden-page__tile-button')).toBeNull();
     expect(stage.querySelector('.garden-page__plot .style-box__title')?.textContent).toBe('plots');
-    expect(rows[0].querySelector('.garden-page__plot-number')?.textContent).toBe('1.');
+    expect(rows[0].querySelector('.garden-page__plot-number')?.textContent).toBe('1');
     expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
     expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('');
     expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');

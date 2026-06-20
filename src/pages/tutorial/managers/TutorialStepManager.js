@@ -1221,6 +1221,10 @@ export class TutorialStepManager {
     return null;
   }
 
+  hasCompletedAllSteps() {
+    return TUTORIAL_STEP_IDS.every((stepId) => this.progressManager.hasCompleted(stepId));
+  }
+
   advanceStep(stepId) {
     if (!stepId) {
       return;

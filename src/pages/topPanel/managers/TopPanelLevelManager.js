@@ -97,19 +97,25 @@ export class TopPanelLevelManager {
     }
 
     this.lastSnapshot = snapshot;
+
+    if (!this.visible) {
+      return;
+    }
+
     const playerLevel = this.getPlayerLevel(snapshot);
     const selectedLevel = this.getClampedSelectedLevel(playerLevel);
     const selectedLevelSnapshot =
       playerLevel.levels.find((level) => level.level === selectedLevel) ??
       this.getFallbackLevel(selectedLevel, playerLevel.currentLevel);
 
-    this.refs.levelPanel.setAttribute(
+    this.setAttribute(
+      this.refs.levelPanel,
       'aria-label',
       `Level ${selectedLevel} rewards`,
     );
     this.refs.levelContent.classList.toggle('is-locked', !selectedLevelSnapshot.unlocked);
     this.setText(this.refs.levelTitle, `level ${selectedLevel}`);
-    this.refs.levelCurrentLabel.hidden = !selectedLevelSnapshot.current;
+    this.setHidden(this.refs.levelCurrentLabel, !selectedLevelSnapshot.current);
     this.renderSections(selectedLevelSnapshot, playerLevel, selectedLevel);
     this.renderPager(selectedLevel, playerLevel.maxLevel);
   }
@@ -167,19 +173,21 @@ export class TopPanelLevelManager {
 
     this.setText(this.refs.levelPreviousButton, hasPrevious ? `level ${previousLevel}` : '');
     this.setText(this.refs.levelNextButton, hasNext ? `level ${nextLevel}` : '');
-    this.refs.levelPreviousButton.hidden = !hasPrevious;
-    this.refs.levelNextButton.hidden = !hasNext;
+    this.setHidden(this.refs.levelPreviousButton, !hasPrevious);
+    this.setHidden(this.refs.levelNextButton, !hasNext);
     this.setDisabled(this.refs.levelPreviousButton, !hasPrevious);
     this.setDisabled(this.refs.levelNextButton, !hasNext);
-    this.refs.levelPreviousButton.setAttribute('aria-disabled', hasPrevious ? 'false' : 'true');
-    this.refs.levelNextButton.setAttribute('aria-disabled', hasNext ? 'false' : 'true');
-    this.refs.levelPreviousButton.setAttribute('aria-selected', 'false');
-    this.refs.levelNextButton.setAttribute('aria-selected', 'false');
-    this.refs.levelPreviousButton.setAttribute(
+    this.setAttribute(this.refs.levelPreviousButton, 'aria-disabled', hasPrevious ? 'false' : 'true');
+    this.setAttribute(this.refs.levelNextButton, 'aria-disabled', hasNext ? 'false' : 'true');
+    this.setAttribute(this.refs.levelPreviousButton, 'aria-selected', 'false');
+    this.setAttribute(this.refs.levelNextButton, 'aria-selected', 'false');
+    this.setAttribute(
+      this.refs.levelPreviousButton,
       'aria-label',
       hasPrevious ? `show level ${previousLevel}` : 'no previous level',
     );
-    this.refs.levelNextButton.setAttribute(
+    this.setAttribute(
+      this.refs.levelNextButton,
       'aria-label',
       hasNext ? `show level ${nextLevel}` : 'no next level',
     );
@@ -190,8 +198,8 @@ export class TopPanelLevelManager {
     const addedRows = this.formatAddedRows(levelSnapshot.effects ?? [], previousTotals);
     const totalRows = this.formatTotalRows(this.getTotals(levelSnapshot));
 
-    this.refs.levelAddedRows.hidden = addedRows.length <= 0;
-    this.refs.levelDivider.hidden = addedRows.length <= 0;
+    this.setHidden(this.refs.levelAddedRows, addedRows.length <= 0);
+    this.setHidden(this.refs.levelDivider, addedRows.length <= 0);
     this.renderRows(this.refs.levelAddedRows, addedRows);
     this.renderRows(this.refs.levelTotalRows, totalRows);
   }
@@ -333,8 +341,8 @@ export class TopPanelLevelManager {
       return;
     }
 
-    this.refs.levelPopup.hidden = !this.visible;
-    this.refs.levelPopup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+    this.setHidden(this.refs.levelPopup, !this.visible);
+    this.setAttribute(this.refs.levelPopup, 'aria-hidden', this.visible ? 'false' : 'true');
   }
 
   setText(element, text) {
@@ -343,9 +351,21 @@ export class TopPanelLevelManager {
     }
   }
 
+  setHidden(element, hidden) {
+    if (element.hidden !== hidden) {
+      element.hidden = hidden;
+    }
+  }
+
   setDisabled(element, disabled) {
     if (element.disabled !== disabled) {
       element.disabled = disabled;
+    }
+  }
+
+  setAttribute(element, name, value) {
+    if (element.getAttribute(name) !== value) {
+      element.setAttribute(name, value);
     }
   }
 

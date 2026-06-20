@@ -54,6 +54,62 @@ describe('PlayerLevelSyncManager', () => {
     expect(setPlayerLevel).toHaveBeenCalledTimes(2);
   });
 
+  it('waits for the current player level sync when flushed explicitly', async () => {
+    let resolveLevelSync;
+    const setPlayerLevel = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveLevelSync = resolve;
+        }),
+    );
+    const gameplayFacade = createGameplayFacade(3);
+    const manager = new PlayerLevelSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setPlayerLevel,
+      },
+    });
+    manager.markGameplaySaveHydrated();
+    manager.setReadyToSync(true);
+
+    const flush = manager.flushAndWait();
+    let settled = false;
+    flush.then(() => {
+      settled = true;
+    });
+
+    await Promise.resolve();
+
+    expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 3 });
+    expect(settled).toBe(false);
+
+    resolveLevelSync();
+
+    await expect(flush).resolves.toBe(true);
+  });
+
+  it('reports explicit flush failure when the level cannot sync', async () => {
+    const setPlayerLevel = vi.fn(() => {
+      throw new Error('offline');
+    });
+    const gameplayFacade = createGameplayFacade(3);
+    const manager = new PlayerLevelSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setPlayerLevel,
+      },
+    });
+    manager.markGameplaySaveHydrated();
+    manager.setReadyToSync(true);
+
+    await expect(manager.flushAndWait()).resolves.toBe(false);
+    expect(manager.pendingPlayerLevel).toBe(3);
+  });
+
   it('does not resend unchanged frame snapshots', async () => {
     const setPlayerLevel = vi.fn(() => Promise.resolve());
     const gameplayFacade = createGameplayFacade(4);

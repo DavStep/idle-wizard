@@ -39,6 +39,10 @@ export class PrestigeFacade {
     );
   }
 
+  getCompletedCount() {
+    return this.prestigeStateEntityManager.getCompletedLevels().length;
+  }
+
   getCurrentLevel() {
     const snapshot = this.playerLevelFacade?.getSnapshot?.() ?? {};
     return Math.max(1, Math.floor(Number(snapshot.currentLevel) || 1));

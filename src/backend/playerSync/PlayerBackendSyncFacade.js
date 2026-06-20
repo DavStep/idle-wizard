@@ -38,6 +38,10 @@ export class PlayerBackendSyncFacade {
     this.levelSyncManager.markGameplaySaveHydrated();
   }
 
+  flushPlayerLevelSync() {
+    return this.levelSyncManager.flushAndWait();
+  }
+
   connect(connection, identity) {
     this.syncManager.connect(connection);
     this.levelSyncManager.connect(connection);

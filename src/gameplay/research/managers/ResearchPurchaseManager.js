@@ -75,6 +75,19 @@ export class ResearchPurchaseManager {
       };
     }
 
+    const missingRequiredPrestigeCount =
+      this.researchDefinitionManager.getMissingRequiredPrestigeCount(normalizedResearchId);
+
+    if (missingRequiredPrestigeCount) {
+      return {
+        ok: false,
+        reason: 'missing_required_prestige',
+        researchId: normalizedResearchId,
+        requiredPrestigeCount: missingRequiredPrestigeCount,
+        ...this.getCostResult(cost),
+      };
+    }
+
     if (!this.getCurrencyFacade(cost.currency)?.spend(cost.amount)) {
       return {
         ok: false,

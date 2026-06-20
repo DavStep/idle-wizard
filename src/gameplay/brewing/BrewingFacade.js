@@ -23,6 +23,7 @@ export class BrewingFacade {
     onBrewComplete,
   }) {
     this.playerLevelFacade = playerLevelFacade;
+    this.researchFacade = researchFacade;
     this.brewingBalanceManager = new BrewingBalanceManager();
     this.brewingCauldronEntityManager = new BrewingCauldronEntityManager({
       itemsFacade,
@@ -35,6 +36,7 @@ export class BrewingFacade {
       brewingBalanceManager: this.brewingBalanceManager,
       brewingCauldronEntityManager: this.brewingCauldronEntityManager,
       playerLevelFacade,
+      researchFacade,
     });
     this.brewingProcessEntityManager = new BrewingProcessEntityManager({
       itemsFacade,
@@ -74,6 +76,7 @@ export class BrewingFacade {
       itemsFacade,
       manaFacade,
       playerLevelFacade,
+      researchFacade,
       getAutoBrewEnabled: (cauldronIndex) => this.getAutoBrewEnabled(cauldronIndex),
       getAutoBrewRecipeKey: (cauldronIndex) => this.getAutoBrewRecipeKey(cauldronIndex),
     });
@@ -438,8 +441,20 @@ export class BrewingFacade {
 
     return Math.min(
       unlockedCauldrons,
-      this.playerLevelFacade?.getMaxCauldrons?.() ?? unlockedCauldrons,
+      this.getMaxUnlockedCauldronsByProgression(unlockedCauldrons),
       this.brewingBalanceManager.getMaxCauldrons(),
+    );
+  }
+
+  getMaxUnlockedCauldronsByProgression(
+    fallback = this.brewingBalanceManager.getMaxCauldrons(),
+  ) {
+    const maxCauldronsByLevel = this.playerLevelFacade?.getMaxCauldrons?.() ?? fallback;
+
+    return Math.min(
+      this.brewingBalanceManager.getMaxCauldrons(),
+      this.researchFacade?.getMaxCauldronsWithCapacity?.(maxCauldronsByLevel) ??
+        maxCauldronsByLevel,
     );
   }
 

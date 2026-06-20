@@ -350,9 +350,12 @@ export class BrewingCauldronManager {
       manaCost: brewing.manaCost,
       nextCauldronCost: brewing.nextCauldronCost,
       nextCauldronLockedByLevel: brewing.nextCauldronLockedByLevel === true,
+      nextCauldronLockedByResearch: brewing.nextCauldronLockedByResearch === true,
       nextCauldronRequiresLevel: brewing.nextCauldronRequiresLevel ?? null,
+      nextCauldronRequiresResearchId: brewing.nextCauldronRequiresResearchId ?? null,
       canBuyCauldron:
         brewing.nextCauldronLockedByLevel !== true &&
+        brewing.nextCauldronLockedByResearch !== true &&
         Number.isFinite(brewing.nextCauldronCost) &&
         (snapshot.gold?.current ?? 0) >= brewing.nextCauldronCost,
     };
@@ -638,6 +641,8 @@ export class BrewingCauldronManager {
       refs.empty,
       brewing.nextCauldronLockedByLevel
         ? `level ${brewing.nextCauldronRequiresLevel ?? '?'}`
+        : brewing.nextCauldronLockedByResearch
+          ? 'research'
         : 'locked',
     );
     this.hideExtraIngredientRows(refs, 0);
@@ -1209,12 +1214,17 @@ export class BrewingCauldronManager {
   getPrimaryAction(brewing) {
     if (brewing.unlocked === false) {
       const levelLocked = brewing.nextCauldronLockedByLevel === true;
+      const researchLocked = brewing.nextCauldronLockedByResearch === true;
       const cost = brewing.nextCauldronCost;
 
       return {
         id: 'buy',
-        label: levelLocked ? `level ${brewing.nextCauldronRequiresLevel ?? '?'}` : 'buy',
-        hasCost: !levelLocked && Number.isFinite(cost),
+        label: levelLocked
+          ? `level ${brewing.nextCauldronRequiresLevel ?? '?'}`
+          : researchLocked
+            ? 'research'
+            : 'buy',
+        hasCost: !levelLocked && !researchLocked && Number.isFinite(cost),
         costText: Number.isFinite(cost) ? formatGoldPriceText(cost) : '',
         costResource: 'gold',
         disabled: brewing.canBuyCauldron !== true,
@@ -1222,6 +1232,8 @@ export class BrewingCauldronManager {
           ? `cauldron ${brewing.cauldronNumber} requires level ${
               brewing.nextCauldronRequiresLevel ?? '?'
             }`
+          : researchLocked
+            ? `cauldron ${brewing.cauldronNumber} requires research`
           : `buy cauldron ${brewing.cauldronNumber}`,
       };
     }
@@ -1708,6 +1720,10 @@ export class BrewingCauldronManager {
 
     if (result.reason === 'level_locked') {
       return 'level locked';
+    }
+
+    if (result.reason === 'research_locked') {
+      return 'research locked';
     }
 
     if (result.reason === 'brew_in_progress') {

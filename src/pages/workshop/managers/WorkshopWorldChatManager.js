@@ -487,24 +487,17 @@ export class WorkshopWorldChatManager {
     }
 
     const totalMinutes = Math.floor(elapsedMs / CHAT_AGE_MINUTE_MS);
-    const days = Math.floor(totalMinutes / 1440);
-    const hours = Math.floor((totalMinutes % 1440) / 60);
-    const minutes = totalMinutes % 60;
-    const parts = [];
 
-    if (days > 0) {
-      parts.push(`${days}d`);
+    if (totalMinutes < 60) {
+      return `${totalMinutes}m ago`;
     }
 
-    if (hours > 0) {
-      parts.push(`${hours}h`);
+    const totalHours = Math.floor(totalMinutes / 60);
+    if (totalHours < 24) {
+      return `${totalHours}h ago`;
     }
 
-    if (minutes > 0) {
-      parts.push(`${minutes}m`);
-    }
-
-    return `${parts.slice(0, 2).join(' ')} ago`;
+    return `${Math.floor(totalHours / 24)}d ago`;
   }
 
   scheduleAgeRefresh(messages) {

@@ -36,6 +36,10 @@ export class WorldChatBackendFacade {
     this.subscriptionManager.disconnect();
   }
 
+  setBeforeSendMessage(beforeSendMessage) {
+    this.sendManager.setBeforeSendMessage(beforeSendMessage);
+  }
+
   getSnapshot() {
     return this.subscriptionManager.getSnapshot();
   }

@@ -1,5 +1,5 @@
 export function getChatFailureReason(error) {
-  const message = String(error?.message ?? error ?? '').toLowerCase();
+  const message = getErrorText(error).toLowerCase();
 
   if (message.includes('globally rate limited') || message.includes('global rate limit')) {
     return 'global_rate_limited';
@@ -47,4 +47,51 @@ export function getChatFailureReason(error) {
   }
 
   return 'send_failed';
+}
+
+function getErrorText(error, seen = new Set()) {
+  if (error === null || error === undefined) {
+    return '';
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (typeof error !== 'object') {
+    return String(error);
+  }
+
+  if (seen.has(error)) {
+    return '';
+  }
+
+  seen.add(error);
+
+  const parts = [];
+  for (const key of [
+    'message',
+    'error',
+    'reason',
+    'details',
+    'body',
+    'text',
+    'statusText',
+  ]) {
+    if (key in error) {
+      parts.push(getErrorText(error[key], seen));
+    }
+  }
+
+  if ('cause' in error) {
+    parts.push(getErrorText(error.cause, seen));
+  }
+
+  try {
+    parts.push(JSON.stringify(error));
+  } catch {
+    parts.push(String(error));
+  }
+
+  return parts.filter(Boolean).join(' ');
 }

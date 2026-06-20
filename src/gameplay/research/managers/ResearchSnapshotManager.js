@@ -52,10 +52,13 @@ export class ResearchSnapshotManager {
     const missingRequiredPlayerLevel =
       this.researchDefinitionManager.getMissingRequiredPlayerLevel(research.id);
     const hasRequiredPlayerLevel = !missingRequiredPlayerLevel;
+    const missingRequiredPrestigeCount =
+      this.researchDefinitionManager.getMissingRequiredPrestigeCount(research.id);
+    const hasRequiredPrestigeCount = !missingRequiredPrestigeCount;
     const locked =
       !completed &&
       !progress.inProgress &&
-      (!hasRequiredResearch || !hasRequiredPlayerLevel);
+      (!hasRequiredResearch || !hasRequiredPlayerLevel || !hasRequiredPrestigeCount);
 
     return {
       ...research,
@@ -64,6 +67,7 @@ export class ResearchSnapshotManager {
         completed,
         hasRequiredResearch,
         hasRequiredPlayerLevel,
+        hasRequiredPrestigeCount,
         cost,
         progress,
       }),
@@ -85,6 +89,7 @@ export class ResearchSnapshotManager {
         !progress.inProgress &&
         hasRequiredResearch &&
         hasRequiredPlayerLevel &&
+        hasRequiredPrestigeCount &&
         this.getCurrencyFacade(cost.currency)?.canSpend(cost.amount),
     };
   }
@@ -93,6 +98,7 @@ export class ResearchSnapshotManager {
     completed,
     hasRequiredResearch,
     hasRequiredPlayerLevel,
+    hasRequiredPrestigeCount,
     cost,
     progress,
   }) {
@@ -104,7 +110,7 @@ export class ResearchSnapshotManager {
       return 'researching';
     }
 
-    if (!hasRequiredResearch || !hasRequiredPlayerLevel) {
+    if (!hasRequiredResearch || !hasRequiredPlayerLevel || !hasRequiredPrestigeCount) {
       return 'locked';
     }
 

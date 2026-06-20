@@ -80,6 +80,7 @@ export class ResearchBoxListManager {
     const boxes = this.decorateBoxes({
       boxes: selectedTab?.boxes ?? [],
       playerLevel: snapshot?.playerLevel?.currentLevel ?? 1,
+      prestigeCount: snapshot?.prestige?.completedLevels?.length ?? 0,
       researchLabelById: this.getResearchLabelById(tabs),
       completedResearchIds: this.getCompletedResearchIds(snapshot, tabs),
     });
@@ -139,7 +140,13 @@ export class ResearchBoxListManager {
     return selectedTab;
   }
 
-  decorateBoxes({ boxes = [], playerLevel = 1, researchLabelById, completedResearchIds }) {
+  decorateBoxes({
+    boxes = [],
+    playerLevel = 1,
+    prestigeCount = 0,
+    researchLabelById,
+    completedResearchIds,
+  }) {
     return boxes.map((box) => ({
       ...box,
       researches: (box.researches ?? []).map((research) => ({
@@ -147,6 +154,7 @@ export class ResearchBoxListManager {
         lockReason: this.getResearchLockReason({
           research,
           playerLevel,
+          prestigeCount,
           researchLabelById,
           completedResearchIds,
         }),
@@ -188,7 +196,13 @@ export class ResearchBoxListManager {
     return completedResearchIds;
   }
 
-  getResearchLockReason({ research, playerLevel, researchLabelById, completedResearchIds }) {
+  getResearchLockReason({
+    research,
+    playerLevel,
+    prestigeCount,
+    researchLabelById,
+    completedResearchIds,
+  }) {
     if (!research?.locked) {
       return '';
     }
@@ -200,6 +214,11 @@ export class ResearchBoxListManager {
       Number.isInteger(research.requiredPlayerLevel) && playerLevel < research.requiredPlayerLevel
         ? research.requiredPlayerLevel
         : null;
+    const missingRequiredPrestigeCount =
+      Number.isInteger(research.requiredPrestigeCount) &&
+      prestigeCount < research.requiredPrestigeCount
+        ? research.requiredPrestigeCount
+        : null;
     const requirements = [];
 
     if (missingResearchLabels.length > 0) {
@@ -210,6 +229,12 @@ export class ResearchBoxListManager {
 
     if (missingRequiredPlayerLevel) {
       requirements.push(`level ${missingRequiredPlayerLevel}`);
+    }
+
+    if (missingRequiredPrestigeCount) {
+      requirements.push(
+        `${missingRequiredPrestigeCount} prestige${missingRequiredPrestigeCount === 1 ? '' : 's'}`,
+      );
     }
 
     if (requirements.length === 0) {

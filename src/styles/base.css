@@ -1187,6 +1187,7 @@ body {
 .game-stage:not([data-tutorial-reveal])
   :where(
     .workshop-page__tasks,
+    .workshop-page__personal-tasks,
     .workshop-page__summon-button,
     .workshop-page__bag-button,
     .workshop-page__prestige-button,
@@ -1222,6 +1223,7 @@ body {
 }
 
 .workshop-page__summon-button,
+.workshop-page__personal-tasks,
 .brewing-page__cauldrons > .style-box:nth-child(1),
 .garden-page__seeds,
 .research-page__box-list > .style-box:nth-child(1),
@@ -1286,7 +1288,8 @@ body {
     .room-bottom-panel-layer,
     .room-world-chat-layer,
     .workshop-page__action-bar > .style-button,
-    .workshop-page__tasks
+    .workshop-page__tasks,
+    .workshop-page__personal-tasks
   ) {
   opacity: 0;
   pointer-events: none;
@@ -3113,6 +3116,89 @@ body {
   background: var(--style-active-surface);
 }
 
+.style-box.workshop-page__personal-tasks {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 76px);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  display: grid;
+  gap: 3px;
+  padding-bottom: calc(var(--style-box-border-label-line-height) - 3px);
+  margin: 0;
+}
+
+.workshop-page__personal-tasks[hidden] {
+  display: none;
+}
+
+.workshop-page__personal-tasks-summary {
+  display: grid;
+  gap: 2px;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__personal-tasks-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: var(--style-row-column-gap);
+  align-items: baseline;
+  min-height: var(--style-row-min-height);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__personal-tasks-summary-name,
+.workshop-page__personal-tasks-summary-reset {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__personal-tasks-summary-count {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.workshop-page__personal-tasks-summary-reset {
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  text-align: right;
+}
+
+.workshop-page__personal-tasks-open {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  z-index: 1;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+  transform: translateX(-50%);
+}
+
+.workshop-page__personal-tasks-open:hover,
+.workshop-page__personal-tasks-open:focus-visible {
+  text-decoration: underline;
+}
+
+.workshop-page__personal-tasks-open:focus {
+  outline: none;
+}
+
+.workshop-page__personal-tasks-open:active {
+  background: var(--style-active-surface);
+}
+
 .workshop-page__level-rewards-toggle {
   position: absolute;
   right: var(--style-box-title-left);
@@ -3975,6 +4061,12 @@ body {
   z-index: 30;
 }
 
+.workshop-page__personal-tasks-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
 .workshop-page__summon-info-popup {
   position: absolute;
   inset: 0;
@@ -4010,6 +4102,7 @@ body {
 .workshop-page__discoveries-popup[hidden],
 .workshop-page__prestige-popup[hidden],
 .workshop-page__tasks-info-popup[hidden],
+.workshop-page__personal-tasks-popup[hidden],
 .workshop-page__summon-info-popup[hidden],
 .room-player-info-popup[hidden],
 .room-alliance-info-popup[hidden] {
@@ -4030,6 +4123,106 @@ body {
   left: 50%;
   width: 260px;
   transform: translate(-50%, -50%);
+}
+
+.workshop-page__personal-tasks-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  width: var(--style-tabbed-dialog-width);
+  transform: translate(-50%, -50%);
+}
+
+.style-dialog.workshop-page__personal-tasks-dialog {
+  width: 286px;
+  height: var(--style-tabbed-dialog-content-height);
+}
+
+.workshop-page__personal-tasks-period {
+  min-height: var(--style-row-min-height);
+  margin-bottom: 5px;
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__personal-tasks-frame {
+  height: calc(
+    var(--style-tabbed-dialog-content-height) -
+      var(--style-box-border-label-line-height) - 31px
+  );
+  overflow: auto;
+}
+
+.workshop-page__personal-tasks-rows {
+  display: grid;
+  gap: 4px;
+}
+
+.workshop-page__personal-task-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(58px, auto);
+  column-gap: var(--style-row-column-gap);
+  align-items: baseline;
+  min-height: var(--style-row-min-height);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__personal-task-row--full {
+  padding-top: 5px;
+  margin-top: 2px;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.workshop-page__personal-task-row.is-completed {
+  color: var(--style-muted);
+}
+
+.workshop-page__personal-task-label,
+.workshop-page__personal-task-reward {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__personal-task-progress,
+.workshop-page__personal-task-reward {
+  text-align: right;
+}
+
+.workshop-page__personal-task-reward {
+  font-size: var(--style-tiny-font-size);
+}
+
+.workshop-page__personal-tasks-tabs {
+  display: flex;
+  gap: var(--style-dialog-tab-gap);
+  margin-top: var(--style-dialog-tab-gap);
+}
+
+.style-button.workshop-page__personal-tasks-close {
+  position: absolute;
+  right: var(--style-box-title-left);
+  bottom: var(--style-box-border-label-offset);
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+}
+
+.workshop-page__personal-tasks-empty {
+  min-height: var(--style-row-min-height);
 }
 
 .workshop-page__tasks-info-copy {
@@ -5435,7 +5628,7 @@ div.workshop-page__discovery-row {
   outline: none;
 }
 
-.garden-page__plot-row:focus-visible .garden-page__plot-action {
+.garden-page__plot-row:not(.is-processing):focus-visible .garden-page__plot-action {
   text-decoration: underline;
 }
 
@@ -5464,7 +5657,6 @@ div.workshop-page__discovery-row {
 @media (hover: hover) and (pointer: fine) {
   .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
     .garden-page__plot-action,
-  .garden-page__plot-row.is-processing .garden-page__plot-action:hover,
   .garden-page__plot-row.is-ready .garden-page__plot-action:hover,
   .garden-page__plot-row.is-empty .garden-page__plot-action:hover {
     text-decoration: underline;
@@ -5473,9 +5665,7 @@ div.workshop-page__discovery-row {
   .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
     .garden-page__plot-label,
   .garden-page__plot-row.is-empty .garden-page__plot-label:hover,
-  .garden-page__plot-row.is-empty .garden-page__plot-box-label:hover,
-  .garden-page__plot-row.is-processing .garden-page__plot-label:hover,
-  .garden-page__plot-row.is-processing .garden-page__plot-box-label:hover {
+  .garden-page__plot-row.is-empty .garden-page__plot-box-label:hover {
     text-decoration: underline;
   }
 
@@ -5669,7 +5859,7 @@ div.workshop-page__discovery-row {
 .garden-page__plot-box-number,
 .garden-page__plot-box-label {
   position: absolute;
-  top: var(--style-box-border-label-offset);
+  top: calc(var(--style-box-border-label-offset) - 1px);
   z-index: 1;
   display: block;
   max-width: calc(100% - 12px);
@@ -9509,6 +9699,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__discoveries-tab-button,
 .style-button.workshop-page__bag-tab-button,
 .style-button.workshop-page__trade-alliance-tab-button,
+.style-button.workshop-page__personal-tasks-tab-button,
 .style-button.workshop-page__world-chat-tab-button {
   flex: 1 1 0;
   width: auto;
@@ -9620,6 +9811,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__discoveries-tab-button[aria-selected="true"],
 .style-button.workshop-page__bag-tab-button[aria-selected="true"],
 .style-button.workshop-page__trade-alliance-tab-button[aria-selected="true"],
+.style-button.workshop-page__personal-tasks-tab-button[aria-selected="true"],
 .style-button.workshop-page__world-chat-tab-button[aria-selected="true"] {
   text-decoration: underline;
 }
@@ -9645,6 +9837,7 @@ div.workshop-page__discovery-row {
   .workshop-page__tasks-pin,
   .workshop-page__tasks-toggle,
   .workshop-page__level-rewards-toggle,
+  .workshop-page__personal-tasks-open,
   .shop-page__slot-row--interactive .shop-page__slot-item-value,
   .shop-page__sell-item-button:not(:disabled):not([aria-disabled="true"])
     .row_key,
@@ -9652,9 +9845,6 @@ div.workshop-page__discovery-row {
     .garden-page__plot-action,
   .garden-page__plot-row.is-empty .garden-page__plot-label,
   .garden-page__plot-row.is-empty .garden-page__plot-box-label,
-  .garden-page__plot-row.is-processing .garden-page__plot-label,
-  .garden-page__plot-row.is-processing .garden-page__plot-box-label,
-  .garden-page__plot-row.is-processing .garden-page__plot-action,
   .garden-page__plot-row.is-ready .garden-page__plot-action,
   .garden-page__seed-button:not(:disabled) .row_key {
     text-decoration: underline;
@@ -9681,6 +9871,7 @@ div.workshop-page__discovery-row {
   .workshop-page__tasks-pin,
   .workshop-page__tasks-toggle,
   .workshop-page__level-rewards-toggle,
+  .workshop-page__personal-tasks-open,
   .shop-page__slot-row--interactive,
   .shop-page__slot-unlock-button,
   .shop-page__sell-item-button,
@@ -9706,6 +9897,7 @@ div.workshop-page__discovery-row {
     .workshop-page__tasks-pin,
     .workshop-page__tasks-toggle,
     .workshop-page__level-rewards-toggle,
+    .workshop-page__personal-tasks-open,
     .shop-page__slot-row--interactive,
     .shop-page__slot-unlock-button,
     .shop-page__sell-item-button,
@@ -9888,6 +10080,7 @@ div.workshop-page__discovery-row {
 .style-box .workshop-page__tasks-pin,
 .style-box .workshop-page__tasks-toggle,
 .style-box .workshop-page__level-rewards-toggle,
+.style-box .workshop-page__personal-tasks-open,
 .style-box .workshop-page__world-chat-title {
   font-size: var(--style-world-chat-title-font-size);
   line-height: var(--style-box-border-label-line-height);
@@ -9946,6 +10139,7 @@ div.workshop-page__discovery-row {
 .workshop-page__discoveries-popup:not([hidden]),
 .workshop-page__prestige-popup:not([hidden]),
 .workshop-page__tasks-info-popup:not([hidden]),
+.workshop-page__personal-tasks-popup:not([hidden]),
 .workshop-page__summon-info-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
@@ -9979,6 +10173,8 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__prestige-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__tasks-info-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
+  .workshop-page,
 .game-stage:has(.workshop-page__summon-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
@@ -10009,6 +10205,7 @@ div.workshop-page__discovery-row {
 
 .workshop-page__logs-popup:not([hidden]) .style-dialog,
 .workshop-page__tasks-info-popup:not([hidden]) .style-dialog,
+.workshop-page__personal-tasks-popup:not([hidden]) .style-dialog,
 .workshop-page__summon-info-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
@@ -10773,6 +10970,7 @@ div.workshop-page__discovery-row {
   .game-stage
     :where(
       .workshop-page__tasks,
+      .workshop-page__personal-tasks,
       .workshop-page__summon-button,
       .workshop-page__bag-button,
       .workshop-page__prestige-button,
