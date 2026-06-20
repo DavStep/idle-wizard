@@ -880,6 +880,7 @@ export class GardenPlotManager {
     const tile = garden.plot.tiles.find((candidate) => candidate.tileNumber === tileNumber);
     const refs = this.tileRefs.get(tileNumber);
     const clickedLabel = this.isTileLabelClick(event);
+    const clickedPlant = this.isTilePlantClick(event);
     const clickedAction = this.isTileActionClick(event, refs);
     const keyboardRowAction =
       event?.target === event?.currentTarget && event?.detail === 0;
@@ -937,7 +938,7 @@ export class GardenPlotManager {
     }
 
     if (tile.phase === 'ready') {
-      if (clickedAction || keyboardRowAction) {
+      if (clickedAction || clickedPlant || keyboardRowAction) {
         this.gameplayFacade.startGardenHarvest(tileNumber);
         this.render(this.gameplayFacade.getSnapshot());
       }
@@ -974,6 +975,10 @@ export class GardenPlotManager {
       clientY >= rect.top &&
       clientY <= rect.bottom
     );
+  }
+
+  isTilePlantClick(event) {
+    return Boolean(event?.target?.closest?.('.garden-page__plot-plant'));
   }
 
   onTileLabelClick(tileNumber, event) {

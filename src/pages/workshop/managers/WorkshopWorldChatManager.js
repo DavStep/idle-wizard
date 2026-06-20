@@ -37,6 +37,8 @@ export class WorkshopWorldChatManager {
     this.visible = false;
     this.unlocked = false;
     this.sending = false;
+    this.statusText = '';
+    this.statusSticky = false;
     this.selectedChannelId = 'world';
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
@@ -190,7 +192,10 @@ export class WorkshopWorldChatManager {
     this.refs.input.autocomplete = 'off';
     this.refs.input.placeholder = 'message';
     this.refs.input.setAttribute('aria-label', 'Chat message');
-    this.refs.input.addEventListener('input', () => this.updateFormState());
+    this.refs.input.addEventListener('input', () => {
+      this.clearStickyStatus();
+      this.updateFormState();
+    });
 
     this.refs.sendButton = document.createElement('button');
     this.refs.sendButton.className = 'style-button workshop-page__world-chat-send';
@@ -254,6 +259,7 @@ export class WorkshopWorldChatManager {
     }
 
     this.selectedChannelId = channelId;
+    this.clearStickyStatus();
     this.render();
   }
 
@@ -282,9 +288,9 @@ export class WorkshopWorldChatManager {
 
     if (result.ok) {
       this.refs.input.value = '';
-      this.setStatus(this.getSelectedSnapshot().connected ? '' : 'offline');
+      this.setStatus(this.getSelectedSnapshot().connected ? 'sent' : 'offline');
     } else {
-      this.setStatus(this.formatFailure(result.reason));
+      this.setStatus(this.formatFailure(result.reason), { sticky: true });
     }
 
     this.updateFormState();
@@ -329,6 +335,8 @@ export class WorkshopWorldChatManager {
     this.visible = false;
     this.unlocked = false;
     this.sending = false;
+    this.statusText = '';
+    this.statusSticky = false;
     this.selectedChannelId = 'world';
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
@@ -344,6 +352,7 @@ export class WorkshopWorldChatManager {
 
     if (this.selectedChannelId === 'alliance' && !this.hasAllianceChat()) {
       this.selectedChannelId = 'world';
+      this.clearStickyStatus();
     }
 
     const channel = this.getSelectedChannel();
@@ -359,7 +368,7 @@ export class WorkshopWorldChatManager {
     this.renderMessages(messages, snapshot);
 
     if (!this.sending) {
-      this.setStatus(snapshot.connected ? '' : 'offline');
+      this.setAutoStatus(snapshot.connected ? '' : 'offline');
     }
 
     this.updateFormState();
@@ -673,9 +682,32 @@ export class WorkshopWorldChatManager {
     this.refs.sendButton.disabled = !canSend;
   }
 
-  setStatus(text) {
+  setAutoStatus(text) {
+    if (this.statusSticky) {
+      this.renderStatus();
+      return;
+    }
+
+    this.setStatus(text);
+  }
+
+  setStatus(text, { sticky = false } = {}) {
+    this.statusText = text;
+    this.statusSticky = Boolean(sticky && text);
+    this.renderStatus();
+  }
+
+  clearStickyStatus() {
+    if (!this.statusSticky) {
+      return;
+    }
+
+    this.setStatus('');
+  }
+
+  renderStatus() {
     if (this.refs.status) {
-      this.refs.status.textContent = text;
+      this.refs.status.textContent = this.statusText;
     }
   }
 

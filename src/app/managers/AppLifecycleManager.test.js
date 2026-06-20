@@ -32,7 +32,7 @@ function createLifecycle({
   const authFacadeFake = authFacade ?? {
     getPendingAccountLinkSave: vi.fn(() => null),
     clearPendingAccountLinkSave: vi.fn(),
-    getSnapshot: vi.fn(() => ({ oidc: { authenticated: false } })),
+    getSnapshot: vi.fn(() => ({ hasToken: true, oidc: { authenticated: false } })),
     signInWithGoogle: vi.fn(() => Promise.resolve({ ok: false, reason: 'disabled' })),
   };
   const maintenanceFacadeFake = maintenanceFacade ?? {
@@ -290,6 +290,119 @@ describe('AppLifecycleManager', () => {
     expect(freshStartChoiceManager.unmount).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for start fresh before connecting without an account token', async () => {
+    let resolveChoice;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveChoice = resolve;
+          }),
+      ),
+      render: vi.fn(),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: false,
+        oidc: { authenticated: false, enabled: true },
+      })),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+
+    lifecycle.start();
+    await flushPromises();
+
+    expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
+      authSnapshot: {
+        hasToken: false,
+        oidc: { authenticated: false, enabled: true },
+      },
+      statusText: null,
+      keepOpenOnConnect: true,
+    });
+    expect(lifecycle.backendFacade.start).not.toHaveBeenCalled();
+
+    resolveChoice(FRESH_START_CHOICE_START_FRESH);
+    await flushPromises();
+
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('connects without the fresh-start gate when an account token exists', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager });
+
+    lifecycle.start();
+    await flushPromises();
+
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows loading while connecting an existing account before backend connect', async () => {
+    let authenticated = false;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_CONNECT_ACCOUNT)),
+      render: vi.fn(),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: authenticated,
+        oidc: { authenticated, enabled: true },
+      })),
+      signInWithGoogle: vi.fn(() => {
+        authenticated = true;
+        return Promise.resolve({ ok: true, reloadRequired: true });
+      }),
+    };
+    const reload = vi.fn();
+    const { lifecycle } = createLifecycle({
+      freshStartChoiceManager,
+      authFacade,
+      reload,
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    await flushPromises();
+
+    expect(authFacade.signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(freshStartChoiceManager.render).toHaveBeenCalledWith({
+      authSnapshot: {
+        hasToken: false,
+        oidc: { authenticated: false, enabled: true },
+      },
+      statusText: 'connecting...',
+      busy: true,
+    });
+    expect(freshStartChoiceManager.render).toHaveBeenLastCalledWith({
+      authSnapshot: {
+        hasToken: true,
+        oidc: { authenticated: true, enabled: true },
+      },
+      statusText: 'connecting...',
+      busy: true,
+    });
+    expect(reload).not.toHaveBeenCalled();
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
   it('pauses gameplay and flushes the last save when maintenance drains', async () => {
     const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
 
@@ -419,8 +532,9 @@ describe('AppLifecycleManager', () => {
 
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
     expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
-      authSnapshot: { oidc: { authenticated: false } },
+      authSnapshot: { hasToken: true, oidc: { authenticated: false } },
       statusText: null,
+      keepOpenOnConnect: true,
     });
     expect(
       lifecycle.onlineGateManager.hide.mock.invocationCallOrder[0],
@@ -482,6 +596,7 @@ describe('AppLifecycleManager', () => {
     expect(freshStartChoiceManager.choose).toHaveBeenNthCalledWith(2, {
       authSnapshot: { oidc: { authenticated: false, enabled: true } },
       statusText: 'login cancelled',
+      keepOpenOnConnect: true,
     });
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       null,
@@ -514,6 +629,7 @@ describe('AppLifecycleManager', () => {
     expect(freshStartChoiceManager.choose).toHaveBeenNthCalledWith(2, {
       authSnapshot: { oidc: { authenticated: false, enabled: true } },
       statusText: 'login unavailable',
+      keepOpenOnConnect: true,
     });
   });
 

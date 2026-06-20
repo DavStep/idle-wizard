@@ -1334,6 +1334,40 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('3s');
   });
 
+  it('starts harvest when a ready plot plant is clicked', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'ready',
+      totalMs: 0,
+      remainingMs: 0,
+      progress: 1,
+      process: null,
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-plant')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(tile.phase).toBe('harvesting');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 3s');
+  });
+
   it('shows full progress when a plot can be harvested', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

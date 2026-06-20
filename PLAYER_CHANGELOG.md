@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.15
+
+- Improved first-run account setup so connecting an account happens before the game creates a new anonymous save.
+- Made ready Garden plants harvest when tapping the plant art, not only the row action label.
+- Kept world and alliance chat send errors visible until the player edits the message or changes tabs.
+- Tightened prestige and chat dialog spacing so ruby rewards and popup panels read cleaner on mobile.
+
 ## 0.2.14
 
 - Added a prestige points tab so permanent capacity rewards are easier to track.

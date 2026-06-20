@@ -88,13 +88,17 @@
   --style-row-right-slot-width: 100px;
   --style-world-chat-row-height: 16px;
   --style-world-chat-row-gap: 0px;
+  --style-world-chat-box-padding-y: 2.5px;
+  --style-world-chat-box-padding-x: 5px;
   --style-world-chat-preview-lines: 2;
   --style-world-chat-preview-font-size: 12px;
   --style-world-chat-preview-icon-size: 14px;
   --style-world-chat-title-font-size: var(--style-box-border-label-font-size);
+  --style-world-chat-dialog-padding: 10px;
   --style-world-chat-popup-font-size: 11px;
   --style-world-chat-popup-line-height: 18px;
   --style-world-chat-progress-gap: 6px;
+  --style-trade-alliance-dialog-padding: 10px;
   --style-log-font-size: var(--style-world-chat-popup-font-size);
   --style-log-line-height: var(--style-world-chat-popup-line-height);
   --style-research-row-height: calc(var(--style-row-min-height) + 2px);
@@ -127,7 +131,9 @@
         var(--style-world-chat-row-height) *
           var(--style-world-chat-preview-lines)
       ) +
-      var(--style-world-chat-row-gap) + 12px
+      var(--style-world-chat-row-gap) +
+      (var(--style-world-chat-box-padding-y) * 2) +
+      (var(--style-border-width) * 2)
   );
   --style-room-chat-title-overhang: 12px;
   --style-room-chat-gap: 8px;
@@ -2714,7 +2720,6 @@ body {
   overflow: visible;
 }
 
-.garden-page__plot-rows:has([data-notification="true"]),
 .garden-page__seed-rows:has([data-notification="true"]),
 .research-page__content:has([data-notification="true"]),
 .shop-page__market-panel:has([data-notification="true"]),
@@ -3966,6 +3971,8 @@ body {
   right: var(--style-room-chrome-edge);
   bottom: var(--style-room-chat-bottom);
   left: var(--style-room-chrome-edge);
+  padding: var(--style-world-chat-box-padding-y)
+    var(--style-world-chat-box-padding-x);
   pointer-events: auto;
 }
 
@@ -6807,7 +6814,8 @@ div.workshop-page__discovery-row {
 
 .workshop-page__trade-alliance-panel {
   width: calc(
-    300px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+    300px + var(--style-trade-alliance-dialog-padding) +
+      var(--style-trade-alliance-dialog-padding) + 4px
   );
 }
 
@@ -6818,7 +6826,8 @@ div.workshop-page__discovery-row {
       var(--style-ui-scale) / 2
   );
   width: calc(
-    286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
+    286px + var(--style-world-chat-dialog-padding) +
+      var(--style-world-chat-dialog-padding) + 4px
   );
 }
 
@@ -8964,6 +8973,7 @@ div.workshop-page__discovery-row {
   position: relative;
   width: 300px;
   height: var(--style-tabbed-dialog-content-height);
+  padding: var(--style-trade-alliance-dialog-padding);
 }
 
 .style-dialog.workshop-page__trade-alliance-member-dialog {
@@ -8971,6 +8981,7 @@ div.workshop-page__discovery-row {
   top: 50%;
   left: 50%;
   width: 260px;
+  padding: var(--style-trade-alliance-dialog-padding);
   transform: translate(-50%, -50%);
 }
 
@@ -8998,6 +9009,7 @@ div.workshop-page__discovery-row {
   position: relative;
   width: 286px;
   height: calc(var(--style-tabbed-dialog-content-height) + 8px);
+  padding: var(--style-world-chat-dialog-padding);
 }
 
 .style-dialog.workshop-page__logs-dialog {

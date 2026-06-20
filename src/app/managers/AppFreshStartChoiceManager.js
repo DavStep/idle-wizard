@@ -7,6 +7,7 @@ export class AppFreshStartChoiceManager {
     this.refs = null;
     this.resolveChoice = null;
     this.previousFocus = null;
+    this.keepOpenOnConnect = false;
     this.handleConnectAccount = () =>
       this.resolve(FRESH_START_CHOICE_CONNECT_ACCOUNT);
     this.handleStartFresh = () => this.resolve(FRESH_START_CHOICE_START_FRESH);
@@ -83,7 +84,7 @@ export class AppFreshStartChoiceManager {
     return root;
   }
 
-  choose({ authSnapshot, statusText } = {}) {
+  choose({ authSnapshot, statusText, busy = false, keepOpenOnConnect = false } = {}) {
     if (!this.root || !this.refs) {
       return Promise.resolve(FRESH_START_CHOICE_START_FRESH);
     }
@@ -92,7 +93,8 @@ export class AppFreshStartChoiceManager {
       this.resolve(FRESH_START_CHOICE_START_FRESH);
     }
 
-    this.render({ authSnapshot, statusText });
+    this.keepOpenOnConnect = Boolean(keepOpenOnConnect);
+    this.render({ authSnapshot, statusText, busy });
     const activeElement = document.activeElement;
     this.previousFocus =
       typeof activeElement?.focus === 'function' ? activeElement : null;
@@ -121,24 +123,51 @@ export class AppFreshStartChoiceManager {
 
     const resolveChoice = this.resolveChoice;
     this.resolveChoice = null;
+    const keepOpen =
+      choice === FRESH_START_CHOICE_CONNECT_ACCOUNT && this.keepOpenOnConnect;
 
-    if (this.root) {
-      this.root.hidden = true;
+    if (!keepOpen) {
+      this.hide();
     }
 
-    this.previousFocus?.focus?.();
-    this.previousFocus = null;
     resolveChoice(choice);
   }
 
-  render({ authSnapshot, statusText } = {}) {
+  hide() {
+    if (this.root) {
+      this.root.hidden = true;
+      this.root.removeAttribute('aria-busy');
+    }
+
+    this.keepOpenOnConnect = false;
+    this.previousFocus?.focus?.();
+    this.previousFocus = null;
+  }
+
+  render({ authSnapshot, statusText, busy = false } = {}) {
     const oidc = authSnapshot?.oidc ?? {};
     const enabled = Boolean(oidc.enabled);
+    const isBusy = Boolean(busy);
 
-    this.refs.connectButton.disabled = !enabled;
+    if (isBusy) {
+      this.root?.setAttribute('aria-busy', 'true');
+    } else {
+      this.root?.removeAttribute('aria-busy');
+    }
+    this.refs.connectButton.disabled = isBusy || !enabled;
+    this.refs.freshButton.disabled = isBusy;
+    this.setText(
+      this.refs.connectButton,
+      isBusy ? 'connecting...' : 'connect account',
+    );
+    this.refs.connectButton.setAttribute(
+      'aria-label',
+      isBusy ? 'connecting account' : 'connect account',
+    );
     this.setText(
       this.refs.status,
-      statusText ?? (enabled ? 'not connected' : 'login unavailable'),
+      statusText ??
+        (isBusy ? 'connecting...' : enabled ? 'not connected' : 'login unavailable'),
     );
   }
 

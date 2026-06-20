@@ -52,6 +52,7 @@ export class AppLifecycleManager {
     this.backendConnecting = false;
     this.backendConnectAttempt = 0;
     this.backendOnline = false;
+    this.freshStartConfirmed = false;
     this.maintenanceUnsubscribe = null;
     this.maintenanceSnapshot = this.normalizeMaintenanceSnapshot(
       maintenanceFacade?.getSnapshot?.(),
@@ -86,10 +87,51 @@ export class AppLifecycleManager {
     this.renderFacade.mount(stage);
     this.started = true;
     this.stopping = false;
-    void this.connectBackend();
+    this.freshStartConfirmed = false;
+    void this.startBackendConnectionFlow();
   }
 
-  async connectBackend() {
+  async startBackendConnectionFlow() {
+    if (!this.started || this.stopping) {
+      return;
+    }
+
+    let authSnapshot = null;
+
+    try {
+      await this.backendFacade.prepare();
+      authSnapshot = this.getAuthSnapshot();
+    } catch {
+      this.handleOffline('connect_error');
+      return;
+    }
+
+    if (!this.started || this.stopping) {
+      return;
+    }
+
+    let promptedBeforeConnect = false;
+    if (this.shouldPromptBeforeInitialConnect(authSnapshot)) {
+      promptedBeforeConnect = true;
+      this.onlineGateManager.hide();
+      await this.chooseFreshStart({
+        authSnapshot,
+        keepOpenOnConnect: true,
+        returnOnConnectedAccount: true,
+      });
+
+      if (!this.started || this.stopping) {
+        return;
+      }
+    }
+
+    if (promptedBeforeConnect) {
+      this.onlineGateManager.showConnecting();
+    }
+    await this.connectBackend({ skipPrepare: true });
+  }
+
+  async connectBackend({ skipPrepare = false } = {}) {
     if (!this.started || this.stopping || this.backendConnecting) {
       return;
     }
@@ -99,7 +141,9 @@ export class AppLifecycleManager {
     this.backendConnecting = true;
 
     try {
-      await this.backendFacade.prepare();
+      if (!skipPrepare) {
+        await this.backendFacade.prepare();
+      }
       if (!this.isCurrentBackendAttempt(attempt)) {
         return;
       }
@@ -145,6 +189,7 @@ export class AppLifecycleManager {
   }
 
   async handleGameplaySaveReady({ save } = {}) {
+    this.freshStartChoiceManager.hide?.();
     const accountLinkSave = this.getPendingAccountLinkSave();
 
     if (accountLinkSave && this.isAuthenticatedAccount()) {
@@ -190,7 +235,7 @@ export class AppLifecycleManager {
 
     if (this.shouldPromptForFreshStart({ save, accountLinkSave })) {
       this.onlineGateManager.hide();
-      await this.chooseFreshStart();
+      await this.chooseFreshStart({ keepOpenOnConnect: true });
       if (this.stopping) {
         return;
       }
@@ -204,24 +249,58 @@ export class AppLifecycleManager {
   }
 
   shouldPromptForFreshStart({ save, accountLinkSave } = {}) {
-    return !save && !accountLinkSave && !this.isAuthenticatedAccount();
+    return (
+      !this.freshStartConfirmed &&
+      !save &&
+      !accountLinkSave &&
+      !this.isAuthenticatedAccount()
+    );
   }
 
-  async chooseFreshStart() {
+  shouldPromptBeforeInitialConnect(authSnapshot = this.getAuthSnapshot()) {
+    return !this.hasConnectableAccount(authSnapshot) && !this.freshStartConfirmed;
+  }
+
+  hasConnectableAccount(authSnapshot = this.getAuthSnapshot()) {
+    return Boolean(authSnapshot?.hasToken || authSnapshot?.oidc?.authenticated);
+  }
+
+  async chooseFreshStart({
+    authSnapshot = null,
+    keepOpenOnConnect = false,
+    returnOnConnectedAccount = false,
+  } = {}) {
     let statusText = null;
 
     while (!this.stopping) {
       const choice = await this.freshStartChoiceManager.choose({
-        authSnapshot: this.getAuthSnapshot(),
+        authSnapshot: authSnapshot ?? this.getAuthSnapshot(),
         statusText,
+        keepOpenOnConnect,
       });
 
       if (choice !== FRESH_START_CHOICE_CONNECT_ACCOUNT) {
+        this.freshStartConfirmed = true;
         return;
       }
 
+      this.freshStartChoiceManager.render?.({
+        authSnapshot: this.getAuthSnapshot(),
+        statusText: 'connecting...',
+        busy: true,
+      });
       const result = await this.connectFreshStartAccount();
       if (result?.ok) {
+        this.freshStartChoiceManager.render?.({
+          authSnapshot: this.getAuthSnapshot(),
+          statusText: 'connecting...',
+          busy: true,
+        });
+
+        if (returnOnConnectedAccount && this.hasConnectableAccount()) {
+          return;
+        }
+
         if (result.reloadRequired) {
           this.reload();
         }
@@ -230,6 +309,7 @@ export class AppLifecycleManager {
       }
 
       statusText = this.getFreshStartLoginStatusText(result);
+      authSnapshot = this.getAuthSnapshot();
     }
   }
 
@@ -369,6 +449,7 @@ export class AppLifecycleManager {
     }
 
     this.backendOnline = false;
+    this.freshStartChoiceManager.hide?.();
     this.interactionLockManager.lock(reason ?? 'offline');
     this.stopFrameLoop();
 

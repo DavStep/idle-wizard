@@ -304,8 +304,16 @@ export class WorkshopPrestigeManager {
       return;
     }
 
-    this.refs.summary.textContent = `level ${currentLevel}, ${earnedRuby} ruby next run`;
-    setResourceColor(this.refs.summary, 'ruby');
+    const ruby = document.createElement('span');
+    ruby.className = 'workshop-page__prestige-summary-ruby';
+    ruby.textContent = `${earnedRuby} ruby`;
+    setResourceColor(ruby, 'ruby');
+
+    this.refs.summary.replaceChildren(
+      document.createTextNode(`level ${currentLevel}, next run: `),
+      ruby,
+    );
+    setResourceColor(this.refs.summary, null);
   }
 
   createRows(snapshot) {

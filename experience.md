@@ -153,6 +153,7 @@
 - FTUE guide auto-move should not rely on inline `style.translate` for the moving wrapper, because active CSS keyframe animations that also set `translate` can override it and make the guide jump.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` stays hidden until level 7.
+- Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
@@ -224,6 +225,7 @@
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Unlinked player saves depend on the anonymous SpacetimeDB token; mirror it into Android native SharedPreferences and retry backup token copies before anonymous reconnect.
+- First-run account-choice gates must happen before anonymous SpacetimeDB connect; `clientConnected` creates player/account rows.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
 - Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
@@ -418,6 +420,7 @@
 - Garden growth/harvest timer text belongs next to the right action label, not inside the progress rail.
 - Garden plot right-side action labels (`choose`, `no seeds`, `buy`, `growing`, `harvest`) should share the smaller growing-label size.
 - Garden plot row height must include the progress rail slot even when no progress is shown; hide the rail but keep the space.
+- Garden plot row notification dots are row-local; do not add parent `:has([data-notification])` bleed margins to `.garden-page__plot-rows`, or plot boxes jump when readiness changes.
 - Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.

@@ -50,6 +50,43 @@ describe('AppFreshStartChoiceManager', () => {
     await expect(choicePromise).resolves.toBe(FRESH_START_CHOICE_START_FRESH);
   });
 
+  it('can keep the dialog open and show loading after connect account', async () => {
+    const stage = document.createElement('section');
+    const manager = new AppFreshStartChoiceManager();
+    manager.mount(stage);
+
+    const choicePromise = manager.choose({
+      authSnapshot: { oidc: { enabled: true } },
+      keepOpenOnConnect: true,
+    });
+
+    const dialog = stage.querySelector('.app-fresh-start-choice');
+    stage
+      .querySelector('.app-fresh-start-choice__button--connect')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    await expect(choicePromise).resolves.toBe(FRESH_START_CHOICE_CONNECT_ACCOUNT);
+    expect(dialog.hidden).toBe(false);
+
+    manager.render({
+      authSnapshot: { oidc: { enabled: true } },
+      statusText: 'connecting...',
+      busy: true,
+    });
+
+    expect(dialog.getAttribute('aria-busy')).toBe('true');
+    expect(stage.querySelector('.app-fresh-start-choice__button--connect').disabled).toBe(
+      true,
+    );
+    expect(stage.querySelector('.app-fresh-start-choice__button--fresh').disabled).toBe(
+      true,
+    );
+    expect(dialog.textContent).toContain('connecting...');
+
+    manager.hide();
+    expect(dialog.hidden).toBe(true);
+  });
+
   it('disables account connect when login is unavailable', () => {
     const stage = document.createElement('section');
     const manager = new AppFreshStartChoiceManager();
