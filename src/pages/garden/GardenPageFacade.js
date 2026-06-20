@@ -1,4 +1,7 @@
-import { GardenHerbInventoryManager } from './managers/GardenHerbInventoryManager.js';
+import {
+  GardenHerbInventoryManager,
+  GardenSeedInventoryManager,
+} from './managers/GardenHerbInventoryManager.js';
 import { GardenPlotManager } from './managers/GardenPlotManager.js';
 import { GardenRoomViewManager } from './managers/GardenRoomViewManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
@@ -13,6 +16,10 @@ export class GardenPageFacade {
     this.flyoutManager = new RewardFlyoutManager();
     this.rewardEventsUnsubscribe = null;
     this.plotManager = new GardenPlotManager({ gameplayFacade, playerFacade });
+    this.seedInventoryManager = new GardenSeedInventoryManager({
+      gameplayFacade,
+      seedDragController: this.plotManager,
+    });
     this.herbInventoryManager = new GardenHerbInventoryManager({ gameplayFacade });
   }
 
@@ -26,6 +33,7 @@ export class GardenPageFacade {
       this.gameplayFacade?.subscribeRewardEvents?.((event) =>
         this.flyoutManager.showReward(event),
       ) ?? null;
+    this.seedInventoryManager.mount(uiLayer);
     this.herbInventoryManager.mount(uiLayer);
   }
 
@@ -33,6 +41,7 @@ export class GardenPageFacade {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
     this.herbInventoryManager.unmount();
+    this.seedInventoryManager.unmount();
     this.flyoutManager.unmount();
     this.plotManager.unmount();
     this.roomViewManager.unmount();

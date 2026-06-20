@@ -6,15 +6,42 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { applyMysteryText } from '../../shared/mysteryText.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
-export class GardenHerbInventoryManager {
-  constructor({ gameplayFacade } = {}) {
+const COLLAPSED_ROW_COUNT = 3;
+
+export class GardenInventoryBoxManager {
+  constructor({
+    gameplayFacade,
+    kind = 'herb',
+    title = 'herbs',
+    rootClassName = 'garden-page__herbs',
+    rowsClassName = 'garden-page__herb-rows',
+    rowClassName = 'garden-page__herb-row',
+    dividerClassName = 'garden-page__herb-divider',
+    countClassName = 'garden-page__inventory-count',
+    toggleClassName = 'garden-page__inventory-toggle',
+    getItems = (snapshot) => snapshot.garden?.herbs ?? [],
+    seedDragController = null,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.kind = kind;
+    this.title = title;
+    this.rootClassName = rootClassName;
+    this.rowsClassName = rowsClassName;
+    this.rowClassName = rowClassName;
+    this.dividerClassName = dividerClassName;
+    this.countClassName = countClassName;
+    this.toggleClassName = toggleClassName;
+    this.getItems = getItems;
+    this.seedDragController = seedDragController;
     this.root = null;
     this.rows = null;
+    this.count = null;
+    this.toggle = null;
     this.unsubscribe = null;
-    this.herbRefs = new Map();
+    this.itemRefs = new Map();
     this.divider = null;
-    this.handleRowsScroll = () => this.updateOverflowCue();
+    this.expanded = false;
+    this.handleToggleClick = () => this.toggleExpanded();
   }
 
   mount(parent) {
@@ -27,17 +54,29 @@ export class GardenHerbInventoryManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'garden-page__herbs style-box';
-    this.root.setAttribute('aria-label', 'Herbs');
+    this.root.className = `garden-page__inventory ${this.rootClassName} style-box`;
+    this.root.setAttribute('aria-label', this.title);
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'herbs';
+    title.textContent = this.title;
+
+    this.count = document.createElement('div');
+    this.count.className = `${this.countClassName} ${this.rootClassName}-count`;
+    this.count.textContent = '0/0';
 
     this.rows = document.createElement('div');
-    this.rows.className = 'garden-page__herb-rows';
-    this.rows.addEventListener('scroll', this.handleRowsScroll);
-    this.root.append(title, this.rows);
+    this.rows.className = `garden-page__inventory-rows ${this.rowsClassName}`;
+    this.rows.id = `${this.rootClassName.replace(/[^a-z0-9_-]+/gi, '-')}-rows`;
+    this.toggle = document.createElement('button');
+    this.toggle.className = `${this.toggleClassName} ${this.rootClassName}-toggle`;
+    this.toggle.type = 'button';
+    this.toggle.textContent = 'expand';
+    this.toggle.setAttribute('aria-controls', this.rows.id);
+    this.toggle.setAttribute('aria-expanded', 'false');
+    this.toggle.addEventListener('click', this.handleToggleClick);
+
+    this.root.append(title, this.count, this.rows, this.toggle);
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -49,51 +88,55 @@ export class GardenHerbInventoryManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
-    this.rows?.removeEventListener('scroll', this.handleRowsScroll);
+    this.toggle?.removeEventListener('click', this.handleToggleClick);
     this.root?.remove();
     this.root = null;
     this.rows = null;
-    this.herbRefs.clear();
+    this.count = null;
+    this.toggle = null;
+    this.itemRefs.clear();
     this.divider = null;
   }
 
   render(snapshot) {
-    const herbs = this.getHerbRows(snapshot);
-    this.ensureRows(herbs);
+    const items = this.getVisibleRows(snapshot);
+    this.ensureRows(items);
 
-    for (const herb of herbs) {
-      const refs = this.herbRefs.get(herb.itemTypeId);
-      refs.label.textContent = herb.display.label;
-      applyMysteryText(refs.label, herb, herb.display.unknown);
-      setItemIconLabel(refs.label, herb.display.unknown ? null : herb.kind, herb.key);
-      refs.quantity.textContent = herb.display.quantity;
-      refs.row.classList.toggle('is-empty', herb.quantity <= 0);
-      refs.row.classList.toggle('is-locked', herb.display.locked);
-      refs.row.classList.toggle('is-unknown', herb.display.unknown);
+    for (const item of items) {
+      const refs = this.itemRefs.get(item.itemTypeId);
+      refs.label.textContent = item.display.label;
+      applyMysteryText(refs.label, item, item.display.unknown);
+      setItemIconLabel(refs.label, item.display.unknown ? null : item.kind, item.key);
+      refs.quantity.textContent = item.display.quantity;
+      refs.row.classList.toggle('is-empty', item.quantity <= 0);
+      refs.row.classList.toggle('is-locked', item.display.locked);
+      refs.row.classList.toggle('is-unknown', item.display.unknown);
+      this.renderSeedDragState(refs.row, item);
     }
 
-    this.applyRowOrder(herbs);
-    this.queueOverflowCue();
+    this.applyRowOrder(items);
+    this.renderToggle(items.length);
   }
 
-  getHerbRows(snapshot) {
-    return (snapshot.garden.herbs ?? [])
-      .map((herb) => ({
-        ...herb,
-        display: getItemDisplay(snapshot, herb, herb.quantity),
+  getVisibleRows(snapshot) {
+    return this.getItems(snapshot)
+      .map((item) => ({
+        ...item,
+        display: getItemDisplay(snapshot, item, item.quantity),
       }))
-      .filter((herb) => shouldShowItemInActionList(snapshot, herb, herb.quantity));
+      .filter((item) => shouldShowItemInActionList(snapshot, item, item.quantity));
   }
 
-  ensureRows(herbs) {
-    for (const herb of herbs) {
-      if (this.herbRefs.has(herb.itemTypeId)) {
+  ensureRows(items) {
+    for (const item of items) {
+      if (this.itemRefs.has(item.itemTypeId)) {
         continue;
       }
 
       const row = document.createElement('div');
-      row.className = 'garden-page__herb-row';
-      setResourceColor(row, 'herb');
+      row.className = `garden-page__inventory-row ${this.rowClassName}`;
+      setResourceColor(row, this.kind);
+      this.bindSeedDrag(row, item.itemTypeId);
 
       const label = document.createElement('span');
       label.className = 'row_key';
@@ -102,51 +145,155 @@ export class GardenHerbInventoryManager {
       quantity.className = 'row_val';
 
       row.append(label, quantity);
-      this.herbRefs.set(herb.itemTypeId, { row, label, quantity });
+      this.itemRefs.set(item.itemTypeId, { row, label, quantity });
       this.rows.append(row);
     }
   }
 
-  applyRowOrder(herbs) {
-    const knownHerbs = herbs.filter((herb) => !herb.display.locked);
-    const unknownHerbs = herbs.filter((herb) => herb.display.locked);
+  bindSeedDrag(row, itemTypeId) {
+    if (!this.seedDragController || this.kind !== 'seed') {
+      return;
+    }
+
+    row.addEventListener('dragstart', (event) => {
+      const item = this.getDragItem(itemTypeId);
+
+      if (item) {
+        this.seedDragController.onSeedNativeDragStart?.(event, item);
+      }
+    });
+    row.addEventListener('dragend', () => {
+      this.seedDragController.onSeedNativeDragEnd?.();
+    });
+    row.addEventListener('pointerdown', (event) => {
+      const item = this.getDragItem(itemTypeId);
+
+      if (item) {
+        this.seedDragController.onSeedPointerDown?.(event, item);
+      }
+    });
+  }
+
+  renderSeedDragState(row, item) {
+    if (!this.seedDragController || this.kind !== 'seed') {
+      return;
+    }
+
+    const canDrag = item.quantity > 0 && !item.display.locked && !item.display.unknown;
+    row.classList.toggle('is-draggable', canDrag);
+    row.draggable = canDrag && this.seedDragController.canUseNativeSeedDrag?.() !== false;
+    row.setAttribute('aria-disabled', canDrag ? 'false' : 'true');
+    row.setAttribute(
+      'aria-label',
+      canDrag
+        ? `drag ${item.label} to a plot, owned ${item.quantity}`
+        : `${item.label}, owned ${item.quantity}`,
+    );
+  }
+
+  getDragItem(itemTypeId) {
+    return this.getVisibleRows(this.gameplayFacade.getSnapshot()).find(
+      (item) => item.itemTypeId === itemTypeId,
+    );
+  }
+
+  applyRowOrder(items) {
+    const knownItems = items.filter((item) => !item.display.locked);
+    const unknownItems = items.filter((item) => item.display.locked);
+    const visibleCount = this.getVisibleCount(items.length);
+    const visibleKnownCount = Math.min(knownItems.length, visibleCount);
+    const visibleUnknownCount = Math.max(0, visibleCount - knownItems.length);
     const orderedRows = [
-      ...knownHerbs.map((herb) => this.herbRefs.get(herb.itemTypeId)?.row),
-      ...(knownHerbs.length > 0 && unknownHerbs.length > 0
+      ...knownItems.map((item) => this.itemRefs.get(item.itemTypeId)?.row),
+      ...(knownItems.length > 0 && unknownItems.length > 0
         ? [this.getDivider()]
         : []),
-      ...unknownHerbs.map((herb) => this.herbRefs.get(herb.itemTypeId)?.row),
+      ...unknownItems.map((item) => this.itemRefs.get(item.itemTypeId)?.row),
     ].filter(Boolean);
 
     this.rows.replaceChildren(...orderedRows);
+
+    knownItems.forEach((item, index) => {
+      this.itemRefs.get(item.itemTypeId)?.row.toggleAttribute(
+        'hidden',
+        index >= visibleKnownCount,
+      );
+    });
+    unknownItems.forEach((item, index) => {
+      this.itemRefs.get(item.itemTypeId)?.row.toggleAttribute(
+        'hidden',
+        index >= visibleUnknownCount,
+      );
+    });
+    this.divider?.toggleAttribute(
+      'hidden',
+      visibleKnownCount <= 0 || visibleUnknownCount <= 0,
+    );
   }
 
   getDivider() {
     if (!this.divider) {
       this.divider = document.createElement('div');
-      this.divider.className = 'garden-page__herb-divider';
+      this.divider.className = `garden-page__inventory-divider ${this.dividerClassName}`;
       this.divider.setAttribute('role', 'separator');
     }
 
     return this.divider;
   }
 
-  queueOverflowCue() {
-    if (typeof requestAnimationFrame === 'function') {
-      requestAnimationFrame(() => this.updateOverflowCue());
-      return;
-    }
+  renderToggle(itemCount) {
+    const visibleCount = this.getVisibleCount(itemCount);
+    const canToggle = itemCount > COLLAPSED_ROW_COUNT;
 
-    this.updateOverflowCue();
+    this.root?.classList.toggle('is-expanded', this.expanded);
+    this.root?.classList.toggle('is-collapsed', !this.expanded);
+    this.count.textContent = `${visibleCount}/${itemCount}`;
+    this.toggle.hidden = !canToggle;
+    this.toggle.textContent = this.expanded ? 'collapse' : 'expand';
+    this.toggle.setAttribute('aria-expanded', this.expanded ? 'true' : 'false');
+    this.toggle.setAttribute(
+      'aria-label',
+      this.expanded ? `collapse ${this.title}` : `expand ${this.title}`,
+    );
   }
 
-  updateOverflowCue() {
-    if (!this.rows) {
-      return;
-    }
+  getVisibleCount(itemCount) {
+    return this.expanded ? itemCount : Math.min(itemCount, COLLAPSED_ROW_COUNT);
+  }
 
-    const hasOverflow = this.rows.scrollHeight > this.rows.clientHeight + 1;
-    const isAtEnd = this.rows.scrollTop + this.rows.clientHeight >= this.rows.scrollHeight - 1;
-    this.rows.classList.toggle('has-overflow', hasOverflow && !isAtEnd);
+  toggleExpanded() {
+    this.expanded = !this.expanded;
+    this.render(this.gameplayFacade.getSnapshot());
+  }
+}
+
+export class GardenHerbInventoryManager extends GardenInventoryBoxManager {
+  constructor({ gameplayFacade } = {}) {
+    super({
+      gameplayFacade,
+      kind: 'herb',
+      title: 'herbs',
+      rootClassName: 'garden-page__herbs',
+      rowsClassName: 'garden-page__herb-rows',
+      rowClassName: 'garden-page__herb-row',
+      dividerClassName: 'garden-page__herb-divider',
+      getItems: (snapshot) => snapshot.garden?.herbs ?? [],
+    });
+  }
+}
+
+export class GardenSeedInventoryManager extends GardenInventoryBoxManager {
+  constructor({ gameplayFacade, seedDragController } = {}) {
+    super({
+      gameplayFacade,
+      kind: 'seed',
+      title: 'seeds',
+      rootClassName: 'garden-page__seeds',
+      rowsClassName: 'garden-page__seed-inventory-rows',
+      rowClassName: 'garden-page__seed-inventory-row',
+      dividerClassName: 'garden-page__seed-inventory-divider',
+      getItems: (snapshot) => snapshot.garden?.seeds ?? [],
+      seedDragController,
+    });
   }
 }

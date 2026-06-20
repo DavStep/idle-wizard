@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.12
+
+- Added seed inventory drag-and-drop so seeds can be dragged onto growing Garden plots to swap crops.
+- Added a Garden swap confirmation popup that returns the old seed and restarts the plot with the new one.
+- Improved Garden seed and herb inventory boxes with compact counts, expand/collapse controls, and smoother scrolling.
+- Hid the FPS display from production builds so release APKs keep the game screen cleaner.
+
 ## 0.2.11
 
 - Added a compact Garden box view with plant icons, growth motion, harvest cues, and a rows/boxes setting.

@@ -102,8 +102,8 @@ export class GardenTileEntityManager {
     return true;
   }
 
-  startGrowth({ tileNumber, seedItemTypeId, herbItemTypeId, totalSeconds }) {
-    if (!this.isTileUnlocked(tileNumber) || !this.isTileEmpty(tileNumber)) {
+  startGrowth({ tileNumber, seedItemTypeId, herbItemTypeId, totalSeconds, replace = false }) {
+    if (!this.isTileUnlocked(tileNumber) || (!replace && !this.isTileEmpty(tileNumber))) {
       return false;
     }
 

@@ -124,6 +124,106 @@ export class GardenPlantingManager {
     return this.startSelectedSeedGrowth(tileNumber, seedResult.seed);
   }
 
+  replaceSeed(tileNumber, seedTypeId) {
+    if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
+      return {
+        ok: false,
+        reason: 'tile_locked',
+        tileNumber,
+      };
+    }
+
+    const tile = this.gardenTileEntityManager
+      .getTileSnapshots()
+      .find((candidate) => candidate.tileNumber === tileNumber);
+
+    if (!tile || tile.phase === 'empty') {
+      return {
+        ok: false,
+        reason: 'tile_empty',
+        tileNumber,
+      };
+    }
+
+    if (tile.phase !== 'growing') {
+      return {
+        ok: false,
+        reason: 'not_growing',
+        tileNumber,
+      };
+    }
+
+    const seedResult = this.getSeedResult(seedTypeId);
+
+    if (!seedResult.ok) {
+      return seedResult;
+    }
+
+    const previousSeed = tile.seedItemTypeId
+      ? this.itemsFacade.getItemDefinition(tile.seedItemTypeId)
+      : null;
+    const availableQuantity =
+      this.itemsFacade.getItemQuantity(seedResult.seed.id) +
+      (previousSeed?.id === seedResult.seed.id ? 1 : 0);
+
+    if (availableQuantity <= 0) {
+      return {
+        ok: false,
+        reason: 'not_enough_seed',
+        seed: seedResult.seed,
+      };
+    }
+
+    if (previousSeed) {
+      this.itemsFacade.addItem(previousSeed.id, 1);
+    }
+
+    if (!this.itemsFacade.removeItem(seedResult.seed.id, 1)) {
+      if (previousSeed) {
+        this.itemsFacade.removeItem(previousSeed.id, 1);
+      }
+
+      return {
+        ok: false,
+        reason: 'not_enough_seed',
+        seed: seedResult.seed,
+      };
+    }
+
+    const durationMs = this.getGrowthDurationMs(tileNumber, seedResult.herb);
+    const replaced = this.gardenTileEntityManager.startGrowth({
+      tileNumber,
+      seedItemTypeId: seedResult.seed.id,
+      herbItemTypeId: seedResult.herb.id,
+      totalSeconds: durationMs / 1_000,
+      replace: true,
+    });
+
+    if (!replaced) {
+      this.itemsFacade.addItem(seedResult.seed.id, 1);
+
+      if (previousSeed) {
+        this.itemsFacade.removeItem(previousSeed.id, 1);
+      }
+
+      return {
+        ok: false,
+        reason: 'replace_failed',
+        tileNumber,
+      };
+    }
+
+    return {
+      ok: true,
+      tileNumber,
+      seed: this.createItemResult(seedResult.seed),
+      herb: this.createItemResult(seedResult.herb),
+      replacedSeed: previousSeed ? this.createItemResult(previousSeed) : null,
+      durationMs,
+      replaced: true,
+    };
+  }
+
   startSelectedSeedGrowth(tileNumber, seed) {
     if (!this.itemsFacade.removeItem(seed.id, 1)) {
       return {
@@ -134,10 +234,7 @@ export class GardenPlantingManager {
     }
 
     const herb = this.itemsFacade.getItemDefinition(seed.producesHerbTypeId);
-    const baseDurationMs = herb.growthDurationMs ?? 60_000;
-    const durationMs =
-      this.researchFacade?.getReducedPlotGrowthDurationMs?.(tileNumber, baseDurationMs) ??
-      baseDurationMs;
+    const durationMs = this.getGrowthDurationMs(tileNumber, herb);
     this.gardenTileEntityManager.startGrowth({
       tileNumber,
       seedItemTypeId: seed.id,
@@ -152,6 +249,14 @@ export class GardenPlantingManager {
       herb: this.createItemResult(herb),
       durationMs,
     };
+  }
+
+  getGrowthDurationMs(tileNumber, herb) {
+    const baseDurationMs = herb.growthDurationMs ?? 60_000;
+    return (
+      this.researchFacade?.getReducedPlotGrowthDurationMs?.(tileNumber, baseDurationMs) ??
+      baseDurationMs
+    );
   }
 
   getSeedResult(seedTypeId) {

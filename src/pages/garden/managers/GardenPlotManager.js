@@ -3,7 +3,10 @@ import {
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
-import { getHerbIconFrameName } from '../../../assets/items/herbs/herbIcons.js';
+import {
+  getHerbIconFrameName,
+  getHerbIconKeyByLabel,
+} from '../../../assets/items/herbs/herbIcons.js';
 import { normalizePlayerPlotView } from '../../../player/playerPlotViews.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
@@ -16,9 +19,12 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
+import { GardenSeedSwapDialogManager } from './GardenSeedSwapDialogManager.js';
 
+const TOUCH_DRAG_DISTANCE = 8;
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
+const NATIVE_SEED_DRAG_QUERY = '(hover: hover) and (pointer: fine)';
 const BOX_PLOT_COLUMNS = 3;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
@@ -28,6 +34,9 @@ export class GardenPlotManager {
     this.playerFacade = playerFacade;
     this.cancelDialogManager = new GardenCancelDialogManager({
       onConfirm: (tileNumber) => this.onConfirmCancel(tileNumber),
+    });
+    this.swapDialogManager = new GardenSeedSwapDialogManager({
+      onConfirm: (swap) => this.onConfirmSeedSwap(swap),
     });
     this.root = null;
     this.unsubscribe = null;
@@ -47,10 +56,15 @@ export class GardenPlotManager {
     this.handledTileLabelPressStartReset = null;
     this.handledSeedPressStartKey = null;
     this.handledSeedPressStartReset = null;
+    this.draggedSeedItemTypeId = null;
+    this.pointerSeedDrag = null;
     this.lastTouchLikePressStart = {
       key: null,
       timeStamp: Number.NEGATIVE_INFINITY,
     };
+    this.handleDocumentSeedPointerMove = (event) => this.onDocumentSeedPointerMove(event);
+    this.handleDocumentSeedPointerUp = (event) => this.onDocumentSeedPointerUp(event);
+    this.handleDocumentSeedPointerCancel = () => this.cancelSeedPointerDrag();
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         if (this.handledTileLabelPressStartTileNumber !== null) {
@@ -106,6 +120,7 @@ export class GardenPlotManager {
     parent.append(this.root);
     popupParent.append(this.refs.popup);
     this.cancelDialogManager.mount(popupParent);
+    this.swapDialogManager.mount(popupParent);
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -129,7 +144,9 @@ export class GardenPlotManager {
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.clearHandledTileLabelPressStartTileNumber();
     this.clearHandledSeedPressStartKey();
+    this.cancelSeedPointerDrag();
     this.cancelDialogManager.unmount();
+    this.swapDialogManager.unmount();
     this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
@@ -147,6 +164,8 @@ export class GardenPlotManager {
     this.handledTileLabelPressStartReset = null;
     this.handledSeedPressStartKey = null;
     this.handledSeedPressStartReset = null;
+    this.draggedSeedItemTypeId = null;
+    this.pointerSeedDrag = null;
   }
 
   createTitle() {
@@ -189,6 +208,9 @@ export class GardenPlotManager {
     button.dataset.gardenTileNumber = String(tileNumber);
     button.dataset.tutorialId = `garden:plot:${tileNumber}`;
     button.addEventListener('click', (event) => this.onTileClick(tileNumber, event));
+    button.addEventListener('dragover', (event) => this.onTileDragOver(tileNumber, event));
+    button.addEventListener('dragleave', () => this.onTileDragLeave(tileNumber));
+    button.addEventListener('drop', (event) => this.onTileDrop(tileNumber, event));
 
     const number = document.createElement('span');
     number.className = 'garden-page__plot-number';
@@ -425,6 +447,7 @@ export class GardenPlotManager {
 
     this.renderSeeds(snapshot, seeds);
     this.cancelDialogManager.sync(snapshot);
+    this.swapDialogManager.sync(snapshot);
     this.updateOverflowCues();
   }
 
@@ -505,22 +528,26 @@ export class GardenPlotManager {
     refs.button.setAttribute('aria-disabled', 'false');
 
     if (tile.phase === 'empty') {
-      const emptyTileLabel = tile.selectedSeedLabel ?? 'empty';
+      const emptyTileDisplay = this.getPlotLabelDisplay(tile);
       const emptyTileAction = hasSelectedSeed
         ? selectedSeedQuantity > 0
           ? 'plant'
           : 'no seeds'
         : 'choose';
-      this.setText(refs.label, emptyTileLabel);
-      setItemIconLabel(refs.label, hasSelectedSeed ? 'seed' : null);
-      setResourceColor(refs.label, hasSelectedSeed ? 'seed' : null);
+      this.setText(refs.label, emptyTileDisplay.label);
+      setItemIconLabel(
+        refs.label,
+        emptyTileDisplay.itemKind,
+        emptyTileDisplay.itemKey,
+      );
+      setResourceColor(refs.label, emptyTileDisplay.resource);
       this.setText(refs.state, '');
       this.setTileAction(refs, {
         label: emptyTileAction,
       });
       this.setBoxTile(refs, tile, {
-        label: emptyTileLabel,
-        labelResource: hasSelectedSeed ? 'seed' : null,
+        label: emptyTileDisplay.label,
+        labelResource: emptyTileDisplay.resource,
         action: emptyTileAction,
       });
       refs.button.setAttribute(
@@ -533,22 +560,20 @@ export class GardenPlotManager {
       return;
     }
 
-    const activeTileLabel = tile.selectedSeedLabel ?? 'empty';
+    const activeTileDisplay = this.getPlotLabelDisplay(tile);
     const activeTileAction = this.formatTileAction(tile);
-    this.setText(refs.label, activeTileLabel);
+    this.setText(refs.label, activeTileDisplay.label);
     setItemIconLabel(
       refs.label,
-      tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
+      activeTileDisplay.itemKind,
+      activeTileDisplay.itemKey,
     );
-    setResourceColor(
-      refs.label,
-      tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
-    );
+    setResourceColor(refs.label, activeTileDisplay.resource);
     this.setText(refs.state, '');
     this.setTileAction(refs, activeTileAction);
     this.setBoxTile(refs, tile, {
-      label: activeTileLabel,
-      labelResource: tile.seedItemTypeId || tile.selectedSeedItemTypeId ? 'seed' : null,
+      label: activeTileDisplay.label,
+      labelResource: activeTileDisplay.resource,
       action: activeTileAction.label,
       timer: this.formatBoxTimer(tile),
       herbKey: tile.herbKey,
@@ -570,6 +595,43 @@ export class GardenPlotManager {
     } else {
       this.hideProgress(refs);
     }
+  }
+
+  getPlotLabelDisplay(tile) {
+    if (!tile?.selectedSeedItemTypeId && !tile?.seedItemTypeId && !tile?.herbItemTypeId) {
+      return {
+        label: 'empty',
+        itemKind: null,
+        itemKey: null,
+        resource: null,
+      };
+    }
+
+    const herbLabel =
+      tile.herbLabel ??
+      tile.selectedHerbLabel ??
+      this.stripSeedSuffix(tile.seedLabel ?? tile.selectedSeedLabel);
+    const herbKey =
+      tile.herbKey ??
+      tile.selectedHerbKey ??
+      getHerbIconKeyByLabel(herbLabel);
+
+    return {
+      label: herbLabel ?? tile.seedLabel ?? tile.selectedSeedLabel ?? 'empty',
+      itemKind: herbLabel ? 'herb' : null,
+      itemKey: herbKey,
+      resource: herbLabel ? 'herb' : null,
+    };
+  }
+
+  stripSeedSuffix(label) {
+    const value = String(label ?? '').trim();
+
+    if (!value) {
+      return null;
+    }
+
+    return value.replace(/\s+seed$/i, '');
   }
 
   formatLockedTileAction(plot) {
@@ -958,6 +1020,258 @@ export class GardenPlotManager {
     return false;
   }
 
+  onSeedNativeDragStart(event, seed) {
+    if (!this.canStartSeedDrag(seed)) {
+      event.preventDefault();
+      return;
+    }
+
+    this.draggedSeedItemTypeId = seed.itemTypeId;
+    event.dataTransfer?.setData('text/plain', String(seed.itemTypeId));
+    event.dataTransfer?.setDragImage?.(event.currentTarget, 8, 8);
+  }
+
+  onSeedNativeDragEnd() {
+    this.draggedSeedItemTypeId = null;
+    this.clearSeedDragState();
+  }
+
+  onSeedPointerDown(event, seed) {
+    if (
+      event.pointerType === 'mouse' ||
+      event.currentTarget?.getAttribute?.('aria-disabled') === 'true' ||
+      !this.canStartSeedDrag(seed)
+    ) {
+      return;
+    }
+
+    this.pointerSeedDrag = {
+      seedTypeId: seed.itemTypeId,
+      source: event.currentTarget,
+      startX: event.clientX,
+      startY: event.clientY,
+      dragging: false,
+      ghost: null,
+    };
+    document.addEventListener('pointermove', this.handleDocumentSeedPointerMove);
+    document.addEventListener('pointerup', this.handleDocumentSeedPointerUp);
+    document.addEventListener('pointercancel', this.handleDocumentSeedPointerCancel);
+  }
+
+  onDocumentSeedPointerMove(event) {
+    if (!this.pointerSeedDrag) {
+      return;
+    }
+
+    if (!this.pointerSeedDrag.dragging) {
+      const deltaX = event.clientX - this.pointerSeedDrag.startX;
+      const deltaY = event.clientY - this.pointerSeedDrag.startY;
+
+      if (Math.hypot(deltaX, deltaY) < TOUCH_DRAG_DISTANCE) {
+        return;
+      }
+
+      this.startSeedPointerDrag(event);
+    }
+
+    event.preventDefault();
+    this.moveSeedGhost(event.clientX, event.clientY);
+    this.syncSeedPointerDragTarget(event.clientX, event.clientY);
+  }
+
+  onDocumentSeedPointerUp(event) {
+    if (!this.pointerSeedDrag) {
+      return;
+    }
+
+    const { seedTypeId, dragging, ghost } = this.pointerSeedDrag;
+    const tileNumber = dragging
+      ? this.getDropTileNumberAtPoint(event.clientX, event.clientY, seedTypeId)
+      : null;
+    ghost?.remove();
+    this.pointerSeedDrag = null;
+    this.removeSeedPointerDragListeners();
+    this.clearSeedDragState();
+
+    if (dragging) {
+      event.preventDefault();
+    }
+
+    if (tileNumber !== null) {
+      this.dropSeedOnTile(tileNumber, seedTypeId);
+    }
+  }
+
+  cancelSeedPointerDrag() {
+    this.pointerSeedDrag?.ghost?.remove();
+    this.pointerSeedDrag = null;
+    this.removeSeedPointerDragListeners();
+    this.clearSeedDragState();
+  }
+
+  removeSeedPointerDragListeners() {
+    document.removeEventListener('pointermove', this.handleDocumentSeedPointerMove);
+    document.removeEventListener('pointerup', this.handleDocumentSeedPointerUp);
+    document.removeEventListener('pointercancel', this.handleDocumentSeedPointerCancel);
+  }
+
+  startSeedPointerDrag(event) {
+    const ghost = this.pointerSeedDrag.source.cloneNode(true);
+    ghost.className = 'garden-page__seed-drag-ghost';
+    document.body.append(ghost);
+    this.pointerSeedDrag.dragging = true;
+    this.pointerSeedDrag.ghost = ghost;
+    this.moveSeedGhost(event.clientX, event.clientY);
+  }
+
+  moveSeedGhost(clientX, clientY) {
+    if (!this.pointerSeedDrag?.ghost) {
+      return;
+    }
+
+    this.pointerSeedDrag.ghost.style.left = `${clientX + 6}px`;
+    this.pointerSeedDrag.ghost.style.top = `${clientY + 6}px`;
+  }
+
+  syncSeedPointerDragTarget(clientX, clientY) {
+    const seedTypeId = this.pointerSeedDrag?.seedTypeId ?? null;
+    const targetTileNumber = this.getDropTileNumberAtPoint(clientX, clientY, seedTypeId);
+
+    this.setSeedDragOverTile(targetTileNumber);
+  }
+
+  onTileDragOver(tileNumber, event) {
+    const seedTypeId = this.getDragSeedItemTypeId(event);
+
+    if (!this.canDropSeedOnTile(tileNumber, seedTypeId)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+
+    this.setSeedDragOverTile(tileNumber);
+  }
+
+  onTileDragLeave(tileNumber) {
+    this.tileRefs.get(tileNumber)?.button.classList.remove('is-seed-drag-over');
+  }
+
+  onTileDrop(tileNumber, event) {
+    const seedTypeId = this.getDragSeedItemTypeId(event);
+
+    if (!this.canDropSeedOnTile(tileNumber, seedTypeId)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.draggedSeedItemTypeId = null;
+    this.clearSeedDragState();
+    this.dropSeedOnTile(tileNumber, seedTypeId);
+  }
+
+  dropSeedOnTile(tileNumber, seedTypeId) {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+    const seed = snapshot.garden?.seeds?.find(
+      (candidate) => candidate.itemTypeId === seedTypeId,
+    );
+
+    if (!this.canDropSeedOnTile(tileNumber, seedTypeId, snapshot) || !tile || !seed) {
+      return null;
+    }
+
+    if (tile.phase === 'empty') {
+      const result = this.gameplayFacade.selectGardenSeed(tileNumber, seedTypeId);
+      this.render(this.gameplayFacade.getSnapshot());
+      return result;
+    }
+
+    this.swapDialogManager.show({ tile, seed });
+    return {
+      ok: true,
+      pendingSwap: true,
+    };
+  }
+
+  canStartSeedDrag(seed) {
+    return Number.isInteger(seed?.itemTypeId) && seed.itemTypeId > 0 && seed.quantity > 0;
+  }
+
+  canDropSeedOnTile(tileNumber, seedTypeId, snapshot = this.gameplayFacade.getSnapshot()) {
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+    const seed = snapshot.garden?.seeds?.find(
+      (candidate) => candidate.itemTypeId === seedTypeId,
+    );
+
+    if (!tile?.unlocked || !seed || seed.quantity <= 0) {
+      return false;
+    }
+
+    return tile.phase === 'empty' || tile.phase === 'growing';
+  }
+
+  getDropTileNumberAtPoint(clientX, clientY, seedTypeId) {
+    for (const [tileNumber, refs] of this.tileRefs.entries()) {
+      if (!this.canDropSeedOnTile(tileNumber, seedTypeId) || refs.button.hidden) {
+        continue;
+      }
+
+      const rect = refs.button.getBoundingClientRect();
+
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        return tileNumber;
+      }
+    }
+
+    return null;
+  }
+
+  getDragSeedItemTypeId(event) {
+    const transferred = Number(event?.dataTransfer?.getData?.('text/plain'));
+
+    if (Number.isInteger(transferred) && transferred > 0) {
+      return transferred;
+    }
+
+    return this.draggedSeedItemTypeId;
+  }
+
+  setSeedDragOverTile(tileNumber) {
+    for (const [candidateTileNumber, refs] of this.tileRefs.entries()) {
+      refs.button.classList.toggle(
+        'is-seed-drag-over',
+        tileNumber !== null && candidateTileNumber === tileNumber,
+      );
+    }
+  }
+
+  clearSeedDragState() {
+    this.setSeedDragOverTile(null);
+  }
+
+  canUseNativeSeedDrag() {
+    const view = this.root?.ownerDocument?.defaultView ?? globalThis.window;
+
+    if (typeof view?.matchMedia !== 'function') {
+      return true;
+    }
+
+    return view.matchMedia(NATIVE_SEED_DRAG_QUERY).matches;
+  }
+
   onConfirmCancel(tileNumber) {
     const openSeedPopupAfterCancel =
       this.openSeedPopupAfterCancelTileNumber === tileNumber;
@@ -967,6 +1281,14 @@ export class GardenPlotManager {
 
     if (openSeedPopupAfterCancel && result?.ok) {
       this.showSeedPopup(tileNumber);
+    }
+  }
+
+  onConfirmSeedSwap({ tileNumber, seedTypeId }) {
+    const result = this.gameplayFacade.replaceGardenSeed(tileNumber, seedTypeId);
+
+    if (result?.ok) {
+      this.render(this.gameplayFacade.getSnapshot());
     }
   }
 

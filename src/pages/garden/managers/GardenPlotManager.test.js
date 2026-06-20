@@ -34,6 +34,8 @@ function createGameplayFacadeFake() {
             selectedSeedItemTypeId: null,
             selectedSeedKey: null,
             selectedSeedLabel: null,
+            selectedHerbKey: null,
+            selectedHerbLabel: null,
             seedItemTypeId: null,
             seedKey: null,
             seedLabel: null,
@@ -100,6 +102,8 @@ function createGameplayFacadeFake() {
       tile.selectedSeedItemTypeId = seed.itemTypeId;
       tile.selectedSeedKey = seed.key;
       tile.selectedSeedLabel = seed.label;
+      tile.selectedHerbKey = herb.key;
+      tile.selectedHerbLabel = herb.label;
       tile.seedItemTypeId = seed.itemTypeId;
       tile.seedKey = seed.key;
       tile.seedLabel = seed.label;
@@ -130,19 +134,24 @@ function createGameplayFacadeFake() {
         tile.selectedSeedItemTypeId = null;
         tile.selectedSeedKey = null;
         tile.selectedSeedLabel = null;
+        tile.selectedHerbKey = null;
+        tile.selectedHerbLabel = null;
         publish();
         return { ok: true, planted: false };
       }
 
       const seed = snapshot.garden.seeds.find((candidate) => candidate.itemTypeId === seedTypeId);
+      const herb = herbsBySeedId.get(seedTypeId);
 
-      if (!seed) {
+      if (!seed || !herb) {
         return { ok: false };
       }
 
       tile.selectedSeedItemTypeId = seed.itemTypeId;
       tile.selectedSeedKey = seed.key;
       tile.selectedSeedLabel = seed.label;
+      tile.selectedHerbKey = herb.key;
+      tile.selectedHerbLabel = herb.label;
 
       if (tile.phase === 'empty' && seed.quantity > 0) {
         const result = gameplayFacade.plantGardenSeed(tileNumber, seedTypeId);
@@ -160,6 +169,49 @@ function createGameplayFacadeFake() {
       }
 
       return gameplayFacade.plantGardenSeed(tileNumber, tile.selectedSeedItemTypeId);
+    },
+    replaceGardenSeed: (tileNumber, seedTypeId) => {
+      const tile = snapshot.garden.plot.tiles[tileNumber - 1];
+      const seed = snapshot.garden.seeds.find((candidate) => candidate.itemTypeId === seedTypeId);
+      const herb = herbsBySeedId.get(seedTypeId);
+      const previousSeed = snapshot.garden.seeds.find(
+        (candidate) => candidate.itemTypeId === tile?.seedItemTypeId,
+      );
+      const availableQuantity =
+        (seed?.quantity ?? 0) + (previousSeed?.itemTypeId === seedTypeId ? 1 : 0);
+
+      if (!tile || tile.phase !== 'growing' || !seed || !herb || availableQuantity <= 0) {
+        return { ok: false };
+      }
+
+      if (previousSeed) {
+        previousSeed.quantity += 1;
+      }
+
+      seed.quantity -= 1;
+      tile.selectedSeedItemTypeId = seed.itemTypeId;
+      tile.selectedSeedKey = seed.key;
+      tile.selectedSeedLabel = seed.label;
+      tile.selectedHerbKey = herb.key;
+      tile.selectedHerbLabel = herb.label;
+      tile.seedItemTypeId = seed.itemTypeId;
+      tile.seedKey = seed.key;
+      tile.seedLabel = seed.label;
+      tile.herbItemTypeId = herb.itemTypeId;
+      tile.herbKey = herb.key;
+      tile.herbLabel = herb.label;
+      tile.phase = 'growing';
+      tile.totalMs = 12_000;
+      tile.remainingMs = 12_000;
+      tile.progress = 0;
+      tile.process = {
+        phase: 'growing',
+        totalMs: 12_000,
+        remainingMs: 12_000,
+        progress: 0,
+      };
+      publish();
+      return { ok: true };
     },
     startGardenHarvest: (tileNumber) => {
       const tile = snapshot.garden.plot.tiles[tileNumber - 1];
@@ -199,6 +251,8 @@ function createGameplayFacadeFake() {
       tile.selectedSeedItemTypeId = null;
       tile.selectedSeedKey = null;
       tile.selectedSeedLabel = null;
+      tile.selectedHerbKey = null;
+      tile.selectedHerbLabel = null;
       tile.seedItemTypeId = null;
       tile.seedKey = null;
       tile.seedLabel = null;
@@ -259,6 +313,29 @@ function dispatchTouchLikePressStart(element) {
   );
 }
 
+function createDataTransfer() {
+  const values = new Map();
+
+  return {
+    dropEffect: 'none',
+    getData: (key) => values.get(key) ?? '',
+    setData: (key, value) => values.set(key, String(value)),
+    setDragImage: () => {},
+  };
+}
+
+function dispatchDrop(element, dataTransfer) {
+  const event = new window.Event('drop', {
+    bubbles: true,
+    cancelable: true,
+  });
+  Object.defineProperty(event, 'dataTransfer', {
+    value: dataTransfer,
+  });
+  element.dispatchEvent(event);
+  return event;
+}
+
 describe('GardenPlotManager', () => {
   it('uses boxes as the default plot view with three fixed columns', () => {
     const parent = document.createElement('section');
@@ -275,6 +352,39 @@ describe('GardenPlotManager', () => {
     expect(plotRoot?.dataset.plotView).toBe('boxes');
     expect(rows?.dataset.plotView).toBe('boxes');
     expect(rows?.style.getPropertyValue('--garden-page-plot-columns')).toBe('3');
+  });
+
+  it('lets the Garden page scroll instead of fixing plot and herb box heights', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const uiLayerRule = baseCss.match(
+      /\.garden-page__ui-layer\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const gardenBoxesRule = baseCss.match(
+      /\.garden-page__plot,\s*\.garden-page__seeds,\s*\.garden-page__herbs\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const plotRowsRule = baseCss.match(
+      /\.garden-page__plot-rows\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const inventoryRowsRule = baseCss.match(
+      /\.garden-page__inventory-rows,\s*\.garden-page__herb-rows,\s*\.garden-page__seed-inventory-rows\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const absoluteRegistryStart = baseCss.indexOf('.workshop-page__bag-dialog,');
+    const absoluteRegistryEnd = baseCss.indexOf('.shop-page__market-panel .shop-page__shelf');
+    const absoluteRegistry = baseCss.slice(absoluteRegistryStart, absoluteRegistryEnd);
+
+    expect(uiLayerRule).toContain('overflow: hidden auto;');
+    expect(uiLayerRule).toContain('touch-action: pan-y;');
+    expect(gardenBoxesRule).toContain('position: relative;');
+    expect(plotRowsRule).toContain('max-height: none;');
+    expect(plotRowsRule).toContain('overflow: visible;');
+    expect(inventoryRowsRule).toContain('max-height: none;');
+    expect(inventoryRowsRule).toContain('overflow: visible;');
+    expect(baseCss).not.toContain('--garden-page-plot-rows-height');
+    expect(baseCss).not.toContain('--garden-page-herb-rows-height');
+    expect(baseCss).not.toContain('--garden-page-plot-box-height');
+    expect(absoluteRegistry).not.toContain('.garden-page__plot');
+    expect(absoluteRegistry).not.toContain('.garden-page__seeds');
+    expect(absoluteRegistry).not.toContain('.garden-page__herbs');
   });
 
   it('switches to rows and keeps current row action and timer behavior', () => {
@@ -313,7 +423,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
 
     expect(plotRoot?.dataset.plotView).toBe('rows');
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage');
     expect(plotRow.querySelector('.garden-page__plot-action-label')?.textContent).toBe(
       'growing',
     );
@@ -520,12 +630,156 @@ describe('GardenPlotManager', () => {
     mintButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint');
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
-      'seed',
+      'herb',
     );
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('12s');
+  });
+
+  it('plants a dragged seed dropped on an empty plot', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const mintSeed = gameplayFacade.getSnapshot().garden.seeds[0];
+    const dataTransfer = createDataTransfer();
+
+    manager.mount(parent);
+    manager.onSeedNativeDragStart(
+      {
+        currentTarget: document.createElement('div'),
+        dataTransfer,
+        preventDefault: () => {},
+      },
+      mintSeed,
+    );
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const dropEvent = dispatchDrop(plotRow, dataTransfer);
+
+    expect(dropEvent.defaultPrevented).toBe(true);
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
+      label: 'mint seed',
+      quantity: 0,
+    });
+  });
+
+  it('shows a swap dialog when a dragged seed is dropped on a growing plot', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    parent
+      .querySelector('[aria-label="select mint seed, owned 1"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const nettleSeed = gameplayFacade.getSnapshot().garden.seeds[1];
+    const dataTransfer = createDataTransfer();
+    manager.onSeedNativeDragStart(
+      {
+        currentTarget: document.createElement('div'),
+        dataTransfer,
+        preventDefault: () => {},
+      },
+      nettleSeed,
+    );
+    dispatchDrop(plotRow, dataTransfer);
+
+    const swapPopup = parent.querySelector('.garden-page__swap-popup');
+
+    expect(swapPopup.hidden).toBe(false);
+    expect(swapPopup.querySelector('#garden-swap-dialog-title')?.textContent).toBe(
+      'swap seed?',
+    );
+    expect(swapPopup.querySelector('.garden-page__swap-message')?.textContent).toBe(
+      'replace mint seed with nettle seed and restart plot 1.',
+    );
+
+    swapPopup
+      .querySelector('.garden-page__swap-confirm')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(swapPopup.hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('nettle');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      selectedSeedKey: 'nettleSeed',
+      seedKey: 'nettleSeed',
+      herbKey: 'nettleHerb',
+      remainingMs: 12_000,
+      progress: 0,
+    });
+    expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
+      label: 'mint seed',
+      quantity: 1,
+    });
+    expect(gameplayFacade.getSnapshot().garden.seeds[1]).toMatchObject({
+      label: 'nettle seed',
+      quantity: 5,
+    });
+  });
+
+  it('supports touch-style seed drag drops onto plots', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const mintSeed = gameplayFacade.getSnapshot().garden.seeds[0];
+    const source = document.createElement('div');
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow.getBoundingClientRect = () => ({
+      left: 40,
+      right: 120,
+      top: 40,
+      bottom: 120,
+      width: 80,
+      height: 80,
+    });
+
+    manager.onSeedPointerDown(
+      {
+        currentTarget: source,
+        pointerType: 'touch',
+        clientX: 0,
+        clientY: 0,
+      },
+      mintSeed,
+    );
+    document.dispatchEvent(
+      new window.MouseEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 60,
+        clientY: 60,
+      }),
+    );
+
+    expect(plotRow.classList.contains('is-seed-drag-over')).toBe(true);
+
+    document.dispatchEvent(
+      new window.MouseEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 60,
+        clientY: 60,
+      }),
+    );
+
+    expect(document.body.querySelector('.garden-page__seed-drag-ghost')).toBeNull();
+    expect(plotRow.classList.contains('is-seed-drag-over')).toBe(false);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint');
   });
 
   it('targets the seed name text for tutorial guidance, not the quantity value', () => {
@@ -571,7 +825,7 @@ describe('GardenPlotManager', () => {
     expect(tile.phase).toBe('empty');
 
     const labelText = plotRow
-      .querySelector('.garden-page__plot-label .style-seed-label__text')
+      .querySelector('.garden-page__plot-label .style-herb-label__text')
       ?.firstChild;
 
     labelText.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -609,7 +863,7 @@ describe('GardenPlotManager', () => {
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
     const labelText = plotRow.querySelector(
-      '.garden-page__plot-label .style-seed-label__text',
+      '.garden-page__plot-label .style-herb-label__text',
     );
 
     dispatchTouchLikePressStart(labelText);
@@ -670,14 +924,14 @@ describe('GardenPlotManager', () => {
     manager.mount(parent);
 
     const labelText = parent.querySelector(
-      '.garden-page__plot-label .style-seed-label__text',
+      '.garden-page__plot-label .style-herb-label__text',
     );
 
     expect(labelText).not.toBeNull();
 
     gameplayFacade.publish();
 
-    expect(parent.querySelector('.garden-page__plot-label .style-seed-label__text')).toBe(
+    expect(parent.querySelector('.garden-page__plot-label .style-herb-label__text')).toBe(
       labelText,
     );
 
@@ -704,7 +958,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint');
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 
@@ -800,7 +1054,7 @@ describe('GardenPlotManager', () => {
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.classList.contains('is-empty')).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
-      'seed',
+      'herb',
     );
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('no seeds');
 
@@ -811,22 +1065,22 @@ describe('GardenPlotManager', () => {
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
   });
 
-  it('keeps selected empty plot seed labels in resource color', () => {
+  it('keeps selected empty plot herb labels in resource color', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const suppressionIndex = baseCss.indexOf(
       '[data-resource-color] {\n  color: inherit;',
     );
     const overrideIndex = baseCss.indexOf(
-      '.garden-page__plot-row.is-empty\n  .garden-page__plot-label[data-resource-color="seed"]',
+      '.garden-page__plot-row.is-empty\n  .garden-page__plot-label[data-resource-color="herb"]',
     );
     const rule = baseCss.match(
-      /\.garden-page__plot-row\.is-empty\s+\.garden-page__plot-label\[data-resource-color="seed"\]\s*\{(?<body>[^}]*)\}/,
+      /\.garden-page__plot-row\.is-empty\s+\.garden-page__plot-label\[data-resource-color="herb"\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(suppressionIndex).toBeGreaterThan(-1);
     expect(overrideIndex).toBeGreaterThan(suppressionIndex);
     expect(rule).toBeDefined();
-    expect(rule).toMatch(/\bcolor:\s*var\(--style-resource-seed\);/);
+    expect(rule).toMatch(/\bcolor:\s*var\(--style-resource-herb\);/);
   });
 
   it('keeps plot notification dots on the text row instead of progress rails', () => {
@@ -883,7 +1137,7 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(cancelPopup.hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint');
 
     plotRow
       .querySelector('.garden-page__plot-action')

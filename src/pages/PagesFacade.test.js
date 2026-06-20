@@ -770,6 +770,8 @@ function createGameplayFacadeFake() {
           selectedSeedItemTypeId: null,
           selectedSeedKey: null,
           selectedSeedLabel: null,
+          selectedHerbKey: null,
+          selectedHerbLabel: null,
           seedItemTypeId: null,
           seedKey: null,
           seedLabel: null,
@@ -1209,6 +1211,16 @@ function createGameplayFacadeFake() {
   };
   const getTask = (taskId) =>
     snapshot.tasks.level.tasks.find((candidate) => candidate.taskId === taskId) ?? null;
+  const createGardenHerbForSeed = (seed) => {
+    const herbLabel = seed.label.replace(/\s+seed$/i, '');
+
+    return {
+      itemTypeId: 1000 + seed.itemTypeId,
+      key: `${seed.key.replace(/Seed$/, '')}Herb`,
+      label: herbLabel,
+      kind: 'herb',
+    };
+  };
   const syncTaskState = (task) => {
     task.remainingQuantity = Math.max(0, task.requiredQuantity - task.progressQuantity);
     task.ownedQuantity = getItemQuantity(task.itemTypeId);
@@ -1539,18 +1551,14 @@ function createGameplayFacadeFake() {
         };
       }
 
-      const herbLabel = seed.label.replace(/ Seed$/, '');
-      const herb = {
-        itemTypeId: 1000 + seed.itemTypeId,
-        key: `${seed.key.replace(/Seed$/, '')}Herb`,
-        label: herbLabel,
-        kind: 'herb',
-      };
+      const herb = createGardenHerbForSeed(seed);
 
       seed.quantity -= 1;
       tile.selectedSeedItemTypeId = seed.itemTypeId;
       tile.selectedSeedKey = seed.key;
       tile.selectedSeedLabel = seed.label;
+      tile.selectedHerbKey = herb.key;
+      tile.selectedHerbLabel = herb.label;
       tile.seedItemTypeId = seed.itemTypeId;
       tile.seedKey = seed.key;
       tile.seedLabel = seed.label;
@@ -1600,6 +1608,8 @@ function createGameplayFacadeFake() {
         tile.selectedSeedItemTypeId = null;
         tile.selectedSeedKey = null;
         tile.selectedSeedLabel = null;
+        tile.selectedHerbKey = null;
+        tile.selectedHerbLabel = null;
         publish();
         return {
           ok: true,
@@ -1623,6 +1633,9 @@ function createGameplayFacadeFake() {
       tile.selectedSeedItemTypeId = seed.itemTypeId;
       tile.selectedSeedKey = seed.key;
       tile.selectedSeedLabel = seed.label;
+      const herb = createGardenHerbForSeed(seed);
+      tile.selectedHerbKey = herb.key;
+      tile.selectedHerbLabel = herb.label;
 
       if (seed.quantity > 0) {
         const result = gameplayFacade.plantGardenSeed(tileNumber, seedTypeId);
@@ -1715,6 +1728,8 @@ function createGameplayFacadeFake() {
       tile.selectedSeedItemTypeId = null;
       tile.selectedSeedKey = null;
       tile.selectedSeedLabel = null;
+      tile.selectedHerbKey = null;
+      tile.selectedHerbLabel = null;
       tile.seedItemTypeId = null;
       tile.seedKey = null;
       tile.seedLabel = null;
@@ -9200,6 +9215,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__wall')).not.toBeNull();
     expect(stage.querySelector('.garden-page__floor')).not.toBeNull();
     expect(stage.querySelector('.garden-page__ui-layer')).not.toBeNull();
+    expect(stage.querySelector('.garden-page__seeds')).not.toBeNull();
+    expect(stage.querySelector('.garden-page__seeds')?.textContent).toContain('seeds');
+    expect(stage.querySelector('.garden-page__seeds')?.textContent).toContain('sage seed0');
     expect(stage.querySelector('.garden-page__herbs')).not.toBeNull();
     expect(stage.querySelector('.garden-page__herbs')?.textContent).toContain('herbs');
     expect(stage.querySelector('.garden-page__herbs')?.textContent).toContain('sage3');
@@ -10402,6 +10420,133 @@ describe('PagesFacade', () => {
     expect(herbs.querySelector('.garden-page__herb-row.is-locked')).toBeNull();
   });
 
+  it('collapses Garden seeds and herbs to three rows and keeps expansion across page swaps', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    unlockWorkshopSecondaryActions(gameplayFacade, 2);
+    snapshot.garden.seeds = [
+      {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+        quantity: 1,
+        researched: true,
+      },
+      {
+        itemTypeId: 2,
+        key: 'mintSeed',
+        label: 'mint seed',
+        kind: 'seed',
+        quantity: 2,
+        researched: true,
+      },
+      {
+        itemTypeId: 3,
+        key: 'nettleSeed',
+        label: 'nettle seed',
+        kind: 'seed',
+        quantity: 3,
+        researched: true,
+      },
+      {
+        itemTypeId: 4,
+        key: 'lavenderSeed',
+        label: 'lavender seed',
+        kind: 'seed',
+        quantity: 4,
+        researched: true,
+      },
+    ];
+    snapshot.garden.herbs = [
+      {
+        itemTypeId: 1001,
+        key: 'sageHerb',
+        label: 'sage',
+        kind: 'herb',
+        quantity: 1,
+        researched: true,
+      },
+      {
+        itemTypeId: 1002,
+        key: 'mintHerb',
+        label: 'mint',
+        kind: 'herb',
+        quantity: 2,
+        researched: true,
+      },
+      {
+        itemTypeId: 1003,
+        key: 'nettleHerb',
+        label: 'nettle',
+        kind: 'herb',
+        quantity: 3,
+        researched: true,
+      },
+      {
+        itemTypeId: 1004,
+        key: 'lavenderHerb',
+        label: 'lavender',
+        kind: 'herb',
+        quantity: 4,
+        researched: true,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+    const visibleRows = (selector) =>
+      [...stage.querySelectorAll(selector)].filter((row) => !row.hidden);
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'garden');
+
+    expect(stage.querySelectorAll('.garden-page__seed-inventory-row')).toHaveLength(4);
+    expect(visibleRows('.garden-page__seed-inventory-row')).toHaveLength(3);
+    expect(stage.querySelector('.garden-page__seeds-count')?.textContent).toBe('3/4');
+    expect(stage.querySelector('.garden-page__seeds-toggle')?.textContent).toBe('expand');
+    expect(stage.querySelector('.garden-page__seeds-toggle')?.getAttribute('aria-expanded')).toBe(
+      'false',
+    );
+    expect(stage.querySelectorAll('.garden-page__herb-row')).toHaveLength(4);
+    expect(visibleRows('.garden-page__herb-row')).toHaveLength(3);
+    expect(stage.querySelector('.garden-page__herbs-count')?.textContent).toBe('3/4');
+    expect(stage.querySelector('.garden-page__herbs-toggle')?.textContent).toBe('expand');
+
+    stage
+      .querySelector('.garden-page__seeds-toggle')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    stage
+      .querySelector('.garden-page__herbs-toggle')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(visibleRows('.garden-page__seed-inventory-row')).toHaveLength(4);
+    expect(stage.querySelector('.garden-page__seeds-count')?.textContent).toBe('4/4');
+    expect(stage.querySelector('.garden-page__seeds-toggle')?.textContent).toBe('collapse');
+    expect(stage.querySelector('.garden-page__seeds-toggle')?.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+    expect(visibleRows('.garden-page__herb-row')).toHaveLength(4);
+    expect(stage.querySelector('.garden-page__herbs-count')?.textContent).toBe('4/4');
+    expect(stage.querySelector('.garden-page__herbs-toggle')?.textContent).toBe('collapse');
+
+    clickRoomTab(stage, 'workshop');
+    clickRoomTab(stage, 'garden');
+
+    expect(visibleRows('.garden-page__seed-inventory-row')).toHaveLength(4);
+    expect(stage.querySelector('.garden-page__seeds-toggle')?.textContent).toBe('collapse');
+    expect(stage.querySelector('.garden-page__seeds-toggle')?.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+    expect(visibleRows('.garden-page__herb-row')).toHaveLength(4);
+    expect(stage.querySelector('.garden-page__herbs-toggle')?.textContent).toBe('collapse');
+    expect(stage.querySelector('.garden-page__herbs-toggle')?.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+  });
+
   it('shows garden plots as text rows and keeps planting as a popup choice', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -10487,9 +10632,9 @@ describe('PagesFacade', () => {
     seedButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(seedPopup.hidden).toBe(true);
-    expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('sage seed');
+    expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('sage');
     expect(rows[0].querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
-      'seed',
+      'herb',
     );
     expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('');
     expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
@@ -10743,7 +10888,7 @@ describe('PagesFacade', () => {
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
 
     expect(seedPopup.hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage seed');
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage');
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 

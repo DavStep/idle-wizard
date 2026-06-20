@@ -45,6 +45,9 @@ export class GardenSnapshotManager {
       const selectedSeed = tile.selectedSeedItemTypeId
         ? this.itemsFacade.getItemDefinition(tile.selectedSeedItemTypeId)
         : null;
+      const selectedHerb = selectedSeed?.producesHerbTypeId
+        ? this.itemsFacade.getItemDefinition(selectedSeed.producesHerbTypeId)
+        : null;
       const seed = tile.seedItemTypeId
         ? this.itemsFacade.getItemDefinition(tile.seedItemTypeId)
         : null;
@@ -56,6 +59,8 @@ export class GardenSnapshotManager {
         ...tile,
         selectedSeedKey: selectedSeed?.key ?? null,
         selectedSeedLabel: selectedSeed?.label ?? null,
+        selectedHerbKey: selectedHerb?.key ?? null,
+        selectedHerbLabel: selectedHerb?.label ?? null,
         seedKey: seed?.key ?? null,
         seedLabel: seed?.label ?? null,
         herbKey: herb?.key ?? null,

@@ -94,6 +94,10 @@ export class GardenFacade {
     return this.gardenPlantingManager.plantSelectedSeed(tileNumber);
   }
 
+  replaceSeed(tileNumber, seedTypeId) {
+    return this.gardenPlantingManager.replaceSeed(tileNumber, seedTypeId);
+  }
+
   startHarvest(tileNumber) {
     return this.gardenPlantingManager.startHarvest(tileNumber);
   }

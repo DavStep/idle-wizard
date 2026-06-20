@@ -956,6 +956,15 @@ export class GameplayFacade {
     return result;
   }
 
+  replaceGardenSeed(tileNumber, seedTypeId) {
+    const result = this.gardenFacade.replaceSeed(tileNumber, seedTypeId);
+    if (result.ok) {
+      this.gameplayLogFacade.logGardenSeedPlanted(result);
+    }
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   startGardenHarvest(tileNumber) {
     const result = this.gardenFacade.startHarvest(tileNumber);
     this.publishAndSaveSnapshot();

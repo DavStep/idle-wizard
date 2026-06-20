@@ -3045,6 +3045,8 @@ describe('GameplayFacade', () => {
       unlocked: true,
       phase: 'growing',
       selectedSeedKey: 'sageSeed',
+      selectedHerbKey: 'sageHerb',
+      selectedHerbLabel: 'sage',
       seedKey: 'sageSeed',
       herbKey: 'sageHerb',
       remainingMs: 12_000,
@@ -3102,6 +3104,8 @@ describe('GameplayFacade', () => {
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
       selectedSeedLabel: 'sage seed',
+      selectedHerbKey: 'sageHerb',
+      selectedHerbLabel: 'sage',
       seedItemTypeId: null,
       herbItemTypeId: null,
       process: null,
@@ -3138,6 +3142,8 @@ describe('GameplayFacade', () => {
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
       selectedSeedLabel: 'sage seed',
+      selectedHerbKey: 'sageHerb',
+      selectedHerbLabel: 'sage',
       seedItemTypeId: null,
       herbItemTypeId: null,
       process: null,
@@ -3215,6 +3221,73 @@ describe('GameplayFacade', () => {
       ok: false,
       reason: 'tile_empty',
       tileNumber: 1,
+    });
+  });
+
+  it('replaces a growing garden seed, returns the old seed, and resets progress', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1, 1);
+    gameplayFacade.itemsFacade.addItem(2, 1);
+    gameplayFacade.plantGardenSeed(1, 1);
+    ecsFacade.update({ deltaSeconds: 5 });
+
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: 'growing',
+      seedKey: 'sageSeed',
+      remainingMs: 7_000,
+    });
+
+    expect(gameplayFacade.replaceGardenSeed(1, 2)).toEqual({
+      ok: true,
+      tileNumber: 1,
+      seed: {
+        itemTypeId: 2,
+        key: 'mintSeed',
+        label: 'mint seed',
+        kind: 'seed',
+      },
+      herb: {
+        itemTypeId: 1002,
+        key: 'mintHerb',
+        label: 'mint',
+        kind: 'herb',
+      },
+      replacedSeed: {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+      },
+      durationMs: 25_000,
+      replaced: true,
+    });
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: 'growing',
+      selectedSeedKey: 'mintSeed',
+      seedKey: 'mintSeed',
+      herbKey: 'mintHerb',
+      remainingMs: 25_000,
+      totalMs: 25_000,
+      process: {
+        phase: 'growing',
+        remainingMs: 25_000,
+        progress: 0,
+      },
+    });
+    expect(gameplayFacade.getSnapshot().garden.seeds).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'sage seed',
+      kind: 'seed',
+      quantity: 1,
+    });
+    expect(gameplayFacade.getSnapshot().garden.seeds).toContainEqual({
+      itemTypeId: 2,
+      key: 'mintSeed',
+      label: 'mint seed',
+      kind: 'seed',
+      quantity: 0,
     });
   });
 

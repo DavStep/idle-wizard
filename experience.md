@@ -66,6 +66,7 @@
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
 - Garden selected seed labels and picker rows need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening/changing the seed.
+- Garden seed drag/drop needs the brewing-style pointer fallback; native HTML drag alone is not reliable in Android WebView.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
@@ -412,6 +413,8 @@
 - Garden plot row height must include the progress rail slot even when no progress is shown; hide the rail but keep the space.
 - Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
+- Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
+- Garden seed/herb inventory expand state is page-manager-owned and survives room tab swaps; collapsed previews show three item rows.
 
 ## Style
 
