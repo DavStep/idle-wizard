@@ -18,6 +18,7 @@ export class GameplaySaveManager {
     gardenFacade,
     tasksFacade,
     personalTasksFacade,
+    worldNoticeFacade,
     now = () => Date.now(),
   }) {
     this.manaFacade = manaFacade;
@@ -36,6 +37,7 @@ export class GameplaySaveManager {
     this.gardenFacade = gardenFacade;
     this.tasksFacade = tasksFacade;
     this.personalTasksFacade = personalTasksFacade;
+    this.worldNoticeFacade = worldNoticeFacade;
     this.now = now;
   }
 
@@ -59,6 +61,7 @@ export class GameplaySaveManager {
       garden: this.gardenFacade.getPersistenceSnapshot(),
       tasks: this.tasksFacade.getPersistenceSnapshot(),
       personalTasks: this.personalTasksFacade.getPersistenceSnapshot(),
+      worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),
     };
   }
 }

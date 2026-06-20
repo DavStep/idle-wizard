@@ -97,11 +97,15 @@ export class ShopAutoSellManager {
   }
 
   sellShopCycle(slots) {
+    return this.sellShopCycleWithDemandState(slots, new Map());
+  }
+
+  sellShopCycleWithDemandState(slots, npcNeedByItemKey) {
     let soldAny = false;
     let blocked = false;
 
     for (const slot of slots) {
-      const result = this.sellSlot(slot);
+      const result = this.sellSlot(slot, { npcNeedByItemKey });
 
       if (result.sold) {
         soldAny = true;
@@ -116,8 +120,10 @@ export class ShopAutoSellManager {
   }
 
   processPendingCycles(activeSlots) {
+    const npcNeedByItemKey = new Map();
+
     while (this.pendingCycleCount > 0) {
-      const result = this.sellShopCycle(activeSlots);
+      const result = this.sellShopCycleWithDemandState(activeSlots, npcNeedByItemKey);
 
       if (result.soldAny) {
         this.pendingCycleCount -= 1;
@@ -133,7 +139,7 @@ export class ShopAutoSellManager {
     }
   }
 
-  sellSlot(slot) {
+  sellSlot(slot, { npcNeedByItemKey = null } = {}) {
     const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
     const availableQuantity = this.getAvailableQuantity(slot.sellItemTypeId);
 
@@ -151,7 +157,7 @@ export class ShopAutoSellManager {
       return { sold: false, blocked: false };
     }
 
-    const npcNeed = this.getNpcNeedForItem(item);
+    const npcNeed = this.getAvailableNpcNeed(item, npcNeedByItemKey);
 
     if (!Number.isFinite(npcNeed)) {
       return { sold: false, blocked: this.isPriceDataPending() };
@@ -171,7 +177,7 @@ export class ShopAutoSellManager {
       return { sold: false, blocked: false };
     }
 
-    const quote = this.quoteSale(item, quantity, gold);
+    const quote = this.quoteSale(item, quantity, gold, { npcNeed });
 
     if (!quote.ok) {
       return {
@@ -191,6 +197,7 @@ export class ShopAutoSellManager {
     const totalGold = quote.totalPriceGold;
     this.goldFacade.add(totalGold);
     this.shopShelfEntityManager.consumeSlotSellQuantityLimit?.(slot.slotNumber, quantity);
+    this.consumeNpcNeed(item, quantity, npcNeedByItemKey);
     void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
     this.onItemSold?.({
       item,
@@ -278,6 +285,40 @@ export class ShopAutoSellManager {
     return Math.floor(need);
   }
 
+  getAvailableNpcNeed(item, npcNeedByItemKey) {
+    const itemKey = this.getNpcNeedItemKey(item);
+
+    if (!itemKey || !npcNeedByItemKey) {
+      return this.getNpcNeedForItem(item);
+    }
+
+    if (!npcNeedByItemKey.has(itemKey)) {
+      npcNeedByItemKey.set(itemKey, this.getNpcNeedForItem(item));
+    }
+
+    return npcNeedByItemKey.get(itemKey);
+  }
+
+  consumeNpcNeed(item, quantity, npcNeedByItemKey) {
+    const itemKey = this.getNpcNeedItemKey(item);
+
+    if (!itemKey || !npcNeedByItemKey) {
+      return;
+    }
+
+    const npcNeed = npcNeedByItemKey.get(itemKey);
+
+    if (!Number.isFinite(npcNeed)) {
+      return;
+    }
+
+    npcNeedByItemKey.set(itemKey, Math.max(0, npcNeed - quantity));
+  }
+
+  getNpcNeedItemKey(item) {
+    return item?.key ? String(item.key) : null;
+  }
+
   isActiveSellSlot(slot) {
     return Boolean(
       slot?.unlocked &&
@@ -299,10 +340,11 @@ export class ShopAutoSellManager {
     return quantity;
   }
 
-  quoteSale(item, quantity, fallbackPriceGold) {
+  quoteSale(item, quantity, fallbackPriceGold, { npcNeed = null } = {}) {
     const quote = this.shopNpcSellQuoteManager?.quoteItem?.({
       item,
       quantity,
+      npcNeed,
     });
 
     if (quote) {

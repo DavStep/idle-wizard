@@ -1,3 +1,6 @@
+const MAX_LOG_ENTRIES = 100;
+const MAX_LOG_MESSAGE_LENGTH = 240;
+
 export class GameplayLogManager {
   constructor({ now = () => Date.now() } = {}) {
     this.now = now;
@@ -19,6 +22,7 @@ export class GameplayLogManager {
 
     this.nextId += 1;
     this.entries.push(entry);
+    this.pruneEntries();
     return entry;
   }
 
@@ -43,6 +47,7 @@ export class GameplayLogManager {
     this.entries = Array.isArray(snapshot.entries)
       ? snapshot.entries.map((entry) => this.normalizeEntry(entry)).filter(Boolean)
       : [];
+    this.pruneEntries();
 
     const highestId = this.entries.reduce((maxId, entry) => Math.max(maxId, entry.id), 0);
     this.nextId = Number.isInteger(snapshot.nextId) && snapshot.nextId > highestId
@@ -70,6 +75,14 @@ export class GameplayLogManager {
   }
 
   normalizeMessage(message) {
-    return String(message ?? '').trim().toLowerCase();
+    return String(message ?? '').trim().toLowerCase().slice(0, MAX_LOG_MESSAGE_LENGTH);
+  }
+
+  pruneEntries() {
+    if (this.entries.length <= MAX_LOG_ENTRIES) {
+      return;
+    }
+
+    this.entries = this.entries.slice(-MAX_LOG_ENTRIES);
   }
 }

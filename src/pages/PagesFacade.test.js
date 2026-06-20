@@ -2898,7 +2898,7 @@ function createFeedbackFacadeFake() {
   };
 }
 
-function createWorldChatFacadeFake({ messages, sendResult = null } = {}) {
+function createWorldChatFacadeFake({ messages, sendResult = null, publishOnSend = true } = {}) {
   const snapshot = {
     connected: true,
     messages: messages ?? [
@@ -2921,10 +2921,35 @@ function createWorldChatFacadeFake({ messages, sendResult = null } = {}) {
     }
   };
 
+  const pushMessage = (message) => {
+    snapshot.messages.push({
+      id: String(snapshot.messages.length + 1),
+      senderIdentity: 'sender-self',
+      username: 'wizard',
+      playerLevel: 1,
+      body: message,
+      sentAtMs: 2_000,
+    });
+  };
+
   return {
     getSnapshot: () => snapshot,
     getSentMessages: () => sentMessages,
     publishSnapshot: publish,
+    publishServerMessage: (message) => {
+      snapshot.messages.push({
+        id: String(snapshot.messages.length + 1),
+        senderIdentity: message.senderIdentity ?? 'sender-self',
+        username: message.username ?? 'wizard',
+        character: message.character,
+        playerLevel: message.playerLevel ?? 1,
+        body: message.body,
+        allianceTag: message.allianceTag ?? '',
+        allianceTagColor: message.allianceTagColor ?? '',
+        sentAtMs: message.sentAtMs ?? 2_000,
+      });
+      publish();
+    },
     subscribe: (listener) => {
       listeners.add(listener);
       listener(snapshot);
@@ -2937,15 +2962,10 @@ function createWorldChatFacadeFake({ messages, sendResult = null } = {}) {
       }
 
       sentMessages.push(message);
-      snapshot.messages.push({
-        id: String(snapshot.messages.length + 1),
-        senderIdentity: 'sender-self',
-        username: 'wizard',
-        playerLevel: 1,
-        body: message,
-        sentAtMs: 2_000,
-      });
-      publish();
+      if (publishOnSend) {
+        pushMessage(message);
+        publish();
+      }
       return {
         ok: true,
         body: message,
@@ -8926,6 +8946,71 @@ describe('PagesFacade', () => {
     expect(pointerDown.defaultPrevented).toBe(true);
     expect(worldChatFacade.getSentMessages()).toEqual(['tapped send']);
     expect(input.value).toBe('');
+  });
+
+  it('shows sent world chat while waiting for the server subscription row', async () => {
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(10_000);
+    const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade(7);
+    const playerFacade = createPlayerFacadeFake('StepDav', 'white', {
+      initialCharacter: 'mira',
+    });
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [],
+      publishOnSend: false,
+    });
+    const tradeAllianceFacade = createTradeAllianceFacadeFake();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade,
+      worldChatFacade,
+      tradeAllianceFacade,
+    });
+
+    try {
+      pagesFacade.mount(stage);
+
+      stage
+        .querySelector('.workshop-page__world-chat-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      const popup = stage.querySelector('.workshop-page__world-chat-popup');
+      const input = popup.querySelector('.workshop-page__world-chat-input');
+      const form = popup.querySelector('.workshop-page__world-chat-form');
+
+      input.value = '  level   20?  ';
+      input.dispatchEvent(new window.Event('input', { bubbles: true }));
+      form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(worldChatFacade.getSentMessages()).toEqual(['level 20?']);
+      expect(input.value).toBe('');
+      expect(popup.querySelector('.workshop-page__world-chat-status')?.textContent).toBe(
+        'sent',
+      );
+      expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(1);
+      expect(popup.textContent).toContain('[VOID] StepDav(7): level 20?');
+      expect(
+        popup.querySelector('.workshop-page__world-chat-character-icon')?.getAttribute('src'),
+      ).toContain('mira.webp');
+
+      worldChatFacade.publishServerMessage({
+        senderIdentity: 'sender-self',
+        username: 'StepDav',
+        character: 'mira',
+        playerLevel: 7,
+        body: 'level 20?',
+        allianceTag: 'VOID',
+        sentAtMs: 10_500,
+      });
+
+      expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(1);
+      expect(popup.textContent).toContain('[VOID] StepDav(7): level 20?');
+    } finally {
+      pagesFacade.unmount();
+      dateNow.mockRestore();
+    }
   });
 
   it('shows world chat rate-limit failures without clearing the typed message', async () => {

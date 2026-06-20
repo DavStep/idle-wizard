@@ -130,6 +130,19 @@ export class TaskStateEntityManager {
     }));
   }
 
+  getPersistenceTaskStateSnapshots() {
+    const currentLevel = this.getCurrentLevel();
+
+    return this.taskBalanceManager
+      .getLevelTasks(currentLevel)
+      .map((task) => ({
+        taskId: task.id,
+        progressQuantity: this.getProgress(task.id),
+        completed: this.isCompleted(task.id),
+      }))
+      .filter((task) => task.progressQuantity > 0 || task.completed);
+  }
+
   applySnapshot(snapshot = {}) {
     const savedTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
     const savedTasksById = new Map(

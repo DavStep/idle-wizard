@@ -11,6 +11,7 @@ import { WorkshopRequirementConnectionManager } from './managers/WorkshopRequire
 import { WorkshopPersonalTasksManager } from './managers/WorkshopPersonalTasksManager.js';
 import { WorkshopTaskManager } from './managers/WorkshopTaskManager.js';
 import { WorkshopTradeAllianceManager } from './managers/WorkshopTradeAllianceManager.js';
+import { WorkshopWorldNoticeManager } from './managers/WorkshopWorldNoticeManager.js';
 import {
   WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
   WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
@@ -78,6 +79,7 @@ export class WorkshopPageFacade {
       onLevelUpNotice: ({ message }) => this.flyoutManager.show(message),
     });
     this.personalTasksManager = new WorkshopPersonalTasksManager({ gameplayFacade });
+    this.worldNoticeManager = new WorkshopWorldNoticeManager({ gameplayFacade });
   }
 
   mount(stage) {
@@ -87,6 +89,7 @@ export class WorkshopPageFacade {
     this.requirementConnectionManager.mount(uiLayer);
     this.taskManager.mount(uiLayer, popupLayer);
     this.personalTasksManager.mount(uiLayer, popupLayer);
+    this.worldNoticeManager.mount(uiLayer, popupLayer);
     this.actionBarManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
@@ -120,6 +123,7 @@ export class WorkshopPageFacade {
     this.logDialogManager.unmount();
     this.tradeAllianceManager.unmount();
     this.leaderboardManager.unmount();
+    this.worldNoticeManager.unmount();
     this.personalTasksManager.unmount();
     this.taskManager.unmount();
     this.actionBarManager.unmount();

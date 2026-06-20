@@ -28,6 +28,7 @@ export class GameplayPersistenceFacade {
     gardenFacade,
     tasksFacade,
     personalTasksFacade,
+    worldNoticeFacade,
     now = () => Date.now(),
     windowRef = globalThis,
     documentRef = globalThis.document,
@@ -51,6 +52,7 @@ export class GameplayPersistenceFacade {
       gardenFacade,
       tasksFacade,
       personalTasksFacade,
+      worldNoticeFacade,
       now,
     });
     this.loadManager = new GameplayLoadManager({
@@ -70,6 +72,7 @@ export class GameplayPersistenceFacade {
       gardenFacade,
       tasksFacade,
       personalTasksFacade,
+      worldNoticeFacade,
     });
     this.now = now;
     this.windowRef = windowRef;

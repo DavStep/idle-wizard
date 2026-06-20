@@ -42,9 +42,11 @@ export class PageNotificationStateManager {
 
   getBrewingPage(snapshot) {
     const brewing = snapshot.brewing ?? {};
+    const cauldrons = getBrewingCauldrons(brewing);
     const canUseHerb =
-      brewing.canAddIngredient === true &&
-      !brewing.activeBrew &&
+      cauldrons.some(
+        (cauldron) => cauldron.canAddIngredient === true && !cauldron.activeBrew,
+      ) &&
       this.getVisibleActionItems(snapshot, brewing.herbs).some(
         (herb) => (herb.availableQuantity ?? herb.quantity ?? 0) > 0,
       );
@@ -52,10 +54,7 @@ export class PageNotificationStateManager {
     return this.createPage({
       cauldron: canBuyNextCauldron(snapshot, brewing),
       herbs: canUseHerb,
-      action:
-        brewing.canBrew === true ||
-        brewing.canStartBottling === true ||
-        brewing.activeBrew?.canStartBottling === true,
+      action: cauldrons.some(hasBrewingActionNotification),
     });
   }
 
@@ -242,6 +241,20 @@ function canBuyNextCauldron(snapshot, brewing) {
     brewing?.nextCauldronLockedByResearch !== true &&
     Number.isFinite(brewing?.nextCauldronCost) &&
     (snapshot.gold?.current ?? 0) >= brewing.nextCauldronCost
+  );
+}
+
+function getBrewingCauldrons(brewing = {}) {
+  return Array.isArray(brewing.cauldrons) && brewing.cauldrons.length > 0
+    ? brewing.cauldrons
+    : [brewing];
+}
+
+function hasBrewingActionNotification(cauldron = {}) {
+  return (
+    cauldron.canBrew === true ||
+    cauldron.canStartBottling === true ||
+    cauldron.activeBrew?.canStartBottling === true
   );
 }
 

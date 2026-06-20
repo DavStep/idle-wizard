@@ -49,6 +49,26 @@ describe('ShopNpcSellQuoteManager', () => {
     });
   });
 
+  it('uses a reserved demand override when quoting same-cycle auto sells', () => {
+    const manager = new ShopNpcSellQuoteManager({
+      shopNpcPriceManager: {
+        getNpcBuyPriceGold: () => 0.8,
+        getNpcNeed: () => 1000,
+        getNpcPrice: () => ({
+          basePriceGold: 1,
+          npcNeed: 1000,
+          targetNeed: 1000,
+        }),
+      },
+    });
+
+    expect(manager.quoteItem({ item: sageSeed, quantity: 3, npcNeed: 2 })).toMatchObject({
+      ok: false,
+      reason: 'demand_too_low',
+      need: 2,
+    });
+  });
+
   it('falls back to simple multiplication when market curve is unavailable', () => {
     const manager = new ShopNpcSellQuoteManager({
       shopNpcPriceManager: {

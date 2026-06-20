@@ -239,6 +239,29 @@ describe('GameplayFacade', () => {
     expect(snapshot.shop.playerRequests.unlockedSlots).toBe(0);
   });
 
+  it('persists only changed current-level task rows', () => {
+    const persistenceStorage = createMemoryStorage();
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    gameplayFacade.itemsFacade.addItem(1, 1);
+    expect(gameplayFacade.fillTask('level1-sage-seeds')).toMatchObject({ ok: true });
+    gameplayFacade.savePersistenceSnapshot();
+
+    const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
+
+    expect(saved.tasks).toEqual({
+      currentLevel: 1,
+      tasks: [
+        {
+          taskId: 'level1-sage-seeds',
+          progressQuantity: 1,
+          completed: false,
+        },
+      ],
+    });
+    expect(JSON.stringify(saved).length).toBeLessThan(50_000);
+  });
+
   it('clamps restored garden and market capacity to the saved player level', () => {
     const persistenceStorage = createMemoryStorage();
     persistenceStorage.setItem(

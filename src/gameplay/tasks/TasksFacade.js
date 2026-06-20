@@ -77,7 +77,7 @@ export class TasksFacade {
   getPersistenceSnapshot() {
     return {
       currentLevel: this.taskStateEntityManager.getCurrentLevel(),
-      tasks: this.taskStateEntityManager.getTaskStateSnapshots(),
+      tasks: this.taskStateEntityManager.getPersistenceTaskStateSnapshots(),
     };
   }
 

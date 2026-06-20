@@ -121,6 +121,7 @@ export class GameplayMigrationManager {
       'garden',
       'tasks',
       'personalTasks',
+      'worldNotice',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -137,6 +138,14 @@ export class GameplayMigrationManager {
       migratedSave.personalTasks = {
         version: 1,
         periods: {},
+      };
+    }
+
+    if (!migratedSave.worldNotice) {
+      migratedSave.worldNotice = {
+        version: 1,
+        current: null,
+        archive: [],
       };
     }
 

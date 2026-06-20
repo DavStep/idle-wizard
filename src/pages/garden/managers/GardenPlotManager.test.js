@@ -819,11 +819,6 @@ describe('GardenPlotManager', () => {
     manager.mount(parent);
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
-    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
-
-    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
-    expect(tile.phase).toBe('empty');
-
     const labelText = plotRow
       .querySelector('.garden-page__plot-label .style-herb-label__text')
       ?.firstChild;
@@ -841,6 +836,32 @@ describe('GardenPlotManager', () => {
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    expect(tile.phase).toBe('growing');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+  });
+
+  it('plants from the full empty plot slot when a selected seed is plantable', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const tile = snapshot.garden.plot.tiles[0];
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 2,
+      selectedSeedKey: 'mintSeed',
+      selectedSeedLabel: 'mint seed',
+      phase: 'empty',
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-box-frame')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(tile.phase).toBe('growing');
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
@@ -1120,16 +1141,21 @@ describe('GardenPlotManager', () => {
 
     const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
 
-    plotRow
-      .querySelector('.garden-page__plot-action')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    plotRow.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        detail: 1,
+        clientX: 1,
+        clientY: 1,
+      }),
+    );
 
     expect(cancelPopup.hidden).toBe(false);
     expect(cancelPopup.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
       'cancel progress?',
     );
     expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
-      'return mint seed and empty plot 1.',
+      'are you sure you want to empty plot 1? mint seed will be returned.',
     );
 
     cancelPopup
@@ -1142,7 +1168,7 @@ describe('GardenPlotManager', () => {
     plotRow
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    expect(cancelPopup.querySelector('.garden-page__cancel-confirm')?.textContent).toBe('yes');
+    expect(cancelPopup.querySelector('.garden-page__cancel-confirm')?.textContent).toBe('empty');
     cancelPopup
       .querySelector('.garden-page__cancel-confirm')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -1182,7 +1208,7 @@ describe('GardenPlotManager', () => {
     expect(cancelPopup.hidden).toBe(false);
     expect(seedPopup.hidden).toBe(true);
     expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
-      'return mint seed and empty plot 1.',
+      'are you sure you want to empty plot 1? mint seed will be returned.',
     );
 
     cancelPopup
@@ -1237,6 +1263,54 @@ describe('GardenPlotManager', () => {
       label: 'mint seed',
       quantity: 1,
     });
+  });
+
+  it('opens cancel when a harvesting plot body is clicked', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'harvesting',
+      totalMs: 3_000,
+      remainingMs: 3_000,
+      progress: 0,
+      process: {
+        phase: 'harvesting',
+        totalMs: 3_000,
+        remainingMs: 3_000,
+        progress: 0,
+      },
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
+
+    plotRow.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        detail: 1,
+        clientX: 1,
+        clientY: 1,
+      }),
+    );
+
+    expect(cancelPopup.hidden).toBe(false);
+    expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
+      'are you sure you want to empty plot 1? sage seed will be returned.',
+    );
   });
 
   it('shows unresearched seed choices as locked and grays zero-count researched seeds', () => {

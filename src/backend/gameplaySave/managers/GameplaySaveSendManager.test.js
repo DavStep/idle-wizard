@@ -20,6 +20,32 @@ describe('GameplaySaveSendManager', () => {
     });
   });
 
+  it('rejects saves that are too large for the reducer before sending', () => {
+    const setPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const onSyncUnhealthy = vi.fn();
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      onSyncUnhealthy,
+    });
+
+    manager.connect({
+      reducers: {
+        setPlayerGameplaySave,
+      },
+    });
+    manager.setReadyToSend(true);
+
+    expect(manager.save({ payload: 'x'.repeat(250_000) })).toBe(false);
+    expect(setPlayerGameplaySave).not.toHaveBeenCalled();
+    expect(onSyncUnhealthy).toHaveBeenCalledWith({
+      reason: 'gameplay_save_too_large',
+      error: {
+        saveJsonLength: expect.any(Number),
+        maxSaveJsonLength: 250_000,
+      },
+    });
+  });
+
   it('queues the latest save until a connection is hydrated', () => {
     const set_player_gameplay_save = vi.fn(() => Promise.resolve());
     const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });

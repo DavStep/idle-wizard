@@ -1,3 +1,28 @@
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
+import {
+  createResourceIconLabel,
+  setResourceIconText,
+} from '../../shared/resourceIconLabel.js';
+
+const PERSONAL_TASK_RESOURCE_BY_ACTION = new Map([
+  ['summon_seeds', 'seed'],
+  ['spend_mana', 'mana'],
+  ['plant_seeds', 'seed'],
+  ['harvest_herbs', 'herb'],
+  ['brew_potions', 'potion'],
+  ['sell_items', 'gold'],
+  ['earn_gold', 'gold'],
+]);
+
+const PERSONAL_TASK_ICON_BY_RESOURCE = new Map([
+  ['seed', { type: 'item', kind: 'seed' }],
+  ['mana', { type: 'resource', resource: 'mana' }],
+  ['herb', { type: 'item', kind: 'herb', itemKey: 'sageHerb' }],
+  ['potion', { type: 'item', kind: 'potion' }],
+  ['gold', { type: 'resource', resource: 'gold' }],
+]);
+
 export class WorkshopPersonalTasksManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -257,16 +282,19 @@ export class WorkshopPersonalTasksManager {
   }
 
   createTaskRow(task) {
+    const root = document.createElement('div');
+    root.className = 'workshop-page__personal-task';
+
     const row = document.createElement('div');
     row.className = 'workshop-page__personal-task-row';
 
     if (task.completed) {
+      root.classList.add('is-completed');
       row.classList.add('is-completed');
     }
 
     const label = document.createElement('span');
     label.className = 'workshop-page__personal-task-label';
-    label.textContent = task.label;
 
     const progress = document.createElement('span');
     progress.className = 'workshop-page__personal-task-progress';
@@ -274,17 +302,33 @@ export class WorkshopPersonalTasksManager {
 
     const reward = document.createElement('span');
     reward.className = 'workshop-page__personal-task-reward';
-    reward.textContent = task.completed ? 'done' : task.reward?.text ?? '';
+
+    const taskResource = this.getTaskResource(task);
+    const activeTaskResource = task.completed ? null : taskResource;
+    this.setTaskIconText(label, task.label, taskResource);
+    setResourceIconText(reward, task.completed ? 'done' : task.reward?.text ?? '');
+    setResourceColor(label, activeTaskResource);
+    setResourceColor(progress, activeTaskResource);
+    setResourceColor(reward, task.completed ? null : this.getRewardResource(task.reward));
+
+    const progressBar = this.createProgressBar(
+      this.getProgressWidth(task.progressQuantity, task.requiredQuantity, task.completed),
+    );
 
     row.append(label, progress, reward);
-    return row;
+    root.append(row, progressBar);
+    return root;
   }
 
   createFullClearRow(period) {
+    const root = document.createElement('div');
+    root.className = 'workshop-page__personal-task workshop-page__personal-task--full';
+
     const row = document.createElement('div');
     row.className = 'workshop-page__personal-task-row workshop-page__personal-task-row--full';
 
     if (period.fullClearRewardClaimed) {
+      root.classList.add('is-completed');
       row.classList.add('is-completed');
     }
 
@@ -298,12 +342,98 @@ export class WorkshopPersonalTasksManager {
 
     const reward = document.createElement('span');
     reward.className = 'workshop-page__personal-task-reward';
-    reward.textContent = period.fullClearRewardClaimed
-      ? 'done'
-      : period.fullClearReward?.text ?? '';
+    setResourceIconText(
+      reward,
+      period.fullClearRewardClaimed ? 'done' : period.fullClearReward?.text ?? '',
+    );
+
+    setResourceColor(reward, this.getFullClearRewardResource(period));
+
+    const progressBar = this.createProgressBar(
+      this.getProgressWidth(
+        period.completedTasks,
+        period.totalTasks,
+        period.fullClearRewardClaimed,
+      ),
+    );
 
     row.append(label, progress, reward);
-    return row;
+    root.append(row, progressBar);
+    return root;
+  }
+
+  createProgressBar(width) {
+    const progress = document.createElement('div');
+    progress.className = 'style-progress workshop-page__personal-task-bar';
+    progress.setAttribute('aria-hidden', 'true');
+
+    const fill = document.createElement('span');
+    fill.className = 'style-progress__fill workshop-page__personal-task-fill';
+    fill.style.width = width;
+
+    progress.append(fill);
+    return progress;
+  }
+
+  getProgressWidth(progressQuantity, requiredQuantity, completed = false) {
+    if (completed) {
+      return '100%';
+    }
+
+    const progress = Number(progressQuantity);
+    const required = Number(requiredQuantity);
+
+    if (!Number.isFinite(progress) || !Number.isFinite(required) || required <= 0) {
+      return '0%';
+    }
+
+    return `${Math.max(0, Math.min(1, progress / required)) * 100}%`;
+  }
+
+  getTaskResource(task) {
+    return PERSONAL_TASK_RESOURCE_BY_ACTION.get(task?.actionType) ?? null;
+  }
+
+  setTaskIconText(label, text, resource) {
+    label.textContent = text;
+    const icon = PERSONAL_TASK_ICON_BY_RESOURCE.get(resource);
+
+    if (!icon) {
+      return;
+    }
+
+    if (icon.type === 'item') {
+      setItemIconLabel(label, icon.kind, icon.itemKey);
+      return;
+    }
+
+    label.replaceChildren(
+      createResourceIconLabel(icon.resource, ''),
+      document.createTextNode(text),
+    );
+  }
+
+  getFullClearRewardResource(period) {
+    if (period?.fullClearRewardClaimed) {
+      return null;
+    }
+
+    return this.getRewardResource(period?.fullClearReward);
+  }
+
+  getRewardResource(reward) {
+    const hasGold = Math.max(0, Math.floor(Number(reward?.gold) || 0)) > 0;
+    const hasCrystal = Math.max(0, Math.floor(Number(reward?.crystal) || 0)) > 0;
+
+    if (hasGold && !hasCrystal) {
+      return 'gold';
+    }
+
+    if (hasCrystal && !hasGold) {
+      return 'crystal';
+    }
+
+    return null;
   }
 
   applyVisibility() {

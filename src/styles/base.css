@@ -1194,6 +1194,7 @@ body {
   :where(
     .workshop-page__tasks,
     .workshop-page__personal-tasks,
+    .workshop-page__world-notice,
     .workshop-page__summon-button,
     .workshop-page__bag-button,
     .workshop-page__prestige-button,
@@ -1230,6 +1231,7 @@ body {
 
 .workshop-page__summon-button,
 .workshop-page__personal-tasks,
+.workshop-page__world-notice,
 .brewing-page__cauldrons > .style-box:nth-child(1),
 .garden-page__seeds,
 .research-page__box-list > .style-box:nth-child(1),
@@ -1295,7 +1297,8 @@ body {
     .room-world-chat-layer,
     .workshop-page__action-bar > .style-button,
     .workshop-page__tasks,
-    .workshop-page__personal-tasks
+    .workshop-page__personal-tasks,
+    .workshop-page__world-notice
   ) {
   opacity: 0;
   pointer-events: none;
@@ -3227,6 +3230,90 @@ body {
   background: var(--style-active-surface);
 }
 
+.style-box.workshop-page__world-notice {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + 180px);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  display: grid;
+  gap: 3px;
+  padding-bottom: calc(var(--style-box-border-label-line-height) - 3px);
+  margin: 0;
+}
+
+.workshop-page__world-notice[hidden] {
+  display: none;
+}
+
+.workshop-page__world-notice-summary {
+  display: grid;
+  gap: 2px;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__world-notice-summary-headline {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__world-notice-summary-meta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: var(--style-row-column-gap);
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__world-notice-summary-meta > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__world-notice-summary-meta > span:last-child {
+  text-align: right;
+}
+
+.workshop-page__world-notice-open {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  z-index: 1;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+  transform: translateX(-50%);
+}
+
+.workshop-page__world-notice-open:hover,
+.workshop-page__world-notice-open:focus-visible {
+  text-decoration: underline;
+}
+
+.workshop-page__world-notice-open:focus {
+  outline: none;
+}
+
+.workshop-page__world-notice-open:active {
+  background: var(--style-active-surface);
+}
+
 .workshop-page__level-rewards-toggle {
   position: absolute;
   right: var(--style-box-title-left);
@@ -4097,6 +4184,12 @@ body {
   z-index: 30;
 }
 
+.workshop-page__world-notice-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
 .workshop-page__summon-info-popup {
   position: absolute;
   inset: 0;
@@ -4133,6 +4226,7 @@ body {
 .workshop-page__prestige-popup[hidden],
 .workshop-page__tasks-info-popup[hidden],
 .workshop-page__personal-tasks-popup[hidden],
+.workshop-page__world-notice-popup[hidden],
 .workshop-page__summon-info-popup[hidden],
 .room-player-info-popup[hidden],
 .room-alliance-info-popup[hidden] {
@@ -4188,25 +4282,33 @@ body {
 
 .workshop-page__personal-tasks-rows {
   display: grid;
-  gap: 4px;
+  gap: 5px;
 }
 
-.workshop-page__personal-task-row {
+.workshop-page__personal-task {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(58px, auto);
-  column-gap: var(--style-row-column-gap);
-  align-items: baseline;
-  min-height: var(--style-row-min-height);
+  gap: 2px;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.workshop-page__personal-task-row--full {
+.workshop-page__personal-task--full {
   padding-top: 5px;
   margin-top: 2px;
   border-top: 1px solid var(--style-disabled);
 }
 
-.workshop-page__personal-task-row.is-completed {
+.workshop-page__personal-task-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(52px, max-content) minmax(
+      58px,
+      max-content
+    );
+  column-gap: 16px;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__personal-task.is-completed {
   color: var(--style-muted);
 }
 
@@ -4218,6 +4320,12 @@ body {
   white-space: nowrap;
 }
 
+:root[data-style-icons="icons"]
+  .workshop-page__personal-task-label
+  > .style-resource-label {
+  margin-right: 0.28em;
+}
+
 .workshop-page__personal-task-progress,
 .workshop-page__personal-task-reward {
   text-align: right;
@@ -4225,6 +4333,10 @@ body {
 
 .workshop-page__personal-task-reward {
   font-size: var(--style-tiny-font-size);
+}
+
+.workshop-page__personal-task-bar {
+  width: 100%;
 }
 
 .workshop-page__personal-tasks-tabs {
@@ -4236,7 +4348,7 @@ body {
 .style-button.workshop-page__personal-tasks-close {
   position: absolute;
   right: var(--style-box-title-left);
-  bottom: var(--style-box-border-label-offset);
+  top: var(--style-box-border-label-offset);
   min-height: var(--style-box-border-label-line-height);
   padding: 0 var(--style-box-border-label-padding-x);
   margin: 0;
@@ -4253,6 +4365,144 @@ body {
 
 .workshop-page__personal-tasks-empty {
   min-height: var(--style-row-min-height);
+}
+
+.style-dialog.workshop-page__world-notice-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 286px;
+  max-height: 420px;
+  transform: translate(-50%, -50%);
+}
+
+.workshop-page__world-notice-content {
+  display: grid;
+  gap: 8px;
+  max-height: 372px;
+  overflow: auto;
+}
+
+.workshop-page__world-notice-header,
+.workshop-page__world-notice-body,
+.workshop-page__world-notice-requests,
+.workshop-page__world-notice-archive {
+  display: grid;
+  gap: 5px;
+}
+
+.workshop-page__world-notice-headline {
+  font-weight: 700;
+}
+
+.workshop-page__world-notice-meta,
+.workshop-page__world-notice-section-label,
+.workshop-page__world-notice-empty,
+.workshop-page__world-notice-archive-response {
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__world-notice-copy {
+  margin: 0;
+}
+
+.workshop-page__world-notice-requests {
+  padding-top: 6px;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.workshop-page__world-notice-request {
+  display: grid;
+  gap: 2px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__world-notice-request.is-completed {
+  color: var(--style-muted);
+}
+
+.workshop-page__world-notice-request-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(52px, max-content) minmax(
+      58px,
+      max-content
+    );
+  column-gap: 12px;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__world-notice-request-label,
+.workshop-page__world-notice-request-action-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__world-notice-request-progress,
+.workshop-page__world-notice-request-action-text {
+  text-align: right;
+}
+
+.workshop-page__world-notice-request-action-text {
+  font-size: var(--style-tiny-font-size);
+}
+
+.style-button.workshop-page__world-notice-request-action {
+  width: auto;
+  min-width: 52px;
+  padding: 1px 4px;
+  margin-bottom: 0;
+  font-size: var(--style-tiny-font-size);
+}
+
+.workshop-page__world-notice-request-bar {
+  width: 100%;
+}
+
+.workshop-page__world-notice-archive {
+  padding-top: 6px;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.workshop-page__world-notice-archive-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(76px, max-content);
+  column-gap: var(--style-row-column-gap);
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__world-notice-archive-headline,
+.workshop-page__world-notice-archive-response {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__world-notice-archive-response {
+  text-align: right;
+}
+
+.style-button.workshop-page__world-notice-close {
+  position: absolute;
+  right: var(--style-box-title-left);
+  top: var(--style-box-border-label-offset);
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
 }
 
 .workshop-page__tasks-info-copy {
@@ -5036,21 +5286,11 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__trade-alliance-content {
-  height: calc(292px - var(--style-scroll-progress-block-size));
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
-}
-
-.workshop-page__trade-alliance-panel[data-active-tab="quests"]
-  .style-dialog.workshop-page__trade-alliance-dialog {
-  height: auto;
-}
-
-.workshop-page__trade-alliance-panel[data-active-tab="quests"]
-  .workshop-page__trade-alliance-content {
-  height: auto;
-  max-height: var(--style-tabbed-dialog-content-height);
 }
 
 .workshop-page__trade-alliance-content::-webkit-scrollbar {
@@ -5621,6 +5861,10 @@ div.workshop-page__discovery-row {
   cursor: default;
 }
 
+.garden-page__plot-row.is-empty.is-plantable {
+  cursor: pointer;
+}
+
 .garden-page__plot-row.is-empty .garden-page__plot-label,
 .garden-page__plot-row.is-empty .garden-page__plot-box-label,
 .garden-page__plot-row.is-empty .garden-page__plot-action {
@@ -5688,6 +5932,7 @@ div.workshop-page__discovery-row {
 @media (hover: hover) and (pointer: fine) {
   .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
     .garden-page__plot-action,
+  .garden-page__plot-row.is-empty.is-plantable:hover .garden-page__plot-action,
   .garden-page__plot-row.is-ready .garden-page__plot-action:hover,
   .garden-page__plot-row.is-empty .garden-page__plot-action:hover {
     text-decoration: underline;
@@ -8970,6 +9215,8 @@ div.workshop-page__discovery-row {
 }
 
 .style-dialog.workshop-page__trade-alliance-dialog {
+  display: flex;
+  flex-direction: column;
   position: relative;
   width: 300px;
   height: var(--style-tabbed-dialog-content-height);
@@ -9876,6 +10123,7 @@ div.workshop-page__discovery-row {
   .workshop-page__tasks-toggle,
   .workshop-page__level-rewards-toggle,
   .workshop-page__personal-tasks-open,
+  .workshop-page__world-notice-open,
   .shop-page__slot-row--interactive .shop-page__slot-item-value,
   .shop-page__sell-item-button:not(:disabled):not([aria-disabled="true"])
     .row_key,
@@ -9910,6 +10158,7 @@ div.workshop-page__discovery-row {
   .workshop-page__tasks-toggle,
   .workshop-page__level-rewards-toggle,
   .workshop-page__personal-tasks-open,
+  .workshop-page__world-notice-open,
   .shop-page__slot-row--interactive,
   .shop-page__slot-unlock-button,
   .shop-page__sell-item-button,
@@ -9936,6 +10185,7 @@ div.workshop-page__discovery-row {
     .workshop-page__tasks-toggle,
     .workshop-page__level-rewards-toggle,
     .workshop-page__personal-tasks-open,
+    .workshop-page__world-notice-open,
     .shop-page__slot-row--interactive,
     .shop-page__slot-unlock-button,
     .shop-page__sell-item-button,
@@ -10119,6 +10369,7 @@ div.workshop-page__discovery-row {
 .style-box .workshop-page__tasks-toggle,
 .style-box .workshop-page__level-rewards-toggle,
 .style-box .workshop-page__personal-tasks-open,
+.style-box .workshop-page__world-notice-open,
 .style-box .workshop-page__world-chat-title {
   font-size: var(--style-world-chat-title-font-size);
   line-height: var(--style-box-border-label-line-height);
@@ -10178,6 +10429,7 @@ div.workshop-page__discovery-row {
 .workshop-page__prestige-popup:not([hidden]),
 .workshop-page__tasks-info-popup:not([hidden]),
 .workshop-page__personal-tasks-popup:not([hidden]),
+.workshop-page__world-notice-popup:not([hidden]),
 .workshop-page__summon-info-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
@@ -10213,6 +10465,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__tasks-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
   .workshop-page,
+.game-stage:has(.workshop-page__world-notice-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__summon-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
@@ -10244,6 +10497,7 @@ div.workshop-page__discovery-row {
 .workshop-page__logs-popup:not([hidden]) .style-dialog,
 .workshop-page__tasks-info-popup:not([hidden]) .style-dialog,
 .workshop-page__personal-tasks-popup:not([hidden]) .style-dialog,
+.workshop-page__world-notice-popup:not([hidden]) .style-dialog,
 .workshop-page__summon-info-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
@@ -11009,6 +11263,7 @@ div.workshop-page__discovery-row {
     :where(
       .workshop-page__tasks,
       .workshop-page__personal-tasks,
+      .workshop-page__world-notice,
       .workshop-page__summon-button,
       .workshop-page__bag-button,
       .workshop-page__prestige-button,

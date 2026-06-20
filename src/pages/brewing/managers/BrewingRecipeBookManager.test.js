@@ -304,12 +304,15 @@ describe('BrewingRecipeBookManager', () => {
       (row) => ({
         required: row.querySelector('.brewing-page__recipe-ingredient-required')?.textContent,
         owned: row.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
+        unavailable: row
+          .querySelector('.brewing-page__recipe-ingredient-required')
+          ?.classList.contains('is-unavailable'),
       }),
     );
 
     expect(ingredients).toEqual([
-      { required: '- 2 briar', owned: 'owned 7' },
-      { required: '- 2 sage', owned: 'owned 1' },
+      { required: '- 2 briar', owned: 'owned 7', unavailable: false },
+      { required: '- 2 sage', owned: 'owned 1', unavailable: true },
     ]);
     const required = parent.querySelector('.brewing-page__recipe-ingredient-required');
 

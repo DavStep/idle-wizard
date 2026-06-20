@@ -882,6 +882,7 @@ export class GardenPlotManager {
     const clickedLabel = this.isTileLabelClick(event);
     const clickedPlant = this.isTilePlantClick(event);
     const clickedAction = this.isTileActionClick(event, refs);
+    const canPlantSelectedSeed = this.canPlantSelectedSeed(tile, snapshot);
     const keyboardRowAction =
       event?.target === event?.currentTarget && event?.detail === 0;
 
@@ -910,7 +911,7 @@ export class GardenPlotManager {
         return;
       }
 
-      if (!clickedAction && !keyboardRowAction) {
+      if (!clickedAction && !keyboardRowAction && !canPlantSelectedSeed) {
         return;
       }
 
@@ -929,11 +930,8 @@ export class GardenPlotManager {
     }
 
     if (tile.process) {
-      if (clickedAction || keyboardRowAction) {
-        this.openSeedPopupAfterCancelTileNumber = null;
-        this.cancelDialogManager.show(tile);
-      }
-
+      this.openSeedPopupAfterCancelTileNumber = clickedLabel ? tileNumber : null;
+      this.cancelDialogManager.show(tile);
       return;
     }
 
@@ -943,6 +941,18 @@ export class GardenPlotManager {
         this.render(this.gameplayFacade.getSnapshot());
       }
     }
+  }
+
+  canPlantSelectedSeed(tile, snapshot) {
+    if (!tile?.selectedSeedItemTypeId || tile.phase !== 'empty') {
+      return false;
+    }
+
+    const selectedSeed = snapshot.garden?.seeds?.find(
+      (seed) => seed.itemTypeId === tile.selectedSeedItemTypeId,
+    );
+
+    return (selectedSeed?.quantity ?? 0) > 0;
   }
 
   isTileLabelClick(event) {

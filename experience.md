@@ -44,6 +44,7 @@
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
 - Weekly events should be framed as `weekly world notice` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
+- Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
 - Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, donate, and deliver, not random chores pasted under a headline.
 - Weekly event v1 should stay mostly solo with light utility rewards; no new combat mode, map mode, event-only economy, or mandatory weekly power gate.
@@ -69,6 +70,7 @@
 - Garden selected seed labels and picker rows need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening/changing the seed.
 - Garden seed drag/drop needs the brewing-style pointer fallback; native HTML drag alone is not reliable in Android WebView.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
+- Garden plantable empty plots should plant from the whole slot/row; seed-name labels still open seed choices and no-seed slots stay inert.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
@@ -574,6 +576,7 @@
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
 - World chat system sender labels stay muted gray in monochrome; reserve the reddish system accent for resource color mode.
+- Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
 - World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
@@ -696,11 +699,13 @@
 - Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
 - NPC market backend can expose shared baseline prices/need, but client buy/sell calls must not mutate shared stock or demand until server-owned inventory/gold exists.
+- NPC market auto-sell must reserve/decrement visible demand locally across same-item stands and catch-up cycles before calling reducers; otherwise stale demand snapshots spam `sell_to_npc` panics.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
 - Market price amounts are cent-rounded floats and visible prices use two decimals; use shared gold-price helpers instead of flooring.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local gold.
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
 - Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.
+- Gameplay save raw JSON must stay below the server cap before reducer normalization; cap noisy client branches like logs and do not persist full future task catalogs.
 - Android packaging uses Capacitor.
 - Capacitor 8 Android builds require JDK 21 here.
 - Capacitor Android serves bundled assets as `https://localhost` by default; local `ws://` SpacetimeDB is blocked as mixed content unless `server.androidScheme` is `http` and cleartext is allowed, then the app is rebuilt/synced.

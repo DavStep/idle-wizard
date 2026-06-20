@@ -15,7 +15,7 @@ export class ShopNpcSellQuoteManager {
     this.shopNpcPriceManager = shopNpcPriceManager;
   }
 
-  quoteItem({ item, quantity = 1 } = {}) {
+  quoteItem({ item, quantity = 1, npcNeed = null } = {}) {
     const safeQuantity = this.normalizeQuantity(quantity);
 
     if (safeQuantity === null) {
@@ -28,7 +28,10 @@ export class ShopNpcSellQuoteManager {
     const priceGold = normalizePositiveGoldPrice(
       this.shopNpcPriceManager.getNpcBuyPriceGold(item),
     );
-    const need = this.shopNpcPriceManager.getNpcNeed(item);
+    const npcNeedOverride = npcNeed === null || npcNeed === undefined
+      ? null
+      : normalizeCount(npcNeed);
+    const need = npcNeedOverride ?? this.shopNpcPriceManager.getNpcNeed(item);
 
     if (priceGold === null) {
       return {
@@ -56,6 +59,7 @@ export class ShopNpcSellQuoteManager {
       item,
       quantity: safeQuantity,
       fallbackPriceGold: priceGold,
+      npcNeed,
     });
 
     if (totalPriceGold === null) {
@@ -88,10 +92,13 @@ export class ShopNpcSellQuoteManager {
     return safeQuantity;
   }
 
-  getMarginalTotalPriceGold({ item, quantity, fallbackPriceGold }) {
+  getMarginalTotalPriceGold({ item, quantity, fallbackPriceGold, npcNeed: npcNeedOverride = null }) {
     const priceState = this.shopNpcPriceManager.getNpcPrice?.(item) ?? item;
     const basePriceGold = normalizePositiveGoldPrice(priceState?.basePriceGold);
-    const npcNeed = normalizeCount(priceState?.npcNeed);
+    const safeNpcNeedOverride = npcNeedOverride === null || npcNeedOverride === undefined
+      ? null
+      : normalizeCount(npcNeedOverride);
+    const npcNeed = safeNpcNeedOverride ?? normalizeCount(priceState?.npcNeed);
     const targetNeed =
       normalizeCount(priceState?.targetNeed) ??
       normalizeCount(priceState?.targetStock);

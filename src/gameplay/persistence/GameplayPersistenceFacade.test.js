@@ -31,6 +31,7 @@ function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}
     gardenFacade: resourceFacade,
     tasksFacade: resourceFacade,
     personalTasksFacade: resourceFacade,
+    worldNoticeFacade: resourceFacade,
     now: () => 123,
     windowRef,
     documentRef,

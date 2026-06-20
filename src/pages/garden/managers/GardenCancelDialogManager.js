@@ -50,7 +50,7 @@ export class GardenCancelDialogManager {
     const confirmButton = document.createElement('button');
     confirmButton.className = 'style-button garden-page__cancel-confirm';
     confirmButton.type = 'button';
-    confirmButton.textContent = 'yes';
+    confirmButton.textContent = 'empty';
     confirmButton.addEventListener('click', () => this.confirm());
 
     actions.append(keepButton, confirmButton);
@@ -135,7 +135,7 @@ export class GardenCancelDialogManager {
 
   updateContent(tile) {
     const seedLabel = tile.seedLabel ?? tile.selectedSeedLabel ?? 'seed';
-    const message = `return ${seedLabel} and empty plot ${tile.tileNumber}.`;
+    const message = `are you sure you want to empty plot ${tile.tileNumber}? ${seedLabel} will be returned.`;
 
     if (this.refs.message && this.refs.message.textContent !== message) {
       this.refs.message.textContent = message;

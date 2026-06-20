@@ -229,6 +229,64 @@ describe('PageNotificationStateManager', () => {
     expect(manager.getSnapshot(snapshot).pages.garden.active).toBe(true);
   });
 
+  it('rolls per-cauldron brewing work up to the brewing page', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.brewing.herbs = [
+      {
+        itemTypeId: 2,
+        key: 'sageHerb',
+        label: 'sage',
+        kind: 'herb',
+        quantity: 1,
+        availableQuantity: 1,
+      },
+    ];
+    snapshot.brewing.cauldrons = [
+      {
+        cauldronIndex: 0,
+        canAddIngredient: false,
+        canBrew: false,
+        canStartBottling: false,
+        activeBrew: {
+          canStartBottling: false,
+        },
+      },
+      {
+        cauldronIndex: 1,
+        canAddIngredient: true,
+        canBrew: false,
+        canStartBottling: false,
+        activeBrew: null,
+      },
+    ];
+
+    expect(manager.getSnapshot(snapshot).pages.brewing).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        herbs: true,
+        action: false,
+      },
+    });
+
+    snapshot.brewing.cauldrons[1].canAddIngredient = false;
+    snapshot.brewing.cauldrons[1].activeBrew = {
+      label: 'calming draught',
+      canStartBottling: true,
+    };
+
+    expect(manager.getSnapshot(snapshot).pages.brewing).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        herbs: false,
+        action: true,
+      },
+    });
+  });
+
   it('does not mark empty player market stands as player-market notifications', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();

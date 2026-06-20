@@ -1,5 +1,6 @@
 const DEFAULT_SYNC_TIMEOUT_MS = 10_000;
 const DEFAULT_SYNC_INTERVAL_MS = 5_000;
+const MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH = 250_000;
 
 export class GameplaySaveSendManager {
   constructor({
@@ -64,6 +65,14 @@ export class GameplaySaveSendManager {
     try {
       const saveJson = JSON.stringify(save);
       const saveContentKey = this.getSaveContentKey(save, saveJson);
+
+      if (!this.isValidSaveJsonLength(saveJson)) {
+        this.notifySyncUnhealthy('gameplay_save_too_large', {
+          saveJsonLength: saveJson.length,
+          maxSaveJsonLength: MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH,
+        });
+        return false;
+      }
 
       if (this.isRedundantSaveContent(saveContentKey)) {
         return true;
@@ -359,6 +368,14 @@ export class GameplaySaveSendManager {
     const meaningfulSave = { ...save };
     delete meaningfulSave.savedAt;
     return JSON.stringify(meaningfulSave);
+  }
+
+  isValidSaveJsonLength(saveJson) {
+    return (
+      typeof saveJson === 'string' &&
+      saveJson.length > 0 &&
+      saveJson.length <= MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH
+    );
   }
 
   findSetPlayerGameplaySaveReducer() {

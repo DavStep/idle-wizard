@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.16
+
+- Added weekly world notices in the Workshop with normal action requests, gold donations, rewards, and past notice history.
+- Improved Workshop personal task rows and chat sending so progress reads cleaner and sent messages appear locally while the server echo catches up.
+- Made Garden planting and emptying easier by letting plantable or active plot bodies respond, with clearer empty-plot confirmation copy.
+- Tightened Brewing recipe and notification states, and hardened save syncing so compact task/notice data stays under the server save limit.
+
 ## 0.2.15
 
 - Improved first-run account setup so connecting an account happens before the game creates a new anonymous save.

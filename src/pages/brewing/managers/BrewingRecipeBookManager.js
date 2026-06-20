@@ -429,6 +429,7 @@ export class BrewingRecipeBookManager {
 
         const required = document.createElement('span');
         required.className = 'brewing-page__recipe-ingredient-required';
+        required.classList.toggle('is-unavailable', ownedQuantity < quantity);
         setResourceColor(required, 'herb');
         required.append(`- ${quantity} `, this.createIngredientIconLabel(ingredient));
 

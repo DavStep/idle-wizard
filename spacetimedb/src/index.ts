@@ -7268,7 +7268,19 @@ function normalizePlayerGameplaySave(
     brewing: normalizeSaveBrewing(save.brewing, itemCatalog, levelLimits.maxCauldrons),
     garden: normalizeSaveGarden(save.garden, itemCatalog, levelLimits),
     tasks,
+    personalTasks: normalizeSaveClientStateBranch(
+      Object.hasOwn(save, 'personalTasks') ? save.personalTasks : previousSave.personalTasks,
+      { version: 1, periods: {} },
+    ),
+    worldNotice: normalizeSaveClientStateBranch(
+      Object.hasOwn(save, 'worldNotice') ? save.worldNotice : previousSave.worldNotice,
+      { version: 1, current: null, archive: [] },
+    ),
   };
+}
+
+function normalizeSaveClientStateBranch(value: unknown, fallback: Record<string, unknown>) {
+  return isRecord(value) ? value : fallback;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -8132,25 +8144,6 @@ function normalizeSaveTasks(
       .filter((task): task is Record<string, unknown> => isRecord(task))
       .map((task) => [String(task.taskId ?? ''), task]),
   );
-  const normalizedTasks = taskCatalog.tasks.map((task) => {
-    const savedTask = savedTasksById.get(task.id);
-    const progressQuantity = clampSaveInteger(
-      savedTask?.progressQuantity,
-      0,
-      task.quantity,
-      0,
-    );
-    const completed = Boolean(savedTask?.completed) && progressQuantity >= task.quantity;
-
-    return {
-      taskId: task.id,
-      progressQuantity: completed ? task.quantity : progressQuantity,
-      completed,
-      level: task.level,
-      requiredQuantity: task.quantity,
-    };
-  });
-  const derivedLevel = getFirstIncompleteSaveLevel(normalizedTasks, taskCatalog);
   const reportedLevel = taskState.currentLevel === undefined
     ? null
     : clampSaveInteger(
@@ -8163,6 +8156,31 @@ function normalizeSaveTasks(
     ? taskCatalog.initialLevel
     : Math.min(taskCatalog.maxLevel, previousLevel + 1);
   const fallbackLevel = previousLevel ?? taskCatalog.initialLevel;
+  const candidateLevel = Math.min(
+    reportedLevel ?? fallbackLevel,
+    maxAllowedLevel,
+  );
+  const normalizedTasks = taskCatalog.tasks.map((task) => {
+    const savedTask = savedTasksById.get(task.id);
+    const progressQuantity = clampSaveInteger(
+      savedTask?.progressQuantity,
+      0,
+      task.quantity,
+      0,
+    );
+    const completed =
+      task.level < candidateLevel ||
+      (Boolean(savedTask?.completed) && progressQuantity >= task.quantity);
+
+    return {
+      taskId: task.id,
+      progressQuantity: completed ? task.quantity : progressQuantity,
+      completed,
+      level: task.level,
+      requiredQuantity: task.quantity,
+    };
+  });
+  const derivedLevel = getFirstIncompleteSaveLevel(normalizedTasks, taskCatalog);
   const currentLevel = Math.min(
     reportedLevel ?? fallbackLevel,
     derivedLevel,
@@ -8171,29 +8189,14 @@ function normalizeSaveTasks(
 
   return {
     currentLevel,
-    tasks: normalizedTasks.map((task) => {
-      if (task.level < currentLevel) {
-        return {
-          taskId: task.taskId,
-          progressQuantity: task.requiredQuantity,
-          completed: true,
-        };
-      }
-
-      if (task.level > currentLevel) {
-        return {
-          taskId: task.taskId,
-          progressQuantity: 0,
-          completed: false,
-        };
-      }
-
-      return {
+    tasks: normalizedTasks
+      .filter((task) => task.level === currentLevel)
+      .filter((task) => task.progressQuantity > 0 || task.completed)
+      .map((task) => ({
         taskId: task.taskId,
         progressQuantity: task.progressQuantity,
         completed: task.completed,
-      };
-    }),
+      })),
   };
 }
 

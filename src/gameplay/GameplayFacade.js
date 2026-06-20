@@ -22,6 +22,10 @@ import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
 import { ShopFacade } from './shop/ShopFacade.js';
 import { TasksFacade } from './tasks/TasksFacade.js';
 import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
+import {
+  WORLD_NOTICE_ACTIONS,
+  WorldNoticeFacade,
+} from './worldNotice/WorldNoticeFacade.js';
 
 export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
 export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 1_000;
@@ -67,6 +71,12 @@ export class GameplayFacade {
       goldFacade: this.goldFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
+      tasksFacade: this.tasksFacade,
+      now: persistenceNow,
+    });
+    this.worldNoticeFacade = new WorldNoticeFacade({
+      goldFacade: this.goldFacade,
+      playerLevelFacade: this.playerLevelFacade,
       tasksFacade: this.tasksFacade,
       now: persistenceNow,
     });
@@ -135,6 +145,7 @@ export class GameplayFacade {
       gardenFacade: this.gardenFacade,
       tasksFacade: this.tasksFacade,
       personalTasksFacade: this.personalTasksFacade,
+      worldNoticeFacade: this.worldNoticeFacade,
       now: persistenceNow,
     });
     this.potionDiscoveryFacade = null;
@@ -474,6 +485,7 @@ export class GameplayFacade {
         version: 1,
         periods: {},
       },
+      worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),
     });
     this.syncPlayerLevelManaEffects();
     this.syncRubyFromPrestige();
@@ -490,6 +502,7 @@ export class GameplayFacade {
 
   handleResearchComplete({ label }) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH, 1);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH, 1);
     this.gameplayLogFacade.logResearchBought({
       label,
     });
@@ -499,6 +512,7 @@ export class GameplayFacade {
   handleSeedSummoned(result) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, result.quantity);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, result.cost);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SUMMON_SEEDS, result.quantity);
     this.gameplayLogFacade.logSeedSummoned(result);
     this.rewardEventManager.publish({
       type: 'seed_summoned',
@@ -514,6 +528,7 @@ export class GameplayFacade {
 
   handleBrewComplete(event) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.BREW_POTIONS, event.quantity);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, event.quantity);
     this.gameplayLogFacade.logBrewCompleted(event);
     this.rewardEventManager.publish({
       type: 'potion_collected',
@@ -524,6 +539,7 @@ export class GameplayFacade {
 
   handleGardenHarvestComplete(event) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.HARVEST_HERBS, event.quantity);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.HARVEST_HERBS, event.quantity);
     this.gameplayLogFacade.logGardenHarvestCompleted(event);
     this.rewardEventManager.publish({
       type: 'herb_harvested',
@@ -544,6 +560,8 @@ export class GameplayFacade {
   handleItemSold(event) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_GOLD, event.gold);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_GOLD, event.gold);
     this.gameplayLogFacade.logItemSold(event);
     this.rewardEventManager.publish({
       type: 'item_sold',
@@ -567,6 +585,7 @@ export class GameplayFacade {
 
   handleGoldCollected(event) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_GOLD, event.gold);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_GOLD, event.gold);
     this.rewardEventManager.publish({
       type: 'gold_collected',
       gold: event.gold,
@@ -576,6 +595,16 @@ export class GameplayFacade {
 
   recordPersonalTaskAction(actionType, quantity = 1) {
     return this.personalTasksFacade.recordAction(actionType, quantity);
+  }
+
+  recordWorldNoticeAction(actionType, quantity = 1) {
+    return this.worldNoticeFacade.recordAction(actionType, quantity);
+  }
+
+  donateWorldNoticeGold(requestId) {
+    const result = this.worldNoticeFacade.donateGold(requestId);
+    this.publishAndSaveSnapshot();
+    return result;
   }
 
   addBrewingIngredient(itemTypeId, cauldronIndex = 0) {
@@ -1089,6 +1118,7 @@ export class GameplayFacade {
       playerLevel: this.playerLevelFacade.getSnapshot(),
       tasks: this.tasksFacade.getSnapshot(),
       personalTasks: this.personalTasksFacade.getSnapshot(),
+      worldNotice: this.worldNoticeFacade.getSnapshot(),
       prestige: this.prestigeFacade.getSnapshot(),
       research: this.researchFacade.getSnapshot(),
       visualSettings: this.visualSettingsFacade.getSnapshot(),
