@@ -119,7 +119,7 @@ export class PlayerLevelSyncManager {
   }
 
   async flushAndWait() {
-    this.observe(this.gameplayFacade?.getSnapshot?.());
+    this.queueCurrentLevelForExplicitSync();
 
     while (true) {
       this.flush();
@@ -135,6 +135,19 @@ export class PlayerLevelSyncManager {
     }
 
     return this.pendingPlayerLevel === null && !this.syncPromise;
+  }
+
+  queueCurrentLevelForExplicitSync() {
+    const playerLevel = this.readPlayerLevel(this.gameplayFacade?.getSnapshot?.());
+
+    if (!Number.isFinite(playerLevel)) {
+      return;
+    }
+
+    const flooredPlayerLevel = Math.max(1, Math.floor(playerLevel));
+    this.lastObservedPlayerLevel = flooredPlayerLevel;
+    this.pendingPlayerLevel = flooredPlayerLevel;
+    this.pendingPlayerLevelWasHydrated = true;
   }
 
   restorePending(playerLevel, playerLevelWasHydrated = true) {

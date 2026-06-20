@@ -2797,7 +2797,8 @@ body {
 .workshop-page__bag-row.is-empty,
 .workshop-page__bag-row.is-locked,
 .workshop-page__bag-row.is-unknown,
-.workshop-page__prestige-row.is-locked {
+.workshop-page__prestige-row.is-locked,
+.workshop-page__prestige-point-row.is-locked {
   color: var(--style-disabled);
 }
 
@@ -2851,9 +2852,19 @@ body {
   column-gap: var(--style-row-column-gap);
 }
 
+.workshop-page__prestige-point-row {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 60px;
+  align-items: start;
+  min-height: var(--style-row-min-height);
+  column-gap: var(--style-row-column-gap);
+}
+
 .workshop-page__prestige-level,
 .workshop-page__prestige-reward,
-.workshop-page__prestige-status {
+.workshop-page__prestige-status,
+.workshop-page__prestige-point-count,
+.workshop-page__prestige-point-status {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2861,9 +2872,21 @@ body {
 }
 
 .workshop-page__prestige-reward,
-.workshop-page__prestige-status {
+.workshop-page__prestige-status,
+.workshop-page__prestige-point-status {
   font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
+}
+
+.workshop-page__prestige-point-count {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__prestige-point-reward {
+  min-width: 0;
+  overflow: visible;
+  line-height: normal;
+  white-space: normal;
 }
 
 .style-button.workshop-page__prestige-action {
@@ -4591,6 +4614,7 @@ body {
 }
 
 .workshop-page__discoveries-tabs,
+.workshop-page__prestige-tabs,
 .workshop-page__bag-tabs {
   position: relative;
   z-index: 21;
@@ -9697,6 +9721,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__leaderboard-tab-button,
 .style-button.workshop-page__discoveries-tab-button,
+.style-button.workshop-page__prestige-tab-button,
 .style-button.workshop-page__bag-tab-button,
 .style-button.workshop-page__trade-alliance-tab-button,
 .style-button.workshop-page__personal-tasks-tab-button,
@@ -9809,6 +9834,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__leaderboard-tab-button[aria-selected="true"],
 .style-button.workshop-page__discoveries-tab-button[aria-selected="true"],
+.style-button.workshop-page__prestige-tab-button[aria-selected="true"],
 .style-button.workshop-page__bag-tab-button[aria-selected="true"],
 .style-button.workshop-page__trade-alliance-tab-button[aria-selected="true"],
 .style-button.workshop-page__personal-tasks-tab-button[aria-selected="true"],

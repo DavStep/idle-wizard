@@ -56,12 +56,15 @@ describe('PlayerLevelSyncManager', () => {
 
   it('waits for the current player level sync when flushed explicitly', async () => {
     let resolveLevelSync;
-    const setPlayerLevel = vi.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveLevelSync = resolve;
-        }),
-    );
+    const setPlayerLevel = vi
+      .fn()
+      .mockResolvedValueOnce()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveLevelSync = resolve;
+          }),
+      );
     const gameplayFacade = createGameplayFacade(3);
     const manager = new PlayerLevelSyncManager();
 
@@ -73,6 +76,7 @@ describe('PlayerLevelSyncManager', () => {
     });
     manager.markGameplaySaveHydrated();
     manager.setReadyToSync(true);
+    await Promise.resolve();
 
     const flush = manager.flushAndWait();
     let settled = false;
@@ -82,7 +86,8 @@ describe('PlayerLevelSyncManager', () => {
 
     await Promise.resolve();
 
-    expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 3 });
+    expect(setPlayerLevel).toHaveBeenCalledTimes(2);
+    expect(setPlayerLevel).toHaveBeenLastCalledWith({ playerLevel: 3 });
     expect(settled).toBe(false);
 
     resolveLevelSync();
@@ -129,6 +134,28 @@ describe('PlayerLevelSyncManager', () => {
     await Promise.resolve();
 
     expect(setPlayerLevel).toHaveBeenCalledTimes(1);
+  });
+
+  it('forces the current level through the reducer on explicit flush', async () => {
+    const setPlayerLevel = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(3);
+    const manager = new PlayerLevelSyncManager();
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setPlayerLevel,
+      },
+    });
+    manager.markGameplaySaveHydrated();
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+    setPlayerLevel.mockClear();
+
+    await expect(manager.flushAndWait()).resolves.toBe(true);
+
+    expect(setPlayerLevel).toHaveBeenCalledTimes(1);
+    expect(setPlayerLevel).toHaveBeenCalledWith({ playerLevel: 3 });
   });
 
   it('reports lower player levels when progress has been reset', async () => {

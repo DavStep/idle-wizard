@@ -6665,6 +6665,52 @@ describe('PagesFacade', () => {
     expect(snapshot.tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
   });
 
+  it('shows prestige point rewards on the second prestige tab', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.tasks.currentLevel = 20;
+    snapshot.playerLevel.currentLevel = 20;
+    snapshot.prestige.currentLevel = 20;
+    snapshot.prestige.completedLevels = [10];
+    snapshot.prestige.earnedRuby = 1;
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const popup = stage.querySelector('.workshop-page__prestige-popup');
+    stage
+      .querySelector('.workshop-page__prestige-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const tabs = popup.querySelector('.workshop-page__prestige-tabs');
+    const tabButtons = [...tabs.querySelectorAll('.workshop-page__prestige-tab-button')];
+    expect(tabButtons.map((button) => button.textContent)).toEqual(['main', 'points']);
+    expect(popup.querySelector('.style-dialog .workshop-page__prestige-tab-button')).toBeNull();
+    expect(popup.querySelector('.style-dialog')?.nextElementSibling).toBe(tabs);
+
+    tabButtons
+      .find((button) => button.textContent === 'points')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(tabButtons.map((button) => button.getAttribute('aria-selected'))).toEqual([
+      'false',
+      'true',
+    ]);
+    expect(popup.textContent).toContain('1 point earned');
+    expect(popup.textContent).toContain('plot 11 capacity');
+    expect(popup.textContent).toContain('plot 12 capacity, cauldron 6 capacity');
+    expect(popup.querySelector('.workshop-page__prestige-point-row')?.textContent).toContain(
+      'unlocked',
+    );
+    expect(
+      popup.querySelectorAll('.workshop-page__prestige-point-row')[1]?.textContent,
+    ).toContain('next');
+  });
+
   it('separates researched seed inventory rows from unresearched rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

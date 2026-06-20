@@ -1,5 +1,57 @@
 import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import {
+  cauldronCapacityEndCauldronNumber,
+  cauldronCapacityStartCauldronNumber,
+  getCauldronCapacityPrestigeRequirement,
+  getPlotCapacityPrestigeRequirement,
+  plotCapacityEndPlotNumber,
+  plotCapacityStartPlotNumber,
+} from '../../../gameplay/research/capacityResearchIds.js';
+
+const PRESTIGE_TABS = [
+  { id: 'main', label: 'main' },
+  { id: 'points', label: 'points' },
+];
+
+const PRESTIGE_POINT_REWARDS = createPrestigePointRewards();
+
+function createPrestigePointRewards() {
+  const rewardsByCount = new Map();
+
+  const addReward = (count, label) => {
+    const safeCount = Math.max(1, Math.floor(Number(count) || 1));
+    const rewards = rewardsByCount.get(safeCount) ?? [];
+    rewards.push(label);
+    rewardsByCount.set(safeCount, rewards);
+  };
+
+  for (
+    let plotNumber = plotCapacityStartPlotNumber;
+    plotNumber <= plotCapacityEndPlotNumber;
+    plotNumber += 1
+  ) {
+    addReward(
+      getPlotCapacityPrestigeRequirement(plotNumber),
+      `plot ${plotNumber} capacity`,
+    );
+  }
+
+  for (
+    let cauldronNumber = cauldronCapacityStartCauldronNumber;
+    cauldronNumber <= cauldronCapacityEndCauldronNumber;
+    cauldronNumber += 1
+  ) {
+    addReward(
+      getCauldronCapacityPrestigeRequirement(cauldronNumber),
+      `cauldron ${cauldronNumber} capacity`,
+    );
+  }
+
+  return [...rewardsByCount.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([count, rewards]) => ({ count, rewards }));
+}
 
 export class WorkshopPrestigeManager {
   constructor({ gameplayFacade } = {}) {
@@ -11,6 +63,7 @@ export class WorkshopPrestigeManager {
     this.confirmingMilestone = null;
     this.lastSnapshot = {};
     this.renderedSignature = '';
+    this.selectedTabId = PRESTIGE_TABS[0].id;
     this.previousFocus = null;
     this.handleRowsScroll = () => this.updateScrollProgress();
     this.handleRootClick = (event) => {
@@ -68,6 +121,7 @@ export class WorkshopPrestigeManager {
       'style-progress__fill workshop-page__prestige-progress-fill';
     this.refs.progress.append(this.refs.progressFill);
     this.refs.confirm = this.createConfirmPanel();
+    this.refs.tabs = this.createTabs();
 
     this.refs.frame.append(this.refs.rows);
     this.refs.dialog.append(
@@ -78,7 +132,7 @@ export class WorkshopPrestigeManager {
       this.refs.progress,
       this.refs.confirm,
     );
-    this.refs.panel.append(this.refs.dialog);
+    this.refs.panel.append(this.refs.dialog, this.refs.tabs);
     this.root.append(this.refs.panel);
     parent.append(this.root);
     document.addEventListener('keydown', this.handleKeydown);
@@ -136,6 +190,40 @@ export class WorkshopPrestigeManager {
     return panel;
   }
 
+  createTabs() {
+    const tabs = document.createElement('div');
+    tabs.className = 'workshop-page__prestige-tabs';
+    tabs.setAttribute('aria-label', 'Prestige view');
+    tabs.setAttribute('role', 'tablist');
+    this.refs.tabButtons = new Map();
+
+    for (const tab of PRESTIGE_TABS) {
+      const button = document.createElement('button');
+      button.className = 'style-button workshop-page__prestige-tab-button';
+      button.type = 'button';
+      button.textContent = tab.label;
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => this.onSelectTab(tab.id));
+      this.refs.tabButtons.set(tab.id, button);
+      tabs.append(button);
+    }
+
+    return tabs;
+  }
+
+  onSelectTab(tabId) {
+    if (this.selectedTabId === tabId) {
+      return;
+    }
+
+    this.selectedTabId = PRESTIGE_TABS.some((tab) => tab.id === tabId)
+      ? tabId
+      : PRESTIGE_TABS[0].id;
+    this.confirmingMilestone = null;
+    this.renderedSignature = '';
+    this.render(this.lastSnapshot);
+  }
+
   toggle() {
     if (this.visible) {
       this.hide();
@@ -190,6 +278,7 @@ export class WorkshopPrestigeManager {
 
     this.lastSnapshot = snapshot ?? {};
     this.updateSummary(this.lastSnapshot.prestige);
+    this.syncTabs();
     this.applyConfirm();
 
     const signature = this.createRenderSignature(this.lastSnapshot);
@@ -199,19 +288,34 @@ export class WorkshopPrestigeManager {
     }
 
     this.renderedSignature = signature;
-    this.refs.rows.replaceChildren(
-      ...((this.lastSnapshot.prestige?.milestones ?? []).map((milestone) =>
-        this.createMilestoneRow(milestone),
-      )),
-    );
+    this.refs.rows.replaceChildren(...this.createRows(this.lastSnapshot));
     this.updateScrollProgress();
   }
 
   updateSummary(prestige = {}) {
     const earnedRuby = Math.max(0, Math.floor(Number(prestige.earnedRuby) || 0));
     const currentLevel = Math.max(1, Math.floor(Number(prestige.currentLevel) || 1));
+
+    if (this.selectedTabId === 'points') {
+      const completedCount = this.getCompletedPrestigeCount(prestige);
+      this.refs.summary.textContent =
+        `${completedCount} ${this.pluralize(completedCount, 'point')} earned`;
+      setResourceColor(this.refs.summary, null);
+      return;
+    }
+
     this.refs.summary.textContent = `level ${currentLevel}, ${earnedRuby} ruby next run`;
     setResourceColor(this.refs.summary, 'ruby');
+  }
+
+  createRows(snapshot) {
+    if (this.selectedTabId === 'points') {
+      return this.createPointRows(snapshot?.prestige);
+    }
+
+    return (snapshot?.prestige?.milestones ?? []).map((milestone) =>
+      this.createMilestoneRow(milestone),
+    );
   }
 
   createMilestoneRow(milestone) {
@@ -232,6 +336,35 @@ export class WorkshopPrestigeManager {
     const action = this.createMilestoneAction(milestone);
 
     row.append(level, reward, action);
+    return row;
+  }
+
+  createPointRows(prestige = {}) {
+    const completedCount = this.getCompletedPrestigeCount(prestige);
+
+    return PRESTIGE_POINT_REWARDS.map((pointReward) =>
+      this.createPointRewardRow(pointReward, completedCount),
+    );
+  }
+
+  createPointRewardRow(pointReward, completedCount) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__prestige-point-row';
+    row.classList.toggle('is-locked', pointReward.count > completedCount + 1);
+
+    const count = document.createElement('span');
+    count.className = 'workshop-page__prestige-point-count';
+    count.textContent = `${pointReward.count} ${this.pluralize(pointReward.count, 'point')}`;
+
+    const reward = document.createElement('span');
+    reward.className = 'workshop-page__prestige-point-reward';
+    reward.textContent = pointReward.rewards.join(', ');
+
+    const status = document.createElement('span');
+    status.className = 'workshop-page__prestige-point-status';
+    status.textContent = this.getPointRewardStatus(pointReward.count, completedCount);
+
+    row.append(count, reward, status);
     return row;
   }
 
@@ -306,11 +439,25 @@ export class WorkshopPrestigeManager {
       `higher level prestige available level ${highest}; prestige level ${milestone.level}?`;
   }
 
+  syncTabs() {
+    for (const tab of PRESTIGE_TABS) {
+      const button = this.refs.tabButtons?.get(tab.id);
+
+      if (!button) {
+        continue;
+      }
+
+      button.setAttribute('aria-selected', tab.id === this.selectedTabId ? 'true' : 'false');
+    }
+  }
+
   createRenderSignature(snapshot) {
     const prestige = snapshot?.prestige ?? {};
     return JSON.stringify({
+      selectedTabId: this.selectedTabId,
       earnedRuby: prestige.earnedRuby,
       currentLevel: prestige.currentLevel,
+      completedCount: this.getCompletedPrestigeCount(prestige),
       highestAvailableLevel: prestige.highestAvailableLevel,
       milestones: (prestige.milestones ?? []).map((milestone) => ({
         level: milestone.level,
@@ -329,6 +476,26 @@ export class WorkshopPrestigeManager {
     }
 
     this.root.hidden = !this.visible;
+  }
+
+  getCompletedPrestigeCount(prestige = {}) {
+    return Array.isArray(prestige.completedLevels) ? prestige.completedLevels.length : 0;
+  }
+
+  getPointRewardStatus(count, completedCount) {
+    if (completedCount >= count) {
+      return 'unlocked';
+    }
+
+    if (completedCount + 1 === count) {
+      return 'next';
+    }
+
+    return 'locked';
+  }
+
+  pluralize(count, word) {
+    return count === 1 ? word : `${word}s`;
   }
 
   updateScrollProgress() {

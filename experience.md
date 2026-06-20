@@ -300,6 +300,7 @@
 - World/alliance chat send reducers can reject for rate, level-sync, session, membership, or maintenance reasons; backend managers should preserve those reasons so the shared popup can show specific status text instead of a vague failure.
 - World chat can have live preview data while still hidden/disabled by the level-3 Workshop secondary-action gate or first-run account gate; check those before debugging transport.
 - World chat sends must wait for backend player-level sync before calling `send_world_chat_message`; the reducer gates on server `player.playerLevel`, not just local Workshop unlock state.
+- Explicit pre-chat player-level flushes must requeue the current gameplay snapshot level even if observers already saw that value; otherwise stale server `playerLevel` can reject unlocked chat sends.
 - All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
 - Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
 - Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.

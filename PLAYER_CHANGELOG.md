@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.14
+
+- Added a prestige points tab so permanent capacity rewards are easier to track.
+- Improved world chat level syncing so unlocked chat sends are less likely to be rejected after local progress changes.
+- Tightened prestige popup tab layout and point reward rows for clearer mobile reading.
+
 ## 0.2.13
 
 - Added personal daily and weekly tasks in the Workshop with automatic gold and crystal rewards.
