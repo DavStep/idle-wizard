@@ -127,6 +127,8 @@ The server module defines:
 
 `clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`. `set_player_profile` updates username, theme, font, color mode, and username prompt state together.
 
+`admin_kick_player_session` is a non-destructive admin recovery path for a stuck account session. It invalidates the player's current `player_session` row and marks the shared player row offline; the next real player connection recreates the session. It does not edit gameplay save JSON, gold, level, research, plots, chat, or market data.
+
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for the own-save subscription before opening the room gate, applies the saved gameplay snapshot, unsubscribes from the own-save stream, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
 Maintenance mode lives in `game_config` under the `maintenance` key. `off` allows normal play. `drain` makes updated clients stop gameplay and flush one final `set_player_gameplay_save` while other player writes are rejected. `locked` rejects all player writes, including gameplay saves, so old clients cannot overwrite rows during a player-save migration. Use `set_maintenance_mode` for ops and follow `docs/maintenance.md` before live data work. `migrate_player_gameplay_saves` requires `locked`, preserves `savedAt`, never deletes rows, and records a one-time migration key in `maintenance_state`.

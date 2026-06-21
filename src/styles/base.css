@@ -2306,9 +2306,10 @@ body {
 
 .workshop-page__action-bar > .style-button.workshop-page__bag-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 384px);
-  right: calc(154px + 8px);
-  width: var(--style-button-width);
+  top: calc(var(--style-room-content-top) + 448px);
+  left: 0;
+  box-sizing: content-box;
+  width: 132px;
 }
 
 .room-reward-flyouts,
@@ -3356,12 +3357,12 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks {
-  top: calc(var(--style-room-content-top) + 194px);
+  top: calc(var(--style-room-content-top) + 242px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  top: calc(var(--style-room-content-top) + 264px);
+  top: calc(var(--style-room-content-top) + 312px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
@@ -4231,14 +4232,14 @@ body {
 
 .style-button.workshop-page__leaderboard-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 342px);
+  top: calc(var(--style-room-content-top) + 408px);
   left: var(--style-room-content-edge);
   width: 132px;
 }
 
 .style-button.workshop-page__trade-alliance-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 342px);
+  top: calc(var(--style-room-content-top) + 408px);
   right: var(--style-room-content-edge);
   width: 132px;
 }
@@ -4277,7 +4278,7 @@ body {
 
 .style-button.workshop-page__discoveries-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 384px);
+  top: calc(var(--style-room-content-top) + 448px);
   right: var(--style-room-content-edge);
   width: 132px;
 }
@@ -9888,7 +9889,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-button {
   position: absolute;
-  top: 55.5%;
+  top: 59.5%;
   left: 50%;
   display: inline-grid;
   place-items: center;
@@ -9928,7 +9929,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-info-button {
   position: absolute;
-  top: calc(55.5% - 50px);
+  top: calc(59.5% - 50px);
   left: calc(50% + 60px);
   z-index: 3;
   display: grid;

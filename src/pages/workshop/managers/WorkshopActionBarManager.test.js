@@ -266,7 +266,7 @@ describe('WorkshopActionBarManager', () => {
       summonButton?.dataset.pressFeedbackTarget,
     ).toBeUndefined();
     expect(summonCircle?.getAttribute('aria-hidden')).toBe('true');
-    expect(summonButtonRule).toMatch(/\btop:\s*55\.5%;/);
+    expect(summonButtonRule).toMatch(/\btop:\s*59\.5%;/);
     expect(summonButtonRule).toMatch(/\bwidth:\s*auto;/);
     expect(summonButtonRule).not.toMatch(/\bwidth:\s*196px;/);
     expect(actionBarButtonRule).toMatch(/\bwidth:\s*auto;/);
@@ -278,18 +278,42 @@ describe('WorkshopActionBarManager', () => {
     manager.unmount();
   });
 
-  it('places the bag button beside discoveries', () => {
+  it('places the secondary action buttons near chat with matching widths', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const bagRule = baseCss.match(
       /\.workshop-page__action-bar > \.style-button\.workshop-page__bag-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const leaderboardRule = baseCss.match(
+      /\.style-button\.workshop-page__leaderboard-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const allianceRule = baseCss.match(
+      /\.style-button\.workshop-page__trade-alliance-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const discoveriesRule = baseCss.match(
+      /\.style-button\.workshop-page__discoveries-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(bagRule).toBeDefined();
     expect(bagRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 384px\);/,
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 448px\);/,
     );
-    expect(bagRule).toMatch(/\bright:\s*calc\(154px \+ 8px\);/);
+    expect(bagRule).toMatch(/\bleft:\s*0;/);
+    expect(bagRule).toMatch(/\bbox-sizing:\s*content-box;/);
+    expect(bagRule).toMatch(/\bwidth:\s*132px;/);
     expect(bagRule).not.toMatch(/\bbottom:/);
+
+    expect(leaderboardRule).toMatch(
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 408px\);/,
+    );
+    expect(allianceRule).toMatch(
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 408px\);/,
+    );
+    expect(discoveriesRule).toMatch(
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 448px\);/,
+    );
+    expect(leaderboardRule).toMatch(/\bwidth:\s*132px;/);
+    expect(allianceRule).toMatch(/\bwidth:\s*132px;/);
+    expect(discoveriesRule).toMatch(/\bwidth:\s*132px;/);
   });
 
   it('keeps normal click summon activation when no hold started', () => {

@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.27
+
+- Added a safer admin recovery path for stuck account sessions without touching player saves, progress, markets, or chat data.
+- Adjusted Workshop buttons and summon placement so tasks, notices, seed bag, discoveries, guild, and leaderboard controls have cleaner spacing on mobile.
+- Updated backend bindings for the latest admin maintenance reducers.
+
 ## 0.2.26
 
 - Fixed saved Garden plot and Brewing cauldron capacity after prestige reset so bought capacity stays restored correctly from research.

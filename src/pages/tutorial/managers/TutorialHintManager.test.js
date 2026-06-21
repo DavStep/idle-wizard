@@ -1802,11 +1802,11 @@ describe('TutorialHintManager', () => {
   it('moves the lesson away from unlocked Workshop secondary controls', () => {
     const stage = document.createElement('section');
     const controls = [
-      { className: 'workshop-page__leaderboard-button', left: 16, top: 430 },
-      { className: 'workshop-page__trade-alliance-button', left: 212, top: 430 },
-      { className: 'workshop-page__bag-button', left: 82, top: 472, width: 100 },
-      { className: 'workshop-page__discoveries-button', left: 212, top: 472 },
-    ].map(({ className, left, top, width = 132 }) => {
+      { className: 'workshop-page__leaderboard-button', left: 16, top: 496 },
+      { className: 'workshop-page__trade-alliance-button', left: 190, top: 496 },
+      { className: 'workshop-page__bag-button', left: 16, top: 536 },
+      { className: 'workshop-page__discoveries-button', left: 190, top: 536 },
+    ].map(({ className, left, top, width = 154 }) => {
       const button = document.createElement('button');
       button.className = className;
       setClientRect(

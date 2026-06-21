@@ -36,12 +36,14 @@ import {
 // Import all reducer arg schemas
 import AcceptTradeAllianceApplicationReducer from "./accept_trade_alliance_application_reducer";
 import AdminDisbandTradeAllianceReducer from "./admin_disband_trade_alliance_reducer";
+import AdminKickPlayerSessionReducer from "./admin_kick_player_session_reducer";
 import AdminMergePlayerAccountsReducer from "./admin_merge_player_accounts_reducer";
 import AdminMoveTradeAllianceMemberReducer from "./admin_move_trade_alliance_member_reducer";
 import AdminResetPlayerProgressionByIdentityReducer from "./admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progression_data_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
 import AdminWipeAllPlayerDataReducer from "./admin_wipe_all_player_data_reducer";
+import AdminWipeZeroIncomePlayerDataReducer from "./admin_wipe_zero_income_player_data_reducer";
 import AnnounceLevelUpReducer from "./announce_level_up_reducer";
 import AnnouncePrestigeReducer from "./announce_prestige_reducer";
 import AnnounceResearchReducer from "./announce_research_reducer";
@@ -661,12 +663,14 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_trade_alliance_application", AcceptTradeAllianceApplicationReducer),
   __reducerSchema("admin_disband_trade_alliance", AdminDisbandTradeAllianceReducer),
+  __reducerSchema("admin_kick_player_session", AdminKickPlayerSessionReducer),
   __reducerSchema("admin_merge_player_accounts", AdminMergePlayerAccountsReducer),
   __reducerSchema("admin_move_trade_alliance_member", AdminMoveTradeAllianceMemberReducer),
   __reducerSchema("admin_reset_player_progression_by_identity", AdminResetPlayerProgressionByIdentityReducer),
   __reducerSchema("admin_reset_player_progression_data", AdminResetPlayerProgressionDataReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
   __reducerSchema("admin_wipe_all_player_data", AdminWipeAllPlayerDataReducer),
+  __reducerSchema("admin_wipe_zero_income_player_data", AdminWipeZeroIncomePlayerDataReducer),
   __reducerSchema("announce_level_up", AnnounceLevelUpReducer),
   __reducerSchema("announce_prestige", AnnouncePrestigeReducer),
   __reducerSchema("announce_research", AnnounceResearchReducer),

@@ -325,6 +325,14 @@ PATH="$HOME/.local/bin:$PATH" spacetime call \
   set_maintenance_mode off "maintenance in progress"
 ```
 
+For one stuck account session, kick only that session instead of resetting player data:
+
+```sh
+PATH="$HOME/.local/bin:$PATH" spacetime call \
+  -s "$SPACETIME_SERVER" "$SPACETIME_DATABASE" \
+  admin_kick_player_session "$PLAYER_IDENTITY_HEX"
+```
+
 ## Migration Rules
 
 - No deletes during player-save migration.

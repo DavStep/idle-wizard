@@ -216,6 +216,7 @@
 - When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
 - New client-owned gameplay save branches must be added to `normalizePlayerGameplaySave`; otherwise SpacetimeDB rewrites the save without that branch on server round-trip.
 - SpacetimeDB save normalization must mirror client permanent capacity math: capacity research raises to `base capacity + bonus` even after prestige reset level, or server keeps spent gold but drops bought plots/cauldrons.
+- For stuck live account sessions, invalidate the `player_session` row by replacing its connection id rather than only deleting it; an empty row can let the stale open client pass the active-session gate again.
 - Local app DB name can come from `.env.local`, while SpacetimeDB CLI defaults to `spacetime.json`; use `--no-config` or the env database name when querying/publishing Codex local DBs.
 - SpacetimeDB SQL does not support `IN (SELECT ...)` subqueries; filtered maintenance deletes need reducer-side identity collection.
 - SpacetimeDB subscription SQL supports only `SELECT * FROM ... WHERE ...`; put public row caps in server views, not `ORDER BY`/`LIMIT` client subscriptions.

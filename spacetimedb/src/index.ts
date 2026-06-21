@@ -12986,6 +12986,28 @@ function deleteAdminPlayerSession(ctx: IdleWizardReducerCtx, identity: Identity)
   }
 }
 
+function kickAdminPlayerSession(ctx: IdleWizardReducerCtx, identity: Identity) {
+  const activeConnectionId = ctx.connectionId;
+  if (!activeConnectionId) {
+    deleteAdminPlayerSession(ctx, identity);
+    return;
+  }
+
+  const nextSession = {
+    identity,
+    activeConnectionId,
+    updatedAt: ctx.timestamp,
+  };
+  const session = ctx.db.playerSession.identity.find(identity);
+
+  if (session) {
+    ctx.db.playerSession.identity.update(nextSession);
+    return;
+  }
+
+  ctx.db.playerSession.insert(nextSession);
+}
+
 function assertAdminMergeAccountsInactive(
   ctx: IdleWizardReducerCtx,
   sourceIdentity: Identity,
@@ -13642,6 +13664,23 @@ export const set_admin_player_data = spacetimedb.reducer(
       totalIncome: safeTotalIncome,
       ...getLeaderboardPeriodDefaults(ctx, safeTotalIncome),
       updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_kick_player_session = spacetimedb.reducer(
+  {
+    identityHex: t.string(),
+  },
+  (ctx, { identityHex }) => {
+    assertGameConfigAdmin(ctx);
+
+    const player = findPlayerByIdentityHex(ctx, identityHex);
+    kickAdminPlayerSession(ctx, player.identity);
+    ctx.db.player.identity.update({
+      ...player,
+      connected: false,
+      lastSeenAt: ctx.timestamp,
     });
   },
 );
