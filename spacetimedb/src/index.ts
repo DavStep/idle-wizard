@@ -8879,28 +8879,34 @@ function applySaveCapacityResearchLimits(
   research: ReturnType<typeof normalizeSaveResearch>,
 ) {
   const nextLimits = { ...limits };
+  const completedPlotCapacityBonus = countSequentialCompletedResearch(
+    research.completedIds,
+    plotCapacityResearchNumbers,
+    (plotNumber) => `advanced:plotCapacity:${plotNumber}`,
+  );
 
-  if (nextLimits.maxGardenTiles >= plotCapacityResearchNumbers[0] - 1) {
+  if (completedPlotCapacityBonus > 0) {
     nextLimits.maxGardenTiles = Math.min(
       MAX_GAME_CONFIG_RESOURCE_LIMIT,
-      nextLimits.maxGardenTiles +
-        countSequentialCompletedResearch(
-          research.completedIds,
-          plotCapacityResearchNumbers,
-          (plotNumber) => `advanced:plotCapacity:${plotNumber}`,
-        ),
+      Math.max(
+        nextLimits.maxGardenTiles,
+        plotCapacityResearchNumbers[0] - 1 + completedPlotCapacityBonus,
+      ),
     );
   }
+  const completedCauldronCapacityBonus = countSequentialCompletedResearch(
+    research.completedIds,
+    cauldronCapacityResearchNumbers,
+    (cauldronNumber) => `advanced:cauldronCapacity:${cauldronNumber}`,
+  );
 
-  if (nextLimits.maxCauldrons >= cauldronCapacityResearchNumbers[0] - 1) {
+  if (completedCauldronCapacityBonus > 0) {
     nextLimits.maxCauldrons = Math.min(
       MAX_PLAYER_SAVE_CAULDRONS,
-      nextLimits.maxCauldrons +
-        countSequentialCompletedResearch(
-          research.completedIds,
-          cauldronCapacityResearchNumbers,
-          (cauldronNumber) => `advanced:cauldronCapacity:${cauldronNumber}`,
-        ),
+      Math.max(
+        nextLimits.maxCauldrons,
+        cauldronCapacityResearchNumbers[0] - 1 + completedCauldronCapacityBonus,
+      ),
     );
   }
 

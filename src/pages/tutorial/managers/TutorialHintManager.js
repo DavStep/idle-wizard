@@ -68,6 +68,7 @@ const OBJECTIVE_PROTECTED_SELECTORS = [
   '.room-top-panel',
   '.room-bottom-panel',
   '.workshop-page__world-chat-box',
+  '.workshop-page__bag-button',
   '.workshop-page__leaderboard-button',
   '.workshop-page__trade-alliance-button',
   '.workshop-page__discoveries-button',

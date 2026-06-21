@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.26
+
+- Fixed saved Garden plot and Brewing cauldron capacity after prestige reset so bought capacity stays restored correctly from research.
+- Moved the Workshop seed bag beside discoveries and adjusted Workshop task, notice, summon, and info controls so they fit more cleanly on mobile.
+- Improved Elara placement so the tutorial guide avoids the Workshop seed bag control.
+
 ## 0.2.25
 
 - Added emerald research support for batch planting and brewing, so upgraded plots and cauldrons can turn multiple normal inputs into multiple outputs in one timer.

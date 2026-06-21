@@ -266,7 +266,7 @@ describe('WorkshopActionBarManager', () => {
       summonButton?.dataset.pressFeedbackTarget,
     ).toBeUndefined();
     expect(summonCircle?.getAttribute('aria-hidden')).toBe('true');
-    expect(summonButtonRule).toMatch(/\btop:\s*calc\(55\.5% - 24px\);/);
+    expect(summonButtonRule).toMatch(/\btop:\s*55\.5%;/);
     expect(summonButtonRule).toMatch(/\bwidth:\s*auto;/);
     expect(summonButtonRule).not.toMatch(/\bwidth:\s*196px;/);
     expect(actionBarButtonRule).toMatch(/\bwidth:\s*auto;/);
@@ -276,6 +276,20 @@ describe('WorkshopActionBarManager', () => {
     expect(textRule).toMatch(/\btransform:\s*none;/);
 
     manager.unmount();
+  });
+
+  it('places the bag button beside discoveries', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const bagRule = baseCss.match(
+      /\.workshop-page__action-bar > \.style-button\.workshop-page__bag-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(bagRule).toBeDefined();
+    expect(bagRule).toMatch(
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 384px\);/,
+    );
+    expect(bagRule).toMatch(/\bright:\s*calc\(154px \+ 8px\);/);
+    expect(bagRule).not.toMatch(/\bbottom:/);
   });
 
   it('keeps normal click summon activation when no hold started', () => {

@@ -1804,8 +1804,9 @@ describe('TutorialHintManager', () => {
     const controls = [
       { className: 'workshop-page__leaderboard-button', left: 16, top: 430 },
       { className: 'workshop-page__trade-alliance-button', left: 212, top: 430 },
+      { className: 'workshop-page__bag-button', left: 82, top: 472, width: 100 },
       { className: 'workshop-page__discoveries-button', left: 212, top: 472 },
-    ].map(({ className, left, top }) => {
+    ].map(({ className, left, top, width = 132 }) => {
       const button = document.createElement('button');
       button.className = className;
       setClientRect(
@@ -1813,7 +1814,7 @@ describe('TutorialHintManager', () => {
         toClientRect({
           left,
           top,
-          width: 132,
+          width,
           height: 28,
         }),
       );
@@ -1821,7 +1822,7 @@ describe('TutorialHintManager', () => {
       return {
         left,
         top,
-        right: left + 132,
+        right: left + width,
         bottom: top + 28,
       };
     });

@@ -2306,8 +2306,8 @@ body {
 
 .workshop-page__action-bar > .style-button.workshop-page__bag-button {
   position: absolute;
-  right: 0;
-  bottom: var(--style-room-chat-clearance);
+  top: calc(var(--style-room-content-top) + 384px);
+  right: calc(154px + 8px);
   width: var(--style-button-width);
 }
 
@@ -3356,12 +3356,12 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks {
-  top: calc(var(--style-room-content-top) + 170px);
+  top: calc(var(--style-room-content-top) + 194px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  top: calc(var(--style-room-content-top) + 240px);
+  top: calc(var(--style-room-content-top) + 264px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
@@ -9888,7 +9888,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-button {
   position: absolute;
-  top: calc(55.5% - 24px);
+  top: 55.5%;
   left: 50%;
   display: inline-grid;
   place-items: center;
@@ -9928,7 +9928,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-info-button {
   position: absolute;
-  top: calc(55.5% - 74px);
+  top: calc(55.5% - 50px);
   left: calc(50% + 60px);
   z-index: 3;
   display: grid;
