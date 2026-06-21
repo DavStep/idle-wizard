@@ -33,6 +33,9 @@ function createGameplayFacadeFake() {
     crystal: {
       current: 0,
     },
+    emerald: {
+      current: 0,
+    },
     ruby: {
       current: 0,
     },
@@ -996,6 +999,46 @@ function createGameplayFacadeFake() {
       ],
     },
   ];
+  const emeraldResearchBoxes = [
+    {
+      id: 'plotPlanting',
+      label: 'plot planting research',
+      researches: [
+        {
+          id: 'emerald:plotPlanting:1:2',
+          label: 'plot 1 planting x2',
+          value: '1 emerald',
+          effect: 'x2 herbs',
+          showEffect: true,
+          requiredResearchIds: [],
+          costGold: 0,
+          costEmerald: 1,
+          costCurrency: 'emerald',
+          completed: false,
+          canResearch: false,
+        },
+      ],
+    },
+    {
+      id: 'cauldronBrewing',
+      label: 'cauldron brewing research',
+      researches: [
+        {
+          id: 'emerald:cauldronBrewing:1:2',
+          label: 'cauldron 1 brewing x2',
+          value: '1 emerald',
+          effect: 'x2 potions',
+          showEffect: true,
+          requiredResearchIds: [],
+          costGold: 0,
+          costEmerald: 1,
+          costCurrency: 'emerald',
+          completed: false,
+          canResearch: false,
+        },
+      ],
+    },
+  ];
   snapshot.research.completedResearchIds = [];
   snapshot.research.tabs = [
     {
@@ -1012,6 +1055,11 @@ function createGameplayFacadeFake() {
       id: 'advanced',
       label: 'advanced research',
       boxes: advancedResearchBoxes,
+    },
+    {
+      id: 'emerald',
+      label: 'emerald research',
+      boxes: emeraldResearchBoxes,
     },
   ];
   const listeners = new Set();
@@ -1046,6 +1094,10 @@ function createGameplayFacadeFake() {
       return snapshot.ruby.current;
     }
 
+    if (currency === 'emerald') {
+      return snapshot.emerald.current;
+    }
+
     return snapshot.gold.current;
   };
 
@@ -1056,6 +1108,10 @@ function createGameplayFacadeFake() {
 
     if (research.costCurrency === 'ruby') {
       return research.costRuby;
+    }
+
+    if (research.costCurrency === 'emerald') {
+      return research.costEmerald;
     }
 
     return research.costGold;
@@ -1072,6 +1128,11 @@ function createGameplayFacadeFake() {
 
     if (research.costCurrency === 'ruby') {
       snapshot.ruby.current -= research.costRuby;
+      return;
+    }
+
+    if (research.costCurrency === 'emerald') {
+      snapshot.emerald.current -= research.costEmerald;
       return;
     }
 
@@ -3546,11 +3607,14 @@ describe('PagesFacade', () => {
       'summon seed, costs 10 mana',
     );
     expect(stage.querySelector('.workshop-page__bag-button')?.textContent).toBe('bag');
-    expect(stage.querySelector('.workshop-page__prestige-button')?.textContent).toBe(
+    expect(stage.querySelector('.workshop-page__prestige-button')).toBeNull();
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.textContent).toBe(
       'prestige',
     );
-    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(true);
-    expect(stage.querySelector('.workshop-page__prestige-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe(
+      'hidden',
+    );
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.disabled).toBe(true);
     expect(stage.querySelector('.workshop-page__leaderboard-button')?.textContent).toBe(
       'leaderboard',
     );
@@ -3565,8 +3629,8 @@ describe('PagesFacade', () => {
         'room-world-chat-layer',
       ),
     ).toBe(true);
-    expect(stage.querySelector('.workshop-page__logs-button')?.textContent).toBe('logs');
-    expect(stage.querySelector('.workshop-page__logs')?.hidden).toBe(true);
+    expect(stage.querySelector('.workshop-page__logs-button')).toBeNull();
+    expect(stage.querySelector('.workshop-page__logs')).toBeNull();
     expect(stage.querySelector('.workshop-page__discoveries-button')?.textContent).toBe(
       'discoveries',
     );
@@ -3586,7 +3650,7 @@ describe('PagesFacade', () => {
       'adv brewing',
       'adv garden',
       'guild',
-      'quests',
+      'prestige',
       'adv market',
     ]);
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
@@ -3787,13 +3851,15 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(true);
-    expect(stage.querySelector('.workshop-page__prestige-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe(
+      'hidden',
+    );
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.disabled).toBe(true);
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__world-chat-button')?.disabled).toBe(false);
-    expect(stage.querySelector('.workshop-page__logs')?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__logs')).toBeNull();
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
 
     unlockWorkshopSecondaryActions(gameplayFacade, 4);
@@ -3814,11 +3880,21 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    expect(stage.querySelector('.workshop-page__prestige-button')?.hidden).toBe(false);
-    expect(stage.querySelector('.workshop-page__prestige-button')?.disabled).toBe(false);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe('');
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.disabled).toBe(false);
+
+    clickRoomTab(stage, 'research');
+    expect(pagesFacade.getCurrentPageId()).toBe('research');
+
+    stage
+      .querySelector('.room-bottom-panel__prestige-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
+    expect(stage.querySelector('.workshop-page__prestige-popup')?.hidden).toBe(false);
   });
 
-  it('shows crystal or ruby in the top panel only on matching research tabs', () => {
+  it('shows crystal, ruby, or emerald in the top panel only on matching research tabs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -3846,16 +3922,35 @@ describe('PagesFacade', () => {
     const crystal = stage.querySelector('.room-top-panel__resource[aria-label="crystal"]');
     expect(crystal?.hidden).toBe(false);
     expect(crystal?.textContent).toBe('crystal 0');
+    expect(
+      crystal?.querySelector('.style-resource-label--crystal .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:crystal');
 
     clickResearchTab('advanced research');
 
     const ruby = stage.querySelector('.room-top-panel__resource[aria-label="ruby"]');
     expect(ruby?.hidden).toBe(false);
     expect(ruby?.textContent).toBe('ruby 0');
+    expect(
+      ruby?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:ruby');
+
+    clickResearchTab('emerald research');
+
+    const emerald = stage.querySelector('.room-top-panel__resource[aria-label="emerald"]');
+    expect(emerald?.hidden).toBe(false);
+    expect(emerald?.textContent).toBe('emerald 0');
+    expect(
+      emerald?.querySelector('.style-resource-label--emerald .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:emerald');
 
     clickResearchTab('regular research');
     expect(resources?.classList.contains('has-special-currency')).toBe(false);
     expect(ruby?.hidden).toBe(true);
+    expect(emerald?.hidden).toBe(true);
   });
 
   it('keeps top panel gold amount and unit in one fitted value', () => {
@@ -3898,7 +3993,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__mana-sphere')).toBeNull();
   });
 
-  it('marks top panel gold but keeps mana plain for icon mode', () => {
+  it('marks top panel mana and gold for icon mode', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -3914,7 +4009,10 @@ describe('PagesFacade', () => {
 
     expect(manaKey?.textContent).toBe('mana ');
     expect(goldValue?.textContent).toBe('0 gold');
-    expect(manaKey?.querySelector('.style-resource-label--mana')).toBeNull();
+    expect(
+      manaKey?.querySelector('.style-resource-label--mana .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:mana');
     expect(goldValue?.querySelector('.style-resource-label--gold')).not.toBeNull();
   });
 
@@ -6700,7 +6798,7 @@ describe('PagesFacade', () => {
 
     const popup = stage.querySelector('.workshop-page__prestige-popup');
     stage
-      .querySelector('.workshop-page__prestige-button')
+      .querySelector('.room-bottom-panel__prestige-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
@@ -6748,7 +6846,7 @@ describe('PagesFacade', () => {
 
     const popup = stage.querySelector('.workshop-page__prestige-popup');
     stage
-      .querySelector('.workshop-page__prestige-button')
+      .querySelector('.room-bottom-panel__prestige-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const tabs = popup.querySelector('.workshop-page__prestige-tabs');
@@ -8669,162 +8767,6 @@ describe('PagesFacade', () => {
     expect(popup.querySelector('.workshop-page__discoveries-empty')?.textContent).toBe('empty');
   });
 
-  it('shows logs popup when logs button is clicked', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    unlockWorkshopSecondaryActions(gameplayFacade);
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-    });
-
-    pagesFacade.mount(stage);
-
-    const popup = stage.querySelector('.workshop-page__logs-popup');
-    const button = stage.querySelector('.workshop-page__logs-button');
-
-    expect(popup.hidden).toBe(true);
-
-    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(popup.querySelector('.style-dialog')).not.toBeNull();
-    expect(popup.textContent).toContain('logs');
-    expect(popup.textContent).toContain('sold sage seed for 1 gold');
-    expect(popup.textContent).toContain('brewed wasted potion');
-    expect([...popup.querySelectorAll('.workshop-page__log-entry')].map((row) => row.textContent))
-      .toEqual(['brewed wasted potion', 'sold sage seed for 1 gold']);
-    expect(
-      popup.querySelector('.workshop-page__log-entry + .workshop-page__log-entry'),
-    ).not.toBeNull();
-    const logsProgress = popup.querySelector('.workshop-page__logs-progress');
-    expect(logsProgress?.classList.contains('style-progress')).toBe(true);
-    expect(
-      popup
-        .querySelector('.workshop-page__logs-progress-fill')
-        ?.classList.contains('style-progress__fill'),
-    ).toBe(true);
-
-    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-
-    expect(popup.hidden).toBe(true);
-  });
-
-  it('shows an empty state when logs popup has no entries', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    unlockWorkshopSecondaryActions(gameplayFacade);
-    gameplayFacade.getSnapshot().logs.entries = [];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-    });
-
-    pagesFacade.mount(stage);
-
-    stage
-      .querySelector('.workshop-page__logs-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(stage.querySelector('.workshop-page__logs-empty')?.textContent).toBe('no logs yet');
-  });
-
-  it('keeps logs pinned to newest entries only while player is at the top', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    unlockWorkshopSecondaryActions(gameplayFacade);
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-    });
-
-    pagesFacade.mount(stage);
-
-    stage
-      .querySelector('.workshop-page__logs-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    const rows = stage.querySelector('.workshop-page__logs-rows');
-    let scrollHeight = 300;
-    let scrollTop = 0;
-    Object.defineProperty(rows, 'clientHeight', { value: 100, configurable: true });
-    Object.defineProperty(rows, 'scrollTop', {
-      get: () => scrollTop,
-      set: (value) => {
-        scrollTop = value;
-      },
-      configurable: true,
-    });
-    Object.defineProperty(rows, 'scrollHeight', {
-      get: () => scrollHeight,
-      configurable: true,
-    });
-
-    gameplayFacade.getSnapshot().logs.entries.push({
-      id: 3,
-      type: 'gameplay',
-      message: 'summoned sage seed',
-      createdAt: 3_000,
-    });
-    gameplayFacade.publishSnapshot();
-
-    expect(rows.scrollTop).toBe(0);
-    expect(stage.querySelector('.workshop-page__log-entry')?.textContent).toBe(
-      'summoned sage seed',
-    );
-
-    rows.scrollTop = 80;
-    scrollHeight = 360;
-    const originalReplaceChildren = rows.replaceChildren.bind(rows);
-    rows.replaceChildren = (...children) => {
-      originalReplaceChildren(...children);
-      scrollHeight = 420;
-    };
-    gameplayFacade.getSnapshot().logs.entries.push({
-      id: 4,
-      type: 'gameplay',
-      message: 'summoned mint seed',
-      createdAt: 4_000,
-    });
-    gameplayFacade.publishSnapshot();
-
-    expect(rows.scrollTop).toBe(140);
-    expect(stage.querySelector('.workshop-page__log-entry')?.textContent).toBe(
-      'summoned mint seed',
-    );
-  });
-
-  it('updates the logs popup progress bar and bottom fade when scrolled', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    unlockWorkshopSecondaryActions(gameplayFacade);
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-    });
-
-    pagesFacade.mount(stage);
-
-    const button = stage.querySelector('.workshop-page__logs-button');
-    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    const rows = stage.querySelector('.workshop-page__logs-rows');
-    const frame = stage.querySelector('.workshop-page__logs-frame');
-    const progressFill = stage.querySelector('.workshop-page__logs-progress-fill');
-
-    Object.defineProperty(rows, 'clientHeight', { value: 100, configurable: true });
-    Object.defineProperty(rows, 'scrollHeight', { value: 300, configurable: true });
-
-    rows.scrollTop = 100;
-    rows.dispatchEvent(new window.Event('scroll'));
-
-    expect(progressFill.style.width).toBe('50%');
-    expect(frame.classList.contains('has-bottom-overflow')).toBe(true);
-
-    rows.scrollTop = 200;
-    rows.dispatchEvent(new window.Event('scroll'));
-
-    expect(progressFill.style.width).toBe('100%');
-    expect(frame.classList.contains('has-bottom-overflow')).toBe(false);
-  });
-
   it('keeps world chat locked until level 3', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -9759,7 +9701,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.research-page__tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['regular research', 'automation', 'advanced research']);
+    ).toEqual(['regular research', 'automation', 'advanced research', 'emerald research']);
     expect(stage.querySelector('.research-page__box-list')?.nextElementSibling).toBe(
       stage.querySelector('.research-page__tabs'),
     );
@@ -9849,6 +9791,13 @@ describe('PagesFacade', () => {
         'aria-label',
       ),
     ).toBe('50 crystals, $159.99');
+    expect(
+      stage
+        .querySelector(
+          '.shop-page__crystal-row[data-crystal-count="50"] .style-resource-label--crystal .style-resource-label__icon',
+        )
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:crystal');
     const crystalPriceButton = stage.querySelector(
       '.shop-page__crystal-row[data-crystal-count="50"] .shop-page__crystal-price',
     );
@@ -10201,7 +10150,7 @@ describe('PagesFacade', () => {
     );
   });
 
-  it('switches the research page between regular, automation, and advanced research', () => {
+  it('switches the research page between regular, automation, advanced, and emerald research', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -10219,9 +10168,13 @@ describe('PagesFacade', () => {
     const advancedTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
       (button) => button.textContent === 'advanced research',
     );
+    const emeraldTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
+      (button) => button.textContent === 'emerald research',
+    );
 
     expect(automationTab).not.toBeNull();
     expect(advancedTab).not.toBeNull();
+    expect(emeraldTab).not.toBeNull();
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       'seed unlock researches',
     );
@@ -10254,6 +10207,22 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('1 ruby');
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
       'auto plant tile research',
+    );
+
+    emeraldTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(emeraldTab.getAttribute('aria-selected')).toBe('true');
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+      'plot planting research',
+    );
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+      'plot 1 planting x2',
+    );
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain(
+      '1 emerald',
+    );
+    expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
+      'cauldron 1 brewing lvl 1',
     );
   });
 

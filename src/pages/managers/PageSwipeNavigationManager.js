@@ -7,7 +7,6 @@ export const DEFAULT_PAGE_SWIPE_ORDER = [
   'advancedBrewing',
   'advancedGarden',
   'guild',
-  'quests',
   'advancedMarket',
 ];
 

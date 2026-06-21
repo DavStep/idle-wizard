@@ -4,7 +4,6 @@ import { WorkshopActionBarManager } from './managers/WorkshopActionBarManager.js
 import { WorkshopSummonInfoManager } from './managers/WorkshopSummonInfoManager.js';
 import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManager.js';
 import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
-import { WorkshopLogDialogManager } from './managers/WorkshopLogDialogManager.js';
 import { WorkshopDiscoveriesManager } from './managers/WorkshopDiscoveriesManager.js';
 import { WorkshopPrestigeManager } from './managers/WorkshopPrestigeManager.js';
 import { WorkshopRequirementConnectionManager } from './managers/WorkshopRequirementConnectionManager.js';
@@ -50,7 +49,6 @@ export class WorkshopPageFacade {
       gameplayFacade,
       hapticsFacade,
       onBagClick: () => this.bagManager.toggle(),
-      onPrestigeClick: () => this.prestigeManager.toggle(),
       onSummonInfoClick: () => this.summonInfoManager.show(),
       onSummonNotice: (message, options) => this.flyoutManager.show(message, options),
       onSummonNoticeList: (notices) => this.flyoutManager.showList(notices),
@@ -69,7 +67,6 @@ export class WorkshopPageFacade {
       onOpenPlayerInfo,
       onOpenAllianceInfo,
     });
-    this.logDialogManager = new WorkshopLogDialogManager({ gameplayFacade });
     this.discoveriesManager = new WorkshopDiscoveriesManager({
       gameplayFacade,
       onOpenPlayerInfo,
@@ -99,7 +96,6 @@ export class WorkshopPageFacade {
       }) ?? null;
     this.leaderboardManager.mount(uiLayer, popupLayer);
     this.tradeAllianceManager.mount(uiLayer, popupLayer);
-    this.logDialogManager.mount(uiLayer, popupLayer);
     this.discoveriesManager.mount(uiLayer, popupLayer);
     this.bagManager.mount(popupLayer);
     this.prestigeManager.mount(popupLayer);
@@ -120,7 +116,6 @@ export class WorkshopPageFacade {
     this.prestigeManager.unmount();
     this.bagManager.unmount();
     this.discoveriesManager.unmount();
-    this.logDialogManager.unmount();
     this.tradeAllianceManager.unmount();
     this.leaderboardManager.unmount();
     this.worldNoticeManager.unmount();
@@ -179,13 +174,14 @@ export class WorkshopPageFacade {
     }
   }
 
+  togglePrestige() {
+    this.prestigeManager.toggle();
+  }
+
   applySecondaryActionGate(snapshot) {
-    const prestigeUnlocked = this.prestigeActionGateManager.apply(snapshot, [
-      this.actionBarManager.refs.prestigeButton,
-    ]);
+    const prestigeUnlocked = this.prestigeActionGateManager.isUnlocked(snapshot);
     const secondaryUnlocked = this.secondaryActionGateManager.apply(snapshot, [
       this.leaderboardManager.root,
-      this.logDialogManager.root,
     ]);
     const discoveryAllianceUnlocked = this.discoveryAllianceActionGateManager.apply(snapshot, [
       this.tradeAllianceManager.root,
@@ -198,7 +194,6 @@ export class WorkshopPageFacade {
 
     if (!secondaryUnlocked) {
       this.leaderboardManager.hide();
-      this.logDialogManager.hide();
     }
 
     if (!discoveryAllianceUnlocked) {

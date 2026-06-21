@@ -10,6 +10,12 @@ import {
   fastSellResearchCostsRuby,
   fastSellResearchIds,
 } from '../fastSellResearch.js';
+import {
+  emeraldResearchIds,
+  emeraldResearchMaxMultiplier,
+  emeraldResearchMinMultiplier,
+  getEmeraldResearchCost,
+} from '../emeraldResearchIds.js';
 
 const maxResearchDurationSeconds = 10 * 60;
 
@@ -116,12 +122,14 @@ const DEFAULT_RESEARCH_BALANCE = {
     'automation:autoBottleCauldron:5': 5,
   },
   researchCostsRuby: createDefaultAdvancedRubyCosts(),
+  researchCostsEmerald: createDefaultEmeraldCosts(),
 };
 
 DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDurations(
   DEFAULT_RESEARCH_BALANCE.researchCostsGold,
   DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
   DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
+  DEFAULT_RESEARCH_BALANCE.researchCostsEmerald,
 );
 DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds['unlockSeed:mintSeed'] = 15;
 DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds['unlockRecipe:manaTonic'] = 60;
@@ -164,13 +172,52 @@ function createDefaultAdvancedRubyCosts() {
   return costs;
 }
 
-function createDefaultResearchDurations(costsGold, costsCrystal = {}, costsRuby = {}) {
+function createDefaultEmeraldCosts() {
+  const costs = {};
+
+  for (let plotNumber = 1; plotNumber <= 10; plotNumber += 1) {
+    for (
+      let multiplier = emeraldResearchMinMultiplier;
+      multiplier <= emeraldResearchMaxMultiplier;
+      multiplier += 1
+    ) {
+      costs[emeraldResearchIds.plotPlanting(plotNumber, multiplier)] =
+        getEmeraldResearchCost({ targetNumber: plotNumber, multiplier });
+    }
+  }
+
+  for (let cauldronNumber = 1; cauldronNumber <= 5; cauldronNumber += 1) {
+    for (
+      let multiplier = emeraldResearchMinMultiplier;
+      multiplier <= emeraldResearchMaxMultiplier;
+      multiplier += 1
+    ) {
+      costs[emeraldResearchIds.cauldronBrewing(cauldronNumber, multiplier)] =
+        getEmeraldResearchCost({ targetNumber: cauldronNumber, multiplier });
+    }
+  }
+
+  return costs;
+}
+
+function createDefaultResearchDurations(
+  costsGold,
+  costsCrystal = {},
+  costsRuby = {},
+  costsEmerald = {},
+) {
   const researchIds = [
     ...Object.keys(costsGold),
     ...Object.keys(costsCrystal).filter((researchId) => costsGold[researchId] === undefined),
     ...Object.keys(costsRuby).filter(
       (researchId) =>
         costsGold[researchId] === undefined && costsCrystal[researchId] === undefined,
+    ),
+    ...Object.keys(costsEmerald).filter(
+      (researchId) =>
+        costsGold[researchId] === undefined &&
+        costsCrystal[researchId] === undefined &&
+        costsRuby[researchId] === undefined,
     ),
   ];
 
@@ -206,6 +253,7 @@ export class ResearchBalanceManager {
     this.costGoldByResearchId = this.readCostGoldByResearchId();
     this.costCrystalByResearchId = this.readCostCrystalByResearchId();
     this.costRubyByResearchId = this.readCostRubyByResearchId();
+    this.costEmeraldByResearchId = this.readCostEmeraldByResearchId();
     this.durationSecondsByResearchId = this.readDurationSecondsByResearchId();
   }
 
@@ -226,6 +274,15 @@ export class ResearchBalanceManager {
       return {
         amount: costRuby,
         currency: 'ruby',
+      };
+    }
+
+    const costEmerald = this.costEmeraldByResearchId[normalizedResearchId];
+
+    if (Number.isFinite(costEmerald)) {
+      return {
+        amount: costEmerald,
+        currency: 'emerald',
       };
     }
 
@@ -259,6 +316,12 @@ export class ResearchBalanceManager {
     const cost = this.getCost(researchId);
 
     return cost.currency === 'ruby' ? cost.amount : 0;
+  }
+
+  getCostEmerald(researchId) {
+    const cost = this.getCost(researchId);
+
+    return cost.currency === 'emerald' ? cost.amount : 0;
   }
 
   getDurationSeconds(researchId) {
@@ -393,6 +456,29 @@ export class ResearchBalanceManager {
 
     return {
       ...DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
+      ...costs,
+    };
+  }
+
+  readCostEmeraldByResearchId() {
+    const costs = this.balance?.researchCostsEmerald;
+
+    if (costs === undefined) {
+      return { ...DEFAULT_RESEARCH_BALANCE.researchCostsEmerald };
+    }
+
+    if (!costs || typeof costs !== 'object' || Array.isArray(costs)) {
+      throw new Error('game_config.research researchCostsEmerald must be an object.');
+    }
+
+    for (const cost of Object.values(costs)) {
+      if (!Number.isFinite(cost) || cost < 0) {
+        throw new Error('game_config.research emerald costs must be zero or positive numbers.');
+      }
+    }
+
+    return {
+      ...DEFAULT_RESEARCH_BALANCE.researchCostsEmerald,
       ...costs,
     };
   }

@@ -101,7 +101,7 @@ describe('ResearchBoxListManager', () => {
     expect(lockedRow?.classList.contains('is-unavailable')).toBe(true);
   });
 
-  it('colors completed advanced research names and values as crystal resources', () => {
+  it('colors completed advanced and emerald research names and values by resource', () => {
     const snapshot = {
       playerLevel: {
         currentLevel: 9,
@@ -133,8 +133,36 @@ describe('ResearchBoxListManager', () => {
               },
             ],
           },
+          {
+            id: 'emerald',
+            label: 'emerald research',
+            boxes: [
+              {
+                id: 'plotPlanting',
+                label: 'plot planting research',
+                researches: [
+                  {
+                    id: 'emerald:plotPlanting:1:2',
+                    label: 'plot 1 planting x2',
+                    value: 'researched',
+                    completed: true,
+                  },
+                  {
+                    id: 'emerald:plotPlanting:1:3',
+                    label: 'plot 1 planting x3',
+                    value: '2 emerald',
+                    completed: false,
+                    canResearch: true,
+                  },
+                ],
+              },
+            ],
+          },
         ],
-        completedResearchIds: ['advanced:plotGrowth:1:1'],
+        completedResearchIds: [
+          'advanced:plotGrowth:1:1',
+          'emerald:plotPlanting:1:2',
+        ],
       },
     };
     const manager = new ResearchBoxListManager({
@@ -163,6 +191,25 @@ describe('ResearchBoxListManager', () => {
     expect(
       availableRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
     ).toBe('ruby');
+
+    manager.onSelectTab('emerald');
+
+    const completedEmeraldRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
+      row.textContent?.includes('plot 1 planting x2'),
+    );
+    const availableEmeraldRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
+      row.textContent?.includes('plot 1 planting x3'),
+    );
+
+    expect(
+      completedEmeraldRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
+    ).toBe('emerald');
+    expect(
+      completedEmeraldRow?.querySelector('.research-page__research-value')?.dataset.resourceColor,
+    ).toBe('emerald');
+    expect(
+      availableEmeraldRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
+    ).toBe('emerald');
   });
 
   it('lets completed advanced research values use crystal color styling', () => {
@@ -171,7 +218,11 @@ describe('ResearchBoxListManager', () => {
     expect(css).toContain(
       '.research-page__research-value[data-resource-color="crystal"]',
     );
+    expect(css).toContain(
+      '.research-page__research-value[data-resource-color="emerald"]',
+    );
     expect(css).toContain('color: var(--style-resource-crystal);');
+    expect(css).toContain('color: var(--style-resource-emerald);');
   });
 
   it('opens locked research info on row tap and explains missing requirements', () => {

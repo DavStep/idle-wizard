@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.24",
+  "version": "0.2.25",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,6 +20,7 @@
     "preview": "vite preview --host 0.0.0.0 --port 55174 --strictPort",
     "lint": "eslint .",
     "test": "vitest run",
+    "check:ui": "node scripts/check-ui-consistency.mjs",
     "check": "npm run lint && npm test && npm run build",
     "release": "node scripts/release.js",
     "balance:sim": "node scripts/balance-sim.js",

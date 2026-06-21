@@ -486,6 +486,10 @@ export class ResearchBoxListManager {
       return 'crystal';
     }
 
+    if (this.isCompletedEmeraldResearch(research)) {
+      return 'emerald';
+    }
+
     return itemKind;
   }
 
@@ -503,6 +507,10 @@ export class ResearchBoxListManager {
 
   isCompletedAdvancedResearch(research) {
     return Boolean(research?.completed) && research.id?.startsWith('advanced:');
+  }
+
+  isCompletedEmeraldResearch(research) {
+    return Boolean(research?.completed) && research.id?.startsWith('emerald:');
   }
 
   getResearchItemKey(research) {
@@ -549,6 +557,11 @@ export class ResearchBoxListManager {
   setResearchValueResourceColor(element, research) {
     if (this.isCompletedAdvancedResearch(research)) {
       setResourceColor(element, 'crystal');
+      return;
+    }
+
+    if (this.isCompletedEmeraldResearch(research)) {
+      setResourceColor(element, 'emerald');
       return;
     }
 

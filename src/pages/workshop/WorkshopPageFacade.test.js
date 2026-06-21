@@ -173,7 +173,7 @@ describe('WorkshopPageFacade requirement feedback', () => {
     facade.summonInfoManager = createStubManager();
     facade.secondaryActionGateManager = { apply: vi.fn(() => true) };
     facade.discoveryAllianceActionGateManager = { apply: vi.fn(() => true) };
-    facade.prestigeActionGateManager = { apply: vi.fn(() => true) };
+    facade.prestigeActionGateManager = { isUnlocked: vi.fn(() => true) };
 
     facade.mount(stage);
 

@@ -12,7 +12,6 @@ export class WorkshopActionBarManager {
     gameplayFacade,
     hapticsFacade,
     onBagClick,
-    onPrestigeClick,
     onSummonInfoClick,
     onSummonNotice,
     onSummonNoticeList,
@@ -21,7 +20,6 @@ export class WorkshopActionBarManager {
     this.gameplayFacade = gameplayFacade;
     this.hapticsFacade = hapticsFacade;
     this.onBagClick = onBagClick;
-    this.onPrestigeClick = onPrestigeClick;
     this.onSummonInfoClick = onSummonInfoClick;
     this.onSummonNotice = onSummonNotice;
     this.onSummonNoticeList = onSummonNoticeList;
@@ -56,13 +54,11 @@ export class WorkshopActionBarManager {
 
     this.refs.summonButton = this.createSummonButton();
     this.refs.summonInfoButton = this.createSummonInfoButton();
-    this.refs.prestigeButton = this.createPrestigeButton();
     this.refs.bagButton = this.createBagButton();
 
     this.root.append(
       this.refs.summonButton,
       this.refs.summonInfoButton,
-      this.refs.prestigeButton,
       this.refs.bagButton,
     );
     parent.append(this.root);
@@ -128,22 +124,6 @@ export class WorkshopActionBarManager {
     button.textContent = 'bag';
     button.setAttribute('aria-label', 'open bag');
     button.addEventListener('click', () => this.onBagClick?.());
-    return button;
-  }
-
-  createPrestigeButton() {
-    const button = document.createElement('button');
-    button.className = 'style-button workshop-page__prestige-button';
-    button.type = 'button';
-    button.textContent = 'prestige';
-    button.setAttribute('aria-label', 'open prestige');
-    button.addEventListener('click', () => {
-      if (button.disabled || button.getAttribute('aria-disabled') === 'true') {
-        return;
-      }
-
-      this.onPrestigeClick?.();
-    });
     return button;
   }
 

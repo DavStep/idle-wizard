@@ -80,4 +80,46 @@ describe('BottomPanelViewManager', () => {
     expect(popup?.classList.contains('is-entering')).toBe(false);
     expect(popup?.dataset.pageId).toBeUndefined();
   });
+
+  it('uses the old quests slot for the gated prestige action', () => {
+    const stage = document.createElement('section');
+    const onAction = vi.fn();
+    const manager = new BottomPanelViewManager({
+      getCurrentPageId: () => 'workshop',
+      onAction,
+    });
+
+    manager.mount(stage);
+
+    const labels = [...stage.querySelectorAll('.room-bottom-panel__tab')].map(
+      (button) => button.textContent,
+    );
+    const prestigeButton = stage.querySelector('.room-bottom-panel__prestige-button');
+
+    expect(labels).toEqual([
+      'brewing',
+      'garden',
+      'workshop',
+      'research',
+      'market',
+      'adv brewing',
+      'adv garden',
+      'guild',
+      'prestige',
+      'adv market',
+    ]);
+    expect(prestigeButton?.dataset.actionId).toBe('prestige');
+    expect(prestigeButton?.dataset.pageId).toBeUndefined();
+    expect(prestigeButton?.style.visibility).toBe('hidden');
+    expect(prestigeButton?.disabled).toBe(true);
+
+    prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onAction).not.toHaveBeenCalled();
+
+    manager.setActionStates([{ id: 'prestige', visible: true, enabled: true }]);
+    prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onAction).toHaveBeenCalledWith('prestige');
+  });
 });

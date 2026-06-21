@@ -1,3 +1,3 @@
 # Bottom Panel
 
-The bottom panel is shared room chrome. It shows all room tabs in fixed order and underlines the current room, while page facades keep rendering only their room content.
+The bottom panel is shared room chrome. It shows room tabs in fixed order, underlines the current room, and carries the gated prestige action in the former quests slot. Page facades keep rendering only their room content.

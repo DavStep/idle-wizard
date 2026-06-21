@@ -41,7 +41,7 @@ const TOTAL_PAYOFFS = [
 const WORKSHOP_UNLOCKS = [
   {
     requiredLevel: WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
-    values: ['logs', 'leaderboard'],
+    values: ['leaderboard'],
   },
   {
     requiredLevel: WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,

@@ -118,9 +118,9 @@ describe('levelPayoffSummary', () => {
     expect(rows).toEqual([
       {
         label: 'unlocks',
-        value: 'research, logs, leaderboard',
-        valueLines: ['research', 'logs', 'leaderboard'],
-        notice: 'research unlocked, logs available, leaderboard available',
+        value: 'research, leaderboard',
+        valueLines: ['research', 'leaderboard'],
+        notice: 'research unlocked, leaderboard available',
       },
       {
         label: 'mana cap',
@@ -139,7 +139,7 @@ describe('levelPayoffSummary', () => {
       },
     ]);
     expect(formatLevelUpNotice(3, rows)).toBe(
-      'level 3 reached: research unlocked, logs available, leaderboard available, +50 mana cap, +0.25/sec mana regen, +1 crystal',
+      'level 3 reached: research unlocked, leaderboard available, +50 mana cap, +0.25/sec mana regen, +1 crystal',
     );
   });
 

@@ -1,4 +1,4 @@
-export const GAMEPLAY_SAVE_VERSION = 5;
+export const GAMEPLAY_SAVE_VERSION = 6;
 
 export class GameplayMigrationManager {
   constructor() {
@@ -16,21 +16,29 @@ export class GameplayMigrationManager {
       return save;
     }
 
+    if (save.version === 5) {
+      return this.createVersion6Save(save);
+    }
+
     if (save.version === 4) {
-      return this.createVersion5Save(save);
+      return this.createVersion6Save(this.createVersion5Save(save));
     }
 
     if (save.version === 3) {
-      return this.createVersion5Save(this.createVersion4Save(save));
+      return this.createVersion6Save(this.createVersion5Save(this.createVersion4Save(save)));
     }
 
     if (save.version === 2) {
-      return this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save)));
+      return this.createVersion6Save(
+        this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save))),
+      );
     }
 
     if (save.version === 1) {
-      return this.createVersion5Save(
-        this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+      return this.createVersion6Save(
+        this.createVersion5Save(
+          this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+        ),
       );
     }
 
@@ -47,6 +55,7 @@ export class GameplayMigrationManager {
       'mana',
       'gold',
       'crystal',
+      'emerald',
       'ruby',
       'logs',
       'inventory',
@@ -77,6 +86,7 @@ export class GameplayMigrationManager {
       'mana',
       'gold',
       'crystal',
+      'emerald',
       'ruby',
       'logs',
       'inventory',
@@ -114,6 +124,7 @@ export class GameplayMigrationManager {
       'mana',
       'gold',
       'crystal',
+      'emerald',
       'ruby',
       'logs',
       'inventory',
@@ -160,7 +171,7 @@ export class GameplayMigrationManager {
 
   createVersion5Save(save) {
     const migratedSave = {
-      version: GAMEPLAY_SAVE_VERSION,
+      version: 5,
     };
 
     for (const key of [
@@ -168,6 +179,7 @@ export class GameplayMigrationManager {
       'mana',
       'gold',
       'crystal',
+      'emerald',
       'ruby',
       'logs',
       'inventory',
@@ -214,6 +226,47 @@ export class GameplayMigrationManager {
       migratedSave.guild = {
         version: 1,
         profile: null,
+      };
+    }
+
+    return migratedSave;
+  }
+
+  createVersion6Save(save) {
+    const migratedSave = {
+      version: GAMEPLAY_SAVE_VERSION,
+    };
+
+    for (const key of [
+      'savedAt',
+      'mana',
+      'gold',
+      'crystal',
+      'emerald',
+      'ruby',
+      'logs',
+      'inventory',
+      'research',
+      'automation',
+      'seedSummoning',
+      'prestige',
+      'visualSettings',
+      'shop',
+      'brewing',
+      'garden',
+      'tasks',
+      'personalTasks',
+      'worldNotice',
+      'guild',
+    ]) {
+      if (save[key] !== undefined) {
+        migratedSave[key] = save[key];
+      }
+    }
+
+    if (!migratedSave.emerald) {
+      migratedSave.emerald = {
+        current: 0,
       };
     }
 

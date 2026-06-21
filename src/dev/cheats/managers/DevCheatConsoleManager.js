@@ -66,6 +66,7 @@ export class DevCheatConsoleManager {
       setMana: (amount) => run('setMana', amount),
       addGold: (amount) => run('addGold', amount),
       addCrystal: (amount) => run('addCrystal', amount),
+      addEmerald: (amount) => run('addEmerald', amount),
       addItem: (itemKeyOrId, quantity = 1) => run('addItem', itemKeyOrId, quantity),
       completeResearch: (researchId) => run('completeResearch', researchId),
       unlockSeed: (seedKey) => run('unlockSeed', seedKey),

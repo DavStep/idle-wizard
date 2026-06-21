@@ -1,3 +1,4 @@
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 export class WorkshopWorldNoticeManager {
@@ -162,6 +163,7 @@ export class WorkshopWorldNoticeManager {
   renderCharacter(notice) {
     if (!notice) {
       this.refs.openButton?.setAttribute('aria-label', 'open world notice, no notice');
+      setNotificationBadge(this.refs.openButton, false);
       return;
     }
 
@@ -169,6 +171,7 @@ export class WorkshopWorldNoticeManager {
       'aria-label',
       `open world notice, ${notice.headline}, ${notice.completedRequests}/${notice.totalRequests}, ${notice.responseLabel}, ${notice.resetLabel}`,
     );
+    setNotificationBadge(this.refs.openButton, hasIncompleteNoticeRequests(notice));
   }
 
   renderPopup(worldNotice) {
@@ -345,4 +348,14 @@ export class WorkshopWorldNoticeManager {
 
     this.refs.openButton?.setAttribute('aria-expanded', this.visible ? 'true' : 'false');
   }
+}
+
+function hasIncompleteNoticeRequests(notice) {
+  const requests = notice?.requests;
+
+  if (Array.isArray(requests) && requests.length > 0) {
+    return requests.some((request) => request?.completed !== true);
+  }
+
+  return Number(notice?.completedRequests ?? 0) < Number(notice?.totalRequests ?? 0);
 }

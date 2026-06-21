@@ -62,6 +62,10 @@ describe('DevCheatsFacade', () => {
       ok: true,
       crystal: { current: 7 },
     });
+    expect(target.cheats.addEmerald(2)).toMatchObject({
+      ok: true,
+      emerald: { current: 2 },
+    });
     expect(target.cheats.addItem('sageSeed', 3)).toMatchObject({
       ok: true,
       item: {
@@ -79,6 +83,7 @@ describe('DevCheatsFacade', () => {
     expect(snapshot.inventory).toContainEqual(
       expect.objectContaining({ key: 'sageSeed', quantity: 3 }),
     );
+    expect(snapshot.emerald.current).toBe(2);
     expect(snapshot.research.completedResearchIds).toContain('unlockSeed:sageSeed');
   });
 
@@ -146,6 +151,7 @@ describe('DevCheatsFacade', () => {
         mana: { current: 0, cap: 50, perSecond: 1 },
         gold: { current: 0, totalGenerated: 0 },
         crystal: { current: 0 },
+        emerald: { current: 0 },
         inventory: [],
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       },
@@ -154,9 +160,10 @@ describe('DevCheatsFacade', () => {
 
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
-      version: 5,
+      version: 6,
       gold: { current: 0, totalGenerated: 0 },
       crystal: { current: 0 },
+      emerald: { current: 0 },
       ruby: { current: 0 },
       inventory: [],
       research: { completedIds: ['unlockSeed:sageSeed'] },

@@ -31,11 +31,6 @@ export const PAGE_UNLOCK_REQUIREMENTS = {
     label: 'advanced garden',
     message: 'advanced garden is not ready yet',
   },
-  quests: {
-    requiredLevel: 999,
-    label: 'quests',
-    message: 'quests are not ready yet',
-  },
   advancedMarket: {
     requiredLevel: 999,
     label: 'advanced market',

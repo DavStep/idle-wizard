@@ -23,6 +23,7 @@
 - The authored game viewport is `1080x2170`.
 - Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on underline/border cues.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
+- Centered content inside source-scaled room layers must account for ui-layer padding/content-box sizing; plain auto margins center in the padded layer, not the visual stage.
 - Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
 - Height animations inside scaled room UI should write layout pixels from `offsetHeight`/`scrollHeight`, not `getBoundingClientRect()` screen pixels, or the element expands by the UI scale.
 - Timer progress fills that transition `transform` toward full need a computed-style flush after applying the current scale; remounted bars can otherwise paint full before the transition starts.
@@ -47,6 +48,7 @@
 - Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
+- Workshop personal tasks and world notice character-button notification dots belong on the small `tasks`/`notice` label box, not the portrait/full hit area.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
 - Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, and earn, not random chores pasted under a headline.
 - Weekly event direct coin funding feels like a quest tax unless strongly justified; prefer contextual normal-loop asks and keep any coin ask small/rare.
@@ -162,6 +164,7 @@
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` stays hidden until level 7.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
+- Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from config level 9 onward, adjacent rows should not reuse exact requirement item keys.
@@ -251,6 +254,7 @@
 - Full gameplay snapshots are expensive on mobile; page mount/show bursts should reuse one scoped snapshot, and heavy sub-snapshots should cache by real invalidation keys.
 - Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
+- Admin `playerLevel` edits only change server/social level; the actual in-game level shown in room UI comes from `player_gameplay_save.saveJson.tasks.currentLevel`.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/gold progress look reset after refresh.

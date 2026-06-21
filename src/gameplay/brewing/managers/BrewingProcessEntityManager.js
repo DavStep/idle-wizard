@@ -16,7 +16,13 @@ export class BrewingProcessEntityManager {
     this.ecsManagers = ecsManagers;
   }
 
-  startBrew({ resultItemTypeId, totalSeconds, bottlingTotalSeconds, cauldronIndex = 0 }) {
+  startBrew({
+    resultItemTypeId,
+    resultQuantity = 1,
+    totalSeconds,
+    bottlingTotalSeconds,
+    cauldronIndex = 0,
+  }) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
 
     if (this.hasActiveBrew(safeCauldronIndex)) {
@@ -28,7 +34,7 @@ export class BrewingProcessEntityManager {
     this.ecsManagers.components.add(entityId, ActiveBrew);
     ActiveBrew.cauldronIndex[entityId] = safeCauldronIndex;
     ActiveBrew.resultItemTypeId[entityId] = resultItemTypeId;
-    ActiveBrew.resultQuantity[entityId] = 1;
+    ActiveBrew.resultQuantity[entityId] = this.normalizeResultQuantity(resultQuantity);
     ActiveBrew.phase[entityId] =
       safeTotalSeconds <= 0 ? activeBrewPhases.brewed : activeBrewPhases.brewing;
     ActiveBrew.totalSeconds[entityId] = safeTotalSeconds;
@@ -41,6 +47,7 @@ export class BrewingProcessEntityManager {
   restoreActiveBrew({
     cauldronIndex = 0,
     resultItemTypeId,
+    resultQuantity = 1,
     phase = 'brewing',
     totalSeconds,
     remainingSeconds,
@@ -58,7 +65,7 @@ export class BrewingProcessEntityManager {
     this.ecsManagers.components.add(entityId, ActiveBrew);
     ActiveBrew.cauldronIndex[entityId] = safeCauldronIndex;
     ActiveBrew.resultItemTypeId[entityId] = resultItemTypeId;
-    ActiveBrew.resultQuantity[entityId] = 1;
+    ActiveBrew.resultQuantity[entityId] = this.normalizeResultQuantity(resultQuantity);
     const normalizedPhase = this.normalizePhase(phase);
     ActiveBrew.phase[entityId] =
       normalizedPhase === activeBrewPhases.brewing && safeRemainingSeconds <= 0
@@ -269,6 +276,7 @@ export class BrewingProcessEntityManager {
       resultItemTypeId,
       key: definition.key,
       label: definition.label,
+      resultQuantity: this.normalizeResultQuantity(ActiveBrew.resultQuantity[entityId]),
       phase: activeBrewPhaseLabels[phase] ?? 'brewing',
       canStartBottling: phase === activeBrewPhases.brewed,
       canCollect: phase === activeBrewPhases.ready,
@@ -321,6 +329,11 @@ export class BrewingProcessEntityManager {
 
   toNonNegativeSeconds(value) {
     return Number.isFinite(value) ? Math.max(0, value) : 0;
+  }
+
+  normalizeResultQuantity(quantity) {
+    const safeQuantity = Math.floor(Number(quantity));
+    return Number.isInteger(safeQuantity) && safeQuantity > 0 ? safeQuantity : 1;
   }
 
   normalizeCauldronIndex(cauldronIndex) {

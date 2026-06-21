@@ -1,3 +1,5 @@
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+
 export const CRYSTAL_OFFERS = [
   {
     crystalCount: 1,
@@ -134,7 +136,7 @@ export class ShopCrystalOfferManager {
 
     const bundle = document.createElement('span');
     bundle.className = 'shop-page__crystal-bundle';
-    bundle.textContent = offer.bundleLabel;
+    setResourceIconText(bundle, offer.bundleLabel);
 
     const price = document.createElement('button');
     price.className = 'shop-page__crystal-price';

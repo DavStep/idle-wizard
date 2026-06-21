@@ -1,6 +1,7 @@
 export class ResearchSnapshotManager {
   constructor({
     crystalFacade,
+    emeraldFacade,
     goldFacade,
     rubyFacade,
     researchBalanceManager,
@@ -8,6 +9,7 @@ export class ResearchSnapshotManager {
     researchStateEntityManager,
   }) {
     this.crystalFacade = crystalFacade;
+    this.emeraldFacade = emeraldFacade;
     this.goldFacade = goldFacade;
     this.rubyFacade = rubyFacade;
     this.researchBalanceManager = researchBalanceManager;
@@ -154,6 +156,10 @@ export class ResearchSnapshotManager {
       return this.rubyFacade;
     }
 
+    if (currency === 'emerald') {
+      return this.emeraldFacade;
+    }
+
     return this.goldFacade;
   }
 
@@ -170,6 +176,14 @@ export class ResearchSnapshotManager {
       return {
         costGold: 0,
         costRuby: cost.amount,
+        costCurrency: cost.currency,
+      };
+    }
+
+    if (cost.currency === 'emerald') {
+      return {
+        costGold: 0,
+        costEmerald: cost.amount,
         costCurrency: cost.currency,
       };
     }

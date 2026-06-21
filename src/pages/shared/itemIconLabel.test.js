@@ -75,21 +75,24 @@ describe('item icon labels', () => {
     expect(icon?.dataset.assetAtlasFrame).toBe('seed:regular');
   });
 
-  it('adds potion, herb, seed, and gold icons inside mixed text', () => {
+  it('adds potion, herb, seed, and resource icons inside mixed text', () => {
     const element = document.createElement('span');
 
     appendTextWithItemIcons(
       element,
-      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 gold',
+      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 gold, 5 crystals, and 3 rubies',
     );
 
     expect(element.textContent).toBe(
-      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 gold',
+      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 gold, 5 crystals, and 3 rubies',
     );
     expect(element.querySelector('.style-potion-label')).not.toBeNull();
     expect(element.querySelector('.style-herb-label')).not.toBeNull();
     expect(element.querySelector('.style-seed-label')).not.toBeNull();
     expect(element.querySelector('.style-resource-label--gold')).not.toBeNull();
+    expect(element.querySelector('.style-resource-label--crystal')).not.toBeNull();
+    expect(element.querySelector('.style-resource-label--ruby')).not.toBeNull();
+    expect(element.querySelector('.style-resource-label--mana')).toBeNull();
     expect(element.querySelector('.style-seed-label__icon')).not.toBeNull();
     expect(element.querySelector('.style-herb-label')?.textContent).toBe('sage');
     expect(element.querySelector('.style-seed-label')?.textContent).toBe('star anise seed');

@@ -22,10 +22,11 @@ export class GardenProcessManager {
     this.gardenTileEntityManager.completeFinishedGrowths();
 
     for (const harvest of this.gardenTileEntityManager.completeFinishedHarvests()) {
-      this.itemsFacade.addItem(harvest.herbItemTypeId, 1);
+      const quantity = Math.max(1, Math.floor(Number(harvest.harvestQuantity) || 1));
+      this.itemsFacade.addItem(harvest.herbItemTypeId, quantity);
       this.onHarvestComplete?.({
         herb: this.itemsFacade.getItemDefinition(harvest.herbItemTypeId),
-        quantity: 1,
+        quantity,
         tileNumber: harvest.tileNumber,
       });
     }

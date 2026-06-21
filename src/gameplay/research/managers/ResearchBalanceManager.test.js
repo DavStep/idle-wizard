@@ -41,4 +41,21 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('shortStudy')).toBe(600);
     expect(manager.getDurationSeconds('exactStudy')).toBe(0);
   });
+
+  it('reads emerald research costs from balance', () => {
+    const manager = new ResearchBalanceManager({
+      balance: {
+        researchCostsGold: {},
+        researchCostsEmerald: {
+          'emerald:plotPlanting:2:2': 2,
+        },
+      },
+    });
+
+    expect(manager.getCost('emerald:plotPlanting:2:2')).toEqual({
+      amount: 2,
+      currency: 'emerald',
+    });
+    expect(manager.getCostEmerald('emerald:plotPlanting:2:2')).toBe(2);
+  });
 });

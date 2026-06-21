@@ -384,6 +384,7 @@ export class BrewingFacade {
   formatActiveBrewPersistence(activeBrew) {
     return {
       resultItemKey: activeBrew.key,
+      resultQuantity: activeBrew.resultQuantity,
       phase: activeBrew.phase,
       remainingMs: activeBrew.remainingMs,
       totalMs: activeBrew.totalMs,
@@ -571,6 +572,7 @@ export class BrewingFacade {
     this.brewingProcessEntityManager.restoreActiveBrew({
       cauldronIndex,
       resultItemTypeId: resultDefinition.id,
+      resultQuantity: Math.max(1, Math.floor(Number(activeBrew.resultQuantity) || 1)),
       phase: activeBrew.phase,
       totalSeconds: activeBrew.totalMs / 1_000,
       remainingSeconds: activeBrew.remainingMs / 1_000,

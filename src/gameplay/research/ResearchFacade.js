@@ -16,6 +16,11 @@ import {
   getFastSellPercent as getFastSellPercentForLevel,
 } from './fastSellResearch.js';
 import {
+  emeraldResearchIds,
+  emeraldResearchMaxMultiplier,
+  emeraldResearchMinMultiplier,
+} from './emeraldResearchIds.js';
+import {
   capacityResearchIds,
   cauldronCapacityEndCauldronNumber,
   cauldronCapacityStartCauldronNumber,
@@ -31,6 +36,7 @@ export class ResearchFacade {
 
   constructor({
     crystalFacade,
+    emeraldFacade,
     goldFacade,
     itemsFacade,
     manaFacade,
@@ -56,6 +62,7 @@ export class ResearchFacade {
     });
     this.researchPurchaseManager = new ResearchPurchaseManager({
       crystalFacade,
+      emeraldFacade,
       goldFacade,
       rubyFacade,
       researchBalanceManager: this.researchBalanceManager,
@@ -71,6 +78,7 @@ export class ResearchFacade {
     });
     this.researchSnapshotManager = new ResearchSnapshotManager({
       crystalFacade,
+      emeraldFacade,
       goldFacade,
       rubyFacade,
       researchBalanceManager: this.researchBalanceManager,
@@ -246,6 +254,43 @@ export class ResearchFacade {
       durationMs,
       this.getCompletedPlotGrowthLevel(plotNumber),
     );
+  }
+
+  getPlotPlantingMultiplier(plotNumber) {
+    return this.getCompletedEmeraldMultiplier({
+      getId: emeraldResearchIds.plotPlanting,
+      targetNumber: plotNumber,
+    });
+  }
+
+  getCauldronBrewingMultiplier(cauldronNumber) {
+    return this.getCompletedEmeraldMultiplier({
+      getId: emeraldResearchIds.cauldronBrewing,
+      targetNumber: cauldronNumber,
+    });
+  }
+
+  getCompletedEmeraldMultiplier({ getId, targetNumber }) {
+    let completedMultiplier = 1;
+
+    for (
+      let multiplier = emeraldResearchMinMultiplier;
+      multiplier <= emeraldResearchMaxMultiplier;
+      multiplier += 1
+    ) {
+      const researchId = getId(targetNumber, multiplier);
+      if (!this.researchDefinitionManager.hasConfiguredResearch(researchId)) {
+        break;
+      }
+
+      if (!this.researchStateEntityManager.isCompleted(researchId)) {
+        break;
+      }
+
+      completedMultiplier = multiplier;
+    }
+
+    return completedMultiplier;
   }
 
   getFastSellPercent() {

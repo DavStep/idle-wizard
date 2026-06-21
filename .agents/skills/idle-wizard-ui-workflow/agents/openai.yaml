@@ -1,0 +1,4 @@
+interface:
+  display_name: "Idle Wizard UI Workflow"
+  short_description: "Parent workflow for Idle Wizard UI work"
+  default_prompt: "Use $idle-wizard-ui-workflow before creating or changing any Idle Wizard UI."

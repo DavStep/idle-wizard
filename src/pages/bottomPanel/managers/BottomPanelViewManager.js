@@ -13,29 +13,46 @@ export const BOTTOM_PANEL_TABS = [
   { id: 'advancedBrewing', label: 'adv brewing' },
   { id: 'advancedGarden', label: 'adv garden' },
   { id: 'guild', label: 'guild' },
-  { id: 'quests', label: 'quests' },
+  { id: 'prestige', label: 'prestige', actionId: 'prestige' },
   { id: 'advancedMarket', label: 'adv market' },
 ];
 
 export class BottomPanelViewManager {
-  constructor({ getCurrentPageId, onShowPage, tabs = BOTTOM_PANEL_TABS } = {}) {
+  constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
     this.getCurrentPageId = getCurrentPageId;
     this.onShowPage = onShowPage;
+    this.onAction = onAction;
     this.tabs = tabs;
     this.root = null;
     this.tabButtons = new Map();
     this.notifications = {};
     this.swipeTargetPageId = null;
     this.pageStates = new Map(
-      tabs.map((tab) => [
-        tab.id,
-        {
-          id: tab.id,
-          unlocked: true,
-        },
-      ]),
+      tabs
+        .filter((tab) => !this.isActionTab(tab))
+        .map((tab) => [
+          tab.id,
+          {
+            id: tab.id,
+            unlocked: true,
+          },
+        ]),
     );
-    this.visiblePageIds = new Set(tabs.map((tab) => tab.id));
+    this.actionStates = new Map(
+      tabs
+        .filter((tab) => this.isActionTab(tab))
+        .map((tab) => [
+          tab.actionId,
+          {
+            id: tab.actionId,
+            visible: false,
+            enabled: false,
+          },
+        ]),
+    );
+    this.visiblePageIds = new Set(
+      tabs.filter((tab) => !this.isActionTab(tab)).map((tab) => tab.id),
+    );
     this.refs = {
       lockPopup: null,
       lockPanel: null,
@@ -100,6 +117,10 @@ export class BottomPanelViewManager {
 
   setCurrentPageId(pageId) {
     for (const tab of this.tabs) {
+      if (this.isActionTab(tab)) {
+        continue;
+      }
+
       const button = this.tabButtons.get(tab.id);
       const selected = tab.id === pageId;
 
@@ -120,6 +141,10 @@ export class BottomPanelViewManager {
     );
 
     for (const tab of this.tabs) {
+      if (this.isActionTab(tab)) {
+        continue;
+      }
+
       const button = this.tabButtons.get(tab.id);
 
       if (button) {
@@ -143,6 +168,10 @@ export class BottomPanelViewManager {
     }
 
     for (const tab of this.tabs) {
+      if (this.isActionTab(tab)) {
+        continue;
+      }
+
       const state = nextStates.get(tab.id) ?? {
         id: tab.id,
         unlocked: true,
@@ -179,7 +208,42 @@ export class BottomPanelViewManager {
     this.notifications = notifications ?? {};
 
     for (const tab of this.tabs) {
+      if (this.isActionTab(tab)) {
+        continue;
+      }
+
       this.syncTabNotification(tab);
+    }
+  }
+
+  setActionStates(actionStates = []) {
+    const nextStates = new Map();
+
+    for (const state of Array.isArray(actionStates) ? actionStates : []) {
+      if (!state?.id) {
+        continue;
+      }
+
+      nextStates.set(state.id, {
+        ...state,
+        visible: state.visible === true,
+        enabled: state.enabled === true,
+      });
+    }
+
+    for (const tab of this.tabs) {
+      if (!this.isActionTab(tab)) {
+        continue;
+      }
+
+      const state = nextStates.get(tab.actionId) ?? {
+        id: tab.actionId,
+        visible: false,
+        enabled: false,
+      };
+
+      this.actionStates.set(tab.actionId, state);
+      this.syncActionState(tab);
     }
   }
 
@@ -188,6 +252,10 @@ export class BottomPanelViewManager {
       typeof pageId === 'string' && this.tabButtons.has(pageId) ? pageId : null;
 
     for (const tab of this.tabs) {
+      if (this.isActionTab(tab)) {
+        continue;
+      }
+
       const button = this.tabButtons.get(tab.id);
       const selected = tab.id === this.swipeTargetPageId;
       const locked = this.pageStates.get(tab.id)?.unlocked === false;
@@ -228,21 +296,42 @@ export class BottomPanelViewManager {
 
   createTab(tab) {
     const button = document.createElement('button');
-    button.className = 'room-bottom-panel__tab';
+    button.className = this.isActionTab(tab)
+      ? `room-bottom-panel__tab room-bottom-panel__action room-bottom-panel__${tab.actionId}-button`
+      : 'room-bottom-panel__tab';
     button.type = 'button';
     button.textContent = tab.label;
-    button.dataset.pageId = tab.id;
-    button.dataset.tutorialId = `page:${tab.id}`;
-    button.hidden = !this.visiblePageIds.has(tab.id);
-    button.setAttribute('aria-label', `show ${tab.label}`);
-    button.setAttribute('aria-selected', 'false');
+    if (this.isActionTab(tab)) {
+      button.dataset.actionId = tab.actionId;
+      button.setAttribute('aria-label', `open ${tab.label}`);
+      this.syncActionState(tab, button);
+    } else {
+      button.dataset.pageId = tab.id;
+      button.dataset.tutorialId = `page:${tab.id}`;
+      button.hidden = !this.visiblePageIds.has(tab.id);
+      button.setAttribute('aria-label', `show ${tab.label}`);
+      button.setAttribute('aria-selected', 'false');
+    }
     button.addEventListener('click', () => this.handleTabClick(tab));
     this.tabButtons.set(tab.id, button);
-    this.syncTabNotification(tab);
+    if (!this.isActionTab(tab)) {
+      this.syncTabNotification(tab);
+    }
     return button;
   }
 
   handleTabClick(tab) {
+    if (this.isActionTab(tab)) {
+      const button = this.tabButtons.get(tab.id);
+
+      if (button?.disabled || button?.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
+
+      this.onAction?.(tab.actionId);
+      return;
+    }
+
     const state = this.pageStates.get(tab.id);
 
     if (state && !state.unlocked) {
@@ -392,5 +481,33 @@ export class BottomPanelViewManager {
 
     setNotificationBadge(button, false);
     button.setAttribute('aria-label', `show ${tab.label}`);
+  }
+
+  syncActionState(tab, button = this.tabButtons.get(tab.id)) {
+    if (!button) {
+      return;
+    }
+
+    const state = this.actionStates.get(tab.actionId) ?? {
+      visible: false,
+      enabled: false,
+    };
+    const visible = state.visible === true;
+    const enabled = visible && state.enabled === true;
+
+    button.disabled = !enabled;
+    button.style.visibility = visible ? '' : 'hidden';
+    button.classList.toggle('is-locked', visible && !enabled);
+    button.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    button.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    button.tabIndex = visible ? 0 : -1;
+    button.setAttribute(
+      'aria-label',
+      enabled ? `open ${tab.label}` : `${tab.label} unavailable`,
+    );
+  }
+
+  isActionTab(tab) {
+    return Boolean(tab?.actionId);
   }
 }

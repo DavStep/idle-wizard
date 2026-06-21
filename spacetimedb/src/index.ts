@@ -112,7 +112,9 @@ const MAX_PLAYER_SAVE_MANA_CURRENT = 5_000;
 const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
 const MAX_PLAYER_SAVE_CURRENT_GOLD = 250_000;
 const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
+const MAX_PLAYER_SAVE_CURRENT_EMERALD = 10_000;
 const MAX_PLAYER_SAVE_CURRENT_RUBY = 10_000;
+const MAX_PLAYER_SAVE_BATCH_MULTIPLIER = 5;
 const MAX_PLAYER_SAVE_AUTO_SEED_MANA_RESERVE = MAX_PLAYER_SAVE_MANA_CURRENT;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
@@ -3590,6 +3592,7 @@ const advancedResearchCauldronNumbers = [1, 2, 3, 4, 5];
 const advancedResearchPlotNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const plotCapacityResearchNumbers = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 const cauldronCapacityResearchNumbers = [6, 7, 8, 9, 10];
+const emeraldResearchMultipliers = [2, 3, 4, 5];
 
 function getAdvancedResearchCostRubyById(): Record<string, number> {
   const costs: Record<string, number> = {};
@@ -3624,6 +3627,29 @@ function getAdvancedResearchCostRubyById(): Record<string, number> {
 const researchDefaultCostRubyById: Record<string, number> =
   getAdvancedResearchCostRubyById();
 
+function getEmeraldResearchCostById(): Record<string, number> {
+  const costs: Record<string, number> = {};
+
+  for (const plotNumber of advancedResearchPlotNumbers) {
+    for (const multiplier of emeraldResearchMultipliers) {
+      costs[`emerald:plotPlanting:${plotNumber}:${multiplier}`] =
+        plotNumber * Math.max(1, multiplier - 1);
+    }
+  }
+
+  for (const cauldronNumber of advancedResearchCauldronNumbers) {
+    for (const multiplier of emeraldResearchMultipliers) {
+      costs[`emerald:cauldronBrewing:${cauldronNumber}:${multiplier}`] =
+        cauldronNumber * Math.max(1, multiplier - 1);
+    }
+  }
+
+  return costs;
+}
+
+const researchDefaultCostEmeraldById: Record<string, number> =
+  getEmeraldResearchCostById();
+
 const researchDefaultDurationOverrideSecondsById: Record<string, bigint> = {
   'unlockSeed:mintSeed': 15n,
   'unlockRecipe:manaTonic': 60n,
@@ -3648,6 +3674,12 @@ const researchDefaultDurationSecondsById: Record<string, bigint> = {
         (researchId) =>
           researchDefaultCostGoldById[researchId] === undefined &&
           researchDefaultCostCrystalById[researchId] === undefined,
+      ),
+      ...Object.keys(researchDefaultCostEmeraldById).filter(
+        (researchId) =>
+          researchDefaultCostGoldById[researchId] === undefined &&
+          researchDefaultCostCrystalById[researchId] === undefined &&
+          researchDefaultCostRubyById[researchId] === undefined,
       ),
     ].map((researchId, index) => [
       researchId,
@@ -4075,6 +4107,23 @@ const advancedResearchCatalog = [
   })),
 ];
 
+const emeraldResearchCatalog = [
+  ...advancedResearchPlotNumbers.flatMap((plotNumber) =>
+    emeraldResearchMultipliers.map((multiplier) => ({
+      id: `emerald:plotPlanting:${plotNumber}:${multiplier}`,
+      label: `plot ${plotNumber} planting x${multiplier}`,
+      groupId: 'plotPlanting',
+    })),
+  ),
+  ...advancedResearchCauldronNumbers.flatMap((cauldronNumber) =>
+    emeraldResearchMultipliers.map((multiplier) => ({
+      id: `emerald:cauldronBrewing:${cauldronNumber}:${multiplier}`,
+      label: `cauldron ${cauldronNumber} brewing x${multiplier}`,
+      groupId: 'cauldronBrewing',
+    })),
+  ),
+];
+
 const researchCatalog = [
   ...herbCatalog.map((herb) => {
     const id = `unlockSeed:${herb.key}Seed`;
@@ -4107,6 +4156,12 @@ const researchCatalog = [
     defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
   })),
   ...advancedResearchCatalog.map((research) => ({
+    researchId: research.id,
+    label: research.label,
+    groupId: research.groupId,
+    defaultCostGold: 0n,
+  })),
+  ...emeraldResearchCatalog.map((research) => ({
     researchId: research.id,
     label: research.label,
     groupId: research.groupId,
@@ -4194,6 +4249,7 @@ const DEFAULT_RESEARCH_CONFIG_JSON = toGameConfigJson({
   researchCostsGold: toNumberRecord(researchDefaultCostGoldById),
   researchCostsCrystal: researchDefaultCostCrystalById,
   researchCostsRuby: researchDefaultCostRubyById,
+  researchCostsEmerald: researchDefaultCostEmeraldById,
   researchDurationsSeconds: toNumberRecord(researchDefaultDurationSecondsById),
 });
 const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
@@ -6675,6 +6731,24 @@ function normalizeGameConfigJson(
       changed = true;
     }
 
+    if (isRecord(parsedConfig.researchCostsEmerald)) {
+      const existingCostsEmerald = parsedConfig.researchCostsEmerald;
+      const missingEmeraldCost = Object.keys(researchDefaultCostEmeraldById).some(
+        (researchId) => existingCostsEmerald[researchId] === undefined,
+      );
+
+      if (missingEmeraldCost) {
+        normalizedResearchConfig.researchCostsEmerald = {
+          ...researchDefaultCostEmeraldById,
+          ...existingCostsEmerald,
+        };
+        changed = true;
+      }
+    } else {
+      normalizedResearchConfig.researchCostsEmerald = researchDefaultCostEmeraldById;
+      changed = true;
+    }
+
     const defaultResearchDurationsSeconds = toNumberRecord(
       researchDefaultDurationSecondsById,
     );
@@ -7255,6 +7329,7 @@ function normalizePlayerGameplaySave(
     mana: normalizeSaveResource(save.mana),
     gold: normalizeSaveGold(save.gold),
     crystal: normalizeSaveCrystal(save.crystal, minimumCurrentCrystal),
+    emerald: normalizeSaveEmerald(save.emerald),
     ruby: normalizeSaveRuby(save.ruby),
     logs: normalizeSaveLogs(save.logs),
     inventory: normalizeSaveInventory(save.inventory, itemCatalog),
@@ -7594,6 +7669,14 @@ function normalizeSaveCrystal(value: unknown, minimumCurrent = 0) {
       0,
       MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
     ),
+  };
+}
+
+function normalizeSaveEmerald(value: unknown) {
+  const emerald = isRecord(value) ? value : {};
+
+  return {
+    current: clampSaveInteger(emerald.current, 0, MAX_PLAYER_SAVE_CURRENT_EMERALD, 0),
   };
 }
 
@@ -8105,6 +8188,15 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
       : [];
   }
 
+  const emeraldMatch = /^emerald:([^:]+):(\d+):(\d+)$/.exec(researchId);
+  if (emeraldMatch) {
+    const targetNumber = Number(emeraldMatch[2]);
+    const multiplier = Number(emeraldMatch[3]);
+    return multiplier > emeraldResearchMultipliers[0]
+      ? [`emerald:${emeraldMatch[1]}:${targetNumber}:${multiplier - 1}`]
+      : [];
+  }
+
   const plotCapacityMatch = /^advanced:plotCapacity:(\d+)$/.exec(researchId);
   if (plotCapacityMatch) {
     const plotNumber = Number(plotCapacityMatch[1]);
@@ -8574,6 +8666,12 @@ function normalizeSaveActiveBrew(value: unknown, itemCatalog: Map<string, string
 
   return {
     resultItemKey,
+    resultQuantity: clampSaveInteger(
+      value.resultQuantity,
+      1,
+      MAX_PLAYER_SAVE_BATCH_MULTIPLIER,
+      1,
+    ),
     phase,
     remainingMs,
     totalMs,
@@ -8629,6 +8727,12 @@ function normalizeSaveGardenTile(
   const remainingMs = phase === 'ready'
     ? 0
     : clampSaveInteger(value.remainingMs, 0, totalMs, 0);
+  const harvestQuantity = clampSaveInteger(
+    value.harvestQuantity,
+    1,
+    MAX_PLAYER_SAVE_BATCH_MULTIPLIER,
+    1,
+  );
   const hasSeed = itemCatalog.get(seedItemKey) === 'seed';
   const hasHerb = itemCatalog.get(herbItemKey) === 'herb';
 
@@ -8639,6 +8743,7 @@ function normalizeSaveGardenTile(
       : null,
     seedItemKey: hasSeed && phase !== 'empty' ? seedItemKey : null,
     herbItemKey: hasHerb && phase !== 'empty' ? herbItemKey : null,
+    harvestQuantity,
     phase: hasSeed && hasHerb ? phase : 'empty',
     totalMs: phase === 'ready' ? 0 : totalMs,
     remainingMs,
@@ -9579,6 +9684,12 @@ function saveJsonHasReplayProgress(saveJson: string): boolean {
       return true;
     }
 
+    const emerald = isRecord(save.emerald) ? save.emerald : {};
+    const currentEmerald = Math.floor(Number(emerald.current));
+    if (Number.isFinite(currentEmerald) && currentEmerald > 0) {
+      return true;
+    }
+
     const ruby = isRecord(save.ruby) ? save.ruby : {};
     const currentRuby = Math.floor(Number(ruby.current));
     return Number.isFinite(currentRuby) && currentRuby > 0;
@@ -10229,12 +10340,14 @@ function validateResearchGameConfig(value: unknown) {
     researchCostsGold?: unknown;
     researchCostsCrystal?: unknown;
     researchCostsRuby?: unknown;
+    researchCostsEmerald?: unknown;
     researchDurationsSeconds?: unknown;
   };
 
   validateCostRecord(config.researchCostsGold, MAX_RESEARCH_COST_GOLD);
   validateCostRecord(config.researchCostsCrystal, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
   validateCostRecord(config.researchCostsRuby, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+  validateCostRecord(config.researchCostsEmerald, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
 
   if (config.researchDurationsSeconds !== undefined) {
     validateCostRecord(config.researchDurationsSeconds, MAX_RESEARCH_DURATION_SECONDS);

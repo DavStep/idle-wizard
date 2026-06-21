@@ -1804,7 +1804,6 @@ describe('TutorialHintManager', () => {
     const controls = [
       { className: 'workshop-page__leaderboard-button', left: 16, top: 430 },
       { className: 'workshop-page__trade-alliance-button', left: 212, top: 430 },
-      { className: 'workshop-page__logs-button', left: 16, top: 472 },
       { className: 'workshop-page__discoveries-button', left: 212, top: 472 },
     ].map(({ className, left, top }) => {
       const button = document.createElement('button');

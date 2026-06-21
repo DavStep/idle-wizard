@@ -5,6 +5,7 @@ export class GameplaySaveManager {
     manaFacade,
     goldFacade,
     crystalFacade,
+    emeraldFacade,
     rubyFacade,
     gameplayLogFacade,
     itemsFacade,
@@ -25,6 +26,7 @@ export class GameplaySaveManager {
     this.manaFacade = manaFacade;
     this.goldFacade = goldFacade;
     this.crystalFacade = crystalFacade;
+    this.emeraldFacade = emeraldFacade;
     this.rubyFacade = rubyFacade;
     this.gameplayLogFacade = gameplayLogFacade;
     this.itemsFacade = itemsFacade;
@@ -50,6 +52,7 @@ export class GameplaySaveManager {
       mana: this.manaFacade.getSnapshot(),
       gold: this.goldFacade.getSnapshot(),
       crystal: this.crystalFacade.getSnapshot(),
+      emerald: this.emeraldFacade.getSnapshot(),
       ruby: this.rubyFacade.getSnapshot(),
       logs: this.gameplayLogFacade.getPersistenceSnapshot(),
       inventory: this.itemsFacade.getPersistenceSnapshot(),

@@ -173,10 +173,17 @@ export class BrewingStartManager {
       };
     }
 
-    if (!this.hasEnoughInventory(ingredientItemTypeIds)) {
+    const yieldMultiplier = this.getYieldMultiplier(safeCauldronIndex);
+    const consumedIngredientItemTypeIds = this.repeatItemTypeIds(
+      ingredientItemTypeIds,
+      yieldMultiplier,
+    );
+
+    if (!this.hasEnoughInventory(consumedIngredientItemTypeIds)) {
       return {
         ok: false,
         reason: 'not_enough_ingredients',
+        requiredQuantity: yieldMultiplier,
       };
     }
 
@@ -196,10 +203,11 @@ export class BrewingStartManager {
       };
     }
 
-    const manaCost =
+    const baseManaCost =
       recipe && !recipeDiscoverable
         ? recipe.manaCost
         : this.brewingBalanceManager.getWastedBrewManaCost();
+    const manaCost = baseManaCost * yieldMultiplier;
 
     if (!this.manaFacade.spend(manaCost)) {
       return {
@@ -209,7 +217,7 @@ export class BrewingStartManager {
       };
     }
 
-    this.removeIngredientsFromInventory(ingredientItemTypeIds);
+    this.removeIngredientsFromInventory(consumedIngredientItemTypeIds);
 
     const resultItem = recipe
       ? this.itemsFacade.getItemDefinition(recipe.potionTypeId)
@@ -228,6 +236,7 @@ export class BrewingStartManager {
     this.brewingProcessEntityManager.startBrew({
       cauldronIndex: safeCauldronIndex,
       resultItemTypeId: resultItem.id,
+      resultQuantity: yieldMultiplier,
       totalSeconds: durationMs / 1_000,
       bottlingTotalSeconds: this.brewingBalanceManager.getBottlingDurationMs() / 1_000,
     });
@@ -253,6 +262,7 @@ export class BrewingStartManager {
             }
           : null,
       manaCost,
+      quantity: yieldMultiplier,
       durationMs,
     };
   }
@@ -472,6 +482,18 @@ export class BrewingStartManager {
       const normalizedQuantity = Math.max(1, quantity);
       return Array.from({ length: normalizedQuantity }, () => ingredient.itemTypeId);
     });
+  }
+
+  getYieldMultiplier(cauldronIndex = 0) {
+    const multiplier =
+      this.researchFacade?.getCauldronBrewingMultiplier?.(cauldronIndex + 1) ?? 1;
+    const safeMultiplier = Math.floor(Number(multiplier));
+    return Number.isInteger(safeMultiplier) && safeMultiplier > 0 ? safeMultiplier : 1;
+  }
+
+  repeatItemTypeIds(itemTypeIds = [], multiplier = 1) {
+    const safeMultiplier = Math.max(1, Math.floor(Number(multiplier) || 1));
+    return Array.from({ length: safeMultiplier }, () => itemTypeIds).flat();
   }
 
   normalizeCauldronIndex(cauldronIndex) {

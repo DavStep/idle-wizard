@@ -70,7 +70,6 @@ const OBJECTIVE_PROTECTED_SELECTORS = [
   '.workshop-page__world-chat-box',
   '.workshop-page__leaderboard-button',
   '.workshop-page__trade-alliance-button',
-  '.workshop-page__logs-button',
   '.workshop-page__discoveries-button',
   '.research-page__tab-button',
   '.shop-page__direct-sell-tab-button',

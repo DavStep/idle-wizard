@@ -1,6 +1,7 @@
 import { AutomationFacade } from './automation/AutomationFacade.js';
 import { BrewingFacade } from './brewing/BrewingFacade.js';
 import { CrystalFacade } from './crystal/CrystalFacade.js';
+import { EmeraldFacade } from './emerald/EmeraldFacade.js';
 import { GoldFacade } from './gold/GoldFacade.js';
 import { GardenFacade } from './garden/GardenFacade.js';
 import { GuildFacade } from './guild/GuildFacade.js';
@@ -43,6 +44,7 @@ export class GameplayFacade {
     this.manaFacade = new ManaFacade();
     this.goldFacade = new GoldFacade();
     this.crystalFacade = new CrystalFacade();
+    this.emeraldFacade = new EmeraldFacade();
     this.rubyFacade = new RubyFacade();
     this.visualSettingsFacade = new VisualSettingsFacade({
       crystalFacade: this.crystalFacade,
@@ -59,6 +61,7 @@ export class GameplayFacade {
     });
     this.researchFacade = new ResearchFacade({
       crystalFacade: this.crystalFacade,
+      emeraldFacade: this.emeraldFacade,
       goldFacade: this.goldFacade,
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
@@ -140,6 +143,7 @@ export class GameplayFacade {
       manaFacade: this.manaFacade,
       goldFacade: this.goldFacade,
       crystalFacade: this.crystalFacade,
+      emeraldFacade: this.emeraldFacade,
       rubyFacade: this.rubyFacade,
       gameplayLogFacade: this.gameplayLogFacade,
       itemsFacade: this.itemsFacade,
@@ -238,6 +242,7 @@ export class GameplayFacade {
     this.manaFacade.initialize(ecsManagers);
     this.goldFacade.initialize(ecsManagers);
     this.crystalFacade.initialize(ecsManagers);
+    this.emeraldFacade.initialize(ecsManagers);
     this.rubyFacade.initialize(ecsManagers);
     this.tasksFacade.initialize(ecsManagers);
     this.prestigeFacade.initialize(ecsManagers);
@@ -465,6 +470,9 @@ export class GameplayFacade {
         totalGenerated: 0,
       },
       crystal: {
+        current: 0,
+      },
+      emerald: {
         current: 0,
       },
       ruby: {
@@ -1163,6 +1171,7 @@ export class GameplayFacade {
       mana: this.manaFacade.getSnapshot(),
       gold: this.goldFacade.getSnapshot(),
       crystal: this.crystalFacade.getSnapshot(),
+      emerald: this.emeraldFacade.getSnapshot(),
       ruby: this.rubyFacade.getSnapshot(),
       inventory: this.itemsFacade.getInventorySnapshot(),
       seedInventory: this.itemsFacade.getSeedInventorySnapshot(),

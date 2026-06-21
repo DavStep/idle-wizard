@@ -55,6 +55,36 @@ afterEach(() => {
 });
 
 describe('GuildPanelManager', () => {
+  it('centers only the locked or charter box state', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const { parent } = mountManager(gameplayFacade);
+    const content = parent.querySelector('.guild-page__content');
+
+    expect(content?.classList.contains('guild-page__content--centered')).toBe(true);
+
+    gameplayFacade.emitGuild(
+      createGuildSnapshot({
+        created: true,
+        profile: {
+          name: 'ash hall',
+          tag: 'ASH',
+          color: 'red',
+        },
+        secretary: {
+          level: 1,
+          hiredCap: 1,
+          boardSlots: 3,
+        },
+        adventurers: [],
+        board: [],
+        applicants: [],
+        logs: [],
+      }),
+    );
+
+    expect(content?.classList.contains('guild-page__content--centered')).toBe(false);
+  });
+
   it('preserves guild charter fields across gameplay snapshot refreshes', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const { popupLayer } = mountManager(gameplayFacade);

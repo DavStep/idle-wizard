@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { setResourceColor } from './resourceColor.js';
+import { setResourceColor, setResourceColorFromText } from './resourceColor.js';
 
 describe('resource colors', () => {
   it('marks potion item labels as potion-colored resources', () => {
@@ -11,5 +11,13 @@ describe('resource colors', () => {
     setResourceColor(element, 'potion');
 
     expect(element.dataset.resourceColor).toBe('potion');
+  });
+
+  it('marks plural crystals as crystal-colored resources', () => {
+    const element = document.createElement('span');
+
+    setResourceColorFromText(element, '5 crystals');
+
+    expect(element.dataset.resourceColor).toBe('crystal');
   });
 });

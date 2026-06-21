@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.25
+
+- Added emerald research support for batch planting and brewing, so upgraded plots and cauldrons can turn multiple normal inputs into multiple outputs in one timer.
+- Added emerald save/backend support and resource icons/colors for crystal, emerald, ruby, mana, and gold rows.
+- Moved Prestige into the bottom room bar when it is unlocked, replacing the unused quests slot.
+- Tightened resource labels and Workshop notice/task indicators so potion names and mana sphere text no longer get mistaken for mana currency.
+
 ## 0.2.24
 
 - Changed personal daily and weekly task rewards so completed goals wait to be claimed instead of paying out instantly.

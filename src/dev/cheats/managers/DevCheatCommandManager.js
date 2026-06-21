@@ -8,6 +8,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.setMana(amount)',
   'cheats.addGold(amount)',
   'cheats.addCrystal(amount)',
+  'cheats.addEmerald(amount)',
   "cheats.addItem('sageSeed', quantity)",
   "cheats.completeResearch('unlockSeed:sageSeed')",
   "cheats.unlockSeed('sage')",
@@ -46,6 +47,8 @@ export class DevCheatCommandManager {
         return this.addGold(commandArgs[0]);
       case 'addcrystal':
         return this.addCrystal(commandArgs[0]);
+      case 'addemerald':
+        return this.addEmerald(commandArgs[0]);
       case 'additem':
         return this.addItem(commandArgs[0], commandArgs[1] ?? 1);
       case 'completeresearch':
@@ -136,6 +139,21 @@ export class DevCheatCommandManager {
     return {
       ok: true,
       crystal: this.gameplayFacade.getSnapshot().crystal,
+    };
+  }
+
+  addEmerald(amount) {
+    const safeAmount = this.readFiniteNumber(amount, 'amount');
+
+    if (!safeAmount.ok) {
+      return safeAmount;
+    }
+
+    this.gameplayFacade.emeraldFacade.add(safeAmount.value);
+    this.gameplayFacade.publishAndSaveSnapshot();
+    return {
+      ok: true,
+      emerald: this.gameplayFacade.getSnapshot().emerald,
     };
   }
 

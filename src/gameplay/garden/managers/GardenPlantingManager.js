@@ -162,31 +162,35 @@ export class GardenPlantingManager {
     const previousSeed = tile.seedItemTypeId
       ? this.itemsFacade.getItemDefinition(tile.seedItemTypeId)
       : null;
+    const harvestQuantity = this.getHarvestQuantity(tileNumber);
+    const previousQuantity = this.getTileHarvestQuantity(tile);
     const availableQuantity =
       this.itemsFacade.getItemQuantity(seedResult.seed.id) +
-      (previousSeed?.id === seedResult.seed.id ? 1 : 0);
+      (previousSeed?.id === seedResult.seed.id ? previousQuantity : 0);
 
-    if (availableQuantity <= 0) {
+    if (availableQuantity < harvestQuantity) {
       return {
         ok: false,
         reason: 'not_enough_seed',
         seed: seedResult.seed,
+        requiredQuantity: harvestQuantity,
       };
     }
 
     if (previousSeed) {
-      this.itemsFacade.addItem(previousSeed.id, 1);
+      this.itemsFacade.addItem(previousSeed.id, previousQuantity);
     }
 
-    if (!this.itemsFacade.removeItem(seedResult.seed.id, 1)) {
+    if (!this.itemsFacade.removeItem(seedResult.seed.id, harvestQuantity)) {
       if (previousSeed) {
-        this.itemsFacade.removeItem(previousSeed.id, 1);
+        this.itemsFacade.removeItem(previousSeed.id, previousQuantity);
       }
 
       return {
         ok: false,
         reason: 'not_enough_seed',
         seed: seedResult.seed,
+        requiredQuantity: harvestQuantity,
       };
     }
 
@@ -195,15 +199,16 @@ export class GardenPlantingManager {
       tileNumber,
       seedItemTypeId: seedResult.seed.id,
       herbItemTypeId: seedResult.herb.id,
+      harvestQuantity,
       totalSeconds: durationMs / 1_000,
       replace: true,
     });
 
     if (!replaced) {
-      this.itemsFacade.addItem(seedResult.seed.id, 1);
+      this.itemsFacade.addItem(seedResult.seed.id, harvestQuantity);
 
       if (previousSeed) {
-        this.itemsFacade.removeItem(previousSeed.id, 1);
+        this.itemsFacade.removeItem(previousSeed.id, previousQuantity);
       }
 
       return {
@@ -219,17 +224,21 @@ export class GardenPlantingManager {
       seed: this.createItemResult(seedResult.seed),
       herb: this.createItemResult(seedResult.herb),
       replacedSeed: previousSeed ? this.createItemResult(previousSeed) : null,
+      ...(harvestQuantity > 1 ? { quantity: harvestQuantity } : {}),
       durationMs,
       replaced: true,
     };
   }
 
   startSelectedSeedGrowth(tileNumber, seed) {
-    if (!this.itemsFacade.removeItem(seed.id, 1)) {
+    const harvestQuantity = this.getHarvestQuantity(tileNumber);
+
+    if (!this.itemsFacade.removeItem(seed.id, harvestQuantity)) {
       return {
         ok: false,
         reason: 'not_enough_seed',
         seed,
+        requiredQuantity: harvestQuantity,
       };
     }
 
@@ -239,6 +248,7 @@ export class GardenPlantingManager {
       tileNumber,
       seedItemTypeId: seed.id,
       herbItemTypeId: herb.id,
+      harvestQuantity,
       totalSeconds: durationMs / 1_000,
     });
 
@@ -247,8 +257,20 @@ export class GardenPlantingManager {
       tileNumber,
       seed: this.createItemResult(seed),
       herb: this.createItemResult(herb),
+      ...(harvestQuantity > 1 ? { quantity: harvestQuantity } : {}),
       durationMs,
     };
+  }
+
+  getHarvestQuantity(tileNumber) {
+    const multiplier = this.researchFacade?.getPlotPlantingMultiplier?.(tileNumber) ?? 1;
+    const safeMultiplier = Math.floor(Number(multiplier));
+    return Number.isInteger(safeMultiplier) && safeMultiplier > 0 ? safeMultiplier : 1;
+  }
+
+  getTileHarvestQuantity(tile = {}) {
+    const quantity = Math.floor(Number(tile.harvestQuantity));
+    return Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
   }
 
   getGrowthDurationMs(tileNumber, herb) {

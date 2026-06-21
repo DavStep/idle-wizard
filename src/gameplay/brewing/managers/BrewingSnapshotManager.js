@@ -93,11 +93,15 @@ export class BrewingSnapshotManager {
     const visibleRecipeUnlocked = visibleRecipe
       ? this.brewingRecipeMatchManager.isRecipeUnlocked(visibleRecipe)
       : false;
-    const manaCost =
+    const yieldMultiplier = this.getYieldMultiplier(safeCauldronIndex);
+    const baseManaCost =
       visibleRecipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
+    const manaCost = baseManaCost * yieldMultiplier;
     const activeBrew =
       this.brewingProcessEntityManager.getActiveBrewSnapshot(safeCauldronIndex);
-    const hasEnoughIngredients = this.hasEnoughIngredients(ingredientItemTypeIds);
+    const hasEnoughIngredients = this.hasEnoughIngredients(
+      this.repeatItemTypeIds(ingredientItemTypeIds, yieldMultiplier),
+    );
     const hasEnoughMana = this.manaFacade.canSpend(manaCost);
 
     return {
@@ -120,6 +124,7 @@ export class BrewingSnapshotManager {
         : null,
       buttonLabel: visibleRecipe && visibleRecipeUnlocked ? `brew ${visibleRecipe.label}` : 'brew',
       manaCost,
+      yieldMultiplier,
       canAddIngredient:
         !activeBrew &&
         ingredients.length < this.brewingBalanceManager.getMaxCauldronIngredients(),
@@ -200,6 +205,18 @@ export class BrewingSnapshotManager {
     }
 
     return true;
+  }
+
+  getYieldMultiplier(cauldronIndex = 0) {
+    const multiplier =
+      this.researchFacade?.getCauldronBrewingMultiplier?.(cauldronIndex + 1) ?? 1;
+    const safeMultiplier = Math.floor(Number(multiplier));
+    return Number.isInteger(safeMultiplier) && safeMultiplier > 0 ? safeMultiplier : 1;
+  }
+
+  repeatItemTypeIds(itemTypeIds = [], multiplier = 1) {
+    const safeMultiplier = Math.max(1, Math.floor(Number(multiplier) || 1));
+    return Array.from({ length: safeMultiplier }, () => itemTypeIds).flat();
   }
 
   normalizeCauldronIndex(cauldronIndex) {

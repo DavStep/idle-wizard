@@ -3,12 +3,16 @@ import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
 export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
 
 const RESOURCE_ICON_FRAME_NAMES = Object.freeze({
+  crystal: 'resource:crystal',
+  emerald: 'resource:emerald',
   gold: 'resource:gold',
   mana: 'resource:mana',
+  ruby: 'resource:ruby',
 });
 
-const RESOURCE_WORD_PATTERN = /\bgold\b/;
-const RESOURCE_WORD_MATCH_PATTERN = /\bgold\b/gi;
+const RESOURCE_WORD_PATTERN = /\b(?:crystals?|emeralds?|gold|mana|rubies|ruby)\b/;
+const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|emeralds?|gold|mana|rubies|ruby)\b/gi;
+const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
 
 export function setResourceIconText(element, text) {
   if (!element) {
@@ -60,6 +64,10 @@ function createResourceIconTextParts(value) {
     const [label] = match;
     const index = match.index ?? 0;
 
+    if (shouldSkipResourceMatch(value, label, index)) {
+      continue;
+    }
+
     if (index > lastIndex) {
       parts.push(document.createTextNode(value.slice(lastIndex, index)));
     }
@@ -75,6 +83,29 @@ function createResourceIconTextParts(value) {
   return parts;
 }
 
+function shouldSkipResourceMatch(value, label, index) {
+  if (label.toLowerCase() !== 'mana') {
+    return false;
+  }
+
+  const afterLabel = value.slice(index + label.length);
+  return MANA_NON_RESOURCE_PHRASE_PATTERN.test(afterLabel);
+}
+
 function normalizeResource(resource) {
-  return String(resource ?? '').trim().toLowerCase();
+  const normalizedResource = String(resource ?? '').trim().toLowerCase();
+
+  if (normalizedResource === 'crystals') {
+    return 'crystal';
+  }
+
+  if (normalizedResource === 'rubies') {
+    return 'ruby';
+  }
+
+  if (normalizedResource === 'emeralds') {
+    return 'emerald';
+  }
+
+  return normalizedResource;
 }

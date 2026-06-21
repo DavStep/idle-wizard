@@ -12,6 +12,9 @@ android/app/build/
 android/build/
 android/captures/
 .local-runtime/
+.impeccable/critique/
+tmp/ui-review/
+tmp/ui-review-core/
 *.apk
 *.iml
 .idea/

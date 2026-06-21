@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WorkshopWorldNoticeManager } from './WorkshopWorldNoticeManager.js';
@@ -104,6 +106,25 @@ function createGameplayFacadeFake(snapshot = createWorldNoticeSnapshot()) {
 }
 
 describe('WorkshopWorldNoticeManager', () => {
+  it('pins character button notification dots to the label box corner', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const outerBadgeRule = baseCss.match(
+      /\.workshop-page__personal-tasks-open\[data-notification="true"\]::before,\s*\.workshop-page__world-notice-open\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const labelBadgeRule = baseCss.match(
+      /\.workshop-page__personal-tasks-open\[data-notification="true"\]\s+\.workshop-page__feature-character-label::after,\s*\.workshop-page__world-notice-open\[data-notification="true"\]\s+\.workshop-page__feature-character-label::after\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(outerBadgeRule).toMatch(/\bdisplay:\s*none;/);
+    expect(labelBadgeRule).toMatch(/\bposition:\s*absolute;/);
+    expect(labelBadgeRule).toMatch(
+      /\btop:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
+    );
+    expect(labelBadgeRule).toMatch(
+      /\bright:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
+    );
+  });
+
   it('renders the unlocked character button and popup requests', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
@@ -143,6 +164,39 @@ describe('WorkshopWorldNoticeManager', () => {
     ).toBe('100%');
 
     expect(popup.textContent).toContain('1/3 answers');
+  });
+
+  it('shows the notice button notification while the current notice has open requests', () => {
+    const snapshot = createWorldNoticeSnapshot();
+    const gameplayFacade = createGameplayFacadeFake(snapshot);
+    const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    manager.mount(parent, popupParent);
+
+    const openButton = parent.querySelector('.workshop-page__world-notice-open');
+    expect(openButton?.dataset.notification).toBe('true');
+
+    for (const request of snapshot.worldNotice.current.requests) {
+      request.completed = true;
+    }
+    snapshot.worldNotice.current.completedRequests =
+      snapshot.worldNotice.current.totalRequests;
+    gameplayFacade.emit(snapshot);
+
+    expect(openButton?.dataset.notification).toBeUndefined();
+
+    gameplayFacade.emit({
+      worldNotice: {
+        unlocked: true,
+        unlockLevel: 4,
+        current: null,
+        archive: [],
+      },
+    });
+
+    expect(openButton?.dataset.notification).toBeUndefined();
   });
 
   it('sends coin only for explicit manual notice rows', () => {

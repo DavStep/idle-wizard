@@ -17,6 +17,7 @@
   --style-resource-mana: var(--style-text);
   --style-resource-gold: var(--style-text);
   --style-resource-crystal: var(--style-text);
+  --style-resource-emerald: var(--style-text);
   --style-resource-ruby: var(--style-text);
   --style-resource-seed: var(--style-text);
   --style-resource-herb: var(--style-text);
@@ -317,6 +318,7 @@
   --style-resource-mana: oklch(43% 0.14 250);
   --style-resource-gold: oklch(45% 0.13 96);
   --style-resource-crystal: oklch(44% 0.1 305);
+  --style-resource-emerald: oklch(42% 0.12 150);
   --style-resource-ruby: oklch(42% 0.16 25);
   --style-resource-seed: oklch(45% 0.08 58);
   --style-resource-herb: oklch(42% 0.12 145);
@@ -328,6 +330,7 @@
   --style-resource-mana: oklch(75% 0.12 250);
   --style-resource-gold: oklch(83% 0.14 96);
   --style-resource-crystal: oklch(78% 0.1 305);
+  --style-resource-emerald: oklch(76% 0.12 150);
   --style-resource-ruby: oklch(76% 0.14 25);
   --style-resource-seed: oklch(78% 0.08 58);
   --style-resource-herb: oklch(75% 0.11 145);
@@ -339,6 +342,7 @@
   --style-resource-mana: oklch(78% 0.12 252);
   --style-resource-gold: oklch(84% 0.14 96);
   --style-resource-crystal: oklch(80% 0.1 305);
+  --style-resource-emerald: oklch(78% 0.12 150);
   --style-resource-ruby: oklch(78% 0.14 25);
   --style-resource-seed: oklch(79% 0.08 58);
   --style-resource-herb: oklch(77% 0.11 145);
@@ -350,6 +354,7 @@
   --style-resource-mana: #64caff;
   --style-resource-gold: #ffd76a;
   --style-resource-crystal: #a96af0;
+  --style-resource-emerald: #4da977;
   --style-resource-ruby: #df7653;
   --style-resource-seed: #e8c878;
   --style-resource-herb: #8fce48;
@@ -366,6 +371,10 @@
 
 :root [data-resource-color="crystal"] {
   color: var(--style-resource-crystal);
+}
+
+:root [data-resource-color="emerald"] {
+  color: var(--style-resource-emerald);
 }
 
 :root [data-resource-color="ruby"] {
@@ -424,11 +433,6 @@
   object-fit: contain;
   object-position: center;
   vertical-align: -0.12em;
-}
-
-.style-resource-label--mana .style-resource-label__icon {
-  width: 0.72em;
-  height: 0.9em;
 }
 
 .style-seed-label__icon,
@@ -1255,10 +1259,8 @@ body {
     .workshop-page__world-notice,
     .workshop-page__summon-button,
     .workshop-page__bag-button,
-    .workshop-page__prestige-button,
     .workshop-page__leaderboard-button,
     .workshop-page__trade-alliance-button,
-    .workshop-page__logs-button,
     .workshop-page__discoveries-button,
     .brewing-page__workbench > .style-box,
     .brewing-page__cauldrons > .style-box,
@@ -1297,7 +1299,6 @@ body {
   --room-section-index: 1;
 }
 
-.workshop-page__prestige-button,
 .workshop-page__bag-button,
 .brewing-page__cauldrons > .style-box:nth-child(2),
 .garden-page__herbs,
@@ -1314,7 +1315,6 @@ body {
   --room-section-index: 3;
 }
 
-.workshop-page__logs-button,
 .workshop-page__discoveries-button,
 .brewing-page__cauldrons > .style-box:nth-child(4),
 .research-page__box-list > .style-box:nth-child(4),
@@ -2266,13 +2266,6 @@ body {
   position: absolute;
   right: 0;
   bottom: var(--style-room-chat-clearance);
-  width: var(--style-button-width);
-}
-
-.workshop-page__action-bar > .style-button.workshop-page__prestige-button {
-  position: absolute;
-  bottom: var(--style-room-chat-clearance);
-  left: 0;
   width: var(--style-button-width);
 }
 
@@ -3407,6 +3400,28 @@ body {
   translate: 0 1px;
 }
 
+.workshop-page__personal-tasks-open[data-notification="true"]::before,
+.workshop-page__world-notice-open[data-notification="true"]::before {
+  display: none;
+}
+
+.workshop-page__personal-tasks-open[data-notification="true"]
+  .workshop-page__feature-character-label::after,
+.workshop-page__world-notice-open[data-notification="true"]
+  .workshop-page__feature-character-label::after {
+  position: absolute;
+  top: calc(-1 * var(--style-notification-offset));
+  right: calc(-1 * var(--style-notification-offset));
+  z-index: 2;
+  width: var(--style-notification-size);
+  height: var(--style-notification-size);
+  pointer-events: none;
+  content: "";
+  background: var(--style-notification-current, var(--style-notification));
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--style-surface);
+}
+
 .workshop-page__level-rewards-toggle {
   position: absolute;
   right: var(--style-box-title-left);
@@ -4178,13 +4193,6 @@ body {
   outline: none;
 }
 
-.style-button.workshop-page__logs-button {
-  position: absolute;
-  top: calc(var(--style-room-content-top) + 384px);
-  left: var(--style-room-content-edge);
-  width: 132px;
-}
-
 .style-button.workshop-page__discoveries-button {
   position: absolute;
   top: calc(var(--style-room-content-top) + 384px);
@@ -4242,12 +4250,6 @@ body {
 }
 
 .workshop-page__bag-popup {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-}
-
-.workshop-page__logs-popup {
   position: absolute;
   inset: 0;
   z-index: 30;
@@ -4314,7 +4316,6 @@ body {
 .workshop-page__trade-alliance-member-popup[hidden],
 .workshop-page__world-chat-popup[hidden],
 .workshop-page__bag-popup[hidden],
-.workshop-page__logs-popup[hidden],
 .workshop-page__discoveries-popup[hidden],
 .workshop-page__prestige-popup[hidden],
 .workshop-page__tasks-info-popup[hidden],
@@ -5138,12 +5139,10 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.workshop-page__logs-frame,
 .workshop-page__bag-frame {
   position: relative;
 }
 
-.workshop-page__logs-frame::after,
 .workshop-page__bag-frame::after {
   position: absolute;
   right: 0;
@@ -5161,33 +5160,16 @@ div.workshop-page__discovery-row {
   transition: opacity var(--style-motion-fast) var(--style-motion-ease);
 }
 
-.workshop-page__logs-frame.has-bottom-overflow::after,
 .workshop-page__bag-frame.has-bottom-overflow::after {
   opacity: 1;
 }
 
-.workshop-page__logs-rows {
-  min-height: 220px;
-  max-height: 320px;
-  padding-right: 8px;
-  overflow: hidden auto;
-  scrollbar-width: none;
-}
-
-.workshop-page__logs-rows::-webkit-scrollbar {
-  display: none;
-}
-
 .workshop-page__world-chat-message,
 .workshop-page__world-chat-empty,
-.workshop-page__world-chat-status,
-.workshop-page__log-entry,
-.workshop-page__logs-empty {
+.workshop-page__world-chat-status {
   min-height: var(--style-row-min-height);
 }
 
-.workshop-page__log-entry,
-.workshop-page__logs-empty,
 .shop-page__trade-history-row,
 .shop-page__trade-history-empty {
   min-height: var(--style-log-line-height);
@@ -5298,21 +5280,10 @@ div.workshop-page__discovery-row {
   place-items: center;
 }
 
-.workshop-page__log-entry {
-  padding: 2px 0;
-  overflow-wrap: anywhere;
-}
-
-.workshop-page__log-entry + .workshop-page__log-entry {
-  border-top: var(--style-border);
-}
-
-.workshop-page__logs-progress,
 .workshop-page__bag-progress {
   margin-top: 6px;
 }
 
-.workshop-page__logs-progress-fill,
 .workshop-page__bag-progress-fill {
   width: 100%;
 }
@@ -6671,6 +6642,11 @@ div.workshop-page__discovery-row {
   color: var(--style-resource-crystal);
 }
 
+.research-page__row.is-completed
+  .research-page__research-value[data-resource-color="emerald"] {
+  color: var(--style-resource-emerald);
+}
+
 .research-page__row.is-in-progress .research-page__research-value {
   color: var(--style-muted);
   font-size: var(--style-box-border-label-font-size);
@@ -7990,7 +7966,6 @@ div.workshop-page__discovery-row {
 .workshop-page__leaderboard-dialog,
 .workshop-page__discoveries-dialog,
 .workshop-page__world-chat-dialog,
-.workshop-page__logs-dialog,
 .brewing-page__guide,
 .garden-page__seed-dialog,
 .garden-page__cancel-dialog,
@@ -8177,6 +8152,16 @@ div.workshop-page__discovery-row {
   gap: 18px;
   width: var(--style-main-box-width);
   max-width: 100%;
+}
+
+.guild-page__content--centered {
+  position: absolute;
+  top: calc(
+    50% -
+      ((var(--style-room-content-top) + var(--style-room-chat-clearance)) / 2)
+  );
+  left: calc(50% - var(--style-room-content-edge));
+  translate: -50% -50%;
 }
 
 .guild-page__box {
@@ -9629,14 +9614,6 @@ div.workshop-page__discovery-row {
   padding: var(--style-world-chat-dialog-padding);
 }
 
-.style-dialog.workshop-page__logs-dialog {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 286px;
-  transform: translate(-50%, -50%);
-}
-
 .style-dialog.room-player-info-dialog {
   position: absolute;
   top: 50%;
@@ -10718,10 +10695,6 @@ div.workshop-page__discovery-row {
   will-change: transform;
 }
 
-.style-progress__fill.workshop-page__logs-progress-fill {
-  width: 100%;
-}
-
 .style-progress--timer {
   height: var(--style-progress-timer-height);
 }
@@ -10794,7 +10767,6 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-popup:not([hidden]),
 .workshop-page__trade-alliance-member-popup:not([hidden]),
 .workshop-page__world-chat-popup:not([hidden]),
-.workshop-page__logs-popup:not([hidden]),
 .workshop-page__discoveries-popup:not([hidden]),
 .workshop-page__prestige-popup:not([hidden]),
 .workshop-page__tasks-info-popup:not([hidden]),
@@ -10829,7 +10801,6 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__trade-alliance-popup:not([hidden]))
   .workshop-page,
 .game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
-.game-stage:has(.workshop-page__logs-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__prestige-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__tasks-info-popup:not([hidden])) .workshop-page,
@@ -10864,7 +10835,6 @@ div.workshop-page__discovery-row {
   z-index: 3;
 }
 
-.workshop-page__logs-popup:not([hidden]) .style-dialog,
 .workshop-page__tasks-info-popup:not([hidden]) .style-dialog,
 .workshop-page__personal-tasks-popup:not([hidden]) .style-dialog,
 .workshop-page__world-notice-popup:not([hidden]) .style-dialog,
@@ -11636,10 +11606,8 @@ div.workshop-page__discovery-row {
       .workshop-page__world-notice,
       .workshop-page__summon-button,
       .workshop-page__bag-button,
-      .workshop-page__prestige-button,
       .workshop-page__leaderboard-button,
       .workshop-page__trade-alliance-button,
-      .workshop-page__logs-button,
       .workshop-page__discoveries-button,
       .brewing-page__workbench > .style-box,
       .brewing-page__cauldrons > .style-box,

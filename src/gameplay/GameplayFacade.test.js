@@ -6,6 +6,7 @@ import { GameplayFacade } from './GameplayFacade.js';
 import { DEFAULT_PLAYER_LEVEL_BALANCE } from './playerLevel/managers/PlayerLevelBalanceManager.js';
 import { advancedResearchIds } from './research/advancedResearchIds.js';
 import { capacityResearchIds } from './research/capacityResearchIds.js';
+import { emeraldResearchIds } from './research/emeraldResearchIds.js';
 import { fastSellResearchIds } from './research/fastSellResearch.js';
 
 function createMemoryStorage() {
@@ -191,6 +192,7 @@ describe('GameplayFacade', () => {
 
     first.gameplayFacade.goldFacade.add(12);
     first.gameplayFacade.crystalFacade.add(2);
+    first.gameplayFacade.emeraldFacade.add(1);
     first.gameplayFacade.itemsFacade.addItem(1, 3);
     first.gameplayFacade.itemsFacade.addItem(1001, 2);
     first.gameplayFacade.buyVisualSettingOption('theme', 'black');
@@ -207,6 +209,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.gold.current).toBe(12);
     expect(snapshot.gold.totalGenerated).toBe(12);
     expect(snapshot.crystal.current).toBe(2);
+    expect(snapshot.emerald.current).toBe(1);
     expect(snapshot.logs.entries).toEqual([]);
     expect(snapshot.inventory).toContainEqual({
       itemTypeId: 1,
@@ -1590,6 +1593,7 @@ describe('GameplayFacade', () => {
       'regular',
       'automation',
       'advanced',
+      'emerald',
     ]);
     expect(research.tabs[1].label).toBe('automation');
     expect(research.tabs[1].boxes.map((box) => box.id)).toEqual([
@@ -1728,6 +1732,37 @@ describe('GameplayFacade', () => {
       advancedResearchIds.plotGrowth(1, 1),
       advancedResearchIds.plotGrowth(2, 1),
     ]);
+    expect(research.tabs[3].label).toBe('emerald research');
+    expect(research.tabs[3].boxes.map((box) => box.id)).toEqual([
+      'plotPlanting',
+      'cauldronBrewing',
+    ]);
+    expect(research.tabs[3].boxes[0].researches[0]).toMatchObject({
+      id: emeraldResearchIds.plotPlanting(1, 2),
+      label: 'plot 1 planting x2',
+      value: '1 emerald',
+      effect: 'x2 herbs',
+      costGold: 0,
+      costEmerald: 1,
+      costCurrency: 'emerald',
+    });
+    expect(research.tabs[3].boxes[0].researches[1]).toMatchObject({
+      id: emeraldResearchIds.plotPlanting(2, 2),
+      label: 'plot 2 planting x2',
+      value: '2 emerald',
+      requiredResearchIds: [],
+      costEmerald: 2,
+      costCurrency: 'emerald',
+    });
+    expect(research.tabs[3].boxes[1].researches[0]).toMatchObject({
+      id: emeraldResearchIds.cauldronBrewing(1, 2),
+      label: 'cauldron 1 brewing x2',
+      value: '1 emerald',
+      effect: 'x2 potions',
+      costGold: 0,
+      costEmerald: 1,
+      costCurrency: 'emerald',
+    });
     expect(research.boxes.map((box) => box.id)).toEqual([
       'seedUnlocks',
       'summonSeeds',
@@ -2070,6 +2105,96 @@ describe('GameplayFacade', () => {
         ?.boxes.find((box) => box.id === 'cauldronBrewing')
         ?.researches.map((research) => research.id),
     ).toEqual([advancedResearchIds.cauldronBrewing(1, 2)]);
+  });
+
+  it('uses emerald plot research to plant two seeds and harvest two herbs', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    const researchId = emeraldResearchIds.plotPlanting(1, 2);
+
+    expect(gameplayFacade.buyResearch(researchId)).toEqual({
+      ok: false,
+      reason: 'not_enough_emerald',
+      researchId,
+      cost: 1,
+      costCurrency: 'emerald',
+    });
+
+    gameplayFacade.emeraldFacade.add(1);
+    expect(gameplayFacade.buyResearch(researchId)).toEqual({
+      ok: true,
+      researchId,
+      cost: 1,
+      costCurrency: 'emerald',
+    });
+    expect(
+      findResearchSnapshot(gameplayFacade, emeraldResearchIds.plotPlanting(1, 3)),
+    ).toMatchObject({
+      value: '2 emerald',
+      costEmerald: 2,
+      costCurrency: 'emerald',
+      requiredResearchIds: [emeraldResearchIds.plotPlanting(1, 2)],
+    });
+
+    gameplayFacade.itemsFacade.addItem(1, 2);
+    expect(gameplayFacade.plantGardenSeed(1, 1)).toMatchObject({
+      ok: true,
+      quantity: 2,
+    });
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
+
+    ecsFacade.update({ deltaSeconds: 15 });
+    expect(gameplayFacade.startGardenHarvest(1)).toMatchObject({
+      ok: true,
+      tileNumber: 1,
+    });
+    ecsFacade.update({ deltaSeconds: 3 });
+
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1001)).toBe(2);
+  });
+
+  it('uses emerald cauldron research to consume two recipe batches and bottle two potions', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    const researchId = emeraldResearchIds.cauldronBrewing(1, 2);
+
+    gameplayFacade.emeraldFacade.add(1);
+    expect(gameplayFacade.buyResearch(researchId)).toEqual({
+      ok: true,
+      researchId,
+      cost: 1,
+      costCurrency: 'emerald',
+    });
+
+    gameplayFacade.itemsFacade.addItem(1001, 6);
+    gameplayFacade.goldFacade.add(80);
+    unlockRecipeResearch(gameplayFacade);
+    ecsFacade.update({ deltaSeconds: 15 });
+
+    expect(gameplayFacade.addBrewingIngredient(1001).ok).toBe(true);
+    expect(gameplayFacade.addBrewingIngredient(1001).ok).toBe(true);
+    expect(gameplayFacade.addBrewingIngredient(1001).ok).toBe(true);
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      buttonLabel: 'brew mana tonic',
+      manaCost: 24,
+      yieldMultiplier: 2,
+      canBrew: true,
+    });
+
+    expect(gameplayFacade.brewCauldron()).toMatchObject({
+      ok: true,
+      manaCost: 24,
+      quantity: 2,
+      durationMs: 30_000,
+    });
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1001)).toBe(0);
+
+    ecsFacade.update({ deltaSeconds: 30 });
+    expect(gameplayFacade.startBrewingBottling()).toMatchObject({
+      ok: true,
+      durationMs: 2_000,
+    });
+    ecsFacade.update({ deltaSeconds: 2 });
+
+    expect(gameplayFacade.itemsFacade.getItemQuantity(2001)).toBe(2);
   });
 
   it('starts fast sell at 80% payout and raises it with ruby research', () => {

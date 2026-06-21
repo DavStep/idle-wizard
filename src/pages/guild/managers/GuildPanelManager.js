@@ -77,6 +77,7 @@ export class GuildPanelManager {
 
     this.captureVisibleFormDraft();
     this.snapshot = snapshot.guild ?? {};
+    this.root.classList.toggle('guild-page__content--centered', this.snapshot.created !== true);
     this.root.replaceChildren(...this.createMainSections());
     this.renderPopup();
   }

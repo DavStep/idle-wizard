@@ -2,6 +2,7 @@ const RESOURCE_COLORS = new Set([
   'mana',
   'gold',
   'crystal',
+  'emerald',
   'ruby',
   'seed',
   'herb',
@@ -35,8 +36,13 @@ export function setResourceColorFromText(element, text) {
     return;
   }
 
-  if (/\bcrystal\b/.test(normalizedText)) {
+  if (/\bcrystals?\b/.test(normalizedText)) {
     setResourceColor(element, 'crystal');
+    return;
+  }
+
+  if (/\bemeralds?\b/.test(normalizedText)) {
+    setResourceColor(element, 'emerald');
     return;
   }
 

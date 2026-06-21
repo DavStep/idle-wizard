@@ -18,6 +18,7 @@ export const GardenTile = {
   selectedSeedItemTypeId: [],
   seedItemTypeId: [],
   herbItemTypeId: [],
+  harvestQuantity: [],
   phase: [],
   totalSeconds: [],
   remainingSeconds: [],

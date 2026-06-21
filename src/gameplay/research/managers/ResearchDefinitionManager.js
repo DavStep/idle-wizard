@@ -10,6 +10,11 @@ import {
   getFastSellPercent,
 } from '../fastSellResearch.js';
 import {
+  emeraldResearchIds,
+  emeraldResearchMaxMultiplier,
+  emeraldResearchMinMultiplier,
+} from '../emeraldResearchIds.js';
+import {
   capacityResearchIds,
   cauldronCapacityEndCauldronNumber,
   cauldronCapacityStartCauldronNumber,
@@ -136,6 +141,11 @@ export class ResearchDefinitionManager {
         id: 'advanced',
         label: 'advanced research',
         boxes: this.getAdvancedResearchBoxes({ includeLevelLockedAutomation }),
+      },
+      {
+        id: 'emerald',
+        label: 'emerald research',
+        boxes: this.getEmeraldResearchBoxes({ includeLevelLockedAutomation }),
       },
     ];
   }
@@ -350,6 +360,38 @@ export class ResearchDefinitionManager {
     ];
   }
 
+  getEmeraldResearchBoxes({ includeLevelLockedAutomation = false } = {}) {
+    return [
+      {
+        id: 'plotPlanting',
+        label: 'plot planting research',
+        researches: this.getEmeraldSlotResearches({
+          count: this.getAutomationGardenTileCount({ includeLevelLockedAutomation }),
+          getId: emeraldResearchIds.plotPlanting,
+          seriesId: (plotNumber) => `emerald:plotPlanting:${plotNumber}`,
+          label: (plotNumber, multiplier) => `plot ${plotNumber} planting x${multiplier}`,
+          effect: (multiplier) => `x${multiplier} herbs`,
+          description: (plotNumber, multiplier) =>
+            `plot ${plotNumber} uses ${multiplier} seeds and harvests ${multiplier} herbs in one growth timer.`,
+        }),
+      },
+      {
+        id: 'cauldronBrewing',
+        label: 'cauldron brewing research',
+        researches: this.getEmeraldSlotResearches({
+          count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
+          getId: emeraldResearchIds.cauldronBrewing,
+          seriesId: (cauldronNumber) => `emerald:cauldronBrewing:${cauldronNumber}`,
+          label: (cauldronNumber, multiplier) =>
+            `cauldron ${cauldronNumber} brewing x${multiplier}`,
+          effect: (multiplier) => `x${multiplier} potions`,
+          description: (cauldronNumber, multiplier) =>
+            `cauldron ${cauldronNumber} uses ${multiplier} recipe inputs and mana costs to bottle ${multiplier} potions in one brew timer.`,
+        }),
+      },
+    ];
+  }
+
   getPlotCapacityResearches() {
     return this.getCapacityResearches({
       start: plotCapacityStartPlotNumber,
@@ -436,6 +478,33 @@ export class ResearchDefinitionManager {
           requiredResearchIds:
             level > 1 ? [getId(targetNumber, level - 1)] : [],
           description: description(targetNumber, level),
+        });
+      }
+    }
+
+    return researches;
+  }
+
+  getEmeraldSlotResearches({ count, getId, seriesId, label, effect, description }) {
+    const researches = [];
+
+    for (let targetNumber = 1; targetNumber <= count; targetNumber += 1) {
+      for (
+        let multiplier = emeraldResearchMinMultiplier;
+        multiplier <= emeraldResearchMaxMultiplier;
+        multiplier += 1
+      ) {
+        researches.push({
+          id: getId(targetNumber, multiplier),
+          label: label(targetNumber, multiplier),
+          value: effect(multiplier),
+          showEffect: true,
+          seriesId: seriesId(targetNumber),
+          requiredResearchIds:
+            multiplier > emeraldResearchMinMultiplier
+              ? [getId(targetNumber, multiplier - 1)]
+              : [],
+          description: description(targetNumber, multiplier),
         });
       }
     }

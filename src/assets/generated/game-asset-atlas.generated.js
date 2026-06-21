@@ -393,8 +393,26 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 256,
     "source": "src/assets/items/potions/potion-venom-draught.png"
   },
-  "resource:gold": {
+  "resource:crystal": {
     "x": 1646,
+    "y": 715,
+    "width": 92,
+    "height": 92,
+    "originalWidth": 92,
+    "originalHeight": 92,
+    "source": "src/assets/icons/icon-crystal.png"
+  },
+  "resource:emerald": {
+    "x": 1770,
+    "y": 715,
+    "width": 92,
+    "height": 92,
+    "originalWidth": 92,
+    "originalHeight": 92,
+    "source": "src/assets/icons/icon-emerald.png"
+  },
+  "resource:gold": {
+    "x": 1894,
     "y": 715,
     "width": 92,
     "height": 92,
@@ -403,13 +421,22 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-gold-coin.png"
   },
   "resource:mana": {
-    "x": 1770,
-    "y": 715,
-    "width": 65,
-    "height": 82,
-    "originalWidth": 65,
-    "originalHeight": 82,
+    "x": 32,
+    "y": 875,
+    "width": 92,
+    "height": 92,
+    "originalWidth": 92,
+    "originalHeight": 92,
     "source": "src/assets/icons/icon-mana-drop.png"
+  },
+  "resource:ruby": {
+    "x": 156,
+    "y": 875,
+    "width": 92,
+    "height": 92,
+    "originalWidth": 92,
+    "originalHeight": 92,
+    "source": "src/assets/icons/icon-ruby.png"
   },
   "seed:black": {
     "x": 155,

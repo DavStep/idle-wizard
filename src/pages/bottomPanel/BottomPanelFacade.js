@@ -2,10 +2,10 @@ import { BottomPanelViewManager } from './managers/BottomPanelViewManager.js';
 
 export class BottomPanelFacade {
   static explain =
-    'Shows the always-visible room tabs so the player can see every room and move between them.';
+    'Shows the always-visible bottom room tabs and small bottom actions such as prestige.';
 
-  constructor({ getCurrentPageId, onShowPage } = {}) {
-    this.viewManager = new BottomPanelViewManager({ getCurrentPageId, onShowPage });
+  constructor({ getCurrentPageId, onShowPage, onAction } = {}) {
+    this.viewManager = new BottomPanelViewManager({ getCurrentPageId, onShowPage, onAction });
   }
 
   mount(stage) {
@@ -26,6 +26,10 @@ export class BottomPanelFacade {
 
   setPageStates(pageStates) {
     this.viewManager.setPageStates(pageStates);
+  }
+
+  setActionStates(actionStates) {
+    this.viewManager.setActionStates(actionStates);
   }
 
   setNotifications(notifications) {

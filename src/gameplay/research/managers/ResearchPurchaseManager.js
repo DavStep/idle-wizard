@@ -1,6 +1,7 @@
 export class ResearchPurchaseManager {
   constructor({
     crystalFacade,
+    emeraldFacade,
     goldFacade,
     rubyFacade,
     researchBalanceManager,
@@ -9,6 +10,7 @@ export class ResearchPurchaseManager {
     researchStateEntityManager,
   }) {
     this.crystalFacade = crystalFacade;
+    this.emeraldFacade = emeraldFacade;
     this.goldFacade = goldFacade;
     this.rubyFacade = rubyFacade;
     this.researchBalanceManager = researchBalanceManager;
@@ -128,6 +130,10 @@ export class ResearchPurchaseManager {
 
     if (currency === 'ruby') {
       return this.rubyFacade;
+    }
+
+    if (currency === 'emerald') {
+      return this.emeraldFacade;
     }
 
     return this.goldFacade;

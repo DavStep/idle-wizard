@@ -16,7 +16,8 @@ export const SEED_ICON_LABEL_CLASS = 'style-seed-label';
 export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
 export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
 
-const GOLD_WORD_MATCH_PATTERN = /\bgold\b/gi;
+const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|gold|mana|rubies|ruby)\b/gi;
+const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+sphere\b/i;
 const GENERIC_SEED_LABELS = new Set(['choose seed', 'summon seed']);
 
 export function setItemIconLabel(element, kind, itemKey = null) {
@@ -228,11 +229,15 @@ function getItemIconMatches(value) {
     }
   }
 
-  for (const match of value.matchAll(GOLD_WORD_MATCH_PATTERN)) {
+  for (const match of value.matchAll(RESOURCE_WORD_MATCH_PATTERN)) {
+    if (shouldSkipResourceMatch(value, match[0], match.index ?? 0)) {
+      continue;
+    }
+
     matches.push({
       index: match.index ?? 0,
       kind: 'resource',
-      resource: 'gold',
+      resource: normalizeResourceMatch(match[0]),
       text: match[0],
     });
   }
@@ -253,6 +258,29 @@ function getItemIconMatches(value) {
   }
 
   return nonOverlappingMatches;
+}
+
+function shouldSkipResourceMatch(value, label, index) {
+  if (label.toLowerCase() !== 'mana') {
+    return false;
+  }
+
+  const afterLabel = value.slice(index + label.length);
+  return MANA_NON_RESOURCE_PHRASE_PATTERN.test(afterLabel);
+}
+
+function normalizeResourceMatch(label) {
+  const normalizedLabel = label.toLowerCase();
+
+  if (normalizedLabel === 'crystals') {
+    return 'crystal';
+  }
+
+  if (normalizedLabel === 'rubies') {
+    return 'ruby';
+  }
+
+  return normalizedLabel;
 }
 
 function createSeedIconLabel(seedName) {

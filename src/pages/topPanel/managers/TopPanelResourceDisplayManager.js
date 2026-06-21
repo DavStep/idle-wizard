@@ -46,7 +46,9 @@ export class TopPanelResourceDisplayManager {
   }
 
   setContextCurrency(currency) {
-    const normalizedCurrency = ['crystal', 'ruby'].includes(currency) ? currency : null;
+    const normalizedCurrency = ['crystal', 'ruby', 'emerald'].includes(currency)
+      ? currency
+      : null;
 
     if (this.contextCurrency === normalizedCurrency) {
       return;

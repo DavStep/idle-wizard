@@ -1,0 +1,4 @@
+interface:
+  display_name: "Idle Wizard UI Consistency"
+  short_description: "Idle Wizard visual consistency rules"
+  default_prompt: "Use $idle-wizard-ui-consistency to audit or align Idle Wizard UI to the project style."

@@ -102,7 +102,14 @@ export class GardenTileEntityManager {
     return true;
   }
 
-  startGrowth({ tileNumber, seedItemTypeId, herbItemTypeId, totalSeconds, replace = false }) {
+  startGrowth({
+    tileNumber,
+    seedItemTypeId,
+    herbItemTypeId,
+    harvestQuantity = 1,
+    totalSeconds,
+    replace = false,
+  }) {
     if (!this.isTileUnlocked(tileNumber) || (!replace && !this.isTileEmpty(tileNumber))) {
       return false;
     }
@@ -111,6 +118,7 @@ export class GardenTileEntityManager {
     GardenTile.selectedSeedItemTypeId[tileEntityId] = seedItemTypeId;
     GardenTile.seedItemTypeId[tileEntityId] = seedItemTypeId;
     GardenTile.herbItemTypeId[tileEntityId] = herbItemTypeId;
+    GardenTile.harvestQuantity[tileEntityId] = this.normalizeHarvestQuantity(harvestQuantity);
     GardenTile.phase[tileEntityId] = gardenTilePhases.growing;
     GardenTile.totalSeconds[tileEntityId] = Math.max(0, totalSeconds);
     GardenTile.remainingSeconds[tileEntityId] = Math.max(0, totalSeconds);
@@ -168,6 +176,7 @@ export class GardenTileEntityManager {
       completedHarvests.push({
         tileNumber: GardenTile.tileNumber[tileEntityId],
         herbItemTypeId: GardenTile.herbItemTypeId[tileEntityId],
+        harvestQuantity: this.normalizeHarvestQuantity(GardenTile.harvestQuantity[tileEntityId]),
         selectedSeedItemTypeId: GardenTile.selectedSeedItemTypeId[tileEntityId] || 0,
       });
       this.clearActiveCropData(tileEntityId);
@@ -208,6 +217,9 @@ export class GardenTileEntityManager {
 
       GardenTile.seedItemTypeId[tileEntityId] = tile.seedItemTypeId || selectedSeedItemTypeId || 0;
       GardenTile.herbItemTypeId[tileEntityId] = tile.herbItemTypeId || 0;
+      GardenTile.harvestQuantity[tileEntityId] = this.normalizeHarvestQuantity(
+        tile.harvestQuantity,
+      );
       GardenTile.phase[tileEntityId] = phase;
       GardenTile.totalSeconds[tileEntityId] = Math.max(0, tile.totalSeconds || 0);
       GardenTile.remainingSeconds[tileEntityId] = Math.max(
@@ -234,6 +246,7 @@ export class GardenTileEntityManager {
         selectedSeedItemTypeId: GardenTile.selectedSeedItemTypeId[tileEntityId] || null,
         seedItemTypeId: GardenTile.seedItemTypeId[tileEntityId] || null,
         herbItemTypeId: GardenTile.herbItemTypeId[tileEntityId] || null,
+        harvestQuantity: this.normalizeHarvestQuantity(GardenTile.harvestQuantity[tileEntityId]),
         phase: gardenTilePhaseNames[phase] ?? 'empty',
         totalMs: Math.ceil(totalSeconds * 1_000),
         remainingMs: Math.ceil(remainingSeconds * 1_000),
@@ -284,6 +297,7 @@ export class GardenTileEntityManager {
   clearActiveCropData(tileEntityId) {
     GardenTile.seedItemTypeId[tileEntityId] = 0;
     GardenTile.herbItemTypeId[tileEntityId] = 0;
+    GardenTile.harvestQuantity[tileEntityId] = 1;
     GardenTile.phase[tileEntityId] = gardenTilePhases.empty;
     GardenTile.totalSeconds[tileEntityId] = 0;
     GardenTile.remainingSeconds[tileEntityId] = 0;
@@ -303,5 +317,10 @@ export class GardenTileEntityManager {
       phase === gardenTilePhases.ready ||
       phase === gardenTilePhases.harvesting
     );
+  }
+
+  normalizeHarvestQuantity(quantity) {
+    const safeQuantity = Math.floor(Number(quantity));
+    return Number.isInteger(safeQuantity) && safeQuantity > 0 ? safeQuantity : 1;
   }
 }

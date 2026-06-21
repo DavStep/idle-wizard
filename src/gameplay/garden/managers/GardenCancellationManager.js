@@ -42,13 +42,15 @@ export class GardenCancellationManager {
     }
 
     const seed = this.itemsFacade.getItemDefinition(tile.seedItemTypeId);
-    this.itemsFacade.addItem(seed.id, 1);
+    const quantity = Math.max(1, Math.floor(Number(tile.harvestQuantity) || 1));
+    this.itemsFacade.addItem(seed.id, quantity);
     this.gardenTileEntityManager.clearTile(tileNumber);
 
     return {
       ok: true,
       tileNumber,
       seed: this.createItemResult(seed),
+      quantity,
     };
   }
 

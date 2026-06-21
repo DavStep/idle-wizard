@@ -11,6 +11,7 @@ import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
 import { TutorialFacade } from './tutorial/TutorialFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
+import { WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL } from './workshop/managers/WorkshopSecondaryActionGateManager.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
 import { PageUnlockManager } from './managers/PageUnlockManager.js';
 import { PageRegistryManager } from './managers/PageRegistryManager.js';
@@ -79,6 +80,7 @@ export class PagesFacade {
     this.bottomPanelFacade = new BottomPanelFacade({
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
+      onAction: (actionId) => this.handleBottomPanelAction(actionId),
     });
     this.notificationFacade = new PageNotificationFacade({
       gameplayFacade,
@@ -236,6 +238,22 @@ export class PagesFacade {
     this.bottomPanelFacade.showLockedPage(pageId);
   }
 
+  handleBottomPanelAction(actionId) {
+    if (actionId === 'prestige') {
+      this.openPrestige();
+    }
+  }
+
+  openPrestige() {
+    if (!this.isPrestigeActionUnlocked(this.getGameplaySnapshot())) {
+      return;
+    }
+
+    this.show('workshop');
+    this.registryManager.get('workshop').togglePrestige?.();
+    this.tutorialFacade?.scheduleRefresh();
+  }
+
   resetTutorialProgress() {
     this.tutorialFacade?.resetProgress();
   }
@@ -255,6 +273,13 @@ export class PagesFacade {
       .filter((page) => page.unlocked)
       .map((page) => page.id);
     this.bottomPanelFacade.setPageStates(this.pageStates);
+    this.bottomPanelFacade.setActionStates([
+      {
+        id: 'prestige',
+        visible: this.isPrestigeActionUnlocked(snapshot),
+        enabled: this.isPrestigeActionUnlocked(snapshot),
+      },
+    ]);
     this.swipeNavigationManager.setPageOrder(
       this.pageStates.map((page) => page.id).filter((pageId) => SWIPE_PAGE_IDS.includes(pageId)),
     );
@@ -315,6 +340,16 @@ export class PagesFacade {
     return this.gameplayFacade?.getSnapshot?.() ?? {};
   }
 
+  isPrestigeActionUnlocked(snapshot = {}) {
+    const level =
+      Number(snapshot.playerLevel?.currentLevel) ||
+      Number(snapshot.tasks?.currentLevel) ||
+      Number(snapshot.tasks?.level?.level) ||
+      1;
+
+    return Math.max(1, Math.floor(level)) >= WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL;
+  }
+
   withGameplaySnapshotCache(callback) {
     if (typeof this.gameplayFacade?.withSnapshotCache !== 'function') {
       return callback();
@@ -343,6 +378,10 @@ export class PagesFacade {
 
     if (this.researchTabId === 'advanced') {
       return { currency: 'ruby' };
+    }
+
+    if (this.researchTabId === 'emerald') {
+      return { currency: 'emerald' };
     }
 
     return {};
