@@ -476,7 +476,7 @@ describe('GardenPlotManager', () => {
     expect(boxTimer?.textContent).toBe('6s');
   });
 
-  it('marks boxes ready to harvest with bounce class', () => {
+  it('marks boxes ready to harvest', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });

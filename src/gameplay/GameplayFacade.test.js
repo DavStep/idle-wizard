@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { automationResearchIds } from './automation/automationResearchIds.js';
-import { GameplayFacade } from './GameplayFacade.js';
+import { GameplayFacade, PRESTIGE_RESET_LEVEL } from './GameplayFacade.js';
 import { DEFAULT_PLAYER_LEVEL_BALANCE } from './playerLevel/managers/PlayerLevelBalanceManager.js';
 import { advancedResearchIds } from './research/advancedResearchIds.js';
 import { capacityResearchIds } from './research/capacityResearchIds.js';
@@ -664,7 +664,7 @@ describe('GameplayFacade', () => {
     });
 
     gameplayFacade.completePrestigeMilestone(10);
-    advanceToLevel(gameplayFacade, 17);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
     expect(gameplayFacade.buyResearch(capacityResearchIds.plot(11))).toMatchObject({
       ok: true,
       cost: 1,
@@ -685,8 +685,8 @@ describe('GameplayFacade', () => {
       capacityResearchIds.plot(11),
     );
     expect(gameplayFacade.getSnapshot().ruby.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
 
-    advanceToLevel(gameplayFacade, 17);
     expect(gameplayFacade.buyResearch(capacityResearchIds.cauldron(6))).toMatchObject({
       ok: true,
       cost: 1,

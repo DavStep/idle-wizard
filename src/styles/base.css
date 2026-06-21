@@ -194,8 +194,9 @@
   --style-motion-ease: cubic-bezier(0.37, 0, 0.63, 1);
   --style-motion-ease-soft: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-rubber: cubic-bezier(0.39, 0.575, 0.565, 1);
-  --style-motion-ease-expand-rubber: cubic-bezier(0.2, 1.12, 0.36, 1);
+  --style-motion-ease-expand-rubber: cubic-bezier(0.22, 1, 0.36, 1);
   --style-block-shadow: 5px 5px 5px var(--style-muted);
+  --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px var(--style-muted);
   --style-tooltip-shadow: -1px 3px 2px var(--style-muted);
   --style-ui-scale: 3;
@@ -248,6 +249,7 @@
   --style-backdrop-rgb: 26 26 26;
   --style-log-fade-rgb: 32 32 32;
   --style-block-shadow: 5px 5px 5px #b8b8b8;
+  --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px #d8d8d8;
   --style-tooltip-shadow: -1px 3px 2px #d8d8d8;
   color-scheme: dark;
@@ -265,6 +267,7 @@
   --style-backdrop-rgb: 28 30 38;
   --style-log-fade-rgb: 28 30 38;
   --style-block-shadow: 5px 5px 5px #0f1118;
+  --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px #0f1118;
   --style-tooltip-shadow: -1px 3px 2px #0f1118;
   color-scheme: dark;
@@ -283,6 +286,7 @@
   --style-backdrop-rgb: 7 4 14;
   --style-log-fade-rgb: 26 16 40;
   --style-block-shadow: 5px 5px 5px #05030a;
+  --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px #05030a;
   --style-tooltip-shadow: -1px 3px 2px #05030a;
   color-scheme: dark;
@@ -1841,7 +1845,6 @@ body {
   padding: 7px 10px 5px;
   border: var(--style-border-strong);
   background: var(--style-surface);
-  box-shadow: var(--style-overlay-shadow);
   pointer-events: auto;
 }
 
@@ -1979,7 +1982,6 @@ body {
   padding: 7px 10px calc(var(--style-box-border-label-line-height) - 2px);
   background: var(--style-surface);
   border: var(--style-border-strong);
-  box-shadow: var(--style-overlay-shadow);
   pointer-events: auto;
   transform-origin: var(--tutorial-lesson-origin-x, left)
     var(--tutorial-lesson-origin-y, bottom);
@@ -1989,7 +1991,7 @@ body {
   z-index: 7;
   padding: var(--style-dialog-padding);
   border: var(--style-border-strong);
-  box-shadow: var(--style-block-shadow);
+  box-shadow: var(--style-dialog-shadow);
 }
 
 .tutorial-layer__lesson.is-intro-dialog .tutorial-layer__lesson-text {
@@ -4032,10 +4034,6 @@ body {
 
 .brewing-page__active-progress {
   margin-top: 3px;
-}
-
-.brewing-page__active-progress-fill {
-  transition: width var(--style-motion-fast) linear;
 }
 
 .brewing-page__active-progress-text {
@@ -6198,10 +6196,6 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.garden-page__plot-progress-fill {
-  transition: width var(--style-motion-fast) linear;
-}
-
 .garden-page__plot-progress-text {
   text-align: center;
 }
@@ -6335,8 +6329,8 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot-box-frame.is-ready .garden-page__plot-plant {
-  animation: garden-page-plot-ready-bounce 1.12s
-    var(--style-motion-ease-rubber) infinite;
+  animation: garden-page-plot-ready-pulse 720ms var(--style-motion-ease-soft)
+    both;
   animation-delay: var(--garden-page-plot-ready-delay, 0ms);
 }
 
@@ -6401,31 +6395,15 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-@keyframes garden-page-plot-ready-bounce {
+@keyframes garden-page-plot-ready-pulse {
   0%,
   100% {
     transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
   }
 
-  26% {
-    transform: translateX(-50%) translateY(-4px)
-      scale(var(--garden-page-plot-growth-scale, 1)) scale(1.06);
-  }
-
-  42% {
-    transform: translateX(-50%) translateY(1px)
-      scale(var(--garden-page-plot-growth-scale, 1)) scaleX(1.1)
-      scaleY(0.88);
-  }
-
-  58% {
-    transform: translateX(-50%) translateY(-2px)
-      scale(var(--garden-page-plot-growth-scale, 1)) scaleX(0.98)
-      scaleY(1.04);
-  }
-
-  72% {
-    transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
+  45% {
+    transform: translateX(-50%)
+      scale(var(--garden-page-plot-growth-scale, 1)) scale(1.02);
   }
 }
 
@@ -6745,10 +6723,6 @@ div.workshop-page__discovery-row {
 .research-page__research-progress {
   grid-column: 1 / -1;
   margin: 1px 0 2px;
-}
-
-.research-page__research-progress-fill {
-  transition: width var(--style-motion-fast) linear;
 }
 
 .research-page__research-progress-text {
@@ -8218,7 +8192,7 @@ div.workshop-page__discovery-row {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  width: var(--style-main-box-width);
+  width: calc(100% - (var(--style-room-content-edge) * 2));
   max-width: 100%;
 }
 
@@ -8228,8 +8202,10 @@ div.workshop-page__discovery-row {
     50% -
       ((var(--style-room-content-top) + var(--style-room-chat-clearance)) / 2)
   );
-  left: calc(50% - var(--style-room-content-edge));
-  translate: -50% -50%;
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  width: auto;
+  translate: 0 -50%;
 }
 
 .guild-page__box {

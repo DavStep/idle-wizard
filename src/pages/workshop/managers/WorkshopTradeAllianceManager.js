@@ -82,6 +82,10 @@ export class WorkshopTradeAllianceManager {
     this.previousFocus = null;
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
+    this.formDrafts = {
+      create: null,
+      settings: null,
+    };
     this.questTimer = null;
     this.pendingQuestScroll = null;
     this.handleRootClick = (event) => {
@@ -303,6 +307,10 @@ export class WorkshopTradeAllianceManager {
     this.previousFocus = null;
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
+    this.formDrafts = {
+      create: null,
+      settings: null,
+    };
     this.questTimer = null;
     this.pendingQuestScroll = null;
   }
@@ -312,6 +320,8 @@ export class WorkshopTradeAllianceManager {
       return;
     }
 
+    const focusState = this.captureContentFocusState();
+    this.captureVisibleDrafts();
     this.lastSnapshot = snapshot ?? {};
     const ownAlliance = this.lastSnapshot.ownAlliance ?? null;
     this.syncMemberEditState();
@@ -328,12 +338,14 @@ export class WorkshopTradeAllianceManager {
       this.renderTabs(MEMBER_TABS, this.selectedMemberTabId);
       this.renderMemberView(this.selectedMemberTabId);
       this.renderMemberEditPopup();
+      this.restoreContentFocusState(focusState);
       return;
     }
 
     this.hideMemberEdit({ focusDialog: false });
     this.renderTabs(SOLO_TABS, this.selectedSoloTabId);
     this.renderSoloView(this.selectedSoloTabId);
+    this.restoreContentFocusState(focusState);
   }
 
   renderTabs(tabs, selectedTabId) {
@@ -393,6 +405,7 @@ export class WorkshopTradeAllianceManager {
     const root = document.createElement('div');
     const search = document.createElement('input');
     search.className = 'style-input workshop-page__trade-alliance-search';
+    search.name = 'search';
     search.type = 'text';
     search.value = this.searchTerm;
     search.placeholder = 'search name or tag';
@@ -481,6 +494,7 @@ export class WorkshopTradeAllianceManager {
   }
 
   renderCreateView() {
+    const draft = this.getFormDraft('create');
     const form = document.createElement('form');
     form.className = 'workshop-page__trade-alliance-form';
     form.addEventListener('submit', (event) => this.onCreateSubmit(event, form));
@@ -488,19 +502,28 @@ export class WorkshopTradeAllianceManager {
     this.bindSubmitPressStart(submitButton, form);
 
     form.append(
-      this.createInputField('name', 'name', { maxLength: 24 }),
-      this.createInputField('tag', 'tag', { maxLength: 5, autocapitalize: 'characters' }),
-      this.createTagColorField('tag color'),
-      this.createInputField('description', 'description', { maxLength: 120 }),
-      this.createJoinModeField('join mode'),
+      this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
+      this.createInputField('tag', 'tag', {
+        value: draft.tag,
+        maxLength: 5,
+        autocapitalize: 'characters',
+      }),
+      this.createTagColorField('tag color', draft.tagColor),
+      this.createInputField('description', 'description', {
+        value: draft.description,
+        maxLength: 120,
+      }),
+      this.createJoinModeField('join mode', draft.joinMode),
       submitButton,
     );
+    this.bindFormDraft(form, 'create');
 
     this.refs.content.replaceChildren(form);
   }
 
   async onCreateSubmit(event, form) {
     event.preventDefault();
+    this.captureFormDraft('create', form);
     const formData = new window.FormData(form);
     await this.runAction(() =>
       this.tradeAllianceFacade.createAlliance({
@@ -955,6 +978,7 @@ export class WorkshopTradeAllianceManager {
     }
 
     const alliance = this.lastSnapshot.ownAlliance;
+    const draft = this.getFormDraft('settings', alliance);
     const form = document.createElement('form');
     form.className = 'workshop-page__trade-alliance-form';
     form.addEventListener('submit', (event) => this.onSettingsSubmit(event, form));
@@ -962,28 +986,30 @@ export class WorkshopTradeAllianceManager {
     this.bindSubmitPressStart(submitButton, form);
 
     form.append(
-      this.createInputField('name', 'name', { value: alliance.name, maxLength: 24 }),
+      this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
       this.createInputField('tag', 'tag', {
-        value: alliance.tag,
+        value: draft.tag,
         maxLength: 5,
         autocapitalize: 'characters',
       }),
-      this.createTagColorField('tag color', alliance.tagColor),
+      this.createTagColorField('tag color', draft.tagColor),
       this.createInputField('description', 'description', {
-        value: alliance.description,
+        value: draft.description,
         maxLength: 120,
       }),
-      this.createInputField('notice', 'notice', { value: alliance.notice, maxLength: 160 }),
-      this.createJoinModeField('join mode', alliance.joinMode),
+      this.createInputField('notice', 'notice', { value: draft.notice, maxLength: 160 }),
+      this.createJoinModeField('join mode', draft.joinMode),
       submitButton,
       this.createDangerButton('disband', () => this.onDisband()),
     );
+    this.bindFormDraft(form, 'settings');
 
     this.refs.content.replaceChildren(form);
   }
 
   async onSettingsSubmit(event, form) {
     event.preventDefault();
+    this.captureFormDraft('settings', form);
     const formData = new window.FormData(form);
     await this.runAction(() =>
       this.tradeAllianceFacade.updateProfile({
@@ -1640,5 +1666,143 @@ export class WorkshopTradeAllianceManager {
     const hidden = !this.visible || !this.memberEditVisible;
     this.refs.memberPopup.hidden = hidden;
     this.refs.memberPopup.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+  }
+
+  captureVisibleDrafts() {
+    if (!this.visible || !this.refs.content) {
+      return;
+    }
+
+    if (!this.lastSnapshot.ownAlliance && this.selectedSoloTabId === 'browse') {
+      const search = this.refs.content.querySelector(
+        '.workshop-page__trade-alliance-search',
+      );
+      if (search) {
+        this.searchTerm = search.value;
+      }
+      return;
+    }
+
+    const form = this.refs.content.querySelector('form.workshop-page__trade-alliance-form');
+    if (!form) {
+      return;
+    }
+
+    if (!this.lastSnapshot.ownAlliance && this.selectedSoloTabId === 'create') {
+      this.captureFormDraft('create', form);
+      return;
+    }
+
+    if (this.lastSnapshot.ownAlliance && this.selectedMemberTabId === 'settings') {
+      this.captureFormDraft('settings', form);
+    }
+  }
+
+  bindFormDraft(form, kind) {
+    form.addEventListener('input', () => this.captureFormDraft(kind, form));
+    form.addEventListener('change', () => this.captureFormDraft(kind, form));
+  }
+
+  captureFormDraft(kind, form) {
+    if (!form) {
+      return;
+    }
+
+    const formData = new window.FormData(form);
+    this.formDrafts[kind] = {
+      name: String(formData.get('name') ?? ''),
+      tag: String(formData.get('tag') ?? ''),
+      tagColor: String(formData.get('tagColor') ?? DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
+      description: String(formData.get('description') ?? ''),
+      notice: String(formData.get('notice') ?? ''),
+      joinMode: String(formData.get('joinMode') ?? 'apply') || 'apply',
+    };
+  }
+
+  getFormDraft(kind, profile = {}) {
+    if (!this.formDrafts[kind]) {
+      this.formDrafts[kind] = this.createProfileDraft(profile);
+    }
+
+    return this.formDrafts[kind];
+  }
+
+  createProfileDraft(profile = {}) {
+    return {
+      name: String(profile.name ?? ''),
+      tag: String(profile.tag ?? ''),
+      tagColor: normalizeTradeAllianceTagColor(profile.tagColor),
+      description: String(profile.description ?? ''),
+      notice: String(profile.notice ?? ''),
+      joinMode: JOIN_MODE_LABELS[profile.joinMode] ? profile.joinMode : 'apply',
+    };
+  }
+
+  captureContentFocusState() {
+    const activeElement = document.activeElement;
+
+    if (!this.refs.content?.contains(activeElement) || !this.isTextEntryElement(activeElement)) {
+      return null;
+    }
+
+    const name = activeElement.name || activeElement.dataset.fieldId;
+    if (!name) {
+      return null;
+    }
+
+    return {
+      name,
+      selectionStart: this.readSelectionValue(activeElement, 'selectionStart'),
+      selectionEnd: this.readSelectionValue(activeElement, 'selectionEnd'),
+    };
+  }
+
+  restoreContentFocusState(focusState) {
+    if (!focusState || !this.visible || !this.refs.content) {
+      return;
+    }
+
+    const nextElement = [...this.refs.content.querySelectorAll('input, textarea, select')].find(
+      (element) => (element.name || element.dataset.fieldId) === focusState.name,
+    );
+
+    if (!nextElement || nextElement.disabled || nextElement.hidden) {
+      return;
+    }
+
+    try {
+      nextElement.focus({ preventScroll: true });
+    } catch {
+      nextElement.focus();
+    }
+
+    if (
+      Number.isInteger(focusState.selectionStart) &&
+      Number.isInteger(focusState.selectionEnd) &&
+      typeof nextElement.setSelectionRange === 'function'
+    ) {
+      try {
+        nextElement.setSelectionRange(focusState.selectionStart, focusState.selectionEnd);
+      } catch {
+        // Some input types do not support text selection.
+      }
+    }
+  }
+
+  readSelectionValue(element, property) {
+    try {
+      return Number.isInteger(element[property]) ? element[property] : null;
+    } catch {
+      return null;
+    }
+  }
+
+  isTextEntryElement(element) {
+    if (!element) {
+      return false;
+    }
+
+    const tagName = element.tagName?.toLowerCase();
+    return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
   }
 }

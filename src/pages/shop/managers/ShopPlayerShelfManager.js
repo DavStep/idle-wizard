@@ -22,6 +22,10 @@ import {
   multiplyGoldPrice,
   parsePositiveGoldPrice,
 } from '../../../shared/goldPrice.js';
+import {
+  PLAYER_MARKET_MAX_PRICE_GOLD,
+  PLAYER_MARKET_MAX_QUANTITY,
+} from '../../../shared/playerMarketLimits.js';
 
 const EMPTY_LOCKED_STAND_LABEL = 'empty stand';
 const EMPTY_STAND_ACTION_LABEL = 'select';
@@ -242,8 +246,10 @@ export class ShopPlayerShelfManager {
 
     const quantityField = this.createNumberField('quantity', 'quantity', 'Listing quantity');
     const priceField = this.createNumberField('gold each', 'gold each', 'Listing gold value per item');
+    quantityField.input.max = String(PLAYER_MARKET_MAX_QUANTITY);
     priceField.input.inputMode = 'decimal';
     priceField.input.min = '0.01';
+    priceField.input.max = String(PLAYER_MARKET_MAX_PRICE_GOLD);
     priceField.input.step = '0.01';
     this.refs.quantityInput = quantityField.input;
     this.refs.priceInput = priceField.input;
@@ -518,8 +524,18 @@ export class ShopPlayerShelfManager {
       return;
     }
 
+    if (quantity > PLAYER_MARKET_MAX_QUANTITY) {
+      this.setListingStatus(`max ${PLAYER_MARKET_MAX_QUANTITY}`);
+      return;
+    }
+
     if (!priceGold) {
       this.setListingStatus('bad value');
+      return;
+    }
+
+    if (priceGold > PLAYER_MARKET_MAX_PRICE_GOLD) {
+      this.setListingStatus(`max ${formatGoldPriceText(PLAYER_MARKET_MAX_PRICE_GOLD)}`);
       return;
     }
 

@@ -81,7 +81,7 @@ describe('BottomPanelViewManager', () => {
     expect(popup?.dataset.pageId).toBeUndefined();
   });
 
-  it('uses the old quests slot for the gated prestige page', () => {
+  it('appends the gated prestige page only when visible', () => {
     const stage = document.createElement('section');
     const onShowPage = vi.fn();
     const manager = new BottomPanelViewManager({
@@ -95,7 +95,6 @@ describe('BottomPanelViewManager', () => {
     const labels = [...stage.querySelectorAll('.room-bottom-panel__tab')].map(
       (button) => button.textContent,
     );
-    const prestigeButton = stage.querySelector('.room-bottom-panel__prestige-button');
 
     expect(labels).toEqual([
       'brewing',
@@ -103,24 +102,49 @@ describe('BottomPanelViewManager', () => {
       'workshop',
       'research',
       'market',
-      'adv brewing',
-      'adv garden',
-      'guild',
-      'prestige',
-      'adv market',
     ]);
-    expect(prestigeButton?.dataset.pageId).toBe('prestige');
-    expect(prestigeButton?.dataset.actionId).toBeUndefined();
-    expect(prestigeButton?.style.visibility).toBe('hidden');
-    expect(prestigeButton?.tabIndex).toBe(-1);
-
-    prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(onShowPage).not.toHaveBeenCalled();
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')).toBeNull();
 
     manager.setPageStates([{ id: 'prestige', unlocked: true, visible: true }]);
+
+    const prestigeButton = stage.querySelector('.room-bottom-panel__prestige-button');
+
+    expect(prestigeButton?.dataset.pageId).toBe('prestige');
+    expect(prestigeButton?.dataset.actionId).toBeUndefined();
+    expect(prestigeButton?.style.visibility).toBe('');
+    expect(prestigeButton?.tabIndex).toBe(0);
     prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(onShowPage).toHaveBeenCalledWith('prestige');
+  });
+
+  it('does not override custom visible page gates when page states refresh', () => {
+    const stage = document.createElement('section');
+    const manager = new BottomPanelViewManager({
+      getCurrentPageId: () => 'workshop',
+    });
+
+    manager.mount(stage);
+    manager.setVisiblePageIds(['workshop']);
+    manager.setPageStates([
+      { id: 'brewing', unlocked: true, visible: true },
+      { id: 'prestige', unlocked: true, visible: true },
+    ]);
+
+    expect(stage.querySelector('.room-bottom-panel__workshop-button')?.hidden).toBe(
+      false,
+    );
+    expect(stage.querySelector('.room-bottom-panel__brewing-button')?.hidden).toBe(
+      true,
+    );
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.hidden).toBe(
+      true,
+    );
+
+    manager.setVisiblePageIds(['workshop', 'prestige']);
+
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.hidden).toBe(
+      false,
+    );
   });
 });

@@ -175,4 +175,22 @@ describe('GuildPanelManager', () => {
     expect(contentRule).toMatch(/\bmin-height:\s*0;/);
     expect(contentRule).toMatch(/\boverflow:\s*hidden auto;/);
   });
+
+  it('uses the full room inset width for guild boxes', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const contentRule = baseCss.match(
+      /\.guild-page__content\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const centeredRule = baseCss.match(
+      /\.guild-page__content--centered\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(contentRule).toMatch(
+      /\bwidth:\s*calc\(100%\s*-\s*\(var\(--style-room-content-edge\)\s*\*\s*2\)\);/,
+    );
+    expect(contentRule).not.toMatch(/--style-main-box-width/);
+    expect(centeredRule).toMatch(/\bleft:\s*var\(--style-room-content-edge\);/);
+    expect(centeredRule).toMatch(/\bright:\s*var\(--style-room-content-edge\);/);
+    expect(centeredRule).toMatch(/\btranslate:\s*0 -50%;/);
+  });
 });

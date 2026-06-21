@@ -10,6 +10,9 @@ export const BOTTOM_PANEL_TABS = [
   { id: 'workshop', label: 'workshop' },
   { id: 'research', label: 'research' },
   { id: 'shop', label: 'market' },
+];
+
+export const OPTIONAL_BOTTOM_PANEL_TABS = [
   { id: 'advancedBrewing', label: 'adv brewing' },
   { id: 'advancedGarden', label: 'adv garden' },
   { id: 'guild', label: 'guild' },
@@ -17,12 +20,17 @@ export const BOTTOM_PANEL_TABS = [
   { id: 'advancedMarket', label: 'adv market' },
 ];
 
+const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
+  OPTIONAL_BOTTOM_PANEL_TABS.map((tab) => [tab.id, tab]),
+);
+
 export class BottomPanelViewManager {
   constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
     this.getCurrentPageId = getCurrentPageId;
     this.onShowPage = onShowPage;
     this.onAction = onAction;
-    this.tabs = tabs;
+    this.tabs = [...tabs];
+    this.defaultTabIds = new Set(this.tabs.map((tab) => tab.id));
     this.root = null;
     this.tabButtons = new Map();
     this.notifications = {};
@@ -53,7 +61,9 @@ export class BottomPanelViewManager {
     this.visiblePageIds = new Set(
       tabs.filter((tab) => !this.isActionTab(tab)).map((tab) => tab.id),
     );
+    this.hasCustomVisiblePageIds = false;
     this.refs = {
+      tabList: null,
       lockPopup: null,
       lockPanel: null,
       lockMessage: null,
@@ -107,6 +117,7 @@ export class BottomPanelViewManager {
     this.tabButtons.clear();
     this.swipeTargetPageId = null;
     this.refs = {
+      tabList: null,
       lockPopup: null,
       lockPanel: null,
       lockMessage: null,
@@ -136,6 +147,7 @@ export class BottomPanelViewManager {
   }
 
   setVisiblePageIds(pageIds = []) {
+    this.hasCustomVisiblePageIds = true;
     this.visiblePageIds = new Set(
       Array.isArray(pageIds) ? pageIds.filter((pageId) => typeof pageId === 'string') : [],
     );
@@ -167,6 +179,8 @@ export class BottomPanelViewManager {
       });
     }
 
+    this.syncOptionalTabs(nextStates);
+
     for (const tab of this.tabs) {
       if (this.isActionTab(tab)) {
         continue;
@@ -187,7 +201,9 @@ export class BottomPanelViewManager {
 
       const locked = !state.unlocked;
       const visible = state.visible !== false;
-      button.style.visibility = visible ? '' : 'hidden';
+      const optionalHidden = !visible && !this.defaultTabIds.has(tab.id);
+      button.hidden = optionalHidden || !this.visiblePageIds.has(tab.id);
+      button.style.visibility = visible || optionalHidden ? '' : 'hidden';
       button.setAttribute('aria-hidden', visible ? 'false' : 'true');
       button.tabIndex = visible ? 0 : -1;
       button.classList.toggle('is-locked', locked);
@@ -293,6 +309,7 @@ export class BottomPanelViewManager {
 
     const list = document.createElement('div');
     list.className = 'room-bottom-panel__tabs';
+    this.refs.tabList = list;
 
     for (const tab of this.tabs) {
       list.append(this.createTab(tab));
@@ -300,6 +317,27 @@ export class BottomPanelViewManager {
 
     panel.append(list);
     return panel;
+  }
+
+  syncOptionalTabs(nextStates) {
+    for (const [pageId, state] of nextStates) {
+      const tab = OPTIONAL_BOTTOM_PANEL_TAB_BY_ID.get(pageId);
+
+      if (!tab || this.tabButtons.has(pageId) || state.visible === false) {
+        continue;
+      }
+
+      this.tabs.push(tab);
+      if (!this.hasCustomVisiblePageIds) {
+        this.visiblePageIds.add(pageId);
+      }
+      this.pageStates.set(pageId, {
+        id: pageId,
+        unlocked: state.unlocked !== false,
+        visible: true,
+      });
+      this.refs.tabList?.append(this.createTab(tab));
+    }
   }
 
   createTab(tab) {

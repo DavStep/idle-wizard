@@ -1,4 +1,8 @@
 import { normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
+import {
+  PLAYER_MARKET_MAX_PRICE_GOLD,
+  PLAYER_MARKET_MAX_QUANTITY,
+} from '../../../shared/playerMarketLimits.js';
 
 export class ShopPlayerRequestManager {
   constructor({
@@ -34,10 +38,26 @@ export class ShopPlayerRequestManager {
       };
     }
 
+    if (safeQuantity > PLAYER_MARKET_MAX_QUANTITY) {
+      return {
+        ok: false,
+        reason: 'quantity_too_high',
+        maxQuantity: PLAYER_MARKET_MAX_QUANTITY,
+      };
+    }
+
     if (safePriceGold === null) {
       return {
         ok: false,
         reason: 'invalid_price',
+      };
+    }
+
+    if (safePriceGold > PLAYER_MARKET_MAX_PRICE_GOLD) {
+      return {
+        ok: false,
+        reason: 'price_too_high',
+        maxPriceGold: PLAYER_MARKET_MAX_PRICE_GOLD,
       };
     }
 

@@ -135,6 +135,46 @@ describe('ShopPlayerShelfListingManager', () => {
     expect(spend).toHaveBeenCalledWith(2.25);
   });
 
+  it('rejects player market listing quantities and prices above the backend cap', () => {
+    const removeItem = vi.fn().mockReturnValue(true);
+    const manager = new ShopPlayerShelfListingManager({
+      goldFacade: {},
+      itemsFacade: {
+        getItemDefinition: () => sageHerb,
+        getItemQuantity: () => 2_000,
+        removeItem,
+      },
+      shopSellKindManager: {
+        isSellKind: () => true,
+      },
+      shopPlayerShelfEntityManager: createPlayerShelfEntityManager(),
+    });
+
+    expect(
+      manager.setSelectedSlotListing({
+        itemTypeId: 1001,
+        quantity: 1_001,
+        priceGold: 1,
+      }),
+    ).toEqual({
+      ok: false,
+      reason: 'quantity_too_high',
+      maxQuantity: 1_000,
+    });
+    expect(
+      manager.setSelectedSlotListing({
+        itemTypeId: 1001,
+        quantity: 1,
+        priceGold: 1_000_000.01,
+      }),
+    ).toEqual({
+      ok: false,
+      reason: 'price_too_high',
+      maxPriceGold: 1_000_000,
+    });
+    expect(removeItem).not.toHaveBeenCalled();
+  });
+
   it('adds player sale proceeds without generated-gold tracking', () => {
     const add = vi.fn();
     const manager = new ShopPlayerShelfListingManager({

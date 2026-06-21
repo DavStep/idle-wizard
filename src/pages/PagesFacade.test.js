@@ -2740,7 +2740,7 @@ function createPlayerFacadeFake(
     initialColorMode = 'monochrome',
     initialFont = 'lexend',
     initialCharacter = 'elara',
-    initialIconMode = 'icons',
+    initialIconMode = 'none',
     initialProgressBar = 'regular',
     initialPlotView = 'boxes',
   } = {},
@@ -3608,16 +3608,7 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.workshop-page__bag-button')?.textContent).toBe('bag');
     expect(stage.querySelector('.workshop-page__prestige-button')).toBeNull();
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.textContent).toBe(
-      'prestige',
-    );
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.dataset.pageId).toBe(
-      'prestige',
-    );
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe(
-      'hidden',
-    );
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.tabIndex).toBe(-1);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')).toBeNull();
     expect(stage.querySelector('.workshop-page__leaderboard-button')?.textContent).toBe(
       'leaderboard',
     );
@@ -3650,11 +3641,6 @@ describe('PagesFacade', () => {
       'workshop',
       'research',
       'market',
-      'adv brewing',
-      'adv garden',
-      'guild',
-      'prestige',
-      'adv market',
     ]);
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'workshop',
@@ -3676,7 +3662,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-page__nav')).toBeNull();
     const topPanel = stage.querySelector('.room-top-panel');
     expect(topPanel).not.toBeNull();
+    expect(topPanel.classList.contains('has-avatar')).toBe(false);
     expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
+    expect(topPanel.children[0]?.hidden).toBe(true);
     expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
     expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
     expect(
@@ -3854,10 +3842,7 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe(
-      'hidden',
-    );
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.tabIndex).toBe(-1);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')).toBeNull();
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(false);
@@ -6396,22 +6381,24 @@ describe('PagesFacade', () => {
     const iconsButton = stage.querySelector(
       '.room-top-panel__icon-button[data-icon-mode="icons"]',
     );
-    expect(noIconsButton.getAttribute('aria-checked')).toBe('false');
-    expect(iconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(iconsButton.getAttribute('aria-checked')).toBe('false');
     expect(noIconsButton.disabled).toBe(false);
     expect(iconsButton.disabled).toBe(false);
-
-    noIconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().iconMode).toBe('none');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.none).toBe(true);
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(true);
 
     iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.none).toBe(true);
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(true);
     expect(iconsButton.getAttribute('aria-checked')).toBe('true');
     expect(noIconsButton.getAttribute('aria-checked')).toBe('false');
+
+    noIconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(iconsButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes font from settings', () => {
@@ -6821,7 +6808,9 @@ describe('PagesFacade', () => {
     expect(page.querySelector('.style-dialog')).toBeNull();
     expect(page.querySelector('.workshop-page__prestige-close')).toBeNull();
     const summary = page.querySelector('.workshop-page__prestige-summary');
-    expect(summary?.textContent).toBe('level 40, next run: 0 ruby');
+    expect(summary?.textContent).toBe(
+      'level 40, 0 ruby available. prestige adds row reward; ruby research stays bought.',
+    );
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('0 ruby');
     expect(page.textContent).toContain('level 10');
@@ -6843,6 +6832,34 @@ describe('PagesFacade', () => {
     expect(snapshot.prestige.completedLevels).toEqual([10]);
     expect(snapshot.ruby.current).toBe(1);
     expect(snapshot.tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
+  });
+
+  it('explains prestige ruby as available while ruby research stays bought', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.tasks.currentLevel = 20;
+    snapshot.playerLevel.currentLevel = 20;
+    snapshot.prestige.currentLevel = 20;
+    snapshot.prestige.earnedRuby = 2;
+    snapshot.ruby.current = 1;
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    stage
+      .querySelector('.room-bottom-panel__prestige-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const summary = stage.querySelector('.workshop-page__prestige-summary');
+    expect(summary?.textContent).toBe(
+      'level 20, 1 ruby available. prestige adds row reward; ruby research stays bought.',
+    );
+    expect(summary?.getAttribute('data-resource-color')).toBeNull();
+    expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('1 ruby');
   });
 
   it('shows prestige point rewards on the second prestige tab', () => {

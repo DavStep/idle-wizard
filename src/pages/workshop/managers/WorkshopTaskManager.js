@@ -17,7 +17,7 @@ const TASK_REORDER_MOTION_MS = 225;
 const TASK_REORDER_EARLY_THRESHOLD_RATIO = 0.2;
 const DUPLICATE_TOUCH_CLICK_SUPPRESSION_MS = 450;
 const TASK_REORDER_TRANSITION =
-  'transform 225ms cubic-bezier(0.2, 1.12, 0.36, 1), opacity 140ms linear';
+  'transform 225ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms linear';
 
 export class WorkshopTaskManager {
   constructor({ gameplayFacade, onLevelUpNotice } = {}) {

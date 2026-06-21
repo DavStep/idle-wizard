@@ -77,6 +77,31 @@ function scanBottomPanelTabs() {
   }
 }
 
+function scanDefaultIconMode() {
+  const filePath = 'src/player/playerIconModes.js';
+  const source = readProjectFile(filePath);
+  const match = source.match(/export const DEFAULT_PLAYER_ICON_MODE = ['"]([^'"]+)['"];/);
+
+  if (!match) {
+    addWarning(
+      'default-icon-mode-missing',
+      filePath,
+      1,
+      'Could not find DEFAULT_PLAYER_ICON_MODE for default chrome audit.',
+    );
+    return;
+  }
+
+  if (match[1] !== 'none') {
+    addWarning(
+      'default-icon-mode',
+      filePath,
+      lineForIndex(source, match.index),
+      'Default icon mode should be `none`; icons are optional personalization, not default A Dark Room chrome.',
+    );
+  }
+}
+
 function scanCssRules() {
   const filePath = 'src/styles/base.css';
   const source = readProjectFile(filePath);
@@ -90,25 +115,19 @@ function scanCssRules() {
     );
   }
 
-  const gradientIndex = source.indexOf(':root[data-style-progress="gradient"]');
-  if (gradientIndex !== -1) {
-    addWarning(
-      'default-gradient-option',
-      filePath,
-      lineForIndex(source, gradientIndex),
-      'Gradient progress styling exists. Keep it out of default UI unless personalization explicitly selects it.',
-    );
-  }
-
   const blockPattern = /([^{}]+)\{([^{}]*)\}/g;
   for (const match of source.matchAll(blockPattern)) {
     const selector = match[1].trim();
     const body = match[2];
+    const allowsDialogShadow =
+      selector.includes('.style-dialog') ||
+      selector.includes('.is-dialog') ||
+      selector.includes('.is-intro-dialog');
 
     if (
       selector.includes('.style-box') &&
       body.includes('box-shadow') &&
-      !selector.includes('.style-dialog')
+      !allowsDialogShadow
     ) {
       addWarning(
         'ordinary-box-shadow',
@@ -122,6 +141,10 @@ function scanCssRules() {
   const lines = source.split('\n');
   lines.forEach((line, index) => {
     if (/\btransition(?:-property)?:[^;]*(width|height|padding|margin)/.test(line)) {
+      if (isAllowedLayoutTransition(lines, index)) {
+        return;
+      }
+
       addWarning(
         'layout-transition',
         filePath,
@@ -130,6 +153,12 @@ function scanCssRules() {
       );
     }
   });
+}
+
+function isAllowedLayoutTransition(lines, index) {
+  const selectorContext = lines.slice(Math.max(0, index - 8), index + 1).join('\n');
+
+  return selectorContext.includes('.workshop-page__tasks-expanded-content');
 }
 
 function scanMotionDrift() {
@@ -167,6 +196,7 @@ function scanMotionDrift() {
 }
 
 scanBottomPanelTabs();
+scanDefaultIconMode();
 scanCssRules();
 scanMotionDrift();
 

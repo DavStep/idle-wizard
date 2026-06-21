@@ -2,6 +2,10 @@ import {
   formatGoldPriceText,
   parsePositiveGoldPrice,
 } from '../../../shared/goldPrice.js';
+import {
+  PLAYER_MARKET_MAX_PRICE_GOLD,
+  PLAYER_MARKET_MAX_QUANTITY,
+} from '../../../shared/playerMarketLimits.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import {
   getItemDisplay,
@@ -176,6 +180,7 @@ export class ShopPlayerRequestManager {
     this.refs.goldField = this.createNumberField('gold each', 'Gold offered per item');
     this.refs.goldField.input.inputMode = 'decimal';
     this.refs.goldField.input.min = '0.01';
+    this.refs.goldField.input.max = String(PLAYER_MARKET_MAX_PRICE_GOLD);
     this.refs.goldField.input.step = '0.01';
     this.refs.itemPicker = this.createItemPicker();
     this.refs.itemTabs = this.createItemTabs();
@@ -299,6 +304,7 @@ export class ShopPlayerRequestManager {
       onInput: () => this.onRequestQuantityInput(),
       onStep: (delta) => this.onRequestQuantityStep(delta),
     });
+    amountField.input.max = String(PLAYER_MARKET_MAX_QUANTITY);
 
     field.append(label, amountField.field);
     return { ...amountField, field, label };
@@ -420,8 +426,18 @@ export class ShopPlayerRequestManager {
       return;
     }
 
+    if (quantity > PLAYER_MARKET_MAX_QUANTITY) {
+      this.setStatus(`max ${PLAYER_MARKET_MAX_QUANTITY}`);
+      return;
+    }
+
     if (!priceGold) {
       this.setStatus('bad value');
+      return;
+    }
+
+    if (priceGold > PLAYER_MARKET_MAX_PRICE_GOLD) {
+      this.setStatus(`max ${formatGoldPriceText(PLAYER_MARKET_MAX_PRICE_GOLD)}`);
       return;
     }
 
@@ -769,8 +785,16 @@ export class ShopPlayerRequestManager {
       return 'bad quantity';
     }
 
+    if (result?.reason === 'quantity_too_high') {
+      return `max ${result.maxQuantity ?? PLAYER_MARKET_MAX_QUANTITY}`;
+    }
+
     if (result?.reason === 'invalid_price') {
       return 'bad value';
+    }
+
+    if (result?.reason === 'price_too_high') {
+      return `max ${formatGoldPriceText(result.maxPriceGold ?? PLAYER_MARKET_MAX_PRICE_GOLD)}`;
     }
 
     if (result?.reason === 'item_not_requestable') {
@@ -809,7 +833,7 @@ export class ShopPlayerRequestManager {
 
     for (const [delta, button] of field.stepButtons) {
       const nextQuantity = quantity + delta;
-      const disabled = nextQuantity < 1;
+      const disabled = nextQuantity < 1 || nextQuantity > PLAYER_MARKET_MAX_QUANTITY;
       button.disabled = disabled;
       button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     }

@@ -10,6 +10,40 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
+function createTradeAllianceFacadeFake(initialSnapshot = {}) {
+  let snapshot = initialSnapshot;
+  const listeners = new Set();
+
+  return {
+    getSnapshot: () => snapshot,
+    emit(nextSnapshot = snapshot) {
+      snapshot = nextSnapshot;
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(snapshot);
+      return () => listeners.delete(listener);
+    },
+  };
+}
+
+function mountManager(tradeAllianceFacade) {
+  const manager = new WorkshopTradeAllianceManager({ tradeAllianceFacade });
+  const parent = document.createElement('div');
+  const popupParent = document.createElement('div');
+
+  document.body.append(parent, popupParent);
+  manager.mount(parent, popupParent);
+  parent
+    .querySelector('.workshop-page__trade-alliance-button')
+    ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+  return { manager, parent, popupParent };
+}
+
 describe('WorkshopTradeAllianceManager styles', () => {
   it('keeps the tabbed popup height fixed while tab content changes', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
@@ -94,5 +128,164 @@ describe('WorkshopTradeAllianceManager styles', () => {
     ).toBe('true');
 
     manager.unmount();
+  });
+
+  it('keeps browse search focused while alliance snapshots refresh', () => {
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      connected: true,
+      ownAlliance: null,
+      alliances: [
+        {
+          allianceId: 'alliance-1',
+          name: 'Tap Guild',
+          tag: 'TAP',
+          description: 'test',
+          joinMode: 'open',
+          memberCount: 1,
+          seasonIncome: 0,
+        },
+      ],
+    });
+    const { popupParent } = mountManager(tradeAllianceFacade);
+    const popup = popupParent.querySelector('.workshop-page__trade-alliance-popup');
+    const search = popup.querySelector('.workshop-page__trade-alliance-search');
+
+    search.focus();
+    search.value = 'tap';
+    search.setSelectionRange(3, 3);
+    search.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    tradeAllianceFacade.emit({
+      connected: true,
+      ownAlliance: null,
+      alliances: [
+        {
+          allianceId: 'alliance-1',
+          name: 'Tap Guild',
+          tag: 'TAP',
+          description: 'test',
+          joinMode: 'open',
+          memberCount: 2,
+          seasonIncome: 5,
+        },
+      ],
+    });
+
+    const refreshedSearch = popup.querySelector('.workshop-page__trade-alliance-search');
+    expect(refreshedSearch.value).toBe('tap');
+    expect(document.activeElement).toBe(refreshedSearch);
+    expect(refreshedSearch.selectionStart).toBe(3);
+    expect(refreshedSearch.selectionEnd).toBe(3);
+  });
+
+  it('keeps create form edits focused while alliance snapshots refresh', () => {
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      connected: true,
+      ownAlliance: null,
+      alliances: [],
+    });
+    const { popupParent } = mountManager(tradeAllianceFacade);
+    const popup = popupParent.querySelector('.workshop-page__trade-alliance-popup');
+    const createTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')].find(
+      (button) => button.textContent === 'create',
+    );
+
+    createTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const nameInput = popup.querySelector('input[name="name"]');
+    nameInput.focus();
+    nameInput.value = 'Tap Guild';
+    nameInput.setSelectionRange(4, 4);
+    nameInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    popup.querySelector('input[name="tag"]').value = 'TAP';
+    popup.querySelector('input[name="tag"]').dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    tradeAllianceFacade.emit({
+      connected: true,
+      ownAlliance: null,
+      alliances: [
+        {
+          allianceId: 'alliance-1',
+          name: 'Other Guild',
+          tag: 'OTH',
+          description: 'test',
+          joinMode: 'open',
+          memberCount: 3,
+          seasonIncome: 10,
+        },
+      ],
+    });
+
+    const refreshedNameInput = popup.querySelector('input[name="name"]');
+    expect(refreshedNameInput.value).toBe('Tap Guild');
+    expect(popup.querySelector('input[name="tag"]')?.value).toBe('TAP');
+    expect(document.activeElement).toBe(refreshedNameInput);
+    expect(refreshedNameInput.selectionStart).toBe(4);
+    expect(refreshedNameInput.selectionEnd).toBe(4);
+  });
+
+  it('keeps settings form edits focused while alliance snapshots refresh', () => {
+    const ownAlliance = {
+      allianceId: 'alliance-1',
+      name: 'All Seeing Void',
+      tag: 'VOID',
+      tagColor: 'ink',
+      description: 'yes',
+      notice: '',
+      joinMode: 'apply',
+      memberCount: 1,
+      seasonIncome: 0,
+      dailyIncome: 0,
+      seasonKey: '0',
+    };
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      connected: true,
+      ownAlliance,
+      ownMember: {
+        memberIdentity: 'self',
+        role: 'tradeMaster',
+      },
+      ownRole: 'tradeMaster',
+      canEditSettings: true,
+      quests: [],
+      contributions: [],
+      rewardInbox: [],
+    });
+    const { popupParent } = mountManager(tradeAllianceFacade);
+    const popup = popupParent.querySelector('.workshop-page__trade-alliance-popup');
+    const settingsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')].find(
+      (button) => button.textContent === 'settings',
+    );
+
+    settingsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const nameInput = popup.querySelector('input[name="name"]');
+    nameInput.focus();
+    nameInput.value = 'Tap Void';
+    nameInput.setSelectionRange(3, 3);
+    nameInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    tradeAllianceFacade.emit({
+      connected: true,
+      ownAlliance: {
+        ...ownAlliance,
+        memberCount: 2,
+      },
+      ownMember: {
+        memberIdentity: 'self',
+        role: 'tradeMaster',
+      },
+      ownRole: 'tradeMaster',
+      canEditSettings: true,
+      quests: [],
+      contributions: [],
+      rewardInbox: [],
+    });
+
+    const refreshedNameInput = popup.querySelector('input[name="name"]');
+    expect(refreshedNameInput.value).toBe('Tap Void');
+    expect(document.activeElement).toBe(refreshedNameInput);
+    expect(refreshedNameInput.selectionStart).toBe(3);
+    expect(refreshedNameInput.selectionEnd).toBe(3);
   });
 });

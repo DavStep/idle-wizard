@@ -343,11 +343,11 @@ export class ResearchFacade {
     const safeBaseMax = Math.max(0, Math.floor(Number(baseMax) || 0));
     const safeBonus = Math.max(0, Math.floor(Number(bonus) || 0));
 
-    if (safeBaseMax < baseCapacity) {
+    if (safeBonus <= 0) {
       return safeBaseMax;
     }
 
-    return safeBaseMax + safeBonus;
+    return Math.max(safeBaseMax, baseCapacity + safeBonus);
   }
 
   getRequiredCapacityResearchId({ targetNumber, start, end, getId }) {

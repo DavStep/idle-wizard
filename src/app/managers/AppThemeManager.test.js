@@ -8,7 +8,7 @@ function createPlayerFacade(
   initialTheme = 'white',
   initialColorMode = 'monochrome',
   initialFont = 'lexend',
-  initialIconMode = 'icons',
+  initialIconMode = 'none',
   initialProgressBar = 'regular',
   initialPlotView = 'boxes',
 ) {
@@ -139,7 +139,7 @@ describe('AppThemeManager', () => {
     expect(document.documentElement.dataset.styleTheme).toBe('white');
     expect(document.documentElement.dataset.styleFont).toBe('lexend');
     expect(document.documentElement.dataset.styleColor).toBe('monochrome');
-    expect(document.documentElement.dataset.styleIcons).toBe('icons');
+    expect(document.documentElement.dataset.styleIcons).toBe('none');
     expect(document.documentElement.dataset.styleProgress).toBe('regular');
     expect(document.documentElement.dataset.stylePlotView).toBe('boxes');
   });

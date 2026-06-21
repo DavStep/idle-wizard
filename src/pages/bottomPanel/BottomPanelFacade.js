@@ -2,7 +2,7 @@ import { BottomPanelViewManager } from './managers/BottomPanelViewManager.js';
 
 export class BottomPanelFacade {
   static explain =
-    'Shows the always-visible bottom room tabs and small bottom actions such as prestige.';
+    'Shows the bottom room tabs and reveals optional room tabs only when they unlock.';
 
   constructor({ getCurrentPageId, onShowPage, onAction } = {}) {
     this.viewManager = new BottomPanelViewManager({ getCurrentPageId, onShowPage, onAction });

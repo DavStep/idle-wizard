@@ -470,6 +470,57 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('shows player market request max errors before publishing', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const playerShopFacade = {
+      getSnapshot: () => ({ connected: true }),
+      setSlotRequest: vi.fn(async () => ({ ok: true })),
+      clearSlotRequest: vi.fn(async () => ({ ok: true })),
+    };
+    const manager = new ShopPlayerRequestManager({
+      gameplayFacade: createRequestGameplayFacadeFake(),
+      playerShopFacade,
+    });
+
+    manager.mount(stage, popupLayer);
+    stage
+      .querySelector('.shop-page__player-request-row')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.shop-page__request-popup');
+    [...popup.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent === 'mint seed (4)')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const [quantityInput, goldInput] =
+      popup.querySelectorAll('.shop-page__request-input');
+    expect(quantityInput.getAttribute('max')).toBe('1000');
+    expect(goldInput.getAttribute('max')).toBe('1000000');
+
+    quantityInput.value = '1001';
+    goldInput.value = '1';
+    popup
+      .querySelector('.shop-page__request-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.querySelector('.shop-page__request-status')?.textContent).toBe('max 1000');
+    expect(playerShopFacade.setSlotRequest).not.toHaveBeenCalled();
+
+    quantityInput.value = '1';
+    goldInput.value = '1000000.01';
+    popup
+      .querySelector('.shop-page__request-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.querySelector('.shop-page__request-status')?.textContent).toBe(
+      'max 1m gold',
+    );
+    expect(playerShopFacade.setSlotRequest).not.toHaveBeenCalled();
+
+    manager.unmount();
+  });
+
   it('deselects a player market request item when selected again', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -1645,6 +1696,113 @@ describe('ShopShelfManager', () => {
     expect(
       listingPopup?.querySelectorAll('.shop-page__player-listing-input')?.[1]?.value,
     ).toBe('3.25');
+
+    manager.unmount();
+  });
+
+  it('shows player market listing max errors before publishing', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      gold: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        playerShelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 2_000,
+            },
+          ],
+          slots: [{ slotNumber: 1, unlocked: true }],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      selectPlayerShopShelfSlot(slotNumber) {
+        gameplaySnapshot.shop.playerShelf.selectedSlotNumber = slotNumber;
+        return { ok: true, slotNumber };
+      },
+      applyPlayerShopMarketSlotQuantity() {},
+    };
+    const playerShopFacade = {
+      subscribe(callback) {
+        callback({
+          connected: true,
+          listings: [],
+          ownListings: [],
+          requests: [],
+          ownRequests: [],
+          proceedsGold: 0,
+        });
+        return () => {};
+      },
+      getSnapshot() {
+        return {
+          connected: true,
+          listings: [],
+          ownListings: [],
+          requests: [],
+          ownRequests: [],
+          proceedsGold: 0,
+        };
+      },
+      setSlotListing: vi.fn(async () => ({ ok: true })),
+    };
+    const manager = new ShopPlayerShelfManager({ gameplayFacade, playerShopFacade });
+
+    manager.mount(stage, popupLayer);
+    stage
+      .querySelector('.shop-page__player-slot-row')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.shop-page__player-listing-popup');
+    const itemButton = [...popup.querySelectorAll('.shop-page__sell-item-button')].find(
+      (button) => button.textContent === 'sage seed (2000)',
+    );
+    itemButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const [quantityInput, priceInput] = popup.querySelectorAll(
+      '.shop-page__player-listing-input',
+    );
+    expect(quantityInput.getAttribute('max')).toBe('1000');
+    expect(priceInput.getAttribute('max')).toBe('1000000');
+
+    quantityInput.value = '1001';
+    priceInput.value = '1';
+    popup
+      .querySelector('.shop-page__player-listing-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.querySelector('.shop-page__player-shop-status')?.textContent).toBe(
+      'max 1000',
+    );
+    expect(playerShopFacade.setSlotListing).not.toHaveBeenCalled();
+
+    quantityInput.value = '1';
+    priceInput.value = '1000000.01';
+    popup
+      .querySelector('.shop-page__player-listing-place-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup.querySelector('.shop-page__player-shop-status')?.textContent).toBe(
+      'max 1m gold',
+    );
+    expect(playerShopFacade.setSlotListing).not.toHaveBeenCalled();
 
     manager.unmount();
   });

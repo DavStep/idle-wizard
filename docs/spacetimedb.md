@@ -141,7 +141,7 @@ Period loops use server UTC time. Daily periods reset at UTC 00:00, which is 04:
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
-Player market exchange reducers are locked down until inventory and spendable gold are server-authoritative. On connect, the module clears old `player_shop_listing`, `player_shop_proceeds`, and `player_shop_trade` rows so stale poisoned market state cannot be claimed.
+Player market exchange reducers are enabled for public listings, public requests, purchases, proceeds, and trade history. The backend caps listing/request quantity at `1000` units, unit price at `1000000` gold, and one trade total at `10000000` gold.
 
 `sell_to_npc` records an NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, increases shared `npc_stock`, and recomputes the backend quote. `scheduled_tick_npc_market` runs from the `npc_market_tick_schedule` SpacetimeDB schedule table every 5 minutes to replenish `npc_need` and recompute prices; trades also apply any due tick inline before changing market rows. During a server data reset, the module clears NPC market demand and stock once using a `maintenance_state` key tied to `PLAYER_DATA_RESET_GUARD_MICROS`.
 

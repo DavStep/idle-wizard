@@ -62,6 +62,8 @@
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
+- Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
+- Guild room boxes should use the full room inset width, not `--style-main-box-width`; otherwise the right side of the room looks unused beside world chat.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
@@ -235,6 +237,7 @@
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
 - Raising playable max level needs matching SpacetimeDB caps (`MAX_REPORTED_PLAYER_LEVEL`, `MAX_GAME_CONFIG_LEVELS`) plus prod `playerLevel` and `tasks` config rows; otherwise prod clips/rejects the new curve.
 - Permanent prestige capacity upgrades should preserve only capacity research IDs through prestige reset; ordinary ruby speed research remains run-scoped.
+- Permanent prestige capacity upgrades should make the researched slot cap buyable immediately in the run; do not require replaying to the old level cap first.
 - When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
 - Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.

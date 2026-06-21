@@ -214,7 +214,7 @@ export class PrestigePanelManager {
     }
 
     this.lastSnapshot = snapshot ?? {};
-    this.updateSummary(this.lastSnapshot.prestige);
+    this.updateSummary(this.lastSnapshot);
     this.syncTabs();
     this.applyConfirm();
 
@@ -229,8 +229,13 @@ export class PrestigePanelManager {
     this.updateScrollProgress();
   }
 
-  updateSummary(prestige = {}) {
+  updateSummary(snapshot = {}) {
+    const prestige = snapshot?.prestige ?? {};
     const earnedRuby = Math.max(0, Math.floor(Number(prestige.earnedRuby) || 0));
+    const currentRuby = Math.max(
+      0,
+      Math.floor(Number(snapshot?.ruby?.current ?? earnedRuby) || 0),
+    );
     const currentLevel = Math.max(1, Math.floor(Number(prestige.currentLevel) || 1));
 
     if (this.selectedTabId === 'points') {
@@ -245,12 +250,15 @@ export class PrestigePanelManager {
 
     const ruby = document.createElement('span');
     ruby.className = 'workshop-page__prestige-summary-ruby';
-    ruby.textContent = `${earnedRuby} ruby`;
+    ruby.textContent = `${currentRuby} ruby`;
     setResourceColor(ruby, 'ruby');
 
     this.refs.summary.replaceChildren(
-      document.createTextNode(`level ${currentLevel}, next run: `),
+      document.createTextNode(`level ${currentLevel}, `),
       ruby,
+      document.createTextNode(
+        ' available. prestige adds row reward; ruby research stays bought.',
+      ),
     );
     setResourceColor(this.refs.summary, null);
   }

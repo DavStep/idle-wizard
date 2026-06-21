@@ -21,6 +21,7 @@ export const PAGE_UNLOCK_REQUIREMENTS = {
     requiredLevel: 15,
     label: 'guild',
     message: 'guild unlocks at level 15',
+    visibleBeforeUnlock: false,
   },
   prestige: {
     requiredLevel: WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
@@ -32,16 +33,19 @@ export const PAGE_UNLOCK_REQUIREMENTS = {
     requiredLevel: 999,
     label: 'advanced brewing',
     message: 'advanced brewing is not ready yet',
+    visibleBeforeUnlock: false,
   },
   advancedGarden: {
     requiredLevel: 999,
     label: 'advanced garden',
     message: 'advanced garden is not ready yet',
+    visibleBeforeUnlock: false,
   },
   advancedMarket: {
     requiredLevel: 999,
     label: 'advanced market',
     message: 'advanced market is not ready yet',
+    visibleBeforeUnlock: false,
   },
 };
 
