@@ -154,7 +154,7 @@ describe('DevCheatsFacade', () => {
 
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
-      version: 4,
+      version: 5,
       gold: { current: 0, totalGenerated: 0 },
       crystal: { current: 0 },
       ruby: { current: 0 },

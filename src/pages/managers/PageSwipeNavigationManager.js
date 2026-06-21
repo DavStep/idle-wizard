@@ -4,6 +4,11 @@ export const DEFAULT_PAGE_SWIPE_ORDER = [
   'workshop',
   'research',
   'shop',
+  'advancedBrewing',
+  'advancedGarden',
+  'guild',
+  'quests',
+  'advancedMarket',
 ];
 
 const BLOCKED_TARGET_SELECTOR = [
@@ -31,6 +36,7 @@ const OPEN_POPUP_SELECTOR = [
   '.shop-page__market-popup:not([hidden])',
   '.shop-page__request-popup:not([hidden])',
   '.shop-page__crystal-support-popup:not([hidden])',
+  '.guild-page__popup:not([hidden])',
   '.room-bottom-panel__lock-popup:not([hidden])',
   '.room-top-panel__settings:not([hidden])',
 ].join(',');

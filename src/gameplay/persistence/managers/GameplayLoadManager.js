@@ -17,6 +17,7 @@ export class GameplayLoadManager {
     tasksFacade,
     personalTasksFacade,
     worldNoticeFacade,
+    guildFacade,
   }) {
     this.manaFacade = manaFacade;
     this.goldFacade = goldFacade;
@@ -35,6 +36,7 @@ export class GameplayLoadManager {
     this.tasksFacade = tasksFacade;
     this.personalTasksFacade = personalTasksFacade;
     this.worldNoticeFacade = worldNoticeFacade;
+    this.guildFacade = guildFacade;
   }
 
   applySave(save) {
@@ -59,6 +61,7 @@ export class GameplayLoadManager {
     this.gardenFacade.applyPersistenceSnapshot(save.garden);
     this.personalTasksFacade.applyPersistenceSnapshot(save.personalTasks);
     this.worldNoticeFacade.applyPersistenceSnapshot(save.worldNotice);
+    this.guildFacade.applyPersistenceSnapshot(save.guild);
     return true;
   }
 }

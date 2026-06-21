@@ -34,8 +34,8 @@ export class GoldEntityManager {
     PlayerGold.current[this.getEntityId()] = normalizeGoldPrice(value) ?? 0;
   }
 
-  addCurrent(amount) {
-    if (amount > 0) {
+  addCurrent(amount, { trackGenerated = true } = {}) {
+    if (trackGenerated && amount > 0) {
       this.addTotalGenerated(amount);
     }
 

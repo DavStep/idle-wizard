@@ -541,13 +541,13 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().mana.cap).toBe(100);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(2);
+    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(1.25);
 
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
     expect(gameplayFacade.getSnapshot().mana.cap).toBe(150);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(3);
+    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(1.5);
   });
 
   it('grants configured crystal when player level advances', () => {
@@ -627,7 +627,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.mana).toMatchObject({
       current: 0,
       cap: 250,
-      perSecond: 5,
+      perSecond: 2,
     });
   }, 30_000);
 
@@ -2214,7 +2214,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 10 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(18);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(5.5);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
@@ -2225,23 +2225,23 @@ describe('GameplayFacade', () => {
       key: 'sageSeed',
       label: 'sage seed',
       kind: 'seed',
-      quantity: 1,
+      quantity: 0,
     });
 
-    ecsFacade.update({ deltaSeconds: 2 });
+    ecsFacade.update({ deltaSeconds: 3 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(16);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(0.75);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
-      remainingMs: 28_000,
+      remainingMs: 27_000,
     });
     expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
       label: 'sage seed',
       kind: 'seed',
-      quantity: 2,
+      quantity: 1,
     });
   });
 
@@ -2554,7 +2554,7 @@ describe('GameplayFacade', () => {
       manaCost: 12,
       durationMs: 30_000,
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(9);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
@@ -2885,7 +2885,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 0 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(9);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
@@ -4008,6 +4008,7 @@ describe('GameplayFacade', () => {
     });
 
     expect(gameplayFacade.getSnapshot().gold.current).toBe(5);
+    expect(gameplayFacade.getSnapshot().gold.totalGenerated).toBe(0);
     expect(rewardEvents).toEqual([
       expect.objectContaining({
         type: 'gold_collected',
@@ -4016,6 +4017,25 @@ describe('GameplayFacade', () => {
       }),
     ]);
     unsubscribeRewardEvents();
+  });
+
+  it('persists player shop proceeds without adding generated gold', () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    first.gameplayFacade.goldFacade.add(10);
+    expect(first.gameplayFacade.claimPlayerShopSaleProceeds(5)).toEqual({
+      ok: true,
+      gold: 5,
+    });
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const second = createGameplay({ persistenceStorage });
+    const snapshot = second.gameplayFacade.getSnapshot();
+
+    expect(snapshot.gold.current).toBe(15);
+    expect(snapshot.gold.totalGenerated).toBe(10);
   });
 
   it('persists crystal-tab gold offer cooldown and catches it up offline', () => {

@@ -6,7 +6,9 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import {
   DEFAULT_PLAYER_CHANGELOG_FILE,
+  buildFeatureAnnouncementDiscordMessages,
   buildPlayerChangelogDiscordMessages,
+  loadFeatureAnnouncement,
   loadPlayerChangelog,
 } from './player-changelog.js';
 
@@ -16,6 +18,7 @@ await loadEnvFile('.env.local');
 await loadEnvFile('.env');
 
 const webhookUrl = process.env.DISCORD_APK_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
+const featureWebhookUrl = process.env.DISCORD_FEATURE_WEBHOOK_URL || process.env.DISCORD_BIG_FEATURE_WEBHOOK_URL;
 const apkPath = await resolveApkPath(process.argv[2] || process.env.DISCORD_APK_FILE);
 
 if (!webhookUrl) {
@@ -37,15 +40,43 @@ const message = process.env.DISCORD_APK_MESSAGE || [
   path.basename(apkPath),
   `${formatBytes(apkStats.size)}`,
 ].join(' - ');
+const featureAnnouncement = process.env.DISCORD_FEATURE_SKIP === '1'
+  ? null
+  : await loadFeatureAnnouncement({
+    rootDir,
+    version: packageInfo.version,
+  });
 const changelog = await loadPlayerChangelog({
   rootDir,
   version: packageInfo.version,
 });
 
+if (featureAnnouncement && !featureWebhookUrl) {
+  fail(
+    `Missing DISCORD_FEATURE_WEBHOOK_URL for feature announcement from ${featureAnnouncement.source}. Add it to .env.local, remove that announcement, or set DISCORD_FEATURE_SKIP=1 only for internal testing.`,
+  );
+}
+
+if (featureWebhookUrl && !isDiscordWebhookUrl(featureWebhookUrl)) {
+  fail('DISCORD_FEATURE_WEBHOOK_URL does not look like a Discord webhook URL.');
+}
+
 if (!changelog && process.env.DISCORD_APK_SKIP_CHANGELOG !== '1') {
   fail(
     `Missing player changelog for ${packageInfo.version}. Add a ## ${packageInfo.version} section to ${DEFAULT_PLAYER_CHANGELOG_FILE}, set DISCORD_APK_CHANGELOG, or set DISCORD_APK_SKIP_CHANGELOG=1 only for internal testing.`,
   );
+}
+
+if (featureAnnouncement) {
+  const featureMessages = buildFeatureAnnouncementDiscordMessages({
+    version: packageInfo.version,
+    announcementText: featureAnnouncement.text,
+  });
+
+  for (const featureMessage of featureMessages) {
+    await postDiscordMessage(featureWebhookUrl, featureMessage, 'feature announcement');
+  }
+  console.log(`Posted feature announcement from ${featureAnnouncement.source} to Discord.`);
 }
 
 if (changelog) {
@@ -55,7 +86,7 @@ if (changelog) {
   });
 
   for (const changelogMessage of changelogMessages) {
-    await postDiscordMessage(webhookUrl, changelogMessage);
+    await postDiscordMessage(webhookUrl, changelogMessage, 'changelog');
   }
   console.log(`Posted player changelog from ${changelog.source} to Discord.`);
 }
@@ -82,7 +113,7 @@ if (!response.ok) {
 
 console.log(`Posted ${relative(apkPath)} to Discord (${formatBytes(apkStats.size)}).`);
 
-async function postDiscordMessage(url, content) {
+async function postDiscordMessage(url, content, label) {
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -93,7 +124,7 @@ async function postDiscordMessage(url, content) {
 
   const responseBody = await response.text();
   if (!response.ok) {
-    fail(`Discord changelog post failed: ${response.status} ${response.statusText}${responseBody ? `\n${responseBody}` : ''}`);
+    fail(`Discord ${label} post failed: ${response.status} ${response.statusText}${responseBody ? `\n${responseBody}` : ''}`);
   }
 }
 

@@ -56,9 +56,11 @@ export class TradeAllianceSubscriptionManager {
     this.connection = null;
     this.identityKey = '';
     this.publicDataActive = false;
+    this.questDataActive = false;
     this.tables = {};
     this.coreSubscriptions = [];
     this.publicSubscriptions = [];
+    this.questSubscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
   }
@@ -141,6 +143,7 @@ export class TradeAllianceSubscriptionManager {
       this.tables.rewards ? this.subscribeQuery(REWARDS_QUERY) : null,
     ].filter(Boolean);
     this.reconcilePublicDataSubscriptions();
+    this.reconcileQuestDataSubscriptions();
     this.publishFromTables();
   }
 
@@ -149,6 +152,7 @@ export class TradeAllianceSubscriptionManager {
     this.unbindTable(this.tables.chat);
     this.unbindTable(this.tables.rewards);
     this.teardownPublicDataSubscriptions();
+    this.teardownQuestDataSubscriptions();
 
     for (const subscription of this.coreSubscriptions) {
       if (!subscription.isEnded?.()) {
@@ -159,10 +163,12 @@ export class TradeAllianceSubscriptionManager {
     this.connection = null;
     this.identityKey = '';
     this.publicDataActive = false;
+    this.questDataActive = false;
     this.tables = {};
     this.queries = {};
     this.coreSubscriptions = [];
     this.publicSubscriptions = [];
+    this.questSubscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
 
@@ -173,6 +179,13 @@ export class TradeAllianceSubscriptionManager {
   setPublicDataActive(active = true) {
     this.publicDataActive = Boolean(active);
     this.reconcilePublicDataSubscriptions();
+    this.reconcileQuestDataSubscriptions();
+    this.publishFromTables();
+  }
+
+  setQuestDataActive(active = true) {
+    this.questDataActive = Boolean(active);
+    this.reconcileQuestDataSubscriptions();
     this.publishFromTables();
   }
 
@@ -240,13 +253,32 @@ export class TradeAllianceSubscriptionManager {
     this.bindTable(this.tables.alliances);
     this.bindTable(this.tables.members);
     this.bindTable(this.tables.applications);
-    this.bindTable(this.tables.quests);
-    this.bindTable(this.tables.contributions);
 
     this.publicSubscriptions = [
       this.tables.alliances ? this.subscribeQuery(this.queries.alliances) : null,
       this.tables.members ? this.subscribeQuery(this.queries.members) : null,
       this.tables.applications ? this.subscribeQuery(this.queries.applications) : null,
+    ].filter(Boolean);
+  }
+
+  reconcileQuestDataSubscriptions() {
+    if (!this.connection) {
+      return;
+    }
+
+    if (!this.shouldReadQuestData()) {
+      this.teardownQuestDataSubscriptions();
+      return;
+    }
+
+    if (this.questSubscriptions.length > 0) {
+      return;
+    }
+
+    this.bindTable(this.tables.quests);
+    this.bindTable(this.tables.contributions);
+
+    this.questSubscriptions = [
       this.tables.quests ? this.subscribeQuery(this.queries.quests) : null,
       this.tables.contributions ? this.subscribeQuery(this.queries.contributions) : null,
     ].filter(Boolean);
@@ -256,8 +288,6 @@ export class TradeAllianceSubscriptionManager {
     this.unbindTable(this.tables.alliances);
     this.unbindTable(this.tables.members);
     this.unbindTable(this.tables.applications);
-    this.unbindTable(this.tables.quests);
-    this.unbindTable(this.tables.contributions);
 
     for (const subscription of this.publicSubscriptions) {
       if (!subscription.isEnded?.()) {
@@ -266,6 +296,23 @@ export class TradeAllianceSubscriptionManager {
     }
 
     this.publicSubscriptions = [];
+  }
+
+  teardownQuestDataSubscriptions() {
+    this.unbindTable(this.tables.quests);
+    this.unbindTable(this.tables.contributions);
+
+    for (const subscription of this.questSubscriptions) {
+      if (!subscription.isEnded?.()) {
+        subscription.unsubscribe();
+      }
+    }
+
+    this.questSubscriptions = [];
+  }
+
+  shouldReadQuestData() {
+    return this.publicDataActive || this.questDataActive;
   }
 
   publishFromTables() {
@@ -303,7 +350,7 @@ export class TradeAllianceSubscriptionManager {
     const claimedQuestKeys = new Set(
       rewardInbox.map((reward) => this.getQuestClaimKey(reward.questId, reward.dayKey)),
     );
-    const quests = this.publicDataActive
+    const quests = this.shouldReadQuestData()
       ? this.readRows(this.tables.quests, (row) => {
           const quest = this.mapQuest(row);
           return {
@@ -316,9 +363,9 @@ export class TradeAllianceSubscriptionManager {
           }
 
           return left.questId.localeCompare(right.questId);
-        })
+      })
       : [];
-    const contributions = this.publicDataActive
+    const contributions = this.shouldReadQuestData()
       ? this.readRows(this.tables.contributions, (row) => this.mapContribution(row))
       : [];
     const allianceChatMessages = this.readRows(this.tables.chat, (row) => this.mapChat(row))

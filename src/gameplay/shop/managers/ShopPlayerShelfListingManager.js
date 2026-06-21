@@ -227,7 +227,7 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    this.goldFacade.add(safeGold);
+    this.goldFacade.add(safeGold, { trackGenerated: false });
 
     return {
       ok: true,

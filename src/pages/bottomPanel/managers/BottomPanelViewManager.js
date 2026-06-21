@@ -10,6 +10,11 @@ export const BOTTOM_PANEL_TABS = [
   { id: 'workshop', label: 'workshop' },
   { id: 'research', label: 'research' },
   { id: 'shop', label: 'market' },
+  { id: 'advancedBrewing', label: 'adv brewing' },
+  { id: 'advancedGarden', label: 'adv garden' },
+  { id: 'guild', label: 'guild' },
+  { id: 'quests', label: 'quests' },
+  { id: 'advancedMarket', label: 'adv market' },
 ];
 
 export class BottomPanelViewManager {

@@ -89,6 +89,7 @@ describe('PageNotificationStateManager', () => {
         garden: { active: false, children: { plots: false } },
         workshop: { active: false, children: { seeds: false, tasks: false, alliance: false } },
         research: { active: false, children: { research: false } },
+        guild: { active: false, children: {} },
         shop: {
           active: false,
           children: {

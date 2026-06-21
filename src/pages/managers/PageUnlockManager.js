@@ -16,6 +16,31 @@ export const PAGE_UNLOCK_REQUIREMENTS = {
     label: 'brewing',
     message: 'brewing unlocks at level 4',
   },
+  guild: {
+    requiredLevel: 15,
+    label: 'guild',
+    message: 'guild unlocks at level 15',
+  },
+  advancedBrewing: {
+    requiredLevel: 999,
+    label: 'advanced brewing',
+    message: 'advanced brewing is not ready yet',
+  },
+  advancedGarden: {
+    requiredLevel: 999,
+    label: 'advanced garden',
+    message: 'advanced garden is not ready yet',
+  },
+  quests: {
+    requiredLevel: 999,
+    label: 'quests',
+    message: 'quests are not ready yet',
+  },
+  advancedMarket: {
+    requiredLevel: 999,
+    label: 'advanced market',
+    message: 'advanced market is not ready yet',
+  },
 };
 
 export class PageUnlockManager {

@@ -4,7 +4,7 @@ export const DEFAULT_PLAYER_LEVEL_BALANCE = {
     "baseMaxManaCap": 50,
     "maxManaCapPerLevel": 50,
     "baseManaPerSecond": 1,
-    "manaPerSecondPerLevel": 1
+    "manaPerSecondPerLevel": 0.25
   },
   "crystal": {
     "perLevel": 1

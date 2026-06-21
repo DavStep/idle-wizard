@@ -33,7 +33,7 @@ export class ShopPageFacade {
     this.marketTabsManager = new ShopMarketTabsManager({
       gameplayFacade,
       playerShopFacade,
-      onActiveTabChange: () => this.renderActiveMarketTab(),
+      onActiveTabChange: () => this.onActiveMarketTabChange(),
     });
     this.shelfManager = new ShopShelfManager({
       gameplayFacade,
@@ -67,7 +67,6 @@ export class ShopPageFacade {
   }
 
   mount(stage) {
-    this.releasePlayerShopPublicData = this.playerShopFacade?.retainPublicData?.() ?? null;
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
@@ -98,6 +97,7 @@ export class ShopPageFacade {
     });
     this.goldOfferManager.mount(crystalsPanel);
     this.crystalOfferManager.mount(crystalsPanel, popupLayer);
+    this.syncPlayerShopPublicDataRetention();
   }
 
   unmount() {
@@ -117,6 +117,27 @@ export class ShopPageFacade {
     this.flyoutManager.unmount();
     this.marketTabsManager.unmount();
     this.roomViewManager.unmount();
+  }
+
+  onActiveMarketTabChange() {
+    this.syncPlayerShopPublicDataRetention();
+    this.renderActiveMarketTab();
+  }
+
+  syncPlayerShopPublicDataRetention() {
+    const shouldRetain = this.marketTabsManager.getActiveTabId() === 'player';
+
+    if (shouldRetain) {
+      if (!this.releasePlayerShopPublicData) {
+        const release = this.playerShopFacade?.retainPublicData?.() ?? null;
+        this.releasePlayerShopPublicData = typeof release === 'function' ? release : null;
+      }
+
+      return;
+    }
+
+    this.releasePlayerShopPublicData?.();
+    this.releasePlayerShopPublicData = null;
   }
 
   renderActiveMarketTab() {

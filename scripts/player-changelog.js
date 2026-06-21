@@ -5,35 +5,29 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export const DEFAULT_PLAYER_CHANGELOG_FILE = 'PLAYER_CHANGELOG.md';
+export const DEFAULT_FEATURE_ANNOUNCEMENT_FILE = 'FEATURE_ANNOUNCEMENT.md';
 export const DISCORD_CONTENT_LIMIT = 2000;
 
 export async function loadPlayerChangelog({ rootDir, version, env = process.env }) {
-  const envText = normalizeChangelogText(env.DISCORD_APK_CHANGELOG);
-  if (envText) {
-    return {
-      source: 'DISCORD_APK_CHANGELOG',
-      text: envText,
-    };
-  }
+  return loadVersionedReleaseText({
+    rootDir,
+    version,
+    envText: env.DISCORD_APK_CHANGELOG,
+    envTextSource: 'DISCORD_APK_CHANGELOG',
+    envFile: env.DISCORD_APK_CHANGELOG_FILE,
+    defaultFile: DEFAULT_PLAYER_CHANGELOG_FILE,
+  });
+}
 
-  const configuredFile = Boolean(env.DISCORD_APK_CHANGELOG_FILE);
-  const changelogFile = env.DISCORD_APK_CHANGELOG_FILE || DEFAULT_PLAYER_CHANGELOG_FILE;
-  const changelogPath = path.resolve(rootDir, changelogFile);
-  if (!existsSync(changelogPath)) {
-    return null;
-  }
-
-  const content = await readFile(changelogPath, 'utf8');
-  const sectionText = extractVersionChangelog(content, version);
-  const text = sectionText || (configuredFile ? normalizeChangelogText(content) : '');
-  if (!text) {
-    return null;
-  }
-
-  return {
-    source: path.relative(rootDir, changelogPath) || '.',
-    text,
-  };
+export async function loadFeatureAnnouncement({ rootDir, version, env = process.env }) {
+  return loadVersionedReleaseText({
+    rootDir,
+    version,
+    envText: env.DISCORD_FEATURE_ANNOUNCEMENT,
+    envTextSource: 'DISCORD_FEATURE_ANNOUNCEMENT',
+    envFile: env.DISCORD_FEATURE_ANNOUNCEMENT_FILE,
+    defaultFile: DEFAULT_FEATURE_ANNOUNCEMENT_FILE,
+  });
 }
 
 export function extractVersionChangelog(content, version) {
@@ -95,10 +89,62 @@ export function buildPlayerChangelogDiscordMessages({ version, changelogText }) 
   });
 }
 
+export function buildFeatureAnnouncementDiscordMessages({ version, announcementText }) {
+  const text = normalizeChangelogText(announcementText);
+  if (!text) {
+    return [];
+  }
+
+  const title = `Idle Wizard ${version} feature spotlight`;
+  const chunkLimit = DISCORD_CONTENT_LIMIT - title.length - 10;
+  const chunks = splitDiscordText(text, chunkLimit);
+
+  return chunks.map((chunk, index) => {
+    const header = chunks.length > 1 ? `${title} (${index + 1}/${chunks.length})` : title;
+    return `${header}\n${chunk}`;
+  });
+}
+
 export function normalizeChangelogText(text) {
   return String(text ?? '')
     .replace(/\r\n/g, '\n')
     .trim();
+}
+
+async function loadVersionedReleaseText({
+  rootDir,
+  version,
+  envText,
+  envTextSource,
+  envFile,
+  defaultFile,
+}) {
+  const normalizedEnvText = normalizeChangelogText(envText);
+  if (normalizedEnvText) {
+    return {
+      source: envTextSource,
+      text: normalizedEnvText,
+    };
+  }
+
+  const configuredFile = Boolean(envFile);
+  const releaseFile = envFile || defaultFile;
+  const releasePath = path.resolve(rootDir, releaseFile);
+  if (!existsSync(releasePath)) {
+    return null;
+  }
+
+  const content = await readFile(releasePath, 'utf8');
+  const sectionText = extractVersionChangelog(content, version);
+  const text = sectionText || (configuredFile ? normalizeChangelogText(content) : '');
+  if (!text) {
+    return null;
+  }
+
+  return {
+    source: path.relative(rootDir, releasePath) || '.',
+    text,
+  };
 }
 
 function splitDiscordText(text, maxLength) {

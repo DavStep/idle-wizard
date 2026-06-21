@@ -44,10 +44,15 @@ function createTable(rows) {
 
 function createConnection({
   listingsTable,
+  publicListingsTable = null,
+  ownListingsTable = null,
   publicRequestsTable = null,
   ownRequestsTable = null,
   proceedsTable,
+  ownProceedsTable = null,
   tradeHistoryTable = null,
+  tradeHistoryRecentTable = null,
+  ownTradeHistoryTable = null,
   failedQueries = [],
 }) {
   const subscriptions = [];
@@ -55,10 +60,15 @@ function createConnection({
   return {
     db: {
       playerShopListing: listingsTable,
+      ...(publicListingsTable ? { publicPlayerShopListing: publicListingsTable } : {}),
+      ...(ownListingsTable ? { ownPlayerShopListing: ownListingsTable } : {}),
       ...(publicRequestsTable ? { publicPlayerShopRequest: publicRequestsTable } : {}),
       ...(ownRequestsTable ? { ownPlayerShopRequest: ownRequestsTable } : {}),
       playerShopProceeds: proceedsTable,
+      ...(ownProceedsTable ? { ownPlayerShopProceeds: ownProceedsTable } : {}),
       ...(tradeHistoryTable ? { playerShopTrade: tradeHistoryTable } : {}),
+      ...(tradeHistoryRecentTable ? { playerShopTradeRecent: tradeHistoryRecentTable } : {}),
+      ...(ownTradeHistoryTable ? { ownPlayerShopTradeHistory: ownTradeHistoryTable } : {}),
     },
     subscriptions,
     subscriptionBuilder: () => ({
@@ -303,6 +313,44 @@ describe('PlayerShopSubscriptionManager', () => {
       `SELECT * FROM player_shop_listing WHERE "sellerIdentity" = 0x${identityHex}`,
       `SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" = 0x${identityHex}`,
       'SELECT * FROM player_shop_listing WHERE quantity > 0',
+    ]);
+  });
+
+  it('subscribes modern player-market views', () => {
+    const publicListingsTable = createTable([]);
+    const ownListingsTable = createTable([]);
+    const publicRequestsTable = createTable([]);
+    const ownRequestsTable = createTable([]);
+    const proceedsTable = createTable([]);
+    const ownProceedsTable = createTable([]);
+    const tradeHistoryTable = createTable([]);
+    const tradeHistoryRecentTable = createTable([]);
+    const ownTradeHistoryTable = createTable([]);
+    const connection = createConnection({
+      listingsTable: createTable([]),
+      publicListingsTable,
+      ownListingsTable,
+      publicRequestsTable,
+      ownRequestsTable,
+      proceedsTable,
+      ownProceedsTable,
+      tradeHistoryTable,
+      tradeHistoryRecentTable,
+      ownTradeHistoryTable,
+    });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.connect(connection, SELF_IDENTITY);
+    manager.setPublicDataActive(true);
+
+    expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
+      'SELECT * FROM own_player_shop_listing',
+      'SELECT * FROM own_player_shop_request',
+      'SELECT * FROM own_player_shop_proceeds',
+      'SELECT * FROM public_player_shop_listing',
+      'SELECT * FROM public_player_shop_request',
+      'SELECT * FROM player_shop_trade_recent',
+      'SELECT * FROM own_player_shop_trade_history',
     ]);
   });
 

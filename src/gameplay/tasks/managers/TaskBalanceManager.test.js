@@ -72,7 +72,7 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
-  it('uses one potion through target level 10', () => {
+  it('uses one potion through target level 10 with lighter direct herbs', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -82,14 +82,18 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level9-briar-seeds', itemKey: 'lavenderSeed', requiredQuantity: 100 },
-      { id: 'level9-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 80 },
-      { id: 'level9-glowcap-herb', itemKey: 'briarHerb', requiredQuantity: 40 },
-      { id: 'level9-calming-draught', itemKey: 'calmingDraught', requiredQuantity: 10 },
+      { id: 'level9-briar-seeds', itemKey: 'briarSeed', requiredQuantity: 100 },
+      { id: 'level9-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 58 },
+      { id: 'level9-glowcap-herb', itemKey: 'mintHerb', requiredQuantity: 29 },
+      {
+        id: 'level9-calming-draught',
+        itemKey: 'minorHealingPotion',
+        requiredQuantity: 13,
+      },
     ]);
   });
 
-  it('uses lower-medium target level 11 requirements with two potions', () => {
+  it('uses lower-medium target level 11 requirements with no repeated glowcap wall', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -99,11 +103,11 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level10-briar-ward', itemKey: 'nettleSeed', requiredQuantity: 132 },
-      { id: 'level10-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 99 },
-      { id: 'level10-glowcap-herb', itemKey: 'lavenderHerb', requiredQuantity: 66 },
-      { id: 'level10-calming-draught', itemKey: 'briarWard', requiredQuantity: 11 },
-      { id: 'level10-briar-seeds', itemKey: 'calmingDraught', requiredQuantity: 8 },
+      { id: 'level10-briar-ward', itemKey: 'lavenderSeed', requiredQuantity: 132 },
+      { id: 'level10-glowcap-seeds', itemKey: 'briarHerb', requiredQuantity: 71 },
+      { id: 'level10-glowcap-herb', itemKey: 'nettleHerb', requiredQuantity: 48 },
+      { id: 'level10-calming-draught', itemKey: 'briarWard', requiredQuantity: 14 },
+      { id: 'level10-briar-seeds', itemKey: 'nettleVigor', requiredQuantity: 10 },
     ]);
   });
 
@@ -117,12 +121,35 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { itemKey: 'moonflowerSeed', requiredQuantity: 2750 },
-      { itemKey: 'dragonpepperHerb', requiredQuantity: 1700 },
-      { itemKey: 'bloodroseHerb', requiredQuantity: 1300 },
-      { itemKey: 'dragonCourage', requiredQuantity: 200 },
-      { itemKey: 'pactWard', requiredQuantity: 150 },
+      { itemKey: 'dreambellSeed', requiredQuantity: 2750 },
+      { itemKey: 'starAniseHerb', requiredQuantity: 1224 },
+      { itemKey: 'dragonpepperHerb', requiredQuantity: 936 },
+      { itemKey: 'elixirOfLife', requiredQuantity: 250 },
+      { itemKey: 'pactWard', requiredQuantity: 188 },
     ]);
+  });
+
+  it('does not repeat exact requirement items on adjacent levels from target level 10 onward', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+    const levels = taskBalanceManager.getLevels();
+
+    for (let index = 1; index < levels.length; index += 1) {
+      const level = levels[index];
+
+      if (level.level < 9) {
+        continue;
+      }
+
+      const previousItemKeys = new Set(levels[index - 1].tasks.map((task) => task.itemKey));
+      const repeatedItemKeys = level.tasks
+        .map((task) => task.itemKey)
+        .filter((itemKey) => previousItemKeys.has(itemKey));
+
+      expect(
+        repeatedItemKeys,
+        `level ${levels[index - 1].level}->${level.level} repeats ${repeatedItemKeys.join(', ')}`,
+      ).toEqual([]);
+    }
   });
 
   it('does not repeat the same material set for three consecutive levels', () => {

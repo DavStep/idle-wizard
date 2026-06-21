@@ -37,7 +37,7 @@ describe('TradeAllianceActionManager', () => {
   it('returns known alliance chat failure reasons from reducer errors', async () => {
     const sendTradeAllianceChatMessage = vi
       .fn()
-      .mockRejectedValueOnce(new Error('World chat is globally rate limited.'))
+      .mockRejectedValueOnce(new Error('Alliance chat is globally rate limited.'))
       .mockRejectedValueOnce(new Error('Alliance chat requires membership.'))
       .mockRejectedValueOnce(new Error('Server maintenance is active.'));
     const manager = new TradeAllianceActionManager();

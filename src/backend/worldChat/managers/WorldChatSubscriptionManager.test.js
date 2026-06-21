@@ -153,6 +153,37 @@ describe('WorldChatSubscriptionManager', () => {
     });
   });
 
+  it('keeps only the newest 40 messages after sorting by send time', () => {
+    const rows = Array.from({ length: 45 }, (_, index) => {
+      const messageNumber = index + 1;
+      return {
+        messageId: `message-${messageNumber}`,
+        senderIdentity: `sender-${messageNumber}`,
+        username: 'Ada',
+        playerLevel: 2,
+        body: `message ${messageNumber}`,
+        sentAt: createTimestamp(messageNumber * 1_000),
+      };
+    }).reverse();
+    const table = createWorldChatTable(rows);
+    const manager = new WorldChatSubscriptionManager();
+
+    manager.connect(createConnection(table));
+
+    const messages = manager.getSnapshot().messages;
+    expect(messages).toHaveLength(40);
+    expect(messages[0]).toMatchObject({
+      id: 'message-6',
+      body: 'message 6',
+      sentAtMs: 6_000,
+    });
+    expect(messages.at(-1)).toMatchObject({
+      id: 'message-45',
+      body: 'message 45',
+      sentAtMs: 45_000,
+    });
+  });
+
   it('unsubscribes and clears snapshot on disconnect', () => {
     const table = createWorldChatTable([]);
     const connection = createConnection(table);

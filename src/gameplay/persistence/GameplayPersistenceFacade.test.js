@@ -32,6 +32,7 @@ function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}
     tasksFacade: resourceFacade,
     personalTasksFacade: resourceFacade,
     worldNoticeFacade: resourceFacade,
+    guildFacade: resourceFacade,
     now: () => 123,
     windowRef,
     documentRef,
@@ -102,7 +103,7 @@ describe('GameplayPersistenceFacade', () => {
 
     expect(storageManager.saveAndFlush).toHaveBeenCalledTimes(2);
     expect(storageManager.saveAndFlush.mock.calls[0][0]).toMatchObject({
-      version: 4,
+      version: 5,
       savedAt: 123,
     });
 

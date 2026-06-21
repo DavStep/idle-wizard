@@ -134,4 +134,20 @@ describe('ShopPlayerShelfListingManager', () => {
     });
     expect(spend).toHaveBeenCalledWith(2.25);
   });
+
+  it('adds player sale proceeds without generated-gold tracking', () => {
+    const add = vi.fn();
+    const manager = new ShopPlayerShelfListingManager({
+      goldFacade: { add },
+      itemsFacade: {},
+      shopSellKindManager: {},
+      shopPlayerShelfEntityManager: createPlayerShelfEntityManager(),
+    });
+
+    expect(manager.claimSaleProceeds(5)).toEqual({
+      ok: true,
+      gold: 5,
+    });
+    expect(add).toHaveBeenCalledWith(5, { trackGenerated: false });
+  });
 });

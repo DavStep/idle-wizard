@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.22
+
+- Added the Guild room at level 15, where players can sign a charter, hire adventurers, manage a request board, and follow guild logs.
+- Added guild applicants, adventurer detail popups, secretary upgrades, quest results, hospital/death outcomes, and guild page notifications.
+- Rebalanced later level requirements and mana regeneration so the midgame asks for a steadier mix of seeds, herbs, and potions.
+- Improved player market, alliance quest, and chat subscriptions so active views and notifications load the right server data with less background noise.
+- Added release feature-spotlight posting so large player-facing updates can be announced separately from the APK changelog.
+
 ## 0.2.21
 
 - Moved the Workshop task and notice character labels to align with the leaderboard, with the two characters stacked closer together.

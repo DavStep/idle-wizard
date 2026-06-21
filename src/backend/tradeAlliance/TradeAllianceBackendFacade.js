@@ -20,6 +20,7 @@ export class TradeAllianceBackendFacade {
       },
     });
     this.publicDataRetainCount = 0;
+    this.questDataRetainCount = 0;
   }
 
   setGameplayFacade(gameplayFacade) {
@@ -33,10 +34,13 @@ export class TradeAllianceBackendFacade {
   connect(connection, identity) {
     this.actionManager.connect(connection);
     this.subscriptionManager.connect(connection, identity);
+    this.subscriptionManager.setPublicDataActive(this.publicDataRetainCount > 0);
+    this.subscriptionManager.setQuestDataActive(this.questDataRetainCount > 0);
   }
 
   disconnect() {
     this.publicDataRetainCount = 0;
+    this.questDataRetainCount = 0;
     this.rewardManager.disconnect();
     this.subscriptionManager.disconnect();
     this.actionManager.disconnect();
@@ -63,6 +67,22 @@ export class TradeAllianceBackendFacade {
       released = true;
       this.publicDataRetainCount = Math.max(0, this.publicDataRetainCount - 1);
       this.subscriptionManager.setPublicDataActive(this.publicDataRetainCount > 0);
+    };
+  }
+
+  retainQuestData() {
+    this.questDataRetainCount += 1;
+    this.subscriptionManager.setQuestDataActive(true);
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.questDataRetainCount = Math.max(0, this.questDataRetainCount - 1);
+      this.subscriptionManager.setQuestDataActive(this.questDataRetainCount > 0);
     };
   }
 

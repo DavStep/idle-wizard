@@ -30,4 +30,13 @@ describe('getChatFailureReason', () => {
       'send_failed',
     );
   });
+
+  it('maps alliance chat rate-limit errors', () => {
+    expect(getChatFailureReason(new Error('Alliance chat is rate limited.'))).toBe(
+      'rate_limited',
+    );
+    expect(
+      getChatFailureReason(new Error('Alliance chat is globally rate limited.')),
+    ).toBe('global_rate_limited');
+  });
 });

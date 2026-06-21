@@ -16,8 +16,8 @@ export class GoldFacade {
     this.goldEntityManager.initialize(ecsManagers);
   }
 
-  add(amount) {
-    this.goldEntityManager.addCurrent(amount);
+  add(amount, options) {
+    this.goldEntityManager.addCurrent(amount, options);
   }
 
   spend(amount) {
@@ -38,9 +38,7 @@ export class GoldFacade {
     }
 
     if (Number.isFinite(snapshot.totalGenerated)) {
-      this.goldEntityManager.setTotalGenerated(
-        Math.max(snapshot.totalGenerated, this.goldEntityManager.getCurrent()),
-      );
+      this.goldEntityManager.setTotalGenerated(snapshot.totalGenerated);
       return;
     }
 

@@ -207,12 +207,12 @@ function createGameplayFacadeFake() {
             maxNpcMarketStands: 1,
             maxPlayerMarketStands: 1,
             maxManaCap: 100,
-            manaPerSecond: 2,
+            manaPerSecond: 1.25,
           },
           effects: [
             'max garden tiles 3',
             'max mana cap 100',
-            'mana regen 2/sec',
+            'mana regen 1.25/sec',
             'crystal reward 1',
           ],
         },
@@ -226,13 +226,13 @@ function createGameplayFacadeFake() {
             maxNpcMarketStands: 2,
             maxPlayerMarketStands: 2,
             maxManaCap: 150,
-            manaPerSecond: 3,
+            manaPerSecond: 1.5,
           },
           effects: [
             'max npc market stands 2',
             'max player market stands 2',
             'max mana cap 150',
-            'mana regen 3/sec',
+            'mana regen 1.5/sec',
             'crystal reward 1',
           ],
         },
@@ -3577,7 +3577,18 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__summon-message')).toBeNull();
     expect(
       [...stage.querySelectorAll('.room-bottom-panel__tab')].map((button) => button.textContent),
-    ).toEqual(['brewing', 'garden', 'workshop', 'research', 'market']);
+    ).toEqual([
+      'brewing',
+      'garden',
+      'workshop',
+      'research',
+      'market',
+      'adv brewing',
+      'adv garden',
+      'guild',
+      'quests',
+      'adv market',
+    ]);
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'workshop',
     );
@@ -3700,6 +3711,69 @@ describe('PagesFacade', () => {
     pagesFacade.unmount();
 
     expect(releasePrices).toHaveBeenCalledTimes(1);
+  });
+
+  it('retains public player-market rows only while player market tab is open', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const releasePublicData = vi.fn();
+    const playerShopSnapshot = {
+      connected: true,
+      listings: [],
+      ownListings: [],
+      requests: [],
+      ownRequests: [],
+      tradeHistory: [],
+      ownTradeHistory: [],
+      proceedsGold: 0,
+    };
+    const playerShopFacade = {
+      getSnapshot: () => playerShopSnapshot,
+      subscribe: vi.fn((listener) => {
+        listener(playerShopSnapshot);
+        return () => {};
+      }),
+      retainPublicData: vi.fn(() => releasePublicData),
+    };
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      playerShopFacade,
+    });
+
+    pagesFacade.mount(stage);
+
+    expect(playerShopFacade.retainPublicData).not.toHaveBeenCalled();
+
+    clickRoomTab(stage, 'shop');
+
+    expect(playerShopFacade.retainPublicData).not.toHaveBeenCalled();
+
+    [...stage.querySelectorAll('.shop-page__market-tab-button')]
+      .find((button) => button.textContent === 'player market')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerShopFacade.retainPublicData).toHaveBeenCalledTimes(1);
+
+    [...stage.querySelectorAll('.shop-page__market-tab-button')]
+      .find((button) => button.textContent === 'npc market')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(releasePublicData).toHaveBeenCalledTimes(1);
+
+    [...stage.querySelectorAll('.shop-page__market-tab-button')]
+      .find((button) => button.textContent === 'player market')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerShopFacade.retainPublicData).toHaveBeenCalledTimes(2);
+
+    clickRoomTab(stage, 'workshop');
+
+    expect(releasePublicData).toHaveBeenCalledTimes(2);
+
+    pagesFacade.unmount();
+
+    expect(releasePublicData).toHaveBeenCalledTimes(2);
   });
 
   it('reveals Workshop non-prestige secondary buttons by milestone level', () => {
@@ -4196,7 +4270,7 @@ describe('PagesFacade', () => {
     ).toContain('mana cap+50');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana regen+1/sec');
+    ).toContain('mana regen+0.25/sec');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
     ).toContain('crystal+1');
@@ -4208,7 +4282,7 @@ describe('PagesFacade', () => {
     ).toContain('mana cap100');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana regen2/sec');
+    ).toContain('mana regen1.25/sec');
 
     levelPopup
       .querySelector('.room-top-panel__level-pager-button:last-child')
@@ -5478,7 +5552,7 @@ describe('PagesFacade', () => {
       ['unlocks', 'garden'],
       ['garden plots', '+1'],
       ['mana cap', '+50'],
-      ['mana regen', '+1/sec'],
+      ['mana regen', '+0.25/sec'],
       ['crystal', '+1'],
     ]);
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
@@ -5490,7 +5564,7 @@ describe('PagesFacade', () => {
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
     expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
-      'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +1/sec mana regen, +1 crystal',
+      'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +0.25/sec mana regen, +1 crystal',
     );
   });
 
@@ -6693,12 +6767,22 @@ describe('PagesFacade', () => {
     ]);
     expect(popup.textContent).toContain('1 point earned');
     expect(popup.textContent).toContain('plot 11 capacity');
-    expect(popup.textContent).toContain('plot 12 capacity, cauldron 6 capacity');
-    expect(popup.querySelector('.workshop-page__prestige-point-row')?.textContent).toContain(
-      'unlocked',
+    const pointRows = [...popup.querySelectorAll('.workshop-page__prestige-point-row')];
+    expect(pointRows[0]?.querySelector('.workshop-page__prestige-point-count')?.textContent).toBe(
+      '★1 point',
+    );
+    expect(pointRows[0]?.textContent).toContain('unlocked');
+    expect(pointRows[1]?.querySelector('.workshop-page__prestige-point-count')?.textContent).toBe(
+      '★★2 points',
     );
     expect(
-      popup.querySelectorAll('.workshop-page__prestige-point-row')[1]?.textContent,
+      [...pointRows[1].querySelectorAll('.workshop-page__prestige-point-reward-row')].map(
+        (row) => row.textContent,
+      ),
+    ).toEqual(['- plot 12 capacity', '- cauldron 6 capacity']);
+    expect(pointRows[1]?.textContent).not.toContain(',');
+    expect(
+      pointRows[1]?.textContent,
     ).toContain('next');
   });
 

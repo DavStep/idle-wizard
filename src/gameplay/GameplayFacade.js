@@ -3,6 +3,7 @@ import { BrewingFacade } from './brewing/BrewingFacade.js';
 import { CrystalFacade } from './crystal/CrystalFacade.js';
 import { GoldFacade } from './gold/GoldFacade.js';
 import { GardenFacade } from './garden/GardenFacade.js';
+import { GuildFacade } from './guild/GuildFacade.js';
 import { ItemsFacade } from './items/ItemsFacade.js';
 import { ManaFacade } from './mana/ManaFacade.js';
 import { GameplayRewardEventManager } from './managers/GameplayRewardEventManager.js';
@@ -80,6 +81,13 @@ export class GameplayFacade {
       tasksFacade: this.tasksFacade,
       now: persistenceNow,
     });
+    this.guildFacade = new GuildFacade({
+      goldFacade: this.goldFacade,
+      itemsFacade: this.itemsFacade,
+      playerLevelFacade: this.playerLevelFacade,
+      worldNoticeFacade: this.worldNoticeFacade,
+      now: persistenceNow,
+    });
     this.levelUpCrystalRewardManager = new LevelUpCrystalRewardManager({
       crystalFacade: this.crystalFacade,
       playerLevelFacade: this.playerLevelFacade,
@@ -146,6 +154,7 @@ export class GameplayFacade {
       tasksFacade: this.tasksFacade,
       personalTasksFacade: this.personalTasksFacade,
       worldNoticeFacade: this.worldNoticeFacade,
+      guildFacade: this.guildFacade,
       now: persistenceNow,
     });
     this.potionDiscoveryFacade = null;
@@ -486,6 +495,7 @@ export class GameplayFacade {
         periods: {},
       },
       worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),
+      guild: this.guildFacade.getPersistenceSnapshot(),
     });
     this.syncPlayerLevelManaEffects();
     this.syncRubyFromPrestige();
@@ -603,6 +613,42 @@ export class GameplayFacade {
 
   donateWorldNoticeGold(requestId) {
     const result = this.worldNoticeFacade.donateGold(requestId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  createGuild(profile) {
+    const result = this.guildFacade.createGuild(profile);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  updateGuildProfile(profile) {
+    const result = this.guildFacade.updateGuildProfile(profile);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  hireGuildApplicant(applicantId) {
+    const result = this.guildFacade.hireApplicant(applicantId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  fireGuildAdventurer(adventurerId) {
+    const result = this.guildFacade.fireAdventurer(adventurerId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  removeGuildRequest(requestId) {
+    const result = this.guildFacade.removeRequest(requestId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  upgradeGuildSecretary() {
+    const result = this.guildFacade.upgradeSecretary();
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -1099,6 +1145,7 @@ export class GameplayFacade {
       ...this.seedSummoningFacade.getSnapshot(),
       autoSummoning: automation.seedSummoning,
     };
+    const guild = this.guildFacade.getSnapshot();
 
     const snapshot = {
       mana: this.manaFacade.getSnapshot(),
@@ -1119,6 +1166,7 @@ export class GameplayFacade {
       tasks: this.tasksFacade.getSnapshot(),
       personalTasks: this.personalTasksFacade.getSnapshot(),
       worldNotice: this.worldNoticeFacade.getSnapshot(),
+      guild,
       prestige: this.prestigeFacade.getSnapshot(),
       research: this.researchFacade.getSnapshot(),
       visualSettings: this.visualSettingsFacade.getSnapshot(),
@@ -1206,6 +1254,7 @@ export class GameplayFacade {
       manaCurrent: Math.floor(Number(mana.current) || 0),
       manaCap: Number(mana.cap) || 0,
       manaPerSecond: Number(mana.perSecond) || 0,
+      guild: this.guildFacade.getFrameSnapshotKey(),
     });
   }
 

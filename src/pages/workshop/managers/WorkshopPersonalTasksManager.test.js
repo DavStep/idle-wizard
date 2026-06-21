@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WorkshopPersonalTasksManager } from './WorkshopPersonalTasksManager.js';
@@ -88,6 +90,19 @@ function createGameplayFacadeFake(snapshot = createPersonalTasksSnapshot()) {
 }
 
 describe('WorkshopPersonalTasksManager', () => {
+  it('keeps the dialog width matched to the shared tabbed popup width', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const panelRule = baseCss.match(
+      /\.workshop-page__personal-tasks-panel\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const dialogRule = baseCss.match(
+      /\.style-dialog\.workshop-page__personal-tasks-dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(panelRule).toMatch(/\bwidth:\s*var\(--style-tabbed-dialog-width\);/);
+    expect(dialogRule).toMatch(/\bwidth:\s*260px;/);
+  });
+
   it('renders the unlocked character button and popup task rows', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopPersonalTasksManager({ gameplayFacade });

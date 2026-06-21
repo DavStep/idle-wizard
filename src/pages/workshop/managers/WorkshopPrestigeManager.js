@@ -14,6 +14,7 @@ const PRESTIGE_TABS = [
   { id: 'points', label: 'points' },
 ];
 
+const PRESTIGE_POINT_STAR = '★';
 const PRESTIGE_POINT_REWARDS = createPrestigePointRewards();
 
 function createPrestigePointRewards() {
@@ -298,8 +299,10 @@ export class WorkshopPrestigeManager {
 
     if (this.selectedTabId === 'points') {
       const completedCount = this.getCompletedPrestigeCount(prestige);
-      this.refs.summary.textContent =
-        `${completedCount} ${this.pluralize(completedCount, 'point')} earned`;
+      this.refs.summary.replaceChildren(
+        this.createPrestigePointCount(completedCount),
+        document.createTextNode(' earned'),
+      );
       setResourceColor(this.refs.summary, null);
       return;
     }
@@ -360,19 +363,48 @@ export class WorkshopPrestigeManager {
     row.className = 'workshop-page__prestige-point-row';
     row.classList.toggle('is-locked', pointReward.count > completedCount + 1);
 
-    const count = document.createElement('span');
-    count.className = 'workshop-page__prestige-point-count';
-    count.textContent = `${pointReward.count} ${this.pluralize(pointReward.count, 'point')}`;
+    const count = this.createPrestigePointCount(pointReward.count);
 
-    const reward = document.createElement('span');
+    const reward = document.createElement('div');
     reward.className = 'workshop-page__prestige-point-reward';
-    reward.textContent = pointReward.rewards.join(', ');
+    reward.replaceChildren(
+      ...pointReward.rewards.map((label) => this.createPointRewardLine(label)),
+    );
 
     const status = document.createElement('span');
     status.className = 'workshop-page__prestige-point-status';
     status.textContent = this.getPointRewardStatus(pointReward.count, completedCount);
 
-    row.append(count, reward, status);
+    row.append(count, status, reward);
+    return row;
+  }
+
+  createPrestigePointCount(count) {
+    const safeCount = Math.max(0, Math.floor(Number(count) || 0));
+    const root = document.createElement('span');
+    root.className = 'workshop-page__prestige-point-count';
+    root.setAttribute(
+      'aria-label',
+      `${safeCount} ${this.pluralize(safeCount, 'point')}`,
+    );
+
+    const stars = document.createElement('span');
+    stars.className = 'workshop-page__prestige-point-stars';
+    stars.setAttribute('aria-hidden', 'true');
+    stars.textContent = PRESTIGE_POINT_STAR.repeat(safeCount);
+
+    const number = document.createElement('span');
+    number.className = 'workshop-page__prestige-point-number';
+    number.textContent = `${safeCount} ${this.pluralize(safeCount, 'point')}`;
+
+    root.append(stars, number);
+    return root;
+  }
+
+  createPointRewardLine(label) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__prestige-point-reward-row';
+    row.textContent = `- ${label}`;
     return row;
   }
 

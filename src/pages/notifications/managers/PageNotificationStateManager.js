@@ -22,6 +22,7 @@ export class PageNotificationStateManager {
       workshop: this.getWorkshopPage(snapshot, tradeAllianceSnapshot),
       research: this.getResearchPage(snapshot),
       shop: this.getShopPage(snapshot, playerShopSnapshot),
+      guild: this.getGuildPage(snapshot),
     };
 
     return {
@@ -107,6 +108,20 @@ export class PageNotificationStateManager {
         playerShop.connected === true &&
         hasListingForOwnPlayerRequest(playerShop, snapshot.gold?.current),
       crystals: shop.goldOffer?.canCollect === true,
+    });
+  }
+
+  getGuildPage(snapshot) {
+    const notifications = snapshot.guild?.notifications;
+
+    if (!notifications?.active) {
+      return this.createPage({});
+    }
+
+    return this.createPage({
+      guild: notifications.tone === NOTIFICATION_TONE_RED
+        ? NOTIFICATION_TONE_RED
+        : NOTIFICATION_TONE_ORANGE,
     });
   }
 

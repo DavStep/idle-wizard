@@ -45,6 +45,7 @@
 - Weekly events should be framed as `weekly world notice` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
+- Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
 - Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, and earn, not random chores pasted under a headline.
 - Weekly event direct coin funding feels like a quest tax unless strongly justified; prefer contextual normal-loop asks and keep any coin ask small/rare.
@@ -52,8 +53,10 @@
 - Weekly event resolution should avoid hard fail: the world resolves, and player contribution changes weak/decent/strong outcome text plus archive/history flavor.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
+- Player market proceeds add spendable gold only; do not increase `gold.totalGenerated` or leaderboard income from player-to-player trades.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
+- Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
@@ -159,6 +162,7 @@
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
+- Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from config level 9 onward, adjacent rows should not reuse exact requirement item keys.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
 - Workshop task drag-sort thresholds must compare the lifted row center, not pointer Y; grab offset otherwise makes rows swap too early or late.
@@ -202,12 +206,15 @@
 - Android WebView press feedback should not rely on CSS `:active` alone; mirror it with a pointer-driven `.is-pressing` class for stable touch scale.
 - Android WebView touch actions should activate from validated `pointerup` and suppress the following native click; long holds can otherwise show press feedback but drop the action.
 - When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
+- New client-owned gameplay save branches must be added to `normalizePlayerGameplaySave`; otherwise SpacetimeDB rewrites the save without that branch on server round-trip.
 - Local app DB name can come from `.env.local`, while SpacetimeDB CLI defaults to `spacetime.json`; use `--no-config` or the env database name when querying/publishing Codex local DBs.
 - SpacetimeDB SQL does not support `IN (SELECT ...)` subqueries; filtered maintenance deletes need reducer-side identity collection.
+- SpacetimeDB subscription SQL supports only `SELECT * FROM ... WHERE ...`; put public row caps in server views, not `ORDER BY`/`LIMIT` client subscriptions.
 - When live maintenance needs a backend reducer while the worktree has unrelated backend edits, publish a temporary module from a clean base plus only the maintenance patch.
 - Signed release APK handoff files should be named `idle-wizard-<package-version>-release.apk`; unsigned release APKs keep `-unsigned` in the filename.
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
+- Release process must inspect recent logs/changelog/git changes for big player-facing features like guilds, advanced brewing/gardening, events, or daily/weekly quests; when present, post a separate friendly feature spotlight through `DISCORD_FEATURE_WEBHOOK_URL` that explains what it is and how it works without number-heavy balance details.
 - User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
 - Live browser/tutorial QA on the shared dev server can hit the `server required` single-account gate after reload if another client owns the session; close the other client or use a fresh local session before screenshot work.
 - When the shared single-account gate blocks local UI QA, mount the affected facade in a temporary localhost HTML harness instead of clearing browser storage or touching the live player save.
@@ -302,8 +309,10 @@
 - Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
 - For Pixel/WebView perf checks, keep the phone awake and profile CPU: Android adaptive refresh can make raw rAF look capped when static, while full gameplay snapshot construction can still be the actual hot path.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
+- World chat recent views and pruning must sort by `sentAt` plus `messageId` before slicing/deleting; relying on index iteration order can drop fresh messages once the 200-row cap is reached.
 - The shared Workshop chat popup multiplexes world/alliance chat; world sends call `sendMessage`, alliance sends call `sendChatMessage`.
 - World/alliance chat send reducers can reject for rate, level-sync, session, membership, or maintenance reasons; backend managers should preserve those reasons so the shared popup can show specific status text instead of a vague failure.
+- World chat user rate limits should ignore `system` rows, and alliance chat should rate-limit only against the sender's own alliance chat rows.
 - World chat can have live preview data while still hidden/disabled by the level-3 Workshop secondary-action gate or first-run account gate; check those before debugging transport.
 - World chat sends must wait for backend player-level sync before calling `send_world_chat_message`; the reducer gates on server `player.playerLevel`, not just local Workshop unlock state.
 - Explicit pre-chat player-level flushes must requeue the current gameplay snapshot level even if observers already saw that value; otherwise stale server `playerLevel` can reject unlocked chat sends.
@@ -672,6 +681,7 @@
 - Trade alliance contribution lookups must include alliance id, quest id, period key, and contributor identity; same-week progress in another alliance locks quest participation until reset or rejoin.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
 - Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
+- Level-up and prestige system chat announcements should bypass normal user-message rate limits; their duplicate guards are the cap, and chat traffic must not hide progression notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
@@ -684,6 +694,7 @@
 - Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.
 - Cauldron unlocks must be bought one at a time; level milestones only raise the max purchasable cauldron cap, never bulk-unlock cauldrons.
 - Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror the client bootstrap default; hosted `game_config.playerLevel` can override milestones.
+- Player-level balance changes that should affect hosted rows need a keyed backend backfill; changing only defaults leaves existing `game_config.playerLevel` rows untouched.
 - Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
 - Player level-up crystal rewards also come from `game_config.playerLevel`; level 1 start does not grant the reward.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.

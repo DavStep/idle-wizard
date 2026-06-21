@@ -28,9 +28,12 @@ To post a debug APK to Discord after building, add a Discord channel webhook URL
 
 ```sh
 DISCORD_APK_WEBHOOK_URL=https://discord.com/api/webhooks/...
+DISCORD_FEATURE_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
 Add player-facing notes for the current `package.json` version to `PLAYER_CHANGELOG.md` before posting. The Discord script posts that changelog first, then uploads the APK. For one-off internal APK tests, set `DISCORD_APK_SKIP_CHANGELOG=1`.
+
+For releases, also inspect recent logs, changelog notes, and git changes for a large player-facing feature such as guilds, advanced potion brewing, advanced gardening, event modes, or daily/weekly quests. When one exists, add a player-friendly `## <version>` section to `FEATURE_ANNOUNCEMENT.md` or set `DISCORD_FEATURE_ANNOUNCEMENT="..."`. Explain what the feature is and how it works, keep the tone friendly, and avoid balance-heavy numbers. The Discord script posts that feature spotlight to `DISCORD_FEATURE_WEBHOOK_URL` as a separate message before the normal changelog/APK post. For one-off internal APK tests, set `DISCORD_FEATURE_SKIP=1`.
 
 Then run:
 
@@ -49,6 +52,8 @@ It runs lint, tests, production web build, production debug-signed APK build, op
 For a manually signed APK, run `npm run discord:postApk -- path/to/app.apk`. The script refuses `unsigned` APK filenames unless `DISCORD_APK_ALLOW_UNSIGNED=1` is set.
 
 You can override the posted notes with `DISCORD_APK_CHANGELOG="..."` or `DISCORD_APK_CHANGELOG_FILE=path/to/notes.md`.
+
+You can override the feature spotlight with `DISCORD_FEATURE_ANNOUNCEMENT="..."` or `DISCORD_FEATURE_ANNOUNCEMENT_FILE=path/to/feature-notes.md`.
 
 In a dev build, open the browser console:
 

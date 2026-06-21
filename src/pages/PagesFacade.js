@@ -1,6 +1,7 @@
 import { BrewingPageFacade } from './brewing/BrewingPageFacade.js';
 import { AllianceInfoDialogFacade } from './allianceInfo/AllianceInfoDialogFacade.js';
 import { GardenPageFacade } from './garden/GardenPageFacade.js';
+import { GuildPageFacade } from './guild/GuildPageFacade.js';
 import { ShopPageFacade } from './shop/ShopPageFacade.js';
 import { ResearchPageFacade } from './research/ResearchPageFacade.js';
 import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
@@ -22,6 +23,7 @@ import { PressFeedbackManager } from './managers/PressFeedbackManager.js';
 import { ScrollCueManager } from './managers/ScrollCueManager.js';
 
 const FTUE_ENABLED = true;
+const SWIPE_PAGE_IDS = ['brewing', 'garden', 'workshop', 'research', 'shop'];
 
 export class PagesFacade {
   static explain =
@@ -150,6 +152,12 @@ export class PagesFacade {
       }),
     );
     this.registryManager.register(
+      'guild',
+      new GuildPageFacade({
+        gameplayFacade,
+      }),
+    );
+    this.registryManager.register(
       'shop',
       new ShopPageFacade({
         gameplayFacade,
@@ -247,7 +255,9 @@ export class PagesFacade {
       .filter((page) => page.unlocked)
       .map((page) => page.id);
     this.bottomPanelFacade.setPageStates(this.pageStates);
-    this.swipeNavigationManager.setPageOrder(this.pageStates.map((page) => page.id));
+    this.swipeNavigationManager.setPageOrder(
+      this.pageStates.map((page) => page.id).filter((pageId) => SWIPE_PAGE_IDS.includes(pageId)),
+    );
 
     if (this.unlockedPageIds.includes(this.getCurrentPageId())) {
       this.syncNpcMarketPriceSubscription();
