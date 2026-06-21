@@ -125,7 +125,7 @@
     calc(var(--app-stage-width, 100vw) * 0.078),
     84px
   );
-  --style-room-chat-bottom: 120px;
+  --style-room-chat-bottom: 101px;
   --style-room-chat-source-height: calc(
     (
         var(--style-world-chat-row-height) *
@@ -3282,7 +3282,7 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  top: calc(var(--style-room-content-top) + 258px);
+  top: calc(var(--style-room-content-top) + 240px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
@@ -4448,6 +4448,14 @@ body {
 }
 
 .workshop-page__personal-task-reward {
+  font-size: var(--style-tiny-font-size);
+}
+
+.style-button.workshop-page__personal-task-claim {
+  width: auto;
+  min-width: 52px;
+  padding: 1px 4px;
+  margin: 0;
   font-size: var(--style-tiny-font-size);
 }
 

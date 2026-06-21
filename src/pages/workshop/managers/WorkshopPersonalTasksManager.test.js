@@ -77,6 +77,8 @@ function createGameplayFacadeFake(snapshot = createPersonalTasksSnapshot()) {
   let listener = null;
 
   return {
+    claimPersonalTaskFullClearReward: vi.fn(),
+    claimPersonalTaskReward: vi.fn(),
     getSnapshot: vi.fn(() => currentSnapshot),
     subscribe: vi.fn((callback) => {
       listener = callback;
@@ -246,6 +248,49 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(parent.querySelector('.workshop-page__personal-tasks').hidden).toBe(true);
     expect(popupParent.querySelector('.workshop-page__personal-tasks-popup').hidden).toBe(
       true,
+    );
+  });
+
+  it('renders claim buttons and notifications for claimable rewards', () => {
+    const snapshot = createPersonalTasksSnapshot();
+    const claimableTask = snapshot.personalTasks.daily.tasks[1];
+    claimableTask.completed = true;
+    claimableTask.progressQuantity = claimableTask.requiredQuantity;
+    claimableTask.rewardClaimed = false;
+    claimableTask.rewardClaimable = true;
+    snapshot.personalTasks.daily.completedTasks = 2;
+    snapshot.personalTasks.daily.claimableRewards = 1;
+    snapshot.personalTasks.daily.hasClaimableRewards = true;
+    snapshot.personalTasks.claimableRewards = 1;
+    snapshot.personalTasks.hasClaimableRewards = true;
+
+    const gameplayFacade = createGameplayFacadeFake(snapshot);
+    const manager = new WorkshopPersonalTasksManager({ gameplayFacade });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    manager.mount(parent, popupParent);
+
+    const openButton = parent.querySelector('.workshop-page__personal-tasks-open');
+    expect(openButton?.dataset.notification).toBe('true');
+
+    openButton.click();
+
+    const popup = popupParent.querySelector('.workshop-page__personal-tasks-popup');
+    const dailyTab = popup.querySelector(
+      '.workshop-page__personal-tasks-tab-button[aria-selected="true"]',
+    );
+    const claimButton = popup.querySelector('.workshop-page__personal-task-claim');
+
+    expect(dailyTab?.dataset.notification).toBe('true');
+    expect(claimButton?.textContent).toBe('claim');
+    expect(claimButton?.dataset.notification).toBe('true');
+
+    claimButton.click();
+
+    expect(gameplayFacade.claimPersonalTaskReward).toHaveBeenCalledWith(
+      'daily',
+      claimableTask.taskId,
     );
   });
 });

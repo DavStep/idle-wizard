@@ -37,6 +37,7 @@ export class PageNotificationStateManager {
       tasks: (snapshot.tasks?.level?.tasks ?? []).some(
         (task) => task.canFill === true || task.canComplete === true,
       ),
+      personalTasks: hasClaimablePersonalTaskReward(snapshot),
       alliance: getTradeAllianceQuestNotification(snapshot, tradeAlliance),
     });
   }
@@ -175,6 +176,27 @@ export function getTradeAllianceQuestNotification(
   }
 
   return hasClaimableTradeAllianceQuest(tradeAllianceSnapshot);
+}
+
+export function hasClaimablePersonalTaskReward(snapshot = {}) {
+  const personalTasks = snapshot.personalTasks;
+
+  if (personalTasks?.unlocked !== true) {
+    return false;
+  }
+
+  if (Math.max(0, Math.floor(Number(personalTasks.claimableRewards) || 0)) > 0) {
+    return true;
+  }
+
+  return ['daily', 'weekly'].some((periodType) => {
+    const period = personalTasks[periodType];
+
+    return (
+      period?.fullClearRewardClaimable === true ||
+      (period?.tasks ?? []).some((task) => task.rewardClaimable === true)
+    );
+  });
 }
 
 export function getResearchTabs(snapshot) {

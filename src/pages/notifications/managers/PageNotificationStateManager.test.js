@@ -87,7 +87,10 @@ describe('PageNotificationStateManager', () => {
       pages: {
         brewing: { active: false, children: { herbs: false, action: false, cauldron: false } },
         garden: { active: false, children: { plots: false } },
-        workshop: { active: false, children: { seeds: false, tasks: false, alliance: false } },
+        workshop: {
+          active: false,
+          children: { seeds: false, tasks: false, personalTasks: false, alliance: false },
+        },
         research: { active: false, children: { research: false } },
         guild: { active: false, children: {} },
         shop: {
@@ -214,6 +217,38 @@ describe('PageNotificationStateManager', () => {
       tone: 'red',
       children: {
         alliance: true,
+      },
+    });
+  });
+
+  it('rolls claimable personal task rewards up to the workshop page', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.personalTasks = {
+      unlocked: true,
+      claimableRewards: 1,
+      daily: {
+        claimableRewards: 1,
+        tasks: [
+          {
+            completed: true,
+            rewardClaimed: false,
+            rewardClaimable: true,
+          },
+        ],
+      },
+      weekly: {
+        claimableRewards: 0,
+        tasks: [],
+      },
+    };
+
+    expect(manager.getSnapshot(snapshot).pages.workshop).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        personalTasks: true,
       },
     });
   });

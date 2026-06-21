@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.24
+
+- Changed personal daily and weekly task rewards so completed goals wait to be claimed instead of paying out instantly.
+- Added clearer claimable reward indicators for personal tasks, including full daily or weekly completion rewards.
+- Lowered many level-up task quantities so Workshop progression asks for less grinding across early and later levels.
+- Tightened the Workshop personal task popup so completed, claimable, and claimed rows read cleaner on mobile.
+
 ## 0.2.23
 
 - Improved Guild forms so charter and settings edits stay in place while the game refreshes in the background.

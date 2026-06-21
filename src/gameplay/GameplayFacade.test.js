@@ -383,15 +383,16 @@ describe('GameplayFacade', () => {
   it('fills tasks from inventory and advances player level after gold payment', () => {
     const { gameplayFacade } = createGameplay();
     const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
+    const partialQuantity = task.requiredQuantity - 1;
 
     expect(gameplayFacade.getSnapshot().tasks.maxLevel).toBe(100);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(1);
-    gameplayFacade.itemsFacade.addItem(task.itemTypeId, 4);
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, partialQuantity);
 
     expect(gameplayFacade.fillTask(task.taskId)).toMatchObject({
       ok: true,
-      quantity: 4,
-      progressQuantity: 4,
+      quantity: partialQuantity,
+      progressQuantity: partialQuantity,
       requiredQuantity: task.requiredQuantity,
       maxed: false,
     });
@@ -406,7 +407,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.fillTask(task.taskId)).toMatchObject({
       ok: true,
-      quantity: task.requiredQuantity - 4,
+      quantity: task.requiredQuantity - partialQuantity,
       progressQuantity: task.requiredQuantity,
       maxed: true,
     });
@@ -462,7 +463,8 @@ describe('GameplayFacade', () => {
 
     finishCurrentTaskLevel(first.gameplayFacade);
     const [task] = first.gameplayFacade.getSnapshot().tasks.level.tasks;
-    first.gameplayFacade.itemsFacade.addItem(task.itemTypeId, 3);
+    const partialQuantity = task.requiredQuantity - 1;
+    first.gameplayFacade.itemsFacade.addItem(task.itemTypeId, partialQuantity);
     first.gameplayFacade.fillTask(task.taskId);
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
@@ -473,7 +475,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.tasks.currentLevel).toBe(2);
     expect(snapshot.tasks.level.tasks[0]).toMatchObject({
       taskId: task.taskId,
-      progressQuantity: 3,
+      progressQuantity: partialQuantity,
       completed: false,
     });
   });

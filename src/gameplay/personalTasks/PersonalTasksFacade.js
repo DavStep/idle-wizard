@@ -10,7 +10,7 @@ export { PERSONAL_TASK_ACTIONS, PERSONAL_TASK_UNLOCK_LEVEL };
 
 export class PersonalTasksFacade {
   static explain =
-    'Personal tasks give the wizard small daily and weekly goals, then auto-pay rewards when those goals are finished.';
+    'Personal tasks give the wizard small daily and weekly goals, then hold rewards until the player claims them.';
 
   constructor({
     crystalFacade,
@@ -47,7 +47,6 @@ export class PersonalTasksFacade {
 
     this.ensureCurrentPeriods();
 
-    const rewards = [];
     let changed = false;
 
     for (const periodType of ['daily', 'weekly']) {
@@ -75,27 +74,71 @@ export class PersonalTasksFacade {
 
         if (nextProgress >= requiredQuantity) {
           task.completed = true;
-          const taskReward = this.claimTaskReward(task, period);
-
-          if (taskReward) {
-            rewards.push(taskReward);
-          }
         }
-      }
-
-      const fullClearReward = this.claimFullClearRewardIfReady(period);
-
-      if (fullClearReward) {
-        rewards.push(fullClearReward);
-        changed = true;
       }
     }
 
     return {
       ok: changed,
       changed,
-      rewards,
+      rewards: [],
     };
+  }
+
+  claimTaskReward(periodType, taskId) {
+    if (!this.isUnlocked()) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'locked',
+      };
+    }
+
+    const period = this.getCurrentPeriod(periodType);
+
+    if (!period) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'unknown_period',
+      };
+    }
+
+    const task = (period.tasks ?? []).find(
+      (candidate) => candidate.taskId === String(taskId ?? ''),
+    );
+
+    if (!task) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'unknown_task',
+      };
+    }
+
+    return this.grantTaskReward(task, period);
+  }
+
+  claimFullClearReward(periodType) {
+    if (!this.isUnlocked()) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'locked',
+      };
+    }
+
+    const period = this.getCurrentPeriod(periodType);
+
+    if (!period) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'unknown_period',
+      };
+    }
+
+    return this.grantFullClearReward(period);
   }
 
   getSnapshot() {
@@ -112,11 +155,17 @@ export class PersonalTasksFacade {
 
     const periods = this.ensureCurrentPeriods();
 
+    const daily = this.createPeriodSnapshot(periods.daily);
+    const weekly = this.createPeriodSnapshot(periods.weekly);
+    const claimableRewards = daily.claimableRewards + weekly.claimableRewards;
+
     return {
       unlocked: true,
       unlockLevel: PERSONAL_TASK_UNLOCK_LEVEL,
-      daily: this.createPeriodSnapshot(periods.daily),
-      weekly: this.createPeriodSnapshot(periods.weekly),
+      claimableRewards,
+      hasClaimableRewards: claimableRewards > 0,
+      daily,
+      weekly,
     };
   }
 
@@ -172,8 +221,13 @@ export class PersonalTasksFacade {
 
   createPeriodSnapshot(period) {
     const tasks = Array.isArray(period?.tasks) ? period.tasks : [];
-    const completedTasks = tasks.filter((task) => task.completed).length;
+    const completedTasks = tasks.filter((task) => this.isTaskCompleted(task)).length;
+    const taskSnapshots = tasks.map((task) => this.createTaskSnapshot(task));
     const fullClearRewardText = this.rewardManager.formatRewardText(period?.fullClearReward);
+    const fullClearRewardClaimable = this.isFullClearRewardClaimable(period);
+    const claimableRewards =
+      taskSnapshots.filter((task) => task.rewardClaimable).length +
+      Number(fullClearRewardClaimable);
 
     return {
       periodType: period.periodType,
@@ -188,7 +242,10 @@ export class PersonalTasksFacade {
         text: fullClearRewardText,
       },
       fullClearRewardClaimed: Boolean(period.fullClearRewardClaimed),
-      tasks: tasks.map((task) => this.createTaskSnapshot(task)),
+      fullClearRewardClaimable,
+      claimableRewards,
+      hasClaimableRewards: claimableRewards > 0,
+      tasks: taskSnapshots,
     };
   }
 
@@ -199,6 +256,9 @@ export class PersonalTasksFacade {
       Math.min(requiredQuantity, Math.floor(Number(task.progressQuantity) || 0)),
     );
 
+    const completed = this.isTaskCompleted(task);
+    const rewardClaimed = Boolean(task.rewardClaimed);
+
     return {
       taskId: task.taskId,
       taskKey: task.taskKey,
@@ -208,52 +268,127 @@ export class PersonalTasksFacade {
       progressQuantity,
       remainingQuantity: Math.max(0, requiredQuantity - progressQuantity),
       progress: progressQuantity / requiredQuantity,
-      completed: Boolean(task.completed),
+      completed,
       reward: {
         ...(task.reward ?? {}),
         text: this.rewardManager.formatRewardText(task.reward),
       },
-      rewardClaimed: Boolean(task.rewardClaimed),
+      rewardClaimed,
+      rewardClaimable: completed && !rewardClaimed,
     };
   }
 
-  claimTaskReward(task, period) {
-    if (task.rewardClaimed) {
-      return null;
+  grantTaskReward(task, period) {
+    if (!this.isTaskCompleted(task)) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'incomplete',
+      };
     }
 
+    if (task.rewardClaimed) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'claimed',
+      };
+    }
+
+    task.completed = true;
     task.rewardClaimed = true;
     const granted = this.rewardManager.grantReward(task.reward);
 
     return {
+      ok: true,
+      changed: true,
       periodType: period.periodType,
       taskId: task.taskId,
       label: task.label,
+      rewards: [
+        {
+          periodType: period.periodType,
+          taskId: task.taskId,
+          label: task.label,
+          ...granted,
+        },
+      ],
       ...granted,
     };
   }
 
-  claimFullClearRewardIfReady(period) {
+  grantFullClearReward(period) {
     const tasks = Array.isArray(period.tasks) ? period.tasks : [];
 
     if (period.fullClearRewardClaimed || tasks.length <= 0) {
-      return null;
+      return {
+        ok: false,
+        changed: false,
+        reason: period.fullClearRewardClaimed ? 'claimed' : 'empty',
+      };
     }
 
-    if (!tasks.every((task) => task.completed)) {
-      return null;
+    if (!tasks.every((task) => this.isTaskCompleted(task))) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'incomplete',
+      };
     }
 
     period.fullClearRewardClaimed = true;
     const granted = this.rewardManager.grantReward(period.fullClearReward);
+    const taskId = `${period.periodKey}:full-clear`;
 
     return {
+      ok: true,
+      changed: true,
       periodType: period.periodType,
-      taskId: `${period.periodKey}:full-clear`,
+      taskId,
       label: `${period.periodType} complete`,
       fullClear: true,
+      rewards: [
+        {
+          periodType: period.periodType,
+          taskId,
+          label: `${period.periodType} complete`,
+          fullClear: true,
+          ...granted,
+        },
+      ],
       ...granted,
     };
+  }
+
+  isFullClearRewardClaimable(period) {
+    const tasks = Array.isArray(period?.tasks) ? period.tasks : [];
+
+    return (
+      !period?.fullClearRewardClaimed &&
+      tasks.length > 0 &&
+      tasks.every((task) => this.isTaskCompleted(task))
+    );
+  }
+
+  isTaskCompleted(task) {
+    const requiredQuantity = Math.max(1, Math.floor(Number(task?.requiredQuantity) || 1));
+    const progressQuantity = Math.max(
+      0,
+      Math.min(requiredQuantity, Math.floor(Number(task?.progressQuantity) || 0)),
+    );
+
+    return Boolean(task?.completed) || progressQuantity >= requiredQuantity;
+  }
+
+  getCurrentPeriod(periodType) {
+    const normalizedPeriodType = String(periodType ?? '');
+
+    if (!['daily', 'weekly'].includes(normalizedPeriodType)) {
+      return null;
+    }
+
+    const periods = this.ensureCurrentPeriods();
+    return periods[normalizedPeriodType] ?? null;
   }
 
   sanitizePeriod(period, periodType) {

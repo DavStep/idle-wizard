@@ -4,6 +4,7 @@ import {
   createResourceIconLabel,
   setResourceIconText,
 } from '../../shared/resourceIconLabel.js';
+import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 const PERSONAL_TASK_RESOURCE_BY_ACTION = new Map([
@@ -240,10 +241,15 @@ export class WorkshopPersonalTasksManager {
   renderCharacter(personalTasks) {
     const daily = personalTasks?.daily;
     const weekly = personalTasks?.weekly;
+    const claimableRewards = Math.max(
+      0,
+      Math.floor(Number(personalTasks?.claimableRewards) || 0),
+    );
     this.refs.openButton?.setAttribute(
       'aria-label',
-      `open personal tasks, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, weekly ${weekly?.completedTasks ?? 0}/${weekly?.totalTasks ?? 0}`,
+      `open personal tasks, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, weekly ${weekly?.completedTasks ?? 0}/${weekly?.totalTasks ?? 0}, ${claimableRewards} rewards to claim`,
     );
+    setNotificationBadge(this.refs.openButton, claimableRewards > 0);
   }
 
   renderPopup(personalTasks) {
@@ -255,8 +261,10 @@ export class WorkshopPersonalTasksManager {
 
     for (const [periodType, button] of this.refs.tabButtons.entries()) {
       const selected = periodType === this.selectedPeriodType;
+      const tabPeriod = personalTasks?.[periodType];
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
       button.tabIndex = selected ? 0 : -1;
+      setNotificationBadge(button, (tabPeriod?.claimableRewards ?? 0) > 0);
     }
 
     this.refs.periodLabel.textContent = period
@@ -283,9 +291,15 @@ export class WorkshopPersonalTasksManager {
     const row = document.createElement('div');
     row.className = 'workshop-page__personal-task-row';
 
-    if (task.completed) {
+    const rewardClaimable = task.rewardClaimable === true;
+    const rewardClaimed = task.rewardClaimed === true;
+
+    if (rewardClaimed) {
       root.classList.add('is-completed');
       row.classList.add('is-completed');
+    } else if (rewardClaimable) {
+      root.classList.add('is-claimable');
+      row.classList.add('is-claimable');
     }
 
     const label = document.createElement('span');
@@ -295,16 +309,24 @@ export class WorkshopPersonalTasksManager {
     progress.className = 'workshop-page__personal-task-progress';
     progress.textContent = `${task.progressQuantity}/${task.requiredQuantity}`;
 
-    const reward = document.createElement('span');
-    reward.className = 'workshop-page__personal-task-reward';
+    const reward = rewardClaimable
+      ? this.createTaskClaimButton(task)
+      : document.createElement('span');
+    reward.classList.add('workshop-page__personal-task-reward');
 
     const taskResource = this.getTaskResource(task);
     const activeTaskResource = task.completed ? null : taskResource;
     this.setTaskIconText(label, task.label, taskResource);
-    setResourceIconText(reward, task.completed ? 'done' : task.reward?.text ?? '');
+    if (!rewardClaimable) {
+      setResourceIconText(reward, rewardClaimed ? 'done' : task.reward?.text ?? '');
+    }
     setResourceColor(label, activeTaskResource);
     setResourceColor(progress, activeTaskResource);
-    setResourceColor(reward, task.completed ? null : this.getRewardResource(task.reward));
+    setResourceColor(
+      reward,
+      rewardClaimed ? null : this.getRewardResource(task.reward),
+    );
+    setNotificationBadge(reward, rewardClaimable);
 
     const progressBar = this.createProgressBar(
       this.getProgressWidth(task.progressQuantity, task.requiredQuantity, task.completed),
@@ -326,9 +348,15 @@ export class WorkshopPersonalTasksManager {
     const row = document.createElement('div');
     row.className = 'workshop-page__personal-task-row workshop-page__personal-task-row--full';
 
-    if (period.fullClearRewardClaimed) {
+    const rewardClaimable = period.fullClearRewardClaimable === true;
+    const rewardClaimed = period.fullClearRewardClaimed === true;
+
+    if (rewardClaimed) {
       root.classList.add('is-completed');
       row.classList.add('is-completed');
+    } else if (rewardClaimable) {
+      root.classList.add('is-claimable');
+      row.classList.add('is-claimable');
     }
 
     const label = document.createElement('span');
@@ -339,14 +367,20 @@ export class WorkshopPersonalTasksManager {
     progress.className = 'workshop-page__personal-task-progress';
     progress.textContent = `${period.completedTasks}/${period.totalTasks}`;
 
-    const reward = document.createElement('span');
-    reward.className = 'workshop-page__personal-task-reward';
-    setResourceIconText(
-      reward,
-      period.fullClearRewardClaimed ? 'done' : period.fullClearReward?.text ?? '',
-    );
+    const reward = rewardClaimable
+      ? this.createFullClearClaimButton(period)
+      : document.createElement('span');
+    reward.classList.add('workshop-page__personal-task-reward');
+
+    if (!rewardClaimable) {
+      setResourceIconText(
+        reward,
+        rewardClaimed ? 'done' : period.fullClearReward?.text ?? '',
+      );
+    }
 
     setResourceColor(reward, this.getFullClearRewardResource(period));
+    setNotificationBadge(reward, rewardClaimable);
 
     const progressBar = this.createProgressBar(
       this.getProgressWidth(
@@ -363,6 +397,39 @@ export class WorkshopPersonalTasksManager {
     row.append(label, status);
     root.append(row, progressBar);
     return root;
+  }
+
+  createTaskClaimButton(task) {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__personal-task-claim';
+    button.type = 'button';
+    button.textContent = 'claim';
+    button.setAttribute(
+      'aria-label',
+      `claim ${task.reward?.text ?? 'reward'} for ${task.label}`,
+    );
+    button.addEventListener('click', () => {
+      this.gameplayFacade?.claimPersonalTaskReward?.(
+        this.selectedPeriodType,
+        task.taskId,
+      );
+    });
+    return button;
+  }
+
+  createFullClearClaimButton(period) {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__personal-task-claim';
+    button.type = 'button';
+    button.textContent = 'claim';
+    button.setAttribute(
+      'aria-label',
+      `claim ${period.fullClearReward?.text ?? 'reward'} for all ${period.periodType} tasks`,
+    );
+    button.addEventListener('click', () => {
+      this.gameplayFacade?.claimPersonalTaskFullClearReward?.(this.selectedPeriodType);
+    });
+    return button;
   }
 
   createProgressBar(width) {

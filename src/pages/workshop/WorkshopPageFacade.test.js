@@ -87,8 +87,56 @@ function getWorkshopCharacterHeight(baseCss) {
   );
 }
 
+function getRootPixelValue(baseCss, propertyName) {
+  return Number(
+    baseCss.match(new RegExp(`${propertyName}:\\s*([\\d.]+)px;`))?.at(1),
+  );
+}
+
+function getRuleBody(baseCss, selector) {
+  return baseCss.match(new RegExp(`${selector}\\s*\\{(?<body>[^}]*)\\}`))
+    ?.groups?.body;
+}
+
+function getRulePixelValue(baseCss, selector, propertyName) {
+  return Number(
+    getRuleBody(baseCss, selector)
+      ?.match(new RegExp(`\\b${propertyName}:\\s*([\\d.]+)px(?:[\\s;]|$)`))
+      ?.at(1),
+  );
+}
+
 describe('WorkshopPageFacade requirement feedback', () => {
-  it('keeps the notice character hitbox clear of the tasks character button', () => {
+  it('keeps world chat close to the bottom room tabs', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const chatBottom = getRootPixelValue(baseCss, '--style-room-chat-bottom');
+    const borderWidth = getRootPixelValue(baseCss, '--style-border-width');
+    const bottomPanelBottom = getRulePixelValue(
+      baseCss,
+      '\\.style-panel\\.room-bottom-panel',
+      'bottom',
+    );
+    const bottomTabHeight =
+      getRootPixelValue(baseCss, '--style-box-border-label-line-height') * 2;
+    const bottomTabPaddingY = getRulePixelValue(
+      baseCss,
+      '\\.room-bottom-panel__tab',
+      'padding',
+    );
+    const bottomTabRowGap = Number(
+      getRuleBody(baseCss, '\\.room-bottom-panel__tabs')
+        ?.match(/\bgap:\s*([\d.]+)px\s+[\d.]+px;/)
+        ?.at(1),
+    );
+
+    const bottomTabOuterHeight = bottomTabHeight + bottomTabPaddingY * 2 + borderWidth * 2;
+    const bottomTabsTop = bottomPanelBottom + bottomTabOuterHeight * 2 + bottomTabRowGap;
+    const gap = chatBottom + borderWidth - bottomTabsTop;
+    expect(gap).toBeGreaterThanOrEqual(9);
+    expect(gap).toBeLessThanOrEqual(11);
+  });
+
+  it('keeps the notice character stacked close below the tasks character', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const personalTasksTop = getWorkshopCharacterTop(
       baseCss,
@@ -100,9 +148,9 @@ describe('WorkshopPageFacade requirement feedback', () => {
     );
     const characterHeight = getWorkshopCharacterHeight(baseCss);
 
-    expect(worldNoticeTop - (personalTasksTop + characterHeight)).toBeGreaterThanOrEqual(
-      18,
-    );
+    const gap = worldNoticeTop - (personalTasksTop + characterHeight);
+    expect(gap).toBeGreaterThanOrEqual(1);
+    expect(gap).toBeLessThanOrEqual(3);
   });
 
   it('mounts task and notice characters only inside the Workshop UI layer', () => {

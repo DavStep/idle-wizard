@@ -607,6 +607,18 @@ export class GameplayFacade {
     return this.personalTasksFacade.recordAction(actionType, quantity);
   }
 
+  claimPersonalTaskReward(periodType, taskId) {
+    const result = this.personalTasksFacade.claimTaskReward(periodType, taskId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  claimPersonalTaskFullClearReward(periodType) {
+    const result = this.personalTasksFacade.claimFullClearReward(periodType);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   recordWorldNoticeAction(actionType, quantity = 1) {
     return this.worldNoticeFacade.recordAction(actionType, quantity);
   }

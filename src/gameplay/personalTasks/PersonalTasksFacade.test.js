@@ -96,7 +96,7 @@ describe('PersonalTasksFacade', () => {
     );
   });
 
-  it('records progress and auto-claims completed task rewards', () => {
+  it('records progress and leaves completed task rewards claimable', () => {
     const { facade, goldFacade } = createFacade({ level: 4 });
     const summonTask = facade
       .getSnapshot()
@@ -115,12 +115,42 @@ describe('PersonalTasksFacade', () => {
     expect(updatedTask).toMatchObject({
       completed: true,
       progressQuantity: summonTask.requiredQuantity,
+      rewardClaimed: false,
+      rewardClaimable: true,
+    });
+    expect(snapshot.daily.claimableRewards).toBe(1);
+    expect(result.rewards).toEqual([]);
+    expect(goldFacade.current).toBe(0);
+  });
+
+  it('claims completed task rewards on request', () => {
+    const { facade, goldFacade } = createFacade({ level: 4 });
+    const summonTask = facade
+      .getSnapshot()
+      .daily.tasks.find((task) => task.actionType === PERSONAL_TASK_ACTIONS.SUMMON_SEEDS);
+
+    facade.recordAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, summonTask.requiredQuantity);
+
+    const claim = facade.claimTaskReward('daily', summonTask.taskId);
+    const updatedTask = facade
+      .getSnapshot()
+      .daily.tasks.find((task) => task.actionType === PERSONAL_TASK_ACTIONS.SUMMON_SEEDS);
+
+    expect(claim).toMatchObject({
+      ok: true,
+      changed: true,
+      periodType: 'daily',
+      taskId: summonTask.taskId,
+    });
+    expect(claim.rewards).toHaveLength(1);
+    expect(updatedTask).toMatchObject({
       rewardClaimed: true,
+      rewardClaimable: false,
     });
     expect(goldFacade.current).toBeGreaterThan(0);
   });
 
-  it('auto-claims weekly full clear crystal after all weekly tasks complete', () => {
+  it('claims weekly full clear crystal after all weekly tasks complete', () => {
     const { crystalFacade, facade } = createFacade({ level: 10 });
     const weekly = facade.getSnapshot().weekly;
 
@@ -131,7 +161,19 @@ describe('PersonalTasksFacade', () => {
     const updatedWeekly = facade.getSnapshot().weekly;
 
     expect(updatedWeekly.completedTasks).toBe(7);
-    expect(updatedWeekly.fullClearRewardClaimed).toBe(true);
+    expect(updatedWeekly.fullClearRewardClaimed).toBe(false);
+    expect(updatedWeekly.fullClearRewardClaimable).toBe(true);
+    expect(crystalFacade.current).toBe(0);
+
+    const claim = facade.claimFullClearReward('weekly');
+
+    expect(claim).toMatchObject({
+      ok: true,
+      changed: true,
+      periodType: 'weekly',
+      fullClear: true,
+    });
+    expect(facade.getSnapshot().weekly.fullClearRewardClaimed).toBe(true);
     expect(crystalFacade.current).toBe(2);
   });
 

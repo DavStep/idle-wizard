@@ -7,7 +7,7 @@
         {
           "id": "level1-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 5
+          "quantity": 4
         }
       ]
     },
@@ -18,12 +18,12 @@
         {
           "id": "level2-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 3
+          "quantity": 2
         },
         {
           "id": "level2-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 10
+          "quantity": 7
         }
       ]
     },
@@ -34,17 +34,17 @@
         {
           "id": "level3-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 40
+          "quantity": 29
         },
         {
           "id": "level3-mint-seeds",
           "itemKey": "mintSeed",
-          "quantity": 10
+          "quantity": 7
         },
         {
           "id": "level3-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 18
+          "quantity": 13
         }
       ]
     },
@@ -55,22 +55,22 @@
         {
           "id": "level4-nettle-seeds",
           "itemKey": "sageSeed",
-          "quantity": 50
+          "quantity": 37
         },
         {
           "id": "level4-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 40
+          "quantity": 29
         },
         {
           "id": "level4-sage-herb",
           "itemKey": "mintHerb",
-          "quantity": 20
+          "quantity": 15
         },
         {
           "id": "level4-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 5
+          "quantity": 4
         }
       ]
     },
@@ -81,22 +81,22 @@
         {
           "id": "level5-nettle-seeds",
           "itemKey": "mintSeed",
-          "quantity": 60
+          "quantity": 45
         },
         {
           "id": "level5-lavender-seeds",
           "itemKey": "lavenderHerb",
-          "quantity": 48
+          "quantity": 36
         },
         {
           "id": "level5-lavender-herb",
           "itemKey": "nettleHerb",
-          "quantity": 24
+          "quantity": 18
         },
         {
           "id": "level5-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 6
+          "quantity": 4
         }
       ]
     },
@@ -107,22 +107,22 @@
         {
           "id": "level6-nettle-vigor",
           "itemKey": "sageSeed",
-          "quantity": 70
+          "quantity": 53
         },
         {
           "id": "level6-lavender-seeds",
           "itemKey": "lavenderHerb",
-          "quantity": 56
+          "quantity": 42
         },
         {
           "id": "level6-lavender-herb",
           "itemKey": "mintHerb",
-          "quantity": 28
+          "quantity": 21
         },
         {
           "id": "level6-minor-healing-potion",
           "itemKey": "nettleVigor",
-          "quantity": 7
+          "quantity": 5
         }
       ]
     },
@@ -133,22 +133,22 @@
         {
           "id": "level7-lavender-seeds",
           "itemKey": "mintSeed",
-          "quantity": 80
+          "quantity": 61
         },
         {
           "id": "level7-briar-seeds",
           "itemKey": "briarHerb",
-          "quantity": 64
+          "quantity": 49
         },
         {
           "id": "level7-briar-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 32
+          "quantity": 25
         },
         {
           "id": "level7-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 8
+          "quantity": 6
         }
       ]
     },
@@ -159,22 +159,22 @@
         {
           "id": "level8-calming-draught",
           "itemKey": "nettleSeed",
-          "quantity": 90
+          "quantity": 70
         },
         {
           "id": "level8-briar-seeds",
           "itemKey": "briarHerb",
-          "quantity": 72
+          "quantity": 56
         },
         {
           "id": "level8-briar-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 36
+          "quantity": 28
         },
         {
           "id": "level8-nettle-vigor",
           "itemKey": "calmingDraught",
-          "quantity": 9
+          "quantity": 7
         }
       ]
     },
@@ -185,22 +185,22 @@
         {
           "id": "level9-briar-seeds",
           "itemKey": "briarSeed",
-          "quantity": 100
+          "quantity": 79
         },
         {
           "id": "level9-glowcap-seeds",
           "itemKey": "glowcapHerb",
-          "quantity": 58
+          "quantity": 46
         },
         {
           "id": "level9-glowcap-herb",
           "itemKey": "mintHerb",
-          "quantity": 29
+          "quantity": 23
         },
         {
           "id": "level9-calming-draught",
           "itemKey": "minorHealingPotion",
-          "quantity": 13
+          "quantity": 10
         }
       ]
     },
@@ -211,27 +211,27 @@
         {
           "id": "level10-briar-ward",
           "itemKey": "lavenderSeed",
-          "quantity": 132
+          "quantity": 106
         },
         {
           "id": "level10-glowcap-seeds",
           "itemKey": "briarHerb",
-          "quantity": 71
+          "quantity": 57
         },
         {
           "id": "level10-glowcap-herb",
           "itemKey": "nettleHerb",
-          "quantity": 48
+          "quantity": 38
         },
         {
           "id": "level10-calming-draught",
           "itemKey": "briarWard",
-          "quantity": 14
+          "quantity": 11
         },
         {
           "id": "level10-briar-seeds",
           "itemKey": "nettleVigor",
-          "quantity": 10
+          "quantity": 8
         }
       ]
     },
@@ -242,27 +242,27 @@
         {
           "id": "level11-glowcap-seeds",
           "itemKey": "mintSeed",
-          "quantity": 144
+          "quantity": 117
         },
         {
           "id": "level11-mandrake-seeds",
           "itemKey": "mandrakeHerb",
-          "quantity": 78
+          "quantity": 63
         },
         {
           "id": "level11-mandrake-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 52
+          "quantity": 42
         },
         {
           "id": "level11-briar-ward",
           "itemKey": "manaTonic",
-          "quantity": 15
+          "quantity": 12
         },
         {
           "id": "level11-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 12
+          "quantity": 10
         }
       ]
     },
@@ -273,27 +273,27 @@
         {
           "id": "level12-lantern-tonic",
           "itemKey": "nettleSeed",
-          "quantity": 156
+          "quantity": 128
         },
         {
           "id": "level12-mandrake-seeds",
           "itemKey": "lavenderHerb",
-          "quantity": 84
+          "quantity": 69
         },
         {
           "id": "level12-mandrake-herb",
           "itemKey": "briarHerb",
-          "quantity": 56
+          "quantity": 46
         },
         {
           "id": "level12-briar-ward",
           "itemKey": "lanternTonic",
-          "quantity": 17
+          "quantity": 14
         },
         {
           "id": "level12-glowcap-seeds",
           "itemKey": "briarWard",
-          "quantity": 13
+          "quantity": 11
         }
       ]
     },
@@ -304,27 +304,27 @@
         {
           "id": "level13-mandrake-seeds",
           "itemKey": "briarSeed",
-          "quantity": 168
+          "quantity": 140
         },
         {
           "id": "level13-sunroot-seeds",
           "itemKey": "glowcapHerb",
-          "quantity": 91
+          "quantity": 76
         },
         {
           "id": "level13-sunroot-herb",
           "itemKey": "sunrootHerb",
-          "quantity": 60
+          "quantity": 50
         },
         {
           "id": "level13-lantern-tonic",
           "itemKey": "calmingDraught",
-          "quantity": 18
+          "quantity": 15
         },
         {
           "id": "level13-briar-ward",
           "itemKey": "minorHealingPotion",
-          "quantity": 13
+          "quantity": 11
         }
       ]
     },
@@ -335,27 +335,27 @@
         {
           "id": "level14-simple-antidote",
           "itemKey": "glowcapSeed",
-          "quantity": 225
+          "quantity": 190
         },
         {
           "id": "level14-sunroot-seeds",
           "itemKey": "mandrakeHerb",
-          "quantity": 97
+          "quantity": 82
         },
         {
           "id": "level14-sunroot-herb",
           "itemKey": "briarHerb",
-          "quantity": 65
+          "quantity": 55
         },
         {
           "id": "level14-lantern-tonic",
           "itemKey": "simpleAntidote",
-          "quantity": 19
+          "quantity": 16
         },
         {
           "id": "level14-mandrake-seeds",
           "itemKey": "briarWard",
-          "quantity": 14
+          "quantity": 12
         }
       ]
     },
@@ -366,27 +366,27 @@
         {
           "id": "level15-sunroot-seeds",
           "itemKey": "briarSeed",
-          "quantity": 192
+          "quantity": 164
         },
         {
           "id": "level15-sunroot-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 104
+          "quantity": 89
         },
         {
           "id": "level15-simple-antidote",
           "itemKey": "sunrootHerb",
-          "quantity": 69
+          "quantity": 59
         },
         {
           "id": "level15-lantern-tonic",
           "itemKey": "nettleVigor",
-          "quantity": 20
+          "quantity": 17
         },
         {
           "id": "level15-mandrake-seeds",
           "itemKey": "lanternTonic",
-          "quantity": 15
+          "quantity": 13
         }
       ]
     },
@@ -397,27 +397,27 @@
         {
           "id": "level16-sunroot-seeds",
           "itemKey": "sunrootSeed",
-          "quantity": 204
+          "quantity": 177
         },
         {
           "id": "level16-moonflower-seeds",
           "itemKey": "moonflowerHerb",
-          "quantity": 110
+          "quantity": 95
         },
         {
           "id": "level16-moonflower-herb",
           "itemKey": "mandrakeHerb",
-          "quantity": 73
+          "quantity": 63
         },
         {
           "id": "level16-venom-draught",
           "itemKey": "venomDraught",
-          "quantity": 22
+          "quantity": 19
         },
         {
           "id": "level16-simple-antidote",
           "itemKey": "simpleAntidote",
-          "quantity": 15
+          "quantity": 13
         }
       ]
     },
@@ -428,27 +428,27 @@
         {
           "id": "level17-moonflower-seeds",
           "itemKey": "glowcapSeed",
-          "quantity": 270
+          "quantity": 237
         },
         {
           "id": "level17-moonflower-herb",
           "itemKey": "briarHerb",
-          "quantity": 117
+          "quantity": 103
         },
         {
           "id": "level17-venom-draught",
           "itemKey": "sunrootHerb",
-          "quantity": 78
+          "quantity": 68
         },
         {
           "id": "level17-simple-antidote",
           "itemKey": "lanternTonic",
-          "quantity": 23
+          "quantity": 20
         },
         {
           "id": "level17-sunroot-seeds",
           "itemKey": "calmingDraught",
-          "quantity": 17
+          "quantity": 15
         }
       ]
     },
@@ -459,27 +459,27 @@
         {
           "id": "level18-healing-potion",
           "itemKey": "mandrakeSeed",
-          "quantity": 228
+          "quantity": 203
         },
         {
           "id": "level18-moonflower-seeds",
           "itemKey": "glowcapHerb",
-          "quantity": 123
+          "quantity": 109
         },
         {
           "id": "level18-moonflower-herb",
           "itemKey": "moonflowerHerb",
-          "quantity": 82
+          "quantity": 73
         },
         {
           "id": "level18-venom-draught",
           "itemKey": "healingPotion",
-          "quantity": 24
+          "quantity": 21
         },
         {
           "id": "level18-sunroot-seeds",
           "itemKey": "simpleAntidote",
-          "quantity": 18
+          "quantity": 16
         }
       ]
     },
@@ -490,27 +490,27 @@
         {
           "id": "level19-moonflower-seeds",
           "itemKey": "moonflowerSeed",
-          "quantity": 240
+          "quantity": 216
         },
         {
           "id": "level19-frostmoss-seeds",
           "itemKey": "sunrootHerb",
-          "quantity": 130
+          "quantity": 117
         },
         {
           "id": "level19-frostmoss-herb",
           "itemKey": "frostmossHerb",
-          "quantity": 86
+          "quantity": 77
         },
         {
           "id": "level19-healing-potion",
           "itemKey": "briarWard",
-          "quantity": 25
+          "quantity": 23
         },
         {
           "id": "level19-venom-draught",
           "itemKey": "venomDraught",
-          "quantity": 18
+          "quantity": 16
         }
       ]
     },

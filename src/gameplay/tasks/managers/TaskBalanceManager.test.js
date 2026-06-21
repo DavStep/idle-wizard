@@ -36,7 +36,7 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level1-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 5 },
+      { id: 'level1-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 4 },
     ]);
   });
 
@@ -50,8 +50,8 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level2-sage-herb', itemKey: 'sageHerb', requiredQuantity: 3 },
-      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 10 },
+      { id: 'level2-sage-herb', itemKey: 'sageHerb', requiredQuantity: 2 },
+      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 7 },
     ]);
   });
 
@@ -65,10 +65,10 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level4-nettle-seeds', itemKey: 'sageSeed', requiredQuantity: 50 },
-      { id: 'level4-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 40 },
-      { id: 'level4-sage-herb', itemKey: 'mintHerb', requiredQuantity: 20 },
-      { id: 'level4-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 5 },
+      { id: 'level4-nettle-seeds', itemKey: 'sageSeed', requiredQuantity: 37 },
+      { id: 'level4-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 29 },
+      { id: 'level4-sage-herb', itemKey: 'mintHerb', requiredQuantity: 15 },
+      { id: 'level4-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 4 },
     ]);
   });
 
@@ -82,13 +82,13 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level9-briar-seeds', itemKey: 'briarSeed', requiredQuantity: 100 },
-      { id: 'level9-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 58 },
-      { id: 'level9-glowcap-herb', itemKey: 'mintHerb', requiredQuantity: 29 },
+      { id: 'level9-briar-seeds', itemKey: 'briarSeed', requiredQuantity: 79 },
+      { id: 'level9-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 46 },
+      { id: 'level9-glowcap-herb', itemKey: 'mintHerb', requiredQuantity: 23 },
       {
         id: 'level9-calming-draught',
         itemKey: 'minorHealingPotion',
-        requiredQuantity: 13,
+        requiredQuantity: 10,
       },
     ]);
   });
@@ -103,11 +103,29 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level10-briar-ward', itemKey: 'lavenderSeed', requiredQuantity: 132 },
-      { id: 'level10-glowcap-seeds', itemKey: 'briarHerb', requiredQuantity: 71 },
-      { id: 'level10-glowcap-herb', itemKey: 'nettleHerb', requiredQuantity: 48 },
-      { id: 'level10-calming-draught', itemKey: 'briarWard', requiredQuantity: 14 },
-      { id: 'level10-briar-seeds', itemKey: 'nettleVigor', requiredQuantity: 10 },
+      { id: 'level10-briar-ward', itemKey: 'lavenderSeed', requiredQuantity: 106 },
+      { id: 'level10-glowcap-seeds', itemKey: 'briarHerb', requiredQuantity: 57 },
+      { id: 'level10-glowcap-herb', itemKey: 'nettleHerb', requiredQuantity: 38 },
+      { id: 'level10-calming-draught', itemKey: 'briarWard', requiredQuantity: 11 },
+      { id: 'level10-briar-seeds', itemKey: 'nettleVigor', requiredQuantity: 8 },
+    ]);
+  });
+
+  it('tapers the early reduction down to target level 20', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(
+      taskBalanceManager.getLevelTasks(19).map((task) => ({
+        id: task.id,
+        itemKey: task.itemKey,
+        requiredQuantity: task.requiredQuantity,
+      })),
+    ).toEqual([
+      { id: 'level19-moonflower-seeds', itemKey: 'moonflowerSeed', requiredQuantity: 216 },
+      { id: 'level19-frostmoss-seeds', itemKey: 'sunrootHerb', requiredQuantity: 117 },
+      { id: 'level19-frostmoss-herb', itemKey: 'frostmossHerb', requiredQuantity: 77 },
+      { id: 'level19-healing-potion', itemKey: 'briarWard', requiredQuantity: 23 },
+      { id: 'level19-venom-draught', itemKey: 'venomDraught', requiredQuantity: 16 },
     ]);
   });
 
