@@ -3166,7 +3166,6 @@ body {
 .workshop-page__ui-layer > .workshop-page__personal-tasks,
 .workshop-page__ui-layer > .workshop-page__world-notice {
   position: absolute;
-  left: calc(var(--style-room-content-edge) - 20px);
   z-index: 1;
   width: 45.5px;
   height: 68.25px;
@@ -3175,11 +3174,13 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks {
-  top: calc(var(--style-room-content-top) + 72px);
+  top: calc(55.5% - 46px);
+  left: calc(50% - 175px);
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  top: calc(var(--style-room-content-top) + 184px);
+  top: calc(55.5% + 16px);
+  left: calc(50% - 175px);
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks[hidden],

@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.20
+
+- Moved the Workshop task and notice characters beside the summon circle, so expanded level requirements stay readable.
+
 ## 0.2.19
 
 - Added short tutorial story beats for buying the old workshop and opening Market, Garden, Research, and Brewing.
