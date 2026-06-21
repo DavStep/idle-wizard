@@ -20,6 +20,7 @@ export class ShopTradeHistoryManager {
     this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.refs = {};
     this.unsubscribe = null;
+    this.releaseTradeHistory = null;
     this.visible = false;
     this.selectedTabId = 'own';
     this.previousFocus = null;
@@ -69,6 +70,8 @@ export class ShopTradeHistoryManager {
   }
 
   unmount() {
+    this.releaseTradeHistory?.();
+    this.releaseTradeHistory = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
@@ -158,6 +161,11 @@ export class ShopTradeHistoryManager {
   show() {
     this.previousFocus = document.activeElement;
     this.visible = true;
+    if (!this.releaseTradeHistory) {
+      const release = this.playerShopFacade?.retainTradeHistory?.() ?? null;
+      this.releaseTradeHistory = typeof release === 'function' ? release : null;
+    }
+    this.render();
     this.applyVisibility();
     this.refs.dialog?.focus();
   }
@@ -166,6 +174,9 @@ export class ShopTradeHistoryManager {
     const wasVisible = this.visible;
     this.visible = false;
     this.applyVisibility();
+    this.releaseTradeHistory?.();
+    this.releaseTradeHistory = null;
+    this.refs.rows?.replaceChildren();
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
       this.previousFocus.focus();
@@ -184,6 +195,10 @@ export class ShopTradeHistoryManager {
       const button = this.refs.tabButtons.get(tab.id);
       button?.setAttribute('aria-selected', selected ? 'true' : 'false');
       button?.setAttribute('tabindex', selected ? '0' : '-1');
+    }
+
+    if (!this.visible) {
+      return;
     }
 
     if (!this.lastSnapshot.connected) {

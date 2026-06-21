@@ -31,6 +31,7 @@
 - Brewing herb notification dots must stay row-local; parent `:has([data-notification])` bleed padding makes the herbs box taller.
 - Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
+- Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
@@ -56,6 +57,7 @@
 - Player market proceeds add spendable gold only; do not increase `gold.totalGenerated` or leaderboard income from player-to-player trades.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
+- Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
@@ -592,6 +594,8 @@
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
 - World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
+- Raising `--style-room-chat-bottom` also raises every `--style-room-chat-clearance` consumer, including Workshop bag/prestige; manually keep fixed Workshop secondary rows in the same lower stack.
+- Workshop task/notice character openers need about `20px` source vertical gap; Android touch targeting can pick the lower notice when the gap is only about `12px`.
 - Main room page content panels should also use the Research-width `16px` source side inset.
 - Workshop tasks sit below the top panel and stay collapsed until the bottom-border expand action is pressed.
 - Workshop collapsed task summary renders the first task as a full task row; a bottom-border `expand`/`collapse` action reveals the remaining rows, and progress count stays as the top-right border label.

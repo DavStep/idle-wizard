@@ -125,7 +125,7 @@
     calc(var(--app-stage-width, 100vw) * 0.078),
     84px
   );
-  --style-room-chat-bottom: 96px;
+  --style-room-chat-bottom: 120px;
   --style-room-chat-source-height: calc(
     (
         var(--style-world-chat-row-height) *
@@ -3277,12 +3277,12 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks {
-  top: calc(var(--style-room-content-top) + 250px);
+  top: calc(var(--style-room-content-top) + 170px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  top: calc(var(--style-room-content-top) + 306px);
+  top: calc(var(--style-room-content-top) + 258px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
@@ -4134,14 +4134,14 @@ body {
 
 .style-button.workshop-page__leaderboard-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 380px);
+  top: calc(var(--style-room-content-top) + 342px);
   left: var(--style-room-content-edge);
   width: 132px;
 }
 
 .style-button.workshop-page__trade-alliance-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 380px);
+  top: calc(var(--style-room-content-top) + 342px);
   right: var(--style-room-content-edge);
   width: 132px;
 }
@@ -4180,14 +4180,14 @@ body {
 
 .style-button.workshop-page__logs-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 422px);
+  top: calc(var(--style-room-content-top) + 384px);
   left: var(--style-room-content-edge);
   width: 132px;
 }
 
 .style-button.workshop-page__discoveries-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 422px);
+  top: calc(var(--style-room-content-top) + 384px);
   right: var(--style-room-content-edge);
   width: 132px;
 }
@@ -8271,8 +8271,12 @@ div.workshop-page__discovery-row {
 .guild-page__popup {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--style-room-content-top) + 12px)
+    var(--style-room-content-edge) var(--style-room-chat-clearance);
   pointer-events: auto;
   background: rgb(var(--style-backdrop-rgb) / 54%);
 }
@@ -8286,19 +8290,25 @@ div.workshop-page__discovery-row {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  max-width: 100%;
+  max-height: 100%;
   outline: none;
 }
 
 .style-dialog.guild-page__dialog {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
   width: 286px;
-  min-height: 260px;
-  max-height: 360px;
-  overflow: hidden;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: visible;
 }
 
 .guild-page__popup-content {
-  max-height: 300px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden auto;
   scrollbar-width: none;
 }
@@ -9855,7 +9865,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-button {
   position: absolute;
-  top: calc(55.5% + 18px);
+  top: calc(55.5% - 24px);
   left: 50%;
   display: inline-grid;
   place-items: center;
@@ -9895,7 +9905,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-info-button {
   position: absolute;
-  top: calc(55.5% - 32px);
+  top: calc(55.5% - 74px);
   left: calc(50% + 60px);
   z-index: 3;
   display: grid;

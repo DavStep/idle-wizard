@@ -129,7 +129,10 @@ export class ShopPageFacade {
 
     if (shouldRetain) {
       if (!this.releasePlayerShopPublicData) {
-        const release = this.playerShopFacade?.retainPublicData?.() ?? null;
+        const release =
+          this.playerShopFacade?.retainMarketData?.() ??
+          this.playerShopFacade?.retainPublicData?.() ??
+          null;
         this.releasePlayerShopPublicData = typeof release === 'function' ? release : null;
       }
 

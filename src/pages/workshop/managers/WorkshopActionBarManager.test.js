@@ -266,7 +266,7 @@ describe('WorkshopActionBarManager', () => {
       summonButton?.dataset.pressFeedbackTarget,
     ).toBeUndefined();
     expect(summonCircle?.getAttribute('aria-hidden')).toBe('true');
-    expect(summonButtonRule).toMatch(/\btop:\s*calc\(55\.5% \+ 18px\);/);
+    expect(summonButtonRule).toMatch(/\btop:\s*calc\(55\.5% - 24px\);/);
     expect(summonButtonRule).toMatch(/\bwidth:\s*auto;/);
     expect(summonButtonRule).not.toMatch(/\bwidth:\s*196px;/);
     expect(actionBarButtonRule).toMatch(/\bwidth:\s*auto;/);

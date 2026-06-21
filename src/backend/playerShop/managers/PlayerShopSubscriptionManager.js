@@ -27,7 +27,8 @@ export class PlayerShopSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.identity = null;
-    this.publicDataActive = false;
+    this.marketDataActive = false;
+    this.tradeHistoryActive = false;
     this.publicListingsTable = null;
     this.ownListingsTable = null;
     this.publicRequestsTable = null;
@@ -36,8 +37,10 @@ export class PlayerShopSubscriptionManager {
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
     this.querySources = {};
-    this.publicSubscriptions = [];
-    this.publicTablesBound = false;
+    this.marketSubscriptions = [];
+    this.tradeHistorySubscriptions = [];
+    this.marketTablesBound = false;
+    this.tradeHistoryTablesBound = false;
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
@@ -142,7 +145,8 @@ export class PlayerShopSubscriptionManager {
   }
 
   disconnect() {
-    this.teardownPublicDataSubscriptions();
+    this.teardownMarketDataSubscriptions();
+    this.teardownTradeHistorySubscriptions();
     this.unbindTable(this.ownListingsTable);
     this.unbindTable(this.ownRequestsTable);
     this.unbindTable(this.proceedsTable);
@@ -155,7 +159,8 @@ export class PlayerShopSubscriptionManager {
 
     this.connection = null;
     this.identity = null;
-    this.publicDataActive = false;
+    this.marketDataActive = false;
+    this.tradeHistoryActive = false;
     this.publicListingsTable = null;
     this.ownListingsTable = null;
     this.publicRequestsTable = null;
@@ -164,8 +169,10 @@ export class PlayerShopSubscriptionManager {
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
     this.querySources = {};
-    this.publicSubscriptions = [];
-    this.publicTablesBound = false;
+    this.marketSubscriptions = [];
+    this.tradeHistorySubscriptions = [];
+    this.marketTablesBound = false;
+    this.tradeHistoryTablesBound = false;
     this.subscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
@@ -175,8 +182,21 @@ export class PlayerShopSubscriptionManager {
   }
 
   setPublicDataActive(active = true) {
-    this.publicDataActive = Boolean(active);
+    this.marketDataActive = Boolean(active);
+    this.tradeHistoryActive = Boolean(active);
     this.reconcilePublicDataSubscriptions();
+    this.publishFromTables();
+  }
+
+  setMarketDataActive(active = true) {
+    this.marketDataActive = Boolean(active);
+    this.reconcileMarketDataSubscriptions();
+    this.publishFromTables();
+  }
+
+  setTradeHistoryActive(active = true) {
+    this.tradeHistoryActive = Boolean(active);
+    this.reconcileTradeHistorySubscriptions();
     this.publishFromTables();
   }
 
@@ -212,29 +232,32 @@ export class PlayerShopSubscriptionManager {
   }
 
   reconcilePublicDataSubscriptions() {
+    this.reconcileMarketDataSubscriptions();
+    this.reconcileTradeHistorySubscriptions();
+  }
+
+  reconcileMarketDataSubscriptions() {
     if (!this.connection || !this.publicListingsTable) {
       return;
     }
 
-    if (!this.publicDataActive) {
-      this.teardownPublicDataSubscriptions();
+    if (!this.marketDataActive) {
+      this.teardownMarketDataSubscriptions();
       return;
     }
 
-    if (!this.publicTablesBound) {
+    if (!this.marketTablesBound) {
       this.bindTable(this.publicListingsTable);
       this.bindTable(this.publicRequestsTable);
-      this.bindTable(this.tradeHistoryTable);
-      this.bindTable(this.ownTradeHistoryTable);
-      this.publicTablesBound = true;
+      this.marketTablesBound = true;
     }
 
-    if (this.publicSubscriptions.length > 0) {
+    if (this.marketSubscriptions.length > 0) {
       return;
     }
 
-    const { publicListings, publicRequests, tradeHistory, ownTradeHistory } = this.querySources;
-    this.publicSubscriptions = [
+    const { publicListings, publicRequests } = this.querySources;
+    this.marketSubscriptions = [
       publicListings?.query ? this.subscribeQuery(publicListings.query) : null,
       this.publicRequestsTable && publicRequests?.query
         ? this.subscribeOptionalQuery(publicRequests.query, () => {
@@ -243,6 +266,35 @@ export class PlayerShopSubscriptionManager {
             this.publishFromTables();
           })
         : null,
+    ].filter(Boolean);
+  }
+
+  reconcileTradeHistorySubscriptions() {
+    if (!this.connection) {
+      return;
+    }
+
+    if (!this.tradeHistoryActive) {
+      this.teardownTradeHistorySubscriptions();
+      return;
+    }
+
+    if (!this.tradeHistoryTable && !this.ownTradeHistoryTable) {
+      return;
+    }
+
+    if (!this.tradeHistoryTablesBound) {
+      this.bindTable(this.tradeHistoryTable);
+      this.bindTable(this.ownTradeHistoryTable);
+      this.tradeHistoryTablesBound = true;
+    }
+
+    if (this.tradeHistorySubscriptions.length > 0) {
+      return;
+    }
+
+    const { tradeHistory, ownTradeHistory } = this.querySources;
+    this.tradeHistorySubscriptions = [
       this.tradeHistoryTable && tradeHistory?.query
         ? this.subscribeOptionalQuery(tradeHistory.query, () => {
             this.unbindTable(this.tradeHistoryTable);
@@ -260,22 +312,36 @@ export class PlayerShopSubscriptionManager {
     ].filter(Boolean);
   }
 
-  teardownPublicDataSubscriptions() {
-    if (this.publicTablesBound) {
+  teardownMarketDataSubscriptions() {
+    if (this.marketTablesBound) {
       this.unbindTable(this.publicListingsTable);
       this.unbindTable(this.publicRequestsTable);
-      this.unbindTable(this.tradeHistoryTable);
-      this.unbindTable(this.ownTradeHistoryTable);
-      this.publicTablesBound = false;
+      this.marketTablesBound = false;
     }
 
-    for (const subscription of this.publicSubscriptions) {
+    for (const subscription of this.marketSubscriptions) {
       if (!subscription.isEnded?.()) {
         subscription.unsubscribe();
       }
     }
 
-    this.publicSubscriptions = [];
+    this.marketSubscriptions = [];
+  }
+
+  teardownTradeHistorySubscriptions() {
+    if (this.tradeHistoryTablesBound) {
+      this.unbindTable(this.tradeHistoryTable);
+      this.unbindTable(this.ownTradeHistoryTable);
+      this.tradeHistoryTablesBound = false;
+    }
+
+    for (const subscription of this.tradeHistorySubscriptions) {
+      if (!subscription.isEnded?.()) {
+        subscription.unsubscribe();
+      }
+    }
+
+    this.tradeHistorySubscriptions = [];
   }
 
   getLegacyPublicListingsQuery() {
@@ -300,7 +366,7 @@ export class PlayerShopSubscriptionManager {
 
     const identityKey = this.toIdentityKey(this.identity);
     const publicListings = Array.from(
-      this.publicDataActive ? this.publicListingsTable?.iter?.() ?? [] : [],
+      this.marketDataActive ? this.publicListingsTable?.iter?.() ?? [] : [],
     )
       .map((row) => this.mapListing(row))
       .sort((left, right) => {
@@ -313,7 +379,7 @@ export class PlayerShopSubscriptionManager {
         return left.slotNumber - right.slotNumber;
       });
     const ownListingSource =
-      this.publicDataActive && this.ownListingsTable === this.publicListingsTable
+      this.marketDataActive && this.ownListingsTable === this.publicListingsTable
         ? publicListings
         : Array.from(this.ownListingsTable.iter()).map((row) => this.mapListing(row));
     const ownListings = ownListingSource.filter(
@@ -324,7 +390,7 @@ export class PlayerShopSubscriptionManager {
         listing.sellerIdentity !== identityKey && listing.quantity > 0 && listing.priceGold > 0,
     );
     const publicRequests = Array.from(
-      this.publicDataActive ? this.publicRequestsTable?.iter?.() ?? [] : [],
+      this.marketDataActive ? this.publicRequestsTable?.iter?.() ?? [] : [],
     )
       .map((row) => this.mapRequest(row))
       .sort((left, right) => {
@@ -337,7 +403,7 @@ export class PlayerShopSubscriptionManager {
         return left.slotNumber - right.slotNumber;
       });
     const ownRequestSource =
-      this.publicDataActive && this.ownRequestsTable === this.publicRequestsTable
+      this.marketDataActive && this.ownRequestsTable === this.publicRequestsTable
         ? publicRequests
         : Array.from(this.ownRequestsTable?.iter?.() ?? []).map((row) => this.mapRequest(row));
     const ownRequests = ownRequestSource.filter(
@@ -408,7 +474,7 @@ export class PlayerShopSubscriptionManager {
   }
 
   getTradeHistoryRows() {
-    if (!this.publicDataActive || !this.tradeHistoryTable) {
+    if (!this.tradeHistoryActive || !this.tradeHistoryTable) {
       return [];
     }
 
@@ -430,7 +496,7 @@ export class PlayerShopSubscriptionManager {
   }
 
   getOwnTradeHistoryRows(tradeHistory, identityKey) {
-    if (!this.publicDataActive) {
+    if (!this.tradeHistoryActive) {
       return [];
     }
 

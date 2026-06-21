@@ -3716,7 +3716,7 @@ describe('PagesFacade', () => {
   it('retains public player-market rows only while player market tab is open', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
-    const releasePublicData = vi.fn();
+    const releaseMarketData = vi.fn();
     const playerShopSnapshot = {
       connected: true,
       listings: [],
@@ -3733,7 +3733,7 @@ describe('PagesFacade', () => {
         listener(playerShopSnapshot);
         return () => {};
       }),
-      retainPublicData: vi.fn(() => releasePublicData),
+      retainMarketData: vi.fn(() => releaseMarketData),
     };
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -3743,37 +3743,37 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    expect(playerShopFacade.retainPublicData).not.toHaveBeenCalled();
+    expect(playerShopFacade.retainMarketData).not.toHaveBeenCalled();
 
     clickRoomTab(stage, 'shop');
 
-    expect(playerShopFacade.retainPublicData).not.toHaveBeenCalled();
+    expect(playerShopFacade.retainMarketData).not.toHaveBeenCalled();
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
       .find((button) => button.textContent === 'player market')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerShopFacade.retainPublicData).toHaveBeenCalledTimes(1);
+    expect(playerShopFacade.retainMarketData).toHaveBeenCalledTimes(1);
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
       .find((button) => button.textContent === 'npc market')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(releasePublicData).toHaveBeenCalledTimes(1);
+    expect(releaseMarketData).toHaveBeenCalledTimes(1);
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
       .find((button) => button.textContent === 'player market')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerShopFacade.retainPublicData).toHaveBeenCalledTimes(2);
+    expect(playerShopFacade.retainMarketData).toHaveBeenCalledTimes(2);
 
     clickRoomTab(stage, 'workshop');
 
-    expect(releasePublicData).toHaveBeenCalledTimes(2);
+    expect(releaseMarketData).toHaveBeenCalledTimes(2);
 
     pagesFacade.unmount();
 
-    expect(releasePublicData).toHaveBeenCalledTimes(2);
+    expect(releaseMarketData).toHaveBeenCalledTimes(2);
   });
 
   it('reveals Workshop non-prestige secondary buttons by milestone level', () => {

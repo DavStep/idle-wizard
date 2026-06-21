@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ShopTradeHistoryManager } from './ShopTradeHistoryManager.js';
 
-function createPlayerShopFacadeFake() {
+function createPlayerShopFacadeFake(overrides = {}) {
   const snapshot = {
     connected: true,
     tradeHistory: [
@@ -46,6 +46,7 @@ function createPlayerShopFacadeFake() {
       listener(snapshot);
       return () => {};
     },
+    ...overrides,
   };
 }
 
@@ -58,8 +59,10 @@ describe('ShopTradeHistoryManager', () => {
     const stage = document.createElement('section');
     const actions = document.createElement('div');
     const popupParent = document.createElement('div');
+    const releaseTradeHistory = vi.fn();
+    const retainTradeHistory = vi.fn(() => releaseTradeHistory);
     const manager = new ShopTradeHistoryManager({
-      playerShopFacade: createPlayerShopFacadeFake(),
+      playerShopFacade: createPlayerShopFacadeFake({ retainTradeHistory }),
     });
 
     stage.append(actions, popupParent);
@@ -71,9 +74,12 @@ describe('ShopTradeHistoryManager', () => {
 
     expect(button?.textContent).toBe('trade history');
     expect(popup.hidden).toBe(true);
+    expect(retainTradeHistory).not.toHaveBeenCalled();
+    expect(popup.querySelectorAll('.shop-page__trade-history-row')).toHaveLength(0);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    expect(retainTradeHistory).toHaveBeenCalledTimes(1);
     expect(popup.hidden).toBe(false);
     expect(
       popup.querySelector('.shop-page__trade-history-dialog')?.nextElementSibling,
@@ -94,10 +100,14 @@ describe('ShopTradeHistoryManager', () => {
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(popup.hidden).toBe(true);
+    expect(releaseTradeHistory).toHaveBeenCalledTimes(1);
+    expect(popup.querySelectorAll('.shop-page__trade-history-row')).toHaveLength(0);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(retainTradeHistory).toHaveBeenCalledTimes(2);
     popup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(popup.hidden).toBe(true);
+    expect(releaseTradeHistory).toHaveBeenCalledTimes(2);
 
     manager.unmount();
   });

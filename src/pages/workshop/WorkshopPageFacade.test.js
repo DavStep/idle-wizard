@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WorkshopPageFacade } from './WorkshopPageFacade.js';
@@ -57,7 +59,52 @@ function createStubManager(overrides = {}) {
   };
 }
 
+function getWorkshopCharacterRuleBody(baseCss) {
+  return baseCss.match(
+    /\.workshop-page__ui-layer > \.workshop-page__personal-tasks,\s*\.workshop-page__ui-layer > \.workshop-page__world-notice\s*\{(?<body>[^}]*)\}/,
+  )?.groups?.body;
+}
+
+function getWorkshopCharacterTop(baseCss, className) {
+  const body = [
+    ...baseCss.matchAll(
+      new RegExp(
+        `\\.workshop-page__ui-layer > \\.${className}\\s*\\{(?<body>[^}]*)\\}`,
+        'g',
+      ),
+    ),
+  ].find((match) => match.groups?.body?.includes('top:'))?.groups?.body;
+  return Number(
+    body
+      ?.match(/top:\s*calc\(var\(--style-room-content-top\) \+ ([\d.]+)px\);/)
+      ?.at(1),
+  );
+}
+
+function getWorkshopCharacterHeight(baseCss) {
+  return Number(
+    getWorkshopCharacterRuleBody(baseCss)?.match(/height:\s*([\d.]+)px;/)?.at(1),
+  );
+}
+
 describe('WorkshopPageFacade requirement feedback', () => {
+  it('keeps the notice character hitbox clear of the tasks character button', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const personalTasksTop = getWorkshopCharacterTop(
+      baseCss,
+      'workshop-page__personal-tasks',
+    );
+    const worldNoticeTop = getWorkshopCharacterTop(
+      baseCss,
+      'workshop-page__world-notice',
+    );
+    const characterHeight = getWorkshopCharacterHeight(baseCss);
+
+    expect(worldNoticeTop - (personalTasksTop + characterHeight)).toBeGreaterThanOrEqual(
+      18,
+    );
+  });
+
   it('mounts task and notice characters only inside the Workshop UI layer', () => {
     const facade = new WorkshopPageFacade({
       gameplayFacade: createGameplayFacadeFake(),

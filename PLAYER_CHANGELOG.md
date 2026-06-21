@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.23
+
+- Improved Guild forms so charter and settings edits stay in place while the game refreshes in the background.
+- Moved Workshop task, world notice, and summon controls apart so mobile taps hit the intended button more reliably.
+- Reduced player market background loading by keeping trade history data and rows lazy until the popup is opened.
+
 ## 0.2.22
 
 - Added the Guild room at level 15, where players can sign a charter, hire adventurers, manage a request board, and follow guild logs.

@@ -18,6 +18,10 @@ export class GuildPanelManager {
     this.selectedCardTab = 'stats';
     this.selectedCardId = null;
     this.selectedCardKind = null;
+    this.formDrafts = {
+      charter: null,
+      settings: null,
+    };
     this.refs = {};
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
@@ -60,6 +64,10 @@ export class GuildPanelManager {
     this.root = null;
     this.popupLayer = null;
     this.refs = {};
+    this.formDrafts = {
+      charter: null,
+      settings: null,
+    };
   }
 
   render(snapshot = {}) {
@@ -67,6 +75,7 @@ export class GuildPanelManager {
       return;
     }
 
+    this.captureVisibleFormDraft();
     this.snapshot = snapshot.guild ?? {};
     this.root.replaceChildren(...this.createMainSections());
     this.renderPopup();
@@ -336,12 +345,14 @@ export class GuildPanelManager {
   showCharterDialog() {
     this.selectedCardKind = 'charter';
     this.selectedCardId = null;
+    this.formDrafts.charter = this.createProfileDraft();
     this.showPopup();
   }
 
   showSettingsDialog() {
     this.selectedCardKind = 'settings';
     this.selectedCardId = null;
+    this.formDrafts.settings = this.createProfileDraft(this.snapshot.profile);
     this.showPopup();
   }
 
@@ -401,18 +412,21 @@ export class GuildPanelManager {
   }
 
   renderCharterDialog() {
+    const draft = this.getFormDraft('charter');
     this.refs.popupTitle.textContent = 'guild charter';
     this.refs.popupTabs.replaceChildren();
     const form = document.createElement('form');
     form.className = 'guild-page__form';
     form.append(
-      this.createInputField('name', 'name', { maxLength: 24 }),
-      this.createInputField('tag', 'tag', { minLength: 2, maxLength: 5, autocapitalize: 'characters' }),
-      this.createColorField('color'),
+      this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
+      this.createInputField('tag', 'tag', { value: draft.tag, minLength: 2, maxLength: 5, autocapitalize: 'characters' }),
+      this.createColorField('color', draft.color),
       this.createSubmitButton('start guild'),
     );
+    this.bindFormDraft(form, 'charter');
     form.addEventListener('submit', (event) => {
       event.preventDefault();
+      this.captureFormDraft('charter', form);
       const formData = new globalThis.FormData(form);
       const result = this.gameplayFacade?.createGuild?.({
         name: formData.get('name'),
@@ -429,6 +443,7 @@ export class GuildPanelManager {
 
   renderSettingsDialog() {
     const profile = this.snapshot.profile ?? {};
+    const draft = this.getFormDraft('settings', profile);
     this.refs.popupTitle.textContent = 'guild settings';
     this.refs.popupTabs.replaceChildren();
     const form = document.createElement('form');
@@ -441,14 +456,16 @@ export class GuildPanelManager {
     upgrade.disabled = !this.snapshot.secretary?.canUpgrade;
     upgrade.addEventListener('click', () => this.gameplayFacade?.upgradeGuildSecretary?.());
     form.append(
-      this.createInputField('name', 'name', { value: profile.name, maxLength: 24 }),
-      this.createInputField('tag', 'tag', { value: profile.tag, minLength: 2, maxLength: 5, autocapitalize: 'characters' }),
-      this.createColorField('color', profile.color),
+      this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
+      this.createInputField('tag', 'tag', { value: draft.tag, minLength: 2, maxLength: 5, autocapitalize: 'characters' }),
+      this.createColorField('color', draft.color),
       this.createSubmitButton('save'),
       upgrade,
     );
+    this.bindFormDraft(form, 'settings');
     form.addEventListener('submit', (event) => {
       event.preventDefault();
+      this.captureFormDraft('settings', form);
       const formData = new globalThis.FormData(form);
       this.gameplayFacade?.updateGuildProfile?.({
         name: formData.get('name'),
@@ -585,6 +602,9 @@ export class GuildPanelManager {
   }
 
   createColorField(label, value = 'ink') {
+    const selectedValue = TRADE_ALLIANCE_TAG_COLORS.some((color) => color.id === value)
+      ? value
+      : 'ink';
     const field = document.createElement('fieldset');
     field.className = 'guild-page__field guild-page__color-field';
     const legend = document.createElement('legend');
@@ -599,7 +619,7 @@ export class GuildPanelManager {
       input.type = 'radio';
       input.name = 'color';
       input.value = color.id;
-      input.checked = color.id === value;
+      input.checked = color.id === selectedValue;
       const mark = document.createElement('span');
       mark.style.color = color.cssValue;
       mark.textContent = color.label;
@@ -624,5 +644,47 @@ export class GuildPanelManager {
     paragraph.className = 'guild-page__paragraph';
     paragraph.textContent = String(text ?? '');
     return paragraph;
+  }
+
+  bindFormDraft(form, kind) {
+    form.addEventListener('input', () => this.captureFormDraft(kind, form));
+    form.addEventListener('change', () => this.captureFormDraft(kind, form));
+  }
+
+  captureVisibleFormDraft() {
+    if (this.refs.popup?.hidden || !['charter', 'settings'].includes(this.selectedCardKind)) {
+      return;
+    }
+
+    const form = this.refs.popupContent?.querySelector('form.guild-page__form');
+
+    if (form) {
+      this.captureFormDraft(this.selectedCardKind, form);
+    }
+  }
+
+  captureFormDraft(kind, form) {
+    const formData = new globalThis.FormData(form);
+    this.formDrafts[kind] = {
+      name: String(formData.get('name') ?? ''),
+      tag: String(formData.get('tag') ?? ''),
+      color: String(formData.get('color') ?? 'ink') || 'ink',
+    };
+  }
+
+  getFormDraft(kind, profile) {
+    if (!this.formDrafts[kind]) {
+      this.formDrafts[kind] = this.createProfileDraft(profile);
+    }
+
+    return this.formDrafts[kind];
+  }
+
+  createProfileDraft(profile = {}) {
+    return {
+      name: String(profile.name ?? ''),
+      tag: String(profile.tag ?? ''),
+      color: String(profile.color ?? 'ink') || 'ink',
+    };
   }
 }

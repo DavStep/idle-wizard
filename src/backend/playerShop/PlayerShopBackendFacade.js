@@ -12,7 +12,8 @@ export class PlayerShopBackendFacade {
       onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
     });
     this.listingManager = new PlayerShopListingManager();
-    this.publicDataRetainCount = 0;
+    this.marketDataRetainCount = 0;
+    this.tradeHistoryRetainCount = 0;
   }
 
   connect(connection, identity) {
@@ -21,7 +22,8 @@ export class PlayerShopBackendFacade {
   }
 
   disconnect() {
-    this.publicDataRetainCount = 0;
+    this.marketDataRetainCount = 0;
+    this.tradeHistoryRetainCount = 0;
     this.listingManager.disconnect();
     this.subscriptionManager.disconnect();
   }
@@ -35,8 +37,8 @@ export class PlayerShopBackendFacade {
   }
 
   retainPublicData() {
-    this.publicDataRetainCount += 1;
-    this.subscriptionManager.setPublicDataActive(true);
+    const releaseMarketData = this.retainMarketData();
+    const releaseTradeHistory = this.retainTradeHistory();
 
     let released = false;
     return () => {
@@ -45,8 +47,40 @@ export class PlayerShopBackendFacade {
       }
 
       released = true;
-      this.publicDataRetainCount = Math.max(0, this.publicDataRetainCount - 1);
-      this.subscriptionManager.setPublicDataActive(this.publicDataRetainCount > 0);
+      releaseMarketData();
+      releaseTradeHistory();
+    };
+  }
+
+  retainMarketData() {
+    this.marketDataRetainCount += 1;
+    this.subscriptionManager.setMarketDataActive(true);
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.marketDataRetainCount = Math.max(0, this.marketDataRetainCount - 1);
+      this.subscriptionManager.setMarketDataActive(this.marketDataRetainCount > 0);
+    };
+  }
+
+  retainTradeHistory() {
+    this.tradeHistoryRetainCount += 1;
+    this.subscriptionManager.setTradeHistoryActive(true);
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.tradeHistoryRetainCount = Math.max(0, this.tradeHistoryRetainCount - 1);
+      this.subscriptionManager.setTradeHistoryActive(this.tradeHistoryRetainCount > 0);
     };
   }
 

@@ -354,6 +354,80 @@ describe('PlayerShopSubscriptionManager', () => {
     ]);
   });
 
+  it('subscribes market rows without trade history when only market data is active', () => {
+    const publicListingsTable = createTable([]);
+    const ownListingsTable = createTable([]);
+    const publicRequestsTable = createTable([]);
+    const ownRequestsTable = createTable([]);
+    const proceedsTable = createTable([]);
+    const ownProceedsTable = createTable([]);
+    const tradeHistoryRecentTable = createTable([]);
+    const ownTradeHistoryTable = createTable([]);
+    const connection = createConnection({
+      listingsTable: createTable([]),
+      publicListingsTable,
+      ownListingsTable,
+      publicRequestsTable,
+      ownRequestsTable,
+      proceedsTable,
+      ownProceedsTable,
+      tradeHistoryRecentTable,
+      ownTradeHistoryTable,
+    });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.connect(connection, SELF_IDENTITY);
+    manager.setMarketDataActive(true);
+
+    expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
+      'SELECT * FROM own_player_shop_listing',
+      'SELECT * FROM own_player_shop_request',
+      'SELECT * FROM own_player_shop_proceeds',
+      'SELECT * FROM public_player_shop_listing',
+      'SELECT * FROM public_player_shop_request',
+    ]);
+    expect(tradeHistoryRecentTable.callbacks.insert).toBeNull();
+    expect(ownTradeHistoryTable.callbacks.insert).toBeNull();
+    expect(manager.getSnapshot().tradeHistory).toEqual([]);
+    expect(manager.getSnapshot().ownTradeHistory).toEqual([]);
+  });
+
+  it('subscribes trade history without market rows when only trade history is active', () => {
+    const publicListingsTable = createTable([]);
+    const ownListingsTable = createTable([]);
+    const publicRequestsTable = createTable([]);
+    const ownRequestsTable = createTable([]);
+    const proceedsTable = createTable([]);
+    const ownProceedsTable = createTable([]);
+    const tradeHistoryRecentTable = createTable([]);
+    const ownTradeHistoryTable = createTable([]);
+    const connection = createConnection({
+      listingsTable: createTable([]),
+      publicListingsTable,
+      ownListingsTable,
+      publicRequestsTable,
+      ownRequestsTable,
+      proceedsTable,
+      ownProceedsTable,
+      tradeHistoryRecentTable,
+      ownTradeHistoryTable,
+    });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.connect(connection, SELF_IDENTITY);
+    manager.setTradeHistoryActive(true);
+
+    expect(connection.subscriptions.map((subscription) => subscription.query)).toEqual([
+      'SELECT * FROM own_player_shop_listing',
+      'SELECT * FROM own_player_shop_request',
+      'SELECT * FROM own_player_shop_proceeds',
+      'SELECT * FROM player_shop_trade_recent',
+      'SELECT * FROM own_player_shop_trade_history',
+    ]);
+    expect(publicListingsTable.callbacks.insert).toBeNull();
+    expect(publicRequestsTable.callbacks.insert).toBeNull();
+  });
+
   it('keeps listings online when optional trade history query fails', () => {
     const listingsTable = createTable([
       {
