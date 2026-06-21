@@ -310,7 +310,11 @@ export class WorkshopPersonalTasksManager {
       this.getProgressWidth(task.progressQuantity, task.requiredQuantity, task.completed),
     );
 
-    row.append(label, progress, reward);
+    const status = document.createElement('span');
+    status.className = 'workshop-page__personal-task-status';
+    status.append(progress, reward);
+
+    row.append(label, status);
     root.append(row, progressBar);
     return root;
   }
@@ -352,7 +356,11 @@ export class WorkshopPersonalTasksManager {
       ),
     );
 
-    row.append(label, progress, reward);
+    const status = document.createElement('span');
+    status.className = 'workshop-page__personal-task-status';
+    status.append(progress, reward);
+
+    row.append(label, status);
     root.append(row, progressBar);
     return root;
   }

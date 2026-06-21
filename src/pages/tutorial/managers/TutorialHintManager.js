@@ -17,8 +17,11 @@ const OBJECTIVE_CONTENT_HEIGHT = 74;
 const OBJECTIVE_HORIZONTAL_CHROME = OBJECTIVE_PADDED_WIDTH - OBJECTIVE_WIDTH;
 const OBJECTIVE_VERTICAL_CHROME = OBJECTIVE_HEIGHT - OBJECTIVE_CONTENT_HEIGHT;
 const LESSON_WIDTH = OBJECTIVE_WIDTH;
+const INTRO_DIALOG_WIDTH = 260;
 const LESSON_MIN_HEIGHT = 34;
 const LESSON_MAX_HEIGHT = 126;
+const INTRO_DIALOG_MIN_HEIGHT = 96;
+const INTRO_DIALOG_MAX_HEIGHT = 230;
 const LESSON_ESTIMATED_CHAR_WIDTH = 6.4;
 const LESSON_ESTIMATED_LINE_HEIGHT = 16;
 const HINT_GAP = 8;
@@ -141,6 +144,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
+    this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
     this.blockingDialogSuspended = false;
@@ -403,6 +407,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
+    this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
     this.blockingDialogSuspended = false;
@@ -493,38 +498,46 @@ export class TutorialHintManager {
     autoOpen = true,
     forceOpen = false,
     advanceOnClick = false,
+    advanceLabel = 'next',
     canShowTarget = false,
     target,
+    variant = null,
     hideTargetCue = true,
   }) {
     if (!this.root || !this.stage || !this.objective || !this.objectiveButton) {
       return;
     }
 
+    const objectiveVariant = variant === 'intro-dialog' ? 'intro-dialog' : null;
+
     if (id && id !== this.objectiveStepId) {
       this.objectiveStepId = id;
-      this.objectivePanelOpen = Boolean(autoOpen);
+      this.objectivePanelOpen = objectiveVariant === 'intro-dialog' || Boolean(autoOpen);
       this.resetTypedText(this.objectiveText);
     } else if (forceOpen) {
       this.objectivePanelOpen = true;
     }
 
+    this.objectiveVariant = objectiveVariant;
     const normalizedProgress = this.normalizeProgress(progress);
     const hasProgress = normalizedProgress !== null;
     this.objectiveCopyText = text ?? '';
     this.objectiveTarget = target ?? null;
     this.blockingDialogSuspended = false;
     this.root.hidden = false;
-    this.objectiveButton.hidden = false;
+    this.objectiveButton.hidden = objectiveVariant === 'intro-dialog';
     this.clearObjectiveHideTimeout();
     this.objective.classList.remove('is-hiding');
+    this.objective.classList.toggle('is-intro-dialog', objectiveVariant === 'intro-dialog');
     this.objectiveButton.classList.remove('is-collapsing');
     this.objective.hidden = !this.objectivePanelOpen;
     this.updateObjectiveButtonState();
     this.objectiveTitle.textContent = title ?? 'lesson';
     this.objectiveStepLabel.textContent = stepLabel ?? '';
     this.lessonAdvanceButton.hidden = !advanceOnClick;
-    this.lessonShowButton.hidden = advanceOnClick || !canShowTarget;
+    this.lessonAdvanceButton.textContent = normalizeActionLabel(advanceLabel);
+    this.lessonShowButton.hidden =
+      objectiveVariant === 'intro-dialog' || advanceOnClick || !canShowTarget;
     this.objectiveProgress.hidden = !hasProgress;
     this.objectiveProgressLabel.hidden = !hasProgress && !progressLabel;
     this.objectiveProgressLabel.textContent = progressLabel ?? '';
@@ -541,7 +554,9 @@ export class TutorialHintManager {
         progress: hasProgress,
         progressLabel,
         advanceOnClick,
+        advanceLabel,
         canShowTarget,
+        variant: objectiveVariant,
       }),
     );
     this.setObjectiveAttention(attention);
@@ -572,14 +587,18 @@ export class TutorialHintManager {
     progress,
     progressLabel,
     advanceOnClick,
+    advanceLabel,
     canShowTarget,
+    variant,
   } = {}) {
-    const width = LESSON_WIDTH;
+    const introDialog = variant === 'intro-dialog';
+    const width = introDialog ? INTRO_DIALOG_WIDTH : LESSON_WIDTH;
     const estimatedHeight = this.estimateLessonHeight({
       text,
       width,
       progress,
       progressLabel,
+      variant,
     });
     const measuredHeight = this.measureLessonHeight({
       title,
@@ -588,13 +607,19 @@ export class TutorialHintManager {
       progress,
       progressLabel,
       advanceOnClick,
+      advanceLabel,
       canShowTarget,
       width,
+      variant,
     });
 
     return {
       width,
-      height: clamp(measuredHeight ?? estimatedHeight, LESSON_MIN_HEIGHT, LESSON_MAX_HEIGHT),
+      height: clamp(
+        measuredHeight ?? estimatedHeight,
+        introDialog ? INTRO_DIALOG_MIN_HEIGHT : LESSON_MIN_HEIGHT,
+        introDialog ? INTRO_DIALOG_MAX_HEIGHT : LESSON_MAX_HEIGHT,
+      ),
     };
   }
 
@@ -605,8 +630,10 @@ export class TutorialHintManager {
     progress,
     progressLabel,
     advanceOnClick,
+    advanceLabel,
     canShowTarget,
     width,
+    variant,
   }) {
     const doc = this.root?.ownerDocument;
 
@@ -616,6 +643,7 @@ export class TutorialHintManager {
 
     const measure = doc.createElement('section');
     measure.className = 'tutorial-layer__lesson tutorial-layer__lesson-measure style-box';
+    measure.classList.toggle('is-intro-dialog', variant === 'intro-dialog');
     measure.setAttribute('aria-hidden', 'true');
     measure.style.width = `${width}px`;
 
@@ -652,7 +680,7 @@ export class TutorialHintManager {
     const measureAdvance = doc.createElement('button');
     measureAdvance.className = 'tutorial-layer__lesson-advance tutorial-layer__advance';
     measureAdvance.type = 'button';
-    measureAdvance.textContent = 'next';
+    measureAdvance.textContent = normalizeActionLabel(advanceLabel);
     measureAdvance.hidden = !advanceOnClick;
 
     measure.append(
@@ -675,7 +703,7 @@ export class TutorialHintManager {
     return contentHeight > 0 ? contentHeight : null;
   }
 
-  estimateLessonHeight({ text, width, progress, progressLabel }) {
+  estimateLessonHeight({ text, width, progress, progressLabel, variant }) {
     const charsPerLine = Math.max(1, Math.floor(width / LESSON_ESTIMATED_CHAR_WIDTH));
     const textLines = String(text ?? '')
       .split('\n')
@@ -695,6 +723,10 @@ export class TutorialHintManager {
 
     if (progress || progressLabel) {
       height += 16;
+    }
+
+    if (variant === 'intro-dialog') {
+      height += 18;
     }
 
     return Math.ceil(height);
@@ -844,6 +876,7 @@ export class TutorialHintManager {
     if (this.objective) {
       this.clearObjectiveHideTimeout();
       this.objective.classList.remove('is-hiding');
+      this.objective.classList.remove('is-intro-dialog');
       this.objective.hidden = true;
     }
 
@@ -859,6 +892,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
+    this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
     this.blockingDialogSuspended = false;
@@ -907,6 +941,7 @@ export class TutorialHintManager {
     if (this.objective) {
       this.clearObjectiveHideTimeout();
       this.objective.classList.remove('is-hiding');
+      this.objective.classList.remove('is-intro-dialog');
       this.objective.hidden = true;
     }
 
@@ -922,6 +957,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
+    this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
     this.blockingDialogSuspended = false;
@@ -1299,6 +1335,19 @@ export class TutorialHintManager {
 
   positionObjective() {
     const bounds = this.getSourceBounds();
+
+    if (this.objectiveVariant === 'intro-dialog') {
+      const placement = this.resolveIntroDialogPlacement(bounds);
+      this.applyObjectivePlacement(placement);
+      this.objective.style.setProperty('--tutorial-lesson-origin-x', '50%');
+      this.objective.style.setProperty('--tutorial-lesson-origin-y', '50%');
+      this.objective.style.setProperty('--tutorial-lesson-enter-x', '0px');
+      this.objective.style.setProperty('--tutorial-lesson-enter-y', '4px');
+      this.clearGuideAutoMoveAnimation();
+      this.clearGuideDragVisualOffset();
+      return;
+    }
+
     const protectedRects = this.getObjectiveProtectedRects(this.objectiveTarget);
     const targetRects = this.getObjectiveTargetProtectedRects(this.objectiveTarget).map((rect) =>
       padAreaRect(rect, GUIDE_AUTO_MOVE_TARGET_GAP),
@@ -1345,6 +1394,24 @@ export class TutorialHintManager {
     this.objective.style.top = `${objectiveTop}px`;
     this.objectiveButton.style.left = `${buttonLeft}px`;
     this.objectiveButton.style.top = `${buttonTop}px`;
+  }
+
+  resolveIntroDialogPlacement(bounds) {
+    const outerSize = this.getObjectiveOuterSize();
+    const objectiveLeft = Math.round((bounds.width - outerSize.width) / 2);
+    const preferredTop = Math.round(bounds.height * 0.28);
+    const objectiveTop = clamp(
+      preferredTop,
+      HINT_GAP,
+      bounds.height - outerSize.height - HINT_GAP,
+    );
+
+    return {
+      objectiveLeft: clamp(objectiveLeft, HINT_GAP, bounds.width - outerSize.width - HINT_GAP),
+      objectiveTop,
+      buttonLeft: OBJECTIVE_BUTTON_LEFT,
+      buttonTop: OBJECTIVE_BUTTON_TOP,
+    };
   }
 
   resolveManualObjectivePlacement({ bounds }) {
@@ -2648,6 +2715,11 @@ function getTargetCueAnchor(target) {
   }
 
   return target;
+}
+
+function normalizeActionLabel(label) {
+  const nextLabel = typeof label === 'string' ? label.trim() : '';
+  return nextLabel.length > 0 ? nextLabel : 'next';
 }
 
 function getOverflowAmount(rect, bounds) {

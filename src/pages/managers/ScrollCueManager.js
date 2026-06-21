@@ -4,6 +4,7 @@ const SCROLL_CUE_SELECTOR = [
   '.brewing-page__guide-sequence',
   '.workshop-page__leaderboard-rows',
   '.workshop-page__discoveries-rows',
+  '.workshop-page__personal-tasks-frame',
   '.workshop-page__world-chat-messages',
   '.workshop-page__trade-alliance-content',
   '.shop-page__market-panel',

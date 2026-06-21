@@ -1887,6 +1887,21 @@ body {
     var(--tutorial-lesson-origin-y, bottom);
 }
 
+.style-box.tutorial-layer__lesson.is-intro-dialog {
+  z-index: 7;
+  padding: var(--style-dialog-padding);
+  border: var(--style-border-strong);
+  box-shadow: var(--style-block-shadow);
+}
+
+.tutorial-layer__lesson.is-intro-dialog .tutorial-layer__lesson-text {
+  white-space: pre-line;
+}
+
+.tutorial-layer__lesson.is-intro-dialog .tutorial-layer__advance {
+  right: var(--style-dialog-padding);
+}
+
 .style-box.tutorial-layer__lesson-measure {
   position: absolute;
   top: -10000px;
@@ -2045,6 +2060,7 @@ body {
 
   .tutorial-layer__objective-button:not([hidden]),
   .tutorial-layer__objective:not([hidden]),
+  .tutorial-layer__lesson.is-intro-dialog:not([hidden]),
   .tutorial-layer__objective.is-hiding,
   .tutorial-layer__lesson.is-hiding,
   .room-bottom-panel__lock-popup.is-entering,
@@ -3150,10 +3166,10 @@ body {
 .workshop-page__ui-layer > .workshop-page__personal-tasks,
 .workshop-page__ui-layer > .workshop-page__world-notice {
   position: absolute;
-  left: var(--style-room-content-edge);
+  left: calc(var(--style-room-content-edge) - 20px);
   z-index: 1;
-  width: 70px;
-  height: 105px;
+  width: 45.5px;
+  height: 68.25px;
   margin: 0;
   pointer-events: none;
 }
@@ -3200,8 +3216,8 @@ body {
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 70px;
-  height: 105px;
+  width: 45.5px;
+  height: 68.25px;
   padding: 0;
   margin: 0;
   appearance: none;
@@ -3232,8 +3248,8 @@ body {
 
 .workshop-page__personal-tasks-character,
 .workshop-page__world-notice-character {
-  width: 70px;
-  height: 91px;
+  width: 45.5px;
+  height: 59.15px;
   object-position: center bottom;
   filter: drop-shadow(0 1px 0 var(--style-surface));
   pointer-events: none;
@@ -3245,17 +3261,17 @@ body {
 
 .workshop-page__feature-character-label {
   position: absolute;
-  right: 4px;
-  bottom: 6px;
+  right: 2.6px;
+  bottom: 3.9px;
   z-index: 2;
   display: inline-block;
-  min-height: var(--style-box-border-label-line-height);
-  padding: 0 var(--style-box-border-label-padding-x);
+  min-height: calc(var(--style-box-border-label-line-height) * 0.65);
+  padding: 0 calc(var(--style-box-border-label-padding-x) * 0.65);
   color: var(--style-text);
   font-family: var(--style-font);
-  font-size: var(--style-box-border-label-font-size);
+  font-size: calc(var(--style-box-border-label-font-size) * 0.65);
   font-weight: normal;
-  line-height: var(--style-box-border-label-line-height);
+  line-height: calc(var(--style-box-border-label-line-height) * 0.65);
   white-space: nowrap;
   background: var(--style-surface);
   border: var(--style-border);
@@ -4258,9 +4274,15 @@ body {
 .workshop-page__personal-tasks-frame {
   height: calc(
     var(--style-tabbed-dialog-content-height) -
-      var(--style-box-border-label-line-height) - 46px
+      var(--style-box-border-label-line-height) - 46px -
+      var(--style-scroll-progress-block-size)
   );
-  overflow: auto;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.workshop-page__personal-tasks-frame::-webkit-scrollbar {
+  display: none;
 }
 
 .workshop-page__personal-tasks-rows {
@@ -4282,13 +4304,19 @@ body {
 
 .workshop-page__personal-task-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(52px, max-content) minmax(
-      58px,
-      max-content
-    );
-  column-gap: 16px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: var(--style-row-column-gap);
   align-items: center;
   min-height: var(--style-row-min-height);
+}
+
+.workshop-page__personal-task-status {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+  justify-content: end;
+  min-width: 0;
 }
 
 .workshop-page__personal-task.is-completed {
@@ -4326,24 +4354,6 @@ body {
   display: flex;
   gap: var(--style-dialog-tab-gap);
   margin-top: var(--style-dialog-tab-gap);
-}
-
-.style-button.workshop-page__personal-tasks-close {
-  position: absolute;
-  right: var(--style-box-title-left);
-  top: var(--style-box-border-label-offset);
-  min-height: var(--style-box-border-label-line-height);
-  padding: 0 var(--style-box-border-label-padding-x);
-  margin: 0;
-  appearance: none;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-box-border-label-font-size);
-  font-weight: normal;
-  line-height: var(--style-box-border-label-line-height);
-  background: var(--style-surface);
-  border: 0;
-  border-radius: 0;
 }
 
 .workshop-page__personal-tasks-empty {
@@ -4478,24 +4488,6 @@ body {
 
 .workshop-page__world-notice-archive-response {
   text-align: right;
-}
-
-.style-button.workshop-page__world-notice-close {
-  position: absolute;
-  right: var(--style-box-title-left);
-  top: var(--style-box-border-label-offset);
-  min-height: var(--style-box-border-label-line-height);
-  padding: 0 var(--style-box-border-label-padding-x);
-  margin: 0;
-  appearance: none;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-box-border-label-font-size);
-  font-weight: normal;
-  line-height: var(--style-box-border-label-line-height);
-  background: var(--style-surface);
-  border: 0;
-  border-radius: 0;
 }
 
 .workshop-page__tasks-info-copy {
@@ -6688,6 +6680,8 @@ div.workshop-page__discovery-row {
 .style-button.brewing-page__potions-close,
 .style-button.workshop-page__bag-close,
 .style-button.workshop-page__prestige-close,
+.style-button.workshop-page__personal-tasks-close,
+.style-button.workshop-page__world-notice-close,
 .style-button.workshop-page__world-chat-close,
 .style-button.workshop-page__trade-alliance-close,
 .style-button.shop-page__request-close,
@@ -6718,6 +6712,12 @@ div.workshop-page__discovery-row {
     [aria-disabled="true"]
   ),
 .style-button.workshop-page__prestige-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.workshop-page__personal-tasks-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.workshop-page__world-notice-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not(

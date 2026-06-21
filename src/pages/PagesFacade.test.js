@@ -9,9 +9,15 @@ import { PagesFacade } from './PagesFacade.js';
 import { setNotificationVisibilityPolicy } from './shared/notificationBadge.js';
 import { TUTORIAL_STORAGE_KEY } from './tutorial/managers/TutorialProgressManager.js';
 import { TUTORIAL_STEP_IDS } from './tutorial/managers/TutorialStepManager.js';
+import { WORKSHOP_CHAT_PENDING_STORAGE_KEY } from './workshop/managers/WorkshopChatPendingMessageManager.js';
 
 afterEach(() => {
   setNotificationVisibilityPolicy(null);
+  try {
+    window.localStorage?.removeItem?.(WORKSHOP_CHAT_PENDING_STORAGE_KEY);
+  } catch {
+    // Ignore unavailable storage in jsdom edge cases.
+  }
 });
 
 function createGameplayFacadeFake() {
@@ -4116,7 +4122,7 @@ describe('PagesFacade', () => {
 
     const shopTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="shop"]');
 
-    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-welcome');
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('purchase-house');
     expect(shopTab?.dataset.notification).toBeUndefined();
 
     pagesFacade.tutorialFacade.progressManager.completeMany(TUTORIAL_STEP_IDS);
@@ -6471,7 +6477,7 @@ describe('PagesFacade', () => {
     const playerFacade = createPlayerFacadeFake('wizard');
     const tutorialStorage = createMemoryStorage({
       [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-        completedStepIds: ['intro-welcome'],
+        completedStepIds: ['purchase-house', 'intro-welcome'],
       }),
     });
     const pagesFacade = new PagesFacade({
@@ -6510,7 +6516,7 @@ describe('PagesFacade', () => {
     const playerFacade = createPlayerFacadeFake('wizard');
     const tutorialStorage = createMemoryStorage({
       [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-        completedStepIds: ['intro-welcome'],
+        completedStepIds: ['purchase-house', 'intro-welcome'],
       }),
     });
     const pagesFacade = new PagesFacade({
@@ -8968,6 +8974,100 @@ describe('PagesFacade', () => {
       expect(popup.textContent).toContain('[VOID] StepDav(7): level 20?');
     } finally {
       pagesFacade.unmount();
+      dateNow.mockRestore();
+    }
+  });
+
+  it('keeps sent world chat through refresh while waiting for the server subscription row', async () => {
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(10_000);
+    const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      'localStorage',
+    );
+    const chatStorage = createMemoryStorage();
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade(7);
+    const playerFacade = createPlayerFacadeFake('StepDav', 'white', {
+      initialCharacter: 'mira',
+    });
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [],
+      publishOnSend: false,
+    });
+
+    const mountOpenChat = () => {
+      const stage = document.createElement('section');
+      const pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade,
+        worldChatFacade,
+      });
+
+      pagesFacade.mount(stage);
+      stage
+        .querySelector('.workshop-page__world-chat-button')
+        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      return {
+        pagesFacade,
+        stage,
+        popup: stage.querySelector('.workshop-page__world-chat-popup'),
+      };
+    };
+
+    let firstMount = null;
+    let secondMount = null;
+
+    try {
+      Object.defineProperty(window, 'localStorage', {
+        configurable: true,
+        value: chatStorage,
+      });
+      firstMount = mountOpenChat();
+
+      const input = firstMount.popup.querySelector('.workshop-page__world-chat-input');
+      const form = firstMount.popup.querySelector('.workshop-page__world-chat-form');
+
+      input.value = '  still   here  ';
+      input.dispatchEvent(new window.Event('input', { bubbles: true }));
+      form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(firstMount.popup.textContent).toContain('StepDav(7): still here');
+      expect(chatStorage.getItem(WORKSHOP_CHAT_PENDING_STORAGE_KEY)).toContain('still here');
+
+      firstMount.pagesFacade.unmount();
+      firstMount.stage.remove();
+      firstMount = null;
+
+      secondMount = mountOpenChat();
+
+      expect(secondMount.popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(
+        1,
+      );
+      expect(secondMount.popup.textContent).toContain('StepDav(7): still here');
+
+      worldChatFacade.publishServerMessage({
+        senderIdentity: 'sender-self',
+        username: 'StepDav',
+        character: 'mira',
+        playerLevel: 7,
+        body: 'still here',
+        sentAtMs: 10_500,
+      });
+
+      expect(secondMount.popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(
+        1,
+      );
+      expect(chatStorage.getItem(WORKSHOP_CHAT_PENDING_STORAGE_KEY)).toBeNull();
+    } finally {
+      firstMount?.pagesFacade.unmount();
+      secondMount?.pagesFacade.unmount();
+      if (originalLocalStorageDescriptor) {
+        Object.defineProperty(window, 'localStorage', originalLocalStorageDescriptor);
+      } else {
+        delete window.localStorage;
+      }
       dateNow.mockRestore();
     }
   });

@@ -216,6 +216,7 @@
 - Temporary Vite UI harnesses must set `--style-ui-scale` to `3 * min(width/1080, height/2170, 1)`; leaving the default `3` compresses source UI in desktop screenshots.
 - Put temporary Vite UI harness HTML at the repo root when it imports source modules or bare deps; `public/` serves raw HTML and bare imports fail.
 - If the in-app browser cannot reach `127.0.0.1:55173` or `localhost:55173`, use the Vite network URL printed by `npm run dev`; shell checks can still use localhost.
+- UI storage helpers should prefer `window.localStorage` and validate `getItem`/`setItem`; Vitest can expose a bad global `localStorage` that reads stale tutorial progress.
 - Before release, verify `package.json` has been bumped beyond the latest pushed release; release automation reuses the current version and will not bump it.
 - Before running release automation, verify the current `PLAYER_CHANGELOG.md` section exists; the script commits/pushes before Discord upload fails on a missing changelog.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.

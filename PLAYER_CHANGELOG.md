@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.19
+
+- Added short tutorial story beats for buying the old workshop and opening Market, Garden, Research, and Brewing.
+- Improved Elara tutorial dialogs so room-opening steps use centered popup-style panels with clearer action labels.
+- Kept unsent world and alliance chat messages locally for a short time, so they survive popup refreshes while waiting for the server echo.
+- Tightened Workshop personal task rows and scrolling so rewards and progress fit better in the popup.
+
 ## 0.2.18
 
 - Added Workshop character entry buttons for personal tasks and world notices, with clearer popup headers.

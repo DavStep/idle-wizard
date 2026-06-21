@@ -18,6 +18,7 @@ const CONTACT_SHEET_URL = 'http://127.0.0.1:55173/docs/tutorial-flow/contact-she
 const CAPTURE_USERNAME = 'Mira';
 
 const FLOW_STEPS = [
+  'purchase-house',
   'intro-welcome',
   'intro-username',
   'intro-username-return',
@@ -32,20 +33,26 @@ const FLOW_STEPS = [
   'select-sage-seed-sale',
   'earn-tutorial-gold',
   'level-up-one',
+  'intro-garden',
   'grow-sage',
   'fill-sage-seed-task',
   'fill-sage-herb-task',
   'level-up-two',
+  'intro-research',
   'research-mint-seed',
   'fill-mint-seed-task',
   'fill-mint-herb-task',
   'level-up-three',
   'research-mana-tonic',
+  'intro-brewing',
   'brew-mana-tonic',
   'refill-mana-tonic-cauldron',
 ];
 
 const STEP_ACTIONS = {
+  'purchase-house': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  },
   'intro-welcome': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
@@ -96,6 +103,9 @@ const STEP_ACTIONS = {
     await page.clickActiveTarget();
     await page.cheat('addItem', 'sageSeed', 1);
   },
+  'intro-garden': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  },
   'grow-sage': async (page) => {
     await page.clickTarget('page:garden');
     await page.cheat('addItem', 'sageHerb', 3);
@@ -115,6 +125,9 @@ const STEP_ACTIONS = {
   'level-up-two': async (page) => {
     await page.ensureTasksExpanded();
     await page.clickActiveTarget();
+  },
+  'intro-research': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
   'research-mint-seed': async (page) => {
     await page.clickTarget('page:research');
@@ -144,6 +157,9 @@ const STEP_ACTIONS = {
     await page.cheat('completeResearch', 'unlockRecipe:manaTonic');
     await page.cheat('addItem', 'sageHerb', 6);
     await page.cheat('fillMana');
+  },
+  'intro-brewing': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
   'brew-mana-tonic': async (page) => {
     await page.clickTarget('page:brewing');
@@ -189,7 +205,7 @@ async function main() {
       { timeoutMs: 20_000 },
     );
     await page.startFresh();
-    await page.waitForStep('intro-welcome');
+    await page.waitForStep(FLOW_STEPS[0]);
 
     const captures = [];
 

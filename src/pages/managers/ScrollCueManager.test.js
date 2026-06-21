@@ -84,6 +84,33 @@ describe('ScrollCueManager', () => {
     manager.unmount();
   });
 
+  it('registers the personal tasks popup frame for shared scroll progress', async () => {
+    const root = document.createElement('div');
+    const frame = document.createElement('div');
+    frame.className = 'workshop-page__personal-tasks-frame';
+    root.append(frame);
+    document.body.append(root);
+
+    Object.defineProperty(frame, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(frame, 'scrollHeight', { value: 220, configurable: true });
+    frame.scrollTop = 60;
+
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    await flushAnimationFrame();
+
+    expect(frame.classList.contains('style-scroll-cue')).toBe(true);
+    expect(frame.nextElementSibling?.classList.contains('style-scroll-cue-progress')).toBe(
+      true,
+    );
+    expect(
+      frame.nextElementSibling?.querySelector('.style-scroll-cue-progress-fill')?.style
+        .width,
+    ).toBe('50%');
+
+    manager.unmount();
+  });
+
   it('ignores unrelated subtree text mutations', async () => {
     const root = document.createElement('div');
     const rows = document.createElement('div');

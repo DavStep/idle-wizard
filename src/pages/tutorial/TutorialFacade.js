@@ -287,13 +287,20 @@ export class TutorialFacade {
   }
 
   advanceActiveStep() {
+    const advancePageId = this.activeStep?.advancePageId;
+
     if (!this.logicManager.advanceActiveStep()) {
       return;
     }
 
     this.activeStep = null;
     this.clearRequestedTargetGuidance();
-    this.hintManager.hideTargetCue();
+    this.hintManager.hideTargetCue({ immediate: Boolean(advancePageId) });
+
+    if (advancePageId && this.onShowPage) {
+      this.onShowPage(advancePageId);
+    }
+
     this.scheduleRefresh();
   }
 

@@ -578,6 +578,48 @@ describe('TutorialHintManager', () => {
     }
   });
 
+  it('renders intro dialogs as centered purchase panels', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const manager = new TutorialHintManager();
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'purchase-house',
+        title: 'the story begins',
+        text: 'this old workshop is for sale.',
+        stepLabel: '1/31',
+        advanceOnClick: true,
+        advanceLabel: 'purchase house 1000 gold',
+        canShowTarget: true,
+        variant: 'intro-dialog',
+      });
+
+      const lesson = stage.querySelector('.tutorial-layer__lesson');
+      const button = stage.querySelector('.tutorial-layer__lesson-button');
+      const advance = stage.querySelector('.tutorial-layer__lesson-advance');
+      const showMe = stage.querySelector('.tutorial-layer__lesson-show');
+
+      expect(lesson?.hidden).toBe(false);
+      expect(lesson?.classList.contains('is-intro-dialog')).toBe(true);
+      expect(lesson?.style.width).toBe('260px');
+      expect(lesson?.style.left).toBe('38px');
+      expect(lesson?.style.top).toBe('202px');
+      expect(button?.hidden).toBe(true);
+      expect(advance?.hidden).toBe(false);
+      expect(advance?.textContent).toBe('purchase house 1000 gold');
+      expect(showMe?.hidden).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps lesson text open until the player closes it', () => {
     vi.useFakeTimers();
 
@@ -1248,7 +1290,7 @@ describe('TutorialHintManager', () => {
         id: 'fast-sell-tab-base',
         title: 'lesson 3: gardening',
         text: 'open herbs tab',
-        stepLabel: '19/27',
+        stepLabel: '21/31',
         canShowTarget: true,
       });
 
@@ -1262,7 +1304,7 @@ describe('TutorialHintManager', () => {
         id: 'fast-sell-tab-target',
         title: 'lesson 3: gardening',
         text: 'open herbs tab',
-        stepLabel: '19/27',
+        stepLabel: '21/31',
         canShowTarget: true,
         target: herbsTab,
       });
@@ -2003,7 +2045,7 @@ describe('TutorialHintManager', () => {
       id: 'brew-mana-tonic',
       title: 'lesson 4: brewing',
       text: 'brew mana tonic',
-      stepLabel: '25/27',
+      stepLabel: '29/31',
       progress: { value: 0, max: 1 },
       progressLabel: '0/1 potion',
       canShowTarget: true,

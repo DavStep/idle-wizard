@@ -33,6 +33,7 @@ const LEVEL_TWO_SELL_ITEM_KEYS = [SAGE_SEED_KEY, SAGE_HERB_KEY];
 const LEVEL_THREE_SELL_ITEM_KEYS = [...LEVEL_TWO_SELL_ITEM_KEYS, MINT_SEED_KEY, MINT_HERB_KEY];
 
 const LEVEL_ONE_STEP_IDS = [
+  'purchase-house',
   'intro-welcome',
   'intro-username',
   'intro-username-return',
@@ -51,6 +52,7 @@ const LEVEL_ONE_STEP_IDS = [
 ];
 
 const LEVEL_TWO_STEP_IDS = [
+  'intro-garden',
   'grow-sage',
   'fill-sage-herb-task',
   'fill-sage-seed-task',
@@ -58,6 +60,7 @@ const LEVEL_TWO_STEP_IDS = [
 ];
 
 const LEVEL_THREE_STEP_IDS = [
+  'intro-research',
   'research-mint-seed',
   'fill-mint-seed-task',
   'fill-mint-herb-task',
@@ -66,6 +69,7 @@ const LEVEL_THREE_STEP_IDS = [
 
 const LEVEL_FOUR_STEP_IDS = [
   'research-mana-tonic',
+  'intro-brewing',
   'brew-mana-tonic',
   'refill-mana-tonic-cauldron',
 ];
@@ -96,6 +100,11 @@ const LESSON_TITLE_BY_STEP_ID = new Map([
   ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 3: gardening']),
   ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 4: brewing']),
   ...SETTINGS_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 5: settings']),
+  ['purchase-house', 'the story begins'],
+  ['intro-market', 'market opened'],
+  ['intro-garden', 'garden opened'],
+  ['intro-research', 'research opened'],
+  ['intro-brewing', 'brewing opened'],
 ]);
 
 export const TUTORIAL_STEP_IDS = [
@@ -114,10 +123,25 @@ const REVEAL_LEVEL_ONE_WORKFLOW = ['mana', 'summon', 'tasks', 'top', 'rooms'];
 
 export const TUTORIAL_STEPS = [
   {
+    id: 'purchase-house',
+    kind: 'dialog',
+    variant: 'intro-dialog',
+    revealTokens: [],
+    text:
+      "this old workshop is for sale.\n\nit needs work, but it can become a real potion shop.\n\nElara used to work here. she'll help you get started.",
+    advanceLabel: 'purchase house 1000 gold',
+    advanceOnClick: true,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 2 ||
+      hasAnySeedQuantity(snapshot) ||
+      hasAnySeedTaskProgress(snapshot),
+  },
+  {
     id: 'intro-welcome',
     kind: 'prompt',
     revealTokens: [],
-    text: "hi there. i'm Elara Starbrew. i'll help you wake this workshop up.",
+    text: "i'm Elara. let's get the workshop running.",
     advanceOnClick: true,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
@@ -270,17 +294,25 @@ export const TUTORIAL_STEPS = [
   {
     id: 'intro-market',
     kind: 'dialog',
+    targetId: 'page:shop',
+    getAdvanceLabel: ({ snapshot }) =>
+      getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 ? 'open market' : 'continue',
+    getAdvancePageId: ({ snapshot }) =>
+      getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 ? 'shop' : null,
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    getText: ({ snapshot }) =>
-      getItemQuantity(snapshot, SAGE_SEED_KEY) > 0
-        ? 'good. that completes the first requirement. now we need more gold. sell a sage seed in market.'
-        : 'good. that completes the first requirement. now we need more gold. summon a sage seed, then sell it in market.',
+    text:
+      'the front room is cleared out.\n\nyou can use it to trade what the workshop makes.',
     advanceOnClick: true,
+    allowTargetClick: true,
+    showPointer: false,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
       getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2 || getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET,
+    isComplete: ({ currentPageId, snapshot }) =>
+      getCurrentLevel(snapshot) >= 2 ||
+      currentPageId === 'shop' ||
+      getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET,
   },
   {
     id: 'prepare-seed-sale',
@@ -494,6 +526,25 @@ export const TUTORIAL_STEPS = [
       getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
+  },
+  {
+    id: 'intro-garden',
+    kind: 'dialog',
+    targetId: 'page:garden',
+    revealTokens: null,
+    text:
+      'there is a small growing plot behind the house.\n\nyou can plant seeds there.',
+    advanceLabel: 'open garden',
+    advancePageId: 'garden',
+    advanceOnClick: true,
+    allowTargetClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
+    isComplete: ({ currentPageId, snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 ||
+      currentPageId === 'garden' ||
+      hasGrownEnoughSageForLesson(snapshot) ||
+      hasTaskActionForItem(snapshot, SAGE_HERB_KEY),
   },
   {
     id: 'grow-sage',
@@ -769,6 +820,24 @@ export const TUTORIAL_STEPS = [
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3,
   },
   {
+    id: 'intro-research',
+    kind: 'dialog',
+    targetId: 'page:research',
+    text:
+      'Elara found notes from the old owner.\n\nyou can study them to learn what this place can make.',
+    advanceLabel: 'open research',
+    advancePageId: 'research',
+    advanceOnClick: true,
+    allowTargetClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 3,
+    isComplete: ({ currentPageId, snapshot }) =>
+      getCurrentLevel(snapshot) >= 4 ||
+      currentPageId === 'research' ||
+      hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ||
+      hasTaskActionForItem(snapshot, MINT_SEED_KEY),
+  },
+  {
     id: 'research-mint-seed',
     kind: 'objective',
     cueMode: 'passive',
@@ -988,6 +1057,22 @@ export const TUTORIAL_STEPS = [
       hasStartedOrCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID) ||
       hasTaskActionForItem(snapshot, MANA_TONIC_KEY) ||
       hasBrewedManaTonic(snapshot),
+  },
+  {
+    id: 'intro-brewing',
+    kind: 'dialog',
+    targetId: 'page:brewing',
+    text:
+      'the cauldron room is usable again.\n\nyou can brew simple potions there.',
+    advanceLabel: 'open brewing',
+    advancePageId: 'brewing',
+    advanceOnClick: true,
+    allowTargetClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 4 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
+    isComplete: ({ currentPageId, snapshot }) =>
+      getCurrentLevel(snapshot) >= 5 || currentPageId === 'brewing' || hasBrewedManaTonic(snapshot),
   },
   {
     id: 'brew-mana-tonic',
@@ -1320,7 +1405,7 @@ export class TutorialStepManager {
     }
 
     if (hasGrownEnoughSageForLesson(snapshot) || hasTaskActionForItem(snapshot, SAGE_HERB_KEY)) {
-      this.completeSteps(['grow-sage']);
+      this.completeSteps(['intro-garden', 'grow-sage']);
     }
 
     if (currentLevel === 2 && hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY)) {
@@ -1335,7 +1420,7 @@ export class TutorialStepManager {
       hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ||
       hasTaskActionForItem(snapshot, MINT_SEED_KEY)
     ) {
-      this.completeSteps(['research-mint-seed']);
+      this.completeSteps(['intro-research', 'research-mint-seed']);
     }
 
     if (hasCompletedTaskForItem(snapshot, MINT_SEED_KEY)) {
@@ -1355,7 +1440,7 @@ export class TutorialStepManager {
     }
 
     if (hasBrewedManaTonic(snapshot)) {
-      this.completeSteps(['brew-mana-tonic']);
+      this.completeSteps(['intro-brewing', 'brew-mana-tonic']);
     }
   }
 
@@ -1391,7 +1476,7 @@ export class TutorialStepManager {
         text: `open ${formatPageLabel(step.pageId)}`,
         hintText: `open ${formatPageLabel(step.pageId)}`,
         objectiveText: step.getObjectiveText?.(context) ?? step.objectiveText ?? step.text ?? '',
-        lessonTitle: getLessonTitle(step.id),
+        lessonTitle: getLessonTitle(step),
         progress: step.getProgress?.(context) ?? null,
         progressLabel: step.getProgressLabel?.(context) ?? '',
         stepLabel,
@@ -1402,6 +1487,9 @@ export class TutorialStepManager {
         allowTargetClick: step.allowTargetClick === true,
         cueMode: getCueMode(step, context),
         autoPageId: getAutoPageId(step, context),
+        advanceLabel: getAdvanceLabel(step, context),
+        advancePageId: getAdvancePageId(step, context),
+        variant: getVariant(step, context),
         effect: step.effect,
         sale: step.sale,
       };
@@ -1418,7 +1506,7 @@ export class TutorialStepManager {
       text,
       hintText,
       objectiveText: step.getObjectiveText?.(context) ?? step.objectiveText ?? text,
-      lessonTitle: getLessonTitle(step.id),
+      lessonTitle: getLessonTitle(step),
       progress: step.getProgress?.(context) ?? null,
       progressLabel: step.getProgressLabel?.(context) ?? '',
       stepLabel,
@@ -1431,6 +1519,9 @@ export class TutorialStepManager {
       allowedPopupClasses: getAllowedPopupClasses(step, { ...context, targetId, text, hintText }),
       cueMode: getCueMode(step, { ...context, targetId, text, hintText }),
       autoPageId: getAutoPageId(step, { ...context, targetId, text, hintText }),
+      advanceLabel: getAdvanceLabel(step, { ...context, targetId, text, hintText }),
+      advancePageId: getAdvancePageId(step, { ...context, targetId, text, hintText }),
+      variant: getVariant(step, { ...context, targetId, text, hintText }),
       effect: step.effect,
       sale: step.sale,
     };
@@ -1486,8 +1577,8 @@ function hasCompletedPrestige(snapshot) {
   return (snapshot?.prestige?.completedLevels ?? []).length > 0;
 }
 
-function getLessonTitle(stepId) {
-  return LESSON_TITLE_BY_STEP_ID.get(stepId) ?? 'lesson';
+function getLessonTitle(step) {
+  return step?.lessonTitle ?? LESSON_TITLE_BY_STEP_ID.get(step?.id) ?? 'lesson';
 }
 
 function getRevealTokens(step) {
@@ -1517,6 +1608,21 @@ function getCueMode(step, context) {
 function getAutoPageId(step, context) {
   const pageId = step?.getAutoPageId?.(context) ?? step?.autoPageId ?? null;
   return typeof pageId === 'string' && pageId.length > 0 ? pageId : null;
+}
+
+function getAdvanceLabel(step, context) {
+  const label = step?.getAdvanceLabel?.(context) ?? step?.advanceLabel ?? 'next';
+  return typeof label === 'string' && label.trim().length > 0 ? label.trim() : 'next';
+}
+
+function getAdvancePageId(step, context) {
+  const pageId = step?.getAdvancePageId?.(context) ?? step?.advancePageId ?? null;
+  return typeof pageId === 'string' && pageId.length > 0 ? pageId : null;
+}
+
+function getVariant(step, context) {
+  const variant = step?.getVariant?.(context) ?? step?.variant ?? null;
+  return typeof variant === 'string' && variant.length > 0 ? variant : null;
 }
 
 function hasCompletedResearch(snapshot, researchId) {

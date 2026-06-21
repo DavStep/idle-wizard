@@ -1,6 +1,7 @@
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
+import { WorkshopChatPendingMessageManager } from './WorkshopChatPendingMessageManager.js';
 import { WorkshopSecondaryActionGateManager } from './WorkshopSecondaryActionGateManager.js';
 
 const EMPTY_CHAT_SNAPSHOT = {
@@ -38,6 +39,9 @@ export class WorkshopWorldChatManager {
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.unlockGateManager = new WorkshopSecondaryActionGateManager();
+    this.pendingMessageManager = new WorkshopChatPendingMessageManager({
+      limit: MESSAGE_LIMIT,
+    });
     this.root = null;
     this.unsubscribeGameplay = null;
     this.unsubscribePlayer = null;
@@ -51,10 +55,7 @@ export class WorkshopWorldChatManager {
     this.statusSticky = false;
     this.selectedChannelId = 'world';
     this.localMessageSeq = 0;
-    this.localMessagesByChannel = {
-      world: [],
-      alliance: [],
-    };
+    this.localMessagesByChannel = this.pendingMessageManager.getMessagesByChannel();
     this.playerSnapshot = null;
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
@@ -374,10 +375,7 @@ export class WorkshopWorldChatManager {
     this.statusSticky = false;
     this.selectedChannelId = 'world';
     this.localMessageSeq = 0;
-    this.localMessagesByChannel = {
-      world: [],
-      alliance: [],
-    };
+    this.localMessagesByChannel = this.pendingMessageManager.getMessagesByChannel();
     this.playerSnapshot = null;
     this.worldChatSnapshot = { ...EMPTY_CHAT_SNAPSHOT };
     this.tradeAllianceSnapshot = { ...EMPTY_ALLIANCE_SNAPSHOT };
@@ -532,8 +530,11 @@ export class WorkshopWorldChatManager {
       }
     }
 
-    this.localMessagesByChannel[channelId] = remainingMessages;
-    return remainingMessages;
+    this.localMessagesByChannel[channelId] = this.pendingMessageManager.setMessages(
+      channelId,
+      remainingMessages,
+    );
+    return this.localMessagesByChannel[channelId];
   }
 
   isServerMatchForLocalMessage(serverMessage, localMessage) {
@@ -801,10 +802,10 @@ export class WorkshopWorldChatManager {
       return;
     }
 
-    this.localMessagesByChannel[channelId] = [
+    this.localMessagesByChannel[channelId] = this.pendingMessageManager.setMessages(channelId, [
       ...(this.localMessagesByChannel[channelId] ?? []),
       localMessage,
-    ].slice(-MESSAGE_LIMIT);
+    ]);
     this.render();
   }
 

@@ -142,6 +142,7 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
 }
 
 const LEVEL_ONE_COMPLETED_STEP_IDS = [
+  'purchase-house',
   'intro-welcome',
   'intro-username',
   'intro-username-return',
@@ -190,7 +191,7 @@ describe('TutorialFacade', () => {
     facade.mount(stage);
     facade.refresh();
 
-    expect(facade.activeStep?.id).toBe('intro-welcome');
+    expect(facade.activeStep?.id).toBe('purchase-house');
     expect(stage.dataset.tutorialReveal).toBe('');
     expect(stage.hasAttribute('data-tutorial-reveal')).toBe(true);
 
@@ -200,7 +201,7 @@ describe('TutorialFacade', () => {
 
     expect(click.defaultPrevented).toBe(true);
     expect(underlyingClicks).toBe(0);
-    expect(facade.progressManager.hasCompleted('intro-welcome')).toBe(true);
+    expect(facade.progressManager.hasCompleted('purchase-house')).toBe(true);
 
     facade.unmount();
   });
@@ -215,7 +216,11 @@ describe('TutorialFacade', () => {
     const facade = new TutorialFacade({
       gameplayFacade,
       getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage(),
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['purchase-house'],
+        }),
+      }),
     });
 
     usernameButton.dataset.tutorialId = 'top:username';
@@ -250,6 +255,7 @@ describe('TutorialFacade', () => {
       storage: createMemoryStorage({
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
           completedStepIds: [
+            'purchase-house',
             'intro-welcome',
             'intro-username',
             'intro-username-return',
@@ -308,6 +314,7 @@ describe('TutorialFacade', () => {
     });
 
     snapshot = createLevelThreeSnapshot();
+    facade.progressManager.complete('intro-research');
     facade.refresh();
 
     expect(facade.activeStep?.id).toBe('research-mint-seed');
@@ -328,7 +335,11 @@ describe('TutorialFacade', () => {
     const facade = new TutorialFacade({
       gameplayFacade,
       getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage(),
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['purchase-house'],
+        }),
+      }),
     });
 
     usernameButton.dataset.tutorialId = 'top:username';
@@ -371,7 +382,7 @@ describe('TutorialFacade', () => {
       getCurrentPageId: () => 'workshop',
       storage: createMemoryStorage({
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: ['intro-welcome'],
+          completedStepIds: ['purchase-house', 'intro-welcome'],
         }),
       }),
     });
@@ -430,7 +441,7 @@ describe('TutorialFacade', () => {
       getCurrentPageId: () => 'workshop',
       storage: createMemoryStorage({
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: ['intro-welcome'],
+          completedStepIds: ['purchase-house', 'intro-welcome'],
         }),
       }),
     });
@@ -477,7 +488,7 @@ describe('TutorialFacade', () => {
       getCurrentPageId: () => 'workshop',
       storage: createMemoryStorage({
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: ['intro-welcome'],
+          completedStepIds: ['purchase-house', 'intro-welcome'],
         }),
       }),
     });
@@ -581,6 +592,7 @@ describe('TutorialFacade', () => {
       storage: createMemoryStorage({
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
           completedStepIds: [
+            'purchase-house',
             'intro-welcome',
             'intro-username',
             'intro-username-return',
@@ -654,7 +666,11 @@ describe('TutorialFacade', () => {
     const facade = new TutorialFacade({
       gameplayFacade,
       getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage(),
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-garden'],
+        }),
+      }),
     });
 
     summonButton.dataset.tutorialId = 'workshop:summonSeed';
@@ -723,7 +739,7 @@ describe('TutorialFacade', () => {
       },
       storage: createMemoryStorage({
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: LEVEL_ONE_COMPLETED_STEP_IDS,
+          completedStepIds: [...LEVEL_ONE_COMPLETED_STEP_IDS, 'intro-garden'],
         }),
       }),
     });
@@ -783,7 +799,11 @@ describe('TutorialFacade', () => {
     const facade = new TutorialFacade({
       gameplayFacade,
       getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage(),
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-garden'],
+        }),
+      }),
       now: () => now,
     });
 
@@ -848,7 +868,11 @@ describe('TutorialFacade', () => {
     const facade = new TutorialFacade({
       gameplayFacade,
       getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage(),
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-garden'],
+        }),
+      }),
       now: () => now,
     });
 

@@ -121,6 +121,17 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(popup.querySelectorAll('.workshop-page__personal-task-row')).toHaveLength(8);
     expect(popup.querySelectorAll('.workshop-page__personal-task')).toHaveLength(8);
     expect(popup.querySelectorAll('.workshop-page__personal-task-bar')).toHaveLength(8);
+    expect(popup.querySelectorAll('.workshop-page__personal-task-status')).toHaveLength(8);
+    expect(
+      popup
+        .querySelector('.workshop-page__personal-task-status')
+        ?.contains(popup.querySelector('.workshop-page__personal-task-progress')),
+    ).toBe(true);
+    expect(
+      popup
+        .querySelector('.workshop-page__personal-task-status')
+        ?.contains(popup.querySelector('.workshop-page__personal-task-reward')),
+    ).toBe(true);
     expect(
       popup.querySelector('.workshop-page__personal-task-fill')?.style.width,
     ).toBe('100%');
