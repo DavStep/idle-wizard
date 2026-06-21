@@ -3174,13 +3174,13 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks {
-  top: calc(55.5% - 46px);
-  left: calc(50% - 175px);
+  top: calc(var(--style-room-content-top) + 250px);
+  left: calc(var(--style-room-content-edge) - 14px);
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  top: calc(55.5% + 16px);
-  left: calc(50% - 175px);
+  top: calc(var(--style-room-content-top) + 306px);
+  left: calc(var(--style-room-content-edge) - 14px);
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks[hidden],
@@ -3262,7 +3262,8 @@ body {
 
 .workshop-page__feature-character-label {
   position: absolute;
-  right: 2.6px;
+  left: 14px;
+  right: auto;
   bottom: 3.9px;
   z-index: 2;
   display: inline-block;

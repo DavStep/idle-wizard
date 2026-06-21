@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.21
+
+- Moved the Workshop task and notice character labels to align with the leaderboard, with the two characters stacked closer together.
+
 ## 0.2.20
 
 - Moved the Workshop task and notice characters beside the summon circle, so expanded level requirements stay readable.
