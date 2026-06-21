@@ -1,4 +1,5 @@
 import { DEFAULT_PAGE_SWIPE_ORDER } from './PageSwipeNavigationManager.js';
+import { WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL } from '../workshop/managers/WorkshopSecondaryActionGateManager.js';
 
 export const PAGE_UNLOCK_REQUIREMENTS = {
   garden: {
@@ -20,6 +21,12 @@ export const PAGE_UNLOCK_REQUIREMENTS = {
     requiredLevel: 15,
     label: 'guild',
     message: 'guild unlocks at level 15',
+  },
+  prestige: {
+    requiredLevel: WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
+    label: 'prestige',
+    message: `prestige unlocks at level ${WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL}`,
+    visibleBeforeUnlock: false,
   },
   advancedBrewing: {
     requiredLevel: 999,
@@ -49,10 +56,12 @@ export class PageUnlockManager {
     return this.pageOrder.map((pageId) => {
       const requirement = PAGE_UNLOCK_REQUIREMENTS[pageId] ?? null;
       const unlocked = !requirement || currentLevel >= requirement.requiredLevel;
+      const visible = requirement?.visibleBeforeUnlock === false ? unlocked : true;
 
       return {
         id: pageId,
         unlocked,
+        visible,
         ...(requirement
           ? {
               requiredLevel: requirement.requiredLevel,

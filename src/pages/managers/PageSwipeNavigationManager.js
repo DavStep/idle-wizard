@@ -7,6 +7,7 @@ export const DEFAULT_PAGE_SWIPE_ORDER = [
   'advancedBrewing',
   'advancedGarden',
   'guild',
+  'prestige',
   'advancedMarket',
 ];
 
@@ -22,7 +23,6 @@ const BLOCKED_TARGET_SELECTOR = [
 
 const OPEN_POPUP_SELECTOR = [
   '.workshop-page__bag-popup:not([hidden])',
-  '.workshop-page__prestige-popup:not([hidden])',
   '.workshop-page__leaderboard-popup:not([hidden])',
   '.workshop-page__world-chat-popup:not([hidden])',
   '.workshop-page__tasks-info-popup:not([hidden])',

@@ -81,15 +81,16 @@ describe('BottomPanelViewManager', () => {
     expect(popup?.dataset.pageId).toBeUndefined();
   });
 
-  it('uses the old quests slot for the gated prestige action', () => {
+  it('uses the old quests slot for the gated prestige page', () => {
     const stage = document.createElement('section');
-    const onAction = vi.fn();
+    const onShowPage = vi.fn();
     const manager = new BottomPanelViewManager({
       getCurrentPageId: () => 'workshop',
-      onAction,
+      onShowPage,
     });
 
     manager.mount(stage);
+    manager.setPageStates([{ id: 'prestige', unlocked: false, visible: false }]);
 
     const labels = [...stage.querySelectorAll('.room-bottom-panel__tab')].map(
       (button) => button.textContent,
@@ -108,18 +109,18 @@ describe('BottomPanelViewManager', () => {
       'prestige',
       'adv market',
     ]);
-    expect(prestigeButton?.dataset.actionId).toBe('prestige');
-    expect(prestigeButton?.dataset.pageId).toBeUndefined();
+    expect(prestigeButton?.dataset.pageId).toBe('prestige');
+    expect(prestigeButton?.dataset.actionId).toBeUndefined();
     expect(prestigeButton?.style.visibility).toBe('hidden');
-    expect(prestigeButton?.disabled).toBe(true);
+    expect(prestigeButton?.tabIndex).toBe(-1);
 
     prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(onAction).not.toHaveBeenCalled();
+    expect(onShowPage).not.toHaveBeenCalled();
 
-    manager.setActionStates([{ id: 'prestige', visible: true, enabled: true }]);
+    manager.setPageStates([{ id: 'prestige', unlocked: true, visible: true }]);
     prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(onAction).toHaveBeenCalledWith('prestige');
+    expect(onShowPage).toHaveBeenCalledWith('prestige');
   });
 });

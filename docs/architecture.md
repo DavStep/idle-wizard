@@ -8,7 +8,7 @@ Every feature has a facade and dedicated managers. Facades explain the feature i
 
 - App: starts/stops the game shell, online gate, account-link gates, deploy refresh, and lifecycle flushes.
 - Viewport: keeps the authored `1080x2170` stage proportional on real devices.
-- Pages: owns room-view DOM for `Brewing`, `Garden`, `Workshop`, `Research`, and `Market`.
+- Pages: owns room-view DOM for `Brewing`, `Garden`, `Workshop`, `Research`, `Market`, and gated `Prestige`.
 - Gameplay: owns ECS-backed rules and snapshots for mana, gold, inventory, garden, brewing, research, tasks, market, prestige, automation, visual settings, and persistence.
 - Backend: owns SpacetimeDB connection, auth/session, save sync, leaderboard, NPC/player market, potion discoveries, world chat, feedback, maintenance, and trade alliance transport.
 - ECS: owns world data, entities, components, and system execution. It must not depend on DOM/canvas or SpacetimeDB.
@@ -17,7 +17,7 @@ Every feature has a facade and dedicated managers. Facades explain the feature i
 
 ## Room Pages
 
-A page is one room the player is looking at, not a web route. Workshop is the default page. Bottom navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`.
+A page is one room the player is looking at, not a web route. Workshop is the default page. Bottom navigation order starts as `Brewing -> Garden -> Workshop -> Research -> Market`; Prestige stays in the former quests slot and appears after its level gate.
 
 Page code can build DOM, popups, tabs, scroll cues, notifications, and tutorial targets. Gameplay effects must go through facades. Page managers should render snapshots and keep interactive nodes stable across updates.
 

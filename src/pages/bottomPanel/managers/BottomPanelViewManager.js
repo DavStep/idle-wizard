@@ -13,7 +13,7 @@ export const BOTTOM_PANEL_TABS = [
   { id: 'advancedBrewing', label: 'adv brewing' },
   { id: 'advancedGarden', label: 'adv garden' },
   { id: 'guild', label: 'guild' },
-  { id: 'prestige', label: 'prestige', actionId: 'prestige' },
+  { id: 'prestige', label: 'prestige' },
   { id: 'advancedMarket', label: 'adv market' },
 ];
 
@@ -175,6 +175,7 @@ export class BottomPanelViewManager {
       const state = nextStates.get(tab.id) ?? {
         id: tab.id,
         unlocked: true,
+        visible: true,
       };
       const button = this.tabButtons.get(tab.id);
 
@@ -185,6 +186,10 @@ export class BottomPanelViewManager {
       }
 
       const locked = !state.unlocked;
+      const visible = state.visible !== false;
+      button.style.visibility = visible ? '' : 'hidden';
+      button.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      button.tabIndex = visible ? 0 : -1;
       button.classList.toggle('is-locked', locked);
       button.classList.toggle(
         'is-swipe-target-locked',
@@ -192,7 +197,10 @@ export class BottomPanelViewManager {
       );
       button.removeAttribute('aria-disabled');
 
-      if (locked) {
+      if (!visible) {
+        setNotificationBadge(button, false);
+        button.setAttribute('aria-label', `${tab.label} unavailable`);
+      } else if (locked) {
         setNotificationBadge(button, false);
         button.setAttribute(
           'aria-label',
@@ -298,7 +306,7 @@ export class BottomPanelViewManager {
     const button = document.createElement('button');
     button.className = this.isActionTab(tab)
       ? `room-bottom-panel__tab room-bottom-panel__action room-bottom-panel__${tab.actionId}-button`
-      : 'room-bottom-panel__tab';
+      : `room-bottom-panel__tab room-bottom-panel__${tab.id}-button`;
     button.type = 'button';
     button.textContent = tab.label;
     if (this.isActionTab(tab)) {
@@ -333,6 +341,10 @@ export class BottomPanelViewManager {
     }
 
     const state = this.pageStates.get(tab.id);
+
+    if (state?.visible === false) {
+      return;
+    }
 
     if (state && !state.unlocked) {
       this.showLockedPageMessage(tab, state);
@@ -463,6 +475,13 @@ export class BottomPanelViewManager {
     const pageNotification = this.notifications?.[tab.id];
     const active = isNotificationActive(pageNotification);
     const locked = this.pageStates.get(tab.id)?.unlocked === false;
+    const visible = this.pageStates.get(tab.id)?.visible !== false;
+
+    if (!visible) {
+      setNotificationBadge(button, false);
+      button.setAttribute('aria-label', `${tab.label} unavailable`);
+      return;
+    }
 
     if (locked) {
       setNotificationBadge(button, false);

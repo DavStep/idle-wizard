@@ -4,6 +4,7 @@ import { GardenPageFacade } from './garden/GardenPageFacade.js';
 import { GuildPageFacade } from './guild/GuildPageFacade.js';
 import { ShopPageFacade } from './shop/ShopPageFacade.js';
 import { ResearchPageFacade } from './research/ResearchPageFacade.js';
+import { PrestigePageFacade } from './prestige/PrestigePageFacade.js';
 import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
 import { PageNotificationFacade } from './notifications/PageNotificationFacade.js';
 import { PlayerInfoDialogFacade } from './playerInfo/PlayerInfoDialogFacade.js';
@@ -11,7 +12,6 @@ import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
 import { TutorialFacade } from './tutorial/TutorialFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
-import { WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL } from './workshop/managers/WorkshopSecondaryActionGateManager.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
 import { PageUnlockManager } from './managers/PageUnlockManager.js';
 import { PageRegistryManager } from './managers/PageRegistryManager.js';
@@ -24,7 +24,7 @@ import { PressFeedbackManager } from './managers/PressFeedbackManager.js';
 import { ScrollCueManager } from './managers/ScrollCueManager.js';
 
 const FTUE_ENABLED = true;
-const SWIPE_PAGE_IDS = ['brewing', 'garden', 'workshop', 'research', 'shop'];
+const SWIPE_PAGE_IDS = ['brewing', 'garden', 'workshop', 'research', 'shop', 'prestige'];
 
 export class PagesFacade {
   static explain =
@@ -80,7 +80,6 @@ export class PagesFacade {
     this.bottomPanelFacade = new BottomPanelFacade({
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
-      onAction: (actionId) => this.handleBottomPanelAction(actionId),
     });
     this.notificationFacade = new PageNotificationFacade({
       gameplayFacade,
@@ -175,6 +174,12 @@ export class PagesFacade {
           this.tutorialFacade?.getNpcStockBuyQuoteOverride?.(sale) ?? null,
       }),
     );
+    this.registryManager.register(
+      'prestige',
+      new PrestigePageFacade({
+        gameplayFacade,
+      }),
+    );
   }
 
   mount(stage) {
@@ -238,22 +243,6 @@ export class PagesFacade {
     this.bottomPanelFacade.showLockedPage(pageId);
   }
 
-  handleBottomPanelAction(actionId) {
-    if (actionId === 'prestige') {
-      this.openPrestige();
-    }
-  }
-
-  openPrestige() {
-    if (!this.isPrestigeActionUnlocked(this.getGameplaySnapshot())) {
-      return;
-    }
-
-    this.show('workshop');
-    this.registryManager.get('workshop').togglePrestige?.();
-    this.tutorialFacade?.scheduleRefresh();
-  }
-
   resetTutorialProgress() {
     this.tutorialFacade?.resetProgress();
   }
@@ -273,15 +262,12 @@ export class PagesFacade {
       .filter((page) => page.unlocked)
       .map((page) => page.id);
     this.bottomPanelFacade.setPageStates(this.pageStates);
-    this.bottomPanelFacade.setActionStates([
-      {
-        id: 'prestige',
-        visible: this.isPrestigeActionUnlocked(snapshot),
-        enabled: this.isPrestigeActionUnlocked(snapshot),
-      },
-    ]);
+    this.bottomPanelFacade.setActionStates([]);
     this.swipeNavigationManager.setPageOrder(
-      this.pageStates.map((page) => page.id).filter((pageId) => SWIPE_PAGE_IDS.includes(pageId)),
+      this.pageStates
+        .filter((page) => page.visible !== false)
+        .map((page) => page.id)
+        .filter((pageId) => SWIPE_PAGE_IDS.includes(pageId)),
     );
 
     if (this.unlockedPageIds.includes(this.getCurrentPageId())) {
@@ -338,16 +324,6 @@ export class PagesFacade {
 
   getGameplaySnapshot() {
     return this.gameplayFacade?.getSnapshot?.() ?? {};
-  }
-
-  isPrestigeActionUnlocked(snapshot = {}) {
-    const level =
-      Number(snapshot.playerLevel?.currentLevel) ||
-      Number(snapshot.tasks?.currentLevel) ||
-      Number(snapshot.tasks?.level?.level) ||
-      1;
-
-    return Math.max(1, Math.floor(level)) >= WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL;
   }
 
   withGameplaySnapshotCache(callback) {

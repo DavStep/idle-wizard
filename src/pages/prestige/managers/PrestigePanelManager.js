@@ -54,32 +54,20 @@ function createPrestigePointRewards() {
     .map(([count, rewards]) => ({ count, rewards }));
 }
 
-export class WorkshopPrestigeManager {
+export class PrestigePanelManager {
+  static explain =
+    'Shows prestige milestones and permanent point rewards so the player can reset a run when ready.';
+
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
-    this.visible = false;
     this.confirmingMilestone = null;
     this.lastSnapshot = {};
     this.renderedSignature = '';
     this.selectedTabId = PRESTIGE_TABS[0].id;
-    this.previousFocus = null;
     this.handleRowsScroll = () => this.updateScrollProgress();
-    this.handleRootClick = (event) => {
-      if (event.target === this.root) {
-        this.hide();
-      }
-    };
-    this.handleKeydown = (event) => {
-      if (!this.visible || event.key !== 'Escape') {
-        return;
-      }
-
-      event.preventDefault();
-      this.hide();
-    };
   }
 
   mount(parent) {
@@ -92,21 +80,16 @@ export class WorkshopPrestigeManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'workshop-page__prestige-popup';
-    this.root.addEventListener('click', this.handleRootClick);
+    this.root.className = 'prestige-page__content';
 
     this.refs.panel = document.createElement('section');
-    this.refs.panel.className = 'workshop-page__prestige-panel';
-    this.refs.panel.setAttribute('aria-label', 'Prestige');
-    this.refs.panel.setAttribute('aria-modal', 'true');
-    this.refs.panel.setAttribute('role', 'dialog');
-    this.refs.panel.tabIndex = -1;
+    this.refs.panel.className = 'prestige-page__panel';
+    this.refs.panel.setAttribute('aria-label', 'prestige');
 
     this.refs.dialog = document.createElement('section');
-    this.refs.dialog.className = 'workshop-page__prestige-dialog style-dialog';
+    this.refs.dialog.className = 'prestige-page__box style-box';
 
     this.refs.title = this.createTitle();
-    this.refs.closeButton = this.createCloseButton();
     this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'workshop-page__prestige-summary';
     this.refs.frame = document.createElement('div');
@@ -127,7 +110,6 @@ export class WorkshopPrestigeManager {
     this.refs.frame.append(this.refs.rows);
     this.refs.dialog.append(
       this.refs.title,
-      this.refs.closeButton,
       this.refs.summary,
       this.refs.frame,
       this.refs.progress,
@@ -136,11 +118,9 @@ export class WorkshopPrestigeManager {
     this.refs.panel.append(this.refs.dialog, this.refs.tabs);
     this.root.append(this.refs.panel);
     parent.append(this.root);
-    document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
     this.render(this.gameplayFacade.getSnapshot());
-    this.applyVisibility();
 
     return this.root;
   }
@@ -150,15 +130,6 @@ export class WorkshopPrestigeManager {
     title.className = 'style-box__title';
     title.textContent = 'prestige';
     return title;
-  }
-
-  createCloseButton() {
-    const button = document.createElement('button');
-    button.className = 'style-button workshop-page__prestige-close';
-    button.type = 'button';
-    button.textContent = 'close';
-    button.addEventListener('click', () => this.hide());
-    return button;
   }
 
   createConfirmPanel() {
@@ -194,7 +165,7 @@ export class WorkshopPrestigeManager {
   createTabs() {
     const tabs = document.createElement('div');
     tabs.className = 'workshop-page__prestige-tabs';
-    tabs.setAttribute('aria-label', 'Prestige view');
+    tabs.setAttribute('aria-label', 'prestige view');
     tabs.setAttribute('role', 'tablist');
     this.refs.tabButtons = new Map();
 
@@ -225,51 +196,16 @@ export class WorkshopPrestigeManager {
     this.render(this.lastSnapshot);
   }
 
-  toggle() {
-    if (this.visible) {
-      this.hide();
-      return;
-    }
-
-    this.show();
-  }
-
-  show() {
-    this.previousFocus = document.activeElement;
-    this.visible = true;
-    this.applyVisibility();
-    this.refs.panel?.focus();
-    this.updateScrollProgress();
-  }
-
-  hide() {
-    const wasVisible = this.visible;
-    this.visible = false;
-    this.confirmingMilestone = null;
-    this.applyConfirm();
-    this.applyVisibility();
-
-    if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
-      this.previousFocus.focus();
-    }
-
-    this.previousFocus = null;
-  }
-
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
-    document.removeEventListener('keydown', this.handleKeydown);
     this.refs.rows?.removeEventListener('scroll', this.handleRowsScroll);
-    this.root?.removeEventListener('click', this.handleRootClick);
     this.root?.remove();
     this.root = null;
     this.refs = {};
-    this.visible = false;
     this.confirmingMilestone = null;
     this.lastSnapshot = {};
     this.renderedSignature = '';
-    this.previousFocus = null;
   }
 
   render(snapshot) {
@@ -439,7 +375,6 @@ export class WorkshopPrestigeManager {
 
     if (result.ok) {
       this.confirmingMilestone = null;
-      this.hide();
       return;
     }
 
@@ -508,14 +443,6 @@ export class WorkshopPrestigeManager {
         lowerThanHighestAvailable: milestone.lowerThanHighestAvailable,
       })),
     });
-  }
-
-  applyVisibility() {
-    if (!this.root) {
-      return;
-    }
-
-    this.root.hidden = !this.visible;
   }
 
   getCompletedPrestigeCount(prestige = {}) {

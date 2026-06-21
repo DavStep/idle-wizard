@@ -911,6 +911,7 @@ body {
     .garden-page,
     .research-page,
     .shop-page,
+    .prestige-page,
     .room-page__popup-layer,
     .room-top-panel-layer,
     .room-bottom-panel-layer,
@@ -981,6 +982,16 @@ body {
     var(--style-motion-ease-rubber) both;
 }
 
+.prestige-page {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--style-surface);
+  animation: room-page-enter var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
+}
+
 .game-stage[data-page-swipe-active="true"]
   :where(
     .workshop-page,
@@ -988,7 +999,8 @@ body {
     .garden-page,
     .research-page,
     .shop-page,
-    .guild-page
+    .guild-page,
+    .prestige-page
   ) {
   animation: none;
   translate: var(--page-swipe-offset, 0px) 0;
@@ -1026,6 +1038,12 @@ body {
 }
 
 .guild-page__wall {
+  position: absolute;
+  inset: 0 0 38%;
+  background: var(--style-surface);
+}
+
+.prestige-page__wall {
   position: absolute;
   inset: 0 0 38%;
   background: var(--style-surface);
@@ -1091,6 +1109,16 @@ body {
 }
 
 .guild-page__floor {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 39%;
+  overflow: hidden;
+  background: var(--style-surface);
+}
+
+.prestige-page__floor {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -1192,6 +1220,16 @@ body {
   transform-origin: top left;
 }
 
+.prestige-page__ui-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
+}
+
 .guild-page__ui-layer::-webkit-scrollbar {
   display: none;
 }
@@ -1269,6 +1307,7 @@ body {
     .garden-page__ui-layer > .style-box,
     .research-page__tabs,
     .research-page__box-list > .style-box,
+    .prestige-page__content,
     .shop-page__market-tabs,
     .shop-page__market-panel > .style-box,
     .shop-page__market-panel > .style-panel
@@ -1285,6 +1324,7 @@ body {
 .brewing-page__herbs,
 .garden-page__plot,
 .research-page__tabs,
+.prestige-page__content,
 .shop-page__market-tabs {
   --room-section-index: 0;
 }
@@ -2923,6 +2963,50 @@ body {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+.prestige-page__content {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  bottom: calc(var(--style-room-chat-clearance) + 38px);
+  left: var(--style-room-content-edge);
+}
+
+.prestige-page__panel {
+  height: 100%;
+}
+
+.style-box.prestige-page__box {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - var(--style-page-tab-button-height) - 8px);
+  min-height: 0;
+}
+
+.prestige-page__box .workshop-page__prestige-summary,
+.prestige-page__box .workshop-page__prestige-progress,
+.prestige-page__box .workshop-page__prestige-confirm {
+  flex: 0 0 auto;
+}
+
+.prestige-page__box .workshop-page__prestige-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.prestige-page__box .workshop-page__prestige-rows {
+  height: 100%;
+}
+
+.prestige-page__content .workshop-page__prestige-tabs {
+  margin-top: 8px;
+}
+
+.prestige-page__content .style-button.workshop-page__prestige-tab-button {
+  min-height: var(--style-page-tab-button-height);
+  border: var(--style-border);
+}
+
 .workshop-page__prestige-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 64px 74px;
@@ -4261,12 +4345,6 @@ body {
   z-index: 30;
 }
 
-.workshop-page__prestige-popup {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-}
-
 .workshop-page__tasks-info-popup {
   position: absolute;
   inset: 0;
@@ -4317,7 +4395,6 @@ body {
 .workshop-page__world-chat-popup[hidden],
 .workshop-page__bag-popup[hidden],
 .workshop-page__discoveries-popup[hidden],
-.workshop-page__prestige-popup[hidden],
 .workshop-page__tasks-info-popup[hidden],
 .workshop-page__personal-tasks-popup[hidden],
 .workshop-page__world-notice-popup[hidden],
@@ -6525,7 +6602,7 @@ div.workshop-page__discovery-row {
   left: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(0, 1.25fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 3px;
 }
 
@@ -6712,8 +6789,9 @@ div.workshop-page__discovery-row {
   padding: 0 3px;
   margin-bottom: 0;
   font-size: var(--style-tiny-font-size);
-  line-height: normal;
-  white-space: nowrap;
+  line-height: var(--style-tiny-line-height);
+  text-align: center;
+  white-space: normal;
   border: var(--style-border);
 }
 
@@ -7125,16 +7203,6 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__bag-panel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 20;
-  width: var(--style-discoveries-dialog-width);
-  outline: none;
-  transform: translate(-50%, -50%);
-}
-
-.workshop-page__prestige-panel {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -9599,12 +9667,6 @@ div.workshop-page__discovery-row {
   height: var(--style-tabbed-dialog-content-height);
 }
 
-.style-dialog.workshop-page__prestige-dialog {
-  position: relative;
-  width: 286px;
-  height: var(--style-tabbed-dialog-content-height);
-}
-
 .style-dialog.workshop-page__world-chat-dialog {
   display: flex;
   flex-direction: column;
@@ -10768,7 +10830,6 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-member-popup:not([hidden]),
 .workshop-page__world-chat-popup:not([hidden]),
 .workshop-page__discoveries-popup:not([hidden]),
-.workshop-page__prestige-popup:not([hidden]),
 .workshop-page__tasks-info-popup:not([hidden]),
 .workshop-page__personal-tasks-popup:not([hidden]),
 .workshop-page__world-notice-popup:not([hidden]),
@@ -10802,7 +10863,6 @@ div.workshop-page__discovery-row {
   .workshop-page,
 .game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
-.game-stage:has(.workshop-page__prestige-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__tasks-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
   .workshop-page,
@@ -10831,6 +10891,8 @@ div.workshop-page__discovery-row {
 .game-stage:has(.room-alliance-info-popup:not([hidden])) .garden-page,
 .game-stage:has(.room-alliance-info-popup:not([hidden])) .research-page,
 .game-stage:has(.room-alliance-info-popup:not([hidden])) .shop-page,
+.game-stage:has(.room-alliance-info-popup:not([hidden])) .prestige-page,
+.game-stage:has(.room-player-info-popup:not([hidden])) .prestige-page,
 .game-stage:has(.room-player-info-popup:not([hidden])) .shop-page {
   z-index: 3;
 }
@@ -10878,7 +10940,6 @@ div.workshop-page__discovery-row {
 .workshop-page__bag-popup:not([hidden]) .workshop-page__bag-panel,
 .workshop-page__discoveries-popup:not([hidden])
   .workshop-page__discoveries-panel,
-.workshop-page__prestige-popup:not([hidden]) .workshop-page__prestige-panel,
 .shop-page__sell-popup:not([hidden]) .shop-page__sell-panel,
 .shop-page__market-popup:not([hidden]) .shop-page__market-dialog,
 .shop-page__request-popup:not([hidden]) .shop-page__request-panel,
@@ -11616,6 +11677,7 @@ div.workshop-page__discovery-row {
       .garden-page__ui-layer > .style-box,
       .research-page__tabs,
       .research-page__box-list > .style-box,
+      .prestige-page__content,
       .shop-page__market-tabs,
       .shop-page__market-panel > .style-box,
       .shop-page__market-panel > .style-panel

@@ -5,7 +5,6 @@ import { WorkshopSummonInfoManager } from './managers/WorkshopSummonInfoManager.
 import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManager.js';
 import { WorkshopFlyoutManager } from './managers/WorkshopFlyoutManager.js';
 import { WorkshopDiscoveriesManager } from './managers/WorkshopDiscoveriesManager.js';
-import { WorkshopPrestigeManager } from './managers/WorkshopPrestigeManager.js';
 import { WorkshopRequirementConnectionManager } from './managers/WorkshopRequirementConnectionManager.js';
 import { WorkshopPersonalTasksManager } from './managers/WorkshopPersonalTasksManager.js';
 import { WorkshopTaskManager } from './managers/WorkshopTaskManager.js';
@@ -13,7 +12,6 @@ import { WorkshopTradeAllianceManager } from './managers/WorkshopTradeAllianceMa
 import { WorkshopWorldNoticeManager } from './managers/WorkshopWorldNoticeManager.js';
 import {
   WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
-  WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
   WorkshopSecondaryActionGateManager,
 } from './managers/WorkshopSecondaryActionGateManager.js';
 
@@ -39,11 +37,7 @@ export class WorkshopPageFacade {
     this.discoveryAllianceActionGateManager = new WorkshopSecondaryActionGateManager({
       unlockLevel: WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
     });
-    this.prestigeActionGateManager = new WorkshopSecondaryActionGateManager({
-      unlockLevel: WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
-    });
     this.bagManager = new WorkshopBagManager({ gameplayFacade });
-    this.prestigeManager = new WorkshopPrestigeManager({ gameplayFacade });
     this.summonInfoManager = new WorkshopSummonInfoManager({ gameplayFacade });
     this.actionBarManager = new WorkshopActionBarManager({
       gameplayFacade,
@@ -98,7 +92,6 @@ export class WorkshopPageFacade {
     this.tradeAllianceManager.mount(uiLayer, popupLayer);
     this.discoveriesManager.mount(uiLayer, popupLayer);
     this.bagManager.mount(popupLayer);
-    this.prestigeManager.mount(popupLayer);
     this.summonInfoManager.mount(popupLayer);
     this.secondaryActionGateUnsubscribe =
       this.gameplayFacade?.subscribe((snapshot) => this.applySecondaryActionGate(snapshot)) ??
@@ -113,7 +106,6 @@ export class WorkshopPageFacade {
     this.rewardEventsUnsubscribe = null;
     this.requirementConnectionManager.unmount();
     this.summonInfoManager.unmount();
-    this.prestigeManager.unmount();
     this.bagManager.unmount();
     this.discoveriesManager.unmount();
     this.tradeAllianceManager.unmount();
@@ -174,12 +166,7 @@ export class WorkshopPageFacade {
     }
   }
 
-  togglePrestige() {
-    this.prestigeManager.toggle();
-  }
-
   applySecondaryActionGate(snapshot) {
-    const prestigeUnlocked = this.prestigeActionGateManager.isUnlocked(snapshot);
     const secondaryUnlocked = this.secondaryActionGateManager.apply(snapshot, [
       this.leaderboardManager.root,
     ]);
@@ -187,10 +174,6 @@ export class WorkshopPageFacade {
       this.tradeAllianceManager.root,
       this.discoveriesManager.root,
     ]);
-
-    if (!prestigeUnlocked) {
-      this.prestigeManager.hide();
-    }
 
     if (!secondaryUnlocked) {
       this.leaderboardManager.hide();

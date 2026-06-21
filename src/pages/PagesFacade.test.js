@@ -3611,10 +3611,13 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-bottom-panel__prestige-button')?.textContent).toBe(
       'prestige',
     );
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.dataset.pageId).toBe(
+      'prestige',
+    );
     expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe(
       'hidden',
     );
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.tabIndex).toBe(-1);
     expect(stage.querySelector('.workshop-page__leaderboard-button')?.textContent).toBe(
       'leaderboard',
     );
@@ -3636,7 +3639,7 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__bag-popup')).not.toBeNull();
-    expect(stage.querySelector('.workshop-page__prestige-popup')).not.toBeNull();
+    expect(stage.querySelector('.prestige-page')).toBeNull();
     expect(stage.querySelector('.workshop-page__flyouts')).not.toBeNull();
     expect(stage.querySelector('.workshop-page__summon-message')).toBeNull();
     expect(
@@ -3681,7 +3684,7 @@ describe('PagesFacade', () => {
         ?.textContent,
     ).toBe('wizard');
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain(
-      'mana 0/50',
+      '0/50 mana',
     );
     expect(topPanel.querySelector('.room-top-panel__mana-rate')?.textContent).toBe('+1/s');
     expect(
@@ -3854,7 +3857,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe(
       'hidden',
     );
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.tabIndex).toBe(-1);
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(false);
@@ -3869,7 +3872,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(false);
   });
 
-  it('reveals the Workshop prestige button at level 7', () => {
+  it('reveals the prestige page tab at level 7', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 7);
@@ -3881,7 +3884,9 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     expect(stage.querySelector('.room-bottom-panel__prestige-button')?.style.visibility).toBe('');
-    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.disabled).toBe(false);
+    expect(stage.querySelector('.room-bottom-panel__prestige-button')?.dataset.pageId).toBe(
+      'prestige',
+    );
 
     clickRoomTab(stage, 'research');
     expect(pagesFacade.getCurrentPageId()).toBe('research');
@@ -3890,8 +3895,10 @@ describe('PagesFacade', () => {
       .querySelector('.room-bottom-panel__prestige-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
-    expect(stage.querySelector('.workshop-page__prestige-popup')?.hidden).toBe(false);
+    expect(pagesFacade.getCurrentPageId()).toBe('prestige');
+    expect(stage.querySelector('.prestige-page')).not.toBeNull();
+    expect(stage.querySelector('.prestige-page__box.style-box')).not.toBeNull();
+    expect(stage.querySelector('.prestige-page .style-dialog')).toBeNull();
   });
 
   it('shows crystal, ruby, or emerald in the top panel only on matching research tabs', () => {
@@ -3920,8 +3927,10 @@ describe('PagesFacade', () => {
     clickResearchTab('automation');
 
     const crystal = stage.querySelector('.room-top-panel__resource[aria-label="crystal"]');
+    const crystalValue = crystal?.querySelector('.room-top-panel__resource-val');
     expect(crystal?.hidden).toBe(false);
-    expect(crystal?.textContent).toBe('crystal 0');
+    expect(crystal?.textContent).toBe('0 crystal');
+    expect(crystalValue?.firstChild?.textContent).toBe('0 ');
     expect(
       crystal?.querySelector('.style-resource-label--crystal .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -3930,8 +3939,10 @@ describe('PagesFacade', () => {
     clickResearchTab('advanced research');
 
     const ruby = stage.querySelector('.room-top-panel__resource[aria-label="ruby"]');
+    const rubyValue = ruby?.querySelector('.room-top-panel__resource-val');
     expect(ruby?.hidden).toBe(false);
-    expect(ruby?.textContent).toBe('ruby 0');
+    expect(ruby?.textContent).toBe('0 ruby');
+    expect(rubyValue?.firstChild?.textContent).toBe('0 ');
     expect(
       ruby?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -3941,7 +3952,7 @@ describe('PagesFacade', () => {
 
     const emerald = stage.querySelector('.room-top-panel__resource[aria-label="emerald"]');
     expect(emerald?.hidden).toBe(false);
-    expect(emerald?.textContent).toBe('emerald 0');
+    expect(emerald?.textContent).toBe('0 emerald');
     expect(
       emerald?.querySelector('.style-resource-label--emerald .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -3988,7 +3999,9 @@ describe('PagesFacade', () => {
 
     const mana = stage.querySelector('.room-top-panel__resource[aria-label="mana"]');
 
-    expect(mana?.querySelector('.room-top-panel__resource-val')?.textContent).toBe('200/200');
+    expect(mana?.querySelector('.room-top-panel__resource-val')?.textContent).toBe(
+      '200/200 mana',
+    );
     expect(mana?.querySelector('.room-top-panel__mana-rate')?.textContent).toBe('+4/s');
     expect(stage.querySelector('.workshop-page__mana-sphere')).toBeNull();
   });
@@ -4004,13 +4017,15 @@ describe('PagesFacade', () => {
 
     const mana = stage.querySelector('.room-top-panel__resource[aria-label="mana"]');
     const gold = stage.querySelector('.room-top-panel__resource[aria-label="gold"]');
-    const manaKey = mana?.querySelector('.room-top-panel__resource-key');
+    const manaValue = mana?.querySelector('.room-top-panel__resource-val');
     const goldValue = gold?.querySelector('.room-top-panel__resource-val');
 
-    expect(manaKey?.textContent).toBe('mana ');
+    expect(manaValue?.textContent).toBe('0/50 mana');
     expect(goldValue?.textContent).toBe('0 gold');
+    expect(manaValue?.firstChild?.textContent).toBe('0/50 ');
+    expect(goldValue?.firstChild?.textContent).toBe('0 ');
     expect(
-      manaKey?.querySelector('.style-resource-label--mana .style-resource-label__icon')
+      manaValue?.querySelector('.style-resource-label--mana .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:mana');
     expect(goldValue?.querySelector('.style-resource-label--gold')).not.toBeNull();
@@ -6796,33 +6811,35 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    const popup = stage.querySelector('.workshop-page__prestige-popup');
     stage
       .querySelector('.room-bottom-panel__prestige-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('.style-dialog')).not.toBeNull();
-    expect(popup.querySelector('.workshop-page__prestige-close')?.textContent).toBe('close');
-    const summary = popup.querySelector('.workshop-page__prestige-summary');
+    expect(pagesFacade.getCurrentPageId()).toBe('prestige');
+    const page = stage.querySelector('.prestige-page');
+    expect(page).not.toBeNull();
+    expect(page.querySelector('.style-dialog')).toBeNull();
+    expect(page.querySelector('.workshop-page__prestige-close')).toBeNull();
+    const summary = page.querySelector('.workshop-page__prestige-summary');
     expect(summary?.textContent).toBe('level 40, next run: 0 ruby');
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('0 ruby');
-    expect(popup.textContent).toContain('level 10');
-    expect(popup.textContent).toContain('level 40');
+    expect(page.textContent).toContain('level 10');
+    expect(page.textContent).toContain('level 40');
 
-    popup
+    page
       .querySelector('.workshop-page__prestige-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.querySelector('.workshop-page__prestige-confirm').hidden).toBe(false);
-    expect(popup.textContent).toContain('higher level prestige available level 40');
+    expect(page.querySelector('.workshop-page__prestige-confirm').hidden).toBe(false);
+    expect(page.textContent).toContain('higher level prestige available level 40');
 
-    popup
+    page
       .querySelector('.workshop-page__prestige-confirm-proceed')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.hidden).toBe(true);
+    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
+    expect(stage.querySelector('.prestige-page')).toBeNull();
     expect(snapshot.prestige.completedLevels).toEqual([10]);
     expect(snapshot.ruby.current).toBe(1);
     expect(snapshot.tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
@@ -6844,16 +6861,16 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    const popup = stage.querySelector('.workshop-page__prestige-popup');
     stage
       .querySelector('.room-bottom-panel__prestige-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const tabs = popup.querySelector('.workshop-page__prestige-tabs');
+    const page = stage.querySelector('.prestige-page');
+    const tabs = page.querySelector('.workshop-page__prestige-tabs');
     const tabButtons = [...tabs.querySelectorAll('.workshop-page__prestige-tab-button')];
     expect(tabButtons.map((button) => button.textContent)).toEqual(['main', 'points']);
-    expect(popup.querySelector('.style-dialog .workshop-page__prestige-tab-button')).toBeNull();
-    expect(popup.querySelector('.style-dialog')?.nextElementSibling).toBe(tabs);
+    expect(page.querySelector('.style-dialog')).toBeNull();
+    expect(page.querySelector('.prestige-page__box')?.nextElementSibling).toBe(tabs);
 
     tabButtons
       .find((button) => button.textContent === 'points')
@@ -6863,9 +6880,9 @@ describe('PagesFacade', () => {
       'false',
       'true',
     ]);
-    expect(popup.textContent).toContain('1 point earned');
-    expect(popup.textContent).toContain('plot 11 capacity');
-    const pointRows = [...popup.querySelectorAll('.workshop-page__prestige-point-row')];
+    expect(page.textContent).toContain('1 point earned');
+    expect(page.textContent).toContain('plot 11 capacity');
+    const pointRows = [...page.querySelectorAll('.workshop-page__prestige-point-row')];
     expect(pointRows[0]?.querySelector('.workshop-page__prestige-point-count')?.textContent).toBe(
       '★1 point',
     );

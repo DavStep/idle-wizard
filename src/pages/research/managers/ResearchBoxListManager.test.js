@@ -225,6 +225,14 @@ describe('ResearchBoxListManager', () => {
     expect(css).toContain('color: var(--style-resource-emerald);');
   });
 
+  it('keeps research tab labels in one four-column row', () => {
+    const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+
+    expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
+    expect(css).toContain('line-height: var(--style-tiny-line-height);');
+    expect(css).toContain('white-space: normal;');
+  });
+
   it('opens locked research info on row tap and explains missing requirements', () => {
     const onShowResearchInfo = vi.fn();
     const snapshot = {

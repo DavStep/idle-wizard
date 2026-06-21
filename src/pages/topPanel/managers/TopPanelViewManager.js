@@ -83,7 +83,7 @@ export class TopPanelViewManager {
 
     const identityRow = document.createElement('div');
     identityRow.className = 'room-top-panel__identity-row';
-    const contextCurrency = this.createResource('crystal', '0');
+    const contextCurrency = this.createResource('crystal', '0 crystal');
     identityRow.append(this.refs.usernameButton, this.refs.levelButton);
 
     this.refs.resources = document.createElement('div');
@@ -92,7 +92,7 @@ export class TopPanelViewManager {
     const rightStatus = document.createElement('div');
     rightStatus.className = 'room-top-panel__right-status';
     rightStatus.append(this.createResource('gold', '0 gold'), contextCurrency);
-    this.refs.resources.append(this.createResource('mana', '0/0'), rightStatus);
+    this.refs.resources.append(this.createResource('mana', '0/0 mana'), rightStatus);
 
     panel.append(this.refs.usernameAvatarButton, identityRow, this.refs.resources);
     return panel;
@@ -124,19 +124,10 @@ export class TopPanelViewManager {
       this.refs.contextCurrencyValue = val;
     }
 
-    if (label === 'gold') {
-      resource.append(val);
-      return resource;
-    }
-
-    const key = document.createElement('span');
-    key.className = 'room-top-panel__resource-key';
-    setResourceIconText(key, `${label} `);
-
     if (label === 'mana') {
       const line = document.createElement('span');
       line.className = 'room-top-panel__resource-line';
-      line.append(key, val);
+      line.append(val);
 
       this.refs.manaRateValue = document.createElement('span');
       this.refs.manaRateValue.className = 'room-top-panel__mana-rate';
@@ -147,11 +138,10 @@ export class TopPanelViewManager {
     }
 
     if (label === 'crystal') {
-      this.refs.contextCurrencyKey = key;
       resource.hidden = true;
     }
 
-    resource.append(key, val);
+    resource.append(val);
     return resource;
   }
 

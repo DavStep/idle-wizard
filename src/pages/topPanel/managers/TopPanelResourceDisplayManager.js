@@ -38,7 +38,10 @@ export class TopPanelResourceDisplayManager {
     const level = snapshot.tasks?.currentLevel ?? 1;
     const goldText = formatGoldPriceText(gold);
 
-    this.setText(this.refs.manaValue, `${Math.floor(mana.current ?? 0)}/${mana.cap ?? 0}`);
+    this.setResourceText(
+      this.refs.manaValue,
+      `${Math.floor(mana.current ?? 0)}/${mana.cap ?? 0} mana`,
+    );
     this.setText(this.refs.manaRateValue, formatManaRate(mana.perSecond));
     this.setResourceText(this.refs.goldValue, goldText);
     this.renderContextCurrency(snapshot);
@@ -78,8 +81,7 @@ export class TopPanelResourceDisplayManager {
     const current = snapshot[currency]?.current ?? 0;
     this.setAttribute(resource, 'aria-label', currency);
     setResourceColor(resource, currency);
-    this.setResourceText(this.refs.contextCurrencyKey, `${currency} `);
-    this.setText(this.refs.contextCurrencyValue, String(Math.floor(current)));
+    this.setResourceText(this.refs.contextCurrencyValue, `${Math.floor(current)} ${currency}`);
   }
 
   setText(element, text) {

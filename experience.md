@@ -44,6 +44,7 @@
 - Show all five room pages in a shared bottom tab panel; underline the current page tab.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
+- Top-panel resource values should be written amount-first, like `560 gold`; icon mode hides the word and leaves `count icon`.
 - Weekly events should be framed as `weekly world notice` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
@@ -162,7 +163,7 @@
 - FTUE guide auto-move should use source-pixel rAF interpolation from the current visual offset to the desired placement; CSS transitions after writing final `left`/`top` can still paint as a teleport in target browsers.
 - FTUE guide auto-move should not rely on inline `style.translate` for the moving wrapper, because active CSS keyframe animations that also set `translate` can override it and make the guide jump.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
-- Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` stays hidden until level 7.
+- Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
