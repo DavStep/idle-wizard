@@ -194,7 +194,7 @@ function createGameplayFacadeFake() {
           effects: [
             'max garden tiles 2',
             'max cauldrons 1',
-            'max npc market stands 1',
+            'max trader market stands 1',
             'max player market stands 1',
             'max mana cap 50',
             'mana regen 1/sec',
@@ -232,7 +232,7 @@ function createGameplayFacadeFake() {
             manaPerSecond: 3,
           },
           effects: [
-            'max npc market stands 2',
+            'max trader market stands 2',
             'max player market stands 2',
             'max mana cap 150',
             'mana regen 3/sec',
@@ -3811,7 +3811,7 @@ describe('PagesFacade', () => {
     expect(playerShopFacade.retainMarketData).toHaveBeenCalledTimes(1);
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'npc market')
+      .find((button) => button.textContent === 'trader market')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(releaseMarketData).toHaveBeenCalledTimes(1);
@@ -4060,32 +4060,6 @@ describe('PagesFacade', () => {
     expect(avatarButton?.hidden).toBe(false);
     expect(avatar?.hidden).toBe(false);
     expect(topPanel?.classList.contains('has-avatar')).toBe(true);
-  });
-
-  it('shows dashboard-only wizard avatar without listing it as a player choice', () => {
-    const stage = document.createElement('section');
-    const pagesFacade = new PagesFacade({
-      gameplayFacade: createGameplayFacadeFake(),
-      playerFacade: createPlayerFacadeFake('Merlin', 'white', {
-        initialCharacter: 'wizard',
-        initialIconMode: 'icons',
-      }),
-    });
-
-    pagesFacade.mount(stage);
-
-    const avatar = stage.querySelector('.room-top-panel__username-avatar');
-
-    expect(avatar?.dataset.character).toBe('wizard');
-    expect(avatar?.getAttribute('src')).toContain('wizard.webp');
-
-    stage
-      .querySelector('.room-top-panel__username')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(
-      stage.querySelector('.room-top-panel__character-button[data-character="wizard"]'),
-    ).toBeNull();
   });
 
   it('mounts the FTUE guide shell for fresh level 1 players', () => {
@@ -4374,7 +4348,7 @@ describe('PagesFacade', () => {
     expect(levelPopup.querySelector('.room-top-panel__level-current')?.hidden).toBe(false);
     expect(levelPopup.textContent).toContain('garden plots');
     expect(levelPopup.textContent).toContain('cauldrons');
-    expect(levelPopup.textContent).toContain('npc stands');
+    expect(levelPopup.textContent).toContain('trader stands');
     expect(levelPopup.textContent).toContain('player stands');
     expect(levelPopup.textContent).not.toContain('max');
     expect(levelPopup.textContent).not.toContain('level 0');
@@ -4435,7 +4409,7 @@ describe('PagesFacade', () => {
     const [level3TotalRow] = levelPopup.querySelectorAll(
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
-    expect(level3AddedText).toContain('npc stands+1');
+    expect(level3AddedText).toContain('trader stands+1');
     expect(level3AddedText).toContain('player stands+1');
     expect(level3AddedText).toContain('mana cap+50');
     expect(level3AddedText).toContain('crystal+1');
@@ -9696,6 +9670,13 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__wall')).not.toBeNull();
     expect(stage.querySelector('.garden-page__floor')).not.toBeNull();
     expect(stage.querySelector('.garden-page__ui-layer')).not.toBeNull();
+    expect(stage.querySelector('.garden-page__content')).not.toBeNull();
+    expect(stage.querySelector('.garden-page__content')?.classList.contains('style-page-scroll')).toBe(
+      true,
+    );
+    expect(stage.querySelector('.garden-page__plot')?.parentElement).toBe(
+      stage.querySelector('.garden-page__content'),
+    );
     expect(stage.querySelector('.garden-page__seeds')).not.toBeNull();
     expect(stage.querySelector('.garden-page__seeds')?.textContent).toContain('seeds');
     expect(stage.querySelector('.garden-page__seeds')?.textContent).toContain('sage seed0');
@@ -9786,7 +9767,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['npc market', 'player market', 'crystals']);
+    ).toEqual(['trader market', 'player market', 'crystals']);
     expect(
       stage
         .querySelector('.shop-page__market-tab-button')
@@ -9794,7 +9775,7 @@ describe('PagesFacade', () => {
     ).toBe('true');
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'npc demand market',
+      'trader demand market',
     );
     expect(stage.querySelector('.shop-page__direct-sell-box')).not.toBeNull();
     expect(stage.querySelector('.shop-page__direct-sell-box')?.textContent).toContain(
@@ -9802,7 +9783,7 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.shop-page__stock')).not.toBeNull();
     expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(
-      'npc stock market',
+      'trader stock market',
     );
     expect(stage.querySelector('.shop-page__market-panel--crystals')?.hidden).toBe(true);
 

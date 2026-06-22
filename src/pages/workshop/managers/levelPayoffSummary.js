@@ -14,9 +14,9 @@ const TOTAL_PAYOFFS = [
   },
   {
     key: 'maxNpcMarketStands',
-    label: 'npc stands',
+    label: 'trader stands',
     formatValue: (delta) => `+${formatNumber(delta)}`,
-    formatNotice: (delta) => `+${formatNumber(delta)} npc stand${delta === 1 ? '' : 's'}`,
+    formatNotice: (delta) => `+${formatNumber(delta)} trader stand${delta === 1 ? '' : 's'}`,
   },
   {
     key: 'maxPlayerMarketStands',

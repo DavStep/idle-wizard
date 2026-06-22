@@ -13,7 +13,7 @@ import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
 
 export class ShopPageFacade {
   static explain =
-    'Shows the market room, where players sell to NPC demand, trade with other players, and see crystal prices.';
+    'Shows the market room, where players sell to trader demand, trade with other players, and see crystal prices.';
 
   constructor({
     gameplayFacade,

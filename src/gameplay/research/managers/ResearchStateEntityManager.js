@@ -51,14 +51,14 @@ export class ResearchStateEntityManager {
 
   isCompleted(researchId) {
     this.syncResearchEntities();
-    return PlayerResearch.isCompleted[this.getEntityId(this.normalizeResearchId(researchId))] === 1;
+    const entityId = this.getKnownEntityId(researchId);
+    return entityId !== undefined && PlayerResearch.isCompleted[entityId] === 1;
   }
 
   isInProgress(researchId) {
     this.syncResearchEntities();
-    return (
-      PlayerResearch.isInProgress[this.getEntityId(this.normalizeResearchId(researchId))] === 1
-    );
+    const entityId = this.getKnownEntityId(researchId);
+    return entityId !== undefined && PlayerResearch.isInProgress[entityId] === 1;
   }
 
   start(researchId, durationSeconds) {
@@ -138,7 +138,12 @@ export class ResearchStateEntityManager {
         continue;
       }
 
-      PlayerResearch.isCompleted[this.getEntityId(normalizedResearchId)] = 1;
+      const entityId = this.getKnownEntityId(normalizedResearchId);
+      if (entityId === undefined) {
+        continue;
+      }
+
+      PlayerResearch.isCompleted[entityId] = 1;
     }
   }
 
@@ -150,10 +155,15 @@ export class ResearchStateEntityManager {
         continue;
       }
 
-      PlayerResearch.isCompleted[this.getEntityId(normalizedResearchId)] = 1;
-      PlayerResearch.isInProgress[this.getEntityId(normalizedResearchId)] = 0;
-      PlayerResearch.totalSeconds[this.getEntityId(normalizedResearchId)] = 0;
-      PlayerResearch.remainingSeconds[this.getEntityId(normalizedResearchId)] = 0;
+      const entityId = this.getKnownEntityId(normalizedResearchId);
+      if (entityId === undefined) {
+        continue;
+      }
+
+      PlayerResearch.isCompleted[entityId] = 1;
+      PlayerResearch.isInProgress[entityId] = 0;
+      PlayerResearch.totalSeconds[entityId] = 0;
+      PlayerResearch.remainingSeconds[entityId] = 0;
     }
   }
 
@@ -237,7 +247,16 @@ export class ResearchStateEntityManager {
 
   getProgressSnapshot(researchId) {
     this.syncResearchEntities();
-    const entityId = this.getEntityId(this.normalizeResearchId(researchId));
+    const entityId = this.getKnownEntityId(researchId);
+
+    if (entityId === undefined) {
+      return {
+        inProgress: false,
+        totalSeconds: 0,
+        remainingSeconds: 0,
+        progress: 0,
+      };
+    }
 
     if (PlayerResearch.isInProgress[entityId] !== 1) {
       return {
@@ -268,6 +287,10 @@ export class ResearchStateEntityManager {
     }
 
     return entityId;
+  }
+
+  getKnownEntityId(researchId) {
+    return this.entityIdsByResearchId.get(this.normalizeResearchId(researchId));
   }
 
   normalizeResearchId(researchId) {

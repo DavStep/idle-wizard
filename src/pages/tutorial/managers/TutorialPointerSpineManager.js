@@ -22,7 +22,7 @@ export class TutorialPointerSpineManager {
     width = POINTER_SPINE_WIDTH,
     height = POINTER_SPINE_HEIGHT,
     animationName = POINTER_SPINE_ANIMATION,
-    enabled = false,
+    enabled = null,
   } = {}) {
     this.assetManager = assetManager;
     this.importPixi = importPixi;
@@ -162,6 +162,7 @@ export class TutorialPointerSpineManager {
       resolution: this.getCanvasResolution(),
       preference: 'webgl',
       powerPreference: 'low-power',
+      preserveDrawingBuffer: true,
     });
     this.syncCanvasCssSize();
 

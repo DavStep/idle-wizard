@@ -1,4 +1,4 @@
-import { Timestamp, type Identity } from 'spacetimedb';
+import { Identity, Timestamp, Uuid } from 'spacetimedb';
 import {
   schema,
   table,
@@ -6,7 +6,6 @@ import {
   Range,
   type ReducerCtx,
   type InferSchema,
-  type Uuid,
 } from 'spacetimedb/server';
 
 const DEFAULT_USERNAME = 'wizard';
@@ -176,15 +175,6 @@ const PLAYER_FONT_ALIASES = new Map([
 ]);
 const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
 const PLAYER_CHARACTERS = new Set([
-  'elara',
-  'mira',
-  'bramble',
-  'corvin',
-  'juniper',
-  'rowan',
-  'wizard',
-]);
-const PLAYER_SELECTABLE_CHARACTERS = new Set([
   'elara',
   'mira',
   'bramble',
@@ -5598,6 +5588,20 @@ function normalizeIdentityHex(identityHex: string): string {
     .replace(/^0x/, '');
 }
 
+function parseIdentityHex(identityHex: string): Identity | null {
+  const safeIdentityHex = normalizeIdentityHex(identityHex);
+
+  if (!safeIdentityHex) {
+    return null;
+  }
+
+  try {
+    return Identity.fromString(safeIdentityHex);
+  } catch {
+    return null;
+  }
+}
+
 function getIdentityHex(identity: { toHexString: () => string }): string {
   return normalizeIdentityHex(identity.toHexString());
 }
@@ -5643,11 +5647,6 @@ function normalizePlayerColorMode(colorMode: string): string {
 function normalizePlayerCharacter(character: unknown): string {
   const value = String(character ?? '').trim().toLowerCase();
   return PLAYER_CHARACTERS.has(value) ? value : DEFAULT_PLAYER_CHARACTER;
-}
-
-function normalizeSelectablePlayerCharacter(character: unknown): string {
-  const value = String(character ?? '').trim().toLowerCase();
-  return PLAYER_SELECTABLE_CHARACTERS.has(value) ? value : DEFAULT_PLAYER_CHARACTER;
 }
 
 function getPlayerCharacterForIdentity(ctx: { db: any }, identity: Identity): string {
@@ -5716,10 +5715,11 @@ function findPlayerByIdentityHex(ctx: IdleWizardReducerCtx, identityHex: string)
     throw new Error('Player identity is required.');
   }
 
-  for (const player of ctx.db.player.iter()) {
-    if (getIdentityHex(player.identity) === safeIdentityHex) {
-      return player;
-    }
+  const identity = parseIdentityHex(safeIdentityHex);
+  const player = identity ? ctx.db.player.identity.find(identity) : null;
+
+  if (player) {
+    return player;
   }
 
   throw new Error('Player not found.');
@@ -5867,6 +5867,29 @@ function getTradeAllianceIdKey(allianceId: unknown): string {
   }
 
   return String(allianceId);
+}
+
+function parseTradeAllianceUuid(allianceId: unknown): Uuid | null {
+  if (
+    typeof allianceId === 'object' &&
+    allianceId !== null &&
+    'compareTo' in allianceId &&
+    typeof allianceId.compareTo === 'function'
+  ) {
+    return allianceId as Uuid;
+  }
+
+  const allianceKey = getTradeAllianceIdKey(allianceId).trim();
+
+  if (!allianceKey) {
+    return null;
+  }
+
+  try {
+    return Uuid.parse(allianceKey);
+  } catch {
+    return null;
+  }
 }
 
 function floorDivBigInt(value: bigint, divisor: bigint): bigint {
@@ -6154,10 +6177,11 @@ function findTradeAllianceById(ctx: IdleWizardReducerCtx, allianceId: string) {
     throw new Error('Alliance is required.');
   }
 
-  for (const alliance of ctx.db.tradeAlliance.iter()) {
-    if (getTradeAllianceIdKey(alliance.allianceId) === safeAllianceId) {
-      return alliance;
-    }
+  const allianceUuid = parseTradeAllianceUuid(safeAllianceId);
+  const alliance = allianceUuid ? ctx.db.tradeAlliance.allianceId.find(allianceUuid) : null;
+
+  if (alliance) {
+    return alliance;
   }
 
   throw new Error('Alliance not found.');
@@ -6206,6 +6230,19 @@ function assertTradeAllianceTagAvailable(
 }
 
 function getTradeAllianceMember(ctx: IdleWizardReducerCtx, identity = ctx.sender) {
+  return ctx.db.tradeAllianceMember.memberIdentity.find(identity) ?? null;
+}
+
+function findTradeAllianceMemberByIdentityHex(
+  ctx: IdleWizardReducerCtx,
+  identityHex: string,
+) {
+  const identity = parseIdentityHex(identityHex);
+
+  if (!identity) {
+    return null;
+  }
+
   return ctx.db.tradeAllianceMember.memberIdentity.find(identity) ?? null;
 }
 
@@ -6267,9 +6304,8 @@ function assertTradeAllianceCanManageMember(
   ctx: IdleWizardReducerCtx,
   allianceId: unknown,
   targetMember: { memberIdentity: Identity; role: string; allianceId: unknown },
+  actor = getTradeAllianceMember(ctx),
 ) {
-  const actor = getTradeAllianceMember(ctx);
-
   if (!actor || getTradeAllianceIdKey(actor.allianceId) !== getTradeAllianceIdKey(allianceId)) {
     throw new Error('Alliance role required.');
   }
@@ -12469,11 +12505,8 @@ function assertFeedbackRateLimit(ctx: IdleWizardReducerCtx) {
     ctx.timestamp.microsSinceUnixEpoch - FEEDBACK_RATE_LIMIT_WINDOW_MICROS;
   let sentInWindow = 0;
 
-  for (const row of ctx.db.playerFeedback.iter()) {
-    if (
-      row.senderIdentity.isEqual(ctx.sender) &&
-      row.submittedAt.microsSinceUnixEpoch >= windowStartMicros
-    ) {
+  for (const row of ctx.db.playerFeedback.bySenderIdentity.filter(ctx.sender)) {
+    if (row.submittedAt.microsSinceUnixEpoch >= windowStartMicros) {
       sentInWindow += 1;
     }
   }
@@ -12505,16 +12538,12 @@ function deletePlayerShopProgressionForIdentity(
   ctx: IdleWizardReducerCtx,
   identity: Identity,
 ) {
-  for (const listing of Array.from(ctx.db.playerShopListing.iter())) {
-    if (listing.sellerIdentity.isEqual(identity)) {
-      ctx.db.playerShopListing.delete(listing);
-    }
+  for (const listing of Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(identity))) {
+    ctx.db.playerShopListing.delete(listing);
   }
 
-  for (const request of Array.from(ctx.db.playerShopRequest.iter())) {
-    if (request.requesterIdentity.isEqual(identity)) {
-      ctx.db.playerShopRequest.delete(request);
-    }
+  for (const request of Array.from(ctx.db.playerShopRequest.byRequesterIdentity.filter(identity))) {
+    ctx.db.playerShopRequest.delete(request);
   }
 
   const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(identity);
@@ -12579,10 +12608,8 @@ function deleteMessageRowsForIdentity(ctx: IdleWizardReducerCtx, identity: Ident
 }
 
 function deletePlayerFeedbackForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
-  for (const row of Array.from(ctx.db.playerFeedback.iter())) {
-    if (row.senderIdentity.isEqual(identity)) {
-      ctx.db.playerFeedback.delete(row);
-    }
+  for (const row of Array.from(ctx.db.playerFeedback.bySenderIdentity.filter(identity))) {
+    ctx.db.playerFeedback.delete(row);
   }
 }
 
@@ -12597,10 +12624,23 @@ function deletePotionDiscoveriesForIdentity(ctx: IdleWizardReducerCtx, identity:
 function deletePlayerShopDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
   deletePlayerShopProgressionForIdentity(ctx, identity);
 
-  for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
-    if (trade.buyerIdentity.isEqual(identity) || trade.sellerIdentity.isEqual(identity)) {
-      ctx.db.playerShopTrade.delete(trade);
+  const deletedTradeIds = new Set<string>();
+  const deleteTrade = (trade: any) => {
+    const tradeId = getTradeAllianceIdKey(trade.tradeId);
+    if (deletedTradeIds.has(tradeId)) {
+      return;
     }
+
+    deletedTradeIds.add(tradeId);
+    ctx.db.playerShopTrade.delete(trade);
+  };
+
+  for (const trade of Array.from(ctx.db.playerShopTrade.byBuyerIdentity.filter(identity))) {
+    deleteTrade(trade);
+  }
+
+  for (const trade of Array.from(ctx.db.playerShopTrade.bySellerIdentity.filter(identity))) {
+    deleteTrade(trade);
   }
 }
 
@@ -12613,22 +12653,16 @@ function deleteTradeAllianceDataForIdentity(ctx: IdleWizardReducerCtx, identity:
     }
   }
 
-  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
-    if (application.applicantIdentity.isEqual(identity)) {
-      ctx.db.tradeAllianceApplication.delete(application);
-    }
+  deleteTradeAllianceApplicationsForIdentity(ctx, identity);
+
+  for (const contribution of Array.from(
+    ctx.db.tradeAllianceQuestContribution.byContributorIdentity.filter(identity),
+  )) {
+    ctx.db.tradeAllianceQuestContribution.delete(contribution);
   }
 
-  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
-    if (contribution.contributorIdentity.isEqual(identity)) {
-      ctx.db.tradeAllianceQuestContribution.delete(contribution);
-    }
-  }
-
-  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
-    if (reward.recipientIdentity.isEqual(identity)) {
-      ctx.db.tradeAllianceRewardInbox.delete(reward);
-    }
+  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(identity))) {
+    ctx.db.tradeAllianceRewardInbox.delete(reward);
   }
 
   const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
@@ -12655,6 +12689,119 @@ function deletePlayerDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identi
   const player = ctx.db.player.identity.find(identity);
   if (player) {
     ctx.db.player.delete(player);
+  }
+}
+
+function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Identity[]) {
+  const identityByHex = new Map<string, Identity>();
+
+  for (const identity of identities) {
+    identityByHex.set(getIdentityHex(identity), identity);
+  }
+
+  if (identityByHex.size <= 0) {
+    return;
+  }
+
+  const isTargetIdentity = (identity: Identity) => identityByHex.has(getIdentityHex(identity));
+
+  for (const identity of identityByHex.values()) {
+    deletePlayerGameplaySaveForIdentity(ctx, identity);
+    deleteLeaderboardForIdentity(ctx, identity);
+    deleteAdminPlayerSession(ctx, identity);
+  }
+
+  for (const row of Array.from(ctx.db.worldChat.iter())) {
+    if (isTargetIdentity(row.senderIdentity)) {
+      ctx.db.worldChat.delete(row);
+    }
+  }
+
+  for (const row of Array.from(ctx.db.tradeAllianceChat.iter())) {
+    if (isTargetIdentity(row.senderIdentity)) {
+      ctx.db.tradeAllianceChat.delete(row);
+    }
+  }
+
+  const affectedAllianceIds: any[] = [];
+
+  for (const alliance of Array.from(ctx.db.tradeAlliance.iter())) {
+    if (isTargetIdentity(alliance.leaderIdentity)) {
+      addAdminAffectedAllianceId(affectedAllianceIds, alliance.allianceId);
+    }
+  }
+
+  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+    if (isTargetIdentity(application.applicantIdentity)) {
+      ctx.db.tradeAllianceApplication.delete(application);
+    }
+  }
+
+  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+    if (isTargetIdentity(contribution.contributorIdentity)) {
+      ctx.db.tradeAllianceQuestContribution.delete(contribution);
+    }
+  }
+
+  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
+    if (isTargetIdentity(reward.recipientIdentity)) {
+      ctx.db.tradeAllianceRewardInbox.delete(reward);
+    }
+  }
+
+  for (const identity of identityByHex.values()) {
+    const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
+    if (member) {
+      addAdminAffectedAllianceId(affectedAllianceIds, member.allianceId);
+      ctx.db.tradeAllianceMember.delete(member);
+    }
+  }
+
+  for (const listing of Array.from(ctx.db.playerShopListing.iter())) {
+    if (isTargetIdentity(listing.sellerIdentity)) {
+      ctx.db.playerShopListing.delete(listing);
+    }
+  }
+
+  for (const request of Array.from(ctx.db.playerShopRequest.iter())) {
+    if (isTargetIdentity(request.requesterIdentity)) {
+      ctx.db.playerShopRequest.delete(request);
+    }
+  }
+
+  for (const proceeds of Array.from(ctx.db.playerShopProceeds.iter())) {
+    if (isTargetIdentity(proceeds.sellerIdentity)) {
+      ctx.db.playerShopProceeds.delete(proceeds);
+    }
+  }
+
+  for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
+    if (isTargetIdentity(trade.buyerIdentity) || isTargetIdentity(trade.sellerIdentity)) {
+      ctx.db.playerShopTrade.delete(trade);
+    }
+  }
+
+  for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
+    if (isTargetIdentity(discovery.discoveredByIdentity)) {
+      ctx.db.potionRecipeDiscovery.delete(discovery);
+    }
+  }
+
+  for (const row of Array.from(ctx.db.playerFeedback.iter())) {
+    if (isTargetIdentity(row.senderIdentity)) {
+      ctx.db.playerFeedback.delete(row);
+    }
+  }
+
+  for (const allianceId of affectedAllianceIds) {
+    refreshAdminMergedAlliance(ctx, allianceId);
+  }
+
+  for (const identity of identityByHex.values()) {
+    const player = ctx.db.player.identity.find(identity);
+    if (player) {
+      ctx.db.player.delete(player);
+    }
   }
 }
 
@@ -12744,23 +12891,17 @@ function deleteTradeAllianceProgressionForIdentity(
   ctx: IdleWizardReducerCtx,
   identity: Identity,
 ) {
-  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
-    if (reward.recipientIdentity.isEqual(identity)) {
-      ctx.db.tradeAllianceRewardInbox.delete(reward);
-    }
+  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(identity))) {
+    ctx.db.tradeAllianceRewardInbox.delete(reward);
   }
 
-  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
-    if (contribution.contributorIdentity.isEqual(identity)) {
-      ctx.db.tradeAllianceQuestContribution.delete(contribution);
-    }
+  for (const contribution of Array.from(
+    ctx.db.tradeAllianceQuestContribution.byContributorIdentity.filter(identity),
+  )) {
+    ctx.db.tradeAllianceQuestContribution.delete(contribution);
   }
 
-  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
-    if (application.applicantIdentity.isEqual(identity)) {
-      ctx.db.tradeAllianceApplication.delete(application);
-    }
-  }
+  deleteTradeAllianceApplicationsForIdentity(ctx, identity);
 
   const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
   if (!member) {
@@ -13268,7 +13409,12 @@ function compareWorldChatRowsOldestFirst(left: any, right: any): number {
 
 function pruneTradeAllianceChat(ctx: IdleWizardReducerCtx, allianceId: unknown) {
   const allianceKey = getTradeAllianceIdKey(allianceId);
-  const rows = Array.from(ctx.db.tradeAllianceChat.iter())
+  const allianceUuid = parseTradeAllianceUuid(allianceId);
+  const rows = Array.from(
+    allianceUuid
+      ? ctx.db.tradeAllianceChat.byAllianceId.filter(allianceUuid)
+      : ctx.db.tradeAllianceChat.iter(),
+  )
     .filter((row) => getTradeAllianceIdKey(row.allianceId) === allianceKey)
     .sort((left, right) => {
       const leftSentAt = left.sentAt.microsSinceUnixEpoch;
@@ -13295,42 +13441,51 @@ function pruneTradeAllianceChat(ctx: IdleWizardReducerCtx, allianceId: unknown) 
 }
 
 function deleteTradeAllianceApplications(ctx: IdleWizardReducerCtx, allianceId: unknown) {
-  const allianceKey = getTradeAllianceIdKey(allianceId);
+  const allianceUuid = parseTradeAllianceUuid(allianceId);
 
-  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
-    if (getTradeAllianceIdKey(application.allianceId) === allianceKey) {
-      ctx.db.tradeAllianceApplication.delete(application);
-    }
+  if (!allianceUuid) {
+    return;
+  }
+
+  for (const application of Array.from(
+    ctx.db.tradeAllianceApplication.byAllianceId.filter(allianceUuid),
+  )) {
+    ctx.db.tradeAllianceApplication.delete(application);
+  }
+}
+
+function deleteTradeAllianceApplicationsForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const application of Array.from(
+    ctx.db.tradeAllianceApplication.byApplicantIdentity.filter(identity),
+  )) {
+    ctx.db.tradeAllianceApplication.delete(application);
   }
 }
 
 function deleteTradeAllianceState(ctx: IdleWizardReducerCtx, alliance: any) {
-  const allianceKey = getTradeAllianceIdKey(alliance.allianceId);
-
-  for (const member of Array.from(ctx.db.tradeAllianceMember.iter())) {
-    if (getTradeAllianceIdKey(member.allianceId) === allianceKey) {
-      ctx.db.tradeAllianceMember.delete(member);
-    }
+  for (const member of getTradeAllianceMembers(ctx, alliance.allianceId)) {
+    ctx.db.tradeAllianceMember.delete(member);
   }
 
   deleteTradeAllianceApplications(ctx, alliance.allianceId);
 
-  for (const chat of Array.from(ctx.db.tradeAllianceChat.iter())) {
-    if (getTradeAllianceIdKey(chat.allianceId) === allianceKey) {
-      ctx.db.tradeAllianceChat.delete(chat);
-    }
+  for (const chat of Array.from(ctx.db.tradeAllianceChat.byAllianceId.filter(alliance.allianceId))) {
+    ctx.db.tradeAllianceChat.delete(chat);
   }
 
-  for (const quest of Array.from(ctx.db.tradeAllianceQuestProgress.iter())) {
-    if (getTradeAllianceIdKey(quest.allianceId) === allianceKey) {
-      ctx.db.tradeAllianceQuestProgress.delete(quest);
-    }
+  for (const quest of Array.from(
+    ctx.db.tradeAllianceQuestProgress.byAllianceId.filter(alliance.allianceId),
+  )) {
+    ctx.db.tradeAllianceQuestProgress.delete(quest);
   }
 
-  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
-    if (getTradeAllianceIdKey(contribution.allianceId) === allianceKey) {
-      ctx.db.tradeAllianceQuestContribution.delete(contribution);
-    }
+  for (const contribution of Array.from(
+    ctx.db.tradeAllianceQuestContribution.byAllianceId.filter(alliance.allianceId),
+  )) {
+    ctx.db.tradeAllianceQuestContribution.delete(contribution);
   }
 
   ctx.db.tradeAlliance.delete(alliance);
@@ -13722,14 +13877,7 @@ export const set_player_profile = spacetimedb.reducer(
     const safeFont = normalizePlayerFont(font);
     const safeColorMode = normalizePlayerColorMode(colorMode);
     const existingPlayer = ctx.db.player.identity.find(ctx.sender);
-    const requestedCharacter = normalizePlayerCharacter(character);
-    const existingCharacter = normalizePlayerCharacter(
-      existingPlayer?.character ?? DEFAULT_PLAYER_CHARACTER,
-    );
-    const safeCharacter =
-      requestedCharacter === 'wizard' && existingCharacter !== 'wizard'
-        ? normalizeSelectablePlayerCharacter(character)
-        : requestedCharacter;
+    const safeCharacter = normalizePlayerCharacter(character);
     const incomingUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
     const nextUsernamePromptSeen =
@@ -14444,11 +14592,7 @@ export const join_trade_alliance = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
-      if (application.applicantIdentity.isEqual(ctx.sender)) {
-        ctx.db.tradeAllianceApplication.delete(application);
-      }
-    }
+    deleteTradeAllianceApplicationsForIdentity(ctx, ctx.sender);
   },
 );
 
@@ -14471,17 +14615,15 @@ export const apply_trade_alliance = spacetimedb.reducer(
       throw new Error('Alliance is open. Join directly.');
     }
 
-    const allianceApplications = Array.from(ctx.db.tradeAllianceApplication.iter()).filter(
-      (application) =>
-        getTradeAllianceIdKey(application.allianceId) ===
-        getTradeAllianceIdKey(alliance.allianceId),
+    const allianceApplications = Array.from(
+      ctx.db.tradeAllianceApplication.byAllianceId.filter(alliance.allianceId),
     );
     if (allianceApplications.length >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS) {
       throw new Error('Alliance applications are full.');
     }
 
-    const ownApplicationCount = Array.from(ctx.db.tradeAllianceApplication.iter()).filter(
-      (application) => application.applicantIdentity.isEqual(ctx.sender),
+    const ownApplicationCount = Array.from(
+      ctx.db.tradeAllianceApplication.byApplicantIdentity.filter(ctx.sender),
     ).length;
     if (ownApplicationCount >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS_PER_PLAYER) {
       throw new Error('Too many pending alliance applications.');
@@ -14568,11 +14710,7 @@ export const accept_trade_alliance_application = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    for (const pending of Array.from(ctx.db.tradeAllianceApplication.iter())) {
-      if (pending.applicantIdentity.isEqual(application.applicantIdentity)) {
-        ctx.db.tradeAllianceApplication.delete(pending);
-      }
-    }
+    deleteTradeAllianceApplicationsForIdentity(ctx, application.applicantIdentity);
   },
 );
 
@@ -14634,12 +14772,13 @@ export const transfer_trade_alliance_leadership = spacetimedb.reducer(
       throw new Error('Leadership transfer requires trade master.');
     }
 
-    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
-    const target = getTradeAllianceMembers(ctx, leader.allianceId).find(
-      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
-    );
+    const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
-    if (!target || target.memberIdentity.isEqual(ctx.sender)) {
+    if (
+      !target ||
+      getTradeAllianceIdKey(target.allianceId) !== getTradeAllianceIdKey(leader.allianceId) ||
+      target.memberIdentity.isEqual(ctx.sender)
+    ) {
       throw new Error('Leadership target not found.');
     }
 
@@ -14689,16 +14828,16 @@ export const set_trade_alliance_member_role = spacetimedb.reducer(
       throw new Error('Alliance role required.');
     }
 
-    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
-    const target = getTradeAllianceMembers(ctx, actor.allianceId).find(
-      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
-    );
+    const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
-    if (!target) {
+    if (
+      !target ||
+      getTradeAllianceIdKey(target.allianceId) !== getTradeAllianceIdKey(actor.allianceId)
+    ) {
       throw new Error('Alliance member not found.');
     }
 
-    const manager = assertTradeAllianceCanManageMember(ctx, actor.allianceId, target);
+    const manager = assertTradeAllianceCanManageMember(ctx, actor.allianceId, target, actor);
     assertTradeAllianceCanAssignRole(manager, targetRole);
     assertTradeAllianceRoleCap(ctx, actor.allianceId, targetRole, target.memberIdentity);
 
@@ -14720,12 +14859,12 @@ export const kick_trade_alliance_member = spacetimedb.reducer(
       throw new Error('Alliance role required.');
     }
 
-    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
-    const target = getTradeAllianceMembers(ctx, actor.allianceId).find(
-      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
-    );
+    const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
-    if (!target) {
+    if (
+      !target ||
+      getTradeAllianceIdKey(target.allianceId) !== getTradeAllianceIdKey(actor.allianceId)
+    ) {
       return;
     }
 
@@ -14897,10 +15036,7 @@ export const admin_set_trade_alliance_member_role = spacetimedb.reducer(
   (ctx, { memberIdentityHex, role }) => {
     assertGameConfigAdmin(ctx);
     const safeRole = validateTradeAllianceRole(role);
-    const targetIdentityHex = normalizeIdentityHex(memberIdentityHex);
-    const target = Array.from(ctx.db.tradeAllianceMember.iter()).find(
-      (member) => getIdentityHex(member.memberIdentity) === targetIdentityHex,
-    );
+    const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
     if (!target) {
       throw new Error('Alliance member not found.');
@@ -15969,9 +16105,7 @@ export const admin_wipe_zero_income_player_data = spacetimedb.reducer(
       return;
     }
 
-    for (const identity of getZeroIncomePlayerIdentities(ctx)) {
-      deletePlayerDataForIdentity(ctx, identity);
-    }
+    deletePlayerDataForIdentities(ctx, getZeroIncomePlayerIdentities(ctx));
 
     ctx.db.maintenanceState.insert({
       stateKey,

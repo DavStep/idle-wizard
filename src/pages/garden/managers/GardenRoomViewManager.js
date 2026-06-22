@@ -2,6 +2,7 @@ export class GardenRoomViewManager {
   constructor() {
     this.root = null;
     this.uiLayer = null;
+    this.contentLayer = null;
     this.popupLayer = null;
   }
 
@@ -31,6 +32,14 @@ export class GardenRoomViewManager {
     return this.uiLayer;
   }
 
+  getContentLayer() {
+    if (!this.contentLayer) {
+      throw new Error('GardenRoomViewManager content layer is not mounted.');
+    }
+
+    return this.contentLayer;
+  }
+
   getPopupLayer() {
     if (!this.popupLayer) {
       throw new Error('GardenRoomViewManager popup layer is not mounted.');
@@ -44,6 +53,7 @@ export class GardenRoomViewManager {
     this.popupLayer?.remove();
     this.root = null;
     this.uiLayer = null;
+    this.contentLayer = null;
     this.popupLayer = null;
   }
 
@@ -63,8 +73,13 @@ export class GardenRoomViewManager {
 
   createUiLayer() {
     this.uiLayer = document.createElement('div');
-    this.uiLayer.className = 'garden-page__ui-layer style-page-scroll';
-    this.uiLayer.dataset.scrollCueProgress = 'inline';
+    this.uiLayer.className = 'garden-page__ui-layer';
+
+    this.contentLayer = document.createElement('div');
+    this.contentLayer.className = 'garden-page__content style-page-scroll';
+    this.contentLayer.dataset.scrollCueProgress = 'inline';
+    this.uiLayer.append(this.contentLayer);
+
     return this.uiLayer;
   }
 

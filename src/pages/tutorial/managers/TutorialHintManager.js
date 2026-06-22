@@ -3,7 +3,6 @@ import { TutorialGuideDragManager } from './TutorialGuideDragManager.js';
 import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
 
 const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
-const POINTING_HAND_URL = new URL('../assets/pointing-hand.png', import.meta.url).href;
 const GUIDE_NAME = 'Elara Starbrew';
 const HINT_WIDTH = 190;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
@@ -121,7 +120,6 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
-    this.pointerImage = null;
     this.portrait = null;
     this.hint = null;
     this.stepLabel = null;
@@ -195,13 +193,6 @@ export class TutorialHintManager {
     this.pointer.hidden = true;
     this.pointer.setAttribute('aria-hidden', 'true');
 
-    this.pointerImage = document.createElement('img');
-    this.pointerImage.className = 'tutorial-layer__pointer-image';
-    this.pointerImage.src = POINTING_HAND_URL;
-    this.pointerImage.alt = '';
-    this.pointerImage.draggable = false;
-    this.pointerImage.setAttribute('aria-hidden', 'true');
-    this.pointer.append(this.pointerImage);
     this.pointerSpineManager.mount(this.pointer);
 
     this.portrait = document.createElement('img');
@@ -391,7 +382,6 @@ export class TutorialHintManager {
     this.root = null;
     this.backdrop = null;
     this.pointer = null;
-    this.pointerImage = null;
     this.pointerSpineManager.unmount();
     this.portrait = null;
     this.hint = null;

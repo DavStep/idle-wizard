@@ -658,7 +658,7 @@ export class GardenPlotManager {
 
     refs.progress.hidden = false;
     setProgressFill(refs.fill, progressValue, {
-      smooth: true,
+      smooth: false,
       remainingMs,
     });
     this.setText(refs.progressText, '');

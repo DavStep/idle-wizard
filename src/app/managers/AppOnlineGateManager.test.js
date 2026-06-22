@@ -27,6 +27,10 @@ describe('AppOnlineGateManager', () => {
     expect(gate.textContent).toContain('connecting to server...');
     expect(progress.hidden).toBe(false);
 
+    manager.showOffline('connect_timeout');
+    expect(gate.textContent).toContain('connecting to server...');
+    expect(progress.hidden).toBe(false);
+
     manager.showOffline('gameplay_save_timeout');
     expect(gate.textContent).toContain('connecting to server...');
     expect(progress.hidden).toBe(false);

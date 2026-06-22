@@ -252,7 +252,7 @@ export class TopPanelLevelManager {
     const limitRows = [
       [/^max garden tiles (\d+)$/, 'maxGardenTiles', 'garden plots', ''],
       [/^max cauldrons (\d+)$/, 'maxCauldrons', 'cauldrons', ''],
-      [/^max npc market stands (\d+)$/, 'maxNpcMarketStands', 'npc stands', ''],
+      [/^max (?:npc|trader) market stands (\d+)$/, 'maxNpcMarketStands', 'trader stands', ''],
       [/^max player market stands (\d+)$/, 'maxPlayerMarketStands', 'player stands', ''],
       [/^max mana cap ([\d.]+)$/, 'maxManaCap', 'mana cap', ''],
       [/^mana regen ([\d.]+)\/sec$/, 'manaPerSecond', 'mana regen', '/sec'],
@@ -303,7 +303,7 @@ export class TopPanelLevelManager {
     return [
       ['garden plots', totals.maxGardenTiles, ''],
       ['cauldrons', totals.maxCauldrons, ''],
-      ['npc stands', totals.maxNpcMarketStands, ''],
+      ['trader stands', totals.maxNpcMarketStands, ''],
       ['player stands', totals.maxPlayerMarketStands, ''],
       ['mana cap', totals.maxManaCap, ''],
       ['mana regen', totals.manaPerSecond, '/sec'],

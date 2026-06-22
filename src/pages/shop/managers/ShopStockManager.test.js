@@ -46,7 +46,7 @@ function getStockBox(stage, label) {
 }
 
 describe('ShopStockManager', () => {
-  it('renders shared NPC stock boxes and a quantity buy dialog', async () => {
+  it('renders shared trader stock boxes and a quantity buy dialog', async () => {
     const stage = document.createElement('section');
     const snapshot = {
       coin: { current: 5 },
@@ -78,9 +78,9 @@ describe('ShopStockManager', () => {
 
     expect(stockBoxes.map((box) => box.querySelector('.style-box__title')?.textContent))
       .toEqual([
-        'npc stock market: seeds',
-        'npc stock market: herbs',
-        'npc stock market: potions',
+        'trader stock market: seeds',
+        'trader stock market: herbs',
+        'trader stock market: potions',
       ]);
     expect(stage.querySelector('.shop-page__stock-type-button')).toBeNull();
     expect(seedBox?.querySelector('.shop-page__stock-row')?.textContent).toContain(

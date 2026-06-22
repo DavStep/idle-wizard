@@ -88,7 +88,7 @@ export class ShopDemandManager {
     button.className = 'style-button shop-page__demand-button';
     button.type = 'button';
     button.textContent = 'demand';
-    button.setAttribute('aria-label', 'show npc demand');
+    button.setAttribute('aria-label', 'show trader demand');
     button.addEventListener('pointerdown', (event) => this.onShowPressStart(event));
     button.addEventListener('touchstart', (event) => this.onShowPressStart(event), {
       passive: false,
@@ -111,7 +111,7 @@ export class ShopDemandManager {
 
     const panel = document.createElement('section');
     panel.className = 'shop-page__demand-panel';
-    panel.setAttribute('aria-label', 'NPC demand');
+    panel.setAttribute('aria-label', 'trader demand');
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('role', 'dialog');
     panel.tabIndex = -1;
@@ -121,7 +121,7 @@ export class ShopDemandManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'demand';
+    title.textContent = 'trader demand';
 
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'shop-page__demand-rows';

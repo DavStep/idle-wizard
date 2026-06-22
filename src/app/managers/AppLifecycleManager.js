@@ -510,6 +510,7 @@ export class AppLifecycleManager {
   isTransientOfflineReason(reason) {
     return (
       reason === 'connect_error' ||
+      reason === 'connect_timeout' ||
       reason === 'disconnect' ||
       reason === 'gameplay_save_timeout'
     );

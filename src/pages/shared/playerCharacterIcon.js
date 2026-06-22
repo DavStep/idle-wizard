@@ -10,7 +10,6 @@ const CHARACTER_IMAGE_URLS = Object.freeze({
   corvin: new URL('./assets/player-characters/corvin.webp', import.meta.url).href,
   juniper: new URL('./assets/player-characters/juniper.webp', import.meta.url).href,
   rowan: new URL('./assets/player-characters/rowan.webp', import.meta.url).href,
-  wizard: new URL('./assets/player-characters/wizard.webp', import.meta.url).href,
 });
 
 export function getPlayerCharacterImageUrl(character) {

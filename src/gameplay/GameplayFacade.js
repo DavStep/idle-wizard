@@ -303,7 +303,7 @@ export class GameplayFacade {
     if (result.ok) {
       this.gameplayLogFacade.logShopStandBought({
         ...result,
-        marketLabel: 'npc market',
+        marketLabel: 'trader market',
       });
     }
     this.publishAndSaveSnapshot();

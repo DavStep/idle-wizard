@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { GardenPlotManager } from './GardenPlotManager.js';
 
@@ -314,6 +314,11 @@ function dispatchTouchLikePressStart(element) {
 }
 
 describe('GardenPlotManager', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('uses boxes as the default plot view with three fixed columns', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -336,6 +341,9 @@ describe('GardenPlotManager', () => {
     const uiLayerRule = baseCss.match(
       /\.garden-page__ui-layer\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const contentRule = baseCss.match(
+      /\.garden-page__content\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const gardenBoxesRule = baseCss.match(
       /\.garden-page__plot,\s*\.garden-page__seeds,\s*\.garden-page__herbs\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -349,8 +357,14 @@ describe('GardenPlotManager', () => {
     const absoluteRegistryEnd = baseCss.indexOf('.shop-page__market-panel .shop-page__shelf');
     const absoluteRegistry = baseCss.slice(absoluteRegistryStart, absoluteRegistryEnd);
 
-    expect(uiLayerRule).toContain('overflow: hidden auto;');
-    expect(uiLayerRule).toContain('touch-action: pan-y;');
+    expect(uiLayerRule).not.toContain('overflow: hidden auto;');
+    expect(contentRule).toContain('top: var(--style-room-content-top);');
+    expect(contentRule).toContain('bottom: var(--style-room-chat-clearance);');
+    expect(contentRule).not.toContain('var(--style-page-tab-scroll-clearance)');
+    expect(contentRule).toContain('padding-top: var(--style-page-scroll-padding-top);');
+    expect(contentRule).toContain('padding-bottom: var(--style-page-scroll-padding-bottom);');
+    expect(contentRule).toContain('overflow: hidden auto;');
+    expect(contentRule).toContain('touch-action: pan-y;');
     expect(gardenBoxesRule).toContain('position: relative;');
     expect(plotRowsRule).toContain('max-height: none;');
     expect(plotRowsRule).toContain('overflow: visible;');
@@ -451,6 +465,53 @@ describe('GardenPlotManager', () => {
     expect(boxAction?.textContent).toBe('growing 6s');
     expect(boxTimer?.parentElement).toBe(boxAction);
     expect(boxTimer?.textContent).toBe('6s');
+  });
+
+  it('keeps active plot progress stepped instead of continuously animating on mobile', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+    const frameCallbacks = [];
+    const requestAnimationFrame = vi.fn((callback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    });
+
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrame);
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'growing',
+      totalMs: 12_000,
+      remainingMs: 6_000,
+      progress: 0.5,
+      process: {
+        phase: 'growing',
+        totalMs: 12_000,
+        remainingMs: 6_000,
+        progress: 0.5,
+      },
+    });
+
+    manager.mount(parent);
+
+    const progressFill = parent.querySelector('.garden-page__plot-progress-fill');
+
+    for (const callback of frameCallbacks) {
+      callback();
+    }
+
+    expect(progressFill?.classList.contains('is-progress-running')).toBe(false);
+    expect(progressFill?.style.transition).toBe('none');
+    expect(progressFill?.style.transform).toBe('scaleX(0.5)');
   });
 
   it('marks boxes ready to harvest', () => {

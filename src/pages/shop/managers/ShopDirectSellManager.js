@@ -160,7 +160,7 @@ export class ShopDirectSellManager {
     button.type = 'button';
     button.textContent = 'fast sell';
     button.dataset.tutorialId = 'shop:directSell';
-    button.setAttribute('aria-label', 'fast sell to npc');
+    button.setAttribute('aria-label', 'fast sell to trader');
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -205,7 +205,7 @@ export class ShopDirectSellManager {
 
     const panel = document.createElement('section');
     panel.className = 'shop-page__direct-sell-panel';
-    panel.setAttribute('aria-label', 'fast sell to npc');
+    panel.setAttribute('aria-label', 'fast sell to trader');
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('role', 'dialog');
     panel.tabIndex = -1;
@@ -699,8 +699,8 @@ export class ShopDirectSellManager {
     const fastSellPercent = this.getFastSellPercent();
     this.refs.helpPopup.tooltip.textContent =
       fastSellPercent === null
-        ? 'fast sell sells now for less than full npc price. market stands wait for the timer and pay 100%.'
-        : `fast sell sells now for ${fastSellPercent}% of full npc price. market stands wait for the timer and pay 100%.`;
+        ? 'fast sell sells now for less than full trader price. market stands wait for the timer and pay 100%.'
+        : `fast sell sells now for ${fastSellPercent}% of full trader price. market stands wait for the timer and pay 100%.`;
 
     if (this.helpVisible) {
       this.positionHelpPopup();

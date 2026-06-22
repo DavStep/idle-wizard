@@ -23,15 +23,16 @@ export class GardenPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
+    const contentLayer = this.roomViewManager.getContentLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
-    this.plotManager.mount(uiLayer, popupLayer);
+    this.plotManager.mount(contentLayer, popupLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
       this.gameplayFacade?.subscribeRewardEvents?.((event) =>
         this.flyoutManager.showReward(event),
       ) ?? null;
-    this.seedInventoryManager.mount(uiLayer);
-    this.herbInventoryManager.mount(uiLayer);
+    this.seedInventoryManager.mount(contentLayer);
+    this.herbInventoryManager.mount(contentLayer);
   }
 
   unmount() {

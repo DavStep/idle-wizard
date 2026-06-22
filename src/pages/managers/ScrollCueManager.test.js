@@ -128,6 +128,9 @@ describe('ScrollCueManager', () => {
     const researchRule = baseCss.match(
       /\.research-page__box-list\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const gardenRule = baseCss.match(
+      /\.garden-page__content\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(rootRule).toMatch(/--style-page-scroll-cut:\s*6px;/);
     expect(rootRule).toMatch(
@@ -146,6 +149,12 @@ describe('ScrollCueManager', () => {
       /padding-top:\s*var\(--style-page-scroll-padding-top\);/,
     );
     expect(researchRule).toMatch(
+      /padding-bottom:\s*var\(--style-page-scroll-padding-bottom\);/,
+    );
+    expect(gardenRule).toMatch(
+      /padding-top:\s*var\(--style-page-scroll-padding-top\);/,
+    );
+    expect(gardenRule).toMatch(
       /padding-bottom:\s*var\(--style-page-scroll-padding-bottom\);/,
     );
   });

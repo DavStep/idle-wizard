@@ -66,7 +66,7 @@ function createSnapshot() {
 }
 
 describe('ShopDemandManager', () => {
-  it('opens NPC demand in tabbed popup with locked rows muted', () => {
+  it('opens trader demand in tabbed popup with locked rows muted', () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');
     const snapshot = createSnapshot();
@@ -91,6 +91,7 @@ describe('ShopDemandManager', () => {
     const tabs = popup.querySelector('.shop-page__demand-tabs');
 
     expect(button.textContent).toBe('demand');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe('trader demand');
     expect(popup.hidden).toBe(false);
     expect(
       popup.querySelector('.shop-page__demand-dialog')?.nextElementSibling,
@@ -153,7 +154,7 @@ describe('ShopDemandManager', () => {
     manager.unmount();
   });
 
-  it('opens NPC demand on touchstart of the border label', () => {
+  it('opens trader demand on touchstart of the border label', () => {
     withPointerEvent(() => {
       const buttonParent = document.createElement('section');
       const popupParent = document.createElement('section');

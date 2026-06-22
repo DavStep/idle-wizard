@@ -289,6 +289,25 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps connecting and retries when backend startup times out', async () => {
+    const { lifecycle, getBackendCallbacks, getRetryCallback } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOffline({ reason: 'connect_timeout' });
+
+    expect(lifecycle.gameplayTickManager.start).not.toHaveBeenCalled();
+    expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
+    expect(lifecycle.connectionRetryManager.schedule).toHaveBeenCalledTimes(1);
+
+    getRetryCallback()();
+    await flushPromises();
+
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
+  });
+
   it('unmounts the deploy refresh gate when the app stops', async () => {
     const { lifecycle } = createLifecycle();
 

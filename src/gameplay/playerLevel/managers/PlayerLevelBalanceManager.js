@@ -322,7 +322,7 @@ export class PlayerLevelBalanceManager {
     }
 
     if (!previousLevel || level.maxNpcMarketStands > previousLevel.maxNpcMarketStands) {
-      effects.push(`max npc market stands ${level.maxNpcMarketStands}`);
+      effects.push(`max trader market stands ${level.maxNpcMarketStands}`);
     }
 
     if (!previousLevel || level.maxPlayerMarketStands > previousLevel.maxPlayerMarketStands) {

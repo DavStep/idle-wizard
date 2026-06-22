@@ -59,7 +59,7 @@ describe('PlayerLevelBalanceManager', () => {
     expect(manager.getLevelSummaries(1)[0].effects).toEqual([
       'max garden tiles 1',
       'max cauldrons 1',
-      'max npc market stands 1',
+      'max trader market stands 1',
       'max player market stands 1',
       'unlocks garden',
       'allows researching "Mana Cap"',

@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
 
 describe('TutorialPointerSpineManager', () => {
-  it('uses the static pointer fallback by default', () => {
+  it('waits for a graphics runtime before loading the Spine pointer by default', () => {
     const pointer = document.createElement('span');
     const importPixi = vi.fn(async () => ({}));
     const manager = new TutorialPointerSpineManager({ importPixi });
@@ -17,12 +17,17 @@ describe('TutorialPointerSpineManager', () => {
     expect(pointer.querySelector('.tutorial-layer__pointer-spine')).not.toBeNull();
   });
 
-  it('loads the pointer Spine into a local Pixi canvas and controls playback', async () => {
+  it('loads the pointer Spine by default when WebGL is available', async () => {
     const pointer = document.createElement('span');
     const originalDevicePixelRatio = window.devicePixelRatio;
+    const originalWebGLRenderingContext = window.WebGLRenderingContext;
     Object.defineProperty(window, 'devicePixelRatio', {
       configurable: true,
       value: 2,
+    });
+    Object.defineProperty(window, 'WebGLRenderingContext', {
+      configurable: true,
+      value: function WebGLRenderingContext() {},
     });
     pointer.style.setProperty('--style-ui-scale', '3');
     const app = {
@@ -52,7 +57,6 @@ describe('TutorialPointerSpineManager', () => {
     const manager = new TutorialPointerSpineManager({
       assetManager,
       importPixi: vi.fn(async () => ({ Application })),
-      enabled: true,
     });
 
     try {
@@ -80,6 +84,7 @@ describe('TutorialPointerSpineManager', () => {
           height: 90,
           backgroundAlpha: 0,
           resolution: 6,
+          preserveDrawingBuffer: true,
         }),
       );
       expect(app.stage.addChild).toHaveBeenCalledWith(spine);
@@ -103,6 +108,10 @@ describe('TutorialPointerSpineManager', () => {
       Object.defineProperty(window, 'devicePixelRatio', {
         configurable: true,
         value: originalDevicePixelRatio,
+      });
+      Object.defineProperty(window, 'WebGLRenderingContext', {
+        configurable: true,
+        value: originalWebGLRenderingContext,
       });
     }
   });

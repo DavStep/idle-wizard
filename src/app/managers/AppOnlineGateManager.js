@@ -81,6 +81,7 @@ export class AppOnlineGateManager {
         : reason === 'account_in_use'
           ? 'account opened on another device. close this one to continue there.'
         : reason === 'connect_error' ||
+            reason === 'connect_timeout' ||
             reason === 'disconnect' ||
             reason === 'gameplay_save_timeout'
           ? 'connecting to server...'

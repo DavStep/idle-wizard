@@ -2,7 +2,7 @@ import { PageNotificationStateManager } from '../../notifications/managers/PageN
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 
 const MARKET_TABS = [
-  { id: 'npm', label: 'npc market' },
+  { id: 'npm', label: 'trader market' },
   { id: 'player', label: 'player market' },
   { id: 'crystals', label: 'crystals' },
 ];

@@ -76,7 +76,7 @@ export class ShopShelfManager {
 
     this.root = document.createElement('section');
     this.root.className = 'shop-page__shelf style-box';
-    this.root.setAttribute('aria-label', 'NPC demand market');
+    this.root.setAttribute('aria-label', 'trader demand market');
 
     this.refs.title = this.createTitle();
     this.refs.timer = this.createTimer();
@@ -121,14 +121,14 @@ export class ShopShelfManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'npc demand market';
+    title.textContent = 'trader demand market';
     return title;
   }
 
   createTimer() {
     const timer = document.createElement('span');
     timer.className = 'shop-page__shelf-timer';
-    timer.setAttribute('aria-label', 'npc demand market timer');
+    timer.setAttribute('aria-label', 'trader demand market timer');
     timer.hidden = true;
     return timer;
   }
@@ -679,7 +679,7 @@ export class ShopShelfManager {
         row.classList.remove('is-unlockable');
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
-        row.setAttribute('aria-label', `select npc market stand ${slotNumber}`);
+        row.setAttribute('aria-label', `select trader market stand ${slotNumber}`);
         row.setAttribute('aria-pressed', selected ? 'true' : 'false');
         refs.itemValue.removeAttribute('role');
         refs.itemValue.removeAttribute('aria-label');
@@ -716,7 +716,7 @@ export class ShopShelfManager {
         unlockButton.setAttribute('aria-disabled', unlockButton.disabled ? 'true' : 'false');
         unlockButton.setAttribute(
           'aria-label',
-          `unlock npc market stand ${slotNumber} for ${actionText}`,
+          `unlock trader market stand ${slotNumber} for ${actionText}`,
         );
         if (canBuySlot) {
           unlockButton.removeAttribute('tabindex');

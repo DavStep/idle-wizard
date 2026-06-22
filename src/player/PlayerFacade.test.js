@@ -153,25 +153,6 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().character).toBe('elara');
   });
 
-  it('keeps dashboard-only character out of player selection', () => {
-    const playerFacade = new PlayerFacade();
-
-    expect(playerFacade.getCharacterOptions().map((option) => option.key)).toEqual([
-      'elara',
-      'mira',
-      'bramble',
-      'corvin',
-      'juniper',
-      'rowan',
-    ]);
-
-    playerFacade.setCharacter('wizard');
-    expect(playerFacade.getSnapshot().character).toBe('elara');
-
-    playerFacade.applyServerProfile({ username: 'Merlin', character: 'wizard' });
-    expect(playerFacade.getSnapshot().character).toBe('wizard');
-  });
-
   it('normalizes progress bar', () => {
     const playerFacade = new PlayerFacade();
 

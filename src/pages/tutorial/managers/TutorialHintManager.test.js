@@ -98,7 +98,7 @@ describe('TutorialHintManager', () => {
     window.localStorage?.clear?.();
   });
 
-  it('uses the pointer without drawing a target rectangle', () => {
+  it('uses the Spine pointer shell without drawing a target rectangle or hand sprite', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');
     const manager = new TutorialHintManager();
@@ -123,11 +123,11 @@ describe('TutorialHintManager', () => {
     });
 
     const pointer = stage.querySelector('.tutorial-layer__pointer');
-    const fallbackImage = pointer?.querySelector('.tutorial-layer__pointer-image');
+    const pointerCanvas = pointer?.querySelector('.tutorial-layer__pointer-spine');
 
     expect(pointer?.hidden).toBe(false);
-    expect(fallbackImage).not.toBeNull();
-    expect(fallbackImage?.getAttribute('src')).toContain('pointing-hand.png');
+    expect(pointerCanvas).not.toBeNull();
+    expect(pointer?.querySelector('img')).toBeNull();
   });
 
   it('mounts and pauses the Spine pointer with target cue visibility', () => {

@@ -64,7 +64,7 @@ export class ShopStockManager {
 
     this.root = document.createElement('div');
     this.root.className = 'shop-page__stock-list';
-    this.root.setAttribute('aria-label', 'NPC stock market');
+    this.root.setAttribute('aria-label', 'trader stock market');
 
     for (const box of STOCK_BOXES) {
       const boxRefs = this.createStockBox(box);
@@ -115,11 +115,11 @@ export class ShopStockManager {
   createStockBox({ kind, label }) {
     const root = document.createElement('section');
     root.className = 'shop-page__stock style-box';
-    root.setAttribute('aria-label', `NPC stock market ${label}`);
+    root.setAttribute('aria-label', `trader stock market ${label}`);
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = `npc stock market: ${label}`;
+    title.textContent = `trader stock market: ${label}`;
 
     const count = document.createElement('div');
     count.className = 'shop-page__stock-count';

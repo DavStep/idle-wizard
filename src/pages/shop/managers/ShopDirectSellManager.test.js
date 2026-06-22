@@ -151,7 +151,7 @@ describe('ShopDirectSellManager', () => {
     expect(manager.getSellFailureText('demand_too_low', { need: 2 })).toBe('only 2 buyers');
   });
 
-  it('opens fast sell, recalculates totals, and clamps sales to NPC need', async () => {
+  it('opens fast sell, recalculates totals, and clamps sales to trader need', async () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');
     const snapshot = {
@@ -197,7 +197,7 @@ describe('ShopDirectSellManager', () => {
 
     expect(helpButton?.getAttribute('aria-expanded')).toBe('true');
     expect(helpPopup?.hidden).toBe(false);
-    expect(helpTooltip?.textContent).toContain('80% of full npc price');
+    expect(helpTooltip?.textContent).toContain('80% of full trader price');
     expect(helpTooltip?.textContent).toContain('wait for the timer');
 
     openButton.click();

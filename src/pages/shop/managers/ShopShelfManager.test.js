@@ -175,7 +175,7 @@ function createRequestGameplayFacadeFake() {
 }
 
 describe('ShopShelfManager', () => {
-  it('switches between npc and player market panels', () => {
+  it('switches between trader and player market panels', () => {
     const stage = document.createElement('section');
     const manager = new ShopMarketTabsManager();
 
@@ -188,7 +188,7 @@ describe('ShopShelfManager', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['npc market', 'player market', 'crystals']);
+    ).toEqual(['trader market', 'player market', 'crystals']);
     const playerTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
       (button) => button.textContent === 'player market',
     );
@@ -276,7 +276,7 @@ describe('ShopShelfManager', () => {
     const buttons = [...stage.querySelectorAll('.shop-page__market-tab-button')];
     const playerTab = buttons.find((button) => button.textContent === 'player market');
     const crystalsTab = buttons.find((button) => button.textContent === 'crystals');
-    const npcTab = buttons.find((button) => button.textContent === 'npc market');
+    const npcTab = buttons.find((button) => button.textContent === 'trader market');
 
     expect(playerTab?.dataset.notification).toBeUndefined();
     expect(playerTab?.dataset.notificationTone).toBeUndefined();
@@ -595,7 +595,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('shows zero-cost NPC market stand buys as free', () => {
+  it('shows zero-cost trader market stand buys as free', () => {
     const manager = new ShopShelfManager();
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 0)).toBe(
@@ -603,7 +603,7 @@ describe('ShopShelfManager', () => {
     );
   });
 
-  it('keeps NPC market free stand buys clear of the demand border action', () => {
+  it('keeps trader market free stand buys clear of the demand border action', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const firstSlotRule = baseCss.match(
       /\.shop-page__shelf > \.shop-page__slot-row:first-of-type\s*\{(?<body>[^}]*)\}/,
@@ -638,7 +638,7 @@ describe('ShopShelfManager', () => {
     );
   });
 
-  it('formats NPC market stand buy costs as compact coin text', () => {
+  it('formats trader market stand buy costs as compact coin text', () => {
     const manager = new ShopShelfManager();
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 1000)).toBe(
@@ -646,7 +646,7 @@ describe('ShopShelfManager', () => {
     );
   });
 
-  it('labels empty NPC market stands by lock state', () => {
+  it('labels empty trader market stands by lock state', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
@@ -705,7 +705,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('marks empty NPC market stands and picker choices as orange notifications', () => {
+  it('marks empty trader market stands and picker choices as orange notifications', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
@@ -762,7 +762,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('buys the next NPC market stand when tapping the locked row text', () => {
+  it('buys the next trader market stand when tapping the locked row text', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     let buyCount = 0;
@@ -816,7 +816,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('buys the next NPC market stand on touchstart of the locked row text', () => {
+  it('buys the next trader market stand on touchstart of the locked row text', () => {
     withPointerEvent(() => {
       const stage = document.createElement('section');
       const popupLayer = document.createElement('section');
@@ -874,7 +874,7 @@ describe('ShopShelfManager', () => {
     });
   });
 
-  it('buys the next NPC market stand from keyboard focus on the locked row', () => {
+  it('buys the next trader market stand from keyboard focus on the locked row', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     let buyCount = 0;
@@ -921,7 +921,7 @@ describe('ShopShelfManager', () => {
     const unlockButton = stage.querySelector('.shop-page__slot-unlock-button');
     expect(unlockButton?.textContent).toBe('1.empty standfree');
     expect(unlockButton?.getAttribute('aria-label')).toBe(
-      'unlock npc market stand 1 for free',
+      'unlock trader market stand 1 for free',
     );
 
     unlockButton?.dispatchEvent(
@@ -933,7 +933,7 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('buys the next NPC market stand on touchstart of the buy button', () => {
+  it('buys the next trader market stand on touchstart of the buy button', () => {
     withPointerEvent(() => {
       const stage = document.createElement('section');
       const popupLayer = document.createElement('section');

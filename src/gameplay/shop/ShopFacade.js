@@ -20,7 +20,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ShopFacade {
   static explain =
-    'The market has NPC stands for automatic sales, shared NPC stock to buy, and player stands for listings other players can buy.';
+    'The market has trader stands for automatic sales, shared trader stock to buy, and player stands for listings other players can buy.';
 
   constructor({
     coinFacade,
