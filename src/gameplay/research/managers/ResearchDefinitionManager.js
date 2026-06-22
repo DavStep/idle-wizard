@@ -121,10 +121,24 @@ export class ResearchDefinitionManager {
     this.playerLevelFacade = playerLevelFacade;
     this.prestigeFacade = prestigeFacade;
     this.researchBalanceManager = researchBalanceManager;
+    this.researchTabsCache = new Map();
+    this.researchLookupCache = new Map();
+  }
+
+  clearCache() {
+    this.researchTabsCache.clear();
+    this.researchLookupCache.clear();
   }
 
   getResearchTabs({ includeLevelLockedAutomation = false } = {}) {
-    return [
+    const cacheKey = this.getResearchTabsCacheKey({ includeLevelLockedAutomation });
+    const cachedTabs = this.researchTabsCache.get(cacheKey);
+
+    if (cachedTabs) {
+      return cachedTabs;
+    }
+
+    const tabs = [
       {
         id: 'regular',
         label: 'regular research',
@@ -148,6 +162,9 @@ export class ResearchDefinitionManager {
         boxes: this.getEmeraldResearchBoxes({ includeLevelLockedAutomation }),
       },
     ];
+
+    this.researchTabsCache.set(cacheKey, tabs);
+    return tabs;
   }
 
   getRegularResearchBoxes({ includeHiddenRecipeUnlocks = false } = {}) {
@@ -568,7 +585,7 @@ export class ResearchDefinitionManager {
     const normalizedResearchId = this.normalizeResearchId(researchId);
     return (
       this.researchBalanceManager.isResearchEnabled(normalizedResearchId) &&
-      this.getResearches().some((research) => research.id === normalizedResearchId)
+      this.getResearchLookup().has(normalizedResearchId)
     );
   }
 
@@ -576,9 +593,7 @@ export class ResearchDefinitionManager {
     const normalizedResearchId = this.normalizeResearchId(researchId);
     return (
       this.researchBalanceManager.isResearchEnabled(normalizedResearchId) &&
-      this.getResearches({ includeLevelLockedAutomation: true }).some(
-        (research) => research.id === normalizedResearchId,
-      )
+      this.getResearchLookup({ includeLevelLockedAutomation: true }).has(normalizedResearchId)
     );
   }
 
@@ -589,7 +604,7 @@ export class ResearchDefinitionManager {
       return null;
     }
 
-    return this.getResearches().find((research) => research.id === normalizedResearchId) ?? null;
+    return this.getResearchLookup().get(normalizedResearchId) ?? null;
   }
 
   getRequiredResearchIds(researchId) {
@@ -624,6 +639,37 @@ export class ResearchDefinitionManager {
 
   getCurrentPrestigeCount() {
     return this.prestigeFacade?.getCompletedCount?.() ?? 0;
+  }
+
+  getResearchTabsCacheKey({ includeLevelLockedAutomation = false } = {}) {
+    if (includeLevelLockedAutomation) {
+      return 'all';
+    }
+
+    return [
+      'visible',
+      this.areRecipeUnlocksVisible() ? 'recipes' : 'no-recipes',
+      this.getAutomationGardenTileCount(),
+      this.getAutomationCauldronCount(),
+    ].join(':');
+  }
+
+  getResearchLookup(options = {}) {
+    const cacheKey = this.getResearchTabsCacheKey(options);
+    const cachedLookup = this.researchLookupCache.get(cacheKey);
+
+    if (cachedLookup) {
+      return cachedLookup;
+    }
+
+    const lookup = new Map();
+
+    for (const research of this.getResearches(options)) {
+      lookup.set(this.normalizeResearchId(research.id), research);
+    }
+
+    this.researchLookupCache.set(cacheKey, lookup);
+    return lookup;
   }
 
   normalizeResearchId(researchId) {

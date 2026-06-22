@@ -20,7 +20,6 @@ export class GardenInventoryBoxManager {
     countClassName = 'garden-page__inventory-count',
     toggleClassName = 'garden-page__inventory-toggle',
     getItems = (snapshot) => snapshot.garden?.herbs ?? [],
-    seedDragController = null,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.kind = kind;
@@ -32,7 +31,6 @@ export class GardenInventoryBoxManager {
     this.countClassName = countClassName;
     this.toggleClassName = toggleClassName;
     this.getItems = getItems;
-    this.seedDragController = seedDragController;
     this.root = null;
     this.rows = null;
     this.count = null;
@@ -111,7 +109,10 @@ export class GardenInventoryBoxManager {
       refs.row.classList.toggle('is-empty', item.quantity <= 0);
       refs.row.classList.toggle('is-locked', item.display.locked);
       refs.row.classList.toggle('is-unknown', item.display.unknown);
-      this.renderSeedDragState(refs.row, item);
+      refs.row.setAttribute(
+        'aria-label',
+        `${item.display.label}, owned ${item.quantity}`,
+      );
     }
 
     this.applyRowOrder(items);
@@ -136,7 +137,6 @@ export class GardenInventoryBoxManager {
       const row = document.createElement('div');
       row.className = `garden-page__inventory-row ${this.rowClassName}`;
       setResourceColor(row, this.kind);
-      this.bindSeedDrag(row, item.itemTypeId);
 
       const label = document.createElement('span');
       label.className = 'row_key';
@@ -148,53 +148,6 @@ export class GardenInventoryBoxManager {
       this.itemRefs.set(item.itemTypeId, { row, label, quantity });
       this.rows.append(row);
     }
-  }
-
-  bindSeedDrag(row, itemTypeId) {
-    if (!this.seedDragController || this.kind !== 'seed') {
-      return;
-    }
-
-    row.addEventListener('dragstart', (event) => {
-      const item = this.getDragItem(itemTypeId);
-
-      if (item) {
-        this.seedDragController.onSeedNativeDragStart?.(event, item);
-      }
-    });
-    row.addEventListener('dragend', () => {
-      this.seedDragController.onSeedNativeDragEnd?.();
-    });
-    row.addEventListener('pointerdown', (event) => {
-      const item = this.getDragItem(itemTypeId);
-
-      if (item) {
-        this.seedDragController.onSeedPointerDown?.(event, item);
-      }
-    });
-  }
-
-  renderSeedDragState(row, item) {
-    if (!this.seedDragController || this.kind !== 'seed') {
-      return;
-    }
-
-    const canDrag = item.quantity > 0 && !item.display.locked && !item.display.unknown;
-    row.classList.toggle('is-draggable', canDrag);
-    row.draggable = canDrag && this.seedDragController.canUseNativeSeedDrag?.() !== false;
-    row.setAttribute('aria-disabled', canDrag ? 'false' : 'true');
-    row.setAttribute(
-      'aria-label',
-      canDrag
-        ? `drag ${item.label} to a plot, owned ${item.quantity}`
-        : `${item.label}, owned ${item.quantity}`,
-    );
-  }
-
-  getDragItem(itemTypeId) {
-    return this.getVisibleRows(this.gameplayFacade.getSnapshot()).find(
-      (item) => item.itemTypeId === itemTypeId,
-    );
   }
 
   applyRowOrder(items) {
@@ -283,7 +236,7 @@ export class GardenHerbInventoryManager extends GardenInventoryBoxManager {
 }
 
 export class GardenSeedInventoryManager extends GardenInventoryBoxManager {
-  constructor({ gameplayFacade, seedDragController } = {}) {
+  constructor({ gameplayFacade } = {}) {
     super({
       gameplayFacade,
       kind: 'seed',
@@ -293,7 +246,6 @@ export class GardenSeedInventoryManager extends GardenInventoryBoxManager {
       rowClassName: 'garden-page__seed-inventory-row',
       dividerClassName: 'garden-page__seed-inventory-divider',
       getItems: (snapshot) => snapshot.garden?.seeds ?? [],
-      seedDragController,
     });
   }
 }

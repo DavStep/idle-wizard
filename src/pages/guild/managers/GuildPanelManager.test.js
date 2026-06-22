@@ -17,12 +17,63 @@ function createGuildSnapshot(overrides = {}) {
   };
 }
 
+function createCreatedGuildSnapshot(overrides = {}) {
+  const boardRequest = {
+    id: 'request-1',
+    title: 'lost lantern',
+    difficulty: 'easy',
+    statLabel: 'wits',
+    rewardText: '12 coin',
+    lore: 'a village needs light.',
+  };
+
+  return createGuildSnapshot({
+    created: true,
+    profile: {
+      name: 'ash hall',
+      tag: 'ASH',
+      color: 'red',
+    },
+    secretary: {
+      level: 1,
+      hiredCap: 1,
+      boardSlots: 3,
+    },
+    board: [boardRequest],
+    normalBoard: [boardRequest],
+    eventBoard: [],
+    adventurers: [
+      {
+        id: 'adventurer-1',
+        displayName: 'mira',
+        level: 1,
+        status: 'idle',
+        statusLabel: 'idle',
+        personalityLabel: 'steady',
+      },
+    ],
+    applicants: [
+      {
+        id: 'applicant-1',
+        displayName: 'orin',
+        level: 1,
+        status: 'idle',
+        statusLabel: 'idle',
+        personalityLabel: 'bold',
+      },
+    ],
+    logs: [{ text: 'mira returns.', tone: null }],
+    ...overrides,
+  });
+}
+
 function createGameplayFacadeFake(initialGuild = createGuildSnapshot()) {
   let snapshot = { guild: initialGuild };
   const listeners = new Set();
 
   return {
     createGuild: vi.fn(() => ({ ok: true })),
+    removeGuildRequest: vi.fn(() => ({ ok: true })),
     updateGuildProfile: vi.fn(() => ({ ok: true })),
     getSnapshot: () => snapshot,
     subscribe(listener) {
@@ -85,6 +136,132 @@ describe('GuildPanelManager', () => {
     expect(content?.classList.contains('guild-page__content--centered')).toBe(false);
   });
 
+  it('separates created guild content into room tabs', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+
+    const getTabButtons = () => [...parent.querySelectorAll('.guild-page__content-tab-button')];
+    const getBoxTitles = () =>
+      [...parent.querySelectorAll('.guild-page__tabpanel .style-box__title')].map(
+        (title) => title.textContent,
+      );
+
+    const tabButtons = getTabButtons();
+    expect(tabButtons.map((button) => button.textContent)).toEqual([
+      'hall',
+      'board',
+      'roster',
+      'log',
+    ]);
+    expect(tabButtons.map((button) => button.getAttribute('aria-selected'))).toEqual([
+      'true',
+      'false',
+      'false',
+      'false',
+    ]);
+    expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('hall');
+    expect(getBoxTitles()).toEqual(['guild hall']);
+
+    getTabButtons()
+      .find((button) => button.dataset.guildTab === 'board')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('board');
+    expect(getBoxTitles()).toEqual(['request board']);
+
+    getTabButtons()
+      .find((button) => button.dataset.guildTab === 'adventurers')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe(
+      'adventurers',
+    );
+    expect(getBoxTitles()).toEqual(['adventurers', 'applicants']);
+
+    getTabButtons()
+      .find((button) => button.dataset.guildTab === 'log')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('log');
+    expect(getBoxTitles()).toEqual(['guild log']);
+  });
+
+  it('keeps selected guild room tab across snapshot refreshes', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    gameplayFacade.emitGuild(
+      createCreatedGuildSnapshot({
+        normalBoard: [],
+        board: [],
+      }),
+    );
+
+    expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('board');
+    expect(
+      parent
+        .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
+        ?.getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(parent.querySelector('.guild-page__empty-row')?.textContent).toBe('no requests');
+  });
+
+  it('rolls hidden adventurer attention up to the guild tab button', () => {
+    const gameplayFacade = createGameplayFacadeFake(
+      createCreatedGuildSnapshot({
+        adventurers: [
+          {
+            id: 'adventurer-1',
+            displayName: 'mira',
+            level: 1,
+            status: 'hospital',
+            statusLabel: 'hospital',
+            personalityLabel: 'steady',
+          },
+        ],
+      }),
+    );
+    const { parent } = mountManager(gameplayFacade);
+    const adventurersTab = parent.querySelector(
+      '.guild-page__content-tab-button[data-guild-tab="adventurers"]',
+    );
+
+    expect(adventurersTab?.dataset.notification).toBe('true');
+    expect(adventurersTab?.dataset.notificationTone).toBe('red');
+  });
+
+  it('places adventurer attention on the row instead of between columns', () => {
+    const gameplayFacade = createGameplayFacadeFake(
+      createCreatedGuildSnapshot({
+        adventurers: [
+          {
+            id: 'adventurer-1',
+            displayName: 'mira',
+            level: 1,
+            status: 'hospital',
+            statusLabel: 'hospital',
+            personalityLabel: 'steady',
+          },
+        ],
+      }),
+    );
+    const { parent } = mountManager(gameplayFacade);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="adventurers"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const row = parent.querySelector('.guild-page__adventurer-row');
+    const main = row?.querySelector('.guild-page__row-main');
+
+    expect(row?.dataset.notification).toBe('true');
+    expect(main?.dataset.notification).toBeUndefined();
+  });
+
   it('preserves guild charter fields across gameplay snapshot refreshes', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const { popupLayer } = mountManager(gameplayFacade);
@@ -95,13 +272,44 @@ describe('GuildPanelManager', () => {
 
     popupLayer.querySelector('input[name="name"]').value = 'ash hall';
     popupLayer.querySelector('input[name="tag"]').value = 'ASH';
-    popupLayer.querySelector('input[name="color"][value="blue"]').checked = true;
+    popupLayer
+      .querySelector('.guild-page__swatch[data-color-id="blue"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     gameplayFacade.emitGuild(createGuildSnapshot({ currentCoin: 1999 }));
 
     expect(popupLayer.querySelector('input[name="name"]')?.value).toBe('ash hall');
     expect(popupLayer.querySelector('input[name="tag"]')?.value).toBe('ASH');
-    expect(popupLayer.querySelector('input[name="color"][value="blue"]')?.checked).toBe(true);
+    expect(popupLayer.querySelector('input[name="color"]')?.value).toBe('blue');
+    expect(
+      popupLayer.querySelector('.guild-page__swatch[data-color-id="blue"]')?.getAttribute(
+        'aria-checked',
+      ),
+    ).toBe('true');
+  });
+
+  it('keeps the active guild charter name input mounted across refreshes', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const { popupLayer } = mountManager(gameplayFacade);
+
+    document
+      .querySelector('.guild-page__wide-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const nameInput = popupLayer.querySelector('input[name="name"]');
+    nameInput.focus();
+    nameInput.value = 'ash hall';
+    nameInput.setSelectionRange(3, 3);
+    nameInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    gameplayFacade.emitGuild(createGuildSnapshot({ currentCoin: 1999 }));
+
+    const refreshedNameInput = popupLayer.querySelector('input[name="name"]');
+    expect(refreshedNameInput).toBe(nameInput);
+    expect(document.activeElement).toBe(nameInput);
+    expect(refreshedNameInput.value).toBe('ash hall');
+    expect(refreshedNameInput.selectionStart).toBe(3);
+    expect(refreshedNameInput.selectionEnd).toBe(3);
   });
 
   it('shows a start guild notification only when the charter is affordable', () => {
@@ -155,7 +363,12 @@ describe('GuildPanelManager', () => {
 
     expect(popupLayer.querySelector('input[name="name"]')?.value).toBe('ash hall');
     expect(popupLayer.querySelector('input[name="tag"]')?.value).toBe('ASH');
-    expect(popupLayer.querySelector('input[name="color"][value="red"]')?.checked).toBe(true);
+    expect(popupLayer.querySelector('input[name="color"]')?.value).toBe('red');
+    expect(
+      popupLayer.querySelector('.guild-page__swatch[data-color-id="red"]')?.getAttribute(
+        'aria-checked',
+      ),
+    ).toBe('true');
 
     popupLayer.querySelector('input[name="name"]').value = 'ember hall';
     gameplayFacade.emitGuild(
@@ -180,7 +393,85 @@ describe('GuildPanelManager', () => {
 
     expect(popupLayer.querySelector('input[name="name"]')?.value).toBe('ember hall');
     expect(popupLayer.querySelector('input[name="tag"]')?.value).toBe('ASH');
-    expect(popupLayer.querySelector('input[name="color"][value="red"]')?.checked).toBe(true);
+    expect(popupLayer.querySelector('input[name="color"]')?.value).toBe('red');
+  });
+
+  it('keeps the active guild settings name input mounted across refreshes', () => {
+    const gameplayFacade = createGameplayFacadeFake(
+      createGuildSnapshot({
+        created: true,
+        profile: {
+          name: 'ash hall',
+          tag: 'ASH',
+          color: 'red',
+        },
+        secretary: {
+          level: 1,
+          hiredCap: 1,
+          boardSlots: 3,
+        },
+        adventurers: [],
+        board: [],
+        applicants: [],
+        logs: [],
+      }),
+    );
+    const { popupLayer } = mountManager(gameplayFacade);
+
+    document
+      .querySelector('.guild-page__wide-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const nameInput = popupLayer.querySelector('input[name="name"]');
+    nameInput.focus();
+    nameInput.value = 'ember hall';
+    nameInput.setSelectionRange(5, 5);
+    nameInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    gameplayFacade.emitGuild(
+      createGuildSnapshot({
+        created: true,
+        profile: {
+          name: 'ash hall',
+          tag: 'ASH',
+          color: 'red',
+        },
+        secretary: {
+          level: 1,
+          hiredCap: 1,
+          boardSlots: 3,
+        },
+        adventurers: [],
+        board: [],
+        applicants: [],
+        logs: [],
+      }),
+    );
+
+    const refreshedNameInput = popupLayer.querySelector('input[name="name"]');
+    expect(refreshedNameInput).toBe(nameInput);
+    expect(document.activeElement).toBe(nameInput);
+    expect(refreshedNameInput.value).toBe('ember hall');
+    expect(refreshedNameInput.selectionStart).toBe(5);
+    expect(refreshedNameInput.selectionEnd).toBe(5);
+  });
+
+  it('uses alliance-style tag color swatches in the charter form', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const { popupLayer } = mountManager(gameplayFacade);
+
+    document
+      .querySelector('.guild-page__wide-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const legend = popupLayer.querySelector('.guild-page__color-field legend');
+    const swatches = popupLayer.querySelectorAll('.guild-page__swatch');
+    const radioInputs = popupLayer.querySelectorAll('input[type="radio"][name="color"]');
+
+    expect(legend?.textContent).toBe('tag color');
+    expect(swatches).toHaveLength(10);
+    expect(radioInputs).toHaveLength(0);
+    expect(popupLayer.querySelector('input[type="hidden"][name="color"]')?.value).toBe('ink');
   });
 
   it('keeps guild dialog labels outside the scrolling clip', () => {
@@ -240,7 +531,9 @@ describe('GuildPanelManager', () => {
     );
     expect(contentRule).not.toMatch(/--style-main-box-width/);
     expect(centeredRule).toMatch(/\bleft:\s*var\(--style-room-content-edge\);/);
-    expect(centeredRule).toMatch(/\bright:\s*var\(--style-room-content-edge\);/);
+    expect(centeredRule).toMatch(
+      /\bright:\s*calc\(var\(--style-room-content-edge\)\s*\*\s*3\);/,
+    );
     expect(centeredRule).toMatch(/\btranslate:\s*0 -50%;/);
   });
 });

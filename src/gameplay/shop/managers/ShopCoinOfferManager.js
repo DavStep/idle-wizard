@@ -72,6 +72,10 @@ export class ShopCoinOfferManager {
     return this.getCooldownRemainingSeconds() <= 0;
   }
 
+  hasFrameTimerWork() {
+    return this.getCooldownRemainingSeconds() > 0;
+  }
+
   getRewardCoin() {
     return Math.max(1, this.getCurrentLevel()) * SHOP_COIN_OFFER_COIN_PER_LEVEL;
   }

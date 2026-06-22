@@ -407,6 +407,8 @@ export class WorkshopPersonalTasksManager {
     button.className = 'style-button workshop-page__personal-task-claim';
     button.type = 'button';
     button.textContent = 'claim';
+    button.dataset.personalTaskPeriodType = this.selectedPeriodType;
+    button.dataset.personalTaskId = task.taskId;
     button.setAttribute(
       'aria-label',
       `claim ${task.reward?.text ?? 'reward'} for ${task.label}`,
@@ -425,6 +427,8 @@ export class WorkshopPersonalTasksManager {
     button.className = 'style-button workshop-page__personal-task-claim';
     button.type = 'button';
     button.textContent = 'claim';
+    button.dataset.personalTaskPeriodType = period.periodType;
+    button.dataset.personalTaskFullClear = 'true';
     button.setAttribute(
       'aria-label',
       `claim ${period.fullClearReward?.text ?? 'reward'} for all ${period.periodType} tasks`,

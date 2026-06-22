@@ -1,4 +1,5 @@
 const SCROLL_CUE_SELECTOR = [
+  '.style-page-scroll',
   '.brewing-page__herb-rows',
   '.brewing-page__cauldron-guide-sequence',
   '.brewing-page__guide-sequence',
@@ -11,7 +12,6 @@ const SCROLL_CUE_SELECTOR = [
   '.garden-page__herb-rows',
   '.garden-page__plot-rows',
   '.garden-page__seed-rows',
-  '.research-page__content',
   '.brewing-page__recipe-list',
   '.brewing-page__potion-list',
   '.shop-page__market-rows',
@@ -24,6 +24,7 @@ const SCROLL_CUE_SELECTOR = [
 ].join(',');
 
 const SCROLL_PROGRESS_PROPERTY = '--style-scroll-progress';
+const INLINE_PROGRESS_MODE = 'inline';
 
 function setClassState(element, className, enabled) {
   if (element.classList.contains(className) === enabled) {
@@ -84,6 +85,8 @@ export function updateScrollCueState({
 class ManagedScrollCue {
   constructor(element) {
     this.element = element;
+    this.inlineProgress =
+      element.dataset.scrollCueProgress === INLINE_PROGRESS_MODE;
     this.progress = null;
     this.progressFill = null;
     this.frame = 0;
@@ -112,7 +115,7 @@ class ManagedScrollCue {
   }
 
   createProgress() {
-    if (this.progress || !this.element.parentNode) {
+    if (this.inlineProgress || this.progress || !this.element.parentNode) {
       return;
     }
 
@@ -163,7 +166,7 @@ class ManagedScrollCue {
       cueElement: this.element,
       progressFill: this.progressFill,
       progressElement: this.progress,
-      inlineCue: false,
+      inlineCue: this.inlineProgress,
     });
   }
 }

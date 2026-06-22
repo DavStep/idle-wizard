@@ -14,7 +14,7 @@ export { WORLD_NOTICE_ACTIONS, WORLD_NOTICE_UNLOCK_LEVEL };
 
 export class WorldNoticeFacade {
   static explain =
-    'Posts one weekly world notice, then lets the player answer it through normal workshop work.';
+    'Posts one weekly world event, then lets the player answer it through normal workshop work.';
 
   constructor({
     coinFacade,
@@ -45,14 +45,22 @@ export class WorldNoticeFacade {
 
     const notice = this.ensureCurrentNotice();
     const result = this.progressManager.recordAction(notice, normalizedActionType, amount);
-    const pointsAdded = this.contributionManager.addPoints(
-      notice,
-      this.contributionManager.getPointsForAction(
+    let pointsAdded = 0;
+
+    for (const update of result.requests ?? []) {
+      const requestPoints = this.contributionManager.getPointsForProgress(
         normalizedActionType,
-        result.appliedQuantity,
+        update.previousProgress,
+        update.nextProgress,
         detail,
-      ),
-    );
+      );
+      pointsAdded += this.contributionManager.addRequestPoints(
+        update.request,
+        requestPoints,
+      );
+    }
+
+    this.contributionManager.addPoints(notice, pointsAdded);
 
     return {
       ok: result.changed,
@@ -123,13 +131,15 @@ export class WorldNoticeFacade {
 
     this.coinFacade.spend(donation);
     const result = this.progressManager.applyProgress(request, donation);
-    const pointsAdded = this.contributionManager.addPoints(
-      notice,
-      this.contributionManager.getPointsForAction(
+    const pointsAdded = this.contributionManager.addRequestPoints(
+      request,
+      this.contributionManager.getPointsForProgress(
         WORLD_NOTICE_ACTIONS.DONATE_COIN,
-        result.appliedQuantity,
+        result.previousProgress,
+        result.nextProgress,
       ),
     );
+    this.contributionManager.addPoints(notice, pointsAdded);
 
     return {
       ok: result.changed,
@@ -246,6 +256,10 @@ export class WorldNoticeFacade {
       Math.min(requiredQuantity, Math.floor(Number(request.progressQuantity) || 0)),
     );
     const completed = Boolean(request.completed) || progressQuantity >= requiredQuantity;
+    const contributionPoints = Math.max(
+      0,
+      Math.floor(Number(request.contributionPoints) || 0),
+    );
     const canDonate =
       request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN &&
       !completed &&
@@ -261,10 +275,12 @@ export class WorldNoticeFacade {
       remainingQuantity: Math.max(0, requiredQuantity - progressQuantity),
       progress: progressQuantity / requiredQuantity,
       completed,
+      contributionPoints,
+      pointText: this.contributionManager.getActionPointText(request.actionType),
+      collectedPointText: this.formatPoints(contributionPoints),
       manual: request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN,
       canDonate,
       actionText: this.getRequestActionText({ request, completed, canDonate }),
-      pointText: this.contributionManager.getActionPointText(request.actionType),
     };
   }
 
@@ -346,6 +362,11 @@ export class WorldNoticeFacade {
     }
 
     return 'small response';
+  }
+
+  formatPoints(points) {
+    const safePoints = Math.max(0, Math.floor(Number(points) || 0));
+    return `${safePoints} point${safePoints === 1 ? '' : 's'}`;
   }
 
   getCurrentLevel() {

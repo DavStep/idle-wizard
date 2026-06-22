@@ -1,13 +1,23 @@
+import { setResourceColor } from '../../shared/resourceColor.js';
+import { createResourceIconLabel } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 const WORLD_NOTICE_TABS = [
-  { id: 'requests', label: 'requests' },
+  { id: 'tasks', label: 'tasks' },
+  { id: 'leaderboard', label: 'leaderboard' },
   { id: 'rewards', label: 'rewards' },
-  { id: 'archive', label: 'archive' },
 ];
-const DEFAULT_WORLD_NOTICE_TAB_ID = 'requests';
+const DEFAULT_WORLD_NOTICE_TAB_ID = 'tasks';
 const WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS = 2_000;
+const WORLD_NOTICE_RESOURCE_BY_ACTION = new Map([
+  ['brew_potions', 'potion'],
+  ['donate_coin', 'coin'],
+  ['earn_coin', 'coin'],
+  ['harvest_herbs', 'herb'],
+  ['sell_items', 'coin'],
+  ['summon_seeds', 'seed'],
+]);
 
 export class WorkshopWorldNoticeManager {
   constructor({ gameplayFacade } = {}) {
@@ -46,7 +56,7 @@ export class WorkshopWorldNoticeManager {
     this.root = document.createElement('section');
     this.root.className = 'workshop-page__panel-button workshop-page__world-notice';
     this.root.dataset.panelSide = 'right';
-    this.root.setAttribute('aria-label', 'world notice');
+    this.root.setAttribute('aria-label', 'world event');
 
     this.refs.openButton = document.createElement('button');
     this.refs.openButton.className =
@@ -58,7 +68,7 @@ export class WorkshopWorldNoticeManager {
     this.refs.openLabel = document.createElement('span');
     this.refs.openLabel.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label';
-    this.refs.openLabel.textContent = 'notice';
+    this.refs.openLabel.textContent = 'event';
 
     this.refs.openTimer = document.createElement('span');
     this.refs.openTimer.className =
@@ -95,7 +105,7 @@ export class WorkshopWorldNoticeManager {
 
     this.refs.panel = document.createElement('section');
     this.refs.panel.className = 'workshop-page__world-notice-panel';
-    this.refs.panel.setAttribute('aria-label', 'world notice');
+    this.refs.panel.setAttribute('aria-label', 'world event');
     this.refs.panel.setAttribute('aria-modal', 'true');
     this.refs.panel.setAttribute('role', 'dialog');
     this.refs.panel.tabIndex = -1;
@@ -105,7 +115,7 @@ export class WorkshopWorldNoticeManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'world notice';
+    title.textContent = 'world event';
 
     this.refs.closeButton = document.createElement('button');
     this.refs.closeButton.className = 'style-button workshop-page__world-notice-close';
@@ -127,7 +137,7 @@ export class WorkshopWorldNoticeManager {
   createTabs() {
     const tabs = document.createElement('div');
     tabs.className = 'workshop-page__world-notice-tabs';
-    tabs.setAttribute('aria-label', 'world notice tabs');
+    tabs.setAttribute('aria-label', 'world event tabs');
     tabs.setAttribute('role', 'tablist');
     this.refs.tabButtons = new Map();
 
@@ -216,7 +226,7 @@ export class WorkshopWorldNoticeManager {
 
   renderCharacter(notice) {
     if (!notice) {
-      this.refs.openButton?.setAttribute('aria-label', 'open world notice, no notice');
+      this.refs.openButton?.setAttribute('aria-label', 'open world event, no event');
       this.renderTimer('');
       setNotificationBadge(this.refs.openButton, false);
       return;
@@ -224,14 +234,16 @@ export class WorkshopWorldNoticeManager {
 
     this.refs.openButton?.setAttribute(
       'aria-label',
-      `open world notice, ${notice.headline}, ${notice.completedRequests}/${notice.totalRequests}, ${notice.responseLabel}, ${notice.resetLabel}`,
+      `open world event: ${notice.headline}. ${this.formatNumber(
+        notice.leaderboard?.currentPoints,
+      )} points. ${notice.resetLabel}`,
     );
     this.renderTimer(notice.resetLabel);
     setNotificationBadge(this.refs.openButton, hasIncompleteNoticeRequests(notice));
   }
 
   renderTimer(resetLabel) {
-    const timerLabel = String(resetLabel ?? '').trim();
+    const timerLabel = this.formatTimerLabel(resetLabel);
     if (!this.refs.openTimer) {
       return;
     }
@@ -239,6 +251,12 @@ export class WorkshopWorldNoticeManager {
     this.refs.openTimer.textContent = timerLabel;
     this.refs.openTimer.hidden = timerLabel.length === 0;
     this.root?.classList.toggle('has-timer', timerLabel.length > 0);
+  }
+
+  formatTimerLabel(resetLabel) {
+    return String(resetLabel ?? '')
+      .trim()
+      .replace(/^resolves\s+/i, '');
   }
 
   renderPopup(worldNotice) {
@@ -252,33 +270,41 @@ export class WorkshopWorldNoticeManager {
     if (!notice) {
       const empty = document.createElement('div');
       empty.className = 'workshop-page__world-notice-empty';
-      empty.textContent = 'no notice';
+      empty.textContent = 'no event';
       this.refs.content.replaceChildren(empty);
       return;
     }
 
+    if (this.selectedTabId === 'leaderboard') {
+      this.renderNoticeContent(notice, this.createLeaderboard(notice.leaderboard));
+      return;
+    }
+
     if (this.selectedTabId === 'rewards') {
-      this.refs.content.replaceChildren(
-        this.createNoticeHeader(notice),
-        this.createLeaderboardRewards(notice.leaderboard),
-      );
+      this.renderNoticeContent(notice, this.createLeaderboardRewards(notice.leaderboard));
       return;
     }
 
-    if (this.selectedTabId === 'archive') {
-      this.refs.content.replaceChildren(
-        this.createNoticeHeader(notice),
-        this.createArchive(worldNotice.archive),
-      );
-      return;
-    }
-
-    this.refs.content.replaceChildren(
-      this.createNoticeHeader(notice),
+    this.renderNoticeContent(
+      notice,
       this.createBody(notice),
       this.createContributionStatus(notice.leaderboard),
-      this.createRequestList(notice),
+      this.createTaskList(notice),
     );
+  }
+
+  renderNoticeContent(notice, ...nodes) {
+    this.refs.content.replaceChildren(
+      this.createNoticeHeader(notice),
+      this.createContentFrame(nodes),
+    );
+  }
+
+  createContentFrame(nodes = []) {
+    const frame = document.createElement('div');
+    frame.className = 'workshop-page__world-notice-frame';
+    frame.replaceChildren(...nodes.filter(Boolean));
+    return frame;
   }
 
   updateTabs() {
@@ -308,11 +334,33 @@ export class WorkshopWorldNoticeManager {
 
     const meta = document.createElement('div');
     meta.className = 'workshop-page__world-notice-meta';
-    meta.textContent = `${notice.completedRequests}/${notice.totalRequests} answers, ${notice.responseLabel}, ${notice.resetLabel}`;
+    meta.append(
+      this.createNoticeMetaRow(
+        'points',
+        this.formatPointCount(notice.leaderboard?.currentPoints),
+      ),
+      this.createNoticeMetaRow('resolves', this.formatTimerLabel(notice.resetLabel)),
+    );
 
     copy.append(headline, meta);
     header.append(portrait, copy);
     return header;
+  }
+
+  createNoticeMetaRow(label, value) {
+    const row = document.createElement('span');
+    row.className = 'workshop-page__world-notice-meta-row';
+
+    const key = document.createElement('span');
+    key.className = 'workshop-page__world-notice-meta-key';
+    key.textContent = label;
+
+    const val = document.createElement('span');
+    val.className = 'workshop-page__world-notice-meta-value';
+    val.textContent = value;
+
+    row.append(key, val);
+    return row;
   }
 
   createBody(notice) {
@@ -342,24 +390,29 @@ export class WorkshopWorldNoticeManager {
     const status = document.createElement('span');
     status.textContent = normalized.qualified
       ? 'qualified'
-      : `${this.formatNumber(normalized.remainingQualificationPoints)} to qualify`;
+      : `${this.formatNumber(normalized.remainingQualificationPoints)} points to qualify`;
 
     root.append(points, status);
     return root;
   }
 
-  createRequestList(notice) {
+  createTaskList(notice) {
     const list = document.createElement('div');
     list.className = 'workshop-page__world-notice-requests';
 
+    const title = document.createElement('div');
+    title.className = 'workshop-page__world-notice-section-label';
+    title.textContent = 'tasks';
+    list.append(title);
+
     for (const request of notice.requests ?? []) {
-      list.append(this.createRequestRow(request));
+      list.append(this.createTaskRow(request));
     }
 
     return list;
   }
 
-  createRequestRow(request) {
+  createTaskRow(request) {
     const root = document.createElement('div');
     root.className = 'workshop-page__world-notice-request';
 
@@ -368,18 +421,44 @@ export class WorkshopWorldNoticeManager {
     }
 
     const row = document.createElement('div');
-    row.className = 'workshop-page__world-notice-request-row';
+    row.className = 'workshop-page__world-notice-request-title-row';
+
+    const marker = document.createElement('span');
+    marker.className = 'workshop-page__world-notice-request-marker';
+    marker.textContent = '-';
 
     const label = document.createElement('span');
-    label.className = 'workshop-page__world-notice-request-label';
+    label.className = 'workshop-page__world-notice-request-title';
     label.textContent = request.label;
+    setResourceColor(label, request.completed ? null : this.getTaskResource(request));
 
-    const progress = document.createElement('span');
-    progress.className = 'workshop-page__world-notice-request-progress';
-    progress.textContent = `${request.progressQuantity}/${request.requiredQuantity}`;
+    row.append(marker, label);
 
-    row.append(label, progress, this.createRequestAction(request));
-    root.append(row, this.createProgressBar(request.progress, request.completed));
+    const instruction = document.createElement('div');
+    instruction.className = 'workshop-page__world-notice-request-instruction';
+    instruction.textContent = this.getTaskInstruction(request);
+
+    const detail = document.createElement('div');
+    detail.className = 'workshop-page__world-notice-request-points-row';
+
+    const pointValue = document.createElement('span');
+    pointValue.className = 'workshop-page__world-notice-request-points';
+    pointValue.textContent = `worth ${request.pointText ?? request.actionText ?? '0 points'}`;
+
+    const collectedPoints = document.createElement('span');
+    collectedPoints.className = 'workshop-page__world-notice-request-collected';
+    collectedPoints.textContent = `earned ${
+      request.collectedPointText ?? this.formatPointCount(request.contributionPoints)
+    }`;
+
+    if (request.manual && !request.completed) {
+      detail.append(pointValue, collectedPoints);
+      root.append(row, instruction, detail, this.createRequestAction(request));
+    } else {
+      detail.append(pointValue, collectedPoints);
+      root.append(row, instruction, detail);
+    }
+
     return root;
   }
 
@@ -409,11 +488,13 @@ export class WorkshopWorldNoticeManager {
 
     const qualification = document.createElement('div');
     qualification.className = 'workshop-page__world-notice-reward-status';
-    qualification.textContent = normalized.qualified
-      ? `${this.formatNumber(normalized.currentPoints)} points, qualified`
-      : `${this.formatNumber(normalized.currentPoints)}/${this.formatNumber(
-          normalized.qualificationPoints,
-        )} points, not qualified`;
+    const label = document.createElement('span');
+    label.textContent = 'leaderboard rewards';
+    const value = document.createElement('span');
+    value.textContent = normalized.qualified
+      ? 'qualified'
+      : `${this.formatNumber(normalized.remainingQualificationPoints)} points to qualify`;
+    qualification.append(label, value);
     section.append(qualification);
 
     for (const tier of normalized.rewardTiers) {
@@ -426,7 +507,7 @@ export class WorkshopWorldNoticeManager {
 
       const reward = document.createElement('span');
       reward.className = 'workshop-page__world-notice-reward-value';
-      reward.textContent = this.formatRewardTier(tier);
+      reward.replaceChildren(...this.createRewardTierParts(tier));
 
       row.append(rank, reward);
       section.append(row);
@@ -435,73 +516,94 @@ export class WorkshopWorldNoticeManager {
     return section;
   }
 
-  formatRewardTier(tier = {}) {
-    const parts = [];
-    const emerald = Math.max(0, Math.floor(Number(tier.emerald) || 0));
-    const crystal = Math.max(0, Math.floor(Number(tier.crystal) || 0));
+  createRewardTierParts(tier = {}) {
+    const rewards = [
+      {
+        resource: 'emerald',
+        amount: Math.max(0, Math.floor(Number(tier.emerald) || 0)),
+      },
+      {
+        resource: 'crystal',
+        amount: Math.max(0, Math.floor(Number(tier.crystal) || 0)),
+      },
+    ].filter((reward) => reward.amount > 0);
 
-    if (emerald > 0) {
-      parts.push(`${emerald} emerald`);
+    if (!rewards.length) {
+      return [document.createTextNode('none')];
     }
 
-    if (crystal > 0) {
-      parts.push(`${crystal} crystal`);
-    }
+    return rewards.flatMap((reward, index) => {
+      const label = document.createElement('span');
+      label.className = 'workshop-page__world-notice-reward-resource';
+      label.setAttribute('aria-label', `${this.formatNumber(reward.amount)} ${reward.resource}`);
 
-    return parts.length ? parts.join(', ') : 'none';
+      const amount = document.createElement('span');
+      amount.className = 'workshop-page__world-notice-reward-amount';
+      amount.textContent = this.formatNumber(reward.amount);
+
+      const icon = createResourceIconLabel(reward.resource, '');
+      if (icon.nodeType === 1) {
+        icon.classList.add('workshop-page__world-notice-reward-icon');
+        icon.setAttribute('aria-hidden', 'true');
+      }
+
+      label.append(amount, icon);
+
+      if (index === 0) {
+        return [label];
+      }
+
+      return [document.createTextNode(' + '), label];
+    });
   }
 
-  createProgressBar(progressValue, completed = false) {
-    const progress = document.createElement('div');
-    progress.className = 'style-progress workshop-page__world-notice-request-bar';
-    progress.setAttribute('aria-hidden', 'true');
-
-    const fill = document.createElement('span');
-    fill.className = 'style-progress__fill workshop-page__world-notice-request-fill';
-    fill.style.width = completed
-      ? '100%'
-      : `${Math.max(0, Math.min(1, Number(progressValue) || 0)) * 100}%`;
-
-    progress.append(fill);
-    return progress;
-  }
-
-  createArchive(archive = []) {
+  createLeaderboard(leaderboard = {}) {
+    const normalized = this.normalizeLeaderboard(leaderboard);
     const section = document.createElement('div');
-    section.className = 'workshop-page__world-notice-archive';
+    section.className = 'workshop-page__world-notice-leaderboard';
 
-    const title = document.createElement('div');
-    title.className = 'workshop-page__world-notice-section-label';
-    title.textContent = 'past notices';
-    section.append(title);
+    section.append(this.createLeaderboardRow({ name: 'user', pointsLabel: 'points' }, 0, {
+      header: true,
+    }));
 
-    if (!archive.length) {
-      const empty = document.createElement('div');
-      empty.className = 'workshop-page__world-notice-empty';
-      empty.textContent = 'none yet';
-      section.append(empty);
-      return section;
+    for (const [index, entry] of normalized.leaderboardRows.entries()) {
+      section.append(this.createLeaderboardRow(entry, index));
     }
 
-    for (const entry of archive.slice(0, 4)) {
-      const row = document.createElement('div');
-      row.className = 'workshop-page__world-notice-archive-row';
-
-      const headline = document.createElement('span');
-      headline.className = 'workshop-page__world-notice-archive-headline';
-      headline.textContent = entry.headline;
-
-      const response = document.createElement('span');
-      response.className = 'workshop-page__world-notice-archive-response';
-      response.textContent = entry.contributionPoints
-        ? `${entry.responseLabel}, ${this.formatNumber(entry.contributionPoints)} points`
-        : entry.responseLabel;
-
-      row.append(headline, response);
-      section.append(row);
-    }
+    const qualification = document.createElement('div');
+    qualification.className = 'workshop-page__world-notice-leaderboard-note';
+    qualification.textContent = normalized.qualified
+      ? 'qualified for leaderboard rewards'
+      : `${this.formatNumber(normalized.remainingQualificationPoints)} points to qualify`;
+    section.append(qualification);
 
     return section;
+  }
+
+  createLeaderboardRow(entry = {}, index = 0, { header = false } = {}) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__row workshop-page__leaderboard-row';
+
+    if (header) {
+      row.classList.add('workshop-page__leaderboard-header');
+    } else if (entry.current) {
+      row.classList.add('workshop-page__leaderboard-current');
+    }
+
+    const key = document.createElement('span');
+    key.className = 'row_key';
+    key.textContent = header
+      ? entry.name
+      : `${entry.rankLabel || `${index + 1}.`} ${entry.name || 'you'}`;
+
+    const val = document.createElement('span');
+    val.className = 'row_val';
+    val.textContent = header
+      ? entry.pointsLabel
+      : this.formatPointCount(entry.points);
+
+    row.append(key, val);
+    return row;
   }
 
   applyVisibility() {
@@ -514,6 +616,53 @@ export class WorkshopWorldNoticeManager {
 
   formatNumber(value) {
     return String(Math.max(0, Math.floor(Number(value) || 0)));
+  }
+
+  formatPointCount(value) {
+    const points = Math.max(0, Math.floor(Number(value) || 0));
+    return `${this.formatNumber(points)} point${points === 1 ? '' : 's'}`;
+  }
+
+  getTaskResource(request) {
+    return WORLD_NOTICE_RESOURCE_BY_ACTION.get(request?.actionType) ?? null;
+  }
+
+  getTaskInstruction(request = {}) {
+    if (typeof request.instructionText === 'string' && request.instructionText.trim()) {
+      return request.instructionText.trim();
+    }
+
+    const required = Math.max(1, Math.floor(Number(request.requiredQuantity) || 1));
+    const progress = Math.max(
+      0,
+      Math.min(required, Math.floor(Number(request.progressQuantity) || 0)),
+    );
+    const target = this.getTaskTargetLabel(request.actionType, required);
+
+    return `${target} (${this.formatNumber(progress)}/${this.formatNumber(required)})`;
+  }
+
+  getTaskTargetLabel(actionType, requiredQuantity) {
+    const amount = this.formatNumber(requiredQuantity);
+
+    switch (actionType) {
+      case 'brew_potions':
+        return `brew ${amount} potion${requiredQuantity === 1 ? '' : 's'}`;
+      case 'complete_research':
+        return `complete ${amount} research`;
+      case 'donate_coin':
+        return `send ${amount} coin`;
+      case 'earn_coin':
+        return `earn ${amount} coin`;
+      case 'harvest_herbs':
+        return `harvest ${amount} herb${requiredQuantity === 1 ? '' : 's'}`;
+      case 'sell_items':
+        return `sell ${amount} item${requiredQuantity === 1 ? '' : 's'}`;
+      case 'summon_seeds':
+        return `summon ${amount} seed${requiredQuantity === 1 ? '' : 's'}`;
+      default:
+        return `make ${amount} progress`;
+    }
   }
 
   normalizeLeaderboard(leaderboard = {}) {
@@ -531,7 +680,28 @@ export class WorkshopWorldNoticeManager {
       rewardTiers: Array.isArray(leaderboard.rewardTiers)
         ? leaderboard.rewardTiers
         : [],
+      leaderboardRows: this.normalizeLeaderboardRows(leaderboard.rows, currentPoints),
     };
+  }
+
+  normalizeLeaderboardRows(rows, currentPoints) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return [
+        {
+          rankLabel: '-',
+          name: 'you',
+          points: currentPoints,
+          current: true,
+        },
+      ];
+    }
+
+    return rows.map((row, index) => ({
+      rankLabel: String(row?.rankLabel ?? `${index + 1}.`),
+      name: String(row?.name ?? 'wizard'),
+      points: Math.max(0, Math.floor(Number(row?.points) || 0)),
+      current: row?.current === true,
+    }));
   }
 }
 

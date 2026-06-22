@@ -4,7 +4,7 @@ Player level reads the task level and turns it into configured account-wide mile
 
 The current scope gates how many garden tiles, cauldrons, NPC market stands, and player market stands can be bought. SpacetimeDB `game_config.playerLevel` decides which buys the current level permits. Reaching a milestone does not grant the tile, cauldron, or stand for free.
 
-Player level also sets mana cap and mana regen through the `mana` progression in `game_config.playerLevel`. Each level gives +50 cap and +0.25 mana per second.
+Player level also sets mana cap and mana regen through the `mana` progression in `game_config.playerLevel`. Each level gives +50 cap. Mana regen starts at 1/sec on level 1, then level-ups to 2-5 add +1/sec each, 6-10 add +0.5/sec each, and 11+ add +0.25/sec each.
 
 Player level-ups also grant crystal through `crystal.perLevel` in `game_config.playerLevel`. Level 1 is the starting level and does not grant this reward.
 

@@ -292,6 +292,8 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(dailyTab?.dataset.notification).toBe('true');
     expect(claimButton?.textContent).toBe('claim');
     expect(claimButton?.dataset.notification).toBe('true');
+    expect(claimButton?.dataset.personalTaskPeriodType).toBe('daily');
+    expect(claimButton?.dataset.personalTaskId).toBe(claimableTask.taskId);
 
     claimButton.click();
 

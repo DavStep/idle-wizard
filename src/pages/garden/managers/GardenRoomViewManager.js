@@ -63,7 +63,8 @@ export class GardenRoomViewManager {
 
   createUiLayer() {
     this.uiLayer = document.createElement('div');
-    this.uiLayer.className = 'garden-page__ui-layer';
+    this.uiLayer.className = 'garden-page__ui-layer style-page-scroll';
+    this.uiLayer.dataset.scrollCueProgress = 'inline';
     return this.uiLayer;
   }
 

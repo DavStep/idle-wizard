@@ -4,7 +4,22 @@
     "baseMaxManaCap": 50,
     "maxManaCapPerLevel": 50,
     "baseManaPerSecond": 1,
-    "manaPerSecondPerLevel": 0.25
+    "manaPerSecondPerLevelRanges": [
+      {
+        "fromLevel": 2,
+        "toLevel": 5,
+        "amount": 1
+      },
+      {
+        "fromLevel": 6,
+        "toLevel": 10,
+        "amount": 0.5
+      },
+      {
+        "fromLevel": 11,
+        "amount": 0.25
+      }
+    ]
   },
   "crystal": {
     "perLevel": 1

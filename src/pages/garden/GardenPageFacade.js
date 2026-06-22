@@ -16,10 +16,7 @@ export class GardenPageFacade {
     this.flyoutManager = new RewardFlyoutManager();
     this.rewardEventsUnsubscribe = null;
     this.plotManager = new GardenPlotManager({ gameplayFacade, playerFacade });
-    this.seedInventoryManager = new GardenSeedInventoryManager({
-      gameplayFacade,
-      seedDragController: this.plotManager,
-    });
+    this.seedInventoryManager = new GardenSeedInventoryManager({ gameplayFacade });
     this.herbInventoryManager = new GardenHerbInventoryManager({ gameplayFacade });
   }
 

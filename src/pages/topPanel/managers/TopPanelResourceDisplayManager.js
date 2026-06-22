@@ -7,6 +7,7 @@ export class TopPanelResourceDisplayManager {
     this.gameplayFacade = gameplayFacade;
     this.refs = null;
     this.unsubscribe = null;
+    this.frameResourceUnsubscribe = null;
     this.contextCurrency = null;
     this.latestSnapshot = null;
   }
@@ -18,12 +19,18 @@ export class TopPanelResourceDisplayManager {
 
     this.refs = refs;
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
+    this.frameResourceUnsubscribe =
+      this.gameplayFacade.subscribeFrameResources?.((snapshot) =>
+        this.renderFrameResources(snapshot),
+      ) ?? null;
     this.render(this.gameplayFacade.getSnapshot());
   }
 
   unmount() {
     this.unsubscribe?.();
+    this.frameResourceUnsubscribe?.();
     this.unsubscribe = null;
+    this.frameResourceUnsubscribe = null;
     this.refs = null;
   }
 
@@ -46,6 +53,18 @@ export class TopPanelResourceDisplayManager {
     this.setResourceText(this.refs.coinValue, coinText);
     this.renderContextCurrency(snapshot);
     this.setText(this.refs.levelValue, `level ${level}`);
+  }
+
+  renderFrameResources(snapshot) {
+    const previousSnapshot = this.latestSnapshot ?? {};
+    this.render({
+      ...previousSnapshot,
+      ...snapshot,
+      tasks: {
+        ...(previousSnapshot.tasks ?? {}),
+        ...(snapshot.tasks ?? {}),
+      },
+    });
   }
 
   setContextCurrency(currency) {

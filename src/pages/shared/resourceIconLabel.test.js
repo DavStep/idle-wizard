@@ -27,6 +27,9 @@ describe('resource icon labels', () => {
     expect(element.querySelector('.style-resource-label--crystal')?.textContent).toBe('crystals');
     expect(element.querySelector('.style-resource-label--emerald')?.textContent).toBe('emerald');
     expect(element.querySelector('.style-resource-label--ruby')?.textContent).toBe('rubies');
+    expect(element.querySelector('.style-resource-label--emerald')?.dataset.resourceColor).toBe(
+      'emerald',
+    );
   });
 
   it('leaves mana phrases plain when mana is not the resource', () => {

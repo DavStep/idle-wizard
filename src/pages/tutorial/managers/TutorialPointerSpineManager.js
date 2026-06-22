@@ -22,7 +22,7 @@ export class TutorialPointerSpineManager {
     width = POINTER_SPINE_WIDTH,
     height = POINTER_SPINE_HEIGHT,
     animationName = POINTER_SPINE_ANIMATION,
-    enabled = null,
+    enabled = false,
   } = {}) {
     this.assetManager = assetManager;
     this.importPixi = importPixi;

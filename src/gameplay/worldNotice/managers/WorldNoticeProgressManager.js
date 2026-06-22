@@ -18,6 +18,7 @@ export class WorldNoticeProgressManager {
     }
 
     const completedRequests = [];
+    const updatedRequests = [];
     let appliedQuantity = 0;
     let changed = false;
 
@@ -34,6 +35,13 @@ export class WorldNoticeProgressManager {
 
       changed = true;
       appliedQuantity += result.appliedQuantity;
+      updatedRequests.push({
+        request,
+        previousProgress: result.previousProgress,
+        nextProgress: result.nextProgress,
+        appliedQuantity: result.appliedQuantity,
+        completed: result.completed,
+      });
 
       if (result.completed) {
         completedRequests.push(request);
@@ -44,6 +52,7 @@ export class WorldNoticeProgressManager {
       changed,
       completedRequests,
       appliedQuantity,
+      requests: updatedRequests,
     };
   }
 
@@ -66,6 +75,8 @@ export class WorldNoticeProgressManager {
         changed: false,
         completed: Boolean(request?.completed),
         appliedQuantity: 0,
+        previousProgress,
+        nextProgress: previousProgress,
       };
     }
 
@@ -76,6 +87,8 @@ export class WorldNoticeProgressManager {
       changed: true,
       completed: request.completed,
       appliedQuantity: nextProgress - previousProgress,
+      previousProgress,
+      nextProgress,
     };
   }
 

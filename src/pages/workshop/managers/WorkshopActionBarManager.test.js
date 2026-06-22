@@ -210,6 +210,50 @@ describe('WorkshopActionBarManager', () => {
     manager.unmount();
   });
 
+  it('plays a short summon circle effect after a successful summon', () => {
+    vi.useFakeTimers();
+    try {
+      const gameplayFacade = createGameplayFacadeFake();
+      const manager = new WorkshopActionBarManager({ gameplayFacade });
+      const parent = document.createElement('div');
+
+      manager.mount(parent);
+
+      const button = parent.querySelector('.workshop-page__summon-button');
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(button.classList.contains('is-summoning')).toBe(true);
+
+      vi.advanceTimersByTime(519);
+
+      expect(button.classList.contains('is-summoning')).toBe(true);
+
+      vi.advanceTimersByTime(1);
+
+      expect(button.classList.contains('is-summoning')).toBe(false);
+
+      manager.unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not play the summon circle effect when summoning fails', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.summonSeed = () => ({ ok: false, reason: 'not_enough_mana' });
+    const manager = new WorkshopActionBarManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    const button = parent.querySelector('.workshop-page__summon-button');
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(button.classList.contains('is-summoning')).toBe(false);
+
+    manager.unmount();
+  });
+
   it('presses the summon seed label without moving the icon', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const genericPressRule = baseCss.match(
@@ -276,6 +320,22 @@ describe('WorkshopActionBarManager', () => {
     expect(textRule).toMatch(/\btransform:\s*none;/);
 
     manager.unmount();
+  });
+
+  it('keeps the summon effect on the circle art and disables it for reduced motion', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const summonEffectRule = baseCss.match(
+      /\.style-button\.workshop-page__summon-button\.is-summoning\s+\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(summonEffectRule).toMatch(
+      /\banimation:\s*workshop-summon-circle-glow 520ms var\(--style-motion-ease-soft\)\s*both;/,
+    );
+    expect(baseCss).toContain('@keyframes workshop-summon-circle-glow');
+    expect(baseCss).toContain('transform: translate(-50%, -50%) scale(1.045);');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.style-button\.workshop-page__summon-button\.is-summoning[\s\S]*animation:\s*none;/,
+    );
   });
 
   it('places the secondary action buttons near chat with matching widths', () => {

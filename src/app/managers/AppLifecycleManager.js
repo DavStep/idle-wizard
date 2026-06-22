@@ -7,6 +7,7 @@ import {
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
   AppFreshStartChoiceManager,
 } from './AppFreshStartChoiceManager.js';
+import { AppGameplayTickManager } from './AppGameplayTickManager.js';
 import { AppInteractionLockManager } from './AppInteractionLockManager.js';
 
 export class AppLifecycleManager {
@@ -25,6 +26,7 @@ export class AppLifecycleManager {
     freshStartChoiceManager = new AppFreshStartChoiceManager(),
     interactionLockManager = new AppInteractionLockManager(),
     connectionRetryManager = new AppConnectionRetryManager(),
+    gameplayTickManager = new AppGameplayTickManager(),
     deployRefreshManager,
     appThemeManager,
     reload = () => window.location.reload(),
@@ -43,6 +45,7 @@ export class AppLifecycleManager {
     this.freshStartChoiceManager = freshStartChoiceManager;
     this.interactionLockManager = interactionLockManager;
     this.connectionRetryManager = connectionRetryManager;
+    this.gameplayTickManager = gameplayTickManager;
     this.deployRefreshManager = deployRefreshManager;
     this.appThemeManager = appThemeManager;
     this.reload = reload;
@@ -54,6 +57,7 @@ export class AppLifecycleManager {
     this.backendOnline = false;
     this.freshStartConfirmed = false;
     this.maintenanceUnsubscribe = null;
+    this.gameplayTickUnsubscribe = null;
     this.maintenanceSnapshot = this.normalizeMaintenanceSnapshot(
       maintenanceFacade?.getSnapshot?.(),
     );
@@ -605,11 +609,12 @@ export class AppLifecycleManager {
       return;
     }
 
-    this.renderFacade.startFrameLoop((frame) => {
-      this.ecsFacade.update(frame);
-      this.gameplayFacade.afterUpdate(frame);
-    });
     this.frameLoopStarted = true;
+    this.gameplayTickUnsubscribe =
+      this.gameplayFacade.subscribe?.(() => {
+        this.requestGameplayTick();
+      }) ?? null;
+    this.gameplayTickManager.start((frame) => this.runGameplayTick(frame));
   }
 
   stopFrameLoop() {
@@ -617,8 +622,27 @@ export class AppLifecycleManager {
       return;
     }
 
+    this.gameplayTickUnsubscribe?.();
+    this.gameplayTickUnsubscribe = null;
+    this.gameplayTickManager.stop();
     this.renderFacade.stopFrameLoop();
     this.frameLoopStarted = false;
+  }
+
+  runGameplayTick(frame) {
+    this.ecsFacade.update(frame);
+    this.gameplayFacade.afterUpdate(frame);
+    return this.gameplayFacade.getNextGameplayTickDelayMs?.();
+  }
+
+  requestGameplayTick() {
+    if (!this.frameLoopStarted || !this.backendOnline) {
+      return false;
+    }
+
+    return this.gameplayTickManager.requestTick(
+      this.gameplayFacade.getNextGameplayTickDelayMs?.(),
+    );
   }
 
   stop() {

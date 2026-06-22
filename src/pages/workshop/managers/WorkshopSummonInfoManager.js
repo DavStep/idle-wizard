@@ -559,9 +559,16 @@ export class WorkshopSummonInfoManager {
     const dropdowns = [
       ...(this.root?.querySelectorAll('.workshop-page__summon-info-weight-dropdown') ?? []),
     ];
+    const hasOpenDropdown = Boolean(this.openWeightDropdownSeedKey);
+
+    this.root?.classList.toggle('is-weight-dropdown-open', hasOpenDropdown);
+    this.refs.dialog?.classList.toggle('is-weight-dropdown-open', hasOpenDropdown);
 
     for (const dropdown of dropdowns) {
       const isOpen = dropdown.dataset.seedKey === this.openWeightDropdownSeedKey;
+      const row = dropdown.closest('.workshop-page__summon-info-row');
+
+      row?.classList.toggle('is-weight-dropdown-row', isOpen);
       dropdown.classList.toggle('is-open', isOpen);
       dropdown
         .querySelector('.workshop-page__summon-info-weight-button')

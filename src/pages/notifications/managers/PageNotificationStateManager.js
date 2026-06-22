@@ -100,7 +100,8 @@ export class PageNotificationStateManager {
 
     return this.createPage({
       npcStand: canBuyNextSlot(snapshot, shop.shelf),
-      npcListing: hasNpcEmptyStand && hasNpcSellItem,
+      npcListing:
+        hasNpcEmptyStand && hasNpcSellItem ? NOTIFICATION_TONE_ORANGE : false,
       playerStand: false,
       playerListing: false,
       playerProceeds:

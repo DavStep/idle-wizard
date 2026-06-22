@@ -246,6 +246,52 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
+  it('keeps personal task reward text visible while animating claimed coin', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const stage = document.createElement('section');
+    stage.className = 'game-stage';
+    setRect(stage, { left: 0, top: 0, width: 520, height: 920 });
+
+    const host = document.createElement('section');
+    const popup = document.createElement('section');
+    popup.className = 'workshop-page__personal-tasks-popup';
+
+    const claimButton = document.createElement('button');
+    claimButton.className = 'workshop-page__personal-task-claim';
+    claimButton.dataset.personalTaskPeriodType = 'daily';
+    claimButton.dataset.personalTaskId = 'task-1';
+    setRect(claimButton, { left: 260, top: 420, width: 70, height: 24 });
+    popup.append(claimButton);
+
+    const coinTarget = document.createElement('span');
+    coinTarget.className = 'room-top-panel__resource';
+    coinTarget.setAttribute('aria-label', 'coin');
+    setRect(coinTarget, { left: 12, top: 18, width: 90, height: 24 });
+
+    stage.append(host, popup, coinTarget);
+    document.body.append(stage);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'personal_task_reward_claimed',
+      periodType: 'daily',
+      taskId: 'task-1',
+      coin: 15,
+      crystal: 1,
+    });
+
+    const flyout = document.querySelector('.room-reward-flyout');
+    expect(flyout?.textContent).toBe('+15 coin, +1 crystal');
+    expect(flyout?.classList).not.toContain('is-visual-only');
+    expect(document.querySelectorAll('.room-coin-particle').length).toBeGreaterThanOrEqual(3);
+    expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+15G');
+    expect(document.querySelector('.room-coin-particle')?.style.left).toBe('295px');
+    expect(document.querySelector('.room-coin-particle')?.style.top).toBe('430.56px');
+
+    manager.unmount();
+  });
+
   it('keeps independent text flyouts on the same anchor', () => {
     const host = document.createElement('section');
     document.body.append(host);
@@ -368,6 +414,37 @@ describe('RewardFlyoutManager', () => {
     const anchor = document.querySelector('.room-item-drop-anchor.is-herb');
     expect(anchor?.style.left).toBe('240px');
     expect(anchor?.style.top).toBe('313px');
+  });
+
+  it('starts potion drops from the cauldron potion icon', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const host = document.createElement('section');
+    const cauldron = document.createElement('section');
+    cauldron.className = 'brewing-page__cauldron';
+    cauldron.dataset.cauldronIndex = '1';
+    setRect(cauldron, { left: 120, top: 300, width: 280, height: 96 });
+
+    const potionIcon = document.createElement('span');
+    potionIcon.className = 'brewing-page__cauldron-potion-icon';
+    setRect(potionIcon, { left: 330, top: 324, width: 48, height: 48 });
+    cauldron.append(potionIcon);
+    host.append(cauldron);
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'potion_collected',
+      potion: { key: 'manaTonic', label: 'mana tonic', kind: 'potion' },
+      quantity: 1,
+      cauldronIndex: 1,
+    });
+
+    const anchor = document.querySelector('.room-item-drop-anchor.is-potion');
+    expect(anchor?.style.left).toBe('354px');
+    expect(anchor?.style.top).toBe('348px');
+
+    manager.unmount();
   });
 
   it('falls back to the garden progress rail when no plot plant is measurable', () => {

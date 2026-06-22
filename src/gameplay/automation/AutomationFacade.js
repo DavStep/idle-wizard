@@ -61,6 +61,14 @@ export class AutomationFacade {
     this.gardenAutomationManager.update();
   }
 
+  hasFrameTimerWork() {
+    return (
+      this.hasSeedSummoningResearch() ||
+      this.brewingAutomationManager.hasAnyBrewingAutomationResearch() ||
+      this.gardenAutomationManager.hasAnyGardenAutomationResearch()
+    );
+  }
+
   setSeedSummoningEnabled(enabled) {
     return this.seedSummoningSettingsManager.setEnabled(enabled);
   }

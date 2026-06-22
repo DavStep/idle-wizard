@@ -6,13 +6,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 ## 0.2.27
 
 - Added a safer admin recovery path for stuck account sessions without touching player saves, progress, markets, or chat data.
-- Adjusted Workshop buttons and summon placement so tasks, notices, seed bag, discoveries, guild, and leaderboard controls have cleaner spacing on mobile.
+- Adjusted Workshop buttons and summon placement so tasks, events, seed bag, discoveries, guild, and leaderboard controls have cleaner spacing on mobile.
 - Updated backend bindings for the latest admin maintenance reducers.
 
 ## 0.2.26
 
 - Fixed saved Garden plot and Brewing cauldron capacity after prestige reset so bought capacity stays restored correctly from research.
-- Moved the Workshop seed bag beside discoveries and adjusted Workshop task, notice, summon, and info controls so they fit more cleanly on mobile.
+- Moved the Workshop seed bag beside discoveries and adjusted Workshop task, event, summon, and info controls so they fit more cleanly on mobile.
 - Improved Elara placement so the tutorial guide avoids the Workshop seed bag control.
 
 ## 0.2.25
@@ -20,7 +20,7 @@ upload script posts the section whose heading matches `package.json` `version`.
 - Added emerald research support for batch planting and brewing, so upgraded plots and cauldrons can turn multiple normal inputs into multiple outputs in one timer.
 - Added emerald save/backend support and resource icons/colors for crystal, emerald, ruby, mana, and coin rows.
 - Moved Prestige into the bottom room bar when it is unlocked, replacing the unused quests slot.
-- Tightened resource labels and Workshop notice/task indicators so potion names and mana sphere text no longer get mistaken for mana currency.
+- Tightened resource labels and Workshop event/task indicators so potion names and mana sphere text no longer get mistaken for mana currency.
 
 ## 0.2.24
 
@@ -32,7 +32,7 @@ upload script posts the section whose heading matches `package.json` `version`.
 ## 0.2.23
 
 - Improved Guild forms so charter and settings edits stay in place while the game refreshes in the background.
-- Moved Workshop task, world notice, and summon controls apart so mobile taps hit the intended button more reliably.
+- Moved Workshop task, world event, and summon controls apart so mobile taps hit the intended button more reliably.
 - Reduced player market background loading by keeping trade history data and rows lazy until the popup is opened.
 
 ## 0.2.22
@@ -45,11 +45,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 
 ## 0.2.21
 
-- Moved the Workshop task and notice character labels to align with the leaderboard, with the two characters stacked closer together.
+- Moved the Workshop task and event character labels to align with the leaderboard, with the two characters stacked closer together.
 
 ## 0.2.20
 
-- Moved the Workshop task and notice characters beside the summon circle, so expanded level requirements stay readable.
+- Moved the Workshop task and event characters beside the summon circle, so expanded level requirements stay readable.
 
 ## 0.2.19
 
@@ -60,9 +60,9 @@ upload script posts the section whose heading matches `package.json` `version`.
 
 ## 0.2.18
 
-- Added Workshop character entry buttons for personal tasks and world notices, with clearer popup headers.
+- Added Workshop character entry buttons for personal tasks and world events, with clearer popup headers.
 - Changed NPC market demand recovery into periodic buyer waves and added demand popup details for the next wave and demand cap.
-- Refined weekly world notice requests so more events ask for research or supplies instead of direct coin funding.
+- Refined weekly world event requests so more events ask for research or supplies instead of direct coin funding.
 - Improved Elara's level-2 gardening guidance, advanced research coloring, and level reward row behavior.
 
 ## 0.2.17
@@ -71,10 +71,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 
 ## 0.2.16
 
-- Added weekly world notices in the Workshop with normal action requests, coin donations, rewards, and past notice history.
+- Added weekly world events in the Workshop with normal action requests, coin donations, rewards, and past event history.
 - Improved Workshop personal task rows and chat sending so progress reads cleaner and sent messages appear locally while the server echo catches up.
 - Made Garden planting and emptying easier by letting plantable or active plot bodies respond, with clearer empty-plot confirmation copy.
-- Tightened Brewing recipe and notification states, and hardened save syncing so compact task/notice data stays under the server save limit.
+- Tightened Brewing recipe and notification states, and hardened save syncing so compact task/event data stays under the server save limit.
 
 ## 0.2.15
 

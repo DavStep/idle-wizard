@@ -62,6 +62,33 @@ export class WorldNoticeContributionManager {
     return Math.floor(amount * rule.pointsPerUnit);
   }
 
+  getPointsForProgress(actionType, previousProgress = 0, nextProgress = 0, detail = {}) {
+    const previous = Math.max(0, Math.floor(Number(previousProgress) || 0));
+    const next = Math.max(previous, Math.floor(Number(nextProgress) || 0));
+    const amount = next - previous;
+
+    if (amount <= 0) {
+      return 0;
+    }
+
+    const itemPoints = this.getItemPoints(detail);
+
+    if (itemPoints > 0) {
+      return itemPoints * amount;
+    }
+
+    const rule = ACTION_POINT_RULES[String(actionType ?? '')];
+
+    if (!rule) {
+      return amount;
+    }
+
+    return (
+      Math.floor(next * rule.pointsPerUnit) -
+      Math.floor(previous * rule.pointsPerUnit)
+    );
+  }
+
   getItemPoints(detail = {}) {
     const itemKey =
       detail?.item?.key ??
@@ -90,6 +117,22 @@ export class WorldNoticeContributionManager {
     return safePoints;
   }
 
+  addRequestPoints(request, points = 0) {
+    if (!request) {
+      return 0;
+    }
+
+    const safePoints = Math.max(0, Math.floor(Number(points) || 0));
+
+    if (safePoints <= 0) {
+      return 0;
+    }
+
+    request.contributionPoints =
+      Math.max(0, Math.floor(Number(request.contributionPoints) || 0)) + safePoints;
+    return safePoints;
+  }
+
   createLeaderboardSnapshot(points = 0) {
     const currentPoints = Math.max(0, Math.floor(Number(points) || 0));
     const qualificationPoints = WORLD_NOTICE_LEADERBOARD_QUALIFICATION_POINTS;
@@ -114,6 +157,6 @@ export class WorldNoticeContributionManager {
       return `${rule.label} = 1 point`;
     }
 
-    return `${rule.pointsPerUnit} points`;
+    return `${rule.pointsPerUnit} points each`;
   }
 }

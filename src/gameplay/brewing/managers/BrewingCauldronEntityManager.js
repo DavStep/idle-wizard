@@ -172,6 +172,16 @@ export class BrewingCauldronEntityManager {
     ).length;
   }
 
+  getIngredientCountsByItemTypeId(cauldronIndex = null) {
+    const counts = new Map();
+
+    for (const itemTypeId of this.getIngredientItemTypeIds(cauldronIndex)) {
+      counts.set(itemTypeId, (counts.get(itemTypeId) ?? 0) + 1);
+    }
+
+    return counts;
+  }
+
   getIngredientSnapshots(cauldronIndex = 0) {
     const safeCauldronIndex =
       cauldronIndex === null ? null : this.normalizeCauldronIndex(cauldronIndex);

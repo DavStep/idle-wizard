@@ -202,10 +202,14 @@ export class RewardFlyoutManager {
       ? this.playRewardVisual(event) > 0
       : false;
     const flyout = this.show(this.formatRewardMessage(event), {
-      visualOnly: visualPlayed,
+      visualOnly: visualPlayed && !this.shouldKeepRewardMessageVisible(event),
     });
 
     return flyout;
+  }
+
+  shouldKeepRewardMessageVisible(event) {
+    return event?.type === 'personal_task_reward_claimed';
   }
 
   shouldPlayVisualDrops() {
@@ -278,6 +282,14 @@ export class RewardFlyoutManager {
       );
     }
 
+    if (event.type === 'personal_task_reward_claimed') {
+      return this.animateCoinsToCoin(
+        this.getAnchorForEvent(event),
+        event.coin ?? 0,
+        this.formatRewardMessage(event),
+      );
+    }
+
     return 0;
   }
 
@@ -295,7 +307,7 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'potion_collected') {
-      return this.root.parentElement?.querySelector('.brewing-page__cauldron');
+      return this.getBrewingPotionAnchor(event);
     }
 
     if (event.type === 'item_sold' && Number.isInteger(event.slotNumber)) {
@@ -310,7 +322,35 @@ export class RewardFlyoutManager {
       return this.getCoinCollectionAnchor(event.source);
     }
 
+    if (event.type === 'personal_task_reward_claimed') {
+      return this.getPersonalTaskRewardAnchor(event);
+    }
+
     return this.root.parentElement;
+  }
+
+  getPersonalTaskRewardAnchor(event) {
+    const root = this.root?.closest('.game-stage') ?? document;
+    const periodType = String(event?.periodType ?? '');
+    const taskId = String(event?.taskId ?? '');
+    const claimButtons = [...root.querySelectorAll('.workshop-page__personal-task-claim')];
+
+    return (
+      claimButtons.find((button) => {
+        if (button.dataset.personalTaskPeriodType !== periodType) {
+          return false;
+        }
+
+        if (event?.fullClear === true) {
+          return button.dataset.personalTaskFullClear === 'true';
+        }
+
+        return button.dataset.personalTaskId === taskId;
+      }) ??
+      root.querySelector('.workshop-page__personal-tasks-dialog') ??
+      root.querySelector('.workshop-page__personal-tasks-open') ??
+      this.root?.parentElement
+    );
   }
 
   getWorkshopSummonAnchor() {
@@ -475,6 +515,23 @@ export class RewardFlyoutManager {
     }
 
     return row;
+  }
+
+  getBrewingPotionAnchor(event) {
+    const cauldronIndex = Number(event?.cauldronIndex);
+    const root = this.root?.parentElement;
+    const cauldronSelector = Number.isInteger(cauldronIndex)
+      ? `.brewing-page__cauldron[data-cauldron-index="${cauldronIndex}"]`
+      : '.brewing-page__cauldron';
+    const cauldron = root?.querySelector(cauldronSelector);
+
+    return (
+      cauldron?.querySelector('.brewing-page__cauldron-potion-icon:not([hidden])') ??
+      cauldron ??
+      root?.querySelector('.brewing-page__cauldron-potion-icon:not([hidden])') ??
+      root?.querySelector('.brewing-page__cauldron') ??
+      root
+    );
   }
 
   getSeedDropSources(event) {
@@ -925,6 +982,10 @@ export class RewardFlyoutManager {
       return `collected ${formatCoinPriceText(event.coin ?? 0)}`;
     }
 
+    if (event.type === 'personal_task_reward_claimed') {
+      return this.formatCurrencyRewardMessage(event);
+    }
+
     return '';
   }
 
@@ -954,6 +1015,22 @@ export class RewardFlyoutManager {
     const safeQuantity = Number.isFinite(quantity) ? Math.max(1, Math.floor(quantity)) : 1;
     const suffix = safeQuantity > 1 ? ` x${safeQuantity}` : '';
     return `${prefix} ${item?.label ?? 'item'}${suffix}${trailingText}`;
+  }
+
+  formatCurrencyRewardMessage(event) {
+    const parts = [];
+    const coin = Math.max(0, Math.floor(Number(event?.coin) || 0));
+    const crystal = Math.max(0, Math.floor(Number(event?.crystal) || 0));
+
+    if (coin > 0) {
+      parts.push(`+${formatCoinPriceText(coin)}`);
+    }
+
+    if (crystal > 0) {
+      parts.push(`+${crystal} crystal`);
+    }
+
+    return parts.join(', ') || 'reward claimed';
   }
 
   unmount() {

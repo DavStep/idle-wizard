@@ -6,6 +6,7 @@ import { getSeedSummonNotification } from '../../notifications/managers/PageNoti
 
 const SUMMON_HOLD_REPEAT_MS = 110;
 const SUMMON_CLICK_SUPPRESSION_MS = 550;
+const SUMMON_EFFECT_MS = 520;
 
 export class WorkshopActionBarManager {
   constructor({
@@ -28,6 +29,7 @@ export class WorkshopActionBarManager {
     this.unsubscribe = null;
     this.refs = {};
     this.summonHoldTimer = null;
+    this.summonEffectTimer = null;
     this.summonHoldPointerId = null;
     this.summonHoldPointerType = '';
     this.suppressSummonClickUntilMs = 0;
@@ -71,6 +73,7 @@ export class WorkshopActionBarManager {
 
   unmount() {
     this.stopSummonHold({ suppressClick: false });
+    this.clearSummonEffect();
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.root?.remove();
@@ -180,6 +183,8 @@ export class WorkshopActionBarManager {
     this.render(snapshot);
 
     if (result.ok) {
+      this.playSummonEffect();
+
       if (playManualHaptic) {
         this.playManualSummonHaptic();
       }
@@ -275,6 +280,37 @@ export class WorkshopActionBarManager {
 
   playManualSummonHaptic() {
     this.hapticsFacade?.playUiTap?.();
+  }
+
+  playSummonEffect() {
+    const button = this.refs.summonButton;
+
+    if (!button) {
+      return;
+    }
+
+    button.classList.remove('is-summoning');
+    void button.offsetWidth;
+    button.classList.add('is-summoning');
+    this.clearSummonEffectTimer();
+    this.summonEffectTimer = window.setTimeout(() => {
+      this.summonEffectTimer = null;
+      button.classList.remove('is-summoning');
+    }, SUMMON_EFFECT_MS);
+  }
+
+  clearSummonEffect() {
+    this.clearSummonEffectTimer();
+    this.refs.summonButton?.classList.remove('is-summoning');
+  }
+
+  clearSummonEffectTimer() {
+    if (this.summonEffectTimer === null) {
+      return;
+    }
+
+    window.clearTimeout(this.summonEffectTimer);
+    this.summonEffectTimer = null;
   }
 
   getSuccessMessage(result) {

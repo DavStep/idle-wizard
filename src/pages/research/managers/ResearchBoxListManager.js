@@ -46,7 +46,8 @@ export class ResearchBoxListManager {
     this.tabsRoot.setAttribute('aria-label', 'Research type');
     this.tabsRoot.setAttribute('role', 'tablist');
     this.boxesRoot = document.createElement('div');
-    this.boxesRoot.className = 'research-page__box-list';
+    this.boxesRoot.className = 'research-page__box-list style-page-scroll';
+    this.boxesRoot.dataset.scrollCueProgress = 'inline';
     this.root.append(this.boxesRoot, this.tabsRoot);
     parent.append(this.root);
 
@@ -600,7 +601,7 @@ export class ResearchBoxListManager {
         const remainingMs = Number.isFinite(research.remainingMs) ? research.remainingMs : 0;
         this.setResearchValueStatus(ref, research);
         setProgressFill(ref.progressFill, progressRatio, {
-          smooth: Boolean(research.inProgress) && remainingMs > 0,
+          smooth: true,
           remainingMs,
         });
         this.setText(ref.progressText, '');

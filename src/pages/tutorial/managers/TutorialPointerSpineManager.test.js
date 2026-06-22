@@ -5,6 +5,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
 
 describe('TutorialPointerSpineManager', () => {
+  it('uses the static pointer fallback by default', () => {
+    const pointer = document.createElement('span');
+    const importPixi = vi.fn(async () => ({}));
+    const manager = new TutorialPointerSpineManager({ importPixi });
+
+    manager.mount(pointer);
+
+    expect(importPixi).not.toHaveBeenCalled();
+    expect(pointer.dataset.spineReady).toBeUndefined();
+    expect(pointer.querySelector('.tutorial-layer__pointer-spine')).not.toBeNull();
+  });
+
   it('loads the pointer Spine into a local Pixi canvas and controls playback', async () => {
     const pointer = document.createElement('span');
     const originalDevicePixelRatio = window.devicePixelRatio;

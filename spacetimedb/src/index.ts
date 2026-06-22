@@ -127,9 +127,13 @@ const PERIOD_MONTH_DAYS = 30n;
 const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UTC, Armenia 04:00.
 const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:direct-sell-stands-v2';
-const PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY = 'game-config:player-level-mana-regen-v1';
+const PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY = 'game-config:player-level-mana-regen-v2';
 const PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY = 'game-config:player-level-cauldron-cap-v1';
-const PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL = 0.25;
+const PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES = [
+  { fromLevel: 2, toLevel: 5, amount: 1 },
+  { fromLevel: 6, toLevel: 10, amount: 0.5 },
+  { fromLevel: 11, amount: 0.25 },
+];
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const MAINTENANCE_MODE_OFF = 'off';
 const MAINTENANCE_MODE_DRAIN = 'drain';
@@ -3273,7 +3277,7 @@ const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = JSON.stringify({
     "baseMaxManaCap": 50,
     "maxManaCapPerLevel": 50,
     "baseManaPerSecond": 1,
-    "manaPerSecondPerLevel": PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL
+    "manaPerSecondPerLevelRanges": PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES
   },
   "crystal": {
     "perLevel": 1
@@ -4382,7 +4386,6 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       boxes: 0,
     },
     icons: {
-      none: 0,
       icons: 0,
     },
   },
@@ -10203,7 +10206,7 @@ function validatePlayerLevelGameConfig(value: unknown) {
     throw new Error('Invalid player level config.');
   }
 
-  validatePlayerLevelManaConfig(config.mana);
+  validatePlayerLevelManaConfig(config.mana, maxLevel);
   validatePlayerLevelCrystalConfig(config);
 
   let previousLevel = 0;
@@ -10292,7 +10295,7 @@ function readPlayerLevelCrystalPerLevel(config: {
   return nestedPerLevel ?? config.crystalPerLevel ?? config.crystalPerLevelUp;
 }
 
-function validatePlayerLevelManaConfig(value: unknown) {
+function validatePlayerLevelManaConfig(value: unknown, maxLevel: number) {
   if (value === undefined || value === null) {
     return;
   }
@@ -10303,7 +10306,6 @@ function validatePlayerLevelManaConfig(value: unknown) {
     'baseMaxManaCap',
     'maxManaCapPerLevel',
     'baseManaPerSecond',
-    'manaPerSecondPerLevel',
   ]) {
     const amount = Number(mana[key]);
 
@@ -10314,6 +10316,64 @@ function validatePlayerLevelManaConfig(value: unknown) {
     ) {
       throw new Error('Invalid player level mana config.');
     }
+  }
+
+  const ranges = mana.manaPerSecondPerLevelRanges ?? mana.perSecondPerLevelRanges;
+
+  if (ranges !== undefined) {
+    validatePlayerLevelManaRangeConfig(ranges, maxLevel);
+    return;
+  }
+
+  const perLevel = Number(mana.manaPerSecondPerLevel ?? mana.perSecondPerLevel);
+
+  if (
+    !Number.isFinite(perLevel) ||
+    perLevel < 0 ||
+    perLevel > MAX_GAME_CONFIG_RESOURCE_LIMIT
+  ) {
+    throw new Error('Invalid player level mana config.');
+  }
+}
+
+function validatePlayerLevelManaRangeConfig(value: unknown, maxLevel: number) {
+  if (
+    !Array.isArray(value) ||
+    value.length < 1 ||
+    value.length > MAX_GAME_CONFIG_LEVELS
+  ) {
+    throw new Error('Invalid player level mana config.');
+  }
+
+  let expectedFromLevel = 2;
+
+  for (const rangeValue of value) {
+    if (!isRecord(rangeValue)) {
+      throw new Error('Invalid player level mana config.');
+    }
+
+    const fromLevel = Number(rangeValue.fromLevel ?? rangeValue.minLevel ?? rangeValue.level);
+    const toLevel = Number(rangeValue.toLevel ?? rangeValue.maxLevel ?? maxLevel);
+    const amount = Number(rangeValue.amount ?? rangeValue.perLevel ?? rangeValue.perSecond);
+
+    if (
+      !Number.isInteger(fromLevel) ||
+      !Number.isInteger(toLevel) ||
+      fromLevel !== expectedFromLevel ||
+      toLevel < fromLevel ||
+      toLevel > maxLevel ||
+      !Number.isFinite(amount) ||
+      amount < 0 ||
+      amount > MAX_GAME_CONFIG_RESOURCE_LIMIT
+    ) {
+      throw new Error('Invalid player level mana config.');
+    }
+
+    expectedFromLevel = toLevel + 1;
+  }
+
+  if (maxLevel > 1 && expectedFromLevel !== maxLevel + 1) {
+    throw new Error('Invalid player level mana config.');
   }
 }
 
@@ -11902,15 +11962,23 @@ function backfillPlayerLevelManaRegen(ctx: IdleWizardReducerCtx) {
     return;
   }
 
-  if (Number(mana.manaPerSecondPerLevel) !== 1) {
+  if (Array.isArray(mana.manaPerSecondPerLevelRanges ?? mana.perSecondPerLevelRanges)) {
     return;
   }
 
+  const scalarPerLevel = Number(mana.manaPerSecondPerLevel ?? mana.perSecondPerLevel);
+  if (scalarPerLevel !== 0.25 && scalarPerLevel !== 1) {
+    return;
+  }
+
+  const restMana = { ...mana };
+  delete restMana.manaPerSecondPerLevel;
+  delete restMana.perSecondPerLevel;
   const configJson = validateGameConfigJson('playerLevel', JSON.stringify({
     ...config,
     mana: {
-      ...mana,
-      manaPerSecondPerLevel: PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL,
+      ...restMana,
+      manaPerSecondPerLevelRanges: PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES,
     },
   }));
 

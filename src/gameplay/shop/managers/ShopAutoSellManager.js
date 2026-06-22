@@ -60,6 +60,12 @@ export class ShopAutoSellManager {
     this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
   }
 
+  hasFrameTimerWork() {
+    return this.shopShelfEntityManager
+      .getSlotSnapshots()
+      .some((slot) => this.isActiveSellSlot(slot));
+  }
+
   syncPriceRetention(activeSlots) {
     this.shopNpcPriceManager?.syncPriceRetention?.(activeSlots.length > 0);
   }

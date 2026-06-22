@@ -244,6 +244,13 @@ export class ShopFacade {
     return this.shopCoinOfferManager.collect();
   }
 
+  hasFrameTimerWork() {
+    return (
+      this.shopCoinOfferManager.hasFrameTimerWork() ||
+      this.shopAutoSellManager.hasFrameTimerWork()
+    );
+  }
+
   getSnapshot() {
     const unlockedSlots = this.shopShelfEntityManager.getUnlockedSlots();
     const playerUnlockedSlots = this.shopPlayerShelfEntityManager.getUnlockedSlots();

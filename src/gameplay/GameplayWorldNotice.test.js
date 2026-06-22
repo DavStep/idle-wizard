@@ -36,8 +36,8 @@ function advanceToLevel(gameplayFacade, targetLevel) {
   }
 }
 
-describe('Gameplay world notice integration', () => {
-  it('unlocks world notices at level 4 and tracks normal gameplay actions', () => {
+describe('Gameplay world event integration', () => {
+  it('unlocks world events at level 4 and tracks normal gameplay actions', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.getSnapshot().worldNotice.unlocked).toBe(false);

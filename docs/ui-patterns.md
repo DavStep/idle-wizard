@@ -8,6 +8,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Box titles sit embedded over the top border on the same room surface.
 - Secondary border labels, such as counts, close/current controls, actions, and tabs, use smaller normal-weight text centered on the border line.
 - Popup/dialog boxes use the thicker dialog treatment: `2px` border, `20px` padding, and bottom-right shadow.
+- Full-page room scroll areas use `style-page-scroll` on the actual scrolling element, with inline scroll cues and the shared `--style-page-scroll-padding-top` / `--style-page-scroll-padding-bottom` cuts so content tucks under chrome consistently.
 
 ## Numbered Rows
 

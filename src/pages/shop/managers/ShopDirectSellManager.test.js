@@ -1,5 +1,7 @@
 /* @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ShopDirectSellManager } from './ShopDirectSellManager.js';
@@ -126,6 +128,21 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ShopDirectSellManager', () => {
+  it('keeps fast-sell item names unlined until selected', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const unselectedRule = baseCss.match(
+      /\.shop-page__direct-sell-rows\s+\.shop-page__direct-sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.row_key,\s*\.shop-page__direct-sell-rows\s+\.shop-page__direct-sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.shop-page__direct-sell-target-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const selectedRule = baseCss.match(
+      /\.shop-page__direct-sell-rows\s+\.shop-page__direct-sell-item-button\[aria-pressed="true"\]\s+\.shop-page__direct-sell-target-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(unselectedRule).toBeDefined();
+    expect(unselectedRule).toMatch(/\btext-decoration:\s*none;/);
+    expect(selectedRule).toBeDefined();
+    expect(selectedRule).toMatch(/\btext-decoration:\s*underline;/);
+  });
+
   it('formats empty demand as no buyers', () => {
     const manager = new ShopDirectSellManager();
 

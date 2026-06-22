@@ -91,7 +91,7 @@ function createGameplayFacadeFake() {
         },
         progressBar: { regular: 0, gradient: 0 },
         plotView: { rows: 0, boxes: 0 },
-        icons: { none: 0, icons: 0 },
+        icons: { icons: 0 },
       },
       researched: {
         theme: { white: true, black: false, midnight: false, witchcraft: false },
@@ -110,7 +110,7 @@ function createGameplayFacadeFake() {
         },
         progressBar: { regular: true, gradient: false },
         plotView: { rows: true, boxes: true },
-        icons: { none: true, icons: true },
+        icons: { icons: true },
       },
     },
     inventory: [],
@@ -210,12 +210,12 @@ function createGameplayFacadeFake() {
             maxNpcMarketStands: 1,
             maxPlayerMarketStands: 1,
             maxManaCap: 100,
-            manaPerSecond: 1.25,
+            manaPerSecond: 2,
           },
           effects: [
             'max garden tiles 3',
             'max mana cap 100',
-            'mana regen 1.25/sec',
+            'mana regen 2/sec',
             'crystal reward 1',
           ],
         },
@@ -229,13 +229,13 @@ function createGameplayFacadeFake() {
             maxNpcMarketStands: 2,
             maxPlayerMarketStands: 2,
             maxManaCap: 150,
-            manaPerSecond: 1.5,
+            manaPerSecond: 3,
           },
           effects: [
             'max npc market stands 2',
             'max player market stands 2',
             'max mana cap 150',
-            'mana regen 1.5/sec',
+            'mana regen 3/sec',
             'crystal reward 1',
           ],
         },
@@ -4409,7 +4409,7 @@ describe('PagesFacade', () => {
     ).toContain('mana cap+50');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana regen+0.25/sec');
+    ).toContain('mana regen+1/sec');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
     ).toContain('crystal+1');
@@ -4421,7 +4421,7 @@ describe('PagesFacade', () => {
     ).toContain('mana cap100');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana regen1.25/sec');
+    ).toContain('mana regen2/sec');
 
     levelPopup
       .querySelector('.room-top-panel__level-pager-button:last-child')
@@ -5691,7 +5691,7 @@ describe('PagesFacade', () => {
       ['unlocks', 'garden'],
       ['garden plots', '+1'],
       ['mana cap', '+50'],
-      ['mana regen', '+0.25/sec'],
+      ['mana regen', '+1/sec'],
       ['crystal', '+1'],
     ]);
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
@@ -5703,7 +5703,7 @@ describe('PagesFacade', () => {
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
-      'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +0.25/sec mana regen, +1 crystal',
+      'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +1/sec mana regen, +1 crystal',
     );
   });
 
@@ -5912,7 +5912,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__icon-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['no icons', 'icons']);
+    ).toEqual(['icons']);
     expect(
       [
         ...settings.querySelectorAll(
@@ -5932,7 +5932,6 @@ describe('PagesFacade', () => {
       'free',
       'researched',
       'free',
-      'researched',
       'researched',
       'researched',
       'researched',
@@ -6422,24 +6421,15 @@ describe('PagesFacade', () => {
     const iconsButton = stage.querySelector(
       '.room-top-panel__icon-button[data-icon-mode="icons"]',
     );
-    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
+    expect(noIconsButton).toBeNull();
     expect(iconsButton.getAttribute('aria-checked')).toBe('false');
-    expect(noIconsButton.disabled).toBe(false);
     expect(iconsButton.disabled).toBe(false);
 
     iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.none).toBe(true);
     expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(true);
     expect(iconsButton.getAttribute('aria-checked')).toBe('true');
-    expect(noIconsButton.getAttribute('aria-checked')).toBe('false');
-
-    noIconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().iconMode).toBe('none');
-    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
-    expect(iconsButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes font from settings', () => {
@@ -11637,6 +11627,8 @@ describe('PagesFacade', () => {
       (button) => button.textContent === 'sage3',
     );
 
+    expect(sageButton.draggable).toBe(false);
+
     sageButton.dispatchEvent(
       createPointerEvent('pointerdown', { clientX: 320, clientY: 360 }),
     );
@@ -11645,7 +11637,6 @@ describe('PagesFacade', () => {
     document.dispatchEvent(createPointerEvent('pointerup', { clientX: 322, clientY: 430 }));
 
     expect(verticalMove.defaultPrevented).toBe(false);
-    expect(document.body.querySelector('.brewing-page__drag-ghost')).toBeNull();
 
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -11733,7 +11724,6 @@ describe('PagesFacade', () => {
       document.dispatchEvent(createPointerEvent('pointerup', { clientX: 390, clientY: 370 }));
 
       expect(move.defaultPrevented).toBe(false);
-      expect(document.body.querySelector('.brewing-page__drag-ghost')).toBeNull();
 
       mandrakeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 

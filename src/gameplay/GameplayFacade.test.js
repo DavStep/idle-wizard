@@ -546,13 +546,13 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().mana.cap).toBe(100);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(1.25);
+    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(2);
 
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
     expect(gameplayFacade.getSnapshot().mana.cap).toBe(150);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(1.5);
+    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(3);
   });
 
   it('grants configured crystal when player level advances', () => {
@@ -632,7 +632,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.mana).toMatchObject({
       current: 0,
       cap: 250,
-      perSecond: 2,
+      perSecond: 5,
     });
   }, 30_000);
 
@@ -1130,6 +1130,8 @@ describe('GameplayFacade', () => {
     });
     expect(rewardEvents[2]).toMatchObject({
       type: 'potion_collected',
+      cauldronIndex: 0,
+      cauldronNumber: 1,
       potion: { label: 'wasted potion' },
       quantity: 1,
     });
@@ -1138,6 +1140,56 @@ describe('GameplayFacade', () => {
       herb: { label: 'sage' },
       quantity: 1,
     });
+    unsubscribeRewardEvents();
+  });
+
+  it('publishes reward events when personal task rewards are claimed', () => {
+    const { gameplayFacade } = createGameplay();
+    const rewardEvents = [];
+    const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
+      rewardEvents.push(event);
+    });
+
+    advanceToLevel(gameplayFacade, 4);
+
+    const dailyTask = gameplayFacade.getSnapshot().personalTasks.daily.tasks[0];
+    gameplayFacade.recordPersonalTaskAction(dailyTask.actionType, dailyTask.requiredQuantity);
+    const dailyClaim = gameplayFacade.claimPersonalTaskReward('daily', dailyTask.taskId);
+
+    const weekly = gameplayFacade.getSnapshot().personalTasks.weekly;
+    for (const task of weekly.tasks) {
+      gameplayFacade.recordPersonalTaskAction(task.actionType, task.requiredQuantity);
+    }
+    const weeklyClaim = gameplayFacade.claimPersonalTaskFullClearReward('weekly');
+
+    expect(dailyClaim).toMatchObject({
+      ok: true,
+      periodType: 'daily',
+      taskId: dailyTask.taskId,
+    });
+    expect(weeklyClaim).toMatchObject({
+      ok: true,
+      periodType: 'weekly',
+      fullClear: true,
+    });
+    expect(rewardEvents).toEqual([
+      expect.objectContaining({
+        type: 'personal_task_reward_claimed',
+        periodType: 'daily',
+        taskId: dailyTask.taskId,
+        fullClear: false,
+        coin: dailyClaim.coin,
+        crystal: dailyClaim.crystal,
+      }),
+      expect.objectContaining({
+        type: 'personal_task_reward_claimed',
+        periodType: 'weekly',
+        taskId: weeklyClaim.taskId,
+        fullClear: true,
+        coin: weeklyClaim.coin,
+        crystal: weeklyClaim.crystal,
+      }),
+    ]);
     unsubscribeRewardEvents();
   });
 
@@ -1382,7 +1434,7 @@ describe('GameplayFacade', () => {
               },
               progressBar: { regular: 0, gradient: 0 },
               plotView: { rows: 0, boxes: 0 },
-              icons: { none: 0, icons: 0 },
+              icons: { icons: 0 },
             },
           }),
         },
@@ -1407,7 +1459,7 @@ describe('GameplayFacade', () => {
       },
       progressBar: { regular: true, gradient: false },
       plotView: { rows: true, boxes: true },
-      icons: { none: true, icons: true },
+      icons: { icons: true },
     });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
       ok: false,
@@ -2339,9 +2391,9 @@ describe('GameplayFacade', () => {
       autoBrewEnabled: true,
     });
 
-    ecsFacade.update({ deltaSeconds: 10 });
+    ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(5.5);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(4);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
@@ -2357,7 +2409,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 3 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(0.75);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(6);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
@@ -2681,7 +2733,7 @@ describe('GameplayFacade', () => {
       manaCost: 12,
       durationMs: 30_000,
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(9);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
@@ -3012,7 +3064,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 0 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(9);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',

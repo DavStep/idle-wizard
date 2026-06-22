@@ -517,6 +517,7 @@ export class TopPanelSettingsManager {
     this.clearVisualSettingStatus();
     this.setFeedbackPending(false);
     this.applyVisibility();
+    this.renderVisualSettingPrices();
     this.focusWithoutScroll(
       this.settingsTab === 'report' && !usernamePromptMode
         ? this.refs.feedbackInput
@@ -855,7 +856,7 @@ export class TopPanelSettingsManager {
   }
 
   renderVisualSettingPrices() {
-    if (!this.refs) {
+    if (!this.refs || !this.visible) {
       return;
     }
 
@@ -1022,6 +1023,7 @@ export class TopPanelSettingsManager {
 
     this.settingsTab = nextTab;
     this.applyMode();
+    this.renderVisualSettingPrices();
   }
 
   toggleHaptics() {

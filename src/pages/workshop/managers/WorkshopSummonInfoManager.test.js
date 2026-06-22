@@ -294,6 +294,71 @@ describe('WorkshopSummonInfoManager', () => {
     expect(css).toContain('color: var(--style-resource-herb);');
   });
 
+  it('keeps the active weight row above the dropdown dim state', () => {
+    const gameplayFacade = createGameplayFacadeFake({
+      seedSummoning: {
+        dropChances: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            label: 'sage seed',
+            kind: 'seed',
+            dropPreference: 'medium',
+            dropChance: 0.25,
+          },
+          {
+            itemTypeId: 2,
+            key: 'mintSeed',
+            label: 'mint seed',
+            kind: 'seed',
+            dropPreference: 'low',
+            dropChance: 0.75,
+          },
+        ],
+      },
+    });
+    const manager = new WorkshopSummonInfoManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+    manager.show();
+
+    const popup = parent.querySelector('.workshop-page__summon-info-popup');
+    const dialog = parent.querySelector('.workshop-page__summon-info-dialog');
+    const rows = [
+      ...parent.querySelectorAll(
+        '.workshop-page__summon-info-rows .workshop-page__summon-info-row',
+      ),
+    ];
+    const sageButton = rows[0]?.querySelector(
+      '.workshop-page__summon-info-weight-button',
+    );
+
+    sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup?.classList.contains('is-weight-dropdown-open')).toBe(true);
+    expect(dialog?.classList.contains('is-weight-dropdown-open')).toBe(true);
+    expect(rows[0]?.classList.contains('is-weight-dropdown-row')).toBe(true);
+    expect(rows[1]?.classList.contains('is-weight-dropdown-row')).toBe(false);
+
+    dialog.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popup?.classList.contains('is-weight-dropdown-open')).toBe(false);
+    expect(rows[0]?.classList.contains('is-weight-dropdown-row')).toBe(false);
+
+    manager.unmount();
+  });
+
+  it('defines taller summon info rows and dropdown dim styles', async () => {
+    const css = await readFile(path.join(cwd(), 'src/styles/base.css'), 'utf8');
+
+    expect(css).toContain('--workshop-summon-info-row-height');
+    expect(css).toContain(
+      '.workshop-page__summon-info-popup.is-weight-dropdown-open:not([hidden])',
+    );
+    expect(css).toContain('.workshop-page__summon-info-row.is-weight-dropdown-row');
+  });
+
   it('updates auto summon controls', () => {
     const gameplayFacade = createGameplayFacadeFake({
       seedSummoning: {

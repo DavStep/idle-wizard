@@ -393,6 +393,7 @@ export class WorldNoticeCatalogManager {
         completionCostCoin,
       }),
       progressQuantity: 0,
+      contributionPoints: 0,
       completed: false,
     };
   }
@@ -491,6 +492,10 @@ export class WorldNoticeCatalogManager {
       label,
       requiredQuantity,
       progressQuantity,
+      contributionPoints: Math.max(
+        0,
+        Math.floor(Number(request.contributionPoints) || 0),
+      ),
       completed: Boolean(request.completed) || progressQuantity >= requiredQuantity,
     };
   }

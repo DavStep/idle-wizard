@@ -393,6 +393,37 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
+  it('marks empty NPC demand stands as lower-priority market notifications', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.research.completedResearchIds = ['unlockSeed:sageSeed'];
+    snapshot.shop.shelf.sellItems = [
+      {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+        quantity: 1,
+      },
+    ];
+    snapshot.shop.shelf.slots = [
+      {
+        slotNumber: 1,
+        unlocked: true,
+        sellItemTypeId: null,
+      },
+    ];
+
+    expect(manager.getSnapshot(snapshot).pages.shop).toMatchObject({
+      active: true,
+      tone: 'orange',
+      children: {
+        npcListing: 'orange',
+      },
+    });
+  });
+
   it('marks player market only when another listing matches an own request', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();

@@ -10,7 +10,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Use browser-simple layout, not decorative game art.
 - The interface should feel like a sparse text game with small bordered panels.
 - Prefer empty space, direct labels, and restrained hierarchy.
-- Use lowercase for player-facing UI labels, including item, research, notice, and task text; keep user-entered names as typed.
+- Use lowercase for player-facing UI labels, including item, research, event, and task text; keep user-entered names as typed.
 
 ## Typography
 
@@ -30,6 +30,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Page and surface: light gray, currently `#d6d6d6` in the white theme.
 - Disabled/secondary text and borders: medium gray.
 - No colored UI unless the user explicitly asks for it.
+- The page background may use the explicit mild bottom-to-top room identity gradient; boxes, buttons, dialogs, and labels stay on the normal surface.
 
 ## Boxes
 

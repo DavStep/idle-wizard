@@ -11,6 +11,19 @@ describe('PlayerLevelBalanceManager', () => {
     expect(manager.getRequiredLevelForCauldron(5)).toBe(25);
   });
 
+  it('uses faster default mana regen gains early and smaller gains later', () => {
+    const manager = new PlayerLevelBalanceManager();
+
+    expect(manager.getEffects(1).manaPerSecond).toBe(1);
+    expect(manager.getEffects(2).manaPerSecond).toBe(2);
+    expect(manager.getEffects(5).manaPerSecond).toBe(5);
+    expect(manager.getEffects(6).manaPerSecond).toBe(5.5);
+    expect(manager.getEffects(10).manaPerSecond).toBe(7.5);
+    expect(manager.getEffects(11).manaPerSecond).toBe(7.75);
+    expect(manager.getEffects(50).manaPerSecond).toBe(17.5);
+    expect(manager.getEffects(100).manaPerSecond).toBe(30);
+  });
+
   it('describes cap, feature, and research milestone text from config', () => {
     const manager = new PlayerLevelBalanceManager({
       balance: {
@@ -90,5 +103,36 @@ describe('PlayerLevelBalanceManager', () => {
       maxManaCap: 70,
       manaPerSecond: 1.2,
     });
+  });
+
+  it('accepts configured mana regen level ranges', () => {
+    const manager = new PlayerLevelBalanceManager({
+      balance: {
+        maxLevel: 4,
+        mana: {
+          baseMaxManaCap: 50,
+          maxManaCapPerLevel: 10,
+          baseManaPerSecond: 1,
+          manaPerSecondPerLevelRanges: [
+            { fromLevel: 2, toLevel: 3, amount: 2 },
+            { fromLevel: 4, amount: 0.5 },
+          ],
+        },
+        milestones: [
+          {
+            level: 1,
+            maxGardenTiles: 1,
+            maxCauldrons: 1,
+            maxNpcMarketStands: 0,
+            maxPlayerMarketStands: 0,
+          },
+        ],
+      },
+    });
+
+    expect(manager.getEffects(1).manaPerSecond).toBe(1);
+    expect(manager.getEffects(2).manaPerSecond).toBe(3);
+    expect(manager.getEffects(3).manaPerSecond).toBe(5);
+    expect(manager.getEffects(4).manaPerSecond).toBe(5.5);
   });
 });

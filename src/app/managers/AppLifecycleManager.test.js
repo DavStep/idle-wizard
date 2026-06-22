@@ -29,6 +29,9 @@ function createLifecycle({
   let backendCallbacks = null;
   let retryCallback = null;
   let maintenanceListener = null;
+  let gameplayListener = null;
+  let gameplayTickCallback = null;
+  const gameplayTickUnsubscribe = vi.fn();
   const authFacadeFake = authFacade ?? {
     getPendingAccountLinkSave: vi.fn(() => null),
     clearPendingAccountLinkSave: vi.fn(),
@@ -84,6 +87,11 @@ function createLifecycle({
       initialize: vi.fn(),
       shutdown: vi.fn(),
       afterUpdate: vi.fn(),
+      subscribe: vi.fn((listener) => {
+        gameplayListener = listener;
+        return gameplayTickUnsubscribe;
+      }),
+      getNextGameplayTickDelayMs: vi.fn(() => 1000),
       loadPersistenceSave: vi.fn(() => true),
       savePersistenceSnapshot: vi.fn(),
       savePersistenceSnapshotAndFlush: vi.fn(() => Promise.resolve(true)),
@@ -131,6 +139,13 @@ function createLifecycle({
         return 1000;
       }),
     },
+    gameplayTickManager: {
+      start: vi.fn((callback) => {
+        gameplayTickCallback = callback;
+      }),
+      stop: vi.fn(),
+      requestTick: vi.fn(),
+    },
     deployRefreshManager: {
       mount: vi.fn(),
       unmount: vi.fn(),
@@ -145,6 +160,8 @@ function createLifecycle({
     maintenanceFacade: maintenanceFacadeFake,
     getBackendCallbacks: () => backendCallbacks,
     getRetryCallback: () => retryCallback,
+    publishGameplaySnapshot: () => gameplayListener?.({}),
+    runGameplayTick: (frame) => gameplayTickCallback?.(frame),
     setMaintenance: (snapshot) => maintenanceListener?.(snapshot),
   };
 }
@@ -160,13 +177,34 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.interactionLockManager.mount).toHaveBeenCalledWith(stage);
     expect(lifecycle.interactionLockManager.lock).toHaveBeenCalledWith('connecting');
     expect(lifecycle.deployRefreshManager.mount).toHaveBeenCalledWith(stage);
+    expect(lifecycle.gameplayTickManager.start).not.toHaveBeenCalled();
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
 
     getBackendCallbacks().onOnline();
 
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
     expect(lifecycle.interactionLockManager.unlock).toHaveBeenCalledTimes(1);
-    expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(1);
+    expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
+  });
+
+  it('runs gameplay ticks from the sleeping tick manager and wakes on gameplay changes', async () => {
+    const { lifecycle, getBackendCallbacks, publishGameplaySnapshot, runGameplayTick } =
+      createLifecycle();
+    const frame = { time: 2000, deltaSeconds: 0.1, timerDeltaSeconds: 2 };
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+    lifecycle.gameplayFacade.getNextGameplayTickDelayMs.mockReturnValue(750);
+
+    expect(runGameplayTick(frame)).toBe(750);
+    expect(lifecycle.ecsFacade.update).toHaveBeenCalledWith(frame);
+    expect(lifecycle.gameplayFacade.afterUpdate).toHaveBeenCalledWith(frame);
+
+    publishGameplaySnapshot();
+
+    expect(lifecycle.gameplayTickManager.requestTick).toHaveBeenCalledWith(750);
   });
 
   it('stops the game loop and blocks input when the server disconnects', async () => {
@@ -180,6 +218,7 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.interactionLockManager.lock).toHaveBeenLastCalledWith(
       'disconnect',
     );
+    expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
@@ -199,6 +238,7 @@ describe('AppLifecycleManager', () => {
     getBackendCallbacks().onOnline();
     getBackendCallbacks().onOffline({ reason: 'gameplay_save_timeout' });
 
+    expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
@@ -221,6 +261,7 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.interactionLockManager.lock).toHaveBeenLastCalledWith(
       'account_in_use',
     );
+    expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showOffline).toHaveBeenCalledWith(
       'account_in_use',
@@ -236,6 +277,7 @@ describe('AppLifecycleManager', () => {
     lifecycle.start();
     await flushPromises();
 
+    expect(lifecycle.gameplayTickManager.start).not.toHaveBeenCalled();
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
@@ -442,7 +484,7 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
     getBackendCallbacks().onOnline();
 
-    expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(1);
 
     setMaintenance({
       mode: 'drain',
@@ -451,6 +493,7 @@ describe('AppLifecycleManager', () => {
       updatedAtMs: 10,
     });
 
+    expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showMaintenance).toHaveBeenLastCalledWith(
@@ -463,7 +506,7 @@ describe('AppLifecycleManager', () => {
       lifecycle.onlineGateManager.showMaintenance.mock.calls.at(-1)?.[0];
     expect(settledMaintenanceCall).toMatchObject({ mode: 'drain' });
     expect(settledMaintenanceCall.saving).toBeUndefined();
-    expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(1);
   });
 
   it('blocks gameplay without flushing when maintenance is locked', async () => {
@@ -483,6 +526,7 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.interactionLockManager.lock).toHaveBeenLastCalledWith(
       'maintenance',
     );
+    expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush).not.toHaveBeenCalled();
     expect(lifecycle.onlineGateManager.showMaintenance).toHaveBeenLastCalledWith(
@@ -511,7 +555,7 @@ describe('AppLifecycleManager', () => {
     });
 
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(2);
-    expect(lifecycle.renderFacade.startFrameLoop).toHaveBeenCalledTimes(2);
+    expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(2);
   });
 
   it('overwrites the connected account when selected after Google login', async () => {
@@ -795,6 +839,7 @@ describe('AppLifecycleManager', () => {
     lifecycle.start();
     await flushPromises();
 
+    expect(lifecycle.gameplayTickManager.start).not.toHaveBeenCalled();
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
     expect(lifecycle.onlineGateManager.showOffline).toHaveBeenCalledWith('bindings_missing');
     expect(lifecycle.connectionRetryManager.schedule).not.toHaveBeenCalled();

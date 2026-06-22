@@ -95,6 +95,7 @@ export class ResearchFacade {
   }
 
   applyRuntimeConfig(snapshot = {}) {
+    this.researchDefinitionManager.clearCache();
     const balance = parseGameConfig(snapshot, 'research');
 
     if (balance) {

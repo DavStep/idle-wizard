@@ -705,6 +705,63 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('marks empty NPC market stands and picker choices as orange notifications', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      coin: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 1,
+              sellCoin: 8,
+              sellNeed: 12,
+            },
+          ],
+          slots: [{ slotNumber: 1, unlocked: true, sellItemTypeId: null }],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const standRow = stage.querySelector('.shop-page__slot-row');
+    expect(standRow?.dataset.notification).toBe('true');
+    expect(standRow?.dataset.notificationTone).toBe('orange');
+
+    manager.showSellPopup();
+
+    const sellTab = popupLayer.querySelector('.shop-page__sell-tab-button');
+    const itemButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')]
+      .find((button) => button.textContent.includes('sage seed'));
+    expect(sellTab?.dataset.notification).toBe('true');
+    expect(sellTab?.dataset.notificationTone).toBe('orange');
+    expect(itemButton?.dataset.notification).toBe('true');
+    expect(itemButton?.dataset.notificationTone).toBe('orange');
+
+    manager.unmount();
+  });
+
   it('buys the next NPC market stand when tapping the locked row text', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');

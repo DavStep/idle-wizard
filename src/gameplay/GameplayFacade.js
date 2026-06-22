@@ -31,6 +31,9 @@ import {
 
 export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
 export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 1_000;
+export const GAMEPLAY_ACTIVE_TICK_DELAY_MS = 250;
+export const GAMEPLAY_MIN_RESOURCE_TICK_DELAY_MS = 250;
+export const GAMEPLAY_MAX_RESOURCE_TICK_DELAY_MS = 1_000;
 export const PRESTIGE_RESET_LEVEL = 5;
 
 export class GameplayFacade {
@@ -39,6 +42,7 @@ export class GameplayFacade {
 
   constructor({ persistenceStorage, persistenceNow, shopNow } = {}) {
     this.stateObserverManager = new GameplayStateObserverManager();
+    this.frameResourceObserverManager = new GameplayStateObserverManager();
     this.rewardEventManager = new GameplayRewardEventManager();
     this.itemsFacade = new ItemsFacade();
     this.manaFacade = new ManaFacade();
@@ -169,6 +173,7 @@ export class GameplayFacade {
     this.lastFrameSnapshotPublishTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotBuildTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotKey = '';
+    this.lastFrameResourceSnapshotKey = '';
     this.lastFrameHadTimerWork = false;
     this.snapshotCacheDepth = 0;
     this.cachedSnapshot = null;
@@ -274,6 +279,7 @@ export class GameplayFacade {
     this.gameConfigUnsubscribe?.();
     this.gameConfigUnsubscribe = null;
     this.stateObserverManager.clear();
+    this.frameResourceObserverManager.clear();
     this.rewardEventManager.clear();
     this.initialized = false;
   }
@@ -554,6 +560,8 @@ export class GameplayFacade {
     this.gameplayLogFacade.logBrewCompleted(event);
     this.rewardEventManager.publish({
       type: 'potion_collected',
+      cauldronIndex: event.cauldronIndex,
+      cauldronNumber: event.cauldronNumber,
       potion: event.potion,
       quantity: event.quantity,
     });
@@ -625,14 +633,39 @@ export class GameplayFacade {
 
   claimPersonalTaskReward(periodType, taskId) {
     const result = this.personalTasksFacade.claimTaskReward(periodType, taskId);
+    this.publishPersonalTaskRewardEvent(result);
     this.publishAndSaveSnapshot();
     return result;
   }
 
   claimPersonalTaskFullClearReward(periodType) {
     const result = this.personalTasksFacade.claimFullClearReward(periodType);
+    this.publishPersonalTaskRewardEvent(result);
     this.publishAndSaveSnapshot();
     return result;
+  }
+
+  publishPersonalTaskRewardEvent(result) {
+    if (!result?.ok || !result.changed) {
+      return;
+    }
+
+    const coin = Math.max(0, Math.floor(Number(result.coin) || 0));
+    const crystal = Math.max(0, Math.floor(Number(result.crystal) || 0));
+
+    if (coin <= 0 && crystal <= 0) {
+      return;
+    }
+
+    this.rewardEventManager.publish({
+      type: 'personal_task_reward_claimed',
+      periodType: result.periodType,
+      taskId: result.taskId,
+      label: result.label,
+      fullClear: result.fullClear === true,
+      coin,
+      crystal,
+    });
   }
 
   recordWorldNoticeAction(actionType, quantity = 1, detail = {}) {
@@ -1159,6 +1192,10 @@ export class GameplayFacade {
     return this.stateObserverManager.subscribe(listener);
   }
 
+  subscribeFrameResources(listener) {
+    return this.frameResourceObserverManager.subscribe(listener);
+  }
+
   subscribeRewardEvents(listener) {
     return this.rewardEventManager.subscribe(listener);
   }
@@ -1253,6 +1290,8 @@ export class GameplayFacade {
     }
 
     this.lastFrameSnapshotPublishTime = time;
+    this.publishFrameResourceSnapshot();
+
     const snapshotKey = this.getFrameSnapshotKey();
     const shouldRefresh = this.shouldRefreshFrameSnapshot(time, hasTimerWork);
 
@@ -1274,32 +1313,69 @@ export class GameplayFacade {
     this.lastFrameSnapshotKey = frameSnapshotKey;
     this.lastFrameSnapshotBuildTime = frameTime;
     this.lastFrameHadTimerWork = hasTimerWork;
+    this.lastFrameResourceSnapshotKey = this.getFrameResourceSnapshotKey();
     this.stateObserverManager.publish(snapshot);
   }
 
   getFrameSnapshotKey() {
     const mana = this.manaFacade.getSnapshot();
+    const current = Number(mana.current) || 0;
+    const cap = Number(mana.cap) || 0;
+
     return JSON.stringify({
-      manaCurrent: Math.floor(Number(mana.current) || 0),
-      manaCap: Number(mana.cap) || 0,
-      manaPerSecond: Number(mana.perSecond) || 0,
+      manaCapped: cap > 0 && current >= cap,
+      manaCap: cap,
       guild: this.guildFacade.getFrameSnapshotKey(),
     });
   }
 
   shouldRefreshFrameSnapshot(time, hasTimerWork = this.hasFrameTimerWork()) {
-    if (!hasTimerWork) {
-      return false;
-    }
-
-    if (!Number.isFinite(this.lastFrameSnapshotBuildTime)) {
-      return true;
-    }
-
     return (
+      hasTimerWork &&
       time >= this.lastFrameSnapshotBuildTime &&
       time - this.lastFrameSnapshotBuildTime >= GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS
     );
+  }
+
+  publishFrameResourceSnapshot() {
+    const frameResourceSnapshotKey = this.getFrameResourceSnapshotKey();
+
+    if (frameResourceSnapshotKey === this.lastFrameResourceSnapshotKey) {
+      return false;
+    }
+
+    this.lastFrameResourceSnapshotKey = frameResourceSnapshotKey;
+    this.frameResourceObserverManager.publish(this.getFrameResourceSnapshot());
+    return true;
+  }
+
+  getFrameResourceSnapshot() {
+    return {
+      mana: this.manaFacade.getSnapshot(),
+      coin: this.coinFacade.getSnapshot(),
+      crystal: this.crystalFacade.getSnapshot(),
+      emerald: this.emeraldFacade.getSnapshot(),
+      ruby: this.rubyFacade.getSnapshot(),
+      tasks: {
+        currentLevel: this.tasksFacade.getPersistenceSnapshot().currentLevel,
+      },
+    };
+  }
+
+  getFrameResourceSnapshotKey() {
+    const resources = this.getFrameResourceSnapshot();
+    const mana = resources.mana ?? {};
+
+    return JSON.stringify({
+      manaCurrent: Math.floor(Number(mana.current) || 0),
+      manaCap: Number(mana.cap) || 0,
+      manaPerSecond: Number(mana.perSecond) || 0,
+      coin: Math.floor(Number(resources.coin?.current) || 0),
+      crystal: Math.floor(Number(resources.crystal?.current) || 0),
+      emerald: Math.floor(Number(resources.emerald?.current) || 0),
+      ruby: Math.floor(Number(resources.ruby?.current) || 0),
+      level: Math.floor(Number(resources.tasks?.currentLevel) || 1),
+    });
   }
 
   getCurrentFrameTime() {
@@ -1311,7 +1387,37 @@ export class GameplayFacade {
     return (
       this.brewingFacade.hasFrameTimerWork() ||
       this.gardenFacade.hasFrameTimerWork() ||
-      this.researchFacade.hasFrameTimerWork()
+      this.researchFacade.hasFrameTimerWork() ||
+      this.shopFacade.hasFrameTimerWork() ||
+      this.automationFacade.hasFrameTimerWork()
+    );
+  }
+
+  getNextGameplayTickDelayMs() {
+    if (this.hasFrameTimerWork()) {
+      return GAMEPLAY_ACTIVE_TICK_DELAY_MS;
+    }
+
+    return this.getNextManaGenerationTickDelayMs();
+  }
+
+  getNextManaGenerationTickDelayMs() {
+    const mana = this.manaFacade.getSnapshot();
+    const current = Number(mana.current) || 0;
+    const cap = Number(mana.cap) || 0;
+    const perSecond = Number(mana.perSecond) || 0;
+
+    if (cap <= 0 || perSecond <= 0 || current >= cap) {
+      return null;
+    }
+
+    const nextVisibleCurrent = Math.min(cap, Math.floor(current) + 1);
+    const missingMana = Math.max(0, nextVisibleCurrent - current);
+    const delayMs = Math.ceil((missingMana / perSecond) * 1_000);
+
+    return Math.max(
+      GAMEPLAY_MIN_RESOURCE_TICK_DELAY_MS,
+      Math.min(GAMEPLAY_MAX_RESOURCE_TICK_DELAY_MS, delayMs),
     );
   }
 

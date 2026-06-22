@@ -20,6 +20,57 @@ function createGameplayFacadeFake(snapshot) {
 }
 
 describe('BrewingCauldronManager', () => {
+  it('adds herbs by click without exposing drag/drop affordances', () => {
+    const addCalls = [];
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 3,
+            availableQuantity: 3,
+          },
+        ],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: {
+        ...createGameplayFacadeFake(snapshot),
+        addBrewingIngredient: (itemTypeId, cauldronIndex) => {
+          addCalls.push([itemTypeId, cauldronIndex]);
+          return { ok: true };
+        },
+      },
+    });
+
+    manager.mount(parent);
+
+    const herbButton = parent.querySelector('.brewing-page__herb-button');
+
+    expect(herbButton.draggable).toBe(false);
+
+    herbButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(addCalls).toEqual([[1001, 0]]);
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('anchors herb notification dots to the herb name instead of the quantity edge', () => {
     const herbLabelRule = baseCss.match(
       /\.brewing-page__herb-label\[data-notification="true"\]\s*\{(?<body>[^}]*)\}/,
@@ -284,6 +335,115 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
+  it('labels the recipe opener as change recipe only after a recipe is selected', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    let selectedRecipeKey = null;
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => selectedRecipeKey,
+    });
+
+    manager.mount(parent);
+
+    const button = parent.querySelector('.brewing-page__cauldron-select-recipe-text');
+
+    expect(button?.textContent).toBe('select recipe');
+    expect(button?.getAttribute('aria-label')).toBe('open select recipe for cauldron 1');
+
+    selectedRecipeKey = 'manaTonic';
+    manager.render(snapshot);
+
+    expect(button?.textContent).toBe('change recipe');
+    expect(button?.getAttribute('aria-label')).toBe('open change recipe for cauldron 1');
+
+    selectedRecipeKey = null;
+    manager.render(snapshot);
+
+    expect(button?.textContent).toBe('select recipe');
+    expect(button?.getAttribute('aria-label')).toBe('open select recipe for cauldron 1');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('renders the selected recipe potion icon inside the cauldron', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => 'manaTonic',
+    });
+
+    manager.mount(parent);
+
+    const cauldron = parent.querySelector('.brewing-page__cauldron');
+    const icon = parent.querySelector('.brewing-page__cauldron-potion-icon');
+    const image = parent.querySelector('.brewing-page__cauldron-potion-icon-image');
+
+    expect(cauldron?.classList.contains('has-potion-icon')).toBe(true);
+    expect(icon?.hidden).toBe(false);
+    expect(icon?.dataset.potionIconKey).toBe('manaTonic');
+    expect(image?.dataset.assetAtlasFrame).toBe('potion:manaTonic');
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('offers fill recipe when a remembered recipe can be staged into an empty cauldron', () => {
     const manager = new BrewingCauldronManager();
     const brewing = {
@@ -407,10 +567,13 @@ describe('BrewingCauldronManager', () => {
 
     const items = parent.querySelector('.brewing-page__cauldron-items');
     const active = parent.querySelector('.brewing-page__active-brew');
+    const icon = parent.querySelector('.brewing-page__cauldron-potion-icon');
 
     expect(items?.hidden).toBe(true);
     expect(active?.hidden).toBe(false);
     expect(active?.textContent).toContain('brewing mana tonic');
+    expect(icon?.hidden).toBe(false);
+    expect(icon?.dataset.potionIconKey).toBe('manaTonic');
 
     snapshot.brewing.activeBrew = null;
     snapshot.brewing.canAddIngredient = true;
@@ -418,6 +581,7 @@ describe('BrewingCauldronManager', () => {
 
     expect(items?.hidden).toBe(false);
     expect(active?.hidden).toBe(true);
+    expect(icon?.hidden).toBe(true);
 
     manager.unmount();
     parent.remove();

@@ -403,26 +403,26 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-coin.png"
   },
   "resource:crystal": {
-    "x": 1862,
+    "x": 1770,
     "y": 715,
-    "width": 52,
+    "width": 68,
     "height": 88,
-    "originalWidth": 52,
+    "originalWidth": 68,
     "originalHeight": 88,
     "source": "src/assets/icons/icon-crystal.png"
   },
   "resource:emerald": {
-    "x": 1946,
+    "x": 1870,
     "y": 715,
-    "width": 50,
+    "width": 65,
     "height": 88,
-    "originalWidth": 50,
+    "originalWidth": 65,
     "originalHeight": 88,
     "source": "src/assets/icons/icon-emerald.png"
   },
   "resource:mana": {
-    "x": 1770,
-    "y": 715,
+    "x": 32,
+    "y": 875,
     "width": 60,
     "height": 88,
     "originalWidth": 60,
@@ -430,7 +430,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-mana-drop.png"
   },
   "resource:ruby": {
-    "x": 32,
+    "x": 124,
     "y": 875,
     "width": 88,
     "height": 85,

@@ -84,6 +84,72 @@ describe('ScrollCueManager', () => {
     manager.unmount();
   });
 
+  it('supports inline cues without adding a sibling progress rail', async () => {
+    const root = document.createElement('div');
+    const panel = document.createElement('div');
+    panel.className = 'style-page-scroll';
+    panel.dataset.scrollCueProgress = 'inline';
+    root.append(panel);
+    document.body.append(root);
+
+    Object.defineProperty(panel, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(panel, 'scrollHeight', { value: 300, configurable: true });
+    panel.scrollTop = 100;
+
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    await flushAnimationFrame();
+
+    expect(panel.classList.contains('style-scroll-cue')).toBe(true);
+    expect(panel.classList.contains('has-scroll-overflow')).toBe(true);
+    expect(panel.classList.contains('has-bottom-overflow')).toBe(true);
+    expect(panel.style.getPropertyValue('--style-scroll-progress')).toBe('50%');
+    expect(panel.nextElementSibling).toBeNull();
+
+    panel.scrollTop = 200;
+    panel.dispatchEvent(new window.Event('scroll'));
+    await flushAnimationFrame();
+
+    expect(panel.style.getPropertyValue('--style-scroll-progress')).toBe('100%');
+    expect(panel.classList.contains('has-bottom-overflow')).toBe(false);
+
+    manager.unmount();
+
+    expect(panel.classList.contains('style-scroll-cue')).toBe(false);
+    expect(panel.style.getPropertyValue('--style-scroll-progress')).toBe('');
+  });
+
+  it('standardizes page scroll cuts in CSS', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
+    const pageScrollRule = baseCss.match(
+      /\.style-page-scroll\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const researchRule = baseCss.match(
+      /\.research-page__box-list\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rootRule).toMatch(/--style-page-scroll-cut:\s*6px;/);
+    expect(rootRule).toMatch(
+      /--style-page-scroll-padding-top:\s*var\(--style-page-scroll-cut\);/,
+    );
+    expect(rootRule).toMatch(
+      /--style-page-scroll-padding-bottom:\s*var\(--style-page-scroll-cut\);/,
+    );
+    expect(pageScrollRule).toMatch(
+      /scroll-padding-top:\s*var\(--style-scroll-padding-top\);/,
+    );
+    expect(pageScrollRule).toMatch(
+      /scroll-padding-bottom:\s*var\(--style-scroll-padding-bottom\);/,
+    );
+    expect(researchRule).toMatch(
+      /padding-top:\s*var\(--style-page-scroll-padding-top\);/,
+    );
+    expect(researchRule).toMatch(
+      /padding-bottom:\s*var\(--style-page-scroll-padding-bottom\);/,
+    );
+  });
+
   it('registers the personal tasks popup frame for shared scroll progress', async () => {
     const root = document.createElement('div');
     const frame = document.createElement('div');

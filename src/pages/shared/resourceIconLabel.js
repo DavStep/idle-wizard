@@ -1,4 +1,5 @@
 import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
+import { setResourceColor } from './resourceColor.js';
 
 export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
 
@@ -45,6 +46,7 @@ export function createResourceIconLabel(resource, label = resource) {
 
   const root = document.createElement('span');
   root.className = `${RESOURCE_ICON_LABEL_CLASS} ${RESOURCE_ICON_LABEL_CLASS}--${normalizedResource}`;
+  setResourceColor(root, normalizedResource);
 
   const icon = createAssetAtlasSprite(`${RESOURCE_ICON_LABEL_CLASS}__icon`, frameName);
 

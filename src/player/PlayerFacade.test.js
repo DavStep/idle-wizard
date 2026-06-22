@@ -132,6 +132,9 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');
 
+    playerFacade.setIconMode('no icons');
+    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+
     playerFacade.setIconMode('unknown');
     expect(playerFacade.getSnapshot().iconMode).toBe('none');
   });

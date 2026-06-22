@@ -82,8 +82,59 @@ export class BrewingSnapshotManager {
 
   getCauldronSnapshot(cauldronIndex = 0, herbs = this.getHerbSnapshots()) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const activeBrew =
+      this.brewingProcessEntityManager.getActiveBrewSnapshot(safeCauldronIndex);
+
+    if (activeBrew) {
+      return {
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
+        ingredients: [],
+        match: null,
+        buttonLabel: 'brew',
+        manaCost: this.brewingBalanceManager.getWastedBrewManaCost(),
+        yieldMultiplier: this.getActiveBrewYieldMultiplier(activeBrew),
+        canAddIngredient: false,
+        canBrew: false,
+        hasEnoughIngredients: false,
+        hasEnoughMana: false,
+        activeBrew,
+        canStartBottling: Boolean(activeBrew.canStartBottling),
+        canCollectPotion: Boolean(activeBrew.canCollect),
+        maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
+        autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
+        autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
+        herbs,
+      };
+    }
+
     const ingredients =
       this.brewingCauldronEntityManager.getIngredientSnapshots(safeCauldronIndex);
+
+    if (ingredients.length === 0) {
+      return {
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
+        ingredients,
+        match: null,
+        buttonLabel: 'brew',
+        manaCost: this.brewingBalanceManager.getWastedBrewManaCost(),
+        yieldMultiplier: 1,
+        canAddIngredient:
+          ingredients.length < this.brewingBalanceManager.getMaxCauldronIngredients(),
+        canBrew: false,
+        hasEnoughIngredients: true,
+        hasEnoughMana: true,
+        activeBrew: null,
+        canStartBottling: false,
+        canCollectPotion: false,
+        maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
+        autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
+        autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
+        herbs,
+      };
+    }
+
     const ingredientItemTypeIds = ingredients.map((ingredient) => ingredient.itemTypeId);
     const recipe = this.brewingRecipeMatchManager.getMatch(ingredientItemTypeIds);
     const recipeDiscoverable = recipe
@@ -97,8 +148,6 @@ export class BrewingSnapshotManager {
     const baseManaCost =
       visibleRecipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
     const manaCost = baseManaCost * yieldMultiplier;
-    const activeBrew =
-      this.brewingProcessEntityManager.getActiveBrewSnapshot(safeCauldronIndex);
     const hasEnoughIngredients = this.hasEnoughIngredients(
       this.repeatItemTypeIds(ingredientItemTypeIds, yieldMultiplier),
     );
@@ -146,9 +195,14 @@ export class BrewingSnapshotManager {
   }
 
   getHerbSnapshots() {
+    const stagedQuantityByItemTypeId =
+      this.brewingCauldronEntityManager.getIngredientCountsByItemTypeId?.(null) ??
+      null;
+
     return this.itemsFacade.getHerbDefinitions().map((herb) => {
       const quantity = this.itemsFacade.getItemQuantity(herb.id);
       const stagedQuantity =
+        stagedQuantityByItemTypeId?.get(herb.id) ??
         this.brewingCauldronEntityManager.getIngredientCountByItemTypeId(herb.id);
 
       return {
@@ -217,6 +271,11 @@ export class BrewingSnapshotManager {
   repeatItemTypeIds(itemTypeIds = [], multiplier = 1) {
     const safeMultiplier = Math.max(1, Math.floor(Number(multiplier) || 1));
     return Array.from({ length: safeMultiplier }, () => itemTypeIds).flat();
+  }
+
+  getActiveBrewYieldMultiplier(activeBrew = {}) {
+    const resultQuantity = Math.floor(Number(activeBrew.resultQuantity));
+    return Number.isInteger(resultQuantity) && resultQuantity > 0 ? resultQuantity : 1;
   }
 
   normalizeCauldronIndex(cauldronIndex) {

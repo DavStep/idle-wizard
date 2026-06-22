@@ -8,7 +8,10 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
-import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import {
+  NOTIFICATION_TONE_ORANGE,
+  setNotificationBadge,
+} from '../../shared/notificationBadge.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { formatCoinPriceText, normalizeCoinPrice } from '../../../shared/coinPrice.js';
 
@@ -682,7 +685,11 @@ export class ShopShelfManager {
         refs.itemValue.removeAttribute('aria-label');
         refs.itemValue.removeAttribute('tabindex');
         refs.itemValue.removeAttribute('aria-pressed');
-        setNotificationBadge(row, !slot.sellItemTypeId && hasSellableItem);
+        setNotificationBadge(
+          row,
+          !slot.sellItemTypeId && hasSellableItem,
+          NOTIFICATION_TONE_ORANGE,
+        );
         setNotificationBadge(unlockButton, false);
         this.renderSlotSellValue(refs, slot, shelf, snapshot);
         return;
@@ -833,6 +840,7 @@ export class ShopShelfManager {
             item.quantity > 0 &&
             this.canSelectSellItem(snapshot, item),
         ),
+        NOTIFICATION_TONE_ORANGE,
       );
     }
 
@@ -875,7 +883,11 @@ export class ShopShelfManager {
         'aria-pressed',
         this.draftSellItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
-      setNotificationBadge(button, canSelectItem && item.quantity > 0);
+      setNotificationBadge(
+        button,
+        canSelectItem && item.quantity > 0,
+        NOTIFICATION_TONE_ORANGE,
+      );
     }
 
     this.refs.sellControls.itemList.hidden = false;

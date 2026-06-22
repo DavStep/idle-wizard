@@ -316,6 +316,8 @@ export class BrewingFacade {
 
     if (result.ok) {
       this.onBrewComplete?.({
+        cauldronIndex: result.cauldronIndex,
+        cauldronNumber: result.cauldronNumber,
         potion: result.potion,
         quantity: result.quantity,
       });

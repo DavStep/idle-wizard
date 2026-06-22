@@ -123,7 +123,8 @@ export class ShopMarketTabsManager {
 
   createPanel(tab) {
     const panel = document.createElement('section');
-    panel.className = `shop-page__market-panel shop-page__market-panel--${tab.id}`;
+    panel.className = `shop-page__market-panel style-page-scroll shop-page__market-panel--${tab.id}`;
+    panel.dataset.scrollCueProgress = 'inline';
     panel.setAttribute('role', 'tabpanel');
     panel.setAttribute('aria-label', tab.label);
     return panel;

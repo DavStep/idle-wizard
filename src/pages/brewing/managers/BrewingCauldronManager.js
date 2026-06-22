@@ -8,11 +8,10 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
+import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
-
-const TOUCH_DRAG_DISTANCE = 8;
-const NATIVE_HERB_DRAG_QUERY = '(hover: hover) and (pointer: fine)';
 
 export class BrewingCauldronManager {
   constructor({
@@ -39,12 +38,7 @@ export class BrewingCauldronManager {
     this.selectedCauldronIndex = 0;
     this.herbsExpanded = false;
     this.message = null;
-    this.draggedItemTypeId = null;
-    this.pointerDrag = null;
     this.suppressNextClick = false;
-    this.handleDocumentPointerMove = (event) => this.onDocumentPointerMove(event);
-    this.handleDocumentPointerUp = (event) => this.onDocumentPointerUp(event);
-    this.handleDocumentPointerCancel = () => this.cancelPointerDrag();
   }
 
   mount(parent) {
@@ -57,7 +51,8 @@ export class BrewingCauldronManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'brewing-page__workbench';
+    this.root.className = 'brewing-page__workbench style-page-scroll';
+    this.root.dataset.scrollCueProgress = 'inline';
     this.root.setAttribute('aria-label', 'Brewing workbench');
 
     this.refs.herbs = this.createHerbsBox();
@@ -75,8 +70,6 @@ export class BrewingCauldronManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
-    this.removePointerDragListeners();
-    this.pointerDrag?.ghost?.remove();
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -86,8 +79,6 @@ export class BrewingCauldronManager {
     this.cauldronRefsSignature = '';
     this.herbsExpanded = false;
     this.message = null;
-    this.draggedItemTypeId = null;
-    this.pointerDrag = null;
     this.suppressNextClick = false;
   }
 
@@ -131,11 +122,6 @@ export class BrewingCauldronManager {
     root.addEventListener('click', (event) =>
       this.onCauldronBoxClick(event, safeCauldronIndex),
     );
-    root.addEventListener('dragover', (event) =>
-      this.onDragOver(event, safeCauldronIndex),
-    );
-    root.addEventListener('dragleave', () => this.onDragLeave(safeCauldronIndex));
-    root.addEventListener('drop', (event) => this.onDrop(event, safeCauldronIndex));
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
@@ -178,6 +164,11 @@ export class BrewingCauldronManager {
     const items = document.createElement('div');
     items.className = 'brewing-page__cauldron-items';
 
+    const potionIcon = document.createElement('div');
+    potionIcon.className = 'brewing-page__cauldron-potion-icon';
+    potionIcon.setAttribute('aria-hidden', 'true');
+    potionIcon.hidden = true;
+
     const status = document.createElement('div');
     status.className = 'brewing-page__cauldron-status';
 
@@ -206,7 +197,17 @@ export class BrewingCauldronManager {
 
     activeProgress.append(activeProgressFill, activeProgressText);
     active.append(activeText, activeProgress);
-    root.append(title, count, guide, status, items, active, actions.root, selectRecipeButton);
+    root.append(
+      title,
+      count,
+      guide,
+      potionIcon,
+      status,
+      items,
+      active,
+      actions.root,
+      selectRecipeButton,
+    );
     return {
       cauldronIndex: safeCauldronIndex,
       root,
@@ -216,6 +217,7 @@ export class BrewingCauldronManager {
       recipeLabel,
       recipeValue,
       guideSequence,
+      potionIcon,
       status,
       selectRecipeButton,
       items,
@@ -483,17 +485,9 @@ export class BrewingCauldronManager {
       const button = document.createElement('button');
       button.className = 'brewing-page__herb-button';
       button.type = 'button';
-      button.draggable = false;
       button.dataset.tutorialId = `brewing:herb:${herb.key}`;
       setResourceColor(button, 'herb');
       button.addEventListener('click', (event) => this.onHerbButtonClick(event, herb.itemTypeId));
-      button.addEventListener('dragstart', (event) =>
-        this.onDragStart(event, herb.itemTypeId),
-      );
-      button.addEventListener('dragend', () => this.onDragEnd());
-      button.addEventListener('pointerdown', (event) =>
-        this.onPointerDown(event, herb.itemTypeId),
-      );
 
       const label = document.createElement('span');
       label.className = 'brewing-page__herb-label row_key';
@@ -526,7 +520,6 @@ export class BrewingCauldronManager {
       setItemIconLabel(refs.label, 'herb', herb.key);
       this.setText(refs.quantity, String(herb.availableQuantity));
       this.setDisabled(refs.button, disabled);
-      this.setDraggable(refs.button, !disabled && this.canUseNativeHerbDrag());
       this.setAttribute(refs.button, 'aria-disabled', disabled ? 'true' : 'false');
       this.setAttribute(refs.button, 'aria-label', `add ${herb.label} to cauldron`);
       setNotificationBadge(refs.button, false);
@@ -585,6 +578,7 @@ export class BrewingCauldronManager {
     const statusText = this.formatCauldronStatus(brewing);
     this.setHidden(refs.status, statusText === '');
     this.setText(refs.status, statusText);
+    this.renderPotionIcon(refs, brewing);
     this.renderCauldronGuide(refs, brewing);
     this.renderCauldronItems(refs, brewing);
 
@@ -603,7 +597,7 @@ export class BrewingCauldronManager {
         ? brewing.activeBrew.remainingMs
         : 0;
       setProgressFill(refs.activeProgressFill, progressRatio, {
-        smooth: remainingMs > 0,
+        smooth: true,
         remainingMs,
       });
       this.setText(refs.activeProgressText, '');
@@ -627,7 +621,8 @@ export class BrewingCauldronManager {
 
     refs.root.classList.add('is-locked');
     refs.root.classList.toggle('is-buyable', isBuyable);
-    refs.root.classList.remove('is-current', 'is-drag-over');
+    refs.root.classList.remove('is-current');
+    this.renderPotionIcon(refs, null);
     this.setHidden(refs.count, true);
     this.setHidden(refs.status, true);
     this.setText(refs.status, '');
@@ -693,6 +688,52 @@ export class BrewingCauldronManager {
     }
 
     this.hideExtraIngredientRows(refs, ingredientGroups.length);
+  }
+
+  renderPotionIcon(refs, brewing) {
+    const iconKey = this.getPotionIconKey(brewing);
+
+    refs.root.classList.toggle('has-potion-icon', Boolean(iconKey));
+    this.setHidden(refs.potionIcon, !iconKey);
+
+    if (!iconKey) {
+      refs.potionIcon.replaceChildren();
+      delete refs.potionIcon.dataset.potionIconKey;
+      return;
+    }
+
+    if (refs.potionIcon.dataset.potionIconKey === iconKey) {
+      return;
+    }
+
+    const frameName = getPotionIconFrameName(iconKey);
+    const icon = createAssetAtlasSprite(
+      'brewing-page__cauldron-potion-icon-image',
+      frameName,
+    );
+
+    if (!icon) {
+      this.setHidden(refs.potionIcon, true);
+      refs.root.classList.remove('has-potion-icon');
+      refs.potionIcon.replaceChildren();
+      delete refs.potionIcon.dataset.potionIconKey;
+      return;
+    }
+
+    refs.potionIcon.replaceChildren(icon);
+    refs.potionIcon.dataset.potionIconKey = iconKey;
+  }
+
+  getPotionIconKey(brewing) {
+    if (!brewing) {
+      return null;
+    }
+
+    if (brewing.activeBrew?.key) {
+      return brewing.activeBrew.key;
+    }
+
+    return brewing.selectedRecipe?.key ?? null;
   }
 
   hideExtraIngredientRows(cauldronRefs, visibleCount) {
@@ -1166,13 +1207,14 @@ export class BrewingCauldronManager {
       return;
     }
 
-    this.setText(selectRecipeButton, 'select recipe');
+    const label = brewing.selectedRecipe ? 'change recipe' : 'select recipe';
+    this.setText(selectRecipeButton, label);
     this.setDisabled(selectRecipeButton, false);
     this.removeAttribute(selectRecipeButton, 'aria-hidden');
     this.setAttribute(
       selectRecipeButton,
       'aria-label',
-      `open select recipe for cauldron ${brewing.cauldronNumber ?? brewing.cauldronIndex + 1}`,
+      `open ${label} for cauldron ${brewing.cauldronNumber ?? brewing.cauldronIndex + 1}`,
     );
 
     if (brewing.autoBrewAvailable === true) {
@@ -1487,208 +1529,6 @@ export class BrewingCauldronManager {
     this.onPrimaryAction(safeCauldronIndex);
   }
 
-  onDragStart(event, itemTypeId) {
-    this.draggedItemTypeId = itemTypeId;
-    event.dataTransfer?.setData('text/plain', String(itemTypeId));
-    event.dataTransfer?.setDragImage?.(event.currentTarget, 8, 8);
-  }
-
-  onDragEnd() {
-    this.draggedItemTypeId = null;
-    this.clearCauldronDragState();
-  }
-
-  onDragOver(event, cauldronIndex = this.selectedCauldronIndex) {
-    if (this.isCauldronLocked(cauldronIndex)) {
-      return;
-    }
-
-    event.preventDefault();
-    this.cauldronRefs.get(cauldronIndex)?.root.classList.add('is-drag-over');
-  }
-
-  onDragLeave(cauldronIndex = this.selectedCauldronIndex) {
-    this.cauldronRefs.get(cauldronIndex)?.root.classList.remove('is-drag-over');
-  }
-
-  onDrop(event, cauldronIndex = this.selectedCauldronIndex) {
-    event.preventDefault();
-    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
-
-    if (this.isCauldronLocked(safeCauldronIndex)) {
-      return;
-    }
-
-    const itemTypeId = Number(event.dataTransfer?.getData('text/plain') || this.draggedItemTypeId);
-    this.cauldronRefs.get(safeCauldronIndex)?.root.classList.remove('is-drag-over');
-
-    if (Number.isInteger(itemTypeId) && itemTypeId > 0) {
-      this.selectCauldron(safeCauldronIndex);
-      this.onAddIngredient(itemTypeId, safeCauldronIndex);
-    }
-
-    this.draggedItemTypeId = null;
-  }
-
-  onPointerDown(event, itemTypeId) {
-    if (
-      event.pointerType === 'mouse' ||
-      event.currentTarget.disabled ||
-      this.shouldKeepHerbListScrollNative(event.currentTarget)
-    ) {
-      return;
-    }
-
-    this.pointerDrag = {
-      itemTypeId,
-      source: event.currentTarget,
-      startX: event.clientX,
-      startY: event.clientY,
-      dragging: false,
-      ghost: null,
-    };
-    document.addEventListener('pointermove', this.handleDocumentPointerMove);
-    document.addEventListener('pointerup', this.handleDocumentPointerUp);
-    document.addEventListener('pointercancel', this.handleDocumentPointerCancel);
-  }
-
-  shouldKeepHerbListScrollNative(target) {
-    const rows = target?.closest?.('.brewing-page__herb-rows');
-    return Boolean(rows && rows.scrollHeight > rows.clientHeight + 1);
-  }
-
-  onDocumentPointerMove(event) {
-    if (!this.pointerDrag) {
-      return;
-    }
-
-    if (!this.pointerDrag.dragging) {
-      const deltaX = event.clientX - this.pointerDrag.startX;
-      const deltaY = event.clientY - this.pointerDrag.startY;
-      const distance = Math.hypot(deltaX, deltaY);
-
-      if (distance < TOUCH_DRAG_DISTANCE) {
-        return;
-      }
-
-      if (Math.abs(deltaY) > Math.abs(deltaX)) {
-        this.cancelPointerDrag();
-        return;
-      }
-
-      this.startPointerDrag(event);
-    }
-
-    event.preventDefault();
-    this.moveGhost(event.clientX, event.clientY);
-    this.syncPointerDragTarget(event.clientX, event.clientY);
-  }
-
-  onDocumentPointerUp(event) {
-    if (!this.pointerDrag) {
-      return;
-    }
-
-    const { itemTypeId, dragging, ghost } = this.pointerDrag;
-    const targetCauldronIndex = dragging
-      ? this.getCauldronIndexAtPoint(event.clientX, event.clientY)
-      : null;
-    const droppedInCauldron = targetCauldronIndex !== null;
-    ghost?.remove();
-    this.clearCauldronDragState();
-    this.pointerDrag = null;
-    this.removePointerDragListeners();
-
-    if (dragging) {
-      event.preventDefault();
-      this.suppressNextClick = true;
-      window.setTimeout(() => {
-        this.suppressNextClick = false;
-      }, 0);
-    }
-
-    if (droppedInCauldron) {
-      this.selectCauldron(targetCauldronIndex);
-      this.onAddIngredient(itemTypeId, targetCauldronIndex);
-    }
-  }
-
-  cancelPointerDrag() {
-    this.pointerDrag?.ghost?.remove();
-    this.clearCauldronDragState();
-    this.pointerDrag = null;
-    this.removePointerDragListeners();
-  }
-
-  removePointerDragListeners() {
-    document.removeEventListener('pointermove', this.handleDocumentPointerMove);
-    document.removeEventListener('pointerup', this.handleDocumentPointerUp);
-    document.removeEventListener('pointercancel', this.handleDocumentPointerCancel);
-  }
-
-  startPointerDrag(event) {
-    const ghost = this.pointerDrag.source.cloneNode(true);
-    ghost.className = 'brewing-page__drag-ghost';
-    document.body.append(ghost);
-    this.pointerDrag.dragging = true;
-    this.pointerDrag.ghost = ghost;
-    this.moveGhost(event.clientX, event.clientY);
-  }
-
-  moveGhost(clientX, clientY) {
-    if (!this.pointerDrag?.ghost) {
-      return;
-    }
-
-    this.pointerDrag.ghost.style.left = `${clientX + 6}px`;
-    this.pointerDrag.ghost.style.top = `${clientY + 6}px`;
-  }
-
-  canUseNativeHerbDrag() {
-    const view = this.root?.ownerDocument?.defaultView ?? globalThis.window;
-
-    if (typeof view?.matchMedia !== 'function') {
-      return true;
-    }
-
-    return view.matchMedia(NATIVE_HERB_DRAG_QUERY).matches;
-  }
-
-  syncPointerDragTarget(clientX, clientY) {
-    const targetCauldronIndex = this.getCauldronIndexAtPoint(clientX, clientY);
-
-    for (const [cauldronIndex, refs] of this.cauldronRefs.entries()) {
-      refs.root.classList.toggle('is-drag-over', cauldronIndex === targetCauldronIndex);
-    }
-  }
-
-  clearCauldronDragState() {
-    for (const refs of this.cauldronRefs.values()) {
-      refs.root.classList.remove('is-drag-over');
-    }
-  }
-
-  getCauldronIndexAtPoint(clientX, clientY) {
-    for (const [cauldronIndex, refs] of this.cauldronRefs.entries()) {
-      if (refs.root.classList.contains('is-locked')) {
-        continue;
-      }
-
-      const rect = refs.root.getBoundingClientRect();
-
-      if (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      ) {
-        return cauldronIndex;
-      }
-    }
-
-    return null;
-  }
-
   formatResultMessage(result) {
     if (result.reason === 'research_not_unlocked') {
       return 'research not yet unlocked';
@@ -1950,12 +1790,6 @@ export class BrewingCauldronManager {
   setDisabled(element, disabled) {
     if (element.disabled !== disabled) {
       element.disabled = disabled;
-    }
-  }
-
-  setDraggable(element, draggable) {
-    if (element.draggable !== draggable) {
-      element.draggable = draggable;
     }
   }
 

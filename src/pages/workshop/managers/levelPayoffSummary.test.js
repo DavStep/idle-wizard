@@ -30,14 +30,14 @@ const snapshot = {
           maxNpcMarketStands: 0,
           maxPlayerMarketStands: 0,
           maxManaCap: 100,
-          manaPerSecond: 1.25,
+          manaPerSecond: 2,
         },
         effects: [
           'max garden tiles 3',
           'max cauldrons 2',
           'allows researching "Mana Cap"',
           'max mana cap 100',
-          'mana regen 1.25/sec',
+          'mana regen 2/sec',
           'crystal reward 1',
         ],
       },
@@ -49,13 +49,13 @@ const snapshot = {
           maxNpcMarketStands: 0,
           maxPlayerMarketStands: 0,
           maxManaCap: 150,
-          manaPerSecond: 1.5,
+          manaPerSecond: 3,
         },
         effects: [
           'max cauldrons 3',
           'allows researching "Still Fake"',
           'max mana cap 150',
-          'mana regen 1.5/sec',
+          'mana regen 3/sec',
           'crystal reward 1',
         ],
       },
@@ -67,12 +67,12 @@ const snapshot = {
           maxNpcMarketStands: 0,
           maxPlayerMarketStands: 0,
           maxManaCap: 200,
-          manaPerSecond: 1.75,
+          manaPerSecond: 4,
         },
         effects: [
           'max cauldrons 4',
           'max mana cap 200',
-          'mana regen 1.75/sec',
+          'mana regen 4/sec',
           'crystal reward 1',
         ],
       },
@@ -101,8 +101,8 @@ describe('levelPayoffSummary', () => {
       },
       {
         label: 'mana regen',
-        value: '+0.25/sec',
-        notice: '+0.25/sec mana regen',
+        value: '+1/sec',
+        notice: '+1/sec mana regen',
       },
       {
         label: 'crystal',
@@ -129,8 +129,8 @@ describe('levelPayoffSummary', () => {
       },
       {
         label: 'mana regen',
-        value: '+0.25/sec',
-        notice: '+0.25/sec mana regen',
+        value: '+1/sec',
+        notice: '+1/sec mana regen',
       },
       {
         label: 'crystal',
@@ -139,7 +139,7 @@ describe('levelPayoffSummary', () => {
       },
     ]);
     expect(formatLevelUpNotice(3, rows)).toBe(
-      'level 3 reached: research unlocked, leaderboard available, +50 mana cap, +0.25/sec mana regen, +1 crystal',
+      'level 3 reached: research unlocked, leaderboard available, +50 mana cap, +1/sec mana regen, +1 crystal',
     );
   });
 
@@ -160,8 +160,8 @@ describe('levelPayoffSummary', () => {
       },
       {
         label: 'mana regen',
-        value: '+0.25/sec',
-        notice: '+0.25/sec mana regen',
+        value: '+1/sec',
+        notice: '+1/sec mana regen',
       },
       {
         label: 'crystal',
@@ -170,7 +170,7 @@ describe('levelPayoffSummary', () => {
       },
     ]);
     expect(formatLevelUpNotice(4, rows)).toBe(
-      'level 4 reached: brewing unlocked, discoveries available, alliance available, +50 mana cap, +0.25/sec mana regen, +1 crystal',
+      'level 4 reached: brewing unlocked, discoveries available, alliance available, +50 mana cap, +1/sec mana regen, +1 crystal',
     );
   });
 });

@@ -13,6 +13,9 @@ Maincloud backend publish is verified.
 
 ## Preflight
 
+Ask whether to push all current changes, then release. Do not continue until the
+answer is clear.
+
 Start from `main` with a clean or intentionally staged worktree:
 
 ```sh
@@ -59,6 +62,19 @@ This performs:
 5. optional SpacetimeDB Maincloud publish
 6. git commit and push from `main`
 7. Discord changelog, optional feature spotlight, and APK upload
+
+If a Pixel 8 Pro is available for device QA, confirm it is connected before the
+device build:
+
+```sh
+adb devices -l
+```
+
+Then install and run a production Android build on it:
+
+```sh
+npm run android:run:prod
+```
 
 Use explicit modes only when needed:
 

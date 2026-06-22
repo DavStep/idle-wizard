@@ -73,7 +73,7 @@ describe('WorldNoticeFacade', () => {
     });
   });
 
-  it('creates one weekly world notice with event-matched requests', () => {
+  it('creates one weekly world event with event-matched requests', () => {
     const { facade } = createFacade({ level: 4 });
     const snapshot = facade.getSnapshot();
 
@@ -94,7 +94,7 @@ describe('WorldNoticeFacade', () => {
     );
   });
 
-  it('keeps default notices on normal workshop actions instead of raw funding', () => {
+  it('keeps default events on normal workshop actions instead of raw funding', () => {
     for (let weekIndex = 0; weekIndex < 10; weekIndex += 1) {
       const { facade } = createFacade({
         level: 4,
@@ -109,7 +109,7 @@ describe('WorldNoticeFacade', () => {
     }
   });
 
-  it('replaces stale saved funding notices with the current catalog', () => {
+  it('replaces stale saved funding events with the current catalog', () => {
     const { facade } = createFacade({ level: 4 });
     facade.applyPersistenceSnapshot({
       version: 1,
@@ -149,7 +149,7 @@ describe('WorldNoticeFacade', () => {
     );
   });
 
-  it('replaces stale in-memory funding notices from hot reload state', () => {
+  it('replaces stale in-memory funding events from hot reload state', () => {
     const { facade } = createFacade({ level: 4 });
     facade.state.current = {
       version: 1,
@@ -213,6 +213,9 @@ describe('WorldNoticeFacade', () => {
       progressQuantity: brewRequest.requiredQuantity,
     });
     expect(result.pointsAdded).toBeGreaterThan(0);
+    expect(updatedRequest.contributionPoints).toBe(result.pointsAdded);
+    expect(updatedRequest.collectedPointText).toBe(`${result.pointsAdded} points`);
+    expect(updatedRequest.pointText).toBe('25 points each');
     expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(result.pointsAdded);
     expect(facade.getSnapshot().current.leaderboard.qualificationPoints).toBe(2000);
     expect(coinFacade.current).toBe(0);
@@ -241,10 +244,16 @@ describe('WorldNoticeFacade', () => {
         .current.requests.find((request) => request.requestId === brewRequest.requestId)
         .progressQuantity,
     ).toBe(2);
+    expect(
+      facade
+        .getSnapshot()
+        .current.requests.find((request) => request.requestId === brewRequest.requestId)
+        .contributionPoints,
+    ).toBe(50);
     expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(50);
   });
 
-  it('donates coin into explicit manual notice requests', () => {
+  it('donates coin into explicit manual event requests', () => {
     const { facade, coinFacade } = createFacade({ level: 4, coin: 1000 });
     facade.applyPersistenceSnapshot({
       version: 2,
@@ -294,7 +303,7 @@ describe('WorldNoticeFacade', () => {
     expect(coinFacade.current).toBe(1000 - donateRequest.requiredQuantity);
   });
 
-  it('archives resolved notices when the weekly period rolls', () => {
+  it('archives resolved events when the weekly period rolls', () => {
     let nowMs = Date.UTC(2026, 5, 14, 12, 0, 0, 0);
     const { facade } = createFacade({
       level: 4,
