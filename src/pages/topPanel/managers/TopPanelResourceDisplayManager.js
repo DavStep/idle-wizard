@@ -1,4 +1,4 @@
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
@@ -34,16 +34,16 @@ export class TopPanelResourceDisplayManager {
 
     this.latestSnapshot = snapshot;
     const mana = snapshot.mana ?? {};
-    const gold = snapshot.gold?.current ?? 0;
+    const coin = snapshot.coin?.current ?? 0;
     const level = snapshot.tasks?.currentLevel ?? 1;
-    const goldText = formatGoldPriceText(gold);
+    const coinText = formatCoinPriceText(coin);
 
     this.setResourceText(
       this.refs.manaValue,
       `${Math.floor(mana.current ?? 0)}/${mana.cap ?? 0} mana`,
     );
     this.setText(this.refs.manaRateValue, formatManaRate(mana.perSecond));
-    this.setResourceText(this.refs.goldValue, goldText);
+    this.setResourceText(this.refs.coinValue, coinText);
     this.renderContextCurrency(snapshot);
     this.setText(this.refs.levelValue, `level ${level}`);
   }

@@ -96,10 +96,11 @@ export class GuildPanelManager {
     if (!guild.created) {
       return [
         this.createBox('guild charter', [
-          this.createTextRow('cost', `${guild.charterCostGold ?? 1500} gold`),
-          this.createTextRow('gold', `${guild.currentGold ?? 0}`),
+          this.createTextRow('cost', `${guild.charterCostCoin ?? 1500} coin`),
+          this.createTextRow('coin', `${guild.currentCoin ?? 0}`),
           this.createButtonRow('start guild', () => this.showCharterDialog(), {
             disabled: !guild.canCreate,
+            notification: guild.canCreate,
           }),
         ]),
       ];
@@ -283,12 +284,13 @@ export class GuildPanelManager {
     return row;
   }
 
-  createButtonRow(label, onClick, { disabled = false } = {}) {
+  createButtonRow(label, onClick, { disabled = false, notification = false } = {}) {
     const button = document.createElement('button');
     button.className = 'style-button guild-page__wide-button';
     button.type = 'button';
     button.textContent = label;
     button.disabled = disabled;
+    setNotificationBadge(button, notification);
     button.addEventListener('click', onClick);
     return button;
   }
@@ -453,7 +455,7 @@ export class GuildPanelManager {
     const upgrade = document.createElement('button');
     upgrade.className = 'style-button guild-page__wide-button';
     upgrade.type = 'button';
-    upgrade.textContent = next ? `upgrade secretary (${next.costGold})` : 'secretary max';
+    upgrade.textContent = next ? `upgrade secretary (${next.costCoin})` : 'secretary max';
     upgrade.disabled = !this.snapshot.secretary?.canUpgrade;
     upgrade.addEventListener('click', () => this.gameplayFacade?.upgradeGuildSecretary?.());
     form.append(

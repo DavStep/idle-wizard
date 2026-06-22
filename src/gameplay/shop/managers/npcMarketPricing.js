@@ -1,4 +1,4 @@
-import { normalizeGoldPrice, normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
+import { normalizeCoinPrice, normalizePositiveCoinPrice } from '../../../shared/coinPrice.js';
 
 export const NPC_MARKET_BUY_BPS = 8_000;
 export const NPC_MARKET_SELL_BPS = 12_000;
@@ -30,18 +30,18 @@ const DEMAND_WAVE_BPS_BY_SLOT = [
 ];
 
 export function getNpcMarketPriceFromNeed({
-  basePriceGold,
+  basePriceCoin,
   itemKind,
   npcNeed,
   targetNeed,
   volatilityBps,
 } = {}) {
-  const safeBasePriceGold = normalizePositiveGoldPrice(basePriceGold);
+  const safeBasePriceCoin = normalizePositiveCoinPrice(basePriceCoin);
   const safeNeed = normalizeCount(npcNeed);
   const safeTargetNeed = normalizeCount(targetNeed);
 
   if (
-    safeBasePriceGold === null ||
+    safeBasePriceCoin === null ||
     safeNeed === null ||
     safeTargetNeed === null ||
     safeTargetNeed <= 0
@@ -53,27 +53,27 @@ export function getNpcMarketPriceFromNeed({
   const pressure = (safeNeed + softness) / (safeTargetNeed + softness);
   const elasticity = getNpcMarketPriceElasticity({ itemKind, volatilityBps });
 
-  return normalizeGoldPrice(safeBasePriceGold * pressure ** elasticity);
+  return normalizeCoinPrice(safeBasePriceCoin * pressure ** elasticity);
 }
 
-export function getNpcBuyPriceGold(marketPriceGold) {
-  const safeMarketPriceGold = normalizeGoldPrice(marketPriceGold);
+export function getNpcBuyPriceCoin(marketPriceCoin) {
+  const safeMarketPriceCoin = normalizeCoinPrice(marketPriceCoin);
 
-  if (safeMarketPriceGold === null) {
+  if (safeMarketPriceCoin === null) {
     return null;
   }
 
-  return normalizeGoldPrice((safeMarketPriceGold * NPC_MARKET_BUY_BPS) / 10_000);
+  return normalizeCoinPrice((safeMarketPriceCoin * NPC_MARKET_BUY_BPS) / 10_000);
 }
 
-export function getNpcSellPriceGold(marketPriceGold) {
-  const safeMarketPriceGold = normalizeGoldPrice(marketPriceGold);
+export function getNpcSellPriceCoin(marketPriceCoin) {
+  const safeMarketPriceCoin = normalizeCoinPrice(marketPriceCoin);
 
-  if (safeMarketPriceGold === null) {
+  if (safeMarketPriceCoin === null) {
     return null;
   }
 
-  return normalizeGoldPrice((safeMarketPriceGold * NPC_MARKET_SELL_BPS) / 10_000);
+  return normalizeCoinPrice((safeMarketPriceCoin * NPC_MARKET_SELL_BPS) / 10_000);
 }
 
 export function getRecoveredNpcNeed({
@@ -127,24 +127,24 @@ export function getNpcMarketPriceState(priceState, nowMs = Date.now()) {
     updatedAtMs: priceState.updatedAtMs,
     nowMs,
   });
-  const marketPriceGold = getNpcMarketPriceFromNeed({
-    basePriceGold: priceState.basePriceGold,
+  const marketPriceCoin = getNpcMarketPriceFromNeed({
+    basePriceCoin: priceState.basePriceCoin,
     itemKind: priceState.itemKind,
     npcNeed,
     targetNeed,
     volatilityBps: priceState.volatilityBps,
   });
-  const npcBuyPriceGold = getNpcBuyPriceGold(marketPriceGold);
-  const npcSellPriceGold = getNpcSellPriceGold(marketPriceGold);
+  const npcBuyPriceCoin = getNpcBuyPriceCoin(marketPriceCoin);
+  const npcSellPriceCoin = getNpcSellPriceCoin(marketPriceCoin);
 
   return {
     ...priceState,
     npcNeed,
     targetNeed,
     maxNeed: getPositiveCount(priceState.maxNeed) ?? getNpcMarketDemandCap(targetNeed),
-    marketPriceGold: marketPriceGold ?? priceState.marketPriceGold,
-    npcBuyPriceGold: npcBuyPriceGold ?? priceState.npcBuyPriceGold,
-    npcSellPriceGold: npcSellPriceGold ?? priceState.npcSellPriceGold,
+    marketPriceCoin: marketPriceCoin ?? priceState.marketPriceCoin,
+    npcBuyPriceCoin: npcBuyPriceCoin ?? priceState.npcBuyPriceCoin,
+    npcSellPriceCoin: npcSellPriceCoin ?? priceState.npcSellPriceCoin,
   };
 }
 

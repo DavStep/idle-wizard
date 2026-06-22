@@ -70,7 +70,7 @@ export class PageNotificationStateManager {
         hasGardenTileNotification({
           tile,
           plot,
-          gold: snapshot.gold,
+          coin: snapshot.coin,
           seedQuantityById: context.seedQuantityById,
           hasPlantableSeed: context.hasPlantableSeed,
         }),
@@ -104,16 +104,24 @@ export class PageNotificationStateManager {
       playerStand: false,
       playerListing: false,
       playerProceeds:
-        playerShop.connected === true && (playerShop.proceedsGold ?? 0) > 0,
+        playerShop.connected === true && (playerShop.proceedsCoin ?? 0) > 0,
       playerMarket:
         playerShop.connected === true &&
-        hasListingForOwnPlayerRequest(playerShop, snapshot.gold?.current),
-      crystals: shop.goldOffer?.canCollect === true,
+        hasListingForOwnPlayerRequest(playerShop, snapshot.coin?.current),
+      crystals: shop.coinOffer?.canCollect === true,
     });
   }
 
   getGuildPage(snapshot) {
-    const notifications = snapshot.guild?.notifications;
+    const guild = snapshot.guild ?? {};
+
+    if (guild.unlocked === true && guild.created !== true && guild.canCreate === true) {
+      return this.createPage({
+        charter: true,
+      });
+    }
+
+    const notifications = guild.notifications;
 
     if (!notifications?.active) {
       return this.createPage({});
@@ -234,7 +242,7 @@ export function getGardenNotificationContext(snapshot) {
 export function hasGardenTileNotification({
   tile,
   plot,
-  gold,
+  coin,
   seedQuantityById,
   hasPlantableSeed,
 } = {}) {
@@ -243,7 +251,7 @@ export function hasGardenTileNotification({
   }
 
   if (!tile.unlocked) {
-    return canBuyNextTile({ tile, plot, gold });
+    return canBuyNextTile({ tile, plot, coin });
   }
 
   if (tile.phase === 'ready') {
@@ -261,13 +269,13 @@ export function hasGardenTileNotification({
   return Boolean(hasPlantableSeed);
 }
 
-function canBuyNextTile({ tile, plot, gold }) {
+function canBuyNextTile({ tile, plot, coin }) {
   return (
     tile.tileNumber === plot?.nextTileNumber &&
     plot?.nextTileLockedByLevel !== true &&
     plot?.nextTileLockedByResearch !== true &&
     Number.isFinite(plot?.nextTileCost) &&
-    (gold?.current ?? 0) >= plot.nextTileCost
+    (coin?.current ?? 0) >= plot.nextTileCost
   );
 }
 
@@ -277,7 +285,7 @@ function canBuyNextCauldron(snapshot, brewing) {
     brewing?.nextCauldronLockedByLevel !== true &&
     brewing?.nextCauldronLockedByResearch !== true &&
     Number.isFinite(brewing?.nextCauldronCost) &&
-    (snapshot.gold?.current ?? 0) >= brewing.nextCauldronCost
+    (snapshot.coin?.current ?? 0) >= brewing.nextCauldronCost
   );
 }
 
@@ -300,7 +308,7 @@ function canBuyNextSlot(snapshot, shelf) {
     Number.isInteger(shelf?.nextSlotNumber) &&
     shelf?.nextSlotLockedByLevel !== true &&
     Number.isFinite(shelf?.nextSlotCost) &&
-    (snapshot.gold?.current ?? 0) >= shelf.nextSlotCost
+    (snapshot.coin?.current ?? 0) >= shelf.nextSlotCost
   );
 }
 
@@ -317,28 +325,28 @@ function isManaCapped(mana = {}) {
   return Number.isFinite(current) && Number.isFinite(cap) && cap > 0 && current >= cap;
 }
 
-function hasListingForOwnPlayerRequest(playerShop = {}, currentGold = 0) {
+function hasListingForOwnPlayerRequest(playerShop = {}, currentCoin = 0) {
   const ownRequests = (playerShop.ownRequests ?? []).filter(
     (request) =>
       request?.itemKey &&
       (request.quantity ?? 0) > 0 &&
-      (request.priceGold ?? 0) > 0,
+      (request.priceCoin ?? 0) > 0,
   );
 
   if (ownRequests.length === 0) {
     return false;
   }
 
-  const gold = Number(currentGold) || 0;
+  const coin = Number(currentCoin) || 0;
 
   return (playerShop.listings ?? []).some((listing) => {
-    const priceGold = Number(listing?.priceGold);
+    const priceCoin = Number(listing?.priceCoin);
 
     if (
       !listing?.itemKey ||
       (listing.quantity ?? 0) <= 0 ||
-      !Number.isFinite(priceGold) ||
-      priceGold > gold
+      !Number.isFinite(priceCoin) ||
+      priceCoin > coin
     ) {
       return false;
     }
@@ -347,7 +355,7 @@ function hasListingForOwnPlayerRequest(playerShop = {}, currentGold = 0) {
       (request) =>
         request.itemKey === listing.itemKey &&
         (!request.itemKind || request.itemKind === listing.itemKind) &&
-        Number(request.priceGold) >= priceGold,
+        Number(request.priceCoin) >= priceCoin,
     );
   });
 }

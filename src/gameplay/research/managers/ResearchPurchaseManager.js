@@ -2,7 +2,7 @@ export class ResearchPurchaseManager {
   constructor({
     crystalFacade,
     emeraldFacade,
-    goldFacade,
+    coinFacade,
     rubyFacade,
     researchBalanceManager,
     researchDefinitionManager,
@@ -11,7 +11,7 @@ export class ResearchPurchaseManager {
   }) {
     this.crystalFacade = crystalFacade;
     this.emeraldFacade = emeraldFacade;
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.rubyFacade = rubyFacade;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
@@ -136,11 +136,11 @@ export class ResearchPurchaseManager {
       return this.emeraldFacade;
     }
 
-    return this.goldFacade;
+    return this.coinFacade;
   }
 
   getCostResult(cost) {
-    if (cost.currency !== 'gold') {
+    if (cost.currency !== 'coin') {
       return {
         cost: cost.amount,
         costCurrency: cost.currency,

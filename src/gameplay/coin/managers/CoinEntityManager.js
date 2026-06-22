@@ -1,7 +1,7 @@
-import { PlayerGold } from '../components/GoldComponents.js';
-import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
+import { PlayerCoin } from '../components/CoinComponents.js';
+import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
 
-export class GoldEntityManager {
+export class CoinEntityManager {
   constructor({ initialCurrent = 0 } = {}) {
     this.initialCurrent = initialCurrent;
     this.entityId = null;
@@ -13,25 +13,25 @@ export class GoldEntityManager {
     }
 
     this.entityId = ecsManagers.entities.createEntity();
-    ecsManagers.components.add(this.entityId, PlayerGold);
+    ecsManagers.components.add(this.entityId, PlayerCoin);
     this.setCurrent(this.initialCurrent);
     this.setTotalGenerated(0);
   }
 
   getEntityId() {
     if (this.entityId === null) {
-      throw new Error('Gold entity has not been initialized.');
+      throw new Error('Coin entity has not been initialized.');
     }
 
     return this.entityId;
   }
 
   getCurrent() {
-    return PlayerGold.current[this.getEntityId()] ?? 0;
+    return PlayerCoin.current[this.getEntityId()] ?? 0;
   }
 
   setCurrent(value) {
-    PlayerGold.current[this.getEntityId()] = normalizeGoldPrice(value) ?? 0;
+    PlayerCoin.current[this.getEntityId()] = normalizeCoinPrice(value) ?? 0;
   }
 
   addCurrent(amount, { trackGenerated = true } = {}) {
@@ -43,11 +43,11 @@ export class GoldEntityManager {
   }
 
   getTotalGenerated() {
-    return PlayerGold.totalGenerated[this.getEntityId()] ?? 0;
+    return PlayerCoin.totalGenerated[this.getEntityId()] ?? 0;
   }
 
   setTotalGenerated(value) {
-    PlayerGold.totalGenerated[this.getEntityId()] = normalizeGoldPrice(value) ?? 0;
+    PlayerCoin.totalGenerated[this.getEntityId()] = normalizeCoinPrice(value) ?? 0;
   }
 
   addTotalGenerated(amount) {

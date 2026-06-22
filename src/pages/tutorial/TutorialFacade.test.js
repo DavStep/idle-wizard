@@ -32,7 +32,7 @@ function setClientRect(element, rect) {
 
 function createLevelThreeSnapshot() {
   return {
-    gold: { current: 0 },
+    coin: { current: 0 },
     inventory: [],
     seedInventory: [],
     seedSummoning: { canSummon: false },
@@ -51,7 +51,7 @@ function createLevelThreeSnapshot() {
     tasks: {
       currentLevel: 3,
       level: {
-        completion: { canComplete: false, costGold: 80 },
+        completion: { canComplete: false, costCoin: 80 },
         tasks: [],
       },
     },
@@ -65,7 +65,7 @@ function createLevelOneSnapshot() {
     tasks: {
       currentLevel: 1,
       level: {
-        completion: { canComplete: false, costGold: 10 },
+        completion: { canComplete: false, costCoin: 10 },
         tasks: [],
       },
     },
@@ -79,7 +79,7 @@ function createLevelOneObjectiveSnapshot() {
     tasks: {
       currentLevel: 1,
       level: {
-        completion: { canComplete: false, costGold: 10 },
+        completion: { canComplete: false, costCoin: 10 },
         tasks: [
           {
             taskId: 'level1-sage-seeds',
@@ -122,7 +122,7 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
     tasks: {
       currentLevel: 2,
       level: {
-        completion: { canComplete: false, costGold: 40 },
+        completion: { canComplete: false, costCoin: 40 },
         tasks: [
           {
             taskId: 'level2-sage-herb',
@@ -155,7 +155,7 @@ const LEVEL_ONE_COMPLETED_STEP_IDS = [
   'open-market',
   'select-market-stand',
   'select-sage-seed-sale',
-  'earn-tutorial-gold',
+  'earn-tutorial-coin',
   'unselect-sage-seed-sale',
   'level-up-one',
 ];
@@ -641,7 +641,7 @@ describe('TutorialFacade', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -698,7 +698,7 @@ describe('TutorialFacade', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -774,7 +774,7 @@ describe('TutorialFacade', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -843,7 +843,7 @@ describe('TutorialFacade', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',

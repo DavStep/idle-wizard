@@ -14,7 +14,7 @@ const BAG_TABS = [
 
 const CURRENCY_ROWS = [
   { id: 'mana', label: 'mana' },
-  { id: 'gold', label: 'gold' },
+  { id: 'coin', label: 'coin' },
   { id: 'crystal', label: 'crystal' },
   { id: 'ruby', label: 'ruby' },
 ];

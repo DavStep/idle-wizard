@@ -60,6 +60,18 @@ export class AuthSessionManager {
     return this.oidcManager?.signIn(options) ?? { ok: false, reason: 'disabled' };
   }
 
+  async tryRestoreConnectedAccount() {
+    const result =
+      (await this.oidcManager?.tryRestoreConnectedAccount?.()) ?? {
+        ok: false,
+        reason: 'disabled',
+      };
+    return {
+      ...result,
+      snapshot: this.getSnapshot(),
+    };
+  }
+
   async signOut() {
     await this.oidcManager?.signOut();
     await this.clearSession();

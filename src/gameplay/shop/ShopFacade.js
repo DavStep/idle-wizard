@@ -12,7 +12,7 @@ import { ShopPlayerRequestEntityManager } from './managers/ShopPlayerRequestEnti
 import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js';
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
-import { ShopGoldOfferManager } from './managers/ShopGoldOfferManager.js';
+import { ShopCoinOfferManager } from './managers/ShopCoinOfferManager.js';
 import { ShopNpcSellQuoteManager } from './managers/ShopNpcSellQuoteManager.js';
 import { ShopStockPurchaseManager } from './managers/ShopStockPurchaseManager.js';
 import { ShopStockPriceQuoteManager } from './managers/ShopStockPriceQuoteManager.js';
@@ -23,7 +23,7 @@ export class ShopFacade {
     'The market has NPC stands for automatic sales, shared NPC stock to buy, and player stands for listings other players can buy.';
 
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     playerLevelFacade,
     researchFacade,
@@ -51,8 +51,8 @@ export class ShopFacade {
     this.shopStockPriceQuoteManager = new ShopStockPriceQuoteManager({
       shopNpcPriceManager: this.shopNpcPriceManager,
     });
-    this.shopGoldOfferManager = new ShopGoldOfferManager({
-      goldFacade,
+    this.shopCoinOfferManager = new ShopCoinOfferManager({
+      coinFacade,
       playerLevelFacade,
     });
     this.shopShelfEntityManager = new ShopShelfEntityManager({
@@ -67,7 +67,7 @@ export class ShopFacade {
       maxSlots: this.shopBalanceManager.getMaxShelfSlots(),
     });
     this.shopSlotPurchaseManager = new ShopSlotPurchaseManager({
-      goldFacade,
+      coinFacade,
       playerLevelFacade,
       getMaxSlotsByLevel: () => this.getMaxNpcMarketStandsByLevel(),
       getRequiredLevelForSlot: (slotNumber) =>
@@ -76,7 +76,7 @@ export class ShopFacade {
       shopShelfEntityManager: this.shopShelfEntityManager,
     });
     this.shopPlayerSlotPurchaseManager = new ShopSlotPurchaseManager({
-      goldFacade,
+      coinFacade,
       playerLevelFacade,
       getMaxSlotsByLevel: () => this.getMaxPlayerMarketStandsByLevel(),
       getRequiredLevelForSlot: (slotNumber) =>
@@ -91,7 +91,7 @@ export class ShopFacade {
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
     });
     this.shopPlayerShelfListingManager = new ShopPlayerShelfListingManager({
-      goldFacade,
+      coinFacade,
       itemsFacade,
       shopSellKindManager: this.shopSellKindManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
@@ -105,13 +105,13 @@ export class ShopFacade {
         this.shopPlayerShelfEntityManager.isSlotUnlocked(slotNumber),
     });
     this.shopStockPurchaseManager = new ShopStockPurchaseManager({
-      goldFacade,
+      coinFacade,
       itemsFacade,
       shopNpcPriceManager: this.shopNpcPriceManager,
       shopStockPriceQuoteManager: this.shopStockPriceQuoteManager,
     });
     this.shopDirectSellManager = new ShopDirectSellManager({
-      goldFacade,
+      coinFacade,
       itemsFacade,
       researchFacade,
       shopNpcPriceManager: this.shopNpcPriceManager,
@@ -120,7 +120,7 @@ export class ShopFacade {
       onItemSold,
     });
     this.shopAutoSellManager = new ShopAutoSellManager({
-      goldFacade,
+      coinFacade,
       itemsFacade,
       shopBalanceManager: this.shopBalanceManager,
       shopNpcPriceManager: this.shopNpcPriceManager,
@@ -167,9 +167,9 @@ export class ShopFacade {
     this.shopShelfEntityManager.initialize(ecsManagers);
     this.shopPlayerShelfEntityManager.initialize(ecsManagers);
     this.shopPlayerRequestEntityManager.initialize(ecsManagers);
-    this.shopGoldOfferManager.initialize(ecsManagers);
+    this.shopCoinOfferManager.initialize(ecsManagers);
     this.shopAutoSellManager.register(ecsManagers.systems);
-    this.shopGoldOfferManager.register(ecsManagers.systems);
+    this.shopCoinOfferManager.register(ecsManagers.systems);
   }
 
   buyNextShelfSlot() {
@@ -236,12 +236,12 @@ export class ShopFacade {
     return this.shopDirectSellManager.quoteItem({ itemTypeId, quantity });
   }
 
-  claimPlayerShopSaleProceeds(gold) {
-    return this.shopPlayerShelfListingManager.claimSaleProceeds(gold);
+  claimPlayerShopSaleProceeds(coin) {
+    return this.shopPlayerShelfListingManager.claimSaleProceeds(coin);
   }
 
-  collectGoldOffer() {
-    return this.shopGoldOfferManager.collect();
+  collectCoinOffer() {
+    return this.shopCoinOfferManager.collect();
   }
 
   getSnapshot() {
@@ -317,7 +317,7 @@ export class ShopFacade {
         sellKinds,
         items: visibleSellItems,
       },
-      goldOffer: this.shopGoldOfferManager.getSnapshot(),
+      coinOffer: this.shopCoinOfferManager.getSnapshot(),
     };
   }
 
@@ -351,7 +351,7 @@ export class ShopFacade {
       .getVisibleSellItems(sellableItems)
       .map((item) => {
         const npcPrice = this.shopNpcPriceManager.getNpcPrice(item);
-        const sellGold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
+        const sellCoin = this.shopNpcPriceManager.getNpcBuyPriceCoin(item);
 
         return {
           ...item,
@@ -360,19 +360,19 @@ export class ShopFacade {
             : {}),
           ...(npcPrice
             ? {
-                basePriceGold: npcPrice.basePriceGold,
-                marketPriceGold: npcPrice.marketPriceGold,
+                basePriceCoin: npcPrice.basePriceCoin,
+                marketPriceCoin: npcPrice.marketPriceCoin,
                 npcNeed: npcPrice.npcNeed,
                 targetNeed: npcPrice.targetNeed,
                 maxNeed: npcPrice.maxNeed,
                 targetStock: npcPrice.targetStock,
               }
             : {}),
-          sellGold,
-          fastSellGold: this.shopDirectSellManager.getFastSellPriceGold(sellGold),
+          sellCoin,
+          fastSellCoin: this.shopDirectSellManager.getFastSellPriceCoin(sellCoin),
           fastSellPercent,
           sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
-          buyGold: this.shopNpcPriceManager.getNpcSellPriceGold(item),
+          buyCoin: this.shopNpcPriceManager.getNpcSellPriceCoin(item),
           stock: this.shopNpcPriceManager.getNpcStock(item),
         };
       });
@@ -391,7 +391,7 @@ export class ShopFacade {
           sellQuantity: null,
           sellLimitMode: 'all',
           sellQuantityLimit: null,
-          sellGold: null,
+          sellCoin: null,
           sellNeed: null,
         };
       }
@@ -407,7 +407,7 @@ export class ShopFacade {
         sellQuantity: sellableItem?.quantity ?? 0,
         sellLimitMode: slot.sellLimitMode ?? 'all',
         sellQuantityLimit: slot.sellLimitMode === 'amount' ? slot.sellQuantityLimit ?? 0 : null,
-        sellGold: this.shopNpcPriceManager.getNpcBuyPriceGold(item),
+        sellCoin: this.shopNpcPriceManager.getNpcBuyPriceCoin(item),
         sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
       };
     });
@@ -448,7 +448,7 @@ export class ShopFacade {
           itemKind: null,
           itemLabel: null,
           quantity: 0,
-          priceGold: 0,
+          priceCoin: 0,
         };
       }
 
@@ -492,7 +492,7 @@ export class ShopFacade {
           slotNumber: slot.slotNumber,
           itemKey: slot.itemTypeId ? this.itemsFacade.getItemDefinition(slot.itemTypeId).key : null,
           quantity: slot.quantity,
-          priceGold: slot.priceGold,
+          priceCoin: slot.priceCoin,
         })),
       },
       playerRequests: {
@@ -502,10 +502,10 @@ export class ShopFacade {
             slotNumber: slot.slotNumber,
             itemKey: slot.itemKey,
             quantity: slot.quantity,
-            priceGold: slot.priceGold,
+            priceCoin: slot.priceCoin,
           })),
       },
-      goldOffer: this.shopGoldOfferManager.getPersistenceSnapshot(),
+      coinOffer: this.shopCoinOfferManager.getPersistenceSnapshot(),
     };
   }
 
@@ -544,7 +544,7 @@ export class ShopFacade {
               ? this.itemsFacade.safeGetDefinitionByKey(slot.itemKey)?.id
               : 0,
           quantity: slot.quantity,
-          priceGold: slot.priceGold,
+          priceCoin: slot.priceCoin,
         }))
       : [];
 
@@ -562,7 +562,7 @@ export class ShopFacade {
               ? this.itemsFacade.safeGetDefinitionByKey(slot.itemKey)?.id
               : 0,
           quantity: slot.quantity,
-          priceGold: slot.priceGold,
+          priceCoin: slot.priceCoin,
         }))
       : [];
 
@@ -570,7 +570,7 @@ export class ShopFacade {
       unlockedSlots: playerUnlockedSlots,
       slots: playerRequestSlots,
     });
-    this.shopGoldOfferManager.applyPersistenceSnapshot(snapshot.goldOffer);
+    this.shopCoinOfferManager.applyPersistenceSnapshot(snapshot.coinOffer);
   }
 
   clampUnlockedSlotsByLevel(unlockedSlots) {

@@ -9,7 +9,7 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const DIRECT_SELL_TABS = [
   { kind: 'seed', label: 'seeds' },
@@ -575,7 +575,7 @@ export class ShopDirectSellManager {
     refs.targetLabel.textContent = `${display.label} x${display.quantity}`;
     setItemIconLabel(refs.targetLabel, item.kind, item.key);
     setResourceColor(refs.targetLabel, item.kind);
-    setResourceIconText(refs.value, this.formatSellGold(this.getDisplayPriceGold(item)));
+    setResourceIconText(refs.value, this.formatSellCoin(this.getDisplayPriceCoin(item)));
     setResourceColorFromText(refs.value, refs.value.textContent);
   }
 
@@ -665,11 +665,11 @@ export class ShopDirectSellManager {
     setResourceColor(this.refs.selectedItem.value, null);
 
     const totalText = displayQuote.ok
-      ? formatGoldPriceText(displayQuote.totalPriceGold)
+      ? formatCoinPriceText(displayQuote.totalPriceCoin)
       : '?';
     this.refs.confirmButtonLabel.textContent = selling ? 'selling' : `sell x${quantity}`;
     setResourceIconText(this.refs.confirmButtonValue, totalText);
-    setResourceColor(this.refs.confirmButtonValue, displayQuote.ok ? 'gold' : null);
+    setResourceColor(this.refs.confirmButtonValue, displayQuote.ok ? 'coin' : null);
     this.refs.confirmButton.setAttribute(
       'aria-label',
       displayQuote.ok
@@ -793,13 +793,13 @@ export class ShopDirectSellManager {
       return quote;
     }
 
-    const fastSellGold = this.getFastSellGold(item);
+    const fastSellCoin = this.getFastSellCoin(item);
 
     return {
-      ok: Number.isFinite(fastSellGold) && fastSellGold > 0,
+      ok: Number.isFinite(fastSellCoin) && fastSellCoin > 0,
       quantity,
-      priceGold: fastSellGold,
-      totalPriceGold: fastSellGold * quantity,
+      priceCoin: fastSellCoin,
+      totalPriceCoin: fastSellCoin * quantity,
     };
   }
 
@@ -886,21 +886,21 @@ export class ShopDirectSellManager {
     return `demand ${sellNeed}`;
   }
 
-  getFastSellGold(item) {
-    return Number.isFinite(item?.fastSellGold) ? item.fastSellGold : item?.sellGold;
+  getFastSellCoin(item) {
+    return Number.isFinite(item?.fastSellCoin) ? item.fastSellCoin : item?.sellCoin;
   }
 
-  getDisplayPriceGold(item) {
+  getDisplayPriceCoin(item) {
     const quoteOverride = this.getSellQuoteOverride?.({
       item,
       quantity: 1,
     });
 
-    if (quoteOverride?.ok && Number.isFinite(quoteOverride.priceGold)) {
-      return quoteOverride.priceGold;
+    if (quoteOverride?.ok && Number.isFinite(quoteOverride.priceCoin)) {
+      return quoteOverride.priceCoin;
     }
 
-    return this.getFastSellGold(item);
+    return this.getFastSellCoin(item);
   }
 
   getDisplaySellQuote(item, quantity = 1) {
@@ -934,12 +934,12 @@ export class ShopDirectSellManager {
     return null;
   }
 
-  formatSellGold(sellGold) {
-    if (!Number.isFinite(sellGold)) {
+  formatSellCoin(sellCoin) {
+    if (!Number.isFinite(sellCoin)) {
       return 'offline';
     }
 
-    return formatGoldPriceText(sellGold);
+    return formatCoinPriceText(sellCoin);
   }
 
   getSellFailureText(reason, quote = null, item = null) {

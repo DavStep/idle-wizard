@@ -6,7 +6,7 @@ const EMPTY_SNAPSHOT = {
   ownRequests: [],
   tradeHistory: [],
   ownTradeHistory: [],
-  proceedsGold: 0,
+  proceedsCoin: 0,
 };
 
 export class PlayerShopStateObserverManager {

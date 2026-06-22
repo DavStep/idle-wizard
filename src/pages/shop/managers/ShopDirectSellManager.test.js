@@ -94,8 +94,8 @@ function createGameplayFacade(snapshot) {
     return {
       ok: true,
       quantity,
-      priceGold: item.fastSellGold,
-      totalPriceGold: quantity === 2 ? 2.08 : item.fastSellGold * quantity,
+      priceCoin: item.fastSellCoin,
+      totalPriceCoin: quantity === 2 ? 2.08 : item.fastSellCoin * quantity,
       fastSellPercent: item.fastSellPercent,
     };
   });
@@ -110,7 +110,7 @@ function createGameplayFacade(snapshot) {
       listener(snapshot);
     }
 
-    return { ok: true, item, quantity, totalPriceGold: 2.6 };
+    return { ok: true, item, quantity, totalPriceCoin: 2.6 };
   });
 
   return {
@@ -148,8 +148,8 @@ describe('ShopDirectSellManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 5,
-              sellGold: 1.4,
-              fastSellGold: 1.12,
+              sellCoin: 1.4,
+              fastSellCoin: 1.12,
               fastSellPercent: 80,
               sellNeed: 3,
             },
@@ -243,9 +243,9 @@ describe('ShopDirectSellManager', () => {
       'sell x1',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '1.12 gold',
+      '1.12 coin',
     );
-    expect(popup.textContent).not.toContain('total1.12 gold');
+    expect(popup.textContent).not.toContain('total1.12 coin');
 
     const incrementButton = [...popup.querySelectorAll('.shop-page__direct-sell-step')].find(
       (button) => button.textContent === '+1',
@@ -259,7 +259,7 @@ describe('ShopDirectSellManager', () => {
       'sell x2',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '2.08 gold',
+      '2.08 coin',
     );
 
     const herbsTab = [...popup.querySelectorAll('.shop-page__direct-sell-tab-button')].find(
@@ -284,7 +284,7 @@ describe('ShopDirectSellManager', () => {
       'sell x3',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '3.36 gold',
+      '3.36 coin',
     );
 
     input.value = '2';
@@ -295,7 +295,7 @@ describe('ShopDirectSellManager', () => {
       'sell x2',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '2.08 gold',
+      '2.08 coin',
     );
     expect(popup.querySelector('.shop-page__direct-sell-confirm')?.disabled).toBe(
       false,
@@ -323,8 +323,8 @@ describe('ShopDirectSellManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 5,
-              sellGold: 1.4,
-              fastSellGold: 1.12,
+              sellCoin: 1.4,
+              fastSellCoin: 1.12,
               fastSellPercent: 80,
               sellNeed: 3,
             },
@@ -369,8 +369,8 @@ describe('ShopDirectSellManager', () => {
                 label: 'sage seed',
                 kind: 'seed',
                 quantity: 5,
-                sellGold: 1.4,
-                fastSellGold: 1.12,
+                sellCoin: 1.4,
+                fastSellCoin: 1.12,
                 fastSellPercent: 80,
                 sellNeed: 3,
               },
@@ -416,8 +416,8 @@ describe('ShopDirectSellManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 5,
-              sellGold: 1.4,
-              fastSellGold: 1.12,
+              sellCoin: 1.4,
+              fastSellCoin: 1.12,
               fastSellPercent: 80,
               sellNeed: 5,
             },
@@ -494,8 +494,8 @@ describe('ShopDirectSellManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 5,
-              sellGold: 1.4,
-              fastSellGold: 1.12,
+              sellCoin: 1.4,
+              fastSellCoin: 1.12,
               fastSellPercent: 80,
               sellNeed: 3,
             },
@@ -574,8 +574,8 @@ describe('ShopDirectSellManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 5,
-              sellGold: 1.4,
-              fastSellGold: 1.12,
+              sellCoin: 1.4,
+              fastSellCoin: 1.12,
               fastSellPercent: 80,
               sellNeed: 5,
             },
@@ -627,8 +627,8 @@ describe('ShopDirectSellManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 2,
-              sellGold: 1.4,
-              fastSellGold: 1.12,
+              sellCoin: 1.4,
+              fastSellCoin: 1.12,
               fastSellPercent: 80,
               sellNeed: 3,
             },
@@ -640,7 +640,7 @@ describe('ShopDirectSellManager', () => {
     const onSellOverride = vi.fn(async () => ({
       handled: true,
       ok: true,
-      gold: 10,
+      coin: 10,
     }));
     const manager = new ShopDirectSellManager({
       gameplayFacade,
@@ -685,8 +685,8 @@ describe('ShopDirectSellManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 2,
-              sellGold: 0.44,
-              fastSellGold: 0.35,
+              sellCoin: 0.44,
+              fastSellCoin: 0.35,
               fastSellPercent: 80,
               sellNeed: 3,
             },
@@ -700,8 +700,8 @@ describe('ShopDirectSellManager', () => {
       getSellQuoteOverride: vi.fn(() => ({
         ok: true,
         quantity: 1,
-        priceGold: 10,
-        totalPriceGold: 10,
+        priceCoin: 10,
+        totalPriceCoin: 10,
         tutorial: true,
       })),
     });
@@ -711,7 +711,7 @@ describe('ShopDirectSellManager', () => {
     buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
 
     const itemButton = popupParent.querySelector('.shop-page__direct-sell-item-button');
-    expect(itemButton?.textContent).toContain('10 gold');
+    expect(itemButton?.textContent).toContain('10 coin');
 
     itemButton?.click();
 
@@ -724,7 +724,7 @@ describe('ShopDirectSellManager', () => {
     expect(
       popupParent.querySelector('.shop-page__direct-sell-confirm-value')?.textContent,
     ).toBe(
-      '10 gold',
+      '10 coin',
     );
 
     manager.unmount();

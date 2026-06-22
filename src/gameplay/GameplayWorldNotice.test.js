@@ -26,7 +26,7 @@ function finishCurrentTaskLevel(gameplayFacade) {
     gameplayFacade.completeTask(task.taskId);
   }
 
-  gameplayFacade.goldFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costGold);
+  gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
   gameplayFacade.completeTaskLevel();
 }
 
@@ -45,7 +45,7 @@ describe('Gameplay world notice integration', () => {
     advanceToLevel(gameplayFacade, 4);
 
     const request = gameplayFacade.getSnapshot().worldNotice.current.requests[0];
-    expect(request.actionType).not.toBe(WORLD_NOTICE_ACTIONS.DONATE_GOLD);
+    expect(request.actionType).not.toBe(WORLD_NOTICE_ACTIONS.DONATE_COIN);
 
     const result = gameplayFacade.recordWorldNoticeAction(
       request.actionType,

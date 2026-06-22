@@ -18,7 +18,7 @@ const DEFAULT_MARK_HOURS = [1 / 6, 0.5, 1, 2, 4, 8, 12, 24, 72, 168];
 const DEFAULT_DAYS = 7;
 const DEFAULT_STEP_SECONDS = 5;
 const RNG_SEED = 0x1d1e12d;
-const LEVEL_COMPLETION_GOLD_COST_PER_LEVEL = 20;
+const LEVEL_COMPLETION_COIN_COST_PER_LEVEL = 20;
 const DEFAULT_COMPLETED_RESEARCH_IDS = ['unlockSeed:sageSeed'];
 const PRESTIGE_STEP = 10;
 const SEED_RESEARCH_LEVELS = {
@@ -99,8 +99,8 @@ class BalanceSimulator {
     this.samples = [];
     this.events = [];
     this.firsts = new Map();
-    this.lastGold = 0;
-    this.lastGoldHour = 0;
+    this.lastCoin = 0;
+    this.lastCoinHour = 0;
 
     this.itemDefinitionManager = new ItemDefinitionManager();
     this.potionRecipeManager = new PotionRecipeManager({
@@ -141,7 +141,7 @@ class BalanceSimulator {
         cap: mana.maxManaCap,
         perSecond: mana.manaPerSecond,
       },
-      gold: {
+      coin: {
         current: 0,
         totalGenerated: 0,
       },
@@ -321,9 +321,9 @@ class BalanceSimulator {
         }
 
         this.removeItem(stand.itemKey, 1);
-        const gold = this.getItemValue(stand.itemKey);
-        this.state.gold.current += gold;
-        this.state.gold.totalGenerated += gold;
+        const coin = this.getItemValue(stand.itemKey);
+        this.state.coin.current += coin;
+        this.state.coin.totalGenerated += coin;
         stand.progressSeconds -= shopBalance.shopShelf.autoSellSeconds;
       }
     }
@@ -435,7 +435,7 @@ class BalanceSimulator {
   getResearchCost(researchId) {
     return (
       this.researchCosts.get(researchId) ?? {
-        currency: 'gold',
+        currency: 'coin',
         amount: Number.POSITIVE_INFINITY,
       }
     );
@@ -448,7 +448,7 @@ class BalanceSimulator {
   canSpendCurrency(currency, amount) {
     if (currency === 'crystal') return this.state.crystal >= amount;
     if (currency === 'ruby') return this.state.ruby >= amount;
-    return this.state.gold.current >= amount;
+    return this.state.coin.current >= amount;
   }
 
   spendCurrency(currency, amount) {
@@ -466,7 +466,7 @@ class BalanceSimulator {
       return true;
     }
 
-    this.state.gold.current -= amount;
+    this.state.coin.current -= amount;
     return true;
   }
 
@@ -510,10 +510,10 @@ class BalanceSimulator {
       this.getCurrentTasks().every((task) => this.state.completedTasks.has(task.id)) &&
       this.state.level < tasksBalance.levels.length
     ) {
-      const cost = this.getCurrentLevelCompletionGoldCost();
+      const cost = this.getCurrentLevelCompletionCoinCost();
 
-      if (this.state.gold.current >= cost) {
-        this.state.gold.current -= cost;
+      if (this.state.coin.current >= cost) {
+        this.state.coin.current -= cost;
         this.state.level += 1;
         this.state.crystal += playerLevelBalance.crystal.perLevel;
         this.syncLevelEffects();
@@ -555,14 +555,14 @@ class BalanceSimulator {
 
     const maxGardenTiles = this.getMaxByLevel(this.state.level, 'maxGardenTiles');
     const nextGardenTile = this.state.gardenTiles.length + 1;
-    const gardenCost = gardenBalance.garden.tileCostsGold[nextGardenTile - 1];
+    const gardenCost = gardenBalance.garden.tileCostsCoin[nextGardenTile - 1];
 
     if (
       this.state.gardenTiles.length < maxGardenTiles &&
       Number.isFinite(gardenCost) &&
-      this.state.gold.current >= gardenCost
+      this.state.coin.current >= gardenCost
     ) {
-      this.state.gold.current -= gardenCost;
+      this.state.coin.current -= gardenCost;
       this.state.gardenTiles.push(this.createEmptyGardenTile());
       this.addEvent(`garden tile ${nextGardenTile}`);
       changed = true;
@@ -570,14 +570,14 @@ class BalanceSimulator {
 
     const maxNpcStands = this.getMaxByLevel(this.state.level, 'maxNpcMarketStands');
     const nextStand = this.state.shopStands.length + 1;
-    const standCost = shopBalance.shopShelf.slotCostsGold[nextStand - 1];
+    const standCost = shopBalance.shopShelf.slotCostsCoin[nextStand - 1];
 
     if (
       this.state.shopStands.length < maxNpcStands &&
       Number.isFinite(standCost) &&
-      this.state.gold.current >= standCost
+      this.state.coin.current >= standCost
     ) {
-      this.state.gold.current -= standCost;
+      this.state.coin.current -= standCost;
       this.state.shopStands.push(this.createEmptyShopStand());
       this.addEvent(`npc stand ${nextStand}`);
       changed = true;
@@ -889,15 +889,15 @@ class BalanceSimulator {
         continue;
       }
 
-      const gold = roundGoldPrice(this.getItemValue(item.key) * 0.8 * quantity);
+      const coin = roundCoinPrice(this.getItemValue(item.key) * 0.8 * quantity);
 
-      if (gold <= 0) {
+      if (coin <= 0) {
         continue;
       }
 
       this.removeItem(item.key, quantity);
-      this.state.gold.current += gold;
-      this.state.gold.totalGenerated += gold;
+      this.state.coin.current += coin;
+      this.state.coin.totalGenerated += coin;
       this.addEvent(`direct sell: ${quantity} ${item.key}`);
       changed = true;
     }
@@ -1003,10 +1003,10 @@ class BalanceSimulator {
     return tasksBalance.levels[this.state.level - 1]?.tasks ?? [];
   }
 
-  getCurrentLevelCompletionGoldCost() {
+  getCurrentLevelCompletionCoinCost() {
     const level = tasksBalance.levels[this.state.level - 1];
 
-    return level?.completionCostGold ?? this.state.level * LEVEL_COMPLETION_GOLD_COST_PER_LEVEL;
+    return level?.completionCostCoin ?? this.state.level * LEVEL_COMPLETION_COIN_COST_PER_LEVEL;
   }
 
   syncLevelEffects() {
@@ -1146,7 +1146,7 @@ class BalanceSimulator {
       'first spare potion',
       this.sumInventoryByKind(itemKinds.potion) > 0,
     );
-    this.recordFirst('first gold', this.state.gold.totalGenerated > 0);
+    this.recordFirst('first coin', this.state.coin.totalGenerated > 0);
     this.recordFirst('level 2', this.state.level >= 2);
     this.recordFirst('level 5', this.state.level >= 5);
     this.recordFirst('level 10', this.state.level >= 10);
@@ -1177,15 +1177,15 @@ class BalanceSimulator {
     ) {
       const summary = this.createSummary();
       const elapsedHours = this.timeSeconds / 3600;
-      const goldDelta = summary.gold.totalGenerated - this.lastGold;
-      const hourDelta = Math.max(0.001, elapsedHours - this.lastGoldHour);
+      const coinDelta = summary.coin.totalGenerated - this.lastCoin;
+      const hourDelta = Math.max(0.001, elapsedHours - this.lastCoinHour);
 
       this.samples.push({
         ...summary,
-        rollingGoldPerHour: goldDelta / hourDelta,
+        rollingCoinPerHour: coinDelta / hourDelta,
       });
-      this.lastGold = summary.gold.totalGenerated;
-      this.lastGoldHour = elapsedHours;
+      this.lastCoin = summary.coin.totalGenerated;
+      this.lastCoinHour = elapsedHours;
     }
   }
 
@@ -1194,7 +1194,7 @@ class BalanceSimulator {
       timeSeconds: this.timeSeconds,
       level: this.state.level,
       mana: { ...this.state.mana },
-      gold: { ...this.state.gold },
+      coin: { ...this.state.coin },
       crystal: this.state.crystal,
       ruby: this.state.ruby,
       completedResearch: this.state.completedResearch.size,
@@ -1299,8 +1299,8 @@ function createResearchCatalog({ recipes, seedDefinitions }) {
 function createResearchCosts() {
   const costs = new Map();
 
-  Object.entries(researchBalance.researchCostsGold).forEach(([id, amount]) => {
-    costs.set(id, { currency: 'gold', amount });
+  Object.entries(researchBalance.researchCostsCoin).forEach(([id, amount]) => {
+    costs.set(id, { currency: 'coin', amount });
   });
 
   Object.entries(researchBalance.researchCostsCrystal).forEach(([id, amount]) => {
@@ -1312,9 +1312,9 @@ function createResearchCosts() {
 
 function createResearchDurations() {
   const ids = [
-    ...Object.keys(researchBalance.researchCostsGold),
+    ...Object.keys(researchBalance.researchCostsCoin),
     ...Object.keys(researchBalance.researchCostsCrystal).filter(
-      (id) => researchBalance.researchCostsGold[id] === undefined,
+      (id) => researchBalance.researchCostsCoin[id] === undefined,
     ),
   ];
 
@@ -1364,8 +1364,8 @@ function printReport(report) {
     [
       'time',
       'level',
-      'gold',
-      'gold/h',
+      'coin',
+      'coin/h',
       'mana',
       'mana/s',
       'research',
@@ -1398,8 +1398,8 @@ function printReport(report) {
       [
         formatDuration(sample.timeSeconds),
         sample.level,
-        formatNumber(sample.gold.current),
-        formatNumber(sample.rollingGoldPerHour),
+        formatNumber(sample.coin.current),
+        formatNumber(sample.rollingCoinPerHour),
         `${formatNumber(sample.mana.current)}/${formatNumber(sample.mana.cap)}`,
         formatNumber(sample.mana.perSecond),
         `${sample.completedResearch}+${sample.inProgressResearch}`,
@@ -1415,8 +1415,8 @@ function printReport(report) {
   console.log('');
   console.log('## final');
   console.log(`level: ${report.final.level}`);
-  console.log(`gold: ${formatNumber(report.final.gold.current)}`);
-  console.log(`total generated gold: ${formatNumber(report.final.gold.totalGenerated)}`);
+  console.log(`coin: ${formatNumber(report.final.coin.current)}`);
+  console.log(`total generated coin: ${formatNumber(report.final.coin.totalGenerated)}`);
   console.log(`inventory value: ${formatNumber(report.final.inventoryValue)}`);
   console.log(`research: ${report.final.completedResearch}+${report.final.inProgressResearch}`);
   console.log(`prestige available: ${report.final.prestigeAvailable ?? '-'}`);
@@ -1515,7 +1515,7 @@ function formatNumber(value) {
   return number.toExponential(2);
 }
 
-function roundGoldPrice(value) {
+function roundCoinPrice(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 

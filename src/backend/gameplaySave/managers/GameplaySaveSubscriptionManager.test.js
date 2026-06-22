@@ -72,7 +72,7 @@ function createConnection(table) {
 
 describe('GameplaySaveSubscriptionManager', () => {
   it('publishes own gameplay save from the own-save view', () => {
-    const save = { version: 2, gold: { current: 12 } };
+    const save = { version: 2, coin: { current: 12 } };
     const table = createSaveTable([
       {
         saveJson: JSON.stringify(save),

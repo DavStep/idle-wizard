@@ -1,6 +1,6 @@
 const EMPTY_SNAPSHOT = {
   topUsers: [],
-  topGeneratedGoldUsers: [],
+  topGeneratedCoinUsers: [],
   topIncomeUsers: [],
 };
 

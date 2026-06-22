@@ -1,9 +1,9 @@
-import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
+import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
 import { fastSellBasePercent } from '../../research/fastSellResearch.js';
 
 export class ShopDirectSellManager {
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     researchFacade,
     shopNpcPriceManager,
@@ -11,7 +11,7 @@ export class ShopDirectSellManager {
     shopSellAvailabilityManager,
     onItemSold,
   } = {}) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.researchFacade = researchFacade;
     this.shopNpcPriceManager = shopNpcPriceManager;
@@ -84,10 +84,10 @@ export class ShopDirectSellManager {
       };
     }
 
-    this.goldFacade.add(quote.totalPriceGold);
+    this.coinFacade.add(quote.totalPriceCoin);
     this.onItemSold?.({
       item,
-      gold: quote.totalPriceGold,
+      coin: quote.totalPriceCoin,
       quantity: safeQuantity,
       source: 'direct_sell',
     });
@@ -101,8 +101,8 @@ export class ShopDirectSellManager {
         kind: item.kind,
       },
       quantity: safeQuantity,
-      priceGold: quote.priceGold,
-      totalPriceGold: quote.totalPriceGold,
+      priceCoin: quote.priceCoin,
+      totalPriceCoin: quote.totalPriceCoin,
       fastSellPercent: quote.fastSellPercent,
     };
   }
@@ -114,20 +114,20 @@ export class ShopDirectSellManager {
 
     return {
       ...quote,
-      priceGold: this.getFastSellPriceGold(quote.priceGold),
-      totalPriceGold: this.getFastSellPriceGold(quote.totalPriceGold),
+      priceCoin: this.getFastSellPriceCoin(quote.priceCoin),
+      totalPriceCoin: this.getFastSellPriceCoin(quote.totalPriceCoin),
       fastSellPercent: this.getFastSellPercent(),
     };
   }
 
-  getFastSellPriceGold(priceGold) {
-    const price = normalizeGoldPrice(priceGold);
+  getFastSellPriceCoin(priceCoin) {
+    const price = normalizeCoinPrice(priceCoin);
 
     if (price === null) {
       return null;
     }
 
-    return normalizeGoldPrice((price * this.getFastSellPercent()) / 100);
+    return normalizeCoinPrice((price * this.getFastSellPercent()) / 100);
   }
 
   getFastSellPercent() {

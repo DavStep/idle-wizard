@@ -1,7 +1,7 @@
 const DEFAULT_GARDEN_BALANCE = {
   garden: {
     initialUnlockedTiles: 1,
-    tileCostsGold: [
+    tileCostsCoin: [
       0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000, 14000,
       19000, 25000, 32000, 40000, 50000, 62000, 76000,
     ],
@@ -21,14 +21,14 @@ export class GardenBalanceManager {
 
   setBalance(balance) {
     this.balance = balance;
-    this.tileCostsGold = this.readTileCostsGold();
+    this.tileCostsCoin = this.readTileCostsCoin();
     this.initialUnlockedTiles = this.readInitialUnlockedTiles();
     this.tilesPerRow = this.readTilesPerRow();
     this.harvestSeconds = this.readHarvestSeconds();
   }
 
   getMaxTiles() {
-    return this.tileCostsGold.length;
+    return this.tileCostsCoin.length;
   }
 
   getInitialUnlockedTiles() {
@@ -36,11 +36,11 @@ export class GardenBalanceManager {
   }
 
   getTileCost(tileNumber) {
-    return this.tileCostsGold[tileNumber - 1] ?? null;
+    return this.tileCostsCoin[tileNumber - 1] ?? null;
   }
 
   getTileCosts() {
-    return [...this.tileCostsGold];
+    return [...this.tileCostsCoin];
   }
 
   getTilesPerRow() {
@@ -51,11 +51,11 @@ export class GardenBalanceManager {
     return this.harvestSeconds;
   }
 
-  readTileCostsGold() {
-    const tileCosts = this.balance?.garden?.tileCostsGold;
+  readTileCostsCoin() {
+    const tileCosts = this.balance?.garden?.tileCostsCoin;
 
     if (!Array.isArray(tileCosts) || tileCosts.length === 0) {
-      throw new Error('game_config.garden requires garden.tileCostsGold.');
+      throw new Error('game_config.garden requires garden.tileCostsCoin.');
     }
 
     if (tileCosts.some((cost) => !Number.isFinite(cost) || cost < 0)) {

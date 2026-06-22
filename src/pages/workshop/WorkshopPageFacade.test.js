@@ -65,17 +65,9 @@ function getWorkshopCharacterRuleBody(baseCss) {
   )?.groups?.body;
 }
 
-function getWorkshopCharacterTop(baseCss, className) {
-  const body = [
-    ...baseCss.matchAll(
-      new RegExp(
-        `\\.workshop-page__ui-layer > \\.${className}\\s*\\{(?<body>[^}]*)\\}`,
-        'g',
-      ),
-    ),
-  ].find((match) => match.groups?.body?.includes('top:'))?.groups?.body;
+function getWorkshopCharacterTopOffset(baseCss) {
   return Number(
-    body
+    getWorkshopCharacterRuleBody(baseCss)
       ?.match(/top:\s*calc\(var\(--style-room-content-top\) \+ ([\d.]+)px\);/)
       ?.at(1),
   );
@@ -95,6 +87,12 @@ function getRootPixelValue(baseCss, propertyName) {
 
 function getRuleBody(baseCss, selector) {
   return baseCss.match(new RegExp(`${selector}\\s*\\{(?<body>[^}]*)\\}`))
+    ?.groups?.body;
+}
+
+function getRuleBodyContaining(baseCss, selector, text) {
+  return [...baseCss.matchAll(new RegExp(`${selector}\\s*\\{(?<body>[^}]*)\\}`, 'g'))]
+    .find((match) => match.groups?.body?.includes(text))
     ?.groups?.body;
 }
 
@@ -136,21 +134,31 @@ describe('WorkshopPageFacade requirement feedback', () => {
     expect(gap).toBeLessThanOrEqual(11);
   });
 
-  it('keeps the notice character stacked close below the tasks character', () => {
+  it('keeps task and notice characters in bottom-aligned side slots', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const personalTasksTop = getWorkshopCharacterTop(
-      baseCss,
-      'workshop-page__personal-tasks',
-    );
-    const worldNoticeTop = getWorkshopCharacterTop(
-      baseCss,
-      'workshop-page__world-notice',
-    );
+    const topOffset = getWorkshopCharacterTopOffset(baseCss);
     const characterHeight = getWorkshopCharacterHeight(baseCss);
+    const personalTasksRule = getRuleBody(
+      baseCss,
+      '\\.workshop-page__ui-layer > \\.workshop-page__personal-tasks',
+    );
+    const worldNoticeRule = getRuleBodyContaining(
+      baseCss,
+      '\\.workshop-page__ui-layer > \\.workshop-page__world-notice',
+      'right:',
+    );
 
-    const gap = worldNoticeTop - (personalTasksTop + characterHeight);
-    expect(gap).toBeGreaterThanOrEqual(1);
-    expect(gap).toBeLessThanOrEqual(3);
+    expect(topOffset).toBe(300);
+    expect(characterHeight).toBe(80.25);
+    expect(personalTasksRule).toMatch(
+      /\bleft:\s*calc\(var\(--style-room-content-edge\) - 14px\);/,
+    );
+    expect(worldNoticeRule).toMatch(
+      /\bright:\s*calc\(var\(--style-room-content-edge\) - 14px\);/,
+    );
+    expect(baseCss).toMatch(
+      /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character\s*\{[^}]*\btransform:\s*scaleX\(-1\);/s,
+    );
   });
 
   it('mounts task and notice characters only inside the Workshop UI layer', () => {

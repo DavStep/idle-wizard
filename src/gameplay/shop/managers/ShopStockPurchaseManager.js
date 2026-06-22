@@ -1,16 +1,16 @@
 import {
-  multiplyGoldPrice,
-  normalizePositiveGoldPrice,
-} from '../../../shared/goldPrice.js';
+  multiplyCoinPrice,
+  normalizePositiveCoinPrice,
+} from '../../../shared/coinPrice.js';
 
 export class ShopStockPurchaseManager {
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     shopNpcPriceManager,
     shopStockPriceQuoteManager,
   } = {}) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.shopNpcPriceManager = shopNpcPriceManager;
     this.shopStockPriceQuoteManager = shopStockPriceQuoteManager;
@@ -33,11 +33,11 @@ export class ShopStockPurchaseManager {
       return quote;
     }
 
-    if (!this.goldFacade.canSpend(quote.totalPriceGold)) {
+    if (!this.coinFacade.canSpend(quote.totalPriceCoin)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
-        cost: quote.totalPriceGold,
+        reason: 'not_enough_coin',
+        cost: quote.totalPriceCoin,
       };
     }
 
@@ -53,11 +53,11 @@ export class ShopStockPurchaseManager {
       };
     }
 
-    if (!this.goldFacade.spend(quote.totalPriceGold)) {
+    if (!this.coinFacade.spend(quote.totalPriceCoin)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
-        cost: quote.totalPriceGold,
+        reason: 'not_enough_coin',
+        cost: quote.totalPriceCoin,
       };
     }
 
@@ -67,8 +67,8 @@ export class ShopStockPurchaseManager {
       ok: true,
       item: this.mapItem(item),
       quantity: safeQuantity,
-      priceGold: quote.priceGold,
-      totalPriceGold: quote.totalPriceGold,
+      priceCoin: quote.priceCoin,
+      totalPriceCoin: quote.totalPriceCoin,
     };
   }
 
@@ -92,11 +92,11 @@ export class ShopStockPurchaseManager {
       return quote;
     }
 
-    const priceGold = normalizePositiveGoldPrice(
-      this.shopNpcPriceManager.getNpcSellPriceGold(item),
+    const priceCoin = normalizePositiveCoinPrice(
+      this.shopNpcPriceManager.getNpcSellPriceCoin(item),
     );
 
-    if (priceGold === null) {
+    if (priceCoin === null) {
       return {
         ok: false,
         reason: 'missing_price',
@@ -106,8 +106,8 @@ export class ShopStockPurchaseManager {
     return {
       ok: true,
       quantity: safeQuantity,
-      priceGold,
-      totalPriceGold: multiplyGoldPrice(priceGold, safeQuantity),
+      priceCoin,
+      totalPriceCoin: multiplyCoinPrice(priceCoin, safeQuantity),
     };
   }
 

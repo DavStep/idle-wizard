@@ -18,7 +18,7 @@ upload script posts the section whose heading matches `package.json` `version`.
 ## 0.2.25
 
 - Added emerald research support for batch planting and brewing, so upgraded plots and cauldrons can turn multiple normal inputs into multiple outputs in one timer.
-- Added emerald save/backend support and resource icons/colors for crystal, emerald, ruby, mana, and gold rows.
+- Added emerald save/backend support and resource icons/colors for crystal, emerald, ruby, mana, and coin rows.
 - Moved Prestige into the bottom room bar when it is unlocked, replacing the unused quests slot.
 - Tightened resource labels and Workshop notice/task indicators so potion names and mana sphere text no longer get mistaken for mana currency.
 
@@ -71,7 +71,7 @@ upload script posts the section whose heading matches `package.json` `version`.
 
 ## 0.2.16
 
-- Added weekly world notices in the Workshop with normal action requests, gold donations, rewards, and past notice history.
+- Added weekly world notices in the Workshop with normal action requests, coin donations, rewards, and past notice history.
 - Improved Workshop personal task rows and chat sending so progress reads cleaner and sent messages appear locally while the server echo catches up.
 - Made Garden planting and emptying easier by letting plantable or active plot bodies respond, with clearer empty-plot confirmation copy.
 - Tightened Brewing recipe and notification states, and hardened save syncing so compact task/notice data stays under the server save limit.
@@ -91,7 +91,7 @@ upload script posts the section whose heading matches `package.json` `version`.
 
 ## 0.2.13
 
-- Added personal daily and weekly tasks in the Workshop with automatic gold and crystal rewards.
+- Added personal daily and weekly tasks in the Workshop with automatic coin and crystal rewards.
 - Added permanent capacity research so prestiges can unlock more Garden plots and Brewing cauldrons.
 - Expanded Garden plot and Brewing cauldron purchase tracks for late-run growth.
 - Improved world chat sending so player level sync is flushed first and chat errors report more clearly.
@@ -108,7 +108,7 @@ upload script posts the section whose heading matches `package.json` `version`.
 - Added a compact Garden box view with plant icons, growth motion, harvest cues, and a rows/boxes setting.
 - Added Market stand quantity marking so NPC auto-sell can sell all items or only a chosen amount.
 - Improved Android auth token storage so signed-in sessions survive WebView storage loss more reliably.
-- Retuned later level seed requirements and tightened Elara's Market gold guidance around fast-sell tabs, quantity, and sell targets.
+- Retuned later level seed requirements and tightened Elara's Market coin guidance around fast-sell tabs, quantity, and sell targets.
 
 ## 0.2.10
 
@@ -198,7 +198,7 @@ upload script posts the section whose heading matches `package.json` `version`.
 
 ## 0.1.26
 
-- Tightened Elara's Market and level-up guidance so later gold goals stay locked onto the real fast-sell flow, selected items, and amount step.
+- Tightened Elara's Market and level-up guidance so later coin goals stay locked onto the real fast-sell flow, selected items, and amount step.
 - Kept tutorial-owned Market prices visible during FTUE so sell and buy quotes match lesson goals instead of drifting with live NPC values.
 - Smoothed early progression by shortening the first sage seed task and putting the level 2 sage herb task before the sage seed follow-up.
 - Made Market touch targets more reliable on mobile for demand, locked stand buys, and stand item selection.
@@ -269,14 +269,14 @@ upload script posts the section whose heading matches `package.json` `version`.
 - Added colored trade alliance tags in alliance views, chat, and leaderboards.
 - Improved level 3 Mira guidance so it continues through mint seed, mint herb, and level-up tasks.
 - Smoothed later task requirements so level tasks follow research order more clearly.
-- Added clearer gold collection flyouts and fixed first-run account choice gate behavior.
+- Added clearer coin collection flyouts and fixed first-run account choice gate behavior.
 
 ## 0.1.16
 
 - Added colored trade alliance tags in alliance views, chat, and leaderboards.
 - Improved level 3 Mira guidance so it continues through mint seed, mint herb, and level-up tasks.
 - Smoothed later task requirements so level tasks follow research order more clearly.
-- Added clearer gold collection flyouts and fixed first-run account choice gate behavior.
+- Added clearer coin collection flyouts and fixed first-run account choice gate behavior.
 
 ## 0.1.15
 

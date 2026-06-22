@@ -28,7 +28,7 @@ describe('PlayerInfoDialogManager', () => {
           username: 'Ada',
           character: 'mira',
           allianceTag: 'TAP',
-          totalProducedGold: 1234,
+          totalProducedCoin: 1234,
           playerLevel: 14,
           prestigeCount: 2,
         },
@@ -72,7 +72,7 @@ describe('PlayerInfoDialogManager', () => {
       'nameAda',
     );
     expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
-      'total produced gold1234',
+      'total produced coin1234',
     );
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -90,7 +90,7 @@ describe('PlayerInfoDialogManager', () => {
           character: 'mira',
           allianceTag: 'TAP',
           allianceTagColor: 'blue',
-          totalProducedGold: 1234,
+          totalProducedCoin: 1234,
           playerLevel: 14,
           prestigeCount: 2,
         },
@@ -127,7 +127,7 @@ describe('PlayerInfoDialogManager', () => {
           {
             username: 'wizard',
             character: 'elara',
-            totalProducedGold: 414,
+            totalProducedCoin: 414,
             playerLevel: 4,
             prestigeCount: 0,
           },

@@ -17,20 +17,20 @@ describe('AppAccountLinkChoiceManager', () => {
     const choicePromise = manager.choose({
       deviceSave: {
         tasks: { currentLevel: 5 },
-        gold: { current: 12 },
+        coin: { current: 12 },
         crystal: { current: 2 },
       },
       accountSave: {
         tasks: { currentLevel: 2 },
-        gold: { current: 3 },
+        coin: { current: 3 },
         crystal: { current: 0 },
       },
       accountUsername: 'Mira',
     });
 
     expect(stage.querySelector('.app-account-link-choice').hidden).toBe(false);
-    expect(stage.textContent).toContain('level 5, 12 gold, 2 crystal');
-    expect(stage.textContent).toContain('username Mira, level 2, 3 gold, 0 crystal');
+    expect(stage.textContent).toContain('level 5, 12 coin, 2 crystal');
+    expect(stage.textContent).toContain('username Mira, level 2, 3 coin, 0 crystal');
 
     stage
       .querySelectorAll('.app-account-link-choice__button')[0]

@@ -1,4 +1,4 @@
-export const PlayerGold = {
+export const PlayerCoin = {
   current: [],
   totalGenerated: [],
 };

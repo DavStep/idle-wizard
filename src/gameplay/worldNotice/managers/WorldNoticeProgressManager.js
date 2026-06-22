@@ -13,10 +13,12 @@ export class WorldNoticeProgressManager {
       return {
         changed: false,
         completedRequests: [],
+        appliedQuantity: 0,
       };
     }
 
     const completedRequests = [];
+    let appliedQuantity = 0;
     let changed = false;
 
     for (const request of notice.requests ?? []) {
@@ -31,6 +33,7 @@ export class WorldNoticeProgressManager {
       }
 
       changed = true;
+      appliedQuantity += result.appliedQuantity;
 
       if (result.completed) {
         completedRequests.push(request);
@@ -40,6 +43,7 @@ export class WorldNoticeProgressManager {
     return {
       changed,
       completedRequests,
+      appliedQuantity,
     };
   }
 
@@ -61,6 +65,7 @@ export class WorldNoticeProgressManager {
       return {
         changed: false,
         completed: Boolean(request?.completed),
+        appliedQuantity: 0,
       };
     }
 
@@ -70,6 +75,7 @@ export class WorldNoticeProgressManager {
     return {
       changed: true,
       completed: request.completed,
+      appliedQuantity: nextProgress - previousProgress,
     };
   }
 

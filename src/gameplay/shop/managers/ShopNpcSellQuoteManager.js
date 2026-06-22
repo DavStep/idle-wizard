@@ -1,10 +1,10 @@
 import {
-  multiplyGoldPrice,
-  normalizeGoldPrice,
-  normalizePositiveGoldPrice,
-} from '../../../shared/goldPrice.js';
+  multiplyCoinPrice,
+  normalizeCoinPrice,
+  normalizePositiveCoinPrice,
+} from '../../../shared/coinPrice.js';
 import {
-  getNpcBuyPriceGold as getNpcBuyMarketPriceGold,
+  getNpcBuyPriceCoin as getNpcBuyMarketPriceCoin,
   getNpcMarketPriceFromNeed,
   normalizeCount,
   NPC_MARKET_MAX_TRADE_QUANTITY,
@@ -25,15 +25,15 @@ export class ShopNpcSellQuoteManager {
       };
     }
 
-    const priceGold = normalizePositiveGoldPrice(
-      this.shopNpcPriceManager.getNpcBuyPriceGold(item),
+    const priceCoin = normalizePositiveCoinPrice(
+      this.shopNpcPriceManager.getNpcBuyPriceCoin(item),
     );
     const npcNeedOverride = npcNeed === null || npcNeed === undefined
       ? null
       : normalizeCount(npcNeed);
     const need = npcNeedOverride ?? this.shopNpcPriceManager.getNpcNeed(item);
 
-    if (priceGold === null) {
+    if (priceCoin === null) {
       return {
         ok: false,
         reason: 'missing_price',
@@ -55,14 +55,14 @@ export class ShopNpcSellQuoteManager {
       };
     }
 
-    const totalPriceGold = this.getMarginalTotalPriceGold({
+    const totalPriceCoin = this.getMarginalTotalPriceCoin({
       item,
       quantity: safeQuantity,
-      fallbackPriceGold: priceGold,
+      fallbackPriceCoin: priceCoin,
       npcNeed,
     });
 
-    if (totalPriceGold === null) {
+    if (totalPriceCoin === null) {
       return {
         ok: false,
         reason: 'missing_price',
@@ -72,8 +72,8 @@ export class ShopNpcSellQuoteManager {
     return {
       ok: true,
       quantity: safeQuantity,
-      priceGold,
-      totalPriceGold,
+      priceCoin,
+      totalPriceCoin,
       need,
     };
   }
@@ -92,9 +92,9 @@ export class ShopNpcSellQuoteManager {
     return safeQuantity;
   }
 
-  getMarginalTotalPriceGold({ item, quantity, fallbackPriceGold, npcNeed: npcNeedOverride = null }) {
+  getMarginalTotalPriceCoin({ item, quantity, fallbackPriceCoin, npcNeed: npcNeedOverride = null }) {
     const priceState = this.shopNpcPriceManager.getNpcPrice?.(item) ?? item;
-    const basePriceGold = normalizePositiveGoldPrice(priceState?.basePriceGold);
+    const basePriceCoin = normalizePositiveCoinPrice(priceState?.basePriceCoin);
     const safeNpcNeedOverride = npcNeedOverride === null || npcNeedOverride === undefined
       ? null
       : normalizeCount(npcNeedOverride);
@@ -104,33 +104,33 @@ export class ShopNpcSellQuoteManager {
       normalizeCount(priceState?.targetStock);
 
     if (
-      basePriceGold === null ||
+      basePriceCoin === null ||
       npcNeed === null ||
       targetNeed === null ||
       targetNeed <= 0
     ) {
-      return multiplyGoldPrice(fallbackPriceGold, quantity);
+      return multiplyCoinPrice(fallbackPriceCoin, quantity);
     }
 
     let totalCents = 0;
 
     for (let offset = 0; offset < quantity; offset += 1) {
-      const marketPriceGold = getNpcMarketPriceFromNeed({
-        basePriceGold,
+      const marketPriceCoin = getNpcMarketPriceFromNeed({
+        basePriceCoin,
         itemKind: priceState?.itemKind ?? item?.kind,
         npcNeed: npcNeed - offset,
         targetNeed,
         volatilityBps: priceState?.volatilityBps,
       });
-      const unitPriceGold = getNpcBuyMarketPriceGold(marketPriceGold);
+      const unitPriceCoin = getNpcBuyMarketPriceCoin(marketPriceCoin);
 
-      if (unitPriceGold === null) {
-        return multiplyGoldPrice(fallbackPriceGold, quantity);
+      if (unitPriceCoin === null) {
+        return multiplyCoinPrice(fallbackPriceCoin, quantity);
       }
 
-      totalCents += Math.round(unitPriceGold * 100);
+      totalCents += Math.round(unitPriceCoin * 100);
     }
 
-    return normalizeGoldPrice(totalCents / 100);
+    return normalizeCoinPrice(totalCents / 100);
   }
 }

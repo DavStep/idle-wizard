@@ -60,7 +60,7 @@ function createResources({ rowClientWidth, rowNaturalWidth, valueClientWidth, va
   const resources = document.createElement('div');
   resources.className = 'room-top-panel__resources';
 
-  for (const label of ['mana', 'gold', 'crystal']) {
+  for (const label of ['mana', 'coin', 'crystal']) {
     const resource = document.createElement('span');
     resource.className = 'room-top-panel__resource';
     const value = document.createElement('span');

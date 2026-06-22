@@ -1,7 +1,7 @@
 {
   "shopShelf": {
     "initialUnlockedSlots": 0,
-    "slotCostsGold": [0, 50, 150, 400, 1000],
+    "slotCostsCoin": [0, 50, 150, 400, 1000],
     "autoSellSeconds": 1800
   }
 }

@@ -4,9 +4,9 @@ import {
   WORLD_NOTICE_UNLOCK_LEVEL,
   WorldNoticeCatalogManager,
 } from './managers/WorldNoticeCatalogManager.js';
+import { WorldNoticeContributionManager } from './managers/WorldNoticeContributionManager.js';
 import { WorldNoticePeriodManager } from './managers/WorldNoticePeriodManager.js';
 import { WorldNoticeProgressManager } from './managers/WorldNoticeProgressManager.js';
-import { WorldNoticeRewardManager } from './managers/WorldNoticeRewardManager.js';
 
 const WORLD_NOTICE_ARCHIVE_LIMIT = 12;
 
@@ -17,22 +17,22 @@ export class WorldNoticeFacade {
     'Posts one weekly world notice, then lets the player answer it through normal workshop work.';
 
   constructor({
-    goldFacade,
+    coinFacade,
     playerLevelFacade,
     tasksFacade,
     now = () => Date.now(),
   } = {}) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.playerLevelFacade = playerLevelFacade;
     this.tasksFacade = tasksFacade;
     this.periodManager = new WorldNoticePeriodManager({ now });
     this.catalogManager = new WorldNoticeCatalogManager();
+    this.contributionManager = new WorldNoticeContributionManager();
     this.progressManager = new WorldNoticeProgressManager();
-    this.rewardManager = new WorldNoticeRewardManager({ goldFacade });
     this.state = this.createEmptyState();
   }
 
-  recordAction(actionType, quantity = 1) {
+  recordAction(actionType, quantity = 1, detail = {}) {
     const normalizedActionType = String(actionType ?? '');
     const amount = Math.max(0, Math.floor(Number(quantity) || 0));
 
@@ -45,16 +45,23 @@ export class WorldNoticeFacade {
 
     const notice = this.ensureCurrentNotice();
     const result = this.progressManager.recordAction(notice, normalizedActionType, amount);
-    const rewards = this.claimCompletedRequestRewards(result.completedRequests);
+    const pointsAdded = this.contributionManager.addPoints(
+      notice,
+      this.contributionManager.getPointsForAction(
+        normalizedActionType,
+        result.appliedQuantity,
+        detail,
+      ),
+    );
 
     return {
       ok: result.changed,
       changed: result.changed,
-      rewards,
+      pointsAdded,
     };
   }
 
-  donateGold(requestId) {
+  donateCoin(requestId) {
     if (!this.isUnlocked()) {
       return {
         ok: false,
@@ -67,7 +74,7 @@ export class WorldNoticeFacade {
     const request = (notice.requests ?? []).find(
       (candidate) =>
         candidate.requestId === requestId &&
-        candidate.actionType === WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+        candidate.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN,
     );
 
     if (!request) {
@@ -91,39 +98,45 @@ export class WorldNoticeFacade {
       Math.floor(Number(request.requiredQuantity) || 0) -
         Math.floor(Number(request.progressQuantity) || 0),
     );
-    const currentGold = Math.max(0, Math.floor(Number(this.goldFacade?.getSnapshot?.().current) || 0));
-    const donation = Math.min(remaining, currentGold);
+    const currentCoin = Math.max(0, Math.floor(Number(this.coinFacade?.getSnapshot?.().current) || 0));
+    const donation = Math.min(remaining, currentCoin);
 
     if (donation <= 0) {
       return {
         ok: false,
         changed: false,
-        reason: 'not_enough_gold',
+        reason: 'not_enough_coin',
         remaining,
-        currentGold,
+        currentCoin,
       };
     }
 
-    if (!this.goldFacade?.canSpend?.(donation)) {
+    if (!this.coinFacade?.canSpend?.(donation)) {
       return {
         ok: false,
         changed: false,
-        reason: 'not_enough_gold',
+        reason: 'not_enough_coin',
         remaining,
-        currentGold,
+        currentCoin,
       };
     }
 
-    this.goldFacade.spend(donation);
+    this.coinFacade.spend(donation);
     const result = this.progressManager.applyProgress(request, donation);
-    const rewards = result.completed ? this.claimCompletedRequestRewards([request]) : [];
+    const pointsAdded = this.contributionManager.addPoints(
+      notice,
+      this.contributionManager.getPointsForAction(
+        WORLD_NOTICE_ACTIONS.DONATE_COIN,
+        result.appliedQuantity,
+      ),
+    );
 
     return {
       ok: result.changed,
       changed: result.changed,
       requestId,
-      donatedGold: donation,
-      rewards,
+      donatedCoin: donation,
+      pointsAdded,
     };
   }
 
@@ -190,7 +203,7 @@ export class WorldNoticeFacade {
     this.state.current = this.catalogManager.createNoticeState({
       ...currentPeriod,
       anchorLevel: this.getCurrentLevel(),
-      completionCostGold: this.getCompletionCostGold(),
+      completionCostCoin: this.getCompletionCostCoin(),
     });
 
     return this.state.current;
@@ -219,6 +232,9 @@ export class WorldNoticeFacade {
       responseTier,
       responseLabel: this.getResponseLabel(responseTier),
       outcome: notice.outcomes?.[responseTier] ?? '',
+      leaderboard: this.contributionManager.createLeaderboardSnapshot(
+        notice.contributionPoints,
+      ),
       requests: requests.map((request) => this.createRequestSnapshot(request)),
     };
   }
@@ -231,9 +247,9 @@ export class WorldNoticeFacade {
     );
     const completed = Boolean(request.completed) || progressQuantity >= requiredQuantity;
     const canDonate =
-      request.actionType === WORLD_NOTICE_ACTIONS.DONATE_GOLD &&
+      request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN &&
       !completed &&
-      Math.max(0, Math.floor(Number(this.goldFacade?.getSnapshot?.().current) || 0)) > 0;
+      Math.max(0, Math.floor(Number(this.coinFacade?.getSnapshot?.().current) || 0)) > 0;
 
     return {
       requestId: request.requestId,
@@ -245,14 +261,10 @@ export class WorldNoticeFacade {
       remainingQuantity: Math.max(0, requiredQuantity - progressQuantity),
       progress: progressQuantity / requiredQuantity,
       completed,
-      manual: request.actionType === WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+      manual: request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN,
       canDonate,
       actionText: this.getRequestActionText({ request, completed, canDonate }),
-      reward: {
-        ...(request.reward ?? {}),
-        text: this.rewardManager.formatRewardText(request.reward),
-      },
-      rewardClaimed: Boolean(request.rewardClaimed),
+      pointText: this.contributionManager.getActionPointText(request.actionType),
     };
   }
 
@@ -261,30 +273,11 @@ export class WorldNoticeFacade {
       return 'done';
     }
 
-    if (request.actionType === WORLD_NOTICE_ACTIONS.DONATE_GOLD) {
+    if (request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN) {
       return canDonate ? 'send coin' : 'need coin';
     }
 
-    return this.rewardManager.formatRewardText(request.reward);
-  }
-
-  claimCompletedRequestRewards(requests) {
-    const rewards = [];
-
-    for (const request of requests ?? []) {
-      if (!request || request.rewardClaimed) {
-        continue;
-      }
-
-      request.rewardClaimed = true;
-      rewards.push({
-        requestId: request.requestId,
-        label: request.label,
-        ...this.rewardManager.grantReward(request.reward),
-      });
-    }
-
-    return rewards;
+    return this.contributionManager.getActionPointText(request.actionType);
   }
 
   archiveNotice(notice) {
@@ -295,6 +288,7 @@ export class WorldNoticeFacade {
       headline: notice.headline,
       responseTier,
       responseLabel: this.getResponseLabel(responseTier),
+      contributionPoints: Math.max(0, Math.floor(Number(notice.contributionPoints) || 0)),
       outcome: notice.outcomes?.[responseTier] ?? notice.archive ?? '',
       archive: notice.archive ?? '',
     };
@@ -336,6 +330,7 @@ export class WorldNoticeFacade {
         typeof entry.responseLabel === 'string'
           ? entry.responseLabel
           : this.getResponseLabel(responseTier),
+      contributionPoints: Math.max(0, Math.floor(Number(entry.contributionPoints) || 0)),
       outcome: typeof entry.outcome === 'string' ? entry.outcome : '',
       archive: typeof entry.archive === 'string' ? entry.archive : '',
     };
@@ -369,8 +364,8 @@ export class WorldNoticeFacade {
     return 1;
   }
 
-  getCompletionCostGold() {
-    const cost = this.tasksFacade?.getLevelCompletionCostGold?.(this.getCurrentLevel());
+  getCompletionCostCoin() {
+    const cost = this.tasksFacade?.getLevelCompletionCostCoin?.(this.getCurrentLevel());
 
     if (Number.isFinite(cost) && cost >= 0) {
       return Math.floor(cost);

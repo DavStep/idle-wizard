@@ -17,13 +17,13 @@ import {
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import {
-  formatGoldPrice,
-  formatGoldPriceText,
-  multiplyGoldPrice,
-  parsePositiveGoldPrice,
-} from '../../../shared/goldPrice.js';
+  formatCoinPrice,
+  formatCoinPriceText,
+  multiplyCoinPrice,
+  parsePositiveCoinPrice,
+} from '../../../shared/coinPrice.js';
 import {
-  PLAYER_MARKET_MAX_PRICE_GOLD,
+  PLAYER_MARKET_MAX_PRICE_COIN,
   PLAYER_MARKET_MAX_QUANTITY,
 } from '../../../shared/playerMarketLimits.js';
 
@@ -57,7 +57,7 @@ export class ShopPlayerShelfManager {
       ownListings: [],
       requests: [],
       ownRequests: [],
-      proceedsGold: 0,
+      proceedsCoin: 0,
     };
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.listingPopup) {
@@ -245,11 +245,11 @@ export class ShopPlayerShelfManager {
     fields.className = 'shop-page__player-listing-fields';
 
     const quantityField = this.createNumberField('quantity', 'quantity', 'Listing quantity');
-    const priceField = this.createNumberField('gold each', 'gold each', 'Listing gold value per item');
+    const priceField = this.createNumberField('coin each', 'coin each', 'Listing coin value per item');
     quantityField.input.max = String(PLAYER_MARKET_MAX_QUANTITY);
     priceField.input.inputMode = 'decimal';
     priceField.input.min = '0.01';
-    priceField.input.max = String(PLAYER_MARKET_MAX_PRICE_GOLD);
+    priceField.input.max = String(PLAYER_MARKET_MAX_PRICE_COIN);
     priceField.input.step = '0.01';
     this.refs.quantityInput = quantityField.input;
     this.refs.priceInput = priceField.input;
@@ -512,7 +512,7 @@ export class ShopPlayerShelfManager {
     const itemTypeId = this.draftListingItemTypeId;
     const item = shelf?.sellItems.find((sellItem) => sellItem.itemTypeId === itemTypeId);
     const quantity = this.readPositiveInteger(this.refs.quantityInput?.value);
-    const priceGold = parsePositiveGoldPrice(this.refs.priceInput?.value);
+    const priceCoin = parsePositiveCoinPrice(this.refs.priceInput?.value);
 
     if (!selectedSlot || !item) {
       this.setListingStatus('choose item');
@@ -529,13 +529,13 @@ export class ShopPlayerShelfManager {
       return;
     }
 
-    if (!priceGold) {
+    if (!priceCoin) {
       this.setListingStatus('bad value');
       return;
     }
 
-    if (priceGold > PLAYER_MARKET_MAX_PRICE_GOLD) {
-      this.setListingStatus(`max ${formatGoldPriceText(PLAYER_MARKET_MAX_PRICE_GOLD)}`);
+    if (priceCoin > PLAYER_MARKET_MAX_PRICE_COIN) {
+      this.setListingStatus(`max ${formatCoinPriceText(PLAYER_MARKET_MAX_PRICE_COIN)}`);
       return;
     }
 
@@ -559,7 +559,7 @@ export class ShopPlayerShelfManager {
       itemLabel: item.label,
       itemKind: item.kind,
       quantity,
-      priceGold,
+      priceCoin,
     });
 
     if (!publishResult?.ok) {
@@ -570,7 +570,7 @@ export class ShopPlayerShelfManager {
     const result = this.gameplayFacade.setSelectedPlayerShopShelfSlotListing({
       itemTypeId,
       quantity,
-      priceGold,
+      priceCoin,
     });
 
     if (!result.ok) {
@@ -623,9 +623,9 @@ export class ShopPlayerShelfManager {
   }
 
   async onClaimProceeds() {
-    const proceedsGold = this.lastPlayerShopSnapshot.proceedsGold ?? 0;
+    const proceedsCoin = this.lastPlayerShopSnapshot.proceedsCoin ?? 0;
 
-    if (proceedsGold <= 0 || !this.lastPlayerShopSnapshot.connected) {
+    if (proceedsCoin <= 0 || !this.lastPlayerShopSnapshot.connected) {
       return;
     }
 
@@ -635,7 +635,7 @@ export class ShopPlayerShelfManager {
       return;
     }
 
-    this.gameplayFacade.claimPlayerShopSaleProceeds(proceedsGold);
+    this.gameplayFacade.claimPlayerShopSaleProceeds(proceedsCoin);
     this.lastGameplaySnapshot = this.gameplayFacade.getSnapshot();
     this.render();
   }
@@ -653,10 +653,10 @@ export class ShopPlayerShelfManager {
       return;
     }
 
-    const totalPriceGold = multiplyGoldPrice(listing.priceGold, buyQuantity);
+    const totalPriceCoin = multiplyCoinPrice(listing.priceCoin, buyQuantity);
 
-    if (totalPriceGold === null || (this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold) {
-      this.setMarketStatus('not enough gold');
+    if (totalPriceCoin === null || (this.lastGameplaySnapshot?.coin?.current ?? 0) < totalPriceCoin) {
+      this.setMarketStatus('not enough coin');
       return;
     }
 
@@ -675,7 +675,7 @@ export class ShopPlayerShelfManager {
       listingKey: listing.listingKey,
       itemKey: listing.itemKey,
       quantity: buyQuantity,
-      priceGold: listing.priceGold,
+      priceCoin: listing.priceCoin,
     });
 
     this.lastGameplaySnapshot = this.gameplayFacade.getSnapshot();
@@ -777,7 +777,7 @@ export class ShopPlayerShelfManager {
     }
 
     if (this.refs.priceInput) {
-      this.refs.priceInput.value = formatGoldPrice(request.priceGold || 1);
+      this.refs.priceInput.value = formatCoinPrice(request.priceCoin || 1);
     }
 
     this.hideMarketPopup();
@@ -890,7 +890,7 @@ export class ShopPlayerShelfManager {
         row.removeAttribute('aria-pressed');
         setResourceIconText(button, this.formatLockedSlotAction(shelf, cost));
         setResourceColorFromText(button, button.textContent);
-        button.disabled = shelf.nextSlotLockedByLevel || this.lastGameplaySnapshot.gold.current < cost;
+        button.disabled = shelf.nextSlotLockedByLevel || this.lastGameplaySnapshot.coin.current < cost;
         button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
         setNotificationBadge(row, false);
         setNotificationBadge(button, false);
@@ -959,7 +959,7 @@ export class ShopPlayerShelfManager {
     this.applyPlayerSlotItemColor(refs.itemValue, parts);
 
     setResourceIconText(refs.priceValue, parts.priceText ? ` ${parts.priceText}` : '');
-    setResourceColor(refs.priceValue, parts.priceText ? 'gold' : null);
+    setResourceColor(refs.priceValue, parts.priceText ? 'coin' : null);
   }
 
   formatLockedSlotAction(shelf, cost) {
@@ -967,7 +967,7 @@ export class ShopPlayerShelfManager {
       return `level ${shelf.nextSlotRequiresLevel}`;
     }
 
-    return cost === 0 ? 'free' : `buy (${formatGoldPriceText(cost)})`;
+    return cost === 0 ? 'free' : `buy (${formatCoinPriceText(cost)})`;
   }
 
   canBuyLockedSlot(shelf, slot, slotNumber) {
@@ -977,7 +977,7 @@ export class ShopPlayerShelfManager {
       slotNumber === shelf?.nextSlotNumber &&
       shelf.nextSlotLockedByLevel !== true &&
       Number.isFinite(shelf.nextSlotCost) &&
-      (this.lastGameplaySnapshot?.gold?.current ?? 0) >= shelf.nextSlotCost
+      (this.lastGameplaySnapshot?.coin?.current ?? 0) >= shelf.nextSlotCost
     );
   }
 
@@ -1061,10 +1061,10 @@ export class ShopPlayerShelfManager {
   }
 
   renderProceeds() {
-    const proceedsGold = this.lastPlayerShopSnapshot.proceedsGold ?? 0;
+    const proceedsCoin = this.lastPlayerShopSnapshot.proceedsCoin ?? 0;
     const button = this.refs.proceedsButton;
 
-    if (proceedsGold <= 0) {
+    if (proceedsCoin <= 0) {
       button.hidden = true;
       button.disabled = true;
       button.setAttribute('aria-disabled', 'true');
@@ -1073,7 +1073,7 @@ export class ShopPlayerShelfManager {
     }
 
     button.hidden = false;
-    setResourceIconText(button, `claim (${formatGoldPriceText(proceedsGold)})`);
+    setResourceIconText(button, `claim (${formatCoinPriceText(proceedsCoin)})`);
     setResourceColorFromText(button, button.textContent);
     button.disabled = !this.lastPlayerShopSnapshot.connected;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
@@ -1353,7 +1353,7 @@ export class ShopPlayerShelfManager {
     const quantity = Math.max(0, Math.floor(Number(request.quantity) || 0));
     const label = `- ${request.itemLabel}`;
     const match = this.getMarketRequestMatch(request);
-    const detail = `wants ${quantity} · ${formatGoldPriceText(request.priceGold)} each · you ${match.ownedQuantity}`;
+    const detail = `wants ${quantity} · ${formatCoinPriceText(request.priceCoin)} each · you ${match.ownedQuantity}`;
     const previousRequestKey = row.row.dataset.shopMarketRequestKey;
 
     if (row.label.textContent !== label) {
@@ -1384,14 +1384,14 @@ export class ShopPlayerShelfManager {
 
   renderMarketRowBuyState(row, listing) {
     const quantity = this.clampListingQuantity(row.quantityInput.value, listing.quantity);
-    const totalPriceGold = quantity
-      ? multiplyGoldPrice(listing.priceGold, quantity)
-      : listing.priceGold;
-    const label = `buy (${formatGoldPriceText(totalPriceGold)})`;
+    const totalPriceCoin = quantity
+      ? multiplyCoinPrice(listing.priceCoin, quantity)
+      : listing.priceCoin;
+    const label = `buy (${formatCoinPriceText(totalPriceCoin)})`;
     const disabled =
       !quantity ||
-      totalPriceGold === null ||
-      (this.lastGameplaySnapshot?.gold?.current ?? 0) < totalPriceGold;
+      totalPriceCoin === null ||
+      (this.lastGameplaySnapshot?.coin?.current ?? 0) < totalPriceCoin;
 
     if (row.button.textContent !== label) {
       setResourceIconText(row.button, label);
@@ -1418,15 +1418,15 @@ export class ShopPlayerShelfManager {
   renderMarketRequestRowActionState(row, request) {
     const match = this.getMarketRequestMatch(request);
     const quantity = this.clampListingQuantity(row.quantityInput.value, match.maxQuantity);
-    const totalPriceGold = quantity
-      ? multiplyGoldPrice(request.priceGold, quantity)
-      : request.priceGold;
-    let label = totalPriceGold === null
+    const totalPriceCoin = quantity
+      ? multiplyCoinPrice(request.priceCoin, quantity)
+      : request.priceCoin;
+    let label = totalPriceCoin === null
       ? 'sell'
-      : `sell (${formatGoldPriceText(totalPriceGold)})`;
+      : `sell (${formatCoinPriceText(totalPriceCoin)})`;
     let disabled =
       !quantity ||
-      totalPriceGold === null ||
+      totalPriceCoin === null ||
       !match.item ||
       match.ownedQuantity <= 0 ||
       !match.slot ||
@@ -1473,14 +1473,14 @@ export class ShopPlayerShelfManager {
   }
 
   isRequestedMarketListing(listing) {
-    const priceGold = Number(listing?.priceGold);
-    const gold = Number(this.lastGameplaySnapshot?.gold?.current) || 0;
+    const priceCoin = Number(listing?.priceCoin);
+    const coin = Number(this.lastGameplaySnapshot?.coin?.current) || 0;
 
     if (
       !listing?.itemKey ||
       (listing.quantity ?? 0) <= 0 ||
-      !Number.isFinite(priceGold) ||
-      priceGold > gold
+      !Number.isFinite(priceCoin) ||
+      priceCoin > coin
     ) {
       return false;
     }
@@ -1490,7 +1490,7 @@ export class ShopPlayerShelfManager {
         request?.itemKey === listing.itemKey &&
         (!request.itemKind || request.itemKind === listing.itemKind) &&
         (request.quantity ?? 0) > 0 &&
-        Number(request.priceGold) >= priceGold,
+        Number(request.priceCoin) >= priceCoin,
     );
   }
 
@@ -1669,7 +1669,7 @@ export class ShopPlayerShelfManager {
     }
 
     if (this.refs.priceInput) {
-      this.refs.priceInput.value = formatGoldPrice(selectedSlot?.priceGold || 1);
+      this.refs.priceInput.value = formatCoinPrice(selectedSlot?.priceCoin || 1);
     }
 
     this.setListingStatus('');
@@ -1700,7 +1700,7 @@ export class ShopPlayerShelfManager {
       itemText: `${display.label} (${display.quantity})`,
       itemKind: displayItem.kind,
       itemEmpty: display.empty,
-      priceText: formatGoldPriceText(slot.priceGold),
+      priceText: formatCoinPriceText(slot.priceCoin),
     };
   }
 

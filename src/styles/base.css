@@ -7,7 +7,7 @@
   --style-disabled: #969696;
   --style-active-surface: var(--style-surface);
   --style-system-text: var(--style-muted);
-  --style-announcement-gold: oklch(44% 0.13 88);
+  --style-announcement-coin: oklch(44% 0.13 88);
   --style-notification-red: #c1121f;
   --style-notification-orange: #d66a00;
   --style-notification: var(--style-notification-red);
@@ -15,7 +15,7 @@
   --style-notification-offset: 3px;
   --style-notification-bleed: calc(var(--style-notification-offset) + 1px);
   --style-resource-mana: var(--style-text);
-  --style-resource-gold: var(--style-text);
+  --style-resource-coin: var(--style-text);
   --style-resource-crystal: var(--style-text);
   --style-resource-emerald: var(--style-text);
   --style-resource-ruby: var(--style-text);
@@ -142,6 +142,8 @@
     var(--style-room-chat-bottom) + var(--style-room-chat-source-height) +
       var(--style-room-chat-title-overhang) + var(--style-room-chat-gap)
   );
+  --workshop-secondary-button-top-offset: 388px;
+  --workshop-secondary-button-row-gap: 40px;
   --style-main-box-width: 280px;
   --style-room-nav-button-width: 100px;
   --brewing-page-guide-sequence-height: var(--style-row-min-height);
@@ -245,7 +247,7 @@
   --style-muted: #a6a6a6;
   --style-disabled: #7a7a7a;
   --style-active-surface: var(--style-surface);
-  --style-announcement-gold: oklch(82% 0.14 88);
+  --style-announcement-coin: oklch(82% 0.14 88);
   --style-backdrop-rgb: 26 26 26;
   --style-log-fade-rgb: 32 32 32;
   --style-block-shadow: 5px 5px 5px #b8b8b8;
@@ -263,7 +265,7 @@
   --style-muted: #a6a6a6;
   --style-disabled: #6a6a6a;
   --style-active-surface: var(--style-surface);
-  --style-announcement-gold: oklch(82% 0.14 88);
+  --style-announcement-coin: oklch(82% 0.14 88);
   --style-backdrop-rgb: 28 30 38;
   --style-log-fade-rgb: 28 30 38;
   --style-block-shadow: 5px 5px 5px #0f1118;
@@ -282,7 +284,7 @@
   --style-disabled: #8f805c;
   --style-active-surface: var(--style-surface);
   --style-system-text: #ffd76a;
-  --style-announcement-gold: #ffd76a;
+  --style-announcement-coin: #ffd76a;
   --style-backdrop-rgb: 7 4 14;
   --style-log-fade-rgb: 26 16 40;
   --style-block-shadow: 5px 5px 5px #05030a;
@@ -320,7 +322,7 @@
 :root[data-style-color="resources"] {
   --style-system-text: oklch(44% 0.12 25);
   --style-resource-mana: oklch(43% 0.14 250);
-  --style-resource-gold: oklch(45% 0.13 96);
+  --style-resource-coin: oklch(45% 0.13 96);
   --style-resource-crystal: oklch(44% 0.1 305);
   --style-resource-emerald: oklch(42% 0.12 150);
   --style-resource-ruby: oklch(42% 0.16 25);
@@ -332,7 +334,7 @@
 :root[data-style-theme="black"][data-style-color="resources"] {
   --style-system-text: oklch(74% 0.11 25);
   --style-resource-mana: oklch(75% 0.12 250);
-  --style-resource-gold: oklch(83% 0.14 96);
+  --style-resource-coin: oklch(83% 0.14 96);
   --style-resource-crystal: oklch(78% 0.1 305);
   --style-resource-emerald: oklch(76% 0.12 150);
   --style-resource-ruby: oklch(76% 0.14 25);
@@ -344,7 +346,7 @@
 :root[data-style-theme="midnight"][data-style-color="resources"] {
   --style-system-text: oklch(75% 0.11 25);
   --style-resource-mana: oklch(78% 0.12 252);
-  --style-resource-gold: oklch(84% 0.14 96);
+  --style-resource-coin: oklch(84% 0.14 96);
   --style-resource-crystal: oklch(80% 0.1 305);
   --style-resource-emerald: oklch(78% 0.12 150);
   --style-resource-ruby: oklch(78% 0.14 25);
@@ -356,7 +358,7 @@
 :root[data-style-theme="witchcraft"][data-style-color="resources"] {
   --style-system-text: #ffd76a;
   --style-resource-mana: #64caff;
-  --style-resource-gold: #ffd76a;
+  --style-resource-coin: #ffd76a;
   --style-resource-crystal: #a96af0;
   --style-resource-emerald: #4da977;
   --style-resource-ruby: #df7653;
@@ -369,8 +371,8 @@
   color: var(--style-resource-mana);
 }
 
-:root [data-resource-color="gold"] {
-  color: var(--style-resource-gold);
+:root [data-resource-color="coin"] {
+  color: var(--style-resource-coin);
 }
 
 :root [data-resource-color="crystal"] {
@@ -1483,6 +1485,19 @@ body {
   transition: opacity var(--style-motion-fast) var(--style-motion-ease);
 }
 
+.tutorial-layer__pointer-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  image-rendering: auto;
+  filter: drop-shadow(0 1px 0 var(--style-surface))
+    drop-shadow(0 2px 1px rgb(0 0 0 / 30%));
+  transform: rotate(var(--tutorial-pointer-rotation, 0deg))
+    scaleX(var(--tutorial-pointer-scale-x, 1));
+  transform-origin: 50% 50%;
+}
+
 .tutorial-layer__pointer-spine-shell {
   position: absolute;
   left: 50%;
@@ -1516,6 +1531,10 @@ body {
   display: block;
 }
 
+.tutorial-layer__pointer[data-spine-ready="true"] .tutorial-layer__pointer-image {
+  visibility: hidden;
+}
+
 .tutorial-layer__pointer.is-hiding {
   opacity: 0;
   will-change: opacity;
@@ -1525,10 +1544,28 @@ body {
   display: none;
 }
 
+.tutorial-layer__pointer[data-placement="top-left"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-rest-x: -1.4px;
+  --tutorial-pointer-rest-y: -1.4px;
+  --tutorial-pointer-push-x: 3.4px;
+  --tutorial-pointer-push-y: 3.4px;
+  --tutorial-pointer-rotation: 45deg;
+  --tutorial-pointer-scale-x: 1;
+}
+
 .tutorial-layer__pointer[data-placement="top-left"] {
   --tutorial-pointer-spine-nudge-x: 6px;
   --tutorial-pointer-spine-nudge-y: 6px;
   --tutorial-pointer-spine-rotation: 135deg;
+}
+
+.tutorial-layer__pointer[data-placement="top-right"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-rest-x: 1.4px;
+  --tutorial-pointer-rest-y: -1.4px;
+  --tutorial-pointer-push-x: -3.4px;
+  --tutorial-pointer-push-y: 3.4px;
+  --tutorial-pointer-rotation: -45deg;
+  --tutorial-pointer-scale-x: -1;
 }
 
 .tutorial-layer__pointer[data-placement="top-right"] {
@@ -1537,16 +1574,45 @@ body {
   --tutorial-pointer-spine-rotation: -135deg;
 }
 
+.tutorial-layer__pointer[data-placement="bottom-left"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-rest-x: -1.4px;
+  --tutorial-pointer-rest-y: 1.4px;
+  --tutorial-pointer-push-x: 3.4px;
+  --tutorial-pointer-push-y: -3.4px;
+  --tutorial-pointer-rotation: -45deg;
+  --tutorial-pointer-scale-x: 1;
+}
+
 .tutorial-layer__pointer[data-placement="bottom-left"] {
   --tutorial-pointer-spine-nudge-x: 6px;
   --tutorial-pointer-spine-nudge-y: -6px;
   --tutorial-pointer-spine-rotation: 45deg;
 }
 
+.tutorial-layer__pointer[data-placement="bottom-right"] .tutorial-layer__pointer-image {
+  --tutorial-pointer-rest-x: 1.4px;
+  --tutorial-pointer-rest-y: 1.4px;
+  --tutorial-pointer-push-x: -3.4px;
+  --tutorial-pointer-push-y: -3.4px;
+  --tutorial-pointer-rotation: 45deg;
+  --tutorial-pointer-scale-x: -1;
+}
+
 .tutorial-layer__pointer[data-placement="bottom-right"] {
   --tutorial-pointer-spine-nudge-x: -6px;
   --tutorial-pointer-spine-nudge-y: -6px;
   --tutorial-pointer-spine-rotation: -45deg;
+}
+
+.tutorial-layer__pointer[data-placement] .tutorial-layer__pointer-image {
+  animation: tutorial-pointer-point 1450ms cubic-bezier(0.37, 0, 0.63, 1)
+    infinite;
+  will-change: translate;
+}
+
+.tutorial-layer__pointer.is-hiding[data-placement] .tutorial-layer__pointer-image {
+  animation: none;
+  will-change: auto;
 }
 
 .game-stage .is-tutorial-target-emphasized {
@@ -2061,6 +2127,17 @@ body {
   text-align: right;
 }
 
+@keyframes tutorial-pointer-point {
+  0%,
+  100% {
+    translate: var(--tutorial-pointer-rest-x) var(--tutorial-pointer-rest-y);
+  }
+
+  50% {
+    translate: var(--tutorial-pointer-push-x) var(--tutorial-pointer-push-y);
+  }
+}
+
 @keyframes tutorial-target-emphasis {
   0%,
   100% {
@@ -2170,6 +2247,7 @@ body {
   .tutorial-layer__objective-button.is-collapsing
     .tutorial-layer__objective-button-label,
   .tutorial-layer__pointer,
+  .tutorial-layer__pointer-image,
   .tutorial-layer__portrait[data-speaking],
   .tutorial-layer__objective-button[data-speaking]
     .tutorial-layer__objective-button-image,
@@ -2190,6 +2268,10 @@ body {
   .tutorial-layer__pointer {
     opacity: 1;
     transition: none;
+    will-change: auto;
+  }
+
+  .tutorial-layer__pointer-image {
     will-change: auto;
   }
 
@@ -2306,7 +2388,11 @@ body {
 
 .workshop-page__action-bar > .style-button.workshop-page__bag-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 448px);
+  top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-secondary-button-top-offset) +
+      var(--workshop-secondary-button-row-gap)
+  );
   left: 0;
   box-sizing: content-box;
   width: 132px;
@@ -2483,7 +2569,7 @@ body {
   left: 0;
   z-index: 91;
   padding: 0;
-  color: var(--style-resource-gold);
+  color: var(--style-resource-coin);
   font: 700 var(--style-font-size) / 1 var(--style-font);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
@@ -2500,9 +2586,9 @@ body {
   will-change: transform, opacity;
 }
 
-.room-top-panel__resource[aria-label="gold"].is-receiving-coins {
+.room-top-panel__resource[aria-label="coin"].is-receiving-coins {
   transform-origin: center;
-  animation: room-gold-pill-receive 420ms var(--style-motion-ease-soft);
+  animation: room-coin-pill-receive 420ms var(--style-motion-ease-soft);
 }
 
 .workshop-page__row {
@@ -3350,20 +3436,19 @@ body {
 .workshop-page__ui-layer > .workshop-page__world-notice {
   position: absolute;
   z-index: 1;
+  top: calc(var(--style-room-content-top) + 300px);
   width: 45.5px;
-  height: 68.25px;
+  height: 80.25px;
   margin: 0;
   pointer-events: none;
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks {
-  top: calc(var(--style-room-content-top) + 242px);
   left: calc(var(--style-room-content-edge) - 14px);
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  top: calc(var(--style-room-content-top) + 312px);
-  left: calc(var(--style-room-content-edge) - 14px);
+  right: calc(var(--style-room-content-edge) - 14px);
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks[hidden],
@@ -3419,6 +3504,16 @@ body {
   transform-origin: center bottom;
 }
 
+.workshop-page__panel-button > .workshop-page__panel-button-open {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.workshop-page__panel-button.has-timer > .workshop-page__panel-button-open {
+  bottom: 12px;
+}
+
 .workshop-page__personal-tasks-open:focus,
 .workshop-page__world-notice-open:focus {
   outline: none;
@@ -3443,6 +3538,11 @@ body {
     translate var(--style-motion-fast) var(--style-motion-ease-rubber);
 }
 
+.workshop-page__panel-button[data-panel-side="right"]
+  .workshop-page__feature-character {
+  transform: scaleX(-1);
+}
+
 .workshop-page__feature-character-label {
   position: absolute;
   left: 14px;
@@ -3462,6 +3562,43 @@ body {
   border: var(--style-border);
   pointer-events: none;
   transition: translate var(--style-motion-press) var(--style-motion-ease-rubber);
+}
+
+.workshop-page__panel-button[data-panel-side="right"]
+  .workshop-page__feature-character-label {
+  right: 14px;
+  left: auto;
+}
+
+.workshop-page__feature-character-timer {
+  position: absolute;
+  right: auto;
+  bottom: -12px;
+  left: 14px;
+  z-index: 2;
+  display: inline-block;
+  min-height: calc(var(--style-box-border-label-line-height) * 0.65);
+  padding: 0 calc(var(--style-box-border-label-padding-x) * 0.65);
+  color: var(--style-muted);
+  font-family: var(--style-font);
+  font-size: calc(var(--style-box-border-label-font-size) * 0.65);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: normal;
+  line-height: calc(var(--style-box-border-label-line-height) * 0.65);
+  white-space: nowrap;
+  background: var(--style-surface);
+  pointer-events: none;
+}
+
+.workshop-page__feature-character-timer[hidden] {
+  display: none;
+}
+
+.workshop-page__panel-button[data-panel-side="right"]
+  .workshop-page__feature-character-timer {
+  right: 14px;
+  left: auto;
+  text-align: right;
 }
 
 .workshop-page__personal-tasks-open:hover .workshop-page__feature-character-label,
@@ -4232,14 +4369,20 @@ body {
 
 .style-button.workshop-page__leaderboard-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 408px);
+  top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-secondary-button-top-offset)
+  );
   left: var(--style-room-content-edge);
   width: 132px;
 }
 
 .style-button.workshop-page__trade-alliance-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 408px);
+  top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-secondary-button-top-offset)
+  );
   right: var(--style-room-content-edge);
   width: 132px;
 }
@@ -4278,7 +4421,11 @@ body {
 
 .style-button.workshop-page__discoveries-button {
   position: absolute;
-  top: calc(var(--style-room-content-top) + 448px);
+  top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-secondary-button-top-offset) +
+      var(--workshop-secondary-button-row-gap)
+  );
   right: var(--style-room-content-edge);
   width: 132px;
 }
@@ -4551,25 +4698,49 @@ body {
 }
 
 .style-dialog.workshop-page__world-notice-dialog {
+  position: relative;
+  width: 286px;
+  height: 380px;
+}
+
+.workshop-page__world-notice-panel {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 286px;
-  max-height: 420px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: var(--style-discoveries-dialog-width);
+  outline: none;
   transform: translate(-50%, -50%);
 }
 
 .workshop-page__world-notice-content {
   display: grid;
   gap: 8px;
-  max-height: 372px;
+  height: calc(380px - var(--style-dialog-padding) - var(--style-dialog-padding));
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.workshop-page__world-notice-content::-webkit-scrollbar {
+  display: none;
+}
+
+.workshop-page__world-notice-tabs {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: 3px;
+  margin-top: var(--style-dialog-tab-gap);
 }
 
 .workshop-page__world-notice-header,
 .workshop-page__world-notice-body,
 .workshop-page__world-notice-requests,
-.workshop-page__world-notice-archive {
+.workshop-page__world-notice-archive,
+.workshop-page__world-notice-rewards {
   display: grid;
   gap: 5px;
 }
@@ -4599,6 +4770,17 @@ body {
 
 .workshop-page__world-notice-copy {
   margin: 0;
+}
+
+.workshop-page__world-notice-contribution,
+.workshop-page__world-notice-reward-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: var(--style-row-column-gap);
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .workshop-page__world-notice-requests {
@@ -4654,6 +4836,28 @@ body {
 
 .workshop-page__world-notice-request-bar {
   width: 100%;
+}
+
+.workshop-page__world-notice-rewards {
+  padding-top: 6px;
+  border-top: 1px solid var(--style-disabled);
+}
+
+.workshop-page__world-notice-reward-row {
+  display: grid;
+  grid-template-columns: minmax(72px, max-content) minmax(0, 1fr);
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+  min-height: var(--style-row-min-height);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__world-notice-reward-value {
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .workshop-page__world-notice-archive {
@@ -4970,7 +5174,7 @@ body {
 
 .workshop-page__summon-info-weight-button[data-drop-weight-color="medium"],
 .workshop-page__summon-info-weight-option[data-drop-weight-color="medium"] {
-  color: var(--style-resource-gold);
+  color: var(--style-resource-coin);
 }
 
 .workshop-page__summon-info-weight-button[data-drop-weight-color="high"],
@@ -4987,7 +5191,7 @@ body {
 }
 
 .workshop-page__summon-info-chance[data-drop-rate-color="medium"] {
-  color: var(--style-resource-gold);
+  color: var(--style-resource-coin);
 }
 
 .workshop-page__summon-info-chance[data-drop-rate-color="high"] {
@@ -5297,7 +5501,7 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-message--recipe-discovery,
 .workshop-page__world-chat-message--recipe-discovery
   .workshop-page__world-chat-name {
-  color: var(--style-announcement-gold);
+  color: var(--style-announcement-coin);
 }
 
 .workshop-page__world-chat-age {
@@ -5675,14 +5879,14 @@ div.workshop-page__discovery-row {
   left: var(--style-room-content-edge);
 }
 
-.shop-page__gold-offer {
+.shop-page__coin-offer {
   position: absolute;
   top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
   left: var(--style-room-content-edge);
 }
 
-.shop-page__gold-offer-row {
+.shop-page__coin-offer-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(58px, max-content);
   align-items: baseline;
@@ -5691,14 +5895,14 @@ div.workshop-page__discovery-row {
   clear: both;
 }
 
-.shop-page__gold-offer-row > :where(span, button) {
+.shop-page__coin-offer-row > :where(span, button) {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.shop-page__gold-offer-action {
+.shop-page__coin-offer-action {
   justify-self: end;
   padding: 0;
   margin: 0;
@@ -5713,13 +5917,13 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.shop-page__gold-offer-action:hover,
-.shop-page__gold-offer-action:focus-visible {
+.shop-page__coin-offer-action:hover,
+.shop-page__coin-offer-action:focus-visible {
   outline: none;
   text-decoration: underline;
 }
 
-.shop-page__gold-offer-action:disabled {
+.shop-page__coin-offer-action:disabled {
   color: var(--style-disabled);
   cursor: default;
   text-decoration: none;
@@ -7553,16 +7757,6 @@ div.workshop-page__discovery-row {
   background: var(--style-surface);
 }
 
-.shop-page__stock-type-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: 0;
-  align-items: stretch;
-  margin-top: 2px;
-  margin-bottom: 4px;
-  border-bottom: var(--style-border);
-}
-
 .shop-page__stock-toggle {
   position: absolute;
   bottom: var(--style-box-border-label-offset);
@@ -8019,7 +8213,7 @@ div.workshop-page__discovery-row {
 .shop-page__sell-dialog,
 .shop-page__trade-history-dialog,
 .shop-page__demand-dialog,
-.shop-page__gold-offer,
+.shop-page__coin-offer,
 .shop-page__crystal-offers,
 .shop-page__direct-sell-box,
 .shop-page__shelf,
@@ -8031,7 +8225,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-panel .shop-page__shelf,
 .shop-page__market-panel .shop-page__stock,
-.shop-page__market-panel .shop-page__gold-offer,
+.shop-page__market-panel .shop-page__coin-offer,
 .shop-page__market-panel .shop-page__crystal-offers,
 .shop-page__market-panel .shop-page__direct-sell-box,
 .shop-page__market-panel .shop-page__player-request,
@@ -8045,7 +8239,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__market-panel .shop-page__shelf:last-child,
 .shop-page__market-panel .shop-page__stock:last-child,
-.shop-page__market-panel .shop-page__gold-offer:last-child,
+.shop-page__market-panel .shop-page__coin-offer:last-child,
 .shop-page__market-panel .shop-page__crystal-offers:last-child,
 .shop-page__market-panel .shop-page__direct-sell-box:last-child,
 .shop-page__market-panel .shop-page__player-request:last-child,
@@ -8307,14 +8501,19 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__popup {
+  --guild-page-popup-center-y: calc(
+    (var(--style-room-content-top) + (100% - var(--style-room-chat-clearance))) /
+      2
+  );
+  --guild-page-popup-visible-center-y: calc(
+    var(--app-visible-stage-height, var(--app-stage-height)) /
+      var(--style-ui-scale) / 2
+  );
   position: absolute;
   inset: 0;
   box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: calc(var(--style-room-content-top) + 12px)
-    var(--style-room-content-edge) var(--style-room-chat-clearance);
+  display: block;
+  padding: 0;
   pointer-events: auto;
   background: rgb(var(--style-backdrop-rgb) / 54%);
 }
@@ -8324,13 +8523,27 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__popup-panel {
-  position: relative;
+  position: absolute;
+  top: var(--guild-page-popup-center-y);
+  left: 50%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  max-width: 100%;
-  max-height: 100%;
+  max-width: calc(100% - (var(--style-room-content-edge) * 2));
+  max-height: calc(
+    100% - var(--style-room-content-top) -
+      var(--style-room-chat-clearance)
+  );
   outline: none;
+  transform: translate(-50%, -50%);
+}
+
+.guild-page__popup:focus-within .guild-page__popup-panel {
+  top: clamp(
+    calc(var(--style-room-content-top) + 96px),
+    var(--guild-page-popup-visible-center-y),
+    var(--guild-page-popup-center-y)
+  );
 }
 
 .style-dialog.guild-page__dialog {
@@ -8690,7 +8903,7 @@ div.workshop-page__discovery-row {
   gap: 10px;
 }
 
-.room-top-panel__right-status .room-top-panel__resource[aria-label="gold"] {
+.room-top-panel__right-status .room-top-panel__resource[aria-label="coin"] {
   justify-self: end;
 }
 
@@ -9357,7 +9570,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__color-preview {
   --color-preview-mana: oklch(43% 0.14 250);
-  --color-preview-gold: oklch(45% 0.13 96);
+  --color-preview-coin: oklch(45% 0.13 96);
   --color-preview-seed: oklch(45% 0.08 58);
   --color-preview-herb: oklch(42% 0.12 145);
   --color-preview-potion: oklch(44% 0.13 345);
@@ -9372,7 +9585,7 @@ div.workshop-page__discovery-row {
 :root[data-style-theme="black"] .room-top-panel__color-preview,
 :root[data-style-theme="midnight"] .room-top-panel__color-preview {
   --color-preview-mana: oklch(76% 0.12 251);
-  --color-preview-gold: oklch(83% 0.14 96);
+  --color-preview-coin: oklch(83% 0.14 96);
   --color-preview-seed: oklch(78% 0.08 58);
   --color-preview-herb: oklch(76% 0.11 145);
   --color-preview-potion: oklch(77% 0.13 345);
@@ -9380,7 +9593,7 @@ div.workshop-page__discovery-row {
 
 :root[data-style-theme="witchcraft"] .room-top-panel__color-preview {
   --color-preview-mana: #64caff;
-  --color-preview-gold: #ffd76a;
+  --color-preview-coin: #ffd76a;
   --color-preview-seed: #e8c878;
   --color-preview-herb: #8fce48;
   --color-preview-potion: #ff8bb4;
@@ -9404,8 +9617,8 @@ div.workshop-page__discovery-row {
 
 :root
   .room-top-panel__color-preview[data-preview-color="resources"]
-  [data-resource-color="gold"] {
-  color: var(--color-preview-gold);
+  [data-resource-color="coin"] {
+  color: var(--color-preview-coin);
 }
 
 :root
@@ -10301,7 +10514,6 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__request-tab-button,
 .style-button.shop-page__market-popup-tab-button,
 .style-button.shop-page__market-tab-button,
-.style-button.shop-page__stock-type-button,
 .style-button.shop-page__trade-history-tab-button,
 .style-button.shop-page__direct-sell-tab-button,
 .style-button.shop-page__demand-tab-button {
@@ -10329,23 +10541,6 @@ div.workshop-page__discovery-row {
   font-size: var(--style-box-border-label-font-size);
   line-height: normal;
   white-space: nowrap;
-}
-
-.style-button.shop-page__stock-type-button {
-  flex: 0 0 auto;
-  width: auto;
-  min-height: calc(var(--style-row-min-height) * 2);
-  padding: 1px 4px;
-  font-size: var(--style-font-size);
-  line-height: normal;
-  background: var(--style-surface);
-  border: 0;
-}
-
-.style-button.shop-page__stock-type-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  ) {
-  background: var(--style-active-surface);
 }
 
 .style-button.shop-page__sell-tab-button,
@@ -10470,7 +10665,6 @@ div.workshop-page__discovery-row {
 .style-button.shop-page__request-tab-button[aria-selected="true"],
 .style-button.shop-page__market-popup-tab-button[aria-selected="true"],
 .style-button.shop-page__market-tab-button[aria-selected="true"],
-.style-button.shop-page__stock-type-button[aria-selected="true"],
 .style-button.shop-page__trade-history-tab-button[aria-selected="true"],
 .style-button.shop-page__direct-sell-tab-button[aria-selected="true"],
 .style-button.shop-page__demand-tab-button[aria-selected="true"] {
@@ -10483,6 +10677,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__bag-tab-button[aria-selected="true"],
 .style-button.workshop-page__trade-alliance-tab-button[aria-selected="true"],
 .style-button.workshop-page__personal-tasks-tab-button[aria-selected="true"],
+.style-button.workshop-page__world-notice-tab-button[aria-selected="true"],
 .style-button.workshop-page__world-chat-tab-button[aria-selected="true"] {
   text-decoration: underline;
 }
@@ -11537,7 +11732,7 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes room-gold-pill-receive {
+@keyframes room-coin-pill-receive {
   0% {
     transform: scale(1);
     text-shadow: 0 0 0 rgb(255 215 106 / 0%);

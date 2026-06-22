@@ -9,9 +9,9 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
-const STOCK_TABS = [
+const STOCK_BOXES = [
   { kind: 'seed', label: 'seeds' },
   { kind: 'herb', label: 'herbs' },
   { kind: 'potion', label: 'potions' },
@@ -26,14 +26,13 @@ export class ShopStockManager {
     this.root = null;
     this.unsubscribe = null;
     this.refs = {
-      tabButtons: new Map(),
+      boxes: new Map(),
       rows: new Map(),
     };
-    this.selectedTab = 'seed';
-    this.stockExpanded = false;
+    this.stockExpanded = new Map();
+    this.statusByKind = new Map();
     this.lastSnapshot = null;
     this.buyingItemTypeId = null;
-    this.statusText = '';
     this.buyPopupVisible = false;
     this.buyItemTypeId = null;
     this.buyQuantity = 1;
@@ -63,40 +62,18 @@ export class ShopStockManager {
       return this.root;
     }
 
-    this.root = document.createElement('section');
-    this.root.className = 'shop-page__stock style-box';
+    this.root = document.createElement('div');
+    this.root.className = 'shop-page__stock-list';
     this.root.setAttribute('aria-label', 'NPC stock market');
 
-    const title = document.createElement('div');
-    title.className = 'style-box__title';
-    title.textContent = 'npc stock market';
+    for (const box of STOCK_BOXES) {
+      const boxRefs = this.createStockBox(box);
+      this.refs.boxes.set(box.kind, boxRefs);
+      this.root.append(boxRefs.root);
+    }
 
-    this.refs.count = document.createElement('div');
-    this.refs.count.className = 'shop-page__stock-count';
-    this.refs.count.textContent = '0/0';
-    this.refs.typeControls = this.createTypeControls();
-    this.refs.rowsRoot = document.createElement('div');
-    this.refs.rowsRoot.className = 'shop-page__stock-rows';
-    this.refs.rowsRoot.id = 'shop-stock-rows';
-    this.refs.status = document.createElement('div');
-    this.refs.status.className = 'shop-page__stock-status';
-    this.refs.toggle = document.createElement('button');
-    this.refs.toggle.className = 'shop-page__stock-toggle';
-    this.refs.toggle.type = 'button';
-    this.refs.toggle.textContent = 'expand';
-    this.refs.toggle.setAttribute('aria-controls', this.refs.rowsRoot.id);
-    this.refs.toggle.setAttribute('aria-expanded', 'false');
-    this.refs.toggle.addEventListener('click', () => this.toggleStockExpanded());
     this.refs.buyPopup = this.createBuyPopup();
 
-    this.root.append(
-      title,
-      this.refs.count,
-      this.refs.typeControls,
-      this.refs.rowsRoot,
-      this.refs.status,
-      this.refs.toggle,
-    );
     parent.append(this.root);
     popupParent.append(this.refs.buyPopup);
     document.addEventListener('keydown', this.handleKeydown);
@@ -121,14 +98,13 @@ export class ShopStockManager {
     this.refs.buyPopup?.remove();
     this.root = null;
     this.refs = {
-      tabButtons: new Map(),
+      boxes: new Map(),
       rows: new Map(),
     };
-    this.selectedTab = 'seed';
-    this.stockExpanded = false;
+    this.stockExpanded = new Map();
+    this.statusByKind = new Map();
     this.lastSnapshot = null;
     this.buyingItemTypeId = null;
-    this.statusText = '';
     this.buyPopupVisible = false;
     this.buyItemTypeId = null;
     this.buyQuantity = 1;
@@ -136,24 +112,43 @@ export class ShopStockManager {
     this.previousFocus = null;
   }
 
-  createTypeControls() {
-    const controls = document.createElement('div');
-    controls.className = 'shop-page__stock-type-row';
-    controls.setAttribute('aria-label', 'Stock item type');
-    controls.setAttribute('role', 'tablist');
+  createStockBox({ kind, label }) {
+    const root = document.createElement('section');
+    root.className = 'shop-page__stock style-box';
+    root.setAttribute('aria-label', `NPC stock market ${label}`);
 
-    for (const tab of STOCK_TABS) {
-      const button = document.createElement('button');
-      button.className = 'style-button shop-page__stock-type-button';
-      button.type = 'button';
-      button.textContent = tab.label;
-      button.setAttribute('role', 'tab');
-      button.addEventListener('click', () => this.onSelectTab(tab.kind));
-      this.refs.tabButtons.set(tab.kind, button);
-      controls.append(button);
-    }
+    const title = document.createElement('div');
+    title.className = 'style-box__title';
+    title.textContent = `npc stock market: ${label}`;
 
-    return controls;
+    const count = document.createElement('div');
+    count.className = 'shop-page__stock-count';
+    count.textContent = '0/0';
+
+    const rowsRoot = document.createElement('div');
+    rowsRoot.className = 'shop-page__stock-rows';
+    rowsRoot.id = `shop-stock-rows-${kind}`;
+
+    const status = document.createElement('div');
+    status.className = 'shop-page__stock-status';
+
+    const toggle = document.createElement('button');
+    toggle.className = 'shop-page__stock-toggle';
+    toggle.type = 'button';
+    toggle.textContent = 'expand';
+    toggle.setAttribute('aria-controls', rowsRoot.id);
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.addEventListener('click', () => this.toggleStockExpanded(kind));
+
+    root.append(title, count, rowsRoot, status, toggle);
+
+    return {
+      root,
+      count,
+      rowsRoot,
+      status,
+      toggle,
+    };
   }
 
   createBuyPopup() {
@@ -237,7 +232,7 @@ export class ShopStockManager {
     });
   }
 
-  createRow(itemTypeId) {
+  createRow(itemTypeId, kind) {
     const row = document.createElement('div');
     row.className = 'shop-page__stock-row';
 
@@ -254,24 +249,14 @@ export class ShopStockManager {
 
     value.append(button);
     row.append(label, value);
-    this.refs.rowsRoot.append(row);
+    this.refs.boxes.get(kind)?.rowsRoot.append(row);
 
     return {
+      kind,
       row,
       label,
       button,
     };
-  }
-
-  onSelectTab(kind) {
-    if (this.selectedTab === kind) {
-      return;
-    }
-
-    this.selectedTab = kind;
-    this.stockExpanded = false;
-    this.statusText = '';
-    this.render();
   }
 
   async onBuyItem(itemTypeId) {
@@ -286,7 +271,7 @@ export class ShopStockManager {
     }
 
     if (!this.canBuyItem(item)) {
-      this.statusText = this.getCannotBuyStatus(item);
+      this.setStatus(item.kind, this.getCannotBuyStatus(item));
       this.render();
       return;
     }
@@ -336,8 +321,8 @@ export class ShopStockManager {
       return;
     }
 
-    if ((this.lastSnapshot?.gold?.current ?? 0) < quote.totalPriceGold) {
-      this.buyStatusText = 'not enough gold';
+    if ((this.lastSnapshot?.coin?.current ?? 0) < quote.totalPriceCoin) {
+      this.buyStatusText = 'not enough coin';
       this.renderBuyDialog();
       return;
     }
@@ -355,7 +340,7 @@ export class ShopStockManager {
 
     if (result.ok) {
       this.hideBuyPopup();
-      this.statusText = '';
+      this.statusByKind.clear();
     } else {
       this.buyStatusText = this.getBuyFailureText(result.reason);
     }
@@ -406,53 +391,70 @@ export class ShopStockManager {
       return;
     }
 
-    for (const tab of STOCK_TABS) {
-      const selected = this.selectedTab === tab.kind;
-      const button = this.refs.tabButtons.get(tab.kind);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
-    }
+    const visibleItemsByKind = new Map();
+    const visibleItemTypeIds = new Set();
 
-    const items = this.getVisibleStockItems();
-    const hiddenStartIndex = this.stockExpanded
-      ? items.length
-      : COLLAPSED_STOCK_ROW_COUNT;
-    const visibleItemTypeIds = new Set(items.map((item) => item.itemTypeId));
+    for (const box of STOCK_BOXES) {
+      const items = this.getVisibleStockItems(box.kind);
+      visibleItemsByKind.set(box.kind, items);
+      for (const item of items) {
+        visibleItemTypeIds.add(item.itemTypeId);
+      }
+    }
 
     for (const [itemTypeId, refs] of this.refs.rows) {
       refs.row.hidden = !visibleItemTypeIds.has(itemTypeId);
     }
 
+    for (const box of STOCK_BOXES) {
+      this.renderStockBox(box.kind, visibleItemsByKind.get(box.kind) ?? []);
+    }
+
+    this.renderBuyDialog();
+  }
+
+  renderStockBox(kind, items) {
+    const hiddenStartIndex = this.isStockExpanded(kind)
+      ? items.length
+      : COLLAPSED_STOCK_ROW_COUNT;
+
     items.forEach((item, index) => {
-      const refs = this.ensureRow(item.itemTypeId);
+      const refs = this.ensureRow(item.itemTypeId, kind);
       this.renderRow(refs, item);
       refs.row.hidden = index >= hiddenStartIndex;
     });
 
-    this.renderStockToggle(items.length);
-    this.renderStatus(items.length === 0 ? 'empty' : this.statusText);
-    this.renderBuyDialog();
+    this.renderStockToggle(kind, items.length);
+    this.renderStatus(kind, items.length === 0 ? 'empty' : this.getStatus(kind));
   }
 
-  renderStockToggle(itemCount) {
+  renderStockToggle(kind, itemCount) {
+    const refs = this.refs.boxes.get(kind);
+    const expanded = this.isStockExpanded(kind);
+
+    if (!refs) {
+      return;
+    }
+
     const collapsedCount = Math.min(itemCount, COLLAPSED_STOCK_ROW_COUNT);
-    const visibleCount = this.stockExpanded ? itemCount : collapsedCount;
+    const visibleCount = expanded ? itemCount : collapsedCount;
     const canToggle = itemCount > COLLAPSED_STOCK_ROW_COUNT;
 
-    this.root?.classList.toggle('is-expanded', this.stockExpanded);
-    this.root?.classList.toggle('is-collapsed', !this.stockExpanded);
-    this.refs.count.textContent = `${visibleCount}/${itemCount}`;
-    this.refs.toggle.hidden = !canToggle;
-    this.refs.toggle.textContent = this.stockExpanded ? 'collapse' : 'expand';
-    this.refs.toggle.setAttribute(
-      'aria-expanded',
-      this.stockExpanded ? 'true' : 'false',
-    );
+    refs.root.classList.toggle('is-expanded', expanded);
+    refs.root.classList.toggle('is-collapsed', !expanded);
+    refs.count.textContent = `${visibleCount}/${itemCount}`;
+    refs.toggle.hidden = !canToggle;
+    refs.toggle.textContent = expanded ? 'collapse' : 'expand';
+    refs.toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
   }
 
-  toggleStockExpanded() {
-    this.stockExpanded = !this.stockExpanded;
+  toggleStockExpanded(kind = 'seed') {
+    this.stockExpanded.set(kind, !this.isStockExpanded(kind));
     this.render();
+  }
+
+  isStockExpanded(kind) {
+    return this.stockExpanded.get(kind) === true;
   }
 
   isRenderVisible() {
@@ -480,13 +482,19 @@ export class ShopStockManager {
     setResourceIconText(refs.button, buying ? 'buying' : this.getBuyButtonText(item));
     refs.button.disabled = buying || !canBuy;
     refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
-    setResourceColor(refs.button, refs.button.disabled ? null : 'gold');
+    setResourceColor(refs.button, refs.button.disabled ? null : 'coin');
   }
 
-  renderStatus(message) {
-    this.refs.status.textContent = message;
-    this.refs.status.hidden = !message;
-    setResourceColorFromText(this.refs.status, message);
+  renderStatus(kind, message) {
+    const refs = this.refs.boxes.get(kind);
+
+    if (!refs) {
+      return;
+    }
+
+    refs.status.textContent = message;
+    refs.status.hidden = !message;
+    setResourceColorFromText(refs.status, message);
   }
 
   renderBuyDialog() {
@@ -512,7 +520,7 @@ export class ShopStockManager {
     const quote = this.getBuyQuote(item, quantity);
     const buying = this.buyingItemTypeId === item.itemTypeId;
     const canAfford =
-      quote.ok && (this.lastSnapshot?.gold?.current ?? 0) >= quote.totalPriceGold;
+      quote.ok && (this.lastSnapshot?.coin?.current ?? 0) >= quote.totalPriceCoin;
     const canBuy = quote.ok && canAfford && !buying;
 
     this.buyQuantity = quantity;
@@ -536,15 +544,15 @@ export class ShopStockManager {
 
     setResourceIconText(
       this.refs.buyEachValue.value,
-      displayQuote.ok ? formatGoldPriceText(displayQuote.priceGold) : 'offline',
+      displayQuote.ok ? formatCoinPriceText(displayQuote.priceCoin) : 'offline',
     );
-    setResourceColor(this.refs.buyEachValue.value, displayQuote.ok ? 'gold' : null);
+    setResourceColor(this.refs.buyEachValue.value, displayQuote.ok ? 'coin' : null);
 
     setResourceIconText(
       this.refs.buyTotalValue.value,
-      quote.ok ? formatGoldPriceText(quote.totalPriceGold) : '?',
+      quote.ok ? formatCoinPriceText(quote.totalPriceCoin) : '?',
     );
-    setResourceColor(this.refs.buyTotalValue.value, quote.ok ? 'gold' : null);
+    setResourceColor(this.refs.buyTotalValue.value, quote.ok ? 'coin' : null);
 
     this.refs.buyConfirmButton.textContent = buying ? 'buying' : 'buy';
     this.refs.buyConfirmButton.disabled = !canBuy;
@@ -553,32 +561,51 @@ export class ShopStockManager {
     const status =
       this.buyStatusText ||
       (!quote.ok ? this.getBuyFailureText(quote.reason) : '') ||
-      (!canAfford ? 'not enough gold' : '');
+      (!canAfford ? 'not enough coin' : '');
     setResourceIconText(this.refs.buyDialogStatus, status);
     this.refs.buyDialogStatus.hidden = !status;
     setResourceColorFromText(this.refs.buyDialogStatus, status);
   }
 
-  ensureRow(itemTypeId) {
+  ensureRow(itemTypeId, kind) {
     if (!this.refs.rows.has(itemTypeId)) {
-      this.refs.rows.set(itemTypeId, this.createRow(itemTypeId));
+      this.refs.rows.set(itemTypeId, this.createRow(itemTypeId, kind));
     }
 
-    return this.refs.rows.get(itemTypeId);
+    const refs = this.refs.rows.get(itemTypeId);
+
+    if (refs.kind !== kind) {
+      refs.kind = kind;
+      this.refs.boxes.get(kind)?.rowsRoot.append(refs.row);
+    }
+
+    return refs;
   }
 
-  getVisibleStockItems() {
+  getVisibleStockItems(kind) {
     const items = this.lastSnapshot?.shop?.stock?.items ?? [];
 
     return items.filter(
       (item) =>
-        item.kind === this.selectedTab &&
+        item.kind === kind &&
         shouldShowItemInActionList(
           this.lastSnapshot,
           item,
           this.getStockDisplayQuantity(item),
         ),
     );
+  }
+
+  getStatus(kind) {
+    return this.statusByKind.get(kind) ?? '';
+  }
+
+  setStatus(kind, message) {
+    if (!kind || !message) {
+      return;
+    }
+
+    this.statusByKind.set(kind, message);
   }
 
   getStockDisplayQuantity(item, stock = item?.stock) {
@@ -611,20 +638,20 @@ export class ShopStockManager {
     }
 
     return {
-      ok: Number.isFinite(item.buyGold) && item.buyGold > 0,
+      ok: Number.isFinite(item.buyCoin) && item.buyCoin > 0,
       quantity,
-      priceGold: item.buyGold,
-      totalPriceGold: item.buyGold * quantity,
+      priceCoin: item.buyCoin,
+      totalPriceCoin: item.buyCoin * quantity,
     };
   }
 
   getDisplayBuyQuote(item, quantity = 1) {
-    if (Number.isFinite(item?.buyGold) && item.buyGold > 0) {
+    if (Number.isFinite(item?.buyCoin) && item.buyCoin > 0) {
       return {
         ok: true,
         quantity,
-        priceGold: item.buyGold,
-        totalPriceGold: item.buyGold * quantity,
+        priceCoin: item.buyCoin,
+        totalPriceCoin: item.buyCoin * quantity,
       };
     }
 
@@ -683,11 +710,11 @@ export class ShopStockManager {
 
   canBuyItem(item) {
     return (
-      Number.isFinite(item.buyGold) &&
-      item.buyGold > 0 &&
+      Number.isFinite(item.buyCoin) &&
+      item.buyCoin > 0 &&
       Number.isFinite(item.stock) &&
       item.stock > 0 &&
-      (this.lastSnapshot?.gold?.current ?? 0) >= item.buyGold &&
+      (this.lastSnapshot?.coin?.current ?? 0) >= item.buyCoin &&
       shouldShowItemInActionList(
         this.lastSnapshot,
         item,
@@ -699,7 +726,7 @@ export class ShopStockManager {
   getBuyButtonText(item) {
     const displayQuote = this.getDisplayBuyQuote(item, 1);
 
-    if (!displayQuote.ok || !Number.isFinite(displayQuote.priceGold)) {
+    if (!displayQuote.ok || !Number.isFinite(displayQuote.priceCoin)) {
       return 'offline';
     }
 
@@ -707,11 +734,11 @@ export class ShopStockManager {
       return 'empty';
     }
 
-    return formatGoldPriceText(displayQuote.priceGold);
+    return formatCoinPriceText(displayQuote.priceCoin);
   }
 
   getCannotBuyStatus(item) {
-    if (!Number.isFinite(item.buyGold)) {
+    if (!Number.isFinite(item.buyCoin)) {
       return 'offline';
     }
 
@@ -719,12 +746,12 @@ export class ShopStockManager {
       return 'empty';
     }
 
-    return 'not enough gold';
+    return 'not enough coin';
   }
 
   getBuyFailureText(reason) {
-    if (reason === 'not_enough_gold') {
-      return 'not enough gold';
+    if (reason === 'not_enough_coin') {
+      return 'not enough coin';
     }
 
     if (reason === 'empty_stock') {

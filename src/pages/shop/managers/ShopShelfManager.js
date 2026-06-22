@@ -10,7 +10,7 @@ import {
 } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
-import { formatGoldPriceText, normalizeGoldPrice } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText, normalizeCoinPrice } from '../../../shared/coinPrice.js';
 
 const EMPTY_STAND_LABEL = 'empty stand';
 const EMPTY_STAND_ACTION_LABEL = 'select';
@@ -806,7 +806,7 @@ export class ShopShelfManager {
       return `level ${shelf.nextSlotRequiresLevel}`;
     }
 
-    return cost === 0 ? 'free' : `buy (${formatGoldPriceText(cost)})`;
+    return cost === 0 ? 'free' : `buy (${formatCoinPriceText(cost)})`;
   }
 
   renderSellControls(snapshot, shelf) {
@@ -867,7 +867,7 @@ export class ShopShelfManager {
       this.setText(label, `${display.label} (${display.quantity}) `);
       setItemIconLabel(label, item.kind, item.key);
       setResourceColor(label, item.kind);
-      setResourceIconText(quantity, this.formatSellGold(this.getDisplaySellGold(item)));
+      setResourceIconText(quantity, this.formatSellCoin(this.getDisplaySellCoin(item)));
       setResourceColorFromText(quantity, quantity.textContent);
       button.disabled = !canSelectItem;
       button.setAttribute('aria-disabled', canSelectItem ? 'false' : 'true');
@@ -1076,12 +1076,12 @@ export class ShopShelfManager {
       kind: slot.sellKind,
       label: slot.sellLabel,
     };
-    const fallbackSellGold = slot.sellGold ?? sellItem?.sellGold;
-    const sellGold = this.getDisplaySellGold(displayItem, fallbackSellGold);
+    const fallbackSellCoin = slot.sellCoin ?? sellItem?.sellCoin;
+    const sellCoin = this.getDisplaySellCoin(displayItem, fallbackSellCoin);
     const amountMode = slot.sellLimitMode === 'amount';
-    const totalSellGold = this.getDisplayTotalSellGold(sellGold, quantity, {
+    const totalSellCoin = this.getDisplayTotalSellCoin(sellCoin, quantity, {
       useUnitForZeroQuantity:
-        !amountMode && Number(quantity) <= 0 && Number.isFinite(sellGold),
+        !amountMode && Number(quantity) <= 0 && Number.isFinite(sellCoin),
     });
     const display = displayItem.key
       ? getItemDisplay(snapshot, displayItem, quantity ?? 0)
@@ -1099,7 +1099,7 @@ export class ShopShelfManager {
       };
     }
 
-    if (!Number.isFinite(totalSellGold)) {
+    if (!Number.isFinite(totalSellCoin)) {
       return {
         itemKey: displayItem.key,
         itemText,
@@ -1115,8 +1115,8 @@ export class ShopShelfManager {
       itemText,
       itemKind: displayItem.kind,
       itemEmpty: display.empty,
-      priceText: this.formatSellGold(totalSellGold),
-      priceResource: 'gold',
+      priceText: this.formatSellCoin(totalSellCoin),
+      priceResource: 'coin',
     };
   }
 
@@ -1326,46 +1326,46 @@ export class ShopShelfManager {
     return 'mark failed';
   }
 
-  formatSellGold(sellGold) {
-    if (!Number.isFinite(sellGold)) {
-      return '? gold';
+  formatSellCoin(sellCoin) {
+    if (!Number.isFinite(sellCoin)) {
+      return '? coin';
     }
 
-    return formatGoldPriceText(sellGold);
+    return formatCoinPriceText(sellCoin);
   }
 
-  getDisplaySellGold(item, fallbackSellGold = item?.sellGold) {
-    if (Number.isFinite(fallbackSellGold) && fallbackSellGold > 0) {
-      return fallbackSellGold;
+  getDisplaySellCoin(item, fallbackSellCoin = item?.sellCoin) {
+    if (Number.isFinite(fallbackSellCoin) && fallbackSellCoin > 0) {
+      return fallbackSellCoin;
     }
 
-    const overrideSellGold = this.getSellPriceOverride?.({
+    const overrideSellCoin = this.getSellPriceOverride?.({
       item,
     });
 
-    if (Number.isFinite(overrideSellGold) && overrideSellGold > 0) {
-      return overrideSellGold;
+    if (Number.isFinite(overrideSellCoin) && overrideSellCoin > 0) {
+      return overrideSellCoin;
     }
 
-    return fallbackSellGold;
+    return fallbackSellCoin;
   }
 
-  getDisplayTotalSellGold(sellGold, quantity, { useUnitForZeroQuantity = false } = {}) {
+  getDisplayTotalSellCoin(sellCoin, quantity, { useUnitForZeroQuantity = false } = {}) {
     const safeQuantity = Math.max(0, Math.floor(Number(quantity)));
 
-    if (!Number.isFinite(sellGold) || sellGold <= 0 || !Number.isFinite(safeQuantity)) {
+    if (!Number.isFinite(sellCoin) || sellCoin <= 0 || !Number.isFinite(safeQuantity)) {
       return null;
     }
 
     const totalQuantity = safeQuantity > 0 || !useUnitForZeroQuantity ? safeQuantity : 1;
-    return normalizeGoldPrice(sellGold * totalQuantity);
+    return normalizeCoinPrice(sellCoin * totalQuantity);
   }
 
   canSelectSellItem(snapshot, item) {
     return (
       shouldShowItemInActionList(snapshot, item, item.quantity) &&
-      Number.isFinite(item.sellGold) &&
-      item.sellGold > 0
+      Number.isFinite(item.sellCoin) &&
+      item.sellCoin > 0
     );
   }
 
@@ -1378,7 +1378,7 @@ export class ShopShelfManager {
       slotNumber === shelf?.nextSlotNumber &&
       shelf.nextSlotLockedByLevel !== true &&
       Number.isFinite(cost) &&
-      (snapshot?.gold?.current ?? 0) >= cost
+      (snapshot?.coin?.current ?? 0) >= cost
     );
   }
 

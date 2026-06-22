@@ -4,8 +4,8 @@ export const WORLD_NOTICE_STATE_VERSION = 2;
 export const WORLD_NOTICE_ACTIONS = Object.freeze({
   BREW_POTIONS: 'brew_potions',
   COMPLETE_RESEARCH: 'complete_research',
-  DONATE_GOLD: 'donate_gold',
-  EARN_GOLD: 'earn_gold',
+  DONATE_COIN: 'donate_coin',
+  EARN_COIN: 'earn_coin',
   HARVEST_HERBS: 'harvest_herbs',
   SELL_ITEMS: 'sell_items',
   SUMMON_SEEDS: 'summon_seeds',
@@ -90,7 +90,7 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     requests: [
       {
         requestKey: 'steadyTrade',
-        actionType: WORLD_NOTICE_ACTIONS.EARN_GOLD,
+        actionType: WORLD_NOTICE_ACTIONS.EARN_COIN,
         label: 'steady workshop trade',
       },
       {
@@ -255,7 +255,7 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     requests: [
       {
         requestKey: 'proveTrade',
-        actionType: WORLD_NOTICE_ACTIONS.EARN_GOLD,
+        actionType: WORLD_NOTICE_ACTIONS.EARN_COIN,
         label: 'prove town trade',
       },
       {
@@ -350,10 +350,10 @@ export class WorldNoticeCatalogManager {
     return WORLD_NOTICE_EVENTS[index % WORLD_NOTICE_EVENTS.length];
   }
 
-  createNoticeState({ periodKey, weekIndex, resetAtMs, anchorLevel, completionCostGold }) {
+  createNoticeState({ periodKey, weekIndex, resetAtMs, anchorLevel, completionCostCoin }) {
     const event = this.getEventForWeek(weekIndex);
     const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const baseGold = Math.max(0, Math.floor(Number(completionCostGold) || level * level * 10));
+    const baseCoin = Math.max(0, Math.floor(Number(completionCostCoin) || level * level * 10));
 
     return {
       version: WORLD_NOTICE_STATE_VERSION,
@@ -368,19 +368,20 @@ export class WorldNoticeCatalogManager {
       body: [...event.body],
       outcomes: { ...event.outcomes },
       archive: event.archive,
+      contributionPoints: 0,
       requests: event.requests.map((request) =>
         this.createRequestState({
           eventId: event.eventId,
           periodKey,
           request,
           anchorLevel: level,
-          completionCostGold: baseGold,
+          completionCostCoin: baseCoin,
         }),
       ),
     };
   }
 
-  createRequestState({ eventId, periodKey, request, anchorLevel, completionCostGold }) {
+  createRequestState({ eventId, periodKey, request, anchorLevel, completionCostCoin }) {
     return {
       requestId: `${periodKey}:${eventId}:${request.requestKey}`,
       requestKey: request.requestKey,
@@ -389,29 +390,25 @@ export class WorldNoticeCatalogManager {
       requiredQuantity: this.getRequiredQuantity({
         actionType: request.actionType,
         anchorLevel,
-        completionCostGold,
+        completionCostCoin,
       }),
       progressQuantity: 0,
       completed: false,
-      reward: {
-        gold: this.getRewardGold(anchorLevel, completionCostGold),
-      },
-      rewardClaimed: false,
     };
   }
 
-  getRequiredQuantity({ actionType, anchorLevel, completionCostGold }) {
+  getRequiredQuantity({ actionType, anchorLevel, completionCostCoin }) {
     const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const completionCost = Math.max(0, Math.floor(Number(completionCostGold) || 0));
+    const completionCost = Math.max(0, Math.floor(Number(completionCostCoin) || 0));
 
     switch (actionType) {
       case WORLD_NOTICE_ACTIONS.BREW_POTIONS:
         return this.clamp(Math.round(3 + level / 2), 5, 30);
       case WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH:
         return 1;
-      case WORLD_NOTICE_ACTIONS.DONATE_GOLD:
+      case WORLD_NOTICE_ACTIONS.DONATE_COIN:
         return this.roundToFive(Math.max(15, completionCost * 0.08));
-      case WORLD_NOTICE_ACTIONS.EARN_GOLD:
+      case WORLD_NOTICE_ACTIONS.EARN_COIN:
         return this.roundToFive(Math.max(50, completionCost * 0.5));
       case WORLD_NOTICE_ACTIONS.HARVEST_HERBS:
         return this.roundToFive(15 + level * 3);
@@ -424,9 +421,9 @@ export class WorldNoticeCatalogManager {
     }
   }
 
-  getRewardGold(anchorLevel, completionCostGold) {
+  getRewardCoin(anchorLevel, completionCostCoin) {
     const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const completionCost = Math.max(0, Math.floor(Number(completionCostGold) || 0));
+    const completionCost = Math.max(0, Math.floor(Number(completionCostCoin) || 0));
 
     return this.roundToFive(Math.max(10, completionCost * 0.08 + level));
   }
@@ -461,6 +458,7 @@ export class WorldNoticeCatalogManager {
       body: [...event.body],
       outcomes: { ...event.outcomes },
       archive: event.archive,
+      contributionPoints: Math.max(0, Math.floor(Number(notice.contributionPoints) || 0)),
       requests: Array.isArray(notice.requests)
         ? notice.requests.map((request) => this.sanitizeRequest(request)).filter(Boolean)
         : [],
@@ -494,10 +492,6 @@ export class WorldNoticeCatalogManager {
       requiredQuantity,
       progressQuantity,
       completed: Boolean(request.completed) || progressQuantity >= requiredQuantity,
-      reward: {
-        gold: Math.max(0, Math.floor(Number(request.reward?.gold) || 0)),
-      },
-      rewardClaimed: Boolean(request.rewardClaimed),
     };
   }
 

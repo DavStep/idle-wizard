@@ -15,7 +15,7 @@ export class BrewingFacade {
     'Brewing lets the wizard place herbs into a cauldron, spend mana, and bottle the result into inventory.';
 
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     manaFacade,
     playerLevelFacade,
@@ -32,7 +32,7 @@ export class BrewingFacade {
       maxCauldrons: this.brewingBalanceManager.getMaxCauldrons(),
     });
     this.brewingCauldronPurchaseManager = new BrewingCauldronPurchaseManager({
-      goldFacade,
+      coinFacade,
       brewingBalanceManager: this.brewingBalanceManager,
       brewingCauldronEntityManager: this.brewingCauldronEntityManager,
       playerLevelFacade,

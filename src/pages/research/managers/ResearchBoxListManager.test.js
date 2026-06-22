@@ -251,7 +251,7 @@ describe('ResearchBoxListManager', () => {
                 value: 'free',
                 effect: 'brew',
                 description: 'allows valid cauldron ingredients to brew mana tonic.',
-                costGold: 0,
+                costCoin: 0,
                 completed: false,
                 canResearch: true,
                 requiredPlayerLevel: 4,
@@ -263,7 +263,7 @@ describe('ResearchBoxListManager', () => {
                 effect: 'brew',
                 description:
                   'allows valid cauldron ingredients to brew minor healing potion.',
-                costGold: 350,
+                costCoin: 350,
                 completed: false,
                 locked: true,
                 canResearch: false,

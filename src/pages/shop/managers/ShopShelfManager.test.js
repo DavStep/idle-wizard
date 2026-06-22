@@ -136,7 +136,7 @@ function createRequestGameplayFacadeFake() {
     getSnapshot() {
       return snapshot;
     },
-    setPlayerShopRequest(slotNumber, { itemTypeId, quantity, priceGold }) {
+    setPlayerShopRequest(slotNumber, { itemTypeId, quantity, priceCoin }) {
       const slot = getRequestSlot(slotNumber);
       const item = getRequestItem(itemTypeId);
 
@@ -150,10 +150,10 @@ function createRequestGameplayFacadeFake() {
         itemKind: item.kind,
         itemLabel: item.label,
         quantity,
-        priceGold,
+        priceCoin,
       });
       publish();
-      return { ok: true, slotNumber, item, quantity, priceGold };
+      return { ok: true, slotNumber, item, quantity, priceCoin };
     },
     clearPlayerShopRequest(slotNumber) {
       const slot = getRequestSlot(slotNumber);
@@ -167,7 +167,7 @@ function createRequestGameplayFacadeFake() {
       delete slot.itemKind;
       delete slot.itemLabel;
       delete slot.quantity;
-      delete slot.priceGold;
+      delete slot.priceCoin;
       publish();
       return { ok: true, slotNumber };
     },
@@ -209,7 +209,7 @@ describe('ShopShelfManager', () => {
   it('shows child notifications on market tab buttons', () => {
     const stage = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -240,7 +240,7 @@ describe('ShopShelfManager', () => {
             },
           ],
         },
-        goldOffer: {
+        coinOffer: {
           canCollect: true,
         },
       },
@@ -248,7 +248,7 @@ describe('ShopShelfManager', () => {
     const playerShopSnapshot = {
       connected: true,
       listings: [],
-      proceedsGold: 0,
+      proceedsCoin: 0,
     };
     const manager = new ShopMarketTabsManager({
       gameplayFacade: {
@@ -324,10 +324,10 @@ describe('ShopShelfManager', () => {
     );
     mintButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const [quantityInput, goldInput] =
+    const [quantityInput, coinInput] =
       popup.querySelectorAll('.shop-page__request-input');
     quantityInput.value = '2';
-    goldInput.value = '3.25';
+    coinInput.value = '3.25';
 
     popup
       .querySelector('.shop-page__request-place-button')
@@ -335,7 +335,7 @@ describe('ShopShelfManager', () => {
 
     expect(popup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.mint seed (2) 3.25 gold',
+      '2.mint seed (2) 3.25 coin',
     );
 
     requestRows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -343,16 +343,16 @@ describe('ShopShelfManager', () => {
       .find((button) => button.textContent === 'sage seed (0)')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     quantityInput.value = '1';
-    goldInput.value = '1';
+    coinInput.value = '1';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.sage seed (1) 1 gold',
+      '1.sage seed (1) 1 coin',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.mint seed (2) 3.25 gold',
+      '2.mint seed (2) 3.25 coin',
     );
 
     stage
@@ -367,7 +367,7 @@ describe('ShopShelfManager', () => {
       'request item',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.mint seed (2) 3.25 gold',
+      '2.mint seed (2) 3.25 coin',
     );
 
     manager.unmount();
@@ -390,23 +390,23 @@ describe('ShopShelfManager', () => {
       .find((button) => button.textContent === 'mint seed (4)')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const [quantityInput, goldInput] =
+    const [quantityInput, coinInput] =
       popup.querySelectorAll('.shop-page__request-input');
     quantityInput.value = '3';
-    goldInput.value = '2.5';
+    coinInput.value = '2.5';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.mint seed (3) 2.5 gold',
+      '1.mint seed (3) 2.5 coin',
     );
 
     manager.unmount();
     manager.mount(stage, popupLayer);
 
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.mint seed (3) 2.5 gold',
+      '1.mint seed (3) 2.5 coin',
     );
 
     manager.unmount();
@@ -435,10 +435,10 @@ describe('ShopShelfManager', () => {
       .find((button) => button.textContent === 'mint seed (4)')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const [quantityInput, goldInput] =
+    const [quantityInput, coinInput] =
       popup.querySelectorAll('.shop-page__request-input');
     quantityInput.value = '4';
-    goldInput.value = '3.25';
+    coinInput.value = '3.25';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -450,11 +450,11 @@ describe('ShopShelfManager', () => {
       itemLabel: 'mint seed',
       itemKind: 'seed',
       quantity: 4,
-      priceGold: 3.25,
+      priceCoin: 3.25,
     });
     expect(popup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.mint seed (4) 3.25 gold',
+      '1.mint seed (4) 3.25 coin',
     );
 
     stage
@@ -493,13 +493,13 @@ describe('ShopShelfManager', () => {
       .find((button) => button.textContent === 'mint seed (4)')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const [quantityInput, goldInput] =
+    const [quantityInput, coinInput] =
       popup.querySelectorAll('.shop-page__request-input');
     expect(quantityInput.getAttribute('max')).toBe('1000');
-    expect(goldInput.getAttribute('max')).toBe('1000000');
+    expect(coinInput.getAttribute('max')).toBe('1000000');
 
     quantityInput.value = '1001';
-    goldInput.value = '1';
+    coinInput.value = '1';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -508,13 +508,13 @@ describe('ShopShelfManager', () => {
     expect(playerShopFacade.setSlotRequest).not.toHaveBeenCalled();
 
     quantityInput.value = '1';
-    goldInput.value = '1000000.01';
+    coinInput.value = '1000000.01';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.querySelector('.shop-page__request-status')?.textContent).toBe(
-      'max 1m gold',
+      'max 1m coin',
     );
     expect(playerShopFacade.setSlotRequest).not.toHaveBeenCalled();
 
@@ -638,11 +638,11 @@ describe('ShopShelfManager', () => {
     );
   });
 
-  it('formats NPC market stand buy costs as compact gold text', () => {
+  it('formats NPC market stand buy costs as compact coin text', () => {
     const manager = new ShopShelfManager();
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 1000)).toBe(
-      'buy (1k gold)',
+      'buy (1k coin)',
     );
   });
 
@@ -650,7 +650,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: [] },
       shop: {
         shelf: {
@@ -710,7 +710,7 @@ describe('ShopShelfManager', () => {
     const popupLayer = document.createElement('section');
     let buyCount = 0;
     const gameplaySnapshot = {
-      gold: { current: 150 },
+      coin: { current: 150 },
       research: { completedResearchIds: [] },
       shop: {
         shelf: {
@@ -765,7 +765,7 @@ describe('ShopShelfManager', () => {
       const popupLayer = document.createElement('section');
       let buyCount = 0;
       const gameplaySnapshot = {
-        gold: { current: 0 },
+        coin: { current: 0 },
         research: { completedResearchIds: [] },
         shop: {
           shelf: {
@@ -822,7 +822,7 @@ describe('ShopShelfManager', () => {
     const popupLayer = document.createElement('section');
     let buyCount = 0;
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: [] },
       shop: {
         shelf: {
@@ -882,7 +882,7 @@ describe('ShopShelfManager', () => {
       const popupLayer = document.createElement('section');
       let buyCount = 0;
       const gameplaySnapshot = {
-        gold: { current: 0 },
+        coin: { current: 0 },
         research: { completedResearchIds: [] },
         shop: {
           shelf: {
@@ -936,7 +936,7 @@ describe('ShopShelfManager', () => {
     const popupLayer = document.createElement('section');
     let selectCount = 0;
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -951,7 +951,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 1,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: 12,
             },
           ],
@@ -964,7 +964,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'sageSeed',
               sellLabel: 'sage seed',
               sellQuantity: 1,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: 12,
             },
           ],
@@ -1020,7 +1020,7 @@ describe('ShopShelfManager', () => {
       const popupLayer = document.createElement('section');
       let selectCount = 0;
       const gameplaySnapshot = {
-        gold: { current: 0 },
+        coin: { current: 0 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
         shop: {
           shelf: {
@@ -1035,7 +1035,7 @@ describe('ShopShelfManager', () => {
                 label: 'sage seed',
                 kind: 'seed',
                 quantity: 1,
-                sellGold: 8,
+                sellCoin: 8,
                 sellNeed: 12,
               },
             ],
@@ -1048,7 +1048,7 @@ describe('ShopShelfManager', () => {
                 sellKey: 'sageSeed',
                 sellLabel: 'sage seed',
                 sellQuantity: 1,
-                sellGold: 8,
+                sellCoin: 8,
                 sellNeed: 12,
               },
             ],
@@ -1092,7 +1092,7 @@ describe('ShopShelfManager', () => {
       const popupLayer = document.createElement('section');
       let selectCount = 0;
       const gameplaySnapshot = {
-        gold: { current: 0 },
+        coin: { current: 0 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
         shop: {
           shelf: {
@@ -1107,7 +1107,7 @@ describe('ShopShelfManager', () => {
                 label: 'sage seed',
                 kind: 'seed',
                 quantity: 1,
-                sellGold: 8,
+                sellCoin: 8,
                 sellNeed: 12,
               },
             ],
@@ -1159,7 +1159,7 @@ describe('ShopShelfManager', () => {
       const popupLayer = document.createElement('section');
       let selectCount = 0;
       const gameplaySnapshot = {
-        gold: { current: 0 },
+        coin: { current: 0 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
         shop: {
           shelf: {
@@ -1174,7 +1174,7 @@ describe('ShopShelfManager', () => {
                 label: 'sage seed',
                 kind: 'seed',
                 quantity: 1,
-                sellGold: 8,
+                sellCoin: 8,
                 sellNeed: 12,
               },
             ],
@@ -1227,7 +1227,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -1242,7 +1242,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 1,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: 12,
             },
           ],
@@ -1282,7 +1282,7 @@ describe('ShopShelfManager', () => {
     ).toBeUndefined();
     expect(sellTarget?.classList.contains('row_key')).toBe(true);
     expect(sellTarget?.closest('.shop-page__sell-item-button')?.textContent).toBe(
-      'sage seed (1) 8 gold',
+      'sage seed (1) 8 coin',
     );
     expect(emptyTarget?.classList.contains('row_key')).toBe(true);
     expect(
@@ -1298,7 +1298,7 @@ describe('ShopShelfManager', () => {
       const stage = document.createElement('section');
       const popupLayer = document.createElement('section');
       const gameplaySnapshot = {
-        gold: { current: 0 },
+        coin: { current: 0 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
         shop: {
           shelf: {
@@ -1313,7 +1313,7 @@ describe('ShopShelfManager', () => {
                 label: 'sage seed',
                 kind: 'seed',
                 quantity: 1,
-                sellGold: 8,
+                sellCoin: 8,
                 sellNeed: 12,
               },
             ],
@@ -1345,7 +1345,7 @@ describe('ShopShelfManager', () => {
             sellQuantity: item.quantity,
             sellLimitMode: sellLimit.sellLimitMode ?? 'all',
             sellQuantityLimit: sellLimit.sellQuantityLimit ?? null,
-            sellGold: item.sellGold,
+            sellCoin: item.sellCoin,
             sellNeed: item.sellNeed,
           });
           return { ok: true, item };
@@ -1385,7 +1385,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -1400,7 +1400,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 100,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: 120,
             },
           ],
@@ -1432,7 +1432,7 @@ describe('ShopShelfManager', () => {
           sellQuantity: item.quantity,
           sellLimitMode: sellLimit.sellLimitMode ?? 'all',
           sellQuantityLimit: sellLimit.sellQuantityLimit ?? null,
-          sellGold: item.sellGold,
+          sellCoin: item.sellCoin,
           sellNeed: item.sellNeed,
         });
         return {
@@ -1466,7 +1466,7 @@ describe('ShopShelfManager', () => {
       sellQuantityLimit: 70,
     });
     expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
-      'sage seed (70) 560 gold',
+      'sage seed (70) 560 coin',
     );
 
     manager.unmount();
@@ -1477,7 +1477,7 @@ describe('ShopShelfManager', () => {
     const popupLayer = document.createElement('section');
     const listeners = new Set();
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -1492,7 +1492,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 1,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: 12,
             },
           ],
@@ -1505,7 +1505,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'sageSeed',
               sellLabel: 'sage seed',
               sellQuantity: 1,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: 12,
             },
           ],
@@ -1562,11 +1562,11 @@ describe('ShopShelfManager', () => {
     );
   });
 
-  it('formats player market stand buy costs as compact gold text', () => {
+  it('formats player market stand buy costs as compact coin text', () => {
     const manager = new ShopPlayerShelfManager();
 
     expect(manager.formatLockedSlotAction({ nextSlotLockedByLevel: false }, 1000)).toBe(
-      'buy (1k gold)',
+      'buy (1k coin)',
     );
   });
 
@@ -1574,7 +1574,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 10 },
+      coin: { current: 10 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         playerShelf: {
@@ -1621,7 +1621,7 @@ describe('ShopShelfManager', () => {
           itemLabel: 'sage seed',
           itemKind: 'seed',
           quantity: 3,
-          priceGold: 2,
+          priceCoin: 2,
         },
       ],
       ownListings: [],
@@ -1635,11 +1635,11 @@ describe('ShopShelfManager', () => {
           itemLabel: 'mint seed',
           itemKind: 'seed',
           quantity: 4,
-          priceGold: 3.25,
+          priceCoin: 3.25,
         },
       ],
       ownRequests: [],
-      proceedsGold: 0,
+      proceedsCoin: 0,
     };
     const playerShopFacade = {
       subscribe(callback) {
@@ -1704,7 +1704,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         playerShelf: {
@@ -1747,7 +1747,7 @@ describe('ShopShelfManager', () => {
           ownListings: [],
           requests: [],
           ownRequests: [],
-          proceedsGold: 0,
+          proceedsCoin: 0,
         });
         return () => {};
       },
@@ -1758,7 +1758,7 @@ describe('ShopShelfManager', () => {
           ownListings: [],
           requests: [],
           ownRequests: [],
-          proceedsGold: 0,
+          proceedsCoin: 0,
         };
       },
       setSlotListing: vi.fn(async () => ({ ok: true })),
@@ -1800,7 +1800,7 @@ describe('ShopShelfManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.querySelector('.shop-page__player-shop-status')?.textContent).toBe(
-      'max 1m gold',
+      'max 1m coin',
     );
     expect(playerShopFacade.setSlotListing).not.toHaveBeenCalled();
 
@@ -1811,7 +1811,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 10 },
+      coin: { current: 10 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         playerShelf: {
@@ -1846,7 +1846,7 @@ describe('ShopShelfManager', () => {
           itemLabel: 'sage seed',
           itemKind: 'seed',
           quantity: 2,
-          priceGold: 3,
+          priceCoin: 3,
         },
       ],
       ownListings: [],
@@ -1861,10 +1861,10 @@ describe('ShopShelfManager', () => {
           itemLabel: 'sage seed',
           itemKind: 'seed',
           quantity: 1,
-          priceGold: 3,
+          priceCoin: 3,
         },
       ],
-      proceedsGold: 0,
+      proceedsCoin: 0,
     };
     const playerShopFacade = {
       subscribe(callback) {
@@ -1894,7 +1894,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: [] },
       shop: {
         playerShelf: {
@@ -1956,7 +1956,7 @@ describe('ShopShelfManager', () => {
     let buyCount = 0;
     let selectCount = 0;
     const gameplaySnapshot = {
-      gold: { current: 150 },
+      coin: { current: 150 },
       research: { completedResearchIds: [] },
       shop: {
         playerShelf: {
@@ -2015,7 +2015,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: [] },
       shop: {
         shelf: {
@@ -2030,7 +2030,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 1,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: 919,
             },
           ],
@@ -2043,7 +2043,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'sageSeed',
               sellLabel: 'sage seed',
               sellQuantity: 1,
-              sellGold: null,
+              sellCoin: null,
               sellNeed: 919,
             },
           ],
@@ -2069,8 +2069,8 @@ describe('ShopShelfManager', () => {
       (button) => button.textContent.includes('sage seed'),
     );
 
-    expect(standValue?.textContent).toBe('sage seed (1) 8 gold');
-    expect(itemButton?.textContent).toBe('sage seed (1) 8 gold');
+    expect(standValue?.textContent).toBe('sage seed (1) 8 coin');
+    expect(itemButton?.textContent).toBe('sage seed (1) 8 coin');
     expect(standValue?.textContent).not.toContain('919');
     expect(itemButton?.textContent).not.toContain('919');
     expect(manager.canSelectSellItem(gameplaySnapshot, gameplaySnapshot.shop.shelf.sellItems[0]))
@@ -2083,7 +2083,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockRecipe:manaTonic'] },
       shop: {
         shelf: {
@@ -2098,7 +2098,7 @@ describe('ShopShelfManager', () => {
               label: 'mana tonic',
               kind: 'potion',
               quantity: 0,
-              sellGold: null,
+              sellCoin: null,
               sellNeed: null,
             },
           ],
@@ -2111,7 +2111,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'manaTonic',
               sellLabel: 'mana tonic',
               sellQuantity: 0,
-              sellGold: null,
+              sellCoin: null,
               sellNeed: null,
             },
           ],
@@ -2144,7 +2144,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -2159,7 +2159,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 0,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: null,
             },
           ],
@@ -2172,7 +2172,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'sageSeed',
               sellLabel: 'sage seed',
               sellQuantity: 0,
-              sellGold: 8,
+              sellCoin: 8,
               sellNeed: null,
             },
           ],
@@ -2193,7 +2193,7 @@ describe('ShopShelfManager', () => {
     manager.mount(stage, popupLayer);
 
     expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
-      'sage seed (0) 8 gold',
+      'sage seed (0) 8 coin',
     );
     expect(
       stage
@@ -2208,7 +2208,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockRecipe:minorHealingPotion'] },
       shop: {
         shelf: {
@@ -2223,7 +2223,7 @@ describe('ShopShelfManager', () => {
               label: 'minor healing potion',
               kind: 'potion',
               quantity: 2,
-              sellGold: 9,
+              sellCoin: 9,
               sellNeed: null,
             },
           ],
@@ -2236,7 +2236,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'minorHealingPotion',
               sellLabel: 'minor healing potion',
               sellQuantity: 2,
-              sellGold: 9,
+              sellCoin: 9,
               sellNeed: null,
             },
           ],
@@ -2269,7 +2269,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockRecipe:manaTonic'] },
       shop: {
         shelf: {
@@ -2284,7 +2284,7 @@ describe('ShopShelfManager', () => {
               label: 'mana tonic',
               kind: 'potion',
               quantity: 0,
-              sellGold: null,
+              sellCoin: null,
               sellNeed: null,
             },
           ],
@@ -2297,7 +2297,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'manaTonic',
               sellLabel: 'mana tonic',
               sellQuantity: 0,
-              sellGold: null,
+              sellCoin: null,
               sellNeed: null,
             },
           ],
@@ -2323,8 +2323,8 @@ describe('ShopShelfManager', () => {
     const standValue = stage.querySelector('.shop-page__slot-row .row_val');
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
-    expect(standValue?.textContent).toBe('mana tonic (0) 100 gold');
-    expect(priceValue?.getAttribute('data-resource-color')).toBe('gold');
+    expect(standValue?.textContent).toBe('mana tonic (0) 100 coin');
+    expect(priceValue?.getAttribute('data-resource-color')).toBe('coin');
 
     manager.unmount();
   });
@@ -2333,7 +2333,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -2350,7 +2350,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 4,
-              sellGold: 1,
+              sellCoin: 1,
               sellNeed: 1000,
             },
           ],
@@ -2363,7 +2363,7 @@ describe('ShopShelfManager', () => {
               sellKey: 'sageSeed',
               sellLabel: 'sage seed',
               sellQuantity: 4,
-              sellGold: 1,
+              sellCoin: 1,
               sellNeed: 1000,
             },
           ],
@@ -2388,7 +2388,7 @@ describe('ShopShelfManager', () => {
     );
     expect(stage.querySelector('.shop-page__slot-timer-value')).toBeNull();
     expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
-      'sage seed (4) 4 gold',
+      'sage seed (4) 4 coin',
     );
 
     gameplaySnapshot.shop.shelf.sellProgressSeconds = 1_800;
@@ -2405,7 +2405,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       shop: {
         shelf: {
           autoSellSeconds: 1_800,
@@ -2444,7 +2444,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         shelf: {
@@ -2459,7 +2459,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 8,
-              sellGold: 0.01,
+              sellCoin: 0.01,
               sellNeed: 0,
             },
           ],
@@ -2493,7 +2493,7 @@ describe('ShopShelfManager', () => {
         slot.sellQuantity = item.quantity;
         slot.sellLimitMode = sellLimit.sellLimitMode ?? 'all';
         slot.sellQuantityLimit = sellLimit.sellQuantityLimit ?? null;
-        slot.sellGold = item.sellGold;
+        slot.sellCoin = item.sellCoin;
         slot.sellNeed = item.sellNeed;
 
         return {
@@ -2509,7 +2509,7 @@ describe('ShopShelfManager', () => {
     manager.showSellPopup();
 
     const sageButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'sage seed (8) 0.01 gold');
+      .find((button) => button.textContent === 'sage seed (8) 0.01 coin');
 
     expect(sageButton?.disabled).toBe(false);
     expect(
@@ -2533,7 +2533,7 @@ describe('ShopShelfManager', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
-      gold: { current: 0 },
+      coin: { current: 0 },
       research: { completedResearchIds: [] },
       shop: {
         playerShelf: {
@@ -2574,7 +2574,7 @@ describe('ShopShelfManager', () => {
       connected: true,
       listings: [],
       ownListings: [],
-      proceedsGold: 0,
+      proceedsCoin: 0,
     };
     const playerShopFacade = {
       subscribe(callback) {

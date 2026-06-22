@@ -93,8 +93,11 @@ export class PlayerInfoSubscriptionManager {
       allianceTagColor: normalizeTradeAllianceTagColor(
         row.allianceTagColor ?? row.alliance_tag_color,
       ),
-      totalProducedGold: this.toNumber(
-        row.totalProducedGold ?? row.total_produced_gold,
+      totalProducedCoin: this.toNumber(
+        row.totalProducedCoin ??
+          row.totalProducedGold ??
+          row.total_produced_coin ??
+          row.total_produced_gold,
       ),
       playerLevel: this.toPositiveInteger(row.playerLevel ?? row.player_level, {
         fallback: 1,

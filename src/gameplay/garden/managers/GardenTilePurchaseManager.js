@@ -1,12 +1,12 @@
 export class GardenTilePurchaseManager {
   constructor({
-    goldFacade,
+    coinFacade,
     gardenBalanceManager,
     gardenTileEntityManager,
     playerLevelFacade,
     researchFacade,
   }) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.gardenBalanceManager = gardenBalanceManager;
     this.gardenTileEntityManager = gardenTileEntityManager;
     this.playerLevelFacade = playerLevelFacade;
@@ -44,10 +44,10 @@ export class GardenTilePurchaseManager {
       };
     }
 
-    if (!this.goldFacade.spend(cost)) {
+    if (!this.coinFacade.spend(cost)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
+        reason: 'not_enough_coin',
         cost,
         tileNumber: nextTileNumber,
       };

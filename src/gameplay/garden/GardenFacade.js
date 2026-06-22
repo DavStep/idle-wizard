@@ -10,10 +10,10 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class GardenFacade {
   static explain =
-    'The garden turns planted seeds into herbs: tiles are opened with gold, then each tile grows and harvests over time.';
+    'The garden turns planted seeds into herbs: tiles are opened with coin, then each tile grows and harvests over time.';
 
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     playerLevelFacade,
     onHarvestComplete,
@@ -28,7 +28,7 @@ export class GardenFacade {
       maxTiles: this.gardenBalanceManager.getMaxTiles(),
     });
     this.gardenTilePurchaseManager = new GardenTilePurchaseManager({
-      goldFacade,
+      coinFacade,
       gardenBalanceManager: this.gardenBalanceManager,
       gardenTileEntityManager: this.gardenTileEntityManager,
       playerLevelFacade,

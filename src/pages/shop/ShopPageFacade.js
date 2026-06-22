@@ -1,7 +1,7 @@
 import { ShopCrystalOfferManager } from './managers/ShopCrystalOfferManager.js';
 import { ShopDemandManager } from './managers/ShopDemandManager.js';
 import { ShopDirectSellManager } from './managers/ShopDirectSellManager.js';
-import { ShopGoldOfferManager } from './managers/ShopGoldOfferManager.js';
+import { ShopCoinOfferManager } from './managers/ShopCoinOfferManager.js';
 import { ShopMarketTabsManager } from './managers/ShopMarketTabsManager.js';
 import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js';
 import { ShopPlayerShelfManager } from './managers/ShopPlayerShelfManager.js';
@@ -62,7 +62,7 @@ export class ShopPageFacade {
       playerShopFacade,
       onOpenPlayerInfo,
     });
-    this.goldOfferManager = new ShopGoldOfferManager({ gameplayFacade });
+    this.coinOfferManager = new ShopCoinOfferManager({ gameplayFacade });
     this.crystalOfferManager = new ShopCrystalOfferManager();
   }
 
@@ -95,7 +95,7 @@ export class ShopPageFacade {
       buttonParent: this.playerShelfManager.getActionsRoot(),
       popupParent: popupLayer,
     });
-    this.goldOfferManager.mount(crystalsPanel);
+    this.coinOfferManager.mount(crystalsPanel);
     this.crystalOfferManager.mount(crystalsPanel, popupLayer);
     this.syncPlayerShopPublicDataRetention();
   }
@@ -106,7 +106,7 @@ export class ShopPageFacade {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
     this.crystalOfferManager.unmount();
-    this.goldOfferManager.unmount();
+    this.coinOfferManager.unmount();
     this.tradeHistoryManager.unmount();
     this.playerShelfManager.unmount();
     this.playerRequestManager.unmount();
@@ -161,7 +161,7 @@ export class ShopPageFacade {
     }
 
     if (activeTabId === 'crystals') {
-      this.goldOfferManager.render(this.gameplayFacade?.getSnapshot?.());
+      this.coinOfferManager.render(this.gameplayFacade?.getSnapshot?.());
     }
   }
 }

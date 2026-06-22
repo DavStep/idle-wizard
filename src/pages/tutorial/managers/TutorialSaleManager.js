@@ -33,17 +33,17 @@ export class TutorialSaleManager {
       return null;
     }
 
-    const goldEach = this.getGoldEach(sale);
-    const remainingGold = this.getRemainingGold(sale, snapshot);
+    const coinEach = this.getCoinEach(sale);
+    const remainingCoin = this.getRemainingCoin(sale, snapshot);
 
-    if (goldEach <= 0 || remainingGold <= 0) {
+    if (coinEach <= 0 || remainingCoin <= 0) {
       return null;
     }
 
     const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
     const ownedQuantity = this.getItemQuantity(snapshot, itemKey);
-    const maxTutorialQuantity = Number.isFinite(remainingGold)
-      ? Math.max(1, Math.ceil(remainingGold / goldEach))
+    const maxTutorialQuantity = Number.isFinite(remainingCoin)
+      ? Math.max(1, Math.ceil(remainingCoin / coinEach))
       : requestedQuantity;
     const sellQuantity = Math.min(requestedQuantity, ownedQuantity, maxTutorialQuantity);
 
@@ -54,8 +54,8 @@ export class TutorialSaleManager {
     return {
       ok: true,
       quantity: sellQuantity,
-      priceGold: Math.min(goldEach, remainingGold),
-      totalPriceGold: Math.min(remainingGold, sellQuantity * goldEach),
+      priceCoin: Math.min(coinEach, remainingCoin),
+      totalPriceCoin: Math.min(remainingCoin, sellQuantity * coinEach),
       tutorial: true,
     };
   }
@@ -84,7 +84,7 @@ export class TutorialSaleManager {
       return { handled: false };
     }
 
-    const result = gameplayFacade?.sellTutorialItemForGold?.({
+    const result = gameplayFacade?.sellTutorialItemForCoin?.({
       ...sale,
       quantity,
     }) ?? {
@@ -106,7 +106,7 @@ export class TutorialSaleManager {
       return null;
     }
 
-    return this.getTutorialFullSellPriceGold({ item, itemKey });
+    return this.getTutorialFullSellPriceCoin({ item, itemKey });
   }
 
   getNpcStockBuyQuoteOverride({ snapshot, item, itemKey, quantity = 1 } = {}) {
@@ -114,9 +114,9 @@ export class TutorialSaleManager {
       return null;
     }
 
-    const priceGold = this.getTutorialBuyPriceGold({ item, itemKey });
+    const priceCoin = this.getTutorialBuyPriceCoin({ item, itemKey });
 
-    if (!Number.isFinite(priceGold) || priceGold <= 0) {
+    if (!Number.isFinite(priceCoin) || priceCoin <= 0) {
       return null;
     }
 
@@ -125,8 +125,8 @@ export class TutorialSaleManager {
     return {
       ok: true,
       quantity: safeQuantity,
-      priceGold,
-      totalPriceGold: priceGold * safeQuantity,
+      priceCoin,
+      totalPriceCoin: priceCoin * safeQuantity,
       tutorial: true,
     };
   }
@@ -134,7 +134,7 @@ export class TutorialSaleManager {
   canPreviewSale(sale = {}, snapshot = {}, itemKey) {
     return (
       itemKey === sale.itemKey &&
-      this.getRemainingGold(sale, snapshot) > 0 &&
+      this.getRemainingCoin(sale, snapshot) > 0 &&
       this.getItemQuantity(snapshot, itemKey) > 0
     );
   }
@@ -142,7 +142,7 @@ export class TutorialSaleManager {
   canSell(sale = {}, snapshot = {}, dom = {}) {
     const itemKey = sale.itemKey;
 
-    if (!itemKey || this.getGold(snapshot) >= sale.goldTarget) {
+    if (!itemKey || this.getCoin(snapshot) >= sale.coinTarget) {
       return false;
     }
 
@@ -177,22 +177,22 @@ export class TutorialSaleManager {
       .reduce((total, item) => total + (Number(item.quantity) || 0), 0);
   }
 
-  getGold(snapshot) {
-    return Math.max(0, Math.floor(Number(snapshot?.gold?.current) || 0));
+  getCoin(snapshot) {
+    return Math.max(0, Math.floor(Number(snapshot?.coin?.current) || 0));
   }
 
-  getGoldEach(sale = {}) {
-    return Math.max(0, Number(sale.goldEach) || 0);
+  getCoinEach(sale = {}) {
+    return Math.max(0, Number(sale.coinEach) || 0);
   }
 
-  getRemainingGold(sale = {}, snapshot = {}) {
-    const currentGold = this.getGold(snapshot);
+  getRemainingCoin(sale = {}, snapshot = {}) {
+    const currentCoin = this.getCoin(snapshot);
 
-    if (!Number.isFinite(sale.goldTarget)) {
+    if (!Number.isFinite(sale.coinTarget)) {
       return Number.POSITIVE_INFINITY;
     }
 
-    return Math.max(0, Math.floor(Number(sale.goldTarget)) - currentGold);
+    return Math.max(0, Math.floor(Number(sale.coinTarget)) - currentCoin);
   }
 
   getFailureMessage(reason) {
@@ -200,7 +200,7 @@ export class TutorialSaleManager {
       return 'not enough items';
     }
 
-    if (reason === 'gold_target_met') {
+    if (reason === 'coin_target_met') {
       return 'done selling';
     }
 
@@ -222,20 +222,20 @@ export class TutorialSaleManager {
       return null;
     }
 
-    const goldEach = this.getTutorialFastSellPriceGold({
+    const coinEach = this.getTutorialFastSellPriceCoin({
       item,
       itemKey: resolvedItemKey,
     });
 
-    if (!Number.isFinite(goldEach) || goldEach <= 0) {
+    if (!Number.isFinite(coinEach) || coinEach <= 0) {
       return null;
     }
 
     return {
       itemKey: resolvedItemKey,
       quantity: 1,
-      goldEach,
-      goldTarget: this.getTutorialGoldTarget(snapshot),
+      coinEach,
+      coinTarget: this.getTutorialCoinTarget(snapshot),
     };
   }
 
@@ -246,16 +246,16 @@ export class TutorialSaleManager {
     );
   }
 
-  getTutorialGoldTarget(snapshot = {}) {
-    const costGold = Math.max(
+  getTutorialCoinTarget(snapshot = {}) {
+    const costCoin = Math.max(
       0,
-      Math.floor(Number(snapshot?.tasks?.level?.completion?.costGold) || 0),
+      Math.floor(Number(snapshot?.tasks?.level?.completion?.costCoin) || 0),
     );
 
-    return costGold > 0 ? costGold : null;
+    return costCoin > 0 ? costCoin : null;
   }
 
-  getTutorialFastSellPriceGold({ item, itemKey } = {}) {
+  getTutorialFastSellPriceCoin({ item, itemKey } = {}) {
     const resolvedItemKey = this.getItemKey(item, itemKey);
     const resolvedItemKind = item?.kind ?? null;
 
@@ -266,18 +266,18 @@ export class TutorialSaleManager {
     );
   }
 
-  getTutorialFullSellPriceGold({ item, itemKey } = {}) {
-    const fastSellGold = this.getTutorialFastSellPriceGold({ item, itemKey });
+  getTutorialFullSellPriceCoin({ item, itemKey } = {}) {
+    const fastSellCoin = this.getTutorialFastSellPriceCoin({ item, itemKey });
 
-    if (!Number.isFinite(fastSellGold) || fastSellGold <= 0) {
+    if (!Number.isFinite(fastSellCoin) || fastSellCoin <= 0) {
       return null;
     }
 
-    return Math.round((fastSellGold / (TUTORIAL_FAST_SELL_PERCENT / 100)) * 100) / 100;
+    return Math.round((fastSellCoin / (TUTORIAL_FAST_SELL_PERCENT / 100)) * 100) / 100;
   }
 
-  getTutorialBuyPriceGold({ item, itemKey } = {}) {
-    return this.getTutorialFullSellPriceGold({ item, itemKey });
+  getTutorialBuyPriceCoin({ item, itemKey } = {}) {
+    return this.getTutorialFullSellPriceCoin({ item, itemKey });
   }
 
   getItemKey(item, itemKey) {

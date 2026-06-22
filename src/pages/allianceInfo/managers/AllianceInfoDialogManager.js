@@ -1,4 +1,4 @@
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
@@ -200,8 +200,8 @@ export class AllianceInfoDialogManager {
       content.push(
         this.createTextRow('members', `${this.formatNumber(alliance.memberCount)}/50`),
         this.createTextRow('join mode', JOIN_MODE_LABELS[alliance.joinMode] ?? alliance.joinMode),
-        this.createTextRow('season income', this.formatGoldText(alliance.seasonIncome), {
-          resource: 'gold',
+        this.createTextRow('season income', this.formatCoinText(alliance.seasonIncome), {
+          resource: 'coin',
         }),
       );
 
@@ -374,7 +374,7 @@ export class AllianceInfoDialogManager {
 
   applyResourceValue(element, resource) {
     setResourceColor(element, resource);
-    if (resource === 'gold') {
+    if (resource === 'coin') {
       setResourceIconText(element, element.textContent);
     }
   }
@@ -505,8 +505,8 @@ export class AllianceInfoDialogManager {
     return ROLE_LABELS[role] ?? String(role ?? 'trader');
   }
 
-  formatGoldText(value) {
-    return formatGoldPriceText(Math.floor(this.toNumber(value)));
+  formatCoinText(value) {
+    return formatCoinPriceText(Math.floor(this.toNumber(value)));
   }
 
   formatNumber(value) {

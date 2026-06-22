@@ -2,7 +2,7 @@ export class ResearchSnapshotManager {
   constructor({
     crystalFacade,
     emeraldFacade,
-    goldFacade,
+    coinFacade,
     rubyFacade,
     researchBalanceManager,
     researchDefinitionManager,
@@ -10,7 +10,7 @@ export class ResearchSnapshotManager {
   }) {
     this.crystalFacade = crystalFacade;
     this.emeraldFacade = emeraldFacade;
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.rubyFacade = rubyFacade;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
@@ -160,13 +160,13 @@ export class ResearchSnapshotManager {
       return this.emeraldFacade;
     }
 
-    return this.goldFacade;
+    return this.coinFacade;
   }
 
   getCostSnapshot(cost) {
     if (cost.currency === 'crystal') {
       return {
-        costGold: 0,
+        costCoin: 0,
         costCrystal: cost.amount,
         costCurrency: cost.currency,
       };
@@ -174,7 +174,7 @@ export class ResearchSnapshotManager {
 
     if (cost.currency === 'ruby') {
       return {
-        costGold: 0,
+        costCoin: 0,
         costRuby: cost.amount,
         costCurrency: cost.currency,
       };
@@ -182,14 +182,14 @@ export class ResearchSnapshotManager {
 
     if (cost.currency === 'emerald') {
       return {
-        costGold: 0,
+        costCoin: 0,
         costEmerald: cost.amount,
         costCurrency: cost.currency,
       };
     }
 
     return {
-      costGold: cost.amount,
+      costCoin: cost.amount,
     };
   }
 }

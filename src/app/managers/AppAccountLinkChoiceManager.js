@@ -161,9 +161,9 @@ export class AppAccountLinkChoiceManager {
     }
 
     const level = this.getPositiveInteger(save.tasks?.currentLevel, 1);
-    const gold = this.getNonNegativeInteger(save.gold?.current);
+    const coin = this.getNonNegativeInteger(save.coin?.current);
     const crystal = this.getNonNegativeInteger(save.crystal?.current);
-    const summary = `level ${level}, ${gold} gold, ${crystal} crystal`;
+    const summary = `level ${level}, ${coin} coin, ${crystal} crystal`;
     return usernameText ? `${usernameText}, ${summary}` : summary;
   }
 

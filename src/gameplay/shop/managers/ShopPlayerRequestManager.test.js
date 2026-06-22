@@ -36,7 +36,7 @@ describe('ShopPlayerRequestManager', () => {
       manager.setRequest(1, {
         itemTypeId: 1,
         quantity: 1_001,
-        priceGold: 1,
+        priceCoin: 1,
       }),
     ).toEqual({
       ok: false,
@@ -47,12 +47,12 @@ describe('ShopPlayerRequestManager', () => {
       manager.setRequest(1, {
         itemTypeId: 1,
         quantity: 1,
-        priceGold: 1_000_000.01,
+        priceCoin: 1_000_000.01,
       }),
     ).toEqual({
       ok: false,
       reason: 'price_too_high',
-      maxPriceGold: 1_000_000,
+      maxPriceCoin: 1_000_000,
     });
     expect(shopPlayerRequestEntityManager.setRequest).not.toHaveBeenCalled();
   });

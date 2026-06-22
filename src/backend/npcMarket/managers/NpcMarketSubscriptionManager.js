@@ -1,4 +1,4 @@
-import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
+import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
 
 const PRICES_QUERY = 'SELECT * FROM npc_market_price_snapshot';
 const LEGACY_PRICES_QUERY = 'SELECT * FROM npc_market_price';
@@ -119,14 +119,35 @@ export class NpcMarketSubscriptionManager {
       itemKey: String(row.itemKey ?? row.item_key ?? ''),
       itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
-      basePriceGold:
-        this.toGoldPrice(row.basePriceGold ?? row.base_price_gold, priceScale) ?? 0,
-      marketPriceGold:
-        this.toGoldPrice(row.marketPriceGold ?? row.market_price_gold, priceScale) ?? 0,
-      npcBuyPriceGold:
-        this.toGoldPrice(row.npcBuyPriceGold ?? row.npc_buy_price_gold, priceScale) ?? 0,
-      npcSellPriceGold:
-        this.toGoldPrice(row.npcSellPriceGold ?? row.npc_sell_price_gold, priceScale) ?? 0,
+      basePriceCoin:
+        this.toCoinPrice(
+          row.basePriceCoin ?? row.basePriceGold ?? row.base_price_coin ?? row.base_price_gold,
+          priceScale,
+        ) ?? 0,
+      marketPriceCoin:
+        this.toCoinPrice(
+          row.marketPriceCoin ??
+            row.marketPriceGold ??
+            row.market_price_coin ??
+            row.market_price_gold,
+          priceScale,
+        ) ?? 0,
+      npcBuyPriceCoin:
+        this.toCoinPrice(
+          row.npcBuyPriceCoin ??
+            row.npcBuyPriceGold ??
+            row.npc_buy_price_coin ??
+            row.npc_buy_price_gold,
+          priceScale,
+        ) ?? 0,
+      npcSellPriceCoin:
+        this.toCoinPrice(
+          row.npcSellPriceCoin ??
+            row.npcSellPriceGold ??
+            row.npc_sell_price_coin ??
+            row.npc_sell_price_gold,
+          priceScale,
+        ) ?? 0,
       npcStock: this.toNumber(row.npcStock ?? row.npc_stock),
       targetStock: this.toNumber(row.targetStock ?? row.target_stock),
       npcNeed: this.toNumber(row.npcNeed ?? row.npc_need),
@@ -179,8 +200,8 @@ export class NpcMarketSubscriptionManager {
     return String(value ?? '').trim().toLowerCase();
   }
 
-  toGoldPrice(value, scaleValue) {
+  toCoinPrice(value, scaleValue) {
     const scale = Number(scaleValue) === 100 ? 100 : 1;
-    return normalizeGoldPrice(this.toNumber(value) / scale);
+    return normalizeCoinPrice(this.toNumber(value) / scale);
   }
 }

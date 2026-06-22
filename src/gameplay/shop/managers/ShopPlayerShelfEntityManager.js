@@ -1,5 +1,5 @@
 import { PlayerShopShelf, PlayerShopShelfSlot } from '../components/ShopComponents.js';
-import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
+import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
 
 export class ShopPlayerShelfEntityManager {
   constructor({ initialUnlockedSlots = 0, maxSlots }) {
@@ -50,7 +50,7 @@ export class ShopPlayerShelfEntityManager {
     PlayerShopShelfSlot.isUnlocked[slotEntityId] = slotNumber <= this.initialUnlockedSlots ? 1 : 0;
     PlayerShopShelfSlot.itemTypeId[slotEntityId] = 0;
     PlayerShopShelfSlot.quantity[slotEntityId] = 0;
-    PlayerShopShelfSlot.priceGold[slotEntityId] = 0;
+    PlayerShopShelfSlot.priceCoin[slotEntityId] = 0;
     this.slotEntityIds.push(slotEntityId);
   }
 
@@ -100,16 +100,16 @@ export class ShopPlayerShelfEntityManager {
     return true;
   }
 
-  assignSlotListing(slotNumber, { itemTypeId, quantity, priceGold }) {
+  assignSlotListing(slotNumber, { itemTypeId, quantity, priceCoin }) {
     if (!this.isSlotUnlocked(slotNumber)) {
       return false;
     }
 
     const slotEntityId = this.getSlotEntityId(slotNumber);
-    const safePriceGold = normalizeGoldPrice(priceGold) ?? 0;
+    const safePriceCoin = normalizeCoinPrice(priceCoin) ?? 0;
     PlayerShopShelfSlot.itemTypeId[slotEntityId] = itemTypeId;
     PlayerShopShelfSlot.quantity[slotEntityId] = quantity;
-    PlayerShopShelfSlot.priceGold[slotEntityId] = safePriceGold;
+    PlayerShopShelfSlot.priceCoin[slotEntityId] = safePriceCoin;
     return true;
   }
 
@@ -121,7 +121,7 @@ export class ShopPlayerShelfEntityManager {
     const slotEntityId = this.getSlotEntityId(slotNumber);
     PlayerShopShelfSlot.itemTypeId[slotEntityId] = 0;
     PlayerShopShelfSlot.quantity[slotEntityId] = 0;
-    PlayerShopShelfSlot.priceGold[slotEntityId] = 0;
+    PlayerShopShelfSlot.priceCoin[slotEntityId] = 0;
     return true;
   }
 
@@ -158,15 +158,15 @@ export class ShopPlayerShelfEntityManager {
       const slot = slots.find((candidate) => candidate?.slotNumber === slotNumber);
       const isUnlocked = slotNumber <= safeUnlockedSlots;
       const quantity = Number.isFinite(slot?.quantity) ? Math.max(0, Math.floor(slot.quantity)) : 0;
-      const priceGold = normalizeGoldPrice(slot?.priceGold) ?? 0;
+      const priceCoin = normalizeCoinPrice(slot?.priceCoin) ?? 0;
 
       PlayerShopShelfSlot.isUnlocked[slotEntityId] = isUnlocked ? 1 : 0;
       PlayerShopShelfSlot.itemTypeId[slotEntityId] =
-        isUnlocked && quantity > 0 && priceGold > 0 ? slot?.itemTypeId || 0 : 0;
+        isUnlocked && quantity > 0 && priceCoin > 0 ? slot?.itemTypeId || 0 : 0;
       PlayerShopShelfSlot.quantity[slotEntityId] =
         isUnlocked && PlayerShopShelfSlot.itemTypeId[slotEntityId] ? quantity : 0;
-      PlayerShopShelfSlot.priceGold[slotEntityId] =
-        isUnlocked && PlayerShopShelfSlot.itemTypeId[slotEntityId] ? priceGold : 0;
+      PlayerShopShelfSlot.priceCoin[slotEntityId] =
+        isUnlocked && PlayerShopShelfSlot.itemTypeId[slotEntityId] ? priceCoin : 0;
     }
 
     const selectedIsValid =
@@ -198,7 +198,7 @@ export class ShopPlayerShelfEntityManager {
       unlocked: PlayerShopShelfSlot.isUnlocked[slotEntityId] === 1,
       itemTypeId: PlayerShopShelfSlot.itemTypeId[slotEntityId] || null,
       quantity: PlayerShopShelfSlot.quantity[slotEntityId] || 0,
-      priceGold: PlayerShopShelfSlot.priceGold[slotEntityId] || 0,
+      priceCoin: PlayerShopShelfSlot.priceCoin[slotEntityId] || 0,
     }));
   }
 

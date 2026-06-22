@@ -1,4 +1,4 @@
-import { normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
+import { normalizePositiveCoinPrice } from '../../../shared/coinPrice.js';
 
 const MAX_PLAYER_SHOP_SLOTS = 5;
 
@@ -17,7 +17,7 @@ export class PlayerShopListingManager {
 
   async setSlotListing(slot) {
     const setPlayerShopSlot = this.findReducer('setPlayerShopSlot', 'set_player_shop_slot');
-    const priceGold = normalizePositiveGoldPrice(slot.priceGold);
+    const priceCoin = normalizePositiveCoinPrice(slot.priceCoin);
 
     if (!setPlayerShopSlot) {
       return {
@@ -26,7 +26,7 @@ export class PlayerShopListingManager {
       };
     }
 
-    if (priceGold === null) {
+    if (priceCoin === null) {
       return {
         ok: false,
         reason: 'invalid_price',
@@ -40,7 +40,8 @@ export class PlayerShopListingManager {
         itemLabel: slot.itemLabel,
         itemKind: slot.itemKind,
         quantity: slot.quantity,
-        priceGold,
+        priceCoin,
+        priceGold: priceCoin,
       });
 
       return {
@@ -83,7 +84,7 @@ export class PlayerShopListingManager {
       'setPlayerShopRequest',
       'set_player_shop_request',
     );
-    const priceGold = normalizePositiveGoldPrice(slot.priceGold);
+    const priceCoin = normalizePositiveCoinPrice(slot.priceCoin);
 
     if (!setPlayerShopRequest) {
       return {
@@ -92,7 +93,7 @@ export class PlayerShopListingManager {
       };
     }
 
-    if (priceGold === null) {
+    if (priceCoin === null) {
       return {
         ok: false,
         reason: 'invalid_price',
@@ -106,7 +107,8 @@ export class PlayerShopListingManager {
         itemLabel: slot.itemLabel,
         itemKind: slot.itemKind,
         quantity: slot.quantity,
-        priceGold,
+        priceCoin,
+        priceGold: priceCoin,
       });
 
       return {

@@ -161,7 +161,7 @@ export class ItemsFacade {
           discoveredByUsername: discovery?.username ?? null,
           discoveredByIdentity: discovery?.discoveredByIdentity ?? null,
           discoveredAtMs: discovery?.discoveredAtMs ?? null,
-          royaltyGold: discovery?.royaltyGold ?? 0,
+          royaltyCoin: discovery?.royaltyCoin ?? 0,
           ingredients: recipe.ingredients,
           manaCost: recipe.manaCost,
           brewDurationMs: recipe.brewDurationMs,

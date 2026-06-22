@@ -11,8 +11,8 @@ function createGuildSnapshot(overrides = {}) {
     unlocked: true,
     created: false,
     canCreate: true,
-    charterCostGold: 1500,
-    currentGold: 2000,
+    charterCostCoin: 1500,
+    currentCoin: 2000,
     ...overrides,
   };
 }
@@ -97,11 +97,34 @@ describe('GuildPanelManager', () => {
     popupLayer.querySelector('input[name="tag"]').value = 'ASH';
     popupLayer.querySelector('input[name="color"][value="blue"]').checked = true;
 
-    gameplayFacade.emitGuild(createGuildSnapshot({ currentGold: 1999 }));
+    gameplayFacade.emitGuild(createGuildSnapshot({ currentCoin: 1999 }));
 
     expect(popupLayer.querySelector('input[name="name"]')?.value).toBe('ash hall');
     expect(popupLayer.querySelector('input[name="tag"]')?.value).toBe('ASH');
     expect(popupLayer.querySelector('input[name="color"][value="blue"]')?.checked).toBe(true);
+  });
+
+  it('shows a start guild notification only when the charter is affordable', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const { parent } = mountManager(gameplayFacade);
+    const button = parent.querySelector('.guild-page__wide-button');
+
+    expect(button?.textContent).toBe('start guild');
+    expect(button?.disabled).toBe(false);
+    expect(button?.dataset.notification).toBe('true');
+    expect(button?.dataset.notificationTone).toBe('red');
+
+    gameplayFacade.emitGuild(
+      createGuildSnapshot({
+        canCreate: false,
+        currentCoin: 1499,
+      }),
+    );
+
+    const updatedButton = parent.querySelector('.guild-page__wide-button');
+    expect(updatedButton?.disabled).toBe(true);
+    expect(updatedButton?.dataset.notification).toBeUndefined();
+    expect(updatedButton?.dataset.notificationTone).toBeUndefined();
   });
 
   it('populates guild settings fields and keeps in-progress edits through refreshes', () => {
@@ -174,6 +197,33 @@ describe('GuildPanelManager', () => {
     expect(dialogRule).not.toMatch(/\boverflow:\s*hidden;/);
     expect(contentRule).toMatch(/\bmin-height:\s*0;/);
     expect(contentRule).toMatch(/\boverflow:\s*hidden auto;/);
+  });
+
+  it('keeps guild popup panels inside the room safe area and visible keyboard stage', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const popupRule = baseCss.match(
+      /\.guild-page__popup\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const panelRule = baseCss.match(
+      /\.guild-page__popup-panel\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const focusRule = baseCss.match(
+      /\.guild-page__popup:focus-within\s+\.guild-page__popup-panel\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(popupRule).toContain('--guild-page-popup-center-y:');
+    expect(popupRule).toContain('--guild-page-popup-visible-center-y:');
+    expect(popupRule).toContain('var(--app-visible-stage-height, var(--app-stage-height))');
+    expect(panelRule).toMatch(/\btop:\s*var\(--guild-page-popup-center-y\);/);
+    expect(panelRule).toMatch(
+      /\bmax-width:\s*calc\(100%\s*-\s*\(var\(--style-room-content-edge\)\s*\*\s*2\)\);/,
+    );
+    expect(panelRule).toContain('100% - var(--style-room-content-top) -');
+    expect(panelRule).toContain('var(--style-room-chat-clearance)');
+    expect(panelRule).toMatch(/\btransform:\s*translate\(-50%, -50%\);/);
+    expect(focusRule).toContain('clamp(');
+    expect(focusRule).toContain('var(--guild-page-popup-visible-center-y)');
+    expect(focusRule).toContain('var(--guild-page-popup-center-y)');
   });
 
   it('uses the full room inset width for guild boxes', () => {

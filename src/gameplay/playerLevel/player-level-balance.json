@@ -55,19 +55,33 @@
     {
       "level": 10,
       "maxGardenTiles": 8,
-      "maxCauldrons": 4,
+      "maxCauldrons": 3,
       "maxNpcMarketStands": 3,
       "maxPlayerMarketStands": 3
     },
     {
       "level": 13,
       "maxGardenTiles": 9,
-      "maxCauldrons": 4,
+      "maxCauldrons": 3,
       "maxNpcMarketStands": 4,
       "maxPlayerMarketStands": 4
     },
     {
       "level": 17,
+      "maxGardenTiles": 10,
+      "maxCauldrons": 3,
+      "maxNpcMarketStands": 5,
+      "maxPlayerMarketStands": 5
+    },
+    {
+      "level": 21,
+      "maxGardenTiles": 10,
+      "maxCauldrons": 4,
+      "maxNpcMarketStands": 5,
+      "maxPlayerMarketStands": 5
+    },
+    {
+      "level": 25,
       "maxGardenTiles": 10,
       "maxCauldrons": 5,
       "maxNpcMarketStands": 5,

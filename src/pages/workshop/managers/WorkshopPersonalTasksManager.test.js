@@ -14,7 +14,7 @@ function createPersonalTasksSnapshot() {
     ['harvest', 'harvest_herbs', 'harvest 8 herbs'],
     ['brew', 'brew_potions', 'brew 3 potions'],
     ['sell', 'sell_items', 'sell 30 items'],
-    ['gold', 'earn_gold', 'earn 150 gold'],
+    ['coin', 'earn_coin', 'earn 150 coin'],
   ];
   const task = ([taskKey, actionType, label], index, completed = false) => ({
     taskId: `task-${index}`,
@@ -25,9 +25,9 @@ function createPersonalTasksSnapshot() {
     progressQuantity: completed ? 10 : index,
     completed,
     reward: {
-      gold: 5,
+      coin: 5,
       crystal: 0,
-      text: '+5 gold',
+      text: '+5 coin',
     },
     rewardClaimed: completed,
   });
@@ -44,9 +44,9 @@ function createPersonalTasksSnapshot() {
         completedTasks: 1,
         totalTasks: 7,
         fullClearReward: {
-          gold: 25,
+          coin: 25,
           crystal: 0,
-          text: '+25 gold',
+          text: '+25 coin',
         },
         fullClearRewardClaimed: false,
         tasks: taskDefinitions.map((definition, index) =>
@@ -61,9 +61,9 @@ function createPersonalTasksSnapshot() {
         completedTasks: 0,
         totalTasks: 7,
         fullClearReward: {
-          gold: 95,
+          coin: 95,
           crystal: 1,
-          text: '+95 gold, +1 crystal',
+          text: '+95 coin, +1 crystal',
         },
         fullClearRewardClaimed: false,
         tasks: taskDefinitions.map((definition, index) => task(definition, index + 1)),
@@ -115,8 +115,15 @@ describe('WorkshopPersonalTasksManager', () => {
 
     expect(parent.querySelector('.workshop-page__personal-tasks').hidden).toBe(false);
     expect(parent.querySelector('.workshop-page__personal-tasks.style-box')).toBeNull();
+    expect(parent.querySelector('.workshop-page__personal-tasks')?.dataset.panelSide).toBe(
+      'left',
+    );
     const openButton = parent.querySelector('.workshop-page__personal-tasks-open');
     expect(openButton?.textContent).toBe('tasks');
+    expect(openButton?.classList.contains('workshop-page__panel-button-open')).toBe(
+      true,
+    );
+    expect(openButton?.querySelector('.workshop-page__panel-button-timer')).toBeNull();
     expect(openButton?.getAttribute('aria-label')).toContain(
       'daily 1/7, weekly 0/7',
     );
@@ -153,12 +160,12 @@ describe('WorkshopPersonalTasksManager', () => {
       popup.querySelector('.workshop-page__personal-task-fill')?.style.width,
     ).toBe('100%');
     expect(popup.textContent).toContain('summon 10 seeds');
-    expect(popup.textContent).toContain('+25 gold');
+    expect(popup.textContent).toContain('+25 coin');
     expect(
       popup
         .querySelector('.workshop-page__personal-task--full .workshop-page__personal-task-reward')
         ?.dataset.resourceColor,
-    ).toBe('gold');
+    ).toBe('coin');
     const completedLabel = popup.querySelector(
       '.workshop-page__personal-task.is-completed .workshop-page__personal-task-label',
     );
@@ -170,22 +177,22 @@ describe('WorkshopPersonalTasksManager', () => {
       .click();
 
     expect(popup.textContent).toContain('0/7 done, resets 3d');
-    expect(popup.textContent).toContain('+95 gold, +1 crystal');
+    expect(popup.textContent).toContain('+95 coin, +1 crystal');
     expect(
       [...popup.querySelectorAll('.workshop-page__personal-task-label')]
         .slice(0, 7)
         .map((label) => label.dataset.resourceColor ?? null),
-    ).toEqual(['seed', 'mana', 'seed', 'herb', 'potion', 'gold', 'gold']);
+    ).toEqual(['seed', 'mana', 'seed', 'herb', 'potion', 'coin', 'coin']);
     expect(
       [...popup.querySelectorAll('.workshop-page__personal-task-progress')]
         .slice(0, 7)
         .map((progress) => progress.dataset.resourceColor ?? null),
-    ).toEqual(['seed', 'mana', 'seed', 'herb', 'potion', 'gold', 'gold']);
+    ).toEqual(['seed', 'mana', 'seed', 'herb', 'potion', 'coin', 'coin']);
     expect(
       [...popup.querySelectorAll('.workshop-page__personal-task-reward')]
         .slice(0, 7)
         .map((reward) => reward.dataset.resourceColor ?? null),
-    ).toEqual(['gold', 'gold', 'gold', 'gold', 'gold', 'gold', 'gold']);
+    ).toEqual(['coin', 'coin', 'coin', 'coin', 'coin', 'coin', 'coin']);
     const weeklyLabels = [
       ...popup.querySelectorAll('.workshop-page__personal-task-label'),
     ].slice(0, 7);
@@ -196,7 +203,7 @@ describe('WorkshopPersonalTasksManager', () => {
       'harvest 8 herbs',
       'brew 3 potions',
       'sell 30 items',
-      'earn 150 gold',
+      'earn 150 coin',
     ]);
     expect(weeklyLabels[0].querySelector('.style-seed-label__icon')).not.toBeNull();
     expect(
@@ -208,18 +215,18 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(weeklyLabels[3].dataset.itemIconKey).toBe('sageHerb');
     expect(weeklyLabels[4].querySelector('.style-potion-label__icon')).not.toBeNull();
     expect(
-      weeklyLabels[5].querySelector('.style-resource-label--gold .style-resource-label__icon')
+      weeklyLabels[5].querySelector('.style-resource-label--coin .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
-    ).toBe('resource:gold');
+    ).toBe('resource:coin');
     expect(
-      weeklyLabels[6].querySelector('.style-resource-label--gold .style-resource-label__icon')
+      weeklyLabels[6].querySelector('.style-resource-label--coin .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
-    ).toBe('resource:gold');
+    ).toBe('resource:coin');
     expect(
       popup
-        .querySelector('.workshop-page__personal-task-reward .style-resource-label--gold')
+        .querySelector('.workshop-page__personal-task-reward .style-resource-label--coin')
         ?.textContent,
-    ).toBe('gold');
+    ).toBe('coin');
     expect(
       popup
         .querySelector('.workshop-page__personal-task--full .workshop-page__personal-task-reward')

@@ -14,8 +14,8 @@ function createPlayerShopFacadeFake(overrides = {}) {
         sellerUsername: 'Ada',
         itemLabel: 'mint seed',
         quantity: 2,
-        priceGold: 4,
-        totalPriceGold: 8,
+        priceCoin: 4,
+        totalPriceCoin: 8,
       },
       {
         tradeId: 'trade-own-1',
@@ -23,8 +23,8 @@ function createPlayerShopFacadeFake(overrides = {}) {
         sellerUsername: 'Ada',
         itemLabel: 'sage seed',
         quantity: 1,
-        priceGold: 3,
-        totalPriceGold: 3,
+        priceCoin: 3,
+        totalPriceCoin: 3,
       },
     ],
     ownTradeHistory: [
@@ -34,8 +34,8 @@ function createPlayerShopFacadeFake(overrides = {}) {
         sellerUsername: 'Ada',
         itemLabel: 'sage seed',
         quantity: 1,
-        priceGold: 3,
-        totalPriceGold: 3,
+        priceCoin: 3,
+        totalPriceCoin: 3,
       },
     ],
   };
@@ -89,14 +89,14 @@ describe('ShopTradeHistoryManager', () => {
         (tab) => tab.textContent,
       ),
     ).toEqual(['own', 'global']);
-    expect(popup.textContent).toContain('wizard bought sage seed from Ada for 3 gold');
+    expect(popup.textContent).toContain('wizard bought sage seed from Ada for 3 coin');
     expect(popup.textContent).not.toContain('Merlin bought 2 mint seed');
 
     [...popup.querySelectorAll('.shop-page__trade-history-tab-button')]
       .find((tab) => tab.textContent === 'global')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.textContent).toContain('Merlin bought 2 mint seed from Ada for 8 gold');
+    expect(popup.textContent).toContain('Merlin bought 2 mint seed from Ada for 8 coin');
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(popup.hidden).toBe(true);

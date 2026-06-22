@@ -77,6 +77,45 @@ describe('AuthSessionManager', () => {
     });
   });
 
+  it('returns a fresh snapshot after restoring an OIDC account', async () => {
+    const tokenStorageManager = new AuthTokenStorageManager({
+      storage: createMemoryStorage(),
+    });
+    let authenticated = false;
+    const sessionManager = new AuthSessionManager({
+      tokenStorageManager,
+      oidcManager: {
+        tryRestoreConnectedAccount: async () => {
+          authenticated = true;
+          return { ok: true, restored: true };
+        },
+        getSnapshot: () => ({
+          enabled: true,
+          authenticated,
+          displayName: authenticated ? 'Dav' : '',
+          email: authenticated ? 'dav@example.com' : '',
+          error: null,
+        }),
+      },
+    });
+
+    await expect(sessionManager.tryRestoreConnectedAccount()).resolves.toEqual({
+      ok: true,
+      restored: true,
+      snapshot: {
+        hasToken: true,
+        identity: undefined,
+        oidc: {
+          authenticated: true,
+          displayName: 'Dav',
+          email: 'dav@example.com',
+          enabled: true,
+          error: null,
+        },
+      },
+    });
+  });
+
   it('does not clear unrelated storage when signing out', async () => {
     const storage = createMemoryStorage();
     const tokenStorageManager = new AuthTokenStorageManager({ storage });

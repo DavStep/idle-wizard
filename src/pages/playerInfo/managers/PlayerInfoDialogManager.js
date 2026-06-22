@@ -186,7 +186,7 @@ export class PlayerInfoDialogManager {
       this.createTextRow('prestige', this.formatPrestige(player.prestigeCount)),
     );
     this.refs.rows.replaceChildren(
-      this.createTextRow('total produced gold', this.formatNumber(player.totalProducedGold)),
+      this.createTextRow('total produced coin', this.formatNumber(player.totalProducedCoin)),
     );
   }
 
@@ -283,9 +283,9 @@ export class PlayerInfoDialogManager {
       allianceTag: normalizeAllianceTag(player.allianceTag ?? player.alliance_tag),
       allianceTagColor: player.allianceTagColor ?? player.alliance_tag_color,
       character: normalizePlayerCharacter(player.character),
-      totalProducedGold: this.normalizeMetric(
-        player.totalProducedGold,
-        player.totalGeneratedGold,
+      totalProducedCoin: this.normalizeMetric(
+        player.totalProducedCoin,
+        player.totalGeneratedCoin,
         player.totalIncome,
       ),
       playerLevel: this.normalizePositiveInteger(player.playerLevel, { fallback: 1, min: 1 }),

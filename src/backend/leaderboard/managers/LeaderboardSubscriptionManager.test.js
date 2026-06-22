@@ -110,7 +110,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 1,
           weeklyIncome: 10,
           monthlyIncome: 4,
-          totalGeneratedGold: 12,
+          totalGeneratedCoin: 12,
           totalIncome: 12,
         },
         {
@@ -120,11 +120,11 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 9,
           weeklyIncome: 2,
           monthlyIncome: 1,
-          totalGeneratedGold: 3,
+          totalGeneratedCoin: 3,
           totalIncome: 3,
         },
       ],
-      topGeneratedGoldUsers: [
+      topGeneratedCoinUsers: [
         {
           name: 'High',
           playerLevel: 10,
@@ -132,7 +132,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 1,
           weeklyIncome: 10,
           monthlyIncome: 4,
-          totalGeneratedGold: 12,
+          totalGeneratedCoin: 12,
           totalIncome: 12,
         },
         {
@@ -142,7 +142,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 9,
           weeklyIncome: 2,
           monthlyIncome: 1,
-          totalGeneratedGold: 3,
+          totalGeneratedCoin: 3,
           totalIncome: 3,
         },
       ],
@@ -154,7 +154,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 9,
           weeklyIncome: 2,
           monthlyIncome: 1,
-          totalGeneratedGold: 3,
+          totalGeneratedCoin: 3,
           totalIncome: 3,
         },
         {
@@ -164,7 +164,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 1,
           weeklyIncome: 10,
           monthlyIncome: 4,
-          totalGeneratedGold: 12,
+          totalGeneratedCoin: 12,
           totalIncome: 12,
         },
       ],
@@ -176,7 +176,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 9,
           weeklyIncome: 2,
           monthlyIncome: 1,
-          totalGeneratedGold: 3,
+          totalGeneratedCoin: 3,
           totalIncome: 3,
         },
         {
@@ -186,7 +186,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 1,
           weeklyIncome: 10,
           monthlyIncome: 4,
-          totalGeneratedGold: 12,
+          totalGeneratedCoin: 12,
           totalIncome: 12,
         },
       ],
@@ -198,7 +198,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 1,
           weeklyIncome: 10,
           monthlyIncome: 4,
-          totalGeneratedGold: 12,
+          totalGeneratedCoin: 12,
           totalIncome: 12,
         },
         {
@@ -208,7 +208,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 9,
           weeklyIncome: 2,
           monthlyIncome: 1,
-          totalGeneratedGold: 3,
+          totalGeneratedCoin: 3,
           totalIncome: 3,
         },
       ],
@@ -220,7 +220,7 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 1,
           weeklyIncome: 10,
           monthlyIncome: 4,
-          totalGeneratedGold: 12,
+          totalGeneratedCoin: 12,
           totalIncome: 12,
         },
         {
@@ -230,11 +230,11 @@ describe('LeaderboardSubscriptionManager', () => {
           dailyIncome: 9,
           weeklyIncome: 2,
           monthlyIncome: 1,
-          totalGeneratedGold: 3,
+          totalGeneratedCoin: 3,
           totalIncome: 3,
         },
       ],
-      currentGeneratedGoldUser: null,
+      currentGeneratedCoinUser: null,
       currentIncomeUser: null,
       currentDailyUser: null,
       currentWeeklyUser: null,
@@ -242,21 +242,21 @@ describe('LeaderboardSubscriptionManager', () => {
       currentAllTimeUser: null,
     });
     expect(manager.getSnapshot().topAllTimeUsers).toEqual(
-      manager.getSnapshot().topGeneratedGoldUsers,
+      manager.getSnapshot().topGeneratedCoinUsers,
     );
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
   });
 
-  it('uses canonical totalIncome when legacy generated-gold rows are zero', () => {
+  it('uses canonical totalIncome when legacy generated-coin rows are zero', () => {
     const rows = [
-      { username: 'Low', playerLevel: 2, income: 0n, totalGeneratedGold: 0n, totalIncome: 3n },
-      { username: 'High', playerLevel: 10, income: 0n, totalGeneratedGold: 0n, totalIncome: 12n },
+      { username: 'Low', playerLevel: 2, income: 0n, totalGeneratedCoin: 0n, totalIncome: 3n },
+      { username: 'High', playerLevel: 10, income: 0n, totalGeneratedCoin: 0n, totalIncome: 12n },
     ];
     const manager = new LeaderboardSubscriptionManager();
 
     manager.connect(createConnection(createLeaderboardTable(rows)));
 
-    expect(manager.getSnapshot().topGeneratedGoldUsers).toEqual([
+    expect(manager.getSnapshot().topGeneratedCoinUsers).toEqual([
       {
         name: 'High',
         playerLevel: 10,
@@ -264,7 +264,7 @@ describe('LeaderboardSubscriptionManager', () => {
         dailyIncome: 0,
         weeklyIncome: 0,
         monthlyIncome: 0,
-        totalGeneratedGold: 12,
+        totalGeneratedCoin: 12,
         totalIncome: 12,
       },
       {
@@ -274,7 +274,7 @@ describe('LeaderboardSubscriptionManager', () => {
         dailyIncome: 0,
         weeklyIncome: 0,
         monthlyIncome: 0,
-        totalGeneratedGold: 3,
+        totalGeneratedCoin: 3,
         totalIncome: 3,
       },
     ]);
@@ -339,15 +339,15 @@ describe('LeaderboardSubscriptionManager', () => {
 
     manager.connect(createConnection(createLeaderboardTable(rows)), 'mine');
 
-    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(100);
-    expect(manager.getSnapshot().currentGeneratedGoldUser).toEqual({
+    expect(manager.getSnapshot().topGeneratedCoinUsers).toHaveLength(100);
+    expect(manager.getSnapshot().currentGeneratedCoinUser).toEqual({
       name: 'Mine',
       playerLevel: 4,
       income: 50,
       dailyIncome: 0,
       weeklyIncome: 0,
       monthlyIncome: 0,
-      totalGeneratedGold: 1,
+      totalGeneratedCoin: 1,
       totalIncome: 1,
       rank: 102,
     });
@@ -358,7 +358,7 @@ describe('LeaderboardSubscriptionManager', () => {
       dailyIncome: 0,
       weeklyIncome: 0,
       monthlyIncome: 0,
-      totalGeneratedGold: 1,
+      totalGeneratedCoin: 1,
       totalIncome: 1,
       rank: 1,
     });
@@ -397,8 +397,8 @@ describe('LeaderboardSubscriptionManager', () => {
 
     manager.connect(createConnection(createLeaderboardTable(rows)), 'mine');
 
-    expect(manager.getSnapshot().topGeneratedGoldUsers).toHaveLength(100);
-    expect(manager.getSnapshot().currentGeneratedGoldUser).toMatchObject({ name: 'Mine', rank: 25 });
+    expect(manager.getSnapshot().topGeneratedCoinUsers).toHaveLength(100);
+    expect(manager.getSnapshot().currentGeneratedCoinUser).toMatchObject({ name: 'Mine', rank: 25 });
     expect(manager.getSnapshot().currentIncomeUser).toMatchObject({ name: 'Mine', rank: 25 });
     expect(manager.getSnapshot().currentDailyUser).toMatchObject({ name: 'Mine', rank: 22 });
     expect(manager.getSnapshot().currentWeeklyUser).toMatchObject({ name: 'Mine', rank: 23 });
@@ -432,13 +432,13 @@ describe('LeaderboardSubscriptionManager', () => {
     expect(table.callbacks.delete).toBeNull();
     expect(manager.getSnapshot()).toEqual({
       topUsers: [],
-      topGeneratedGoldUsers: [],
+      topGeneratedCoinUsers: [],
       topIncomeUsers: [],
       topDailyUsers: [],
       topWeeklyUsers: [],
       topMonthlyUsers: [],
       topAllTimeUsers: [],
-      currentGeneratedGoldUser: null,
+      currentGeneratedCoinUser: null,
       currentIncomeUser: null,
       currentDailyUser: null,
       currentWeeklyUser: null,

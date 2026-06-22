@@ -1,11 +1,11 @@
-import { ShopGoldOffer } from '../components/ShopComponents.js';
+import { ShopCoinOffer } from '../components/ShopComponents.js';
 
-export const SHOP_GOLD_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
-export const SHOP_GOLD_OFFER_GOLD_PER_LEVEL = 20;
+export const SHOP_COIN_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
+export const SHOP_COIN_OFFER_COIN_PER_LEVEL = 20;
 
-export class ShopGoldOfferManager {
-  constructor({ goldFacade, playerLevelFacade } = {}) {
-    this.goldFacade = goldFacade;
+export class ShopCoinOfferManager {
+  constructor({ coinFacade, playerLevelFacade } = {}) {
+    this.coinFacade = coinFacade;
     this.playerLevelFacade = playerLevelFacade;
     this.entityId = null;
     this.registered = false;
@@ -17,8 +17,8 @@ export class ShopGoldOfferManager {
     }
 
     this.entityId = ecsManagers.entities.createEntity();
-    ecsManagers.components.add(this.entityId, ShopGoldOffer);
-    ShopGoldOffer.cooldownRemainingSeconds[this.entityId] = 0;
+    ecsManagers.components.add(this.entityId, ShopCoinOffer);
+    ShopCoinOffer.cooldownRemainingSeconds[this.entityId] = 0;
   }
 
   register(systemManager) {
@@ -49,22 +49,22 @@ export class ShopGoldOfferManager {
       };
     }
 
-    const gold = this.getRewardGold();
+    const coin = this.getRewardCoin();
 
-    if (gold <= 0) {
+    if (coin <= 0) {
       return {
         ok: false,
         reason: 'empty_reward',
       };
     }
 
-    this.goldFacade?.add(gold);
-    this.setCooldownRemainingSeconds(SHOP_GOLD_OFFER_COOLDOWN_SECONDS);
+    this.coinFacade?.add(coin);
+    this.setCooldownRemainingSeconds(SHOP_COIN_OFFER_COOLDOWN_SECONDS);
 
     return {
       ok: true,
-      gold,
-      cooldownSeconds: SHOP_GOLD_OFFER_COOLDOWN_SECONDS,
+      coin,
+      cooldownSeconds: SHOP_COIN_OFFER_COOLDOWN_SECONDS,
     };
   }
 
@@ -72,8 +72,8 @@ export class ShopGoldOfferManager {
     return this.getCooldownRemainingSeconds() <= 0;
   }
 
-  getRewardGold() {
-    return Math.max(1, this.getCurrentLevel()) * SHOP_GOLD_OFFER_GOLD_PER_LEVEL;
+  getRewardCoin() {
+    return Math.max(1, this.getCurrentLevel()) * SHOP_COIN_OFFER_COIN_PER_LEVEL;
   }
 
   getCurrentLevel() {
@@ -82,11 +82,11 @@ export class ShopGoldOfferManager {
   }
 
   getCooldownRemainingSeconds() {
-    return ShopGoldOffer.cooldownRemainingSeconds[this.getEntityId()] ?? 0;
+    return ShopCoinOffer.cooldownRemainingSeconds[this.getEntityId()] ?? 0;
   }
 
   setCooldownRemainingSeconds(seconds) {
-    ShopGoldOffer.cooldownRemainingSeconds[this.getEntityId()] = Math.max(
+    ShopCoinOffer.cooldownRemainingSeconds[this.getEntityId()] = Math.max(
       0,
       Number.isFinite(seconds) ? seconds : 0,
     );
@@ -96,9 +96,9 @@ export class ShopGoldOfferManager {
     const cooldownRemainingSeconds = this.getCooldownRemainingSeconds();
 
     return {
-      rewardGold: this.getRewardGold(),
+      rewardCoin: this.getRewardCoin(),
       currentLevel: this.getCurrentLevel(),
-      cooldownSeconds: SHOP_GOLD_OFFER_COOLDOWN_SECONDS,
+      cooldownSeconds: SHOP_COIN_OFFER_COOLDOWN_SECONDS,
       cooldownRemainingSeconds,
       remainingMs: Math.ceil(cooldownRemainingSeconds * 1_000),
       ready: cooldownRemainingSeconds <= 0,
@@ -124,7 +124,7 @@ export class ShopGoldOfferManager {
 
   getEntityId() {
     if (this.entityId === null) {
-      throw new Error('Shop gold offer has not been initialized.');
+      throw new Error('Shop coin offer has not been initialized.');
     }
 
     return this.entityId;

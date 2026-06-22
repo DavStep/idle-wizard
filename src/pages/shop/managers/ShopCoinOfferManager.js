@@ -1,9 +1,9 @@
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
-export class ShopGoldOfferManager {
+export class ShopCoinOfferManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.root = null;
@@ -21,22 +21,22 @@ export class ShopGoldOfferManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'shop-page__gold-offer style-box';
-    this.root.setAttribute('aria-label', 'Gold offer');
+    this.root.className = 'shop-page__coin-offer style-box';
+    this.root.setAttribute('aria-label', 'Coin offer');
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'gold offer';
+    title.textContent = 'coin offer';
 
     const row = document.createElement('div');
-    row.className = 'shop-page__gold-offer-row';
+    row.className = 'shop-page__coin-offer-row';
 
     this.refs.reward = document.createElement('span');
-    this.refs.reward.className = 'shop-page__gold-offer-reward';
-    setResourceColor(this.refs.reward, 'gold');
+    this.refs.reward.className = 'shop-page__coin-offer-reward';
+    setResourceColor(this.refs.reward, 'coin');
 
     this.refs.action = document.createElement('button');
-    this.refs.action.className = 'shop-page__gold-offer-action';
+    this.refs.action.className = 'shop-page__coin-offer-action';
     this.refs.action.type = 'button';
     this.refs.action.addEventListener('click', () => this.onCollect());
 
@@ -59,7 +59,7 @@ export class ShopGoldOfferManager {
   }
 
   onCollect() {
-    const result = this.gameplayFacade.collectShopGoldOffer();
+    const result = this.gameplayFacade.collectShopCoinOffer();
 
     if (!result.ok) {
       this.render(this.gameplayFacade.getSnapshot());
@@ -67,13 +67,13 @@ export class ShopGoldOfferManager {
   }
 
   render(snapshot) {
-    const offer = snapshot?.shop?.goldOffer;
+    const offer = snapshot?.shop?.coinOffer;
 
     if (!offer || !this.root || this.root.closest('[hidden]')) {
       return;
     }
 
-    const rewardText = formatGoldPriceText(offer.rewardGold);
+    const rewardText = formatCoinPriceText(offer.rewardCoin);
     this.setResourceText(this.refs.reward, rewardText);
     this.setText(
       this.refs.action,

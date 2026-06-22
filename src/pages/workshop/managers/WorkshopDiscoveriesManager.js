@@ -3,7 +3,7 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const DISCOVERY_TABS = [
   { id: 'seeds', label: 'seeds' },
@@ -294,10 +294,10 @@ export class WorkshopDiscoveriesManager {
   createRoyaltyValue(potion) {
     const value = document.createElement('span');
     value.className = 'row_val workshop-page__discovery-royalties';
-    const royaltyGold = Number(potion.royaltyGold);
+    const royaltyCoin = Number(potion.royaltyCoin);
     setResourceIconText(
       value,
-      `royalties ${formatGoldPriceText(Number.isFinite(royaltyGold) ? royaltyGold : 0)}`,
+      `royalties ${formatCoinPriceText(Number.isFinite(royaltyCoin) ? royaltyCoin : 0)}`,
     );
     return value;
   }
@@ -384,7 +384,7 @@ export class WorkshopDiscoveriesManager {
             potion.key,
             potion.discovered,
             potion.discoveredByUsername,
-            potion.royaltyGold,
+            potion.royaltyCoin,
             potion.manaCost,
             potion.brewDurationMs,
             ingredientsSignature,

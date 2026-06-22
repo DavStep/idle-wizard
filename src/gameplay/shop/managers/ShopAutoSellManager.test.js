@@ -36,7 +36,7 @@ function createSlotManager({
 describe('ShopAutoSellManager', () => {
   it('bulk sells available items at the static NPC price', () => {
     const nowMs = 5_000;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn().mockReturnValue({
       itemTypeId: 1,
       key: 'sageSeed',
@@ -46,8 +46,8 @@ describe('ShopAutoSellManager', () => {
     });
     const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -63,7 +63,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 4,
+        getNpcBuyPriceCoin: () => 4,
         recordSellToNpc,
       },
       shopShelfEntityManager: createSlotManager(),
@@ -73,7 +73,7 @@ describe('ShopAutoSellManager', () => {
     manager.update(5);
 
     expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addGold).toHaveBeenCalledWith(12);
+    expect(addCoin).toHaveBeenCalledWith(12);
     expect(recordSellToNpc).toHaveBeenCalledWith(
       {
         id: 1,
@@ -88,7 +88,7 @@ describe('ShopAutoSellManager', () => {
   it('does not sell reserved cauldron quantities', () => {
     let nowMs = 5_000;
     let quantity = 3;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
       if (quantity < removeQuantity) {
         return null;
@@ -104,8 +104,8 @@ describe('ShopAutoSellManager', () => {
       };
     });
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -120,7 +120,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 6,
+        getNpcBuyPriceCoin: () => 6,
         recordSellToNpc: vi.fn(),
       },
       shopSellAvailabilityManager: {
@@ -137,14 +137,14 @@ describe('ShopAutoSellManager', () => {
 
     expect(quantity).toBe(2);
     expect(removeItem).toHaveBeenCalledTimes(1);
-    expect(addGold).toHaveBeenCalledTimes(1);
-    expect(addGold).toHaveBeenCalledWith(6);
+    expect(addCoin).toHaveBeenCalledTimes(1);
+    expect(addCoin).toHaveBeenCalledWith(6);
   });
 
   it('sells only the marked NPC stand amount and decrements it', () => {
     let nowMs = 5_000;
     let quantity = 5;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
       quantity -= removeQuantity;
       return {
@@ -167,8 +167,8 @@ describe('ShopAutoSellManager', () => {
       ],
     });
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -184,7 +184,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 4,
+        getNpcBuyPriceCoin: () => 4,
         getNpcNeed: () => 10,
         recordSellToNpc: vi.fn(),
       },
@@ -195,7 +195,7 @@ describe('ShopAutoSellManager', () => {
     manager.update(5);
 
     expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(addGold).toHaveBeenCalledWith(8);
+    expect(addCoin).toHaveBeenCalledWith(8);
     expect(quantity).toBe(3);
     expect(slotManager.getSlotSnapshots()[0].sellQuantityLimit).toBe(0);
 
@@ -207,7 +207,7 @@ describe('ShopAutoSellManager', () => {
 
   it('sells all eligible NPC stands on one shared shop timer', () => {
     let nowMs = 4_000;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const quantities = new Map([
       [1, 2],
       [2, 3],
@@ -262,8 +262,8 @@ describe('ShopAutoSellManager', () => {
       ],
     });
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: (itemTypeId) => definitions.get(itemTypeId),
@@ -274,7 +274,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: (item) => (item.id === 1 ? 4 : 7),
+        getNpcBuyPriceCoin: (item) => (item.id === 1 ? 4 : 7),
         recordSellToNpc,
       },
       shopShelfEntityManager: slotManager,
@@ -291,15 +291,15 @@ describe('ShopAutoSellManager', () => {
 
     expect(removeItem).toHaveBeenCalledWith(1, 2);
     expect(removeItem).toHaveBeenCalledWith(2, 3);
-    expect(addGold).toHaveBeenCalledWith(8);
-    expect(addGold).toHaveBeenCalledWith(21);
+    expect(addCoin).toHaveBeenCalledWith(8);
+    expect(addCoin).toHaveBeenCalledWith(21);
     expect(slotManager.getSellProgressSeconds()).toBe(0);
   });
 
   it('does not over-submit NPC demand across same-item stands in one timer cycle', () => {
     let nowMs = 5_000;
     let quantity = 10;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
       quantity -= removeQuantity;
       return {
@@ -326,8 +326,8 @@ describe('ShopAutoSellManager', () => {
       ],
     });
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -343,7 +343,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 4,
+        getNpcBuyPriceCoin: () => 4,
         getNpcNeed: () => 3,
         recordSellToNpc,
       },
@@ -355,7 +355,7 @@ describe('ShopAutoSellManager', () => {
 
     expect(removeItem).toHaveBeenCalledTimes(1);
     expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addGold).toHaveBeenCalledWith(12);
+    expect(addCoin).toHaveBeenCalledWith(12);
     expect(recordSellToNpc).toHaveBeenCalledTimes(1);
     expect(recordSellToNpc).toHaveBeenCalledWith(
       {
@@ -371,7 +371,7 @@ describe('ShopAutoSellManager', () => {
   it('does not over-submit NPC demand across catch-up timer cycles', () => {
     const nowMs = 15_000;
     let quantity = 10;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
       quantity -= removeQuantity;
       return {
@@ -384,8 +384,8 @@ describe('ShopAutoSellManager', () => {
     });
     const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -401,7 +401,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 4,
+        getNpcBuyPriceCoin: () => 4,
         getNpcNeed: () => 3,
         recordSellToNpc,
       },
@@ -413,14 +413,14 @@ describe('ShopAutoSellManager', () => {
 
     expect(removeItem).toHaveBeenCalledTimes(1);
     expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addGold).toHaveBeenCalledWith(12);
+    expect(addCoin).toHaveBeenCalledWith(12);
     expect(recordSellToNpc).toHaveBeenCalledTimes(1);
   });
 
   it('syncs the shop timer to global wall-clock boundaries', () => {
     let nowMs = 3_605_000;
     let quantity = 2;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
       if (quantity < removeQuantity) {
         return null;
@@ -437,8 +437,8 @@ describe('ShopAutoSellManager', () => {
     });
     const slotManager = createSlotManager();
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -454,7 +454,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 1_800,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 4,
+        getNpcBuyPriceCoin: () => 4,
         recordSellToNpc: vi.fn(),
       },
       shopShelfEntityManager: slotManager,
@@ -464,7 +464,7 @@ describe('ShopAutoSellManager', () => {
     manager.update(600);
 
     expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(addGold).toHaveBeenCalledWith(8);
+    expect(addCoin).toHaveBeenCalledWith(8);
     expect(slotManager.getSellProgressSeconds()).toBe(5);
 
     nowMs = 3_610_000;
@@ -476,11 +476,11 @@ describe('ShopAutoSellManager', () => {
 
   it('does not sell when backend NPC price is missing', () => {
     let nowMs = 5_000;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn();
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -495,7 +495,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => null,
+        getNpcBuyPriceCoin: () => null,
         recordSellToNpc: vi.fn(),
       },
       shopShelfEntityManager: createSlotManager(),
@@ -505,14 +505,14 @@ describe('ShopAutoSellManager', () => {
     manager.update(5);
 
     expect(removeItem).not.toHaveBeenCalled();
-    expect(addGold).not.toHaveBeenCalled();
+    expect(addCoin).not.toHaveBeenCalled();
   });
 
   it('keeps a completed cycle pending until backend NPC prices are ready', () => {
     let nowMs = 5_000;
-    let priceGold = null;
+    let priceCoin = null;
     let npcNeed = null;
-    const addGold = vi.fn();
+    const addCoin = vi.fn();
     const removeItem = vi.fn().mockReturnValue({
       itemTypeId: 1,
       key: 'sageSeed',
@@ -522,8 +522,8 @@ describe('ShopAutoSellManager', () => {
     });
     const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
     const manager = new ShopAutoSellManager({
-      goldFacade: {
-        add: addGold,
+      coinFacade: {
+        add: addCoin,
       },
       itemsFacade: {
         getItemDefinition: () => ({
@@ -539,7 +539,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => priceGold,
+        getNpcBuyPriceCoin: () => priceCoin,
         getNpcNeed: () => npcNeed,
         recordSellToNpc,
         syncPriceRetention: vi.fn(),
@@ -551,15 +551,15 @@ describe('ShopAutoSellManager', () => {
     manager.update(5);
 
     expect(removeItem).not.toHaveBeenCalled();
-    expect(addGold).not.toHaveBeenCalled();
+    expect(addCoin).not.toHaveBeenCalled();
 
-    priceGold = 4;
+    priceCoin = 4;
     npcNeed = 10;
     nowMs = 6_000;
     manager.update(1);
 
     expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addGold).toHaveBeenCalledWith(12);
+    expect(addCoin).toHaveBeenCalledWith(12);
     expect(recordSellToNpc).toHaveBeenCalledWith(
       {
         id: 1,
@@ -589,7 +589,7 @@ describe('ShopAutoSellManager', () => {
       },
     };
     const manager = new ShopAutoSellManager({
-      goldFacade: {
+      coinFacade: {
         add: vi.fn(),
       },
       itemsFacade: {
@@ -606,7 +606,7 @@ describe('ShopAutoSellManager', () => {
         getAutoSellSeconds: () => 5,
       },
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 4,
+        getNpcBuyPriceCoin: () => 4,
         recordSellToNpc: vi.fn(),
         syncPriceRetention,
       },

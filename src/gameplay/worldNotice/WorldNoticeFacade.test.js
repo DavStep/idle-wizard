@@ -7,9 +7,9 @@ import {
 
 const WEEK_1_MS = Date.UTC(2026, 5, 20, 12, 0, 0, 0);
 
-function createGoldFacade(initialGold = 0) {
+function createCoinFacade(initialCoin = 0) {
   return {
-    current: initialGold,
+    current: initialCoin,
     add(amount) {
       this.current += amount;
     },
@@ -32,21 +32,21 @@ function createGoldFacade(initialGold = 0) {
   };
 }
 
-function createFacade({ level = 4, gold = 0, now = () => WEEK_1_MS } = {}) {
-  const goldFacade = createGoldFacade(gold);
+function createFacade({ level = 4, coin = 0, now = () => WEEK_1_MS } = {}) {
+  const coinFacade = createCoinFacade(coin);
   const playerLevelFacade = {
     getSnapshot: () => ({
       currentLevel: level,
     }),
   };
   const tasksFacade = {
-    getLevelCompletionCostGold: (levelNumber) => levelNumber * levelNumber * 10,
+    getLevelCompletionCostCoin: (levelNumber) => levelNumber * levelNumber * 10,
     getSnapshot: () => ({
       currentLevel: level,
     }),
   };
   const facade = new WorldNoticeFacade({
-    goldFacade,
+    coinFacade,
     now,
     playerLevelFacade,
     tasksFacade,
@@ -54,7 +54,7 @@ function createFacade({ level = 4, gold = 0, now = () => WEEK_1_MS } = {}) {
 
   return {
     facade,
-    goldFacade,
+    coinFacade,
   };
 }
 
@@ -90,7 +90,7 @@ describe('WorldNoticeFacade', () => {
       'bring random mint',
     );
     expect(snapshot.current.requests.map((request) => request.actionType)).not.toContain(
-      WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+      WORLD_NOTICE_ACTIONS.DONATE_COIN,
     );
   });
 
@@ -104,7 +104,7 @@ describe('WorldNoticeFacade', () => {
         .getSnapshot()
         .current.requests.map((request) => request.actionType);
 
-      expect(requestTypes).not.toContain(WORLD_NOTICE_ACTIONS.DONATE_GOLD);
+      expect(requestTypes).not.toContain(WORLD_NOTICE_ACTIONS.DONATE_COIN);
       expect(new Set(requestTypes).size).toBe(requestTypes.length);
     }
   });
@@ -124,13 +124,13 @@ describe('WorldNoticeFacade', () => {
           {
             requestId: 'weekly-1:siege-stonebridge:wallFund',
             requestKey: 'wallFund',
-            actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+            actionType: WORLD_NOTICE_ACTIONS.DONATE_COIN,
             label: 'fund the wall watch',
             requiredQuantity: 160,
             progressQuantity: 0,
             completed: false,
             reward: {
-              gold: 10,
+              coin: 10,
             },
             rewardClaimed: false,
           },
@@ -145,7 +145,7 @@ describe('WorldNoticeFacade', () => {
       'fund the wall watch',
     );
     expect(snapshot.current.requests.map((request) => request.actionType)).not.toContain(
-      WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+      WORLD_NOTICE_ACTIONS.DONATE_COIN,
     );
   });
 
@@ -164,13 +164,13 @@ describe('WorldNoticeFacade', () => {
         {
           requestId: 'weekly-1:siege-stonebridge:wallFund',
           requestKey: 'wallFund',
-          actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+          actionType: WORLD_NOTICE_ACTIONS.DONATE_COIN,
           label: 'fund the wall watch',
           requiredQuantity: 160,
           progressQuantity: 0,
           completed: false,
           reward: {
-            gold: 10,
+            coin: 10,
           },
           rewardClaimed: false,
         },
@@ -191,8 +191,8 @@ describe('WorldNoticeFacade', () => {
     );
   });
 
-  it('records matching action progress and grants light gold on completion', () => {
-    const { facade, goldFacade } = createFacade({ level: 4 });
+  it('records matching action progress and adds contribution points', () => {
+    const { facade, coinFacade } = createFacade({ level: 4 });
     const brewRequest = facade
       .getSnapshot()
       .current.requests.find(
@@ -211,13 +211,41 @@ describe('WorldNoticeFacade', () => {
     expect(updatedRequest).toMatchObject({
       completed: true,
       progressQuantity: brewRequest.requiredQuantity,
-      rewardClaimed: true,
     });
-    expect(goldFacade.current).toBeGreaterThan(0);
+    expect(result.pointsAdded).toBeGreaterThan(0);
+    expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(result.pointsAdded);
+    expect(facade.getSnapshot().current.leaderboard.qualificationPoints).toBe(2000);
+    expect(coinFacade.current).toBe(0);
   });
 
-  it('donates gold into explicit manual notice requests', () => {
-    const { facade, goldFacade } = createFacade({ level: 4, gold: 1000 });
+  it('scores mana tonic contributions as 25 points each', () => {
+    const { facade } = createFacade({ level: 4 });
+    const brewRequest = facade
+      .getSnapshot()
+      .current.requests.find(
+        (request) => request.actionType === WORLD_NOTICE_ACTIONS.BREW_POTIONS,
+      );
+
+    const result = facade.recordAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, 2, {
+      potion: { key: 'manaTonic' },
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      changed: true,
+      pointsAdded: 50,
+    });
+    expect(
+      facade
+        .getSnapshot()
+        .current.requests.find((request) => request.requestId === brewRequest.requestId)
+        .progressQuantity,
+    ).toBe(2);
+    expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(50);
+  });
+
+  it('donates coin into explicit manual notice requests', () => {
+    const { facade, coinFacade } = createFacade({ level: 4, coin: 1000 });
     facade.applyPersistenceSnapshot({
       version: 2,
       current: {
@@ -231,13 +259,13 @@ describe('WorldNoticeFacade', () => {
           {
             requestId: 'weekly-1:siege-stonebridge:bridgeCoin',
             requestKey: 'bridgeCoin',
-            actionType: WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+            actionType: WORLD_NOTICE_ACTIONS.DONATE_COIN,
             label: 'send bridge coin',
             requiredQuantity: 30,
             progressQuantity: 0,
             completed: false,
             reward: {
-              gold: 10,
+              coin: 10,
             },
             rewardClaimed: false,
           },
@@ -248,10 +276,10 @@ describe('WorldNoticeFacade', () => {
     const donateRequest = facade
       .getSnapshot()
       .current.requests.find(
-        (request) => request.actionType === WORLD_NOTICE_ACTIONS.DONATE_GOLD,
+        (request) => request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN,
       );
 
-    const result = facade.donateGold(donateRequest.requestId);
+    const result = facade.donateCoin(donateRequest.requestId);
     const updatedRequest = facade
       .getSnapshot()
       .current.requests.find((request) => request.requestId === donateRequest.requestId);
@@ -259,10 +287,11 @@ describe('WorldNoticeFacade', () => {
     expect(result).toMatchObject({
       ok: true,
       changed: true,
-      donatedGold: donateRequest.requiredQuantity,
+      donatedCoin: donateRequest.requiredQuantity,
     });
     expect(updatedRequest.completed).toBe(true);
-    expect(goldFacade.current).toBe(1000 - donateRequest.requiredQuantity + result.rewards[0].gold);
+    expect(result.pointsAdded).toBe(1);
+    expect(coinFacade.current).toBe(1000 - donateRequest.requiredQuantity);
   });
 
   it('archives resolved notices when the weekly period rolls', () => {

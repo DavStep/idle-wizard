@@ -118,7 +118,7 @@ The server module defines:
 - `trade_alliance_quest_progress` and `trade_alliance_quest_contribution`: weekly alliance quest progress and per-player contribution rows.
 - `trade_alliance_chat` and `trade_alliance_reward_inbox`: private base tables exposed through sender-scoped views for the current member/reward recipient; alliance chat rows join the sender character for avatar display.
 - `player_shop_listing`: one row per published player market stand, keyed by seller identity and slot number.
-- `player_shop_proceeds`: one row per seller with unclaimed gold from player shop sales.
+- `player_shop_proceeds`: one row per seller with unclaimed coin from player shop sales.
 - `potion_recipe_discovery`: global recipe discovery rows; clients subscribe through `potion_recipe_discovery_snapshot`.
 - `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC need, and rolling fulfilled/supply scores. Clients subscribe through `npc_market_price_snapshot`.
 - `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
@@ -127,7 +127,7 @@ The server module defines:
 
 `clientConnected` creates or reconnects the player row. `clientDisconnected` marks it offline. `set_username` updates both `player.username` and the label shown in `leaderboard`. `set_player_profile` updates username, theme, font, color mode, and username prompt state together.
 
-`admin_kick_player_session` is a non-destructive admin recovery path for a stuck account session. It invalidates the player's current `player_session` row and marks the shared player row offline; the next real player connection recreates the session. It does not edit gameplay save JSON, gold, level, research, plots, chat, or market data.
+`admin_kick_player_session` is a non-destructive admin recovery path for a stuck account session. It invalidates the player's current `player_session` row and marks the shared player row offline; the next real player connection recreates the session. It does not edit gameplay save JSON, coin, level, research, plots, chat, or market data.
 
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for the own-save subscription before opening the room gate, applies the saved gameplay snapshot, unsubscribes from the own-save stream, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
@@ -139,15 +139,15 @@ Maintenance mode lives in `game_config` under the `maintenance` key. `off` allow
 
 Period loops use server UTC time. Daily periods reset at UTC 00:00, which is 04:00 in Armenia. Weekly and monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly spans 7 days and monthly spans 30 days.
 
-`set_total_generated_gold` accepts client-reported lifetime generated gold, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap and rolls period counters when the server day/week/month key changes. The accepted delta raises the player's daily, weekly, monthly, and all-time leaderboard income, plus alliance income and current weekly alliance-income quest progress when the player is in an alliance.
+`set_total_generated_coin` accepts client-reported lifetime generated coin, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap and rolls period counters when the server day/week/month key changes. The accepted delta raises the player's daily, weekly, monthly, and all-time leaderboard income, plus alliance income and current weekly alliance-income quest progress when the player is in an alliance.
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
-Player market exchange reducers are enabled for public listings, public requests, purchases, proceeds, and trade history. The backend caps listing/request quantity at `1000` units, unit price at `1000000` gold, and one trade total at `10000000` gold.
+Player market exchange reducers are enabled for public listings, public requests, purchases, proceeds, and trade history. The backend caps listing/request quantity at `1000` units, unit price at `1000000` coin, and one trade total at `10000000` coin.
 
 `sell_to_npc` records an NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, increases shared `npc_stock`, and recomputes the backend quote. `scheduled_tick_npc_market` runs from the `npc_market_tick_schedule` SpacetimeDB schedule table every 5 minutes to replenish `npc_need` and recompute prices; trades also apply any due tick inline before changing market rows. During a server data reset, the module clears NPC market demand and stock once using a `maintenance_state` key tied to `PLAYER_DATA_RESET_GUARD_MICROS`.
 
-NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. `reset_npc_market` restores neutral demand, clears rolling scores, resets prices to base, and clears NPC stock. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Quotes are computed from uncapped `npc_need / target_need` pressure; currently `npcBuyPriceGold` is 80% of `marketPriceGold` and `npcSellPriceGold` is 120%.
+NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. `reset_npc_market` restores neutral demand, clears rolling scores, resets prices to base, and clears NPC stock. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Quotes are computed from uncapped `npc_need / target_need` pressure; currently `npcBuyPriceCoin` is 80% of `marketPriceCoin` and `npcSellPriceCoin` is 120%.
 
 `upsert_game_config` accepts only known config keys (`tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, `potionRecipes`, `maintenance`) and validates bounded schemas before storing JSON. Existing invalid rows are reset to the built-in defaults on connect. The `tradeAlliance` config currently owns `weeklyQuests`; legacy `dailyQuests` rows are still accepted. Supported quest types are `allianceIncome` and `itemFill`; item-fill quest ids must use `itemFill:<itemKey>` for an exact seed or potion key.
 
@@ -191,7 +191,7 @@ SELECT * FROM own_trade_alliance_chat
 SELECT * FROM own_trade_alliance_reward_inbox
 ```
 
-The own `player` profile view is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated gold totals call throttled `set_total_generated_gold`, and the server stores capped income values on `leaderboard`. The client subscribes to `leaderboard_summary`, not the raw leaderboard table, so it receives daily, weekly, monthly, and all-time top 100 rows plus the current player's rank row for the Workshop leaderboard popup.
+The own `player` profile view is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated coin totals call throttled `set_total_generated_coin`, and the server stores capped income values on `leaderboard`. The client subscribes to `leaderboard_summary`, not the raw leaderboard table, so it receives daily, weekly, monthly, and all-time top 100 rows plus the current player's rank row for the Workshop leaderboard popup.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.
 

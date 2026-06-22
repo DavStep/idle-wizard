@@ -21,17 +21,17 @@ describe('ShopNpcPriceManager', () => {
   it('returns no NPC buy price when backend price is missing', () => {
     const manager = new ShopNpcPriceManager();
 
-    expect(manager.getNpcBuyPriceGold(sageSeed)).toBeNull();
+    expect(manager.getNpcBuyPriceCoin(sageSeed)).toBeNull();
   });
 
   it('uses backend NPC buy price when available', () => {
     const manager = new ShopNpcPriceManager({
       npcMarketFacade: {
-        getNpcBuyPriceGold: () => 7,
+        getNpcBuyPriceCoin: () => 7,
       },
     });
 
-    expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(7);
+    expect(manager.getNpcBuyPriceCoin(sageSeed)).toBe(7);
   });
 
   it('uses fake NPC demand and prices before level 4', async () => {
@@ -40,8 +40,8 @@ describe('ShopNpcPriceManager', () => {
     const manager = new ShopNpcPriceManager({
       playerLevelFacade: createPlayerLevelFacade(3),
       npcMarketFacade: {
-        getNpcBuyPriceGold: () => 7,
-        getNpcSellPriceGold: () => 9,
+        getNpcBuyPriceCoin: () => 7,
+        getNpcSellPriceCoin: () => 9,
         getNpcNeed: () => 12,
         getNpcStock: () => 4,
         sellToNpc,
@@ -50,8 +50,8 @@ describe('ShopNpcPriceManager', () => {
     });
 
     expect(manager.getNpcPrice(sageSeed)).toBeNull();
-    expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(1);
-    expect(manager.getNpcSellPriceGold(sageSeed)).toBeNull();
+    expect(manager.getNpcBuyPriceCoin(sageSeed)).toBe(1);
+    expect(manager.getNpcSellPriceCoin(sageSeed)).toBeNull();
     expect(manager.getNpcNeed(sageSeed)).toBe(1000);
     expect(manager.getNpcStock(sageSeed)).toBeNull();
 
@@ -72,13 +72,13 @@ describe('ShopNpcPriceManager', () => {
     const manager = new ShopNpcPriceManager({
       playerLevelFacade: createPlayerLevelFacade(4),
       npcMarketFacade: {
-        getNpcBuyPriceGold: () => 7,
+        getNpcBuyPriceCoin: () => 7,
         getNpcNeed: () => 12,
         sellToNpc,
       },
     });
 
-    expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(7);
+    expect(manager.getNpcBuyPriceCoin(sageSeed)).toBe(7);
     expect(manager.getNpcNeed(sageSeed)).toBe(12);
 
     await expect(manager.recordSellToNpc(sageSeed, 3)).resolves.toEqual({ ok: true });
@@ -122,11 +122,11 @@ describe('ShopNpcPriceManager', () => {
   it('keeps decimal NPC buy prices to cents', () => {
     const manager = new ShopNpcPriceManager({
       npcMarketFacade: {
-        getNpcBuyPriceGold: () => 0.805,
+        getNpcBuyPriceCoin: () => 0.805,
       },
     });
 
-    expect(manager.getNpcBuyPriceGold(sageSeed)).toBe(0.81);
+    expect(manager.getNpcBuyPriceCoin(sageSeed)).toBe(0.81);
   });
 
   it('uses backend NPC need when available', () => {
@@ -154,7 +154,7 @@ describe('ShopNpcPriceManager', () => {
   it('requires backend price and positive need before selling to NPC', () => {
     const manager = new ShopNpcPriceManager({
       npcMarketFacade: {
-        getNpcBuyPriceGold: () => 7,
+        getNpcBuyPriceCoin: () => 7,
         getNpcNeed: () => 12,
       },
     });
@@ -163,7 +163,7 @@ describe('ShopNpcPriceManager', () => {
 
     const missingNeedManager = new ShopNpcPriceManager({
       npcMarketFacade: {
-        getNpcBuyPriceGold: () => 7,
+        getNpcBuyPriceCoin: () => 7,
       },
     });
 
@@ -171,7 +171,7 @@ describe('ShopNpcPriceManager', () => {
 
     const emptyNeedManager = new ShopNpcPriceManager({
       npcMarketFacade: {
-        getNpcBuyPriceGold: () => 7,
+        getNpcBuyPriceCoin: () => 7,
         getNpcNeed: () => 0,
       },
     });
@@ -197,7 +197,7 @@ describe('ShopNpcPriceManager', () => {
   it('requires backend sell price and stock before buying from NPC', () => {
     const manager = new ShopNpcPriceManager({
       npcMarketFacade: {
-        getNpcSellPriceGold: () => 9,
+        getNpcSellPriceCoin: () => 9,
         getPrice: () => ({
           npcStock: 2,
         }),

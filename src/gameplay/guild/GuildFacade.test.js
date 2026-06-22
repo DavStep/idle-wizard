@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { GuildFacade, GUILD_CHARTER_COST_GOLD, GUILD_UNLOCK_LEVEL } from './GuildFacade.js';
+import { GuildFacade, GUILD_CHARTER_COST_COIN, GUILD_UNLOCK_LEVEL } from './GuildFacade.js';
 
-function createGoldFacade(initialGold = 0) {
+function createCoinFacade(initialCoin = 0) {
   return {
-    current: initialGold,
+    current: initialCoin,
     add(amount) {
       this.current += amount;
     },
@@ -38,11 +38,11 @@ function createItemsFacade() {
   };
 }
 
-function createFacade({ level = GUILD_UNLOCK_LEVEL, gold = 2000, now = () => 0 } = {}) {
-  const goldFacade = createGoldFacade(gold);
+function createFacade({ level = GUILD_UNLOCK_LEVEL, coin = 2000, now = () => 0 } = {}) {
+  const coinFacade = createCoinFacade(coin);
   const itemsFacade = createItemsFacade();
   const facade = new GuildFacade({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     now,
     playerLevelFacade: {
@@ -59,7 +59,7 @@ function createFacade({ level = GUILD_UNLOCK_LEVEL, gold = 2000, now = () => 0 }
     },
   });
 
-  return { facade, goldFacade, itemsFacade };
+  return { facade, coinFacade, itemsFacade };
 }
 
 describe('GuildFacade', () => {
@@ -77,16 +77,16 @@ describe('GuildFacade', () => {
     });
   });
 
-  it('spends gold to create a guild and generates applicants and board requests', () => {
-    const { facade, goldFacade } = createFacade();
+  it('spends coin to create a guild and generates applicants and board requests', () => {
+    const { facade, coinFacade } = createFacade();
 
     expect(facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' })).toMatchObject({
       ok: true,
-      costGold: GUILD_CHARTER_COST_GOLD,
+      costCoin: GUILD_CHARTER_COST_COIN,
     });
     const snapshot = facade.getSnapshot();
 
-    expect(goldFacade.getSnapshot().current).toBe(500);
+    expect(coinFacade.getSnapshot().current).toBe(500);
     expect(snapshot).toMatchObject({
       created: true,
       profile: {
@@ -115,7 +115,7 @@ describe('GuildFacade', () => {
   });
 
   it('hires one starting adventurer until secretary is upgraded', () => {
-    const { facade } = createFacade({ gold: 10_000 });
+    const { facade } = createFacade({ coin: 10_000 });
     facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' });
     const applicantId = facade.getSnapshot().applicants[0].id;
 

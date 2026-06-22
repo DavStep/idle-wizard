@@ -13,7 +13,7 @@ export class GameplayPersistenceFacade {
     storage,
     storageManager,
     manaFacade,
-    goldFacade,
+    coinFacade,
     crystalFacade,
     emeraldFacade,
     rubyFacade,
@@ -39,7 +39,7 @@ export class GameplayPersistenceFacade {
     this.migrationManager = new GameplayMigrationManager();
     this.saveManager = new GameplaySaveManager({
       manaFacade,
-      goldFacade,
+      coinFacade,
       crystalFacade,
       emeraldFacade,
       rubyFacade,
@@ -61,7 +61,7 @@ export class GameplayPersistenceFacade {
     });
     this.loadManager = new GameplayLoadManager({
       manaFacade,
-      goldFacade,
+      coinFacade,
       crystalFacade,
       emeraldFacade,
       rubyFacade,

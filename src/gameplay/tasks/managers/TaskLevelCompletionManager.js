@@ -12,7 +12,7 @@ export class TaskLevelCompletionManager {
 
     return {
       level,
-      costGold: this.taskBalanceManager.getLevelCompletionCostGold(level),
+      costCoin: this.taskBalanceManager.getLevelCompletionCostCoin(level),
       allTasksCompleted,
       atMaxLevel,
       completedAllLevels,
@@ -56,7 +56,7 @@ export class TaskLevelCompletionManager {
       currentLevel: completion.levelAfter,
       advanced: completion.advanced,
       completedAllLevels: completion.completedAllLevels,
-      costGold: snapshot.costGold,
+      costCoin: snapshot.costCoin,
     };
   }
 }

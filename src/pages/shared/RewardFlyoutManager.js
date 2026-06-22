@@ -6,7 +6,7 @@ import {
   getPotionIconKeyByLabel,
 } from '../../assets/items/potions/potionIcons.js';
 import { getSeedIconFrameName, seedIconVariantFrameNames } from '../../assets/items/seeds/seedIcons.js';
-import { formatGoldPriceText } from '../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../shared/coinPrice.js';
 
 const FLYOUT_LIFETIME_MS = 1200;
 const FLYOUT_LIST_STAGGER_MS = 55;
@@ -14,7 +14,7 @@ const FLYOUT_BURST_WINDOW_MS = 90;
 const MAX_FLYOUT_STAGGER_INDEX = 5;
 const MAX_POOLED_FLYOUTS = 12;
 const ITEM_DROP_LIFETIME_MS = 1300;
-const GOLD_TARGET_PULSE_MS = 520;
+const COIN_TARGET_PULSE_MS = 520;
 const MAX_VISUAL_ITEM_DROPS = 12;
 
 export class RewardFlyoutManager {
@@ -247,15 +247,15 @@ export class RewardFlyoutManager {
 
     if (event.type === 'item_sold') {
       const itemAnchor = this.getAnchorForEvent(event);
-      const goldAnchor = this.getShopSlotGoldAnchor(event.slotNumber) ?? itemAnchor;
+      const coinAnchor = this.getShopSlotCoinAnchor(event.slotNumber) ?? itemAnchor;
       const itemDropCount = this.playItemDrop(
         this.getItemDropSource(event.item, event.item?.kind),
         itemAnchor,
         event.item?.kind,
       );
-      const coinCount = this.animateCoinsToGold(
-        goldAnchor,
-        event.gold ?? 0,
+      const coinCount = this.animateCoinsToCoin(
+        coinAnchor,
+        event.coin ?? 0,
         this.formatRewardMessage(event),
       );
       return itemDropCount + coinCount;
@@ -269,11 +269,11 @@ export class RewardFlyoutManager {
       );
     }
 
-    if (event.type === 'gold_collected') {
+    if (event.type === 'coin_collected') {
       const anchor = this.getAnchorForEvent(event);
-      return this.animateCoinsToGold(
+      return this.animateCoinsToCoin(
         anchor,
-        event.gold ?? 0,
+        event.coin ?? 0,
         this.formatRewardMessage(event),
       );
     }
@@ -306,8 +306,8 @@ export class RewardFlyoutManager {
       return this.getShopBoughtItemAnchor(event);
     }
 
-    if (event.type === 'gold_collected') {
-      return this.getGoldCollectionAnchor(event.source);
+    if (event.type === 'coin_collected') {
+      return this.getCoinCollectionAnchor(event.source);
     }
 
     return this.root.parentElement;
@@ -329,11 +329,11 @@ export class RewardFlyoutManager {
     };
   }
 
-  getGoldCollectionAnchor(source) {
-    if (source === 'shop_gold_offer') {
+  getCoinCollectionAnchor(source) {
+    if (source === 'shop_coin_offer') {
       return (
-        this.root?.parentElement?.querySelector('.shop-page__gold-offer-action') ??
-        this.root?.parentElement?.querySelector('.shop-page__gold-offer-reward')
+        this.root?.parentElement?.querySelector('.shop-page__coin-offer-action') ??
+        this.root?.parentElement?.querySelector('.shop-page__coin-offer-reward')
       );
     }
 
@@ -354,7 +354,7 @@ export class RewardFlyoutManager {
     );
   }
 
-  getShopSlotGoldAnchor(slotNumber) {
+  getShopSlotCoinAnchor(slotNumber) {
     if (!Number.isInteger(slotNumber)) {
       return null;
     }
@@ -727,14 +727,14 @@ export class RewardFlyoutManager {
     drop.style.setProperty('--toss-peak', `${peak.toFixed(1)}px`);
   }
 
-  animateCoinsToGold(source, amount, title) {
+  animateCoinsToCoin(source, amount, title) {
     const safeAmount = Math.max(0, Number(amount) || 0);
     if (safeAmount <= 0) {
       return 0;
     }
 
     const target =
-      document.querySelector('.room-top-panel__resource[aria-label="gold"]') ??
+      document.querySelector('.room-top-panel__resource[aria-label="coin"]') ??
       document.querySelector('.room-top-panel__resource-val');
 
     if (!target) {
@@ -786,7 +786,7 @@ export class RewardFlyoutManager {
       const name = `room-coin-fly-${eventUid}-${index}`;
       keyframeBlocks.push(this.buildCoinFlyKeyframes(name, bx, by, ctrlX, ctrlY, dx, dy, rot));
 
-      const coin = createAssetAtlasSprite('room-coin-particle', 'resource:gold');
+      const coin = createAssetAtlasSprite('room-coin-particle', 'resource:coin');
       coin.style.animationName = name;
       coin.style.animationDuration = `${dur}ms`;
       coin.style.animationDelay = `${delay}ms`;
@@ -815,7 +815,7 @@ export class RewardFlyoutManager {
     amountPop.addEventListener('animationend', removeAmount, { once: true });
     this.setManagedTimeout(removeAmount, 1200);
 
-    this.setManagedTimeout(() => this.pulseGoldTarget(target), Math.max(0, maxLife - 210));
+    this.setManagedTimeout(() => this.pulseCoinTarget(target), Math.max(0, maxLife - 210));
     return coinCount + 1;
   }
 
@@ -845,11 +845,11 @@ export class RewardFlyoutManager {
     return `@keyframes ${name} {\n  ${stops.join('\n  ')}\n}`;
   }
 
-  pulseGoldTarget(target) {
+  pulseCoinTarget(target) {
     target.classList.remove('is-receiving-coins');
     void target.offsetWidth;
     target.classList.add('is-receiving-coins');
-    this.setManagedTimeout(() => target.classList.remove('is-receiving-coins'), GOLD_TARGET_PULSE_MS);
+    this.setManagedTimeout(() => target.classList.remove('is-receiving-coins'), COIN_TARGET_PULSE_MS);
   }
 
   formatCoinFlyoutAmount(amount) {
@@ -910,19 +910,19 @@ export class RewardFlyoutManager {
         'sold',
         event.item,
         event.quantity,
-        ` for ${formatGoldPriceText(event.gold ?? 0)}`,
+        ` for ${formatCoinPriceText(event.coin ?? 0)}`,
       );
     }
 
     if (event.type === 'item_bought') {
-      const trailingText = Number.isFinite(event.gold)
-        ? ` for ${formatGoldPriceText(event.gold)}`
+      const trailingText = Number.isFinite(event.coin)
+        ? ` for ${formatCoinPriceText(event.coin)}`
         : '';
       return this.formatItemQuantity('bought', event.item, event.quantity, trailingText);
     }
 
-    if (event.type === 'gold_collected') {
-      return `collected ${formatGoldPriceText(event.gold ?? 0)}`;
+    if (event.type === 'coin_collected') {
+      return `collected ${formatCoinPriceText(event.coin ?? 0)}`;
     }
 
     return '';

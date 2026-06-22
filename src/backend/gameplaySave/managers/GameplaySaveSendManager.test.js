@@ -13,10 +13,10 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, gold: { current: 12 } });
+    manager.save({ version: 2, coin: { current: 12 } });
 
     expect(setPlayerGameplaySave).toHaveBeenCalledWith({
-      saveJson: JSON.stringify({ version: 2, gold: { current: 12 } }),
+      saveJson: JSON.stringify({ version: 2, coin: { current: 12 } }),
     });
   });
 
@@ -50,8 +50,8 @@ describe('GameplaySaveSendManager', () => {
     const set_player_gameplay_save = vi.fn(() => Promise.resolve());
     const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
-    expect(manager.save({ version: 2, gold: { current: 1 } })).toBe(true);
-    manager.save({ version: 2, gold: { current: 2 } });
+    expect(manager.save({ version: 2, coin: { current: 1 } })).toBe(true);
+    manager.save({ version: 2, coin: { current: 2 } });
     manager.connect({
       reducers: {
         set_player_gameplay_save,
@@ -64,7 +64,7 @@ describe('GameplaySaveSendManager', () => {
 
     expect(set_player_gameplay_save).toHaveBeenCalledTimes(1);
     expect(set_player_gameplay_save).toHaveBeenCalledWith({
-      saveJson: JSON.stringify({ version: 2, gold: { current: 2 } }),
+      saveJson: JSON.stringify({ version: 2, coin: { current: 2 } }),
     });
   });
 
@@ -72,7 +72,7 @@ describe('GameplaySaveSendManager', () => {
     const set_player_gameplay_save = vi.fn(() => Promise.resolve());
     const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
-    manager.save({ version: 2, gold: { current: 1 } });
+    manager.save({ version: 2, coin: { current: 1 } });
     manager.connect({
       reducers: {
         set_player_gameplay_save,
@@ -97,7 +97,7 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, gold: { current: 3 } });
+    manager.save({ version: 2, coin: { current: 3 } });
     manager.disconnect();
     manager.discardPreHydrationSave();
     manager.connect({
@@ -108,7 +108,7 @@ describe('GameplaySaveSendManager', () => {
     manager.setReadyToSend(true);
 
     expect(set_player_gameplay_save).toHaveBeenCalledWith({
-      saveJson: JSON.stringify({ version: 2, gold: { current: 3 } }),
+      saveJson: JSON.stringify({ version: 2, coin: { current: 3 } }),
     });
   });
 
@@ -129,7 +129,7 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, gold: { current: 3 } });
+    manager.save({ version: 2, coin: { current: 3 } });
 
     expect(firstSetPlayerGameplaySave).toHaveBeenCalledTimes(1);
 
@@ -143,7 +143,7 @@ describe('GameplaySaveSendManager', () => {
     manager.setReadyToSend(true);
 
     expect(secondSetPlayerGameplaySave).toHaveBeenCalledWith({
-      saveJson: JSON.stringify({ version: 2, gold: { current: 3 } }),
+      saveJson: JSON.stringify({ version: 2, coin: { current: 3 } }),
     });
 
     resolveFirstSave();
@@ -161,8 +161,8 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, gold: { current: 3 } });
-    manager.save({ version: 2, gold: { current: 4 } });
+    manager.save({ version: 2, coin: { current: 3 } });
+    manager.save({ version: 2, coin: { current: 4 } });
 
     manager.discardPendingSaves();
     manager.disconnect();
@@ -202,8 +202,8 @@ describe('GameplaySaveSendManager', () => {
     });
     manager.setReadyToSend(true);
 
-    const flush = manager.saveAndFlush({ version: 2, gold: { current: 1 } });
-    manager.save({ version: 2, gold: { current: 2 } });
+    const flush = manager.saveAndFlush({ version: 2, coin: { current: 1 } });
+    manager.save({ version: 2, coin: { current: 2 } });
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
     expect(setTimeoutFn).toHaveBeenCalledWith(expect.any(Function), 50);
@@ -215,7 +215,7 @@ describe('GameplaySaveSendManager', () => {
       expect.objectContaining({ reason: 'gameplay_save_timeout' }),
     );
     expect(manager.pendingSaveJson).toBe(
-      JSON.stringify({ version: 2, gold: { current: 2 } }),
+      JSON.stringify({ version: 2, coin: { current: 2 } }),
     );
     expect(manager.syncPromise).toBeNull();
     expect(clearTimeoutFn).not.toHaveBeenCalled();
@@ -238,7 +238,7 @@ describe('GameplaySaveSendManager', () => {
     });
     manager.setReadyToSend(true);
 
-    const flush = manager.saveAndFlush({ version: 2, gold: { current: 9 } });
+    const flush = manager.saveAndFlush({ version: 2, coin: { current: 9 } });
     let settled = false;
     flush.then(() => {
       settled = true;
@@ -265,11 +265,11 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, savedAt: 100, gold: { current: 9 } });
+    manager.save({ version: 2, savedAt: 100, coin: { current: 9 } });
     await Promise.resolve();
     await Promise.resolve();
 
-    manager.save({ version: 2, savedAt: 200, gold: { current: 9 } });
+    manager.save({ version: 2, savedAt: 200, coin: { current: 9 } });
     await Promise.resolve();
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
@@ -296,12 +296,12 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, gold: { current: 1 } });
+    manager.save({ version: 2, coin: { current: 1 } });
     await Promise.resolve();
     await Promise.resolve();
 
     nowMs += 5_000;
-    manager.save({ version: 2, gold: { current: 2 } });
+    manager.save({ version: 2, coin: { current: 2 } });
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -315,7 +315,7 @@ describe('GameplaySaveSendManager', () => {
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(2);
     expect(setPlayerGameplaySave).toHaveBeenLastCalledWith({
-      saveJson: JSON.stringify({ version: 2, gold: { current: 2 } }),
+      saveJson: JSON.stringify({ version: 2, coin: { current: 2 } }),
     });
   });
 
@@ -339,12 +339,12 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, gold: { current: 1 } });
+    manager.save({ version: 2, coin: { current: 1 } });
     await manager.syncPromise;
     await Promise.resolve();
 
     nowMs += 1_000;
-    manager.save({ version: 2, gold: { current: 2 } });
+    manager.save({ version: 2, coin: { current: 2 } });
     await Promise.resolve();
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
@@ -366,17 +366,17 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, gold: { current: 1 } });
+    manager.save({ version: 2, coin: { current: 1 } });
     await Promise.resolve();
 
     nowMs += 5_000;
     await expect(
-      manager.saveAndFlush({ version: 2, gold: { current: 2 } }),
+      manager.saveAndFlush({ version: 2, coin: { current: 2 } }),
     ).resolves.toBe(true);
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(2);
     expect(setPlayerGameplaySave).toHaveBeenLastCalledWith({
-      saveJson: JSON.stringify({ version: 2, gold: { current: 2 } }),
+      saveJson: JSON.stringify({ version: 2, coin: { current: 2 } }),
     });
   });
 });

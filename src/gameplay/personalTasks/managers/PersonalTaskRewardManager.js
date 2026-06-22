@@ -1,15 +1,15 @@
 export class PersonalTaskRewardManager {
-  constructor({ crystalFacade, goldFacade } = {}) {
+  constructor({ crystalFacade, coinFacade } = {}) {
     this.crystalFacade = crystalFacade;
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
   }
 
   grantReward(reward = {}) {
-    const gold = Math.max(0, Math.floor(Number(reward.gold) || 0));
+    const coin = Math.max(0, Math.floor(Number(reward.coin) || 0));
     const crystal = Math.max(0, Math.floor(Number(reward.crystal) || 0));
 
-    if (gold > 0) {
-      this.goldFacade?.add?.(gold);
+    if (coin > 0) {
+      this.coinFacade?.add?.(coin);
     }
 
     if (crystal > 0) {
@@ -17,18 +17,18 @@ export class PersonalTaskRewardManager {
     }
 
     return {
-      gold,
+      coin,
       crystal,
     };
   }
 
   formatRewardText(reward = {}) {
     const parts = [];
-    const gold = Math.max(0, Math.floor(Number(reward.gold) || 0));
+    const coin = Math.max(0, Math.floor(Number(reward.coin) || 0));
     const crystal = Math.max(0, Math.floor(Number(reward.crystal) || 0));
 
-    if (gold > 0) {
-      parts.push(`+${gold} gold`);
+    if (coin > 0) {
+      parts.push(`+${coin} coin`);
     }
 
     if (crystal > 0) {

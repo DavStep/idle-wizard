@@ -9,7 +9,7 @@ Every feature has a facade and dedicated managers. Facades explain the feature i
 - App: starts/stops the game shell, online gate, account-link gates, deploy refresh, and lifecycle flushes.
 - Viewport: keeps the authored `1080x2170` stage proportional on real devices.
 - Pages: owns room-view DOM for `Brewing`, `Garden`, `Workshop`, `Research`, `Market`, and gated `Prestige`.
-- Gameplay: owns ECS-backed rules and snapshots for mana, gold, inventory, garden, brewing, research, tasks, market, prestige, automation, visual settings, and persistence.
+- Gameplay: owns ECS-backed rules and snapshots for mana, coin, inventory, garden, brewing, research, tasks, market, prestige, automation, visual settings, and persistence.
 - Backend: owns SpacetimeDB connection, auth/session, save sync, leaderboard, NPC/player market, potion discoveries, world chat, feedback, maintenance, and trade alliance transport.
 - ECS: owns world data, entities, components, and system execution. It must not depend on DOM/canvas or SpacetimeDB.
 - Rendering: owns the frame loop and render shell. It observes game/page state; it does not own gameplay rules.
@@ -31,7 +31,7 @@ Current gameplay features include:
 - `brewing`
 - `crystal`
 - `garden`
-- `gold`
+- `coin`
 - `items`
 - `logs`
 - `mana`

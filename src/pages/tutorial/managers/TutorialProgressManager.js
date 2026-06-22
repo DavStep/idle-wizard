@@ -1,5 +1,9 @@
 export const TUTORIAL_STORAGE_KEY = 'idle-wizard.tutorial.v4';
 
+const LEGACY_STEP_ID_ALIASES = new Map([
+  ['earn-tutorial-gold', 'earn-tutorial-coin'],
+]);
+
 export class TutorialProgressManager {
   constructor({ storage = globalThis.localStorage } = {}) {
     this.storage = storage;
@@ -12,20 +16,22 @@ export class TutorialProgressManager {
   }
 
   hasCompleted(stepId) {
-    return this.completedStepIds.has(stepId);
+    return this.completedStepIds.has(normalizeTutorialStepId(stepId));
   }
 
   complete(stepId) {
-    if (!stepId || this.completedStepIds.has(stepId)) {
+    const normalizedStepId = normalizeTutorialStepId(stepId);
+
+    if (!normalizedStepId || this.completedStepIds.has(normalizedStepId)) {
       return;
     }
 
-    this.completedStepIds.add(stepId);
+    this.completedStepIds.add(normalizedStepId);
     this.save();
   }
 
   completeMany(stepIds) {
-    const nextStepIds = stepIds.filter(
+    const nextStepIds = stepIds.map(normalizeTutorialStepId).filter(
       (stepId) => stepId && !this.completedStepIds.has(stepId),
     );
 
@@ -55,7 +61,9 @@ export class TutorialProgressManager {
       const parsed = raw ? JSON.parse(raw) : null;
       this.completedStepIds = new Set(
         Array.isArray(parsed?.completedStepIds)
-          ? parsed.completedStepIds.filter((stepId) => typeof stepId === 'string')
+          ? parsed.completedStepIds
+              .filter((stepId) => typeof stepId === 'string')
+              .map(normalizeTutorialStepId)
           : [],
       );
     } catch {
@@ -75,4 +83,8 @@ export class TutorialProgressManager {
       // Tutorial progress is only UI guidance; storage failures should not affect play.
     }
   }
+}
+
+function normalizeTutorialStepId(stepId) {
+  return LEGACY_STEP_ID_ALIASES.get(stepId) ?? stepId;
 }

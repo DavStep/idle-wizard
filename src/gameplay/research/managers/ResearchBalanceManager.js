@@ -20,7 +20,7 @@ import {
 const maxResearchDurationSeconds = 10 * 60;
 
 const DEFAULT_RESEARCH_BALANCE = {
-  researchCostsGold: {
+  researchCostsCoin: {
     'unlockSeed:sageSeed': 0,
     'unlockSeed:mintSeed': 25,
     'unlockSeed:nettleSeed': 120,
@@ -126,7 +126,7 @@ const DEFAULT_RESEARCH_BALANCE = {
 };
 
 DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDurations(
-  DEFAULT_RESEARCH_BALANCE.researchCostsGold,
+  DEFAULT_RESEARCH_BALANCE.researchCostsCoin,
   DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
   DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
   DEFAULT_RESEARCH_BALANCE.researchCostsEmerald,
@@ -201,21 +201,21 @@ function createDefaultEmeraldCosts() {
 }
 
 function createDefaultResearchDurations(
-  costsGold,
+  costsCoin,
   costsCrystal = {},
   costsRuby = {},
   costsEmerald = {},
 ) {
   const researchIds = [
-    ...Object.keys(costsGold),
-    ...Object.keys(costsCrystal).filter((researchId) => costsGold[researchId] === undefined),
+    ...Object.keys(costsCoin),
+    ...Object.keys(costsCrystal).filter((researchId) => costsCoin[researchId] === undefined),
     ...Object.keys(costsRuby).filter(
       (researchId) =>
-        costsGold[researchId] === undefined && costsCrystal[researchId] === undefined,
+        costsCoin[researchId] === undefined && costsCrystal[researchId] === undefined,
     ),
     ...Object.keys(costsEmerald).filter(
       (researchId) =>
-        costsGold[researchId] === undefined &&
+        costsCoin[researchId] === undefined &&
         costsCrystal[researchId] === undefined &&
         costsRuby[researchId] === undefined,
     ),
@@ -250,7 +250,7 @@ export class ResearchBalanceManager {
 
   setBalance(balance) {
     this.balance = balance;
-    this.costGoldByResearchId = this.readCostGoldByResearchId();
+    this.costCoinByResearchId = this.readCostCoinByResearchId();
     this.costCrystalByResearchId = this.readCostCrystalByResearchId();
     this.costRubyByResearchId = this.readCostRubyByResearchId();
     this.costEmeraldByResearchId = this.readCostEmeraldByResearchId();
@@ -286,24 +286,24 @@ export class ResearchBalanceManager {
       };
     }
 
-    const costGold =
-      this.runtimeConfigByResearchId.get(normalizedResearchId)?.costGold ??
-      this.costGoldByResearchId[normalizedResearchId];
+    const costCoin =
+      this.runtimeConfigByResearchId.get(normalizedResearchId)?.costCoin ??
+      this.costCoinByResearchId[normalizedResearchId];
 
-    if (!Number.isFinite(costGold)) {
+    if (!Number.isFinite(costCoin)) {
       throw new Error(`game_config.research missing cost for ${researchId}.`);
     }
 
     return {
-      amount: costGold,
-      currency: 'gold',
+      amount: costCoin,
+      currency: 'coin',
     };
   }
 
-  getCostGold(researchId) {
+  getCostCoin(researchId) {
     const cost = this.getCost(researchId);
 
-    return cost.currency === 'gold' ? cost.amount : 0;
+    return cost.currency === 'coin' ? cost.amount : 0;
   }
 
   getCostCrystal(researchId) {
@@ -358,7 +358,7 @@ export class ResearchBalanceManager {
       }
 
       this.runtimeConfigByResearchId.set(researchId, {
-        costGold: this.normalizeOptionalCostGold(config?.costGold),
+        costCoin: this.normalizeOptionalCostCoin(config?.costCoin),
         durationSeconds: this.normalizeOptionalDurationSeconds(config?.durationSeconds),
         enabled: config?.enabled !== false,
       });
@@ -369,12 +369,12 @@ export class ResearchBalanceManager {
     return String(researchId ?? '').trim();
   }
 
-  normalizeOptionalCostGold(costGold) {
-    if (costGold === undefined || costGold === null) {
+  normalizeOptionalCostCoin(costCoin) {
+    if (costCoin === undefined || costCoin === null) {
       return undefined;
     }
 
-    const value = Number(costGold);
+    const value = Number(costCoin);
 
     if (!Number.isFinite(value) || value < 0) {
       return 0;
@@ -401,11 +401,11 @@ export class ResearchBalanceManager {
     return Math.min(maxResearchDurationSeconds, Math.floor(value));
   }
 
-  readCostGoldByResearchId() {
-    const costs = this.balance?.researchCostsGold;
+  readCostCoinByResearchId() {
+    const costs = this.balance?.researchCostsCoin;
 
     if (!costs || typeof costs !== 'object' || Array.isArray(costs)) {
-      throw new Error('game_config.research requires researchCostsGold.');
+      throw new Error('game_config.research requires researchCostsCoin.');
     }
 
     for (const cost of Object.values(costs)) {

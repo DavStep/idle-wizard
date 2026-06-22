@@ -77,10 +77,10 @@ describe('NpcMarketSubscriptionManager', () => {
         itemKey: 'sageSeed',
         itemLabel: 'sage seed',
         itemKind: 'seed',
-        basePriceGold: 1n,
-        marketPriceGold: 3n,
-        npcBuyPriceGold: 2n,
-        npcSellPriceGold: 4n,
+        basePriceCoin: 1n,
+        marketPriceCoin: 3n,
+        npcBuyPriceCoin: 2n,
+        npcSellPriceCoin: 4n,
         npcStock: 900n,
         targetStock: 1000n,
         npcNeed: 750n,
@@ -100,9 +100,9 @@ describe('NpcMarketSubscriptionManager', () => {
       prices: [
         {
           itemKey: 'sageSeed',
-          marketPriceGold: 3,
-          npcBuyPriceGold: 2,
-          npcSellPriceGold: 4,
+          marketPriceCoin: 3,
+          npcBuyPriceCoin: 2,
+          npcSellPriceCoin: 4,
           npcStock: 900,
           npcNeed: 750,
           targetNeed: 1000,
@@ -112,7 +112,7 @@ describe('NpcMarketSubscriptionManager', () => {
     });
     expect(manager.getPrice('sageSeed')).toMatchObject({
       itemLabel: 'sage seed',
-      npcBuyPriceGold: 2,
+      npcBuyPriceCoin: 2,
     });
   });
 

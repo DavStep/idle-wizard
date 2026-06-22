@@ -112,7 +112,7 @@ Sample saves:
 ```sh
 PATH="$HOME/.local/bin:$PATH" spacetime sql \
   -s "$SPACETIME_SERVER" "$SPACETIME_DATABASE" \
-  "SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10"
+  "SELECT identity, current_coin, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10"
 ```
 
 ## Full Player Progression Reset
@@ -337,7 +337,7 @@ PATH="$HOME/.local/bin:$PATH" spacetime call \
 
 - No deletes during player-save migration.
 - Preserve `savedAt` unless the migration intentionally changes offline catch-up.
-- Preserve all recognized save branches: `mana`, `gold`, `crystal`, `logs`, `inventory`,
+- Preserve all recognized save branches: `mana`, `coin`, `crystal`, `logs`, `inventory`,
   `research`, `visualSettings`, `shop`, `brewing`, `garden`, and `tasks`.
 - Run migration only after `locked`.
 - Keep the migration idempotent: rerunning it should not change already-migrated rows.

@@ -22,7 +22,7 @@ function createCounterFacade() {
 }
 
 function createFacade({ level = 4, now = () => START_MS, researchTabs = [] } = {}) {
-  const goldFacade = createCounterFacade();
+  const coinFacade = createCounterFacade();
   const crystalFacade = createCounterFacade();
   const playerLevelFacade = {
     getSnapshot: () => ({
@@ -30,7 +30,7 @@ function createFacade({ level = 4, now = () => START_MS, researchTabs = [] } = {
     }),
   };
   const tasksFacade = {
-    getLevelCompletionCostGold: (levelNumber) => levelNumber * levelNumber * 10,
+    getLevelCompletionCostCoin: (levelNumber) => levelNumber * levelNumber * 10,
     getSnapshot: () => ({
       currentLevel: level,
     }),
@@ -42,7 +42,7 @@ function createFacade({ level = 4, now = () => START_MS, researchTabs = [] } = {
   };
   const facade = new PersonalTasksFacade({
     crystalFacade,
-    goldFacade,
+    coinFacade,
     playerLevelFacade,
     researchFacade,
     tasksFacade,
@@ -52,7 +52,7 @@ function createFacade({ level = 4, now = () => START_MS, researchTabs = [] } = {
   return {
     crystalFacade,
     facade,
-    goldFacade,
+    coinFacade,
   };
 }
 
@@ -89,7 +89,7 @@ describe('PersonalTasksFacade', () => {
       totalTasks: 7,
     });
     expect(snapshot.daily.tasks.map((task) => task.actionType)).toContain(
-      PERSONAL_TASK_ACTIONS.EARN_GOLD,
+      PERSONAL_TASK_ACTIONS.EARN_COIN,
     );
     expect(snapshot.weekly.tasks.map((task) => task.actionType)).toContain(
       PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS,
@@ -97,7 +97,7 @@ describe('PersonalTasksFacade', () => {
   });
 
   it('records progress and leaves completed task rewards claimable', () => {
-    const { facade, goldFacade } = createFacade({ level: 4 });
+    const { facade, coinFacade } = createFacade({ level: 4 });
     const summonTask = facade
       .getSnapshot()
       .daily.tasks.find((task) => task.actionType === PERSONAL_TASK_ACTIONS.SUMMON_SEEDS);
@@ -120,11 +120,11 @@ describe('PersonalTasksFacade', () => {
     });
     expect(snapshot.daily.claimableRewards).toBe(1);
     expect(result.rewards).toEqual([]);
-    expect(goldFacade.current).toBe(0);
+    expect(coinFacade.current).toBe(0);
   });
 
   it('claims completed task rewards on request', () => {
-    const { facade, goldFacade } = createFacade({ level: 4 });
+    const { facade, coinFacade } = createFacade({ level: 4 });
     const summonTask = facade
       .getSnapshot()
       .daily.tasks.find((task) => task.actionType === PERSONAL_TASK_ACTIONS.SUMMON_SEEDS);
@@ -147,7 +147,7 @@ describe('PersonalTasksFacade', () => {
       rewardClaimed: true,
       rewardClaimable: false,
     });
-    expect(goldFacade.current).toBeGreaterThan(0);
+    expect(coinFacade.current).toBeGreaterThan(0);
   });
 
   it('claims weekly full clear crystal after all weekly tasks complete', () => {

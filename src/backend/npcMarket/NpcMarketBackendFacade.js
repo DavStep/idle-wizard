@@ -82,12 +82,12 @@ export class NpcMarketBackendFacade {
     return this.subscriptionManager.getPrice(itemKey);
   }
 
-  getNpcBuyPriceGold(itemKey) {
-    return this.getPrice(itemKey)?.npcBuyPriceGold ?? null;
+  getNpcBuyPriceCoin(itemKey) {
+    return this.getPrice(itemKey)?.npcBuyPriceCoin ?? null;
   }
 
-  getNpcSellPriceGold(itemKey) {
-    return this.getPrice(itemKey)?.npcSellPriceGold ?? null;
+  getNpcSellPriceCoin(itemKey) {
+    return this.getPrice(itemKey)?.npcSellPriceCoin ?? null;
   }
 
   getNpcNeed(itemKey) {

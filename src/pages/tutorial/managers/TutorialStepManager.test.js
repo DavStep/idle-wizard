@@ -28,7 +28,7 @@ function createSnapshot(overrides = {}) {
     research: {
       completedResearchIds: [],
     },
-    gold: {
+    coin: {
       current: 0,
     },
     shop: {
@@ -56,7 +56,7 @@ function createSnapshot(overrides = {}) {
       level: {
         completion: {
           canComplete: false,
-          costGold: 10,
+          costCoin: 10,
         },
         tasks: [
           {
@@ -133,7 +133,7 @@ function createLevelOneTaskCompleteSnapshot(overrides = {}) {
       level: {
         completion: {
           canComplete: false,
-          costGold: 10,
+          costCoin: 10,
         },
         tasks: [
           {
@@ -156,7 +156,7 @@ function createLevelOneTaskCompleteSnapshot(overrides = {}) {
 function createLevelTwoReadySnapshot(overrides = {}) {
   return createSnapshot({
     inventory: [{ key: 'sageHerb', quantity: 1 }],
-    gold: {
+    coin: {
       current: 10,
     },
     tasks: {
@@ -164,7 +164,7 @@ function createLevelTwoReadySnapshot(overrides = {}) {
       level: {
         completion: {
           canComplete: true,
-          costGold: 40,
+          costCoin: 40,
         },
         tasks: [
           {
@@ -216,7 +216,7 @@ function createLevelThreeMintHerbSnapshot({ seedQuantity = 1, tile = {} } = {}) 
     tasks: {
       currentLevel: 3,
       level: {
-        completion: { canComplete: false, costGold: 80 },
+        completion: { canComplete: false, costCoin: 80 },
         tasks: [
           {
             taskId: 'level3-mint-seeds',
@@ -250,7 +250,7 @@ describe('TutorialStepManager', () => {
       id: 'purchase-house',
       kind: 'dialog',
       advanceOnClick: true,
-      advanceLabel: 'purchase house 1000 gold',
+      advanceLabel: 'purchase house 1000 coin',
       variant: 'intro-dialog',
       stepLabel: '1/31',
       revealTokens: [],
@@ -395,7 +395,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 1,
         level: {
-          completion: { canComplete: false, costGold: 10 },
+          completion: { canComplete: false, costCoin: 10 },
           tasks: [
             {
               taskId: 'level1-sage-seeds',
@@ -436,7 +436,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 1,
         level: {
-          completion: { canComplete: false, costGold: 10 },
+          completion: { canComplete: false, costCoin: 10 },
           tasks: [
             {
               taskId: 'level1-sage-seeds',
@@ -479,7 +479,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 1,
         level: {
-          completion: { canComplete: false, costGold: 10 },
+          completion: { canComplete: false, costCoin: 10 },
           tasks: [
             {
               taskId: 'level1-sage-seeds',
@@ -565,7 +565,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 1,
         level: {
-          completion: { canComplete: false, costGold: 10 },
+          completion: { canComplete: false, costCoin: 10 },
           tasks: [
             {
               taskId: 'level1-sage-seeds',
@@ -700,24 +700,24 @@ describe('TutorialStepManager', () => {
         completed: completedThrough('select-sage-seed-sale'),
       }),
     ).toMatchObject({
-      id: 'earn-tutorial-gold',
+      id: 'earn-tutorial-coin',
       kind: 'objective',
       effect: 'tutorial-sale',
       targetId: 'shop:directSell:sell',
       hintText: 'press sell',
       sale: {
         itemKey: 'sageSeed',
-        goldEach: 10,
-        goldTarget: 10,
+        coinEach: 10,
+        coinTarget: 10,
       },
-      progressLabel: '0/10 gold',
+      progressLabel: '0/10 coin',
       stepLabel: '14/31',
     });
   });
 
-  it('skips old stand unselect after tutorial gold is earned', () => {
+  it('skips old stand unselect after tutorial coin is earned', () => {
     const snapshot = createLevelOneTaskCompleteSnapshot({
-      gold: { current: 10 },
+      coin: { current: 10 },
     });
 
     expect(
@@ -725,22 +725,22 @@ describe('TutorialStepManager', () => {
         pageId: 'shop',
         snapshot,
         dom: createDomFake({ shopDirectSellPopupOpen: true }),
-        completed: completedThrough('earn-tutorial-gold'),
+        completed: completedThrough('earn-tutorial-coin'),
       }),
     ).not.toMatchObject({
       id: 'unselect-sage-seed-sale',
     });
   });
 
-  it('targets level up after gold is earned and sale is unselected', () => {
+  it('targets level up after coin is earned and sale is unselected', () => {
     const snapshot = createLevelOneTaskCompleteSnapshot({
-      gold: { current: 10 },
+      coin: { current: 10 },
       tasks: {
         currentLevel: 1,
         level: {
           completion: {
             canComplete: true,
-            costGold: 10,
+            costCoin: 10,
           },
           tasks: [
             {
@@ -816,7 +816,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -893,7 +893,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -984,7 +984,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -1021,7 +1021,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -1072,7 +1072,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-seeds',
@@ -1122,7 +1122,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -1172,7 +1172,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -1215,7 +1215,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 2,
         level: {
-          completion: { canComplete: false, costGold: 40 },
+          completion: { canComplete: false, costCoin: 40 },
           tasks: [
             {
               taskId: 'level2-sage-herb',
@@ -1241,7 +1241,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('redirects level two gold shortfall to market before level up', () => {
+  it('redirects level two coin shortfall to market before level up', () => {
     const snapshot = createLevelTwoReadySnapshot();
 
     expect(getStep({ snapshot })).toMatchObject({
@@ -1249,14 +1249,14 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'page:shop',
       hintText: 'open market',
-      objectiveText: 'earn level-up gold in market',
+      objectiveText: 'earn level-up coin in market',
       progress: { value: 10, max: 40 },
-      progressLabel: '10/40 gold',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
 
-  it('points at the market stand while earning level two gold', () => {
+  it('points at the market stand while earning level two coin', () => {
     const snapshot = createLevelTwoReadySnapshot();
 
     expect(getStep({ pageId: 'shop', snapshot })).toMatchObject({
@@ -1264,13 +1264,13 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'shop:directSell',
       hintText: 'fast sell',
-      objectiveText: 'earn level-up gold in market',
-      progressLabel: '10/40 gold',
+      objectiveText: 'earn level-up coin in market',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
 
-  it('targets an item row when fast sell is already open during level two gold guidance', () => {
+  it('targets an item row when fast sell is already open during level two coin guidance', () => {
     const snapshot = createLevelTwoReadySnapshot();
 
     expect(
@@ -1285,12 +1285,12 @@ describe('TutorialStepManager', () => {
       targetId: 'shop:directSell:sageHerb',
       hintText: 'choose something to sell',
       objectiveText: 'choose something to sell',
-      progressLabel: '10/40 gold',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
 
-  it('targets the herbs tab before a hidden herb row during level two gold guidance', () => {
+  it('targets the herbs tab before a hidden herb row during level two coin guidance', () => {
     const snapshot = createLevelTwoReadySnapshot({
       shop: {
         shelf: {
@@ -1327,7 +1327,7 @@ describe('TutorialStepManager', () => {
       targetId: 'shop:directSell:tab:herb',
       hintText: 'herbs',
       objectiveText: 'open herbs tab',
-      progressLabel: '10/40 gold',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
@@ -1351,7 +1351,7 @@ describe('TutorialStepManager', () => {
       allowedPopupClasses: ['shop-page__direct-sell-popup'],
       hintText: 'press sell',
       objectiveText: 'press sell',
-      progressLabel: '10/40 gold',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
@@ -1377,15 +1377,15 @@ describe('TutorialStepManager', () => {
       allowedPopupClasses: ['shop-page__direct-sell-popup'],
       hintText: '+1',
       objectiveText: 'amount starts at 1. press sell, or +1 if you have more to sell.',
-      progressLabel: '10/40 gold',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
 
-  it('targets sell once the selected fast-sell amount covers the gold shortfall', () => {
+  it('targets sell once the selected fast-sell amount covers the coin shortfall', () => {
     const snapshot = createLevelTwoReadySnapshot({
       inventory: [{ key: 'sageHerb', quantity: 3 }],
-      gold: {
+      coin: {
         current: 30,
       },
       shop: {
@@ -1397,7 +1397,7 @@ describe('TutorialStepManager', () => {
               key: 'sageHerb',
               kind: 'herb',
               quantity: 3,
-              fastSellGold: 10,
+              fastSellCoin: 10,
               sellNeed: 1000,
             },
           ],
@@ -1422,12 +1422,12 @@ describe('TutorialStepManager', () => {
       allowedPopupClasses: ['shop-page__direct-sell-popup'],
       hintText: 'press sell',
       objectiveText: 'press sell',
-      progressLabel: '30/40 gold',
+      progressLabel: '30/40 coin',
       stepLabel: '21/31',
     });
   });
 
-  it('routes level two gold shortfall back to a sage source when nothing is sellable', () => {
+  it('routes level two coin shortfall back to a sage source when nothing is sellable', () => {
     const snapshot = createLevelTwoReadySnapshot({
       inventory: [],
       seedSummoning: {
@@ -1442,12 +1442,12 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:summonSeed',
       hintText: 'summon seed',
       objectiveText: 'get sage to sell',
-      progressLabel: '10/40 gold',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
 
-  it('does not target a zero-available fast-sell row during level two gold guidance', () => {
+  it('does not target a zero-available fast-sell row during level two coin guidance', () => {
     const snapshot = createLevelTwoReadySnapshot({
       inventory: [{ key: 'sageSeed', quantity: 1 }],
       shop: {
@@ -1474,14 +1474,14 @@ describe('TutorialStepManager', () => {
       targetId: 'page:garden',
       hintText: 'open garden',
       objectiveText: 'get sage to sell',
-      progressLabel: '10/40 gold',
+      progressLabel: '10/40 coin',
       stepLabel: '21/31',
     });
   });
 
-  it('returns level two players to the level-up button once gold is ready', () => {
+  it('returns level two players to the level-up button once coin is ready', () => {
     const snapshot = createLevelTwoReadySnapshot({
-      gold: {
+      coin: {
         current: 40,
       },
     });
@@ -1525,7 +1525,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 3,
         level: {
-          completion: { canComplete: false, costGold: 80 },
+          completion: { canComplete: false, costCoin: 80 },
           tasks: [
             {
               taskId: 'level3-sage-seeds',
@@ -1586,7 +1586,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 3,
         level: {
-          completion: { canComplete: false, costGold: 90 },
+          completion: { canComplete: false, costCoin: 90 },
           tasks: [
             {
               taskId: 'level3-mint-seeds',
@@ -1626,7 +1626,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 3,
         level: {
-          completion: { canComplete: false, costGold: 90 },
+          completion: { canComplete: false, costCoin: 90 },
           tasks: [
             {
               taskId: 'level3-mint-seeds',
@@ -1758,17 +1758,17 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('keeps level three Elara active for level-up gold', () => {
+  it('keeps level three Elara active for level-up coin', () => {
     const snapshot = createSnapshot({
       inventory: [{ key: 'mintHerb', quantity: 1 }],
-      gold: { current: 77 },
+      coin: { current: 77 },
       research: {
         completedResearchIds: ['unlockSeed:mintSeed'],
       },
       tasks: {
         currentLevel: 3,
         level: {
-          completion: { canComplete: true, costGold: 80 },
+          completion: { canComplete: true, costCoin: 80 },
           tasks: [
             {
               taskId: 'level3-mint-seeds',
@@ -1800,15 +1800,15 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'page:shop',
       hintText: 'open market',
-      objectiveText: 'earn level-up gold in market',
-      progressLabel: '77/80 gold',
+      objectiveText: 'earn level-up coin in market',
+      progressLabel: '77/80 coin',
       stepLabel: '26/31',
     });
   });
 
-  it('routes level three gold shortfall to mint supply when nothing is sellable', () => {
+  it('routes level three coin shortfall to mint supply when nothing is sellable', () => {
     const snapshot = createSnapshot({
-      gold: { current: 77 },
+      coin: { current: 77 },
       seedSummoning: {
         canSummon: true,
         cost: 10,
@@ -1819,7 +1819,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 3,
         level: {
-          completion: { canComplete: true, costGold: 80 },
+          completion: { canComplete: true, costCoin: 80 },
           tasks: [
             {
               taskId: 'level3-mint-seeds',
@@ -1852,21 +1852,21 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:summonSeed',
       hintText: 'summon seed',
       objectiveText: 'get mint to sell',
-      progressLabel: '77/80 gold',
+      progressLabel: '77/80 coin',
       stepLabel: '26/31',
     });
   });
 
-  it('routes level three gold shortfall to mint research when mint is still locked', () => {
+  it('routes level three coin shortfall to mint research when mint is still locked', () => {
     const snapshot = createSnapshot({
-      gold: { current: 77 },
+      coin: { current: 77 },
       research: {
         completedResearchIds: [],
       },
       tasks: {
         currentLevel: 3,
         level: {
-          completion: { canComplete: true, costGold: 90 },
+          completion: { canComplete: true, costCoin: 90 },
           tasks: [
             {
               taskId: 'level3-mint-seeds',
@@ -1903,7 +1903,7 @@ describe('TutorialStepManager', () => {
       targetId: 'page:research',
       hintText: 'open research',
       objectiveText: 'get mint to sell',
-      progressLabel: '77/90 gold',
+      progressLabel: '77/90 coin',
     });
   });
 
@@ -2077,7 +2077,7 @@ describe('TutorialStepManager', () => {
       tasks: {
         currentLevel: 4,
         level: {
-          completion: { canComplete: false, costGold: 160 },
+          completion: { canComplete: false, costCoin: 160 },
           tasks: [
             {
               taskId: 'level4-mana-tonic',

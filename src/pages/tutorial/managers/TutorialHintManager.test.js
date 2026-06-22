@@ -123,8 +123,11 @@ describe('TutorialHintManager', () => {
     });
 
     const pointer = stage.querySelector('.tutorial-layer__pointer');
+    const fallbackImage = pointer?.querySelector('.tutorial-layer__pointer-image');
 
     expect(pointer?.hidden).toBe(false);
+    expect(fallbackImage).not.toBeNull();
+    expect(fallbackImage?.getAttribute('src')).toContain('pointing-hand.png');
   });
 
   it('mounts and pauses the Spine pointer with target cue visibility', () => {
@@ -554,10 +557,10 @@ describe('TutorialHintManager', () => {
       manager.showLesson({
         id: 'long-copy',
         title: 'lesson 2: market',
-        text: 'summon seeds and sell them for level-up gold',
+        text: 'summon seeds and sell them for level-up coin',
         stepLabel: '11/25',
         progress: { value: 0, max: 10 },
-        progressLabel: '0/10 gold',
+        progressLabel: '0/10 coin',
         canShowTarget: true,
       });
 
@@ -568,7 +571,7 @@ describe('TutorialHintManager', () => {
 
       expect(text?.textContent).toBe('');
       expect(text?.getAttribute('aria-label')).toBe(
-        'summon seeds and sell them for level-up gold',
+        'summon seeds and sell them for level-up coin',
       );
       expect(shortSize.width).toBe(190);
       expect(longSize.width).toBe(shortSize.width);
@@ -596,7 +599,7 @@ describe('TutorialHintManager', () => {
         text: 'this old workshop is for sale.',
         stepLabel: '1/31',
         advanceOnClick: true,
-        advanceLabel: 'purchase house 1000 gold',
+        advanceLabel: 'purchase house 1000 coin',
         canShowTarget: true,
         variant: 'intro-dialog',
       });
@@ -613,7 +616,7 @@ describe('TutorialHintManager', () => {
       expect(lesson?.style.top).toBe('202px');
       expect(button?.hidden).toBe(true);
       expect(advance?.hidden).toBe(false);
-      expect(advance?.textContent).toBe('purchase house 1000 gold');
+      expect(advance?.textContent).toBe('purchase house 1000 coin');
       expect(showMe?.hidden).toBe(true);
     } finally {
       vi.useRealTimers();

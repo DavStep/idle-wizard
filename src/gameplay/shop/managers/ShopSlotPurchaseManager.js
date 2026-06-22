@@ -1,13 +1,13 @@
 export class ShopSlotPurchaseManager {
   constructor({
-    goldFacade,
+    coinFacade,
     playerLevelFacade,
     getMaxSlotsByLevel,
     getRequiredLevelForSlot,
     shopBalanceManager,
     shopShelfEntityManager,
   }) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.playerLevelFacade = playerLevelFacade;
     this.getConfiguredMaxSlotsByLevel = getMaxSlotsByLevel;
     this.getRequiredLevelForSlot = getRequiredLevelForSlot;
@@ -38,10 +38,10 @@ export class ShopSlotPurchaseManager {
       };
     }
 
-    if (!this.goldFacade.spend(cost)) {
+    if (!this.coinFacade.spend(cost)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
+        reason: 'not_enough_coin',
         cost,
         slotNumber: nextSlotNumber,
       };

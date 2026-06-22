@@ -67,7 +67,7 @@ const POTION_ASSETS = [
 ];
 
 const ASSETS = [
-  ['resource:gold', 'src/assets/icons/icon-gold-coin.png', 96],
+  ['resource:coin', 'src/assets/icons/icon-coin.png', 96],
   ['resource:crystal', 'src/assets/icons/icon-crystal.png', 96],
   ['resource:emerald', 'src/assets/icons/icon-emerald.png', 96],
   ['resource:mana', 'src/assets/icons/icon-mana-drop.png', 96],

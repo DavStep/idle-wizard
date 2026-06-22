@@ -16,7 +16,7 @@ export const SEED_ICON_LABEL_CLASS = 'style-seed-label';
 export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
 export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
 
-const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|gold|mana|rubies|ruby)\b/gi;
+const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|coin|mana|rubies|ruby)\b/gi;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+sphere\b/i;
 const GENERIC_SEED_LABELS = new Set(['choose seed', 'summon seed']);
 

@@ -2,7 +2,7 @@ import { AutomationFacade } from './automation/AutomationFacade.js';
 import { BrewingFacade } from './brewing/BrewingFacade.js';
 import { CrystalFacade } from './crystal/CrystalFacade.js';
 import { EmeraldFacade } from './emerald/EmeraldFacade.js';
-import { GoldFacade } from './gold/GoldFacade.js';
+import { CoinFacade } from './coin/CoinFacade.js';
 import { GardenFacade } from './garden/GardenFacade.js';
 import { GuildFacade } from './guild/GuildFacade.js';
 import { ItemsFacade } from './items/ItemsFacade.js';
@@ -42,7 +42,7 @@ export class GameplayFacade {
     this.rewardEventManager = new GameplayRewardEventManager();
     this.itemsFacade = new ItemsFacade();
     this.manaFacade = new ManaFacade();
-    this.goldFacade = new GoldFacade();
+    this.coinFacade = new CoinFacade();
     this.crystalFacade = new CrystalFacade();
     this.emeraldFacade = new EmeraldFacade();
     this.rubyFacade = new RubyFacade();
@@ -62,7 +62,7 @@ export class GameplayFacade {
     this.researchFacade = new ResearchFacade({
       crystalFacade: this.crystalFacade,
       emeraldFacade: this.emeraldFacade,
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
       onResearchComplete: (event) => this.handleResearchComplete(event),
@@ -72,20 +72,20 @@ export class GameplayFacade {
     });
     this.personalTasksFacade = new PersonalTasksFacade({
       crystalFacade: this.crystalFacade,
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
       tasksFacade: this.tasksFacade,
       now: persistenceNow,
     });
     this.worldNoticeFacade = new WorldNoticeFacade({
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       playerLevelFacade: this.playerLevelFacade,
       tasksFacade: this.tasksFacade,
       now: persistenceNow,
     });
     this.guildFacade = new GuildFacade({
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       worldNoticeFacade: this.worldNoticeFacade,
@@ -98,7 +98,7 @@ export class GameplayFacade {
         this.researchFacade.getCommittedCrystalCostTotal(),
     });
     this.brewingFacade = new BrewingFacade({
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       itemsFacade: this.itemsFacade,
       manaFacade: this.manaFacade,
       playerLevelFacade: this.playerLevelFacade,
@@ -111,7 +111,7 @@ export class GameplayFacade {
       researchFacade: this.researchFacade,
     });
     this.shopFacade = new ShopFacade({
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
@@ -120,7 +120,7 @@ export class GameplayFacade {
       now: shopNow,
     });
     this.gardenFacade = new GardenFacade({
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
@@ -141,7 +141,7 @@ export class GameplayFacade {
     this.persistenceFacade = new GameplayPersistenceFacade({
       storage: persistenceStorage,
       manaFacade: this.manaFacade,
-      goldFacade: this.goldFacade,
+      coinFacade: this.coinFacade,
       crystalFacade: this.crystalFacade,
       emeraldFacade: this.emeraldFacade,
       rubyFacade: this.rubyFacade,
@@ -240,7 +240,7 @@ export class GameplayFacade {
     const ecsManagers = ecsFacade.getManagers();
     this.itemsFacade.initialize(ecsManagers);
     this.manaFacade.initialize(ecsManagers);
-    this.goldFacade.initialize(ecsManagers);
+    this.coinFacade.initialize(ecsManagers);
     this.crystalFacade.initialize(ecsManagers);
     this.emeraldFacade.initialize(ecsManagers);
     this.rubyFacade.initialize(ecsManagers);
@@ -365,17 +365,17 @@ export class GameplayFacade {
       };
     }
 
-    if (!this.goldFacade.canSpend(completion.costGold)) {
+    if (!this.coinFacade.canSpend(completion.costCoin)) {
       this.publishAndSaveSnapshot();
       return {
         ok: false,
-        reason: 'not_enough_gold',
+        reason: 'not_enough_coin',
         ...completion,
-        currentGold: this.goldFacade.getSnapshot().current,
+        currentCoin: this.coinFacade.getSnapshot().current,
       };
     }
 
-    this.goldFacade.spend(completion.costGold);
+    this.coinFacade.spend(completion.costCoin);
     const result = this.tasksFacade.completeCurrentLevel();
 
     if (result.ok && result.advanced) {
@@ -465,7 +465,7 @@ export class GameplayFacade {
         cap: 50,
         perSecond: 1,
       },
-      gold: {
+      coin: {
         current: 0,
         totalGenerated: 0,
       },
@@ -530,7 +530,9 @@ export class GameplayFacade {
   handleSeedSummoned(result) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, result.quantity);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, result.cost);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SUMMON_SEEDS, result.quantity);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SUMMON_SEEDS, result.quantity, {
+      seed: result.seed,
+    });
     this.gameplayLogFacade.logSeedSummoned(result);
     this.rewardEventManager.publish({
       type: 'seed_summoned',
@@ -546,7 +548,9 @@ export class GameplayFacade {
 
   handleBrewComplete(event) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.BREW_POTIONS, event.quantity);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, event.quantity);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, event.quantity, {
+      potion: event.potion,
+    });
     this.gameplayLogFacade.logBrewCompleted(event);
     this.rewardEventManager.publish({
       type: 'potion_collected',
@@ -557,7 +561,9 @@ export class GameplayFacade {
 
   handleGardenHarvestComplete(event) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.HARVEST_HERBS, event.quantity);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.HARVEST_HERBS, event.quantity);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.HARVEST_HERBS, event.quantity, {
+      herb: event.herb,
+    });
     this.gameplayLogFacade.logGardenHarvestCompleted(event);
     this.rewardEventManager.publish({
       type: 'herb_harvested',
@@ -577,14 +583,16 @@ export class GameplayFacade {
 
   handleItemSold(event) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_GOLD, event.gold);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_GOLD, event.gold);
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_COIN, event.coin);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SELL_ITEMS, event.quantity ?? 1, {
+      item: event.item,
+    });
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_COIN, event.coin);
     this.gameplayLogFacade.logItemSold(event);
     this.rewardEventManager.publish({
       type: 'item_sold',
       item: event.item,
-      gold: event.gold,
+      coin: event.coin,
       quantity: event.quantity ?? 1,
       slotNumber: event.slotNumber,
     });
@@ -594,19 +602,19 @@ export class GameplayFacade {
     this.rewardEventManager.publish({
       type: 'item_bought',
       item: event.item,
-      gold: event.gold,
+      coin: event.coin,
       quantity: event.quantity ?? 1,
       source: event.source,
       listingKey: event.listingKey,
     });
   }
 
-  handleGoldCollected(event) {
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_GOLD, event.gold);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_GOLD, event.gold);
+  handleCoinCollected(event) {
+    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_COIN, event.coin);
+    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_COIN, event.coin);
     this.rewardEventManager.publish({
-      type: 'gold_collected',
-      gold: event.gold,
+      type: 'coin_collected',
+      coin: event.coin,
       source: event.source,
     });
   }
@@ -627,12 +635,12 @@ export class GameplayFacade {
     return result;
   }
 
-  recordWorldNoticeAction(actionType, quantity = 1) {
-    return this.worldNoticeFacade.recordAction(actionType, quantity);
+  recordWorldNoticeAction(actionType, quantity = 1, detail = {}) {
+    return this.worldNoticeFacade.recordAction(actionType, quantity, detail);
   }
 
-  donateWorldNoticeGold(requestId) {
-    const result = this.worldNoticeFacade.donateGold(requestId);
+  donateWorldNoticeCoin(requestId) {
+    const result = this.worldNoticeFacade.donateCoin(requestId);
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -820,7 +828,7 @@ export class GameplayFacade {
     if (result.ok) {
       this.publishItemBought({
         item: result.item,
-        gold: result.totalPriceGold,
+        coin: result.totalPriceCoin,
         quantity: result.quantity,
         source: 'player_market',
         listingKey: listing?.listingKey,
@@ -836,12 +844,12 @@ export class GameplayFacade {
     if (result.ok) {
       this.gameplayLogFacade.logItemBought({
         item: result.item,
-        gold: result.totalPriceGold,
+        coin: result.totalPriceCoin,
         quantity: result.quantity,
       });
       this.publishItemBought({
         item: result.item,
-        gold: result.totalPriceGold,
+        coin: result.totalPriceCoin,
         quantity: result.quantity,
         source: 'npc_stock',
       });
@@ -865,11 +873,11 @@ export class GameplayFacade {
     return this.shopFacade.quoteNpcMarketSell(itemTypeId, quantity);
   }
 
-  claimPlayerShopSaleProceeds(gold) {
-    const result = this.shopFacade.claimPlayerShopSaleProceeds(gold);
+  claimPlayerShopSaleProceeds(coin) {
+    const result = this.shopFacade.claimPlayerShopSaleProceeds(coin);
     if (result.ok) {
-      this.handleGoldCollected({
-        gold: result.gold,
+      this.handleCoinCollected({
+        coin: result.coin,
         source: 'player_shop_proceeds',
       });
     }
@@ -877,19 +885,19 @@ export class GameplayFacade {
     return result;
   }
 
-  collectShopGoldOffer() {
-    const result = this.shopFacade.collectGoldOffer();
+  collectShopCoinOffer() {
+    const result = this.shopFacade.collectCoinOffer();
     if (result.ok) {
-      this.handleGoldCollected({
-        gold: result.gold,
-        source: 'shop_gold_offer',
+      this.handleCoinCollected({
+        coin: result.coin,
+        source: 'shop_coin_offer',
       });
     }
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  sellTutorialItemForGold({ itemKey, quantity = 1, goldEach = 1, goldTarget = null } = {}) {
+  sellTutorialItemForCoin({ itemKey, quantity = 1, coinEach = 1, coinTarget = null } = {}) {
     let item;
 
     try {
@@ -903,30 +911,30 @@ export class GameplayFacade {
     }
 
     const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
-    const unitGold = Math.max(0, Number(goldEach) || 0);
+    const unitCoin = Math.max(0, Number(coinEach) || 0);
 
-    if (unitGold <= 0) {
+    if (unitCoin <= 0) {
       return {
         ok: false,
-        reason: 'invalid_gold',
+        reason: 'invalid_coin',
       };
     }
 
-    const currentGold = this.goldFacade.getSnapshot().current;
-    const remainingGold = Number.isFinite(goldTarget)
-      ? Math.max(0, Math.floor(Number(goldTarget)) - currentGold)
+    const currentCoin = this.coinFacade.getSnapshot().current;
+    const remainingCoin = Number.isFinite(coinTarget)
+      ? Math.max(0, Math.floor(Number(coinTarget)) - currentCoin)
       : Number.POSITIVE_INFINITY;
 
-    if (remainingGold <= 0) {
+    if (remainingCoin <= 0) {
       return {
         ok: false,
-        reason: 'gold_target_met',
-        currentGold,
+        reason: 'coin_target_met',
+        currentCoin,
       };
     }
 
-    const targetQuantity = Number.isFinite(remainingGold)
-      ? Math.min(requestedQuantity, Math.ceil(remainingGold / unitGold))
+    const targetQuantity = Number.isFinite(remainingCoin)
+      ? Math.min(requestedQuantity, Math.ceil(remainingCoin / unitCoin))
       : requestedQuantity;
     const ownedQuantity = this.itemsFacade.getItemQuantity(item.id);
     const sellQuantity = Math.min(targetQuantity, ownedQuantity);
@@ -949,11 +957,11 @@ export class GameplayFacade {
       };
     }
 
-    const gold = Math.min(remainingGold, sellQuantity * unitGold);
-    this.goldFacade.add(gold);
+    const coin = Math.min(remainingCoin, sellQuantity * unitCoin);
+    this.coinFacade.add(coin);
     this.handleItemSold({
       item,
-      gold,
+      coin,
       quantity: sellQuantity,
       tutorial: true,
     });
@@ -963,8 +971,8 @@ export class GameplayFacade {
       ok: true,
       item,
       quantity: sellQuantity,
-      gold,
-      currentGold: this.goldFacade.getSnapshot().current,
+      coin,
+      currentCoin: this.coinFacade.getSnapshot().current,
       tutorial: true,
     };
   }
@@ -1169,7 +1177,7 @@ export class GameplayFacade {
 
     const snapshot = {
       mana: this.manaFacade.getSnapshot(),
-      gold: this.goldFacade.getSnapshot(),
+      coin: this.coinFacade.getSnapshot(),
       crystal: this.crystalFacade.getSnapshot(),
       emerald: this.emeraldFacade.getSnapshot(),
       ruby: this.rubyFacade.getSnapshot(),

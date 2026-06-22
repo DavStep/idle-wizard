@@ -340,12 +340,12 @@ export class GuildSimulationManager {
 
   createReward({ quest, rng, multiplier = 1 }) {
     const range = getRewardRange(quest.difficulty);
-    const rewardKind = pick(rng, ['gold', 'seed', 'herb']);
+    const rewardKind = pick(rng, ['coin', 'seed', 'herb']);
 
-    if (rewardKind === 'gold') {
+    if (rewardKind === 'coin') {
       return {
-        kind: 'gold',
-        quantity: Math.max(1, Math.floor(randomInt(rng, range.gold[0], range.gold[1]) * multiplier)),
+        kind: 'coin',
+        quantity: Math.max(1, Math.floor(randomInt(rng, range.coin[0], range.coin[1]) * multiplier)),
         questTitle: quest.title,
       };
     }

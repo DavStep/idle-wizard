@@ -275,7 +275,7 @@ describe('WorkshopSummonInfoManager', () => {
     );
     expect(css).toContain('color: var(--style-resource-ruby);');
     expect(css).toContain('color: var(--style-resource-seed);');
-    expect(css).toContain('color: var(--style-resource-gold);');
+    expect(css).toContain('color: var(--style-resource-coin);');
     expect(css).toContain('color: var(--style-resource-herb);');
   });
 
@@ -290,7 +290,7 @@ describe('WorkshopSummonInfoManager', () => {
     );
     expect(css).toContain('color: var(--style-resource-ruby);');
     expect(css).toContain('color: var(--style-resource-seed);');
-    expect(css).toContain('color: var(--style-resource-gold);');
+    expect(css).toContain('color: var(--style-resource-coin);');
     expect(css).toContain('color: var(--style-resource-herb);');
   });
 

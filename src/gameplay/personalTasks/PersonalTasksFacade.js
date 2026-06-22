@@ -14,7 +14,7 @@ export class PersonalTasksFacade {
 
   constructor({
     crystalFacade,
-    goldFacade,
+    coinFacade,
     playerLevelFacade,
     researchFacade,
     tasksFacade,
@@ -29,7 +29,7 @@ export class PersonalTasksFacade {
     });
     this.rewardManager = new PersonalTaskRewardManager({
       crystalFacade,
-      goldFacade,
+      coinFacade,
     });
     this.state = this.createEmptyState();
   }
@@ -443,7 +443,7 @@ export class PersonalTasksFacade {
 
   sanitizeReward(reward = {}) {
     return {
-      gold: Math.max(0, Math.floor(Number(reward.gold) || 0)),
+      coin: Math.max(0, Math.floor(Number(reward.coin) || 0)),
       crystal: Math.max(0, Math.floor(Number(reward.crystal) || 0)),
     };
   }

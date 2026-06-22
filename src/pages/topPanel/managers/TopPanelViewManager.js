@@ -91,7 +91,7 @@ export class TopPanelViewManager {
     this.refs.resources.setAttribute('aria-label', 'resources');
     const rightStatus = document.createElement('div');
     rightStatus.className = 'room-top-panel__right-status';
-    rightStatus.append(this.createResource('gold', '0 gold'), contextCurrency);
+    rightStatus.append(this.createResource('coin', '0 coin'), contextCurrency);
     this.refs.resources.append(this.createResource('mana', '0/0 mana'), rightStatus);
 
     panel.append(this.refs.usernameAvatarButton, identityRow, this.refs.resources);
@@ -114,8 +114,8 @@ export class TopPanelViewManager {
       this.refs.manaValue = val;
     }
 
-    if (label === 'gold') {
-      this.refs.goldValue = val;
+    if (label === 'coin') {
+      this.refs.coinValue = val;
     }
 
     if (label === 'crystal') {
@@ -618,7 +618,7 @@ export class TopPanelViewManager {
 
     const row = document.createElement('div');
     row.className = 'room-top-panel__theme-preview-row';
-    row.textContent = '34.4k gold';
+    row.textContent = '34.4k coin';
 
     box.append(
       title,
@@ -658,7 +658,7 @@ export class TopPanelViewManager {
 
     preview.append(
       this.createColorPreviewItem('mana 100/100', 'mana'),
-      this.createColorPreviewItem('34.4k gold', 'gold'),
+      this.createColorPreviewItem('34.4k coin', 'coin'),
       this.createColorPreviewItem('sage seed', 'seed'),
       this.createColorPreviewItem('sage', 'herb'),
       this.createColorPreviewItem('mana tonic', 'potion'),
@@ -682,7 +682,7 @@ export class TopPanelViewManager {
     preview.setAttribute('aria-hidden', 'true');
 
     preview.append(
-      this.createIconPreviewItem('34.4k gold', 'resource', 'gold'),
+      this.createIconPreviewItem('34.4k coin', 'resource', 'coin'),
       this.createIconPreviewItem('sage seed', 'seed', 'sageSeed'),
       this.createIconPreviewItem('mana tonic', 'potion', 'manaTonic'),
     );

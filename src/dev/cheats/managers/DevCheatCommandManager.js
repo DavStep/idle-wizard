@@ -6,7 +6,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.fillMana()',
   'cheats.addMana(amount)',
   'cheats.setMana(amount)',
-  'cheats.addGold(amount)',
+  'cheats.addCoin(amount)',
   'cheats.addCrystal(amount)',
   'cheats.addEmerald(amount)',
   "cheats.addItem('sageSeed', quantity)",
@@ -43,8 +43,8 @@ export class DevCheatCommandManager {
         return this.addMana(commandArgs[0]);
       case 'setmana':
         return this.setMana(commandArgs[0]);
-      case 'addgold':
-        return this.addGold(commandArgs[0]);
+      case 'addcoin':
+        return this.addCoin(commandArgs[0]);
       case 'addcrystal':
         return this.addCrystal(commandArgs[0]);
       case 'addemerald':
@@ -112,18 +112,18 @@ export class DevCheatCommandManager {
     };
   }
 
-  addGold(amount) {
+  addCoin(amount) {
     const safeAmount = this.readFiniteNumber(amount, 'amount');
 
     if (!safeAmount.ok) {
       return safeAmount;
     }
 
-    this.gameplayFacade.goldFacade.add(safeAmount.value);
+    this.gameplayFacade.coinFacade.add(safeAmount.value);
     this.gameplayFacade.publishAndSaveSnapshot();
     return {
       ok: true,
-      gold: this.gameplayFacade.getSnapshot().gold,
+      coin: this.gameplayFacade.getSnapshot().coin,
     };
   }
 
@@ -313,7 +313,7 @@ export class DevCheatCommandManager {
       mana: {
         current: 0,
       },
-      gold: {
+      coin: {
         current: 0,
         totalGenerated: 0,
       },
@@ -343,7 +343,7 @@ export class DevCheatCommandManager {
         playerShelf: {
           slots: [],
         },
-        goldOffer: {
+        coinOffer: {
           cooldownRemainingSeconds: 0,
         },
       },

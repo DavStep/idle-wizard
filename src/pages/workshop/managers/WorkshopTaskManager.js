@@ -6,7 +6,7 @@ import {
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js';
 
 const INITIAL_REQUIREMENTS_LABEL = formatLevelRequirementsLabel();
@@ -31,7 +31,7 @@ export class WorkshopTaskManager {
     this.currentTasksById = new Map();
     this.currentDisplayTasks = [];
     this.currentLevelCompletion = null;
-    this.currentGold = 0;
+    this.currentCoin = 0;
     this.currentSnapshot = null;
     this.currentFirstCompletedTaskId = null;
     this.currentRequirementsLabel = INITIAL_REQUIREMENTS_LABEL;
@@ -284,7 +284,7 @@ export class WorkshopTaskManager {
     this.currentTasksById.clear();
     this.currentDisplayTasks = [];
     this.currentLevelCompletion = null;
-    this.currentGold = 0;
+    this.currentCoin = 0;
     this.currentSnapshot = null;
     this.currentFirstCompletedTaskId = null;
     this.currentRequirementsLabel = INITIAL_REQUIREMENTS_LABEL;
@@ -460,7 +460,7 @@ export class WorkshopTaskManager {
     this.currentTasksById = new Map(tasks.map((task) => [task.taskId, task]));
     this.currentDisplayTasks = displayTasks;
     this.currentLevelCompletion = taskSnapshot.level.completion ?? null;
-    this.currentGold = Number(snapshot?.gold?.current) || 0;
+    this.currentCoin = Number(snapshot?.coin?.current) || 0;
     this.currentFirstCompletedTaskId = this.getFirstCompletedTaskId(displayTasks);
     const rowMovement = this.ensureRows(listTasks);
     this.setCanToggleTasks(listTasks.length > 0);
@@ -745,7 +745,7 @@ export class WorkshopTaskManager {
 
     const cost = document.createElement('span');
     cost.className = 'workshop-page__level-complete-cost';
-    setResourceColor(cost, 'gold');
+    setResourceColor(cost, 'coin');
 
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__level-complete-button';
@@ -1025,7 +1025,7 @@ export class WorkshopTaskManager {
       return;
     }
 
-    const costText = formatGoldPriceText(this.currentLevelCompletion.costGold);
+    const costText = formatCoinPriceText(this.currentLevelCompletion.costCoin);
     const disabled = !this.canAffordLevelCompletion();
     const nextLevel = this.currentLevelCompletion.level + 1;
     const payoffRows = this.getLevelPayoffRows(this.currentLevelCompletion.level, nextLevel);
@@ -1054,7 +1054,7 @@ export class WorkshopTaskManager {
   canAffordLevelCompletion() {
     return (
       this.shouldShowLevelComplete() &&
-      this.currentGold >= (this.currentLevelCompletion?.costGold ?? Infinity)
+      this.currentCoin >= (this.currentLevelCompletion?.costCoin ?? Infinity)
     );
   }
 

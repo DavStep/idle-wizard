@@ -33,8 +33,8 @@ describe('DevCheatsFacade', () => {
     facade.mount();
 
     expect(target.cheats.help()).toMatchObject({ ok: true });
-    expect(target.cheat('addGold 25')).toMatchObject({ ok: true });
-    expect(app.gameplayFacade.getSnapshot().gold.current).toBe(25);
+    expect(target.cheat('addCoin 25')).toMatchObject({ ok: true });
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(25);
     expect(logger.info).toHaveBeenCalledWith('Dev cheats enabled. Run cheats.help().');
 
     facade.unmount();
@@ -54,9 +54,9 @@ describe('DevCheatsFacade', () => {
       ok: true,
       mana: { current: 50, cap: 50 },
     });
-    expect(target.cheats.addGold(100)).toMatchObject({
+    expect(target.cheats.addCoin(100)).toMatchObject({
       ok: true,
-      gold: { current: 100, totalGenerated: 100 },
+      coin: { current: 100, totalGenerated: 100 },
     });
     expect(target.cheats.addCrystal(7)).toMatchObject({
       ok: true,
@@ -112,14 +112,14 @@ describe('DevCheatsFacade', () => {
     const facade = new DevCheatsFacade({ app, target, logger: null });
 
     facade.mount();
-    target.cheats.addGold(50);
+    target.cheats.addCoin(50);
 
     await expect(target.cheats.resetData()).resolves.toEqual({
       ok: false,
       reason: 'confirmation_required',
       confirmation: 'RESET',
     });
-    expect(app.gameplayFacade.getSnapshot().gold.current).toBe(50);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(50);
   });
 
   it('resets gameplay data and clears server player-market progress', async () => {
@@ -138,7 +138,7 @@ describe('DevCheatsFacade', () => {
 
     facade.mount();
     target.cheats.fillMana();
-    target.cheats.addGold(100);
+    target.cheats.addCoin(100);
     target.cheats.addCrystal(7);
     target.cheats.addItem('sageSeed', 3);
     target.cheats.unlockSeed('sage');
@@ -149,7 +149,7 @@ describe('DevCheatsFacade', () => {
       playerShop: { ok: true },
       snapshot: {
         mana: { current: 0, cap: 50, perSecond: 1 },
-        gold: { current: 0, totalGenerated: 0 },
+        coin: { current: 0, totalGenerated: 0 },
         crystal: { current: 0 },
         emerald: { current: 0 },
         inventory: [],
@@ -160,8 +160,8 @@ describe('DevCheatsFacade', () => {
 
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
-      version: 6,
-      gold: { current: 0, totalGenerated: 0 },
+      version: 7,
+      coin: { current: 0, totalGenerated: 0 },
       crystal: { current: 0 },
       emerald: { current: 0 },
       ruby: { current: 0 },
@@ -182,12 +182,12 @@ describe('DevCheatsFacade', () => {
     const facade = new DevCheatsFacade({ app, target, logger: null });
 
     facade.mount();
-    target.cheats.addGold(50);
+    target.cheats.addCoin(50);
 
     await expect(target.cheats.resetData('RESET')).resolves.toEqual({
       ok: false,
       reason: 'backend_save_not_ready',
     });
-    expect(app.gameplayFacade.getSnapshot().gold.current).toBe(50);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(50);
   });
 });

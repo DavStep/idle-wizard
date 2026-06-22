@@ -405,7 +405,7 @@ export class WorkshopLeaderboardManager {
     const user =
       leaderboard[period.currentUserKey] ??
       (period.id === 'allTime'
-        ? leaderboard.currentGeneratedGoldUser ?? leaderboard.currentUser
+        ? leaderboard.currentGeneratedCoinUser ?? leaderboard.currentUser
         : null);
 
     return this.normalizeUser(user, { includeRank: true });
@@ -433,7 +433,7 @@ export class WorkshopLeaderboardManager {
     if (period.id === 'allTime') {
       return (
         leaderboard.topAllTimeUsers ??
-        leaderboard.topGeneratedGoldUsers ??
+        leaderboard.topGeneratedCoinUsers ??
         leaderboard.topUsers ??
         []
       );
@@ -493,8 +493,8 @@ export class WorkshopLeaderboardManager {
       dailyIncome: this.normalizeMetric(user.dailyIncome),
       weeklyIncome: this.normalizeMetric(user.weeklyIncome, user.seasonIncome),
       monthlyIncome: this.normalizeMetric(user.monthlyIncome),
-      totalGeneratedGold: this.normalizeMetric(user.totalIncome, user.totalGeneratedGold),
-      totalIncome: this.normalizeMetric(user.totalIncome, user.totalGeneratedGold),
+      totalGeneratedCoin: this.normalizeMetric(user.totalIncome, user.totalGeneratedCoin),
+      totalIncome: this.normalizeMetric(user.totalIncome, user.totalGeneratedCoin),
       prestigeCount: this.normalizeMetric(user.prestigeCount),
     };
 
@@ -640,7 +640,7 @@ export class WorkshopLeaderboardManager {
         allianceTag: user.allianceTag,
         allianceTagColor: user.allianceTagColor,
         playerLevel: user.playerLevel,
-        totalProducedGold: user.totalIncome,
+        totalProducedCoin: user.totalIncome,
         prestigeCount: user.prestigeCount,
       },
       {

@@ -393,6 +393,15 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 256,
     "source": "src/assets/items/potions/potion-venom-draught.png"
   },
+  "resource:coin": {
+    "x": 1646,
+    "y": 715,
+    "width": 92,
+    "height": 92,
+    "originalWidth": 92,
+    "originalHeight": 92,
+    "source": "src/assets/icons/icon-coin.png"
+  },
   "resource:crystal": {
     "x": 1862,
     "y": 715,
@@ -410,15 +419,6 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalWidth": 50,
     "originalHeight": 88,
     "source": "src/assets/icons/icon-emerald.png"
-  },
-  "resource:gold": {
-    "x": 1646,
-    "y": 715,
-    "width": 92,
-    "height": 92,
-    "originalWidth": 92,
-    "originalHeight": 92,
-    "source": "src/assets/icons/icon-gold-coin.png"
   },
   "resource:mana": {
     "x": 1770,

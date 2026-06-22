@@ -20,6 +20,7 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
@@ -33,6 +34,7 @@ import org.json.JSONException;
 public class NativeGoogleAuthPlugin extends Plugin {
     private static final String AUTH_PREFS = "native_google_auth";
     private static final String PENDING_SIGN_IN_RESULT_KEY = "pending_sign_in_result";
+    private static final String STORED_SIGN_IN_RESULT_KEY = "stored_sign_in_result";
 
     private CredentialManager credentialManager;
     private final Executor executor = Executors.newSingleThreadExecutor();
@@ -58,6 +60,37 @@ public class NativeGoogleAuthPlugin extends Plugin {
             .addCredentialOption(googleOption)
             .build();
 
+        requestCredential(call, request, nonce, true);
+    }
+
+    @PluginMethod
+    public void restoreAuthorized(PluginCall call) {
+        String serverClientId = call.getString("serverClientId");
+        if (serverClientId == null || serverClientId.trim().isEmpty()) {
+            call.reject("Missing Google server client id", "missing_client_id");
+            return;
+        }
+
+        String nonce = createNonce();
+        GetGoogleIdOption googleOption = new GetGoogleIdOption.Builder()
+            .setServerClientId(serverClientId)
+            .setFilterByAuthorizedAccounts(true)
+            .setAutoSelectEnabled(true)
+            .setNonce(nonce)
+            .build();
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+            .addCredentialOption(googleOption)
+            .build();
+
+        requestCredential(call, request, nonce, false);
+    }
+
+    private void requestCredential(
+        PluginCall call,
+        GetCredentialRequest request,
+        String nonce,
+        boolean savePendingResult
+    ) {
         credentialManager.getCredentialAsync(
             getActivity(),
             request,
@@ -66,7 +99,7 @@ public class NativeGoogleAuthPlugin extends Plugin {
             new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
                 @Override
                 public void onResult(GetCredentialResponse result) {
-                    resolveSignIn(call, result, nonce);
+                    resolveSignIn(call, result, nonce, savePendingResult);
                 }
 
                 @Override
@@ -84,6 +117,7 @@ public class NativeGoogleAuthPlugin extends Plugin {
     @PluginMethod
     public void signOut(PluginCall call) {
         clearPendingSignInResult();
+        clearStoredSignInResult();
         credentialManager.clearCredentialStateAsync(
             new ClearCredentialStateRequest(),
             new CancellationSignal(),
@@ -106,19 +140,27 @@ public class NativeGoogleAuthPlugin extends Plugin {
     public void consumePendingSignInResult(PluginCall call) {
         String pendingJson = getAuthPreferences().getString(PENDING_SIGN_IN_RESULT_KEY, null);
         clearPendingSignInResult();
-        if (pendingJson == null || pendingJson.trim().isEmpty()) {
-            call.resolve(new JSObject());
-            return;
-        }
-
-        try {
-            call.resolve(new JSObject(pendingJson));
-        } catch (JSONException exception) {
-            call.resolve(new JSObject());
-        }
+        resolveStoredJson(call, pendingJson);
     }
 
-    private void resolveSignIn(PluginCall call, GetCredentialResponse result, String nonce) {
+    @PluginMethod
+    public void getStoredSignInResult(PluginCall call) {
+        String storedJson = getAuthPreferences().getString(STORED_SIGN_IN_RESULT_KEY, null);
+        resolveStoredJson(call, storedJson);
+    }
+
+    @PluginMethod
+    public void clearStoredSignInResult(PluginCall call) {
+        clearStoredSignInResult();
+        call.resolve();
+    }
+
+    private void resolveSignIn(
+        PluginCall call,
+        GetCredentialResponse result,
+        String nonce,
+        boolean savePendingResult
+    ) {
         Credential credential = result.getCredential();
         if (!(credential instanceof CustomCredential)) {
             rejectOnUiThread(call, "Unexpected credential type", "native_error", null);
@@ -149,10 +191,26 @@ public class NativeGoogleAuthPlugin extends Plugin {
             if (googleCredential.getProfilePictureUri() != null) {
                 ret.put("profilePictureUri", googleCredential.getProfilePictureUri().toString());
             }
-            savePendingSignInResult(ret);
+            saveStoredSignInResult(ret);
+            if (savePendingResult) {
+                savePendingSignInResult(ret);
+            }
             getActivity().runOnUiThread(() -> call.resolve(ret));
         } catch (RuntimeException exception) {
             rejectOnUiThread(call, "Invalid Google ID token", "native_error", exception);
+        }
+    }
+
+    private void resolveStoredJson(PluginCall call, String storedJson) {
+        if (storedJson == null || storedJson.trim().isEmpty()) {
+            call.resolve(new JSObject());
+            return;
+        }
+
+        try {
+            call.resolve(new JSObject(storedJson));
+        } catch (JSONException exception) {
+            call.resolve(new JSObject());
         }
     }
 
@@ -173,10 +231,24 @@ public class NativeGoogleAuthPlugin extends Plugin {
             .apply();
     }
 
+    private void saveStoredSignInResult(JSObject result) {
+        getAuthPreferences()
+            .edit()
+            .putString(STORED_SIGN_IN_RESULT_KEY, result.toString())
+            .apply();
+    }
+
     private void clearPendingSignInResult() {
         getAuthPreferences()
             .edit()
             .remove(PENDING_SIGN_IN_RESULT_KEY)
+            .apply();
+    }
+
+    private void clearStoredSignInResult() {
+        getAuthPreferences()
+            .edit()
+            .remove(STORED_SIGN_IN_RESULT_KEY)
             .apply();
     }
 

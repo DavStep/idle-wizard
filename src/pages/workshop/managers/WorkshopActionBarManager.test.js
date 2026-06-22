@@ -295,7 +295,7 @@ describe('WorkshopActionBarManager', () => {
 
     expect(bagRule).toBeDefined();
     expect(bagRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 448px\);/,
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
     );
     expect(bagRule).toMatch(/\bleft:\s*0;/);
     expect(bagRule).toMatch(/\bbox-sizing:\s*content-box;/);
@@ -303,13 +303,13 @@ describe('WorkshopActionBarManager', () => {
     expect(bagRule).not.toMatch(/\bbottom:/);
 
     expect(leaderboardRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 408px\);/,
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
     );
     expect(allianceRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 408px\);/,
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
     );
     expect(discoveriesRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+ 448px\);/,
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
     );
     expect(leaderboardRule).toMatch(/\bwidth:\s*132px;/);
     expect(allianceRule).toMatch(/\bwidth:\s*132px;/);

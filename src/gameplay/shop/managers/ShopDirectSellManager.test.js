@@ -11,12 +11,12 @@ const sageSeed = {
 
 function createManager({
   quantity = 5,
-  quote = { ok: true, quantity: 2, priceGold: 0.8, totalPriceGold: 1.55 },
+  quote = { ok: true, quantity: 2, priceCoin: 0.8, totalPriceCoin: 1.55 },
   fastSellPercent,
   sellResult = { ok: true },
 } = {}) {
   let ownedQuantity = quantity;
-  const addGold = vi.fn();
+  const addCoin = vi.fn();
   const addItem = vi.fn((_itemTypeId, addQuantity) => {
     ownedQuantity += addQuantity;
   });
@@ -35,8 +35,8 @@ function createManager({
   const recordSellToNpc = vi.fn().mockResolvedValue(sellResult);
   const onItemSold = vi.fn();
   const manager = new ShopDirectSellManager({
-    goldFacade: {
-      add: addGold,
+    coinFacade: {
+      add: addCoin,
     },
     itemsFacade: {
       addItem,
@@ -57,7 +57,7 @@ function createManager({
   });
 
   return {
-    addGold,
+    addCoin,
     addItem,
     manager,
     onItemSold,
@@ -81,22 +81,22 @@ describe('ShopDirectSellManager', () => {
   });
 
   it('sells directly to NPC after backend accepts the trade', async () => {
-    const { addGold, manager, onItemSold, recordSellToNpc, removeItem } = createManager();
+    const { addCoin, manager, onItemSold, recordSellToNpc, removeItem } = createManager();
 
     await expect(manager.sellItem({ itemTypeId: 1, quantity: 2 })).resolves.toMatchObject({
       ok: true,
       quantity: 2,
-      priceGold: 0.64,
-      totalPriceGold: 1.24,
+      priceCoin: 0.64,
+      totalPriceCoin: 1.24,
       fastSellPercent: 80,
     });
     expect(recordSellToNpc).toHaveBeenCalledWith(sageSeed, 2);
     expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(addGold).toHaveBeenCalledWith(1.24);
+    expect(addCoin).toHaveBeenCalledWith(1.24);
     expect(onItemSold).toHaveBeenCalledWith(
       expect.objectContaining({
         item: sageSeed,
-        gold: 1.24,
+        coin: 1.24,
         quantity: 2,
         source: 'direct_sell',
       }),
@@ -106,19 +106,19 @@ describe('ShopDirectSellManager', () => {
   it('raises fast sell payout when research improves the percent', () => {
     const { manager } = createManager({
       fastSellPercent: 95,
-      quote: { ok: true, quantity: 1, priceGold: 100, totalPriceGold: 100 },
+      quote: { ok: true, quantity: 1, priceCoin: 100, totalPriceCoin: 100 },
     });
 
     expect(manager.quoteItem({ itemTypeId: 1, quantity: 1 })).toMatchObject({
       ok: true,
-      priceGold: 95,
-      totalPriceGold: 95,
+      priceCoin: 95,
+      totalPriceCoin: 95,
       fastSellPercent: 95,
     });
   });
 
   it('returns removed inventory when backend sell fails', async () => {
-    const { addGold, addItem, manager, recordSellToNpc } = createManager({
+    const { addCoin, addItem, manager, recordSellToNpc } = createManager({
       sellResult: { ok: false, reason: 'offline' },
     });
 
@@ -128,6 +128,6 @@ describe('ShopDirectSellManager', () => {
     });
     expect(recordSellToNpc).toHaveBeenCalledWith(sageSeed, 2);
     expect(addItem).toHaveBeenCalledWith(1, 2);
-    expect(addGold).not.toHaveBeenCalled();
+    expect(addCoin).not.toHaveBeenCalled();
   });
 });

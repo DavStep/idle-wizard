@@ -3,7 +3,7 @@ import { GAMEPLAY_SAVE_VERSION } from './GameplayMigrationManager.js';
 export class GameplaySaveManager {
   constructor({
     manaFacade,
-    goldFacade,
+    coinFacade,
     crystalFacade,
     emeraldFacade,
     rubyFacade,
@@ -24,7 +24,7 @@ export class GameplaySaveManager {
     now = () => Date.now(),
   }) {
     this.manaFacade = manaFacade;
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.crystalFacade = crystalFacade;
     this.emeraldFacade = emeraldFacade;
     this.rubyFacade = rubyFacade;
@@ -46,11 +46,14 @@ export class GameplaySaveManager {
   }
 
   createSave() {
+    const coin = this.coinFacade.getSnapshot();
+
     return {
       version: GAMEPLAY_SAVE_VERSION,
       savedAt: this.now(),
       mana: this.manaFacade.getSnapshot(),
-      gold: this.goldFacade.getSnapshot(),
+      coin,
+      gold: coin,
       crystal: this.crystalFacade.getSnapshot(),
       emerald: this.emeraldFacade.getSnapshot(),
       ruby: this.rubyFacade.getSnapshot(),

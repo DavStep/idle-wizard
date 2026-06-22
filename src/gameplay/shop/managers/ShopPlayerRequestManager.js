@@ -1,6 +1,6 @@
-import { normalizePositiveGoldPrice } from '../../../shared/goldPrice.js';
+import { normalizePositiveCoinPrice } from '../../../shared/coinPrice.js';
 import {
-  PLAYER_MARKET_MAX_PRICE_GOLD,
+  PLAYER_MARKET_MAX_PRICE_COIN,
   PLAYER_MARKET_MAX_QUANTITY,
 } from '../../../shared/playerMarketLimits.js';
 
@@ -17,7 +17,7 @@ export class ShopPlayerRequestManager {
     this.isRequestSlotUnlocked = isRequestSlotUnlocked;
   }
 
-  setRequest(slotNumber, { itemTypeId, quantity, priceGold }) {
+  setRequest(slotNumber, { itemTypeId, quantity, priceCoin }) {
     const safeSlotNumber = Math.floor(Number(slotNumber));
 
     if (!Number.isInteger(safeSlotNumber) || !this.isRequestSlotUnlocked(safeSlotNumber)) {
@@ -29,7 +29,7 @@ export class ShopPlayerRequestManager {
     }
 
     const safeQuantity = Math.floor(Number(quantity));
-    const safePriceGold = normalizePositiveGoldPrice(priceGold);
+    const safePriceCoin = normalizePositiveCoinPrice(priceCoin);
 
     if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
       return {
@@ -46,18 +46,18 @@ export class ShopPlayerRequestManager {
       };
     }
 
-    if (safePriceGold === null) {
+    if (safePriceCoin === null) {
       return {
         ok: false,
         reason: 'invalid_price',
       };
     }
 
-    if (safePriceGold > PLAYER_MARKET_MAX_PRICE_GOLD) {
+    if (safePriceCoin > PLAYER_MARKET_MAX_PRICE_COIN) {
       return {
         ok: false,
         reason: 'price_too_high',
-        maxPriceGold: PLAYER_MARKET_MAX_PRICE_GOLD,
+        maxPriceCoin: PLAYER_MARKET_MAX_PRICE_COIN,
       };
     }
 
@@ -74,7 +74,7 @@ export class ShopPlayerRequestManager {
     this.shopPlayerRequestEntityManager.setRequest(safeSlotNumber, {
       itemTypeId,
       quantity: safeQuantity,
-      priceGold: safePriceGold,
+      priceCoin: safePriceCoin,
     });
 
     return {
@@ -82,7 +82,7 @@ export class ShopPlayerRequestManager {
       slotNumber: safeSlotNumber,
       item: this.mapItem(item),
       quantity: safeQuantity,
-      priceGold: safePriceGold,
+      priceCoin: safePriceCoin,
     };
   }
 

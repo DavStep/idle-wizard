@@ -112,6 +112,14 @@ export class AppLifecycleManager {
 
     let promptedBeforeConnect = false;
     if (this.shouldPromptBeforeInitialConnect(authSnapshot)) {
+      await this.tryRestoreConnectedAccount();
+      if (!this.started || this.stopping) {
+        return;
+      }
+      authSnapshot = this.getAuthSnapshot();
+    }
+
+    if (this.shouldPromptBeforeInitialConnect(authSnapshot)) {
       promptedBeforeConnect = true;
       this.onlineGateManager.hide();
       await this.chooseFreshStart({
@@ -321,6 +329,20 @@ export class AppLifecycleManager {
     }
 
     return Promise.resolve(authFacade.signInWithGoogle()).catch((error) => ({
+      ok: false,
+      reason: 'exception',
+      message: this.getErrorText(error),
+    }));
+  }
+
+  async tryRestoreConnectedAccount() {
+    const authFacade = this.backendFacade.getAuthFacade?.();
+
+    if (typeof authFacade?.tryRestoreConnectedAccount !== 'function') {
+      return { ok: false, reason: 'disabled' };
+    }
+
+    return Promise.resolve(authFacade.tryRestoreConnectedAccount()).catch((error) => ({
       ok: false,
       reason: 'exception',
       message: this.getErrorText(error),

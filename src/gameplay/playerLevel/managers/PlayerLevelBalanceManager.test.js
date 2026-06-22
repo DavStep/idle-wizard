@@ -3,6 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { PlayerLevelBalanceManager } from './PlayerLevelBalanceManager.js';
 
 describe('PlayerLevelBalanceManager', () => {
+  it('keeps the default cauldron cap at three through level twenty', () => {
+    const manager = new PlayerLevelBalanceManager();
+
+    expect(manager.getEffects(20).maxCauldrons).toBe(3);
+    expect(manager.getRequiredLevelForCauldron(4)).toBe(21);
+    expect(manager.getRequiredLevelForCauldron(5)).toBe(25);
+  });
+
   it('describes cap, feature, and research milestone text from config', () => {
     const manager = new PlayerLevelBalanceManager({
       balance: {

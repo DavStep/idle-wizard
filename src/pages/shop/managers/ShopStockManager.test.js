@@ -25,25 +25,31 @@ function createGameplayFacade(snapshot) {
       return {
         ok: true,
         quantity,
-        priceGold: item.buyGold,
-        totalPriceGold: quantity === 2 ? 2.6 : item.buyGold * quantity,
+        priceCoin: item.buyCoin,
+        totalPriceCoin: quantity === 2 ? 2.6 : item.buyCoin * quantity,
       };
     }),
     buyNpcMarketStockItem: vi.fn().mockResolvedValue({
       ok: true,
       item: snapshot.shop.stock.items[0],
       quantity: 1,
-      priceGold: snapshot.shop.stock.items[0].buyGold,
-      totalPriceGold: snapshot.shop.stock.items[0].buyGold,
+      priceCoin: snapshot.shop.stock.items[0].buyCoin,
+      totalPriceCoin: snapshot.shop.stock.items[0].buyCoin,
     }),
   };
 }
 
+function getStockBox(stage, label) {
+  return [...stage.querySelectorAll('.shop-page__stock')].find((box) =>
+    box.querySelector('.style-box__title')?.textContent.includes(label),
+  );
+}
+
 describe('ShopStockManager', () => {
-  it('renders shared NPC stock with type controls and a quantity buy dialog', async () => {
+  it('renders shared NPC stock boxes and a quantity buy dialog', async () => {
     const stage = document.createElement('section');
     const snapshot = {
-      gold: { current: 5 },
+      coin: { current: 5 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         stock: {
@@ -55,7 +61,7 @@ describe('ShopStockManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 0,
-              buyGold: 1.25,
+              buyCoin: 1.25,
               stock: 3,
             },
           ],
@@ -67,37 +73,41 @@ describe('ShopStockManager', () => {
 
     manager.mount(stage);
 
-    expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(
-      'npc stock market',
-    );
-    expect(stage.querySelector('.shop-page__stock-row')?.textContent).toContain(
+    const stockBoxes = [...stage.querySelectorAll('.shop-page__stock')];
+    const seedBox = getStockBox(stage, 'seeds');
+
+    expect(stockBoxes.map((box) => box.querySelector('.style-box__title')?.textContent))
+      .toEqual([
+        'npc stock market: seeds',
+        'npc stock market: herbs',
+        'npc stock market: potions',
+      ]);
+    expect(stage.querySelector('.shop-page__stock-type-button')).toBeNull();
+    expect(seedBox?.querySelector('.shop-page__stock-row')?.textContent).toContain(
       'sage seed (3)',
     );
-    expect(stage.querySelector('.shop-page__stock-buy-button')?.textContent).toBe(
-      '1.25 gold',
+    expect(seedBox?.querySelector('.shop-page__stock-buy-button')?.textContent).toBe(
+      '1.25 coin',
     );
     expect(
-      stage
+      seedBox
         .querySelector('.shop-page__stock-buy-button')
         ?.getAttribute('data-resource-color'),
-    ).toBe('gold');
-    expect(stage.querySelector('.shop-page__stock-buy-button')?.disabled).toBe(
+    ).toBe('coin');
+    expect(seedBox?.querySelector('.shop-page__stock-buy-button')?.disabled).toBe(
       false,
     );
-    expect(
-      [...stage.querySelectorAll('.shop-page__stock-type-button')].map(
-        (button) => button.textContent,
-      ),
-    ).toEqual(['seeds', 'herbs', 'potions']);
-    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('1/1');
-    expect(stage.querySelector('.shop-page__stock-toggle')?.hidden).toBe(true);
+    expect(seedBox?.querySelector('.shop-page__stock-count')?.textContent).toBe('1/1');
+    expect(seedBox?.querySelector('.shop-page__stock-toggle')?.hidden).toBe(true);
+    expect(getStockBox(stage, 'herbs')?.textContent).toContain('empty');
+    expect(getStockBox(stage, 'potions')?.textContent).toContain('empty');
 
     await manager.onBuyItem(1);
 
     expect(stage.querySelector('.shop-page__stock-buy-popup')?.hidden).toBe(false);
     expect(gameplayFacade.buyNpcMarketStockItem).not.toHaveBeenCalled();
     expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
-      'total1.25 gold',
+      'total1.25 coin',
     );
 
     const stepButtons = [
@@ -120,7 +130,7 @@ describe('ShopStockManager', () => {
     expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 2);
     expect(input.value).toBe('2');
     expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
-      'total2.6 gold',
+      'total2.6 coin',
     );
 
     stepButtons.find((button) => button.textContent === '+100').click();
@@ -138,7 +148,7 @@ describe('ShopStockManager', () => {
 
     expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 2);
     expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
-      'total2.6 gold',
+      'total2.6 coin',
     );
 
     await manager.onConfirmBuy();
@@ -149,10 +159,10 @@ describe('ShopStockManager', () => {
     manager.unmount();
   });
 
-  it('keeps unaffordable stock buy prices disabled without gold color', () => {
+  it('keeps unaffordable stock buy prices disabled without coin color', () => {
     const stage = document.createElement('section');
     const snapshot = {
-      gold: { current: 1 },
+      coin: { current: 1 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         stock: {
@@ -164,7 +174,7 @@ describe('ShopStockManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 0,
-              buyGold: 1.25,
+              buyCoin: 1.25,
               stock: 3,
             },
           ],
@@ -178,7 +188,7 @@ describe('ShopStockManager', () => {
 
     const button = stage.querySelector('.shop-page__stock-buy-button');
 
-    expect(button?.textContent).toBe('1.25 gold');
+    expect(button?.textContent).toBe('1.25 coin');
     expect(button?.disabled).toBe(true);
     expect(button?.getAttribute('data-resource-color')).toBeNull();
 
@@ -188,7 +198,7 @@ describe('ShopStockManager', () => {
   it('shows tutorial fallback stock prices when backend prices are missing', () => {
     const stage = document.createElement('section');
     const snapshot = {
-      gold: { current: 1 },
+      coin: { current: 1 },
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
       shop: {
         stock: {
@@ -200,7 +210,7 @@ describe('ShopStockManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 0,
-              buyGold: null,
+              buyCoin: null,
               stock: 3,
             },
           ],
@@ -215,8 +225,8 @@ describe('ShopStockManager', () => {
           ? {
               ok: true,
               quantity,
-              priceGold: 12.5,
-              totalPriceGold: 12.5 * quantity,
+              priceCoin: 12.5,
+              totalPriceCoin: 12.5 * quantity,
               tutorial: true,
             }
           : null,
@@ -226,7 +236,7 @@ describe('ShopStockManager', () => {
 
     const button = stage.querySelector('.shop-page__stock-buy-button');
 
-    expect(button?.textContent).toBe('12.5 gold');
+    expect(button?.textContent).toBe('12.5 coin');
     expect(button?.disabled).toBe(true);
     expect(button?.getAttribute('data-resource-color')).toBeNull();
 
@@ -236,7 +246,7 @@ describe('ShopStockManager', () => {
   it('shows backend-stocked items even with zero local quantity and no research', () => {
     const stage = document.createElement('section');
     const snapshot = {
-      gold: { current: 5 },
+      coin: { current: 5 },
       research: { completedResearchIds: [] },
       shop: {
         stock: {
@@ -247,7 +257,7 @@ describe('ShopStockManager', () => {
               label: 'mint seed',
               kind: 'seed',
               quantity: 0,
-              buyGold: 1,
+              buyCoin: 1,
               stock: 1,
             },
           ],
@@ -271,10 +281,10 @@ describe('ShopStockManager', () => {
     manager.unmount();
   });
 
-  it('shows only selected stock category rows after tab changes', () => {
+  it('renders stock category rows in separate boxes', () => {
     const stage = document.createElement('section');
     const snapshot = {
-      gold: { current: 5 },
+      coin: { current: 5 },
       research: { completedResearchIds: [] },
       shop: {
         stock: {
@@ -285,7 +295,7 @@ describe('ShopStockManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 0,
-              buyGold: 1,
+              buyCoin: 1,
               stock: 3,
               researched: true,
             },
@@ -295,7 +305,7 @@ describe('ShopStockManager', () => {
               label: 'sage',
               kind: 'herb',
               quantity: 0,
-              buyGold: 1,
+              buyCoin: 1,
               stock: 2,
               researched: true,
             },
@@ -305,7 +315,7 @@ describe('ShopStockManager', () => {
               label: 'mana tonic',
               kind: 'potion',
               quantity: 0,
-              buyGold: 1,
+              buyCoin: 1,
               stock: 1,
               researched: true,
             },
@@ -317,15 +327,19 @@ describe('ShopStockManager', () => {
     const manager = new ShopStockManager({ gameplayFacade });
 
     manager.mount(stage);
-    manager.onSelectTab('herb');
 
-    expect(manager.refs.rows.get(1)?.row.hidden).toBe(true);
+    const seedBox = getStockBox(stage, 'seeds');
+    const herbBox = getStockBox(stage, 'herbs');
+    const potionBox = getStockBox(stage, 'potions');
+
+    expect(seedBox?.textContent).toContain('sage seed (3)');
+    expect(herbBox?.textContent).toContain('sage (2)');
+    expect(potionBox?.textContent).toContain('mana tonic (1)');
+    expect(manager.refs.rows.get(1)?.row.closest('.shop-page__stock')).toBe(seedBox);
+    expect(manager.refs.rows.get(101)?.row.closest('.shop-page__stock')).toBe(herbBox);
+    expect(manager.refs.rows.get(201)?.row.closest('.shop-page__stock')).toBe(potionBox);
+    expect(manager.refs.rows.get(1)?.row.hidden).toBe(false);
     expect(manager.refs.rows.get(101)?.row.hidden).toBe(false);
-
-    manager.onSelectTab('potion');
-
-    expect(manager.refs.rows.get(1)?.row.hidden).toBe(true);
-    expect(manager.refs.rows.get(101)?.row.hidden).toBe(true);
     expect(manager.refs.rows.get(201)?.row.hidden).toBe(false);
 
     manager.unmount();
@@ -339,12 +353,12 @@ describe('ShopStockManager', () => {
       label: `seed ${index}`,
       kind: 'seed',
       quantity: 0,
-      buyGold: 1,
+      buyCoin: 1,
       stock: 3,
       researched: true,
     }));
     const snapshot = {
-      gold: { current: 20 },
+      coin: { current: 20 },
       research: { completedResearchIds: [] },
       shop: {
         stock: {
@@ -357,25 +371,27 @@ describe('ShopStockManager', () => {
 
     manager.mount(stage);
 
-    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('5/6');
-    expect(stage.querySelector('.shop-page__stock-toggle')?.hidden).toBe(false);
+    const seedBox = getStockBox(stage, 'seeds');
+
+    expect(seedBox?.querySelector('.shop-page__stock-count')?.textContent).toBe('5/6');
+    expect(seedBox?.querySelector('.shop-page__stock-toggle')?.hidden).toBe(false);
     expect(manager.refs.rows.get(1)?.row.hidden).toBe(false);
     expect(manager.refs.rows.get(5)?.row.hidden).toBe(false);
     expect(manager.refs.rows.get(6)?.row.hidden).toBe(true);
 
-    manager.toggleStockExpanded();
+    manager.toggleStockExpanded('seed');
 
-    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('6/6');
-    expect(stage.querySelector('.shop-page__stock-toggle')?.textContent).toBe(
+    expect(seedBox?.querySelector('.shop-page__stock-count')?.textContent).toBe('6/6');
+    expect(seedBox?.querySelector('.shop-page__stock-toggle')?.textContent).toBe(
       'collapse',
     );
     expect(manager.refs.rows.get(6)?.row.hidden).toBe(false);
-
-    manager.onSelectTab('herb');
-
-    expect(stage.querySelector('.shop-page__stock-count')?.textContent).toBe('0/0');
-    expect(stage.querySelector('.shop-page__stock-toggle')?.hidden).toBe(true);
-    expect(manager.stockExpanded).toBe(false);
+    expect(getStockBox(stage, 'herbs')?.querySelector('.shop-page__stock-count')?.textContent)
+      .toBe('0/0');
+    expect(getStockBox(stage, 'herbs')?.querySelector('.shop-page__stock-toggle')?.hidden)
+      .toBe(true);
+    expect(manager.isStockExpanded('seed')).toBe(true);
+    expect(manager.isStockExpanded('herb')).toBe(false);
 
     manager.unmount();
   });

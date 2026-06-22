@@ -99,9 +99,12 @@ export class PotionDiscoverySubscriptionManager {
       ),
       username: typeof row.username === 'string' ? row.username : 'wizard',
       discoveredAtMs: this.toTimestampMs(row.discoveredAt ?? row.discovered_at),
-      royaltyGold: this.toGoldValue(
-        row.royaltyGold ?? row.royalty_gold,
-        row.royaltyGoldScale ?? row.royalty_gold_scale,
+      royaltyCoin: this.toCoinValue(
+        row.royaltyCoin ?? row.royaltyGold ?? row.royalty_coin ?? row.royalty_gold,
+        row.royaltyCoinScale ??
+          row.royaltyGoldScale ??
+          row.royalty_coin_scale ??
+          row.royalty_gold_scale,
       ),
     };
   }
@@ -150,7 +153,7 @@ export class PotionDiscoverySubscriptionManager {
     return Number.isFinite(value) ? value : 0;
   }
 
-  toGoldValue(value, scaleValue = 1) {
+  toCoinValue(value, scaleValue = 1) {
     const numericValue = typeof value === 'bigint' ? Number(value) : Number(value ?? 0);
     const numericScale =
       typeof scaleValue === 'bigint' ? Number(scaleValue) : Number(scaleValue ?? 1);

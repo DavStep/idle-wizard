@@ -1,6 +1,14 @@
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
+const WORLD_NOTICE_TABS = [
+  { id: 'requests', label: 'requests' },
+  { id: 'rewards', label: 'rewards' },
+  { id: 'archive', label: 'archive' },
+];
+const DEFAULT_WORLD_NOTICE_TAB_ID = 'requests';
+const WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS = 2_000;
+
 export class WorkshopWorldNoticeManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -8,6 +16,7 @@ export class WorkshopWorldNoticeManager {
     this.unsubscribe = null;
     this.refs = {};
     this.visible = false;
+    this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
     this.previousFocus = null;
     this.currentSnapshot = null;
     this.handlePopupClick = (event) => {
@@ -35,18 +44,26 @@ export class WorkshopWorldNoticeManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'workshop-page__world-notice';
+    this.root.className = 'workshop-page__panel-button workshop-page__world-notice';
+    this.root.dataset.panelSide = 'right';
     this.root.setAttribute('aria-label', 'world notice');
 
     this.refs.openButton = document.createElement('button');
-    this.refs.openButton.className = 'workshop-page__world-notice-open';
+    this.refs.openButton.className =
+      'workshop-page__panel-button-open workshop-page__world-notice-open';
     this.refs.openButton.type = 'button';
     this.refs.openButton.setAttribute('aria-haspopup', 'dialog');
     this.refs.openButton.addEventListener('click', () => this.show());
 
     this.refs.openLabel = document.createElement('span');
-    this.refs.openLabel.className = 'workshop-page__feature-character-label';
+    this.refs.openLabel.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label';
     this.refs.openLabel.textContent = 'notice';
+
+    this.refs.openTimer = document.createElement('span');
+    this.refs.openTimer.className =
+      'workshop-page__panel-button-timer workshop-page__feature-character-timer';
+    this.refs.openTimer.hidden = true;
 
     this.refs.openButton.append(
       createWorkshopCharacterPortrait(
@@ -54,6 +71,7 @@ export class WorkshopWorldNoticeManager {
         'workshop-page__world-notice-character',
       ),
       this.refs.openLabel,
+      this.refs.openTimer,
     );
 
     this.root.append(this.refs.openButton);
@@ -75,12 +93,15 @@ export class WorkshopWorldNoticeManager {
     popup.hidden = true;
     popup.addEventListener('click', this.handlePopupClick);
 
+    this.refs.panel = document.createElement('section');
+    this.refs.panel.className = 'workshop-page__world-notice-panel';
+    this.refs.panel.setAttribute('aria-label', 'world notice');
+    this.refs.panel.setAttribute('aria-modal', 'true');
+    this.refs.panel.setAttribute('role', 'dialog');
+    this.refs.panel.tabIndex = -1;
+
     this.refs.dialog = document.createElement('section');
     this.refs.dialog.className = 'workshop-page__world-notice-dialog style-dialog';
-    this.refs.dialog.setAttribute('aria-label', 'world notice');
-    this.refs.dialog.setAttribute('aria-modal', 'true');
-    this.refs.dialog.setAttribute('role', 'dialog');
-    this.refs.dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
@@ -96,9 +117,41 @@ export class WorkshopWorldNoticeManager {
     this.refs.content.className = 'workshop-page__world-notice-content';
 
     this.refs.dialog.append(title, this.refs.closeButton, this.refs.content);
-    popup.append(this.refs.dialog);
+    this.refs.tabs = this.createTabs();
+    this.refs.panel.append(this.refs.dialog, this.refs.tabs);
+    popup.append(this.refs.panel);
 
     return popup;
+  }
+
+  createTabs() {
+    const tabs = document.createElement('div');
+    tabs.className = 'workshop-page__world-notice-tabs';
+    tabs.setAttribute('aria-label', 'world notice tabs');
+    tabs.setAttribute('role', 'tablist');
+    this.refs.tabButtons = new Map();
+
+    for (const tab of WORLD_NOTICE_TABS) {
+      const button = document.createElement('button');
+      button.className = 'style-button workshop-page__world-notice-tab-button';
+      button.type = 'button';
+      button.textContent = tab.label;
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => this.onSelectTab(tab.id));
+      this.refs.tabButtons.set(tab.id, button);
+      tabs.append(button);
+    }
+
+    return tabs;
+  }
+
+  onSelectTab(tabId) {
+    if (this.selectedTabId === tabId) {
+      return;
+    }
+
+    this.selectedTabId = tabId;
+    this.renderPopup(this.currentSnapshot?.worldNotice);
   }
 
   show() {
@@ -110,7 +163,7 @@ export class WorkshopWorldNoticeManager {
     this.visible = true;
     this.applyVisibility();
     this.renderPopup(this.currentSnapshot?.worldNotice);
-    this.refs.dialog?.focus();
+    this.refs.panel?.focus();
   }
 
   hide() {
@@ -136,6 +189,7 @@ export class WorkshopWorldNoticeManager {
     this.visible = false;
     this.previousFocus = null;
     this.currentSnapshot = null;
+    this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
   }
 
   render(snapshot) {
@@ -163,6 +217,7 @@ export class WorkshopWorldNoticeManager {
   renderCharacter(notice) {
     if (!notice) {
       this.refs.openButton?.setAttribute('aria-label', 'open world notice, no notice');
+      this.renderTimer('');
       setNotificationBadge(this.refs.openButton, false);
       return;
     }
@@ -171,7 +226,19 @@ export class WorkshopWorldNoticeManager {
       'aria-label',
       `open world notice, ${notice.headline}, ${notice.completedRequests}/${notice.totalRequests}, ${notice.responseLabel}, ${notice.resetLabel}`,
     );
+    this.renderTimer(notice.resetLabel);
     setNotificationBadge(this.refs.openButton, hasIncompleteNoticeRequests(notice));
+  }
+
+  renderTimer(resetLabel) {
+    const timerLabel = String(resetLabel ?? '').trim();
+    if (!this.refs.openTimer) {
+      return;
+    }
+
+    this.refs.openTimer.textContent = timerLabel;
+    this.refs.openTimer.hidden = timerLabel.length === 0;
+    this.root?.classList.toggle('has-timer', timerLabel.length > 0);
   }
 
   renderPopup(worldNotice) {
@@ -179,6 +246,7 @@ export class WorkshopWorldNoticeManager {
       return;
     }
 
+    this.updateTabs();
     const notice = worldNotice?.current;
 
     if (!notice) {
@@ -189,12 +257,37 @@ export class WorkshopWorldNoticeManager {
       return;
     }
 
+    if (this.selectedTabId === 'rewards') {
+      this.refs.content.replaceChildren(
+        this.createNoticeHeader(notice),
+        this.createLeaderboardRewards(notice.leaderboard),
+      );
+      return;
+    }
+
+    if (this.selectedTabId === 'archive') {
+      this.refs.content.replaceChildren(
+        this.createNoticeHeader(notice),
+        this.createArchive(worldNotice.archive),
+      );
+      return;
+    }
+
     this.refs.content.replaceChildren(
       this.createNoticeHeader(notice),
       this.createBody(notice),
+      this.createContributionStatus(notice.leaderboard),
       this.createRequestList(notice),
-      this.createArchive(worldNotice.archive),
     );
+  }
+
+  updateTabs() {
+    for (const tab of WORLD_NOTICE_TABS) {
+      const selected = this.selectedTabId === tab.id;
+      const button = this.refs.tabButtons?.get(tab.id);
+      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button?.setAttribute('tabindex', selected ? '0' : '-1');
+    }
   }
 
   createNoticeHeader(notice) {
@@ -234,6 +327,25 @@ export class WorkshopWorldNoticeManager {
     }
 
     return body;
+  }
+
+  createContributionStatus(leaderboard = {}) {
+    const normalized = this.normalizeLeaderboard(leaderboard);
+    const root = document.createElement('div');
+    root.className = 'workshop-page__world-notice-contribution';
+
+    const points = document.createElement('span');
+    points.textContent = `${this.formatNumber(normalized.currentPoints)}/${this.formatNumber(
+      normalized.qualificationPoints,
+    )} points`;
+
+    const status = document.createElement('span');
+    status.textContent = normalized.qualified
+      ? 'qualified'
+      : `${this.formatNumber(normalized.remainingQualificationPoints)} to qualify`;
+
+    root.append(points, status);
+    return root;
   }
 
   createRequestList(notice) {
@@ -279,7 +391,7 @@ export class WorkshopWorldNoticeManager {
       button.textContent = request.actionText;
       button.disabled = !request.canDonate;
       button.addEventListener('click', () => {
-        this.gameplayFacade?.donateWorldNoticeGold?.(request.requestId);
+        this.gameplayFacade?.donateWorldNoticeCoin?.(request.requestId);
       });
       return button;
     }
@@ -288,6 +400,55 @@ export class WorkshopWorldNoticeManager {
     action.className = 'workshop-page__world-notice-request-action-text';
     action.textContent = request.actionText;
     return action;
+  }
+
+  createLeaderboardRewards(leaderboard = {}) {
+    const normalized = this.normalizeLeaderboard(leaderboard);
+    const section = document.createElement('div');
+    section.className = 'workshop-page__world-notice-rewards';
+
+    const qualification = document.createElement('div');
+    qualification.className = 'workshop-page__world-notice-reward-status';
+    qualification.textContent = normalized.qualified
+      ? `${this.formatNumber(normalized.currentPoints)} points, qualified`
+      : `${this.formatNumber(normalized.currentPoints)}/${this.formatNumber(
+          normalized.qualificationPoints,
+        )} points, not qualified`;
+    section.append(qualification);
+
+    for (const tier of normalized.rewardTiers) {
+      const row = document.createElement('div');
+      row.className = 'workshop-page__world-notice-reward-row';
+
+      const rank = document.createElement('span');
+      rank.className = 'workshop-page__world-notice-reward-rank';
+      rank.textContent = tier.rankLabel;
+
+      const reward = document.createElement('span');
+      reward.className = 'workshop-page__world-notice-reward-value';
+      reward.textContent = this.formatRewardTier(tier);
+
+      row.append(rank, reward);
+      section.append(row);
+    }
+
+    return section;
+  }
+
+  formatRewardTier(tier = {}) {
+    const parts = [];
+    const emerald = Math.max(0, Math.floor(Number(tier.emerald) || 0));
+    const crystal = Math.max(0, Math.floor(Number(tier.crystal) || 0));
+
+    if (emerald > 0) {
+      parts.push(`${emerald} emerald`);
+    }
+
+    if (crystal > 0) {
+      parts.push(`${crystal} crystal`);
+    }
+
+    return parts.length ? parts.join(', ') : 'none';
   }
 
   createProgressBar(progressValue, completed = false) {
@@ -332,7 +493,9 @@ export class WorkshopWorldNoticeManager {
 
       const response = document.createElement('span');
       response.className = 'workshop-page__world-notice-archive-response';
-      response.textContent = entry.responseLabel;
+      response.textContent = entry.contributionPoints
+        ? `${entry.responseLabel}, ${this.formatNumber(entry.contributionPoints)} points`
+        : entry.responseLabel;
 
       row.append(headline, response);
       section.append(row);
@@ -347,6 +510,28 @@ export class WorkshopWorldNoticeManager {
     }
 
     this.refs.openButton?.setAttribute('aria-expanded', this.visible ? 'true' : 'false');
+  }
+
+  formatNumber(value) {
+    return String(Math.max(0, Math.floor(Number(value) || 0)));
+  }
+
+  normalizeLeaderboard(leaderboard = {}) {
+    const currentPoints = Math.max(0, Math.floor(Number(leaderboard.currentPoints) || 0));
+    const qualificationPoints = Math.max(
+      1,
+      Math.floor(Number(leaderboard.qualificationPoints) || WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS),
+    );
+
+    return {
+      currentPoints,
+      qualificationPoints,
+      qualified: Boolean(leaderboard.qualified) || currentPoints >= qualificationPoints,
+      remainingQualificationPoints: Math.max(0, qualificationPoints - currentPoints),
+      rewardTiers: Array.isArray(leaderboard.rewardTiers)
+        ? leaderboard.rewardTiers
+        : [],
+    };
   }
 }
 

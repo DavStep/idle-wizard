@@ -44,4 +44,22 @@ describe('TutorialProgressManager', () => {
       completedStepIds: ['open-tasks'],
     });
   });
+
+  it('maps old tutorial coin step ids without resetting progress', () => {
+    const storage = createMemoryStorage();
+    storage.setItem(
+      TUTORIAL_STORAGE_KEY,
+      JSON.stringify({
+        completedStepIds: ['earn-tutorial-gold'],
+      }),
+    );
+
+    const manager = new TutorialProgressManager({ storage });
+
+    expect(manager.hasCompleted('earn-tutorial-coin')).toBe(true);
+    manager.complete('finish-seed-task');
+    expect(JSON.parse(storage.getItem(TUTORIAL_STORAGE_KEY))).toEqual({
+      completedStepIds: ['earn-tutorial-coin', 'finish-seed-task'],
+    });
+  });
 });

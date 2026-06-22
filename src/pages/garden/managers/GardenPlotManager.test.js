@@ -15,7 +15,7 @@ function createGameplayFacadeFake() {
     [3, { itemTypeId: 1003, key: 'nettleHerb', label: 'nettle' }],
   ]);
   const snapshot = {
-    gold: {
+    coin: {
       current: 0,
     },
     garden: {
@@ -573,7 +573,7 @@ describe('GardenPlotManager', () => {
     expect(plotRow.disabled).toBe(false);
   });
 
-  it('keeps unaffordable plot buy prices disabled without gold color', () => {
+  it('keeps unaffordable plot buy prices disabled without coin color', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -589,15 +589,15 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     const actionLabel = plotRow.querySelector('.garden-page__plot-action-label');
 
-    expect(actionLabel?.textContent).toBe('buy 25 gold');
+    expect(actionLabel?.textContent).toBe('buy 25 coin');
     expect(plotRow.disabled).toBe(true);
     expect(actionLabel?.getAttribute('data-resource-color')).toBeNull();
 
-    snapshot.gold.current = 25;
+    snapshot.coin.current = 25;
     gameplayFacade.publish();
 
     expect(plotRow.disabled).toBe(false);
-    expect(actionLabel?.getAttribute('data-resource-color')).toBe('gold');
+    expect(actionLabel?.getAttribute('data-resource-color')).toBe('coin');
   });
 
   it('keeps plant seed buttons stable between renders and plants mint seed', () => {

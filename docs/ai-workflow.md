@@ -9,7 +9,8 @@ Use this when an AI agent or contributor needs to change the repo without guessi
 3. Read `docs/architecture.md` for boundaries and feature locations.
 4. For UI work, also read `docs/style.md` and `docs/ui-patterns.md`.
 5. For tutorial/FTUE work, use the local `idle-wizard-tutorial-ui` skill and its QA checklist.
-6. Read the feature-local `README.md` before editing a feature folder.
+6. For release work, read `docs/release-workflow.md`.
+7. Read the feature-local `README.md` before editing a feature folder.
 
 If docs conflict with source, inspect source and tests, then update the stale doc in the same change.
 

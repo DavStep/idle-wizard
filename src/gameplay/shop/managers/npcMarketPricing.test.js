@@ -45,7 +45,7 @@ describe('npcMarketPricing', () => {
   it('uses soft demand instead of collapsing empty demand to a hard cent floor', () => {
     expect(
       getNpcMarketPriceFromNeed({
-        basePriceGold: 10,
+        basePriceCoin: 10,
         itemKind: 'seed',
         npcNeed: 0,
         targetNeed: 1_000,

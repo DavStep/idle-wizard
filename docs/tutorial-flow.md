@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source starts with a purchase dialog and routes room openings through short `market opened`, `garden opened`, `research opened`, and `brewing opened` beats. Gold-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates those routing and room-open changes and should be refreshed the next time tutorial captures are regenerated.
+Current source starts with a purchase dialog and routes room openings through short `market opened`, `garden opened`, `research opened`, and `brewing opened` beats. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates those routing and room-open changes and should be refreshed the next time tutorial captures are regenerated.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -26,7 +26,7 @@ flowchart TD
   S10["10. open-market<br/>target: market tab"]
   S11["11. select-market-stand<br/>target: fast sell button"]
   S12["12. select-sage-seed-sale<br/>target: fast sell sage seed row"]
-  S13["13. earn-tutorial-gold<br/>effect: tutorial fast sell"]
+  S13["13. earn-tutorial-coin<br/>effect: tutorial fast sell"]
   S14["14. unselect-sage-seed-sale<br/>target: empty picker row"]
   S15["15. level-up-one<br/>target: level up"]
   S16["16. grow-sage<br/>lesson 3: gardening"]
@@ -40,7 +40,7 @@ flowchart TD
   S24["24. brew-mana-tonic<br/>objective: first potion"]
   S25["25. refill-mana-tonic-cauldron<br/>objective: refill cauldron"]
   Done["tutorial hidden / complete"]
-  G00["gold shortfall"]
+  G00["coin shortfall"]
   G01{"available fast-sell quantity?"}
   G02["no: obtain source<br/>sage or mint"]
   G03{"on Market page?"}
@@ -65,7 +65,7 @@ flowchart TD
   S10 -->|"Market opened"| S11
   S11 -->|"fast sell opened"| S12
   S12 -->|"sage seed selected"| S13
-  S13 -->|"10 gold earned"| S14
+  S13 -->|"10 coin earned"| S14
   S14 -->|"stand emptied"| S15
   S15 -->|"level 2"| S16
   S16 -->|"sage grown"| S17
@@ -81,8 +81,8 @@ flowchart TD
 
   S05 -. "paused while mana is not ready" .-> S05
   S07 -. "target can switch: tasks, task row, summon, mana" .-> S07
-  S18 -. "if gold short" .-> G00
-  S22 -. "if gold short" .-> G00
+  S18 -. "if coin short" .-> G00
+  S22 -. "if coin short" .-> G00
   G00 --> G01
   G01 -->|"no"| G02
   G01 -->|"yes"| G03
@@ -112,7 +112,7 @@ flowchart TD
 | 10. `open-market` | <img src="tutorial-flow/screenshots/10-open-market.png" width="220" alt="open-market"> |
 | 11. `select-market-stand` | <img src="tutorial-flow/screenshots/11-select-market-stand.png" width="220" alt="select-market-stand"> |
 | 12. `select-sage-seed-sale` | <img src="tutorial-flow/screenshots/12-select-sage-seed-sale.png" width="220" alt="select-sage-seed-sale"> |
-| 13. `earn-tutorial-gold` | <img src="tutorial-flow/screenshots/13-earn-tutorial-gold.png" width="220" alt="earn-tutorial-gold"> |
+| 13. `earn-tutorial-coin` | <img src="tutorial-flow/screenshots/13-earn-tutorial-coin.png" width="220" alt="earn-tutorial-coin"> |
 | 14. `unselect-sage-seed-sale` | <img src="tutorial-flow/screenshots/14-unselect-sage-seed-sale.png" width="220" alt="unselect-sage-seed-sale"> |
 | 15. `level-up-one` | <img src="tutorial-flow/screenshots/15-level-up-one.png" width="220" alt="level-up-one"> |
 | 16. `grow-sage` | <img src="tutorial-flow/screenshots/16-grow-sage.png" width="220" alt="grow-sage"> |

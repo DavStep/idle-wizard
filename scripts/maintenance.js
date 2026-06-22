@@ -381,7 +381,7 @@ function verifyPlayerGameplaySave() {
   runSql('SELECT COUNT(*) AS row_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS parseable_count FROM admin_player_gameplay_save');
   runSql(
-    'SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10',
+    'SELECT identity, current_coin, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10',
   );
 }
 

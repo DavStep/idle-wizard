@@ -3,15 +3,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { TutorialSaleManager } from './TutorialSaleManager.js';
 
 function createSnapshot({
-  gold = 0,
+  coin = 0,
   level = 1,
-  levelCostGold = 10,
+  levelCostCoin = 10,
   seeds = [{ key: 'sageSeed', quantity: 1 }],
   herbs = [],
   prestigeCompletedLevels = [],
 } = {}) {
   return {
-    gold: { current: gold },
+    coin: { current: coin },
     inventory: [],
     seedInventory: seeds,
     garden: {
@@ -25,7 +25,7 @@ function createSnapshot({
       currentLevel: level,
       level: {
         completion: {
-          costGold: levelCostGold,
+          costCoin: levelCostCoin,
         },
       },
     },
@@ -54,8 +54,8 @@ describe('TutorialSaleManager', () => {
           sale: {
             itemKey: 'sageSeed',
             quantity: 1,
-            goldEach: 10,
-            goldTarget: 10,
+            coinEach: 10,
+            coinTarget: 10,
           },
         },
         snapshot: createSnapshot({
@@ -67,8 +67,8 @@ describe('TutorialSaleManager', () => {
     ).toMatchObject({
       ok: true,
       quantity: 1,
-      priceGold: 10,
-      totalPriceGold: 10,
+      priceCoin: 10,
+      totalPriceCoin: 10,
       tutorial: true,
     });
   });
@@ -81,8 +81,8 @@ describe('TutorialSaleManager', () => {
         step: { effect: 'none' },
         snapshot: createSnapshot({
           level: 3,
-          gold: 30,
-          levelCostGold: 40,
+          coin: 30,
+          levelCostCoin: 40,
           herbs: [{ key: 'sageHerb', quantity: 2 }],
           seeds: [],
         }),
@@ -96,8 +96,8 @@ describe('TutorialSaleManager', () => {
     ).toMatchObject({
       ok: true,
       quantity: 1,
-      priceGold: 10,
-      totalPriceGold: 10,
+      priceCoin: 10,
+      totalPriceCoin: 10,
       tutorial: true,
     });
   });
@@ -118,10 +118,10 @@ describe('TutorialSaleManager', () => {
   it('runs the local tutorial sale only when the tutorial item is confirmed', () => {
     const manager = new TutorialSaleManager();
     const gameplayFacade = {
-      sellTutorialItemForGold: vi.fn(() => ({
+      sellTutorialItemForCoin: vi.fn(() => ({
         ok: true,
         quantity: 1,
-        gold: 10,
+        coin: 10,
         tutorial: true,
       })),
     };
@@ -132,8 +132,8 @@ describe('TutorialSaleManager', () => {
         sale: {
           itemKey: 'sageSeed',
           quantity: 1,
-          goldEach: 10,
-          goldTarget: 10,
+          coinEach: 10,
+          coinTarget: 10,
         },
       },
       snapshot: createSnapshot(),
@@ -146,23 +146,23 @@ describe('TutorialSaleManager', () => {
     expect(result).toMatchObject({
       handled: true,
       ok: true,
-      gold: 10,
+      coin: 10,
     });
-    expect(gameplayFacade.sellTutorialItemForGold).toHaveBeenCalledWith({
+    expect(gameplayFacade.sellTutorialItemForCoin).toHaveBeenCalledWith({
       itemKey: 'sageSeed',
       quantity: 4,
-      goldEach: 10,
-      goldTarget: 10,
+      coinEach: 10,
+      coinTarget: 10,
     });
   });
 
   it('routes later FTUE fast sells through the local tutorial market prices too', () => {
     const manager = new TutorialSaleManager();
     const gameplayFacade = {
-      sellTutorialItemForGold: vi.fn(() => ({
+      sellTutorialItemForCoin: vi.fn(() => ({
         ok: true,
         quantity: 1,
-        gold: 10,
+        coin: 10,
         tutorial: true,
       })),
     };
@@ -171,8 +171,8 @@ describe('TutorialSaleManager', () => {
       step: { effect: 'none' },
       snapshot: createSnapshot({
         level: 3,
-        gold: 30,
-        levelCostGold: 40,
+        coin: 30,
+        levelCostCoin: 40,
         herbs: [{ key: 'sageHerb', quantity: 2 }],
         seeds: [],
       }),
@@ -189,20 +189,20 @@ describe('TutorialSaleManager', () => {
     expect(result).toMatchObject({
       handled: true,
       ok: true,
-      gold: 10,
+      coin: 10,
     });
-    expect(gameplayFacade.sellTutorialItemForGold).toHaveBeenCalledWith({
+    expect(gameplayFacade.sellTutorialItemForCoin).toHaveBeenCalledWith({
       itemKey: 'sageHerb',
       quantity: 2,
-      goldEach: 20,
-      goldTarget: 40,
+      coinEach: 20,
+      coinTarget: 40,
     });
   });
 
   it('does not hijack confirm for a different selected item', () => {
     const manager = new TutorialSaleManager();
     const gameplayFacade = {
-      sellTutorialItemForGold: vi.fn(),
+      sellTutorialItemForCoin: vi.fn(),
     };
 
     expect(
@@ -212,8 +212,8 @@ describe('TutorialSaleManager', () => {
           sale: {
             itemKey: 'sageSeed',
             quantity: 1,
-            goldEach: 10,
-            goldTarget: 10,
+            coinEach: 10,
+            coinTarget: 10,
           },
         },
         snapshot: createSnapshot({
@@ -228,7 +228,7 @@ describe('TutorialSaleManager', () => {
         quantity: 1,
       }),
     ).toEqual({ handled: false });
-    expect(gameplayFacade.sellTutorialItemForGold).not.toHaveBeenCalled();
+    expect(gameplayFacade.sellTutorialItemForCoin).not.toHaveBeenCalled();
   });
 
   it('provides fallback FTUE prices for offline stand and stock rows', () => {
@@ -251,8 +251,8 @@ describe('TutorialSaleManager', () => {
     ).toMatchObject({
       ok: true,
       quantity: 2,
-      priceGold: 100,
-      totalPriceGold: 200,
+      priceCoin: 100,
+      totalPriceCoin: 200,
       tutorial: true,
     });
   });

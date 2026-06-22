@@ -111,7 +111,7 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'sage seed',
         itemKind: 'seed',
         quantity: 0,
-        priceGold: 3n,
+        priceCoin: 3n,
       },
       {
         listingKey: 'seller:1',
@@ -122,13 +122,13 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'mint seed',
         itemKind: 'seed',
         quantity: 2,
-        priceGold: 4n,
+        priceCoin: 4n,
       },
     ]);
     const proceedsTable = createTable([
       {
         sellerIdentity: SELF_IDENTITY_HEX,
-        gold: 7n,
+        coin: 7n,
       },
     ]);
     const connection = createConnection({ listingsTable, proceedsTable });
@@ -141,21 +141,21 @@ describe('PlayerShopSubscriptionManager', () => {
 
     expect(manager.getSnapshot()).toMatchObject({
       connected: true,
-      proceedsGold: 7,
+      proceedsCoin: 7,
       listings: [
         {
           listingKey: 'seller:1',
           username: 'Ada',
           itemLabel: 'mint seed',
           quantity: 2,
-          priceGold: 4,
+          priceCoin: 4,
         },
       ],
       ownListings: [
         {
           listingKey: 'self:1',
           quantity: 0,
-          priceGold: 3,
+          priceCoin: 3,
         },
       ],
       tradeHistory: [],
@@ -176,7 +176,7 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'sage seed',
         itemKind: 'seed',
         quantity: 1,
-        priceGold: 2n,
+        priceCoin: 2n,
       },
       {
         requestKey: 'hershel:1',
@@ -187,7 +187,7 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'mint seed',
         itemKind: 'seed',
         quantity: 4,
-        priceGold: 325n,
+        priceCoin: 325n,
         priceScale: 100,
       },
     ]);
@@ -201,7 +201,7 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'sage seed',
         itemKind: 'seed',
         quantity: 1,
-        priceGold: 2n,
+        priceCoin: 2n,
       },
     ]);
     const proceedsTable = createTable([]);
@@ -224,7 +224,7 @@ describe('PlayerShopSubscriptionManager', () => {
           username: 'Hershel',
           itemLabel: 'mint seed',
           quantity: 4,
-          priceGold: 3.25,
+          priceCoin: 3.25,
         },
       ],
       ownRequests: [
@@ -233,7 +233,7 @@ describe('PlayerShopSubscriptionManager', () => {
           username: 'wizard',
           itemLabel: 'sage seed',
           quantity: 1,
-          priceGold: 2,
+          priceCoin: 2,
         },
       ],
     });
@@ -253,8 +253,8 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'sage seed',
         itemKind: 'seed',
         quantity: 1,
-        priceGold: 3n,
-        totalPriceGold: 3n,
+        priceCoin: 3n,
+        totalPriceCoin: 3n,
         tradedAt: 100,
       },
       {
@@ -267,8 +267,8 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'mint seed',
         itemKind: 'seed',
         quantity: 2,
-        priceGold: 4n,
-        totalPriceGold: 8n,
+        priceCoin: 4n,
+        totalPriceCoin: 8n,
         tradedAt: 200,
       },
     ]);
@@ -294,7 +294,7 @@ describe('PlayerShopSubscriptionManager', () => {
         buyerUsername: 'wizard',
         sellerUsername: 'Ada',
         itemLabel: 'sage seed',
-        totalPriceGold: 3,
+        totalPriceCoin: 3,
       },
     ]);
   });
@@ -439,7 +439,7 @@ describe('PlayerShopSubscriptionManager', () => {
         itemLabel: 'mint seed',
         itemKind: 'seed',
         quantity: 2,
-        priceGold: 4n,
+        priceCoin: 4n,
       },
     ]);
     const proceedsTable = createTable([]);
@@ -491,7 +491,7 @@ describe('PlayerShopSubscriptionManager', () => {
       ownRequests: [],
       tradeHistory: [],
       ownTradeHistory: [],
-      proceedsGold: 0,
+      proceedsCoin: 0,
     });
   });
 });

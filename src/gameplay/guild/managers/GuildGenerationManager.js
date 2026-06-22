@@ -1,5 +1,5 @@
 export const GUILD_UNLOCK_LEVEL = 15;
-export const GUILD_CHARTER_COST_GOLD = 1500;
+export const GUILD_CHARTER_COST_COIN = 1500;
 export const GUILD_STATE_VERSION = 1;
 export const GUILD_STATS = Object.freeze([
   'strength',
@@ -13,11 +13,11 @@ export const GUILD_STATS = Object.freeze([
 ]);
 
 export const GUILD_SECRETARY_LEVELS = Object.freeze([
-  { level: 1, costGold: 0, hiredCap: 1, boardSlots: 3, minLevel: 1, maxLevel: 25 },
-  { level: 2, costGold: 3000, hiredCap: 2, boardSlots: 5, minLevel: 10, maxLevel: 40 },
-  { level: 3, costGold: 9000, hiredCap: 3, boardSlots: 7, minLevel: 25, maxLevel: 60 },
-  { level: 4, costGold: 27000, hiredCap: 4, boardSlots: 9, minLevel: 45, maxLevel: 80 },
-  { level: 5, costGold: 81000, hiredCap: 5, boardSlots: 12, minLevel: 65, maxLevel: 100 },
+  { level: 1, costCoin: 0, hiredCap: 1, boardSlots: 3, minLevel: 1, maxLevel: 25 },
+  { level: 2, costCoin: 3000, hiredCap: 2, boardSlots: 5, minLevel: 10, maxLevel: 40 },
+  { level: 3, costCoin: 9000, hiredCap: 3, boardSlots: 7, minLevel: 25, maxLevel: 60 },
+  { level: 4, costCoin: 27000, hiredCap: 4, boardSlots: 9, minLevel: 45, maxLevel: 80 },
+  { level: 5, costCoin: 81000, hiredCap: 5, boardSlots: 12, minLevel: 65, maxLevel: 100 },
 ]);
 
 const PERSONALITIES = Object.freeze([
@@ -345,7 +345,7 @@ export class GuildGenerationManager {
 
   getRewardText(difficulty) {
     const reward = getRewardRange(difficulty);
-    return `${reward.gold[0]}-${reward.gold[1]} gold, ${reward.seeds[0]}-${reward.seeds[1]} seeds, or ${reward.herbs[0]}-${reward.herbs[1]} herbs`;
+    return `${reward.coin[0]}-${reward.coin[1]} coin, ${reward.seeds[0]}-${reward.seeds[1]} seeds, or ${reward.herbs[0]}-${reward.herbs[1]} herbs`;
   }
 }
 
@@ -375,11 +375,11 @@ export function getNextLevelXp(level) {
 
 export function getRewardRange(difficulty) {
   const ranges = {
-    trivial: { gold: [100, 140], seeds: [10, 20], herbs: [20, 35] },
-    easy: { gold: [130, 180], seeds: [16, 28], herbs: [30, 50] },
-    medium: { gold: [170, 230], seeds: [24, 38], herbs: [45, 70] },
-    hard: { gold: [220, 300], seeds: [34, 50], herbs: [65, 100] },
-    deadly: { gold: [260, 300], seeds: [40, 50], herbs: [80, 100] },
+    trivial: { coin: [100, 140], seeds: [10, 20], herbs: [20, 35] },
+    easy: { coin: [130, 180], seeds: [16, 28], herbs: [30, 50] },
+    medium: { coin: [170, 230], seeds: [24, 38], herbs: [45, 70] },
+    hard: { coin: [220, 300], seeds: [34, 50], herbs: [65, 100] },
+    deadly: { coin: [260, 300], seeds: [40, 50], herbs: [80, 100] },
   };
 
   return ranges[difficulty] ?? ranges.medium;

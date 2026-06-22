@@ -64,6 +64,13 @@ export class AuthFacade {
     });
   }
 
+  tryRestoreConnectedAccount() {
+    return (
+      this.sessionManager.tryRestoreConnectedAccount?.() ??
+      Promise.resolve({ ok: false, reason: 'disabled' })
+    );
+  }
+
   signOut() {
     this.accountLinkSaveManager.clearPendingSave();
     return this.sessionManager.signOut();

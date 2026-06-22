@@ -105,7 +105,7 @@ export class TutorialCaptureFacade {
       level: snapshot?.tasks?.currentLevel ?? null,
       page: this.app?.pagesFacade?.getCurrentPageId?.() ?? null,
       mana: snapshot?.mana ?? null,
-      gold: snapshot?.gold ?? null,
+      coin: snapshot?.coin ?? null,
       tasks: snapshot?.tasks ?? null,
       inventory: summarizeItems(snapshot?.inventory),
       seeds: summarizeItems(snapshot?.seedInventory),

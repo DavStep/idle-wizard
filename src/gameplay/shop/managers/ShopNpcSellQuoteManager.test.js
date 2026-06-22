@@ -13,10 +13,10 @@ describe('ShopNpcSellQuoteManager', () => {
   it('quotes direct NPC sells from marginal market prices', () => {
     const manager = new ShopNpcSellQuoteManager({
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 0.8,
+        getNpcBuyPriceCoin: () => 0.8,
         getNpcNeed: () => 1000,
         getNpcPrice: () => ({
-          basePriceGold: 1,
+          basePriceCoin: 1,
           npcNeed: 1000,
           targetNeed: 1000,
         }),
@@ -28,16 +28,16 @@ describe('ShopNpcSellQuoteManager', () => {
     expect(quote).toMatchObject({
       ok: true,
       quantity: 1000,
-      priceGold: 0.8,
+      priceCoin: 0.8,
     });
-    expect(quote.totalPriceGold).toBeLessThan(0.8 * 1000);
-    expect(quote.totalPriceGold).toBeGreaterThan(0);
+    expect(quote.totalPriceCoin).toBeLessThan(0.8 * 1000);
+    expect(quote.totalPriceCoin).toBeGreaterThan(0);
   });
 
   it('blocks direct NPC sells above current demand', () => {
     const manager = new ShopNpcSellQuoteManager({
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 0.8,
+        getNpcBuyPriceCoin: () => 0.8,
         getNpcNeed: () => 2,
       },
     });
@@ -52,10 +52,10 @@ describe('ShopNpcSellQuoteManager', () => {
   it('uses a reserved demand override when quoting same-cycle auto sells', () => {
     const manager = new ShopNpcSellQuoteManager({
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 0.8,
+        getNpcBuyPriceCoin: () => 0.8,
         getNpcNeed: () => 1000,
         getNpcPrice: () => ({
-          basePriceGold: 1,
+          basePriceCoin: 1,
           npcNeed: 1000,
           targetNeed: 1000,
         }),
@@ -72,7 +72,7 @@ describe('ShopNpcSellQuoteManager', () => {
   it('falls back to simple multiplication when market curve is unavailable', () => {
     const manager = new ShopNpcSellQuoteManager({
       shopNpcPriceManager: {
-        getNpcBuyPriceGold: () => 0.8,
+        getNpcBuyPriceCoin: () => 0.8,
         getNpcNeed: () => 10,
         getNpcPrice: () => null,
       },
@@ -81,7 +81,7 @@ describe('ShopNpcSellQuoteManager', () => {
     expect(manager.quoteItem({ item: sageSeed, quantity: 3 })).toMatchObject({
       ok: true,
       quantity: 3,
-      totalPriceGold: 2.4,
+      totalPriceCoin: 2.4,
     });
   });
 });

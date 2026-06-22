@@ -731,6 +731,109 @@ describe('AuthOidcManager', () => {
     await expect(reloadedManager.getConnectionToken()).resolves.toBe(idToken);
   });
 
+  it('loads a stored native Google result when WebView storage is empty', async () => {
+    const storage = createMemoryStorage();
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+      nonce: 'nonce-1',
+    });
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(),
+      restoreAuthorized: vi.fn(),
+      consumePendingSignInResult: vi.fn(() => Promise.resolve({})),
+      getStoredSignInResult: vi.fn(() =>
+        Promise.resolve({
+          idToken,
+          nonce: 'nonce-1',
+          email: 'dav@example.com',
+          displayName: 'Dav',
+          uniqueId: 'google-sub',
+        }),
+      ),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await expect(manager.prepare()).resolves.toMatchObject({
+      enabled: true,
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+
+    expect(nativeGoogleAuthPlugin.restoreAuthorized).not.toHaveBeenCalled();
+    expect(storage.getItem('idle-wizard.native-google.user')).toContain(idToken);
+    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
+  });
+
+  it('restores a native authorized account before showing the sign-in button flow', async () => {
+    const storage = createMemoryStorage();
+    const idToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
+      nonce: 'nonce-1',
+    });
+    const nativeGoogleAuthPlugin = {
+      signIn: vi.fn(),
+      restoreAuthorized: vi.fn(() =>
+        Promise.resolve({
+          idToken,
+          nonce: 'nonce-1',
+          email: 'dav@example.com',
+          displayName: 'Dav',
+          uniqueId: 'google-sub',
+        }),
+      ),
+      consumePendingSignInResult: vi.fn(() => Promise.resolve({})),
+      getStoredSignInResult: vi.fn(() => Promise.resolve({})),
+    };
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+    });
+
+    await manager.prepare();
+    await expect(manager.tryRestoreConnectedAccount()).resolves.toEqual({
+      ok: true,
+      restored: true,
+    });
+
+    expect(nativeGoogleAuthPlugin.signIn).not.toHaveBeenCalled();
+    expect(nativeGoogleAuthPlugin.restoreAuthorized).toHaveBeenCalledWith({
+      serverClientId: 'client-1',
+    });
+    expect(storage.getItem('idle-wizard.native-google.user')).toContain(idToken);
+    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+  });
+
   it('uses native Google result fields when WebView token decoding fails', async () => {
     const storage = createMemoryStorage();
     const originalAtob = globalThis.atob;

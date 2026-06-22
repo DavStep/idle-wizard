@@ -14,7 +14,7 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
@@ -439,7 +439,7 @@ export class GardenPlotManager {
       this.renderTile({
         tile,
         plot: garden.plot,
-        gold: snapshot.gold,
+        coin: snapshot.coin,
         seedQuantityById,
         hasPlantableSeed,
       });
@@ -460,7 +460,7 @@ export class GardenPlotManager {
       .filter((seed) => shouldShowItemInActionList(snapshot, seed, seed.quantity));
   }
 
-  renderTile({ tile, plot, gold, seedQuantityById, hasPlantableSeed }) {
+  renderTile({ tile, plot, coin, seedQuantityById, hasPlantableSeed }) {
     const refs = this.tileRefs.get(tile.tileNumber);
     const isNextLockedTile = tile.tileNumber === plot.nextTileNumber;
     const selectedSeedQuantity = tile.selectedSeedItemTypeId
@@ -488,7 +488,7 @@ export class GardenPlotManager {
       hasGardenTileNotification({
         tile,
         plot,
-        gold,
+        coin,
         seedQuantityById,
         hasPlantableSeed,
       }),
@@ -500,7 +500,7 @@ export class GardenPlotManager {
         !isNextLockedTile ||
         plot.nextTileLockedByLevel ||
         plot.nextTileLockedByResearch ||
-        gold.current < plot.nextTileCost;
+        coin.current < plot.nextTileCost;
       const lockedTileLabel = isNextLockedTile ? `plot ${tile.tileNumber}` : '';
       this.setText(refs.label, lockedTileLabel);
       setItemIconLabel(refs.label, null);
@@ -646,7 +646,7 @@ export class GardenPlotManager {
       return 'research';
     }
 
-    return `buy ${this.formatGold(plot.nextTileCost)}`;
+    return `buy ${this.formatCoin(plot.nextTileCost)}`;
   }
 
   formatLockedTileAriaLabel(tile, plot) {
@@ -1542,12 +1542,12 @@ export class GardenPlotManager {
     this.handledSeedPressStartKey = null;
   }
 
-  formatGold(value) {
+  formatCoin(value) {
     if (value === 0) {
       return 'free';
     }
 
-    return formatGoldPriceText(value);
+    return formatCoinPriceText(value);
   }
 
   formatTileStatus(phase) {

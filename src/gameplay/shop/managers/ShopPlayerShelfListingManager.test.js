@@ -15,7 +15,7 @@ function createPlayerShelfEntityManager() {
     slotNumber: 1,
     itemTypeId: null,
     quantity: 0,
-    priceGold: 0,
+    priceCoin: 0,
   };
 
   return {
@@ -48,7 +48,7 @@ describe('ShopPlayerShelfListingManager', () => {
       removeItem,
     };
     const manager = new ShopPlayerShelfListingManager({
-      goldFacade: {},
+      coinFacade: {},
       itemsFacade,
       shopSellKindManager: {
         isSellKind: () => true,
@@ -64,7 +64,7 @@ describe('ShopPlayerShelfListingManager', () => {
       manager.setSelectedSlotListing({
         itemTypeId: 1001,
         quantity: 2,
-        priceGold: 4,
+        priceCoin: 4,
       }),
     ).toEqual({
       ok: false,
@@ -79,12 +79,12 @@ describe('ShopPlayerShelfListingManager', () => {
       manager.setSelectedSlotListing({
         itemTypeId: 1001,
         quantity: 1,
-        priceGold: 4,
+        priceCoin: 4,
       }),
     ).toMatchObject({
       ok: true,
       quantity: 1,
-      priceGold: 4,
+      priceCoin: 4,
     });
     expect(quantity).toBe(2);
   });
@@ -101,7 +101,7 @@ describe('ShopPlayerShelfListingManager', () => {
       addItem,
     };
     const manager = new ShopPlayerShelfListingManager({
-      goldFacade: { spend },
+      coinFacade: { spend },
       itemsFacade,
       shopSellKindManager: {
         isSellKind: () => true,
@@ -113,24 +113,24 @@ describe('ShopPlayerShelfListingManager', () => {
       manager.setSelectedSlotListing({
         itemTypeId: 1001,
         quantity: 1,
-        priceGold: 4.25,
+        priceCoin: 4.25,
       }),
     ).toMatchObject({
       ok: true,
       quantity: 1,
-      priceGold: 4.25,
+      priceCoin: 4.25,
     });
 
     expect(
       manager.buyListingItem({
         itemKey: 'sageHerb',
         quantity: 3,
-        priceGold: 0.75,
+        priceCoin: 0.75,
       }),
     ).toMatchObject({
       ok: true,
-      priceGold: 0.75,
-      totalPriceGold: 2.25,
+      priceCoin: 0.75,
+      totalPriceCoin: 2.25,
     });
     expect(spend).toHaveBeenCalledWith(2.25);
   });
@@ -138,7 +138,7 @@ describe('ShopPlayerShelfListingManager', () => {
   it('rejects player market listing quantities and prices above the backend cap', () => {
     const removeItem = vi.fn().mockReturnValue(true);
     const manager = new ShopPlayerShelfListingManager({
-      goldFacade: {},
+      coinFacade: {},
       itemsFacade: {
         getItemDefinition: () => sageHerb,
         getItemQuantity: () => 2_000,
@@ -154,7 +154,7 @@ describe('ShopPlayerShelfListingManager', () => {
       manager.setSelectedSlotListing({
         itemTypeId: 1001,
         quantity: 1_001,
-        priceGold: 1,
+        priceCoin: 1,
       }),
     ).toEqual({
       ok: false,
@@ -165,20 +165,20 @@ describe('ShopPlayerShelfListingManager', () => {
       manager.setSelectedSlotListing({
         itemTypeId: 1001,
         quantity: 1,
-        priceGold: 1_000_000.01,
+        priceCoin: 1_000_000.01,
       }),
     ).toEqual({
       ok: false,
       reason: 'price_too_high',
-      maxPriceGold: 1_000_000,
+      maxPriceCoin: 1_000_000,
     });
     expect(removeItem).not.toHaveBeenCalled();
   });
 
-  it('adds player sale proceeds without generated-gold tracking', () => {
+  it('adds player sale proceeds without generated-coin tracking', () => {
     const add = vi.fn();
     const manager = new ShopPlayerShelfListingManager({
-      goldFacade: { add },
+      coinFacade: { add },
       itemsFacade: {},
       shopSellKindManager: {},
       shopPlayerShelfEntityManager: createPlayerShelfEntityManager(),
@@ -186,7 +186,7 @@ describe('ShopPlayerShelfListingManager', () => {
 
     expect(manager.claimSaleProceeds(5)).toEqual({
       ok: true,
-      gold: 5,
+      coin: 5,
     });
     expect(add).toHaveBeenCalledWith(5, { trackGenerated: false });
   });

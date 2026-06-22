@@ -49,6 +49,8 @@ npm run release
 
 It runs lint, tests, production web build, production debug-signed APK build, optional SpacetimeDB Maincloud publish when `spacetimedb/` changed, git commit/push from `main`, and Discord APK upload. Use `RELEASE_BACKEND=always` to force backend publish or `RELEASE_BACKEND=skip` to skip it.
 
+For the full release checklist and post-release verification, use `docs/release-workflow.md`.
+
 For a manually signed APK, run `npm run discord:postApk -- path/to/app.apk`. The script refuses `unsigned` APK filenames unless `DISCORD_APK_ALLOW_UNSIGNED=1` is set.
 
 You can override the posted notes with `DISCORD_APK_CHANGELOG="..."` or `DISCORD_APK_CHANGELOG_FILE=path/to/notes.md`.
@@ -60,7 +62,7 @@ In a dev build, open the browser console:
 ```js
 cheats.help()
 cheats.fillMana()
-cheats.addGold(1000)
+cheats.addCoin(1000)
 cheats.addCrystal(10)
 cheats.addItem('sageSeed', 5)
 cheats.completeResearch('unlockSeed:sageSeed')
@@ -94,7 +96,7 @@ npm run stdb:generate
 
 ## Current Scope
 
-Idle Wizard currently has five room pages: `Brewing`, `Garden`, `Workshop`, `Research`, and `Market`. Implemented systems include mana, gold, inventory items, seed summoning, garden planting/harvesting, active brewing, research, tasks, NPC/player market flows, prestige, automation, visual settings, world chat, leaderboard, account/session handling, save sync, feedback, maintenance, and trade alliance backend/UI flows.
+Idle Wizard currently has five room pages: `Brewing`, `Garden`, `Workshop`, `Research`, and `Market`. Implemented systems include mana, coin, inventory items, seed summoning, garden planting/harvesting, active brewing, research, tasks, NPC/player market flows, prestige, automation, visual settings, world chat, leaderboard, account/session handling, save sync, feedback, maintenance, and trade alliance backend/UI flows.
 
 Do not add new gameplay behavior beyond the explicit request. If requested gameplay behavior is unclear, ask before implementing.
 

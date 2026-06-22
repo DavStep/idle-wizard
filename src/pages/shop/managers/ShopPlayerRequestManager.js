@@ -1,9 +1,9 @@
 import {
-  formatGoldPriceText,
-  parsePositiveGoldPrice,
-} from '../../../shared/goldPrice.js';
+  formatCoinPriceText,
+  parsePositiveCoinPrice,
+} from '../../../shared/coinPrice.js';
 import {
-  PLAYER_MARKET_MAX_PRICE_GOLD,
+  PLAYER_MARKET_MAX_PRICE_COIN,
   PLAYER_MARKET_MAX_QUANTITY,
 } from '../../../shared/playerMarketLimits.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
@@ -177,11 +177,11 @@ export class ShopPlayerRequestManager {
     closeButton.addEventListener('click', () => this.hidePopup());
 
     this.refs.quantityField = this.createQuantityField();
-    this.refs.goldField = this.createNumberField('gold each', 'Gold offered per item');
-    this.refs.goldField.input.inputMode = 'decimal';
-    this.refs.goldField.input.min = '0.01';
-    this.refs.goldField.input.max = String(PLAYER_MARKET_MAX_PRICE_GOLD);
-    this.refs.goldField.input.step = '0.01';
+    this.refs.coinField = this.createNumberField('coin each', 'Coin offered per item');
+    this.refs.coinField.input.inputMode = 'decimal';
+    this.refs.coinField.input.min = '0.01';
+    this.refs.coinField.input.max = String(PLAYER_MARKET_MAX_PRICE_COIN);
+    this.refs.coinField.input.step = '0.01';
     this.refs.itemPicker = this.createItemPicker();
     this.refs.itemTabs = this.createItemTabs();
 
@@ -215,7 +215,7 @@ export class ShopPlayerRequestManager {
       closeButton,
       this.refs.itemPicker.selectedRow,
       this.refs.quantityField.field,
-      this.refs.goldField.field,
+      this.refs.coinField.field,
       actionRow,
       this.refs.itemPicker.divider,
       this.refs.itemPicker.list,
@@ -359,8 +359,8 @@ export class ShopPlayerRequestManager {
       : '1';
     this.refs.quantityField.setValue(this.refs.quantityField.input.value);
     this.refs.quantityField.hideInput();
-    this.refs.goldField.input.value = request
-      ? String(request.priceGold)
+    this.refs.coinField.input.value = request
+      ? String(request.priceCoin)
       : '1';
   }
 
@@ -414,7 +414,7 @@ export class ShopPlayerRequestManager {
   onPlaceRequest() {
     const item = this.getSelectedRequestItem();
     const quantity = this.readPositiveInteger(this.refs.quantityField?.input.value);
-    const priceGold = parsePositiveGoldPrice(this.refs.goldField?.input.value);
+    const priceCoin = parsePositiveCoinPrice(this.refs.coinField?.input.value);
 
     if (!item) {
       this.setStatus('choose item');
@@ -431,20 +431,20 @@ export class ShopPlayerRequestManager {
       return;
     }
 
-    if (!priceGold) {
+    if (!priceCoin) {
       this.setStatus('bad value');
       return;
     }
 
-    if (priceGold > PLAYER_MARKET_MAX_PRICE_GOLD) {
-      this.setStatus(`max ${formatGoldPriceText(PLAYER_MARKET_MAX_PRICE_GOLD)}`);
+    if (priceCoin > PLAYER_MARKET_MAX_PRICE_COIN) {
+      this.setStatus(`max ${formatCoinPriceText(PLAYER_MARKET_MAX_PRICE_COIN)}`);
       return;
     }
 
     const request = {
       itemTypeId: item.itemTypeId,
       quantity,
-      priceGold,
+      priceCoin,
     };
 
     if (this.hasBackendRequests()) {
@@ -468,7 +468,7 @@ export class ShopPlayerRequestManager {
       itemLabel: item.label,
       itemKind: item.kind,
       quantity: request.quantity,
-      priceGold: request.priceGold,
+      priceCoin: request.priceCoin,
     });
 
     if (!publishResult?.ok) {
@@ -664,7 +664,7 @@ export class ShopPlayerRequestManager {
     }
 
     const itemText = `${request.itemLabel} (${request.quantity})`;
-    const priceText = formatGoldPriceText(request.priceGold);
+    const priceText = formatCoinPriceText(request.priceCoin);
     if (
       refs.itemValue.parentElement !== refs.value ||
       refs.priceValue.parentElement !== refs.value
@@ -676,7 +676,7 @@ export class ShopPlayerRequestManager {
     setItemIconLabel(refs.itemValue, request.itemKind, request.itemKey);
     setResourceColor(refs.itemValue, request.itemKind);
     setResourceIconText(refs.priceValue, ` ${priceText}`);
-    setResourceColor(refs.priceValue, 'gold');
+    setResourceColor(refs.priceValue, 'coin');
   }
 
   renderActions() {
@@ -762,7 +762,7 @@ export class ShopPlayerRequestManager {
   }
 
   getRequestFromSlot(slot) {
-    if (!slot?.unlocked || !slot.itemTypeId || slot.quantity <= 0 || slot.priceGold <= 0) {
+    if (!slot?.unlocked || !slot.itemTypeId || slot.quantity <= 0 || slot.priceCoin <= 0) {
       return null;
     }
 
@@ -772,7 +772,7 @@ export class ShopPlayerRequestManager {
       itemKind: slot.itemKind,
       itemLabel: slot.itemLabel,
       quantity: slot.quantity,
-      priceGold: slot.priceGold,
+      priceCoin: slot.priceCoin,
     };
   }
 
@@ -794,7 +794,7 @@ export class ShopPlayerRequestManager {
     }
 
     if (result?.reason === 'price_too_high') {
-      return `max ${formatGoldPriceText(result.maxPriceGold ?? PLAYER_MARKET_MAX_PRICE_GOLD)}`;
+      return `max ${formatCoinPriceText(result.maxPriceCoin ?? PLAYER_MARKET_MAX_PRICE_COIN)}`;
     }
 
     if (result?.reason === 'item_not_requestable') {

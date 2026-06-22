@@ -1,21 +1,21 @@
 import {
-  multiplyGoldPrice,
-  normalizePositiveGoldPrice,
-} from '../../../shared/goldPrice.js';
+  multiplyCoinPrice,
+  normalizePositiveCoinPrice,
+} from '../../../shared/coinPrice.js';
 import {
-  PLAYER_MARKET_MAX_PRICE_GOLD,
+  PLAYER_MARKET_MAX_PRICE_COIN,
   PLAYER_MARKET_MAX_QUANTITY,
 } from '../../../shared/playerMarketLimits.js';
 
 export class ShopPlayerShelfListingManager {
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     shopSellKindManager,
     shopSellAvailabilityManager,
     shopPlayerShelfEntityManager,
   }) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.shopSellKindManager = shopSellKindManager;
     this.shopSellAvailabilityManager = shopSellAvailabilityManager;
@@ -37,7 +37,7 @@ export class ShopPlayerShelfListingManager {
     };
   }
 
-  setSelectedSlotListing({ itemTypeId, quantity, priceGold }) {
+  setSelectedSlotListing({ itemTypeId, quantity, priceCoin }) {
     const selectedSlotNumber = this.shopPlayerShelfEntityManager.getSelectedSlotNumber();
 
     if (!selectedSlotNumber) {
@@ -48,7 +48,7 @@ export class ShopPlayerShelfListingManager {
     }
 
     const safeQuantity = Math.floor(Number(quantity));
-    const safePriceGold = normalizePositiveGoldPrice(priceGold);
+    const safePriceCoin = normalizePositiveCoinPrice(priceCoin);
 
     if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
       return {
@@ -65,18 +65,18 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    if (safePriceGold === null) {
+    if (safePriceCoin === null) {
       return {
         ok: false,
         reason: 'invalid_price',
       };
     }
 
-    if (safePriceGold > PLAYER_MARKET_MAX_PRICE_GOLD) {
+    if (safePriceCoin > PLAYER_MARKET_MAX_PRICE_COIN) {
       return {
         ok: false,
         reason: 'price_too_high',
-        maxPriceGold: PLAYER_MARKET_MAX_PRICE_GOLD,
+        maxPriceCoin: PLAYER_MARKET_MAX_PRICE_COIN,
       };
     }
 
@@ -122,7 +122,7 @@ export class ShopPlayerShelfListingManager {
     this.shopPlayerShelfEntityManager.assignSlotListing(selectedSlotNumber, {
       itemTypeId,
       quantity: safeQuantity,
-      priceGold: safePriceGold,
+      priceCoin: safePriceCoin,
     });
 
     return {
@@ -130,7 +130,7 @@ export class ShopPlayerShelfListingManager {
       slotNumber: selectedSlotNumber,
       item: this.mapItem(item),
       quantity: safeQuantity,
-      priceGold: safePriceGold,
+      priceCoin: safePriceCoin,
     };
   }
 
@@ -188,9 +188,9 @@ export class ShopPlayerShelfListingManager {
     };
   }
 
-  buyListingItem({ itemKey, quantity = 1, priceGold }) {
+  buyListingItem({ itemKey, quantity = 1, priceCoin }) {
     const safeQuantity = Math.floor(Number(quantity));
-    const safePriceGold = normalizePositiveGoldPrice(priceGold);
+    const safePriceCoin = normalizePositiveCoinPrice(priceCoin);
 
     if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
       return {
@@ -199,7 +199,7 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    if (safePriceGold === null) {
+    if (safePriceCoin === null) {
       return {
         ok: false,
         reason: 'invalid_price',
@@ -216,13 +216,13 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    const totalPriceGold = multiplyGoldPrice(safePriceGold, safeQuantity);
+    const totalPriceCoin = multiplyCoinPrice(safePriceCoin, safeQuantity);
 
-    if (totalPriceGold === null || !this.goldFacade.spend(totalPriceGold)) {
+    if (totalPriceCoin === null || !this.coinFacade.spend(totalPriceCoin)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
-        cost: totalPriceGold ?? 0,
+        reason: 'not_enough_coin',
+        cost: totalPriceCoin ?? 0,
       };
     }
 
@@ -232,26 +232,26 @@ export class ShopPlayerShelfListingManager {
       ok: true,
       item: this.mapItem(item),
       quantity: safeQuantity,
-      priceGold: safePriceGold,
-      totalPriceGold,
+      priceCoin: safePriceCoin,
+      totalPriceCoin,
     };
   }
 
-  claimSaleProceeds(gold) {
-    const safeGold = normalizePositiveGoldPrice(gold);
+  claimSaleProceeds(coin) {
+    const safeCoin = normalizePositiveCoinPrice(coin);
 
-    if (safeGold === null) {
+    if (safeCoin === null) {
       return {
         ok: false,
-        reason: 'invalid_gold',
+        reason: 'invalid_coin',
       };
     }
 
-    this.goldFacade.add(safeGold, { trackGenerated: false });
+    this.coinFacade.add(safeCoin, { trackGenerated: false });
 
     return {
       ok: true,
-      gold: safeGold,
+      coin: safeCoin,
     };
   }
 
@@ -262,7 +262,7 @@ export class ShopPlayerShelfListingManager {
   }
 
   reserveExistingSlotAgain(slot) {
-    if (!slot?.itemTypeId || slot.quantity <= 0 || slot.priceGold <= 0) {
+    if (!slot?.itemTypeId || slot.quantity <= 0 || slot.priceCoin <= 0) {
       return;
     }
 

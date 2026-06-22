@@ -9,7 +9,7 @@ const EMPTY_PLAYER_SHOP_SNAPSHOT = {
   ownTradeHistory: [],
 };
 
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { appendTextWithSeedIcons } from '../../shared/itemIconLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
@@ -229,7 +229,7 @@ export class ShopTradeHistoryManager {
   }
 
   formatTrade(trade) {
-    const { buyerUsername, sellerUsername, itemText, gold } = this.getTradeSummary(trade);
+    const { buyerUsername, sellerUsername, itemText, coin } = this.getTradeSummary(trade);
 
     return [
       buyerUsername,
@@ -238,12 +238,12 @@ export class ShopTradeHistoryManager {
       ' from ',
       sellerUsername,
       ' for ',
-      formatGoldPriceText(gold),
+      formatCoinPriceText(coin),
     ].join('');
   }
 
   createTradeRow(trade) {
-    const { buyerUsername, sellerUsername, itemText, gold } = this.getTradeSummary(trade);
+    const { buyerUsername, sellerUsername, itemText, coin } = this.getTradeSummary(trade);
     const row = document.createElement('div');
     row.className = 'shop-page__trade-history-row';
 
@@ -275,7 +275,7 @@ export class ShopTradeHistoryManager {
     appendTextWithSeedIcons(item, itemText);
 
     const price = document.createElement('span');
-    setResourceIconText(price, formatGoldPriceText(gold));
+    setResourceIconText(price, formatCoinPriceText(coin));
 
     row.append(buyer, ' bought ', item, ' from ', seller, ' for ', price);
     return row;
@@ -284,15 +284,15 @@ export class ShopTradeHistoryManager {
   getTradeSummary(trade) {
     const quantity = Math.max(1, Math.floor(Number(trade.quantity) || 1));
     const itemText = quantity > 1 ? `${quantity} ${trade.itemLabel}` : trade.itemLabel;
-    const totalPriceGold = Number(trade.totalPriceGold) || 0;
-    const priceGold = Number(trade.priceGold) || 0;
-    const gold = totalPriceGold || priceGold * quantity;
+    const totalPriceCoin = Number(trade.totalPriceCoin) || 0;
+    const priceCoin = Number(trade.priceCoin) || 0;
+    const coin = totalPriceCoin || priceCoin * quantity;
 
     return {
       buyerUsername: trade.buyerUsername || 'wizard',
       sellerUsername: trade.sellerUsername || 'wizard',
       itemText,
-      gold,
+      coin,
     };
   }
 

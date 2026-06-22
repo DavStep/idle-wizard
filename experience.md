@@ -43,8 +43,8 @@
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
 - Show all five room pages in a shared bottom tab panel; underline the current page tab.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
-- The top status panel is shared room chrome; show gameplay gold there, not a separate coin currency.
-- Top-panel resource values should be written amount-first, like `560 gold`; icon mode hides the word and leaves `count icon`.
+- The top status panel is shared room chrome; show gameplay coin there, not a separate coin currency.
+- Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
 - Weekly events should be framed as `weekly world notice` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
@@ -53,11 +53,12 @@
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
 - Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, and earn, not random chores pasted under a headline.
 - Weekly event direct coin funding feels like a quest tax unless strongly justified; prefer contextual normal-loop asks and keep any coin ask small/rare.
-- Weekly event v1 should stay mostly solo with light utility rewards; no new combat mode, map mode, event-only economy, or mandatory weekly power gate.
+- Weekly event v1 should stay mostly solo; no new combat mode, map mode, event-only economy, or mandatory weekly power gate.
 - Weekly event resolution should avoid hard fail: the world resolves, and player contribution changes weak/decent/strong outcome text plus archive/history flavor.
+- Weekly event requests should grant contribution points, not immediate completion rewards; leaderboard rewards require 2000 points to qualify.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
-- Player market proceeds add spendable gold only; do not increase `gold.totalGenerated` or leaderboard income from player-to-player trades.
+- Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
@@ -94,7 +95,7 @@
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
-- When fast sell is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing gold, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
+- When fast sell is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing coin, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
@@ -108,6 +109,7 @@
 - Iconless collapsed Elara still drags a 70px invisible button; left clamp must account for the visible `help` label's right-anchored offset so the chip can align with the 16px room inset.
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
 - FTUE target cues are Spine-only; preserve diagonal placement math and rotate the Spine shell by placement so the authored upward tap points at the target anchor.
+- FTUE Spine target cues still need a hidden-until-needed static hand fallback; no-WebGL or failed Spine init must not leave the pointer span empty.
 - Pointer-local Pixi canvases inside the scaled tutorial layer must use `devicePixelRatio * --style-ui-scale` resolution; DPR-only backing stores look pixelated after the room UI scale transform.
 - FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then the top-panel mana readout, then summon, then tasks and room chrome.
 - Room section entry animations must opt out while `data-tutorial-reveal` is present; opacity/translate animations can override FTUE reveal gates.
@@ -115,15 +117,15 @@
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
-- FTUE tutorial sales should mutate local gameplay inventory/gold through a dedicated tutorial method, never the NPC market backend/demand path.
+- FTUE tutorial sales should mutate local gameplay inventory/coin through a dedicated tutorial method, never the NPC market backend/demand path.
 - FTUE fast-sell price text should show the tutorial sale quote while the tutorial sale step is active; live NPC fast-sell quotes can contradict the fixed tutorial payout.
-- FTUE market quotes should stay tutorial-owned until the guide completes; letting shared NPC prices or offline rows leak into tutorial gold goals makes Market feel broken.
+- FTUE market quotes should stay tutorial-owned until the guide completes; letting shared NPC prices or offline rows leak into tutorial coin goals makes Market feel broken.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
-- FTUE level-up objectives should point to Market and show gold progress when completed tasks are blocked only by missing level-up gold.
-- FTUE level-up prompts should target the full completion row, not only the button, so the needed gold stays visible.
-- FTUE level-up gold guidance should choose fast-sell targets from `shop.shelf.sellItems` available quantities, not raw inventory; reserved items can show `x0` and must route back to a source, while available items on another category should first target that tab.
+- FTUE level-up objectives should point to Market and show coin progress when completed tasks are blocked only by missing level-up coin.
+- FTUE level-up prompts should target the full completion row, not only the button, so the needed coin stays visible.
+- FTUE level-up coin guidance should choose fast-sell targets from `shop.shelf.sellItems` available quantities, not raw inventory; reserved items can show `x0` and must route back to a source, while available items on another category should first target that tab.
 - Wide FTUE context rows can keep `data-tutorial-id` on the row while the pointer uses a child CTA anchor; otherwise the hand may point back to row center.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
@@ -143,7 +145,7 @@
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
 - FTUE level-5 theme/settings guidance is passive; it should point to the username settings opener first, then the `theme` settings tab when settings is open.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
-- FTUE username target needs the username button rect to fit the visible name text; a flex-filled button makes the pointer drift toward the level/gold side.
+- FTUE username target needs the username button rect to fit the visible name text; a flex-filled button makes the pointer drift toward the level/coin side.
 - Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Elara disappears while tasks remain.
 - Level-3 FTUE should be passive: no automatic target popups; show Elara attention only after idle/stuck time, then reveal target guidance on player request.
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
@@ -215,7 +217,7 @@
 - Android WebView touch actions should activate from validated `pointerup` and suppress the following native click; long holds can otherwise show press feedback but drop the action.
 - When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
 - New client-owned gameplay save branches must be added to `normalizePlayerGameplaySave`; otherwise SpacetimeDB rewrites the save without that branch on server round-trip.
-- SpacetimeDB save normalization must mirror client permanent capacity math: capacity research raises to `base capacity + bonus` even after prestige reset level, or server keeps spent gold but drops bought plots/cauldrons.
+- SpacetimeDB save normalization must mirror client permanent capacity math: capacity research raises to `base capacity + bonus` even after prestige reset level, or server keeps spent coin but drops bought plots/cauldrons.
 - For stuck live account sessions, invalidate the `player_session` row by replacing its connection id rather than only deleting it; an empty row can let the stale open client pass the active-session gate again.
 - Local app DB name can come from `.env.local`, while SpacetimeDB CLI defaults to `spacetime.json`; use `--no-config` or the env database name when querying/publishing Codex local DBs.
 - SpacetimeDB SQL does not support `IN (SELECT ...)` subqueries; filtered maintenance deletes need reducer-side identity collection.
@@ -248,6 +250,7 @@
 - SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
 - Unlinked player saves depend on the anonymous SpacetimeDB token; mirror it into Android native SharedPreferences and retry backup token copies before anonymous reconnect.
 - First-run account-choice gates must happen before anonymous SpacetimeDB connect; `clientConnected` creates player/account rows.
+- Android connected-account restore should try native Google authorized-account auto-select before showing the first-run `connect account` choice; stored server tokens can disappear across reinstall-style release handoffs.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
 - Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
@@ -263,7 +266,7 @@
 - Admin `playerLevel` edits only change server/social level; the actual in-game level shown in room UI comes from `player_gameplay_save.saveJson.tasks.currentLevel`.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
-- Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/gold progress look reset after refresh.
+- Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/coin progress look reset after refresh.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
 - Web Google account linking should fall back to OIDC redirect when Google Identity prompt cannot display; `web_unavailable` should not leave players stuck.
 - Web Google Identity script load/init failures should also be treated as `web_unavailable`, so blocked GIS can fall back to top-level OIDC redirect.
@@ -297,10 +300,10 @@
 - Task retunes should keep existing task ids stable when only changing required items; task ids are persisted progress keys.
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
-- Prestige reset saves intentionally lower run level, gold, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
+- Prestige reset saves intentionally lower run level, coin, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
 - Prestige reset baseline is paid player level 5; new prestige runs should not go back to level 1.
 - Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
-- After prestige, leaderboard and alliance income must advance from accepted save run-gold deltas; comparing new run `gold.totalGenerated` directly against all-time leaderboard total stalls score growth.
+- After prestige, leaderboard and alliance income must advance from accepted save run-coin deltas; comparing new run `coin.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
 - Crystal earn-back floors must subtract committed automation research, not only completed automation research; otherwise reload can refund crystal while in-progress research keeps ticking.
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
@@ -355,7 +358,7 @@
 - Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
 - Player-visible discovery reducers must not silently return behind feature flags; client success with no table row makes recipes look undiscovered.
 - Potion discovery table inserts must not depend on world-chat announcement rate limits; chat is secondary to the global unlock.
-- Potion discovery chat announcements should include the player, potion name, and full ingredient recipe, with a distinct gold system-row style.
+- Potion discovery chat announcements should include the player, potion name, and full ingredient recipe, with a distinct coin system-row style.
 - Potion discovery royalties are earned only from other players' sales, and discovery rows show lifetime royalty income per recipe.
 - Undiscovered hidden potion matches should preview like wasted mixes, including wasted mana cost; only global discovery reveals the real recipe UI.
 - Brewing herb controls are tap-first on mobile; drag should start only after movement crosses a small threshold.
@@ -371,9 +374,9 @@
 - Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
 - Brewing shows `recipes` and `potions` as sibling buttons, not a bordered recipes block; potions popup reads owned potion stacks from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
-- wasted potion is not researchable and sells for 1 gold by item-level sell price override.
+- wasted potion is not researchable and sells for 1 coin by item-level sell price override.
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
-- Live regular-gold research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
+- Live regular-coin research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
 - Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - For now, research timers are capped at `10 minutes`; this is temporary balance.
 - Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
@@ -394,19 +397,19 @@
 - Level 10 is the first big progression milestone; level 9 can be a stronger gate before that unlock.
 - Milestone levels should not dip easier than the gate before them; when raising level 9, raise level 10+ to preserve curve.
 - Recipe research order can differ from potion item catalog order; keep item order stable to avoid potion type-id churn, and order prerequisites by ingredient tier.
-- Automation research spends crystal via client balance; existing backend `research_config.cost_gold` should not decide automation research currency.
+- Automation research spends crystal via client balance; existing backend `research_config.cost_coin` should not decide automation research currency.
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; ruby research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
-- With Research moved to level 3, level-one FTUE should bank only the 10 gold needed for level 2; do not hold players for mint research before Garden.
-- Nettle seed research stays locked until level 4 so level-3 players keep the 60 gold needed to complete the level-3 task step.
+- With Research moved to level 3, level-one FTUE should bank only the 10 coin needed for level 2; do not hold players for mint research before Garden.
+- Nettle seed research stays locked until level 4 so level-3 players keep the 60 coin needed to complete the level-3 task step.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
-- NPC market price UI should read backend-derived `sellGold` and `sellNeed` from the shop snapshot; do not duplicate price balance in page code.
+- NPC market price UI should read backend-derived `sellCoin` and `sellNeed` from the shop snapshot; do not duplicate price balance in page code.
 - NPC market auto-sell should not sell when the backend quote is missing or backend need is zero.
-- NPC market `basePriceGold` is not the visible sell payout; neutral `npcBuyPriceGold` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
+- NPC market `basePriceCoin` is not the visible sell payout; neutral `npcBuyPriceCoin` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
 - NPC market demand stays in the backend/snapshot and gates sales, but current NPC market UI hides demand; visible labels show item plus sell price only.
 - NPC market stand and sell-picker labels include available quantity as `<item> (N)` before the sell price.
 - NPC market selected stand rows show the total value for the current quantity; `quoteNpcMarketSell` is fast-sell priced and should not drive stand row totals.
@@ -418,15 +421,15 @@
 - NPC market blank stand row space is inert; item/select text opens the sell picker, and the buy button owns locked-stand purchases.
 - NPC market prices should follow uncapped `npcNeed / targetNeed` pressure; avoid hard price caps that hide real scarcity.
 - NPC market tick logic must not clamp `npcNeed` against a zero `maxNeed`; that drains all demand to `0` on the first due tick.
-- Player market listings reserve local inventory quantity and store a per-item gold value; they do not auto-sell over time.
+- Player market listings reserve local inventory quantity and store a per-item coin value; they do not auto-sell over time.
 - Market sellable quantities must subtract Brewing cauldron-staged herbs and selected Garden seeds, but not unfinished task requirements; NPC and player market sales should use available quantities, not raw item stacks.
 - Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
-- Player market listing popup keeps selected item, quantity, gold each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
-- Player market server listings own market quantity, while local gameplay owns inventory and gold changes after reducer success.
+- Player market listing popup keeps selected item, quantity, coin each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
+- Player market server listings own market quantity, while local gameplay owns inventory and coin changes after reducer success.
 - Player market listing prices should use only global sanity caps and trade-total limits; do not cap by item base price multiplier, because cheap seeds need arbitrary player-set prices.
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
 - Market page uses visible `npc market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
-- Crystal tab gold offer grants current level * 20 gold only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim gold; ready state owns Market/crystals notification dots.
+- Crystal tab coin offer grants current level * 20 coin only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim coin; ready state owns Market/crystals notification dots.
 - Player market requests publish to backend request rows for public `buying` visibility; fulfillment is still not a server trade without escrow/delivery semantics.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
 - Player market requests use local numbered slots that follow player market stand unlock state.
@@ -537,14 +540,14 @@
 - Padded inputs inside flex columns need `box-sizing: border-box` or explicit width math; content-box `width: 100%` overflows columns.
 - Full-width padded dialog buttons also need `box-sizing: border-box`; otherwise their right borders clip outside the popup content.
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
-- Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 gold`.
-- Gold displays amount-first as `<compact amount> gold` everywhere, including top chrome; use `25 gold` and `123k gold`, never `25g` or `gold 25`.
-- Task level-up is manual after every task in the current level is done; the Workshop task list shows a bottom `complete` action that spends the configured level completion gold.
+- Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 coin`.
+- Coin displays amount-first as `<compact amount> coin` everywhere, including top chrome; use `25 coin` and `123k coin`, never `25g` or `coin 25`.
+- Task level-up is manual after every task in the current level is done; the Workshop task list shows a bottom `complete` action that spends the configured level completion coin.
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
-- Top panel layout uses two rows: username full-width above mana/gold/context currency, so resource text does not squeeze names.
+- Top panel layout uses two rows: username full-width above mana/coin/context currency, so resource text does not squeeze names.
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
-- Top panel gold should keep amount and `gold` in the same fitted value span; a separate suffix can leave clipped values like `308... gold`.
+- Top panel coin should keep amount and `coin` in the same fitted value span; a separate suffix can leave clipped values like `308... coin`.
 - Clicking the top-panel username opens settings; username editing and visual theme choices live there.
 - Settings use bottom tabs outside the popup border: `account`, `report`, and `configurations`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
 - Settings account controls should stay visible: label the tab `account`, and keep `connect account` visible disabled with `login unavailable` when OIDC config is missing.
@@ -565,15 +568,15 @@
 - Profile sync can echo stale server visual values after a local choice; keep in-flight client choices optimistic until a matching server echo arrives.
 - Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Lexend, and monochrome start researched, while other visual options show their price/free research action until researched.
 - Zero-cost visual setting names should not unlock or select directly; tap `free` to research first, then tap the option name to select.
-- Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `gold`.
+- Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `coin`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
 - If `data-resource-color` sits on the same row as `is-empty`/`is-locked`, set disabled color on that row; reserve `inherit` for child resource spans inside disabled parents.
 - Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
 - Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
-- NPC stock market category controls need large first-row tap targets; reserve bottom border labels for expand/collapse.
-- NPC stock buy row controls show only the price (`25 gold`), not a `buy` prefix; enabled prices use gold resource color, disabled/unaffordable prices inherit muted disabled color.
+- NPC stock market uses three ordinary boxes (`seeds`, `herbs`, `potions`) instead of category tabs; reserve each box's bottom border label for expand/collapse.
+- NPC stock buy row controls show only the price (`25 coin`), not a `buy` prefix; enabled prices use coin resource color, disabled/unaffordable prices inherit muted disabled color.
 - NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.
 - NPC stock row visibility and labels should treat backend `stock` as availability; local inventory quantity can be `0` right after selling into stock.
 - Grid-rendered rows that are toggled with `[hidden]` need an explicit `[hidden] { display: none; }` rule, or authored `display: grid` can keep old category rows visible in browser.
@@ -676,7 +679,7 @@
 - Private player-owned tables need a sender-scoped client read path, such as an own-row view; `SELECT *` subscriptions on public base tables leak every row.
 - SpacetimeDB TypeScript UUID values expose `compareTo`/string conversion, not `isEqual`; normalize UUID keys before comparing alliance IDs.
 - Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
-- Generated-gold leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedGold` field.
+- Generated-coin leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedCoin` field.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
 - Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
 - Task balance default changes need a matching `game_config.tasks` update path, such as a narrow legacy-value normalizer or an admin upsert; valid stored rows do not change just because source defaults changed.
@@ -712,9 +715,9 @@
 - Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
 - Player level-up crystal rewards also come from `game_config.playerLevel`; level 1 start does not grant the reward.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
-- Garden tile and market stand purchases should fail with `level_locked` before checking gold when the next buy exceeds the current level milestone cap.
-- Leaderboard total generated gold should stay admin/server-owned until gold generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.
-- Global progress resets should bump the gameplay save version and migrate old saves to keep only `gold.totalGenerated`; username and leaderboard identity live outside gameplay save.
+- Garden tile and market stand purchases should fail with `level_locked` before checking coin when the next buy exceeds the current level milestone cap.
+- Leaderboard total generated coin should stay admin/server-owned until coin generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.
+- Global progress resets should bump the gameplay save version and migrate old saves to keep only `coin.totalGenerated`; username and leaderboard identity live outside gameplay save.
 - Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
 - New client-only profile visual fields must not be sent to `set_player_profile` until the SpacetimeDB player schema and generated bindings support them.
 - Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
@@ -725,11 +728,11 @@
 - Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
 - Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
-- NPC market backend can expose shared baseline prices/need, but client buy/sell calls must not mutate shared stock or demand until server-owned inventory/gold exists.
+- NPC market backend can expose shared baseline prices/need, but client buy/sell calls must not mutate shared stock or demand until server-owned inventory/coin exists.
 - NPC market auto-sell must reserve/decrement visible demand locally across same-item stands and catch-up cycles before calling reducers; otherwise stale demand snapshots spam `sell_to_npc` panics.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
-- Market price amounts are cent-rounded floats and visible prices use two decimals; use shared gold-price helpers instead of flooring.
-- Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local gold.
+- Market price amounts are cent-rounded floats and visible prices use two decimals; use shared coin-price helpers instead of flooring.
+- Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local coin.
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
 - Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.
 - Gameplay save raw JSON must stay below the server cap before reducer normalization; cap noisy client branches like logs and do not persist full future task catalogs.

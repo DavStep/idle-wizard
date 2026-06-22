@@ -1,6 +1,6 @@
 import { DEFAULT_TRADE_ALLIANCE_TAG_COLOR, normalizeTradeAllianceTagColor } from '../../shared/tradeAllianceTagColors.js';
 import {
-  GUILD_CHARTER_COST_GOLD,
+  GUILD_CHARTER_COST_COIN,
   GUILD_SECRETARY_LEVELS,
   GUILD_STATE_VERSION,
   GUILD_STATS,
@@ -17,20 +17,20 @@ const MIN_GUILD_TAG_LENGTH = 2;
 const MAX_GUILD_TAG_LENGTH = 5;
 const MAX_BOARD_SEQUENCE = 1_000_000;
 
-export { GUILD_CHARTER_COST_GOLD, GUILD_STATS, GUILD_UNLOCK_LEVEL };
+export { GUILD_CHARTER_COST_COIN, GUILD_STATS, GUILD_UNLOCK_LEVEL };
 
 export class GuildFacade {
   static explain =
     'Runs the player guild: a private hall where hired adventurers choose board requests and live their own small lives.';
 
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     playerLevelFacade,
     worldNoticeFacade,
     now = () => Date.now(),
   } = {}) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;
     this.worldNoticeFacade = worldNoticeFacade;
@@ -65,16 +65,16 @@ export class GuildFacade {
       };
     }
 
-    if (!this.goldFacade?.canSpend?.(GUILD_CHARTER_COST_GOLD)) {
+    if (!this.coinFacade?.canSpend?.(GUILD_CHARTER_COST_COIN)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
-        costGold: GUILD_CHARTER_COST_GOLD,
-        currentGold: this.goldFacade?.getSnapshot?.().current ?? 0,
+        reason: 'not_enough_coin',
+        costCoin: GUILD_CHARTER_COST_COIN,
+        currentCoin: this.coinFacade?.getSnapshot?.().current ?? 0,
       };
     }
 
-    this.goldFacade.spend(GUILD_CHARTER_COST_GOLD);
+    this.coinFacade.spend(GUILD_CHARTER_COST_COIN);
     this.state = {
       ...this.createEmptyState(),
       profile: {
@@ -88,7 +88,7 @@ export class GuildFacade {
 
     return {
       ok: true,
-      costGold: GUILD_CHARTER_COST_GOLD,
+      costCoin: GUILD_CHARTER_COST_COIN,
       profile: this.state.profile,
     };
   }
@@ -235,16 +235,16 @@ export class GuildFacade {
       };
     }
 
-    if (!this.goldFacade?.canSpend?.(nextLevel.costGold)) {
+    if (!this.coinFacade?.canSpend?.(nextLevel.costCoin)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
-        costGold: nextLevel.costGold,
-        currentGold: this.goldFacade?.getSnapshot?.().current ?? 0,
+        reason: 'not_enough_coin',
+        costCoin: nextLevel.costCoin,
+        currentCoin: this.coinFacade?.getSnapshot?.().current ?? 0,
       };
     }
 
-    this.goldFacade.spend(nextLevel.costGold);
+    this.coinFacade.spend(nextLevel.costCoin);
     this.state.secretaryLevel = nextLevel.level;
     this.addLog(`guild secretary reaches level ${nextLevel.level}.`, 'orange');
     this.ensureBoardFilled({ force: true });
@@ -262,7 +262,7 @@ export class GuildFacade {
       return {
         unlocked: false,
         unlockLevel: GUILD_UNLOCK_LEVEL,
-        charterCostGold: GUILD_CHARTER_COST_GOLD,
+        charterCostCoin: GUILD_CHARTER_COST_COIN,
         created: false,
       };
     }
@@ -271,9 +271,9 @@ export class GuildFacade {
       return {
         unlocked: true,
         unlockLevel: GUILD_UNLOCK_LEVEL,
-        charterCostGold: GUILD_CHARTER_COST_GOLD,
-        canCreate: this.goldFacade?.canSpend?.(GUILD_CHARTER_COST_GOLD) === true,
-        currentGold: this.goldFacade?.getSnapshot?.().current ?? 0,
+        charterCostCoin: GUILD_CHARTER_COST_COIN,
+        canCreate: this.coinFacade?.canSpend?.(GUILD_CHARTER_COST_COIN) === true,
+        currentCoin: this.coinFacade?.getSnapshot?.().current ?? 0,
         created: false,
       };
     }
@@ -295,7 +295,7 @@ export class GuildFacade {
     return {
       unlocked: true,
       unlockLevel: GUILD_UNLOCK_LEVEL,
-      charterCostGold: GUILD_CHARTER_COST_GOLD,
+      charterCostCoin: GUILD_CHARTER_COST_COIN,
       created: true,
       profile: { ...this.state.profile },
       secretary,
@@ -437,9 +437,9 @@ export class GuildFacade {
   applyReward(reward) {
     const quantity = Math.max(1, Math.floor(Number(reward?.quantity) || 1));
 
-    if (reward?.kind === 'gold') {
-      this.goldFacade?.add?.(quantity);
-      this.addLog(`${reward.questTitle} pays ${quantity} gold.`, 'orange');
+    if (reward?.kind === 'coin') {
+      this.coinFacade?.add?.(quantity);
+      this.addLog(`${reward.questTitle} pays ${quantity} coin.`, 'orange');
       return;
     }
 
@@ -464,7 +464,7 @@ export class GuildFacade {
     return {
       ...secretary,
       next,
-      canUpgrade: Boolean(next) && this.goldFacade?.canSpend?.(next.costGold) === true,
+      canUpgrade: Boolean(next) && this.coinFacade?.canSpend?.(next.costCoin) === true,
     };
   }
 

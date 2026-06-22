@@ -95,7 +95,10 @@ export class AuthOidcManager {
     }
 
     if (this.shouldUseNativeGoogleAuth()) {
-      this.user = (await this.consumePendingNativeUser()) ?? this.loadNativeUser();
+      this.user =
+        (await this.consumePendingNativeUser()) ??
+        this.loadNativeUser() ??
+        (await this.loadStoredNativeUser());
       this.publish();
       return this.getSnapshot();
     }
@@ -388,6 +391,40 @@ export class AuthOidcManager {
       this.publish();
       return { ok: false, reason: 'native_failed' };
     }
+  }
+
+  async tryRestoreConnectedAccount() {
+    if (!this.isEnabled()) {
+      return { ok: false, reason: 'disabled' };
+    }
+
+    if (this.hasFreshUserToken(this.user)) {
+      return { ok: true, restored: false };
+    }
+
+    if (!this.shouldUseNativeGoogleAuth()) {
+      return { ok: false, reason: 'unsupported' };
+    }
+
+    const storedUser = await this.loadStoredNativeUser();
+    if (storedUser) {
+      this.user = storedUser;
+      this.saveNativeUser(storedUser);
+      this.error = null;
+      this.cancelled = false;
+      this.publish();
+
+      if (this.hasFreshUserToken(this.user)) {
+        return { ok: true, restored: true };
+      }
+    }
+
+    const restoredUser = await this.restoreNativeAuthorizedUser();
+    if (!restoredUser) {
+      return { ok: false, reason: 'no_authorized_account' };
+    }
+
+    return { ok: true, restored: true };
   }
 
   async signInWebGoogleIdentity({ pendingAccountLinkAttemptId } = {}) {
@@ -725,6 +762,88 @@ export class AuthOidcManager {
     } catch {
       return null;
     }
+  }
+
+  async loadStoredNativeUser() {
+    if (!this.nativeGoogleAuthPlugin?.getStoredSignInResult) {
+      return null;
+    }
+
+    try {
+      const result = await this.nativeGoogleAuthPlugin.getStoredSignInResult();
+      const user = this.createNativeUserFromPluginResult(result);
+      if (user) {
+        this.saveNativeUser(user);
+      }
+      return user;
+    } catch {
+      return null;
+    }
+  }
+
+  async restoreNativeAuthorizedUser() {
+    if (!this.nativeGoogleAuthPlugin?.restoreAuthorized) {
+      return null;
+    }
+
+    try {
+      const result = await this.nativeGoogleAuthPlugin.restoreAuthorized({
+        serverClientId: this.clientId,
+      });
+      const user = this.createNativeUserFromPluginResult(result);
+      if (!this.hasFreshUserToken(user)) {
+        return null;
+      }
+
+      this.user = user;
+      this.saveNativeUser(user);
+      this.clearActiveAccountLinkAttemptId();
+      this.error = null;
+      this.cancelled = false;
+      this.publish();
+      return user;
+    } catch {
+      return null;
+    }
+  }
+
+  createNativeUserFromPluginResult(result = {}) {
+    if (!result?.idToken) {
+      return null;
+    }
+
+    try {
+      return this.createNativeUser(result, {
+        accountLinkAttemptId: result.accountLinkAttemptId ?? null,
+      });
+    } catch {
+      return this.createNativeUserProfileOnly(result);
+    }
+  }
+
+  createNativeUserProfileOnly(result = {}) {
+    if (
+      !result?.uniqueId &&
+      !result?.email &&
+      !result?.displayName &&
+      !result?.givenName &&
+      !result?.familyName &&
+      !result?.profilePictureUri
+    ) {
+      return null;
+    }
+
+    return {
+      profile: {
+        sub: result.uniqueId ?? '',
+        email: result.email ?? '',
+        name: result.displayName ?? '',
+        given_name: result.givenName ?? '',
+        family_name: result.familyName ?? '',
+        picture: result.profilePictureUri ?? '',
+      },
+      accountLinkAttemptId: result.accountLinkAttemptId ?? null,
+    };
   }
 
   async clearPendingNativeUser() {

@@ -9,7 +9,7 @@ function createSnapshot() {
       cap: 50,
       perSecond: 1,
     },
-    gold: { current: 0 },
+    coin: { current: 0 },
     seedSummoning: { canSummon: false },
     tasks: {
       level: {
@@ -221,6 +221,45 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
+  it('rolls an affordable guild charter up to the guild page', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.guild = {
+      unlocked: true,
+      created: false,
+      canCreate: false,
+      charterCostCoin: 1500,
+      currentCoin: 1499,
+    };
+
+    expect(manager.getSnapshot(snapshot).pages.guild).toMatchObject({
+      active: false,
+      children: {},
+    });
+
+    snapshot.guild.canCreate = true;
+    snapshot.guild.currentCoin = 1500;
+
+    expect(manager.getSnapshot(snapshot).pages.guild).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        charter: true,
+      },
+    });
+
+    snapshot.guild.created = true;
+    snapshot.guild.notifications = {
+      active: false,
+    };
+
+    expect(manager.getSnapshot(snapshot).pages.guild).toMatchObject({
+      active: false,
+      children: {},
+    });
+  });
+
   it('rolls claimable personal task rewards up to the workshop page', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();
@@ -261,7 +300,7 @@ describe('PageNotificationStateManager', () => {
     expect(manager.getSnapshot(snapshot).pages.garden.active).toBe(true);
 
     snapshot.garden.plot.tiles[0].phase = 'empty';
-    snapshot.gold.current = 1;
+    snapshot.coin.current = 1;
     expect(manager.getSnapshot(snapshot).pages.garden.active).toBe(true);
   });
 
@@ -358,7 +397,7 @@ describe('PageNotificationStateManager', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();
 
-    snapshot.gold.current = 10;
+    snapshot.coin.current = 10;
 
     expect(
       manager.getSnapshot(snapshot, {
@@ -370,7 +409,7 @@ describe('PageNotificationStateManager', () => {
               itemKey: 'mintSeed',
               itemKind: 'seed',
               quantity: 1,
-              priceGold: 3,
+              priceCoin: 3,
             },
           ],
           ownRequests: [
@@ -379,7 +418,7 @@ describe('PageNotificationStateManager', () => {
               itemKey: 'sageSeed',
               itemKind: 'seed',
               quantity: 1,
-              priceGold: 3,
+              priceCoin: 3,
             },
           ],
         },
@@ -396,7 +435,7 @@ describe('PageNotificationStateManager', () => {
               itemKey: 'sageSeed',
               itemKind: 'seed',
               quantity: 1,
-              priceGold: 3,
+              priceCoin: 3,
             },
           ],
           ownRequests: [
@@ -405,7 +444,7 @@ describe('PageNotificationStateManager', () => {
               itemKey: 'sageSeed',
               itemKind: 'seed',
               quantity: 1,
-              priceGold: 3,
+              priceCoin: 3,
             },
           ],
         },
@@ -442,7 +481,7 @@ describe('PageNotificationStateManager', () => {
 
     expect(
       manager.getSnapshot(snapshot, {
-        playerShop: { connected: true, proceedsGold: 1 },
+        playerShop: { connected: true, proceedsCoin: 1 },
       }).pages.shop,
     ).toMatchObject({
       active: true,
@@ -454,11 +493,11 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
-  it('rolls ready crystal-tab gold offers up to the market page', () => {
+  it('rolls ready crystal-tab coin offers up to the market page', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();
 
-    snapshot.shop.goldOffer = {
+    snapshot.shop.coinOffer = {
       canCollect: true,
     };
 
@@ -470,7 +509,7 @@ describe('PageNotificationStateManager', () => {
       },
     });
 
-    snapshot.shop.goldOffer.canCollect = false;
+    snapshot.shop.coinOffer.canCollect = false;
 
     expect(manager.getSnapshot(snapshot).pages.shop.children.crystals).toBe(false);
   });

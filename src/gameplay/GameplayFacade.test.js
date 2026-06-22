@@ -39,7 +39,7 @@ function makeResearchInstant(gameplayFacade) {
     .getResearches({ includeLevelLockedAutomation: true })
     .map((research) => ({
       researchId: research.id,
-      costGold: gameplayFacade.researchFacade.researchBalanceManager.getCostGold(research.id),
+      costCoin: gameplayFacade.researchFacade.researchBalanceManager.getCostCoin(research.id),
       durationSeconds: 0,
       enabled: true,
     }));
@@ -49,7 +49,7 @@ function makeResearchInstant(gameplayFacade) {
 
 function createNpcMarketFacadeFake(gameplayFacade) {
   return {
-    getNpcBuyPriceGold(itemKey) {
+    getNpcBuyPriceCoin(itemKey) {
       return gameplayFacade.itemsFacade.safeGetDefinitionByKey(itemKey)?.baseSellPrice ?? null;
     },
     getNpcNeed() {
@@ -69,7 +69,7 @@ function setShopAutoSellSeconds(gameplayFacade, autoSellSeconds) {
         configJson: JSON.stringify({
           shopShelf: {
             initialUnlockedSlots: 0,
-            slotCostsGold: [0, 50, 150, 400, 1000],
+            slotCostsCoin: [0, 50, 150, 400, 1000],
             autoSellSeconds,
           },
         }),
@@ -97,10 +97,10 @@ function unlockRecipeResearch(gameplayFacade, researchId = 'unlockRecipe:manaTon
   };
   advanceToLevel(gameplayFacade, requiredLevelByResearchId[researchId] ?? 4);
   const research = findResearchSnapshot(gameplayFacade, researchId);
-  const currentGold = gameplayFacade.getSnapshot().gold.current;
-  const costGold = research?.costGold ?? 0;
-  if (costGold > currentGold) {
-    gameplayFacade.goldFacade.add(costGold - currentGold);
+  const currentCoin = gameplayFacade.getSnapshot().coin.current;
+  const costCoin = research?.costCoin ?? 0;
+  if (costCoin > currentCoin) {
+    gameplayFacade.coinFacade.add(costCoin - currentCoin);
   }
   return gameplayFacade.buyResearch(researchId);
 }
@@ -114,7 +114,7 @@ function finishCurrentTaskLevel(gameplayFacade) {
     gameplayFacade.completeTask(task.taskId);
   }
 
-  gameplayFacade.goldFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costGold);
+  gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
   gameplayFacade.completeTaskLevel();
 }
 
@@ -127,7 +127,7 @@ function advanceToLevel(gameplayFacade, targetLevel) {
 function buyGardenTilesThrough(gameplayFacade, targetTileCount) {
   while (gameplayFacade.getSnapshot().garden.plot.unlockedTiles < targetTileCount) {
     const { nextTileCost } = gameplayFacade.getSnapshot().garden.plot;
-    gameplayFacade.goldFacade.add(nextTileCost);
+    gameplayFacade.coinFacade.add(nextTileCost);
     expect(gameplayFacade.buyGardenTile()).toMatchObject({ ok: true });
   }
 }
@@ -135,7 +135,7 @@ function buyGardenTilesThrough(gameplayFacade, targetTileCount) {
 function buyCauldronsThrough(gameplayFacade, targetCauldronCount) {
   while (gameplayFacade.getSnapshot().brewing.unlockedCauldrons < targetCauldronCount) {
     const { nextCauldronCost } = gameplayFacade.getSnapshot().brewing;
-    gameplayFacade.goldFacade.add(nextCauldronCost);
+    gameplayFacade.coinFacade.add(nextCauldronCost);
     expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({ ok: true });
   }
 }
@@ -161,28 +161,28 @@ function openFirstPlayerMarketStand(gameplayFacade) {
 }
 
 describe('GameplayFacade', () => {
-  it('sells tutorial items locally for fixed gold', () => {
+  it('sells tutorial items locally for fixed coin', () => {
     const { gameplayFacade } = createGameplay();
     unlockSageSeed(gameplayFacade);
     gameplayFacade.itemsFacade.addItem(1, 1);
 
-    const result = gameplayFacade.sellTutorialItemForGold({
+    const result = gameplayFacade.sellTutorialItemForCoin({
       itemKey: 'sageSeed',
       quantity: 1,
-      goldEach: 10,
-      goldTarget: 10,
+      coinEach: 10,
+      coinTarget: 10,
     });
 
     expect(result).toMatchObject({
       ok: true,
       quantity: 1,
-      gold: 10,
+      coin: 10,
       tutorial: true,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(10);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(10);
     expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
     expect(gameplayFacade.getSnapshot().logs.entries[0]?.message).toBe(
-      'sold sage seed for 10 gold',
+      'sold sage seed for 10 coin',
     );
   });
 
@@ -190,7 +190,7 @@ describe('GameplayFacade', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
 
-    first.gameplayFacade.goldFacade.add(12);
+    first.gameplayFacade.coinFacade.add(12);
     first.gameplayFacade.crystalFacade.add(2);
     first.gameplayFacade.emeraldFacade.add(1);
     first.gameplayFacade.itemsFacade.addItem(1, 3);
@@ -206,8 +206,8 @@ describe('GameplayFacade', () => {
     const second = createGameplay({ persistenceStorage });
     const snapshot = second.gameplayFacade.getSnapshot();
 
-    expect(snapshot.gold.current).toBe(12);
-    expect(snapshot.gold.totalGenerated).toBe(12);
+    expect(snapshot.coin.current).toBe(12);
+    expect(snapshot.coin.totalGenerated).toBe(12);
     expect(snapshot.crystal.current).toBe(2);
     expect(snapshot.emerald.current).toBe(1);
     expect(snapshot.logs.entries).toEqual([]);
@@ -272,7 +272,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 2,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: {},
         logs: {},
         inventory: [],
@@ -316,7 +316,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 3,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: {},
         logs: {},
         inventory: [],
@@ -353,7 +353,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 3,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: {},
         logs: {},
         inventory: [{ itemKey: 'sageHerb', quantity: 3 }],
@@ -383,7 +383,7 @@ describe('GameplayFacade', () => {
     expect(brewing.nextCauldronNumber).toBe(3);
   });
 
-  it('fills tasks from inventory and advances player level after gold payment', () => {
+  it('fills tasks from inventory and advances player level after coin payment', () => {
     const { gameplayFacade } = createGameplay();
     const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
     const partialQuantity = task.requiredQuantity - 1;
@@ -439,25 +439,25 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
     expect(gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
       level: 1,
-      costGold: 10,
+      costCoin: 10,
       canComplete: true,
     });
     expect(gameplayFacade.completeTaskLevel()).toMatchObject({
       ok: false,
-      reason: 'not_enough_gold',
-      costGold: 10,
+      reason: 'not_enough_coin',
+      costCoin: 10,
     });
 
-    gameplayFacade.goldFacade.add(10);
+    gameplayFacade.coinFacade.add(10);
     expect(gameplayFacade.completeTaskLevel()).toMatchObject({
       ok: true,
       currentLevel: 2,
       advanced: true,
-      costGold: 10,
+      costCoin: 10,
     });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(2);
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
   });
 
   it('persists task progress and player level', () => {
@@ -494,8 +494,8 @@ describe('GameplayFacade', () => {
       first.gameplayFacade.completeTask(task.taskId);
     }
 
-    const costGold = first.gameplayFacade.getSnapshot().tasks.level.completion.costGold;
-    first.gameplayFacade.goldFacade.add(costGold);
+    const costCoin = first.gameplayFacade.getSnapshot().tasks.level.completion.costCoin;
+    first.gameplayFacade.coinFacade.add(costCoin);
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
 
@@ -505,10 +505,10 @@ describe('GameplayFacade', () => {
     expect(snapshot.tasks.currentLevel).toBe(1);
     expect(snapshot.tasks.level.completion).toMatchObject({
       level: 1,
-      costGold,
+      costCoin,
       canComplete: true,
     });
-    expect(snapshot.gold.current).toBe(costGold);
+    expect(snapshot.coin.current).toBe(costCoin);
   });
 
   it('keeps task requirements out of market sell reservations', () => {
@@ -527,7 +527,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.setSelectedPlayerShopShelfSlotListing({
       itemTypeId: task.itemTypeId,
       quantity: task.requiredQuantity,
-      priceGold: 1,
+      priceCoin: 1,
     })).toMatchObject({
       ok: true,
       quantity: task.requiredQuantity,
@@ -593,7 +593,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.crystalFacade.add(4);
-    gameplayFacade.goldFacade.add(99);
+    gameplayFacade.coinFacade.add(99);
     gameplayFacade.itemsFacade.addItem(1, 5);
     gameplayFacade.buyVisualSettingOption('theme', 'black');
     gameplayFacade.buyResearch('unlockSeed:sageSeed');
@@ -621,7 +621,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.prestige.completedLevels).toEqual([10]);
     expect(snapshot.prestige.earnedRuby).toBe(1);
     expect(snapshot.ruby.current).toBe(1);
-    expect(snapshot.gold).toMatchObject({ current: 0, totalGenerated: 0 });
+    expect(snapshot.coin).toMatchObject({ current: 0, totalGenerated: 0 });
     expect(snapshot.crystal.current).toBe(0);
     expect(snapshot.inventory).toEqual([]);
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
@@ -639,7 +639,7 @@ describe('GameplayFacade', () => {
   it('uses prestige-gated permanent research for extra plots and cauldrons', () => {
     const { gameplayFacade } = createGameplay();
 
-    advanceToLevel(gameplayFacade, 17);
+    advanceToLevel(gameplayFacade, 25);
     buyGardenTilesThrough(gameplayFacade, 10);
     buyCauldronsThrough(gameplayFacade, 5);
 
@@ -663,7 +663,7 @@ describe('GameplayFacade', () => {
       costCurrency: 'ruby',
     });
 
-    gameplayFacade.completePrestigeMilestone(10);
+    gameplayFacade.completePrestigeMilestone(10, { confirmedLower: true });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
     expect(gameplayFacade.buyResearch(capacityResearchIds.plot(11))).toMatchObject({
       ok: true,
@@ -729,7 +729,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     gameplayFacade.crystalFacade.add(4);
-    gameplayFacade.goldFacade.add(99);
+    gameplayFacade.coinFacade.add(99);
     gameplayFacade.buyVisualSettingOption('theme', 'black');
     gameplayFacade.buyResearch('unlockSeed:sageSeed');
     advanceToLevel(gameplayFacade, 10);
@@ -738,7 +738,7 @@ describe('GameplayFacade', () => {
 
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
-      gold: { current: 0, totalGenerated: 0 },
+      coin: { current: 0, totalGenerated: 0 },
       crystal: { current: 0 },
       ruby: { current: 1 },
       inventory: [],
@@ -783,7 +783,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 3,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: { current: 0 },
         ruby: { current: 9 },
         inventory: [],
@@ -813,7 +813,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 2,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: { current: 0 },
         inventory: [],
         research: { completedIds: [] },
@@ -837,7 +837,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 2,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: { current: 2 },
         inventory: [],
         research: { completedIds: [] },
@@ -861,7 +861,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 2,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: { current: 0 },
         inventory: [],
         research: {
@@ -887,7 +887,7 @@ describe('GameplayFacade', () => {
       JSON.stringify({
         version: 2,
         mana: {},
-        gold: {},
+        coin: {},
         crystal: { current: 1 },
         inventory: [],
         research: {
@@ -972,7 +972,7 @@ describe('GameplayFacade', () => {
           configJson: JSON.stringify({
             garden: {
               initialUnlockedTiles: 1,
-              tileCostsGold: [0, 11],
+              tileCostsCoin: [0, 11],
               tilesPerRow: 2,
               harvestSeconds: 7,
             },
@@ -983,7 +983,7 @@ describe('GameplayFacade', () => {
           configJson: JSON.stringify({
             shopShelf: {
               initialUnlockedSlots: 1,
-              slotCostsGold: [0, 22],
+              slotCostsCoin: [0, 22],
               autoSellSeconds: 3,
             },
           }),
@@ -1106,7 +1106,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
       'summoned sage seed',
-      'sold sage seed for 0.8 gold',
+      'sold sage seed for 0.8 coin',
       'brewed wasted potion',
       'planted sage seed',
       'harvested sage',
@@ -1125,7 +1125,7 @@ describe('GameplayFacade', () => {
     expect(rewardEvents[1]).toMatchObject({
       type: 'item_sold',
       item: { label: 'sage seed' },
-      gold: 0.8,
+      coin: 0.8,
       quantity: 1,
     });
     expect(rewardEvents[2]).toMatchObject({
@@ -1148,7 +1148,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     expect(gameplayFacade.getSnapshot()).toMatchObject({
-      gold: { current: 0 },
+      coin: { current: 0 },
       crystal: { current: 0 },
       inventory: [],
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
@@ -1161,7 +1161,7 @@ describe('GameplayFacade', () => {
       'idle-wizard.gameplay.save',
       JSON.stringify({
         version: 1,
-        gold: {
+        coin: {
           current: 12,
           totalGenerated: 18,
         },
@@ -1187,8 +1187,8 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
     const snapshot = gameplayFacade.getSnapshot();
 
-    expect(snapshot.gold.current).toBe(12);
-    expect(snapshot.gold.totalGenerated).toBe(18);
+    expect(snapshot.coin.current).toBe(12);
+    expect(snapshot.coin.totalGenerated).toBe(18);
     expect(snapshot.inventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
@@ -1208,7 +1208,7 @@ describe('GameplayFacade', () => {
     const first = createGameplay({ persistenceStorage });
 
     first.gameplayFacade.itemsFacade.addItem(1001, 3);
-    first.gameplayFacade.goldFacade.add(80);
+    first.gameplayFacade.coinFacade.add(80);
     unlockRecipeResearch(first.gameplayFacade);
     first.ecsFacade.update({ deltaSeconds: 12 });
     first.gameplayFacade.addBrewingIngredient(1001);
@@ -1269,7 +1269,7 @@ describe('GameplayFacade', () => {
     });
 
     first.gameplayFacade.itemsFacade.addItem(1001, 3);
-    first.gameplayFacade.goldFacade.add(80);
+    first.gameplayFacade.coinFacade.add(80);
     unlockRecipeResearch(first.gameplayFacade);
     first.ecsFacade.update({ deltaSeconds: 12 });
     first.gameplayFacade.addBrewingIngredient(1001);
@@ -1304,7 +1304,7 @@ describe('GameplayFacade', () => {
           cap: 100,
           perSecond: 2,
         },
-        gold: {},
+        coin: {},
         crystal: {},
         logs: {},
         inventory: [],
@@ -1478,7 +1478,7 @@ describe('GameplayFacade', () => {
   it('uses completed summon research as the active seed summon multiplier', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
-    gameplayFacade.goldFacade.add(600);
+    gameplayFacade.coinFacade.add(600);
     expect(gameplayFacade.buyResearch('summonSeedsX2')).toEqual({
       ok: true,
       researchId: 'summonSeedsX2',
@@ -1609,7 +1609,7 @@ describe('GameplayFacade', () => {
       value: '10 crystal',
       effect: 'auto',
       description: 'summons researched seeds when enough mana is available.',
-      costGold: 0,
+      costCoin: 0,
       costCrystal: 10,
       costCurrency: 'crystal',
       completed: false,
@@ -1621,7 +1621,7 @@ describe('GameplayFacade', () => {
       value: '1 crystal',
       effect: 'auto',
       description: 'garden tile 1 plants its selected seed when one is available.',
-      costGold: 0,
+      costCoin: 0,
       costCrystal: 1,
       costCurrency: 'crystal',
       completed: false,
@@ -1632,7 +1632,7 @@ describe('GameplayFacade', () => {
       label: 'auto plant tile 2',
       value: 'locked',
       requiredResearchIds: [automationResearchIds.autoPlantTile(1)],
-      costGold: 0,
+      costCoin: 0,
       costCrystal: 2,
       costCurrency: 'crystal',
       locked: true,
@@ -1657,7 +1657,7 @@ describe('GameplayFacade', () => {
       value: '1 crystal',
       description:
         'cauldron 1 starts brewing when staged ingredients and mana are ready.',
-      costGold: 0,
+      costCoin: 0,
       costCrystal: 1,
       costCurrency: 'crystal',
     });
@@ -1678,7 +1678,7 @@ describe('GameplayFacade', () => {
       effect: '85% payout',
       showEffect: true,
       requiredResearchIds: [],
-      costGold: 0,
+      costCoin: 0,
       costRuby: 2,
       costCurrency: 'ruby',
     });
@@ -1694,7 +1694,7 @@ describe('GameplayFacade', () => {
       requiredPrestigeCount: 1,
       requiredResearchIds: [],
       locked: true,
-      costGold: 0,
+      costCoin: 0,
       costRuby: 1,
       costCurrency: 'ruby',
     });
@@ -1710,7 +1710,7 @@ describe('GameplayFacade', () => {
       requiredPrestigeCount: 2,
       requiredResearchIds: [],
       locked: true,
-      costGold: 0,
+      costCoin: 0,
       costRuby: 1,
       costCurrency: 'ruby',
     });
@@ -1724,7 +1724,7 @@ describe('GameplayFacade', () => {
       effect: '-2% time',
       showEffect: true,
       requiredResearchIds: [],
-      costGold: 0,
+      costCoin: 0,
       costRuby: 1,
       costCurrency: 'ruby',
     });
@@ -1742,7 +1742,7 @@ describe('GameplayFacade', () => {
       label: 'plot 1 planting x2',
       value: '1 emerald',
       effect: 'x2 herbs',
-      costGold: 0,
+      costCoin: 0,
       costEmerald: 1,
       costCurrency: 'emerald',
     });
@@ -1759,7 +1759,7 @@ describe('GameplayFacade', () => {
       label: 'cauldron 1 brewing x2',
       value: '1 emerald',
       effect: 'x2 potions',
-      costGold: 0,
+      costCoin: 0,
       costEmerald: 1,
       costCurrency: 'emerald',
     });
@@ -1774,7 +1774,7 @@ describe('GameplayFacade', () => {
       value: 'researched',
       effect: 'drop',
       description: 'allows sage seed to drop from summon seed.',
-      costGold: 0,
+      costCoin: 0,
       completed: true,
       canResearch: false,
     });
@@ -1782,10 +1782,10 @@ describe('GameplayFacade', () => {
       {
         id: 'summonSeedsX2',
         label: 'x2 summon',
-        value: '600 gold',
+        value: '600 coin',
         effect: '20 mana',
         description: 'summons 2 researched seeds for 20 mana.',
-        costGold: 600,
+        costCoin: 600,
         completed: false,
         canResearch: false,
       },
@@ -1796,7 +1796,7 @@ describe('GameplayFacade', () => {
         effect: '30 mana',
         requiredResearchIds: ['summonSeedsX2'],
         description: 'summons 3 researched seeds for 30 mana.',
-        costGold: 1800,
+        costCoin: 1800,
         completed: false,
         locked: true,
         canResearch: false,
@@ -1808,7 +1808,7 @@ describe('GameplayFacade', () => {
         effect: '40 mana',
         requiredResearchIds: ['summonSeedsX3'],
         description: 'summons 4 researched seeds for 40 mana.',
-        costGold: 4500,
+        costCoin: 4500,
         completed: false,
         locked: true,
         canResearch: false,
@@ -1820,7 +1820,7 @@ describe('GameplayFacade', () => {
         effect: '50 mana',
         requiredResearchIds: ['summonSeedsX4'],
         description: 'summons 5 researched seeds for 50 mana.',
-        costGold: 10000,
+        costCoin: 10000,
         completed: false,
         locked: true,
         canResearch: false,
@@ -1848,7 +1848,7 @@ describe('GameplayFacade', () => {
       effect: 'brew',
       requiredPlayerLevel: 4,
       description: 'allows valid cauldron ingredients to brew mana tonic.',
-      costGold: 0,
+      costCoin: 0,
       completed: false,
       canResearch: true,
     });
@@ -1910,16 +1910,16 @@ describe('GameplayFacade', () => {
     ]);
   });
 
-  it('buys research with gold from research balance', () => {
+  it('buys research with coin from research balance', () => {
     const { gameplayFacade } = createGameplay();
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.goldFacade.add(25);
+    gameplayFacade.coinFacade.add(25);
 
     expect(gameplayFacade.getSnapshot().research.boxes[0].researches[1]).toMatchObject({
       id: 'unlockSeed:mintSeed',
-      value: '25 gold',
-      costGold: 25,
+      value: '25 coin',
+      costCoin: 25,
       completed: false,
       canResearch: true,
     });
@@ -1929,8 +1929,8 @@ describe('GameplayFacade', () => {
       researchId: 'unlockSeed:mintSeed',
       cost: 25,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
-    expect(gameplayFacade.getSnapshot().gold.totalGenerated).toBe(75);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.totalGenerated).toBe(75);
     expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([
       'unlockSeed:sageSeed',
       'unlockSeed:mintSeed',
@@ -1955,7 +1955,7 @@ describe('GameplayFacade', () => {
     });
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.goldFacade.add(25);
+    gameplayFacade.coinFacade.add(25);
 
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: true,
@@ -2005,7 +2005,7 @@ describe('GameplayFacade', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     unlockSageSeed(gameplayFacade);
-    gameplayFacade.goldFacade.add(100);
+    gameplayFacade.coinFacade.add(100);
 
     expect(gameplayFacade.buyResearch(automationResearchIds.autoSeedSpawn())).toEqual({
       ok: false,
@@ -2024,7 +2024,7 @@ describe('GameplayFacade', () => {
       costCurrency: 'crystal',
     });
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(100);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(100);
 
     ecsFacade.update({ deltaSeconds: 10 });
 
@@ -2165,7 +2165,7 @@ describe('GameplayFacade', () => {
     });
 
     gameplayFacade.itemsFacade.addItem(1001, 6);
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.coinFacade.add(80);
     unlockRecipeResearch(gameplayFacade);
     ecsFacade.update({ deltaSeconds: 15 });
 
@@ -2204,8 +2204,8 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.quoteNpcMarketSell(1, 1)).toMatchObject({
       ok: true,
-      priceGold: 0.8,
-      totalPriceGold: 0.8,
+      priceCoin: 0.8,
+      totalPriceCoin: 0.8,
       fastSellPercent: 80,
     });
 
@@ -2228,8 +2228,8 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.quoteNpcMarketSell(1, 1)).toMatchObject({
       ok: true,
-      priceGold: 0.95,
-      totalPriceGold: 0.95,
+      priceCoin: 0.95,
+      totalPriceCoin: 0.95,
       fastSellPercent: 95,
     });
   });
@@ -2238,7 +2238,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay();
     const backendSells = [];
     gameplayFacade.setNpcMarketFacade({
-      getNpcBuyPriceGold: () => 7,
+      getNpcBuyPriceCoin: () => 7,
       getNpcNeed: () => 12,
       sellToNpc({ itemKey, quantity }) {
         backendSells.push({ itemKey, quantity });
@@ -2251,14 +2251,14 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find(
       (item) => item.key === 'sageSeed',
     )).toMatchObject({
-      sellGold: 1,
-      fastSellGold: 0.8,
+      sellCoin: 1,
+      fastSellCoin: 0.8,
       sellNeed: 1000,
     });
     await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
       ok: true,
-      priceGold: 0.8,
-      totalPriceGold: 1.6,
+      priceCoin: 0.8,
+      totalPriceCoin: 1.6,
     });
     expect(backendSells).toEqual([]);
 
@@ -2268,14 +2268,14 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find(
       (item) => item.key === 'sageSeed',
     )).toMatchObject({
-      sellGold: 7,
-      fastSellGold: 5.6,
+      sellCoin: 7,
+      fastSellCoin: 5.6,
       sellNeed: 12,
     });
     await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
       ok: true,
-      priceGold: 5.6,
-      totalPriceGold: 11.2,
+      priceCoin: 5.6,
+      totalPriceCoin: 11.2,
     });
     expect(backendSells).toEqual([{ itemKey: 'sageSeed', quantity: 2 }]);
   });
@@ -2300,7 +2300,7 @@ describe('GameplayFacade', () => {
     });
 
     ecsFacade.update({ deltaSeconds: 12 });
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.coinFacade.add(80);
     gameplayFacade.itemsFacade.addItem(1001, 3);
     expect(unlockRecipeResearch(gameplayFacade)).toMatchObject({ ok: true });
     expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({ ok: true });
@@ -2317,7 +2317,7 @@ describe('GameplayFacade', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     unlockSageSeed(gameplayFacade);
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.coinFacade.add(80);
     gameplayFacade.crystalFacade.add(11);
     gameplayFacade.itemsFacade.addItem(1001, 3);
 
@@ -2384,7 +2384,7 @@ describe('GameplayFacade', () => {
     });
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.goldFacade.add(25);
+    gameplayFacade.coinFacade.add(25);
 
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: true,
@@ -2421,7 +2421,7 @@ describe('GameplayFacade', () => {
   it('rejects removed mana research ids', () => {
     const { gameplayFacade } = createGameplay();
 
-    gameplayFacade.goldFacade.add(150);
+    gameplayFacade.coinFacade.add(150);
 
     expect(gameplayFacade.buyResearch('manaSphereCap:1')).toEqual({
       ok: false,
@@ -2442,7 +2442,7 @@ describe('GameplayFacade', () => {
   it('rejects removed mana research levels out of order as unknown', () => {
     const { gameplayFacade } = createGameplay();
 
-    gameplayFacade.goldFacade.add(20);
+    gameplayFacade.coinFacade.add(20);
 
     expect(gameplayFacade.buyResearch('manaProductionRate:2')).toEqual({
       ok: false,
@@ -2461,10 +2461,10 @@ describe('GameplayFacade', () => {
         .find((research) => research.id === researchId);
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.goldFacade.add(10000);
+    gameplayFacade.coinFacade.add(10000);
 
     expect(getResearch('unlockSeed:mintSeed')).toMatchObject({
-      value: '25 gold',
+      value: '25 coin',
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
@@ -2493,7 +2493,7 @@ describe('GameplayFacade', () => {
       cost: 600,
     });
     expect(getResearch('summonSeedsX3')).toMatchObject({
-      value: '1800 gold',
+      value: '1800 coin',
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch('summonSeedsX4')).toEqual({
@@ -2527,7 +2527,7 @@ describe('GameplayFacade', () => {
     });
     advanceToLevel(gameplayFacade, 5);
     expect(getResearch('unlockRecipe:minorHealingPotion')).toMatchObject({
-      value: '350 gold',
+      value: '350 coin',
       canResearch: true,
     });
 
@@ -2555,7 +2555,7 @@ describe('GameplayFacade', () => {
         .getSnapshot()
         .research.boxes.flatMap((box) => box.researches)
         .find((research) => research.id === researchId);
-    const finishCurrentTasksWithoutGold = () => {
+    const finishCurrentTasksWithoutCoin = () => {
       for (const task of gameplayFacade.getSnapshot().tasks.level.tasks) {
         gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
         gameplayFacade.fillTask(task.taskId);
@@ -2564,13 +2564,13 @@ describe('GameplayFacade', () => {
     };
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.goldFacade.add(115);
+    gameplayFacade.coinFacade.add(115);
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
       ok: true,
       cost: 25,
     });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(90);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(90);
     expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
       value: 'locked',
       requiredPlayerLevel: 4,
@@ -2585,16 +2585,16 @@ describe('GameplayFacade', () => {
       cost: 120,
     });
 
-    finishCurrentTasksWithoutGold();
+    finishCurrentTasksWithoutCoin();
     expect(gameplayFacade.completeTaskLevel()).toMatchObject({
       ok: true,
       currentLevel: 4,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
 
-    gameplayFacade.goldFacade.add(120);
+    gameplayFacade.coinFacade.add(120);
     expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
-      value: '120 gold',
+      value: '120 coin',
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toMatchObject({
@@ -2607,7 +2607,7 @@ describe('GameplayFacade', () => {
   it('rejects legacy mana research ids', () => {
     const { gameplayFacade } = createGameplay();
 
-    gameplayFacade.goldFacade.add(75);
+    gameplayFacade.coinFacade.add(75);
 
     expect(gameplayFacade.buyResearch('manaProductionRate')).toEqual({
       ok: false,
@@ -2617,14 +2617,14 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().mana.perSecond).toBe(1);
   });
 
-  it('rejects research purchase without enough gold', () => {
+  it('rejects research purchase without enough coin', () => {
     const { gameplayFacade } = createGameplay();
 
     advanceToLevel(gameplayFacade, 3);
 
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: false,
-      reason: 'not_enough_gold',
+      reason: 'not_enough_coin',
       researchId: 'unlockSeed:mintSeed',
       cost: 25,
     });
@@ -2634,7 +2634,7 @@ describe('GameplayFacade', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(1001, 3);
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.coinFacade.add(80);
     unlockRecipeResearch(gameplayFacade);
     ecsFacade.update({ deltaSeconds: 12 });
 
@@ -2726,7 +2726,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(1001, 3);
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.coinFacade.add(80);
     unlockRecipeResearch(gameplayFacade);
 
     expect(gameplayFacade.prepareBrewingRecipe('manaTonic')).toMatchObject({
@@ -2758,9 +2758,9 @@ describe('GameplayFacade', () => {
     gameplayFacade.syncPlayerLevelManaEffects();
     gameplayFacade.manaFacade.fill();
     gameplayFacade.itemsFacade.addItem(1001, 6);
-    gameplayFacade.goldFacade.add(180);
+    gameplayFacade.coinFacade.add(180);
     unlockRecipeResearch(gameplayFacade);
-    gameplayFacade.goldFacade.add(100);
+    gameplayFacade.coinFacade.add(100);
 
     expect(gameplayFacade.getSnapshot().brewing.maxCauldrons).toBe(3);
     expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(1);
@@ -2789,7 +2789,7 @@ describe('GameplayFacade', () => {
       unlockedCauldrons: 3,
       nextCauldronNumber: 4,
       nextCauldronLockedByLevel: true,
-      nextCauldronRequiresLevel: 10,
+      nextCauldronRequiresLevel: 21,
     });
     expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(3);
 
@@ -2844,13 +2844,13 @@ describe('GameplayFacade', () => {
     advanceToLevel(gameplayFacade, 5);
     gameplayFacade.syncPlayerLevelManaEffects();
     gameplayFacade.manaFacade.fill();
-    gameplayFacade.goldFacade.add(500);
+    gameplayFacade.coinFacade.add(500);
     gameplayFacade.crystalFacade.add(3);
     gameplayFacade.itemsFacade.addItem(1001, 5);
     gameplayFacade.itemsFacade.addItem(1002, 1);
     unlockRecipeResearch(gameplayFacade);
     unlockRecipeResearch(gameplayFacade, 'unlockRecipe:minorHealingPotion');
-    gameplayFacade.goldFacade.add(500);
+    gameplayFacade.coinFacade.add(500);
     expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({
       ok: true,
       cauldronNumber: 2,
@@ -2916,9 +2916,9 @@ describe('GameplayFacade', () => {
     first.gameplayFacade.syncPlayerLevelManaEffects();
     first.gameplayFacade.itemsFacade.addItem(1001, 9);
     first.gameplayFacade.itemsFacade.addItem(2001, 2);
-    first.gameplayFacade.goldFacade.add(180);
+    first.gameplayFacade.coinFacade.add(180);
     unlockRecipeResearch(first.gameplayFacade);
-    first.gameplayFacade.goldFacade.add(100);
+    first.gameplayFacade.coinFacade.add(100);
     expect(first.gameplayFacade.buyBrewingCauldron()).toMatchObject({
       ok: true,
       cauldronNumber: 2,
@@ -2983,7 +2983,7 @@ describe('GameplayFacade', () => {
   it('auto brews, bottles, and collects cauldron potions after research', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.coinFacade.add(80);
     gameplayFacade.crystalFacade.add(2);
     unlockRecipeResearch(gameplayFacade);
     expect(gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1))).toMatchObject({
@@ -3080,7 +3080,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('uses ingredient order and turns unknown mixes into wasted potion worth one gold', () => {
+  it('uses ingredient order and turns unknown mixes into wasted potion worth one coin', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(1001, 2);
@@ -3136,11 +3136,11 @@ describe('GameplayFacade', () => {
       hasRecipe: false,
       baseSellPrice: 1,
       quantity: 1,
-      sellGold: 1,
-      fastSellGold: 0.8,
+      sellCoin: 1,
+      fastSellCoin: 0.8,
       fastSellPercent: 80,
       sellNeed: 1000,
-      buyGold: null,
+      buyCoin: null,
       stock: null,
     });
   });
@@ -3163,7 +3163,7 @@ describe('GameplayFacade', () => {
       nextSlotRequiresLevel: 4,
       selectedSlotNumber: null,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: false,
       reason: 'level_locked',
@@ -3197,7 +3197,7 @@ describe('GameplayFacade', () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(11);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(11);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: false,
@@ -3210,20 +3210,20 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: false,
-      reason: 'not_enough_gold',
+      reason: 'not_enough_coin',
       cost: 50,
       slotNumber: 2,
     });
 
     advanceToLevel(gameplayFacade, 5);
-    gameplayFacade.goldFacade.add(39);
+    gameplayFacade.coinFacade.add(39);
 
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
       ok: true,
       cost: 50,
       slotNumber: 2,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(gameplayFacade.getSnapshot().shop.shelf.unlockedSlots).toBe(2);
     expect(gameplayFacade.getSnapshot().shop.shelf.nextSlotCost).toBe(150);
     expect(gameplayFacade.getSnapshot().shop.shelf.nextSlotLockedByLevel).toBe(true);
@@ -3261,12 +3261,12 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.buyGardenTile()).toEqual({
       ok: false,
-      reason: 'not_enough_gold',
+      reason: 'not_enough_coin',
       cost: 25,
       tileNumber: 2,
     });
 
-    gameplayFacade.goldFacade.add(25);
+    gameplayFacade.coinFacade.add(25);
 
     expect(gameplayFacade.buyGardenTile()).toEqual({
       ok: true,
@@ -3279,7 +3279,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().garden.plot.nextTileRequiresLevel).toBe(2);
 
     finishCurrentTaskLevel(gameplayFacade);
-    gameplayFacade.goldFacade.add(75);
+    gameplayFacade.coinFacade.add(75);
 
     expect(gameplayFacade.buyGardenTile()).toEqual({
       ok: true,
@@ -3568,7 +3568,7 @@ describe('GameplayFacade', () => {
 
     finishCurrentTaskLevel(gameplayFacade);
     finishCurrentTaskLevel(gameplayFacade);
-    gameplayFacade.goldFacade.add(25);
+    gameplayFacade.coinFacade.add(25);
     gameplayFacade.crystalFacade.add(2);
     expect(gameplayFacade.buyGardenTile()).toMatchObject({
       ok: true,
@@ -3768,7 +3768,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('rejects NPC market stand purchase without enough gold', () => {
+  it('rejects NPC market stand purchase without enough coin', () => {
     const { gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.buyShopShelfSlot()).toEqual({
@@ -3907,14 +3907,14 @@ describe('GameplayFacade', () => {
     expect(initialSellItems).toHaveLength(57);
     expect(initialSellItems.find((item) => item.key === 'sageSeed')).toMatchObject({
       quantity: 0,
-      sellGold: 1,
+      sellCoin: 1,
     });
     expect(initialSellItems.find((item) => item.key === 'manaTonic')).toMatchObject({
       quantity: 0,
-      sellGold: 55,
+      sellCoin: 55,
     });
 
-    gameplayFacade.goldFacade.add(80);
+    gameplayFacade.coinFacade.add(80);
     unlockRecipeResearch(gameplayFacade);
     gameplayFacade.itemsFacade.addItem(2, 2);
 
@@ -3923,15 +3923,15 @@ describe('GameplayFacade', () => {
     expect(sellItems).toHaveLength(57);
     expect(sellItems.find((item) => item.key === 'mintSeed')).toMatchObject({
       quantity: 2,
-      sellGold: 1,
+      sellCoin: 1,
     });
     expect(sellItems.find((item) => item.key === 'sageHerb')).toMatchObject({
       quantity: 0,
-      sellGold: 6,
+      sellCoin: 6,
     });
     expect(sellItems.find((item) => item.key === 'nettleSeed')).toMatchObject({
       quantity: 0,
-      sellGold: 1,
+      sellCoin: 1,
     });
   });
 
@@ -3952,13 +3952,13 @@ describe('GameplayFacade', () => {
     shopNowMs = 4_000;
     ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(gameplayFacade.getSnapshot().inventory).toHaveLength(1);
 
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(11);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(11);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       slotNumber: 1,
@@ -3996,7 +3996,7 @@ describe('GameplayFacade', () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(7);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(7);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: summonResult.seed.id,
@@ -4016,7 +4016,7 @@ describe('GameplayFacade', () => {
     shopNowMs = 10_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(7);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(7);
     expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(4);
   });
 
@@ -4029,7 +4029,7 @@ describe('GameplayFacade', () => {
 
     openFirstNpcMarketStand(gameplayFacade);
     advanceToLevel(gameplayFacade, 5);
-    gameplayFacade.goldFacade.add(50);
+    gameplayFacade.coinFacade.add(50);
     expect(gameplayFacade.buyShopShelfSlot()).toMatchObject({
       ok: true,
       slotNumber: 2,
@@ -4055,74 +4055,74 @@ describe('GameplayFacade', () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(2);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().shop.shelf.sellProgressSeconds).toBe(0);
   });
 
-  it('collects the crystal-tab gold offer and cools it down', () => {
+  it('collects the crystal-tab coin offer and cools it down', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
     const rewardEvents = [];
     const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
       rewardEvents.push(event);
     });
 
-    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
-      rewardGold: 20,
+    expect(gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
+      rewardCoin: 20,
       cooldownRemainingSeconds: 0,
       canCollect: true,
     });
 
-    expect(gameplayFacade.collectShopGoldOffer()).toEqual({
+    expect(gameplayFacade.collectShopCoinOffer()).toEqual({
       ok: true,
-      gold: 20,
+      coin: 20,
       cooldownSeconds: 7_200,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(20);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(20);
     expect(rewardEvents).toEqual([
       expect.objectContaining({
-        type: 'gold_collected',
-        gold: 20,
-        source: 'shop_gold_offer',
+        type: 'coin_collected',
+        coin: 20,
+        source: 'shop_coin_offer',
       }),
     ]);
-    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+    expect(gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
       cooldownRemainingSeconds: 7_200,
       canCollect: false,
     });
-    expect(gameplayFacade.collectShopGoldOffer()).toMatchObject({
+    expect(gameplayFacade.collectShopCoinOffer()).toMatchObject({
       ok: false,
       reason: 'cooldown',
     });
     expect(rewardEvents).toHaveLength(1);
 
     ecsFacade.update({ timerDeltaSeconds: 7_199 });
-    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+    expect(gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
       cooldownRemainingSeconds: 1,
       canCollect: false,
     });
 
     finishCurrentTaskLevel(gameplayFacade);
     ecsFacade.update({ timerDeltaSeconds: 1 });
-    expect(gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
-      rewardGold: 40,
+    expect(gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
+      rewardCoin: 40,
       cooldownRemainingSeconds: 0,
       canCollect: true,
     });
-    expect(gameplayFacade.collectShopGoldOffer()).toMatchObject({
+    expect(gameplayFacade.collectShopCoinOffer()).toMatchObject({
       ok: true,
-      gold: 40,
+      coin: 40,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(60);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(60);
     expect(rewardEvents[1]).toMatchObject({
-      type: 'gold_collected',
-      gold: 40,
-      source: 'shop_gold_offer',
+      type: 'coin_collected',
+      coin: 40,
+      source: 'shop_coin_offer',
     });
     unsubscribeRewardEvents();
   });
 
-  it('publishes player shop proceeds as collected gold', () => {
+  it('publishes player shop proceeds as collected coin', () => {
     const { gameplayFacade } = createGameplay();
     const rewardEvents = [];
     const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents((event) => {
@@ -4131,29 +4131,29 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.claimPlayerShopSaleProceeds(5)).toEqual({
       ok: true,
-      gold: 5,
+      coin: 5,
     });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(5);
-    expect(gameplayFacade.getSnapshot().gold.totalGenerated).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(5);
+    expect(gameplayFacade.getSnapshot().coin.totalGenerated).toBe(0);
     expect(rewardEvents).toEqual([
       expect.objectContaining({
-        type: 'gold_collected',
-        gold: 5,
+        type: 'coin_collected',
+        coin: 5,
         source: 'player_shop_proceeds',
       }),
     ]);
     unsubscribeRewardEvents();
   });
 
-  it('persists player shop proceeds without adding generated gold', () => {
+  it('persists player shop proceeds without adding generated coin', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
 
-    first.gameplayFacade.goldFacade.add(10);
+    first.gameplayFacade.coinFacade.add(10);
     expect(first.gameplayFacade.claimPlayerShopSaleProceeds(5)).toEqual({
       ok: true,
-      gold: 5,
+      coin: 5,
     });
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
@@ -4161,11 +4161,11 @@ describe('GameplayFacade', () => {
     const second = createGameplay({ persistenceStorage });
     const snapshot = second.gameplayFacade.getSnapshot();
 
-    expect(snapshot.gold.current).toBe(15);
-    expect(snapshot.gold.totalGenerated).toBe(10);
+    expect(snapshot.coin.current).toBe(15);
+    expect(snapshot.coin.totalGenerated).toBe(10);
   });
 
-  it('persists crystal-tab gold offer cooldown and catches it up offline', () => {
+  it('persists crystal-tab coin offer cooldown and catches it up offline', () => {
     const persistenceStorage = createMemoryStorage();
     let now = 1_000_000;
     const first = createGameplay({
@@ -4173,7 +4173,7 @@ describe('GameplayFacade', () => {
       persistenceNow: () => now,
     });
 
-    first.gameplayFacade.collectShopGoldOffer();
+    first.gameplayFacade.collectShopCoinOffer();
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
 
@@ -4182,7 +4182,7 @@ describe('GameplayFacade', () => {
       persistenceStorage,
       persistenceNow: () => now,
     });
-    expect(second.gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+    expect(second.gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
       cooldownRemainingSeconds: 3_600,
       canCollect: false,
     });
@@ -4194,7 +4194,7 @@ describe('GameplayFacade', () => {
       persistenceStorage,
       persistenceNow: () => now,
     });
-    expect(third.gameplayFacade.getSnapshot().shop.goldOffer).toMatchObject({
+    expect(third.gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
       cooldownRemainingSeconds: 0,
       canCollect: true,
     });
@@ -4218,7 +4218,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find((item) => item.key === 'sageHerb'))
       .toMatchObject({
         quantity: 1,
-        sellGold: 6,
+        sellCoin: 6,
       });
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       sellItemTypeId: 1001,
@@ -4228,7 +4228,7 @@ describe('GameplayFacade', () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(6);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(6);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1001,
@@ -4248,7 +4248,7 @@ describe('GameplayFacade', () => {
     shopNowMs = 10_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(6);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(6);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1001,
@@ -4289,7 +4289,7 @@ describe('GameplayFacade', () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1,
@@ -4311,7 +4311,7 @@ describe('GameplayFacade', () => {
       gameplayFacade.setSelectedPlayerShopShelfSlotListing({
         itemTypeId: 1,
         quantity: 2,
-        priceGold: 4,
+        priceCoin: 4,
       }),
     ).toEqual({
       ok: true,
@@ -4323,7 +4323,7 @@ describe('GameplayFacade', () => {
         kind: 'seed',
       },
       quantity: 2,
-      priceGold: 4,
+      priceCoin: 4,
     });
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
@@ -4341,7 +4341,7 @@ describe('GameplayFacade', () => {
       itemLabel: 'sage seed',
       itemKind: 'seed',
       quantity: 2,
-      priceGold: 4,
+      priceCoin: 4,
     });
 
     expect(gameplayFacade.clearSelectedPlayerShopShelfSlotListing()).toEqual({
@@ -4371,7 +4371,7 @@ describe('GameplayFacade', () => {
       gameplayFacade.setSelectedPlayerShopShelfSlotListing({
         itemTypeId: 1001,
         quantity: 2,
-        priceGold: 4,
+        priceCoin: 4,
       }),
     ).toEqual({
       ok: false,
@@ -4385,12 +4385,12 @@ describe('GameplayFacade', () => {
       gameplayFacade.setSelectedPlayerShopShelfSlotListing({
         itemTypeId: 1001,
         quantity: 1,
-        priceGold: 4,
+        priceCoin: 4,
       }),
     ).toMatchObject({
       ok: true,
       quantity: 1,
-      priceGold: 4,
+      priceCoin: 4,
     });
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
@@ -4411,22 +4411,22 @@ describe('GameplayFacade', () => {
       rewardEvents.push(event);
     });
 
-    gameplayFacade.goldFacade.add(10);
+    gameplayFacade.coinFacade.add(10);
 
     expect(
       gameplayFacade.buyPlayerShopListingItem({
         listingKey: 'listing-1',
         itemKey: 'sageSeed',
         quantity: 2,
-        priceGold: 3,
+        priceCoin: 3,
       }),
     ).toMatchObject({
       ok: true,
       quantity: 2,
-      priceGold: 3,
-      totalPriceGold: 6,
+      priceCoin: 3,
+      totalPriceCoin: 6,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(4);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(4);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1,
@@ -4448,15 +4448,15 @@ describe('GameplayFacade', () => {
           kind: 'seed',
         },
         quantity: 2,
-        gold: 6,
+        coin: 6,
       }),
     ]);
 
     expect(gameplayFacade.claimPlayerShopSaleProceeds(5)).toEqual({
       ok: true,
-      gold: 5,
+      coin: 5,
     });
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(9);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(9);
     unsubscribeRewardEvents();
   });
 
@@ -4469,14 +4469,14 @@ describe('GameplayFacade', () => {
 
     advanceToLevel(gameplayFacade, 4);
     gameplayFacade.setNpcMarketFacade({
-      getNpcBuyPriceGold: () => 1,
+      getNpcBuyPriceCoin: () => 1,
       getNpcNeed: () => 1000,
       sellToNpc: () => Promise.resolve({ ok: true }),
-      getNpcSellPriceGold: () => 2,
+      getNpcSellPriceCoin: () => 2,
       getNpcStock: () => 20,
       buyFromNpc: () => Promise.resolve({ ok: true }),
     });
-    gameplayFacade.goldFacade.add(40);
+    gameplayFacade.coinFacade.add(40);
 
     await expect(gameplayFacade.buyNpcMarketStockItem(1, 15)).resolves.toMatchObject({
       ok: true,
@@ -4487,7 +4487,7 @@ describe('GameplayFacade', () => {
         kind: 'seed',
       },
       quantity: 15,
-      totalPriceGold: 30,
+      totalPriceCoin: 30,
     });
     expect(rewardEvents).toEqual([
       expect.objectContaining({
@@ -4500,7 +4500,7 @@ describe('GameplayFacade', () => {
           kind: 'seed',
         },
         quantity: 15,
-        gold: 30,
+        coin: 30,
       }),
     ]);
     unsubscribeRewardEvents();
@@ -4521,7 +4521,7 @@ describe('GameplayFacade', () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(1);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1,

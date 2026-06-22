@@ -111,7 +111,7 @@ describe('TopPanelViewManager', () => {
         mode: 'monochrome',
         labels: [
           ['mana 100/100', 'mana'],
-          ['34.4k gold', 'gold'],
+          ['34.4k coin', 'coin'],
           ['sage seed', 'seed'],
           ['sage', 'herb'],
           ['mana tonic', 'potion'],
@@ -121,7 +121,7 @@ describe('TopPanelViewManager', () => {
         mode: 'resources',
         labels: [
           ['mana 100/100', 'mana'],
-          ['34.4k gold', 'gold'],
+          ['34.4k coin', 'coin'],
           ['sage seed', 'seed'],
           ['sage', 'herb'],
           ['mana tonic', 'potion'],
@@ -164,7 +164,7 @@ describe('TopPanelViewManager', () => {
       labels: [...preview.querySelectorAll('.room-top-panel__icon-preview-item')].map(
         (item) => item.textContent,
       ),
-      hasGoldIcon: Boolean(preview.querySelector('.style-resource-label--gold')),
+      hasCoinIcon: Boolean(preview.querySelector('.style-resource-label--coin')),
       hasSeedIcon: Boolean(preview.querySelector('.style-seed-label')),
       hasPotionIcon: Boolean(preview.querySelector('.style-potion-label')),
     }));
@@ -172,15 +172,15 @@ describe('TopPanelViewManager', () => {
     expect(iconPreviews).toEqual([
       {
         mode: 'none',
-        labels: ['34.4k gold', 'sage seed', 'mana tonic'],
-        hasGoldIcon: true,
+        labels: ['34.4k coin', 'sage seed', 'mana tonic'],
+        hasCoinIcon: true,
         hasSeedIcon: true,
         hasPotionIcon: true,
       },
       {
         mode: 'icons',
-        labels: ['34.4k gold', 'sage seed', 'mana tonic'],
-        hasGoldIcon: true,
+        labels: ['34.4k coin', 'sage seed', 'mana tonic'],
+        hasCoinIcon: true,
         hasSeedIcon: true,
         hasPotionIcon: true,
       },

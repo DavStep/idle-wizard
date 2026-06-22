@@ -27,7 +27,7 @@ function createGameplayFacadeFake() {
       cap: 50,
       perSecond: 1,
     },
-    gold: {
+    coin: {
       current: 0,
     },
     crystal: {
@@ -138,7 +138,7 @@ function createGameplayFacadeFake() {
         totalTasks: 1,
         completion: {
           level: 1,
-          costGold: 10,
+          costCoin: 10,
           allTasksCompleted: false,
           atMaxLevel: false,
           completedAllLevels: false,
@@ -388,7 +388,7 @@ function createGameplayFacadeFake() {
           unlocked: true,
           discoveredByUsername: 'Ada',
           discoveredAtMs: Date.UTC(2026, 0, 2),
-          royaltyGold: 12.5,
+          royaltyCoin: 12.5,
           ingredients: [
             {
               itemTypeId: 1002,
@@ -422,7 +422,7 @@ function createGameplayFacadeFake() {
         {
           id: 1,
           type: 'gameplay',
-          message: 'sold sage seed for 1 gold',
+          message: 'sold sage seed for 1 coin',
           createdAt: 1_000,
         },
         {
@@ -444,7 +444,7 @@ function createGameplayFacadeFake() {
               label: 'sage seed',
               value: 'free',
               effect: 'drop',
-              costGold: 0,
+              costCoin: 0,
               completed: false,
               canResearch: true,
             },
@@ -457,9 +457,9 @@ function createGameplayFacadeFake() {
             {
               id: 'summonSeedsX2',
               label: 'x2 summon',
-              value: '20 gold',
+              value: '20 coin',
               effect: '20 mana',
-              costGold: 20,
+              costCoin: 20,
               completed: false,
               canResearch: false,
             },
@@ -472,9 +472,9 @@ function createGameplayFacadeFake() {
             {
               id: 'unlockRecipe:manaTonic',
               label: 'mana tonic',
-              value: '3 gold',
+              value: '3 coin',
               effect: 'brew',
-              costGold: 3,
+              costCoin: 3,
               completed: false,
               canResearch: false,
             },
@@ -483,8 +483,8 @@ function createGameplayFacadeFake() {
       ],
     },
     shop: {
-      goldOffer: {
-        rewardGold: 20,
+      coinOffer: {
+        rewardCoin: 20,
         currentLevel: 1,
         cooldownSeconds: 7_200,
         cooldownRemainingSeconds: 0,
@@ -501,9 +501,9 @@ function createGameplayFacadeFake() {
         selectedSlotNumber: 1,
         autoSellSeconds: 5,
         sellKinds: [
-          { id: 1, kind: 'seed', label: 'seeds', sellGold: 1 },
-          { id: 2, kind: 'herb', label: 'herbs', sellGold: 2 },
-          { id: 3, kind: 'potion', label: 'potions', sellGold: 5 },
+          { id: 1, kind: 'seed', label: 'seeds', sellCoin: 1 },
+          { id: 2, kind: 'herb', label: 'herbs', sellCoin: 2 },
+          { id: 3, kind: 'potion', label: 'potions', sellCoin: 5 },
         ],
         sellItems: [
           {
@@ -512,7 +512,7 @@ function createGameplayFacadeFake() {
             label: 'sage seed',
             kind: 'seed',
             quantity: 0,
-            sellGold: 1,
+            sellCoin: 1,
             sellNeed: 1000,
           },
           {
@@ -521,7 +521,7 @@ function createGameplayFacadeFake() {
             label: 'sage',
             kind: 'herb',
             quantity: 0,
-            sellGold: 2,
+            sellCoin: 2,
             sellNeed: 800,
           },
           {
@@ -530,7 +530,7 @@ function createGameplayFacadeFake() {
             label: 'mana tonic',
             kind: 'potion',
             quantity: 0,
-            sellGold: 5,
+            sellCoin: 5,
             sellNeed: 300,
           },
         ],
@@ -590,7 +590,7 @@ function createGameplayFacadeFake() {
             label: 'sage seed',
             kind: 'seed',
             quantity: 0,
-            buyGold: 1.2,
+            buyCoin: 1.2,
             stock: 4,
           },
           {
@@ -599,7 +599,7 @@ function createGameplayFacadeFake() {
             label: 'sage',
             kind: 'herb',
             quantity: 0,
-            buyGold: 2.4,
+            buyCoin: 2.4,
             stock: 3,
           },
           {
@@ -608,7 +608,7 @@ function createGameplayFacadeFake() {
             label: 'mana tonic',
             kind: 'potion',
             quantity: 0,
-            buyGold: 6,
+            buyCoin: 6,
             stock: 2,
           },
         ],
@@ -621,9 +621,9 @@ function createGameplayFacadeFake() {
         nextSlotCost: 1,
         selectedSlotNumber: 1,
         sellKinds: [
-          { id: 1, kind: 'seed', label: 'seeds', sellGold: 1 },
-          { id: 2, kind: 'herb', label: 'herbs', sellGold: 2 },
-          { id: 3, kind: 'potion', label: 'potions', sellGold: 5 },
+          { id: 1, kind: 'seed', label: 'seeds', sellCoin: 1 },
+          { id: 2, kind: 'herb', label: 'herbs', sellCoin: 2 },
+          { id: 3, kind: 'potion', label: 'potions', sellCoin: 5 },
         ],
         sellItems: [
           {
@@ -632,7 +632,7 @@ function createGameplayFacadeFake() {
             label: 'sage seed',
             kind: 'seed',
             quantity: 0,
-            sellGold: 1,
+            sellCoin: 1,
           },
           {
             itemTypeId: 1001,
@@ -640,7 +640,7 @@ function createGameplayFacadeFake() {
             label: 'sage',
             kind: 'herb',
             quantity: 0,
-            sellGold: 2,
+            sellCoin: 2,
           },
           {
             itemTypeId: 2001,
@@ -648,7 +648,7 @@ function createGameplayFacadeFake() {
             label: 'mana tonic',
             kind: 'potion',
             quantity: 0,
-            sellGold: 5,
+            sellCoin: 5,
           },
         ],
         slots: [
@@ -660,7 +660,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 2,
@@ -670,7 +670,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 3,
@@ -680,7 +680,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 4,
@@ -690,7 +690,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 5,
@@ -700,7 +700,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
         ],
       },
@@ -719,7 +719,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 2,
@@ -729,7 +729,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 3,
@@ -739,7 +739,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 4,
@@ -749,7 +749,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
           {
             slotNumber: 5,
@@ -759,7 +759,7 @@ function createGameplayFacadeFake() {
             itemKind: null,
             itemLabel: null,
             quantity: 0,
-            priceGold: 0,
+            priceCoin: 0,
           },
         ],
       },
@@ -828,14 +828,14 @@ function createGameplayFacadeFake() {
           character: 'mira',
           playerLevel: 2,
           income: 3,
-          totalGeneratedGold: 0,
+          totalGeneratedCoin: 0,
           totalIncome: 120,
         },
         {
           name: 'Merlin',
           playerLevel: 10,
           income: 9,
-          totalGeneratedGold: 0,
+          totalGeneratedCoin: 0,
           totalIncome: 75,
         },
       ],
@@ -851,7 +851,7 @@ function createGameplayFacadeFake() {
           label: 'auto seed spawn',
           value: '10 crystal',
           effect: 'auto',
-          costGold: 0,
+          costCoin: 0,
           costCrystal: 10,
           costCurrency: 'crystal',
           completed: false,
@@ -868,7 +868,7 @@ function createGameplayFacadeFake() {
           label: 'auto plant tile 1',
           value: '1 crystal',
           effect: 'auto',
-          costGold: 0,
+          costCoin: 0,
           costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
@@ -879,7 +879,7 @@ function createGameplayFacadeFake() {
           label: 'auto plant tile 2',
           value: 'locked',
           effect: 'auto',
-          costGold: 0,
+          costCoin: 0,
           costCrystal: 2,
           costCurrency: 'crystal',
           completed: false,
@@ -897,7 +897,7 @@ function createGameplayFacadeFake() {
           label: 'auto harvest tile 1',
           value: '1 crystal',
           effect: 'auto',
-          costGold: 0,
+          costCoin: 0,
           costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
@@ -914,7 +914,7 @@ function createGameplayFacadeFake() {
           label: 'auto brew cauldron 1',
           value: '1 crystal',
           effect: 'auto',
-          costGold: 0,
+          costCoin: 0,
           costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
@@ -931,7 +931,7 @@ function createGameplayFacadeFake() {
           label: 'auto bottle cauldron 1',
           value: '1 crystal',
           effect: 'auto',
-          costGold: 0,
+          costCoin: 0,
           costCrystal: 1,
           costCurrency: 'crystal',
           completed: false,
@@ -952,7 +952,7 @@ function createGameplayFacadeFake() {
           effect: '85% payout',
           showEffect: true,
           requiredResearchIds: [],
-          costGold: 0,
+          costCoin: 0,
           costRuby: 2,
           costCurrency: 'ruby',
           completed: false,
@@ -971,7 +971,7 @@ function createGameplayFacadeFake() {
           effect: '-2% time',
           showEffect: true,
           requiredResearchIds: [],
-          costGold: 0,
+          costCoin: 0,
           costRuby: 1,
           costCurrency: 'ruby',
           completed: false,
@@ -990,7 +990,7 @@ function createGameplayFacadeFake() {
           effect: '-2% time',
           showEffect: true,
           requiredResearchIds: [],
-          costGold: 0,
+          costCoin: 0,
           costRuby: 1,
           costCurrency: 'ruby',
           completed: false,
@@ -1011,7 +1011,7 @@ function createGameplayFacadeFake() {
           effect: 'x2 herbs',
           showEffect: true,
           requiredResearchIds: [],
-          costGold: 0,
+          costCoin: 0,
           costEmerald: 1,
           costCurrency: 'emerald',
           completed: false,
@@ -1030,7 +1030,7 @@ function createGameplayFacadeFake() {
           effect: 'x2 potions',
           showEffect: true,
           requiredResearchIds: [],
-          costGold: 0,
+          costCoin: 0,
           costEmerald: 1,
           costCurrency: 'emerald',
           completed: false,
@@ -1077,7 +1077,7 @@ function createGameplayFacadeFake() {
 
   const updateResearchAffordability = () => {
     for (const research of getResearches()) {
-      const currency = research.costCurrency ?? 'gold';
+      const currency = research.costCurrency ?? 'coin';
       const current = getCurrencyCurrent(currency);
       const cost = getResearchCost(research);
 
@@ -1098,7 +1098,7 @@ function createGameplayFacadeFake() {
       return snapshot.emerald.current;
     }
 
-    return snapshot.gold.current;
+    return snapshot.coin.current;
   };
 
   const getResearchCost = (research) => {
@@ -1114,11 +1114,11 @@ function createGameplayFacadeFake() {
       return research.costEmerald;
     }
 
-    return research.costGold;
+    return research.costCoin;
   };
 
   const getResearchCurrent = (research) =>
-    getCurrencyCurrent(research.costCurrency ?? 'gold');
+    getCurrencyCurrent(research.costCurrency ?? 'coin');
 
   const spendResearchCost = (research) => {
     if (research.costCurrency === 'crystal') {
@@ -1136,7 +1136,7 @@ function createGameplayFacadeFake() {
       return;
     }
 
-    snapshot.gold.current -= research.costGold;
+    snapshot.coin.current -= research.costCoin;
   };
 
   const isResearchComplete = (researchId) =>
@@ -1305,7 +1305,7 @@ function createGameplayFacadeFake() {
     },
     createPersistenceSave: () => ({
       tasks: { currentLevel: snapshot.tasks.currentLevel },
-      gold: { current: snapshot.gold.current },
+      coin: { current: snapshot.coin.current },
       crystal: { current: snapshot.crystal.current },
     }),
     publishSnapshot: publish,
@@ -1412,13 +1412,13 @@ function createGameplayFacadeFake() {
     },
     buyShopShelfSlot: () => ({
       ok: false,
-      reason: 'not_enough_gold',
+      reason: 'not_enough_coin',
       cost: 1,
       slotNumber: 2,
     }),
     buyPlayerShopShelfSlot: () => ({
       ok: false,
-      reason: 'not_enough_gold',
+      reason: 'not_enough_coin',
       cost: 1,
       slotNumber: 2,
     }),
@@ -1434,16 +1434,16 @@ function createGameplayFacadeFake() {
         };
       }
 
-      if (snapshot.gold.current < cost) {
+      if (snapshot.coin.current < cost) {
         return {
           ok: false,
-          reason: 'not_enough_gold',
+          reason: 'not_enough_coin',
           cost,
           tileNumber,
         };
       }
 
-      snapshot.gold.current -= cost;
+      snapshot.coin.current -= cost;
       garden.unlockedTiles += 1;
       garden.tiles[tileNumber - 1].unlocked = true;
       updateGardenNextTile();
@@ -1476,16 +1476,16 @@ function createGameplayFacadeFake() {
         };
       }
 
-      if (snapshot.gold.current < cost) {
+      if (snapshot.coin.current < cost) {
         return {
           ok: false,
-          reason: 'not_enough_gold',
+          reason: 'not_enough_coin',
           cost,
           cauldronNumber,
         };
       }
 
-      snapshot.gold.current -= cost;
+      snapshot.coin.current -= cost;
       brewing.unlockedCauldrons += 1;
       const brewingFields = { ...brewing };
       delete brewingFields.cauldrons;
@@ -1529,15 +1529,15 @@ function createGameplayFacadeFake() {
         };
       }
 
-      if (snapshot.gold.current < completion.costGold) {
+      if (snapshot.coin.current < completion.costCoin) {
         return {
           ok: false,
-          reason: 'not_enough_gold',
-          costGold: completion.costGold,
+          reason: 'not_enough_coin',
+          costCoin: completion.costCoin,
         };
       }
 
-      snapshot.gold.current -= completion.costGold;
+      snapshot.coin.current -= completion.costCoin;
       snapshot.tasks.currentLevel += 1;
       snapshot.tasks.level.level = snapshot.tasks.currentLevel;
       snapshot.tasks.level.completion = {
@@ -1551,7 +1551,7 @@ function createGameplayFacadeFake() {
       return {
         ok: true,
         currentLevel: snapshot.tasks.currentLevel,
-        costGold: completion.costGold,
+        costCoin: completion.costCoin,
       };
     },
     completePrestigeMilestone: (level, { confirmedLower = false } = {}) => {
@@ -1840,7 +1840,7 @@ function createGameplayFacadeFake() {
       if (getResearchCurrent(research) < getResearchCost(research)) {
         return {
           ok: false,
-          reason: `not_enough_${research.costCurrency ?? 'gold'}`,
+          reason: `not_enough_${research.costCurrency ?? 'coin'}`,
           researchId,
           cost: getResearchCost(research),
           ...(research.costCurrency ? { costCurrency: research.costCurrency } : {}),
@@ -2220,7 +2220,7 @@ function createGameplayFacadeFake() {
       slot.sellKey = item.key;
       slot.sellLabel = item.label;
       slot.sellQuantity = item.quantity;
-      slot.sellGold = item.sellGold;
+      slot.sellCoin = item.sellCoin;
       slot.sellNeed = item.sellNeed;
       publish();
       return {
@@ -2239,7 +2239,7 @@ function createGameplayFacadeFake() {
       slot.sellKey = null;
       slot.sellLabel = null;
       slot.sellQuantity = null;
-      slot.sellGold = null;
+      slot.sellCoin = null;
       slot.sellNeed = null;
       slot.sellProgressSeconds = 0;
       publish();
@@ -2248,7 +2248,7 @@ function createGameplayFacadeFake() {
         slotNumber,
       };
     },
-    setSelectedPlayerShopShelfSlotListing: ({ itemTypeId, quantity, priceGold }) => {
+    setSelectedPlayerShopShelfSlotListing: ({ itemTypeId, quantity, priceCoin }) => {
       const slotNumber = snapshot.shop.playerShelf.selectedSlotNumber;
       const slot = snapshot.shop.playerShelf.slots.find(
         (shelfSlot) => shelfSlot.slotNumber === slotNumber,
@@ -2270,7 +2270,7 @@ function createGameplayFacadeFake() {
       slot.itemKind = item.kind;
       slot.itemLabel = item.label;
       slot.quantity = quantity;
-      slot.priceGold = priceGold;
+      slot.priceCoin = priceCoin;
       publish();
 
       return {
@@ -2278,7 +2278,7 @@ function createGameplayFacadeFake() {
         slotNumber,
         item,
         quantity,
-        priceGold,
+        priceCoin,
       };
     },
     clearSelectedPlayerShopShelfSlotListing: () => {
@@ -2299,7 +2299,7 @@ function createGameplayFacadeFake() {
       slot.itemKind = null;
       slot.itemLabel = null;
       slot.quantity = 0;
-      slot.priceGold = 0;
+      slot.priceCoin = 0;
       publish();
 
       return {
@@ -2307,7 +2307,7 @@ function createGameplayFacadeFake() {
         slotNumber,
       };
     },
-    setPlayerShopRequest: (slotNumber, { itemTypeId, quantity, priceGold }) => {
+    setPlayerShopRequest: (slotNumber, { itemTypeId, quantity, priceCoin }) => {
       const slot = snapshot.shop.playerRequests.slots.find(
         (requestSlot) => requestSlot.slotNumber === slotNumber,
       );
@@ -2327,7 +2327,7 @@ function createGameplayFacadeFake() {
       slot.itemKind = item.kind;
       slot.itemLabel = item.label;
       slot.quantity = quantity;
-      slot.priceGold = priceGold;
+      slot.priceCoin = priceCoin;
       publish();
 
       return {
@@ -2335,7 +2335,7 @@ function createGameplayFacadeFake() {
         slotNumber,
         item,
         quantity,
-        priceGold,
+        priceCoin,
       };
     },
     clearPlayerShopRequest: (slotNumber) => {
@@ -2355,7 +2355,7 @@ function createGameplayFacadeFake() {
       slot.itemKind = null;
       slot.itemLabel = null;
       slot.quantity = 0;
-      slot.priceGold = 0;
+      slot.priceCoin = 0;
       publish();
 
       return {
@@ -2381,7 +2381,7 @@ function createGameplayFacadeFake() {
         slot.itemKind = null;
         slot.itemLabel = null;
         slot.quantity = 0;
-        slot.priceGold = 0;
+        slot.priceCoin = 0;
       } else {
         slot.quantity = quantity;
       }
@@ -2394,25 +2394,25 @@ function createGameplayFacadeFake() {
         quantity,
       };
     },
-    buyPlayerShopListingItem: ({ itemKey, quantity = 1, priceGold }) => {
-      const totalPriceGold = quantity * priceGold;
+    buyPlayerShopListingItem: ({ itemKey, quantity = 1, priceCoin }) => {
+      const totalPriceCoin = quantity * priceCoin;
 
-      if (snapshot.gold.current < totalPriceGold) {
+      if (snapshot.coin.current < totalPriceCoin) {
         return {
           ok: false,
-          reason: 'not_enough_gold',
+          reason: 'not_enough_coin',
         };
       }
 
-      snapshot.gold.current -= totalPriceGold;
+      snapshot.coin.current -= totalPriceCoin;
       publish();
 
       return {
         ok: true,
         item: { key: itemKey },
         quantity,
-        priceGold,
-        totalPriceGold,
+        priceCoin,
+        totalPriceCoin,
       };
     },
     buyNpcMarketStockItem: async (itemTypeId, quantity = 1) => {
@@ -2427,16 +2427,16 @@ function createGameplayFacadeFake() {
         };
       }
 
-      const totalPriceGold = quantity * item.buyGold;
+      const totalPriceCoin = quantity * item.buyCoin;
 
-      if (snapshot.gold.current < totalPriceGold) {
+      if (snapshot.coin.current < totalPriceCoin) {
         return {
           ok: false,
-          reason: 'not_enough_gold',
+          reason: 'not_enough_coin',
         };
       }
 
-      snapshot.gold.current -= totalPriceGold;
+      snapshot.coin.current -= totalPriceCoin;
       item.stock -= quantity;
       item.quantity += quantity;
       publish();
@@ -2445,58 +2445,58 @@ function createGameplayFacadeFake() {
         ok: true,
         item,
         quantity,
-        priceGold: item.buyGold,
-        totalPriceGold,
+        priceCoin: item.buyCoin,
+        totalPriceCoin,
       };
     },
-    claimPlayerShopSaleProceeds: (gold) => {
-      snapshot.gold.current += gold;
+    claimPlayerShopSaleProceeds: (coin) => {
+      snapshot.coin.current += coin;
       publish();
 
       return {
         ok: true,
-        gold,
+        coin,
       };
     },
-    collectShopGoldOffer: () => {
-      if (!snapshot.shop.goldOffer.canCollect) {
+    collectShopCoinOffer: () => {
+      if (!snapshot.shop.coinOffer.canCollect) {
         return {
           ok: false,
           reason: 'cooldown',
-          cooldownRemainingSeconds: snapshot.shop.goldOffer.cooldownRemainingSeconds,
+          cooldownRemainingSeconds: snapshot.shop.coinOffer.cooldownRemainingSeconds,
         };
       }
 
-      const gold = snapshot.shop.goldOffer.rewardGold;
-      snapshot.gold.current += gold;
-      snapshot.shop.goldOffer.cooldownRemainingSeconds = snapshot.shop.goldOffer.cooldownSeconds;
-      snapshot.shop.goldOffer.remainingMs = snapshot.shop.goldOffer.cooldownSeconds * 1_000;
-      snapshot.shop.goldOffer.ready = false;
-      snapshot.shop.goldOffer.canCollect = false;
+      const coin = snapshot.shop.coinOffer.rewardCoin;
+      snapshot.coin.current += coin;
+      snapshot.shop.coinOffer.cooldownRemainingSeconds = snapshot.shop.coinOffer.cooldownSeconds;
+      snapshot.shop.coinOffer.remainingMs = snapshot.shop.coinOffer.cooldownSeconds * 1_000;
+      snapshot.shop.coinOffer.ready = false;
+      snapshot.shop.coinOffer.canCollect = false;
       publish();
 
       return {
         ok: true,
-        gold,
-        cooldownSeconds: snapshot.shop.goldOffer.cooldownSeconds,
+        coin,
+        cooldownSeconds: snapshot.shop.coinOffer.cooldownSeconds,
       };
     },
-    sellTutorialItemForGold: ({ itemKey, quantity = 1, goldEach = 1, goldTarget = null } = {}) => {
+    sellTutorialItemForCoin: ({ itemKey, quantity = 1, coinEach = 1, coinTarget = null } = {}) => {
       const item = getItemDefinitionByKey(itemKey);
       const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
-      const remainingGold = Number.isFinite(goldTarget)
-        ? Math.max(0, Math.floor(Number(goldTarget)) - snapshot.gold.current)
+      const remainingCoin = Number.isFinite(coinTarget)
+        ? Math.max(0, Math.floor(Number(coinTarget)) - snapshot.coin.current)
         : Number.POSITIVE_INFINITY;
 
-      if (remainingGold <= 0) {
+      if (remainingCoin <= 0) {
         return {
           ok: false,
-          reason: 'gold_target_met',
+          reason: 'coin_target_met',
         };
       }
 
-      const targetQuantity = Number.isFinite(remainingGold)
-        ? Math.min(requestedQuantity, Math.ceil(remainingGold / goldEach))
+      const targetQuantity = Number.isFinite(remainingCoin)
+        ? Math.min(requestedQuantity, Math.ceil(remainingCoin / coinEach))
         : requestedQuantity;
       const sellQuantity = Math.min(targetQuantity, getItemQuantity(item.id));
 
@@ -2507,16 +2507,16 @@ function createGameplayFacadeFake() {
         };
       }
 
-      const gold = Math.min(remainingGold, sellQuantity * goldEach);
-      snapshot.gold.current += gold;
+      const coin = Math.min(remainingCoin, sellQuantity * coinEach);
+      snapshot.coin.current += coin;
       publish();
 
       return {
         ok: true,
         item,
         quantity: sellQuantity,
-        gold,
-        currentGold: snapshot.gold.current,
+        coin,
+        currentCoin: snapshot.coin.current,
         tutorial: true,
       };
     },
@@ -2559,22 +2559,22 @@ function createGameplayFacadeFake() {
         ok: true,
       };
     },
-    setShopSellGold: (kind, sellGold) => {
+    setShopSellCoin: (kind, sellCoin) => {
       for (const sellKind of snapshot.shop.shelf.sellKinds) {
         if (sellKind.kind === kind) {
-          sellKind.sellGold = sellGold;
+          sellKind.sellCoin = sellCoin;
         }
       }
 
       for (const item of snapshot.shop.shelf.sellItems) {
         if (item.kind === kind) {
-          item.sellGold = sellGold;
+          item.sellCoin = sellCoin;
         }
       }
 
       for (const slot of snapshot.shop.shelf.slots) {
         if (slot.sellKind === kind) {
-          slot.sellGold = sellGold;
+          slot.sellCoin = sellCoin;
         }
       }
 
@@ -2601,7 +2601,7 @@ function createGameplayFacadeFake() {
       snapshot.shop.shelf.sellItems = sellItems;
       snapshot.shop.stock.items = sellItems.map((item) => ({
         ...item,
-        buyGold: item.buyGold ?? item.sellGold,
+        buyCoin: item.buyCoin ?? item.sellCoin,
         stock: item.stock ?? item.sellNeed ?? 0,
       }));
       snapshot.shop.playerShelf.sellItems = sellItems.map((item) => ({ ...item }));
@@ -2640,8 +2640,8 @@ function createGameplayFacadeFake() {
 
       publish();
     },
-    setGold: (amount) => {
-      snapshot.gold.current = amount;
+    setCoin: (amount) => {
+      snapshot.coin.current = amount;
       updateResearchAffordability();
       updateBrewing();
       publish();
@@ -3380,12 +3380,12 @@ function createPlayerShopFacadeFake() {
         itemLabel: 'sage seed',
         itemKind: 'seed',
         quantity: 2,
-        priceGold: 3,
-        totalPriceGold: 3,
+        priceCoin: 3,
+        totalPriceCoin: 3,
       },
     ],
     ownListings: [],
-    proceedsGold: 0,
+    proceedsCoin: 0,
   };
   const listeners = new Set();
 
@@ -3410,7 +3410,7 @@ function createPlayerShopFacadeFake() {
         sellerIdentity: 'self',
         username: 'wizard',
         ...slot,
-        totalPriceGold: slot.priceGold,
+        totalPriceCoin: slot.priceCoin,
       };
 
       if (existing) {
@@ -3442,12 +3442,12 @@ function createPlayerShopFacadeFake() {
       return { ok: true };
     },
     claimProceeds: async () => {
-      snapshot.proceedsGold = 0;
+      snapshot.proceedsCoin = 0;
       publish();
       return { ok: true };
     },
-    setProceedsGold: (gold) => {
-      snapshot.proceedsGold = gold;
+    setProceedsCoin: (coin) => {
+      snapshot.proceedsCoin = coin;
       publish();
     },
   };
@@ -3678,7 +3678,7 @@ describe('PagesFacade', () => {
     expect(
       topPanel.querySelector('[data-tutorial-id="top:mana"]')?.getAttribute('aria-label'),
     ).toBe('mana');
-    expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain('0 gold');
+    expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain('0 coin');
     expect(
       topPanel
         .querySelector('.room-top-panel__resources')
@@ -3780,7 +3780,7 @@ describe('PagesFacade', () => {
       ownRequests: [],
       tradeHistory: [],
       ownTradeHistory: [],
-      proceedsGold: 0,
+      proceedsCoin: 0,
     };
     const playerShopFacade = {
       getSnapshot: () => playerShopSnapshot,
@@ -3949,7 +3949,7 @@ describe('PagesFacade', () => {
     expect(emerald?.hidden).toBe(true);
   });
 
-  it('keeps top panel gold amount and unit in one fitted value', () => {
+  it('keeps top panel coin amount and unit in one fitted value', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const pagesFacade = new PagesFacade({
@@ -3958,14 +3958,14 @@ describe('PagesFacade', () => {
     });
 
     pagesFacade.mount(stage);
-    gameplayFacade.setGold(308.33);
+    gameplayFacade.setCoin(308.33);
 
-    const gold = stage.querySelector('.room-top-panel__resource[aria-label="gold"]');
-    const value = gold?.querySelector('.room-top-panel__resource-val');
+    const coin = stage.querySelector('.room-top-panel__resource[aria-label="coin"]');
+    const value = coin?.querySelector('.room-top-panel__resource-val');
 
-    expect(gold?.textContent).toBe('308.33 gold');
-    expect(value?.textContent).toBe('308.33 gold');
-    expect(gold?.querySelector('.room-top-panel__resource-key')).toBeNull();
+    expect(coin?.textContent).toBe('308.33 coin');
+    expect(value?.textContent).toBe('308.33 coin');
+    expect(coin?.querySelector('.room-top-panel__resource-key')).toBeNull();
   });
 
   it('shows top panel mana regen under the mana amount', () => {
@@ -3991,7 +3991,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__mana-sphere')).toBeNull();
   });
 
-  it('marks top panel mana and gold for icon mode', () => {
+  it('marks top panel mana and coin for icon mode', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -4001,19 +4001,19 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const mana = stage.querySelector('.room-top-panel__resource[aria-label="mana"]');
-    const gold = stage.querySelector('.room-top-panel__resource[aria-label="gold"]');
+    const coin = stage.querySelector('.room-top-panel__resource[aria-label="coin"]');
     const manaValue = mana?.querySelector('.room-top-panel__resource-val');
-    const goldValue = gold?.querySelector('.room-top-panel__resource-val');
+    const coinValue = coin?.querySelector('.room-top-panel__resource-val');
 
     expect(manaValue?.textContent).toBe('0/50 mana');
-    expect(goldValue?.textContent).toBe('0 gold');
+    expect(coinValue?.textContent).toBe('0 coin');
     expect(manaValue?.firstChild?.textContent).toBe('0/50 ');
-    expect(goldValue?.firstChild?.textContent).toBe('0 ');
+    expect(coinValue?.firstChild?.textContent).toBe('0 ');
     expect(
       manaValue?.querySelector('.style-resource-label--mana .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:mana');
-    expect(goldValue?.querySelector('.style-resource-label--gold')).not.toBeNull();
+    expect(coinValue?.querySelector('.style-resource-label--coin')).not.toBeNull();
   });
 
   it('shows the selected character avatar in the top panel only when icons are enabled', () => {
@@ -4277,6 +4277,47 @@ describe('PagesFacade', () => {
     expect(row?.dataset.notification).toBe('true');
   });
 
+  it('shows guild charter notifications on the guild tab and start button', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 15);
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.guild = {
+      unlocked: true,
+      created: false,
+      canCreate: true,
+      charterCostCoin: 1500,
+      currentCoin: 1500,
+    };
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createCompletedTutorialStorage(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const guildTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="guild"]');
+    expect(guildTab?.hidden).toBe(false);
+    expect(guildTab?.dataset.notification).toBe('true');
+    expect(guildTab?.dataset.notificationTone).toBe('red');
+
+    clickRoomTab(stage, 'guild');
+
+    const startButton = stage.querySelector('.guild-page__wide-button');
+    expect(startButton?.textContent).toBe('start guild');
+    expect(startButton?.dataset.notification).toBe('true');
+    expect(startButton?.dataset.notificationTone).toBe('red');
+
+    snapshot.guild.canCreate = false;
+    snapshot.guild.currentCoin = 1499;
+    gameplayFacade.publishSnapshot();
+
+    const updatedStartButton = stage.querySelector('.guild-page__wide-button');
+    expect(guildTab?.dataset.notification).toBeUndefined();
+    expect(updatedStartButton?.dataset.notification).toBeUndefined();
+  });
+
   it('suppresses unrelated notifications while a blocking FTUE step is active', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -4286,7 +4327,7 @@ describe('PagesFacade', () => {
       tutorialStorage: createMemoryStorage(),
     });
 
-    gameplayFacade.getSnapshot().shop.goldOffer.canCollect = true;
+    gameplayFacade.getSnapshot().shop.coinOffer.canCollect = true;
 
     pagesFacade.mount(stage);
     gameplayFacade.publishSnapshot();
@@ -5600,12 +5641,12 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
-    snapshot.gold.current = 20;
+    snapshot.coin.current = 20;
     snapshot.tasks.level.completedTasks = 1;
     snapshot.tasks.level.totalTasks = 1;
     snapshot.tasks.level.completion = {
       level: 1,
-      costGold: 20,
+      costCoin: 20,
       allTasksCompleted: true,
       atMaxLevel: false,
       completedAllLevels: false,
@@ -5654,13 +5695,13 @@ describe('PagesFacade', () => {
       ['crystal', '+1'],
     ]);
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
-    expect(button?.textContent).toBe('level up20 gold');
+    expect(button?.textContent).toBe('level up20 coin');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
       'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +0.25/sec mana regen, +1 crystal',
     );
@@ -6487,7 +6528,7 @@ describe('PagesFacade', () => {
     expect(authFacade.signInPayload).toMatchObject({
       pendingGameplaySave: {
         tasks: { currentLevel: 1 },
-        gold: { current: 0 },
+        coin: { current: 0 },
         crystal: { current: 0 },
       },
     });
@@ -6979,21 +7020,21 @@ describe('PagesFacade', () => {
       {
         id: 'unlockSeed:nettleSeed',
         label: 'nettle seed',
-        value: '3 gold',
+        value: '3 coin',
         completed: false,
         canResearch: false,
       },
       {
         id: 'unlockSeed:lavenderSeed',
         label: 'lavender seed',
-        value: '4 gold',
+        value: '4 coin',
         completed: false,
         canResearch: false,
       },
       {
         id: 'unlockSeed:briarSeed',
         label: 'briar seed',
-        value: '5 gold',
+        value: '5 coin',
         completed: false,
         canResearch: false,
       },
@@ -7061,7 +7102,7 @@ describe('PagesFacade', () => {
     const rows = [...stage.querySelectorAll('.workshop-page__bag-currency-row')];
     expect(rows.map((row) => row.querySelector('.row_key')?.textContent)).toEqual([
       'mana',
-      'gold',
+      'coin',
       'crystal',
       'ruby',
     ]);
@@ -7073,8 +7114,8 @@ describe('PagesFacade', () => {
     ]);
     expect(
       rows
-        .find((row) => row.querySelector('.row_key')?.textContent === 'gold')
-        ?.querySelector('.row_val .style-resource-label--gold'),
+        .find((row) => row.querySelector('.row_key')?.textContent === 'coin')
+        ?.querySelector('.row_val .style-resource-label--coin'),
     ).not.toBeNull();
     expect(rows.every((row) => row.classList.contains('is-empty'))).toBe(true);
   });
@@ -7416,20 +7457,20 @@ describe('PagesFacade', () => {
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().leaderboard = {
-      topGeneratedGoldUsers: Array.from({ length: 100 }, (_value, index) => ({
+      topGeneratedCoinUsers: Array.from({ length: 100 }, (_value, index) => ({
         name: `Player ${index + 1}`,
         playerLevel: index + 1,
         income: 0,
-        totalGeneratedGold: 200 - index,
+        totalGeneratedCoin: 200 - index,
         totalIncome: 200 - index,
       })),
       topIncomeUsers: [],
-      currentGeneratedGoldUser: {
+      currentGeneratedCoinUser: {
         name: 'Mine',
         allianceTag: 'SELF',
         playerLevel: 4,
         income: 0,
-        totalGeneratedGold: 1,
+        totalGeneratedCoin: 1,
         totalIncome: 1,
         rank: 102,
       },
@@ -7467,19 +7508,19 @@ describe('PagesFacade', () => {
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
     gameplayFacade.getSnapshot().leaderboard = {
-      topGeneratedGoldUsers: Array.from({ length: 100 }, (_value, index) => ({
+      topGeneratedCoinUsers: Array.from({ length: 100 }, (_value, index) => ({
         name: index === 2 ? 'Mine' : `Player ${index + 1}`,
         playerLevel: index + 1,
         income: 0,
-        totalGeneratedGold: 200 - index,
+        totalGeneratedCoin: 200 - index,
         totalIncome: 200 - index,
       })),
       topIncomeUsers: [],
-      currentGeneratedGoldUser: {
+      currentGeneratedCoinUser: {
         name: 'Mine',
         playerLevel: 3,
         income: 0,
-        totalGeneratedGold: 98,
+        totalGeneratedCoin: 98,
         totalIncome: 98,
         rank: 3,
       },
@@ -7535,7 +7576,7 @@ describe('PagesFacade', () => {
           username: 'Ada',
           allianceTag: 'TAP',
           allianceTagColor: 'blue',
-          totalProducedGold: 321,
+          totalProducedCoin: 321,
           playerLevel: 9,
           prestigeCount: 1,
         },
@@ -7641,9 +7682,9 @@ describe('PagesFacade', () => {
       browseRow.querySelector('.workshop-page__trade-alliance-row .row_key')?.textContent,
     ).toBe('[BG] BustinGame');
     expect(incomeRow.querySelector('.row_key')?.textContent).toBe('season income');
-    expect(incomeRow.querySelector('.row_val')?.textContent).toBe('6.36k gold');
-    expect(incomeRow.querySelector('.row_val')?.getAttribute('data-resource-color')).toBe('gold');
-    expect(incomeRow.querySelector('.row_val .style-resource-label--gold')).not.toBeNull();
+    expect(incomeRow.querySelector('.row_val')?.textContent).toBe('6.36k coin');
+    expect(incomeRow.querySelector('.row_val')?.getAttribute('data-resource-color')).toBe('coin');
+    expect(incomeRow.querySelector('.row_val .style-resource-label--coin')).not.toBeNull();
   });
 
   it('opens alliance info from trade alliance browse rows and joins open alliances', async () => {
@@ -8783,7 +8824,7 @@ describe('PagesFacade', () => {
       'silverleaf quiet: discovered by Ada',
     );
     expect(discoveredRow?.querySelector('.workshop-page__discovery-royalties')?.textContent).toBe(
-      'royalties 12.5 gold',
+      'royalties 12.5 coin',
     );
     expect(popup.textContent).toContain('- 1 mint');
     expect(popup.textContent).toContain('- 1 glowcap');
@@ -9729,7 +9770,7 @@ describe('PagesFacade', () => {
       'sage seed',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('x2 summon');
-    expect(stage.querySelector('.research-page__content')?.textContent).toContain('20 gold');
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain('20 coin');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('mana tonic');
     expect(
       [...stage.querySelectorAll('.research-page__tab-button')].map(
@@ -9785,22 +9826,22 @@ describe('PagesFacade', () => {
     crystalsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__market-panel--crystals')?.hidden).toBe(false);
-    const goldOffer = stage.querySelector('.shop-page__gold-offer');
-    expect(goldOffer).not.toBeNull();
-    expect(goldOffer?.querySelector('.shop-page__gold-offer-reward')?.textContent).toBe(
-      '20 gold',
+    const coinOffer = stage.querySelector('.shop-page__coin-offer');
+    expect(coinOffer).not.toBeNull();
+    expect(coinOffer?.querySelector('.shop-page__coin-offer-reward')?.textContent).toBe(
+      '20 coin',
     );
-    const goldCollectButton = goldOffer?.querySelector('.shop-page__gold-offer-action');
-    expect(goldCollectButton?.textContent).toBe('collect');
-    expect(goldCollectButton?.disabled).toBe(false);
-    expect(goldCollectButton?.dataset.notification).toBe('true');
+    const coinCollectButton = coinOffer?.querySelector('.shop-page__coin-offer-action');
+    expect(coinCollectButton?.textContent).toBe('collect');
+    expect(coinCollectButton?.disabled).toBe(false);
+    expect(coinCollectButton?.dataset.notification).toBe('true');
 
-    goldCollectButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    coinCollectButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(20);
-    expect(goldCollectButton?.textContent).toBe('2h');
-    expect(goldCollectButton?.disabled).toBe(true);
-    expect(goldCollectButton?.dataset.notification).toBeUndefined();
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(20);
+    expect(coinCollectButton?.textContent).toBe('2h');
+    expect(coinCollectButton?.disabled).toBe(true);
+    expect(coinCollectButton?.dataset.notification).toBeUndefined();
     expect(crystalsTab?.dataset.notification).toBeUndefined();
     expect(stage.querySelector('.shop-page__crystal-offers')).not.toBeNull();
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain(
@@ -10012,11 +10053,11 @@ describe('PagesFacade', () => {
     expect(cauldrons[1].classList.contains('is-locked')).toBe(true);
     expect(cauldrons[1].textContent).toContain('locked');
     expect(cauldrons[1].querySelector('.brewing-page__action-button')?.textContent).toContain(
-      'buy 1 gold',
+      'buy 1 coin',
     );
     expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(true);
 
-    gameplayFacade.setGold(1);
+    gameplayFacade.setCoin(1);
     expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(false);
     cauldrons[1]
       .querySelector('.brewing-page__action-button')
@@ -10034,7 +10075,7 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
 
     const brewing = gameplayFacade.getSnapshot().brewing;
@@ -10109,7 +10150,7 @@ describe('PagesFacade', () => {
     expect(selectRecipeButton?.hidden).toBe(true);
     expect(actions?.classList.contains('is-centered')).toBe(true);
 
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
 
     expect(selectRecipeButton?.hidden).toBe(false);
@@ -10269,7 +10310,7 @@ describe('PagesFacade', () => {
       playerFacade: createPlayerFacadeFake(),
     });
 
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     gameplayFacade.getSnapshot().inventory = [
       {
@@ -10452,7 +10493,7 @@ describe('PagesFacade', () => {
     });
 
     gameplayFacade.getSnapshot().brewing.herbs[0].quantity = 1;
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'brewing');
@@ -10485,7 +10526,7 @@ describe('PagesFacade', () => {
       playerFacade: createPlayerFacadeFake(),
     });
 
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     gameplayFacade.setMana(24);
     pagesFacade.mount(stage);
@@ -10545,7 +10586,7 @@ describe('PagesFacade', () => {
       playerFacade: createPlayerFacadeFake(),
     });
 
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'brewing');
@@ -10582,7 +10623,7 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     const brewing = gameplayFacade.getSnapshot().brewing;
     brewing.unlockedCauldrons = 2;
@@ -10649,7 +10690,7 @@ describe('PagesFacade', () => {
       playerFacade: createPlayerFacadeFake(),
     });
 
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'brewing');
@@ -10699,16 +10740,16 @@ describe('PagesFacade', () => {
     const manaValue = stage.querySelector(
       '.room-top-panel__resource[aria-label="mana"] .room-top-panel__resource-val',
     );
-    const goldValue = stage.querySelector(
-      '.room-top-panel__resource[aria-label="gold"] .room-top-panel__resource-val',
+    const coinValue = stage.querySelector(
+      '.room-top-panel__resource[aria-label="coin"] .room-top-panel__resource-val',
     );
     const manaText = manaValue.firstChild;
-    const goldText = goldValue.firstChild;
+    const coinText = coinValue.firstChild;
 
     gameplayFacade.publishSnapshot();
 
     expect(manaValue.firstChild).toBe(manaText);
-    expect(goldValue.firstChild).toBe(goldText);
+    expect(coinValue.firstChild).toBe(coinText);
   });
 
   it('keeps Brewing text DOM stable across unchanged snapshot renders', () => {
@@ -10846,21 +10887,21 @@ describe('PagesFacade', () => {
       {
         id: 'unlockSeed:nettleSeed',
         label: 'nettle seed',
-        value: '3 gold',
+        value: '3 coin',
         completed: false,
         canResearch: false,
       },
       {
         id: 'unlockSeed:lavenderSeed',
         label: 'lavender seed',
-        value: '4 gold',
+        value: '4 coin',
         completed: false,
         canResearch: false,
       },
       {
         id: 'unlockSeed:briarSeed',
         label: 'briar seed',
-        value: '5 gold',
+        value: '5 coin',
         completed: false,
         canResearch: false,
       },
@@ -11056,10 +11097,10 @@ describe('PagesFacade', () => {
     expect(rows[0].disabled).toBe(false);
     expect(rows[1].querySelector('.garden-page__plot-label')?.textContent).toBe('plot 2');
     expect(rows[1].querySelector('.garden-page__plot-state')?.textContent).toBe('');
-    expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('buy 1 gold');
+    expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('buy 1 coin');
     expect(rows[1].disabled).toBe(true);
 
-    gameplayFacade.setGold(1);
+    gameplayFacade.setCoin(1);
     expect(rows[1].disabled).toBe(false);
 
     rows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -11483,7 +11524,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
 
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
@@ -11800,21 +11841,21 @@ describe('PagesFacade', () => {
       playerFacade: createPlayerFacadeFake(),
     });
 
-    gameplayFacade.setGold(25);
+    gameplayFacade.setCoin(25);
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'research');
 
     const researchButton = [...stage.querySelectorAll('.research-page__research-button')].find(
-      (button) => button.textContent === '20 gold',
+      (button) => button.textContent === '20 coin',
     );
 
-    expect(researchButton.textContent).toBe('20 gold');
+    expect(researchButton.textContent).toBe('20 coin');
     expect(researchButton.disabled).toBe(false);
 
     researchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(5);
-    expect(stage.querySelector('.room-top-panel')?.textContent).toContain('5 gold');
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(5);
+    expect(stage.querySelector('.room-top-panel')?.textContent).toContain('5 coin');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('researched');
   });
 
@@ -11891,7 +11932,7 @@ describe('PagesFacade', () => {
       label: 'mint seed',
       value: 'locked',
       effect: 'drop',
-      costGold: 2,
+      costCoin: 2,
       completed: false,
       locked: true,
       canResearch: false,
@@ -11916,7 +11957,7 @@ describe('PagesFacade', () => {
     expect(findResearchRow('mint seed')?.classList.contains('is-unavailable')).toBe(true);
     expect(findResearchRow('mint seed')?.classList.contains('is-locked')).toBe(true);
 
-    gameplayFacade.setGold(25);
+    gameplayFacade.setCoin(25);
 
     expect(findResearchRow('x2 summon')?.classList.contains('is-unavailable')).toBe(
       false,
@@ -11937,7 +11978,7 @@ describe('PagesFacade', () => {
         label: 'mint seed',
         value: 'locked',
         effect: 'drop',
-        costGold: 2,
+        costCoin: 2,
         completed: false,
         locked: true,
         canResearch: false,
@@ -11947,7 +11988,7 @@ describe('PagesFacade', () => {
         label: 'nettle seed',
         value: 'locked',
         effect: 'drop',
-        costGold: 3,
+        costCoin: 3,
         completed: false,
         locked: true,
         canResearch: false,
@@ -11957,7 +11998,7 @@ describe('PagesFacade', () => {
         label: 'lavender seed',
         value: 'locked',
         effect: 'drop',
-        costGold: 5,
+        costCoin: 5,
         completed: false,
         locked: true,
         canResearch: false,
@@ -11967,7 +12008,7 @@ describe('PagesFacade', () => {
         label: 'briar seed',
         value: 'locked',
         effect: 'drop',
-        costGold: 8,
+        costCoin: 8,
         completed: false,
         locked: true,
         canResearch: false,
@@ -12043,7 +12084,7 @@ describe('PagesFacade', () => {
       label: 'minor healing potion',
       value: 'locked',
       effect: 'brew',
-      costGold: 7,
+      costCoin: 7,
       completed: false,
       locked: true,
       canResearch: false,
@@ -12099,7 +12140,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('herbs');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('potions');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'sage seed (0) 1 gold',
+      'sage seed (0) 1 coin',
     );
     expect(
       stage.querySelector('.shop-page__sell-dialog .shop-page__sell-tab-button'),
@@ -12114,7 +12155,7 @@ describe('PagesFacade', () => {
     ).toBe('empty');
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'sage seed (0) 1 gold',
+      (button) => button.textContent === 'sage seed (0) 1 coin',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
@@ -12122,7 +12163,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 1 gold',
+      '1.sage seed (0) 1 coin',
     );
     const seedItemValue = stage.querySelector('.shop-page__slot-item-value');
     expect(seedItemValue?.getAttribute('data-resource-color')).toBe('seed');
@@ -12131,7 +12172,7 @@ describe('PagesFacade', () => {
       stage
         .querySelector('.shop-page__slot-price-value')
         ?.getAttribute('data-resource-color'),
-    ).toBe('gold');
+    ).toBe('coin');
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
       '1. sells sage seed',
     );
@@ -12141,7 +12182,7 @@ describe('PagesFacade', () => {
   it('colors NPC market item names and prices separately', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
-    gameplayFacade.setGold(3);
+    gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -12157,7 +12198,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'mana tonic (0) 5 gold')
+      .find((button) => button.textContent === 'mana tonic (0) 5 coin')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.shop-page__sell-mark-all-button')
@@ -12167,13 +12208,13 @@ describe('PagesFacade', () => {
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.mana tonic (0) 5 gold',
+      '1.mana tonic (0) 5 coin',
     );
     expect(itemValue?.textContent).toBe('mana tonic (0)');
     expect(itemValue?.getAttribute('data-resource-color')).toBe('potion');
     expect(itemValue?.classList.contains('is-empty')).toBe(true);
-    expect(priceValue?.textContent).toBe(' 5 gold');
-    expect(priceValue?.getAttribute('data-resource-color')).toBe('gold');
+    expect(priceValue?.textContent).toBe(' 5 coin');
+    expect(priceValue?.getAttribute('data-resource-color')).toBe('coin');
   });
 
   it('does not open shop sell picker for locked NPC market stands', () => {
@@ -12207,14 +12248,14 @@ describe('PagesFacade', () => {
 
     clickNpcMarketStandLabel(stage);
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'sage seed (0) 1 gold')
+      .find((button) => button.textContent === 'sage seed (0) 1 coin')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.shop-page__sell-mark-all-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 1 gold',
+      '1.sage seed (0) 1 coin',
     );
 
     clickNpcMarketStandLabel(stage);
@@ -12248,30 +12289,30 @@ describe('PagesFacade', () => {
     clickNpcMarketStandLabel(stage);
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'sage seed (0) 1 gold',
+      (button) => button.textContent === 'sage seed (0) 1 coin',
     );
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.shop-page__sell-mark-all-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    gameplayFacade.setShopSellGold('seed', 7);
+    gameplayFacade.setShopSellCoin('seed', 7);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 7 gold',
+      '1.sage seed (0) 7 coin',
     );
 
     gameplayFacade.setShopSellNeed(1, 4);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 7 gold',
+      '1.sage seed (0) 7 coin',
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('need 4');
 
     clickNpcMarketStandLabel(stage);
 
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'sage seed (0) 7 gold',
+      'sage seed (0) 7 coin',
     );
   });
 
@@ -12293,7 +12334,7 @@ describe('PagesFacade', () => {
         label: 'mint seed',
         kind: 'seed',
         quantity: 1,
-        sellGold: 1,
+        sellCoin: 1,
       },
     ]);
 
@@ -12304,10 +12345,10 @@ describe('PagesFacade', () => {
       row.textContent.includes('sage seed'),
     );
     const mintButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'mint seed (1) 1 gold',
+      (button) => button.textContent === 'mint seed (1) 1 coin',
     );
 
-    expect(visibleRows).toEqual(['empty', 'mint seed (1) 1 gold']);
+    expect(visibleRows).toEqual(['empty', 'mint seed (1) 1 coin']);
     expect(mintButton?.disabled).toBe(false);
     expect(sageRow?.hidden ?? true).toBe(true);
   });
@@ -12325,7 +12366,7 @@ describe('PagesFacade', () => {
     clickNpcMarketStandLabel(stage);
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'sage seed (0) 1 gold')
+      .find((button) => button.textContent === 'sage seed (0) 1 coin')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
       .querySelector('.shop-page__sell-mark-all-button')
@@ -12334,7 +12375,7 @@ describe('PagesFacade', () => {
     gameplayFacade.setShopSellItems([]);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 1 gold',
+      '1.sage seed (0) 1 coin',
     );
   });
 
@@ -12357,7 +12398,7 @@ describe('PagesFacade', () => {
     herbsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const sageHerbButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'sage (0) 2 gold',
+      (button) => button.textContent === 'sage (0) 2 coin',
     );
     expect(sageHerbButton.closest('.shop-page__sell-item-row').hidden).toBe(false);
 
@@ -12366,7 +12407,7 @@ describe('PagesFacade', () => {
     const visiblePotionRows = [...stage.querySelectorAll('.shop-page__sell-item-row')]
       .filter((row) => !row.hidden)
       .map((row) => row.textContent);
-    expect(visiblePotionRows).not.toContain('mana tonic (locked) 5 gold');
+    expect(visiblePotionRows).not.toContain('mana tonic (locked) 5 coin');
   });
 
   it('hides shop sell picker with Escape or outside click', () => {
@@ -12400,7 +12441,7 @@ describe('PagesFacade', () => {
     });
 
     gameplayFacade.setShopSellItemQuantity(1, 4);
-    gameplayFacade.setGold(10);
+    gameplayFacade.setCoin(10);
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
 
@@ -12432,17 +12473,17 @@ describe('PagesFacade', () => {
     [...requestPopup.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.textContent === 'sage seed (4)')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    const [requestQuantityInput, requestGoldInput] =
+    const [requestQuantityInput, requestCoinInput] =
       requestPopup.querySelectorAll('.shop-page__request-input');
     requestQuantityInput.value = '3';
-    requestGoldInput.value = '2.5';
+    requestCoinInput.value = '2.5';
     requestPopup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(requestPopup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.sage seed (3) 2.5 gold',
+      '1.sage seed (3) 2.5 coin',
     );
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
@@ -12459,7 +12500,7 @@ describe('PagesFacade', () => {
 
     const listingPopup = stage.querySelector('.shop-page__player-listing-popup');
     expect(listingPopup.textContent).toContain('quantity');
-    expect(listingPopup.textContent).toContain('gold each');
+    expect(listingPopup.textContent).toContain('coin each');
     const listingSpace = listingPopup.querySelector('.shop-page__player-listing-space');
     expect(listingSpace).not.toBeNull();
     expect(listingPopup.querySelector('.shop-page__player-listing-choice-row')).toBeNull();
@@ -12496,7 +12537,7 @@ describe('PagesFacade', () => {
     await Promise.resolve();
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
-      '1.sage seed (2) 4 gold',
+      '1.sage seed (2) 4 coin',
     );
     expect(
       stage
@@ -12507,7 +12548,7 @@ describe('PagesFacade', () => {
       stage
         .querySelector('.shop-page__player-shelf .shop-page__slot-price-value')
         ?.getAttribute('data-resource-color'),
-    ).toBe('gold');
+    ).toBe('coin');
     expect(listingPopup.hidden).toBe(true);
 
     stage
@@ -12528,17 +12569,17 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(4);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(4);
     expect(marketPopup.textContent).toContain('empty');
 
-    playerShopFacade.setProceedsGold(5);
+    playerShopFacade.setProceedsCoin(5);
     const claimProceedsButton = stage.querySelector('.shop-page__claim-proceeds-button');
     expect(claimProceedsButton?.hidden).toBe(false);
-    expect(claimProceedsButton?.textContent).toBe('claim (5 gold)');
+    expect(claimProceedsButton?.textContent).toBe('claim (5 coin)');
     claimProceedsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 
-    expect(gameplayFacade.getSnapshot().gold.current).toBe(9);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(9);
     expect(claimProceedsButton.hidden).toBe(true);
   });
 

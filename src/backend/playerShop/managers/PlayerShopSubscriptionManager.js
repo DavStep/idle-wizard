@@ -1,4 +1,4 @@
-import { normalizeGoldPrice } from '../../../shared/goldPrice.js';
+import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
 
 const PUBLIC_LISTINGS_QUERY = 'SELECT * FROM public_player_shop_listing';
 const OWN_LISTINGS_QUERY = 'SELECT * FROM own_player_shop_listing';
@@ -19,7 +19,7 @@ const EMPTY_SNAPSHOT = {
   ownRequests: [],
   tradeHistory: [],
   ownTradeHistory: [],
-  proceedsGold: 0,
+  proceedsCoin: 0,
 };
 
 export class PlayerShopSubscriptionManager {
@@ -387,7 +387,7 @@ export class PlayerShopSubscriptionManager {
     );
     const listings = publicListings.filter(
       (listing) =>
-        listing.sellerIdentity !== identityKey && listing.quantity > 0 && listing.priceGold > 0,
+        listing.sellerIdentity !== identityKey && listing.quantity > 0 && listing.priceCoin > 0,
     );
     const publicRequests = Array.from(
       this.marketDataActive ? this.publicRequestsTable?.iter?.() ?? [] : [],
@@ -411,7 +411,7 @@ export class PlayerShopSubscriptionManager {
     );
     const requests = publicRequests.filter(
       (request) =>
-        request.requesterIdentity !== identityKey && request.quantity > 0 && request.priceGold > 0,
+        request.requesterIdentity !== identityKey && request.quantity > 0 && request.priceCoin > 0,
     );
     const proceedsRow = Array.from(this.proceedsTable.iter()).find(
       (row) => this.toIdentityKey(row.sellerIdentity ?? row.seller_identity) === identityKey,
@@ -427,16 +427,24 @@ export class PlayerShopSubscriptionManager {
       ownRequests,
       tradeHistory,
       ownTradeHistory,
-      proceedsGold:
-        this.toGoldPrice(proceedsRow?.gold, proceedsRow?.goldScale ?? proceedsRow?.gold_scale) ??
-        0,
+      proceedsCoin:
+        this.toCoinPrice(
+          proceedsRow?.coin ?? proceedsRow?.gold,
+          proceedsRow?.coinScale ??
+            proceedsRow?.goldScale ??
+            proceedsRow?.coin_scale ??
+            proceedsRow?.gold_scale,
+        ) ?? 0,
     });
   }
 
   mapListing(row) {
     const quantity = this.toNumber(row.quantity);
-    const priceGold =
-      this.toGoldPrice(row.priceGold ?? row.price_gold, row.priceScale ?? row.price_scale) ?? 0;
+    const priceCoin =
+      this.toCoinPrice(
+        row.priceCoin ?? row.priceGold ?? row.price_coin ?? row.price_gold,
+        row.priceScale ?? row.price_scale,
+      ) ?? 0;
 
     return {
       listingKey: String(row.listingKey ?? row.listing_key ?? ''),
@@ -447,16 +455,19 @@ export class PlayerShopSubscriptionManager {
       itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
       quantity,
-      priceGold,
-      totalPriceGold: priceGold,
+      priceCoin,
+      totalPriceCoin: priceCoin,
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
   }
 
   mapRequest(row) {
     const quantity = this.toNumber(row.quantity);
-    const priceGold =
-      this.toGoldPrice(row.priceGold ?? row.price_gold, row.priceScale ?? row.price_scale) ?? 0;
+    const priceCoin =
+      this.toCoinPrice(
+        row.priceCoin ?? row.priceGold ?? row.price_coin ?? row.price_gold,
+        row.priceScale ?? row.price_scale,
+      ) ?? 0;
 
     return {
       requestKey: String(row.requestKey ?? row.request_key ?? ''),
@@ -467,8 +478,8 @@ export class PlayerShopSubscriptionManager {
       itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
       quantity,
-      priceGold,
-      totalPriceGold: priceGold,
+      priceCoin,
+      totalPriceCoin: priceCoin,
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
   }
@@ -547,11 +558,21 @@ export class PlayerShopSubscriptionManager {
   mapTrade(row) {
     const quantity = this.toNumber(row.quantity);
     const priceScale = row.priceScale ?? row.price_scale;
-    const priceGold = this.toGoldPrice(row.priceGold ?? row.price_gold, priceScale) ?? 0;
+    const priceCoin =
+      this.toCoinPrice(
+        row.priceCoin ?? row.priceGold ?? row.price_coin ?? row.price_gold,
+        priceScale,
+      ) ?? 0;
     const buyerUsername = row.buyerUsername ?? row.buyer_username;
     const sellerUsername = row.sellerUsername ?? row.seller_username;
-    const totalPriceGold =
-      this.toGoldPrice(row.totalPriceGold ?? row.total_price_gold, priceScale) ?? 0;
+    const totalPriceCoin =
+      this.toCoinPrice(
+        row.totalPriceCoin ??
+          row.totalPriceGold ??
+          row.total_price_coin ??
+          row.total_price_gold,
+        priceScale,
+      ) ?? 0;
 
     return {
       tradeId: this.toId(row.tradeId ?? row.trade_id),
@@ -563,8 +584,8 @@ export class PlayerShopSubscriptionManager {
       itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
       quantity,
-      priceGold,
-      totalPriceGold: totalPriceGold || priceGold * quantity,
+      priceCoin,
+      totalPriceCoin: totalPriceCoin || priceCoin * quantity,
       tradedAtMs: this.toTimestampMs(row.tradedAt ?? row.traded_at),
     };
   }
@@ -639,8 +660,8 @@ export class PlayerShopSubscriptionManager {
     return String(value ?? '').trim().toLowerCase();
   }
 
-  toGoldPrice(value, scaleValue) {
+  toCoinPrice(value, scaleValue) {
     const scale = Number(scaleValue) === 100 ? 100 : 1;
-    return normalizeGoldPrice(this.toNumber(value) / scale);
+    return normalizeCoinPrice(this.toNumber(value) / scale);
   }
 }

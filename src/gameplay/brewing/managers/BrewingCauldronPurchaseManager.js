@@ -1,12 +1,12 @@
 export class BrewingCauldronPurchaseManager {
   constructor({
-    goldFacade,
+    coinFacade,
     brewingBalanceManager,
     brewingCauldronEntityManager,
     playerLevelFacade,
     researchFacade,
   }) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.brewingBalanceManager = brewingBalanceManager;
     this.brewingCauldronEntityManager = brewingCauldronEntityManager;
     this.playerLevelFacade = playerLevelFacade;
@@ -45,10 +45,10 @@ export class BrewingCauldronPurchaseManager {
       };
     }
 
-    if (!this.goldFacade.spend(cost)) {
+    if (!this.coinFacade.spend(cost)) {
       return {
         ok: false,
-        reason: 'not_enough_gold',
+        reason: 'not_enough_coin',
         cost,
         cauldronNumber: nextCauldronNumber,
       };

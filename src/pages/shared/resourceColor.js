@@ -1,6 +1,6 @@
 const RESOURCE_COLORS = new Set([
   'mana',
-  'gold',
+  'coin',
   'crystal',
   'emerald',
   'ruby',
@@ -61,8 +61,8 @@ export function setResourceColorFromText(element, text) {
     return;
   }
 
-  if (/\bgold\b|(^|[^\w])(\d+|\?)g($|[^\w])/.test(normalizedText)) {
-    setResourceColor(element, 'gold');
+  if (/\bcoin\b|(^|[^\w])(\d+|\?)g($|[^\w])/.test(normalizedText)) {
+    setResourceColor(element, 'coin');
     return;
   }
 

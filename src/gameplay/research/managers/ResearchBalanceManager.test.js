@@ -6,7 +6,7 @@ describe('ResearchBalanceManager', () => {
   it('caps research durations at ten minutes', () => {
     const manager = new ResearchBalanceManager({
       balance: {
-        researchCostsGold: {
+        researchCostsCoin: {
           shortStudy: 1,
           exactStudy: 2,
           longStudy: 3,
@@ -26,13 +26,13 @@ describe('ResearchBalanceManager', () => {
     manager.setRuntimeConfigs([
       {
         researchId: 'shortStudy',
-        costGold: 1,
+        costCoin: 1,
         durationSeconds: 720,
         enabled: true,
       },
       {
         researchId: 'exactStudy',
-        costGold: 2,
+        costCoin: 2,
         durationSeconds: 0,
         enabled: true,
       },
@@ -45,7 +45,7 @@ describe('ResearchBalanceManager', () => {
   it('reads emerald research costs from balance', () => {
     const manager = new ResearchBalanceManager({
       balance: {
-        researchCostsGold: {},
+        researchCostsCoin: {},
         researchCostsEmerald: {
           'emerald:plotPlanting:2:2': 2,
         },

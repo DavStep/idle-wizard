@@ -8,10 +8,10 @@ describe('resource icon labels', () => {
   it('marks resource words while preserving text content', () => {
     const element = document.createElement('span');
 
-    setResourceIconText(element, 'cost 10 mana, 2 gold, 5 crystals, 1 emerald, and 3 rubies');
+    setResourceIconText(element, 'cost 10 mana, 2 coin, 5 crystals, 1 emerald, and 3 rubies');
 
     expect(element.textContent).toBe(
-      'cost 10 mana, 2 gold, 5 crystals, 1 emerald, and 3 rubies',
+      'cost 10 mana, 2 coin, 5 crystals, 1 emerald, and 3 rubies',
     );
     expect(
       [...element.querySelectorAll('.style-resource-label__icon')].map(
@@ -19,7 +19,7 @@ describe('resource icon labels', () => {
       ),
     ).toEqual([
       'resource:mana',
-      'resource:gold',
+      'resource:coin',
       'resource:crystal',
       'resource:emerald',
       'resource:ruby',
@@ -41,11 +41,11 @@ describe('resource icon labels', () => {
   it('keeps already-marked unchanged text stable', () => {
     const element = document.createElement('span');
 
-    setResourceIconText(element, '1 gold');
-    const goldLabel = element.querySelector('.style-resource-label--gold');
+    setResourceIconText(element, '1 coin');
+    const coinLabel = element.querySelector('.style-resource-label--coin');
 
-    setResourceIconText(element, '1 gold');
+    setResourceIconText(element, '1 coin');
 
-    expect(element.querySelector('.style-resource-label--gold')).toBe(goldLabel);
+    expect(element.querySelector('.style-resource-label--coin')).toBe(coinLabel);
   });
 });

@@ -7,7 +7,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    'Level requirements give the wizard item turn-ins: turn in the listed drops, complete the filled requirements, then pay gold to level up.';
+    'Level requirements give the wizard item turn-ins: turn in the listed drops, complete the filled requirements, then pay coin to level up.';
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });
@@ -62,8 +62,8 @@ export class TasksFacade {
     return this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot();
   }
 
-  getLevelCompletionCostGold(levelNumber) {
-    return this.taskBalanceManager.getLevelCompletionCostGold(levelNumber);
+  getLevelCompletionCostCoin(levelNumber) {
+    return this.taskBalanceManager.getLevelCompletionCostCoin(levelNumber);
   }
 
   completeCurrentLevel() {

@@ -1,6 +1,6 @@
 export class ShopAutoSellManager {
   constructor({
-    goldFacade,
+    coinFacade,
     itemsFacade,
     shopBalanceManager,
     shopNpcPriceManager,
@@ -10,7 +10,7 @@ export class ShopAutoSellManager {
     onItemSold,
     now = () => Date.now(),
   }) {
-    this.goldFacade = goldFacade;
+    this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.shopBalanceManager = shopBalanceManager;
     this.shopNpcPriceManager = shopNpcPriceManager;
@@ -147,13 +147,13 @@ export class ShopAutoSellManager {
       return { sold: false, blocked: false };
     }
 
-    const gold = this.shopNpcPriceManager.getNpcBuyPriceGold(item);
+    const coin = this.shopNpcPriceManager.getNpcBuyPriceCoin(item);
 
-    if (!Number.isFinite(gold)) {
+    if (!Number.isFinite(coin)) {
       return { sold: false, blocked: this.isPriceDataPending() };
     }
 
-    if (gold <= 0) {
+    if (coin <= 0) {
       return { sold: false, blocked: false };
     }
 
@@ -177,7 +177,7 @@ export class ShopAutoSellManager {
       return { sold: false, blocked: false };
     }
 
-    const quote = this.quoteSale(item, quantity, gold, { npcNeed });
+    const quote = this.quoteSale(item, quantity, coin, { npcNeed });
 
     if (!quote.ok) {
       return {
@@ -194,14 +194,14 @@ export class ShopAutoSellManager {
       return { sold: false, blocked: false };
     }
 
-    const totalGold = quote.totalPriceGold;
-    this.goldFacade.add(totalGold);
+    const totalCoin = quote.totalPriceCoin;
+    this.coinFacade.add(totalCoin);
     this.shopShelfEntityManager.consumeSlotSellQuantityLimit?.(slot.slotNumber, quantity);
     this.consumeNpcNeed(item, quantity, npcNeedByItemKey);
     void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
     this.onItemSold?.({
       item,
-      gold: totalGold,
+      coin: totalCoin,
       quantity,
       slotNumber: slot.slotNumber,
     });
@@ -340,7 +340,7 @@ export class ShopAutoSellManager {
     return quantity;
   }
 
-  quoteSale(item, quantity, fallbackPriceGold, { npcNeed = null } = {}) {
+  quoteSale(item, quantity, fallbackPriceCoin, { npcNeed = null } = {}) {
     const quote = this.shopNpcSellQuoteManager?.quoteItem?.({
       item,
       quantity,
@@ -354,8 +354,8 @@ export class ShopAutoSellManager {
     return {
       ok: true,
       quantity,
-      priceGold: fallbackPriceGold,
-      totalPriceGold: fallbackPriceGold * quantity,
+      priceCoin: fallbackPriceCoin,
+      totalPriceCoin: fallbackPriceCoin * quantity,
     };
   }
 }

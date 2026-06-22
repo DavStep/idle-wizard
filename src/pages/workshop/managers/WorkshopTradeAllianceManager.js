@@ -4,7 +4,7 @@ import {
   getTradeAllianceTagColorCssValue,
   normalizeTradeAllianceTagColor,
 } from '../../../shared/tradeAllianceTagColors.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { createAllianceTagSpan } from '../../shared/allianceTagLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
@@ -451,8 +451,8 @@ export class WorkshopTradeAllianceManager {
       ),
       this.createTextRow(
         'season income',
-        this.formatGoldText(alliance.seasonIncome),
-        { muted: true, compact: true, resource: 'gold' },
+        this.formatCoinText(alliance.seasonIncome),
+        { muted: true, compact: true, resource: 'coin' },
       ),
     );
 
@@ -564,11 +564,11 @@ export class WorkshopTradeAllianceManager {
     root.append(
       this.createTextRow('role', this.formatRole(member?.role)),
       this.createTextRow('members', `${alliance.memberCount}/50`),
-      this.createTextRow('season income', this.formatGoldText(alliance.seasonIncome), {
-        resource: 'gold',
+      this.createTextRow('season income', this.formatCoinText(alliance.seasonIncome), {
+        resource: 'coin',
       }),
-      this.createTextRow('daily income', this.formatGoldText(alliance.dailyIncome), {
-        resource: 'gold',
+      this.createTextRow('daily income', this.formatCoinText(alliance.dailyIncome), {
+        resource: 'coin',
       }),
       this.createQuestResetRow(),
     );
@@ -1242,7 +1242,7 @@ export class WorkshopTradeAllianceManager {
 
   applyResourceValue(element, value, resource) {
     setResourceColor(element, resource);
-    if (resource === 'gold') {
+    if (resource === 'coin') {
       setResourceIconText(element, value);
     }
   }
@@ -1644,8 +1644,8 @@ export class WorkshopTradeAllianceManager {
     return Number.isFinite(level) && level >= 1 ? level : 1;
   }
 
-  formatGoldText(value) {
-    return formatGoldPriceText(Math.floor(Number(value) || 0));
+  formatCoinText(value) {
+    return formatCoinPriceText(Math.floor(Number(value) || 0));
   }
 
   applyVisibility() {

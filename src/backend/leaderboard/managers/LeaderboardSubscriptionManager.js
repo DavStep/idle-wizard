@@ -5,13 +5,13 @@ const TOP_USER_LIMIT = 100;
 const LEADERBOARD_QUERY = 'SELECT * FROM leaderboard_summary';
 const EMPTY_SNAPSHOT = {
   topUsers: [],
-  topGeneratedGoldUsers: [],
+  topGeneratedCoinUsers: [],
   topIncomeUsers: [],
   topDailyUsers: [],
   topWeeklyUsers: [],
   topMonthlyUsers: [],
   topAllTimeUsers: [],
-  currentGeneratedGoldUser: null,
+  currentGeneratedCoinUser: null,
   currentIncomeUser: null,
   currentDailyUser: null,
   currentWeeklyUser: null,
@@ -109,16 +109,20 @@ export class LeaderboardSubscriptionManager {
         dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
         weeklyIncome: this.toNumber(row.weeklyIncome ?? row.weekly_income),
         monthlyIncome: this.toNumber(row.monthlyIncome ?? row.monthly_income),
-        totalGeneratedGold: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
-        totalIncome: this.toNumber(row.totalIncome ?? row.totalGeneratedGold),
+        totalGeneratedCoin: this.toNumber(
+          row.totalIncome ?? row.totalGeneratedCoin ?? row.totalGeneratedGold,
+        ),
+        totalIncome: this.toNumber(
+          row.totalIncome ?? row.totalGeneratedCoin ?? row.totalGeneratedGold,
+        ),
         dailyRank: this.toRank(row.dailyRank ?? row.daily_rank),
         weeklyRank: this.toRank(row.weeklyRank ?? row.weekly_rank),
         monthlyRank: this.toRank(row.monthlyRank ?? row.monthly_rank),
         allTimeRank: this.toRank(row.allTimeRank ?? row.all_time_rank),
       }));
-    const rankedGeneratedGoldUsers = this.getRankedUsersBy(users, 'totalGeneratedGold');
+    const rankedGeneratedCoinUsers = this.getRankedUsersBy(users, 'totalGeneratedCoin');
     const rankedIncomeUsers = this.getRankedUsersBy(users, 'income');
-    const topGeneratedGoldUsers = rankedGeneratedGoldUsers
+    const topGeneratedCoinUsers = rankedGeneratedCoinUsers
       .slice(0, TOP_USER_LIMIT)
       .map((user) => this.toSnapshotUser(user));
     const topIncomeUsers = rankedIncomeUsers
@@ -135,11 +139,11 @@ export class LeaderboardSubscriptionManager {
     }
 
     this.publish({
-      topUsers: topGeneratedGoldUsers,
-      topGeneratedGoldUsers,
+      topUsers: topGeneratedCoinUsers,
+      topGeneratedCoinUsers,
       topIncomeUsers,
       ...periodLists,
-      currentGeneratedGoldUser: this.getCurrentUser(rankedGeneratedGoldUsers),
+      currentGeneratedCoinUser: this.getCurrentUser(rankedGeneratedCoinUsers),
       currentIncomeUser: this.getCurrentUser(rankedIncomeUsers),
     });
   }
@@ -164,7 +168,7 @@ export class LeaderboardSubscriptionManager {
       case 'monthlyIncome':
         return 'monthlyRank';
       case 'income':
-      case 'totalGeneratedGold':
+      case 'totalGeneratedCoin':
       case 'totalIncome':
         return 'allTimeRank';
       default:
@@ -190,7 +194,7 @@ export class LeaderboardSubscriptionManager {
       dailyIncome: user.dailyIncome,
       weeklyIncome: user.weeklyIncome,
       monthlyIncome: user.monthlyIncome,
-      totalGeneratedGold: user.totalGeneratedGold,
+      totalGeneratedCoin: user.totalGeneratedCoin,
       totalIncome: user.totalIncome,
     };
 

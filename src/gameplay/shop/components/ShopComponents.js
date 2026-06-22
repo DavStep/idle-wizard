@@ -28,16 +28,16 @@ export const PlayerShopShelfSlot = {
   isUnlocked: [],
   itemTypeId: [],
   quantity: [],
-  priceGold: [],
+  priceCoin: [],
 };
 
 export const PlayerShopRequestSlot = {
   slotNumber: [],
   itemTypeId: [],
   quantity: [],
-  priceGold: [],
+  priceCoin: [],
 };
 
-export const ShopGoldOffer = {
+export const ShopCoinOffer = {
   cooldownRemainingSeconds: [],
 };

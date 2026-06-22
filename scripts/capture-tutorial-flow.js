@@ -31,7 +31,7 @@ const FLOW_STEPS = [
   'open-market',
   'select-market-stand',
   'select-sage-seed-sale',
-  'earn-tutorial-gold',
+  'earn-tutorial-coin',
   'level-up-one',
   'intro-garden',
   'grow-sage',
@@ -94,7 +94,7 @@ const STEP_ACTIONS = {
     await page.ensureShopDirectSellPopup();
     await page.clickTarget('shop:directSell:sageSeed');
   },
-  'earn-tutorial-gold': async (page) => {
+  'earn-tutorial-coin': async (page) => {
     await page.clickTarget('shop:directSell:sell');
   },
   'level-up-one': async (page) => {
@@ -120,7 +120,7 @@ const STEP_ACTIONS = {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
     await page.completeCurrentTask('level2-sage-herb');
-    await page.cheat('addGold', 40);
+    await page.cheat('addCoin', 40);
   },
   'level-up-two': async (page) => {
     await page.ensureTasksExpanded();
@@ -146,7 +146,7 @@ const STEP_ACTIONS = {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
     await page.completeCurrentTask('level3-mint-herb');
-    await page.cheat('addGold', 80);
+    await page.cheat('addCoin', 80);
   },
   'level-up-three': async (page) => {
     await page.ensureTasksExpanded();
@@ -278,7 +278,7 @@ async function prepareStepForCapture(page, stepId) {
       await page.ensureTasksExpanded();
       break;
     case 'select-sage-seed-sale':
-    case 'earn-tutorial-gold':
+    case 'earn-tutorial-coin':
       await page.ensurePage('shop');
       await page.ensureShopDirectSellPopup();
       break;

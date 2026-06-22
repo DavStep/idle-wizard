@@ -128,6 +128,7 @@ const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UT
 const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:direct-sell-stands-v2';
 const PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY = 'game-config:player-level-mana-regen-v1';
+const PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY = 'game-config:player-level-cauldron-cap-v1';
 const PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL = 0.25;
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const MAINTENANCE_MODE_OFF = 'off';
@@ -3323,19 +3324,33 @@ const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = JSON.stringify({
     {
       "level": 10,
       "maxGardenTiles": 8,
-      "maxCauldrons": 4,
+      "maxCauldrons": 3,
       "maxNpcMarketStands": 3,
       "maxPlayerMarketStands": 3
     },
     {
       "level": 13,
       "maxGardenTiles": 9,
-      "maxCauldrons": 4,
+      "maxCauldrons": 3,
       "maxNpcMarketStands": 4,
       "maxPlayerMarketStands": 4
     },
     {
       "level": 17,
+      "maxGardenTiles": 10,
+      "maxCauldrons": 3,
+      "maxNpcMarketStands": 5,
+      "maxPlayerMarketStands": 5
+    },
+    {
+      "level": 21,
+      "maxGardenTiles": 10,
+      "maxCauldrons": 4,
+      "maxNpcMarketStands": 5,
+      "maxPlayerMarketStands": 5
+    },
+    {
+      "level": 25,
       "maxGardenTiles": 10,
       "maxCauldrons": 5,
       "maxNpcMarketStands": 5,
@@ -7311,6 +7326,7 @@ function normalizePlayerGameplaySave(
   const tasks = normalizeSaveTasks(save.tasks, taskCatalog, previousLevel);
   const prestige = normalizeSavePrestige(save.prestige);
   const research = normalizeSaveResearch(save.research, prestige.completedLevels.length);
+  const normalizedCoin = normalizeSaveGold(readSaveCoinBranch(save));
   const levelLimits = applySaveCapacityResearchLimits(
     getSaveLevelLimits(ctx, tasks.currentLevel),
     research,
@@ -7327,7 +7343,8 @@ function normalizePlayerGameplaySave(
       ? normalizeSaveExistingTimestamp(save.savedAt, ctx)
       : normalizeSaveTimestamp(ctx),
     mana: normalizeSaveResource(save.mana),
-    gold: normalizeSaveGold(save.gold),
+    coin: normalizedCoin,
+    gold: normalizedCoin,
     crystal: normalizeSaveCrystal(save.crystal, minimumCurrentCrystal),
     emerald: normalizeSaveEmerald(save.emerald),
     ruby: normalizeSaveRuby(save.ruby),
@@ -7385,6 +7402,14 @@ function parsePlayerGameplaySaveJson(saveJson?: string): Record<string, unknown>
   }
 }
 
+function readSaveCoinBranch(save: Record<string, unknown>): Record<string, unknown> {
+  if (isRecord(save.coin)) {
+    return save.coin;
+  }
+
+  return isRecord(save.gold) ? save.gold : {};
+}
+
 function migratePlayerGameplaySaveJson(
   ctx: IdleWizardReducerCtx,
   save: PlayerGameplaySaveRowValue,
@@ -7422,7 +7447,7 @@ function toAdminPlayerGameplaySaveResult(save: PlayerGameplaySaveRowValue) {
 }
 
 function getSaveCurrentGold(save: Record<string, unknown>): number {
-  const gold = isRecord(save.gold) ? save.gold : {};
+  const gold = readSaveCoinBranch(save);
   return clampSaveGoldPrice(gold.current, BigInt(MAX_PLAYER_SAVE_CURRENT_GOLD));
 }
 
@@ -7463,7 +7488,7 @@ function createAdminPlayerGameplaySaveJson(
   currentCrystal: number,
 ): string {
   const previousSave = parsePlayerGameplaySaveJson(existingSave?.saveJson) ?? {};
-  const previousGold = isRecord(previousSave.gold) ? previousSave.gold : {};
+  const previousGold = readSaveCoinBranch(previousSave);
   const previousCrystal = isRecord(previousSave.crystal) ? previousSave.crystal : {};
   const totalGenerated = Math.max(
     currentGold,
@@ -7478,6 +7503,11 @@ function createAdminPlayerGameplaySaveJson(
     JSON.stringify({
       ...previousSave,
       gold: {
+        ...previousGold,
+        current: currentGold,
+        totalGenerated,
+      },
+      coin: {
         ...previousGold,
         current: currentGold,
         totalGenerated,
@@ -9473,7 +9503,7 @@ function readSavedTotalGeneratedGold(saveJson?: string): bigint | null {
 
   try {
     const save = JSON.parse(saveJson);
-    const gold = isRecord(save?.gold) ? save.gold : {};
+    const gold = isRecord(save) ? readSaveCoinBranch(save) : {};
     const totalGenerated = [
       gold.totalGenerated,
       gold.totalGeneratedGold,
@@ -11842,6 +11872,18 @@ function runPlayerLevelManaRegenBackfillOnce(ctx: IdleWizardReducerCtx) {
   });
 }
 
+function runPlayerLevelCauldronCapBackfillOnce(ctx: IdleWizardReducerCtx) {
+  if (ctx.db.maintenanceState.stateKey.find(PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY)) {
+    return;
+  }
+
+  backfillPlayerLevelCauldronCaps(ctx);
+  ctx.db.maintenanceState.insert({
+    stateKey: PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY,
+    appliedAt: ctx.timestamp,
+  });
+}
+
 function backfillPlayerLevelManaRegen(ctx: IdleWizardReducerCtx) {
   const row = ctx.db.gameConfig.configKey.find('playerLevel');
   if (!row) {
@@ -11870,6 +11912,42 @@ function backfillPlayerLevelManaRegen(ctx: IdleWizardReducerCtx) {
       ...mana,
       manaPerSecondPerLevel: PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL,
     },
+  }));
+
+  ctx.db.gameConfig.configKey.update({
+    ...row,
+    configJson,
+    updatedAt: ctx.timestamp,
+  });
+}
+
+function backfillPlayerLevelCauldronCaps(ctx: IdleWizardReducerCtx) {
+  const row = ctx.db.gameConfig.configKey.find('playerLevel');
+  if (!row) {
+    return;
+  }
+
+  let config: any;
+  try {
+    config = JSON.parse(row.configJson);
+  } catch {
+    return;
+  }
+
+  const rawMilestones = config?.milestones ?? config?.levels;
+  if (!Array.isArray(rawMilestones)) {
+    return;
+  }
+
+  const nextMilestones = applyDefaultCauldronCaps(rawMilestones);
+
+  if (JSON.stringify(rawMilestones) === JSON.stringify(nextMilestones)) {
+    return;
+  }
+
+  const configJson = validateGameConfigJson('playerLevel', JSON.stringify({
+    ...config,
+    milestones: nextMilestones,
   }));
 
   ctx.db.gameConfig.configKey.update({
@@ -11999,6 +12077,22 @@ function insertLevelFourMarketStandMilestone(milestones: any[]) {
   return result;
 }
 
+function applyDefaultCauldronCaps(milestones: any[]) {
+  const withRequiredMilestones = insertCauldronCapMilestones(milestones);
+
+  return withRequiredMilestones.map((milestone: any) => ({
+    ...milestone,
+    maxCauldrons: getDefaultCauldronsForLevel(Number(milestone?.level)),
+  }));
+}
+
+function insertCauldronCapMilestones(milestones: any[]) {
+  return [21, 25].reduce(
+    (nextMilestones, level) => insertPlayerLevelMilestone(nextMilestones, level),
+    milestones,
+  );
+}
+
 function getDefaultMarketStandsForLevel(level: number) {
   if (level < 4) {
     return 0;
@@ -12021,6 +12115,56 @@ function getDefaultMarketStandsForLevel(level: number) {
   }
 
   return 5;
+}
+
+function getDefaultCauldronsForLevel(level: number) {
+  if (level < 5) {
+    return 1;
+  }
+
+  if (level < 21) {
+    return 3;
+  }
+
+  if (level < 25) {
+    return 4;
+  }
+
+  return 5;
+}
+
+function insertPlayerLevelMilestone(milestones: any[], targetLevel: number) {
+  if (milestones.some((milestone) => Number(milestone?.level) === targetLevel)) {
+    return milestones;
+  }
+
+  const result: any[] = [];
+  let previous: any = null;
+  let inserted = false;
+
+  for (const milestone of milestones) {
+    const level = Number(milestone?.level);
+
+    if (!inserted && level > targetLevel) {
+      result.push({
+        ...(previous ?? milestone),
+        level: targetLevel,
+      });
+      inserted = true;
+    }
+
+    result.push(milestone);
+    previous = milestone;
+  }
+
+  if (!inserted) {
+    result.push({
+      ...(previous ?? {}),
+      level: targetLevel,
+    });
+  }
+
+  return result;
 }
 
 function deleteAllPotionDiscoveries(ctx: IdleWizardReducerCtx) {
@@ -13387,6 +13531,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   ensureGameConfigCatalog(ctx);
   runStartupMaintenanceOnce(ctx);
   runPlayerLevelManaRegenBackfillOnce(ctx);
+  runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
 
   if (getMaintenanceConfig(ctx).mode === MAINTENANCE_MODE_LOCKED) {
@@ -13423,6 +13568,7 @@ export const init = spacetimedb.init((ctx) => {
   ensureGameConfigCatalog(ctx);
   runStartupMaintenanceOnce(ctx);
   runPlayerLevelManaRegenBackfillOnce(ctx);
+  runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
 });
 

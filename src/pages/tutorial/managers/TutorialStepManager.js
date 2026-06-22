@@ -17,8 +17,8 @@ const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
 const MANA_READOUT_TARGET_ID = 'top:mana';
 const LEVEL_ONE_SEED_TASK_ID = 'level1-sage-seeds';
-const LEVEL_ONE_GOLD_TARGET = 10;
-const TUTORIAL_SELL_GOLD_EACH = LEVEL_ONE_GOLD_TARGET;
+const LEVEL_ONE_COIN_TARGET = 10;
+const TUTORIAL_SELL_COIN_EACH = LEVEL_ONE_COIN_TARGET;
 const LEVEL_TWO_SAGE_GROW_TARGET = 3;
 const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
@@ -26,8 +26,8 @@ export const TUTORIAL_LESSON_THREE_STUCK_MS = 3500;
 export const LEVEL_ONE_TUTORIAL_SALE = Object.freeze({
   itemKey: SAGE_SEED_KEY,
   quantity: 1,
-  goldEach: TUTORIAL_SELL_GOLD_EACH,
-  goldTarget: LEVEL_ONE_GOLD_TARGET,
+  coinEach: TUTORIAL_SELL_COIN_EACH,
+  coinTarget: LEVEL_ONE_COIN_TARGET,
 });
 const LEVEL_TWO_SELL_ITEM_KEYS = [SAGE_SEED_KEY, SAGE_HERB_KEY];
 const LEVEL_THREE_SELL_ITEM_KEYS = [...LEVEL_TWO_SELL_ITEM_KEYS, MINT_SEED_KEY, MINT_HERB_KEY];
@@ -46,7 +46,7 @@ const LEVEL_ONE_STEP_IDS = [
   'open-market',
   'select-market-stand',
   'select-sage-seed-sale',
-  'earn-tutorial-gold',
+  'earn-tutorial-coin',
   'unselect-sage-seed-sale',
   'level-up-one',
 ];
@@ -129,7 +129,7 @@ export const TUTORIAL_STEPS = [
     revealTokens: [],
     text:
       "this old workshop is for sale.\n\nit needs work, but it can become a real potion shop.\n\nElara used to work here. she'll help you get started.",
-    advanceLabel: 'purchase house 1000 gold',
+    advanceLabel: 'purchase house 1000 coin',
     advanceOnClick: true,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
     isComplete: ({ snapshot }) =>
@@ -308,11 +308,11 @@ export const TUTORIAL_STEPS = [
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET,
     isComplete: ({ currentPageId, snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
       currentPageId === 'shop' ||
-      getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET,
+      getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET,
   },
   {
     id: 'prepare-seed-sale',
@@ -333,11 +333,11 @@ export const TUTORIAL_STEPS = [
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      getGold(snapshot) < LEVEL_ONE_GOLD_TARGET &&
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET &&
       getItemQuantity(snapshot, SAGE_SEED_KEY) <= 0,
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
-      getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET ||
+      getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET ||
       getItemQuantity(snapshot, SAGE_SEED_KEY) > 0,
   },
   {
@@ -353,7 +353,7 @@ export const TUTORIAL_STEPS = [
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET,
     isComplete: ({ currentPageId, snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
       currentPageId === 'shop' ||
@@ -376,7 +376,7 @@ export const TUTORIAL_STEPS = [
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET,
     isComplete: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
       dom.isShopDirectSellPopupOpen?.() ||
@@ -412,14 +412,14 @@ export const TUTORIAL_STEPS = [
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET,
     isComplete: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
       isDirectSellSelected(dom, SAGE_SEED_KEY) ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
   {
-    id: 'earn-tutorial-gold',
+    id: 'earn-tutorial-coin',
     kind: 'objective',
     pageId: null,
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
@@ -475,17 +475,17 @@ export const TUTORIAL_STEPS = [
       return 'press sell';
     },
     getProgress: ({ snapshot }) => ({
-      value: Math.min(getGold(snapshot), LEVEL_ONE_GOLD_TARGET),
-      max: LEVEL_ONE_GOLD_TARGET,
+      value: Math.min(getCoin(snapshot), LEVEL_ONE_COIN_TARGET),
+      max: LEVEL_ONE_COIN_TARGET,
     }),
     getProgressLabel: ({ snapshot }) =>
-      `${Math.min(getGold(snapshot), LEVEL_ONE_GOLD_TARGET)}/${LEVEL_ONE_GOLD_TARGET} gold`,
-    getReminderKey: () => 'earn-tutorial-gold-actions',
+      `${Math.min(getCoin(snapshot), LEVEL_ONE_COIN_TARGET)}/${LEVEL_ONE_COIN_TARGET} coin`,
+    getReminderKey: () => 'earn-tutorial-coin-actions',
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      getGold(snapshot) < LEVEL_ONE_GOLD_TARGET,
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2 || getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET,
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2 || getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET,
   },
   {
     id: 'unselect-sage-seed-sale',
@@ -503,7 +503,7 @@ export const TUTORIAL_STEPS = [
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       isLevelOneSeedTaskComplete(snapshot) &&
-      getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET,
+      getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET,
     isComplete: () => true,
   },
   {
@@ -523,7 +523,7 @@ export const TUTORIAL_STEPS = [
       `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
-      getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET &&
+      getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
   },
@@ -737,9 +737,9 @@ export const TUTORIAL_STEPS = [
     id: 'level-up-two',
     kind: 'objective',
     getObjectiveText: ({ currentPageId, dom, snapshot }) =>
-      hasLevelCompletionGold(snapshot)
+      hasLevelCompletionCoin(snapshot)
         ? 'level up again'
-        : getLevelUpGoldObjectiveText({
+        : getLevelUpCoinObjectiveText({
             currentPageId,
             dom,
             snapshot,
@@ -747,8 +747,8 @@ export const TUTORIAL_STEPS = [
             emptyObjectiveText: 'get sage to sell',
           }),
     getTargetId: ({ currentPageId, dom, snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        return getLevelUpGoldTargetId({
+      if (!hasLevelCompletionCoin(snapshot)) {
+        return getLevelUpCoinTargetId({
           currentPageId,
           dom,
           snapshot,
@@ -764,8 +764,8 @@ export const TUTORIAL_STEPS = [
       return dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks';
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        return getLevelUpGoldHintText({
+      if (!hasLevelCompletionCoin(snapshot)) {
+        return getLevelUpCoinHintText({
           currentPageId,
           dom,
           snapshot,
@@ -781,11 +781,11 @@ export const TUTORIAL_STEPS = [
       return dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot);
     },
     getAllowedPopupClasses: ({ currentPageId, dom, snapshot }) => {
-      if (hasLevelCompletionGold(snapshot)) {
+      if (hasLevelCompletionCoin(snapshot)) {
         return [];
       }
 
-      return getLevelUpGoldAllowedPopupClasses({
+      return getLevelUpCoinAllowedPopupClasses({
         currentPageId,
         dom,
         snapshot,
@@ -793,11 +793,11 @@ export const TUTORIAL_STEPS = [
       });
     },
     getProgress: ({ snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        const costGold = getLevelCompletionCostGold(snapshot);
+      if (!hasLevelCompletionCoin(snapshot)) {
+        const costCoin = getLevelCompletionCostCoin(snapshot);
         return {
-          value: Math.min(getGold(snapshot), costGold),
-          max: costGold,
+          value: Math.min(getCoin(snapshot), costCoin),
+          max: costCoin,
         };
       }
 
@@ -807,9 +807,9 @@ export const TUTORIAL_STEPS = [
       };
     },
     getProgressLabel: ({ snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        const costGold = getLevelCompletionCostGold(snapshot);
-        return `${Math.min(getGold(snapshot), costGold)}/${costGold} gold`;
+      if (!hasLevelCompletionCoin(snapshot)) {
+        const costCoin = getLevelCompletionCostCoin(snapshot);
+        return `${Math.min(getCoin(snapshot), costCoin)}/${costCoin} coin`;
       }
 
       return `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`;
@@ -956,9 +956,9 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     cueMode: 'passive',
     getObjectiveText: ({ currentPageId, dom, snapshot }) =>
-      hasLevelCompletionGold(snapshot)
+      hasLevelCompletionCoin(snapshot)
         ? 'level up again'
-        : getLevelUpGoldObjectiveText({
+        : getLevelUpCoinObjectiveText({
             currentPageId,
             dom,
             snapshot,
@@ -966,8 +966,8 @@ export const TUTORIAL_STEPS = [
             emptyObjectiveText: 'get mint to sell',
           }),
     getTargetId: ({ currentPageId, dom, snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        return getLevelUpGoldTargetId({
+      if (!hasLevelCompletionCoin(snapshot)) {
+        return getLevelUpCoinTargetId({
           currentPageId,
           dom,
           snapshot,
@@ -983,8 +983,8 @@ export const TUTORIAL_STEPS = [
       return dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks';
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        return getLevelUpGoldHintText({
+      if (!hasLevelCompletionCoin(snapshot)) {
+        return getLevelUpCoinHintText({
           currentPageId,
           dom,
           snapshot,
@@ -1000,11 +1000,11 @@ export const TUTORIAL_STEPS = [
       return dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot);
     },
     getAllowedPopupClasses: ({ currentPageId, dom, snapshot }) => {
-      if (hasLevelCompletionGold(snapshot)) {
+      if (hasLevelCompletionCoin(snapshot)) {
         return [];
       }
 
-      return getLevelUpGoldAllowedPopupClasses({
+      return getLevelUpCoinAllowedPopupClasses({
         currentPageId,
         dom,
         snapshot,
@@ -1012,11 +1012,11 @@ export const TUTORIAL_STEPS = [
       });
     },
     getProgress: ({ snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        const costGold = getLevelCompletionCostGold(snapshot);
+      if (!hasLevelCompletionCoin(snapshot)) {
+        const costCoin = getLevelCompletionCostCoin(snapshot);
         return {
-          value: Math.min(getGold(snapshot), costGold),
-          max: costGold,
+          value: Math.min(getCoin(snapshot), costCoin),
+          max: costCoin,
         };
       }
 
@@ -1026,9 +1026,9 @@ export const TUTORIAL_STEPS = [
       };
     },
     getProgressLabel: ({ snapshot }) => {
-      if (!hasLevelCompletionGold(snapshot)) {
-        const costGold = getLevelCompletionCostGold(snapshot);
-        return `${Math.min(getGold(snapshot), costGold)}/${costGold} gold`;
+      if (!hasLevelCompletionCoin(snapshot)) {
+        const costCoin = getLevelCompletionCostCoin(snapshot);
+        return `${Math.min(getCoin(snapshot), costCoin)}/${costCoin} coin`;
       }
 
       return `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`;
@@ -1387,7 +1387,7 @@ export class TutorialStepManager {
     if (
       isLevelOneSeedTaskComplete(snapshot) &&
       (getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 ||
-        getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET)
+        getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET)
     ) {
       this.completeSteps(['prepare-seed-sale']);
     }
@@ -1396,8 +1396,8 @@ export class TutorialStepManager {
       this.completeSteps(['open-market', 'select-market-stand', 'select-sage-seed-sale']);
     }
 
-    if (getGold(snapshot) >= LEVEL_ONE_GOLD_TARGET) {
-      this.completeSteps(['prepare-seed-sale', 'earn-tutorial-gold']);
+    if (getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET) {
+      this.completeSteps(['prepare-seed-sale', 'earn-tutorial-coin']);
 
       if (!isNpcMarketSelling(snapshot, SAGE_SEED_KEY)) {
         this.completeSteps(['unselect-sage-seed-sale']);
@@ -1643,26 +1643,26 @@ function getItemQuantity(snapshot, itemKey) {
     .reduce((total, item) => total + (Number(item.quantity) || 0), 0);
 }
 
-function getGold(snapshot) {
-  return Math.max(0, Math.floor(Number(snapshot?.gold?.current) || 0));
+function getCoin(snapshot) {
+  return Math.max(0, Math.floor(Number(snapshot?.coin?.current) || 0));
 }
 
-function getLevelCompletionCostGold(snapshot) {
-  return Math.max(0, Math.floor(Number(snapshot?.tasks?.level?.completion?.costGold) || 0));
+function getLevelCompletionCostCoin(snapshot) {
+  return Math.max(0, Math.floor(Number(snapshot?.tasks?.level?.completion?.costCoin) || 0));
 }
 
-function hasLevelCompletionGold(snapshot) {
-  return getGold(snapshot) >= getLevelCompletionCostGold(snapshot);
+function hasLevelCompletionCoin(snapshot) {
+  return getCoin(snapshot) >= getLevelCompletionCostCoin(snapshot);
 }
 
-function getLevelUpGoldObjectiveText({
+function getLevelUpCoinObjectiveText({
   currentPageId,
   dom,
   snapshot,
   sellItemKeys,
   emptyObjectiveText,
 }) {
-  const state = getLevelUpGoldMarketState({
+  const state = getLevelUpCoinMarketState({
     currentPageId,
     dom,
     snapshot,
@@ -1687,17 +1687,17 @@ function getLevelUpGoldObjectiveText({
       : 'press sell';
   }
 
-  return 'earn level-up gold in market';
+  return 'earn level-up coin in market';
 }
 
-function getLevelUpGoldTargetId({
+function getLevelUpCoinTargetId({
   currentPageId,
   dom,
   snapshot,
   sellItemKeys,
   getObtainTargetId,
 }) {
-  const state = getLevelUpGoldMarketState({
+  const state = getLevelUpCoinMarketState({
     currentPageId,
     dom,
     snapshot,
@@ -1731,14 +1731,14 @@ function getLevelUpGoldTargetId({
   return getObtainTargetId({ currentPageId, dom, snapshot });
 }
 
-function getLevelUpGoldHintText({
+function getLevelUpCoinHintText({
   currentPageId,
   dom,
   snapshot,
   sellItemKeys,
   getObtainHintText,
 }) {
-  const state = getLevelUpGoldMarketState({
+  const state = getLevelUpCoinMarketState({
     currentPageId,
     dom,
     snapshot,
@@ -1772,13 +1772,13 @@ function getLevelUpGoldHintText({
   return getObtainHintText({ currentPageId, dom, snapshot });
 }
 
-function getLevelUpGoldAllowedPopupClasses({
+function getLevelUpCoinAllowedPopupClasses({
   currentPageId,
   dom,
   snapshot,
   sellItemKeys,
 }) {
-  const state = getLevelUpGoldMarketState({
+  const state = getLevelUpCoinMarketState({
     currentPageId,
     dom,
     snapshot,
@@ -1792,7 +1792,7 @@ function getLevelUpGoldAllowedPopupClasses({
   return [];
 }
 
-function getLevelUpGoldMarketState({
+function getLevelUpCoinMarketState({
   currentPageId,
   dom,
   snapshot,
@@ -1818,7 +1818,7 @@ function getLevelUpGoldMarketState({
       kind: 'set-amount',
       canIncrease:
         getSelectedDirectSellMaxQuantity(snapshot, selectedItemKey) > selectedQuantity &&
-        !doesSelectedSellQuantityCoverGoldShortfall({
+        !doesSelectedSellQuantityCoverCoinShortfall({
           snapshot,
           itemKey: selectedItemKey,
           quantity: selectedQuantity,
@@ -1892,28 +1892,28 @@ function getSelectedDirectSellQuantity(dom) {
   return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 }
 
-function doesSelectedSellQuantityCoverGoldShortfall({ snapshot, itemKey, quantity }) {
-  const unitGold = getDirectSellUnitGold(snapshot, itemKey);
+function doesSelectedSellQuantityCoverCoinShortfall({ snapshot, itemKey, quantity }) {
+  const unitCoin = getDirectSellUnitCoin(snapshot, itemKey);
 
-  if (!Number.isFinite(unitGold) || unitGold <= 0) {
+  if (!Number.isFinite(unitCoin) || unitCoin <= 0) {
     return quantity > 1;
   }
 
-  return unitGold * quantity >= getLevelCompletionCostGold(snapshot) - getGold(snapshot);
+  return unitCoin * quantity >= getLevelCompletionCostCoin(snapshot) - getCoin(snapshot);
 }
 
-function getDirectSellUnitGold(snapshot, itemKey) {
+function getDirectSellUnitCoin(snapshot, itemKey) {
   const item = snapshot?.shop?.shelf?.sellItems?.find(
     (sellItem) => sellItem?.key === itemKey,
   );
-  const fastSellGold = Number(item?.fastSellGold);
+  const fastSellCoin = Number(item?.fastSellCoin);
 
-  if (Number.isFinite(fastSellGold) && fastSellGold > 0) {
-    return fastSellGold;
+  if (Number.isFinite(fastSellCoin) && fastSellCoin > 0) {
+    return fastSellCoin;
   }
 
-  const sellGold = Number(item?.sellGold);
-  return Number.isFinite(sellGold) && sellGold > 0 ? sellGold : null;
+  const sellCoin = Number(item?.sellCoin);
+  return Number.isFinite(sellCoin) && sellCoin > 0 ? sellCoin : null;
 }
 
 function getPositiveSellQuantity(item) {

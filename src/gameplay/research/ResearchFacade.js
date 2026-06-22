@@ -32,12 +32,12 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ResearchFacade {
   static explain =
-    'Research lets the wizard spend gold, crystal, or ruby on studies that unlock seeds, recipes, automation, and speed upgrades.';
+    'Research lets the wizard spend coin, crystal, or ruby on studies that unlock seeds, recipes, automation, and speed upgrades.';
 
   constructor({
     crystalFacade,
     emeraldFacade,
-    goldFacade,
+    coinFacade,
     itemsFacade,
     manaFacade,
     onResearchComplete,
@@ -63,7 +63,7 @@ export class ResearchFacade {
     this.researchPurchaseManager = new ResearchPurchaseManager({
       crystalFacade,
       emeraldFacade,
-      goldFacade,
+      coinFacade,
       rubyFacade,
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
@@ -79,7 +79,7 @@ export class ResearchFacade {
     this.researchSnapshotManager = new ResearchSnapshotManager({
       crystalFacade,
       emeraldFacade,
-      goldFacade,
+      coinFacade,
       rubyFacade,
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,

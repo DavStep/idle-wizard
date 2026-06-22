@@ -13,8 +13,8 @@ const PERSONAL_TASK_RESOURCE_BY_ACTION = new Map([
   ['plant_seeds', 'seed'],
   ['harvest_herbs', 'herb'],
   ['brew_potions', 'potion'],
-  ['sell_items', 'gold'],
-  ['earn_gold', 'gold'],
+  ['sell_items', 'coin'],
+  ['earn_coin', 'coin'],
 ]);
 
 const PERSONAL_TASK_ICON_BY_RESOURCE = new Map([
@@ -22,7 +22,7 @@ const PERSONAL_TASK_ICON_BY_RESOURCE = new Map([
   ['mana', { type: 'resource', resource: 'mana' }],
   ['herb', { type: 'item', kind: 'herb', itemKey: 'sageHerb' }],
   ['potion', { type: 'item', kind: 'potion' }],
-  ['gold', { type: 'resource', resource: 'gold' }],
+  ['coin', { type: 'resource', resource: 'coin' }],
 ]);
 
 export class WorkshopPersonalTasksManager {
@@ -60,17 +60,20 @@ export class WorkshopPersonalTasksManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'workshop-page__personal-tasks';
+    this.root.className = 'workshop-page__panel-button workshop-page__personal-tasks';
+    this.root.dataset.panelSide = 'left';
     this.root.setAttribute('aria-label', 'personal tasks');
 
     this.refs.openButton = document.createElement('button');
-    this.refs.openButton.className = 'workshop-page__personal-tasks-open';
+    this.refs.openButton.className =
+      'workshop-page__panel-button-open workshop-page__personal-tasks-open';
     this.refs.openButton.type = 'button';
     this.refs.openButton.setAttribute('aria-haspopup', 'dialog');
     this.refs.openButton.addEventListener('click', () => this.show());
 
     this.refs.openLabel = document.createElement('span');
-    this.refs.openLabel.className = 'workshop-page__feature-character-label';
+    this.refs.openLabel.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label';
     this.refs.openLabel.textContent = 'tasks';
 
     this.refs.openButton.append(
@@ -492,14 +495,14 @@ export class WorkshopPersonalTasksManager {
   }
 
   getRewardResource(reward) {
-    const hasGold = Math.max(0, Math.floor(Number(reward?.gold) || 0)) > 0;
+    const hasCoin = Math.max(0, Math.floor(Number(reward?.coin) || 0)) > 0;
     const hasCrystal = Math.max(0, Math.floor(Number(reward?.crystal) || 0)) > 0;
 
-    if (hasGold && !hasCrystal) {
-      return 'gold';
+    if (hasCoin && !hasCrystal) {
+      return 'coin';
     }
 
-    if (hasCrystal && !hasGold) {
+    if (hasCrystal && !hasCoin) {
       return 'crystal';
     }
 

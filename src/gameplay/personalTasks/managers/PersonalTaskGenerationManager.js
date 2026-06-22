@@ -4,7 +4,7 @@ export const PERSONAL_TASK_ACTIONS = Object.freeze({
   BREW_POTIONS: 'brew_potions',
   COMPLETE_MAIN_REQUIREMENTS: 'complete_main_requirements',
   COMPLETE_RESEARCH: 'complete_research',
-  EARN_GOLD: 'earn_gold',
+  EARN_COIN: 'earn_coin',
   HARVEST_HERBS: 'harvest_herbs',
   PLANT_SEEDS: 'plant_seeds',
   SELL_ITEMS: 'sell_items',
@@ -23,19 +23,19 @@ export class PersonalTaskGenerationManager {
 
   createPeriodState({ periodType, periodKey, resetAtMs, anchorLevel }) {
     const level = Math.max(PERSONAL_TASK_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const completionCostGold = this.getCompletionCostGold(level);
+    const completionCostCoin = this.getCompletionCostCoin(level);
     const tasks =
       periodType === 'weekly'
-        ? this.createWeeklyTasks({ periodKey, anchorLevel: level, completionCostGold })
-        : this.createDailyTasks({ periodKey, anchorLevel: level, completionCostGold });
+        ? this.createWeeklyTasks({ periodKey, anchorLevel: level, completionCostCoin })
+        : this.createDailyTasks({ periodKey, anchorLevel: level, completionCostCoin });
     const fullClearReward =
       periodType === 'weekly'
         ? {
-            gold: this.roundGold(completionCostGold * 0.6),
+            coin: this.roundCoin(completionCostCoin * 0.6),
             crystal: this.getWeeklyFullClearCrystal(level),
           }
         : {
-            gold: this.roundGold(completionCostGold * 0.15),
+            coin: this.roundCoin(completionCostCoin * 0.15),
             crystal: 0,
           };
 
@@ -51,10 +51,10 @@ export class PersonalTaskGenerationManager {
     };
   }
 
-  createDailyTasks({ periodKey, anchorLevel, completionCostGold }) {
-    const targets = this.getTargets(anchorLevel, completionCostGold);
+  createDailyTasks({ periodKey, anchorLevel, completionCostCoin }) {
+    const targets = this.getTargets(anchorLevel, completionCostCoin);
     const rewards = this.createTaskRewards({
-      budgetGold: completionCostGold * 0.45,
+      budgetCoin: completionCostCoin * 0.45,
       weights: DAILY_TASK_WEIGHTS,
     });
 
@@ -109,19 +109,19 @@ export class PersonalTaskGenerationManager {
       }),
       this.createTask({
         periodKey,
-        taskKey: 'gold',
-        actionType: PERSONAL_TASK_ACTIONS.EARN_GOLD,
-        label: `earn ${targets.dailyEarnGold} gold`,
-        requiredQuantity: targets.dailyEarnGold,
+        taskKey: 'coin',
+        actionType: PERSONAL_TASK_ACTIONS.EARN_COIN,
+        label: `earn ${targets.dailyEarnCoin} coin`,
+        requiredQuantity: targets.dailyEarnCoin,
         reward: rewards[6],
       }),
     ];
   }
 
-  createWeeklyTasks({ periodKey, anchorLevel, completionCostGold }) {
-    const targets = this.getTargets(anchorLevel, completionCostGold);
+  createWeeklyTasks({ periodKey, anchorLevel, completionCostCoin }) {
+    const targets = this.getTargets(anchorLevel, completionCostCoin);
     const rewards = this.createTaskRewards({
-      budgetGold: completionCostGold * 1.8,
+      budgetCoin: completionCostCoin * 1.8,
       weights: WEEKLY_TASK_WEIGHTS,
     });
     const progressTask = this.createWeeklyProgressTask({
@@ -218,22 +218,22 @@ export class PersonalTaskGenerationManager {
     };
   }
 
-  createTaskRewards({ budgetGold, weights }) {
+  createTaskRewards({ budgetCoin, weights }) {
     const totalWeight = weights.reduce((total, weight) => total + weight, 0);
     return weights.map((weight) => ({
-      gold: this.roundGold((budgetGold * weight) / totalWeight),
+      coin: this.roundCoin((budgetCoin * weight) / totalWeight),
       crystal: 0,
     }));
   }
 
-  getTargets(anchorLevel, completionCostGold) {
+  getTargets(anchorLevel, completionCostCoin) {
     const dailySummonSeeds = this.roundToFive(20 + 8 * anchorLevel);
     const dailySpendMana = dailySummonSeeds * 10;
     const dailyPlantSeeds = this.clamp(Math.round(4 + 1.1 * anchorLevel), 6, 45);
     const dailyHarvestHerbs = this.clamp(Math.round(6 + 1.4 * anchorLevel), 8, 60);
     const dailyBrewPotions = this.clamp(Math.round(2 + anchorLevel / 5), 3, 12);
     const dailySellItems = this.roundToFive(15 + 4 * anchorLevel);
-    const dailyEarnGold = this.roundToFive(0.35 * completionCostGold);
+    const dailyEarnCoin = this.roundToFive(0.35 * completionCostCoin);
 
     return {
       dailySummonSeeds,
@@ -242,7 +242,7 @@ export class PersonalTaskGenerationManager {
       dailyHarvestHerbs,
       dailyBrewPotions,
       dailySellItems,
-      dailyEarnGold,
+      dailyEarnCoin,
       weeklySummonSeeds: dailySummonSeeds * 5,
       weeklySpendMana: dailySpendMana * 5,
       weeklyPlantSeeds: dailyPlantSeeds * 5,
@@ -252,8 +252,8 @@ export class PersonalTaskGenerationManager {
     };
   }
 
-  getCompletionCostGold(level) {
-    const cost = this.tasksFacade?.getLevelCompletionCostGold?.(level);
+  getCompletionCostCoin(level) {
+    const cost = this.tasksFacade?.getLevelCompletionCostCoin?.(level);
 
     if (Number.isFinite(cost) && cost >= 0) {
       return Math.floor(cost);
@@ -290,7 +290,7 @@ export class PersonalTaskGenerationManager {
     );
   }
 
-  roundGold(value) {
+  roundCoin(value) {
     return Math.max(1, this.roundToFive(value));
   }
 

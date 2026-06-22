@@ -9,7 +9,7 @@ import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
 import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
-import { formatGoldPriceText } from '../../../shared/goldPrice.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const TOUCH_DRAG_DISTANCE = 8;
 const NATIVE_HERB_DRAG_QUERY = '(hover: hover) and (pointer: fine)';
@@ -357,7 +357,7 @@ export class BrewingCauldronManager {
         brewing.nextCauldronLockedByLevel !== true &&
         brewing.nextCauldronLockedByResearch !== true &&
         Number.isFinite(brewing.nextCauldronCost) &&
-        (snapshot.gold?.current ?? 0) >= brewing.nextCauldronCost,
+        (snapshot.coin?.current ?? 0) >= brewing.nextCauldronCost,
     };
   }
 
@@ -1225,8 +1225,8 @@ export class BrewingCauldronManager {
             ? 'research'
             : 'buy',
         hasCost: !levelLocked && !researchLocked && Number.isFinite(cost),
-        costText: Number.isFinite(cost) ? formatGoldPriceText(cost) : '',
-        costResource: 'gold',
+        costText: Number.isFinite(cost) ? formatCoinPriceText(cost) : '',
+        costResource: 'coin',
         disabled: brewing.canBuyCauldron !== true,
         ariaLabel: levelLocked
           ? `cauldron ${brewing.cauldronNumber} requires level ${
@@ -1698,8 +1698,8 @@ export class BrewingCauldronManager {
       return 'not enough mana';
     }
 
-    if (result.reason === 'not_enough_gold') {
-      return 'not enough gold';
+    if (result.reason === 'not_enough_coin') {
+      return 'not enough coin';
     }
 
     if (result.reason === 'not_enough_item' || result.reason === 'not_enough_ingredients') {

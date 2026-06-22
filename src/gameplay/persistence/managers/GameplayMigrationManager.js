@@ -1,4 +1,4 @@
-export const GAMEPLAY_SAVE_VERSION = 6;
+export const GAMEPLAY_SAVE_VERSION = 7;
 
 export class GameplayMigrationManager {
   constructor() {
@@ -16,28 +16,38 @@ export class GameplayMigrationManager {
       return save;
     }
 
+    if (save.version === 6) {
+      return this.createVersion7Save(save);
+    }
+
     if (save.version === 5) {
-      return this.createVersion6Save(save);
+      return this.createVersion7Save(this.createVersion6Save(save));
     }
 
     if (save.version === 4) {
-      return this.createVersion6Save(this.createVersion5Save(save));
+      return this.createVersion7Save(this.createVersion6Save(this.createVersion5Save(save)));
     }
 
     if (save.version === 3) {
-      return this.createVersion6Save(this.createVersion5Save(this.createVersion4Save(save)));
+      return this.createVersion7Save(
+        this.createVersion6Save(this.createVersion5Save(this.createVersion4Save(save))),
+      );
     }
 
     if (save.version === 2) {
-      return this.createVersion6Save(
-        this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save))),
+      return this.createVersion7Save(
+        this.createVersion6Save(
+          this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save))),
+        ),
       );
     }
 
     if (save.version === 1) {
-      return this.createVersion6Save(
-        this.createVersion5Save(
-          this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+      return this.createVersion7Save(
+        this.createVersion6Save(
+          this.createVersion5Save(
+            this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+          ),
         ),
       );
     }
@@ -53,6 +63,7 @@ export class GameplayMigrationManager {
     for (const key of [
       'savedAt',
       'mana',
+      'coin',
       'gold',
       'crystal',
       'emerald',
@@ -84,6 +95,7 @@ export class GameplayMigrationManager {
     for (const key of [
       'savedAt',
       'mana',
+      'coin',
       'gold',
       'crystal',
       'emerald',
@@ -122,6 +134,7 @@ export class GameplayMigrationManager {
     for (const key of [
       'savedAt',
       'mana',
+      'coin',
       'gold',
       'crystal',
       'emerald',
@@ -177,6 +190,7 @@ export class GameplayMigrationManager {
     for (const key of [
       'savedAt',
       'mana',
+      'coin',
       'gold',
       'crystal',
       'emerald',
@@ -234,12 +248,13 @@ export class GameplayMigrationManager {
 
   createVersion6Save(save) {
     const migratedSave = {
-      version: GAMEPLAY_SAVE_VERSION,
+      version: 6,
     };
 
     for (const key of [
       'savedAt',
       'mana',
+      'coin',
       'gold',
       'crystal',
       'emerald',
@@ -262,6 +277,53 @@ export class GameplayMigrationManager {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
       }
+    }
+
+    if (!migratedSave.emerald) {
+      migratedSave.emerald = {
+        current: 0,
+      };
+    }
+
+    return migratedSave;
+  }
+
+  createVersion7Save(save) {
+    const migratedSave = {
+      version: GAMEPLAY_SAVE_VERSION,
+    };
+
+    for (const key of [
+      'savedAt',
+      'mana',
+      'crystal',
+      'emerald',
+      'ruby',
+      'logs',
+      'inventory',
+      'research',
+      'automation',
+      'seedSummoning',
+      'prestige',
+      'visualSettings',
+      'shop',
+      'brewing',
+      'garden',
+      'tasks',
+      'personalTasks',
+      'worldNotice',
+      'guild',
+    ]) {
+      if (save[key] !== undefined) {
+        migratedSave[key] = save[key];
+      }
+    }
+
+    const coin = save.coin ?? save.gold;
+    if (coin !== undefined) {
+      migratedSave.coin = coin;
+      // Legacy mirror keeps old clients/backends from treating the save as empty.
+      migratedSave.gold = coin;
     }
 
     if (!migratedSave.emerald) {

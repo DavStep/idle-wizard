@@ -54,11 +54,11 @@ describe('RewardFlyoutManager', () => {
     slot.append(slotItem, slotPrice);
     host.append(summonCircle, slot);
 
-    const goldTarget = document.createElement('span');
-    goldTarget.className = 'room-top-panel__resource';
-    goldTarget.setAttribute('aria-label', 'gold');
-    setRect(goldTarget, { left: 12, top: 18, width: 90, height: 24 });
-    document.body.append(host, goldTarget);
+    const coinTarget = document.createElement('span');
+    coinTarget.className = 'room-top-panel__resource';
+    coinTarget.setAttribute('aria-label', 'coin');
+    setRect(coinTarget, { left: 12, top: 18, width: 90, height: 24 });
+    document.body.append(host, coinTarget);
 
     const manager = new RewardFlyoutManager();
     manager.mount(host);
@@ -70,7 +70,7 @@ describe('RewardFlyoutManager', () => {
     manager.showReward({
       type: 'item_sold',
       item: { key: 'sageSeed', label: 'sage seed', kind: 'seed' },
-      gold: 1000,
+      coin: 1000,
       quantity: 1,
       slotNumber: 1,
     });
@@ -114,14 +114,14 @@ describe('RewardFlyoutManager', () => {
       source: 'npc_stock',
       item: { key: 'sageSeed', label: 'sage seed', kind: 'seed' },
       quantity: 20,
-      gold: 40,
+      coin: 40,
     });
 
     expect(document.querySelectorAll('.room-item-drop-anchor.is-seed')).toHaveLength(12);
     expect(document.querySelector('.room-item-drop-anchor.is-seed')?.style.left).toBe('300px');
     expect(document.querySelector('.room-item-drop-anchor.is-seed')?.style.top).toBe('375px');
     expect(document.querySelector('.room-reward-flyout')?.textContent).toBe(
-      'bought sage seed x20 for 40 gold',
+      'bought sage seed x20 for 40 coin',
     );
     expect(document.querySelector('.room-reward-flyout')?.classList).toContain(
       'is-visual-only',
@@ -215,29 +215,29 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-item-drop')).toBeNull();
   });
 
-  it('plays coin flyout when gold is collected from the gold offer', () => {
+  it('plays coin flyout when coin is collected from the coin offer', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');
     const collectButton = document.createElement('button');
-    collectButton.className = 'shop-page__gold-offer-action';
+    collectButton.className = 'shop-page__coin-offer-action';
     setRect(collectButton, { left: 320, top: 410, width: 90, height: 30 });
     host.append(collectButton);
 
-    const goldTarget = document.createElement('span');
-    goldTarget.className = 'room-top-panel__resource';
-    goldTarget.setAttribute('aria-label', 'gold');
-    setRect(goldTarget, { left: 12, top: 18, width: 90, height: 24 });
-    document.body.append(host, goldTarget);
+    const coinTarget = document.createElement('span');
+    coinTarget.className = 'room-top-panel__resource';
+    coinTarget.setAttribute('aria-label', 'coin');
+    setRect(coinTarget, { left: 12, top: 18, width: 90, height: 24 });
+    document.body.append(host, coinTarget);
 
     const manager = new RewardFlyoutManager();
     manager.mount(host);
     manager.showReward({
-      type: 'gold_collected',
-      gold: 20,
-      source: 'shop_gold_offer',
+      type: 'coin_collected',
+      coin: 20,
+      source: 'shop_coin_offer',
     });
 
-    expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('collected 20 gold');
+    expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('collected 20 coin');
     expect(document.querySelectorAll('.room-coin-particle').length).toBeGreaterThanOrEqual(3);
     expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+20G');
     expect(document.querySelector('.room-coin-particle')?.style.left).toBe('365px');

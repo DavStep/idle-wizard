@@ -350,6 +350,38 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
+  it('restores a connected account before showing the fresh-start gate', async () => {
+    let hasToken = false;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken,
+        oidc: { authenticated: hasToken, enabled: true },
+      })),
+      tryRestoreConnectedAccount: vi.fn(() => {
+        hasToken = true;
+        return Promise.resolve({ ok: true });
+      }),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+
+    lifecycle.start();
+    await flushPromises();
+    await flushPromises();
+
+    expect(authFacade.tryRestoreConnectedAccount).toHaveBeenCalledTimes(1);
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
   it('shows loading while connecting an existing account before backend connect', async () => {
     let authenticated = false;
     const freshStartChoiceManager = {

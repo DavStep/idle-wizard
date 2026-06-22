@@ -1,7 +1,7 @@
 const DEFAULT_SHOP_BALANCE = {
   shopShelf: {
     initialUnlockedSlots: 0,
-    slotCostsGold: [0, 50, 150, 400, 1000],
+    slotCostsCoin: [0, 50, 150, 400, 1000],
     autoSellSeconds: 1_800,
   },
 };
@@ -19,13 +19,13 @@ export class ShopBalanceManager {
 
   setBalance(balance) {
     this.balance = balance;
-    this.slotCostsGold = this.readSlotCostsGold();
+    this.slotCostsCoin = this.readSlotCostsCoin();
     this.initialUnlockedSlots = this.readInitialUnlockedSlots();
     this.autoSellSeconds = this.readAutoSellSeconds();
   }
 
   getMaxShelfSlots() {
-    return this.slotCostsGold.length;
+    return this.slotCostsCoin.length;
   }
 
   getInitialUnlockedSlots() {
@@ -33,22 +33,22 @@ export class ShopBalanceManager {
   }
 
   getSlotCost(slotNumber) {
-    return this.slotCostsGold[slotNumber - 1] ?? null;
+    return this.slotCostsCoin[slotNumber - 1] ?? null;
   }
 
   getSlotCosts() {
-    return [...this.slotCostsGold];
+    return [...this.slotCostsCoin];
   }
 
   getAutoSellSeconds() {
     return this.autoSellSeconds;
   }
 
-  readSlotCostsGold() {
-    const slotCosts = this.balance?.shopShelf?.slotCostsGold;
+  readSlotCostsCoin() {
+    const slotCosts = this.balance?.shopShelf?.slotCostsCoin;
 
     if (!Array.isArray(slotCosts)) {
-      throw new Error('game_config.shop requires shopShelf.slotCostsGold.');
+      throw new Error('game_config.shop requires shopShelf.slotCostsCoin.');
     }
 
     if (slotCosts.length > MAX_SHELF_SLOTS) {

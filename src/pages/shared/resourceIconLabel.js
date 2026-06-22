@@ -5,13 +5,13 @@ export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
 const RESOURCE_ICON_FRAME_NAMES = Object.freeze({
   crystal: 'resource:crystal',
   emerald: 'resource:emerald',
-  gold: 'resource:gold',
+  coin: 'resource:coin',
   mana: 'resource:mana',
   ruby: 'resource:ruby',
 });
 
-const RESOURCE_WORD_PATTERN = /\b(?:crystals?|emeralds?|gold|mana|rubies|ruby)\b/;
-const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|emeralds?|gold|mana|rubies|ruby)\b/gi;
+const RESOURCE_WORD_PATTERN = /\b(?:crystals?|emeralds?|coin|mana|rubies|ruby)\b/;
+const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|emeralds?|coin|mana|rubies|ruby)\b/gi;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
 
 export function setResourceIconText(element, text) {
