@@ -77,8 +77,9 @@ export class TopPanelAuthManager {
     }
 
     const oidc = snapshot?.oidc ?? {};
-    this.authenticated = Boolean(oidc.authenticated);
-    if (!this.busy && (oidc.authenticated || oidc.error || oidc.cancelled)) {
+    const rememberedConnected = Boolean(snapshot?.hasToken && oidc.remembered);
+    this.authenticated = Boolean(oidc.authenticated || rememberedConnected);
+    if (!this.busy && (this.authenticated || oidc.error || oidc.cancelled)) {
       this.statusOverride = null;
     }
 
@@ -100,13 +101,14 @@ export class TopPanelAuthManager {
       this.authenticated ? 'disconnect google account' : 'connect google account',
     );
 
-    const statusText = this.statusOverride ?? this.getStatusText(oidc);
+    const statusText = this.statusOverride ?? this.getStatusText(snapshot);
     if (status.textContent !== statusText) {
       status.textContent = statusText;
     }
   }
 
-  getStatusText(oidc) {
+  getStatusText(snapshot = {}) {
+    const oidc = snapshot?.oidc ?? {};
     if (oidc.cancelled) {
       return 'login cancelled';
     }
@@ -116,6 +118,10 @@ export class TopPanelAuthManager {
     }
 
     if (oidc.authenticated) {
+      return oidc.displayName || oidc.email || 'connected';
+    }
+
+    if (snapshot?.hasToken && oidc.remembered) {
       return oidc.displayName || oidc.email || 'connected';
     }
 

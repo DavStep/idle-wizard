@@ -461,6 +461,7 @@ export class GameplayFacade {
   resetRunAfterPrestige() {
     const prestige = this.prestigeFacade.getPersistenceSnapshot();
     const completedCapacityResearchIds = this.researchFacade.getPermanentCompletedResearchIds();
+    const emerald = this.emeraldFacade.getSnapshot();
     const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
     const automation = this.automationFacade.getPersistenceSnapshot();
     const seedSummoning = this.seedSummoningFacade.getPersistenceSnapshot();
@@ -478,9 +479,7 @@ export class GameplayFacade {
       crystal: {
         current: 0,
       },
-      emerald: {
-        current: 0,
-      },
+      emerald,
       ruby: {
         current: 0,
       },
@@ -672,8 +671,8 @@ export class GameplayFacade {
     return this.worldNoticeFacade.recordAction(actionType, quantity, detail);
   }
 
-  donateWorldNoticeCoin(requestId) {
-    const result = this.worldNoticeFacade.donateCoin(requestId);
+  donateWorldNoticeCoin(requestId, quantity = null) {
+    const result = this.worldNoticeFacade.donateCoin(requestId, quantity);
     this.publishAndSaveSnapshot();
     return result;
   }

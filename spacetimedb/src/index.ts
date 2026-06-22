@@ -46,6 +46,8 @@ const DEFAULT_TRADE_ALLIANCE_TAG_COLOR = 'ink';
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
+const NPC_MARKET_FILLED_ANNOUNCEMENT_BODY =
+  'traders filled the market. go see what they need.';
 const TRADE_ALLIANCE_CHAT_RATE_LIMIT_WINDOW_MICROS = WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS;
 const TRADE_ALLIANCE_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const TRADE_ALLIANCE_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
@@ -94,7 +96,7 @@ const NPC_MARKET_AUTO_TUNE_WINDOW_BPS = 500n;
 const NPC_MARKET_AUTO_TUNE_MIN_SIGNAL_QUANTITY = 10n;
 const NPC_MARKET_AUTO_TUNE_MAX_STEP_BPS = 250;
 const MAX_RESEARCH_COST_GOLD = 1_000_000_000n;
-const MAX_RESEARCH_DURATION_SECONDS = 10n * 60n;
+const MAX_RESEARCH_DURATION_SECONDS = 4n * 60n * 60n;
 const MAX_GAME_CONFIG_KEY_LENGTH = 48;
 const MAX_GAME_CONFIG_JSON_LENGTH = 80_000;
 const MAX_GAME_CONFIG_LEVELS = 100;
@@ -312,7 +314,7 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level5-nettle-seeds",
-          "itemKey": "mintSeed",
+          "itemKey": "nettleSeed",
           "quantity": 45
         },
         {
@@ -322,7 +324,7 @@ const DEFAULT_TASKS_CONFIG = {
         },
         {
           "id": "level5-lavender-herb",
-          "itemKey": "nettleHerb",
+          "itemKey": "sageHerb",
           "quantity": 18
         },
         {
@@ -343,7 +345,7 @@ const DEFAULT_TASKS_CONFIG = {
         },
         {
           "id": "level6-lavender-seeds",
-          "itemKey": "lavenderHerb",
+          "itemKey": "nettleHerb",
           "quantity": 42
         },
         {
@@ -374,12 +376,12 @@ const DEFAULT_TASKS_CONFIG = {
         },
         {
           "id": "level7-briar-herb",
-          "itemKey": "lavenderHerb",
+          "itemKey": "sageHerb",
           "quantity": 25
         },
         {
           "id": "level7-nettle-vigor",
-          "itemKey": "nettleVigor",
+          "itemKey": "minorHealingPotion",
           "quantity": 6
         }
       ]
@@ -390,17 +392,17 @@ const DEFAULT_TASKS_CONFIG = {
       "tasks": [
         {
           "id": "level8-calming-draught",
-          "itemKey": "nettleSeed",
+          "itemKey": "sageSeed",
           "quantity": 70
         },
         {
           "id": "level8-briar-seeds",
-          "itemKey": "briarHerb",
+          "itemKey": "lavenderHerb",
           "quantity": 56
         },
         {
           "id": "level8-briar-herb",
-          "itemKey": "lavenderHerb",
+          "itemKey": "nettleHerb",
           "quantity": 28
         },
         {
@@ -3368,6 +3370,16 @@ const herbCatalog = [
   { key: 'starAnise', label: 'star anise', growthDurationMs: 150_000 },
   { key: 'bloodrose', label: 'bloodrose', growthDurationMs: 180_000 },
   { key: 'dragonpepper', label: 'dragonpepper', growthDurationMs: 210_000 },
+  { key: 'silverleaf', label: 'silverleaf', growthDurationMs: 240_000 },
+  { key: 'yarrow', label: 'yarrow', growthDurationMs: 270_000 },
+  { key: 'hyssop', label: 'hyssop', growthDurationMs: 300_000 },
+  { key: 'valerian', label: 'valerian', growthDurationMs: 330_000 },
+  { key: 'comfrey', label: 'comfrey', growthDurationMs: 360_000 },
+  { key: 'nightshade', label: 'nightshade', growthDurationMs: 390_000 },
+  { key: 'belladonna', label: 'belladonna', growthDurationMs: 420_000 },
+  { key: 'wormwood', label: 'wormwood', growthDurationMs: 450_000 },
+  { key: 'snowdrop', label: 'snowdrop', growthDurationMs: 480_000 },
+  { key: 'pearlroot', label: 'pearlroot', growthDurationMs: 520_000 },
 ];
 
 const knownPotionCatalog = [
@@ -3391,6 +3403,19 @@ const knownPotionCatalog = [
   { key: 'pactWard', label: 'pact ward' },
 ];
 
+const extraKnownPotionCatalog = [
+  { key: 'silverleafSalve', label: 'silverleaf salve' },
+  { key: 'yarrowPoultice', label: 'yarrow poultice' },
+  { key: 'hyssopClarity', label: 'hyssop clarity' },
+  { key: 'valerianRest', label: 'valerian rest' },
+  { key: 'comfreyBalm', label: 'comfrey balm' },
+  { key: 'nightshadeVeil', label: 'nightshade veil' },
+  { key: 'belladonnaSight', label: 'belladonna sight' },
+  { key: 'wormwoodPurge', label: 'wormwood purge' },
+  { key: 'snowdropBreath', label: 'snowdrop breath' },
+  { key: 'pearlrootDraught', label: 'pearlroot draught' },
+];
+
 const knownPotionResearchOrder = [
   'manaTonic',
   'minorHealingPotion',
@@ -3410,10 +3435,23 @@ const knownPotionResearchOrder = [
   'deepDreamVision',
   'pactWard',
   'dragonCourage',
+  'silverleafSalve',
+  'yarrowPoultice',
+  'hyssopClarity',
+  'valerianRest',
+  'comfreyBalm',
+  'nightshadeVeil',
+  'belladonnaSight',
+  'wormwoodPurge',
+  'snowdropBreath',
+  'pearlrootDraught',
 ];
 
 const knownPotionCatalogByKey = new Map(
-  knownPotionCatalog.map((potion) => [potion.key, potion]),
+  [...knownPotionCatalog, ...extraKnownPotionCatalog].map((potion) => [
+    potion.key,
+    potion,
+  ]),
 );
 const knownPotionResearchCatalog = knownPotionResearchOrder.flatMap((potionKey) => {
   const potion = knownPotionCatalogByKey.get(potionKey);
@@ -3448,6 +3486,16 @@ const herbMarketBasePriceGoldByKey: Record<string, number> = {
   starAnise: 45,
   bloodrose: 55,
   dragonpepper: 65,
+  silverleaf: 80,
+  yarrow: 95,
+  hyssop: 115,
+  valerian: 140,
+  comfrey: 165,
+  nightshade: 200,
+  belladonna: 240,
+  wormwood: 285,
+  snowdrop: 345,
+  pearlroot: 410,
 };
 
 const potionMarketBasePriceGoldByKey: Record<string, number> = {
@@ -3479,6 +3527,16 @@ const potionMarketBasePriceGoldByKey: Record<string, number> = {
   starlessCourage: 407,
   frostveinDraught: 282,
   bloodlightWard: 313,
+  silverleafSalve: 425,
+  yarrowPoultice: 460,
+  hyssopClarity: 500,
+  valerianRest: 545,
+  comfreyBalm: 595,
+  nightshadeVeil: 650,
+  belladonnaSight: 710,
+  wormwoodPurge: 775,
+  snowdropBreath: 845,
+  pearlrootDraught: 925,
 };
 
 const researchDefaultCostGoldById: Record<string, bigint> = {
@@ -3496,6 +3554,16 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockSeed:starAniseSeed': 15_500n,
   'unlockSeed:bloodroseSeed': 22_000n,
   'unlockSeed:dragonpepperSeed': 32_000n,
+  'unlockSeed:silverleafSeed': 45_000n,
+  'unlockSeed:yarrowSeed': 63_000n,
+  'unlockSeed:hyssopSeed': 88_000n,
+  'unlockSeed:valerianSeed': 123_000n,
+  'unlockSeed:comfreySeed': 172_000n,
+  'unlockSeed:nightshadeSeed': 240_000n,
+  'unlockSeed:belladonnaSeed': 335_000n,
+  'unlockSeed:wormwoodSeed': 470_000n,
+  'unlockSeed:snowdropSeed': 660_000n,
+  'unlockSeed:pearlrootSeed': 925_000n,
   'summonSeedsX2': 600n,
   'summonSeedsX3': 1_800n,
   'summonSeedsX4': 4_500n,
@@ -3518,6 +3586,16 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockRecipe:deepDreamVision': 68_000n,
   'unlockRecipe:pactWard': 88_000n,
   'unlockRecipe:dragonCourage': 115_000n,
+  'unlockRecipe:silverleafSalve': 150_000n,
+  'unlockRecipe:yarrowPoultice': 195_000n,
+  'unlockRecipe:hyssopClarity': 255_000n,
+  'unlockRecipe:valerianRest': 335_000n,
+  'unlockRecipe:comfreyBalm': 440_000n,
+  'unlockRecipe:nightshadeVeil': 580_000n,
+  'unlockRecipe:belladonnaSight': 765_000n,
+  'unlockRecipe:wormwoodPurge': 1_000_000n,
+  'unlockRecipe:snowdropBreath': 1_300_000n,
+  'unlockRecipe:pearlrootDraught': 1_700_000n,
   'automation:autoPlantTile:1': 1n,
   'automation:autoPlantTile:2': 2n,
   'automation:autoPlantTile:3': 3n,
@@ -3596,6 +3674,8 @@ const researchDefaultCostCrystalById: Record<string, number> = {
 
 const ADVANCED_RESEARCH_MAX_LEVEL = 10;
 const FAST_SELL_RESEARCH_MAX_LEVEL = 3;
+const RESEARCH_TIME_REDUCTION_MAX_LEVEL = 8;
+const RESEARCH_COST_REDUCTION_MAX_LEVEL = 8;
 const fastSellResearchCostsRuby = [2, 5, 10];
 const advancedResearchCauldronNumbers = [1, 2, 3, 4, 5];
 const advancedResearchPlotNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -3639,6 +3719,14 @@ const researchDefaultCostRubyById: Record<string, number> =
 function getEmeraldResearchCostById(): Record<string, number> {
   const costs: Record<string, number> = {};
 
+  for (let level = 1; level <= RESEARCH_TIME_REDUCTION_MAX_LEVEL; level += 1) {
+    costs[`advanced:researchTime:${level}`] = level;
+  }
+
+  for (let level = 1; level <= RESEARCH_COST_REDUCTION_MAX_LEVEL; level += 1) {
+    costs[`emerald:researchCost:${level}`] = level;
+  }
+
   for (const plotNumber of advancedResearchPlotNumbers) {
     for (const multiplier of emeraldResearchMultipliers) {
       costs[`emerald:plotPlanting:${plotNumber}:${multiplier}`] =
@@ -3659,7 +3747,72 @@ function getEmeraldResearchCostById(): Record<string, number> {
 const researchDefaultCostEmeraldById: Record<string, number> =
   getEmeraldResearchCostById();
 
-const researchDefaultDurationOverrideSecondsById: Record<string, bigint> = {
+function isResearchTimeReductionResearchId(researchId: string) {
+  return /^advanced:researchTime:\d+$/.test(researchId);
+}
+
+const QUICK_RESEARCH_DURATION_SECONDS = 3n;
+const DEFAULT_RESEARCH_DURATION_SECONDS = 10n * 60n;
+
+const seedResearchDurationSecondsById: Record<string, bigint> = {
+  'unlockSeed:sageSeed': QUICK_RESEARCH_DURATION_SECONDS,
+  'unlockSeed:mintSeed': 5n * 60n,
+  'unlockSeed:nettleSeed': 5n * 60n,
+  'unlockSeed:lavenderSeed': 7n * 60n,
+  'unlockSeed:briarSeed': 10n * 60n,
+  'unlockSeed:glowcapSeed': 12n * 60n,
+  'unlockSeed:mandrakeSeed': 15n * 60n,
+  'unlockSeed:sunrootSeed': 18n * 60n,
+  'unlockSeed:moonflowerSeed': 22n * 60n,
+  'unlockSeed:frostmossSeed': 26n * 60n,
+  'unlockSeed:dreambellSeed': 30n * 60n,
+  'unlockSeed:starAniseSeed': 35n * 60n,
+  'unlockSeed:bloodroseSeed': 40n * 60n,
+  'unlockSeed:dragonpepperSeed': 45n * 60n,
+  'unlockSeed:silverleafSeed': 50n * 60n,
+  'unlockSeed:yarrowSeed': 60n * 60n,
+  'unlockSeed:hyssopSeed': 70n * 60n,
+  'unlockSeed:valerianSeed': 80n * 60n,
+  'unlockSeed:comfreySeed': 90n * 60n,
+  'unlockSeed:nightshadeSeed': 100n * 60n,
+  'unlockSeed:belladonnaSeed': 110n * 60n,
+  'unlockSeed:wormwoodSeed': 120n * 60n,
+  'unlockSeed:snowdropSeed': 135n * 60n,
+  'unlockSeed:pearlrootSeed': 150n * 60n,
+};
+
+const recipeResearchDurationSecondsById: Record<string, bigint> = {
+  'unlockRecipe:manaTonic': 10n,
+  'unlockRecipe:minorHealingPotion': 5n * 60n,
+  'unlockRecipe:nettleVigor': 7n * 60n,
+  'unlockRecipe:calmingDraught': 10n * 60n,
+  'unlockRecipe:briarWard': 12n * 60n,
+  'unlockRecipe:lanternTonic': 15n * 60n,
+  'unlockRecipe:simpleAntidote': 18n * 60n,
+  'unlockRecipe:venomDraught': 22n * 60n,
+  'unlockRecipe:healingPotion': 26n * 60n,
+  'unlockRecipe:sunrootStamina': 30n * 60n,
+  'unlockRecipe:moonlitFocus': 35n * 60n,
+  'unlockRecipe:frostmossCleanse': 40n * 60n,
+  'unlockRecipe:sleepDraught': 45n * 60n,
+  'unlockRecipe:elixirOfLife': 50n * 60n,
+  'unlockRecipe:starLuckPhiltre': 60n * 60n,
+  'unlockRecipe:deepDreamVision': 70n * 60n,
+  'unlockRecipe:pactWard': 80n * 60n,
+  'unlockRecipe:dragonCourage': 90n * 60n,
+  'unlockRecipe:silverleafSalve': 100n * 60n,
+  'unlockRecipe:yarrowPoultice': 110n * 60n,
+  'unlockRecipe:hyssopClarity': 120n * 60n,
+  'unlockRecipe:valerianRest': 135n * 60n,
+  'unlockRecipe:comfreyBalm': 150n * 60n,
+  'unlockRecipe:nightshadeVeil': 165n * 60n,
+  'unlockRecipe:belladonnaSight': 180n * 60n,
+  'unlockRecipe:wormwoodPurge': 195n * 60n,
+  'unlockRecipe:snowdropBreath': 210n * 60n,
+  'unlockRecipe:pearlrootDraught': 240n * 60n,
+};
+
+const researchLegacyDurationOverrideSecondsById: Record<string, bigint> = {
   'unlockSeed:mintSeed': 15n,
   'unlockRecipe:manaTonic': 60n,
 };
@@ -3672,48 +3825,82 @@ const researchLegacyDurationSecondsById: Record<string, bigint> = {
   'unlockRecipe:manaTonic': 600n,
 };
 
-const researchDefaultDurationSecondsById: Record<string, bigint> = {
-  ...(Object.fromEntries(
-    [
-      ...Object.keys(researchDefaultCostGoldById),
-      ...Object.keys(researchDefaultCostCrystalById).filter(
-        (researchId) => researchDefaultCostGoldById[researchId] === undefined,
-      ),
-      ...Object.keys(researchDefaultCostRubyById).filter(
-        (researchId) =>
-          researchDefaultCostGoldById[researchId] === undefined &&
-          researchDefaultCostCrystalById[researchId] === undefined,
-      ),
-      ...Object.keys(researchDefaultCostEmeraldById).filter(
-        (researchId) =>
-          researchDefaultCostGoldById[researchId] === undefined &&
-          researchDefaultCostCrystalById[researchId] === undefined &&
-          researchDefaultCostRubyById[researchId] === undefined,
-      ),
-    ].map((researchId, index) => [
-      researchId,
-      BigInt(getDefaultResearchDurationSeconds(index)),
-    ]),
-  ) as Record<string, bigint>),
-  ...researchDefaultDurationOverrideSecondsById,
+const researchAdditionalLegacyDurationSecondsById: Record<string, readonly bigint[]> = {
+  'unlockRecipe:manaTonic': [300n],
 };
 
-function getDefaultResearchDurationSeconds(index: number): number {
+const orderedResearchDurationIds = [
+  ...Object.keys(researchDefaultCostGoldById),
+  ...Object.keys(researchDefaultCostCrystalById).filter(
+    (researchId) => researchDefaultCostGoldById[researchId] === undefined,
+  ),
+  ...Object.keys(researchDefaultCostRubyById).filter(
+    (researchId) =>
+      researchDefaultCostGoldById[researchId] === undefined &&
+      researchDefaultCostCrystalById[researchId] === undefined,
+  ),
+  ...Object.keys(researchDefaultCostEmeraldById).filter(
+    (researchId) =>
+      researchDefaultCostGoldById[researchId] === undefined &&
+      researchDefaultCostCrystalById[researchId] === undefined &&
+      researchDefaultCostRubyById[researchId] === undefined,
+  ),
+];
+
+const researchLegacyDefaultDurationSecondsById: Record<string, bigint> = {
+  ...(Object.fromEntries(
+    orderedResearchDurationIds.map((researchId, index) => [
+      researchId,
+      getLegacyDefaultResearchDurationSeconds(index),
+    ]),
+  ) as Record<string, bigint>),
+  ...researchLegacyDurationOverrideSecondsById,
+};
+
+const researchDefaultDurationSecondsById: Record<string, bigint> = Object.fromEntries(
+  orderedResearchDurationIds.map((researchId) => [
+    researchId,
+    getDefaultResearchDurationSeconds(researchId),
+  ]),
+) as Record<string, bigint>;
+
+function getLegacyDefaultResearchDurationSeconds(index: number): bigint {
   if (index === 0) {
-    return 3;
+    return QUICK_RESEARCH_DURATION_SECONDS;
   }
 
   if (index === 1) {
-    return 60;
+    return 60n;
   }
 
-  return Math.min(Number(MAX_RESEARCH_DURATION_SECONDS), 300 + Math.max(0, index - 2) * 300);
+  return BigInt(Math.min(10 * 60, 300 + Math.max(0, index - 2) * 300));
+}
+
+function getDefaultResearchDurationSeconds(researchId: string): bigint {
+  if (
+    researchDefaultCostCrystalById[researchId] !== undefined ||
+    researchDefaultCostRubyById[researchId] !== undefined ||
+    researchDefaultCostEmeraldById[researchId] !== undefined
+  ) {
+    return QUICK_RESEARCH_DURATION_SECONDS;
+  }
+
+  if (seedResearchDurationSecondsById[researchId] !== undefined) {
+    return seedResearchDurationSecondsById[researchId];
+  }
+
+  if (recipeResearchDurationSecondsById[researchId] !== undefined) {
+    return recipeResearchDurationSecondsById[researchId];
+  }
+
+  return DEFAULT_RESEARCH_DURATION_SECONDS;
 }
 
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
   { key: 'wastedPotion', label: 'wasted potion', basePriceGold: 1 },
+  ...extraKnownPotionCatalog,
 ];
 
 const potionRecipeCatalog = [
@@ -3881,6 +4068,107 @@ const potionRecipeCatalog = [
       { itemKey: 'dragonpepperHerb', quantity: 1 },
       { itemKey: 'sunrootHerb', quantity: 2 },
       { itemKey: 'nettleHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'silverleafSalve',
+    manaCost: 70,
+    brewDurationMs: 150_000,
+    ingredients: [
+      { itemKey: 'silverleafHerb', quantity: 2 },
+      { itemKey: 'sageHerb', quantity: 1 },
+      { itemKey: 'comfreyHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'yarrowPoultice',
+    manaCost: 72,
+    brewDurationMs: 155_000,
+    ingredients: [
+      { itemKey: 'yarrowHerb', quantity: 2 },
+      { itemKey: 'mintHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'hyssopClarity',
+    manaCost: 76,
+    brewDurationMs: 165_000,
+    ingredients: [
+      { itemKey: 'hyssopHerb', quantity: 2 },
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'valerianRest',
+    manaCost: 80,
+    brewDurationMs: 175_000,
+    ingredients: [
+      { itemKey: 'valerianHerb', quantity: 2 },
+      { itemKey: 'dreambellHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'comfreyBalm',
+    manaCost: 84,
+    brewDurationMs: 185_000,
+    ingredients: [
+      { itemKey: 'comfreyHerb', quantity: 2 },
+      { itemKey: 'sunrootHerb', quantity: 1 },
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'nightshadeVeil',
+    manaCost: 90,
+    brewDurationMs: 200_000,
+    ingredients: [
+      { itemKey: 'nightshadeHerb', quantity: 1 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'belladonnaSight',
+    manaCost: 96,
+    brewDurationMs: 215_000,
+    ingredients: [
+      { itemKey: 'belladonnaHerb', quantity: 1 },
+      { itemKey: 'starAniseHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'wormwoodPurge',
+    manaCost: 102,
+    brewDurationMs: 230_000,
+    ingredients: [
+      { itemKey: 'wormwoodHerb', quantity: 1 },
+      { itemKey: 'nettleHerb', quantity: 2 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'snowdropBreath',
+    manaCost: 110,
+    brewDurationMs: 245_000,
+    ingredients: [
+      { itemKey: 'snowdropHerb', quantity: 1 },
+      { itemKey: 'silverleafHerb', quantity: 1 },
+      { itemKey: 'moonflowerHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'pearlrootDraught',
+    manaCost: 120,
+    brewDurationMs: 270_000,
+    ingredients: [
+      { itemKey: 'pearlrootHerb', quantity: 1 },
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'belladonnaHerb', quantity: 1 },
+      { itemKey: 'sunrootHerb', quantity: 1 },
     ],
   },
   {
@@ -4084,6 +4372,14 @@ const advancedResearchCatalog = [
       groupId: 'fastSell',
     };
   }),
+  ...Array.from({ length: RESEARCH_TIME_REDUCTION_MAX_LEVEL }, (_value, index) => {
+    const level = index + 1;
+    return {
+      id: `advanced:researchTime:${level}`,
+      label: `research time lvl ${level}`,
+      groupId: 'researchTime',
+    };
+  }),
   ...advancedResearchCauldronNumbers.flatMap((cauldronNumber) =>
     Array.from({ length: ADVANCED_RESEARCH_MAX_LEVEL }, (_value, index) => {
       const level = index + 1;
@@ -4117,6 +4413,14 @@ const advancedResearchCatalog = [
 ];
 
 const emeraldResearchCatalog = [
+  ...Array.from({ length: RESEARCH_COST_REDUCTION_MAX_LEVEL }, (_value, index) => {
+    const level = index + 1;
+    return {
+      id: `emerald:researchCost:${level}`,
+      label: `research cost lvl ${level}`,
+      groupId: 'researchCost',
+    };
+  }),
   ...advancedResearchPlotNumbers.flatMap((plotNumber) =>
     emeraldResearchMultipliers.map((multiplier) => ({
       id: `emerald:plotPlanting:${plotNumber}:${multiplier}`,
@@ -6623,9 +6927,25 @@ function normalizeStoredResearchDurationSeconds(
   fallback: bigint,
 ): bigint {
   const durationSeconds = normalizeResearchDurationSeconds(value, fallback);
+  const legacyDefaultDurationSeconds = researchLegacyDefaultDurationSecondsById[researchId];
+
+  if (
+    legacyDefaultDurationSeconds !== undefined &&
+    durationSeconds === legacyDefaultDurationSeconds
+  ) {
+    return fallback;
+  }
+
   const legacyDurationSeconds = researchLegacyDurationSecondsById[researchId];
 
   if (legacyDurationSeconds !== undefined && durationSeconds === legacyDurationSeconds) {
+    return fallback;
+  }
+
+  const additionalLegacyDurationSeconds =
+    researchAdditionalLegacyDurationSecondsById[researchId] ?? [];
+
+  if (additionalLegacyDurationSeconds.includes(durationSeconds)) {
     return fallback;
   }
 
@@ -6768,12 +7088,19 @@ function normalizeGameConfigJson(
     }
 
     if (isRecord(parsedConfig.researchCostsRuby)) {
-      const existingCostsRuby = parsedConfig.researchCostsRuby;
+      const existingCostsRuby = Object.fromEntries(
+        Object.entries(parsedConfig.researchCostsRuby).filter(
+          ([researchId]) => !isResearchTimeReductionResearchId(researchId),
+        ),
+      );
+      const removedResearchTimeRubyCost =
+        Object.keys(existingCostsRuby).length !==
+        Object.keys(parsedConfig.researchCostsRuby).length;
       const missingRubyCost = Object.keys(researchDefaultCostRubyById).some(
         (researchId) => existingCostsRuby[researchId] === undefined,
       );
 
-      if (missingRubyCost) {
+      if (missingRubyCost || removedResearchTimeRubyCost) {
         normalizedResearchConfig.researchCostsRuby = {
           ...researchDefaultCostRubyById,
           ...existingCostsRuby,
@@ -6812,12 +7139,76 @@ function normalizeGameConfigJson(
       const missingDuration = Object.keys(defaultResearchDurationsSeconds).some(
         (researchId) => existingDurations[researchId] === undefined,
       );
+      const nextDurations = {
+        ...defaultResearchDurationsSeconds,
+        ...existingDurations,
+      };
+      let replacedLegacyDuration = false;
 
-      if (missingDuration) {
-        normalizedResearchConfig.researchDurationsSeconds = {
-          ...defaultResearchDurationsSeconds,
-          ...existingDurations,
-        };
+      for (const [researchId, legacyDurationSeconds] of Object.entries(
+        researchLegacyDefaultDurationSecondsById,
+      )) {
+        const defaultDurationSeconds = defaultResearchDurationsSeconds[researchId];
+
+        if (defaultDurationSeconds === undefined) {
+          continue;
+        }
+
+        const currentDurationSeconds = Number(nextDurations[researchId]);
+
+        if (currentDurationSeconds !== Number(legacyDurationSeconds)) {
+          continue;
+        }
+
+        nextDurations[researchId] = defaultDurationSeconds;
+        replacedLegacyDuration = true;
+      }
+
+      for (const [researchId, legacyDurationSeconds] of Object.entries(
+        researchLegacyDurationSecondsById,
+      )) {
+        const defaultDurationSeconds = defaultResearchDurationsSeconds[researchId];
+
+        if (defaultDurationSeconds === undefined) {
+          continue;
+        }
+
+        const currentDurationSeconds = Number(nextDurations[researchId]);
+
+        if (currentDurationSeconds !== Number(legacyDurationSeconds)) {
+          continue;
+        }
+
+        nextDurations[researchId] = defaultDurationSeconds;
+        replacedLegacyDuration = true;
+      }
+
+      for (const [researchId, legacyDurationSecondsValues] of Object.entries(
+        researchAdditionalLegacyDurationSecondsById,
+      )) {
+        const defaultDurationSeconds = defaultResearchDurationsSeconds[researchId];
+
+        if (defaultDurationSeconds === undefined) {
+          continue;
+        }
+
+        const currentDurationSeconds = Number(nextDurations[researchId]);
+
+        if (
+          !legacyDurationSecondsValues.some(
+            (legacyDurationSeconds) =>
+              currentDurationSeconds === Number(legacyDurationSeconds),
+          )
+        ) {
+          continue;
+        }
+
+        nextDurations[researchId] = defaultDurationSeconds;
+        replacedLegacyDuration = true;
+      }
+
+      if (missingDuration || replacedLegacyDuration) {
+        normalizedResearchConfig.researchDurationsSeconds = nextDurations;
         changed = true;
       }
     } else {
@@ -7022,6 +7413,7 @@ function shouldResetTasksGameConfigToDefault(levels: unknown[]): boolean {
     hasLegacyLevelTwoSageTasks(levels) ||
     hasLegacyShortTaskCatalog(levels) ||
     hasSameFamilySeedItemRequirementsAfterTutorial(levels) ||
+    hasLegacyEarlyRepeatedTaskItems(levels) ||
     hasLegacyRepetitiveTaskMaterialBands(levels);
 }
 
@@ -7099,6 +7491,34 @@ function hasLegacyRepetitiveTaskMaterialBands(levels: unknown[]): boolean {
     'level45-star-anise--seeds-1',
     'starAniseSeed',
     690,
+  );
+}
+
+function hasLegacyEarlyRepeatedTaskItems(levels: unknown[]): boolean {
+  return hasTaskConfigValue(
+    levels,
+    5,
+    'level5-nettle-seeds',
+    'mintSeed',
+    45,
+  ) && hasTaskConfigValue(
+    levels,
+    6,
+    'level6-lavender-seeds',
+    'lavenderHerb',
+    42,
+  ) && hasTaskConfigValue(
+    levels,
+    7,
+    'level7-nettle-vigor',
+    'nettleVigor',
+    6,
+  ) && hasTaskConfigValue(
+    levels,
+    8,
+    'level8-briar-seeds',
+    'briarHerb',
+    56,
   );
 }
 
@@ -8246,6 +8666,18 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
   if (fastSellMatch) {
     const level = Number(fastSellMatch[1]);
     return level > 1 ? [`fastSellPayout:${level - 1}`] : [];
+  }
+
+  const researchTimeMatch = /^advanced:researchTime:(\d+)$/.exec(researchId);
+  if (researchTimeMatch) {
+    const level = Number(researchTimeMatch[1]);
+    return level > 1 ? [`advanced:researchTime:${level - 1}`] : [];
+  }
+
+  const researchCostMatch = /^emerald:researchCost:(\d+)$/.exec(researchId);
+  if (researchCostMatch) {
+    const level = Number(researchCostMatch[1]);
+    return level > 1 ? [`emerald:researchCost:${level - 1}`] : [];
   }
 
   const advancedMatch = /^advanced:([^:]+):(\d+):(\d+)$/.exec(researchId);
@@ -13386,6 +13818,26 @@ function pruneWorldChat(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function insertSystemWorldChatMessage(ctx: IdleWizardReducerCtx, body: string) {
+  const message = normalizeWorldChatMessage(body);
+
+  if (!message) {
+    return;
+  }
+
+  ctx.db.worldChat.insert({
+    messageId: ctx.newUuidV7(),
+    senderIdentity: ctx.sender,
+    username: 'system',
+    playerLevel: 0,
+    body: message,
+    sentAt: ctx.timestamp,
+    allianceTag: '',
+    allianceTagColor: DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
+  });
+  pruneWorldChat(ctx);
+}
+
 function getWorldChatRowsOldestFirst(ctx: { db: any }) {
   return Array.from<any>(ctx.db.worldChat.bySentAt.filter(new Range())).sort(
     compareWorldChatRowsOldestFirst,
@@ -15666,6 +16118,7 @@ export const reset_npc_market = spacetimedb.reducer({}, (ctx) => {
   assertNpcMarketAdmin(ctx);
   ensureNpcMarketCatalog(ctx);
   resetNpcMarketRows(ctx, { resetStock: true });
+  insertSystemWorldChatMessage(ctx, NPC_MARKET_FILLED_ANNOUNCEMENT_BODY);
 });
 
 export const claim_npc_market_admin = spacetimedb.reducer({}, (ctx) => {

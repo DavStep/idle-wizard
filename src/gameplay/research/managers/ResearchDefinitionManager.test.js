@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { ItemsFacade } from '../../items/ItemsFacade.js';
 import { ResearchBalanceManager } from './ResearchBalanceManager.js';
 import { ResearchDefinitionManager } from './ResearchDefinitionManager.js';
+import { researchCostResearchIds } from '../researchCostResearch.js';
+import { researchTimeResearchIds } from '../researchTimeResearch.js';
 
 function createManager() {
   let maxGardenTiles = 10;
@@ -71,5 +73,45 @@ describe('ResearchDefinitionManager', () => {
 
     expect(manager.hasResearch('unlockRecipe:manaTonic')).toBe(false);
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
+  });
+
+  it('adds staged research time reduction rows to advanced research', () => {
+    const { manager } = createManager();
+    const box = manager
+      .getResearchTabs()
+      .find((tab) => tab.id === 'advanced')
+      ?.boxes.find((nextBox) => nextBox.id === 'researchTime');
+
+    expect(box?.researches[0]).toMatchObject({
+      id: researchTimeResearchIds.reduction(1),
+      label: 'research time lvl 1',
+      value: '-10% time',
+      requiredResearchIds: [],
+    });
+    expect(box?.researches[7]).toMatchObject({
+      id: researchTimeResearchIds.reduction(8),
+      value: '-80% time',
+      requiredResearchIds: [researchTimeResearchIds.reduction(7)],
+    });
+  });
+
+  it('adds staged research cost reduction rows to emerald research', () => {
+    const { manager } = createManager();
+    const box = manager
+      .getResearchTabs()
+      .find((tab) => tab.id === 'emerald')
+      ?.boxes.find((nextBox) => nextBox.id === 'researchCost');
+
+    expect(box?.researches[0]).toMatchObject({
+      id: researchCostResearchIds.reduction(1),
+      label: 'research cost lvl 1',
+      value: '-10% cost',
+      requiredResearchIds: [],
+    });
+    expect(box?.researches[7]).toMatchObject({
+      id: researchCostResearchIds.reduction(8),
+      value: '-80% cost',
+      requiredResearchIds: [researchCostResearchIds.reduction(7)],
+    });
   });
 });

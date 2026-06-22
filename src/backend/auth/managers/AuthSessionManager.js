@@ -92,12 +92,14 @@ export class AuthSessionManager {
   }
 
   getSnapshot() {
-    const oidcSnapshot = this.oidcManager?.getSnapshot?.() ?? {
+    const oidcSnapshot = {
       enabled: false,
       authenticated: false,
+      remembered: false,
       displayName: '',
       email: '',
       error: null,
+      ...(this.oidcManager?.getSnapshot?.() ?? {}),
     };
 
     return {

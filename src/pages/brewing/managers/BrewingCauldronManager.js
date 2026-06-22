@@ -131,6 +131,10 @@ export class BrewingCauldronManager {
     count.className = 'brewing-page__cauldron-count';
     count.textContent = '0/0';
 
+    const recipeTitle = document.createElement('div');
+    recipeTitle.className = 'brewing-page__cauldron-recipe-title';
+    recipeTitle.hidden = true;
+
     const selectRecipeButton = document.createElement('button');
     selectRecipeButton.className = 'brewing-page__cauldron-select-recipe-text';
     selectRecipeButton.type = 'button';
@@ -145,21 +149,10 @@ export class BrewingCauldronManager {
     guide.className = 'brewing-page__cauldron-guide';
     guide.hidden = true;
 
-    const recipeRow = document.createElement('div');
-    recipeRow.className = 'brewing-page__cauldron-recipe-row';
-
-    const recipeLabel = document.createElement('span');
-    recipeLabel.className = 'row_key';
-    recipeLabel.textContent = 'recipe';
-
-    const recipeValue = document.createElement('span');
-    recipeValue.className = 'row_val';
-
     const guideSequence = document.createElement('div');
     guideSequence.className = 'brewing-page__cauldron-guide-sequence';
 
-    recipeRow.append(recipeLabel, recipeValue);
-    guide.append(recipeRow, guideSequence);
+    guide.append(guideSequence);
 
     const items = document.createElement('div');
     items.className = 'brewing-page__cauldron-items';
@@ -200,6 +193,7 @@ export class BrewingCauldronManager {
     root.append(
       title,
       count,
+      recipeTitle,
       guide,
       potionIcon,
       status,
@@ -213,9 +207,7 @@ export class BrewingCauldronManager {
       root,
       count,
       guide,
-      recipeRow,
-      recipeLabel,
-      recipeValue,
+      recipeTitle,
       guideSequence,
       potionIcon,
       status,
@@ -575,6 +567,7 @@ export class BrewingCauldronManager {
     refs.root.classList.toggle('is-current', brewing.cauldronIndex === this.selectedCauldronIndex);
     this.setHidden(refs.count, false);
     this.setText(refs.count, this.formatCauldronCount(brewing));
+    this.renderCauldronRecipeTitle(refs, brewing);
     const statusText = this.formatCauldronStatus(brewing);
     this.setHidden(refs.status, statusText === '');
     this.setText(refs.status, statusText);
@@ -624,6 +617,7 @@ export class BrewingCauldronManager {
     refs.root.classList.remove('is-current');
     this.renderPotionIcon(refs, null);
     this.setHidden(refs.count, true);
+    this.renderCauldronRecipeTitle(refs, null);
     this.setHidden(refs.status, true);
     this.setText(refs.status, '');
     this.setHidden(refs.guide, true);
@@ -660,18 +654,23 @@ export class BrewingCauldronManager {
       return;
     }
 
-    this.setHidden(refs.items, false);
     const hasIngredients = brewing.ingredients.length > 0;
     const showGuideContents = Boolean(brewing.selectedRecipe && !brewing.activeBrew);
+
+    if (showGuideContents) {
+      this.setHidden(refs.items, true);
+      refs.items.classList.remove('is-empty');
+      this.setHidden(refs.empty, true);
+      this.setText(refs.empty, '');
+      this.hideExtraIngredientRows(refs, 0);
+      return;
+    }
+
+    this.setHidden(refs.items, false);
     const showEmpty = !hasIngredients && !brewing.activeBrew && !showGuideContents;
     refs.items.classList.toggle('is-empty', showEmpty);
     this.setHidden(refs.empty, !showEmpty);
     this.setText(refs.empty, showEmpty ? 'empty' : '');
-
-    if (showGuideContents) {
-      this.hideExtraIngredientRows(refs, 0);
-      return;
-    }
 
     const ingredientGroups = this.groupAdjacentIngredients(brewing.ingredients);
 
@@ -756,12 +755,10 @@ export class BrewingCauldronManager {
     this.setHidden(refs.guide, !showGuide);
 
     if (!showGuide) {
-      this.setText(refs.recipeValue, '');
       this.hideExtraCauldronGuideRows(refs, 0);
       return;
     }
 
-    this.setText(refs.recipeValue, recipe.label);
     const targetIngredients = this.expandIngredientSequence(recipe.ingredients);
     const ingredientGroups = this.createIngredientGroups(recipe.ingredients);
     const match = this.getIngredientMatch(targetIngredients, brewing.ingredients);
@@ -802,6 +799,18 @@ export class BrewingCauldronManager {
     }
 
     this.hideExtraCauldronGuideRows(refs, renderedRows);
+  }
+
+  renderCauldronRecipeTitle(refs, brewing) {
+    const recipeTitle = refs?.recipeTitle;
+
+    if (!recipeTitle) {
+      return;
+    }
+
+    const label = brewing?.activeBrew?.label ?? brewing?.selectedRecipe?.label ?? '';
+    this.setHidden(recipeTitle, label === '');
+    this.setText(recipeTitle, label);
   }
 
   ensureCauldronGuideRow(cauldronRefs, index) {

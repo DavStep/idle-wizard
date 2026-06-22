@@ -166,6 +166,107 @@ const recipeCatalog = [
     ],
   },
   {
+    potionKey: 'silverleafSalve',
+    manaCost: 70,
+    brewDurationMs: 150_000,
+    ingredients: [
+      { itemKey: 'silverleafHerb', quantity: 2 },
+      { itemKey: 'sageHerb', quantity: 1 },
+      { itemKey: 'comfreyHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'yarrowPoultice',
+    manaCost: 72,
+    brewDurationMs: 155_000,
+    ingredients: [
+      { itemKey: 'yarrowHerb', quantity: 2 },
+      { itemKey: 'mintHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'hyssopClarity',
+    manaCost: 76,
+    brewDurationMs: 165_000,
+    ingredients: [
+      { itemKey: 'hyssopHerb', quantity: 2 },
+      { itemKey: 'moonflowerHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'valerianRest',
+    manaCost: 80,
+    brewDurationMs: 175_000,
+    ingredients: [
+      { itemKey: 'valerianHerb', quantity: 2 },
+      { itemKey: 'dreambellHerb', quantity: 1 },
+      { itemKey: 'lavenderHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'comfreyBalm',
+    manaCost: 84,
+    brewDurationMs: 185_000,
+    ingredients: [
+      { itemKey: 'comfreyHerb', quantity: 2 },
+      { itemKey: 'sunrootHerb', quantity: 1 },
+      { itemKey: 'mandrakeHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'nightshadeVeil',
+    manaCost: 90,
+    brewDurationMs: 200_000,
+    ingredients: [
+      { itemKey: 'nightshadeHerb', quantity: 1 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+      { itemKey: 'bloodroseHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'belladonnaSight',
+    manaCost: 96,
+    brewDurationMs: 215_000,
+    ingredients: [
+      { itemKey: 'belladonnaHerb', quantity: 1 },
+      { itemKey: 'starAniseHerb', quantity: 1 },
+      { itemKey: 'glowcapHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'wormwoodPurge',
+    manaCost: 102,
+    brewDurationMs: 230_000,
+    ingredients: [
+      { itemKey: 'wormwoodHerb', quantity: 1 },
+      { itemKey: 'nettleHerb', quantity: 2 },
+      { itemKey: 'frostmossHerb', quantity: 1 },
+    ],
+  },
+  {
+    potionKey: 'snowdropBreath',
+    manaCost: 110,
+    brewDurationMs: 245_000,
+    ingredients: [
+      { itemKey: 'snowdropHerb', quantity: 1 },
+      { itemKey: 'silverleafHerb', quantity: 1 },
+      { itemKey: 'moonflowerHerb', quantity: 2 },
+    ],
+  },
+  {
+    potionKey: 'pearlrootDraught',
+    manaCost: 120,
+    brewDurationMs: 270_000,
+    ingredients: [
+      { itemKey: 'pearlrootHerb', quantity: 1 },
+      { itemKey: 'dragonpepperHerb', quantity: 1 },
+      { itemKey: 'belladonnaHerb', quantity: 1 },
+      { itemKey: 'sunrootHerb', quantity: 1 },
+    ],
+  },
+  {
     potionKey: 'ashenMemory',
     manaCost: 36,
     brewDurationMs: 80_000,

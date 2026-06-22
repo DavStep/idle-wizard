@@ -200,6 +200,34 @@ describe('TopPanelAuthManager', () => {
     expect(refs.authStatus.textContent).toBe('login unavailable');
   });
 
+  it('shows a remembered account token as connected', () => {
+    const refs = createRefs();
+    const authFacade = {
+      subscribe: vi.fn((listener) => {
+        listener({
+          hasToken: true,
+          oidc: {
+            enabled: true,
+            authenticated: false,
+            remembered: true,
+            displayName: 'Dav',
+            email: 'dav@example.com',
+          },
+        });
+        return vi.fn();
+      }),
+    };
+    const manager = new TopPanelAuthManager({
+      authFacade,
+      reload: vi.fn(),
+    });
+
+    manager.mount(refs);
+
+    expect(refs.authButton.textContent).toBe('disconnect account');
+    expect(refs.authStatus.textContent).toBe('Dav');
+  });
+
   it('hides raw Google prompt failure reasons in settings', () => {
     const refs = createRefs();
     const authFacade = {

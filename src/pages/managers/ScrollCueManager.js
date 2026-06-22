@@ -1,7 +1,6 @@
 const SCROLL_CUE_SELECTOR = [
   '.style-page-scroll',
   '.brewing-page__herb-rows',
-  '.brewing-page__cauldron-guide-sequence',
   '.brewing-page__guide-sequence',
   '.workshop-page__leaderboard-rows',
   '.workshop-page__discoveries-rows',

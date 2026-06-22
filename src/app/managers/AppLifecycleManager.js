@@ -115,7 +115,7 @@ export class AppLifecycleManager {
     }
 
     let promptedBeforeConnect = false;
-    if (this.shouldPromptBeforeInitialConnect(authSnapshot)) {
+    if (this.shouldRestoreConnectedAccountBeforeInitialConnect(authSnapshot)) {
       await this.tryRestoreConnectedAccount();
       if (!this.started || this.stopping) {
         return;
@@ -271,6 +271,16 @@ export class AppLifecycleManager {
 
   shouldPromptBeforeInitialConnect(authSnapshot = this.getAuthSnapshot()) {
     return !this.hasConnectableAccount(authSnapshot) && !this.freshStartConfirmed;
+  }
+
+  shouldRestoreConnectedAccountBeforeInitialConnect(
+    authSnapshot = this.getAuthSnapshot(),
+  ) {
+    return (
+      !authSnapshot?.oidc?.authenticated &&
+      (this.shouldPromptBeforeInitialConnect(authSnapshot) ||
+        authSnapshot?.oidc?.remembered)
+    );
   }
 
   hasConnectableAccount(authSnapshot = this.getAuthSnapshot()) {
@@ -440,7 +450,11 @@ export class AppLifecycleManager {
   }
 
   isAuthenticatedAccount() {
-    return Boolean(this.backendFacade.getAuthFacade?.()?.getSnapshot?.()?.oidc?.authenticated);
+    const snapshot = this.backendFacade.getAuthFacade?.()?.getSnapshot?.();
+    return Boolean(
+      snapshot?.oidc?.authenticated ||
+        (snapshot?.hasToken && snapshot?.oidc?.remembered),
+    );
   }
 
   getAccountUsername() {

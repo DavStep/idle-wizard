@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.29
+
+- Added more late-game herbs, potion recipes, market prices, and item icons.
+- Added research upgrades that reduce research time and research coin cost.
+- Improved weekly world events with repeat contribution scoring, donation amounts, contributor/player details, and clearer event rows.
+- Fixed several mobile tap paths in Market, Workshop events, auth/session handling, and scroll cues so dialogs and rows respond more reliably.
+
 ## 0.2.28
 
 - Fixed Guild saves so reloading or reconnecting no longer resets the guild charter, adventurers, board, or logs.

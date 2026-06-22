@@ -302,6 +302,7 @@ export class AuthOidcManager {
     return {
       enabled: this.isEnabled(),
       authenticated: this.hasFreshUserToken(this.user),
+      remembered: this.hasRememberedUser(this.user),
       displayName: this.getDisplayName(),
       email: this.user?.profile?.email ?? '',
       error: this.error,
@@ -1032,6 +1033,19 @@ export class AuthOidcManager {
 
   hasFreshUserToken(user) {
     return this.googleTokenManager.hasFreshUserToken(user);
+  }
+
+  hasRememberedUser(user) {
+    const profile = user?.profile;
+    return Boolean(
+      profile &&
+        (profile.sub ||
+          profile.email ||
+          profile.name ||
+          profile.given_name ||
+          profile.family_name ||
+          profile.picture),
+    );
   }
 
   shouldUseNativeGoogleAuth() {

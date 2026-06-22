@@ -4,6 +4,7 @@ export class ResearchSnapshotManager {
     emeraldFacade,
     coinFacade,
     rubyFacade,
+    getResearchCostReductionLevel,
     researchBalanceManager,
     researchDefinitionManager,
     researchStateEntityManager,
@@ -12,6 +13,7 @@ export class ResearchSnapshotManager {
     this.emeraldFacade = emeraldFacade;
     this.coinFacade = coinFacade;
     this.rubyFacade = rubyFacade;
+    this.getResearchCostReductionLevel = getResearchCostReductionLevel;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
     this.researchStateEntityManager = researchStateEntityManager;
@@ -42,7 +44,7 @@ export class ResearchSnapshotManager {
   }
 
   getResearchSnapshot(research) {
-    const cost = this.researchBalanceManager.getCost(research.id);
+    const cost = this.getResearchCost(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
     const requiredResearchIds =
@@ -161,6 +163,12 @@ export class ResearchSnapshotManager {
     }
 
     return this.coinFacade;
+  }
+
+  getResearchCost(researchId) {
+    return this.researchBalanceManager.getCost(researchId, {
+      researchCostReductionLevel: this.getResearchCostReductionLevel?.() ?? 0,
+    });
   }
 
   getCostSnapshot(cost) {

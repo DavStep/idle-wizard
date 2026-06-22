@@ -12,7 +12,7 @@ describe('PotionRecipeManager', () => {
   it('knows dormant potion recipes', () => {
     const manager = createManager();
 
-    expect(manager.getPotionRecipes()).toHaveLength(28);
+    expect(manager.getPotionRecipes()).toHaveLength(38);
     expect(manager.getPotionRecipe('manaTonic')).toMatchObject({
       potionTypeId: 2001,
       key: 'manaTonic',
@@ -94,6 +94,43 @@ describe('PotionRecipeManager', () => {
         },
       ],
     });
+    expect(manager.getPotionRecipe('pearlrootDraught')).toMatchObject({
+      potionTypeId: 2039,
+      key: 'pearlrootDraught',
+      label: 'pearlroot draught',
+      manaCost: 120,
+      brewDurationMs: 270_000,
+      ingredients: [
+        {
+          itemTypeId: 1024,
+          key: 'pearlrootHerb',
+          label: 'pearlroot',
+          kind: 'herb',
+          quantity: 1,
+        },
+        {
+          itemTypeId: 1014,
+          key: 'dragonpepperHerb',
+          label: 'dragonpepper',
+          kind: 'herb',
+          quantity: 1,
+        },
+        {
+          itemTypeId: 1021,
+          key: 'belladonnaHerb',
+          label: 'belladonna',
+          kind: 'herb',
+          quantity: 1,
+        },
+        {
+          itemTypeId: 1008,
+          key: 'sunrootHerb',
+          label: 'sunroot',
+          kind: 'herb',
+          quantity: 1,
+        },
+      ],
+    });
   });
 
   it('matches recipes by exact ingredient order', () => {
@@ -107,6 +144,10 @@ describe('PotionRecipeManager', () => {
       key: 'ashenMemory',
       label: 'ashen memory',
       unknown: true,
+    });
+    expect(manager.getPotionRecipeByIngredientSequence([1024, 1014, 1021, 1008])).toMatchObject({
+      key: 'pearlrootDraught',
+      label: 'pearlroot draught',
     });
     expect(manager.getPotionRecipeByIngredientSequence([1002, 1001, 1001])).toBeNull();
   });

@@ -19,6 +19,7 @@ const EMPTY_STAND_LABEL = 'empty stand';
 const EMPTY_STAND_ACTION_LABEL = 'select';
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
+const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
 
 export class ShopShelfManager {
   constructor({ gameplayFacade, getSellPriceOverride } = {}) {
@@ -39,6 +40,11 @@ export class ShopShelfManager {
     this.handledSelectSlotPressStartReset = null;
     this.handledSellItemPressStartKey = null;
     this.handledSellItemPressStartReset = null;
+    this.pendingSellItemPress = null;
+    this.handlePendingSellItemPressMove = (event) =>
+      this.onPendingSellItemPressMove(event);
+    this.handlePendingSellItemPressEnd = (event) => this.onPendingSellItemPressEnd(event);
+    this.handlePendingSellItemPressCancel = () => this.clearPendingSellItemPress();
     this.lastTouchLikePressStart = {
       key: null,
       timeStamp: Number.NEGATIVE_INFINITY,
@@ -49,6 +55,13 @@ export class ShopShelfManager {
           event.preventDefault();
           event.stopPropagation();
           this.clearHandledSelectSlotPressStartSlotNumber();
+          return;
+        }
+
+        if (this.handledSellItemPressStartKey !== null) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.clearHandledSellItemPressStartKey();
           return;
         }
 
@@ -101,6 +114,7 @@ export class ShopShelfManager {
     document.removeEventListener('keydown', this.handleKeydown);
     this.clearHandledSelectSlotPressStartSlotNumber();
     this.clearHandledSellItemPressStartKey();
+    this.clearPendingSellItemPress();
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.root?.remove();
     this.refs.popup?.remove();
@@ -282,7 +296,7 @@ export class ShopShelfManager {
     const emptyButton = document.createElement('button');
     emptyButton.className = 'shop-page__sell-item-button';
     emptyButton.type = 'button';
-    this.bindTouchLikePressStart(emptyButton, 'sell-item:empty', (event) =>
+    this.bindTouchLikeValidatedPress(emptyButton, 'sell-item:empty', (event) =>
       this.onClearSellItemPressStart(event),
     );
     emptyButton.addEventListener('click', (event) => this.onClearSellItemClick(event));
@@ -455,6 +469,17 @@ export class ShopShelfManager {
     );
   }
 
+  bindTouchLikeValidatedPress(target, key, handler) {
+    target.addEventListener('pointerdown', (event) =>
+      this.onTouchLikeValidatedPressStart(event, key, handler),
+    );
+    target.addEventListener(
+      'touchstart',
+      (event) => this.onTouchLikeValidatedPressStart(event, key, handler),
+      { passive: true },
+    );
+  }
+
   onTouchLikePressStart(event, key, handler) {
     if (this.isMousePressStart(event)) {
       return;
@@ -467,6 +492,34 @@ export class ShopShelfManager {
     }
 
     handler(event);
+  }
+
+  onTouchLikeValidatedPressStart(event, key, handler) {
+    if (
+      this.isMousePressStart(event) ||
+      this.isDisabledControl(event.currentTarget) ||
+      this.isDuplicateTouchLikePressStart(event, key)
+    ) {
+      return;
+    }
+
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    this.clearPendingSellItemPress();
+    this.pendingSellItemPress = {
+      key,
+      handler,
+      target: event.currentTarget,
+      pointerId: event.pointerId,
+      startX: point.clientX,
+      startY: point.clientY,
+      moved: false,
+      type: event.type === 'pointerdown' ? 'pointer' : 'touch',
+    };
+    this.addPendingSellItemPressListeners(this.pendingSellItemPress.type);
   }
 
   onSetSellItem(itemTypeId) {
@@ -589,10 +642,6 @@ export class ShopShelfManager {
   }
 
   onClearSellItemPressStart(event) {
-    if (event.currentTarget?.disabled) {
-      return;
-    }
-
     event.preventDefault();
     this.setHandledSellItemPressStartKey('sell-item:empty');
     this.onClearSellItem();
@@ -610,10 +659,6 @@ export class ShopShelfManager {
 
   onSetSellItemPressStart(event, itemTypeId) {
     const handledKey = `sell-item:${itemTypeId}`;
-    if (event.currentTarget?.disabled) {
-      return;
-    }
-
     event.preventDefault();
     this.setHandledSellItemPressStartKey(handledKey);
     this.onSetSellItem(itemTypeId);
@@ -846,7 +891,9 @@ export class ShopShelfManager {
 
     this.refs.sellControls.emptyButton.setAttribute(
       'aria-pressed',
-      this.isSlotEmpty(selectedSlot) ? 'true' : 'false',
+      this.isSlotEmpty(selectedSlot) && this.draftSellItemTypeId === null
+        ? 'true'
+        : 'false',
     );
 
     this.ensureDraftStillVisible(shelf);
@@ -1046,7 +1093,7 @@ export class ShopShelfManager {
       const button = document.createElement('button');
       button.className = 'shop-page__sell-item-button';
       button.type = 'button';
-      this.bindTouchLikePressStart(button, `sell-item:${item.itemTypeId}`, (event) =>
+      this.bindTouchLikeValidatedPress(button, `sell-item:${item.itemTypeId}`, (event) =>
         this.onSetSellItemPressStart(event, item.itemTypeId),
       );
       button.addEventListener('click', (event) =>
@@ -1431,6 +1478,140 @@ export class ShopShelfManager {
     }
 
     this.handledSellItemPressStartKey = null;
+  }
+
+  addPendingSellItemPressListeners(type) {
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    if (!document) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      document.addEventListener('pointermove', this.handlePendingSellItemPressMove, {
+        passive: true,
+      });
+      document.addEventListener('pointerup', this.handlePendingSellItemPressEnd, true);
+      document.addEventListener(
+        'pointercancel',
+        this.handlePendingSellItemPressCancel,
+        true,
+      );
+      return;
+    }
+
+    document.addEventListener('touchmove', this.handlePendingSellItemPressMove, {
+      passive: true,
+    });
+    document.addEventListener('touchend', this.handlePendingSellItemPressEnd, true);
+    document.addEventListener('touchcancel', this.handlePendingSellItemPressCancel, true);
+  }
+
+  removePendingSellItemPressListeners(type) {
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    if (!document) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      document.removeEventListener('pointermove', this.handlePendingSellItemPressMove);
+      document.removeEventListener('pointerup', this.handlePendingSellItemPressEnd, true);
+      document.removeEventListener(
+        'pointercancel',
+        this.handlePendingSellItemPressCancel,
+        true,
+      );
+      return;
+    }
+
+    document.removeEventListener('touchmove', this.handlePendingSellItemPressMove);
+    document.removeEventListener('touchend', this.handlePendingSellItemPressEnd, true);
+    document.removeEventListener(
+      'touchcancel',
+      this.handlePendingSellItemPressCancel,
+      true,
+    );
+  }
+
+  onPendingSellItemPressMove(event) {
+    const pending = this.pendingSellItemPress;
+    if (!pending || !this.eventMatchesPendingSellItemPress(event, pending)) {
+      return;
+    }
+
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    if (
+      Math.hypot(point.clientX - pending.startX, point.clientY - pending.startY) >
+      TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX
+    ) {
+      pending.moved = true;
+    }
+  }
+
+  onPendingSellItemPressEnd(event) {
+    const pending = this.pendingSellItemPress;
+    if (!pending || !this.eventMatchesPendingSellItemPress(event, pending)) {
+      return;
+    }
+
+    this.clearPendingSellItemPress();
+
+    if (
+      pending.moved ||
+      this.isDisabledControl(pending.target) ||
+      !pending.target.contains(event.target)
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    pending.handler(event);
+  }
+
+  clearPendingSellItemPress() {
+    if (!this.pendingSellItemPress) {
+      return;
+    }
+
+    const type = this.pendingSellItemPress.type;
+    this.pendingSellItemPress = null;
+    this.removePendingSellItemPressListeners(type);
+  }
+
+  eventMatchesPendingSellItemPress(event, pending) {
+    return (
+      pending.type !== 'pointer' ||
+      event.pointerId === undefined ||
+      pending.pointerId === undefined ||
+      event.pointerId === pending.pointerId
+    );
+  }
+
+  getTouchLikePoint(event) {
+    const touch = event.changedTouches?.[0] ?? event.touches?.[0];
+    if (touch) {
+      return {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      };
+    }
+
+    if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+      return {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+    }
+
+    return null;
+  }
+
+  isDisabledControl(control) {
+    return control?.disabled || control?.getAttribute?.('aria-disabled') === 'true';
   }
 
   setHandledSelectSlotPressStartSlotNumber(slotNumber) {

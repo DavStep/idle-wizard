@@ -1,3 +1,9 @@
+import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
+import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
+import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { createResourceIconLabel } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
@@ -20,14 +26,20 @@ const WORLD_NOTICE_RESOURCE_BY_ACTION = new Map([
 ]);
 
 export class WorkshopWorldNoticeManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, onOpenPlayerInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
     this.visible = false;
+    this.donateVisible = false;
+    this.donateRequestId = null;
+    this.donateAmount = 1;
+    this.donateStatusText = '';
     this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
     this.previousFocus = null;
+    this.previousDonateFocus = null;
     this.currentSnapshot = null;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
@@ -40,6 +52,11 @@ export class WorkshopWorldNoticeManager {
       }
 
       event.preventDefault();
+      if (this.donateVisible) {
+        this.hideDonateDialog();
+        return;
+      }
+
       this.hide();
     };
   }
@@ -129,7 +146,8 @@ export class WorkshopWorldNoticeManager {
     this.refs.dialog.append(title, this.refs.closeButton, this.refs.content);
     this.refs.tabs = this.createTabs();
     this.refs.panel.append(this.refs.dialog, this.refs.tabs);
-    popup.append(this.refs.panel);
+    this.refs.donatePanel = this.createDonateDialog();
+    popup.append(this.refs.panel, this.refs.donatePanel);
 
     return popup;
   }
@@ -153,6 +171,84 @@ export class WorkshopWorldNoticeManager {
     }
 
     return tabs;
+  }
+
+  createDonateDialog() {
+    const panel = document.createElement('section');
+    panel.className = 'workshop-page__world-notice-donate-panel';
+    panel.hidden = true;
+    panel.setAttribute('aria-label', 'donate to event task');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('role', 'dialog');
+    panel.tabIndex = -1;
+
+    const dialog = document.createElement('section');
+    dialog.className = 'workshop-page__world-notice-donate-dialog style-dialog';
+
+    this.refs.donateTitle = document.createElement('div');
+    this.refs.donateTitle.className = 'style-box__title';
+    this.refs.donateTitle.textContent = 'donate coin';
+
+    this.refs.donateCloseButton = document.createElement('button');
+    this.refs.donateCloseButton.className =
+      'style-button workshop-page__world-notice-donate-close';
+    this.refs.donateCloseButton.type = 'button';
+    this.refs.donateCloseButton.textContent = 'close';
+    this.refs.donateCloseButton.addEventListener('click', () => this.hideDonateDialog());
+
+    this.refs.donateRequestRow = this.createDonateValueRow('task');
+    this.refs.donateProgressRow = this.createDonateValueRow('given');
+    this.refs.donateAvailableRow = this.createDonateValueRow('can give');
+
+    this.refs.donateAmountField = createAmountSelectionRow({
+      ariaLabel: 'donation amount',
+      className: 'workshop-page__world-notice-donate-field',
+      inputClassName: 'workshop-page__world-notice-donate-input',
+      stepClassName: 'workshop-page__world-notice-donate-step',
+      onInput: () => this.onDonateAmountInput(),
+      onStep: (delta) => this.onDonateAmountStep(delta),
+    });
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'workshop-page__world-notice-donate-action-row';
+
+    this.refs.donateConfirmButton = document.createElement('button');
+    this.refs.donateConfirmButton.className =
+      'style-button workshop-page__world-notice-donate-confirm';
+    this.refs.donateConfirmButton.type = 'button';
+    this.refs.donateConfirmButton.addEventListener('click', () => this.onConfirmDonate());
+    actionRow.append(this.refs.donateConfirmButton);
+
+    this.refs.donateStatus = document.createElement('div');
+    this.refs.donateStatus.className = 'workshop-page__world-notice-donate-status';
+
+    dialog.append(
+      this.refs.donateTitle,
+      this.refs.donateCloseButton,
+      this.refs.donateRequestRow.row,
+      this.refs.donateProgressRow.row,
+      this.refs.donateAvailableRow.row,
+      this.refs.donateAmountField.field,
+      actionRow,
+      this.refs.donateStatus,
+    );
+    panel.append(dialog);
+    return panel;
+  }
+
+  createDonateValueRow(labelText) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__world-notice-donate-row';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+    label.textContent = labelText;
+
+    const value = document.createElement('span');
+    value.className = 'row_val';
+
+    row.append(label, value);
+    return { row, value };
   }
 
   onSelectTab(tabId) {
@@ -179,6 +275,7 @@ export class WorkshopWorldNoticeManager {
   hide() {
     const wasVisible = this.visible;
     this.visible = false;
+    this.hideDonateDialog({ restoreFocus: false });
     this.applyVisibility();
 
     if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
@@ -197,7 +294,9 @@ export class WorkshopWorldNoticeManager {
     this.root = null;
     this.refs = {};
     this.visible = false;
+    this.hideDonateDialog({ restoreFocus: false });
     this.previousFocus = null;
+    this.previousDonateFocus = null;
     this.currentSnapshot = null;
     this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
   }
@@ -221,6 +320,10 @@ export class WorkshopWorldNoticeManager {
 
     if (this.visible) {
       this.renderPopup(worldNotice);
+    }
+
+    if (this.donateVisible) {
+      this.renderDonateDialog();
     }
   }
 
@@ -383,9 +486,7 @@ export class WorkshopWorldNoticeManager {
     root.className = 'workshop-page__world-notice-contribution';
 
     const points = document.createElement('span');
-    points.textContent = `${this.formatNumber(normalized.currentPoints)}/${this.formatNumber(
-      normalized.qualificationPoints,
-    )} points`;
+    points.textContent = `${this.formatNumber(normalized.currentPoints)} points earned`;
 
     const status = document.createElement('span');
     status.textContent = normalized.qualified
@@ -416,23 +517,15 @@ export class WorkshopWorldNoticeManager {
     const root = document.createElement('div');
     root.className = 'workshop-page__world-notice-request';
 
-    if (request.completed) {
-      root.classList.add('is-completed');
-    }
-
     const row = document.createElement('div');
     row.className = 'workshop-page__world-notice-request-title-row';
-
-    const marker = document.createElement('span');
-    marker.className = 'workshop-page__world-notice-request-marker';
-    marker.textContent = '-';
 
     const label = document.createElement('span');
     label.className = 'workshop-page__world-notice-request-title';
     label.textContent = request.label;
-    setResourceColor(label, request.completed ? null : this.getTaskResource(request));
+    setResourceColor(label, this.getTaskResource(request));
 
-    row.append(marker, label);
+    row.append(label);
 
     const instruction = document.createElement('div');
     instruction.className = 'workshop-page__world-notice-request-instruction';
@@ -443,7 +536,7 @@ export class WorkshopWorldNoticeManager {
 
     const pointValue = document.createElement('span');
     pointValue.className = 'workshop-page__world-notice-request-points';
-    pointValue.textContent = `worth ${request.pointText ?? request.actionText ?? '0 points'}`;
+    pointValue.textContent = this.getTaskProgressText(request);
 
     const collectedPoints = document.createElement('span');
     collectedPoints.className = 'workshop-page__world-notice-request-collected';
@@ -451,7 +544,7 @@ export class WorkshopWorldNoticeManager {
       request.collectedPointText ?? this.formatPointCount(request.contributionPoints)
     }`;
 
-    if (request.manual && !request.completed) {
+    if (request.manual) {
       detail.append(pointValue, collectedPoints);
       root.append(row, instruction, detail, this.createRequestAction(request));
     } else {
@@ -463,15 +556,13 @@ export class WorkshopWorldNoticeManager {
   }
 
   createRequestAction(request) {
-    if (request.manual && !request.completed) {
+    if (request.manual) {
       const button = document.createElement('button');
       button.className = 'style-button workshop-page__world-notice-request-action';
       button.type = 'button';
       button.textContent = request.actionText;
       button.disabled = !request.canDonate;
-      button.addEventListener('click', () => {
-        this.gameplayFacade?.donateWorldNoticeCoin?.(request.requestId);
-      });
+      button.addEventListener('click', () => this.showDonateDialog(request));
       return button;
     }
 
@@ -562,12 +653,22 @@ export class WorkshopWorldNoticeManager {
     const section = document.createElement('div');
     section.className = 'workshop-page__world-notice-leaderboard';
 
-    section.append(this.createLeaderboardRow({ name: 'user', pointsLabel: 'points' }, 0, {
+    const rows = document.createElement('div');
+    rows.className =
+      'workshop-page__leaderboard-rows workshop-page__world-notice-leaderboard-rows';
+
+    rows.append(this.createLeaderboardRow({ name: 'user', pointsLabel: 'points' }, 0, {
       header: true,
     }));
 
     for (const [index, entry] of normalized.leaderboardRows.entries()) {
-      section.append(this.createLeaderboardRow(entry, index));
+      rows.append(this.createLeaderboardRow(entry, index));
+    }
+
+    if (this.shouldShowCurrentLeaderboardRow(normalized)) {
+      rows.append(
+        this.createLeaderboardRow(normalized.currentLeaderboardRow, 0, { current: true }),
+      );
     }
 
     const qualification = document.createElement('div');
@@ -575,26 +676,29 @@ export class WorkshopWorldNoticeManager {
     qualification.textContent = normalized.qualified
       ? 'qualified for leaderboard rewards'
       : `${this.formatNumber(normalized.remainingQualificationPoints)} points to qualify`;
-    section.append(qualification);
+    section.append(rows, qualification);
 
     return section;
   }
 
-  createLeaderboardRow(entry = {}, index = 0, { header = false } = {}) {
+  createLeaderboardRow(entry = {}, index = 0, { header = false, current = false } = {}) {
     const row = document.createElement('div');
     row.className = 'workshop-page__row workshop-page__leaderboard-row';
 
     if (header) {
       row.classList.add('workshop-page__leaderboard-header');
-    } else if (entry.current) {
+    } else if (current || entry.current) {
       row.classList.add('workshop-page__leaderboard-current');
     }
 
     const key = document.createElement('span');
     key.className = 'row_key';
-    key.textContent = header
-      ? entry.name
-      : `${entry.rankLabel || `${index + 1}.`} ${entry.name || 'you'}`;
+
+    if (header) {
+      key.textContent = entry.name;
+    } else {
+      key.replaceChildren(...this.createLeaderboardPlayerLabel(entry, index));
+    }
 
     const val = document.createElement('span');
     val.className = 'row_val';
@@ -606,12 +710,287 @@ export class WorkshopWorldNoticeManager {
     return row;
   }
 
+  createLeaderboardPlayerLabel(entry = {}, index = 0) {
+    const rankLabel = this.formatLeaderboardRankLabel(entry, index);
+    const tag = createAllianceTagSpan(entry.allianceTag, entry.allianceTagColor);
+    const name = createPlayerInfoLink(
+      {
+        identity: entry.identity,
+        username: entry.name,
+        character: entry.character,
+        allianceTag: entry.allianceTag,
+        allianceTagColor: entry.allianceTagColor,
+        playerLevel: entry.playerLevel,
+        worldEventPoints: entry.points,
+      },
+      {
+        onOpenPlayerInfo: this.onOpenPlayerInfo,
+        text: entry.name,
+        className: 'workshop-page__leaderboard-player-link',
+      },
+    );
+    const player = document.createElement('span');
+    player.className = 'workshop-page__leaderboard-player';
+    player.append(
+      createPlayerCharacterIcon(
+        entry.character,
+        'workshop-page__leaderboard-character-icon',
+      ),
+      ...(tag ? [tag, document.createTextNode(' ')] : []),
+      name,
+    );
+
+    return [
+      document.createTextNode(`${rankLabel} `),
+      player,
+      document.createTextNode(` (${this.normalizePlayerLevel(entry.playerLevel)})`),
+    ];
+  }
+
+  formatLeaderboardRankLabel(entry = {}, index = 0) {
+    const rawRankLabel = String(entry.rankLabel ?? '').trim();
+
+    if (rawRankLabel) {
+      return rawRankLabel === '-' || rawRankLabel.endsWith('.')
+        ? rawRankLabel
+        : `${rawRankLabel}.`;
+    }
+
+    return `${this.normalizeRank(entry.rank) ?? index + 1}.`;
+  }
+
   applyVisibility() {
     if (this.refs.popup) {
       this.refs.popup.hidden = !this.visible;
     }
 
     this.refs.openButton?.setAttribute('aria-expanded', this.visible ? 'true' : 'false');
+  }
+
+  showDonateDialog(request = {}) {
+    if (!request.requestId || !this.refs.donatePanel) {
+      return;
+    }
+
+    this.previousDonateFocus = document.activeElement;
+    this.donateRequestId = request.requestId;
+    this.donateAmount = 1;
+    this.donateStatusText = '';
+    this.donateVisible = true;
+    this.applyDonateVisibility();
+    this.renderDonateDialog();
+    this.refs.donatePanel.focus();
+    this.refs.donateAmountField?.hideInput();
+  }
+
+  hideDonateDialog({ restoreFocus = true } = {}) {
+    const wasVisible = this.donateVisible;
+    this.donateVisible = false;
+    this.donateRequestId = null;
+    this.donateAmount = 1;
+    this.donateStatusText = '';
+    this.applyDonateVisibility();
+
+    if (
+      restoreFocus &&
+      wasVisible &&
+      this.previousDonateFocus &&
+      document.contains(this.previousDonateFocus)
+    ) {
+      this.previousDonateFocus.focus();
+    }
+
+    this.previousDonateFocus = null;
+  }
+
+  applyDonateVisibility() {
+    if (this.refs.donatePanel) {
+      this.refs.donatePanel.hidden = !this.donateVisible;
+    }
+  }
+
+  onDonateAmountInput() {
+    this.donateAmount =
+      this.readPositiveInteger(this.refs.donateAmountField?.input.value) ?? 0;
+    this.donateStatusText = '';
+    this.renderDonateDialog();
+  }
+
+  onDonateAmountStep(delta) {
+    const request = this.getDonateRequest();
+    const quantity = this.clampDonateAmount(this.donateAmount, request) ?? 1;
+    const nextQuantity = this.clampSteppedDonateAmount(quantity + delta, request);
+
+    if (!nextQuantity || nextQuantity === quantity) {
+      return;
+    }
+
+    this.donateAmount = nextQuantity;
+    this.donateStatusText = '';
+    this.renderDonateDialog();
+  }
+
+  onConfirmDonate() {
+    const request = this.getDonateRequest();
+    const quantity = this.clampDonateAmount(this.donateAmount, request);
+
+    if (!request || !quantity) {
+      this.donateStatusText = request ? 'bad amount' : 'task gone';
+      this.renderDonateDialog();
+      return;
+    }
+
+    const result = this.gameplayFacade?.donateWorldNoticeCoin?.(
+      request.requestId,
+      quantity,
+    );
+
+    if (result?.ok) {
+      this.hideDonateDialog({ restoreFocus: false });
+      return;
+    }
+
+    this.donateStatusText = this.getDonateFailureText(result?.reason);
+    this.renderDonateDialog();
+  }
+
+  renderDonateDialog() {
+    if (!this.donateVisible || !this.refs.donatePanel) {
+      return;
+    }
+
+    const request = this.getDonateRequest();
+
+    if (!request) {
+      this.donateStatusText = 'task gone';
+      return;
+    }
+
+    const maxQuantity = this.getMaxDonateAmount(request);
+    const quantity = maxQuantity > 0
+      ? this.clampDonateAmount(this.donateAmount, request) ?? 1
+      : 0;
+    const disabled = maxQuantity <= 0;
+
+    this.donateAmount = quantity;
+    this.refs.donateTitle.textContent = 'donate coin';
+    this.refs.donateRequestRow.value.textContent = request.label;
+    this.refs.donateProgressRow.value.textContent = this.getTaskProgressText(request);
+    this.refs.donateAvailableRow.value.textContent = `${this.formatNumber(maxQuantity)} coin`;
+    setResourceColor(this.refs.donateAvailableRow.value, disabled ? null : 'coin');
+
+    this.refs.donateAmountField.input.min = disabled ? '0' : '1';
+    this.refs.donateAmountField.input.max = String(maxQuantity);
+    this.refs.donateAmountField.input.disabled = disabled;
+    this.refs.donateAmountField.setValue(quantity);
+    this.refs.donateAmountField.valueButton.disabled = disabled;
+    this.refs.donateAmountField.valueButton.setAttribute(
+      'aria-disabled',
+      disabled ? 'true' : 'false',
+    );
+
+    for (const [delta, button] of this.refs.donateAmountField.stepButtons) {
+      const nextQuantity = this.clampSteppedDonateAmount(quantity + delta, request);
+      const stepDisabled = disabled || !nextQuantity || nextQuantity === quantity;
+      button.disabled = stepDisabled;
+      button.setAttribute('aria-disabled', stepDisabled ? 'true' : 'false');
+    }
+
+    this.refs.donateConfirmButton.textContent =
+      quantity > 0 ? `donate x${this.formatNumber(quantity)}` : 'donate';
+    this.refs.donateConfirmButton.disabled = disabled;
+    this.refs.donateConfirmButton.setAttribute(
+      'aria-disabled',
+      disabled ? 'true' : 'false',
+    );
+    this.refs.donateConfirmButton.setAttribute(
+      'aria-label',
+      quantity > 0
+        ? `donate ${this.formatNumber(quantity)} coin to ${request.label}`
+        : `donate coin to ${request.label}`,
+    );
+
+    this.refs.donateStatus.textContent =
+      this.donateStatusText || (disabled ? 'need coin' : '');
+    this.refs.donateStatus.hidden = this.refs.donateStatus.textContent.length === 0;
+  }
+
+  getDonateRequest() {
+    const requests = this.currentSnapshot?.worldNotice?.current?.requests;
+
+    if (!Array.isArray(requests)) {
+      return null;
+    }
+
+    return (
+      requests.find((request) => request?.requestId === this.donateRequestId) ?? null
+    );
+  }
+
+  getMaxDonateAmount(request = {}) {
+    const snapshotCoin = Number(this.currentSnapshot?.coin?.current);
+    const requestAvailable = Number(request.availableQuantity);
+    const available = Number.isFinite(snapshotCoin)
+      ? snapshotCoin
+      : Number.isFinite(requestAvailable)
+        ? requestAvailable
+        : 0;
+
+    return Math.max(0, Math.floor(available));
+  }
+
+  clampDonateAmount(quantity, request) {
+    const safeQuantity = this.readPositiveInteger(quantity);
+
+    if (!safeQuantity) {
+      return null;
+    }
+
+    const maxQuantity = this.getMaxDonateAmount(request);
+
+    if (maxQuantity <= 0) {
+      return null;
+    }
+
+    return Math.min(safeQuantity, maxQuantity);
+  }
+
+  clampSteppedDonateAmount(quantity, request) {
+    const integer = Math.floor(Number(quantity));
+    const maxQuantity = this.getMaxDonateAmount(request);
+
+    if (!Number.isInteger(integer) || maxQuantity <= 0) {
+      return null;
+    }
+
+    return Math.min(Math.max(1, integer), maxQuantity);
+  }
+
+  readPositiveInteger(value) {
+    const integer = Math.floor(Number(value));
+
+    if (!Number.isInteger(integer) || integer <= 0) {
+      return null;
+    }
+
+    return integer;
+  }
+
+  getDonateFailureText(reason) {
+    switch (reason) {
+      case 'bad_amount':
+        return 'bad amount';
+      case 'completed':
+        return 'already done';
+      case 'locked':
+        return 'event locked';
+      case 'not_enough_coin':
+        return 'need coin';
+      case 'unknown_request':
+        return 'task gone';
+      default:
+        return 'donate failed';
+    }
   }
 
   formatNumber(value) {
@@ -632,36 +1011,160 @@ export class WorkshopWorldNoticeManager {
       return request.instructionText.trim();
     }
 
-    const required = Math.max(1, Math.floor(Number(request.requiredQuantity) || 1));
-    const progress = Math.max(
-      0,
-      Math.min(required, Math.floor(Number(request.progressQuantity) || 0)),
-    );
-    const target = this.getTaskTargetLabel(request.actionType, required);
+    const action = this.getTaskActionCopy(request);
+    const pointRule = this.getTaskPointRule(request);
 
-    return `${target} (${this.formatNumber(progress)}/${this.formatNumber(required)})`;
+    if (pointRule) {
+      return `${action}. ${pointRule}.`;
+    }
+
+    return `${action}.`;
   }
 
-  getTaskTargetLabel(actionType, requiredQuantity) {
-    const amount = this.formatNumber(requiredQuantity);
+  getTaskProgressText(request = {}) {
+    const contributed = Math.max(
+      0,
+      Math.floor(
+        Number(request.contributedQuantity ?? request.pointProgressQuantity) ||
+          Number(request.progressQuantity) ||
+          0,
+      ),
+    );
+
+    return `${this.getTaskProgressVerb(request.actionType)} ${this.formatNumber(
+      contributed,
+    )} ${this.getTaskProgressUnit(
+      request.actionType,
+      contributed,
+    )}`;
+  }
+
+  getTaskActionCopy(request = {}) {
+    const label = String(request.label ?? 'this request').trim() || 'this request';
+    const actionType = request.actionType;
 
     switch (actionType) {
       case 'brew_potions':
-        return `brew ${amount} potion${requiredQuantity === 1 ? '' : 's'}`;
+        return 'brew potions for this request';
       case 'complete_research':
-        return `complete ${amount} research`;
+        return 'complete research for this request';
       case 'donate_coin':
-        return `send ${amount} coin`;
+        return 'donate coin to this request';
       case 'earn_coin':
-        return `earn ${amount} coin`;
+        return 'earn coin through workshop trade';
       case 'harvest_herbs':
-        return `harvest ${amount} herb${requiredQuantity === 1 ? '' : 's'}`;
+        return 'harvest herbs for this request';
       case 'sell_items':
-        return `sell ${amount} item${requiredQuantity === 1 ? '' : 's'}`;
+        return 'sell items to supply this request';
       case 'summon_seeds':
-        return `summon ${amount} seed${requiredQuantity === 1 ? '' : 's'}`;
+        return 'summon seeds for this request';
       default:
-        return `make ${amount} progress`;
+        return `help ${label}`;
+    }
+  }
+
+  getTaskPointRule(request = {}) {
+    const raw = String(request.pointText ?? request.actionText ?? '').trim();
+
+    if (!raw || raw === 'done') {
+      return '';
+    }
+
+    if (raw.includes('=')) {
+      const [left, right] = raw.split('=').map((part) => part.trim());
+      const context = this.getTaskPointContext(request.actionType);
+      return context
+        ? `${left} ${context} gives ${right}`
+        : `${left} gives ${right}`;
+    }
+
+    const eachMatch = raw.match(/^(.+?)\s+each$/i);
+
+    if (eachMatch) {
+      return `each ${this.getTaskPointUnit(request.actionType)} gives ${eachMatch[1]}`;
+    }
+
+    if (/^\d+\s+points?$/i.test(raw)) {
+      return `each ${this.getTaskPointUnit(request.actionType)} gives ${raw}`;
+    }
+
+    if (/^points?$/i.test(raw)) {
+      return '';
+    }
+
+    return raw;
+  }
+
+  getTaskPointContext(actionType) {
+    switch (actionType) {
+      case 'donate_coin':
+        return 'donated';
+      case 'earn_coin':
+        return 'earned';
+      default:
+        return '';
+    }
+  }
+
+  getTaskPointUnit(actionType) {
+    switch (actionType) {
+      case 'brew_potions':
+        return 'potion';
+      case 'complete_research':
+        return 'research';
+      case 'donate_coin':
+        return 'coin donated';
+      case 'earn_coin':
+        return 'coin earned';
+      case 'harvest_herbs':
+        return 'herb';
+      case 'sell_items':
+        return 'item sold';
+      case 'summon_seeds':
+        return 'seed';
+      default:
+        return 'counted action';
+    }
+  }
+
+  getTaskProgressVerb(actionType) {
+    switch (actionType) {
+      case 'brew_potions':
+        return 'brewed';
+      case 'complete_research':
+        return 'finished';
+      case 'donate_coin':
+        return 'donated';
+      case 'earn_coin':
+        return 'earned';
+      case 'harvest_herbs':
+        return 'harvested';
+      case 'sell_items':
+        return 'sold';
+      case 'summon_seeds':
+        return 'summoned';
+      default:
+        return 'counted';
+    }
+  }
+
+  getTaskProgressUnit(actionType, quantity) {
+    switch (actionType) {
+      case 'brew_potions':
+        return `potion${quantity === 1 ? '' : 's'}`;
+      case 'complete_research':
+        return 'research';
+      case 'donate_coin':
+      case 'earn_coin':
+        return 'coin';
+      case 'harvest_herbs':
+        return `herb${quantity === 1 ? '' : 's'}`;
+      case 'sell_items':
+        return `item${quantity === 1 ? '' : 's'}`;
+      case 'summon_seeds':
+        return `seed${quantity === 1 ? '' : 's'}`;
+      default:
+        return `action${quantity === 1 ? '' : 's'}`;
     }
   }
 
@@ -670,6 +1173,15 @@ export class WorkshopWorldNoticeManager {
     const qualificationPoints = Math.max(
       1,
       Math.floor(Number(leaderboard.qualificationPoints) || WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS),
+    );
+    const currentLeaderboardRow = this.normalizeLeaderboardCurrentRow(
+      leaderboard,
+      currentPoints,
+    );
+    const leaderboardRows = this.normalizeLeaderboardRows(
+      this.getLeaderboardRows(leaderboard),
+      currentLeaderboardRow,
+      currentPoints,
     );
 
     return {
@@ -680,28 +1192,165 @@ export class WorkshopWorldNoticeManager {
       rewardTiers: Array.isArray(leaderboard.rewardTiers)
         ? leaderboard.rewardTiers
         : [],
-      leaderboardRows: this.normalizeLeaderboardRows(leaderboard.rows, currentPoints),
+      leaderboardRows,
+      currentLeaderboardRow,
     };
   }
 
-  normalizeLeaderboardRows(rows, currentPoints) {
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return [
-        {
-          rankLabel: '-',
-          name: 'you',
-          points: currentPoints,
-          current: true,
-        },
-      ];
+  getLeaderboardRows(leaderboard = {}) {
+    for (const key of [
+      'rows',
+      'topWorldEventUsers',
+      'topEventUsers',
+      'topContributors',
+      'topUsers',
+    ]) {
+      if (Array.isArray(leaderboard[key])) {
+        return leaderboard[key];
+      }
     }
 
-    return rows.map((row, index) => ({
-      rankLabel: String(row?.rankLabel ?? `${index + 1}.`),
-      name: String(row?.name ?? 'wizard'),
-      points: Math.max(0, Math.floor(Number(row?.points) || 0)),
-      current: row?.current === true,
-    }));
+    return [];
+  }
+
+  getCurrentLeaderboardRow(leaderboard = {}) {
+    return (
+      leaderboard.currentWorldEventUser ??
+      leaderboard.currentEventUser ??
+      leaderboard.currentContributor ??
+      leaderboard.currentUser ??
+      null
+    );
+  }
+
+  normalizeLeaderboardCurrentRow(leaderboard = {}, currentPoints = 0) {
+    return (
+      this.normalizeLeaderboardEntry(this.getCurrentLeaderboardRow(leaderboard), 0, {
+        includeRank: true,
+        current: true,
+      }) ??
+      this.createFallbackLeaderboardRow(currentPoints)
+    );
+  }
+
+  normalizeLeaderboardRows(rows, currentLeaderboardRow, currentPoints) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return [currentLeaderboardRow ?? this.createFallbackLeaderboardRow(currentPoints)];
+    }
+
+    return rows
+      .map((row, index) => this.normalizeLeaderboardEntry(row, index))
+      .filter(Boolean);
+  }
+
+  normalizeLeaderboardEntry(row, index = 0, { includeRank = false, current = false } = {}) {
+    if (!row || typeof row !== 'object') {
+      return null;
+    }
+
+    const name = String(row.name ?? row.username ?? row.userName ?? '').trim();
+
+    if (!name) {
+      return null;
+    }
+
+    const rank = this.normalizeRank(row.rank);
+    const rankLabel = String(row.rankLabel ?? '').trim();
+
+    return {
+      identity: row.identity,
+      rank: includeRank ? rank : rank ?? index + 1,
+      rankLabel: rankLabel || '',
+      name,
+      allianceTag: normalizeAllianceTag(row.allianceTag ?? row.alliance_tag),
+      allianceTagColor: normalizeTradeAllianceTagColor(
+        row.allianceTagColor ?? row.alliance_tag_color,
+      ),
+      character: normalizePlayerCharacter(row.character),
+      playerLevel: this.normalizePlayerLevel(row.playerLevel ?? row.player_level),
+      points: this.normalizeMetric(
+        row.points,
+        row.contributionPoints,
+        row.eventPoints,
+        row.score,
+      ),
+      current: current || row.current === true || row.isCurrent === true,
+    };
+  }
+
+  createFallbackLeaderboardRow(currentPoints = 0) {
+    return {
+      rankLabel: '-',
+      name: 'you',
+      points: currentPoints,
+      current: true,
+      playerLevel: 1,
+      character: normalizePlayerCharacter(null),
+    };
+  }
+
+  shouldShowCurrentLeaderboardRow(normalized = {}) {
+    const current = normalized.currentLeaderboardRow;
+    const rows = normalized.leaderboardRows ?? [];
+
+    if (!current || rows.some((row) => this.isSameLeaderboardPlayer(row, current))) {
+      return false;
+    }
+
+    const rank = this.normalizeRank(current.rank);
+    return rank !== null && rank > rows.length;
+  }
+
+  isSameLeaderboardPlayer(row = {}, current = {}) {
+    if (row.current === true) {
+      return true;
+    }
+
+    const rowIdentity = String(row.identity ?? '');
+    const currentIdentity = String(current.identity ?? '');
+
+    if (rowIdentity && currentIdentity) {
+      return rowIdentity === currentIdentity;
+    }
+
+    const rowRank = this.normalizeRank(row.rank);
+    const currentRank = this.normalizeRank(current.rank);
+
+    return rowRank !== null && currentRank !== null && rowRank === currentRank;
+  }
+
+  normalizeMetric(...values) {
+    for (const value of values) {
+      if (typeof value === 'bigint') {
+        return Number(value);
+      }
+
+      if (Number.isFinite(value)) {
+        return Math.max(0, Math.floor(value));
+      }
+    }
+
+    return 0;
+  }
+
+  normalizeRank(rank) {
+    const safeRank = Math.floor(Number(rank));
+
+    if (!Number.isFinite(safeRank) || safeRank < 1) {
+      return null;
+    }
+
+    return safeRank;
+  }
+
+  normalizePlayerLevel(playerLevel) {
+    const safePlayerLevel = Math.floor(Number(playerLevel));
+
+    if (!Number.isFinite(safePlayerLevel) || safePlayerLevel < 1) {
+      return 1;
+    }
+
+    return safePlayerLevel;
   }
 }
 

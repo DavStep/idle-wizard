@@ -4279,7 +4279,8 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'guild');
 
     const startButton = stage.querySelector('.guild-page__wide-button');
-    expect(startButton?.textContent).toBe('start guild');
+    expect(startButton?.textContent).toBe('start guild1.5k coin');
+    expect(startButton?.querySelector('.style-resource-label--coin')).not.toBeNull();
     expect(startButton?.dataset.notification).toBe('true');
     expect(startButton?.dataset.notificationTone).toBe('red');
 
@@ -10368,14 +10369,12 @@ describe('PagesFacade', () => {
     manaTonicRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
-      'recipemana tonic',
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
+      'mana tonic',
     );
-    expect(
-      [...stage.querySelectorAll('.brewing-page__cauldron-recipe-row .row_key')].map(
-        (row) => row.textContent,
-      ),
-    ).toEqual(['recipe']);
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).not.toContain(
+      'recipe',
+    );
     expect(
       stage.querySelector('.brewing-page__cauldron-guide-step.is-placed')?.textContent,
     ).toContain('- 3 sage');
@@ -10478,8 +10477,8 @@ describe('PagesFacade', () => {
 
     const guideStep = stage.querySelector('.brewing-page__cauldron-guide-step');
 
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
-      'recipemana tonic',
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
+      'mana tonic',
     );
     expect(guideStep?.textContent).toContain('- 3 sage');
     expect(guideStep?.textContent).toContain('missing 2');
@@ -10529,8 +10528,8 @@ describe('PagesFacade', () => {
       'fill recipe',
     );
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
-      'recipemana tonic',
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
+      'mana tonic',
     );
 
     stage
@@ -10569,16 +10568,16 @@ describe('PagesFacade', () => {
       .querySelector('.brewing-page__recipe-select-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
-      'recipemana tonic',
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
+      'mana tonic',
     );
 
     clickRoomTab(stage, 'garden');
     expect(pagesFacade.getCurrentPageId()).toBe('garden');
 
     clickRoomTab(stage, 'brewing');
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).toContain(
-      'recipemana tonic',
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
+      'mana tonic',
     );
 
     stage

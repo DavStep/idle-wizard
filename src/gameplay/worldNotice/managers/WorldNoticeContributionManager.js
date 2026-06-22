@@ -133,6 +133,37 @@ export class WorldNoticeContributionManager {
     return safePoints;
   }
 
+  addRequestActionPoints(request, actionType, quantity = 1, detail = {}) {
+    if (!request) {
+      return 0;
+    }
+
+    const amount = Math.max(0, Math.floor(Number(quantity) || 0));
+
+    if (amount <= 0) {
+      return 0;
+    }
+
+    const previousQuantity = this.getRequestPointProgressQuantity(request);
+    const nextQuantity = previousQuantity + amount;
+    request.pointProgressQuantity = nextQuantity;
+
+    return this.addRequestPoints(
+      request,
+      this.getPointsForProgress(actionType, previousQuantity, nextQuantity, detail),
+    );
+  }
+
+  getRequestPointProgressQuantity(request) {
+    const pointProgressQuantity = Number(request?.pointProgressQuantity);
+
+    if (Number.isFinite(pointProgressQuantity)) {
+      return Math.max(0, Math.floor(pointProgressQuantity));
+    }
+
+    return Math.max(0, Math.floor(Number(request?.progressQuantity) || 0));
+  }
+
   createLeaderboardSnapshot(points = 0) {
     const currentPoints = Math.max(0, Math.floor(Number(points) || 0));
     const qualificationPoints = WORLD_NOTICE_LEADERBOARD_QUALIFICATION_POINTS;

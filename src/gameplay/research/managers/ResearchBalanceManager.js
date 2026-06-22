@@ -11,13 +11,82 @@ import {
   fastSellResearchIds,
 } from '../fastSellResearch.js';
 import {
+  researchTimeResearchIds,
+  researchTimeResearchMaxLevel,
+} from '../researchTimeResearch.js';
+import {
+  applyResearchCostReductionAmount,
+  researchCostResearchIds,
+  researchCostResearchMaxLevel,
+} from '../researchCostResearch.js';
+import {
   emeraldResearchIds,
   emeraldResearchMaxMultiplier,
   emeraldResearchMinMultiplier,
   getEmeraldResearchCost,
 } from '../emeraldResearchIds.js';
 
-const maxResearchDurationSeconds = 10 * 60;
+const maxResearchDurationSeconds = 4 * 60 * 60;
+const quickResearchDurationSeconds = 3;
+const defaultResearchDurationSeconds = 10 * 60;
+
+const seedResearchDurationSecondsById = {
+  'unlockSeed:sageSeed': quickResearchDurationSeconds,
+  'unlockSeed:mintSeed': 5 * 60,
+  'unlockSeed:nettleSeed': 5 * 60,
+  'unlockSeed:lavenderSeed': 7 * 60,
+  'unlockSeed:briarSeed': 10 * 60,
+  'unlockSeed:glowcapSeed': 12 * 60,
+  'unlockSeed:mandrakeSeed': 15 * 60,
+  'unlockSeed:sunrootSeed': 18 * 60,
+  'unlockSeed:moonflowerSeed': 22 * 60,
+  'unlockSeed:frostmossSeed': 26 * 60,
+  'unlockSeed:dreambellSeed': 30 * 60,
+  'unlockSeed:starAniseSeed': 35 * 60,
+  'unlockSeed:bloodroseSeed': 40 * 60,
+  'unlockSeed:dragonpepperSeed': 45 * 60,
+  'unlockSeed:silverleafSeed': 50 * 60,
+  'unlockSeed:yarrowSeed': 60 * 60,
+  'unlockSeed:hyssopSeed': 70 * 60,
+  'unlockSeed:valerianSeed': 80 * 60,
+  'unlockSeed:comfreySeed': 90 * 60,
+  'unlockSeed:nightshadeSeed': 100 * 60,
+  'unlockSeed:belladonnaSeed': 110 * 60,
+  'unlockSeed:wormwoodSeed': 120 * 60,
+  'unlockSeed:snowdropSeed': 135 * 60,
+  'unlockSeed:pearlrootSeed': 150 * 60,
+};
+
+const recipeResearchDurationSecondsById = {
+  'unlockRecipe:manaTonic': 10,
+  'unlockRecipe:minorHealingPotion': 5 * 60,
+  'unlockRecipe:nettleVigor': 7 * 60,
+  'unlockRecipe:calmingDraught': 10 * 60,
+  'unlockRecipe:briarWard': 12 * 60,
+  'unlockRecipe:lanternTonic': 15 * 60,
+  'unlockRecipe:simpleAntidote': 18 * 60,
+  'unlockRecipe:venomDraught': 22 * 60,
+  'unlockRecipe:healingPotion': 26 * 60,
+  'unlockRecipe:sunrootStamina': 30 * 60,
+  'unlockRecipe:moonlitFocus': 35 * 60,
+  'unlockRecipe:frostmossCleanse': 40 * 60,
+  'unlockRecipe:sleepDraught': 45 * 60,
+  'unlockRecipe:elixirOfLife': 50 * 60,
+  'unlockRecipe:starLuckPhiltre': 60 * 60,
+  'unlockRecipe:deepDreamVision': 70 * 60,
+  'unlockRecipe:pactWard': 80 * 60,
+  'unlockRecipe:dragonCourage': 90 * 60,
+  'unlockRecipe:silverleafSalve': 100 * 60,
+  'unlockRecipe:yarrowPoultice': 110 * 60,
+  'unlockRecipe:hyssopClarity': 120 * 60,
+  'unlockRecipe:valerianRest': 135 * 60,
+  'unlockRecipe:comfreyBalm': 150 * 60,
+  'unlockRecipe:nightshadeVeil': 165 * 60,
+  'unlockRecipe:belladonnaSight': 180 * 60,
+  'unlockRecipe:wormwoodPurge': 195 * 60,
+  'unlockRecipe:snowdropBreath': 210 * 60,
+  'unlockRecipe:pearlrootDraught': 240 * 60,
+};
 
 const DEFAULT_RESEARCH_BALANCE = {
   researchCostsCoin: {
@@ -35,6 +104,16 @@ const DEFAULT_RESEARCH_BALANCE = {
     'unlockSeed:starAniseSeed': 15500,
     'unlockSeed:bloodroseSeed': 22000,
     'unlockSeed:dragonpepperSeed': 32000,
+    'unlockSeed:silverleafSeed': 45000,
+    'unlockSeed:yarrowSeed': 63000,
+    'unlockSeed:hyssopSeed': 88000,
+    'unlockSeed:valerianSeed': 123000,
+    'unlockSeed:comfreySeed': 172000,
+    'unlockSeed:nightshadeSeed': 240000,
+    'unlockSeed:belladonnaSeed': 335000,
+    'unlockSeed:wormwoodSeed': 470000,
+    'unlockSeed:snowdropSeed': 660000,
+    'unlockSeed:pearlrootSeed': 925000,
     'summonSeedsX2': 600,
     'summonSeedsX3': 1800,
     'summonSeedsX4': 4500,
@@ -57,6 +136,16 @@ const DEFAULT_RESEARCH_BALANCE = {
     'unlockRecipe:deepDreamVision': 68000,
     'unlockRecipe:pactWard': 88000,
     'unlockRecipe:dragonCourage': 115000,
+    'unlockRecipe:silverleafSalve': 150000,
+    'unlockRecipe:yarrowPoultice': 195000,
+    'unlockRecipe:hyssopClarity': 255000,
+    'unlockRecipe:valerianRest': 335000,
+    'unlockRecipe:comfreyBalm': 440000,
+    'unlockRecipe:nightshadeVeil': 580000,
+    'unlockRecipe:belladonnaSight': 765000,
+    'unlockRecipe:wormwoodPurge': 1000000,
+    'unlockRecipe:snowdropBreath': 1300000,
+    'unlockRecipe:pearlrootDraught': 1700000,
     'automation:autoPlantTile:1': 1,
     'automation:autoPlantTile:2': 2,
     'automation:autoPlantTile:3': 3,
@@ -131,8 +220,6 @@ DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDuratio
   DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
   DEFAULT_RESEARCH_BALANCE.researchCostsEmerald,
 );
-DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds['unlockSeed:mintSeed'] = 15;
-DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds['unlockRecipe:manaTonic'] = 60;
 
 function createDefaultAdvancedRubyCosts() {
   const costs = {};
@@ -174,6 +261,14 @@ function createDefaultAdvancedRubyCosts() {
 
 function createDefaultEmeraldCosts() {
   const costs = {};
+
+  for (let level = 1; level <= researchTimeResearchMaxLevel; level += 1) {
+    costs[researchTimeResearchIds.reduction(level)] = level;
+  }
+
+  for (let level = 1; level <= researchCostResearchMaxLevel; level += 1) {
+    costs[researchCostResearchIds.reduction(level)] = level;
+  }
 
   for (let plotNumber = 1; plotNumber <= 10; plotNumber += 1) {
     for (
@@ -222,20 +317,38 @@ function createDefaultResearchDurations(
   ];
 
   return Object.fromEntries(
-    researchIds.map((researchId, index) => [researchId, getDefaultResearchDurationSeconds(index)]),
+    researchIds.map((researchId) => [
+      researchId,
+      getDefaultResearchDurationSeconds(researchId, {
+        costsCrystal,
+        costsRuby,
+        costsEmerald,
+      }),
+    ]),
   );
 }
 
-function getDefaultResearchDurationSeconds(index) {
-  if (index === 0) {
-    return 3;
+function getDefaultResearchDurationSeconds(
+  researchId,
+  { costsCrystal = {}, costsRuby = {}, costsEmerald = {} } = {},
+) {
+  if (
+    costsCrystal[researchId] !== undefined ||
+    costsRuby[researchId] !== undefined ||
+    costsEmerald[researchId] !== undefined
+  ) {
+    return quickResearchDurationSeconds;
   }
 
-  if (index === 1) {
-    return 60;
+  if (seedResearchDurationSecondsById[researchId] !== undefined) {
+    return seedResearchDurationSecondsById[researchId];
   }
 
-  return Math.min(maxResearchDurationSeconds, 300 + Math.max(0, index - 2) * 300);
+  if (recipeResearchDurationSecondsById[researchId] !== undefined) {
+    return recipeResearchDurationSecondsById[researchId];
+  }
+
+  return defaultResearchDurationSeconds;
 }
 
 export class ResearchBalanceManager {
@@ -257,7 +370,7 @@ export class ResearchBalanceManager {
     this.durationSecondsByResearchId = this.readDurationSecondsByResearchId();
   }
 
-  getCost(researchId) {
+  getCost(researchId, { researchCostReductionLevel = 0 } = {}) {
     const normalizedResearchId = this.normalizeResearchId(researchId);
     const costCrystal = this.costCrystalByResearchId[normalizedResearchId];
 
@@ -295,31 +408,31 @@ export class ResearchBalanceManager {
     }
 
     return {
-      amount: costCoin,
+      amount: applyResearchCostReductionAmount(costCoin, researchCostReductionLevel),
       currency: 'coin',
     };
   }
 
-  getCostCoin(researchId) {
-    const cost = this.getCost(researchId);
+  getCostCoin(researchId, options) {
+    const cost = this.getCost(researchId, options);
 
     return cost.currency === 'coin' ? cost.amount : 0;
   }
 
-  getCostCrystal(researchId) {
-    const cost = this.getCost(researchId);
+  getCostCrystal(researchId, options) {
+    const cost = this.getCost(researchId, options);
 
     return cost.currency === 'crystal' ? cost.amount : 0;
   }
 
-  getCostRuby(researchId) {
-    const cost = this.getCost(researchId);
+  getCostRuby(researchId, options) {
+    const cost = this.getCost(researchId, options);
 
     return cost.currency === 'ruby' ? cost.amount : 0;
   }
 
-  getCostEmerald(researchId) {
-    const cost = this.getCost(researchId);
+  getCostEmerald(researchId, options) {
+    const cost = this.getCost(researchId, options);
 
     return cost.currency === 'emerald' ? cost.amount : 0;
   }
@@ -456,7 +569,11 @@ export class ResearchBalanceManager {
 
     return {
       ...DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
-      ...costs,
+      ...Object.fromEntries(
+        Object.entries(costs).filter(
+          ([researchId]) => !isResearchTimeReductionResearchId(researchId),
+        ),
+      ),
     };
   }
 
@@ -505,4 +622,8 @@ export class ResearchBalanceManager {
       ...durations,
     };
   }
+}
+
+function isResearchTimeReductionResearchId(researchId) {
+  return /^advanced:researchTime:\d+$/.test(researchId);
 }

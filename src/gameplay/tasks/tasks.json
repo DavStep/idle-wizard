@@ -80,7 +80,7 @@
       "tasks": [
         {
           "id": "level5-nettle-seeds",
-          "itemKey": "mintSeed",
+          "itemKey": "nettleSeed",
           "quantity": 45
         },
         {
@@ -90,7 +90,7 @@
         },
         {
           "id": "level5-lavender-herb",
-          "itemKey": "nettleHerb",
+          "itemKey": "sageHerb",
           "quantity": 18
         },
         {
@@ -111,7 +111,7 @@
         },
         {
           "id": "level6-lavender-seeds",
-          "itemKey": "lavenderHerb",
+          "itemKey": "nettleHerb",
           "quantity": 42
         },
         {
@@ -142,12 +142,12 @@
         },
         {
           "id": "level7-briar-herb",
-          "itemKey": "lavenderHerb",
+          "itemKey": "sageHerb",
           "quantity": 25
         },
         {
           "id": "level7-nettle-vigor",
-          "itemKey": "nettleVigor",
+          "itemKey": "minorHealingPotion",
           "quantity": 6
         }
       ]
@@ -158,17 +158,17 @@
       "tasks": [
         {
           "id": "level8-calming-draught",
-          "itemKey": "nettleSeed",
+          "itemKey": "sageSeed",
           "quantity": 70
         },
         {
           "id": "level8-briar-seeds",
-          "itemKey": "briarHerb",
+          "itemKey": "lavenderHerb",
           "quantity": 56
         },
         {
           "id": "level8-briar-herb",
-          "itemKey": "lavenderHerb",
+          "itemKey": "nettleHerb",
           "quantity": 28
         },
         {

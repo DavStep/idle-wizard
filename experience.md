@@ -54,6 +54,7 @@
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
+- Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
 - Workshop personal tasks and world event character-button notification dots belong on the small `tasks`/`event` label box, not the portrait/full hit area.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
@@ -62,6 +63,8 @@
 - Weekly event v1 should stay mostly solo; no new combat mode, map mode, event-only economy, or mandatory weekly power gate.
 - Weekly event resolution should avoid hard fail: the world resolves, and player contribution changes weak/decent/strong outcome text plus archive/history flavor.
 - Weekly event requests should grant contribution points, not immediate completion rewards; leaderboard rewards require 2000 points to qualify.
+- Weekly event request completion caps visible progress/response only; matching actions keep adding contribution points after completion.
+- Weekly event tasks have no contribution limit; show accumulated contribution like `earned 175 coin`, never `25/50`, remaining, or capped target copy.
 - World event popup rows are tasks, not progression requests: show points earned per task and points collected from that task; use a leaderboard tab instead of an archive tab.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
@@ -78,9 +81,6 @@
 - Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; otherwise the right side of the room looks unused beside world chat.
 - Guild content tabs should use compact labels like `hall`, `board`, `roster`, and `log`; `adventurers` crowds fitted desktop tab widths.
-- Adventurer icon packs that must match current character art should derive from the shipped character PNGs with palette swaps/crops; fresh image generation drifts into taller, painterly fantasy busts.
-- Do not mirror shipped character PNGs for adventurer icon derivatives; keep their original facing direction so they match player and guide portraits.
-- Palette swaps alone make adventurer icon derivatives read too alike, but hard-drawn overlay marks look pasted on; use existing raster game assets or source art layers for role props.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
@@ -95,6 +95,7 @@
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
+- Trader demand market sell-picker rows should activate on validated touch release, not touchstart, so scroll drags do not select rows; underline only the selected picker row.
 - Garden selected seed labels and picker rows need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening/changing the seed.
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
@@ -189,7 +190,7 @@
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
-- Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from config level 9 onward, adjacent rows should not reuse exact requirement item keys.
+- Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
@@ -232,6 +233,7 @@
 - Atlas sprites in DOM should use inline SVG `viewBox` crops instead of CSS background positioning; they scale like images and keep Pixi mirror frame lookup simple.
 - Generated atlases need transparent-pixel alpha bleed and edge extrusion; raw RGB garbage or blank padding can show as seams when Pixi/SVG scales sprites.
 - Inline SVG atlas crops used as text-size item icons need wide gutters; 2px padding lets adjacent herb frames bleed into minified sprites.
+- `herbIcons` label entries need matching atlas frames; missing herb frames can render stray `null` text in rich item labels.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
 - `capacitor.config.json` must not set `server.url` for packaged APK QA; Capacitor loads that remote page instead of bundled `dist`, hiding local UI/CSS changes.
 - Android WebView press feedback should not rely on CSS `:active` alone; mirror it with a pointer-driven `.is-pressing` class for stable touch scale.
@@ -273,6 +275,7 @@
 - Unlinked player saves depend on the anonymous SpacetimeDB token; mirror it into Android native SharedPreferences and retry backup token copies before anonymous reconnect.
 - First-run account-choice gates must happen before anonymous SpacetimeDB connect; `clientConnected` creates player/account rows.
 - Android connected-account restore should try native Google authorized-account auto-select before showing the first-run `connect account` choice; stored server tokens can disappear across reinstall-style release handoffs.
+- A remembered native Google profile plus stored SpacetimeDB token is still a connected account after the Google ID token expires; use it to suppress fresh-start/account prompts while native restore refreshes the token.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
 - Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
 - Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
@@ -399,7 +402,8 @@
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
 - Live regular-coin research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
 - Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
-- For now, research timers are capped at `10 minutes`; this is temporary balance.
+- Research timers are capped at `4 hours`; premium-currency research is intentionally quick.
+- Emerald research time reduction applies only when starting future research; it does not rewrite active timers.
 - Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
@@ -409,6 +413,7 @@
 - Crystal is the hard currency; it starts at `0`, appears in the top panel only where usable, level-ups grant `playerLevel.crystal.perLevel`, and automation research spends it.
 - Ruby starts at `0`, has no source yet, appears in the top panel only where usable, and advanced research spends it on per-slot speed upgrades.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
+- Prestige resets run data but preserves current emerald currency; emerald research remains run-scoped unless explicitly made permanent.
 - Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
 - Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
@@ -658,6 +663,7 @@
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
 - Smooth timed progress bars with compositor `transform` transitions from the latest snapshot to completion; do not raise gameplay snapshot cadence just to reduce visible stepping.
 - Brewing selected recipe guide renders inside the cauldron; do not add a separate guide box back to the bottom of the room.
+- Brewing selected recipe guide sits above normal cauldron content; border actions like `change recipe` need a higher z-index or they can look visible but stop receiving taps.
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; keep resource-color overrides scoped so zero-count selected seeds can still show seed color.
 - Research item-name spans need their own `data-resource-color`; item icons alone do not color the text, and locked rows rely on the unavailable ancestor to suppress that color.
 
@@ -667,6 +673,7 @@
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
 - Shared live local QA belongs to one primary branch/worktree; helper branches/worktrees can prep code or run static checks, but runtime verification is invalid unless that checkout owns the running Vite and SpacetimeDB processes.
 - Before claiming local runtime verification, confirm both Vite `55173` and SpacetimeDB `3000`; frontend-only status is not enough.
+- Visual QA for deep page states needs deterministic real-game state recipes; ad hoc clicks/cheats make agents miss screenshots or verify the wrong state.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.

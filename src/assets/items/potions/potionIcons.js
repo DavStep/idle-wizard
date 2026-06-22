@@ -29,6 +29,16 @@ export const potionIconFrameNamesByKey = Object.freeze({
   starlessCourage: 'potion:starlessCourage',
   frostveinDraught: 'potion:frostveinDraught',
   bloodlightWard: 'potion:bloodlightWard',
+  silverleafSalve: 'potion:silverleafSalve',
+  yarrowPoultice: 'potion:yarrowPoultice',
+  hyssopClarity: 'potion:hyssopClarity',
+  valerianRest: 'potion:valerianRest',
+  comfreyBalm: 'potion:comfreyBalm',
+  nightshadeVeil: 'potion:nightshadeVeil',
+  belladonnaSight: 'potion:belladonnaSight',
+  wormwoodPurge: 'potion:wormwoodPurge',
+  snowdropBreath: 'potion:snowdropBreath',
+  pearlrootDraught: 'potion:pearlrootDraught',
 });
 
 const potionIconKeysByLabel = Object.freeze({
@@ -60,6 +70,16 @@ const potionIconKeysByLabel = Object.freeze({
   'starless courage': 'starlessCourage',
   'frostvein draught': 'frostveinDraught',
   'bloodlight ward': 'bloodlightWard',
+  'silverleaf salve': 'silverleafSalve',
+  'yarrow poultice': 'yarrowPoultice',
+  'hyssop clarity': 'hyssopClarity',
+  'valerian rest': 'valerianRest',
+  'comfrey balm': 'comfreyBalm',
+  'nightshade veil': 'nightshadeVeil',
+  'belladonna sight': 'belladonnaSight',
+  'wormwood purge': 'wormwoodPurge',
+  'snowdrop breath': 'snowdropBreath',
+  'pearlroot draught': 'pearlrootDraught',
   'wasted potion': 'wastedPotion',
   'unknown potion': 'unknownPotion',
 });

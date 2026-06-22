@@ -221,6 +221,83 @@ describe('WorldNoticeFacade', () => {
     expect(coinFacade.current).toBe(0);
   });
 
+  it('continues adding points after the matching request is complete', () => {
+    const { facade } = createFacade({ level: 4 });
+    const brewRequest = facade
+      .getSnapshot()
+      .current.requests.find(
+        (request) => request.actionType === WORLD_NOTICE_ACTIONS.BREW_POTIONS,
+      );
+
+    const completionResult = facade.recordAction(
+      WORLD_NOTICE_ACTIONS.BREW_POTIONS,
+      brewRequest.requiredQuantity,
+    );
+    const extraResult = facade.recordAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, 3);
+    const updatedRequest = facade
+      .getSnapshot()
+      .current.requests.find((request) => request.requestId === brewRequest.requestId);
+
+    expect(extraResult).toMatchObject({
+      ok: true,
+      changed: true,
+      pointsAdded: 75,
+    });
+    expect(updatedRequest).toMatchObject({
+      completed: true,
+      progressQuantity: brewRequest.requiredQuantity,
+      contributionPoints: completionResult.pointsAdded + 75,
+    });
+    expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(
+      completionResult.pointsAdded + 75,
+    );
+  });
+
+  it('preserves coin point progress after the matching request is complete', () => {
+    const { facade } = createFacade({ level: 4 });
+    facade.applyPersistenceSnapshot({
+      version: 2,
+      current: {
+        version: 2,
+        periodKey: 'weekly-1',
+        weekIndex: 1,
+        resetAtMs: Date.UTC(2026, 5, 22, 0, 0, 0, 0),
+        anchorLevel: 4,
+        eventId: 'king-dethroned',
+        requests: [
+          {
+            requestId: 'weekly-1:king-dethroned:steadyTrade',
+            requestKey: 'steadyTrade',
+            actionType: WORLD_NOTICE_ACTIONS.EARN_COIN,
+            label: 'steady workshop trade',
+            requiredQuantity: 25,
+            progressQuantity: 0,
+            contributionPoints: 0,
+            completed: false,
+          },
+        ],
+      },
+      archive: [],
+    });
+
+    expect(facade.recordAction(WORLD_NOTICE_ACTIONS.EARN_COIN, 25)).toMatchObject({
+      ok: true,
+      changed: true,
+      pointsAdded: 1,
+    });
+    expect(facade.recordAction(WORLD_NOTICE_ACTIONS.EARN_COIN, 24)).toMatchObject({
+      ok: true,
+      changed: true,
+      pointsAdded: 0,
+    });
+    expect(facade.recordAction(WORLD_NOTICE_ACTIONS.EARN_COIN, 1)).toMatchObject({
+      ok: true,
+      changed: true,
+      pointsAdded: 1,
+    });
+    expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(2);
+  });
+
   it('scores mana tonic contributions as 25 points each', () => {
     const { facade } = createFacade({ level: 4 });
     const brewRequest = facade
@@ -296,11 +373,69 @@ describe('WorldNoticeFacade', () => {
     expect(result).toMatchObject({
       ok: true,
       changed: true,
-      donatedCoin: donateRequest.requiredQuantity,
+      donatedCoin: 1000,
+      pointsAdded: 40,
     });
     expect(updatedRequest.completed).toBe(true);
-    expect(result.pointsAdded).toBe(1);
-    expect(coinFacade.current).toBe(1000 - donateRequest.requiredQuantity);
+    expect(updatedRequest.contributedQuantity).toBe(1000);
+    expect(coinFacade.current).toBe(0);
+  });
+
+  it('donates requested coin amount without request limit cap', () => {
+    const { facade, coinFacade } = createFacade({ level: 4, coin: 1000 });
+    facade.applyPersistenceSnapshot({
+      version: 2,
+      current: {
+        version: 2,
+        periodKey: 'weekly-1',
+        weekIndex: 1,
+        resetAtMs: Date.UTC(2026, 5, 22, 0, 0, 0, 0),
+        anchorLevel: 4,
+        eventId: 'siege-stonebridge',
+        requests: [
+          {
+            requestId: 'weekly-1:siege-stonebridge:bridgeCoin',
+            requestKey: 'bridgeCoin',
+            actionType: WORLD_NOTICE_ACTIONS.DONATE_COIN,
+            label: 'send bridge coin',
+            requiredQuantity: 30,
+            progressQuantity: 0,
+            completed: false,
+          },
+        ],
+      },
+      archive: [],
+    });
+    const donateRequest = facade
+      .getSnapshot()
+      .current.requests.find(
+        (request) => request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN,
+      );
+
+    const result = facade.donateCoin(donateRequest.requestId, 250);
+    const updatedRequest = facade
+      .getSnapshot()
+      .current.requests.find((request) => request.requestId === donateRequest.requestId);
+
+    expect(result).toMatchObject({
+      ok: true,
+      changed: true,
+      donatedCoin: 250,
+      pointsAdded: 10,
+    });
+    expect(updatedRequest).toMatchObject({
+      completed: true,
+      progressQuantity: 30,
+      contributedQuantity: 250,
+      remainingQuantity: 0,
+      maxDonateQuantity: 750,
+    });
+    expect(coinFacade.current).toBe(750);
+    expect(facade.donateCoin(donateRequest.requestId, 0)).toMatchObject({
+      ok: false,
+      changed: false,
+      reason: 'bad_amount',
+    });
   });
 
   it('archives resolved events when the weekly period rolls', () => {

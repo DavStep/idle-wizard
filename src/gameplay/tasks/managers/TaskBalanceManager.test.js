@@ -72,6 +72,50 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
+  it('uses diversified target level 6 through 10 requirements', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(
+      [5, 6, 7, 8, 9].map((level) =>
+        taskBalanceManager.getLevelTasks(level).map((task) => ({
+          itemKey: task.itemKey,
+          requiredQuantity: task.requiredQuantity,
+        })),
+      ),
+    ).toEqual([
+      [
+        { itemKey: 'nettleSeed', requiredQuantity: 45 },
+        { itemKey: 'lavenderHerb', requiredQuantity: 36 },
+        { itemKey: 'sageHerb', requiredQuantity: 18 },
+        { itemKey: 'minorHealingPotion', requiredQuantity: 4 },
+      ],
+      [
+        { itemKey: 'sageSeed', requiredQuantity: 53 },
+        { itemKey: 'nettleHerb', requiredQuantity: 42 },
+        { itemKey: 'mintHerb', requiredQuantity: 21 },
+        { itemKey: 'nettleVigor', requiredQuantity: 5 },
+      ],
+      [
+        { itemKey: 'mintSeed', requiredQuantity: 61 },
+        { itemKey: 'briarHerb', requiredQuantity: 49 },
+        { itemKey: 'sageHerb', requiredQuantity: 25 },
+        { itemKey: 'minorHealingPotion', requiredQuantity: 6 },
+      ],
+      [
+        { itemKey: 'sageSeed', requiredQuantity: 70 },
+        { itemKey: 'lavenderHerb', requiredQuantity: 56 },
+        { itemKey: 'nettleHerb', requiredQuantity: 28 },
+        { itemKey: 'calmingDraught', requiredQuantity: 7 },
+      ],
+      [
+        { itemKey: 'briarSeed', requiredQuantity: 79 },
+        { itemKey: 'glowcapHerb', requiredQuantity: 46 },
+        { itemKey: 'mintHerb', requiredQuantity: 23 },
+        { itemKey: 'minorHealingPotion', requiredQuantity: 10 },
+      ],
+    ]);
+  });
+
   it('uses one potion through target level 10 with lighter direct herbs', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
@@ -147,14 +191,14 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
-  it('does not repeat exact requirement items on adjacent levels from target level 10 onward', () => {
+  it('does not repeat exact requirement items on adjacent levels from target level 6 onward', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
     const levels = taskBalanceManager.getLevels();
 
     for (let index = 1; index < levels.length; index += 1) {
       const level = levels[index];
 
-      if (level.level < 9) {
+      if (level.level < 5) {
         continue;
       }
 

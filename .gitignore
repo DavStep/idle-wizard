@@ -1,6 +1,8 @@
 node_modules/
 dist/
 backups/
+test-results/
+tmp/
 spacetimedb/dist/
 .env
 .env.local

@@ -444,6 +444,82 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
+  it('puts the selected recipe name on the cauldron top line', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => 'manaTonic',
+    });
+
+    manager.mount(parent);
+
+    const title = parent.querySelector('.brewing-page__cauldron-recipe-title');
+    const guide = parent.querySelector('.brewing-page__cauldron-guide');
+    const items = parent.querySelector('.brewing-page__cauldron-items');
+
+    expect(title?.textContent).toBe('mana tonic');
+    expect(title?.hidden).toBe(false);
+    expect(guide?.querySelector('.brewing-page__cauldron-recipe-row')).toBeNull();
+    expect(guide?.textContent).not.toContain('recipe');
+    expect(guide?.textContent).toContain('- 3 sage');
+    expect(items?.hidden).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('keeps selected recipe guide rows out of an inner scroll pane', () => {
+    const guideSequenceRule = baseCss.match(
+      /\.brewing-page__cauldron-guide-sequence\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(guideSequenceRule).toContain(
+      'min-height: var(--brewing-page-cauldron-scroll-height);',
+    );
+    expect(guideSequenceRule).toContain('overflow: visible;');
+    expect(guideSequenceRule).not.toContain('overflow: hidden auto;');
+  });
+
+  it('keeps the change-recipe label above the selected recipe guide layer', () => {
+    const selectRecipeRule = baseCss.match(
+      /\.style-box \.brewing-page__cauldron-select-recipe-text\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const guideRule = baseCss.match(
+      /\.brewing-page__cauldron-guide\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(selectRecipeRule).toContain('z-index: 2;');
+    expect(guideRule).toContain('z-index: 1;');
+  });
+
   it('offers fill recipe when a remembered recipe can be staged into an empty cauldron', () => {
     const manager = new BrewingCauldronManager();
     const brewing = {

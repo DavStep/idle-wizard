@@ -17,6 +17,8 @@ const shopBalance = require('../src/gameplay/shop/shop-balance.json');
 const DEFAULT_MARK_HOURS = [1 / 6, 0.5, 1, 2, 4, 8, 12, 24, 72, 168];
 const DEFAULT_DAYS = 7;
 const DEFAULT_STEP_SECONDS = 5;
+const QUICK_RESEARCH_DURATION_SECONDS = 3;
+const DEFAULT_RESEARCH_DURATION_SECONDS = 10 * 60;
 const RNG_SEED = 0x1d1e12d;
 const LEVEL_COMPLETION_COIN_COST_PER_LEVEL = 20;
 const DEFAULT_COMPLETED_RESEARCH_IDS = ['unlockSeed:sageSeed'];
@@ -1319,17 +1321,19 @@ function createResearchDurations() {
   ];
 
   return new Map(
-    ids.map((id, index) => [
+    ids.map((id) => [
       id,
-      researchBalance.researchDurationsSeconds?.[id] ?? getDefaultResearchDurationSeconds(index),
+      researchBalance.researchDurationsSeconds?.[id] ?? getDefaultResearchDurationSeconds(id),
     ]),
   );
 }
 
-function getDefaultResearchDurationSeconds(index) {
-  if (index === 0) return 3;
-  if (index === 1) return 60;
-  return Math.min(10 * 60, 300 + Math.max(0, index - 2) * 300);
+function getDefaultResearchDurationSeconds(researchId) {
+  if (researchBalance.researchCostsCrystal[researchId] !== undefined) {
+    return QUICK_RESEARCH_DURATION_SECONDS;
+  }
+
+  return DEFAULT_RESEARCH_DURATION_SECONDS;
 }
 
 function getAdvancedResearchTimeMultiplier(level) {

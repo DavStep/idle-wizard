@@ -210,6 +210,49 @@ describe('GuildPanelManager', () => {
     expect(parent.querySelector('.guild-page__empty-row')?.textContent).toBe('no requests');
   });
 
+  it('renders guild card dialog tabs as a standard tablist', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent, popupLayer } = mountManager(gameplayFacade);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="adventurers"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    parent
+      .querySelector('.guild-page__adventurer-row .guild-page__row-main')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const panel = popupLayer.querySelector('.guild-page__popup-panel');
+    const tabs = popupLayer.querySelector('.guild-page__tabs');
+    const tabButtons = [...popupLayer.querySelectorAll('.guild-page__tab-button')];
+
+    expect(panel?.dataset.popupKind).toBe('adventurer');
+    expect(tabs?.getAttribute('role')).toBe('tablist');
+    expect(tabs?.getAttribute('aria-label')).toBe('guild card details');
+    expect(tabButtons.map((button) => button.textContent)).toEqual([
+      'stats',
+      'life',
+      'history',
+    ]);
+    expect(tabButtons.map((button) => button.getAttribute('role'))).toEqual([
+      'tab',
+      'tab',
+      'tab',
+    ]);
+    expect(tabButtons.map((button) => button.getAttribute('aria-selected'))).toEqual([
+      'true',
+      'false',
+      'false',
+    ]);
+
+    tabButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      [...popupLayer.querySelectorAll('.guild-page__tab-button')].map((button) =>
+        button.getAttribute('aria-selected'),
+      ),
+    ).toEqual(['false', 'true', 'false']);
+  });
+
   it('rolls hidden adventurer attention up to the guild tab button', () => {
     const gameplayFacade = createGameplayFacadeFake(
       createCreatedGuildSnapshot({
@@ -317,7 +360,16 @@ describe('GuildPanelManager', () => {
     const { parent } = mountManager(gameplayFacade);
     const button = parent.querySelector('.guild-page__wide-button');
 
-    expect(button?.textContent).toBe('start guild');
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe('guild charter');
+    expect(parent.querySelector('.guild-page__paragraph')?.textContent).toBe(
+      'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
+    );
+    expect(button?.textContent).toBe('start guild1.5k coin');
+    expect(button?.getAttribute('aria-label')).toBe('start guild for 1.5k coin');
+    expect(button?.querySelector('.guild-page__charter-button-cost')?.dataset.resourceColor).toBe(
+      'coin',
+    );
+    expect(button?.querySelector('.style-resource-label--coin')).not.toBeNull();
     expect(button?.disabled).toBe(false);
     expect(button?.dataset.notification).toBe('true');
     expect(button?.dataset.notificationTone).toBe('red');
@@ -488,6 +540,37 @@ describe('GuildPanelManager', () => {
     expect(dialogRule).not.toMatch(/\boverflow:\s*hidden;/);
     expect(contentRule).toMatch(/\bmin-height:\s*0;/);
     expect(contentRule).toMatch(/\boverflow:\s*hidden auto;/);
+  });
+
+  it('aligns guild card dialog tabs with the shared tabbed popup pattern', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const panelRule = baseCss.match(
+      /\.guild-page__popup-panel\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const dialogRule = baseCss.match(
+      /\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const cardDialogRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="adventurer"\]\s+\.style-dialog\.guild-page__dialog,\s*\.guild-page__popup-panel\[data-popup-kind="applicant"\]\s+\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const tabsRule = baseCss.match(
+      /\.guild-page__tabs\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const tabButtonRule = baseCss.match(
+      /\.style-button\.guild-page__tab-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(panelRule).toMatch(/\bwidth:\s*var\(--style-tabbed-dialog-width\);/);
+    expect(dialogRule).toMatch(/\bwidth:\s*260px;/);
+    expect(dialogRule).not.toMatch(/\bbox-sizing:\s*border-box;/);
+    expect(cardDialogRule).toMatch(
+      /\bheight:\s*var\(--style-tabbed-dialog-content-height\);/,
+    );
+    expect(tabsRule).toMatch(/\bmargin-top:\s*var\(--style-dialog-tab-gap\);/);
+    expect(tabsRule).not.toMatch(/\bmargin-top:\s*-2px;/);
+    expect(tabButtonRule).toMatch(/\bflex:\s*1 1 0;/);
+    expect(tabButtonRule).toMatch(/\bmin-width:\s*0;/);
+    expect(tabButtonRule).not.toMatch(/\bmin-width:\s*72px;/);
   });
 
   it('keeps guild popup panels inside the room safe area and visible keyboard stage', () => {

@@ -19,6 +19,16 @@ const herbCatalog = [
   { key: 'starAnise', label: 'star anise', growthDurationMs: 150_000 },
   { key: 'bloodrose', label: 'bloodrose', growthDurationMs: 180_000 },
   { key: 'dragonpepper', label: 'dragonpepper', growthDurationMs: 210_000 },
+  { key: 'silverleaf', label: 'silverleaf', growthDurationMs: 240_000 },
+  { key: 'yarrow', label: 'yarrow', growthDurationMs: 270_000 },
+  { key: 'hyssop', label: 'hyssop', growthDurationMs: 300_000 },
+  { key: 'valerian', label: 'valerian', growthDurationMs: 330_000 },
+  { key: 'comfrey', label: 'comfrey', growthDurationMs: 360_000 },
+  { key: 'nightshade', label: 'nightshade', growthDurationMs: 390_000 },
+  { key: 'belladonna', label: 'belladonna', growthDurationMs: 420_000 },
+  { key: 'wormwood', label: 'wormwood', growthDurationMs: 450_000 },
+  { key: 'snowdrop', label: 'snowdrop', growthDurationMs: 480_000 },
+  { key: 'pearlroot', label: 'pearlroot', growthDurationMs: 520_000 },
 ];
 
 const knownPotionCatalog = [
@@ -40,6 +50,19 @@ const knownPotionCatalog = [
   { key: 'dragonCourage', label: 'dragon courage' },
   { key: 'deepDreamVision', label: 'deep dream vision' },
   { key: 'pactWard', label: 'pact ward' },
+];
+
+const extraKnownPotionCatalog = [
+  { key: 'silverleafSalve', label: 'silverleaf salve' },
+  { key: 'yarrowPoultice', label: 'yarrow poultice' },
+  { key: 'hyssopClarity', label: 'hyssop clarity' },
+  { key: 'valerianRest', label: 'valerian rest' },
+  { key: 'comfreyBalm', label: 'comfrey balm' },
+  { key: 'nightshadeVeil', label: 'nightshade veil' },
+  { key: 'belladonnaSight', label: 'belladonna sight' },
+  { key: 'wormwoodPurge', label: 'wormwood purge' },
+  { key: 'snowdropBreath', label: 'snowdrop breath' },
+  { key: 'pearlrootDraught', label: 'pearlroot draught' },
 ];
 
 const unknownPotionCatalog = [
@@ -77,6 +100,16 @@ const herbSellPricesByKey = {
   starAnise: 36,
   bloodrose: 44,
   dragonpepper: 52,
+  silverleaf: 64,
+  yarrow: 76,
+  hyssop: 92,
+  valerian: 112,
+  comfrey: 132,
+  nightshade: 160,
+  belladonna: 192,
+  wormwood: 228,
+  snowdrop: 276,
+  pearlroot: 328,
 };
 
 const potionSellPricesByKey = {
@@ -108,12 +141,23 @@ const potionSellPricesByKey = {
   starlessCourage: 325,
   frostveinDraught: 225,
   bloodlightWard: 250,
+  silverleafSalve: 340,
+  yarrowPoultice: 368,
+  hyssopClarity: 400,
+  valerianRest: 436,
+  comfreyBalm: 476,
+  nightshadeVeil: 520,
+  belladonnaSight: 568,
+  wormwoodPurge: 620,
+  snowdropBreath: 676,
+  pearlrootDraught: 740,
 };
 
 const potionCatalog = [
   ...knownPotionCatalog,
   ...unknownPotionCatalog,
   { key: 'wastedPotion', label: 'wasted potion', hasRecipe: false, baseSellPrice: 1 },
+  ...extraKnownPotionCatalog,
 ];
 
 const herbDefinitions = herbCatalog.map((herb, index) => ({

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { ResearchBalanceManager } from './ResearchBalanceManager.js';
+import { researchCostResearchIds } from '../researchCostResearch.js';
+import { researchTimeResearchIds } from '../researchTimeResearch.js';
 
 describe('ResearchBalanceManager', () => {
-  it('caps research durations at ten minutes', () => {
+  it('caps research durations at four hours', () => {
     const manager = new ResearchBalanceManager({
       balance: {
         researchCostsCoin: {
@@ -13,21 +15,21 @@ describe('ResearchBalanceManager', () => {
         },
         researchDurationsSeconds: {
           shortStudy: 30,
-          exactStudy: 600,
-          longStudy: 601,
+          exactStudy: 14_400,
+          longStudy: 14_401,
         },
       },
     });
 
     expect(manager.getDurationSeconds('shortStudy')).toBe(30);
-    expect(manager.getDurationSeconds('exactStudy')).toBe(600);
-    expect(manager.getDurationSeconds('longStudy')).toBe(600);
+    expect(manager.getDurationSeconds('exactStudy')).toBe(14_400);
+    expect(manager.getDurationSeconds('longStudy')).toBe(14_400);
 
     manager.setRuntimeConfigs([
       {
         researchId: 'shortStudy',
         costCoin: 1,
-        durationSeconds: 720,
+        durationSeconds: 14_500,
         enabled: true,
       },
       {
@@ -38,8 +40,57 @@ describe('ResearchBalanceManager', () => {
       },
     ]);
 
-    expect(manager.getDurationSeconds('shortStudy')).toBe(600);
+    expect(manager.getDurationSeconds('shortStudy')).toBe(14_400);
     expect(manager.getDurationSeconds('exactStudy')).toBe(0);
+  });
+
+  it('uses the default research time curve by currency and content type', () => {
+    const manager = new ResearchBalanceManager();
+
+    expect(manager.getDurationSeconds('automation:autoPlantTile:1')).toBe(3);
+    expect(manager.getDurationSeconds('fastSellPayout:1')).toBe(3);
+    expect(manager.getDurationSeconds(researchTimeResearchIds.reduction(1))).toBe(3);
+    expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(3);
+    expect(manager.getDurationSeconds('emerald:plotPlanting:1:2')).toBe(3);
+    expect(manager.getDurationSeconds('unlockSeed:sageSeed')).toBe(3);
+    expect(manager.getDurationSeconds('unlockSeed:mintSeed')).toBe(300);
+    expect(manager.getDurationSeconds('unlockSeed:pearlrootSeed')).toBe(9_000);
+    expect(manager.getDurationSeconds('unlockRecipe:manaTonic')).toBe(10);
+    expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
+    expect(manager.getDurationSeconds('summonSeedsX2')).toBe(600);
+    expect(manager.getCost(researchTimeResearchIds.reduction(8))).toEqual({
+      amount: 8,
+      currency: 'emerald',
+    });
+    expect(manager.getCost(researchCostResearchIds.reduction(8))).toEqual({
+      amount: 8,
+      currency: 'emerald',
+    });
+  });
+
+  it('applies research cost reduction to coin research costs', () => {
+    const manager = new ResearchBalanceManager();
+
+    expect(
+      manager.getCost('unlockSeed:mintSeed', { researchCostReductionLevel: 1 }),
+    ).toEqual({
+      amount: 22,
+      currency: 'coin',
+    });
+    expect(
+      manager.getCost('unlockRecipe:manaTonic', { researchCostReductionLevel: 8 }),
+    ).toEqual({
+      amount: 0,
+      currency: 'coin',
+    });
+    expect(
+      manager.getCost(researchCostResearchIds.reduction(2), {
+        researchCostReductionLevel: 1,
+      }),
+    ).toEqual({
+      amount: 2,
+      currency: 'emerald',
+    });
   });
 
   it('reads emerald research costs from balance', () => {
@@ -57,5 +108,21 @@ describe('ResearchBalanceManager', () => {
       currency: 'emerald',
     });
     expect(manager.getCostEmerald('emerald:plotPlanting:2:2')).toBe(2);
+  });
+
+  it('ignores legacy ruby costs for research time reduction', () => {
+    const manager = new ResearchBalanceManager({
+      balance: {
+        researchCostsCoin: {},
+        researchCostsRuby: {
+          [researchTimeResearchIds.reduction(1)]: 99,
+        },
+      },
+    });
+
+    expect(manager.getCost(researchTimeResearchIds.reduction(1))).toEqual({
+      amount: 1,
+      currency: 'emerald',
+    });
   });
 });

@@ -1,3 +1,4 @@
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import {
   DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
   TRADE_ALLIANCE_TAG_COLORS,
@@ -6,6 +7,8 @@ import {
 } from '../../../shared/tradeAllianceTagColors.js';
 import { createAllianceTagSpan } from '../../shared/allianceTagLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 
 const CARD_TABS = [
   { id: 'stats', label: 'stats' },
@@ -108,14 +111,21 @@ export class GuildPanelManager {
     }
 
     if (!guild.created) {
+      const charterCost = guild.charterCostCoin ?? 1500;
       return [
         this.createBox('guild charter', [
-          this.createTextRow('cost', `${guild.charterCostCoin ?? 1500} coin`),
-          this.createTextRow('coin', `${guild.currentCoin ?? 0}`),
-          this.createButtonRow('start guild', () => this.showCharterDialog(), {
-            disabled: !guild.canCreate,
-            notification: guild.canCreate,
-          }),
+          this.createParagraph(
+            'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
+          ),
+          this.createCostButtonRow(
+            'start guild',
+            formatCoinPriceText(charterCost),
+            () => this.showCharterDialog(),
+            {
+              disabled: !guild.canCreate,
+              notification: guild.canCreate,
+            },
+          ),
         ]),
       ];
     }
@@ -391,6 +401,29 @@ export class GuildPanelManager {
     return button;
   }
 
+  createCostButtonRow(
+    label,
+    costText,
+    onClick,
+    { disabled = false, notification = false } = {},
+  ) {
+    const button = this.createButtonRow(label, onClick, { disabled, notification });
+    button.classList.add('guild-page__charter-button');
+    button.setAttribute('aria-label', `${label} for ${costText}`);
+
+    const labelElement = document.createElement('span');
+    labelElement.className = 'guild-page__charter-button-label';
+    labelElement.textContent = label;
+
+    const costElement = document.createElement('span');
+    costElement.className = 'guild-page__charter-button-cost';
+    setResourceColor(costElement, 'coin');
+    setResourceIconText(costElement, costText);
+
+    button.replaceChildren(labelElement, costElement);
+    return button;
+  }
+
   createEmptyRow(text) {
     const row = document.createElement('div');
     row.className = 'guild-page__empty-row';
@@ -432,6 +465,8 @@ export class GuildPanelManager {
     this.refs.popupContent.className = 'guild-page__popup-content';
     this.refs.popupTabs = document.createElement('div');
     this.refs.popupTabs.className = 'guild-page__tabs';
+    this.refs.popupTabs.setAttribute('role', 'tablist');
+    this.refs.popupTabs.setAttribute('aria-label', 'guild card details');
 
     dialog.append(this.refs.popupTitle, this.refs.closeButton, this.refs.popupContent);
     panel.append(dialog, this.refs.popupTabs);
@@ -695,6 +730,7 @@ export class GuildPanelManager {
         button.className = 'style-button guild-page__tab-button';
         button.type = 'button';
         button.textContent = tab.label;
+        button.setAttribute('role', 'tab');
         button.setAttribute('aria-selected', tab.id === this.selectedCardTab ? 'true' : 'false');
         button.addEventListener('click', () => {
           this.selectedCardTab = tab.id;

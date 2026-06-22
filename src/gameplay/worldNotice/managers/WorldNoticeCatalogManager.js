@@ -393,6 +393,7 @@ export class WorldNoticeCatalogManager {
         completionCostCoin,
       }),
       progressQuantity: 0,
+      pointProgressQuantity: 0,
       contributionPoints: 0,
       completed: false,
     };
@@ -484,6 +485,9 @@ export class WorldNoticeCatalogManager {
       0,
       Math.min(requiredQuantity, Math.floor(Number(request.progressQuantity) || 0)),
     );
+    const pointProgressQuantity = Number.isFinite(request.pointProgressQuantity)
+      ? Math.max(0, Math.floor(request.pointProgressQuantity))
+      : progressQuantity;
 
     return {
       requestId,
@@ -492,6 +496,7 @@ export class WorldNoticeCatalogManager {
       label,
       requiredQuantity,
       progressQuantity,
+      pointProgressQuantity,
       contributionPoints: Math.max(
         0,
         Math.floor(Number(request.contributionPoints) || 0),

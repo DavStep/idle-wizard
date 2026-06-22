@@ -15,3 +15,7 @@ week. Player level only scales request targets.
 Requests award event contribution points, not immediate completion rewards. The
 leaderboard reward table is shown in the event popup, and players need 2000
 points to qualify for rank or participation rewards.
+
+Request progress completes at its target, but matching actions keep adding
+contribution points after completion. Completion changes response status; it
+does not cap leaderboard scoring.

@@ -976,6 +976,7 @@ describe('AuthOidcManager', () => {
 
     expect(manager.getSnapshot()).toMatchObject({
       authenticated: false,
+      remembered: true,
       displayName: 'Dav',
       email: 'dav@example.com',
     });

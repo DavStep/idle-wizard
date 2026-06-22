@@ -14,13 +14,35 @@ function createTouchStartEvent() {
   return new window.Event('touchstart', { bubbles: true, cancelable: true });
 }
 
-function createPointerDownEvent(pointerType = 'touch') {
-  const event = new window.Event('pointerdown', { bubbles: true, cancelable: true });
+function createPointerEvent(type, options = {}) {
+  const {
+    pointerType = 'touch',
+    pointerId = 1,
+    clientX = 0,
+    clientY = 0,
+  } = options;
+  const event = new window.Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'pointerType', {
     configurable: true,
     value: pointerType,
   });
+  Object.defineProperty(event, 'pointerId', {
+    configurable: true,
+    value: pointerId,
+  });
+  Object.defineProperty(event, 'clientX', {
+    configurable: true,
+    value: clientX,
+  });
+  Object.defineProperty(event, 'clientY', {
+    configurable: true,
+    value: clientY,
+  });
   return event;
+}
+
+function createPointerDownEvent(pointerType = 'touch', options = {}) {
+  return createPointerEvent('pointerdown', { ...options, pointerType });
 }
 
 function withPointerEvent(callback) {
@@ -1350,10 +1372,11 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('selects an NPC market sell item draft from touchstart on the visible seed text', () => {
+  it('selects an NPC market sell item draft from touch release on the visible seed text', () => {
     withPointerEvent(() => {
       const stage = document.createElement('section');
       const popupLayer = document.createElement('section');
+      document.body.append(stage, popupLayer);
       const gameplaySnapshot = {
         coin: { current: 0 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
@@ -1416,12 +1439,31 @@ describe('ShopShelfManager', () => {
       const visibleSeedText = popupLayer.querySelector(
         '[data-tutorial-id="shop:sell:sageSeed"] .style-seed-label__text',
       );
-      visibleSeedText?.dispatchEvent(createTouchStartEvent());
+      visibleSeedText?.dispatchEvent(createPointerDownEvent('touch'));
+
+      expect(
+        popupLayer.querySelector('.shop-page__sell-selected-label')?.textContent,
+      ).toBe('no item selected');
+      expect(manager.pendingSellItemPress?.key).toBe('sell-item:1');
+
+      visibleSeedText?.dispatchEvent(createPointerEvent('pointerup'));
+      expect(manager.pendingSellItemPress).toBe(null);
 
       expect(gameplaySnapshot.shop.shelf.slots[0].sellItemTypeId).toBe(null);
       expect(
         popupLayer.querySelector('.shop-page__sell-selected-label')?.textContent,
       ).toContain('sage seed');
+      expect(
+        popupLayer.querySelector('.shop-page__sell-item-button')?.getAttribute(
+          'aria-pressed',
+        ),
+      ).toBe('false');
+      expect(popupLayer.querySelector('.shop-page__sell-popup')?.hidden).toBe(false);
+
+      popupLayer
+        .querySelector('.shop-page__sell-popup')
+        ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
       expect(popupLayer.querySelector('.shop-page__sell-popup')?.hidden).toBe(false);
 
       popupLayer
@@ -1435,7 +1477,103 @@ describe('ShopShelfManager', () => {
       expect(popupLayer.querySelector('.shop-page__sell-popup')?.hidden).toBe(true);
 
       manager.unmount();
+      stage.remove();
+      popupLayer.remove();
     });
+  });
+
+  it('does not select an NPC market sell item when the picker touch scrolls', () => {
+    withPointerEvent(() => {
+      const stage = document.createElement('section');
+      const popupLayer = document.createElement('section');
+      document.body.append(stage, popupLayer);
+      const gameplaySnapshot = {
+        coin: { current: 0 },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          shelf: {
+            maxSlots: 1,
+            selectedSlotNumber: 1,
+            slotCosts: [0],
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 1,
+                sellCoin: 8,
+                sellNeed: 12,
+              },
+            ],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                sellItemTypeId: null,
+              },
+            ],
+          },
+        },
+      };
+      const gameplayFacade = {
+        subscribe(callback) {
+          callback(gameplaySnapshot);
+          return () => {};
+        },
+        getSnapshot() {
+          return gameplaySnapshot;
+        },
+        setSelectedShopShelfSlotSellItem: vi.fn(() => ({ ok: true })),
+      };
+      const manager = new ShopShelfManager({ gameplayFacade });
+
+      manager.mount(stage, popupLayer);
+      manager.showSellPopup();
+
+      const visibleSeedText = popupLayer.querySelector(
+        '[data-tutorial-id="shop:sell:sageSeed"] .style-seed-label__text',
+      );
+      visibleSeedText?.dispatchEvent(
+        createPointerDownEvent('touch', { clientX: 10, clientY: 10 }),
+      );
+      visibleSeedText?.dispatchEvent(
+        createPointerEvent('pointermove', { clientX: 10, clientY: 32 }),
+      );
+      visibleSeedText?.dispatchEvent(
+        createPointerEvent('pointerup', { clientX: 10, clientY: 32 }),
+      );
+
+      expect(
+        popupLayer.querySelector('.shop-page__sell-selected-label')?.textContent,
+      ).toBe('no item selected');
+      expect(gameplayFacade.setSelectedShopShelfSlotSellItem).not.toHaveBeenCalled();
+
+      manager.unmount();
+      stage.remove();
+      popupLayer.remove();
+    });
+  });
+
+  it('keeps NPC market sell picker underlines selected-only with compact scroll rail gap', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const unselectedRule = baseCss.match(
+      /\.shop-page__sell-popup\s+\.shop-page__sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.row_key\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const selectedRule = baseCss.match(
+      /\.shop-page__sell-popup \.shop-page__sell-item-button\[aria-pressed="true"\] \.row_key\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const progressGapRule = baseCss.match(
+      /\.shop-page__sell-controls:not\(\.shop-page__player-listing-controls\)\s+\.shop-page__sell-item-list\s+\+\s+\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(unselectedRule).toMatch(/\btext-decoration:\s*none;/);
+    expect(selectedRule).toMatch(/\btext-decoration:\s*underline;/);
+    expect(progressGapRule).toMatch(
+      /\bmargin-top:\s*var\(--shop-page-sell-scroll-progress-gap\);/,
+    );
+    expect(baseCss).toMatch(/--shop-page-sell-scroll-progress-gap:\s*4px;/);
   });
 
   it('marks a fixed NPC market sell amount from the picker', () => {

@@ -70,7 +70,10 @@ export class WorkshopPageFacade {
       onLevelUpNotice: ({ message }) => this.flyoutManager.show(message),
     });
     this.personalTasksManager = new WorkshopPersonalTasksManager({ gameplayFacade });
-    this.worldNoticeManager = new WorkshopWorldNoticeManager({ gameplayFacade });
+    this.worldNoticeManager = new WorkshopWorldNoticeManager({
+      gameplayFacade,
+      onOpenPlayerInfo,
+    });
   }
 
   mount(stage) {

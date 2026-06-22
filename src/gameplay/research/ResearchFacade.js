@@ -16,6 +16,16 @@ import {
   getFastSellPercent as getFastSellPercentForLevel,
 } from './fastSellResearch.js';
 import {
+  getResearchTimeReductionPercent as getResearchTimeReductionPercentForLevel,
+  researchTimeResearchIds,
+  researchTimeResearchMaxLevel,
+} from './researchTimeResearch.js';
+import {
+  getResearchCostReductionPercent as getResearchCostReductionPercentForLevel,
+  researchCostResearchIds,
+  researchCostResearchMaxLevel,
+} from './researchCostResearch.js';
+import {
   emeraldResearchIds,
   emeraldResearchMaxMultiplier,
   emeraldResearchMinMultiplier,
@@ -32,7 +42,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ResearchFacade {
   static explain =
-    'Research lets the wizard spend coin, crystal, or ruby on studies that unlock seeds, recipes, automation, and speed upgrades.';
+    'Research lets the wizard spend coin, crystal, ruby, or emerald on studies that unlock seeds, recipes, automation, and speed upgrades.';
 
   constructor({
     crystalFacade,
@@ -64,6 +74,8 @@ export class ResearchFacade {
       crystalFacade,
       emeraldFacade,
       coinFacade,
+      getResearchCostReductionLevel: () => this.getCompletedResearchCostReductionLevel(),
+      getResearchTimeReductionLevel: () => this.getCompletedResearchTimeReductionLevel(),
       rubyFacade,
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
@@ -81,6 +93,7 @@ export class ResearchFacade {
       emeraldFacade,
       coinFacade,
       rubyFacade,
+      getResearchCostReductionLevel: () => this.getCompletedResearchCostReductionLevel(),
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
       researchStateEntityManager: this.researchStateEntityManager,
@@ -296,6 +309,46 @@ export class ResearchFacade {
 
   getFastSellPercent() {
     return getFastSellPercentForLevel(this.getCompletedFastSellLevel());
+  }
+
+  getResearchTimeReductionPercent() {
+    return getResearchTimeReductionPercentForLevel(
+      this.getCompletedResearchTimeReductionLevel(),
+    );
+  }
+
+  getResearchCostReductionPercent() {
+    return getResearchCostReductionPercentForLevel(
+      this.getCompletedResearchCostReductionLevel(),
+    );
+  }
+
+  getCompletedResearchCostReductionLevel() {
+    let completedLevel = 0;
+
+    for (let level = 1; level <= researchCostResearchMaxLevel; level += 1) {
+      if (!this.researchStateEntityManager.isCompleted(researchCostResearchIds.reduction(level))) {
+        break;
+      }
+
+      completedLevel = level;
+    }
+
+    return completedLevel;
+  }
+
+  getCompletedResearchTimeReductionLevel() {
+    let completedLevel = 0;
+
+    for (let level = 1; level <= researchTimeResearchMaxLevel; level += 1) {
+      if (!this.researchStateEntityManager.isCompleted(researchTimeResearchIds.reduction(level))) {
+        break;
+      }
+
+      completedLevel = level;
+    }
+
+    return completedLevel;
   }
 
   getCompletedFastSellLevel() {

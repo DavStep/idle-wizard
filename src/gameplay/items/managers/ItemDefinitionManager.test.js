@@ -6,7 +6,7 @@ describe('ItemDefinitionManager', () => {
   it('knows dormant herb and potion item concepts', () => {
     const manager = new ItemDefinitionManager();
 
-    expect(manager.getHerbDefinitions()).toHaveLength(14);
+    expect(manager.getHerbDefinitions()).toHaveLength(24);
     expect(manager.getHerbDefinitions()).toContainEqual({
       id: 1001,
       key: 'sageHerb',
@@ -23,9 +23,18 @@ describe('ItemDefinitionManager', () => {
       growthDurationMs: 210_000,
       baseSellPrice: 52,
     });
+    expect(manager.getDefinitionByKey('pearlrootHerb')).toEqual({
+      id: 1024,
+      key: 'pearlrootHerb',
+      label: 'pearlroot',
+      kind: 'herb',
+      growthDurationMs: 520_000,
+      baseSellPrice: 328,
+    });
     expect(manager.getSeedDefinition(1).producesHerbTypeId).toBe(1001);
     expect(manager.getSeedDefinition(14).producesHerbTypeId).toBe(1014);
-    expect(manager.getPotionDefinitions()).toHaveLength(29);
+    expect(manager.getSeedDefinition(24).producesHerbTypeId).toBe(1024);
+    expect(manager.getPotionDefinitions()).toHaveLength(39);
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2001,
       key: 'manaTonic',
@@ -60,7 +69,14 @@ describe('ItemDefinitionManager', () => {
       hasRecipe: false,
       baseSellPrice: 1,
     });
-    expect(manager.getRecipePotionDefinitions()).toHaveLength(18);
+    expect(manager.getPotionDefinitions()).toContainEqual({
+      id: 2039,
+      key: 'pearlrootDraught',
+      label: 'pearlroot draught',
+      kind: 'potion',
+      baseSellPrice: 740,
+    });
+    expect(manager.getRecipePotionDefinitions()).toHaveLength(28);
     expect(manager.getUnknownPotionDefinitions()).toHaveLength(10);
     expect(manager.getDefinition(2001).kind).toBe('potion');
   });

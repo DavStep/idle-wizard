@@ -1,9 +1,13 @@
+import { applyResearchTimeReductionSeconds } from '../researchTimeResearch.js';
+
 export class ResearchPurchaseManager {
   constructor({
     crystalFacade,
     emeraldFacade,
     coinFacade,
     rubyFacade,
+    getResearchCostReductionLevel,
+    getResearchTimeReductionLevel,
     researchBalanceManager,
     researchDefinitionManager,
     researchManaEffectManager,
@@ -13,6 +17,8 @@ export class ResearchPurchaseManager {
     this.emeraldFacade = emeraldFacade;
     this.coinFacade = coinFacade;
     this.rubyFacade = rubyFacade;
+    this.getResearchCostReductionLevel = getResearchCostReductionLevel;
+    this.getResearchTimeReductionLevel = getResearchTimeReductionLevel;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
     this.researchManaEffectManager = researchManaEffectManager;
@@ -30,7 +36,7 @@ export class ResearchPurchaseManager {
       };
     }
 
-    const cost = this.researchBalanceManager.getCost(normalizedResearchId);
+    const cost = this.getResearchCost(normalizedResearchId);
 
     if (this.researchStateEntityManager.isCompleted(normalizedResearchId)) {
       return {
@@ -99,7 +105,9 @@ export class ResearchPurchaseManager {
       };
     }
 
-    const durationSeconds = this.researchBalanceManager.getDurationSeconds(normalizedResearchId);
+    const durationSeconds = this.getReducedDurationSeconds(
+      this.researchBalanceManager.getDurationSeconds(normalizedResearchId),
+    );
 
     if (durationSeconds > 0) {
       this.researchStateEntityManager.start(normalizedResearchId, durationSeconds);
@@ -137,6 +145,19 @@ export class ResearchPurchaseManager {
     }
 
     return this.coinFacade;
+  }
+
+  getReducedDurationSeconds(durationSeconds) {
+    return applyResearchTimeReductionSeconds(
+      durationSeconds,
+      this.getResearchTimeReductionLevel?.() ?? 0,
+    );
+  }
+
+  getResearchCost(researchId) {
+    return this.researchBalanceManager.getCost(researchId, {
+      researchCostReductionLevel: this.getResearchCostReductionLevel?.() ?? 0,
+    });
   }
 
   getCostResult(cost) {

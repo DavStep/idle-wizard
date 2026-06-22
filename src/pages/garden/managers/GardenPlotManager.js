@@ -877,6 +877,13 @@ export class GardenPlotManager {
       return;
     }
 
+    if (event?.type === 'click' && this.handledSeedPressStartKey !== null) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.clearHandledSeedPressStartKey();
+      return;
+    }
+
     if (event?.type === 'click' && this.handledTileLabelPressStartTileNumber === tileNumber) {
       event.preventDefault();
       event.stopPropagation();

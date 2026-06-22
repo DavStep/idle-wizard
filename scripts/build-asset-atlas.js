@@ -18,20 +18,30 @@ const PADDING = 32;
 const EDGE_EXTRUDE = Math.max(1, Math.floor(PADDING / 2));
 
 const HERB_ASSETS = [
+  ['herb:belladonnaHerb', 'src/assets/items/herbs/herb-belladonna.png'],
   ['herb:bloodroseHerb', 'src/assets/items/herbs/herb-bloodrose.png'],
   ['herb:briarHerb', 'src/assets/items/herbs/herb-briar.png'],
+  ['herb:comfreyHerb', 'src/assets/items/herbs/herb-comfrey.png'],
   ['herb:dragonpepperHerb', 'src/assets/items/herbs/herb-dragonpepper.png'],
   ['herb:dreambellHerb', 'src/assets/items/herbs/herb-dreambell.png'],
   ['herb:frostmossHerb', 'src/assets/items/herbs/herb-frostmoss.png'],
   ['herb:glowcapHerb', 'src/assets/items/herbs/herb-glowcap.png'],
+  ['herb:hyssopHerb', 'src/assets/items/herbs/herb-hyssop.png'],
   ['herb:lavenderHerb', 'src/assets/items/herbs/herb-lavender.png'],
   ['herb:mandrakeHerb', 'src/assets/items/herbs/herb-mandrake.png'],
   ['herb:mintHerb', 'src/assets/items/herbs/herb-mint.png'],
   ['herb:moonflowerHerb', 'src/assets/items/herbs/herb-moonflower.png'],
   ['herb:nettleHerb', 'src/assets/items/herbs/herb-nettle.png'],
+  ['herb:nightshadeHerb', 'src/assets/items/herbs/herb-nightshade.png'],
+  ['herb:pearlrootHerb', 'src/assets/items/herbs/herb-pearlroot.png'],
   ['herb:sageHerb', 'src/assets/items/herbs/herb-sage.png'],
+  ['herb:silverleafHerb', 'src/assets/items/herbs/herb-silverleaf.png'],
+  ['herb:snowdropHerb', 'src/assets/items/herbs/herb-snowdrop.png'],
   ['herb:starAniseHerb', 'src/assets/items/herbs/herb-star-anise.png'],
   ['herb:sunrootHerb', 'src/assets/items/herbs/herb-sunroot.png'],
+  ['herb:valerianHerb', 'src/assets/items/herbs/herb-valerian.png'],
+  ['herb:wormwoodHerb', 'src/assets/items/herbs/herb-wormwood.png'],
+  ['herb:yarrowHerb', 'src/assets/items/herbs/herb-yarrow.png'],
 ];
 
 const POTION_ASSETS = [
@@ -63,6 +73,16 @@ const POTION_ASSETS = [
   ['potion:starlessCourage', 'src/assets/items/potions/potion-starless-courage.png'],
   ['potion:frostveinDraught', 'src/assets/items/potions/potion-frostvein-draught.png'],
   ['potion:bloodlightWard', 'src/assets/items/potions/potion-bloodlight-ward.png'],
+  ['potion:silverleafSalve', 'src/assets/items/potions/potion-silverleaf-salve.png'],
+  ['potion:yarrowPoultice', 'src/assets/items/potions/potion-yarrow-poultice.png'],
+  ['potion:hyssopClarity', 'src/assets/items/potions/potion-hyssop-clarity.png'],
+  ['potion:valerianRest', 'src/assets/items/potions/potion-valerian-rest.png'],
+  ['potion:comfreyBalm', 'src/assets/items/potions/potion-comfrey-balm.png'],
+  ['potion:nightshadeVeil', 'src/assets/items/potions/potion-nightshade-veil.png'],
+  ['potion:belladonnaSight', 'src/assets/items/potions/potion-belladonna-sight.png'],
+  ['potion:wormwoodPurge', 'src/assets/items/potions/potion-wormwood-purge.png'],
+  ['potion:snowdropBreath', 'src/assets/items/potions/potion-snowdrop-breath.png'],
+  ['potion:pearlrootDraught', 'src/assets/items/potions/potion-pearlroot-draught.png'],
   ['potion:generic', 'src/assets/items/potions/potion-generic.png'],
 ];
 

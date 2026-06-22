@@ -10,6 +10,16 @@ import {
   getFastSellPercent,
 } from '../fastSellResearch.js';
 import {
+  getResearchTimeReductionPercent,
+  researchTimeResearchIds,
+  researchTimeResearchMaxLevel,
+} from '../researchTimeResearch.js';
+import {
+  getResearchCostReductionPercent,
+  researchCostResearchIds,
+  researchCostResearchMaxLevel,
+} from '../researchCostResearch.js';
+import {
   emeraldResearchIds,
   emeraldResearchMaxMultiplier,
   emeraldResearchMinMultiplier,
@@ -68,6 +78,16 @@ const seedUnlockRequiredPlayerLevels = {
   starAniseSeed: 25,
   bloodroseSeed: 28,
   dragonpepperSeed: 31,
+  silverleafSeed: 34,
+  yarrowSeed: 37,
+  hyssopSeed: 40,
+  valerianSeed: 43,
+  comfreySeed: 46,
+  nightshadeSeed: 49,
+  belladonnaSeed: 52,
+  wormwoodSeed: 55,
+  snowdropSeed: 58,
+  pearlrootSeed: 61,
 };
 
 const recipeUnlockRequiredPlayerLevels = {
@@ -89,6 +109,16 @@ const recipeUnlockRequiredPlayerLevels = {
   deepDreamVision: 38,
   pactWard: 41,
   dragonCourage: 44,
+  silverleafSalve: 47,
+  yarrowPoultice: 50,
+  hyssopClarity: 53,
+  valerianRest: 56,
+  comfreyBalm: 59,
+  nightshadeVeil: 62,
+  belladonnaSight: 65,
+  wormwoodPurge: 68,
+  snowdropBreath: 71,
+  pearlrootDraught: 74,
 };
 
 const recipeUnlockOrder = [
@@ -110,6 +140,16 @@ const recipeUnlockOrder = [
   'deepDreamVision',
   'pactWard',
   'dragonCourage',
+  'silverleafSalve',
+  'yarrowPoultice',
+  'hyssopClarity',
+  'valerianRest',
+  'comfreyBalm',
+  'nightshadeVeil',
+  'belladonnaSight',
+  'wormwoodPurge',
+  'snowdropBreath',
+  'pearlrootDraught',
 ];
 
 const maxAutomationGardenTiles = 10;
@@ -340,6 +380,11 @@ export class ResearchDefinitionManager {
         researches: this.getFastSellResearches(),
       },
       {
+        id: 'researchTime',
+        label: 'research time research',
+        researches: this.getResearchTimeResearches(),
+      },
+      {
         id: 'plotCapacity',
         label: 'plot capacity research',
         researches: this.getPlotCapacityResearches(),
@@ -379,6 +424,11 @@ export class ResearchDefinitionManager {
 
   getEmeraldResearchBoxes({ includeLevelLockedAutomation = false } = {}) {
     return [
+      {
+        id: 'researchCost',
+        label: 'research cost research',
+        researches: this.getResearchCostResearches(),
+      },
       {
         id: 'plotPlanting',
         label: 'plot planting research',
@@ -477,6 +527,42 @@ export class ResearchDefinitionManager {
         requiredResearchIds:
           level > 1 ? [fastSellResearchIds.payout(level - 1)] : [],
         description: `fast sell pays ${percent}% of npc bulk sell price.`,
+      };
+    });
+  }
+
+  getResearchTimeResearches() {
+    return Array.from({ length: researchTimeResearchMaxLevel }, (_value, index) => {
+      const level = index + 1;
+      const percent = getResearchTimeReductionPercent(level);
+
+      return {
+        id: researchTimeResearchIds.reduction(level),
+        label: `research time lvl ${level}`,
+        value: `-${percent}% time`,
+        showEffect: true,
+        seriesId: 'researchTime',
+        requiredResearchIds:
+          level > 1 ? [researchTimeResearchIds.reduction(level - 1)] : [],
+        description: `future research timers are reduced by ${percent}%.`,
+      };
+    });
+  }
+
+  getResearchCostResearches() {
+    return Array.from({ length: researchCostResearchMaxLevel }, (_value, index) => {
+      const level = index + 1;
+      const percent = getResearchCostReductionPercent(level);
+
+      return {
+        id: researchCostResearchIds.reduction(level),
+        label: `research cost lvl ${level}`,
+        value: `-${percent}% cost`,
+        showEffect: true,
+        seriesId: 'researchCost',
+        requiredResearchIds:
+          level > 1 ? [researchCostResearchIds.reduction(level - 1)] : [],
+        description: `future coin research costs are reduced by ${percent}%.`,
       };
     });
   }

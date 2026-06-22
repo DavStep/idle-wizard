@@ -62,6 +62,23 @@ describe('item icon labels', () => {
     expect(icon?.dataset.assetAtlasFrame).toBe('herb:sageHerb');
   });
 
+  it('marks late-game herb and potion labels with item icons', () => {
+    const herb = document.createElement('span');
+    herb.textContent = 'pearlroot';
+    const potion = document.createElement('span');
+    potion.textContent = 'pearlroot draught';
+
+    setItemIconLabel(herb, 'herb', 'pearlrootHerb');
+    setItemIconLabel(potion, 'potion', 'pearlrootDraught');
+
+    expect(herb.querySelector('.style-herb-label__icon')?.dataset.assetAtlasFrame).toBe(
+      'herb:pearlrootHerb',
+    );
+    expect(potion.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame).toBe(
+      'potion:pearlrootDraught',
+    );
+  });
+
   it('marks seed labels with the seed pack icon while preserving text', () => {
     const element = document.createElement('span');
     element.textContent = 'sage seed (3)';

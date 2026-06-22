@@ -32,6 +32,7 @@ describe('AuthSessionManager', () => {
         email: '',
         enabled: false,
         error: null,
+        remembered: false,
       },
     });
   });
@@ -111,6 +112,7 @@ describe('AuthSessionManager', () => {
           email: 'dav@example.com',
           enabled: true,
           error: null,
+          remembered: false,
         },
       },
     });

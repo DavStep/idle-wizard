@@ -877,6 +877,30 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
   });
 
+  it('ignores the retargeted plot click after touch-selecting a seed choice', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+    parent
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const mintButton = parent.querySelector('[aria-label="select mint seed, owned 1"]');
+
+    dispatchTouchLikePressStart(mintButton);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow.dispatchEvent(
+      new window.MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }),
+    );
+
+    expect(parent.querySelector('.garden-page__cancel-popup').hidden).toBe(true);
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+  });
+
   it('shows the selected plot and seed while the seed picker is open', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -1016,6 +1040,25 @@ describe('GardenPlotManager', () => {
     expect(rule).toContain('top: calc(');
     expect(rule).toContain('var(--style-row-min-height)');
     expect(rule).toContain('var(--style-notification-size)');
+  });
+
+  it('keeps choose-seed rows taller without underlined row labels', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const buttonRule = baseCss.match(
+      /\.garden-page__seed-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const underlineRule = baseCss.match(
+      /\.garden-page__seed-button:hover \.row_key,\s*\.garden-page__seed-button:focus \.row_key,\s*\.garden-page__seed-button\[aria-pressed="true"\] \.row_key\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(buttonRule).toBeDefined();
+    expect(buttonRule).toMatch(/\bdisplay:\s*grid;/);
+    expect(buttonRule).toMatch(
+      /\bmin-height:\s*calc\(var\(--style-row-min-height\) \+ 8px\);/,
+    );
+    expect(underlineRule).toBeDefined();
+    expect(underlineRule).toMatch(/\btext-decoration:\s*none;/);
+    expect(baseCss).not.toContain('.garden-page__seed-button:not(:disabled) .row_key');
   });
 
   it('confirms canceling active plot progress and returns the seed', () => {

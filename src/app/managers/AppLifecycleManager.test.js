@@ -443,6 +443,42 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
+  it('refreshes a remembered connected account before using a stored server token', async () => {
+    let authenticated = false;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: true,
+        oidc: {
+          authenticated,
+          enabled: true,
+          remembered: !authenticated,
+        },
+      })),
+      tryRestoreConnectedAccount: vi.fn(() => {
+        authenticated = true;
+        return Promise.resolve({ ok: true, restored: true });
+      }),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+
+    lifecycle.start();
+    await flushPromises();
+    await flushPromises();
+
+    expect(authFacade.tryRestoreConnectedAccount).toHaveBeenCalledTimes(1);
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
   it('shows loading while connecting an existing account before backend connect', async () => {
     let authenticated = false;
     const freshStartChoiceManager = {
@@ -757,6 +793,33 @@ describe('AppLifecycleManager', () => {
       getPendingAccountLinkSave: vi.fn(() => null),
       clearPendingAccountLinkSave: vi.fn(),
       getSnapshot: vi.fn(() => ({ oidc: { authenticated: true } })),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+
+    await lifecycle.handleGameplaySaveReady({ save: null });
+
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      null,
+      lifecycle.ecsFacade,
+    );
+  });
+
+  it('does not ask fresh start questions for a remembered account token with no save', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: true,
+        oidc: { authenticated: false, remembered: true },
+      })),
       signInWithGoogle: vi.fn(),
     };
     const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
