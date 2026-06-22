@@ -4372,14 +4372,6 @@ const advancedResearchCatalog = [
       groupId: 'fastSell',
     };
   }),
-  ...Array.from({ length: RESEARCH_TIME_REDUCTION_MAX_LEVEL }, (_value, index) => {
-    const level = index + 1;
-    return {
-      id: `advanced:researchTime:${level}`,
-      label: `research time lvl ${level}`,
-      groupId: 'researchTime',
-    };
-  }),
   ...advancedResearchCauldronNumbers.flatMap((cauldronNumber) =>
     Array.from({ length: ADVANCED_RESEARCH_MAX_LEVEL }, (_value, index) => {
       const level = index + 1;
@@ -4419,6 +4411,14 @@ const emeraldResearchCatalog = [
       id: `emerald:researchCost:${level}`,
       label: `research cost lvl ${level}`,
       groupId: 'researchCost',
+    };
+  }),
+  ...Array.from({ length: RESEARCH_TIME_REDUCTION_MAX_LEVEL }, (_value, index) => {
+    const level = index + 1;
+    return {
+      id: `advanced:researchTime:${level}`,
+      label: `research time lvl ${level}`,
+      groupId: 'researchTime',
     };
   }),
   ...advancedResearchPlotNumbers.flatMap((plotNumber) =>

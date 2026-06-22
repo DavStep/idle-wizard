@@ -5,7 +5,10 @@ import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
-import { createResourceIconLabel } from '../../shared/resourceIconLabel.js';
+import {
+  createResourceIconLabel,
+  setResourceIconText,
+} from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
@@ -16,21 +19,15 @@ const WORLD_NOTICE_TABS = [
 ];
 const DEFAULT_WORLD_NOTICE_TAB_ID = 'tasks';
 const WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS = 2_000;
-const WORLD_NOTICE_RESOURCE_BY_ACTION = new Map([
-  ['brew_potions', 'potion'],
-  ['donate_coin', 'coin'],
-  ['earn_coin', 'coin'],
-  ['harvest_herbs', 'herb'],
-  ['sell_items', 'coin'],
-  ['summon_seeds', 'seed'],
-]);
 
 export class WorkshopWorldNoticeManager {
-  constructor({ gameplayFacade, onOpenPlayerInfo } = {}) {
+  constructor({ gameplayFacade, playerFacade, onOpenPlayerInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.playerFacade = playerFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribe = null;
+    this.unsubscribePlayer = null;
     this.refs = {};
     this.visible = false;
     this.donateVisible = false;
@@ -41,6 +38,7 @@ export class WorkshopWorldNoticeManager {
     this.previousFocus = null;
     this.previousDonateFocus = null;
     this.currentSnapshot = null;
+    this.playerSnapshot = this.playerFacade?.getSnapshot?.() ?? null;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -109,6 +107,14 @@ export class WorkshopWorldNoticeManager {
     document.addEventListener('keydown', this.handleKeydown);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
+    this.unsubscribePlayer =
+      this.playerFacade?.subscribe?.((snapshot) => {
+        this.playerSnapshot = snapshot ?? null;
+        if (this.visible) {
+          this.renderPopup(this.currentSnapshot?.worldNotice);
+        }
+      }) ?? null;
+    this.playerSnapshot = this.playerFacade?.getSnapshot?.() ?? this.playerSnapshot;
     this.render(this.gameplayFacade.getSnapshot());
 
     return this.root;
@@ -287,7 +293,9 @@ export class WorkshopWorldNoticeManager {
 
   unmount() {
     this.unsubscribe?.();
+    this.unsubscribePlayer?.();
     this.unsubscribe = null;
+    this.unsubscribePlayer = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.root?.remove();
     this.refs.popup?.remove();
@@ -298,6 +306,7 @@ export class WorkshopWorldNoticeManager {
     this.previousFocus = null;
     this.previousDonateFocus = null;
     this.currentSnapshot = null;
+    this.playerSnapshot = null;
     this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
   }
 
@@ -523,26 +532,25 @@ export class WorkshopWorldNoticeManager {
     const label = document.createElement('span');
     label.className = 'workshop-page__world-notice-request-title';
     label.textContent = request.label;
-    setResourceColor(label, this.getTaskResource(request));
 
     row.append(label);
 
     const instruction = document.createElement('div');
     instruction.className = 'workshop-page__world-notice-request-instruction';
-    instruction.textContent = this.getTaskInstruction(request);
+    setResourceIconText(instruction, this.getTaskInstruction(request));
 
     const detail = document.createElement('div');
     detail.className = 'workshop-page__world-notice-request-points-row';
 
     const pointValue = document.createElement('span');
     pointValue.className = 'workshop-page__world-notice-request-points';
-    pointValue.textContent = this.getTaskProgressText(request);
+    setResourceIconText(pointValue, this.getTaskProgressText(request));
 
     const collectedPoints = document.createElement('span');
     collectedPoints.className = 'workshop-page__world-notice-request-collected';
-    collectedPoints.textContent = `earned ${
+    setResourceIconText(collectedPoints, `earned ${
       request.collectedPointText ?? this.formatPointCount(request.contributionPoints)
-    }`;
+    }`);
 
     if (request.manual) {
       detail.append(pointValue, collectedPoints);
@@ -631,6 +639,7 @@ export class WorkshopWorldNoticeManager {
       const amount = document.createElement('span');
       amount.className = 'workshop-page__world-notice-reward-amount';
       amount.textContent = this.formatNumber(reward.amount);
+      setResourceColor(amount, reward.resource);
 
       const icon = createResourceIconLabel(reward.resource, '');
       if (icon.nodeType === 1) {
@@ -704,7 +713,7 @@ export class WorkshopWorldNoticeManager {
     val.className = 'row_val';
     val.textContent = header
       ? entry.pointsLabel
-      : this.formatPointCount(entry.points);
+      : this.formatNumber(entry.points);
 
     row.append(key, val);
     return row;
@@ -875,8 +884,14 @@ export class WorkshopWorldNoticeManager {
     this.donateAmount = quantity;
     this.refs.donateTitle.textContent = 'donate coin';
     this.refs.donateRequestRow.value.textContent = request.label;
-    this.refs.donateProgressRow.value.textContent = this.getTaskProgressText(request);
-    this.refs.donateAvailableRow.value.textContent = `${this.formatNumber(maxQuantity)} coin`;
+    setResourceIconText(
+      this.refs.donateProgressRow.value,
+      this.getTaskProgressText(request),
+    );
+    setResourceIconText(
+      this.refs.donateAvailableRow.value,
+      `${this.formatNumber(maxQuantity)} coin`,
+    );
     setResourceColor(this.refs.donateAvailableRow.value, disabled ? null : 'coin');
 
     this.refs.donateAmountField.input.min = disabled ? '0' : '1';
@@ -1002,10 +1017,6 @@ export class WorkshopWorldNoticeManager {
     return `${this.formatNumber(points)} point${points === 1 ? '' : 's'}`;
   }
 
-  getTaskResource(request) {
-    return WORLD_NOTICE_RESOURCE_BY_ACTION.get(request?.actionType) ?? null;
-  }
-
   getTaskInstruction(request = {}) {
     if (typeof request.instructionText === 'string' && request.instructionText.trim()) {
       return request.instructionText.trim();
@@ -1040,26 +1051,25 @@ export class WorkshopWorldNoticeManager {
   }
 
   getTaskActionCopy(request = {}) {
-    const label = String(request.label ?? 'this request').trim() || 'this request';
     const actionType = request.actionType;
 
     switch (actionType) {
       case 'brew_potions':
-        return 'brew potions for this request';
+        return 'brew any potion';
       case 'complete_research':
-        return 'complete research for this request';
+        return 'complete any research';
       case 'donate_coin':
-        return 'donate coin to this request';
+        return 'donate coin';
       case 'earn_coin':
-        return 'earn coin through workshop trade';
+        return 'earn coin by selling items or claiming coin';
       case 'harvest_herbs':
-        return 'harvest herbs for this request';
+        return 'harvest any herb';
       case 'sell_items':
-        return 'sell items to supply this request';
+        return 'sell any item';
       case 'summon_seeds':
-        return 'summon seeds for this request';
+        return 'summon seeds';
       default:
-        return `help ${label}`;
+        return 'complete this task';
     }
   }
 
@@ -1279,14 +1289,23 @@ export class WorkshopWorldNoticeManager {
   }
 
   createFallbackLeaderboardRow(currentPoints = 0) {
+    const player = this.getPlayerSnapshot();
     return {
       rankLabel: '-',
-      name: 'you',
+      name: this.normalizeFallbackPlayerName(player?.username),
       points: currentPoints,
       current: true,
-      playerLevel: 1,
-      character: normalizePlayerCharacter(null),
+      playerLevel: this.normalizePlayerLevel(this.currentSnapshot?.playerLevel?.currentLevel),
+      character: normalizePlayerCharacter(player?.character),
     };
+  }
+
+  getPlayerSnapshot() {
+    return this.playerFacade?.getSnapshot?.() ?? this.playerSnapshot ?? {};
+  }
+
+  normalizeFallbackPlayerName(username) {
+    return String(username ?? '').trim() || 'wizard';
   }
 
   shouldShowCurrentLeaderboardRow(normalized = {}) {

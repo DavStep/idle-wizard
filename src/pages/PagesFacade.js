@@ -125,6 +125,7 @@ export class PagesFacade {
       'workshop',
       new WorkshopPageFacade({
         gameplayFacade,
+        playerFacade,
         hapticsFacade,
         leaderboardFacade,
         tradeAllianceFacade,

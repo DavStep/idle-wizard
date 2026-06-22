@@ -1728,7 +1728,6 @@ describe('GameplayFacade', () => {
     });
     expect(research.tabs[2].boxes.map((box) => box.id)).toEqual([
       'fastSell',
-      'researchTime',
       'plotCapacity',
       'cauldronCapacity',
       'cauldronBrewing',
@@ -1749,23 +1748,9 @@ describe('GameplayFacade', () => {
       costCurrency: 'ruby',
     });
     expect(research.tabs[2].boxes[1].researches.map((research) => research.id)).toEqual([
-      researchTimeResearchIds.reduction(1),
-    ]);
-    expect(research.tabs[2].boxes[1].researches[0]).toMatchObject({
-      id: researchTimeResearchIds.reduction(1),
-      label: 'research time lvl 1',
-      value: '1 emerald',
-      effect: '-10% time',
-      showEffect: true,
-      requiredResearchIds: [],
-      costCoin: 0,
-      costEmerald: 1,
-      costCurrency: 'emerald',
-    });
-    expect(research.tabs[2].boxes[2].researches.map((research) => research.id)).toEqual([
       capacityResearchIds.plot(11),
     ]);
-    expect(research.tabs[2].boxes[2].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[1].researches[0]).toMatchObject({
       id: capacityResearchIds.plot(11),
       label: 'plot 11 capacity',
       value: 'locked',
@@ -1778,10 +1763,10 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[3].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[2].researches.map((research) => research.id)).toEqual([
       capacityResearchIds.cauldron(6),
     ]);
-    expect(research.tabs[2].boxes[3].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[2].researches[0]).toMatchObject({
       id: capacityResearchIds.cauldron(6),
       label: 'cauldron 6 capacity',
       value: 'locked',
@@ -1794,10 +1779,10 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[3].researches.map((research) => research.id)).toEqual([
       advancedResearchIds.cauldronBrewing(1, 1),
     ]);
-    expect(research.tabs[2].boxes[4].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[3].researches[0]).toMatchObject({
       id: advancedResearchIds.cauldronBrewing(1, 1),
       label: 'cauldron 1 brewing lvl 1',
       value: '1 ruby',
@@ -1808,13 +1793,14 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[5].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
       advancedResearchIds.plotGrowth(1, 1),
       advancedResearchIds.plotGrowth(2, 1),
     ]);
     expect(research.tabs[3].label).toBe('emerald research');
     expect(research.tabs[3].boxes.map((box) => box.id)).toEqual([
       'researchCost',
+      'researchTime',
       'plotPlanting',
       'cauldronBrewing',
     ]);
@@ -1827,7 +1813,21 @@ describe('GameplayFacade', () => {
       costEmerald: 1,
       costCurrency: 'emerald',
     });
+    expect(research.tabs[3].boxes[1].researches.map((research) => research.id)).toEqual([
+      researchTimeResearchIds.reduction(1),
+    ]);
     expect(research.tabs[3].boxes[1].researches[0]).toMatchObject({
+      id: researchTimeResearchIds.reduction(1),
+      label: 'research time lvl 1',
+      value: '1 emerald',
+      effect: '-10% time',
+      showEffect: true,
+      requiredResearchIds: [],
+      costCoin: 0,
+      costEmerald: 1,
+      costCurrency: 'emerald',
+    });
+    expect(research.tabs[3].boxes[2].researches[0]).toMatchObject({
       id: emeraldResearchIds.plotPlanting(1, 2),
       label: 'plot 1 planting x2',
       value: '1 emerald',
@@ -1836,7 +1836,7 @@ describe('GameplayFacade', () => {
       costEmerald: 1,
       costCurrency: 'emerald',
     });
-    expect(research.tabs[3].boxes[1].researches[1]).toMatchObject({
+    expect(research.tabs[3].boxes[2].researches[1]).toMatchObject({
       id: emeraldResearchIds.plotPlanting(2, 2),
       label: 'plot 2 planting x2',
       value: '2 emerald',
@@ -1844,7 +1844,7 @@ describe('GameplayFacade', () => {
       costEmerald: 2,
       costCurrency: 'emerald',
     });
-    expect(research.tabs[3].boxes[2].researches[0]).toMatchObject({
+    expect(research.tabs[3].boxes[3].researches[0]).toMatchObject({
       id: emeraldResearchIds.cauldronBrewing(1, 2),
       label: 'cauldron 1 brewing x2',
       value: '1 emerald',
@@ -2227,7 +2227,7 @@ describe('GameplayFacade', () => {
     expect(
       gameplayFacade
         .getSnapshot()
-        .research.tabs.find((tab) => tab.id === 'advanced')
+        .research.tabs.find((tab) => tab.id === 'emerald')
         ?.boxes.find((box) => box.id === 'researchTime')
         ?.researches.map((research) => research.id),
     ).toEqual([researchTimeResearchIds.reduction(2)]);

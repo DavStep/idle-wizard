@@ -8,6 +8,9 @@ import { WorkshopWorldNoticeManager } from './WorkshopWorldNoticeManager.js';
 
 function createWorldNoticeSnapshot() {
   return {
+    playerLevel: {
+      currentLevel: 4,
+    },
     worldNotice: {
       unlocked: true,
       unlockLevel: 4,
@@ -38,7 +41,7 @@ function createWorldNoticeSnapshot() {
             },
             {
               rank: 2,
-              name: 'you',
+              name: 'Merlin',
               character: 'mira',
               playerLevel: 4,
               points: 125,
@@ -60,7 +63,7 @@ function createWorldNoticeSnapshot() {
             requestId: 'weekly-1:fever:herbs',
             requestKey: 'herbs',
             actionType: 'harvest_herbs',
-            label: 'send clean herbs',
+            label: 'harvest herbs: clean herbs',
             requiredQuantity: 25,
             progressQuantity: 25,
             progress: 1,
@@ -80,7 +83,7 @@ function createWorldNoticeSnapshot() {
             requestId: 'weekly-1:fever:tonics',
             requestKey: 'tonics',
             actionType: 'brew_potions',
-            label: 'brew fever tonics',
+            label: 'brew potions: fever tonics',
             requiredQuantity: 5,
             progressQuantity: 2,
             progress: 0.4,
@@ -95,7 +98,7 @@ function createWorldNoticeSnapshot() {
             requestId: 'weekly-1:fever:water',
             requestKey: 'water',
             actionType: 'complete_research',
-            label: 'test clean water',
+            label: 'complete research: clean water',
             requiredQuantity: 1,
             progressQuantity: 0,
             progress: 0,
@@ -138,6 +141,13 @@ function createGameplayFacadeFake(snapshot = createWorldNoticeSnapshot()) {
   };
 }
 
+function createPlayerFacadeFake(snapshot = { username: 'Merlin', character: 'mira' }) {
+  return {
+    getSnapshot: vi.fn(() => snapshot),
+    subscribe: vi.fn(() => vi.fn()),
+  };
+}
+
 describe('WorkshopWorldNoticeManager', () => {
   it('pins character button notification dots to the label box corner', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
@@ -172,6 +182,9 @@ describe('WorkshopWorldNoticeManager', () => {
     const instructionRule = baseCss.match(
       /\.workshop-page__world-notice-request-instruction\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const progressRule = baseCss.match(
+      /\.workshop-page__world-notice-frame\s*\+\s*\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(contentRule).toMatch(/\bgrid-template-rows:\s*90px minmax\(0,\s*1fr\);/);
     expect(contentRule).toMatch(/\boverflow:\s*hidden;/);
@@ -180,6 +193,7 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(titleRule).toMatch(/\bfont-weight:\s*700;/);
     expect(titleRule).toMatch(/\bwhite-space:\s*normal;/);
     expect(instructionRule).toMatch(/\bwhite-space:\s*normal;/);
+    expect(progressRule).toBeUndefined();
   });
 
   it('keeps leaderboard and reward tabs from drawing a second header separator', () => {
@@ -192,6 +206,9 @@ describe('WorkshopWorldNoticeManager', () => {
         /\.workshop-page__world-notice-leaderboard\s*\{(?<body>[^}]*)\}/g,
       ),
     ].map((match) => match.groups?.body ?? '');
+    const leaderboardRowsRule = baseCss.match(
+      /\.workshop-page__world-notice-leaderboard-rows\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const rewardsRules = [
       ...baseCss.matchAll(
         /\.workshop-page__world-notice-rewards\s*\{(?<body>[^}]*)\}/g,
@@ -206,6 +223,8 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(leaderboardRules.some((rule) => /\bborder-top:\s*0;/.test(rule))).toBe(
       true,
     );
+    expect(leaderboardRowsRule).toMatch(/\bjustify-self:\s*center;/);
+    expect(leaderboardRowsRule).toMatch(/\bwidth:\s*260px;/);
     expect(rewardsRules.some((rule) => /\bborder-top:\s*0;/.test(rule))).toBe(true);
     expect(
       requestsRules.some((rule) =>
@@ -294,15 +313,15 @@ describe('WorkshopWorldNoticeManager', () => {
     ).toEqual(['points:125 points', 'resolves:3d']);
     expect(popup.textContent).toContain('lanterns stay lit past midnight');
     expect(popup.textContent).toContain('tasks');
-    expect(popup.textContent).toContain('brew fever tonics');
+    expect(popup.textContent).toContain('brew potions: fever tonics');
     expect(popup.textContent).toContain(
-      'brew potions for this request. each potion gives 25 points.',
+      'brew any potion. each potion gives 25 points.',
     );
     expect(popup.textContent).toContain('brewed 2 potions');
     expect(popup.textContent).toContain('earned 50 points');
     expect(
       popup.querySelector('.workshop-page__world-notice-request-title')?.textContent,
-    ).toBe('send clean herbs');
+    ).toBe('harvest herbs: clean herbs');
     expect(
       popup.querySelector('.workshop-page__world-notice-request-points-row')?.children
         .length,
@@ -322,14 +341,14 @@ describe('WorkshopWorldNoticeManager', () => {
           '.workshop-page__world-notice-leaderboard .row_key',
         ),
       ].map((cell) => cell.textContent),
-    ).toEqual(['user', '1. [DAY] Daily Ada (3)', '2. you (4)']);
+    ).toEqual(['user', '1. [DAY] Daily Ada (3)', '2. Merlin (4)']);
     expect(
       [
         ...popup.querySelectorAll(
           '.workshop-page__world-notice-leaderboard .row_val',
         ),
       ].map((cell) => cell.textContent),
-    ).toEqual(['points', '225 points', '125 points']);
+    ).toEqual(['points', '225', '125']);
     expect(
       popup.querySelectorAll(
         '.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-character-icon',
@@ -346,7 +365,7 @@ describe('WorkshopWorldNoticeManager', () => {
       popup
         .querySelector('.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-current')
         ?.textContent,
-    ).toContain('125 points');
+    ).toContain('125');
     expect(popup.textContent).toContain('1875 points to qualify');
     expect(popup.textContent).not.toContain('past events');
 
@@ -376,10 +395,17 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(
       popup
         .querySelector(
-          '.workshop-page__world-notice-reward-value [data-resource-color="emerald"]',
+          '.workshop-page__world-notice-reward-amount[data-resource-color="emerald"]',
         )
         ?.dataset.resourceColor,
     ).toBe('emerald');
+    expect(
+      popup
+        .querySelector(
+          '.workshop-page__world-notice-reward-amount[data-resource-color="crystal"]',
+        )
+        ?.dataset.resourceColor,
+    ).toBe('crystal');
   });
 
   it('renders event task rows with title, instruction, point columns, and separators', () => {
@@ -394,7 +420,7 @@ describe('WorkshopWorldNoticeManager', () => {
 
     const row = manager.createTaskRow({
       actionType: 'earn_coin',
-      label: 'steady workshop trade',
+      label: 'earn coin: sales and claims',
       requiredQuantity: 50,
       progressQuantity: 25,
       contributionPoints: 1,
@@ -413,20 +439,36 @@ describe('WorkshopWorldNoticeManager', () => {
     );
     expect(row.querySelector('.workshop-page__world-notice-request-marker')).toBeNull();
     expect(row.querySelector('.workshop-page__world-notice-request-title')?.textContent).toBe(
-      'steady workshop trade',
+      'earn coin: sales and claims',
     );
     expect(
-      row.querySelector('.workshop-page__world-notice-request-instruction')?.textContent,
-    ).toBe('earn coin through workshop trade. 25 coin earned gives 1 point.');
+      row.querySelector('.workshop-page__world-notice-request-title')?.dataset.resourceColor,
+    ).toBeUndefined();
     expect(
-      [...row.querySelectorAll('.workshop-page__world-notice-request-points-row span')].map(
-        (node) => node.textContent,
-      ),
+      row.querySelector('.workshop-page__world-notice-request-instruction')?.textContent,
+    ).toBe('earn coin by selling items or claiming coin. 25 coin earned gives 1 point.');
+    expect(
+      [
+        ...row.querySelectorAll(
+          '.workshop-page__world-notice-request-instruction .style-resource-label--coin',
+        ),
+      ].map((node) => node.textContent),
+    ).toEqual(['coin', 'coin', 'coin']);
+    expect(
+      [
+        ...(row.querySelector('.workshop-page__world-notice-request-points-row')?.children ??
+          []),
+      ].map((node) => node.textContent),
     ).toEqual(['earned 25 coin', 'earned 1 point']);
+    expect(
+      row.querySelector(
+        '.workshop-page__world-notice-request-points .style-resource-label--coin .style-resource-label__icon',
+      )?.dataset.assetAtlasFrame,
+    ).toBe('resource:coin');
 
     const staleRow = manager.createTaskRow({
       actionType: 'legacy_progress',
-      label: 'steady workshop trade',
+      label: 'legacy progress',
       requiredQuantity: 1125,
       progressQuantity: 1125,
       contributionPoints: 1125,
@@ -440,7 +482,7 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(
       staleRow.querySelector('.workshop-page__world-notice-request-instruction')
         ?.textContent,
-    ).toBe('help steady workshop trade. each counted action gives 1 point.');
+    ).toBe('complete this task. each counted action gives 1 point.');
     expect(
       staleRow.querySelector('.workshop-page__world-notice-request-points')
         ?.textContent,
@@ -451,7 +493,8 @@ describe('WorkshopWorldNoticeManager', () => {
     const snapshot = createWorldNoticeSnapshot();
     delete snapshot.worldNotice.current.leaderboard.rows;
     const gameplayFacade = createGameplayFacadeFake(snapshot);
-    const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
+    const playerFacade = createPlayerFacadeFake();
+    const manager = new WorkshopWorldNoticeManager({ gameplayFacade, playerFacade });
     const parent = document.createElement('div');
     const popupParent = document.createElement('div');
 
@@ -467,12 +510,12 @@ describe('WorkshopWorldNoticeManager', () => {
           '.workshop-page__world-notice-leaderboard .row_key',
         ),
       ].map((cell) => cell.textContent),
-    ).toEqual(['user', '- you (1)']);
+    ).toEqual(['user', '- Merlin (4)']);
     expect(
       popupParent.querySelector(
         '.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-current',
       )?.textContent,
-    ).toContain('125 points');
+    ).toContain('125');
   });
 
   it('shows the event button notification while the current event has open requests', () => {

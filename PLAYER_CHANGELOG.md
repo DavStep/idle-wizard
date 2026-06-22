@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.30
+
+- Clarified weekly world event tasks so each row starts with the real action, like earning coin, selling items, brewing potions, harvesting herbs, or completing research.
+- Improved world event popups with cleaner resource coloring, centered leaderboard rows, and fallback player details that use your wizard name and character.
+- Moved research time upgrades into Emerald Research so the upgrade group matches its emerald cost.
+- Tightened scroll progress rails, Guild charter spacing, Garden seed rows, and Market sell pickers for cleaner mobile layouts.
+- Fixed touch-drag and canceled-tap handling so rows and buttons are less likely to fire an accidental action after scrolling or moving your finger.
+
 ## 0.2.29
 
 - Added more late-game herbs, potion recipes, market prices, and item icons.

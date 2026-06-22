@@ -77,10 +77,12 @@ export class WorkshopBagManager {
     this.refs.rows.className = 'workshop-page__bag-rows';
     this.refs.rows.addEventListener('scroll', this.handleRowsScroll);
     this.refs.progress = document.createElement('div');
-    this.refs.progress.className = 'style-progress workshop-page__bag-progress';
+    this.refs.progress.className =
+      'style-progress style-scroll-cue-progress workshop-page__bag-progress';
     this.refs.progress.setAttribute('aria-hidden', 'true');
     this.refs.progressFill = document.createElement('div');
-    this.refs.progressFill.className = 'style-progress__fill workshop-page__bag-progress-fill';
+    this.refs.progressFill.className =
+      'style-progress__fill style-scroll-cue-progress-fill workshop-page__bag-progress-fill';
     this.refs.progress.append(this.refs.progressFill);
     this.refs.tabs = this.createTabs();
 
@@ -488,6 +490,7 @@ export class WorkshopBagManager {
       scrollElement: this.refs.rows,
       cueElement: this.refs.frame,
       progressFill: this.refs.progressFill,
+      progressElement: this.refs.progress,
       inlineCue: false,
     });
   }

@@ -380,11 +380,6 @@ export class ResearchDefinitionManager {
         researches: this.getFastSellResearches(),
       },
       {
-        id: 'researchTime',
-        label: 'research time research',
-        researches: this.getResearchTimeResearches(),
-      },
-      {
         id: 'plotCapacity',
         label: 'plot capacity research',
         researches: this.getPlotCapacityResearches(),
@@ -428,6 +423,11 @@ export class ResearchDefinitionManager {
         id: 'researchCost',
         label: 'research cost research',
         researches: this.getResearchCostResearches(),
+      },
+      {
+        id: 'researchTime',
+        label: 'research time research',
+        researches: this.getResearchTimeResearches(),
       },
       {
         id: 'plotPlanting',

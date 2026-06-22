@@ -361,6 +361,7 @@ describe('GuildPanelManager', () => {
     const button = parent.querySelector('.guild-page__wide-button');
 
     expect(parent.querySelector('.style-box__title')?.textContent).toBe('guild charter');
+    expect(parent.querySelector('.guild-page__box--charter')).not.toBeNull();
     expect(parent.querySelector('.guild-page__paragraph')?.textContent).toBe(
       'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
     );
@@ -385,6 +386,33 @@ describe('GuildPanelManager', () => {
     expect(updatedButton?.disabled).toBe(true);
     expect(updatedButton?.dataset.notification).toBeUndefined();
     expect(updatedButton?.dataset.notificationTone).toBeUndefined();
+  });
+
+  it('gives the guild charter box extra vertical room', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const charterRule = baseCss.match(
+      /\.guild-page__box--charter\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const charterRowsRule = baseCss.match(
+      /\.guild-page__box--charter\s+\.guild-page__rows\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(charterRule).toMatch(
+      /\bmin-height:\s*calc\(var\(--style-row-min-height\)\s*\*\s*5\);/,
+    );
+    expect(charterRule).toMatch(/\bpadding-top:\s*10px;/);
+    expect(charterRule).toMatch(/\bpadding-bottom:\s*10px;/);
+    expect(charterRowsRule).toMatch(/\bgap:\s*8px;/);
+  });
+
+  it('centers the guild charter start button', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const charterButtonRule = baseCss.match(
+      /\.style-button\.guild-page__charter-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(charterButtonRule).toMatch(/\balign-self:\s*center;/);
+    expect(charterButtonRule).toMatch(/\bwidth:\s*min\(220px,\s*100%\);/);
   });
 
   it('populates guild settings fields and keeps in-progress edits through refreshes', () => {

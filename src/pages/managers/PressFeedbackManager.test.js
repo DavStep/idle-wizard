@@ -499,6 +499,75 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
+  it('suppresses a native click on the dragged control after touch movement', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    let clicks = 0;
+    button.className = 'style-button';
+    button.addEventListener('click', () => {
+      clicks += 1;
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { clientX: 10, clientY: 10 });
+    dispatchPointer(document, 'pointermove', { clientX: 10, clientY: 40 });
+    dispatchPointer(document, 'pointerup', { clientX: 10, clientY: 40 });
+    button.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        clientX: 10,
+        clientY: 40,
+      }),
+    );
+
+    expect(clicks).toBe(0);
+
+    manager.unmount();
+  });
+
+  it('suppresses a native click retargeted to another control after touch movement', () => {
+    const root = document.createElement('div');
+    const first = document.createElement('button');
+    const second = document.createElement('button');
+    let firstClicks = 0;
+    let secondClicks = 0;
+    first.className = 'style-button';
+    second.className = 'style-button';
+    first.addEventListener('click', () => {
+      firstClicks += 1;
+    });
+    second.addEventListener('click', () => {
+      secondClicks += 1;
+    });
+    root.append(first, second);
+    document.body.append(root);
+    document.elementFromPoint = () => second;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(first, 'pointerdown', { clientX: 10, clientY: 10 });
+    dispatchPointer(document, 'pointermove', { clientX: 10, clientY: 44 });
+    dispatchPointer(document, 'pointerup', { clientX: 10, clientY: 44 });
+    second.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        clientX: 10,
+        clientY: 44,
+      }),
+    );
+
+    expect(firstClicks).toBe(0);
+    expect(secondClicks).toBe(0);
+
+    manager.unmount();
+  });
+
   it('moves press feedback when a second control is pressed', () => {
     const root = document.createElement('div');
     const first = document.createElement('button');

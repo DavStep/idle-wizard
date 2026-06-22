@@ -3,8 +3,13 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  DEFAULT_PLAYER_CHANGELOG_FILE,
+  loadFeatureAnnouncement,
+  loadPlayerChangelog,
+} from './player-changelog.js';
 
 const rootDir = process.cwd();
 const options = parseOptions(process.argv.slice(2));
@@ -14,10 +19,9 @@ await loadEnvFile('.env');
 await loadEnvFile('.env.production', { overrideKeys: /^VITE_/ });
 await loadEnvFile('.env.production.local', { overrideKeys: /^VITE_/ });
 
-const packageInfo = JSON.parse(await readFile(path.join(rootDir, 'package.json'), 'utf8'));
-const commitMessage = options.message || process.env.RELEASE_COMMIT_MESSAGE || `release: ${packageInfo.version}`;
 const apkMode = options.apk || process.env.RELEASE_APK || 'prod-debug';
 const backendMode = options.backend || process.env.RELEASE_BACKEND || 'auto';
+const versionBump = resolveVersionBump();
 const skipDiscord = Boolean(options['skip-discord']);
 const skipGit = Boolean(options['skip-git']);
 
@@ -30,7 +34,17 @@ if (!skipGit && branch !== 'main' && !options['allow-non-main']) {
   fail(`Release push deploys GitHub Pages only from main. Current branch: ${branch || '(detached)'}`);
 }
 
+if (versionBump) {
+  await bumpPackageVersion(versionBump);
+}
+
+const packageInfo = await readPackageInfo();
+const commitMessage = options.message || process.env.RELEASE_COMMIT_MESSAGE || `release: ${packageInfo.version}`;
 const apkPlan = resolveApkPlan(apkMode, packageInfo.version);
+
+if (!skipDiscord) {
+  await preflightDiscordNotes(packageInfo.version);
+}
 
 step('lint');
 run('npm', ['run', 'lint']);
@@ -115,6 +129,137 @@ function resolveBuiltApkPath(apkPlan) {
   fail(`APK not found. Checked:\n${apkPlan.pathCandidates.map((candidatePath) => `- ${candidatePath}`).join('\n')}`);
 }
 
+function resolveVersionBump() {
+  if (options['no-version-bump']) {
+    return null;
+  }
+
+  const configured = options['version-bump'] || process.env.RELEASE_VERSION_BUMP || 'patch';
+  if (['none', 'skip', 'false', '0'].includes(String(configured).toLowerCase())) {
+    return null;
+  }
+
+  return configured;
+}
+
+async function bumpPackageVersion(bump) {
+  const packagePath = path.join(rootDir, 'package.json');
+  const lockPath = path.join(rootDir, 'package-lock.json');
+  const packageJson = JSON.parse(await readFile(packagePath, 'utf8'));
+  const headVersion = readHeadPackageVersion();
+
+  if (
+    headVersion
+    && packageJson.version !== headVersion
+    && !options['force-version-bump']
+  ) {
+    console.log(`Package version already differs from HEAD (${headVersion} -> ${packageJson.version}); not bumping again.`);
+    return;
+  }
+
+  const nextVersion = getNextVersion(packageJson.version, bump);
+  if (nextVersion === packageJson.version) {
+    return;
+  }
+
+  packageJson.version = nextVersion;
+  await writeJsonFile(packagePath, packageJson);
+
+  if (existsSync(lockPath)) {
+    const lockJson = JSON.parse(await readFile(lockPath, 'utf8'));
+    lockJson.version = nextVersion;
+    if (lockJson.packages?.['']) {
+      lockJson.packages[''].version = nextVersion;
+    }
+    await writeJsonFile(lockPath, lockJson);
+  }
+
+  console.log(`Bumped package version to ${nextVersion}.`);
+}
+
+function readHeadPackageVersion() {
+  const result = spawnSync('git', ['show', 'HEAD:package.json'], {
+    cwd: rootDir,
+    env: process.env,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+
+  if (result.status !== 0 || !result.stdout) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(result.stdout).version || null;
+  } catch {
+    return null;
+  }
+}
+
+function getNextVersion(currentVersion, bump) {
+  if (/^\d+\.\d+\.\d+(?:[-+].+)?$/.test(bump)) {
+    return bump;
+  }
+
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(currentVersion);
+  if (!match) {
+    fail(`Cannot ${bump} bump non-standard version: ${currentVersion}`);
+  }
+
+  let [, major, minor, patch] = match.map(Number);
+  if (bump === 'major') {
+    major += 1;
+    minor = 0;
+    patch = 0;
+  } else if (bump === 'minor') {
+    minor += 1;
+    patch = 0;
+  } else if (bump === 'patch') {
+    patch += 1;
+  } else {
+    fail(`Unknown version bump: ${bump}. Use patch, minor, major, none, or an exact x.y.z version.`);
+  }
+
+  return `${major}.${minor}.${patch}`;
+}
+
+async function writeJsonFile(filePath, data) {
+  await writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+async function readPackageInfo() {
+  return JSON.parse(await readFile(path.join(rootDir, 'package.json'), 'utf8'));
+}
+
+async function preflightDiscordNotes(version) {
+  const changelog = await loadPlayerChangelog({
+    rootDir,
+    version,
+  });
+
+  if (!changelog && process.env.DISCORD_APK_SKIP_CHANGELOG !== '1') {
+    fail(
+      `Missing player changelog for ${version}. Add a ## ${version} section to ${DEFAULT_PLAYER_CHANGELOG_FILE}, set DISCORD_APK_CHANGELOG, or set DISCORD_APK_SKIP_CHANGELOG=1 only for internal testing.`,
+    );
+  }
+
+  const featureAnnouncement = process.env.DISCORD_FEATURE_SKIP === '1'
+    ? null
+    : await loadFeatureAnnouncement({
+      rootDir,
+      version,
+    });
+
+  if (
+    featureAnnouncement
+    && !(process.env.DISCORD_FEATURE_WEBHOOK_URL || process.env.DISCORD_BIG_FEATURE_WEBHOOK_URL)
+  ) {
+    fail(
+      `Missing DISCORD_FEATURE_WEBHOOK_URL for feature announcement from ${featureAnnouncement.source}. Add it to .env.local, remove that announcement, or set DISCORD_FEATURE_SKIP=1 only for internal testing.`,
+    );
+  }
+}
+
 function shouldPublishBackend(mode) {
   if (mode === 'skip') {
     return false;
@@ -146,7 +291,7 @@ function parseOptions(rawArgs) {
       continue;
     }
 
-    if (['message', 'apk', 'backend'].includes(rawKey)) {
+    if (['message', 'apk', 'backend', 'version-bump'].includes(rawKey)) {
       index += 1;
       if (!rawArgs[index]) {
         fail(`Missing value for --${rawKey}`);

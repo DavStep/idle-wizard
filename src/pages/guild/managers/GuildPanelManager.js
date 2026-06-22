@@ -113,20 +113,24 @@ export class GuildPanelManager {
     if (!guild.created) {
       const charterCost = guild.charterCostCoin ?? 1500;
       return [
-        this.createBox('guild charter', [
-          this.createParagraph(
-            'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
-          ),
-          this.createCostButtonRow(
-            'start guild',
-            formatCoinPriceText(charterCost),
-            () => this.showCharterDialog(),
-            {
-              disabled: !guild.canCreate,
-              notification: guild.canCreate,
-            },
-          ),
-        ]),
+        this.createBox(
+          'guild charter',
+          [
+            this.createParagraph(
+              'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
+            ),
+            this.createCostButtonRow(
+              'start guild',
+              formatCoinPriceText(charterCost),
+              () => this.showCharterDialog(),
+              {
+                disabled: !guild.canCreate,
+                notification: guild.canCreate,
+              },
+            ),
+          ],
+          { className: 'guild-page__box--charter' },
+        ),
       ];
     }
 
@@ -338,9 +342,9 @@ export class GuildPanelManager {
     return row;
   }
 
-  createBox(title, children, { countLabel = '', bottomLabel = '' } = {}) {
+  createBox(title, children, { countLabel = '', bottomLabel = '', className = '' } = {}) {
     const box = document.createElement('section');
-    box.className = 'style-box guild-page__box';
+    box.className = ['style-box guild-page__box', className].filter(Boolean).join(' ');
 
     const titleElement = document.createElement('div');
     titleElement.className = 'style-box__title';

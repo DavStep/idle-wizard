@@ -25,17 +25,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'cleanHerbs',
         actionType: WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
-        label: 'send clean herbs',
+        label: 'harvest herbs: clean herbs',
       },
       {
         requestKey: 'feverTonics',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'brew fever tonics',
+        label: 'brew potions: fever tonics',
       },
       {
         requestKey: 'waterTests',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'test clean water',
+        label: 'complete research: clean water',
       },
     ],
     outcomes: {
@@ -58,17 +58,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'fieldBottles',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'brew field bottles',
+        label: 'brew potions: field bottles',
       },
       {
         requestKey: 'marketSupplies',
         actionType: WORLD_NOTICE_ACTIONS.SELL_ITEMS,
-        label: 'move spare supplies',
+        label: 'sell items: spare supplies',
       },
       {
         requestKey: 'siegeNotes',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'study siege notes',
+        label: 'complete research: siege notes',
       },
     ],
     outcomes: {
@@ -91,17 +91,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'steadyTrade',
         actionType: WORLD_NOTICE_ACTIONS.EARN_COIN,
-        label: 'steady workshop trade',
+        label: 'earn coin: sales and claims',
       },
       {
         requestKey: 'guildSupplies',
         actionType: WORLD_NOTICE_ACTIONS.SELL_ITEMS,
-        label: 'supply the guild stores',
+        label: 'sell items: guild stores',
       },
       {
         requestKey: 'roadCharters',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'review road charters',
+        label: 'complete research: road charters',
       },
     ],
     outcomes: {
@@ -124,17 +124,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'expeditionPotions',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'prepare expedition potions',
+        label: 'brew potions: expedition stock',
       },
       {
         requestKey: 'oldMarkings',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'study old markings',
+        label: 'complete research: old markings',
       },
       {
         requestKey: 'packedHerbs',
         actionType: WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
-        label: 'pack expedition herbs',
+        label: 'harvest herbs: expedition herbs',
       },
     ],
     outcomes: {
@@ -157,17 +157,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'cleanCuttings',
         actionType: WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
-        label: 'gather clean cuttings',
+        label: 'harvest herbs: clean cuttings',
       },
       {
         requestKey: 'blightStudy',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'study the blight',
+        label: 'complete research: the blight',
       },
       {
         requestKey: 'fieldTreatment',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'brew field treatment',
+        label: 'brew potions: field treatment',
       },
     ],
     outcomes: {
@@ -190,17 +190,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'replacementStock',
         actionType: WORLD_NOTICE_ACTIONS.SELL_ITEMS,
-        label: 'replace market stock',
+        label: 'sell items: replacement stock',
       },
       {
         requestKey: 'scoutPotions',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'brew scout draughts',
+        label: 'brew potions: scout draughts',
       },
       {
         requestKey: 'searchRoutes',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'mark search routes',
+        label: 'complete research: search routes',
       },
     ],
     outcomes: {
@@ -223,17 +223,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'bitterHerbs',
         actionType: WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
-        label: 'gather bitter herbs',
+        label: 'harvest herbs: bitter herbs',
       },
       {
         requestKey: 'wellStudy',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'test the wellwater',
+        label: 'complete research: well water',
       },
       {
         requestKey: 'cleansingBrew',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'brew cleansing draughts',
+        label: 'brew potions: cleansing draughts',
       },
     ],
     outcomes: {
@@ -256,17 +256,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'proveTrade',
         actionType: WORLD_NOTICE_ACTIONS.EARN_COIN,
-        label: 'prove town trade',
+        label: 'earn coin: sales and claims',
       },
       {
         requestKey: 'crownStores',
         actionType: WORLD_NOTICE_ACTIONS.SELL_ITEMS,
-        label: 'supply crown stores',
+        label: 'sell items: crown stores',
       },
       {
         requestKey: 'edictReview',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'review new edicts',
+        label: 'complete research: new edicts',
       },
     ],
     outcomes: {
@@ -289,17 +289,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'omenNotes',
         actionType: WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH,
-        label: 'study the omen',
+        label: 'complete research: omen notes',
       },
       {
         requestKey: 'steadyHands',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'brew steadying potions',
+        label: 'brew potions: steadying potions',
       },
       {
         requestKey: 'seedStores',
         actionType: WORLD_NOTICE_ACTIONS.SUMMON_SEEDS,
-        label: 'summon seed stores',
+        label: 'summon seeds: seed stores',
       },
     ],
     outcomes: {
@@ -322,17 +322,17 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       {
         requestKey: 'watchBottles',
         actionType: WORLD_NOTICE_ACTIONS.BREW_POTIONS,
-        label: 'brew watch bottles',
+        label: 'brew potions: watch bottles',
       },
       {
         requestKey: 'roadSupplies',
         actionType: WORLD_NOTICE_ACTIONS.SELL_ITEMS,
-        label: 'move road supplies',
+        label: 'sell items: road supplies',
       },
       {
         requestKey: 'roadPoultices',
         actionType: WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
-        label: 'gather road poultices',
+        label: 'harvest herbs: road poultices',
       },
     ],
     outcomes: {
@@ -462,19 +462,33 @@ export class WorldNoticeCatalogManager {
       archive: event.archive,
       contributionPoints: Math.max(0, Math.floor(Number(notice.contributionPoints) || 0)),
       requests: Array.isArray(notice.requests)
-        ? notice.requests.map((request) => this.sanitizeRequest(request)).filter(Boolean)
+        ? notice.requests
+            .map((request) => this.sanitizeRequest(request, event))
+            .filter(Boolean)
         : [],
     };
   }
 
-  sanitizeRequest(request) {
+  sanitizeRequest(request, event = null) {
     if (!request || typeof request !== 'object') {
       return null;
     }
 
     const requestId = typeof request.requestId === 'string' ? request.requestId : '';
     const actionType = typeof request.actionType === 'string' ? request.actionType : '';
-    const label = typeof request.label === 'string' ? request.label : '';
+    const requestKey = typeof request.requestKey === 'string' ? request.requestKey : requestId;
+    const catalogRequest = Array.isArray(event?.requests)
+      ? event.requests.find(
+          (candidate) =>
+            candidate.requestKey === requestKey && candidate.actionType === actionType,
+        )
+      : null;
+    const label =
+      typeof catalogRequest?.label === 'string'
+        ? catalogRequest.label
+        : typeof request.label === 'string'
+          ? request.label
+          : '';
 
     if (!requestId || !actionType || !label) {
       return null;
@@ -491,7 +505,7 @@ export class WorldNoticeCatalogManager {
 
     return {
       requestId,
-      requestKey: typeof request.requestKey === 'string' ? request.requestKey : requestId,
+      requestKey,
       actionType,
       label,
       requiredQuantity,

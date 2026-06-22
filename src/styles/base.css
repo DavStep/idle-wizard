@@ -5046,6 +5046,8 @@ body {
 }
 
 .workshop-page__world-notice-leaderboard-rows {
+  justify-self: center;
+  width: 260px;
   height: auto;
   max-height: calc(240px - var(--style-scroll-progress-block-size));
 }
@@ -5552,7 +5554,7 @@ body {
   padding-top: 4px;
   height: calc(
     var(--style-tabbed-dialog-content-height) - 4px -
-      var(--style-scroll-progress-height) - 6px
+      var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -5807,10 +5809,6 @@ div.workshop-page__discovery-row {
   );
   text-align: center;
   place-items: center;
-}
-
-.workshop-page__bag-progress {
-  margin-top: 6px;
 }
 
 .workshop-page__bag-progress-fill {
@@ -6924,8 +6922,8 @@ div.workshop-page__discovery-row {
   column-gap: var(--style-row-column-gap);
   align-items: center;
   width: 100%;
-  min-height: calc(var(--style-row-min-height) + 8px);
-  padding: 2px 0;
+  min-height: var(--style-row-min-height);
+  padding: 0;
   appearance: none;
   color: var(--style-text);
   font-family: var(--style-font);
@@ -8361,26 +8359,12 @@ div.workshop-page__discovery-row {
   scrollbar-width: none;
 }
 
-.shop-page__sell-controls:not(.shop-page__player-listing-controls) {
-  --shop-page-sell-scroll-progress-gap: 4px;
-  --shop-page-sell-scroll-progress-block-size: calc(
-    var(--shop-page-sell-scroll-progress-gap) +
-      var(--style-scroll-progress-height)
-  );
-}
-
 .shop-page__sell-controls:not(.shop-page__player-listing-controls)
   .shop-page__sell-item-list {
   height: calc(
     var(--style-tabbed-dialog-content-height) - 112px -
-      var(--shop-page-sell-scroll-progress-block-size)
+      var(--style-scroll-progress-block-size)
   );
-}
-
-.shop-page__sell-controls:not(.shop-page__player-listing-controls)
-  .shop-page__sell-item-list
-  + .style-scroll-cue-progress {
-  margin-top: var(--shop-page-sell-scroll-progress-gap);
 }
 
 .shop-page__sell-item-list::-webkit-scrollbar {
@@ -8675,10 +8659,20 @@ div.workshop-page__discovery-row {
   position: relative;
 }
 
+.guild-page__box--charter {
+  min-height: calc(var(--style-row-min-height) * 5);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 .guild-page__rows {
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+.guild-page__box--charter .guild-page__rows {
+  gap: 8px;
 }
 
 .guild-page__row,
@@ -8795,9 +8789,11 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.guild-page__charter-button {
+  align-self: center;
   display: grid;
   align-content: center;
   justify-items: center;
+  width: min(220px, 100%);
   min-height: calc(var(--style-row-min-height) * 2);
   line-height: normal;
   row-gap: 0;

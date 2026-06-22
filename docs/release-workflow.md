@@ -13,27 +13,28 @@ Maincloud backend publish is verified.
 
 ## Preflight
 
-Ask whether to push all current changes, then release. Do not continue until the
-answer is clear.
-
-Start from `main` with a clean or intentionally staged worktree:
+Start from `main`. By default, the release command bumps `package.json` and
+`package-lock.json` by one patch version, stages all current changes, commits,
+and pushes.
 
 ```sh
 git status --short --branch
 ```
 
-Check version and notes:
+Check the current version and prepare notes for the next patch version:
 
 ```sh
 node -p "require('./package.json').version"
 ```
 
-- Add `## <version>` to `PLAYER_CHANGELOG.md`.
-- If the release has a large player-facing feature, add `## <version>` to
+- Add `## <next-version>` to `PLAYER_CHANGELOG.md`.
+- If the release has a large player-facing feature, add `## <next-version>` to
   `FEATURE_ANNOUNCEMENT.md`.
 - Make sure `.env.local` has `DISCORD_APK_WEBHOOK_URL`.
 - If a feature announcement exists, `.env.local` must also have
   `DISCORD_FEATURE_WEBHOOK_URL`.
+- Tell the release command explicitly when not bumping or not pushing:
+  `npm run release -- --no-version-bump` or `npm run release -- --skip-git`.
 
 If backend changes are already committed before the release command runs, force a
 backend publish:
@@ -55,13 +56,15 @@ npm run release
 
 This performs:
 
-1. `npm run lint`
-2. `npm test`
-3. production web build with `/idle-wizard/` base
-4. production debug-signed Android APK build
-5. optional SpacetimeDB Maincloud publish
-6. git commit and push from `main`
-7. Discord changelog, optional feature spotlight, and APK upload
+1. patch version bump unless disabled
+2. player changelog/feature announcement preflight
+3. `npm run lint`
+4. `npm test`
+5. production web build with `/idle-wizard/` base
+6. production debug-signed Android APK build
+7. optional SpacetimeDB Maincloud publish
+8. git commit and push from `main`
+9. Discord changelog, optional feature spotlight, and APK upload
 
 If a Pixel 8 Pro is available for device QA, confirm it is connected before the
 device build:
@@ -82,6 +85,9 @@ Use explicit modes only when needed:
 RELEASE_BACKEND=always npm run release
 RELEASE_BACKEND=skip npm run release
 RELEASE_APK=release npm run release
+npm run release -- --no-version-bump
+npm run release -- --version-bump minor
+npm run release -- --skip-git
 npm run release -- --apk path/to/file.apk
 ```
 

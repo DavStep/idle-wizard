@@ -1556,7 +1556,7 @@ describe('ShopShelfManager', () => {
     });
   });
 
-  it('keeps NPC market sell picker underlines selected-only with compact scroll rail gap', () => {
+  it('keeps NPC market sell picker underlines selected-only with shared scroll rail gap', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const unselectedRule = baseCss.match(
       /\.shop-page__sell-popup\s+\.shop-page__sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.row_key\s*\{(?<body>[^}]*)\}/,
@@ -1564,16 +1564,16 @@ describe('ShopShelfManager', () => {
     const selectedRule = baseCss.match(
       /\.shop-page__sell-popup \.shop-page__sell-item-button\[aria-pressed="true"\] \.row_key\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const progressGapRule = baseCss.match(
-      /\.shop-page__sell-controls:not\(\.shop-page__player-listing-controls\)\s+\.shop-page__sell-item-list\s+\+\s+\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
+    const listRule = baseCss.match(
+      /\.shop-page__sell-controls:not\(\.shop-page__player-listing-controls\)\s+\.shop-page__sell-item-list\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(unselectedRule).toMatch(/\btext-decoration:\s*none;/);
     expect(selectedRule).toMatch(/\btext-decoration:\s*underline;/);
-    expect(progressGapRule).toMatch(
-      /\bmargin-top:\s*var\(--shop-page-sell-scroll-progress-gap\);/,
+    expect(listRule).toMatch(
+      /\bvar\(--style-scroll-progress-block-size\)/,
     );
-    expect(baseCss).toMatch(/--shop-page-sell-scroll-progress-gap:\s*4px;/);
+    expect(baseCss).not.toMatch(/--shop-page-sell-scroll-progress-gap:/);
   });
 
   it('marks a fixed NPC market sell amount from the picker', () => {

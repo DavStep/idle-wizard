@@ -21,6 +21,7 @@ export class WorkshopPageFacade {
 
   constructor({
     gameplayFacade,
+    playerFacade,
     hapticsFacade,
     leaderboardFacade,
     tradeAllianceFacade,
@@ -72,6 +73,7 @@ export class WorkshopPageFacade {
     this.personalTasksManager = new WorkshopPersonalTasksManager({ gameplayFacade });
     this.worldNoticeManager = new WorkshopWorldNoticeManager({
       gameplayFacade,
+      playerFacade,
       onOpenPlayerInfo,
     });
   }

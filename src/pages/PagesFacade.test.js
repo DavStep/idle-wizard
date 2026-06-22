@@ -11620,6 +11620,22 @@ describe('PagesFacade', () => {
 
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    expect(stage.querySelector('.brewing-page__cauldron')?.textContent).not.toContain(
+      '- 1 sage',
+    );
+    expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage3');
+
+    const originalElementFromPoint = document.elementFromPoint;
+    try {
+      document.elementFromPoint = () => sageButton;
+      sageButton.dispatchEvent(
+        createPointerEvent('pointerdown', { clientX: 320, clientY: 360 }),
+      );
+      document.dispatchEvent(createPointerEvent('pointerup', { clientX: 320, clientY: 360 }));
+    } finally {
+      document.elementFromPoint = originalElementFromPoint;
+    }
+
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('- 1 sage');
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage2');
   });
@@ -11706,6 +11722,24 @@ describe('PagesFacade', () => {
       expect(move.defaultPrevented).toBe(false);
 
       mandrakeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(stage.querySelector('.brewing-page__cauldron')?.textContent).not.toContain(
+        '- 1 mandrake',
+      );
+      expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain(
+        'mandrake1',
+      );
+
+      const originalElementFromPoint = document.elementFromPoint;
+      try {
+        document.elementFromPoint = () => mandrakeButton;
+        mandrakeButton.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 320, clientY: 360 }),
+        );
+        document.dispatchEvent(createPointerEvent('pointerup', { clientX: 320, clientY: 360 }));
+      } finally {
+        document.elementFromPoint = originalElementFromPoint;
+      }
 
       expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain(
         '- 1 mandrake',

@@ -182,6 +182,8 @@ export class PressFeedbackManager {
 
     const pressedElement = this.pressedElement;
     const didClickOnPressStart = pressedElement && this.pressStartClickElement === pressedElement;
+    const shouldSuppressCanceledTouchClick =
+      pressedElement && this.pressPointerType !== 'mouse';
     const shouldActivate =
       pressedElement &&
       !this.pressMoved &&
@@ -195,6 +197,10 @@ export class PressFeedbackManager {
     this.clearPressedElement();
 
     if (!shouldActivate) {
+      if (shouldSuppressCanceledTouchClick) {
+        this.suppressNextNativeClick(pressedElement, event);
+      }
+
       this.pointerSoundElement = null;
       return;
     }

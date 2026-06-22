@@ -65,8 +65,12 @@
 - Weekly event requests should grant contribution points, not immediate completion rewards; leaderboard rewards require 2000 points to qualify.
 - Weekly event request completion caps visible progress/response only; matching actions keep adding contribution points after completion.
 - Weekly event tasks have no contribution limit; show accumulated contribution like `earned 175 coin`, never `25/50`, remaining, or capped target copy.
+- Weekly event task labels should start with the literal counted action (`earn coin`, `sell items`, `complete research`) before event flavor; flavor-only labels read like hidden mechanics.
+- Weekly event task titles stay monochrome; color/icon only the resource words or amount phrases inside instructions/progress.
 - World event popup rows are tasks, not progression requests: show points earned per task and points collected from that task; use a leaderboard tab instead of an archive tab.
+- World event leaderboard rows should keep the main leaderboard row treatment: 260px source row width, centered in the wider world-event dialog, with bare numeric values under a `points` header.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
+- World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
@@ -250,7 +254,7 @@
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
 - Release process must inspect recent logs/changelog/git changes for big player-facing features like guilds, advanced brewing/gardening, events, or daily/weekly quests; when present, post a separate friendly feature spotlight through `DISCORD_FEATURE_WEBHOOK_URL` that explains what it is and how it works without number-heavy balance details.
-- User saying `release` means run release automation: checks, build, commit/push main, deploy changed backend, and post APK to Discord.
+- User saying `release` means run release automation: version up by default, checks, build, commit/push all current changes on main, deploy changed backend, and post APK to Discord.
 - Live browser/tutorial QA on the shared dev server can hit the `server required` single-account gate after reload if another client owns the session; close the other client or use a fresh local session before screenshot work.
 - When the shared single-account gate blocks local UI QA, mount the affected facade in a temporary localhost HTML harness instead of clearing browser storage or touching the live player save.
 - The in-app browser blocks `data:` QA harnesses; serve temporary module harnesses through Vite on `127.0.0.1:55173` so source imports stay same-origin.
@@ -260,8 +264,8 @@
 - Transient Playwright `page.setContent` UI harnesses must first `goto` the Vite origin before importing `/src/...`; `about:blank` gets blocked by CORS.
 - If the in-app browser cannot reach `127.0.0.1:55173` or `localhost:55173`, use the Vite network URL printed by `npm run dev`; shell checks can still use localhost.
 - UI storage helpers should prefer `window.localStorage` and validate `getItem`/`setItem`; Vitest can expose a bad global `localStorage` that reads stale tutorial progress.
-- Before release, verify `package.json` has been bumped beyond the latest pushed release; release automation reuses the current version and will not bump it.
-- Before running release automation, verify the current `PLAYER_CHANGELOG.md` section exists; the script commits/pushes before Discord upload fails on a missing changelog.
+- Release automation bumps `package.json`/`package-lock.json` by patch by default; use `--no-version-bump` only when explicitly asked not to version up.
+- Before running release automation, add the next-version `PLAYER_CHANGELOG.md` section; release preflight checks notes before build/push.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
 - Raising playable max level needs matching SpacetimeDB caps (`MAX_REPORTED_PLAYER_LEVEL`, `MAX_GAME_CONFIG_LEVELS`) plus prod `playerLevel` and `tasks` config rows; otherwise prod clips/rejects the new curve.
 - Permanent prestige capacity upgrades should preserve only capacity research IDs through prestige reset; ordinary ruby speed research remains run-scoped.
@@ -612,6 +616,7 @@
 - Scrollable room and dialog lists should use the shared scroll cue: transparent bottom fade plus scroll progress, matching the logs popup math.
 - Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
 - Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
+- Dialog scroll panes must show the shared bottom progress rail and use the select-recipe dialog spacing: rail below the frame, default `--style-scroll-progress-gap`, and normal dialog bottom padding.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
@@ -674,6 +679,7 @@
 - Shared live local QA belongs to one primary branch/worktree; helper branches/worktrees can prep code or run static checks, but runtime verification is invalid unless that checkout owns the running Vite and SpacetimeDB processes.
 - Before claiming local runtime verification, confirm both Vite `55173` and SpacetimeDB `3000`; frontend-only status is not enough.
 - Visual QA for deep page states needs deterministic real-game state recipes; ad hoc clicks/cheats make agents miss screenshots or verify the wrong state.
+- Fresh-start browser QA resets FTUE progress; after choosing `start fresh`, write completed `idle-wizard.tutorial.v4` storage and reload before normal room-click automation.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.

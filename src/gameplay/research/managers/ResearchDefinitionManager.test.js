@@ -75,11 +75,11 @@ describe('ResearchDefinitionManager', () => {
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
   });
 
-  it('adds staged research time reduction rows to advanced research', () => {
+  it('adds staged research time reduction rows to emerald research', () => {
     const { manager } = createManager();
     const box = manager
       .getResearchTabs()
-      .find((tab) => tab.id === 'advanced')
+      .find((tab) => tab.id === 'emerald')
       ?.boxes.find((nextBox) => nextBox.id === 'researchTime');
 
     expect(box?.researches[0]).toMatchObject({

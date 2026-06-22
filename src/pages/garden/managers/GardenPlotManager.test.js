@@ -1042,7 +1042,7 @@ describe('GardenPlotManager', () => {
     expect(rule).toContain('var(--style-notification-size)');
   });
 
-  it('keeps choose-seed rows taller without underlined row labels', () => {
+  it('keeps choose-seed rows compact without underlined row labels', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const buttonRule = baseCss.match(
       /\.garden-page__seed-button\s*\{(?<body>[^}]*)\}/,
@@ -1053,9 +1053,8 @@ describe('GardenPlotManager', () => {
 
     expect(buttonRule).toBeDefined();
     expect(buttonRule).toMatch(/\bdisplay:\s*grid;/);
-    expect(buttonRule).toMatch(
-      /\bmin-height:\s*calc\(var\(--style-row-min-height\) \+ 8px\);/,
-    );
+    expect(buttonRule).toMatch(/\bmin-height:\s*var\(--style-row-min-height\);/);
+    expect(buttonRule).toMatch(/\bpadding:\s*0;/);
     expect(underlineRule).toBeDefined();
     expect(underlineRule).toMatch(/\btext-decoration:\s*none;/);
     expect(baseCss).not.toContain('.garden-page__seed-button:not(:disabled) .row_key');

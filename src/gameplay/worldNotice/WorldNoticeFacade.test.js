@@ -269,7 +269,7 @@ describe('WorldNoticeFacade', () => {
             requestId: 'weekly-1:king-dethroned:steadyTrade',
             requestKey: 'steadyTrade',
             actionType: WORLD_NOTICE_ACTIONS.EARN_COIN,
-            label: 'steady workshop trade',
+            label: 'old saved label',
             requiredQuantity: 25,
             progressQuantity: 0,
             contributionPoints: 0,
@@ -280,6 +280,9 @@ describe('WorldNoticeFacade', () => {
       archive: [],
     });
 
+    expect(facade.getSnapshot().current.requests[0].label).toBe(
+      'earn coin: sales and claims',
+    );
     expect(facade.recordAction(WORLD_NOTICE_ACTIONS.EARN_COIN, 25)).toMatchObject({
       ok: true,
       changed: true,

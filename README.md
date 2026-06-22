@@ -31,7 +31,7 @@ DISCORD_APK_WEBHOOK_URL=https://discord.com/api/webhooks/...
 DISCORD_FEATURE_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
-Add player-facing notes for the current `package.json` version to `PLAYER_CHANGELOG.md` before posting. The Discord script posts that changelog first, then uploads the APK. For one-off internal APK tests, set `DISCORD_APK_SKIP_CHANGELOG=1`.
+Add player-facing notes for the release version to `PLAYER_CHANGELOG.md` before posting. The Discord script posts that changelog first, then uploads the APK. For one-off internal APK tests, set `DISCORD_APK_SKIP_CHANGELOG=1`.
 
 For releases, also inspect recent logs, changelog notes, and git changes for a large player-facing feature such as guilds, advanced potion brewing, advanced gardening, event modes, or daily/weekly quests. When one exists, add a player-friendly `## <version>` section to `FEATURE_ANNOUNCEMENT.md` or set `DISCORD_FEATURE_ANNOUNCEMENT="..."`. Explain what the feature is and how it works, keep the tone friendly, and avoid balance-heavy numbers. The Discord script posts that feature spotlight to `DISCORD_FEATURE_WEBHOOK_URL` as a separate message before the normal changelog/APK post. For one-off internal APK tests, set `DISCORD_FEATURE_SKIP=1`.
 
@@ -47,7 +47,7 @@ Full release automation is:
 npm run release
 ```
 
-It runs lint, tests, production web build, production debug-signed APK build, optional SpacetimeDB Maincloud publish when `spacetimedb/` changed, git commit/push from `main`, and Discord APK upload. Use `RELEASE_BACKEND=always` to force backend publish or `RELEASE_BACKEND=skip` to skip it.
+It bumps the patch version by default, preflights release notes, runs lint, tests, production web build, production debug-signed APK build, optional SpacetimeDB Maincloud publish when `spacetimedb/` changed, git commit/push of all current changes from `main`, and Discord APK upload. Use `RELEASE_BACKEND=always` to force backend publish or `RELEASE_BACKEND=skip` to skip it. Use `npm run release -- --no-version-bump` or `npm run release -- --skip-git` only when you explicitly do not want the default version bump or push.
 
 For the full release checklist and post-release verification, use `docs/release-workflow.md`.
 
