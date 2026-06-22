@@ -78,6 +78,7 @@ export class GameplayMigrationManager {
       'brewing',
       'garden',
       'tasks',
+      'guild',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -111,6 +112,7 @@ export class GameplayMigrationManager {
       'brewing',
       'garden',
       'tasks',
+      'guild',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -152,6 +154,7 @@ export class GameplayMigrationManager {
       'tasks',
       'personalTasks',
       'worldNotice',
+      'guild',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];

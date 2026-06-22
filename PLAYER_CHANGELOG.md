@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.28
+
+- Fixed Guild saves so reloading or reconnecting no longer resets the guild charter, adventurers, board, or logs.
+
 ## 0.2.27
 
 - Added a safer admin recovery path for stuck account sessions without touching player saves, progress, markets, or chat data.
