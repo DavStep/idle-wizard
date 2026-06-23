@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { EcsFacade } from '../../ecs/EcsFacade.js';
 import { GameplayFacade } from '../../gameplay/GameplayFacade.js';
+import { PlayerFacade } from '../../player/PlayerFacade.js';
 import { DevCheatsFacade } from './DevCheatsFacade.js';
 
 function createMemoryStorage() {
@@ -14,14 +15,26 @@ function createMemoryStorage() {
 
 function createApp({
   backendFacade,
+  onlineGateManager,
   pagesFacade,
   persistenceStorage = createMemoryStorage(),
+  playerFacade,
 } = {}) {
   const ecsFacade = new EcsFacade();
   const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow: () => 0 });
   ecsFacade.createWorld();
   gameplayFacade.initialize(ecsFacade);
-  return { ecsFacade, app: { backendFacade, gameplayFacade, pagesFacade }, persistenceStorage };
+  return {
+    ecsFacade,
+    app: {
+      backendFacade,
+      gameplayFacade,
+      onlineGateManager,
+      pagesFacade,
+      playerFacade,
+    },
+    persistenceStorage,
+  };
 }
 
 describe('DevCheatsFacade', () => {
@@ -181,6 +194,195 @@ describe('DevCheatsFacade', () => {
           },
         },
       });
+  });
+
+  it('sets profile, inventory presets, and forced page notifications', () => {
+    const playerFacade = new PlayerFacade();
+    const pagesFacade = {
+      setDevNotifications: vi.fn((snapshot) => ({ ok: true, snapshot })),
+      clearDevNotifications: vi.fn(() => ({ ok: true, snapshot: { pages: {} } })),
+      syncPageUnlocks: vi.fn(),
+    };
+    const { app } = createApp({ pagesFacade, playerFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.setProfile({
+      username: 'Long QA Name',
+      character: 'witch',
+    })).toMatchObject({
+      ok: true,
+      profile: {
+        username: 'Long QA Name',
+        character: 'elara',
+      },
+    });
+    expect(target.cheats.setInventoryPreset('full')).toMatchObject({
+      ok: true,
+      preset: 'full',
+    });
+    expect(app.gameplayFacade.getSnapshot().inventory.length).toBeGreaterThan(10);
+
+    expect(target.cheats.setInventoryPreset({ sageSeed: 4 })).toMatchObject({
+      ok: true,
+    });
+    expect(app.gameplayFacade.getSnapshot().inventory).toEqual([
+      expect.objectContaining({ key: 'sageSeed', quantity: 4 }),
+    ]);
+
+    expect(target.cheats.setNotifications({ garden: 'red', market: true }))
+      .toMatchObject({ ok: true });
+    const forcedSnapshot = pagesFacade.setDevNotifications.mock.calls[0][0];
+    expect(forcedSnapshot.pages.garden).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        plots: { active: true, tone: 'red' },
+      },
+    });
+    expect(forcedSnapshot.pages.shop.active).toBe(true);
+
+    expect(target.cheats.clearNotifications()).toMatchObject({ ok: true });
+    expect(pagesFacade.clearDevNotifications).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets market and backend UI states without live backend data', () => {
+    const playerShopFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+    };
+    const backendFacade = {
+      getPlayerShopFacade: () => playerShopFacade,
+    };
+    const onlineGateManager = {
+      hide: vi.fn(),
+      showConnecting: vi.fn(),
+      showOffline: vi.fn(),
+    };
+    const { app } = createApp({ backendFacade, onlineGateManager });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.setMarketState('full', { slots: 2 })).toMatchObject({
+      ok: true,
+      unlockedSlots: 2,
+      shop: {
+        shelf: {
+          unlockedSlots: 2,
+        },
+        playerShelf: {
+          unlockedSlots: 2,
+        },
+      },
+      playerShop: { ok: true },
+    });
+    expect(playerShopFacade.setDevSnapshot.mock.calls[0][0]).toMatchObject({
+      connected: true,
+      listings: [{ listingKey: 'dev-listing-1' }, { listingKey: 'dev-listing-2' }],
+      requests: [{ requestKey: 'dev-request-1' }, { requestKey: 'dev-request-2' }],
+    });
+
+    expect(target.cheats.setBackendState('offline')).toMatchObject({
+      ok: true,
+      state: 'offline',
+      reason: 'disconnect',
+    });
+    expect(onlineGateManager.showOffline).toHaveBeenCalledWith('disconnect');
+    expect(playerShopFacade.setDevSnapshot.mock.calls.at(-1)[0]).toMatchObject({
+      connected: false,
+    });
+
+    expect(target.cheats.setBackendState('connected')).toMatchObject({
+      ok: true,
+      state: 'connected',
+    });
+    expect(onlineGateManager.hide).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets event, guild, timer, stress, and dialog states for UI QA', () => {
+    const leaderboardFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+    };
+    const worldEventLeaderboardFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+    };
+    const playerShopFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+    };
+    const backendFacade = {
+      getLeaderboardFacade: () => leaderboardFacade,
+      getWorldEventLeaderboardFacade: () => worldEventLeaderboardFacade,
+      getPlayerShopFacade: () => playerShopFacade,
+    };
+    const pagesFacade = {
+      openDialog: vi.fn(() => ({ ok: true, dialogId: 'worldEvent' })),
+      setDevNotifications: vi.fn((snapshot) => ({ ok: true, snapshot })),
+      syncPageUnlocks: vi.fn(),
+    };
+    const playerFacade = new PlayerFacade();
+    const { app } = createApp({ backendFacade, pagesFacade, playerFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.setWorldEventState('complete', { leaderboardCount: 2 }))
+      .toMatchObject({
+        ok: true,
+        worldNotice: {
+          current: {
+            completedRequests: 3,
+            leaderboard: {
+              currentPoints: 2750,
+            },
+          },
+        },
+      });
+    expect(worldEventLeaderboardFacade.setDevSnapshot).toHaveBeenCalled();
+
+    expect(target.cheats.setGuildState('claimable', { adventurers: 1 })).toMatchObject({
+      ok: true,
+      guild: {
+        created: true,
+        notifications: {
+          returned: true,
+        },
+      },
+    });
+
+    expect(target.cheats.setTimers('half')).toMatchObject({
+      ok: true,
+      plot: {
+        tile: {
+          progress: 0.5,
+        },
+      },
+      cauldron: {
+        cauldron: {
+          activeBrew: {
+            phase: 'brewing',
+            progress: 0.5,
+          },
+        },
+      },
+    });
+
+    expect(target.cheats.openDialog('worldEvent', { tab: 'leaderboard' }))
+      .toMatchObject({ ok: true });
+    expect(pagesFacade.openDialog).toHaveBeenCalledWith('worldEvent', {
+      tab: 'leaderboard',
+    });
+
+    expect(target.cheats.setStressText()).toMatchObject({
+      ok: true,
+      results: {
+        profile: { ok: true },
+        notifications: { ok: true },
+      },
+    });
   });
 
   it('bridges tutorial stages through pages facade', () => {

@@ -8,6 +8,10 @@ cheats.fillMana()
 cheats.addCoin(1000)
 cheats.addCrystal(10)
 cheats.addItem('sageSeed', 5)
+cheats.setProfile({ username: 'QA Long Name', character: 'mira' })
+cheats.setInventoryPreset('full')
+cheats.setNotifications({ garden: 'red', market: true })
+cheats.clearNotifications()
 cheats.setLevel(10)
 cheats.showPage('garden')
 cheats.unlockFeature('garden')
@@ -21,6 +25,13 @@ cheats.unlockCauldrons(3)
 cheats.setCauldron(1, { potion: 'manaTonic', phase: 'brewed' })
 cheats.unlockTraderStands(3)
 cheats.unlockPlayerStands(3)
+cheats.setMarketState('full')
+cheats.setWorldEventState('complete')
+cheats.setGuildState('claimable')
+cheats.setBackendState('offline')
+cheats.openDialog('worldEvent', { tab: 'leaderboard' })
+cheats.setTimers('allReady')
+cheats.setStressText()
 cheats.setDummyLeaderboard()
 cheats.clearDummyLeaderboard()
 cheats.listTutorialStages()
@@ -50,9 +61,25 @@ Useful view setup commands:
   `harvesting`; use `progress`, `remainingMs`, or `remainingSeconds` for timers.
 - `setCauldron(cauldron, options)` supports phases `empty`, `staged`, `brewing`,
   `brewed`, `bottling`, and `ready`.
+- `setProfile(options)` sets local profile UI fields such as username,
+  character, theme, font, color mode, icon mode, progress bar, and plot view.
+- `setInventoryPreset(preset)` supports `empty`, `basic`, `full`, and
+  `overflow`; pass an item map like `{ sageSeed: 4 }` for exact inventory.
+- `setNotifications(config)` forces bottom-tab badges for UI testing. Use
+  `clearNotifications()` to restore live computed badges.
+- `setMarketState(preset)` supports empty/full/ready/half/long-running market
+  views and publishes dummy player-market backend rows when available.
+- `setWorldEventState(preset)` supports locked, active, partial, qualify,
+  complete, and ended/archive states.
+- `setGuildState(preset)` supports locked, charter, joined, applicants, full,
+  claimable, and urgent guild hall states.
+- `setBackendState(state)` supports connected, offline, reconnecting,
+  account-in-use, and save-failed online gate views.
+- `openDialog(dialog, options)` opens mounted UI surfaces such as leaderboard,
+  worldEvent, market, guild request/adventurer, settings, and level popups.
+- `setTimers(preset)` supports allReady, half, almostDone, and longRunning for
+  garden, brewing, and market timers.
+- `setStressText()` loads long names, overflowing inventory, full market/event
+  data, claimable guild state, dummy leaderboards, and all badges.
 - `setDummyLeaderboard()` publishes local dummy normal and world-event leaderboard
   snapshots until `clearDummyLeaderboard()` restores server data.
-
-Still useful to add later: profile/character presets, alliance/guild membership
-fixtures, dialog-open helpers, inventory bulk presets, offline-return timers, and
-world-event contribution presets.
