@@ -1,4 +1,6 @@
-export const TIMER_PROGRESS_STEP_MS = 220;
+// Active timer snapshots refresh about every 500ms; keep fills moving across
+// nearly the whole gap without using full-duration continuous timer animation.
+export const TIMER_PROGRESS_STEP_MS = 480;
 
 const SECOND_MS = 1_000;
 const MINUTE_SECONDS = 60;

@@ -232,6 +232,40 @@ describe('ViewportScaleManager', () => {
     input.remove();
   });
 
+  it('keeps the document anchored when text entry triggers WebView pan', () => {
+    const stage = document.createElement('section');
+    const input = document.createElement('input');
+    const manager = new ViewportScaleManager({ viewport: gameViewport });
+    manager.stage = stage;
+    document.body.append(input);
+    setWindowSize({ width: 1080, height: 2170 });
+    manager.updateScale();
+
+    manager.handleTextEntryFocusIn({ target: input });
+    document.documentElement.scrollTop = 240;
+    document.body.scrollTop = 240;
+    manager.handleViewportScroll();
+
+    expect(document.documentElement.scrollTop).toBe(0);
+    expect(document.body.scrollTop).toBe(0);
+
+    setWindowSize({ width: 1080, height: 1450 });
+    document.documentElement.scrollTop = 180;
+    document.body.scrollTop = 180;
+    manager.handleViewportChange();
+
+    expect(document.documentElement.scrollTop).toBe(0);
+    expect(document.body.scrollTop).toBe(0);
+    expect(
+      document.documentElement.style.getPropertyValue('--app-viewport-height'),
+    ).toBe('2170px');
+    expect(
+      document.documentElement.style.getPropertyValue('--app-visible-stage-height'),
+    ).toBe('1450px');
+
+    input.remove();
+  });
+
   it('does not scale beyond the authored viewport', () => {
     const stage = document.createElement('section');
     const manager = new ViewportScaleManager({ viewport: gameViewport });

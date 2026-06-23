@@ -9,6 +9,9 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     private static final float TARGET_FRAME_RATE = 120f;
+    private static final int SOFT_INPUT_MODE =
+        WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED |
+        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -16,13 +19,19 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeGoogleAuthPlugin.class);
         registerPlugin(NativeAuthTokenStoragePlugin.class);
         super.onCreate(savedInstanceState);
+        lockSoftKeyboardWindow();
         requestHighFrameRate();
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        lockSoftKeyboardWindow();
         requestHighFrameRate();
+    }
+
+    private void lockSoftKeyboardWindow() {
+        getWindow().setSoftInputMode(SOFT_INPUT_MODE);
     }
 
     private void requestHighFrameRate() {

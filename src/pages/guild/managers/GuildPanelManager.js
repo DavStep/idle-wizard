@@ -186,7 +186,11 @@ export class GuildPanelManager {
 
   getContentTabSections(guild, tabId) {
     if (tabId === 'board') {
-      return [this.createBoardBox(guild), this.createAvailableRequestsBox(guild)];
+      return [
+        this.createBoardBox(guild),
+        this.createBoardSeparator(),
+        this.createAvailableRequestsBox(guild),
+      ];
     }
 
     if (tabId === 'adventurers') {
@@ -273,7 +277,17 @@ export class GuildPanelManager {
       return current;
     }
 
-    return `${current} -> ${next}`;
+    const preview = document.createElement('span');
+    preview.className = 'guild-page__upgrade-preview';
+    preview.append(document.createTextNode(String(current)), this.createUpgradePreviewGain(next));
+    return preview;
+  }
+
+  createUpgradePreviewGain(next) {
+    const gain = document.createElement('span');
+    gain.className = 'guild-page__upgrade-preview-gain';
+    gain.textContent = ` -> ${next}`;
+    return gain;
   }
 
   createSecretaryUpgradeButton(secretary) {
@@ -295,7 +309,6 @@ export class GuildPanelManager {
 
     return this.createBox('request board', rows, {
       countLabel: `${guild.board?.length ?? 0}/${guild.secretary?.boardSlots ?? 3}`,
-      bottomLabel: guild.boardWaveLabel ? `new available ${guild.boardWaveLabel}` : '',
     });
   }
 
@@ -308,9 +321,12 @@ export class GuildPanelManager {
       actionKind: 'post',
     });
 
+    if (guild.boardWaveLabel) {
+      rows.push(this.createTextRow('upcoming quest', guild.boardWaveLabel));
+    }
+
     return this.createBox('available quests', rows, {
       countLabel: `${availableRequests.length}`,
-      bottomLabel: guild.boardWaveLabel ? `new ${guild.boardWaveLabel}` : '',
     });
   }
 
@@ -379,11 +395,17 @@ export class GuildPanelManager {
     row.className = 'guild-page__row guild-page__request-row';
 
     const main = document.createElement('button');
-    main.className = 'guild-page__row-main';
+    main.className = 'guild-page__row-main guild-page__request-main';
     main.type = 'button';
-    main.textContent = `${request.title} (${request.difficulty})${
-      request.expiresLabel ? ` expires ${request.expiresLabel}` : ''
-    }`;
+    main.append(
+      this.createRequestLine('guild-page__request-title', request.title),
+      this.createRequestLine('guild-page__request-description', request.lore),
+      this.createRequestLine(
+        'guild-page__request-meta',
+        `${request.difficulty}${request.expiresLabel ? `, expires ${request.expiresLabel}` : ''}`,
+      ),
+      this.createRequestLine('guild-page__request-reward', `reward: ${request.rewardText}`),
+    );
     main.addEventListener('click', () => this.showRequestDialog(request.id));
 
     const action = document.createElement('button');
@@ -407,23 +429,74 @@ export class GuildPanelManager {
     return row;
   }
 
+  createBoardSeparator() {
+    const separator = document.createElement('div');
+    separator.className = 'guild-page__board-separator';
+    separator.setAttribute('aria-hidden', 'true');
+    return separator;
+  }
+
+  createRequestLine(className, text) {
+    const line = document.createElement('span');
+    line.className = className;
+    line.textContent = String(text ?? '');
+    return line;
+  }
+
   createAdventurerRow(adventurer, kind) {
     const row = document.createElement('div');
     row.className = 'guild-page__row guild-page__adventurer-row';
     setNotificationBadge(row, adventurer.status === 'hospital' || adventurer.status === 'dead');
 
+    const displayName = adventurer.displayName ?? 'nameless';
+    const levelLabel = `level ${adventurer.level ?? 1}`;
+    const statusLabel = adventurer.statusLabel ?? adventurer.personalityLabel ?? 'idle';
+
     const main = document.createElement('button');
-    main.className = 'guild-page__row-main';
+    main.className = 'guild-page__row-main guild-page__adventurer-main';
     main.type = 'button';
-    main.textContent = `${adventurer.displayName} (${adventurer.level})`;
+    main.setAttribute('aria-label', `${displayName}, ${levelLabel}, ${statusLabel}`);
+    main.append(
+      this.createAdventurerIconPlaceholder(displayName),
+      this.createAdventurerSummary(displayName, levelLabel),
+    );
     main.addEventListener('click', () => this.showAdventurerDialog(adventurer.id, kind));
 
     const status = document.createElement('span');
-    status.className = 'guild-page__row-action';
-    status.textContent = adventurer.statusLabel ?? adventurer.personalityLabel;
+    status.className = 'guild-page__row-action guild-page__adventurer-status';
+    status.textContent = statusLabel;
 
     row.append(main, status);
     return row;
+  }
+
+  createAdventurerIconPlaceholder(displayName) {
+    const icon = document.createElement('span');
+    icon.className = 'guild-page__adventurer-icon';
+    icon.dataset.initial = this.getAdventurerInitial(displayName);
+    icon.setAttribute('aria-hidden', 'true');
+    return icon;
+  }
+
+  createAdventurerSummary(displayName, levelLabel) {
+    const summary = document.createElement('span');
+    summary.className = 'guild-page__adventurer-summary';
+
+    const name = document.createElement('span');
+    name.className = 'guild-page__adventurer-name';
+    name.textContent = displayName;
+
+    const level = document.createElement('span');
+    level.className = 'guild-page__adventurer-level';
+    level.textContent = levelLabel;
+
+    summary.append(name, level);
+    return summary;
+  }
+
+  getAdventurerInitial(displayName) {
+    const trimmed = String(displayName ?? '').trim();
+    return trimmed ? trimmed.slice(0, 1).toLowerCase() : '?';
   }
 
   createBox(title, children, { countLabel = '', bottomLabel = '', className = '' } = {}) {

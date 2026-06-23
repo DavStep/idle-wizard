@@ -32,7 +32,7 @@
 - Timer progress fills that transition `transform` toward full need a computed-style flush after applying the current scale; remounted bars can otherwise paint full before the transition starts.
 - Smooth timer progress transitions keep Android WebView drawing every frame; for text-game timer bars prefer stepped fills from snapshot refreshes.
 - Garden, Brewing, and Research timer bars should share short stepped transforms and shared remaining-time text; do not let one active timer surface keep a full-duration continuous fill on Android.
-- Garden progress bars should soften snapshot steps with a short transform transition, not a full remaining-duration transition; avoid extra continuous motion near active plot timers.
+- Timer progress bars should soften active 500ms snapshot steps with near-cadence transform transitions, not full remaining-duration transitions.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
@@ -43,6 +43,7 @@
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
+- Even with Android `adjustNothing`, WebView text focus can pan the document; keep the app shell fixed and reset document scroll while text entry is locked.
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
@@ -78,6 +79,7 @@
 - Keep event qualification copy in tasks/rewards, not under the leaderboard rows; the leaderboard tab should stay table-only.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
+- World event same-tab refreshes must restore `.workshop-page__world-notice-frame.scrollTop`; live snapshot/leaderboard updates otherwise bounce mobile scrolling back to the top.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
@@ -86,6 +88,7 @@
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
 - Market tab panels need inline-only scroll cues; sibling progress rails after the absolute panel render at the top of the room behind top chrome.
 - Full-page room scroll roots should use `style-page-scroll` on the actual scrolling element with inline cues; wrapper-level scroll cues miss overflow and lose the shared top/bottom chrome cuts.
+- Page swipe direction lock should wait for a clear axis ratio, and `style-page-scroll` roots need `touch-action: pan-y`; otherwise tiny early vertical drift inside scroll pages can steal horizontal swipes.
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
@@ -106,9 +109,10 @@
 - Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
-- Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
+- Market popup item-picker visible labels need stable hit targets and click/backdrop dedupe; icon/text fragments inside those labels should not own separate hit testing.
 - Trader demand market sell-picker rows should activate on validated touch release, not touchstart, so scroll drags do not select rows; bold only the selected picker row.
-- Garden selected seed labels and picker rows need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening/changing the seed.
+- Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
+- Garden selected seed labels need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening seed choices.
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
 - Garden plantable empty plots should plant from the whole slot/row; seed-name labels still open seed choices and no-seed slots stay inert.
@@ -252,6 +256,7 @@
 - `herbIcons` label entries need matching atlas frames; missing herb frames can render stray `null` text in rich item labels.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
 - `capacitor.config.json` must not set `server.url` for packaged APK QA; Capacitor loads that remote page instead of bundled `dist`, hiding local UI/CSS changes.
+- Android Activity soft input mode must stay `adjustNothing`; otherwise the OS can pan/resize the whole WebView when the keyboard opens, before CSS dialog lifting runs.
 - Android WebView press feedback should not rely on CSS `:active` alone; mirror it with a pointer-driven `.is-pressing` class for stable touch scale.
 - Android WebView touch actions should activate from validated `pointerup` and suppress the following native click; long holds can otherwise show press feedback but drop the action.
 - When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
@@ -545,6 +550,7 @@
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
 - Do not use hover-only below-text line decoration; gate hover-only emphasis with `@media (hover: hover) and (pointer: fine)` when touch sticky state matters.
+- Single-choice selected options, such as tabs or one-of button-panel buttons, may show an underline only in their neutral selected state; avoid it while hovered, held, or pressed.
 - Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
@@ -632,7 +638,7 @@
 - Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
 - Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
 - Dialog scroll panes must show the shared bottom progress rail and use the select-recipe dialog spacing: rail below the frame, default `--style-scroll-progress-gap`, and normal dialog bottom padding.
-- World event dialog content is a fixed grid; do not stack grid `gap` plus scroll rail margin. Reserve a visible rail row with `:has(...:not([hidden]))`, spacer rows, and `margin-top: 0` so frame-to-rail spacing still equals select recipe.
+- World event dialog content should stay a flex column: fixed header, scroll frame, then normal shared scroll rail. Do not use grid `:has()` spacer rows or rail margin overrides there.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is bolded, not line-decorated or boxed.

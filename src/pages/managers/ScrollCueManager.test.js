@@ -125,6 +125,9 @@ describe('ScrollCueManager', () => {
     const pageScrollRule = baseCss.match(
       /\.style-page-scroll\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const dialogScrollRule = baseCss.match(
+      /\.style-dialog-scroll\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const researchRule = baseCss.match(
       /\.research-page__box-list\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -145,6 +148,9 @@ describe('ScrollCueManager', () => {
     expect(pageScrollRule).toMatch(
       /scroll-padding-bottom:\s*var\(--style-scroll-padding-bottom\);/,
     );
+    expect(pageScrollRule).toMatch(/\btouch-action:\s*pan-y;/);
+    expect(dialogScrollRule).toMatch(/\boverflow:\s*hidden auto;/);
+    expect(dialogScrollRule).toMatch(/\btouch-action:\s*pan-y;/);
     expect(researchRule).toMatch(
       /padding-top:\s*var\(--style-page-scroll-padding-top\);/,
     );
@@ -216,6 +222,7 @@ describe('ScrollCueManager', () => {
   it('registers dialog scroll panes for shared bottom progress', async () => {
     const root = document.createElement('div');
     const classNames = [
+      'style-dialog-scroll',
       'shop-page__direct-sell-rows',
       'guild-page__popup-content',
       'room-alliance-info-content',

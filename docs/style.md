@@ -22,7 +22,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Normal line height and normal letter spacing.
 - Use tabular lining numerals for resource values, costs, counts, timers, and leaderboard numbers.
 - Use bold only for totals, section names, selected/current state, or strong resource values.
-- Do not draw lines below text anywhere; selected/current states use weight, borders, or existing row state instead.
+- Do not use below-text lines for hover, hold, press, or ordinary current state. The only underline exception is a neutral selected option in a one-of-many control, such as a tab or button panel button.
 
 ## Color
 

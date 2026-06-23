@@ -2,6 +2,7 @@ import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 import { normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import {
   createResourceIconLabel,
@@ -15,7 +16,7 @@ import {
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 const WORLD_NOTICE_TABS = [
-  { id: 'tasks', label: 'tasks' },
+  { id: 'tasks', label: 'quests' },
   { id: 'leaderboard', label: 'leaderboard' },
   { id: 'rewards', label: 'rewards' },
 ];
@@ -41,9 +42,11 @@ export class WorkshopWorldNoticeManager {
     this.visible = false;
     this.donateVisible = false;
     this.donateRequestId = null;
+    this.donateOptionKey = null;
     this.donateAmount = 1;
     this.donateStatusText = '';
     this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
+    this.renderedNoticeScrollKey = null;
     this.previousFocus = null;
     this.previousDonateFocus = null;
     this.currentSnapshot = null;
@@ -204,7 +207,7 @@ export class WorkshopWorldNoticeManager {
     const panel = document.createElement('section');
     panel.className = 'workshop-page__world-notice-donate-panel';
     panel.hidden = true;
-    panel.setAttribute('aria-label', 'donate to event task');
+    panel.setAttribute('aria-label', 'donate to event quest');
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('role', 'dialog');
     panel.tabIndex = -1;
@@ -214,7 +217,7 @@ export class WorkshopWorldNoticeManager {
 
     this.refs.donateTitle = document.createElement('div');
     this.refs.donateTitle.className = 'style-box__title';
-    this.refs.donateTitle.textContent = 'donate coin';
+    this.refs.donateTitle.textContent = 'donate';
 
     this.refs.donateCloseButton = document.createElement('button');
     this.refs.donateCloseButton.className =
@@ -223,9 +226,11 @@ export class WorkshopWorldNoticeManager {
     this.refs.donateCloseButton.textContent = 'close';
     this.refs.donateCloseButton.addEventListener('click', () => this.hideDonateDialog());
 
-    this.refs.donateRequestRow = this.createDonateValueRow('task');
-    this.refs.donateProgressRow = this.createDonateValueRow('given');
-    this.refs.donateAvailableRow = this.createDonateValueRow('can give');
+    this.refs.donateRequestRow = this.createDonateValueRow('quest');
+    this.refs.donateGivingRow = this.createDonateValueRow('giving');
+    this.refs.donateProgressRow = this.createDonateValueRow('total');
+    this.refs.donateAvailableRow = this.createDonateValueRow('owned');
+    this.refs.donatePointsRow = this.createDonateValueRow('points');
 
     this.refs.donateAmountField = createAmountSelectionRow({
       ariaLabel: 'donation amount',
@@ -253,8 +258,10 @@ export class WorkshopWorldNoticeManager {
       this.refs.donateTitle,
       this.refs.donateCloseButton,
       this.refs.donateRequestRow.row,
+      this.refs.donateGivingRow.row,
       this.refs.donateProgressRow.row,
       this.refs.donateAvailableRow.row,
+      this.refs.donatePointsRow.row,
       this.refs.donateAmountField.field,
       actionRow,
       this.refs.donateStatus,
@@ -302,6 +309,7 @@ export class WorkshopWorldNoticeManager {
   hide() {
     const wasVisible = this.visible;
     this.visible = false;
+    this.renderedNoticeScrollKey = null;
     this.hideDonateDialog({ restoreFocus: false });
     this.applyVisibility();
 
@@ -332,6 +340,7 @@ export class WorkshopWorldNoticeManager {
     this.playerSnapshot = null;
     this.worldEventLeaderboardSnapshot = null;
     this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
+    this.renderedNoticeScrollKey = null;
   }
 
   render(snapshot) {
@@ -407,6 +416,8 @@ export class WorkshopWorldNoticeManager {
       const empty = document.createElement('div');
       empty.className = 'workshop-page__world-notice-empty';
       empty.textContent = 'no event';
+      this.refs.contentFrame = null;
+      this.renderedNoticeScrollKey = null;
       this.refs.content.replaceChildren(empty);
       return;
     }
@@ -436,10 +447,21 @@ export class WorkshopWorldNoticeManager {
   }
 
   renderNoticeContent(notice, ...nodes) {
+    const scrollKey = this.getNoticeScrollKey(notice);
+    const previousFrame = this.getNoticeContentFrame();
+    const previousScrollTop =
+      this.renderedNoticeScrollKey === scrollKey
+        ? Math.max(0, Number(previousFrame?.scrollTop) || 0)
+        : 0;
+    const frame = this.createContentFrame(nodes);
+
     this.refs.content.replaceChildren(
       this.createNoticeHeader(notice),
-      this.createContentFrame(nodes),
+      frame,
     );
+    this.refs.contentFrame = frame;
+    this.renderedNoticeScrollKey = scrollKey;
+    this.restoreNoticeScrollTop(frame, previousScrollTop);
   }
 
   createContentFrame(nodes = []) {
@@ -447,6 +469,33 @@ export class WorkshopWorldNoticeManager {
     frame.className = 'workshop-page__world-notice-frame';
     frame.replaceChildren(...nodes.filter(Boolean));
     return frame;
+  }
+
+  getNoticeContentFrame() {
+    return (
+      this.refs.contentFrame ??
+      this.refs.content?.querySelector?.('.workshop-page__world-notice-frame') ??
+      null
+    );
+  }
+
+  getNoticeScrollKey(notice = {}) {
+    return [
+      this.selectedTabId,
+      notice.periodKey ?? '',
+      notice.eventId ?? '',
+      notice.headline ?? '',
+    ].join('|');
+  }
+
+  restoreNoticeScrollTop(frame, scrollTop) {
+    if (!frame || scrollTop <= 0) {
+      return;
+    }
+
+    frame.scrollTop = scrollTop;
+    const EventCtor = frame.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+    frame.dispatchEvent(new EventCtor('scroll'));
   }
 
   updateTabs() {
@@ -594,7 +643,7 @@ export class WorkshopWorldNoticeManager {
 
     const title = document.createElement('div');
     title.className = 'workshop-page__world-notice-section-label';
-    title.textContent = 'tasks';
+    title.textContent = 'quests';
     list.append(title);
 
     for (const request of notice.requests ?? []) {
@@ -613,13 +662,39 @@ export class WorkshopWorldNoticeManager {
 
     const label = document.createElement('span');
     label.className = 'workshop-page__world-notice-request-title';
-    label.textContent = request.label;
+    label.textContent = request.title ?? request.label;
 
     row.append(label);
 
+    root.append(row);
+
+    if (request.situation) {
+      const situation = document.createElement('div');
+      situation.className =
+        'workshop-page__world-notice-request-instruction workshop-page__world-notice-request-situation';
+      situation.textContent = request.situation;
+      root.append(situation);
+    }
+
     const instruction = document.createElement('div');
     instruction.className = 'workshop-page__world-notice-request-instruction';
-    setResourceIconText(instruction, this.getTaskInstruction(request));
+    setResourceIconText(
+      instruction,
+      request.description || this.getTaskInstruction(request),
+    );
+    root.append(instruction);
+
+    if (request.donationOptions?.length) {
+      const options = document.createElement('div');
+      options.className = 'workshop-page__world-notice-donation-options';
+
+      for (const option of request.donationOptions) {
+        options.append(this.createDonationOptionRow(request, option));
+      }
+
+      root.append(options);
+      return root;
+    }
 
     const detail = document.createElement('div');
     detail.className = 'workshop-page__world-notice-request-points-row';
@@ -634,15 +709,109 @@ export class WorkshopWorldNoticeManager {
       request.collectedPointText ?? this.formatPointCount(request.contributionPoints)
     }`);
 
-    if (request.manual) {
-      detail.append(pointValue, collectedPoints);
-      root.append(row, instruction, detail, this.createRequestAction(request));
-    } else {
-      detail.append(pointValue, collectedPoints);
-      root.append(row, instruction, detail);
-    }
+    detail.append(pointValue, collectedPoints);
+    root.append(detail, this.createRequestAction(request));
 
     return root;
+  }
+
+  createDonationOptionRow(request, option) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__world-notice-donation-option';
+    row.classList.toggle('is-unavailable', option.canDonate !== true);
+
+    const label = document.createElement('span');
+    label.className = 'workshop-page__world-notice-donation-label';
+    this.setDonationOptionLabel(label, option);
+
+    const points = document.createElement('span');
+    points.className = 'workshop-page__world-notice-donation-points';
+    setResourceIconText(points, `${this.formatNumber(option.pointsPerUnit)} points each`);
+
+    const total = document.createElement('span');
+    total.className = 'workshop-page__world-notice-donation-total';
+    setResourceIconText(
+      total,
+      `total ${option.collectedPointText ?? this.formatPointCount(option.contributionPoints)}`,
+    );
+
+    row.append(label, points, total, this.createDonationOptionAction(request, option));
+    return row;
+  }
+
+  setDonationOptionLabel(label, option = {}) {
+    if (!label) {
+      return;
+    }
+
+    const resource = this.getDonationOptionResource(option);
+    label.classList.toggle('is-unavailable', option.canDonate !== true);
+
+    if (resource === 'coin') {
+      label.replaceChildren(createResourceIconLabel('coin', option.label || 'coin'));
+    } else {
+      label.textContent = option.label ?? '';
+      setItemIconLabel(label, resource, option.itemKey);
+    }
+
+    setResourceColor(label, resource);
+  }
+
+  setDonationOptionText(element, option = {}, text = '', { unavailable = false } = {}) {
+    if (!element) {
+      return;
+    }
+
+    const resource = this.getDonationOptionResource(option);
+    element.classList.toggle('is-unavailable', unavailable);
+    setItemIconLabel(element, null);
+
+    if (resource === 'coin') {
+      setResourceIconText(element, text);
+    } else {
+      element.textContent = text ?? '';
+      setItemIconLabel(element, resource, option.itemKey);
+    }
+
+    setResourceColor(element, resource);
+  }
+
+  getDonationOptionResource(option = {}) {
+    if (option.resourceType === 'coin') {
+      return 'coin';
+    }
+
+    if (option.resourceType !== 'item') {
+      return null;
+    }
+
+    const itemKind = String(option.itemKind ?? option.kind ?? '').toLowerCase();
+
+    if (['seed', 'herb', 'potion'].includes(itemKind)) {
+      return itemKind;
+    }
+
+    const itemKey = String(option.itemKey ?? option.optionKey ?? '').toLowerCase();
+
+    if (itemKey.endsWith('seed')) {
+      return 'seed';
+    }
+
+    if (itemKey.endsWith('herb')) {
+      return 'herb';
+    }
+
+    return 'potion';
+  }
+
+  createDonationOptionAction(request, option) {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__world-notice-request-action';
+    button.type = 'button';
+    button.textContent = option.canDonate ? 'donate' : this.getDonationNeedText(option);
+    button.disabled = !option.canDonate;
+    button.addEventListener('click', () => this.showDonateDialog(request, option));
+    return button;
   }
 
   createRequestAction(request) {
@@ -796,13 +965,16 @@ export class WorkshopWorldNoticeManager {
     this.refs.openButton?.setAttribute('aria-expanded', this.visible ? 'true' : 'false');
   }
 
-  showDonateDialog(request = {}) {
-    if (!request.requestId || !this.refs.donatePanel) {
+  showDonateDialog(request = {}, option = null) {
+    const donationOption = option ?? request.donationOptions?.[0] ?? null;
+
+    if (!request.requestId || !donationOption?.optionKey || !this.refs.donatePanel) {
       return;
     }
 
     this.previousDonateFocus = document.activeElement;
     this.donateRequestId = request.requestId;
+    this.donateOptionKey = donationOption.optionKey;
     this.donateAmount = 1;
     this.donateStatusText = '';
     this.donateVisible = true;
@@ -816,6 +988,7 @@ export class WorkshopWorldNoticeManager {
     const wasVisible = this.donateVisible;
     this.donateVisible = false;
     this.donateRequestId = null;
+    this.donateOptionKey = null;
     this.donateAmount = 1;
     this.donateStatusText = '';
     this.applyDonateVisibility();
@@ -847,8 +1020,9 @@ export class WorkshopWorldNoticeManager {
 
   onDonateAmountStep(delta) {
     const request = this.getDonateRequest();
-    const quantity = this.clampDonateAmount(this.donateAmount, request) ?? 1;
-    const nextQuantity = this.clampSteppedDonateAmount(quantity + delta, request);
+    const option = this.getDonateOption(request);
+    const quantity = this.clampDonateAmount(this.donateAmount, option) ?? 1;
+    const nextQuantity = this.clampSteppedDonateAmount(quantity + delta, option);
 
     if (!nextQuantity || nextQuantity === quantity) {
       return;
@@ -861,18 +1035,24 @@ export class WorkshopWorldNoticeManager {
 
   onConfirmDonate() {
     const request = this.getDonateRequest();
-    const quantity = this.clampDonateAmount(this.donateAmount, request);
+    const option = this.getDonateOption(request);
+    const quantity = this.clampDonateAmount(this.donateAmount, option);
 
-    if (!request || !quantity) {
-      this.donateStatusText = request ? 'bad amount' : 'task gone';
+    if (!request || !option || !quantity) {
+      this.donateStatusText = request ? 'bad amount' : 'quest gone';
       this.renderDonateDialog();
       return;
     }
 
-    const result = this.gameplayFacade?.donateWorldNoticeCoin?.(
-      request.requestId,
-      quantity,
-    );
+    const result =
+      this.gameplayFacade?.donateWorldNoticeResource?.(
+        request.requestId,
+        option.optionKey,
+        quantity,
+      ) ??
+      (option.resourceType === 'coin'
+        ? this.gameplayFacade?.donateWorldNoticeCoin?.(request.requestId, quantity)
+        : null);
 
     if (result?.ok) {
       this.hideDonateDialog({ restoreFocus: false });
@@ -889,30 +1069,39 @@ export class WorkshopWorldNoticeManager {
     }
 
     const request = this.getDonateRequest();
+    const option = this.getDonateOption(request);
 
-    if (!request) {
-      this.donateStatusText = 'task gone';
+    if (!request || !option) {
+      this.donateStatusText = request ? 'option gone' : 'quest gone';
       return;
     }
 
-    const maxQuantity = this.getMaxDonateAmount(request);
+    const maxQuantity = this.getMaxDonateAmount(option);
     const quantity = maxQuantity > 0
-      ? this.clampDonateAmount(this.donateAmount, request) ?? 1
+      ? this.clampDonateAmount(this.donateAmount, option) ?? 1
       : 0;
     const disabled = maxQuantity <= 0;
 
     this.donateAmount = quantity;
-    this.refs.donateTitle.textContent = 'donate coin';
-    this.refs.donateRequestRow.value.textContent = request.label;
+    this.refs.donateTitle.textContent = 'donate';
+    this.refs.donateRequestRow.value.textContent = request.title ?? request.label;
+    this.setDonationOptionText(this.refs.donateGivingRow.value, option, option.label);
     setResourceIconText(
       this.refs.donateProgressRow.value,
-      this.getTaskProgressText(request),
+      option.collectedPointText ?? this.formatPointCount(option.contributionPoints),
+    );
+    this.setDonationOptionText(
+      this.refs.donateAvailableRow.value,
+      option,
+      `${this.formatNumber(maxQuantity)} ${option.label}`,
+      { unavailable: disabled },
     );
     setResourceIconText(
-      this.refs.donateAvailableRow.value,
-      `${this.formatNumber(maxQuantity)} coin`,
+      this.refs.donatePointsRow.value,
+      quantity > 0
+        ? `+${this.formatNumber(quantity * option.pointsPerUnit)} points`
+        : '+0 points',
     );
-    setResourceColor(this.refs.donateAvailableRow.value, disabled ? null : 'coin');
 
     this.refs.donateAmountField.input.min = disabled ? '0' : '1';
     this.refs.donateAmountField.input.max = String(maxQuantity);
@@ -925,14 +1114,17 @@ export class WorkshopWorldNoticeManager {
     );
 
     for (const [delta, button] of this.refs.donateAmountField.stepButtons) {
-      const nextQuantity = this.clampSteppedDonateAmount(quantity + delta, request);
+      const nextQuantity = this.clampSteppedDonateAmount(quantity + delta, option);
       const stepDisabled = disabled || !nextQuantity || nextQuantity === quantity;
       button.disabled = stepDisabled;
       button.setAttribute('aria-disabled', stepDisabled ? 'true' : 'false');
     }
 
-    this.refs.donateConfirmButton.textContent =
-      quantity > 0 ? `donate x${this.formatNumber(quantity)}` : 'donate';
+    this.renderDonateConfirmButton(
+      this.refs.donateConfirmButton,
+      quantity,
+      quantity * option.pointsPerUnit,
+    );
     this.refs.donateConfirmButton.disabled = disabled;
     this.refs.donateConfirmButton.setAttribute(
       'aria-disabled',
@@ -941,13 +1133,37 @@ export class WorkshopWorldNoticeManager {
     this.refs.donateConfirmButton.setAttribute(
       'aria-label',
       quantity > 0
-        ? `donate ${this.formatNumber(quantity)} coin to ${request.label}`
-        : `donate coin to ${request.label}`,
+        ? `donate ${this.formatNumber(quantity)} ${option.label} to ${request.title ?? request.label} for ${this.formatPointCount(quantity * option.pointsPerUnit)}`
+        : `donate ${option.label} to ${request.title ?? request.label}`,
     );
 
     this.refs.donateStatus.textContent =
-      this.donateStatusText || (disabled ? 'need coin' : '');
+      this.donateStatusText || (disabled ? this.getDonationNeedText(option) : '');
     this.refs.donateStatus.hidden = this.refs.donateStatus.textContent.length === 0;
+  }
+
+  renderDonateConfirmButton(button, quantity = 0, points = 0) {
+    if (!button) {
+      return;
+    }
+
+    const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+    const safePoints = Math.max(0, Math.floor(Number(points) || 0));
+
+    if (safeQuantity <= 0) {
+      button.textContent = 'donate';
+      return;
+    }
+
+    const label = document.createElement('span');
+    label.className = 'workshop-page__world-notice-donate-confirm-label';
+    label.textContent = `donate x${this.formatNumber(safeQuantity)}`;
+
+    const pointLabel = document.createElement('span');
+    pointLabel.className = 'workshop-page__world-notice-donate-confirm-points';
+    pointLabel.textContent = this.formatPointCount(safePoints);
+
+    button.replaceChildren(label, pointLabel);
   }
 
   getDonateRequest() {
@@ -962,26 +1178,32 @@ export class WorkshopWorldNoticeManager {
     );
   }
 
-  getMaxDonateAmount(request = {}) {
-    const snapshotCoin = Number(this.currentSnapshot?.coin?.current);
-    const requestAvailable = Number(request.availableQuantity);
-    const available = Number.isFinite(snapshotCoin)
-      ? snapshotCoin
-      : Number.isFinite(requestAvailable)
-        ? requestAvailable
-        : 0;
+  getDonateOption(request = {}) {
+    if (!request || !Array.isArray(request.donationOptions)) {
+      return null;
+    }
+
+    return (
+      request.donationOptions.find(
+        (option) => option?.optionKey === this.donateOptionKey,
+      ) ?? null
+    );
+  }
+
+  getMaxDonateAmount(option = {}) {
+    const available = Number(option.maxDonateQuantity ?? option.availableQuantity);
 
     return Math.max(0, Math.floor(available));
   }
 
-  clampDonateAmount(quantity, request) {
+  clampDonateAmount(quantity, option) {
     const safeQuantity = this.readPositiveInteger(quantity);
 
     if (!safeQuantity) {
       return null;
     }
 
-    const maxQuantity = this.getMaxDonateAmount(request);
+    const maxQuantity = this.getMaxDonateAmount(option);
 
     if (maxQuantity <= 0) {
       return null;
@@ -990,9 +1212,9 @@ export class WorkshopWorldNoticeManager {
     return Math.min(safeQuantity, maxQuantity);
   }
 
-  clampSteppedDonateAmount(quantity, request) {
+  clampSteppedDonateAmount(quantity, option) {
     const integer = Math.floor(Number(quantity));
-    const maxQuantity = this.getMaxDonateAmount(request);
+    const maxQuantity = this.getMaxDonateAmount(option);
 
     if (!Number.isInteger(integer) || maxQuantity <= 0) {
       return null;
@@ -1021,11 +1243,19 @@ export class WorkshopWorldNoticeManager {
         return 'event locked';
       case 'not_enough_coin':
         return 'need coin';
+      case 'not_enough_items':
+        return 'need items';
+      case 'unknown_option':
+        return 'option gone';
       case 'unknown_request':
-        return 'task gone';
+        return 'quest gone';
       default:
         return 'donate failed';
     }
+  }
+
+  getDonationNeedText(option = {}) {
+    return option.resourceType === 'coin' ? 'need coin' : 'need item';
   }
 
   formatNumber(value) {
@@ -1079,6 +1309,7 @@ export class WorkshopWorldNoticeManager {
       case 'complete_research':
         return 'complete any research';
       case 'donate_coin':
+      case 'donate_resources':
         return 'donate coin';
       case 'earn_coin':
         return 'earn coin by selling items or claiming coin';
@@ -1089,7 +1320,7 @@ export class WorkshopWorldNoticeManager {
       case 'summon_seeds':
         return 'summon seeds';
       default:
-        return 'complete this task';
+        return 'complete this quest';
     }
   }
 
@@ -1143,6 +1374,7 @@ export class WorkshopWorldNoticeManager {
       case 'complete_research':
         return 'research';
       case 'donate_coin':
+      case 'donate_resources':
         return 'coin donated';
       case 'earn_coin':
         return 'coin earned';
@@ -1164,6 +1396,7 @@ export class WorkshopWorldNoticeManager {
       case 'complete_research':
         return 'finished';
       case 'donate_coin':
+      case 'donate_resources':
         return 'donated';
       case 'earn_coin':
         return 'earned';
@@ -1185,6 +1418,7 @@ export class WorkshopWorldNoticeManager {
       case 'complete_research':
         return 'research';
       case 'donate_coin':
+      case 'donate_resources':
       case 'earn_coin':
         return 'coin';
       case 'harvest_herbs':

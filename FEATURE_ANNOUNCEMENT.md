@@ -1,5 +1,15 @@
 # Feature Announcements
 
+## 0.2.34
+
+Weekly world events now use donation quests.
+
+The event popup still begins with world news, but the quests inside it can now ask for exact potions as well as coin. Choose a donation amount, see the points before confirming, and track how many points each donation option has already earned.
+
+Brewing and gathering matter more during events now. A healing potion, ward, tonic, draught, or salve can be worth more event points than raw coin because it took real workshop work to make. Quests still complete for response text, but extra donations keep adding leaderboard points after completion.
+
+Old saved funding events also refresh into the current event catalog, so updated players should see the new quest format cleanly.
+
 ## 0.2.22
 
 Guilds are open.

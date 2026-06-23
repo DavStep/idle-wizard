@@ -11314,6 +11314,100 @@ describe('PagesFacade', () => {
     expect(pagesFacade.getCurrentPageId()).toBe('research');
   });
 
+  it('keeps page scroll roots swipeable after an ambiguous diagonal start', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.show('research');
+
+    const scrollRoot = stage.querySelector('.research-page__box-list');
+    const startTouch = createTouch(12, 500, 600, scrollRoot);
+    const firstMoveTouch = createTouch(12, 486, 616, scrollRoot);
+    const secondMoveTouch = createTouch(12, 390, 650, scrollRoot);
+    const endTouch = createTouch(12, 250, 690, scrollRoot);
+
+    scrollRoot.dispatchEvent(
+      createTouchEvent('touchstart', {
+        touches: [startTouch],
+        changedTouches: [startTouch],
+      }),
+    );
+
+    const firstMove = createTouchEvent('touchmove', {
+      touches: [firstMoveTouch],
+      changedTouches: [firstMoveTouch],
+    });
+    scrollRoot.dispatchEvent(firstMove);
+
+    expect(firstMove.defaultPrevented).toBe(false);
+    expect(stage.dataset.pageSwipeActive).toBeUndefined();
+
+    const secondMove = createTouchEvent('touchmove', {
+      touches: [secondMoveTouch],
+      changedTouches: [secondMoveTouch],
+    });
+    scrollRoot.dispatchEvent(secondMove);
+
+    expect(secondMove.defaultPrevented).toBe(true);
+    expect(stage.dataset.pageSwipeActive).toBe('true');
+
+    scrollRoot.dispatchEvent(
+      createTouchEvent('touchend', {
+        touches: [],
+        changedTouches: [endTouch],
+      }),
+    );
+
+    expect(pagesFacade.getCurrentPageId()).toBe('shop');
+  });
+
+  it('keeps vertical drags on page scroll roots available for native scrolling', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+    pagesFacade.show('research');
+
+    const scrollRoot = stage.querySelector('.research-page__box-list');
+    const startTouch = createTouch(13, 500, 600, scrollRoot);
+    const moveTouch = createTouch(13, 490, 680, scrollRoot);
+    const endTouch = createTouch(13, 488, 740, scrollRoot);
+
+    scrollRoot.dispatchEvent(
+      createTouchEvent('touchstart', {
+        touches: [startTouch],
+        changedTouches: [startTouch],
+      }),
+    );
+
+    const verticalMove = createTouchEvent('touchmove', {
+      touches: [moveTouch],
+      changedTouches: [moveTouch],
+    });
+    scrollRoot.dispatchEvent(verticalMove);
+    scrollRoot.dispatchEvent(
+      createTouchEvent('touchend', {
+        touches: [],
+        changedTouches: [endTouch],
+      }),
+    );
+
+    expect(verticalMove.defaultPrevented).toBe(false);
+    expect(stage.dataset.pageSwipeActive).toBeUndefined();
+    expect(pagesFacade.getCurrentPageId()).toBe('research');
+  });
+
   it('uses pointer swipes when TouchEvent is present', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

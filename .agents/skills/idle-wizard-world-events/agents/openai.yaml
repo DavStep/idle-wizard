@@ -1,0 +1,4 @@
+interface:
+  display_name: "Idle Wizard World Events"
+  short_description: "Generate weekly event lore and donation quests"
+  default_prompt: "Use $idle-wizard-world-events to create a weekly world event with lore and donation quests."

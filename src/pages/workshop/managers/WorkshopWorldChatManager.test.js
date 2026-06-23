@@ -5,6 +5,16 @@ import { cwd } from 'node:process';
 import { describe, expect, it } from 'vitest';
 
 describe('WorkshopWorldChatManager styles', () => {
+  it('pins the app shell against keyboard document pan', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const appShellRule = baseCss.match(/\.app-shell\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
+
+    expect(appShellRule).toContain('position: fixed;');
+    expect(appShellRule).toContain('inset: 0;');
+    expect(appShellRule).toContain('overflow: hidden;');
+  });
+
   it('keeps the chat dialog on a stable upper anchor while text input focuses', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;

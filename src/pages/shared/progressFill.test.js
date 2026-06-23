@@ -73,6 +73,31 @@ describe('progressFill', () => {
     expect(fill.style.transform).toBe('scaleX(0.5)');
   });
 
+  it('keeps stepped progress smoothing when remaining time is not supplied', () => {
+    const fill = document.createElement('span');
+
+    setProgressFill(fill, 0.5, {
+      smooth: 'step',
+      stepMs: 120,
+    });
+
+    expect(fill.style.transition).toBe('transform 120ms linear');
+    expect(fill.style.transform).toBe('scaleX(0.5)');
+  });
+
+  it('caps stepped progress smoothing by remaining time', () => {
+    const fill = document.createElement('span');
+
+    setProgressFill(fill, 0.98, {
+      smooth: 'step',
+      remainingMs: 80,
+      stepMs: 480,
+    });
+
+    expect(fill.style.transition).toBe('transform 80ms linear');
+    expect(fill.style.transform).toBe('scaleX(0.98)');
+  });
+
   it('stops active progress immediately', () => {
     const fill = document.createElement('span');
 

@@ -63,17 +63,47 @@ function createWorldNoticeSnapshot() {
           {
             requestId: 'weekly-1:fever:herbs',
             requestKey: 'herbs',
-            actionType: 'harvest_herbs',
-            label: 'harvest herbs: clean herbs',
-            requiredQuantity: 25,
-            progressQuantity: 25,
+            actionType: 'donate_resources',
+            label: 'cool the fever',
+            title: 'cool the fever',
+            situation: 'families are sleeping beside buckets.',
+            description: 'donate tonics that steady breath and bring fever down.',
+            requiredQuantity: 600,
+            progressQuantity: 125,
             progress: 1,
             completed: true,
             contributionPoints: 125,
             collectedPointText: '125 points',
-            manual: false,
-            actionText: 'done',
-            pointText: '5 points each',
+            manual: true,
+            actionText: 'donate',
+            donationOptions: [
+              {
+                optionKey: 'manaTonic',
+                resourceType: 'item',
+                itemKey: 'manaTonic',
+                label: 'mana tonic',
+                pointsPerUnit: 80,
+                availableQuantity: 2,
+                maxDonateQuantity: 2,
+                contributedQuantity: 1,
+                contributionPoints: 80,
+                collectedPointText: '80 points',
+                canDonate: true,
+              },
+              {
+                optionKey: 'minorHealingPotion',
+                resourceType: 'item',
+                itemKey: 'minorHealingPotion',
+                label: 'minor healing potion',
+                pointsPerUnit: 150,
+                availableQuantity: 0,
+                maxDonateQuantity: 0,
+                contributedQuantity: 0,
+                contributionPoints: 0,
+                collectedPointText: '0 points',
+                canDonate: false,
+              },
+            ],
             reward: {
               coin: 15,
               text: '+15 coin',
@@ -83,32 +113,66 @@ function createWorldNoticeSnapshot() {
           {
             requestId: 'weekly-1:fever:tonics',
             requestKey: 'tonics',
-            actionType: 'brew_potions',
-            label: 'brew potions: fever tonics',
-            requiredQuantity: 5,
-            progressQuantity: 2,
+            actionType: 'donate_resources',
+            label: 'clean hands, clean cups',
+            title: 'clean hands, clean cups',
+            situation: 'the first helpers are running out of safe washes.',
+            description: 'donate cleansing brews so healers stop carrying fever bed to bed.',
+            requiredQuantity: 600,
+            progressQuantity: 50,
             progress: 0.4,
             completed: false,
             contributionPoints: 50,
             collectedPointText: '50 points',
-            manual: false,
-            actionText: '25 points each',
-            pointText: '25 points each',
+            manual: true,
+            actionText: 'donate',
+            donationOptions: [
+              {
+                optionKey: 'simpleAntidote',
+                resourceType: 'item',
+                itemKey: 'simpleAntidote',
+                label: 'simple antidote',
+                pointsPerUnit: 160,
+                availableQuantity: 0,
+                maxDonateQuantity: 0,
+                contributedQuantity: 0,
+                contributionPoints: 50,
+                collectedPointText: '50 points',
+                canDonate: false,
+              },
+            ],
           },
           {
             requestId: 'weekly-1:fever:water',
             requestKey: 'water',
-            actionType: 'complete_research',
-            label: 'complete research: clean water',
-            requiredQuantity: 1,
+            actionType: 'donate_resources',
+            label: 'quiet rooms for the sick',
+            title: 'quiet rooms for the sick',
+            situation: 'crowded houses keep the fever moving after sunset.',
+            description: 'donate coin so families can rent spare rooms.',
+            requiredQuantity: 900,
             progressQuantity: 0,
             progress: 0,
             completed: false,
             contributionPoints: 0,
             collectedPointText: '0 points',
-            manual: false,
-            actionText: '100 points each',
-            pointText: '100 points each',
+            manual: true,
+            canDonate: true,
+            actionText: 'donate',
+            donationOptions: [
+              {
+                optionKey: 'coin',
+                resourceType: 'coin',
+                label: 'coin',
+                pointsPerUnit: 1,
+                availableQuantity: 30,
+                maxDonateQuantity: 30,
+                contributedQuantity: 0,
+                contributionPoints: 0,
+                collectedPointText: '0 points',
+                canDonate: true,
+              },
+            ],
           },
         ],
       },
@@ -130,6 +194,7 @@ function createGameplayFacadeFake(snapshot = createWorldNoticeSnapshot()) {
 
   return {
     donateWorldNoticeCoin: vi.fn(() => ({ ok: true, changed: true })),
+    donateWorldNoticeResource: vi.fn(() => ({ ok: true, changed: true })),
     getSnapshot: vi.fn(() => currentSnapshot),
     subscribe: vi.fn((callback) => {
       listener = callback;
@@ -193,32 +258,36 @@ describe('WorkshopWorldNoticeManager', () => {
     const instructionRule = baseCss.match(
       /\.workshop-page__world-notice-request-instruction\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const progressRule = baseCss.match(
-      /\.workshop-page__world-notice-frame\s*\+\s*\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
+    const headerRule = baseCss.match(
+      /\.workshop-page__world-notice-header\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const frameRule = baseCss.match(
+      /\.workshop-page__world-notice-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(contentRule).toMatch(
-      /\bgrid-template-rows:\s*90px 6px minmax\(0,\s*1fr\);/,
-    );
-    expect(contentRule).toMatch(/\bgap:\s*0;/);
+    expect(contentRule).toMatch(/\bdisplay:\s*flex;/);
+    expect(contentRule).toMatch(/\bflex-direction:\s*column;/);
+    expect(contentRule).toMatch(/\bheight:\s*100%;/);
     expect(contentRule).toMatch(/\boverflow:\s*hidden;/);
+    expect(headerRule).toMatch(/\bflex:\s*0 0 90px;/);
+    expect(headerRule).toMatch(/\bmargin-bottom:\s*6px;/);
+    expect(frameRule).toMatch(/\bflex:\s*1 1 auto;/);
+    expect(frameRule).toMatch(/\bmin-height:\s*0;/);
     expect(portraitRule).toMatch(/\bwidth:\s*64px;/);
     expect(portraitRule).toMatch(/\bheight:\s*80px;/);
     expect(titleRule).toMatch(/\bfont-weight:\s*700;/);
     expect(titleRule).toMatch(/\bwhite-space:\s*normal;/);
     expect(instructionRule).toMatch(/\bwhite-space:\s*normal;/);
-    expect(progressRule).toMatch(/\bgrid-row:\s*5;/);
-    expect(progressRule).toMatch(/\bmargin-top:\s*0;/);
   });
 
-  it('reserves the world event progress row with select-recipe spacing only when visible', () => {
+  it('lets world event use the shared scroll progress flow', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const overflowRule = baseCss.match(
-      /\.workshop-page__world-notice-content:has\(\s*\.workshop-page__world-notice-frame \+ \.style-scroll-cue-progress:not\(\[hidden\]\)\s*\)\s*\{(?<body>[^}]*)\}/,
+    const progressRule = baseCss.match(
+      /\.workshop-page__world-notice-frame\s*\+\s*\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(overflowRule).toMatch(/\bvar\(--style-scroll-progress-gap\)/);
-    expect(overflowRule).toMatch(/\bvar\(--style-scroll-progress-height\)/);
+    expect(baseCss).not.toMatch(/\.workshop-page__world-notice-content:has/);
+    expect(progressRule).toBeUndefined();
   });
 
   it('keeps leaderboard and reward tabs from drawing a second header separator', () => {
@@ -274,6 +343,23 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(textRule).toMatch(/\bdisplay:\s*none;/);
   });
 
+  it('keeps the donate dialog close label and confirm button in shared popup style', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const closeRule = baseCss.match(
+      /\.style-button\.brewing-page__recipes-close,[\s\S]*?\.style-button\.room-bottom-panel__lock-close\s*\{(?<body>[^}]*)\}/,
+    )?.[0];
+    const confirmRule = baseCss.match(
+      /\.style-button\.workshop-page__world-notice-donate-confirm\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(closeRule).toContain(
+      '.style-button.workshop-page__world-notice-donate-close',
+    );
+    expect(closeRule).toMatch(/\bright:\s*var\(--style-box-title-left\);/);
+    expect(confirmRule).toMatch(/\bdisplay:\s*inline-grid;/);
+    expect(confirmRule).toMatch(/\bwhite-space:\s*normal;/);
+  });
+
   it('renders the unlocked character button and popup requests', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
@@ -321,7 +407,7 @@ describe('WorkshopWorldNoticeManager', () => {
       [...popup.querySelectorAll('.workshop-page__world-notice-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['tasks', 'leaderboard', 'rewards']);
+    ).toEqual(['quests', 'leaderboard', 'rewards']);
     expect(
       popup
         .querySelector('.workshop-page__world-notice-dialog-character')
@@ -337,23 +423,54 @@ describe('WorkshopWorldNoticeManager', () => {
       ),
     ).toEqual(['points:125 points', 'resolves:3d']);
     expect(popup.textContent).toContain('lanterns stay lit past midnight');
-    expect(popup.textContent).toContain('tasks');
-    expect(popup.textContent).toContain('brew potions: fever tonics');
+    expect(popup.textContent).toContain('quests');
+    expect(popup.textContent).toContain('clean hands, clean cups');
+    expect(popup.textContent).toContain('the first helpers are running out of safe washes.');
     expect(popup.textContent).toContain(
-      'brew any potion. each potion gives 25 points.',
+      'donate cleansing brews so healers stop carrying fever bed to bed.',
     );
-    expect(popup.textContent).toContain('brewed 2 potions');
-    expect(popup.textContent).toContain('earned 50 points');
+    expect(popup.textContent).toContain('simple antidote');
+    expect(popup.textContent).toContain('160 points each');
+    expect(popup.textContent).toContain('total 50 points');
+    const firstDonationLabel = popup.querySelector(
+      '.workshop-page__world-notice-donation-label',
+    );
+    expect(firstDonationLabel?.dataset.resourceColor).toBe('potion');
+    expect(
+      firstDonationLabel?.querySelector('.style-potion-label__icon')?.dataset
+        .assetAtlasFrame,
+    ).toBe('potion:manaTonic');
     expect(
       popup.querySelector('.workshop-page__world-notice-request-title')?.textContent,
-    ).toBe('harvest herbs: clean herbs');
+    ).toBe('cool the fever');
     expect(
-      popup.querySelector('.workshop-page__world-notice-request-points-row')?.children
+      popup.querySelector('.workshop-page__world-notice-donation-option')?.children
         .length,
-    ).toBe(2);
+    ).toBe(4);
+    const optionLabels = [
+      ...popup.querySelectorAll('.workshop-page__world-notice-donation-label'),
+    ];
+    expect(optionLabels[0]?.textContent).toBe('mana tonic');
+    expect(optionLabels[0]?.dataset.resourceColor).toBe('potion');
+    expect(
+      optionLabels[0]?.querySelector('.style-potion-label__icon')?.dataset
+        .assetAtlasFrame,
+    ).toBe('potion:manaTonic');
+    expect(optionLabels[1]?.classList.contains('is-unavailable')).toBe(true);
+    expect(optionLabels[1]?.dataset.resourceColor).toBe('potion');
+    expect(
+      optionLabels[1]?.querySelector('.style-potion-label__icon')?.dataset
+        .assetAtlasFrame,
+    ).toBe('potion:minorHealingPotion');
+    const coinLabel = optionLabels.find((label) => label.textContent === 'coin');
+    expect(coinLabel?.dataset.resourceColor).toBe('coin');
+    expect(
+      coinLabel?.querySelector('.style-resource-label--coin .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:coin');
     expect(popup.textContent).toContain('125 points earned');
     expect(popup.querySelector('.workshop-page__world-notice-request-fill')).toBeNull();
-    expect(popup.textContent).not.toContain('1/3 tasks');
+    expect(popup.textContent).not.toContain('1/3 quests');
     expect(popup.textContent).not.toContain('125 points, 3d');
     expect(popup.textContent).not.toContain('resolves 3d');
 
@@ -433,6 +550,39 @@ describe('WorkshopWorldNoticeManager', () => {
     ).toBe('crystal');
   });
 
+  it('preserves event scroll position across same-tab snapshot refreshes', () => {
+    const snapshot = createWorldNoticeSnapshot();
+    const gameplayFacade = createGameplayFacadeFake(snapshot);
+    const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    manager.mount(parent, popupParent);
+    parent.querySelector('.workshop-page__world-notice-open').click();
+
+    const frame = popupParent.querySelector('.workshop-page__world-notice-frame');
+    frame.scrollTop = 96;
+
+    const nextSnapshot = JSON.parse(JSON.stringify(snapshot));
+    nextSnapshot.worldNotice.current.leaderboard.currentPoints = 140;
+    gameplayFacade.emit(nextSnapshot);
+
+    const refreshedFrame = popupParent.querySelector(
+      '.workshop-page__world-notice-frame',
+    );
+    expect(refreshedFrame).not.toBe(frame);
+    expect(refreshedFrame.scrollTop).toBe(96);
+
+    refreshedFrame.scrollTop = 72;
+    popupParent
+      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
+      .click();
+
+    expect(
+      popupParent.querySelector('.workshop-page__world-notice-frame')?.scrollTop,
+    ).toBe(0);
+  });
+
   it('renders event task rows with title, instruction, point columns, and separators', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const separatorRule = baseCss.match(
@@ -507,7 +657,7 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(
       staleRow.querySelector('.workshop-page__world-notice-request-instruction')
         ?.textContent,
-    ).toBe('complete this task. each counted action gives 1 point.');
+    ).toBe('complete this quest. each counted action gives 1 point.');
     expect(
       staleRow.querySelector('.workshop-page__world-notice-request-points')
         ?.textContent,
@@ -674,7 +824,23 @@ describe('WorkshopWorldNoticeManager', () => {
               manual: true,
               canDonate: true,
               actionText: 'donate',
-              pointText: '25 coin = 1 point',
+              title: 'send bridge coin',
+              situation: 'the bridge watch keeps a sealed coin box.',
+              description: 'donate coin for the bridge watch.',
+              donationOptions: [
+                {
+                  optionKey: 'coin',
+                  resourceType: 'coin',
+                  label: 'coin',
+                  pointsPerUnit: 1,
+                  availableQuantity: 30,
+                  maxDonateQuantity: 30,
+                  contributedQuantity: 0,
+                  contributionPoints: 0,
+                  collectedPointText: '0 points',
+                  canDonate: true,
+                },
+              ],
               reward: {
                 coin: 10,
                 text: '+10 coin',
@@ -704,22 +870,59 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(donatePanel.hidden).toBe(false);
     expect(
       donatePanel.querySelector('.style-box__title')?.textContent,
-    ).toBe('donate coin');
-    expect(donatePanel.textContent).toContain('send bridge coin');
+    ).toBe('donate');
     expect(
-      donatePanel.querySelector('.workshop-page__world-notice-donate-confirm')
-        ?.textContent,
+      donatePanel.querySelector('.workshop-page__world-notice-donate-close'),
+    ).not.toBeNull();
+    expect(donatePanel.textContent).toContain('send bridge coin');
+    const donateRows = new Map(
+      [...donatePanel.querySelectorAll('.workshop-page__world-notice-donate-row')]
+        .map((row) => [
+          row.querySelector('.row_key')?.textContent,
+          row.querySelector('.row_val'),
+        ]),
+    );
+    expect(donateRows.get('giving')?.dataset.resourceColor).toBe('coin');
+    expect(
+      donateRows
+        .get('owned')
+        ?.querySelector('.style-resource-label--coin .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:coin');
+    const donateConfirm = donatePanel.querySelector(
+      '.workshop-page__world-notice-donate-confirm',
+    );
+    expect(
+      donateConfirm?.querySelector(
+        '.workshop-page__world-notice-donate-confirm-label',
+      )?.textContent,
     ).toBe('donate x1');
+    expect(
+      donateConfirm?.querySelector(
+        '.workshop-page__world-notice-donate-confirm-points',
+      )?.textContent,
+    ).toBe('1 point');
 
     [...donatePanel.querySelectorAll('.amount-selection-row__step')]
       .find((button) => button.textContent === '+10')
       .click();
+    expect(
+      donateConfirm?.querySelector(
+        '.workshop-page__world-notice-donate-confirm-label',
+      )?.textContent,
+    ).toBe('donate x11');
+    expect(
+      donateConfirm?.querySelector(
+        '.workshop-page__world-notice-donate-confirm-points',
+      )?.textContent,
+    ).toBe('11 points');
     donatePanel
       .querySelector('.workshop-page__world-notice-donate-confirm')
       .click();
 
-    expect(gameplayFacade.donateWorldNoticeCoin).toHaveBeenCalledWith(
+    expect(gameplayFacade.donateWorldNoticeResource).toHaveBeenCalledWith(
       'weekly-1:siege:coin',
+      'coin',
       11,
     );
     expect(donatePanel.hidden).toBe(true);

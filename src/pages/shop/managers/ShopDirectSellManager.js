@@ -19,6 +19,7 @@ const DIRECT_SELL_TABS = [
 const DIRECT_SELL_HELP_TOOLTIP_ID = 'shop-page__direct-sell-help-tooltip';
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
+const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
 
 export class ShopDirectSellManager {
   constructor({ gameplayFacade, onSellOverride, getSellQuoteOverride } = {}) {
@@ -39,6 +40,10 @@ export class ShopDirectSellManager {
     this.sellingItemTypeId = null;
     this.handledSelectPressStartItemTypeId = null;
     this.handledSelectPressStartReset = null;
+    this.pendingSelectPress = null;
+    this.handlePendingSelectPressMove = (event) => this.onPendingSelectPressMove(event);
+    this.handlePendingSelectPressEnd = (event) => this.onPendingSelectPressEnd(event);
+    this.handlePendingSelectPressCancel = () => this.clearPendingSelectPress();
     this.lastTouchLikePressStart = {
       key: null,
       timeStamp: Number.NEGATIVE_INFINITY,
@@ -112,6 +117,7 @@ export class ShopDirectSellManager {
     document.removeEventListener('click', this.handleDocumentClick);
     document.removeEventListener('keydown', this.handleKeydown);
     this.clearHandledSelectPressStartItemTypeId();
+    this.clearPendingSelectPress();
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.refs.controlsRoot?.remove();
     this.refs.helpPopup?.root?.remove();
@@ -731,7 +737,7 @@ export class ShopDirectSellManager {
     button.className =
       'shop-page__direct-sell-row shop-page__sell-item-row shop-page__direct-sell-item-button shop-page__sell-item-button';
     button.type = 'button';
-    this.bindTouchLikePressStart(button, `direct-sell:${itemTypeId}`, (event) =>
+    this.bindTouchLikeValidatedPress(button, `direct-sell:${itemTypeId}`, (event) =>
       this.onSelectItemPressStart(event, itemTypeId),
     );
     button.addEventListener('click', (event) => this.onSelectItemClick(event, itemTypeId));
@@ -1040,23 +1046,169 @@ export class ShopDirectSellManager {
     return event.type === 'pointerdown' && event.pointerType === 'mouse';
   }
 
-  bindTouchLikePressStart(target, key, handler) {
+  bindTouchLikeValidatedPress(target, key, handler) {
     target.addEventListener('pointerdown', (event) =>
-      this.onTouchLikePressStart(event, key, handler),
+      this.onTouchLikeValidatedPressStart(event, key, handler),
     );
     target.addEventListener(
       'touchstart',
-      (event) => this.onTouchLikePressStart(event, key, handler),
-      { passive: false },
+      (event) => this.onTouchLikeValidatedPressStart(event, key, handler),
+      { passive: true },
     );
   }
 
-  onTouchLikePressStart(event, key, handler) {
-    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+  onTouchLikeValidatedPressStart(event, key, handler) {
+    if (
+      this.isMousePressStart(event) ||
+      this.isDisabledControl(event.currentTarget) ||
+      this.isDuplicateTouchLikePressStart(event, key)
+    ) {
       return;
     }
 
-    handler(event);
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    this.clearPendingSelectPress();
+    this.pendingSelectPress = {
+      key,
+      handler,
+      target: event.currentTarget,
+      pointerId: event.pointerId,
+      startX: point.clientX,
+      startY: point.clientY,
+      moved: false,
+      type: event.type === 'pointerdown' ? 'pointer' : 'touch',
+    };
+    this.addPendingSelectPressListeners(this.pendingSelectPress.type);
+  }
+
+  addPendingSelectPressListeners(type) {
+    const document = this.refs.popup?.ownerDocument ?? globalThis.document;
+    if (!document) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      document.addEventListener('pointermove', this.handlePendingSelectPressMove, {
+        passive: true,
+      });
+      document.addEventListener('pointerup', this.handlePendingSelectPressEnd, true);
+      document.addEventListener('pointercancel', this.handlePendingSelectPressCancel, true);
+      return;
+    }
+
+    document.addEventListener('touchmove', this.handlePendingSelectPressMove, {
+      passive: true,
+    });
+    document.addEventListener('touchend', this.handlePendingSelectPressEnd, true);
+    document.addEventListener('touchcancel', this.handlePendingSelectPressCancel, true);
+  }
+
+  removePendingSelectPressListeners(type) {
+    const document = this.refs.popup?.ownerDocument ?? globalThis.document;
+    if (!document) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      document.removeEventListener('pointermove', this.handlePendingSelectPressMove);
+      document.removeEventListener('pointerup', this.handlePendingSelectPressEnd, true);
+      document.removeEventListener(
+        'pointercancel',
+        this.handlePendingSelectPressCancel,
+        true,
+      );
+      return;
+    }
+
+    document.removeEventListener('touchmove', this.handlePendingSelectPressMove);
+    document.removeEventListener('touchend', this.handlePendingSelectPressEnd, true);
+    document.removeEventListener('touchcancel', this.handlePendingSelectPressCancel, true);
+  }
+
+  onPendingSelectPressMove(event) {
+    const pending = this.pendingSelectPress;
+    if (!pending || !this.eventMatchesPendingSelectPress(event, pending)) {
+      return;
+    }
+
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    if (
+      Math.hypot(point.clientX - pending.startX, point.clientY - pending.startY) >
+      TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX
+    ) {
+      pending.moved = true;
+    }
+  }
+
+  onPendingSelectPressEnd(event) {
+    const pending = this.pendingSelectPress;
+    if (!pending || !this.eventMatchesPendingSelectPress(event, pending)) {
+      return;
+    }
+
+    this.clearPendingSelectPress();
+
+    if (
+      pending.moved ||
+      this.isDisabledControl(pending.target) ||
+      !pending.target.contains(event.target)
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    pending.handler(event);
+  }
+
+  clearPendingSelectPress() {
+    if (!this.pendingSelectPress) {
+      return;
+    }
+
+    const type = this.pendingSelectPress.type;
+    this.pendingSelectPress = null;
+    this.removePendingSelectPressListeners(type);
+  }
+
+  eventMatchesPendingSelectPress(event, pending) {
+    return (
+      pending.type !== 'pointer' ||
+      event.pointerId === undefined ||
+      pending.pointerId === undefined ||
+      event.pointerId === pending.pointerId
+    );
+  }
+
+  getTouchLikePoint(event) {
+    const touch = event.changedTouches?.[0] ?? event.touches?.[0];
+    if (touch) {
+      return {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      };
+    }
+
+    if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+      return {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+    }
+
+    return null;
+  }
+
+  isDisabledControl(control) {
+    return control?.disabled || control?.getAttribute?.('aria-disabled') === 'true';
   }
 
   isDuplicateTouchLikePressStart(event, key) {

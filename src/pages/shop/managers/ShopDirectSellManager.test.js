@@ -6,8 +6,19 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ShopDirectSellManager } from './ShopDirectSellManager.js';
 
-function createTouchStartEvent() {
-  return new window.Event('touchstart', { bubbles: true, cancelable: true });
+function createPointerEvent(
+  type,
+  { clientX = 120, clientY = 180, pointerId = 1, pointerType = 'touch' } = {},
+) {
+  const event = new window.MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    clientY,
+  });
+  Object.defineProperty(event, 'pointerId', { value: pointerId });
+  Object.defineProperty(event, 'pointerType', { value: pointerType });
+  return event;
 }
 
 function withPointerEvent(callback) {
@@ -326,7 +337,7 @@ describe('ShopDirectSellManager', () => {
     manager.unmount();
   });
 
-  it('selects a fast-sell item on touchstart of the item name', () => {
+  it('selects a fast-sell item on touch release of the item name', () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');
     const snapshot = {
@@ -352,12 +363,14 @@ describe('ShopDirectSellManager', () => {
     const gameplayFacade = createGameplayFacade(snapshot);
     const manager = new ShopDirectSellManager({ gameplayFacade });
 
+    document.body.append(buttonParent, popupParent);
     manager.mount({ buttonParent, popupParent });
     const onSelectItemSpy = vi.spyOn(manager, 'onSelectItem');
     buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
 
     const itemName = popupParent.querySelector('.shop-page__direct-sell-target-label');
-    itemName?.dispatchEvent(createTouchStartEvent());
+    itemName?.dispatchEvent(createPointerEvent('pointerdown'));
+    itemName?.dispatchEvent(createPointerEvent('pointerup'));
     itemName?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(onSelectItemSpy).toHaveBeenCalledTimes(1);
@@ -369,9 +382,11 @@ describe('ShopDirectSellManager', () => {
     ).toBe('true');
 
     manager.unmount();
+    buttonParent.remove();
+    popupParent.remove();
   });
 
-  it('selects a fast-sell item from touchstart on the visible seed text when PointerEvent exists', () => {
+  it('selects a fast-sell item from touch release on the visible seed text', () => {
     withPointerEvent(() => {
       const buttonParent = document.createElement('section');
       const popupParent = document.createElement('section');
@@ -398,13 +413,15 @@ describe('ShopDirectSellManager', () => {
       const gameplayFacade = createGameplayFacade(snapshot);
       const manager = new ShopDirectSellManager({ gameplayFacade });
 
+      document.body.append(buttonParent, popupParent);
       manager.mount({ buttonParent, popupParent });
       buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
 
       const visibleSeedText = popupParent.querySelector(
         '.shop-page__direct-sell-target-label .style-seed-label__text',
       );
-      visibleSeedText?.dispatchEvent(createTouchStartEvent());
+      visibleSeedText?.dispatchEvent(createPointerEvent('pointerdown'));
+      visibleSeedText?.dispatchEvent(createPointerEvent('pointerup'));
 
       expect(
         popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
@@ -416,7 +433,55 @@ describe('ShopDirectSellManager', () => {
       ).toBe('true');
 
       manager.unmount();
+      buttonParent.remove();
+      popupParent.remove();
     });
+  });
+
+  it('does not select a fast-sell item when the picker touch scrolls', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 5,
+              sellCoin: 1.4,
+              fastSellCoin: 1.12,
+              fastSellPercent: 80,
+              sellNeed: 3,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = createGameplayFacade(snapshot);
+    const manager = new ShopDirectSellManager({ gameplayFacade });
+
+    document.body.append(buttonParent, popupParent);
+    manager.mount({ buttonParent, popupParent });
+    const onSelectItemSpy = vi.spyOn(manager, 'onSelectItem');
+    buttonParent.querySelector('.shop-page__direct-sell-button')?.click();
+
+    const itemName = popupParent.querySelector('.shop-page__direct-sell-target-label');
+    itemName?.dispatchEvent(createPointerEvent('pointerdown', { clientX: 10, clientY: 10 }));
+    document.dispatchEvent(createPointerEvent('pointermove', { clientX: 10, clientY: 32 }));
+    itemName?.dispatchEvent(createPointerEvent('pointerup', { clientX: 10, clientY: 32 }));
+
+    expect(onSelectItemSpy).not.toHaveBeenCalled();
+    expect(
+      popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
+    ).toBe('no item selected');
+
+    manager.unmount();
+    buttonParent.remove();
+    popupParent.remove();
   });
 
   it('deselects the selected fast-sell item from the list row and top name', () => {

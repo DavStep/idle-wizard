@@ -12,18 +12,14 @@ export const WORLD_NOTICE_LEADERBOARD_REWARD_TIERS = Object.freeze([
   { rankLabel: '101+ qualified', emerald: 0, crystal: 1 },
 ]);
 
-const COIN_PER_POINT = 25;
-
 const ACTION_POINT_RULES = Object.freeze({
   [WORLD_NOTICE_ACTIONS.BREW_POTIONS]: { pointsPerUnit: 25, label: 'potion' },
   [WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH]: { pointsPerUnit: 100, label: 'research' },
-  [WORLD_NOTICE_ACTIONS.DONATE_COIN]: {
-    pointsPerUnit: 1 / COIN_PER_POINT,
-    label: `${COIN_PER_POINT} coin`,
-  },
+  [WORLD_NOTICE_ACTIONS.DONATE_COIN]: { pointsPerUnit: 1, label: 'coin' },
+  [WORLD_NOTICE_ACTIONS.DONATE_RESOURCES]: { pointsPerUnit: 1, label: 'point' },
   [WORLD_NOTICE_ACTIONS.EARN_COIN]: {
-    pointsPerUnit: 1 / COIN_PER_POINT,
-    label: `${COIN_PER_POINT} coin`,
+    pointsPerUnit: 1 / 25,
+    label: '25 coin',
   },
   [WORLD_NOTICE_ACTIONS.HARVEST_HERBS]: { pointsPerUnit: 5, label: 'herb' },
   [WORLD_NOTICE_ACTIONS.SELL_ITEMS]: { pointsPerUnit: 3, label: 'item sold' },
@@ -60,6 +56,17 @@ export class WorldNoticeContributionManager {
     }
 
     return Math.floor(amount * rule.pointsPerUnit);
+  }
+
+  getPointsForDonationOption(option = {}, quantity = 1) {
+    const amount = Math.max(0, Math.floor(Number(quantity) || 0));
+    const pointsPerUnit = Math.max(0, Math.floor(Number(option.pointsPerUnit) || 0));
+
+    if (amount <= 0 || pointsPerUnit <= 0) {
+      return 0;
+    }
+
+    return amount * pointsPerUnit;
   }
 
   getPointsForProgress(actionType, previousProgress = 0, nextProgress = 0, detail = {}) {

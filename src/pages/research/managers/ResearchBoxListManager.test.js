@@ -8,11 +8,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { ResearchBoxListManager } from './ResearchBoxListManager.js';
 import { TIMER_PROGRESS_STEP_MS } from '../../shared/timerDisplay.js';
 
-function createTouchEvent(type, target) {
+function createTouchEvent(type, target, { clientX = 120, clientY = 180 } = {}) {
   const touch = {
     identifier: 1,
-    clientX: 120,
-    clientY: 180,
+    clientX,
+    clientY,
     target,
   };
   const event = new window.Event(type, {
@@ -328,6 +328,7 @@ describe('ResearchBoxListManager', () => {
       onShowResearchInfo,
     });
     const stage = document.createElement('section');
+    document.body.append(stage);
 
     manager.mount(stage);
 
@@ -338,6 +339,7 @@ describe('ResearchBoxListManager', () => {
     expect(row?.classList.contains('is-locked')).toBe(true);
 
     row.dispatchEvent(createTouchEvent('touchstart', row));
+    row.dispatchEvent(createTouchEvent('touchend', row));
     row.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(onShowResearchInfo).toHaveBeenCalledTimes(1);
@@ -347,6 +349,61 @@ describe('ResearchBoxListManager', () => {
         lockReason: 'requires mana tonic research and level 5.',
       }),
     );
+
+    manager.unmount();
+    stage.remove();
+  });
+
+  it('does not explain locked research when the row touch scrolls', () => {
+    const onShowResearchInfo = vi.fn();
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 4,
+      },
+      research: {
+        boxes: [
+          {
+            id: 'recipeUnlocks',
+            label: 'recipe unlock researches',
+            researches: [
+              {
+                id: 'unlockRecipe:minorHealingPotion',
+                label: 'minor healing potion',
+                value: 'locked',
+                effect: 'brew',
+                description:
+                  'allows valid cauldron ingredients to brew minor healing potion.',
+                costCoin: 350,
+                completed: false,
+                locked: true,
+                canResearch: false,
+                requiredResearchIds: ['unlockRecipe:manaTonic'],
+                requiredPlayerLevel: 5,
+              },
+            ],
+          },
+        ],
+        completedResearchIds: [],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+      onShowResearchInfo,
+    });
+    const stage = document.createElement('section');
+    document.body.append(stage);
+
+    manager.mount(stage);
+
+    const row = stage.querySelector('.research-page__row');
+    row.dispatchEvent(createTouchEvent('touchstart', row, { clientX: 10, clientY: 10 }));
+    document.dispatchEvent(createTouchEvent('touchmove', row, { clientX: 10, clientY: 32 }));
+    row.dispatchEvent(createTouchEvent('touchend', row, { clientX: 10, clientY: 32 }));
+
+    expect(onShowResearchInfo).not.toHaveBeenCalled();
+
+    manager.unmount();
+    stage.remove();
   });
 
   it('explains prestige-locked research requirements', () => {
@@ -389,11 +446,13 @@ describe('ResearchBoxListManager', () => {
       onShowResearchInfo,
     });
     const stage = document.createElement('section');
+    document.body.append(stage);
 
     manager.mount(stage);
 
     const row = stage.querySelector('.research-page__row');
     row.dispatchEvent(createTouchEvent('touchstart', row));
+    row.dispatchEvent(createTouchEvent('touchend', row));
 
     expect(onShowResearchInfo).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -401,5 +460,8 @@ describe('ResearchBoxListManager', () => {
         lockReason: 'requires 2 prestiges.',
       }),
     );
+
+    manager.unmount();
+    stage.remove();
   });
 });

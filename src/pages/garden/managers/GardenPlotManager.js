@@ -27,6 +27,7 @@ import { GardenSeedSwapDialogManager } from './GardenSeedSwapDialogManager.js';
 
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
+const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
 const BOX_PLOT_COLUMNS = 3;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
@@ -58,6 +59,10 @@ export class GardenPlotManager {
     this.handledTileLabelPressStartReset = null;
     this.handledSeedPressStartKey = null;
     this.handledSeedPressStartReset = null;
+    this.pendingSeedPress = null;
+    this.handlePendingSeedPressMove = (event) => this.onPendingSeedPressMove(event);
+    this.handlePendingSeedPressEnd = (event) => this.onPendingSeedPressEnd(event);
+    this.handlePendingSeedPressCancel = () => this.clearPendingSeedPress();
     this.lastTouchLikePressStart = {
       key: null,
       timeStamp: Number.NEGATIVE_INFINITY,
@@ -141,6 +146,7 @@ export class GardenPlotManager {
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.clearHandledTileLabelPressStartTileNumber();
     this.clearHandledSeedPressStartKey();
+    this.clearPendingSeedPress();
     this.cancelDialogManager.unmount();
     this.swapDialogManager.unmount();
     this.root?.remove();
@@ -344,7 +350,7 @@ export class GardenPlotManager {
     button.className = 'garden-page__seed-button';
     button.type = 'button';
     setResourceColor(button, 'seed');
-    this.bindTouchLikePressStart(button, `seed:${seed.itemTypeId}`, (event) =>
+    this.bindTouchLikeValidatedPress(button, `seed:${seed.itemTypeId}`, (event) =>
       this.onSelectSeedPressStart(event, seed.itemTypeId),
     );
     button.addEventListener('click', (event) => this.onSelectSeedClick(event, seed.itemTypeId));
@@ -369,7 +375,7 @@ export class GardenPlotManager {
     const button = document.createElement('button');
     button.className = 'garden-page__seed-button';
     button.type = 'button';
-    this.bindTouchLikePressStart(button, 'seed:empty', (event) =>
+    this.bindTouchLikeValidatedPress(button, 'seed:empty', (event) =>
       this.onSelectSeedPressStart(event, null),
     );
     button.addEventListener('click', (event) => this.onSelectSeedClick(event, null));
@@ -1207,23 +1213,165 @@ export class GardenPlotManager {
     element.classList.toggle('has-overflow', hasOverflow && !isAtEnd);
   }
 
-  bindTouchLikePressStart(target, key, handler) {
+  bindTouchLikeValidatedPress(target, key, handler) {
     target.addEventListener('pointerdown', (event) =>
-      this.onTouchLikePressStart(event, key, handler),
+      this.onTouchLikeValidatedPressStart(event, key, handler),
     );
     target.addEventListener(
       'touchstart',
-      (event) => this.onTouchLikePressStart(event, key, handler),
-      { passive: false },
+      (event) => this.onTouchLikeValidatedPressStart(event, key, handler),
+      { passive: true },
     );
   }
 
-  onTouchLikePressStart(event, key, handler) {
-    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+  onTouchLikeValidatedPressStart(event, key, handler) {
+    if (
+      this.isMousePressStart(event) ||
+      this.isDisabledControl(event.currentTarget) ||
+      this.isDuplicateTouchLikePressStart(event, key)
+    ) {
       return;
     }
 
-    handler(event);
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    this.clearPendingSeedPress();
+    this.pendingSeedPress = {
+      key,
+      handler,
+      target: event.currentTarget,
+      pointerId: event.pointerId,
+      startX: point.clientX,
+      startY: point.clientY,
+      moved: false,
+      type: event.type === 'pointerdown' ? 'pointer' : 'touch',
+    };
+    this.addPendingSeedPressListeners(this.pendingSeedPress.type);
+  }
+
+  addPendingSeedPressListeners(type) {
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    if (!document) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      document.addEventListener('pointermove', this.handlePendingSeedPressMove, {
+        passive: true,
+      });
+      document.addEventListener('pointerup', this.handlePendingSeedPressEnd, true);
+      document.addEventListener('pointercancel', this.handlePendingSeedPressCancel, true);
+      return;
+    }
+
+    document.addEventListener('touchmove', this.handlePendingSeedPressMove, {
+      passive: true,
+    });
+    document.addEventListener('touchend', this.handlePendingSeedPressEnd, true);
+    document.addEventListener('touchcancel', this.handlePendingSeedPressCancel, true);
+  }
+
+  removePendingSeedPressListeners(type) {
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    if (!document) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      document.removeEventListener('pointermove', this.handlePendingSeedPressMove);
+      document.removeEventListener('pointerup', this.handlePendingSeedPressEnd, true);
+      document.removeEventListener('pointercancel', this.handlePendingSeedPressCancel, true);
+      return;
+    }
+
+    document.removeEventListener('touchmove', this.handlePendingSeedPressMove);
+    document.removeEventListener('touchend', this.handlePendingSeedPressEnd, true);
+    document.removeEventListener('touchcancel', this.handlePendingSeedPressCancel, true);
+  }
+
+  onPendingSeedPressMove(event) {
+    const pending = this.pendingSeedPress;
+    if (!pending || !this.eventMatchesPendingSeedPress(event, pending)) {
+      return;
+    }
+
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    if (
+      Math.hypot(point.clientX - pending.startX, point.clientY - pending.startY) >
+      TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX
+    ) {
+      pending.moved = true;
+    }
+  }
+
+  onPendingSeedPressEnd(event) {
+    const pending = this.pendingSeedPress;
+    if (!pending || !this.eventMatchesPendingSeedPress(event, pending)) {
+      return;
+    }
+
+    this.clearPendingSeedPress();
+
+    if (
+      pending.moved ||
+      this.isDisabledControl(pending.target) ||
+      !pending.target.contains(event.target)
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    pending.handler(event);
+  }
+
+  clearPendingSeedPress() {
+    if (!this.pendingSeedPress) {
+      return;
+    }
+
+    const type = this.pendingSeedPress.type;
+    this.pendingSeedPress = null;
+    this.removePendingSeedPressListeners(type);
+  }
+
+  eventMatchesPendingSeedPress(event, pending) {
+    return (
+      pending.type !== 'pointer' ||
+      event.pointerId === undefined ||
+      pending.pointerId === undefined ||
+      event.pointerId === pending.pointerId
+    );
+  }
+
+  getTouchLikePoint(event) {
+    const touch = event.changedTouches?.[0] ?? event.touches?.[0];
+    if (touch) {
+      return {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      };
+    }
+
+    if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+      return {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+    }
+
+    return null;
+  }
+
+  isDisabledControl(control) {
+    return control?.disabled || control?.getAttribute?.('aria-disabled') === 'true';
   }
 
   isMousePressStart(event) {

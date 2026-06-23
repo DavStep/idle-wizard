@@ -84,6 +84,7 @@ export class GameplayFacade {
     });
     this.worldNoticeFacade = new WorldNoticeFacade({
       coinFacade: this.coinFacade,
+      itemsFacade: this.itemsFacade,
       playerLevelFacade: this.playerLevelFacade,
       tasksFacade: this.tasksFacade,
       now: persistenceNow,
@@ -673,6 +674,12 @@ export class GameplayFacade {
 
   donateWorldNoticeCoin(requestId, quantity = null) {
     const result = this.worldNoticeFacade.donateCoin(requestId, quantity);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  donateWorldNoticeResource(requestId, optionKey, quantity = null) {
+    const result = this.worldNoticeFacade.donateResource(requestId, optionKey, quantity);
     this.publishAndSaveSnapshot();
     return result;
   }

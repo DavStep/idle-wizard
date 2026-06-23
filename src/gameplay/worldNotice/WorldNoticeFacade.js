@@ -18,11 +18,13 @@ export class WorldNoticeFacade {
 
   constructor({
     coinFacade,
+    itemsFacade,
     playerLevelFacade,
     tasksFacade,
     now = () => Date.now(),
   } = {}) {
     this.coinFacade = coinFacade;
+    this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;
     this.tasksFacade = tasksFacade;
     this.periodManager = new WorldNoticePeriodManager({ now });
@@ -72,6 +74,10 @@ export class WorldNoticeFacade {
   }
 
   donateCoin(requestId, quantity = null) {
+    return this.donateResource(requestId, 'coin', quantity);
+  }
+
+  donateResource(requestId, optionKey, quantity = null) {
     if (!this.isUnlocked()) {
       return {
         ok: false,
@@ -83,8 +89,7 @@ export class WorldNoticeFacade {
     const notice = this.ensureCurrentNotice();
     const request = (notice.requests ?? []).find(
       (candidate) =>
-        candidate.requestId === requestId &&
-        candidate.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN,
+        candidate.requestId === requestId && this.isDonationRequest(candidate),
     );
 
     if (!request) {
@@ -95,7 +100,17 @@ export class WorldNoticeFacade {
       };
     }
 
-    const currentCoin = Math.max(0, Math.floor(Number(this.coinFacade?.getSnapshot?.().current) || 0));
+    const option = this.getDonationOption(request, optionKey);
+
+    if (!option) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'unknown_option',
+      };
+    }
+
+    const availableQuantity = this.getDonationAvailableQuantity(option);
     const requestedDonation =
       quantity === null || typeof quantity === 'undefined'
         ? null
@@ -109,46 +124,192 @@ export class WorldNoticeFacade {
         ok: false,
         changed: false,
         reason: 'bad_amount',
-        currentCoin,
+        availableQuantity,
       };
     }
 
-    const donation = Math.min(currentCoin, requestedDonation ?? currentCoin);
+    const donation = Math.min(availableQuantity, requestedDonation ?? availableQuantity);
 
     if (donation <= 0) {
       return {
         ok: false,
         changed: false,
-        reason: 'not_enough_coin',
-        currentCoin,
+        reason: this.getDonationEmptyReason(option),
+        availableQuantity,
       };
     }
 
-    if (!this.coinFacade?.canSpend?.(donation)) {
+    if (!this.canSpendDonation(option, donation)) {
       return {
         ok: false,
         changed: false,
-        reason: 'not_enough_coin',
-        currentCoin,
+        reason: this.getDonationEmptyReason(option),
+        availableQuantity,
       };
     }
 
-    this.coinFacade.spend(donation);
-    const pointsAdded = this.contributionManager.addRequestActionPoints(
-      request,
-      WORLD_NOTICE_ACTIONS.DONATE_COIN,
+    const spent = this.spendDonation(option, donation);
+
+    if (!spent) {
+      return {
+        ok: false,
+        changed: false,
+        reason: this.getDonationEmptyReason(option),
+        availableQuantity,
+      };
+    }
+
+    const pointsAdded = this.contributionManager.getPointsForDonationOption(
+      option,
       donation,
     );
-    this.progressManager.applyProgress(request, donation);
+    this.contributionManager.addRequestPoints(request, pointsAdded);
+    this.addDonationProgress(request, option, donation, pointsAdded);
+    this.progressManager.applyProgress(request, pointsAdded);
     this.contributionManager.addPoints(notice, pointsAdded);
 
-    return {
+    const result = {
       ok: true,
       changed: true,
       requestId,
-      donatedCoin: donation,
+      optionKey: option.optionKey,
+      donatedQuantity: donation,
       pointsAdded,
     };
+
+    if (option.resourceType === 'coin') {
+      result.donatedCoin = donation;
+    }
+
+    if (option.resourceType === 'item') {
+      result.donatedItem = {
+        itemKey: option.itemKey,
+        label: option.label,
+        quantity: donation,
+      };
+    }
+
+    return result;
+  }
+
+  isDonationRequest(request = {}) {
+    return (
+      request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN ||
+      request.actionType === WORLD_NOTICE_ACTIONS.DONATE_RESOURCES ||
+      Array.isArray(request.donationOptions)
+    );
+  }
+
+  getDonationOption(request = {}, optionKey = '') {
+    const safeOptionKey = String(optionKey ?? '').trim();
+    const options = this.getDonationOptions(request);
+
+    if (!safeOptionKey && options.length === 1) {
+      return options[0];
+    }
+
+    return options.find((option) => option.optionKey === safeOptionKey) ?? null;
+  }
+
+  getDonationOptions(request = {}) {
+    if (Array.isArray(request.donationOptions) && request.donationOptions.length) {
+      return request.donationOptions;
+    }
+
+    if (request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN) {
+      return [
+        {
+          optionKey: 'coin',
+          resourceType: 'coin',
+          label: 'coin',
+          pointsPerUnit: 1,
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  getDonationAvailableQuantity(option = {}) {
+    if (option.resourceType === 'coin') {
+      return Math.max(
+        0,
+        Math.floor(Number(this.coinFacade?.getSnapshot?.().current) || 0),
+      );
+    }
+
+    if (option.resourceType === 'item') {
+      const item = this.getDonationItemDefinition(option);
+
+      if (!item) {
+        return 0;
+      }
+
+      return Math.max(0, Math.floor(Number(this.itemsFacade?.getItemQuantity?.(item.id)) || 0));
+    }
+
+    return 0;
+  }
+
+  getDonationItemDefinition(option = {}) {
+    if (!option.itemKey) {
+      return null;
+    }
+
+    try {
+      return this.itemsFacade?.getItemDefinitionByKey?.(option.itemKey) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  canSpendDonation(option = {}, quantity = 0) {
+    if (option.resourceType === 'coin') {
+      return this.coinFacade?.canSpend?.(quantity) === true;
+    }
+
+    if (option.resourceType === 'item') {
+      return this.getDonationAvailableQuantity(option) >= quantity;
+    }
+
+    return false;
+  }
+
+  spendDonation(option = {}, quantity = 0) {
+    if (option.resourceType === 'coin') {
+      return this.coinFacade?.spend?.(quantity) === true;
+    }
+
+    if (option.resourceType === 'item') {
+      const item = this.getDonationItemDefinition(option);
+
+      if (!item) {
+        return false;
+      }
+
+      return Boolean(this.itemsFacade?.removeItem?.(item.id, quantity));
+    }
+
+    return false;
+  }
+
+  addDonationProgress(request = {}, option = {}, quantity = 0, points = 0) {
+    if (!request.donationProgress || typeof request.donationProgress !== 'object') {
+      request.donationProgress = {};
+    }
+
+    const optionKey = option.optionKey;
+    const previous = request.donationProgress[optionKey] ?? {};
+    request.donationProgress[optionKey] = {
+      quantity: Math.max(0, Math.floor(Number(previous.quantity) || 0)) + quantity,
+      points: Math.max(0, Math.floor(Number(previous.points) || 0)) + points,
+    };
+    request.pointProgressQuantity =
+      Math.max(0, Math.floor(Number(request.pointProgressQuantity) || 0)) + points;
+  }
+
+  getDonationEmptyReason(option = {}) {
+    return option.resourceType === 'coin' ? 'not_enough_coin' : 'not_enough_items';
   }
 
   getSnapshot() {
@@ -268,21 +429,31 @@ export class WorldNoticeFacade {
       0,
       Math.floor(Number(this.coinFacade?.getSnapshot?.().current) || 0),
     );
+    const donationOptions = this.createDonationOptionSnapshots(request);
+    const maxOptionDonateQuantity = donationOptions.reduce(
+      (max, option) => Math.max(max, option.maxDonateQuantity),
+      0,
+    );
     const availableQuantity =
-      request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN ? currentCoin : 0;
+      request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN
+        ? currentCoin
+        : maxOptionDonateQuantity;
     const maxDonateQuantity =
       request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN
         ? currentCoin
-        : 0;
+        : maxOptionDonateQuantity;
     const canDonate =
-      request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN &&
-      maxDonateQuantity > 0;
+      this.isDonationRequest(request) &&
+      donationOptions.some((option) => option.maxDonateQuantity > 0);
 
     return {
       requestId: request.requestId,
       requestKey: request.requestKey,
       actionType: request.actionType,
       label: request.label,
+      title: request.title ?? request.label,
+      situation: request.situation ?? '',
+      description: request.description ?? '',
       requiredQuantity,
       progressQuantity,
       contributedQuantity,
@@ -292,21 +463,55 @@ export class WorldNoticeFacade {
       contributionPoints,
       pointText: this.contributionManager.getActionPointText(request.actionType),
       collectedPointText: this.formatPoints(contributionPoints),
-      manual: request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN,
+      manual: this.isDonationRequest(request),
       canDonate,
       availableQuantity,
       maxDonateQuantity,
+      donationOptions,
       actionText: this.getRequestActionText({ request, completed, canDonate }),
     };
   }
 
+  createDonationOptionSnapshots(request = {}) {
+    return this.getDonationOptions(request).map((option) =>
+      this.createDonationOptionSnapshot(request, option),
+    );
+  }
+
+  createDonationOptionSnapshot(request = {}, option = {}) {
+    const progress = request.donationProgress?.[option.optionKey] ?? {};
+    const itemDefinition =
+      option.resourceType === 'item' ? this.getDonationItemDefinition(option) : null;
+    const label = itemDefinition?.label ?? option.label;
+    const availableQuantity = this.getDonationAvailableQuantity(option);
+    const contributedQuantity = Math.max(0, Math.floor(Number(progress.quantity) || 0));
+    const contributionPoints = Math.max(0, Math.floor(Number(progress.points) || 0));
+
+    return {
+      optionKey: option.optionKey,
+      resourceType: option.resourceType,
+      itemKey: option.itemKey ?? null,
+      itemTypeId: itemDefinition?.id ?? null,
+      itemKind: itemDefinition?.kind ?? null,
+      label,
+      pointsPerUnit: Math.max(0, Math.floor(Number(option.pointsPerUnit) || 0)),
+      pointText: `${this.formatPoints(option.pointsPerUnit)} each`,
+      availableQuantity,
+      maxDonateQuantity: availableQuantity,
+      contributedQuantity,
+      contributionPoints,
+      collectedPointText: this.formatPoints(contributionPoints),
+      canDonate: availableQuantity > 0,
+    };
+  }
+
   getRequestActionText({ request, completed, canDonate }) {
-    if (completed && request.actionType !== WORLD_NOTICE_ACTIONS.DONATE_COIN) {
+    if (completed && !this.isDonationRequest(request)) {
       return 'done';
     }
 
-    if (request.actionType === WORLD_NOTICE_ACTIONS.DONATE_COIN) {
-      return canDonate ? 'donate' : 'need coin';
+    if (this.isDonationRequest(request)) {
+      return canDonate ? 'donate' : 'need items';
     }
 
     return this.contributionManager.getActionPointText(request.actionType);

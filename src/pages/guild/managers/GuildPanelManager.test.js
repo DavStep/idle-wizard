@@ -229,7 +229,7 @@ describe('GuildPanelManager', () => {
     expect(parent.querySelector('.guild-page__empty-row')?.textContent).toBe('no requests');
   });
 
-  it('shows board requests above available quests with expiry and post/remove actions', () => {
+  it('shows board requests above available quests with details, rewards, and actions', () => {
     const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
     const { parent } = mountManager(gameplayFacade);
 
@@ -246,18 +246,40 @@ describe('GuildPanelManager', () => {
     );
     const boardRow = boardBox?.querySelector('.guild-page__request-row');
     const availableRow = availableBox?.querySelector('.guild-page__request-row');
+    const separator = parent.querySelector('.guild-page__board-separator');
 
-    expect(boardBox?.querySelector('.guild-page__row-main')?.textContent).toBe(
-      'lost lantern (easy) expires 12m',
+    expect(separator).not.toBeNull();
+    expect(boardRow?.querySelector('.guild-page__request-title')?.textContent).toBe(
+      'lost lantern',
     );
-    expect(boardBox?.querySelector('.guild-page__box-bottom')?.textContent).toBe(
-      'new available 12m',
+    expect(boardRow?.querySelector('.guild-page__request-description')?.textContent).toBe(
+      'a village needs light.',
     );
+    expect(boardRow?.querySelector('.guild-page__request-meta')?.textContent).toBe(
+      'easy, expires 12m',
+    );
+    expect(boardRow?.querySelector('.guild-page__request-reward')?.textContent).toBe(
+      'reward: 12 coin',
+    );
+    expect(boardBox?.querySelector('.guild-page__box-bottom')).toBeNull();
     expect(boardRow?.querySelector('.guild-page__row-action')?.textContent).toBe('remove');
-    expect(availableBox?.querySelector('.guild-page__row-main')?.textContent).toBe(
-      'old road escort (medium) expires 12m',
+    expect(availableRow?.querySelector('.guild-page__request-title')?.textContent).toBe(
+      'old road escort',
     );
-    expect(availableBox?.querySelector('.guild-page__box-bottom')?.textContent).toBe('new 12m');
+    expect(availableRow?.querySelector('.guild-page__request-description')?.textContent).toBe(
+      'a trader wants one honest shadow.',
+    );
+    expect(availableRow?.querySelector('.guild-page__request-meta')?.textContent).toBe(
+      'medium, expires 12m',
+    );
+    expect(availableRow?.querySelector('.guild-page__request-reward')?.textContent).toBe(
+      'reward: 20 coin',
+    );
+    const availableTimerRow = [...(availableBox?.querySelectorAll('.guild-page__row') ?? [])].find(
+      (row) => row.querySelector('.guild-page__row-key')?.textContent === 'upcoming quest',
+    );
+    expect(availableTimerRow?.querySelector('.guild-page__row-value')?.textContent).toBe('12m');
+    expect(availableBox?.querySelector('.guild-page__box-bottom')).toBeNull();
     expect(availableRow?.querySelector('.guild-page__row-action')?.textContent).toBe('post');
 
     boardRow
@@ -318,6 +340,11 @@ describe('GuildPanelManager', () => {
     expect(
       [...secretaryBox.querySelectorAll('.guild-page__row-value')].map((row) => row.textContent),
     ).toEqual(['1', '1 -> 2', '3 -> 5']);
+    expect(
+      [...secretaryBox.querySelectorAll('.guild-page__upgrade-preview-gain')].map(
+        (gain) => gain.textContent,
+      ),
+    ).toEqual([' -> 2', ' -> 5']);
     expect(upgradeButton?.disabled).toBe(false);
 
     upgradeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -334,6 +361,15 @@ describe('GuildPanelManager', () => {
       ),
     ).toEqual(['save']);
     expect(popupLayer.textContent).not.toContain('upgrade secretary');
+  });
+
+  it('colors secretary upgrade preview gains green', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const gainRule = baseCss.match(
+      /\.guild-page__upgrade-preview-gain\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(gainRule).toMatch(/\bcolor:\s*var\(--style-alliance-tag-green\);/);
   });
 
   it('renders guild card dialog tabs as a standard tablist', () => {
@@ -377,6 +413,76 @@ describe('GuildPanelManager', () => {
         button.getAttribute('aria-selected'),
       ),
     ).toEqual(['false', 'true', 'false']);
+  });
+
+  it('renders adventurers and applicants as compact identity cards', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="adventurers"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const boxes = [...parent.querySelectorAll('.guild-page__box')];
+    const adventurersBox = boxes.find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'adventurers',
+    );
+    const applicantsBox = boxes.find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'applicants',
+    );
+    const adventurerRow = adventurersBox?.querySelector('.guild-page__adventurer-row');
+    const applicantRow = applicantsBox?.querySelector('.guild-page__adventurer-row');
+
+    expect(adventurerRow?.querySelector('.guild-page__adventurer-icon')?.dataset.initial).toBe(
+      'm',
+    );
+    expect(adventurerRow?.querySelector('.guild-page__adventurer-name')?.textContent).toBe('mira');
+    expect(adventurerRow?.querySelector('.guild-page__adventurer-level')?.textContent).toBe(
+      'level 1',
+    );
+    expect(adventurerRow?.querySelector('.guild-page__adventurer-status')?.textContent).toBe(
+      'idle',
+    );
+    expect(adventurerRow?.querySelector('.guild-page__adventurer-main')?.getAttribute('aria-label'))
+      .toBe('mira, level 1, idle');
+
+    expect(applicantRow?.querySelector('.guild-page__adventurer-icon')?.dataset.initial).toBe('o');
+    expect(applicantRow?.querySelector('.guild-page__adventurer-name')?.textContent).toBe('orin');
+    expect(applicantRow?.querySelector('.guild-page__adventurer-level')?.textContent).toBe(
+      'level 1',
+    );
+    expect(applicantRow?.querySelector('.guild-page__adventurer-status')?.textContent).toBe(
+      'idle',
+    );
+    expect(applicantRow?.querySelector('.guild-page__adventurer-main')?.getAttribute('aria-label'))
+      .toBe('orin, level 1, idle');
+  });
+
+  it('styles guild identity cards with source-scale icon placeholders', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rowRule = [
+      ...baseCss.matchAll(/\.guild-page__adventurer-row\s*\{(?<body>[^}]*)\}/g),
+    ].at(-1)?.groups?.body;
+    const mainRule = baseCss.match(
+      /\.guild-page__adventurer-main\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const iconRule = baseCss.match(
+      /\.guild-page__adventurer-icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const levelStatusRule = [
+      ...baseCss.matchAll(
+        /\.guild-page__adventurer-level,\s*\.guild-page__adventurer-status\s*\{(?<body>[^}]*)\}/g,
+      ),
+    ].at(-1)?.groups?.body;
+
+    expect(rowRule).toMatch(
+      /\bmin-height:\s*calc\(var\(--style-row-min-height\)\s*\*\s*2\);/,
+    );
+    expect(mainRule).toMatch(/\bgrid-template-columns:\s*24px minmax\(0,\s*1fr\);/);
+    expect(iconRule).toMatch(/\bwidth:\s*24px;/);
+    expect(iconRule).toMatch(/\bheight:\s*24px;/);
+    expect(iconRule).toMatch(/\bborder:\s*var\(--style-border\);/);
+    expect(levelStatusRule).toMatch(/\bfont-size:\s*var\(--style-box-border-label-font-size\);/);
   });
 
   it('rolls hidden adventurer attention up to the guild tab button', () => {
@@ -540,6 +646,25 @@ describe('GuildPanelManager', () => {
     expect(charterButtonRule).toMatch(/\balign-self:\s*center;/);
     expect(charterButtonRule).toMatch(/\bwidth:\s*min\(220px,\s*100%\);/);
     expect(charterButtonRule).toMatch(/\bmargin-top:\s*10px;/);
+  });
+
+  it('lets guild request details wrap instead of ellipsizing', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const requestMainRule = baseCss.match(
+      /\.guild-page__request-main\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const requestLineRule = baseCss.match(
+      /\.guild-page__request-title,\s*\.guild-page__request-description,\s*\.guild-page__request-meta,\s*\.guild-page__request-reward\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const separatorRule = baseCss.match(
+      /\.guild-page__board-separator\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(requestMainRule).toMatch(/\bwhite-space:\s*normal;/);
+    expect(requestMainRule).toMatch(/\btext-overflow:\s*clip;/);
+    expect(requestLineRule).toMatch(/\bwhite-space:\s*normal;/);
+    expect(requestLineRule).toMatch(/\boverflow-wrap:\s*anywhere;/);
+    expect(separatorRule).toMatch(/\bborder-top:\s*var\(--style-border\);/);
   });
 
   it('populates guild settings fields and keeps in-progress edits through refreshes', () => {

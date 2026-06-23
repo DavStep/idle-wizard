@@ -13,6 +13,7 @@ import {
 
 const maxLockedResearchesPerBox = 3;
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
+const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
 
 export class ResearchBoxListManager {
   constructor({ gameplayFacade, onSelectedTabChange, onShowResearchInfo } = {}) {
@@ -28,6 +29,11 @@ export class ResearchBoxListManager {
     this.tabButtons = new Map();
     this.rowRefs = new Map();
     this.handledLockedRowPressStartResearchId = null;
+    this.pendingLockedRowPress = null;
+    this.handlePendingLockedRowPressMove = (event) =>
+      this.onPendingLockedRowPressMove(event);
+    this.handlePendingLockedRowPressEnd = (event) => this.onPendingLockedRowPressEnd(event);
+    this.handlePendingLockedRowPressCancel = () => this.clearPendingLockedRowPress();
     this.lastTouchLikePressStart = {
       key: null,
       timeStamp: Number.NEGATIVE_INFINITY,
@@ -64,6 +70,7 @@ export class ResearchBoxListManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.clearPendingLockedRowPress();
     this.root?.remove();
     this.root = null;
     this.tabsRoot = null;
@@ -367,7 +374,7 @@ export class ResearchBoxListManager {
     row.classList.toggle('is-in-progress', Boolean(research.inProgress));
 
     if (research.locked) {
-      this.bindTouchLikePressStart(row, `locked-research:${research.id}`, (event) =>
+      this.bindTouchLikeValidatedPress(row, `locked-research:${research.id}`, (event) =>
         this.onLockedRowPressStart(event, research),
       );
       row.addEventListener('click', (event) => this.onLockedRowClick(event, research));
@@ -433,23 +440,199 @@ export class ResearchBoxListManager {
     this.onShowResearchInfo?.(research);
   }
 
-  bindTouchLikePressStart(target, key, handler) {
+  bindTouchLikeValidatedPress(target, key, handler) {
     target.addEventListener('pointerdown', (event) =>
-      this.onTouchLikePressStart(event, key, handler),
+      this.onTouchLikeValidatedPressStart(event, key, handler),
     );
     target.addEventListener(
       'touchstart',
-      (event) => this.onTouchLikePressStart(event, key, handler),
-      { passive: false },
+      (event) => this.onTouchLikeValidatedPressStart(event, key, handler),
+      { passive: true },
     );
   }
 
-  onTouchLikePressStart(event, key, handler) {
-    if (this.isMousePressStart(event) || this.isDuplicateTouchLikePressStart(event, key)) {
+  onTouchLikeValidatedPressStart(event, key, handler) {
+    if (
+      this.isMousePressStart(event) ||
+      this.isDuplicateTouchLikePressStart(event, key) ||
+      event.target?.closest?.('button')
+    ) {
       return;
     }
 
-    handler(event);
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    this.clearPendingLockedRowPress();
+    this.pendingLockedRowPress = {
+      key,
+      handler,
+      target: event.currentTarget,
+      pointerId: event.pointerId,
+      startX: point.clientX,
+      startY: point.clientY,
+      moved: false,
+      type: event.type === 'pointerdown' ? 'pointer' : 'touch',
+    };
+    this.addPendingLockedRowPressListeners(this.pendingLockedRowPress.type);
+  }
+
+  addPendingLockedRowPressListeners(type) {
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    const target = this.pendingLockedRowPress?.target ?? null;
+
+    if (!document && !target) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      this.addPendingLockedRowPointerListeners(document);
+      this.addPendingLockedRowPointerListeners(target);
+      return;
+    }
+
+    this.addPendingLockedRowTouchListeners(document);
+    this.addPendingLockedRowTouchListeners(target);
+  }
+
+  addPendingLockedRowPointerListeners(target) {
+    if (!target) {
+      return;
+    }
+
+    target.addEventListener('pointermove', this.handlePendingLockedRowPressMove, {
+      passive: true,
+    });
+    target.addEventListener('pointerup', this.handlePendingLockedRowPressEnd, true);
+    target.addEventListener('pointercancel', this.handlePendingLockedRowPressCancel, true);
+  }
+
+  addPendingLockedRowTouchListeners(target) {
+    if (!target) {
+      return;
+    }
+
+    target.addEventListener('touchmove', this.handlePendingLockedRowPressMove, {
+      passive: true,
+    });
+    target.addEventListener('touchend', this.handlePendingLockedRowPressEnd, true);
+    target.addEventListener('touchcancel', this.handlePendingLockedRowPressCancel, true);
+  }
+
+  removePendingLockedRowPressListeners(type, fallbackTarget = null) {
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    if (!document && !fallbackTarget) {
+      return;
+    }
+
+    if (type === 'pointer') {
+      this.removePendingLockedRowPointerListeners(document);
+      this.removePendingLockedRowPointerListeners(fallbackTarget);
+      return;
+    }
+
+    this.removePendingLockedRowTouchListeners(document);
+    this.removePendingLockedRowTouchListeners(fallbackTarget);
+  }
+
+  removePendingLockedRowPointerListeners(target) {
+    if (!target) {
+      return;
+    }
+
+    target.removeEventListener('pointermove', this.handlePendingLockedRowPressMove);
+    target.removeEventListener('pointerup', this.handlePendingLockedRowPressEnd, true);
+    target.removeEventListener(
+      'pointercancel',
+      this.handlePendingLockedRowPressCancel,
+      true,
+    );
+  }
+
+  removePendingLockedRowTouchListeners(target) {
+    if (!target) {
+      return;
+    }
+
+    target.removeEventListener('touchmove', this.handlePendingLockedRowPressMove);
+    target.removeEventListener('touchend', this.handlePendingLockedRowPressEnd, true);
+    target.removeEventListener('touchcancel', this.handlePendingLockedRowPressCancel, true);
+  }
+
+  onPendingLockedRowPressMove(event) {
+    const pending = this.pendingLockedRowPress;
+    if (!pending || !this.eventMatchesPendingLockedRowPress(event, pending)) {
+      return;
+    }
+
+    const point = this.getTouchLikePoint(event);
+    if (!point) {
+      return;
+    }
+
+    if (
+      Math.hypot(point.clientX - pending.startX, point.clientY - pending.startY) >
+      TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX
+    ) {
+      pending.moved = true;
+    }
+  }
+
+  onPendingLockedRowPressEnd(event) {
+    const pending = this.pendingLockedRowPress;
+    if (!pending || !this.eventMatchesPendingLockedRowPress(event, pending)) {
+      return;
+    }
+
+    this.clearPendingLockedRowPress();
+
+    if (pending.moved || !pending.target.contains(event.target)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    pending.handler(event);
+  }
+
+  clearPendingLockedRowPress() {
+    if (!this.pendingLockedRowPress) {
+      return;
+    }
+
+    const { type, target } = this.pendingLockedRowPress;
+    this.pendingLockedRowPress = null;
+    this.removePendingLockedRowPressListeners(type, target);
+  }
+
+  eventMatchesPendingLockedRowPress(event, pending) {
+    return (
+      pending.type !== 'pointer' ||
+      event.pointerId === undefined ||
+      pending.pointerId === undefined ||
+      event.pointerId === pending.pointerId
+    );
+  }
+
+  getTouchLikePoint(event) {
+    const touch = event.changedTouches?.[0] ?? event.touches?.[0];
+    if (touch) {
+      return {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      };
+    }
+
+    if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+      return {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+    }
+
+    return null;
   }
 
   isDuplicateTouchLikePressStart(event, key) {

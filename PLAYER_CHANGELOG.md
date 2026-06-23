@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.34
+
+- Reworked weekly world events into donation quests that can ask for useful potions or coin, with an amount picker, point preview, and per-option totals.
+- Added a new rotation of world-event crises and cleanup so older saved funding events refresh into the current quest format.
+- Improved the world event popup with clearer quest rows, fixed header scrolling, leaderboard rewards, and qualification copy.
+- Tightened mobile taps for Garden seed choices, Research locked rows, and Market fast-sell rows so scrolling is less likely to select the wrong thing.
+- Improved Android keyboard handling, swipe navigation, timer fills, Guild board/adventurer rows, and desktop hover behavior.
+
 ## 0.2.33
 
 - Improved Android text handling so normal play no longer opens copy, paste, select, or drag menus over the game.

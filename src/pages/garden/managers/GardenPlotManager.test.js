@@ -305,12 +305,28 @@ function setPlotActionHitBox(plotRow) {
   });
 }
 
-function dispatchTouchLikePressStart(element) {
+function createPointerEvent(
+  type,
+  { clientX = 120, clientY = 180, pointerId = 1, pointerType = 'touch' } = {},
+) {
+  const event = new window.MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    clientY,
+  });
+  Object.defineProperty(event, 'pointerId', { value: pointerId });
+  Object.defineProperty(event, 'pointerType', { value: pointerType });
+  return event;
+}
+
+function dispatchTouchLikePressStart(element, options) {
+  element.dispatchEvent(createPointerEvent('pointerdown', options));
+}
+
+function dispatchTouchLikePressEnd(element, options) {
   element.dispatchEvent(
-    new window.MouseEvent('pointerdown', {
-      bubbles: true,
-      cancelable: true,
-    }),
+    createPointerEvent('pointerup', options),
   );
 }
 
@@ -335,6 +351,20 @@ describe('GardenPlotManager', () => {
     expect(plotRoot?.dataset.plotView).toBe('boxes');
     expect(rows?.dataset.plotView).toBe('boxes');
     expect(rows?.style.getPropertyValue('--garden-page-plot-columns')).toBe('3');
+  });
+
+  it('centers the plant and no seeds actions inside empty selected plot boxes', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const centeredRule = baseCss.match(
+      /\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-row\.is-empty\.is-plantable\s+\.garden-page__plot-box-action,\s*\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-row\.is-empty\.is-selected-without-seeds\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(centeredRule).toContain('top: 50%;');
+    expect(centeredRule).toContain('left: 50%;');
+    expect(centeredRule).toContain('right: auto;');
+    expect(centeredRule).toContain('bottom: auto;');
+    expect(centeredRule).toContain('text-align: center;');
+    expect(centeredRule).toContain('transform: translate(-50%, -50%);');
   });
 
   it('lets the Garden page scroll instead of fixing plot and herb box heights', () => {
@@ -859,11 +889,12 @@ describe('GardenPlotManager', () => {
     expect(tile.phase).toBe('empty');
   });
 
-  it('selects a seed choice on touch press start', () => {
+  it('selects a seed choice on touch release', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
 
+    document.body.append(parent);
     manager.mount(parent);
     parent
       .querySelector('.garden-page__plot-action')
@@ -872,12 +903,43 @@ describe('GardenPlotManager', () => {
     const mintButton = parent.querySelector('[aria-label="select mint seed, owned 1"]');
 
     dispatchTouchLikePressStart(mintButton);
+    dispatchTouchLikePressEnd(mintButton);
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint');
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('does not select a seed choice when the seed picker touch scrolls', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    document.body.append(parent);
+    manager.mount(parent);
+    parent
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const mintButton = parent.querySelector('[aria-label="select mint seed, owned 1"]');
+
+    dispatchTouchLikePressStart(mintButton, { clientX: 10, clientY: 10 });
+    document.dispatchEvent(createPointerEvent('pointermove', { clientX: 10, clientY: 32 }));
+    dispatchTouchLikePressEnd(mintButton, { clientX: 10, clientY: 32 });
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('ignores the retargeted plot click after touch-selecting a seed choice', () => {
@@ -885,6 +947,7 @@ describe('GardenPlotManager', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
 
+    document.body.append(parent);
     manager.mount(parent);
     parent
       .querySelector('.garden-page__plot-action')
@@ -893,6 +956,7 @@ describe('GardenPlotManager', () => {
     const mintButton = parent.querySelector('[aria-label="select mint seed, owned 1"]');
 
     dispatchTouchLikePressStart(mintButton);
+    dispatchTouchLikePressEnd(mintButton);
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
     plotRow.dispatchEvent(
@@ -902,6 +966,9 @@ describe('GardenPlotManager', () => {
     expect(parent.querySelector('.garden-page__cancel-popup').hidden).toBe(true);
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('shows the selected plot and seed while the seed picker is open', () => {

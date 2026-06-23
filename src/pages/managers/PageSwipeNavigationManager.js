@@ -41,6 +41,7 @@ const OPEN_POPUP_SELECTOR = [
 ].join(',');
 
 const SWIPE_COMMIT_AXIS_RATIO = 1.15;
+const SWIPE_AXIS_LOCK_RATIO = 1.25;
 const SWIPE_FEEDBACK_MAX_PX = 18;
 const SWIPE_FEEDBACK_RESISTANCE = 0.08;
 const SWIPE_EDGE_FEEDBACK_RESISTANCE = 0.035;
@@ -233,23 +234,18 @@ export class PageSwipeNavigationManager {
     const absX = Math.abs(this.gesture.lastX - this.gesture.startX);
     const absY = Math.abs(this.gesture.lastY - this.gesture.startY);
 
-    if (
-      !this.gesture.isHorizontal &&
-      !this.gesture.isVertical &&
-      absY >= this.axisLockPx &&
-      absY > absX
-    ) {
-      this.gesture.isVertical = true;
-      this.clearSwipeFeedback();
-      return;
-    }
+    if (!this.gesture.isHorizontal && !this.gesture.isVertical) {
+      const axis = this.getGestureAxis(absX, absY);
 
-    if (this.gesture.isVertical) {
-      return;
-    }
+      if (axis === 'vertical') {
+        this.gesture.isVertical = true;
+        this.clearSwipeFeedback();
+        return;
+      }
 
-    if (!this.gesture.isHorizontal && absX >= this.axisLockPx && absX > absY) {
-      this.gesture.isHorizontal = true;
+      if (axis === 'horizontal') {
+        this.gesture.isHorizontal = true;
+      }
     }
 
     if (this.gesture.isHorizontal && originalEvent.cancelable) {
@@ -260,6 +256,22 @@ export class PageSwipeNavigationManager {
     if (this.gesture.isHorizontal) {
       this.updateSwipeFeedback(this.gesture.lastX - this.gesture.startX);
     }
+  }
+
+  getGestureAxis(absX, absY) {
+    if (absX < this.axisLockPx && absY < this.axisLockPx) {
+      return null;
+    }
+
+    if (absX >= this.axisLockPx && absX >= absY * SWIPE_AXIS_LOCK_RATIO) {
+      return 'horizontal';
+    }
+
+    if (absY >= this.axisLockPx && absY >= absX * SWIPE_AXIS_LOCK_RATIO) {
+      return 'vertical';
+    }
+
+    return null;
   }
 
   finishGesture(point, originalEvent = point) {

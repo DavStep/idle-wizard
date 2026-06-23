@@ -88,10 +88,21 @@ function getSmoothMode(smooth) {
   return smooth ? 'continuous' : 'none';
 }
 
-function getStepTransitionMs(stepMs) {
+function getStepTransitionMs(stepMs, remainingMs) {
   const safeStepMs = Math.max(0, Number(stepMs) || 0);
+  const transitionMs = safeStepMs > 0 ? Math.ceil(safeStepMs) : DEFAULT_STEP_TRANSITION_MS;
 
-  return safeStepMs > 0 ? Math.ceil(safeStepMs) : DEFAULT_STEP_TRANSITION_MS;
+  if (remainingMs === null || remainingMs === undefined) {
+    return transitionMs;
+  }
+
+  const safeRemainingMs = Math.max(0, Number(remainingMs) || 0);
+
+  if (safeRemainingMs <= 0) {
+    return 0;
+  }
+
+  return Math.min(transitionMs, Math.ceil(safeRemainingMs));
 }
 
 export function stopProgressFill(element, progress = 0) {
@@ -130,7 +141,7 @@ export function stopProgressFill(element, progress = 0) {
 export function setProgressFill(
   element,
   progress,
-  { smooth = false, remainingMs = 0, stepMs = DEFAULT_STEP_TRANSITION_MS } = {},
+  { smooth = false, remainingMs = null, stepMs = DEFAULT_STEP_TRANSITION_MS } = {},
 ) {
   if (!element) {
     return 0;
@@ -146,9 +157,10 @@ export function setProgressFill(
   setStyleValue(element, 'width', '100%');
 
   if (smoothMode === 'step') {
-    const transition = prefersReducedMotion(element)
+    const stepTransitionMs = getStepTransitionMs(stepMs, remainingMs);
+    const transition = prefersReducedMotion(element) || stepTransitionMs <= 0
       ? 'none'
-      : `transform ${getStepTransitionMs(stepMs)}ms linear`;
+      : `transform ${stepTransitionMs}ms linear`;
     const scale = formatScale(safeProgress);
     const existingState = progressStates.get(element);
 

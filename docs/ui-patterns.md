@@ -24,6 +24,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 
 - Row actions are text controls on the line, not separate decorative cards.
 - Hover and press states must not tint row or button backgrounds; use weight, borders, or existing row state instead of below-text lines.
+- Underlines are allowed only for neutral selected options in mutually exclusive controls, such as tabs or one-of button panels; do not show them while hovered, held, or pressed.
 - Buy/place/claim prices stay right-aligned and use tabular numerals.
 - Disabled or locked right-side actions use muted text and keep the same row height as enabled rows.
 

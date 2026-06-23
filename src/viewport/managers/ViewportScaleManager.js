@@ -6,21 +6,38 @@ export class ViewportScaleManager {
     this.resizeObserver = null;
     this.layoutViewport = null;
     this.textEntryViewportLocked = false;
-    this.handleViewportChange = () => this.updateScale();
+    this.focusedTextEntryElement = null;
+    this.scrollResetFrame = null;
+    this.handleViewportChange = () => {
+      this.keepDocumentAnchoredDuringTextEntry();
+      this.updateScale();
+    };
+    this.handleViewportScroll = () => {
+      if (!this.textEntryViewportLocked && !this.isTextEntryActive()) {
+        return;
+      }
+
+      this.keepDocumentAnchoredDuringTextEntry();
+      this.updateScale();
+    };
     this.handleTextEntryPressStart = (event) => {
       if (this.getTextEntryElementFromEvent(event)) {
-        this.textEntryViewportLocked = true;
+        this.lockTextEntryViewport();
       }
     };
     this.handleTextEntryFocusIn = (event) => {
       if (this.isTextEntryElement(event.target)) {
-        this.textEntryViewportLocked = true;
+        this.focusedTextEntryElement = event.target;
+        this.lockTextEntryViewport();
         this.updateScale();
       }
     };
     this.handleTextEntryFocusOut = (event) => {
       if (this.isTextEntryElement(event.target)) {
-        this.textEntryViewportLocked = true;
+        if (this.focusedTextEntryElement === event.target) {
+          this.focusedTextEntryElement = null;
+        }
+        this.lockTextEntryViewport();
       }
     };
   }
@@ -29,10 +46,12 @@ export class ViewportScaleManager {
     this.stage = stage;
     this.updateScale();
 
-    this.resizeObserver = new ResizeObserver(() => this.updateScale());
+    this.resizeObserver = new ResizeObserver(this.handleViewportChange);
     this.resizeObserver.observe(document.documentElement);
     window.addEventListener('resize', this.handleViewportChange);
     window.visualViewport?.addEventListener('resize', this.handleViewportChange);
+    window.addEventListener('scroll', this.handleViewportScroll);
+    window.visualViewport?.addEventListener('scroll', this.handleViewportScroll);
     document.addEventListener('pointerdown', this.handleTextEntryPressStart, true);
     document.addEventListener('touchstart', this.handleTextEntryPressStart, true);
     document.addEventListener('focusin', this.handleTextEntryFocusIn);
@@ -44,10 +63,13 @@ export class ViewportScaleManager {
     this.resizeObserver = null;
     window.removeEventListener('resize', this.handleViewportChange);
     window.visualViewport?.removeEventListener('resize', this.handleViewportChange);
+    window.removeEventListener('scroll', this.handleViewportScroll);
+    window.visualViewport?.removeEventListener('scroll', this.handleViewportScroll);
     document.removeEventListener('pointerdown', this.handleTextEntryPressStart, true);
     document.removeEventListener('touchstart', this.handleTextEntryPressStart, true);
     document.removeEventListener('focusin', this.handleTextEntryFocusIn);
     document.removeEventListener('focusout', this.handleTextEntryFocusOut);
+    this.cancelScrollResetFrame();
     document.documentElement.style.removeProperty('--app-viewport-width');
     document.documentElement.style.removeProperty('--app-viewport-height');
     document.documentElement.style.removeProperty('--app-stage-width');
@@ -58,6 +80,7 @@ export class ViewportScaleManager {
     document.documentElement.style.removeProperty('--app-keyboard-top-dialog-shift');
     this.layoutViewport = null;
     this.textEntryViewportLocked = false;
+    this.focusedTextEntryElement = null;
     this.stage = null;
   }
 
@@ -185,9 +208,87 @@ export class ViewportScaleManager {
     return measuredViewport;
   }
 
+  lockTextEntryViewport() {
+    this.textEntryViewportLocked = true;
+    this.keepDocumentAnchoredDuringTextEntry();
+  }
+
+  keepDocumentAnchoredDuringTextEntry() {
+    if (!this.textEntryViewportLocked && !this.isTextEntryActive()) {
+      return;
+    }
+
+    this.resetDocumentScroll();
+    this.scheduleScrollResetFrame();
+  }
+
+  scheduleScrollResetFrame() {
+    if (this.scrollResetFrame) {
+      return;
+    }
+
+    const requestFrame = window.requestAnimationFrame;
+
+    if (typeof requestFrame !== 'function') {
+      return;
+    }
+
+    this.scrollResetFrame = requestFrame.call(window, () => {
+      this.scrollResetFrame = null;
+
+      if (this.textEntryViewportLocked || this.isTextEntryActive()) {
+        this.resetDocumentScroll();
+      }
+    });
+  }
+
+  cancelScrollResetFrame() {
+    if (!this.scrollResetFrame) {
+      return;
+    }
+
+    const cancelFrame = window.cancelAnimationFrame;
+
+    if (typeof cancelFrame === 'function') {
+      cancelFrame.call(window, this.scrollResetFrame);
+    }
+
+    this.scrollResetFrame = null;
+  }
+
+  resetDocumentScroll() {
+    const scrollingElement = document.scrollingElement ?? document.documentElement;
+    const resetElement = (element) => {
+      if (!element) {
+        return;
+      }
+
+      element.scrollLeft = 0;
+      element.scrollTop = 0;
+    };
+
+    resetElement(scrollingElement);
+    resetElement(document.documentElement);
+    resetElement(document.body);
+
+    if (
+      typeof window.scrollTo === 'function' &&
+      ((window.scrollX ?? 0) !== 0 || (window.scrollY ?? 0) !== 0)
+    ) {
+      window.scrollTo(0, 0);
+    }
+  }
+
   isTextEntryActive() {
     const activeElement = document.activeElement;
-    return this.isTextEntryElement(activeElement);
+    if (this.isTextEntryElement(activeElement)) {
+      return true;
+    }
+
+    return (
+      this.isTextEntryElement(this.focusedTextEntryElement) &&
+      document.contains(this.focusedTextEntryElement)
+    );
   }
 
   getTextEntryElementFromEvent(event) {

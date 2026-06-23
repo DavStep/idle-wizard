@@ -527,10 +527,13 @@ body {
 }
 
 .app-shell {
+  position: fixed;
+  inset: 0;
   display: grid;
   width: var(--app-viewport-width);
   height: var(--app-viewport-height);
   place-items: center;
+  overflow: hidden;
   background: var(--style-bg);
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -1963,11 +1966,16 @@ body {
   border-radius: 0;
 }
 
-.tutorial-layer__lesson-show:hover,
 .tutorial-layer__lesson-show:focus-visible,
-.tutorial-layer__lesson-advance:hover,
 .tutorial-layer__lesson-advance:focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tutorial-layer__lesson-show:hover,
+  .tutorial-layer__lesson-advance:hover {
+    font-weight: 700;
+  }
 }
 
 .tutorial-layer__lesson-show:focus,
@@ -2037,9 +2045,14 @@ body {
   border-radius: 0;
 }
 
-.tutorial-layer__advance:hover,
 .tutorial-layer__advance:focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tutorial-layer__advance:hover {
+    font-weight: 700;
+  }
 }
 
 .tutorial-layer__advance:focus {
@@ -2967,7 +2980,6 @@ body {
   cursor: pointer;
 }
 
-.workshop-page__row--interactive:hover .row_key,
 .workshop-page__row--interactive:focus .row_key {
   font-weight: 700;
 }
@@ -2984,6 +2996,10 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .workshop-page__row--interactive:hover .row_key {
+    font-weight: 700;
+  }
+
   .shop-page__slot-row--interactive:hover
     :where(.shop-page__slot-item-value, .shop-page__slot-price-value) {
     font-weight: 700;
@@ -3334,9 +3350,14 @@ body {
   border-radius: 0;
 }
 
-.workshop-page__tasks-title:hover,
 .workshop-page__tasks-title:focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__tasks-title:hover {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__tasks-title:focus {
@@ -3347,13 +3368,18 @@ body {
   background: var(--style-active-surface);
 }
 
-.workshop-page__tasks-pin:hover,
 .workshop-page__tasks-pin:focus-visible,
-.workshop-page__tasks-toggle:hover,
 .workshop-page__tasks-toggle:focus-visible,
-.workshop-page__level-rewards-toggle:hover,
 .workshop-page__level-rewards-toggle:focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__tasks-pin:hover,
+  .workshop-page__tasks-toggle:hover,
+  .workshop-page__level-rewards-toggle:hover {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__tasks-pin:focus,
@@ -3610,13 +3636,20 @@ body {
   text-align: right;
 }
 
-.workshop-page__personal-tasks-open:hover .workshop-page__feature-character-label,
 .workshop-page__personal-tasks-open:focus-visible
   .workshop-page__feature-character-label,
-.workshop-page__world-notice-open:hover .workshop-page__feature-character-label,
 .workshop-page__world-notice-open:focus-visible
   .workshop-page__feature-character-label {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__personal-tasks-open:hover
+    .workshop-page__feature-character-label,
+  .workshop-page__world-notice-open:hover
+    .workshop-page__feature-character-label {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__personal-tasks-open:active
@@ -3999,13 +4032,18 @@ body {
   display: none;
 }
 
-.brewing-page__herb-button:hover .row_key,
 .brewing-page__herb-button:focus .row_key,
-.brewing-page__ingredient-row:hover .row_key,
 .brewing-page__ingredient-row:focus .row_key,
-.brewing-page__cauldron-guide-step:not(:disabled):hover .row_key,
 .brewing-page__cauldron-guide-step:not(:disabled):focus .row_key {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .brewing-page__herb-button:hover .row_key,
+  .brewing-page__ingredient-row:hover .row_key,
+  .brewing-page__cauldron-guide-step:not(:disabled):hover .row_key {
+    font-weight: 700;
+  }
 }
 
 .brewing-page__herb-button:focus,
@@ -4454,9 +4492,14 @@ body {
   border-radius: 0;
 }
 
-.workshop-page__world-chat-title:hover,
 .workshop-page__world-chat-title:focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__world-chat-title:hover {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__world-chat-title:focus {
@@ -4778,26 +4821,14 @@ body {
 }
 
 .workshop-page__world-notice-content {
-  display: grid;
-  grid-template-rows: 90px 6px minmax(0, 1fr);
-  gap: 0;
-  height: calc(420px - var(--style-dialog-padding) - var(--style-dialog-padding));
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
 }
 
-.workshop-page__world-notice-content:has(
-    .workshop-page__world-notice-frame + .style-scroll-cue-progress:not([hidden])
-  ) {
-  grid-template-rows:
-    90px
-    6px
-    minmax(0, 1fr)
-    var(--style-scroll-progress-gap)
-    var(--style-scroll-progress-height);
-}
-
 .workshop-page__world-notice-frame {
-  grid-row: 3;
+  flex: 1 1 auto;
   display: grid;
   align-content: start;
   gap: 8px;
@@ -4809,11 +4840,6 @@ body {
 
 .workshop-page__world-notice-frame::-webkit-scrollbar {
   display: none;
-}
-
-.workshop-page__world-notice-frame + .style-scroll-cue-progress {
-  grid-row: 5;
-  margin-top: 0;
 }
 
 .workshop-page__world-notice-tabs {
@@ -4834,8 +4860,8 @@ body {
 }
 
 .workshop-page__world-notice-header {
-  grid-row: 1;
   box-sizing: border-box;
+  flex: 0 0 90px;
   display: grid;
   grid-template-columns: 68px minmax(0, 1fr);
   column-gap: 8px;
@@ -4843,6 +4869,7 @@ body {
   height: 90px;
   min-height: 90px;
   padding-bottom: 6px;
+  margin-bottom: 6px;
   background: var(--style-surface);
   border-bottom: 1px solid var(--style-disabled);
 }
@@ -4956,6 +4983,62 @@ body {
   color: var(--style-muted);
 }
 
+.workshop-page__world-notice-donation-options {
+  display: grid;
+  gap: 2px;
+}
+
+.workshop-page__world-notice-donation-option {
+  display: grid;
+  grid-template-areas:
+    "label action"
+    "points total";
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__world-notice-donation-label {
+  grid-area: label;
+  min-width: 0;
+}
+
+.workshop-page__world-notice-donation-label.is-unavailable {
+  color: var(--style-disabled);
+}
+
+.workshop-page__world-notice-donation-label .style-resource-label__icon {
+  margin-right: 0.28em;
+}
+
+:root[data-style-icons="icons"]
+  .workshop-page__world-notice-donation-label
+  .style-resource-label__text {
+  display: inline;
+}
+
+.workshop-page__world-notice-donation-points,
+.workshop-page__world-notice-donation-total {
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  white-space: nowrap;
+}
+
+.workshop-page__world-notice-donation-points {
+  grid-area: points;
+}
+
+.workshop-page__world-notice-donation-total {
+  grid-area: total;
+  text-align: right;
+}
+
+.workshop-page__world-notice-donation-option
+  > .workshop-page__world-notice-request-action {
+  grid-area: action;
+}
+
 .workshop-page__world-notice-request-points,
 .workshop-page__world-notice-request-collected {
   min-width: 0;
@@ -5002,6 +5085,30 @@ body {
 .workshop-page__world-notice-donate-action-row {
   margin-top: 8px;
   text-align: right;
+}
+
+.style-button.workshop-page__world-notice-donate-confirm {
+  display: inline-grid;
+  gap: 1px;
+  align-items: center;
+  justify-items: center;
+  width: auto;
+  min-width: var(--style-button-width);
+  margin-bottom: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: normal;
+}
+
+.workshop-page__world-notice-donate-confirm-points {
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+}
+
+.style-button.workshop-page__world-notice-donate-confirm:disabled
+  .workshop-page__world-notice-donate-confirm-points,
+.style-button.workshop-page__world-notice-donate-confirm[aria-disabled="true"]
+  .workshop-page__world-notice-donate-confirm-points {
+  color: inherit;
 }
 
 .workshop-page__world-notice-donate-status {
@@ -5213,9 +5320,14 @@ body {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.style-button.workshop-page__summon-info-action:hover,
 .style-button.workshop-page__summon-info-action:focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .style-button.workshop-page__summon-info-action:hover {
+    font-weight: 700;
+  }
 }
 
 .style-button.workshop-page__summon-info-action:focus-visible {
@@ -5297,12 +5409,17 @@ body {
   touch-action: manipulation;
 }
 
-.workshop-page__summon-info-weight-button:hover,
 .workshop-page__summon-info-weight-button:focus-visible,
-.workshop-page__summon-info-weight-option:hover,
 .workshop-page__summon-info-weight-option:focus-visible,
 .workshop-page__summon-info-weight-option[aria-selected="true"] {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__summon-info-weight-button:hover,
+  .workshop-page__summon-info-weight-option:hover {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__summon-info-weight-button:focus-visible,
@@ -5629,10 +5746,15 @@ div.workshop-page__discovery-row {
   color: var(--style-disabled);
 }
 
-.workshop-page__discovery-row.is-discovered:hover .row_key,
 .workshop-page__discovery-row.is-discovered:focus .row_key,
 .workshop-page__discovery-row.is-selected .row_key {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__discovery-row.is-discovered:hover .row_key {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__discovery-row:focus {
@@ -5850,9 +5972,14 @@ div.workshop-page__discovery-row {
   cursor: pointer;
 }
 
-.room-player-info-link:hover,
 .room-player-info-link:focus {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-player-info-link:hover {
+    font-weight: 700;
+  }
 }
 
 .room-player-info-link:focus {
@@ -5968,9 +6095,14 @@ div.workshop-page__discovery-row {
   cursor: pointer;
 }
 
-.workshop-page__trade-alliance-member-row.is-actionable:hover .row_key,
 .workshop-page__trade-alliance-member-row.is-actionable:focus .row_key {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__trade-alliance-member-row.is-actionable:hover .row_key {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__trade-alliance-member-row.is-actionable:focus {
@@ -5982,11 +6114,16 @@ div.workshop-page__discovery-row {
   cursor: pointer;
 }
 
-.workshop-page__trade-alliance-list-main.is-actionable:hover .row_key,
 .workshop-page__trade-alliance-list-main.is-actionable:focus .row_key,
-.workshop-page__leaderboard-row.is-actionable:hover .row_key,
 .workshop-page__leaderboard-row.is-actionable:focus .row_key {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workshop-page__trade-alliance-list-main.is-actionable:hover .row_key,
+  .workshop-page__leaderboard-row.is-actionable:hover .row_key {
+    font-weight: 700;
+  }
 }
 
 .workshop-page__trade-alliance-list-main.is-actionable:focus,
@@ -6168,10 +6305,16 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.shop-page__coin-offer-action:hover,
 .shop-page__coin-offer-action:focus-visible {
   outline: none;
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shop-page__coin-offer-action:hover {
+    outline: none;
+    font-weight: 700;
+  }
 }
 
 .shop-page__coin-offer-action:disabled {
@@ -6215,10 +6358,16 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.shop-page__crystal-price:hover,
 .shop-page__crystal-price:focus-visible {
   outline: none;
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shop-page__crystal-price:hover {
+    outline: none;
+    font-weight: 700;
+  }
 }
 
 .shop-page__crystal-row--header > span:last-child {
@@ -6322,9 +6471,14 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.garden-page__inventory-toggle:hover,
 .garden-page__inventory-toggle:focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .garden-page__inventory-toggle:hover {
+    font-weight: 700;
+  }
 }
 
 .garden-page__inventory-toggle:focus {
@@ -6804,6 +6958,20 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row.is-empty.is-plantable
+  .garden-page__plot-box-action,
+.garden-page__plot[data-plot-view="boxes"]
+  .garden-page__plot-row.is-empty.is-selected-without-seeds
+  .garden-page__plot-box-action {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.garden-page__plot[data-plot-view="boxes"]
   .garden-page__plot-row.is-processing
   .garden-page__plot-box-action {
   color: var(--style-muted);
@@ -7258,6 +7426,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__prestige-close,
 .style-button.workshop-page__personal-tasks-close,
 .style-button.workshop-page__world-notice-close,
+.style-button.workshop-page__world-notice-donate-close,
 .style-button.workshop-page__world-chat-close,
 .style-button.workshop-page__trade-alliance-close,
 .style-button.shop-page__request-close,
@@ -7294,6 +7463,9 @@ div.workshop-page__discovery-row {
     [aria-disabled="true"]
   ),
 .style-button.workshop-page__world-notice-close:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.workshop-page__world-notice-donate-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not(
@@ -7378,9 +7550,14 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.brewing-page__auto-state-button:hover,
 .brewing-page__auto-state-button:focus {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .brewing-page__auto-state-button:hover {
+    font-weight: 700;
+  }
 }
 
 .brewing-page__auto-state-button:focus {
@@ -7471,11 +7648,16 @@ div.workshop-page__discovery-row {
   pointer-events: none;
 }
 
-.brewing-page__recipe-row:hover .brewing-page__recipe-select-button,
 .brewing-page__recipe-row:focus .brewing-page__recipe-select-button,
 .brewing-page__recipe-row.is-selected .brewing-page__recipe-select-button,
 .brewing-page__recipe-row.is-selected .brewing-page__recipe-name {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .brewing-page__recipe-row:hover .brewing-page__recipe-select-button {
+    font-weight: 700;
+  }
 }
 
 .brewing-page__recipe-row:focus {
@@ -8073,13 +8255,18 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.shop-page__direct-sell-selected-label:hover,
 .shop-page__direct-sell-selected-label:focus-visible,
 .shop-page__direct-sell-selected-label[aria-pressed="true"],
-.shop-page__sell-selected-label:hover,
 .shop-page__sell-selected-label:focus-visible,
 .shop-page__sell-selected-label[aria-pressed="true"] {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shop-page__direct-sell-selected-label:hover,
+  .shop-page__sell-selected-label:hover {
+    font-weight: 700;
+  }
 }
 
 .shop-page__direct-sell-selected-label:active:not(:disabled),
@@ -8551,10 +8738,16 @@ div.workshop-page__discovery-row {
   -webkit-user-drag: none;
 }
 
-.room-bottom-panel__tab:hover,
 .room-bottom-panel__tab:focus-visible {
   border-color: var(--style-stroke);
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-bottom-panel__tab:hover {
+    border-color: var(--style-stroke);
+    font-weight: 700;
+  }
 }
 
 .room-bottom-panel__tab:focus {
@@ -8595,10 +8788,16 @@ div.workshop-page__discovery-row {
     var(--style-motion-ease-soft) both;
 }
 
-.room-bottom-panel__tab.is-locked:hover,
 .room-bottom-panel__tab.is-locked:focus-visible {
   border-color: var(--style-disabled);
   font-weight: normal;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-bottom-panel__tab.is-locked:hover {
+    border-color: var(--style-disabled);
+    font-weight: normal;
+  }
 }
 
 .guild-page__content {
@@ -8727,6 +8926,10 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.guild-page__upgrade-preview-gain {
+  color: var(--style-alliance-tag-green);
+}
+
 .guild-page__row-main,
 .guild-page__row-action {
   padding: 0;
@@ -8757,12 +8960,146 @@ div.workshop-page__discovery-row {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.guild-page__row-main:hover,
 .guild-page__row-main:focus-visible,
-.guild-page__row-action:hover,
 .guild-page__row-action:focus-visible {
   font-weight: 700;
   outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .guild-page__row-main:hover,
+  .guild-page__row-action:hover {
+    font-weight: 700;
+    outline: none;
+  }
+}
+
+.guild-page__request-row {
+  align-items: start;
+  min-height: calc(var(--style-row-min-height) * 3);
+  padding: 3px 0;
+}
+
+.guild-page__request-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: visible;
+  text-align: left;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.guild-page__request-main:hover,
+.guild-page__request-main:focus-visible {
+  font-weight: inherit;
+}
+
+.guild-page__request-title,
+.guild-page__request-description,
+.guild-page__request-meta,
+.guild-page__request-reward {
+  display: block;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.guild-page__request-title {
+  font-weight: 700;
+}
+
+.guild-page__request-meta,
+.guild-page__request-reward {
+  color: var(--style-muted);
+}
+
+.guild-page__request-row .guild-page__row-action {
+  align-self: start;
+  padding-top: 1px;
+}
+
+.guild-page__board-separator {
+  height: 0;
+  margin: -7px 0;
+  border-top: var(--style-border);
+}
+
+.guild-page__adventurer-row {
+  min-height: calc(var(--style-row-min-height) * 2);
+  padding: 3px 0;
+}
+
+.guild-page__adventurer-main {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  min-height: calc(var(--style-row-min-height) + 8px);
+  column-gap: var(--style-row-column-gap);
+  overflow: visible;
+  text-align: left;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.guild-page__adventurer-main:hover,
+.guild-page__adventurer-main:focus-visible {
+  font-weight: inherit;
+}
+
+.guild-page__adventurer-icon {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: 700;
+  line-height: 1;
+  border: var(--style-border);
+}
+
+.guild-page__adventurer-icon::before {
+  content: attr(data-initial);
+}
+
+.guild-page__adventurer-main:hover .guild-page__adventurer-icon,
+.guild-page__adventurer-main:focus-visible .guild-page__adventurer-icon {
+  border: var(--style-border-strong);
+}
+
+.guild-page__adventurer-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.guild-page__adventurer-name,
+.guild-page__adventurer-level,
+.guild-page__adventurer-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guild-page__adventurer-name {
+  font-weight: 700;
+}
+
+.guild-page__adventurer-level,
+.guild-page__adventurer-status {
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+}
+
+.guild-page__adventurer-status {
+  align-self: center;
+  cursor: default;
 }
 
 .guild-page__adventurer-row[data-notification="true"] {
@@ -9192,9 +9529,14 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
-.room-top-panel__username:hover,
 .room-top-panel__username:focus {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-top-panel__username:hover {
+    font-weight: 700;
+  }
 }
 
 .room-top-panel__username:active {
@@ -9222,9 +9564,14 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.room-top-panel__level:hover,
 .room-top-panel__level:focus {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-top-panel__level:hover {
+    font-weight: 700;
+  }
 }
 
 .room-top-panel__level:active {
@@ -9388,12 +9735,18 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.room-top-panel__settings-close:hover,
 .room-top-panel__settings-close:focus-visible,
-.room-top-panel__level-close:hover,
 .room-top-panel__level-close:focus-visible {
   outline: none;
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-top-panel__settings-close:hover,
+  .room-top-panel__level-close:hover {
+    outline: none;
+    font-weight: 700;
+  }
 }
 
 .room-top-panel__level-current {
@@ -10079,12 +10432,17 @@ div.workshop-page__discovery-row {
   display: inline;
 }
 
-.room-top-panel__visual-option-name:hover,
 .room-top-panel__visual-option-name:focus-visible,
 .room-top-panel__visual-option-name[aria-checked="true"],
-.room-top-panel__visual-option-price:not(:disabled):hover,
 .room-top-panel__visual-option-price:not(:disabled):focus-visible {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-top-panel__visual-option-name:hover,
+  .room-top-panel__visual-option-price:not(:disabled):hover {
+    font-weight: 700;
+  }
 }
 
 .room-top-panel__visual-option-name:focus-visible,
@@ -10681,11 +11039,16 @@ div.workshop-page__discovery-row {
     both;
 }
 
-.style-button.workshop-page__summon-button:hover
-  .workshop-page__summon-button-label,
 .style-button.workshop-page__summon-button:focus-visible
   .workshop-page__summon-button-label {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .style-button.workshop-page__summon-button:hover
+    .workshop-page__summon-button-label {
+    font-weight: 700;
+  }
 }
 
 .style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
@@ -11056,10 +11419,15 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
-.shop-page__sell-item-button:hover .row_key,
 .shop-page__sell-item-button:focus .row_key,
 .shop-page__sell-item-button[aria-pressed="true"] .row_key {
   font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shop-page__sell-item-button:hover .row_key {
+    font-weight: 700;
+  }
 }
 
 .shop-page__sell-item-button:active:not(:disabled),
@@ -11097,8 +11465,10 @@ div.workshop-page__discovery-row {
   background: var(--style-active-surface);
 }
 
-.style-button:hover {
-  font-weight: 700;
+@media (hover: hover) and (pointer: fine) {
+  .style-button:hover {
+    font-weight: 700;
+  }
 }
 
 .style-button:focus-visible {
@@ -11315,9 +11685,22 @@ div.workshop-page__discovery-row {
   scroll-padding-bottom: var(--style-scroll-padding-bottom);
   overscroll-behavior: contain;
   scrollbar-width: none;
+  touch-action: pan-y;
 }
 
 .style-page-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.style-dialog-scroll {
+  min-height: 0;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+
+.style-dialog-scroll::-webkit-scrollbar {
   display: none;
 }
 

@@ -37,19 +37,25 @@ function advanceToLevel(gameplayFacade, targetLevel) {
 }
 
 describe('Gameplay world event integration', () => {
-  it('unlocks world events at level 4 and tracks normal gameplay actions', () => {
+  it('unlocks world events at level 4 and tracks donation quests', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.getSnapshot().worldNotice.unlocked).toBe(false);
 
     advanceToLevel(gameplayFacade, 4);
 
-    const request = gameplayFacade.getSnapshot().worldNotice.current.requests[0];
-    expect(request.actionType).not.toBe(WORLD_NOTICE_ACTIONS.DONATE_COIN);
+    gameplayFacade.coinFacade.add(50);
 
-    const result = gameplayFacade.recordWorldNoticeAction(
-      request.actionType,
-      request.requiredQuantity,
+    const request = gameplayFacade.getSnapshot().worldNotice.current.requests.find(
+      (candidate) =>
+        candidate.donationOptions.some((option) => option.resourceType === 'coin'),
+    );
+    expect(request.actionType).toBe(WORLD_NOTICE_ACTIONS.DONATE_RESOURCES);
+
+    const result = gameplayFacade.donateWorldNoticeResource(
+      request.requestId,
+      'coin',
+      25,
     );
     const updatedRequest = gameplayFacade
       .getSnapshot()
@@ -58,7 +64,8 @@ describe('Gameplay world event integration', () => {
       );
 
     expect(result.ok).toBe(true);
-    expect(updatedRequest.completed).toBe(true);
+    expect(result.pointsAdded).toBe(25);
+    expect(updatedRequest.contributionPoints).toBe(25);
 
     gameplayFacade.shutdown();
     ecsFacade.destroyWorld();
