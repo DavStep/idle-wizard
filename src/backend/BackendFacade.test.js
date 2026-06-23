@@ -39,6 +39,11 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
+  backendFacade.worldEventLeaderboardFacade = {
+    setGameplayFacade: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
   backendFacade.tradeAllianceFacade = {
     setGameplayFacade: vi.fn(),
     setRewardProcessingReady: vi.fn(),

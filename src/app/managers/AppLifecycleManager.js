@@ -9,6 +9,7 @@ import {
 } from './AppFreshStartChoiceManager.js';
 import { AppGameplayTickManager } from './AppGameplayTickManager.js';
 import { AppInteractionLockManager } from './AppInteractionLockManager.js';
+import { AppVisibilityManager } from './AppVisibilityManager.js';
 
 export class AppLifecycleManager {
   constructor({
@@ -27,6 +28,7 @@ export class AppLifecycleManager {
     interactionLockManager = new AppInteractionLockManager(),
     connectionRetryManager = new AppConnectionRetryManager(),
     gameplayTickManager = new AppGameplayTickManager(),
+    appVisibilityManager = new AppVisibilityManager(),
     deployRefreshManager,
     appThemeManager,
     reload = () => window.location.reload(),
@@ -46,6 +48,7 @@ export class AppLifecycleManager {
     this.interactionLockManager = interactionLockManager;
     this.connectionRetryManager = connectionRetryManager;
     this.gameplayTickManager = gameplayTickManager;
+    this.appVisibilityManager = appVisibilityManager;
     this.deployRefreshManager = deployRefreshManager;
     this.appThemeManager = appThemeManager;
     this.reload = reload;
@@ -53,8 +56,11 @@ export class AppLifecycleManager {
     this.frameLoopStarted = false;
     this.stopping = false;
     this.backendConnecting = false;
+    this.backendConnectionFlowActive = false;
     this.backendConnectAttempt = 0;
     this.backendOnline = false;
+    this.appVisible = true;
+    this.hiddenOfflineReason = null;
     this.freshStartConfirmed = false;
     this.maintenanceUnsubscribe = null;
     this.gameplayTickUnsubscribe = null;
@@ -79,6 +85,13 @@ export class AppLifecycleManager {
     this.accountLinkChoiceManager.mount(stage);
     this.freshStartChoiceManager.mount(stage);
     this.deployRefreshManager?.mount(stage);
+    this.appVisible = true;
+    this.hiddenOfflineReason = null;
+    this.appVisibilityManager.mount({
+      onHidden: () => this.handleAppHidden(),
+      onVisible: () => this.handleAppVisible(),
+    });
+    this.appVisible = this.appVisibilityManager.visible !== false;
     this.onlineGateManager.showConnecting();
     this.maintenanceUnsubscribe = this.maintenanceFacade?.subscribe?.((snapshot) => {
       this.handleMaintenanceChange(snapshot);
@@ -96,55 +109,67 @@ export class AppLifecycleManager {
   }
 
   async startBackendConnectionFlow() {
-    if (!this.started || this.stopping) {
+    if (!this.started || this.stopping || this.backendConnectionFlowActive) {
       return;
     }
 
-    let authSnapshot = null;
+    this.backendConnectionFlowActive = true;
 
     try {
-      await this.backendFacade.prepare();
-      authSnapshot = this.getAuthSnapshot();
-    } catch {
-      this.handleOffline('connect_error');
-      return;
-    }
+      let authSnapshot = null;
 
-    if (!this.started || this.stopping) {
-      return;
-    }
-
-    let promptedBeforeConnect = false;
-    if (this.shouldRestoreConnectedAccountBeforeInitialConnect(authSnapshot)) {
-      await this.tryRestoreConnectedAccount();
-      if (!this.started || this.stopping) {
+      try {
+        await this.backendFacade.prepare();
+        authSnapshot = this.getAuthSnapshot();
+      } catch {
+        this.handleOffline('connect_error');
         return;
       }
-      authSnapshot = this.getAuthSnapshot();
-    }
-
-    if (this.shouldPromptBeforeInitialConnect(authSnapshot)) {
-      promptedBeforeConnect = true;
-      this.onlineGateManager.hide();
-      await this.chooseFreshStart({
-        authSnapshot,
-        keepOpenOnConnect: true,
-        returnOnConnectedAccount: true,
-      });
 
       if (!this.started || this.stopping) {
         return;
       }
-    }
 
-    if (promptedBeforeConnect) {
-      this.onlineGateManager.showConnecting();
+      let promptedBeforeConnect = false;
+      if (this.shouldRestoreConnectedAccountBeforeInitialConnect(authSnapshot)) {
+        await this.tryRestoreConnectedAccount();
+        if (!this.started || this.stopping) {
+          return;
+        }
+        authSnapshot = this.getAuthSnapshot();
+      }
+
+      if (this.shouldPromptBeforeInitialConnect(authSnapshot)) {
+        promptedBeforeConnect = true;
+        this.onlineGateManager.hide();
+        await this.chooseFreshStart({
+          authSnapshot,
+          keepOpenOnConnect: true,
+          returnOnConnectedAccount: true,
+        });
+
+        if (!this.started || this.stopping) {
+          return;
+        }
+      }
+
+      if (promptedBeforeConnect) {
+        this.onlineGateManager.showConnecting();
+      }
+      await this.connectBackend({ skipPrepare: true });
+    } finally {
+      this.backendConnectionFlowActive = false;
+      this.resumeBackendAfterHiddenIfNeeded();
     }
-    await this.connectBackend({ skipPrepare: true });
   }
 
   async connectBackend({ skipPrepare = false } = {}) {
-    if (!this.started || this.stopping || this.backendConnecting) {
+    if (
+      !this.started ||
+      this.stopping ||
+      !this.appVisible ||
+      this.backendConnecting
+    ) {
       return;
     }
 
@@ -196,6 +221,7 @@ export class AppLifecycleManager {
     } finally {
       if (this.isCurrentBackendAttempt(attempt)) {
         this.backendConnecting = false;
+        this.resumeBackendAfterHiddenIfNeeded();
       }
     }
   }
@@ -479,7 +505,14 @@ export class AppLifecycleManager {
     }
 
     this.backendOnline = true;
+    this.hiddenOfflineReason = null;
     this.connectionRetryManager.reset();
+
+    if (!this.appVisible) {
+      this.stopFrameLoop();
+      return;
+    }
+
     this.applyMaintenanceState();
   }
 
@@ -492,6 +525,14 @@ export class AppLifecycleManager {
     this.freshStartChoiceManager.hide?.();
     this.interactionLockManager.lock(reason ?? 'offline');
     this.stopFrameLoop();
+
+    if (!this.appVisible) {
+      this.hiddenOfflineReason = reason ?? null;
+      this.connectionRetryManager.clear();
+      return;
+    }
+
+    this.hiddenOfflineReason = null;
 
     if (this.isMaintenanceActive()) {
       this.onlineGateManager.showMaintenance(this.maintenanceSnapshot);
@@ -519,6 +560,84 @@ export class AppLifecycleManager {
     this.connectionRetryManager.schedule(() => {
       void this.connectBackend();
     });
+  }
+
+  handleAppHidden() {
+    if (!this.started || this.stopping) {
+      return;
+    }
+
+    this.appVisible = false;
+    this.connectionRetryManager.clear();
+    this.stopFrameLoop();
+    void Promise.resolve(
+      this.gameplayFacade.savePersistenceSnapshotAndFlush?.(),
+    ).catch(() => false);
+  }
+
+  handleAppVisible() {
+    if (!this.started || this.stopping) {
+      return;
+    }
+
+    this.appVisible = true;
+
+    if (this.backendOnline) {
+      this.applyMaintenanceState();
+      return;
+    }
+
+    const hiddenOfflineReason = this.hiddenOfflineReason;
+
+    if (this.backendConnecting || this.backendConnectionFlowActive) {
+      this.interactionLockManager.lock('connecting');
+      this.onlineGateManager.showConnecting();
+      return;
+    }
+
+    this.hiddenOfflineReason = null;
+
+    if (
+      hiddenOfflineReason &&
+      (!this.isTransientOfflineReason(hiddenOfflineReason) ||
+        this.isMaintenanceActive())
+    ) {
+      this.handleOffline(hiddenOfflineReason);
+      return;
+    }
+
+    this.interactionLockManager.lock('connecting');
+    this.onlineGateManager.showConnecting();
+
+    if (this.backendConnectAttempt <= 0) {
+      void this.startBackendConnectionFlow();
+      return;
+    }
+
+    void this.connectBackend();
+  }
+
+  resumeBackendAfterHiddenIfNeeded() {
+    if (
+      !this.appVisible ||
+      this.backendOnline ||
+      this.backendConnecting ||
+      this.backendConnectionFlowActive ||
+      !this.hiddenOfflineReason ||
+      !this.isTransientOfflineReason(this.hiddenOfflineReason) ||
+      this.isMaintenanceActive()
+    ) {
+      return;
+    }
+
+    this.hiddenOfflineReason = null;
+
+    if (this.backendConnectAttempt <= 0) {
+      void this.startBackendConnectionFlow();
+      return;
+    }
+
+    void this.connectBackend();
   }
 
   isTransientOfflineReason(reason) {
@@ -666,9 +785,13 @@ export class AppLifecycleManager {
     }
 
     this.stopping = true;
+    this.appVisibilityManager.unmount();
+    this.backendConnectionFlowActive = false;
     this.backendConnectAttempt += 1;
     this.backendConnecting = false;
     this.backendOnline = false;
+    this.appVisible = true;
+    this.hiddenOfflineReason = null;
     this.maintenanceUnsubscribe?.();
     this.maintenanceUnsubscribe = null;
     this.connectionRetryManager.clear();

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 backups/
+public/qa-data/
 test-results/
 tmp/
 spacetimedb/dist/

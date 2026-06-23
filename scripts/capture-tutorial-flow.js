@@ -108,8 +108,8 @@ const STEP_ACTIONS = {
   },
   'grow-sage': async (page) => {
     await page.clickTarget('page:garden');
-    await page.cheat('addItem', 'sageHerb', 3);
-    await page.cheat('addItem', 'sageSeed', 10);
+    await page.cheat('addItem', 'sageHerb', 2);
+    await page.cheat('addItem', 'sageSeed', 7);
   },
   'fill-sage-seed-task': async (page) => {
     await page.clickTarget('page:workshop');

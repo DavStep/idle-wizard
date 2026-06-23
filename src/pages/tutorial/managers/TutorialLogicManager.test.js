@@ -219,7 +219,7 @@ describe('TutorialLogicManager', () => {
     const target = {};
     const step = createStep({
       cueMode: 'delayed-target',
-      text: 'grow sage 3 times',
+      text: 'grow sage',
     });
     const waitingReminder = createReminderFake({
       attentionState: { shouldNotify: false, nextRefreshAt: 4500 },
@@ -268,7 +268,7 @@ describe('TutorialLogicManager', () => {
     const target = {};
     const step = createStep({
       cueMode: 'delayed-target',
-      text: 'grow sage 3 times',
+      text: 'grow sage',
     });
     const reminderManager = createReminderFake({
       attentionState: { shouldNotify: false, nextRefreshAt: 4500 },

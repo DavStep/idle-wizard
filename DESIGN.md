@@ -87,7 +87,7 @@ components:
 
 Idle Wizard uses sparse room UI that behaves like a readable ledger inside a fixed mobile game surface. The authored design size is 1080x2170; room UI is built at source scale, then fitted to the viewport. Do not make source text larger to solve mobile readability.
 
-The system rejects decorated fantasy RPG UI, colorful idle dashboards, modern rounded mobile cards, gradients, icon-heavy controls, textures, illustration, and decorative shadows. Interface choices should feel like A Dark Room-style text-game controls without copying that game's desktop dimensions.
+The system rejects decorated fantasy RPG UI, colorful idle dashboards, modern rounded mobile cards, gradients, decorative or icon-heavy controls, textures, illustration, and decorative shadows. Interface choices should feel like A Dark Room-style text-game controls without copying that game's desktop dimensions.
 
 **Key Characteristics:**
 - Fixed authored portrait room surface with scaled source UI.
@@ -201,7 +201,7 @@ Ordinary room UI is flat. In the white theme, depth is communicated by 1px borde
 
 ### Don't:
 - **Don't** make the UI look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app.
-- **Don't** use gradients, textures, illustrations, icons, rounded cards, or decorative shadows.
+- **Don't** use gradients, textures, illustrations, decorative icons, rounded cards, or decorative shadows.
 - **Don't** add color except notification/resource state or an explicit user request.
 - **Don't** put headings inside boxes when the label belongs embedded over the border.
 - **Don't** inflate source font size to make mobile text readable.

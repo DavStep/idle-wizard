@@ -9,8 +9,13 @@ export class LeaderboardBackendFacade {
   constructor() {
     this.stateObserverManager = new LeaderboardStateObserverManager();
     this.generatedCoinSyncManager = new LeaderboardGeneratedCoinSyncManager();
+    this.devSnapshot = null;
     this.subscriptionManager = new LeaderboardSubscriptionManager({
-      onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
+      onSnapshot: (snapshot) => {
+        if (!this.devSnapshot) {
+          this.stateObserverManager.publish(snapshot);
+        }
+      },
     });
   }
 
@@ -29,10 +34,23 @@ export class LeaderboardBackendFacade {
   }
 
   getSnapshot() {
-    return this.subscriptionManager.getSnapshot();
+    return this.devSnapshot ?? this.subscriptionManager.getSnapshot();
   }
 
   subscribe(listener) {
     return this.stateObserverManager.subscribe(listener);
+  }
+
+  setDevSnapshot(snapshot) {
+    this.devSnapshot = snapshot;
+    this.stateObserverManager.publish(snapshot);
+    return { ok: true };
+  }
+
+  clearDevSnapshot() {
+    this.devSnapshot = null;
+    const snapshot = this.subscriptionManager.getSnapshot();
+    this.stateObserverManager.publish(snapshot);
+    return { ok: true, snapshot };
   }
 }

@@ -82,6 +82,7 @@ import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
 import SetTradeAllianceMemberRoleReducer from "./set_trade_alliance_member_role_reducer";
 import SetUsernameReducer from "./set_username_reducer";
+import SetWorldEventContributionPointsReducer from "./set_world_event_contribution_points_reducer";
 import SubmitFeedbackReducer from "./submit_feedback_reducer";
 import TransferTradeAllianceLeadershipReducer from "./transfer_trade_alliance_leadership_reducer";
 import UpdateTradeAllianceProfileReducer from "./update_trade_alliance_profile_reducer";
@@ -138,7 +139,9 @@ import TradeAllianceQuestContributionSnapshotRow from "./trade_alliance_quest_co
 import TradeAllianceQuestProgressSnapshotRow from "./trade_alliance_quest_progress_snapshot_table";
 import TradeAllianceSnapshotRow from "./trade_alliance_snapshot_table";
 import WorldChatRow from "./world_chat_table";
+import WorldEventLeaderboardRow from "./world_event_leaderboard_table";
 import WorldChatRecentRow from "./world_chat_recent_table";
+import WorldEventLeaderboardSummaryRow from "./world_event_leaderboard_summary_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -461,6 +464,26 @@ const tablesSchema = __schema({
       { name: 'world_chat_message_id_key', constraint: 'unique', columns: ['messageId'] },
     ],
   }, WorldChatRow),
+  worldEventLeaderboard: __table({
+    name: 'world_event_leaderboard',
+    indexes: [
+      { accessor: 'contributionKey', name: 'world_event_leaderboard_contribution_key_idx_btree', algorithm: 'btree', columns: [
+        'contributionKey',
+      ] },
+      { accessor: 'byIdentity', name: 'world_event_leaderboard_identity_idx_btree', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+      { accessor: 'byPeriodKey', name: 'world_event_leaderboard_period_key_idx_btree', algorithm: 'btree', columns: [
+        'periodKey',
+      ] },
+      { accessor: 'byPoints', name: 'world_event_leaderboard_points_idx_btree', algorithm: 'btree', columns: [
+        'points',
+      ] },
+    ],
+    constraints: [
+      { name: 'world_event_leaderboard_contribution_key_key', constraint: 'unique', columns: ['contributionKey'] },
+    ],
+  }, WorldEventLeaderboardRow),
   admin_player_feedback: __table({
     name: 'admin_player_feedback',
     indexes: [
@@ -657,6 +680,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, WorldChatRecentRow),
+  world_event_leaderboard_summary: __table({
+    name: 'world_event_leaderboard_summary',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, WorldEventLeaderboardSummaryRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
@@ -709,6 +739,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
   __reducerSchema("set_trade_alliance_member_role", SetTradeAllianceMemberRoleReducer),
   __reducerSchema("set_username", SetUsernameReducer),
+  __reducerSchema("set_world_event_contribution_points", SetWorldEventContributionPointsReducer),
   __reducerSchema("submit_feedback", SubmitFeedbackReducer),
   __reducerSchema("transfer_trade_alliance_leadership", TransferTradeAllianceLeadershipReducer),
   __reducerSchema("update_trade_alliance_profile", UpdateTradeAllianceProfileReducer),

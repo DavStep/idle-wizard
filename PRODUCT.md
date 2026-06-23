@@ -18,7 +18,7 @@ Sparse, quiet, readable. The game should feel like a restrained text adventure: 
 
 ## Anti-references
 
-Do not make it look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app. Avoid gradients, icons, textures, illustrations, oversized type, rounded cards, and decorative shadows.
+Do not make it look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app. Avoid gradients, icon-heavy controls, textures, illustrations, oversized type, rounded cards, and decorative shadows.
 
 ## Design Principles
 

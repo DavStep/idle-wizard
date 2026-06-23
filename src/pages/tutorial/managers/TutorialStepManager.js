@@ -19,7 +19,7 @@ const MANA_READOUT_TARGET_ID = 'top:mana';
 const LEVEL_ONE_SEED_TASK_ID = 'level1-sage-seeds';
 const LEVEL_ONE_COIN_TARGET = 10;
 const TUTORIAL_SELL_COIN_EACH = LEVEL_ONE_COIN_TARGET;
-const LEVEL_TWO_SAGE_GROW_TARGET = 3;
+const DEFAULT_LEVEL_TWO_SAGE_GROW_TARGET = 3;
 const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
 export const TUTORIAL_LESSON_THREE_STUCK_MS = 3500;
@@ -554,9 +554,11 @@ export const TUTORIAL_STEPS = [
         return 'wait for sage to grow';
       }
 
+      const growTarget = getLessonSageGrowTarget(snapshot);
+
       return getLessonSageGrowCount(snapshot) <= 0
         ? getLevelTwoRequirementIntroText(snapshot)
-        : 'keep going. grow sage 3 times.';
+        : `keep going. grow sage ${growTarget} ${growTarget === 1 ? 'time' : 'times'}.`;
     },
     getCueMode: ({ snapshot }) =>
       getLessonSageGrowCount(snapshot) <= 0 ? 'active' : 'delayed-target',
@@ -652,10 +654,10 @@ export const TUTORIAL_STEPS = [
         : null,
     getProgress: ({ snapshot }) => ({
       value: getLessonSageGrowCount(snapshot),
-      max: LEVEL_TWO_SAGE_GROW_TARGET,
+      max: getLessonSageGrowTarget(snapshot),
     }),
     getProgressLabel: ({ snapshot }) =>
-      `${getLessonSageGrowCount(snapshot)}/${LEVEL_TWO_SAGE_GROW_TARGET} sage`,
+      `${getLessonSageGrowCount(snapshot)}/${getLessonSageGrowTarget(snapshot)} sage`,
     getReminderKey: () => 'lesson-three-sage-actions',
     getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
@@ -2365,19 +2367,30 @@ function formatRequirementQuantity(task, labels) {
 }
 
 function getLessonSageGrowCount(snapshot) {
+  const growTarget = getLessonSageGrowTarget(snapshot);
   const task = getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
   const taskCount = task?.completed
-    ? Number(task.requiredQuantity) || LEVEL_TWO_SAGE_GROW_TARGET
+    ? Number(task.requiredQuantity) || growTarget
     : Number(task?.progressQuantity) || 0;
 
   return Math.min(
-    LEVEL_TWO_SAGE_GROW_TARGET,
+    growTarget,
     Math.max(0, Math.floor(getItemQuantity(snapshot, SAGE_HERB_KEY) + taskCount)),
   );
 }
 
+function getLessonSageGrowTarget(snapshot) {
+  const requiredQuantity = Number(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)?.requiredQuantity);
+
+  if (Number.isFinite(requiredQuantity) && requiredQuantity > 0) {
+    return Math.max(1, Math.floor(requiredQuantity));
+  }
+
+  return DEFAULT_LEVEL_TWO_SAGE_GROW_TARGET;
+}
+
 function hasGrownEnoughSageForLesson(snapshot) {
-  return getLessonSageGrowCount(snapshot) >= LEVEL_TWO_SAGE_GROW_TARGET;
+  return getLessonSageGrowCount(snapshot) >= getLessonSageGrowTarget(snapshot);
 }
 
 function isGrowSageWaitState(snapshot) {

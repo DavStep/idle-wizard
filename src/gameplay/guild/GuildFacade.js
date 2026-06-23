@@ -173,6 +173,62 @@ export class GuildFacade {
     };
   }
 
+  postRequest(requestId) {
+    if (!this.state.profile) {
+      return {
+        ok: false,
+        reason: 'not_created',
+      };
+    }
+
+    this.ensureGeneratedState();
+
+    if ((this.state.board ?? []).some((request) => request.id === requestId)) {
+      return {
+        ok: false,
+        reason: 'already_posted',
+      };
+    }
+
+    const secretary = getSecretaryLevel(this.state.secretaryLevel);
+
+    if ((this.state.board ?? []).length >= secretary.boardSlots) {
+      return {
+        ok: false,
+        reason: 'board_full',
+        boardSlots: secretary.boardSlots,
+      };
+    }
+
+    const index = (this.state.availableRequests ?? []).findIndex(
+      (request) => request.id === requestId,
+    );
+
+    if (index < 0) {
+      return {
+        ok: false,
+        reason: 'unknown_request',
+      };
+    }
+
+    const [request] = this.state.availableRequests.splice(index, 1);
+
+    if (this.isRequestExpired(request)) {
+      return {
+        ok: false,
+        reason: 'expired',
+      };
+    }
+
+    this.state.board.push(request);
+    this.addLog(`${request.title} is pinned to the board.`, null);
+
+    return {
+      ok: true,
+      requestId,
+    };
+  }
+
   fireAdventurer(adventurerId) {
     const adventurer = this.state.adventurers.find((candidate) => candidate.id === adventurerId);
 
@@ -200,6 +256,13 @@ export class GuildFacade {
   }
 
   removeRequest(requestId) {
+    if (!this.state.profile) {
+      return {
+        ok: false,
+        reason: 'not_created',
+      };
+    }
+
     const index = this.state.board.findIndex((request) => request.id === requestId);
 
     if (index < 0) {
@@ -210,6 +273,7 @@ export class GuildFacade {
     }
 
     const [request] = this.state.board.splice(index, 1);
+    this.returnRequestToAvailable(request);
     this.addLog(`${request.title} is pulled from the board.`, null);
 
     return {
@@ -247,7 +311,7 @@ export class GuildFacade {
     this.coinFacade.spend(nextLevel.costCoin);
     this.state.secretaryLevel = nextLevel.level;
     this.addLog(`guild secretary reaches level ${nextLevel.level}.`, 'orange');
-    this.ensureBoardFilled({ force: true });
+    this.ensureAvailableRequests({ force: true });
 
     return {
       ok: true,
@@ -289,6 +353,9 @@ export class GuildFacade {
       this.createAdventurerSnapshot(applicant),
     );
     const board = (this.state.board ?? []).map((request) => this.createRequestSnapshot(request));
+    const availableRequests = (this.state.availableRequests ?? []).map((request) =>
+      this.createRequestSnapshot(request),
+    );
     const daily = this.periodManager.getDailyPeriod();
     const boardWave = this.periodManager.getBoardWave();
 
@@ -304,10 +371,13 @@ export class GuildFacade {
       board,
       eventBoard: board.filter((request) => request.event),
       normalBoard: board.filter((request) => !request.event),
+      availableRequests,
+      availableEventRequests: availableRequests.filter((request) => request.event),
+      availableNormalRequests: availableRequests.filter((request) => !request.event),
       logs: [...(this.state.logs ?? [])],
       applicantResetLabel: daily.resetLabel,
       boardWaveLabel: boardWave.resetLabel,
-      notifications: this.createNotificationSnapshot({ applicants, adventurers, board }),
+      notifications: this.createNotificationSnapshot({ applicants, adventurers }),
     };
   }
 
@@ -322,8 +392,11 @@ export class GuildFacade {
 
     return JSON.stringify({
       tick: this.periodManager.getAlignedSimTick(),
+      minute: Math.floor(this.periodManager.getNowMs() / 60_000),
       applicants: this.state.applicantPeriodKey,
       board: this.state.boardWaveKey,
+      posted: this.state.board.length,
+      available: this.state.availableRequests.length,
     });
   }
 
@@ -351,6 +424,9 @@ export class GuildFacade {
       board: Array.isArray(snapshot.board)
         ? snapshot.board.map((request) => this.sanitizeRequest(request)).filter(Boolean)
         : [],
+      availableRequests: Array.isArray(snapshot.availableRequests)
+        ? snapshot.availableRequests.map((request) => this.sanitizeRequest(request)).filter(Boolean)
+        : [],
       logs: Array.isArray(snapshot.logs) ? snapshot.logs.slice(0, 80) : [],
       nextLogId: clampInt(snapshot.nextLogId, 1, 1_000_000),
     };
@@ -375,26 +451,23 @@ export class GuildFacade {
       changed = true;
     }
 
-    changed = this.ensureBoardFilled() || changed;
+    changed = this.pruneExpiredRequests() || changed;
+    changed = this.ensureAvailableRequests() || changed;
     return changed;
   }
 
-  ensureBoardFilled({ force = false } = {}) {
+  ensureAvailableRequests({ force = false } = {}) {
     const secretary = getSecretaryLevel(this.state.secretaryLevel);
     const boardWave = this.periodManager.getBoardWave();
-    const missing = Math.max(0, secretary.boardSlots - this.state.board.length);
 
-    if (missing <= 0) {
-      this.state.boardWaveKey = boardWave.waveKey;
+    if (!force && this.state.boardWaveKey === boardWave.waveKey) {
       return false;
     }
 
-    if (!force && this.state.boardWaveKey === boardWave.waveKey && this.state.board.length > 0) {
-      return false;
-    }
+    const count = this.getAvailableRequestCount(secretary);
 
     const requests = this.generationManager.createRequests({
-      count: missing,
+      count,
       sequence: this.state.boardSequence,
       periodKey: boardWave.waveKey,
       worldNotice: this.worldNoticeFacade?.getSnapshot?.().current ?? null,
@@ -402,17 +475,37 @@ export class GuildFacade {
 
     for (const request of requests) {
       request.createdAtMs = this.periodManager.getNowMs();
+      request.expiresAtMs = boardWave.nextWaveAtMs;
     }
 
-    this.state.board.push(...requests);
-    this.state.boardSequence = (this.state.boardSequence + missing) % MAX_BOARD_SEQUENCE;
+    this.state.availableRequests = requests;
+    this.state.boardSequence = (this.state.boardSequence + count) % MAX_BOARD_SEQUENCE;
     this.state.boardWaveKey = boardWave.waveKey;
 
     if (requests.length > 0) {
-      this.addLog(`${requests.length} request${requests.length === 1 ? '' : 's'} pinned to the board.`, null);
+      this.addLog(`${requests.length} request${requests.length === 1 ? '' : 's'} arrive for the board.`, null);
     }
 
     return requests.length > 0;
+  }
+
+  pruneExpiredRequests(nowMs = this.periodManager.getNowMs()) {
+    const keepFresh = (request) => !this.isRequestExpired(request, nowMs);
+    const previousBoardCount = this.state.board?.length ?? 0;
+    const previousAvailableCount = this.state.availableRequests?.length ?? 0;
+    this.state.board = (this.state.board ?? []).filter(keepFresh);
+    this.state.availableRequests = (this.state.availableRequests ?? []).filter(keepFresh);
+    return (
+      previousBoardCount !== this.state.board.length ||
+      previousAvailableCount !== this.state.availableRequests.length
+    );
+  }
+
+  getAvailableRequestCount(secretary) {
+    return Math.max(
+      secretary.boardSlots,
+      Math.min(secretary.boardSlots + 2, secretary.boardSlots * 2),
+    );
   }
 
   runSimulation() {
@@ -425,10 +518,6 @@ export class GuildFacade {
 
     for (const reward of result.rewards ?? []) {
       this.applyReward(reward);
-    }
-
-    if ((result.rewards ?? []).length > 0) {
-      this.ensureBoardFilled({ force: true });
     }
 
     return result.changed || (result.rewards ?? []).length > 0;
@@ -468,19 +557,17 @@ export class GuildFacade {
     };
   }
 
-  createNotificationSnapshot({ applicants, adventurers, board }) {
+  createNotificationSnapshot({ applicants, adventurers }) {
     const urgent = adventurers.some((adventurer) => adventurer.status === 'dead' || adventurer.status === 'hospital');
     const returned = adventurers.some((adventurer) => adventurer.status === 'idle' && (adventurer.history ?? [])[0]?.text?.includes('completes'));
     const newApplicants = applicants.length > 0 && adventurers.length < this.createSecretarySnapshot().hiredCap;
-    const emptyBoardSlots = board.length < this.createSecretarySnapshot().boardSlots;
 
     return {
-      active: urgent || returned || newApplicants || emptyBoardSlots,
+      active: urgent || returned || newApplicants,
       tone: urgent ? 'red' : 'orange',
       urgent,
       returned,
       newApplicants,
-      emptyBoardSlots,
     };
   }
 
@@ -501,6 +588,9 @@ export class GuildFacade {
       ...request,
       statLabel: (request.stats ?? []).join(' / '),
       eventLabel: request.event?.headline ?? '',
+      expiresLabel: this.periodManager.formatDuration(
+        Math.max(0, Number(request.expiresAtMs) || 0) - this.periodManager.getNowMs(),
+      ),
     };
   }
 
@@ -551,6 +641,7 @@ export class GuildFacade {
       applicants: [],
       adventurers: [],
       board: [],
+      availableRequests: [],
       logs: [],
       nextLogId: 1,
     };
@@ -631,9 +722,34 @@ export class GuildFacade {
       event: request.event && typeof request.event === 'object' ? { ...request.event } : null,
       rewardText: String(request.rewardText ?? ''),
       createdAtMs: Number.isFinite(request.createdAtMs) ? request.createdAtMs : 0,
+      expiresAtMs: Number.isFinite(request.expiresAtMs)
+        ? request.expiresAtMs
+        : this.periodManager.getBoardWave().nextWaveAtMs,
       startedAtMs: Number.isFinite(request.startedAtMs) ? request.startedAtMs : undefined,
       returnAtMs: Number.isFinite(request.returnAtMs) ? request.returnAtMs : undefined,
     };
+  }
+
+  returnRequestToAvailable(request) {
+    if (!request || this.isRequestExpired(request)) {
+      return;
+    }
+
+    this.state.availableRequests = this.state.availableRequests ?? [];
+
+    if (this.state.availableRequests.some((candidate) => candidate.id === request.id)) {
+      return;
+    }
+
+    this.state.availableRequests.push(request);
+    this.state.availableRequests.sort(
+      (left, right) => (Number(left.sequence) || 0) - (Number(right.sequence) || 0),
+    );
+  }
+
+  isRequestExpired(request, nowMs = this.periodManager.getNowMs()) {
+    const expiresAtMs = Number(request?.expiresAtMs);
+    return Number.isFinite(expiresAtMs) && expiresAtMs <= nowMs;
   }
 
   addLog(text, tone = null) {

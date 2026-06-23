@@ -91,7 +91,7 @@ function createGameplayFacadeFake() {
         },
         progressBar: { regular: 0, gradient: 0 },
         plotView: { rows: 0, boxes: 0 },
-        icons: { icons: 0 },
+        icons: { none: 0, icons: 0 },
       },
       researched: {
         theme: { white: true, black: false, midnight: false, witchcraft: false },
@@ -110,7 +110,7 @@ function createGameplayFacadeFake() {
         },
         progressBar: { regular: true, gradient: false },
         plotView: { rows: true, boxes: true },
-        icons: { icons: true },
+        icons: { none: true, icons: true },
       },
     },
     inventory: [],
@@ -2740,7 +2740,7 @@ function createPlayerFacadeFake(
     initialColorMode = 'monochrome',
     initialFont = 'lexend',
     initialCharacter = 'elara',
-    initialIconMode = 'none',
+    initialIconMode = 'icons',
     initialProgressBar = 'regular',
     initialPlotView = 'boxes',
   } = {},
@@ -2860,9 +2860,11 @@ function createPlayerFacadeFake(
       return snapshot;
     },
     setIconMode: (iconMode) => {
-      const normalizedIconMode = ['icons', 'icon', 'on', 'enabled'].includes(iconMode)
-        ? 'icons'
-        : 'none';
+      const normalizedIconMode = ['off', 'no-icons', 'no icons', 'none'].includes(iconMode)
+        ? 'none'
+        : ['icons', 'icon', 'on', 'enabled'].includes(iconMode)
+          ? 'icons'
+          : 'icons';
       snapshot = {
         ...snapshot,
         iconMode: normalizedIconMode,
@@ -3662,9 +3664,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-page__nav')).toBeNull();
     const topPanel = stage.querySelector('.room-top-panel');
     expect(topPanel).not.toBeNull();
-    expect(topPanel.classList.contains('has-avatar')).toBe(false);
+    expect(topPanel.classList.contains('has-avatar')).toBe(true);
     expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
-    expect(topPanel.children[0]?.hidden).toBe(true);
+    expect(topPanel.children[0]?.hidden).toBe(false);
     expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
     expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
     expect(
@@ -5616,12 +5618,12 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
-    snapshot.coin.current = 20;
+    snapshot.coin.current = 10;
     snapshot.tasks.level.completedTasks = 1;
     snapshot.tasks.level.totalTasks = 1;
     snapshot.tasks.level.completion = {
       level: 1,
-      costCoin: 20,
+      costCoin: 10,
       allTasksCompleted: true,
       atMaxLevel: false,
       completedAllLevels: false,
@@ -5670,7 +5672,7 @@ describe('PagesFacade', () => {
       ['crystal', '+1'],
     ]);
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
-    expect(button?.textContent).toBe('level up20 coin');
+    expect(button?.textContent).toBe('level up10 coin');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -5887,7 +5889,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__icon-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['icons']);
+    ).toEqual(['no icons', 'icons']);
     expect(
       [
         ...settings.querySelectorAll(
@@ -5907,6 +5909,7 @@ describe('PagesFacade', () => {
       'free',
       'researched',
       'free',
+      'researched',
       'researched',
       'researched',
       'researched',
@@ -6396,9 +6399,16 @@ describe('PagesFacade', () => {
     const iconsButton = stage.querySelector(
       '.room-top-panel__icon-button[data-icon-mode="icons"]',
     );
-    expect(noIconsButton).toBeNull();
-    expect(iconsButton.getAttribute('aria-checked')).toBe('false');
+    expect(noIconsButton).not.toBeNull();
+    expect(noIconsButton.getAttribute('aria-checked')).toBe('false');
+    expect(iconsButton.getAttribute('aria-checked')).toBe('true');
     expect(iconsButton.disabled).toBe(false);
+
+    noIconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.none).toBe(true);
+    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
 
     iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 

@@ -77,7 +77,7 @@ describe('GuildFacade', () => {
     });
   });
 
-  it('spends coin to create a guild and generates applicants and board requests', () => {
+  it('spends coin to create a guild and generates applicants and available requests', () => {
     const { facade, coinFacade } = createFacade();
 
     expect(facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' })).toMatchObject({
@@ -101,8 +101,12 @@ describe('GuildFacade', () => {
       },
     });
     expect(snapshot.applicants).toHaveLength(3);
-    expect(snapshot.board).toHaveLength(3);
-    expect(snapshot.eventBoard.length).toBeGreaterThan(0);
+    expect(snapshot.board).toHaveLength(0);
+    expect(snapshot.availableRequests).toHaveLength(5);
+    expect(snapshot.availableEventRequests.length).toBeGreaterThan(0);
+    expect(snapshot.availableRequests[0]).toMatchObject({
+      expiresLabel: '30m',
+    });
   });
 
   it('rejects guild tags that cannot render as alliance tags', () => {
@@ -136,5 +140,48 @@ describe('GuildFacade', () => {
     expect(facade.hireApplicant(facade.getSnapshot().applicants[0].id)).toMatchObject({
       ok: true,
     });
+  });
+
+  it('posts chosen available requests to the board and removal does not auto-refill it', () => {
+    const { facade } = createFacade();
+    facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' });
+    const requestId = facade.getSnapshot().availableRequests[0].id;
+
+    expect(facade.postRequest(requestId)).toMatchObject({
+      ok: true,
+      requestId,
+    });
+    expect(facade.getSnapshot()).toMatchObject({
+      board: [{ id: requestId }],
+    });
+    expect(facade.getSnapshot().availableRequests.some((request) => request.id === requestId)).toBe(
+      false,
+    );
+
+    expect(facade.removeRequest(requestId)).toMatchObject({
+      ok: true,
+      requestId,
+    });
+
+    const snapshot = facade.getSnapshot();
+    expect(snapshot.board).toHaveLength(0);
+    expect(snapshot.availableRequests.some((request) => request.id === requestId)).toBe(true);
+  });
+
+  it('expires board and available requests on the request wave without filling the board', () => {
+    let nowMs = 0;
+    const { facade } = createFacade({ now: () => nowMs });
+    facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' });
+    const requestId = facade.getSnapshot().availableRequests[0].id;
+    facade.postRequest(requestId);
+
+    nowMs = 30 * 60 * 1000;
+    const snapshot = facade.getSnapshot();
+
+    expect(snapshot.board).toHaveLength(0);
+    expect(snapshot.availableRequests).toHaveLength(5);
+    expect(snapshot.availableRequests.some((request) => request.id === requestId)).toBe(false);
+    expect(snapshot.availableRequests[0].expiresLabel).toBe('30m');
+    expect(snapshot.boardWaveLabel).toBe('30m');
   });
 });

@@ -760,3 +760,34 @@ export const WorldChatRecentResult = __t.object("WorldChatRecentResult", {
 });
 export type WorldChatRecentResult = __Infer<typeof WorldChatRecentResult>;
 
+export const WorldEventLeaderboard = __t.object("WorldEventLeaderboard", {
+  contributionKey: __t.string(),
+  identity: __t.identity(),
+  periodKey: __t.string(),
+  eventId: __t.string(),
+  username: __t.string(),
+  points: __t.u64(),
+  updatedAt: __t.timestamp(),
+  playerLevel: __t.u32(),
+});
+export type WorldEventLeaderboard = __Infer<typeof WorldEventLeaderboard>;
+
+export const WorldEventLeaderboardSummary = __t.object("WorldEventLeaderboardSummary", {});
+export type WorldEventLeaderboardSummary = __Infer<typeof WorldEventLeaderboardSummary>;
+
+export const WorldEventLeaderboardSummaryResult = __t.object("WorldEventLeaderboardSummaryResult", {
+  contributionKey: __t.string(),
+  identity: __t.identity(),
+  periodKey: __t.string(),
+  eventId: __t.string(),
+  username: __t.string(),
+  allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
+  character: __t.string(),
+  points: __t.u64(),
+  updatedAt: __t.timestamp(),
+  playerLevel: __t.u32(),
+  rank: __t.u32(),
+});
+export type WorldEventLeaderboardSummaryResult = __Infer<typeof WorldEventLeaderboardSummaryResult>;
+

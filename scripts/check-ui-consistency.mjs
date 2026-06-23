@@ -92,12 +92,12 @@ function scanDefaultIconMode() {
     return;
   }
 
-  if (match[1] !== 'none') {
+  if (match[1] !== 'icons') {
     addWarning(
       'default-icon-mode',
       filePath,
       lineForIndex(source, match.index),
-      'Default icon mode should be `none`; icons are optional personalization, not default A Dark Room chrome.',
+      'Default icon mode should be `icons`; item/resource icons are the current default configuration.',
     );
   }
 }

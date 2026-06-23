@@ -19,6 +19,10 @@ export class GameplayStorageManager {
     }
   }
 
+  canSave() {
+    return Boolean(this.storage);
+  }
+
   save(save) {
     if (!this.storage) {
       return false;

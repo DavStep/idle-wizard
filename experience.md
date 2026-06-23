@@ -30,6 +30,7 @@
 - Height animations inside scaled room UI should write layout pixels from `offsetHeight`/`scrollHeight`, not `getBoundingClientRect()` screen pixels, or the element expands by the UI scale.
 - Timer progress fills that transition `transform` toward full need a computed-style flush after applying the current scale; remounted bars can otherwise paint full before the transition starts.
 - Smooth timer progress transitions keep Android WebView drawing every frame; for text-game timer bars prefer stepped fills from snapshot refreshes.
+- Garden progress bars should soften snapshot steps with a short transform transition, not a full remaining-duration transition; avoid extra continuous motion near active plot timers.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
@@ -69,6 +70,9 @@
 - Weekly event task titles stay monochrome; color/icon only the resource words or amount phrases inside instructions/progress.
 - World event popup rows are tasks, not progression requests: show points earned per task and points collected from that task; use a leaderboard tab instead of an archive tab.
 - World event leaderboard rows should keep the main leaderboard row treatment: 260px source row width, centered in the wider world-event dialog, with bare numeric values under a `points` header.
+- World event leaderboard data should come from `world_event_leaderboard_summary`; local current-point fallback is only for offline/missing backend rows.
+- Main and world event leaderboard user rows share `WorkshopLeaderboardRowRenderer`; do not fork icon/tag/name/level DOM in each dialog.
+- Keep event qualification copy in tasks/rewards, not under the leaderboard rows; the leaderboard tab should stay table-only.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
@@ -85,6 +89,7 @@
 - Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; otherwise the right side of the room looks unused beside world chat.
 - Guild content tabs should use compact labels like `hall`, `board`, `roster`, and `log`; `adventurers` crowds fitted desktop tab widths.
+- Guild request board rows are player-selected from an available quest pool; new waves refresh available quests and expire old requests, but never auto-fill the visible board.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
@@ -153,7 +158,7 @@
 - FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
 - FTUE mana tonic recipe guidance should point to the recipe popup `close` label after the recipe is selected; do not keep cueing the selected row.
 - FTUE mana tonic brew guidance must require an unlocked `manaTonic` cauldron match, not just `canBrew`; `canBrew` is also true for wasted mixes. Overfilled sage should target the remove row before brew.
-- FTUE should actively show the first `grow sage` loop at `0/3`; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
+- FTUE should actively show the first `grow sage` loop using the live sage-herb requirement target; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
 - FTUE level-2 task order should match the visible level-2 task row order; showing `sage` before `sage seed` keeps the gardening lesson coherent.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.
@@ -190,11 +195,13 @@
 - FTUE guide auto-move should not rely on inline `style.translate` for the moving wrapper, because active CSS keyframe animations that also set `translate` can override it and make the guide jump.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
+- Dev cheats that force garden/shop/brewing slot counts must raise player level or capacity research first; snapshot apply paths clamp counts back to progression caps.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
+- SpacetimeDB task runtime config can still expose legacy `completionCostGold`; client task balance must treat it as `completionCostCoin` or level-up prices fall back to `level * 20`.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
@@ -222,6 +229,8 @@
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
 - Full gameplay snapshots can publish during frame timers; cache expensive static catalogs/lookups such as research definitions instead of rebuilding them per snapshot.
+- No-subscriber gameplay publishes should refresh cheap frame metadata without building full snapshots; no-storage persistence should skip save construction because broad facade tests amplify both costs.
+- Renamed save branches need server normalizer aliases and client load fallbacks; otherwise server-normalized restarts can silently reset cooldowns.
 - SpacetimeDB reducers should use primary keys and existing indexes for identity/alliance lookups; maintenance reducers that touch many players should sweep each table once from an identity set, not call per-player cleanup that rescans tables.
 - `PressFeedbackManager` can route the `.is-pressing` class to a child selector via `data-press-feedback-target`; use it when a control's art should press without moving its label/sign container.
 - UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
@@ -297,6 +306,7 @@
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/coin progress look reset after refresh.
+- Android app-background disconnects should defer reconnect UI/retry until foreground; otherwise app switching can race SpacetimeDB session ownership and look like an account reconnect.
 - Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
 - Web Google account linking should fall back to OIDC redirect when Google Identity prompt cannot display; `web_unavailable` should not leave players stuck.
 - Web Google Identity script load/init failures should also be treated as `web_unavailable`, so blocked GIS can fall back to top-level OIDC redirect.
@@ -498,6 +508,7 @@
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
+- Icon mode defaults to `icons`; keep `none` as a real selectable mode so players can disable icons.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
@@ -617,10 +628,12 @@
 - Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
 - Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
 - Dialog scroll panes must show the shared bottom progress rail and use the select-recipe dialog spacing: rail below the frame, default `--style-scroll-progress-gap`, and normal dialog bottom padding.
+- World event dialog content is a fixed grid; do not stack grid `gap` plus scroll rail margin. Reserve a visible rail row with `:has(...:not([hidden]))`, spacer rows, and `margin-top: 0` so frame-to-rail spacing still equals select recipe.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
 - Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
+- Page-level content tabs should sit fixed just above world chat, like Research/Market; make the active tab panel scroll above them instead of putting tabs in normal top content flow.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.

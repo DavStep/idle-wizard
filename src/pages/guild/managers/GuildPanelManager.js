@@ -175,7 +175,8 @@ export class GuildPanelManager {
 
   createContentPanel(tab, sections) {
     const panel = document.createElement('section');
-    panel.className = 'guild-page__tabpanel';
+    panel.className = 'guild-page__tabpanel style-page-scroll';
+    panel.dataset.scrollCueProgress = 'inline';
     panel.dataset.guildTabPanel = tab.id;
     panel.setAttribute('role', 'tabpanel');
     panel.setAttribute('aria-label', tab.label);
@@ -185,7 +186,7 @@ export class GuildPanelManager {
 
   getContentTabSections(guild, tabId) {
     if (tabId === 'board') {
-      return [this.createBoardBox(guild)];
+      return [this.createBoardBox(guild), this.createAvailableRequestsBox(guild)];
     }
 
     if (tabId === 'adventurers') {
@@ -196,7 +197,7 @@ export class GuildPanelManager {
       return [this.createLogBox(guild)];
     }
 
-    return [this.createHallBox(guild)];
+    return [this.createHallBox(guild), this.createSecretaryBox(guild)];
   }
 
   getContentTabNotification(guild, tabId) {
@@ -236,8 +237,7 @@ export class GuildPanelManager {
     return this.createBox(
       'guild hall',
       [
-        this.createTextRow('name', profileLabel),
-        this.createTextRow('secretary', `level ${guild.secretary?.level ?? 1}`),
+        this.createIdentityRow(profileLabel),
         this.createTextRow(
           'adventurers',
           `${guild.adventurers?.filter((adventurer) => adventurer.status !== 'dead').length ?? 0}/${guild.secretary?.hiredCap ?? 1}`,
@@ -251,26 +251,71 @@ export class GuildPanelManager {
     );
   }
 
+  createSecretaryBox(guild) {
+    const secretary = guild.secretary ?? {};
+
+    return this.createBox('secretary', [
+      this.createTextRow('level', secretary.level ?? 1),
+      this.createTextRow('adventurers', secretary.hiredCap ?? 1),
+      this.createTextRow('board', secretary.boardSlots ?? 3),
+      this.createSecretaryUpgradeButton(secretary),
+    ]);
+  }
+
+  createSecretaryUpgradeButton(secretary) {
+    const next = secretary.next;
+    return this.createButtonRow(
+      next ? `upgrade secretary (${next.costCoin})` : 'secretary max',
+      () => this.gameplayFacade?.upgradeGuildSecretary?.(),
+      { disabled: !secretary.canUpgrade },
+    );
+  }
+
   createBoardBox(guild) {
-    const rows = [];
-    const eventBoard = guild.eventBoard ?? [];
-    const normalBoard = guild.normalBoard ?? [];
-
-    if (normalBoard.length <= 0 && eventBoard.length <= 0) {
-      rows.push(this.createEmptyRow('no requests'));
-    } else {
-      rows.push(...normalBoard.map((request) => this.createRequestRow(request)));
-
-      if (eventBoard.length > 0) {
-        rows.push(this.createSectionLabel('event requests'));
-        rows.push(...eventBoard.map((request) => this.createRequestRow(request)));
-      }
-    }
+    const rows = this.createRequestRows({
+      normalRequests: guild.normalBoard ?? [],
+      eventRequests: guild.eventBoard ?? [],
+      emptyText: 'no requests',
+      actionKind: 'remove',
+    });
 
     return this.createBox('request board', rows, {
       countLabel: `${guild.board?.length ?? 0}/${guild.secretary?.boardSlots ?? 3}`,
-      bottomLabel: guild.boardWaveLabel ? `next ${guild.boardWaveLabel}` : '',
+      bottomLabel: guild.boardWaveLabel ? `new available ${guild.boardWaveLabel}` : '',
     });
+  }
+
+  createAvailableRequestsBox(guild) {
+    const availableRequests = guild.availableRequests ?? [];
+    const rows = this.createRequestRows({
+      normalRequests: guild.availableNormalRequests ?? [],
+      eventRequests: guild.availableEventRequests ?? [],
+      emptyText: 'no available quests',
+      actionKind: 'post',
+    });
+
+    return this.createBox('available quests', rows, {
+      countLabel: `${availableRequests.length}`,
+      bottomLabel: guild.boardWaveLabel ? `new ${guild.boardWaveLabel}` : '',
+    });
+  }
+
+  createRequestRows({ normalRequests, eventRequests, emptyText, actionKind }) {
+    const rows = [];
+
+    if (normalRequests.length <= 0 && eventRequests.length <= 0) {
+      rows.push(this.createEmptyRow(emptyText));
+      return rows;
+    }
+
+    rows.push(...normalRequests.map((request) => this.createRequestRow(request, actionKind)));
+
+    if (eventRequests.length > 0) {
+      rows.push(this.createSectionLabel('event requests'));
+      rows.push(...eventRequests.map((request) => this.createRequestRow(request, actionKind)));
+    }
+
+    return rows;
   }
 
   createAdventurersBox(guild) {
@@ -303,21 +348,46 @@ export class GuildPanelManager {
     return this.createBox('guild log', rows.length ? rows : [this.createEmptyRow('quiet')]);
   }
 
-  createRequestRow(request) {
+  createIdentityRow(label) {
+    const row = document.createElement('div');
+    row.className = 'guild-page__row guild-page__identity-row';
+
+    const value = document.createElement('span');
+    value.className = 'guild-page__identity-label';
+    value.append(label);
+
+    row.append(value);
+    return row;
+  }
+
+  createRequestRow(request, actionKind = 'remove') {
     const row = document.createElement('div');
     row.className = 'guild-page__row guild-page__request-row';
 
     const main = document.createElement('button');
     main.className = 'guild-page__row-main';
     main.type = 'button';
-    main.textContent = `${request.title} (${request.difficulty})`;
+    main.textContent = `${request.title} (${request.difficulty})${
+      request.expiresLabel ? ` expires ${request.expiresLabel}` : ''
+    }`;
     main.addEventListener('click', () => this.showRequestDialog(request.id));
 
     const action = document.createElement('button');
     action.className = 'guild-page__row-action';
     action.type = 'button';
-    action.textContent = 'remove';
-    action.addEventListener('click', () => this.gameplayFacade?.removeGuildRequest?.(request.id));
+    const boardFull =
+      actionKind === 'post' &&
+      (this.snapshot.board?.length ?? 0) >= (this.snapshot.secretary?.boardSlots ?? 0);
+    action.textContent = actionKind === 'post' ? (boardFull ? 'full' : 'post') : 'remove';
+    action.disabled = boardFull;
+    action.addEventListener('click', () => {
+      if (actionKind === 'post') {
+        this.gameplayFacade?.postGuildRequest?.(request.id);
+        return;
+      }
+
+      this.gameplayFacade?.removeGuildRequest?.(request.id);
+    });
 
     row.append(main, action);
     return row;
@@ -603,13 +673,6 @@ export class GuildPanelManager {
     const form = document.createElement('form');
     form.className = 'guild-page__form';
     form.dataset.formKind = 'settings';
-    const next = this.snapshot.secretary?.next;
-    const upgrade = document.createElement('button');
-    upgrade.className = 'style-button guild-page__wide-button';
-    upgrade.type = 'button';
-    upgrade.textContent = next ? `upgrade secretary (${next.costCoin})` : 'secretary max';
-    upgrade.disabled = !this.snapshot.secretary?.canUpgrade;
-    upgrade.addEventListener('click', () => this.gameplayFacade?.upgradeGuildSecretary?.());
     form.append(
       this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
       this.createInputField('tag', 'tag', {
@@ -620,7 +683,6 @@ export class GuildPanelManager {
       }),
       this.createColorField('tag color', draft.color),
       this.createSubmitButton('save'),
-      upgrade,
     );
     this.bindFormDraft(form, 'settings');
     form.addEventListener('submit', (event) => {
@@ -637,7 +699,13 @@ export class GuildPanelManager {
   }
 
   renderRequestDialog() {
-    const request = (this.snapshot.board ?? []).find((candidate) => candidate.id === this.selectedCardId);
+    const boardRequest = (this.snapshot.board ?? []).find(
+      (candidate) => candidate.id === this.selectedCardId,
+    );
+    const availableRequest = (this.snapshot.availableRequests ?? []).find(
+      (candidate) => candidate.id === this.selectedCardId,
+    );
+    const request = boardRequest ?? availableRequest;
 
     if (!request) {
       this.hidePopup();
@@ -652,6 +720,7 @@ export class GuildPanelManager {
       this.createTextRow('difficulty', request.difficulty),
       this.createTextRow('stats', request.statLabel),
       this.createTextRow('reward', request.rewardText),
+      this.createTextRow('expires', request.expiresLabel ?? 'now'),
       this.createParagraph(request.lore),
     );
 
@@ -659,10 +728,24 @@ export class GuildPanelManager {
       rows.append(this.createTextRow('event', request.eventLabel));
     }
 
-    rows.append(this.createButtonRow('remove', () => {
-      this.gameplayFacade?.removeGuildRequest?.(request.id);
-      this.hidePopup();
-    }));
+    const boardFull =
+      !boardRequest &&
+      (this.snapshot.board?.length ?? 0) >= (this.snapshot.secretary?.boardSlots ?? 0);
+    rows.append(
+      this.createButtonRow(
+        boardRequest ? 'remove' : boardFull ? 'board full' : 'post',
+        () => {
+          if (boardRequest) {
+            this.gameplayFacade?.removeGuildRequest?.(request.id);
+          } else {
+            this.gameplayFacade?.postGuildRequest?.(request.id);
+          }
+
+          this.hidePopup();
+        },
+        { disabled: boardFull },
+      ),
+    );
     this.refs.popupContent.replaceChildren(rows);
   }
 

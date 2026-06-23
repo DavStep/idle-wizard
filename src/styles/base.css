@@ -1297,20 +1297,8 @@ body {
   position: absolute;
   inset: 0;
   z-index: 3;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  align-items: stretch;
   width: calc(100% / var(--style-ui-scale));
   height: calc(100% / var(--style-ui-scale));
-  padding: calc(var(--style-room-content-top) + var(--style-page-scroll-padding-top))
-    var(--style-room-content-edge)
-    calc(
-      var(--style-room-chat-clearance) + var(--style-page-tab-scroll-clearance) +
-        var(--style-page-scroll-padding-bottom)
-    );
-  overflow: hidden auto;
-  touch-action: pan-y;
   transform: scale(var(--style-ui-scale));
   transform-origin: top left;
 }
@@ -4781,13 +4769,25 @@ body {
 
 .workshop-page__world-notice-content {
   display: grid;
-  grid-template-rows: 90px minmax(0, 1fr);
-  gap: 6px;
+  grid-template-rows: 90px 6px minmax(0, 1fr);
+  gap: 0;
   height: calc(420px - var(--style-dialog-padding) - var(--style-dialog-padding));
   overflow: hidden;
 }
 
+.workshop-page__world-notice-content:has(
+    .workshop-page__world-notice-frame + .style-scroll-cue-progress:not([hidden])
+  ) {
+  grid-template-rows:
+    90px
+    6px
+    minmax(0, 1fr)
+    var(--style-scroll-progress-gap)
+    var(--style-scroll-progress-height);
+}
+
 .workshop-page__world-notice-frame {
+  grid-row: 3;
   display: grid;
   align-content: start;
   gap: 8px;
@@ -4799,6 +4799,11 @@ body {
 
 .workshop-page__world-notice-frame::-webkit-scrollbar {
   display: none;
+}
+
+.workshop-page__world-notice-frame + .style-scroll-cue-progress {
+  grid-row: 5;
+  margin-top: 0;
 }
 
 .workshop-page__world-notice-tabs {
@@ -4819,6 +4824,7 @@ body {
 }
 
 .workshop-page__world-notice-header {
+  grid-row: 1;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: 68px minmax(0, 1fr);
@@ -5050,17 +5056,6 @@ body {
   width: 260px;
   height: auto;
   max-height: calc(240px - var(--style-scroll-progress-block-size));
-}
-
-.workshop-page__world-notice-leaderboard-note {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--style-muted);
-  font-size: var(--style-tiny-font-size);
-  font-variant-numeric: tabular-nums lining-nums;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .workshop-page__world-notice-archive {
@@ -6770,7 +6765,11 @@ div.workshop-page__discovery-row {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.15px;
-  animation: garden-page-plot-scissors-snip 0.42s steps(2, end) infinite;
+  transform: translate(-20px, 0) rotate(-90deg);
+}
+
+.garden-page__plot-box-frame.is-harvesting .garden-page__plot-scissors {
+  animation: garden-page-plot-scissors-snip 0.42s steps(2, end) 2;
 }
 
 .garden-page__plot-scissors[hidden] {
@@ -8602,6 +8601,11 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__content {
+  position: absolute;
+  top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  bottom: var(--style-room-chat-clearance);
+  left: var(--style-room-content-edge);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -8616,12 +8620,18 @@ div.workshop-page__discovery-row {
       ((var(--style-room-content-top) + var(--style-room-chat-clearance)) / 2)
   );
   right: calc(var(--style-room-content-edge) * 3);
+  bottom: auto;
   left: var(--style-room-content-edge);
   width: auto;
   translate: 0 -50%;
 }
 
 .guild-page__content-tabs {
+  position: absolute;
+  right: 0;
+  bottom: 6px;
+  left: 0;
+  z-index: 20;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 3px;
@@ -8650,9 +8660,18 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__tabpanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: var(--style-page-tab-scroll-clearance);
+  left: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  padding-top: var(--style-page-scroll-padding-top);
+  padding-bottom: var(--style-page-scroll-padding-bottom);
+  overflow: hidden auto;
+  touch-action: pan-y;
 }
 
 .guild-page__box {
@@ -8688,6 +8707,7 @@ div.workshop-page__discovery-row {
 
 .guild-page__row-key,
 .guild-page__row-main,
+.guild-page__identity-label,
 .guild-page__empty-row,
 .guild-page__paragraph {
   min-width: 0;
@@ -8720,6 +8740,20 @@ div.workshop-page__discovery-row {
 
 .guild-page__row-action {
   text-align: right;
+}
+
+.guild-page__row-action:disabled {
+  color: var(--style-disabled);
+  cursor: default;
+}
+
+.guild-page__row-action:disabled:hover,
+.guild-page__row-action:disabled:focus-visible {
+  text-decoration: none;
+}
+
+.guild-page__identity-row {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .guild-page__row-main:hover,
@@ -8795,6 +8829,7 @@ div.workshop-page__discovery-row {
   justify-items: center;
   width: min(220px, 100%);
   min-height: calc(var(--style-row-min-height) * 2);
+  margin-top: 10px;
   line-height: normal;
   row-gap: 0;
 }
@@ -11253,6 +11288,7 @@ div.workshop-page__discovery-row {
   box-sizing: border-box;
   height: var(--style-progress-total-height);
   overflow: hidden;
+  contain: paint;
   background: var(--style-progress-rail-background);
   border: var(--style-progress-rail-border);
   box-shadow: var(--style-progress-rail-shadow);

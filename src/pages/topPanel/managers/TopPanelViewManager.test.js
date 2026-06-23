@@ -171,6 +171,13 @@ describe('TopPanelViewManager', () => {
 
     expect(iconPreviews).toEqual([
       {
+        mode: 'none',
+        labels: ['34.4k coin', 'sage seed', 'mana tonic'],
+        hasCoinIcon: true,
+        hasSeedIcon: true,
+        hasPotionIcon: true,
+      },
+      {
         mode: 'icons',
         labels: ['34.4k coin', 'sage seed', 'mana tonic'],
         hasCoinIcon: true,

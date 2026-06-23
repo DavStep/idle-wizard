@@ -968,6 +968,29 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
   });
 
+  it('uses legacy SpacetimeDB task completion costs without falling back', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.applyRuntimeConfig({
+      gameConfigs: [
+        {
+          configKey: 'tasks',
+          configJson: JSON.stringify({
+            levels: [
+              {
+                level: 1,
+                completionCostGold: 7,
+                tasks: [{ id: 'level1-sage-seeds', itemKey: 'sageSeed', quantity: 4 }],
+              },
+            ],
+          }),
+        },
+      ],
+    });
+
+    expect(gameplayFacade.getSnapshot().tasks.level.completion.costCoin).toBe(7);
+  });
+
   it('uses SpacetimeDB runtime config for balance and catalog data', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -1440,7 +1463,7 @@ describe('GameplayFacade', () => {
               },
               progressBar: { regular: 0, gradient: 0 },
               plotView: { rows: 0, boxes: 0 },
-              icons: { icons: 0 },
+              icons: { none: 0, icons: 0 },
             },
           }),
         },
@@ -1465,7 +1488,7 @@ describe('GameplayFacade', () => {
       },
       progressBar: { regular: true, gradient: false },
       plotView: { rows: true, boxes: true },
-      icons: { icons: true },
+      icons: { none: true, icons: true },
     });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
       ok: false,

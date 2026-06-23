@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.31",
+  "version": "0.2.32",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,6 +23,8 @@
     "check:ui": "node scripts/check-ui-consistency.mjs",
     "check": "npm run lint && npm test && npm run build",
     "release": "node scripts/release.js",
+    "qa:data:sync": "node scripts/qa-data.js sync --server maincloud --database idle-wizard",
+    "qa:data:from-backup": "node scripts/qa-data.js from-backup",
     "balance:sim": "node scripts/balance-sim.js",
     "tutorial:capture": "node scripts/capture-tutorial-flow.js",
     "mobile:sync": "npm run mobile:sync:prod",

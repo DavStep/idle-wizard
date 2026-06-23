@@ -41,6 +41,22 @@ function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}
 }
 
 describe('GameplayPersistenceFacade', () => {
+  it('does not build a save when the storage manager cannot save', () => {
+    const storageManager = {
+      canSave: vi.fn(() => false),
+      save: vi.fn(() => true),
+      saveAndFlush: vi.fn(() => true),
+    };
+    const facade = createPersistenceFacade({ storageManager });
+    const createSave = vi.spyOn(facade.saveManager, 'createSave');
+
+    expect(facade.save()).toBe(false);
+    expect(facade.saveAndFlush()).toBe(false);
+    expect(createSave).not.toHaveBeenCalled();
+    expect(storageManager.save).not.toHaveBeenCalled();
+    expect(storageManager.saveAndFlush).not.toHaveBeenCalled();
+  });
+
   it('autosaves once per minute during active play', () => {
     const storageManager = {
       save: vi.fn(() => true),

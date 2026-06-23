@@ -63,8 +63,7 @@ export class GuildRoomViewManager {
 
   createUiLayer() {
     this.uiLayer = document.createElement('div');
-    this.uiLayer.className = 'guild-page__ui-layer style-page-scroll';
-    this.uiLayer.dataset.scrollCueProgress = 'inline';
+    this.uiLayer.className = 'guild-page__ui-layer';
     return this.uiLayer;
   }
 

@@ -1,8 +1,10 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
-import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
-import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
+import {
+  createWorkshopLeaderboardRow,
+  createWorkshopLeaderboardUserLabel,
+} from './WorkshopLeaderboardRowRenderer.js';
 
 const LEADERBOARD_SCOPES = [
   {
@@ -591,79 +593,22 @@ export class WorkshopLeaderboardManager {
   }
 
   createRow(label, value, { header = false, current = false, onActivate = null } = {}) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__row workshop-page__leaderboard-row';
-
-    if (header) {
-      row.classList.add('workshop-page__leaderboard-header');
-    }
-
-    if (current) {
-      row.classList.add('workshop-page__leaderboard-current');
-    }
-
-    if (typeof onActivate === 'function') {
-      row.classList.add('is-actionable');
-      row.tabIndex = 0;
-      row.setAttribute('role', 'button');
-      row.addEventListener('click', () => onActivate());
-      row.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') {
-          return;
-        }
-
-        event.preventDefault();
-        onActivate();
-      });
-    }
-
-    const key = document.createElement('span');
-    key.className = 'row_key';
-    this.appendCellContent(key, label);
-
-    const val = document.createElement('span');
-    val.className = 'row_val';
-    val.textContent = value;
-
-    row.append(key, val);
-    return row;
+    return createWorkshopLeaderboardRow(label, value, {
+      header,
+      current,
+      onActivate,
+    });
   }
 
   createUserLabel(user, index) {
-    const rank = this.normalizeRank(user?.rank) ?? index + 1;
-    const tag = createAllianceTagSpan(user?.allianceTag, user?.allianceTagColor);
-    const name = createPlayerInfoLink(
-      {
-        identity: user.identity,
-        username: user.name,
-        character: user.character,
-        allianceTag: user.allianceTag,
-        allianceTagColor: user.allianceTagColor,
-        playerLevel: user.playerLevel,
+    return createWorkshopLeaderboardUserLabel(user, {
+      index,
+      onOpenPlayerInfo: this.onOpenPlayerInfo,
+      playerInfo: {
         totalProducedCoin: user.totalIncome,
         prestigeCount: user.prestigeCount,
       },
-      {
-        onOpenPlayerInfo: this.onOpenPlayerInfo,
-        text: user.name,
-        className: 'workshop-page__leaderboard-player-link',
-      },
-    );
-    const player = document.createElement('span');
-    player.className = 'workshop-page__leaderboard-player';
-    player.append(
-      createPlayerCharacterIcon(
-        user.character,
-        'workshop-page__leaderboard-character-icon',
-      ),
-      ...(tag ? [tag, document.createTextNode(' ')] : []),
-      name,
-    );
-    return [
-      document.createTextNode(`${rank}. `),
-      player,
-      document.createTextNode(` (${this.normalizePlayerLevel(user.playerLevel)})`),
-    ];
+    });
   }
 
   createAllianceLabel(alliance, index) {
@@ -689,20 +634,6 @@ export class WorkshopLeaderboardManager {
       weeklyIncome: alliance?.weeklyIncome,
       totalIncome: alliance?.totalIncome,
     });
-  }
-
-  appendCellContent(element, content) {
-    if (Array.isArray(content)) {
-      element.replaceChildren(...content);
-      return;
-    }
-
-    if (content && typeof content === 'object' && typeof content.nodeType === 'number') {
-      element.replaceChildren(content);
-      return;
-    }
-
-    element.textContent = String(content ?? '');
   }
 
   applyVisibility() {

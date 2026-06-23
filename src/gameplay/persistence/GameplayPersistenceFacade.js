@@ -118,6 +118,10 @@ export class GameplayPersistenceFacade {
   }
 
   save() {
+    if (this.storageManager.canSave?.() === false) {
+      return false;
+    }
+
     return this.storageManager.save(this.saveManager.createSave());
   }
 
@@ -126,6 +130,10 @@ export class GameplayPersistenceFacade {
   }
 
   saveAndFlush() {
+    if (this.storageManager.canSave?.() === false) {
+      return false;
+    }
+
     const save = this.saveManager.createSave();
 
     if (typeof this.storageManager.saveAndFlush === 'function') {

@@ -46,6 +46,15 @@ export class TutorialProgressManager {
     this.save();
   }
 
+  setCompletedStepIds(stepIds = []) {
+    this.completedStepIds = new Set(
+      stepIds
+        .map(normalizeTutorialStepId)
+        .filter((stepId) => typeof stepId === 'string' && stepId.length > 0),
+    );
+    this.save();
+  }
+
   skip() {
     this.save();
   }

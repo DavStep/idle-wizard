@@ -111,6 +111,8 @@ The server module defines:
 - `player_gameplay_save`: one row per identity, with the full gameplay save JSON and update time.
 - `leaderboard`: one row per identity, with `username`, player level, all-time `totalIncome`, current daily/weekly/monthly income counters, and period keys.
 - `leaderboard_summary`: public indexed view returning each period top 100 plus the subscribing player's own row, alliance tag, and rank fields.
+- `world_event_leaderboard`: one row per identity/event period, with `username`, player level, event id, period key, and current event points.
+- `world_event_leaderboard_summary`: public indexed view returning the current weekly event top 100 plus the subscribing player's own row, alliance tag, character, and rank.
 - `world_chat`: one row per chat message, with sender identity, username, sender player level, alliance tag, body, and timestamp. `world_chat_recent` exposes only the latest 40 messages for the client and joins the sender character for avatar display.
 - `trade_alliance`: one row per alliance, with unique tag, leader identity, join mode, member count, all-time/daily/weekly/monthly income totals, and period keys.
 - `trade_alliance_member`: one row per member identity, with alliance id, username/player-level snapshot, role, lifetime contribution, and current weekly contribution in the legacy `dailyContribution` column.
@@ -140,6 +142,8 @@ Maintenance mode lives in `game_config` under the `maintenance` key. `off` allow
 Period loops use server UTC time. Daily periods reset at UTC 00:00, which is 04:00 in Armenia. Weekly and monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly spans 7 days and monthly spans 30 days.
 
 `set_total_generated_coin` accepts client-reported lifetime generated coin, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap and rolls period counters when the server day/week/month key changes. The accepted delta raises the player's daily, weekly, monthly, and all-time leaderboard income, plus alliance income and current weekly alliance-income quest progress when the player is in an alliance.
+
+`set_world_event_contribution_points` accepts client-reported current weekly event points, but only for the active event period and only as a non-decreasing value bounded by player level. The client subscribes to `world_event_leaderboard_summary`, so the Workshop event leaderboard receives shared user rows instead of only local fallback points.
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
@@ -191,7 +195,7 @@ SELECT * FROM own_trade_alliance_chat
 SELECT * FROM own_trade_alliance_reward_inbox
 ```
 
-The own `player` profile view is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated coin totals call throttled `set_total_generated_coin`, and the server stores capped income values on `leaderboard`. The client subscribes to `leaderboard_summary`, not the raw leaderboard table, so it receives daily, weekly, monthly, and all-time top 100 rows plus the current player's rank row for the Workshop leaderboard popup.
+The own `player` profile view is treated as the source of truth on reconnect, then later local profile edits are sent through `set_player_profile`. The `player_gameplay_save` row owns the full gameplay restore path. Local task levels sync through `set_player_level`; local generated coin totals call throttled `set_total_generated_coin`, and the server stores capped income values on `leaderboard`. Local weekly event points call throttled `set_world_event_contribution_points`, and the server stores capped event points on `world_event_leaderboard`. The client subscribes to `leaderboard_summary`, not the raw leaderboard table, so it receives daily, weekly, monthly, and all-time top 100 rows plus the current player's rank row for the Workshop leaderboard popup. The event popup similarly reads `world_event_leaderboard_summary` for current weekly event top rows plus the current player's rank row.
 
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.
 

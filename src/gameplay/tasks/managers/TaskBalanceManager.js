@@ -113,10 +113,11 @@ export class TaskBalanceManager {
         throw new Error('game_config.tasks requires 1 to 5 tasks per level.');
       }
 
+      const completionCostValue = level.completionCostCoin ?? level.completionCostGold;
       const completionCostCoin =
-        level.completionCostCoin === undefined
+        completionCostValue === undefined
           ? undefined
-          : Math.max(0, Math.floor(Number(level.completionCostCoin)));
+          : Math.max(0, Math.floor(Number(completionCostValue)));
 
       return {
         level: levelNumber,

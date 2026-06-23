@@ -71,7 +71,7 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
   ),
   progressBar: Object.freeze({ [DEFAULT_PLAYER_PROGRESS_BAR]: true }),
   plotView: Object.freeze({ [DEFAULT_PLAYER_PLOT_VIEW]: true, rows: true }),
-  icons: Object.freeze({ icons: true }),
+  icons: Object.freeze({ none: true, icons: true }),
 });
 
 const CATEGORY_BY_KEY = new Map(

@@ -25,6 +25,7 @@ const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
 const BOX_PLOT_COLUMNS = 3;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const GARDEN_PROGRESS_STEP_MS = 140;
 
 export class GardenPlotManager {
   constructor({ gameplayFacade, playerFacade } = {}) {
@@ -658,8 +659,9 @@ export class GardenPlotManager {
 
     refs.progress.hidden = false;
     setProgressFill(refs.fill, progressValue, {
-      smooth: false,
+      smooth: 'step',
       remainingMs,
+      stepMs: GARDEN_PROGRESS_STEP_MS,
     });
     this.setText(refs.progressText, '');
   }

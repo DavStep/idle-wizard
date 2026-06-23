@@ -16,6 +16,7 @@ function createWorldNoticeSnapshot() {
       unlockLevel: 4,
       current: {
         periodKey: 'weekly-1',
+        eventId: 'fever-lower-quarter',
         resetLabel: 'resolves 3d',
         headline: 'fever in the lower quarter',
         body: [
@@ -148,6 +149,16 @@ function createPlayerFacadeFake(snapshot = { username: 'Merlin', character: 'mir
   };
 }
 
+function createWorldEventLeaderboardFacadeFake(snapshot = {}) {
+  return {
+    getSnapshot: vi.fn(() => snapshot),
+    subscribe: vi.fn((callback) => {
+      callback(snapshot);
+      return vi.fn();
+    }),
+  };
+}
+
 describe('WorkshopWorldNoticeManager', () => {
   it('pins character button notification dots to the label box corner', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
@@ -186,14 +197,28 @@ describe('WorkshopWorldNoticeManager', () => {
       /\.workshop-page__world-notice-frame\s*\+\s*\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(contentRule).toMatch(/\bgrid-template-rows:\s*90px minmax\(0,\s*1fr\);/);
+    expect(contentRule).toMatch(
+      /\bgrid-template-rows:\s*90px 6px minmax\(0,\s*1fr\);/,
+    );
+    expect(contentRule).toMatch(/\bgap:\s*0;/);
     expect(contentRule).toMatch(/\boverflow:\s*hidden;/);
     expect(portraitRule).toMatch(/\bwidth:\s*64px;/);
     expect(portraitRule).toMatch(/\bheight:\s*80px;/);
     expect(titleRule).toMatch(/\bfont-weight:\s*700;/);
     expect(titleRule).toMatch(/\bwhite-space:\s*normal;/);
     expect(instructionRule).toMatch(/\bwhite-space:\s*normal;/);
-    expect(progressRule).toBeUndefined();
+    expect(progressRule).toMatch(/\bgrid-row:\s*5;/);
+    expect(progressRule).toMatch(/\bmargin-top:\s*0;/);
+  });
+
+  it('reserves the world event progress row with select-recipe spacing only when visible', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const overflowRule = baseCss.match(
+      /\.workshop-page__world-notice-content:has\(\s*\.workshop-page__world-notice-frame \+ \.style-scroll-cue-progress:not\(\[hidden\]\)\s*\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(overflowRule).toMatch(/\bvar\(--style-scroll-progress-gap\)/);
+    expect(overflowRule).toMatch(/\bvar\(--style-scroll-progress-height\)/);
   });
 
   it('keeps leaderboard and reward tabs from drawing a second header separator', () => {
@@ -366,7 +391,7 @@ describe('WorkshopWorldNoticeManager', () => {
         .querySelector('.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-current')
         ?.textContent,
     ).toContain('125');
-    expect(popup.textContent).toContain('1875 points to qualify');
+    expect(popup.textContent).not.toContain('1875 points to qualify');
     expect(popup.textContent).not.toContain('past events');
 
     popup
@@ -516,6 +541,73 @@ describe('WorkshopWorldNoticeManager', () => {
         '.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-current',
       )?.textContent,
     ).toContain('125');
+  });
+
+  it('uses shared event leaderboard rows when backend rows are supplied', () => {
+    const snapshot = createWorldNoticeSnapshot();
+    delete snapshot.worldNotice.current.leaderboard.rows;
+    const gameplayFacade = createGameplayFacadeFake(snapshot);
+    const playerFacade = createPlayerFacadeFake();
+    const worldEventLeaderboardFacade = createWorldEventLeaderboardFacadeFake({
+      connected: true,
+      periodKey: 'weekly-1',
+      eventId: 'fever-lower-quarter',
+      topWorldEventUsers: [
+        {
+          identity: 'ada',
+          rank: 1,
+          name: 'Ada',
+          allianceTag: 'DAY',
+          character: 'rowan',
+          playerLevel: 5,
+          points: 450,
+        },
+        {
+          identity: 'mine',
+          rank: 2,
+          name: 'Merlin',
+          character: 'mira',
+          playerLevel: 4,
+          points: 125,
+        },
+      ],
+      currentWorldEventUser: {
+        identity: 'mine',
+        rank: 2,
+        name: 'Merlin',
+        character: 'mira',
+        playerLevel: 4,
+        points: 125,
+      },
+    });
+    const manager = new WorkshopWorldNoticeManager({
+      gameplayFacade,
+      playerFacade,
+      worldEventLeaderboardFacade,
+    });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    manager.mount(parent, popupParent);
+    parent.querySelector('.workshop-page__world-notice-open').click();
+    popupParent
+      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
+      .click();
+
+    expect(
+      [
+        ...popupParent.querySelectorAll(
+          '.workshop-page__world-notice-leaderboard .row_key',
+        ),
+      ].map((cell) => cell.textContent),
+    ).toEqual(['user', '1. [DAY] Ada (5)', '2. Merlin (4)']);
+    expect(
+      [
+        ...popupParent.querySelectorAll(
+          '.workshop-page__world-notice-leaderboard .row_val',
+        ),
+      ].map((cell) => cell.textContent),
+    ).toEqual(['points', '450', '125']);
   });
 
   it('shows the event button notification while the current event has open requests', () => {

@@ -51,6 +51,28 @@ describe('progressFill', () => {
     expect(fill.classList.contains('is-progress-running')).toBe(false);
   });
 
+  it('softens stepped progress without running a full timer transition', () => {
+    const fill = document.createElement('span');
+    const requestAnimationFrame = vi.fn();
+
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+    });
+
+    setProgressFill(fill, 0.5, {
+      smooth: 'step',
+      remainingMs: 6_000,
+      stepMs: 120,
+    });
+
+    expect(requestAnimationFrame).not.toHaveBeenCalled();
+    expect(fill.classList.contains('is-smooth-progress-fill')).toBe(true);
+    expect(fill.classList.contains('is-progress-running')).toBe(false);
+    expect(fill.style.transition).toBe('transform 120ms linear');
+    expect(fill.style.transform).toBe('scaleX(0.5)');
+  });
+
   it('stops active progress immediately', () => {
     const fill = document.createElement('span');
 

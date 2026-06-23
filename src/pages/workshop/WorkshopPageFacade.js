@@ -24,6 +24,7 @@ export class WorkshopPageFacade {
     playerFacade,
     hapticsFacade,
     leaderboardFacade,
+    worldEventLeaderboardFacade,
     tradeAllianceFacade,
     onOpenPlayerInfo,
     onOpenAllianceInfo,
@@ -74,6 +75,7 @@ export class WorkshopPageFacade {
     this.worldNoticeManager = new WorkshopWorldNoticeManager({
       gameplayFacade,
       playerFacade,
+      worldEventLeaderboardFacade,
       onOpenPlayerInfo,
     });
   }

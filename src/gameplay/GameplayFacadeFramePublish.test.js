@@ -20,6 +20,17 @@ function createGameplayFacade() {
 }
 
 describe('GameplayFacade frame publishing', () => {
+  it('does not build explicit snapshots when no listeners are subscribed', () => {
+    const gameplayFacade = createGameplayFacade();
+    const getSnapshot = vi.spyOn(gameplayFacade, 'getSnapshot');
+
+    expect(gameplayFacade.publishSnapshot()).toBe(false);
+    expect(
+      gameplayFacade.publishSnapshotObject(gameplayFacade.getFrameResourceSnapshot()),
+    ).toBe(false);
+    expect(getSnapshot).not.toHaveBeenCalled();
+  });
+
   it('publishes mana frame resources without a full snapshot at the gameplay tick rate', () => {
     const gameplayFacade = createGameplayFacade();
     const listener = vi.fn();

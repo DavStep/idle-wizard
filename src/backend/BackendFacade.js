@@ -13,6 +13,7 @@ import { PotionDiscoveryBackendFacade } from './potionDiscoveries/PotionDiscover
 import { SpacetimeDbFacade } from './spacetime/SpacetimeDbFacade.js';
 import { TradeAllianceBackendFacade } from './tradeAlliance/TradeAllianceBackendFacade.js';
 import { WorldChatBackendFacade } from './worldChat/WorldChatBackendFacade.js';
+import { WorldEventLeaderboardBackendFacade } from './worldEventLeaderboard/WorldEventLeaderboardBackendFacade.js';
 
 export class BackendFacade {
   static explain =
@@ -30,6 +31,7 @@ export class BackendFacade {
     });
     this.gameplaySaveFacade = new GameplaySaveBackendFacade();
     this.leaderboardFacade = new LeaderboardBackendFacade();
+    this.worldEventLeaderboardFacade = new WorldEventLeaderboardBackendFacade();
     this.worldChatFacade = new WorldChatBackendFacade();
     this.feedbackFacade = new FeedbackBackendFacade();
     this.npcMarketFacade = new NpcMarketBackendFacade();
@@ -61,6 +63,7 @@ export class BackendFacade {
     onGameplaySaveReady,
   } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
+    this.worldEventLeaderboardFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setRewardProcessingReady(false);
     this.accountSessionInactive = false;
@@ -148,6 +151,7 @@ export class BackendFacade {
 
         this.gameConfigFacade.connect(connection);
         this.leaderboardFacade.connect(connection, identity);
+        this.worldEventLeaderboardFacade.connect(connection, identity);
         this.worldChatFacade.connect(connection);
         this.feedbackFacade.connect(connection);
         this.npcMarketFacade.connect(connection);
@@ -180,6 +184,7 @@ export class BackendFacade {
     this.disconnectBackendFacades();
     this.gameplaySaveFacade.setSyncUnhealthyHandler(null);
     this.leaderboardFacade.setGameplayFacade(null);
+    this.worldEventLeaderboardFacade.setGameplayFacade(null);
     this.tradeAllianceFacade.setGameplayFacade(null);
     this.playerSyncFacade.setGameplayFacade(null);
     this.worldChatFacade.setBeforeSendMessage?.(null);
@@ -220,6 +225,7 @@ export class BackendFacade {
     this.gameConfigFacade.disconnect();
     this.gameplaySaveFacade.disconnect();
     this.leaderboardFacade.disconnect();
+    this.worldEventLeaderboardFacade.disconnect();
     this.worldChatFacade.disconnect();
     this.feedbackFacade.disconnect();
     this.npcMarketFacade.disconnect();
@@ -252,6 +258,10 @@ export class BackendFacade {
 
   getLeaderboardFacade() {
     return this.leaderboardFacade;
+  }
+
+  getWorldEventLeaderboardFacade() {
+    return this.worldEventLeaderboardFacade;
   }
 
   getWorldChatFacade() {

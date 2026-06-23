@@ -1,3 +1,5 @@
+import { App as CapacitorApp } from '@capacitor/app';
+
 import { BackendFacade } from '../backend/BackendFacade.js';
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { GameplayFacade } from '../gameplay/GameplayFacade.js';
@@ -13,6 +15,7 @@ import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
 import { AppOnlineGateManager } from './managers/AppOnlineGateManager.js';
 import { AppShellManager } from './managers/AppShellManager.js';
 import { AppThemeManager } from './managers/AppThemeManager.js';
+import { AppVisibilityManager } from './managers/AppVisibilityManager.js';
 
 export class AppFacade {
   static explain =
@@ -47,6 +50,7 @@ export class AppFacade {
       gameplayFacade: this.gameplayFacade,
       playerFacade: this.playerFacade,
       leaderboardFacade: this.backendFacade.getLeaderboardFacade(),
+      worldEventLeaderboardFacade: this.backendFacade.getWorldEventLeaderboardFacade(),
       worldChatFacade: this.backendFacade.getWorldChatFacade(),
       tradeAllianceFacade: this.backendFacade.getTradeAllianceFacade(),
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
@@ -72,6 +76,7 @@ export class AppFacade {
       onlineGateManager: this.onlineGateManager,
       deployRefreshManager: this.deployRefreshManager,
       appThemeManager: this.appThemeManager,
+      appVisibilityManager: new AppVisibilityManager({ appPlugin: CapacitorApp }),
     });
   }
 

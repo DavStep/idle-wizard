@@ -62,9 +62,9 @@ function createSnapshot(overrides = {}) {
           {
             taskId: 'level1-sage-seeds',
             itemKey: 'sageSeed',
-            requiredQuantity: 5,
+            requiredQuantity: 4,
             progressQuantity: 0,
-            remainingQuantity: 5,
+            remainingQuantity: 4,
             canFill: false,
             canComplete: false,
             completed: false,
@@ -139,8 +139,8 @@ function createLevelOneTaskCompleteSnapshot(overrides = {}) {
           {
             taskId: 'level1-sage-seeds',
             itemKey: 'sageSeed',
-            requiredQuantity: 5,
-            progressQuantity: 5,
+            requiredQuantity: 4,
+            progressQuantity: 4,
             remainingQuantity: 0,
             canFill: false,
             canComplete: false,
@@ -170,8 +170,8 @@ function createLevelTwoReadySnapshot(overrides = {}) {
           {
             taskId: 'level2-sage-herb',
             itemKey: 'sageHerb',
-            requiredQuantity: 3,
-            progressQuantity: 3,
+            requiredQuantity: 2,
+            progressQuantity: 2,
             remainingQuantity: 0,
             canFill: false,
             canComplete: false,
@@ -400,9 +400,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 5,
+              requiredQuantity: 4,
               progressQuantity: 0,
-              remainingQuantity: 5,
+              remainingQuantity: 4,
               canFill: true,
               canComplete: false,
               completed: false,
@@ -441,9 +441,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 5,
+              requiredQuantity: 4,
               progressQuantity: 1,
-              remainingQuantity: 4,
+              remainingQuantity: 3,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -464,8 +464,8 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:summonSeed',
       objectiveText: 'summon and turn in sage seeds for the next level',
-      progress: { value: 1, max: 5 },
-      progressLabel: '1/5 seeds',
+      progress: { value: 1, max: 4 },
+      progressLabel: '1/4 seeds',
       stepLabel: '8/31',
     });
   });
@@ -484,9 +484,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 5,
+              requiredQuantity: 4,
               progressQuantity: 1,
-              remainingQuantity: 4,
+              remainingQuantity: 3,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -570,9 +570,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 5,
+              requiredQuantity: 4,
               progressQuantity: 1,
-              remainingQuantity: 4,
+              remainingQuantity: 3,
               canFill: true,
               canComplete: false,
               completed: false,
@@ -746,8 +746,8 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level1-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 5,
-              progressQuantity: 5,
+              requiredQuantity: 4,
+              progressQuantity: 4,
               remainingQuantity: 0,
               canFill: false,
               canComplete: false,
@@ -821,9 +821,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
+              requiredQuantity: 2,
               progressQuantity: 0,
-              remainingQuantity: 3,
+              remainingQuantity: 2,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -831,9 +831,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 10,
+              requiredQuantity: 7,
               progressQuantity: 0,
-              remainingQuantity: 10,
+              remainingQuantity: 7,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -859,9 +859,9 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:tasks',
       hintText: 'open level 3 requirements',
       objectiveText:
-        "now level 3 requires 3 sages and 10 sage seeds to level up. fussy little list. let's start growing sage.",
+        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
       autoPageId: null,
-      progressLabel: '0/3 sage',
+      progressLabel: '0/2 sage',
     });
 
     expect(
@@ -876,7 +876,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       autoPageId: 'garden',
       objectiveText:
-        "now level 3 requires 3 sages and 10 sage seeds to level up. fussy little list. let's start growing sage.",
+        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
     });
 
     expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
@@ -884,11 +884,11 @@ describe('TutorialStepManager', () => {
       targetId: 'garden:plot:1:label',
       hintText: 'choose sage seed',
       objectiveText:
-        "now level 3 requires 3 sages and 10 sage seeds to level up. fussy little list. let's start growing sage.",
+        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
     });
   });
 
-  it('keeps the grow sage objective until three sage are grown', () => {
+  it('keeps the grow sage objective until the sage requirement target is grown', () => {
     const snapshot = createSnapshot({
       tasks: {
         currentLevel: 2,
@@ -898,8 +898,8 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
-              progressQuantity: 2,
+              requiredQuantity: 2,
+              progressQuantity: 1,
               remainingQuantity: 1,
               canFill: false,
               canComplete: false,
@@ -912,9 +912,9 @@ describe('TutorialStepManager', () => {
 
     expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
       id: 'grow-sage',
-      progress: { value: 2, max: 3 },
-      objectiveText: 'keep going. grow sage 3 times.',
-      progressLabel: '2/3 sage',
+      progress: { value: 1, max: 2 },
+      objectiveText: 'keep going. grow sage 2 times.',
+      progressLabel: '1/2 sage',
       cueMode: 'delayed-target',
     });
   });
@@ -989,9 +989,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
+              requiredQuantity: 2,
               progressQuantity: 0,
-              remainingQuantity: 3,
+              remainingQuantity: 2,
               ownedQuantity: 1,
               canFill: false,
               canComplete: false,
@@ -1012,7 +1012,7 @@ describe('TutorialStepManager', () => {
       targetId: 'task:level2-sage-herb',
       hintText: 'turn in sage',
       objectiveText: 'good. now turn in sage for the next level.',
-      progressLabel: '0/3 sage',
+      progressLabel: '0/2 sage',
     });
   });
 
@@ -1026,9 +1026,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
+              requiredQuantity: 2,
               progressQuantity: 1,
-              remainingQuantity: 2,
+              remainingQuantity: 1,
               canFill: true,
               canComplete: false,
               completed: false,
@@ -1036,9 +1036,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 10,
+              requiredQuantity: 7,
               progressQuantity: 0,
-              remainingQuantity: 10,
+              remainingQuantity: 7,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -1060,7 +1060,7 @@ describe('TutorialStepManager', () => {
       targetId: 'task:level2-sage-herb',
       hintText: 'turn in sage',
       objectiveText: 'good. now turn in sage for the next level.',
-      progressLabel: '1/3 sage',
+      progressLabel: '1/2 sage',
       cueMode: 'delayed-target',
       stepLabel: '19/31',
     });
@@ -1077,9 +1077,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 10,
+              requiredQuantity: 7,
               progressQuantity: 4,
-              remainingQuantity: 6,
+              remainingQuantity: 3,
               canFill: true,
               canComplete: false,
               completed: false,
@@ -1087,8 +1087,8 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
-              progressQuantity: 3,
+              requiredQuantity: 2,
+              progressQuantity: 2,
               remainingQuantity: 0,
               canFill: false,
               canComplete: false,
@@ -1110,7 +1110,7 @@ describe('TutorialStepManager', () => {
       targetId: 'task:level2-sage-seeds',
       hintText: 'turn in',
       objectiveText: 'and yes, the next level still requires sage seed.',
-      progressLabel: '4/10 sage seeds',
+      progressLabel: '4/7 sage seeds',
       cueMode: 'delayed-target',
       stepLabel: '20/31',
     });
@@ -1127,9 +1127,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
+              requiredQuantity: 2,
               progressQuantity: 1,
-              remainingQuantity: 2,
+              remainingQuantity: 1,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -1145,7 +1145,7 @@ describe('TutorialStepManager', () => {
       targetId: 'page:garden',
       hintText: 'open garden',
       objectiveText: 'good. now turn in sage for the next level.',
-      progressLabel: '1/3 sage',
+      progressLabel: '1/2 sage',
       stepLabel: '19/31',
     });
   });
@@ -1177,9 +1177,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
+              requiredQuantity: 2,
               progressQuantity: 1,
-              remainingQuantity: 2,
+              remainingQuantity: 1,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -1201,7 +1201,7 @@ describe('TutorialStepManager', () => {
       hintText: 'wait for sage to grow',
       objectiveText: 'wait for sage to grow',
       cueMode: 'passive',
-      progressLabel: '1/3 sage',
+      progressLabel: '1/2 sage',
       stepLabel: '19/31',
     });
   });
@@ -1220,9 +1220,9 @@ describe('TutorialStepManager', () => {
             {
               taskId: 'level2-sage-herb',
               itemKey: 'sageHerb',
-              requiredQuantity: 3,
+              requiredQuantity: 2,
               progressQuantity: 1,
-              remainingQuantity: 2,
+              remainingQuantity: 1,
               canFill: false,
               canComplete: false,
               completed: false,

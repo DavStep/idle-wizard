@@ -17,6 +17,7 @@ export class PageNotificationFacade {
     this.gameplaySnapshot = null;
     this.playerShopSnapshot = null;
     this.tradeAllianceSnapshot = null;
+    this.devSnapshot = null;
     this.snapshot = this.stateManager.getSnapshot();
   }
 
@@ -57,7 +58,31 @@ export class PageNotificationFacade {
     return this.snapshot;
   }
 
+  setDevSnapshot(snapshot) {
+    this.devSnapshot = snapshot && typeof snapshot === 'object' ? snapshot : null;
+    this.publish();
+    return {
+      ok: true,
+      snapshot: this.snapshot,
+    };
+  }
+
+  clearDevSnapshot() {
+    this.devSnapshot = null;
+    this.publish();
+    return {
+      ok: true,
+      snapshot: this.snapshot,
+    };
+  }
+
   publish() {
+    if (this.devSnapshot) {
+      this.snapshot = this.devSnapshot;
+      this.onChange?.(this.snapshot);
+      return;
+    }
+
     this.snapshot = this.stateManager.getSnapshot(this.gameplaySnapshot, {
       playerShop: this.playerShopSnapshot ?? {},
       tradeAlliance: this.tradeAllianceSnapshot ?? {},

@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.32
+
+- Added live weekly world event leaderboard data so event points and player rows stay synced across clients.
+- Changed Guild requests so new requests arrive as choices and players decide which ones to pin to the board.
+- Improved Android resume handling so the game saves, pauses, and reconnects more cleanly after backgrounding.
+- Tightened tutorial progress text, world event scrolling, Guild layout, and Garden harvest feedback for cleaner mobile play.
+
 ## 0.2.31
 
 - Fixed the free coin offer so restarting the app no longer resets its two-hour cooldown after collection.

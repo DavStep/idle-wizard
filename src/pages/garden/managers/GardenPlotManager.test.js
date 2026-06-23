@@ -467,7 +467,7 @@ describe('GardenPlotManager', () => {
     expect(boxTimer?.textContent).toBe('6s');
   });
 
-  it('keeps active plot progress stepped instead of continuously animating on mobile', () => {
+  it('softens active plot progress without continuously animating on mobile', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -510,7 +510,7 @@ describe('GardenPlotManager', () => {
     }
 
     expect(progressFill?.classList.contains('is-progress-running')).toBe(false);
-    expect(progressFill?.style.transition).toBe('none');
+    expect(progressFill?.style.transition).toBe('transform 140ms linear');
     expect(progressFill?.style.transform).toBe('scaleX(0.5)');
   });
 

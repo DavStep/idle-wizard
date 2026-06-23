@@ -701,6 +701,12 @@ export class GameplayFacade {
     return result;
   }
 
+  postGuildRequest(requestId) {
+    const result = this.guildFacade.postRequest(requestId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   removeGuildRequest(requestId) {
     const result = this.guildFacade.removeRequest(requestId);
     this.publishAndSaveSnapshot();
@@ -1265,7 +1271,12 @@ export class GameplayFacade {
   }
 
   publishSnapshot() {
-    this.publishSnapshotObject(this.getSnapshot());
+    if (!this.stateObserverManager.hasListeners()) {
+      this.updateSnapshotPublishMetadata();
+      return false;
+    }
+
+    return this.publishSnapshotObject(this.getSnapshot());
   }
 
   publishFrameSnapshot(frame = {}) {
@@ -1309,11 +1320,25 @@ export class GameplayFacade {
     frameTime = this.getCurrentFrameTime(),
     hasTimerWork = this.hasFrameTimerWork(),
   ) {
+    this.updateSnapshotPublishMetadata(frameSnapshotKey, frameTime, hasTimerWork);
+
+    if (!this.stateObserverManager.hasListeners()) {
+      return false;
+    }
+
+    this.stateObserverManager.publish(snapshot);
+    return true;
+  }
+
+  updateSnapshotPublishMetadata(
+    frameSnapshotKey = this.getFrameSnapshotKey(),
+    frameTime = this.getCurrentFrameTime(),
+    hasTimerWork = this.hasFrameTimerWork(),
+  ) {
     this.lastFrameSnapshotKey = frameSnapshotKey;
     this.lastFrameSnapshotBuildTime = frameTime;
     this.lastFrameHadTimerWork = hasTimerWork;
     this.lastFrameResourceSnapshotKey = this.getFrameResourceSnapshotKey();
-    this.stateObserverManager.publish(snapshot);
   }
 
   getFrameSnapshotKey() {

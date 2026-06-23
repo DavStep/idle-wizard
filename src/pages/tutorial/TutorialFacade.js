@@ -3,7 +3,10 @@ import { TutorialLogicManager } from './managers/TutorialLogicManager.js';
 import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialRevealManager } from './managers/TutorialRevealManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
-import { LEVEL_ONE_TUTORIAL_SALE } from './managers/TutorialStepManager.js';
+import {
+  LEVEL_ONE_TUTORIAL_SALE,
+  TUTORIAL_STEP_IDS,
+} from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanel/topPanelEvents.js';
 
@@ -129,6 +132,66 @@ export class TutorialFacade {
     this.activeStep = null;
     this.clearRequestedTargetGuidance();
     this.scheduleRefresh();
+  }
+
+  listStages() {
+    return {
+      ok: true,
+      stages: [...TUTORIAL_STEP_IDS],
+      aliases: ['reset', 'start', 'complete', 'done'],
+    };
+  }
+
+  setStage(stageId) {
+    const normalizedStageId = String(stageId ?? '').trim();
+
+    if (!normalizedStageId) {
+      return { ok: false, reason: 'invalid_stage_id', stageId };
+    }
+
+    const lowerStageId = normalizedStageId.toLowerCase();
+
+    if (lowerStageId === 'reset' || lowerStageId === 'start') {
+      return this.applyStageCompletedIds([], 'purchase-house');
+    }
+
+    if (lowerStageId === 'complete' || lowerStageId === 'done') {
+      return this.applyStageCompletedIds([...TUTORIAL_STEP_IDS], null);
+    }
+
+    const numericStage = Number(normalizedStageId);
+    const stageIndex = Number.isInteger(numericStage)
+      ? numericStage
+      : TUTORIAL_STEP_IDS.indexOf(normalizedStageId);
+
+    if (stageIndex < 0 || stageIndex >= TUTORIAL_STEP_IDS.length) {
+      return {
+        ok: false,
+        reason: 'unknown_stage',
+        stageId,
+        stages: [...TUTORIAL_STEP_IDS],
+      };
+    }
+
+    const activeStageId = TUTORIAL_STEP_IDS[stageIndex];
+    return this.applyStageCompletedIds(TUTORIAL_STEP_IDS.slice(0, stageIndex), activeStageId);
+  }
+
+  applyStageCompletedIds(completedStepIds, activeStageId) {
+    this.progressManager.setCompletedStepIds(completedStepIds);
+    this.logicManager.activeStep = null;
+    this.stepManager.activeStepId = null;
+    this.activeStep = null;
+    this.reminderManager.discardActivePrompt();
+    this.clearRequestedTargetGuidance();
+    this.hintManager.hideTargetCue?.({ immediate: true });
+    this.scheduleRefresh();
+
+    return {
+      ok: true,
+      stage: activeStageId,
+      completedStepIds: [...completedStepIds],
+    };
   }
 
   handleDirectSellOverride({ item, quantity } = {}) {

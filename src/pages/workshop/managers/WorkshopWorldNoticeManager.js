@@ -1,15 +1,17 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
-import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import { normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
-import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
-import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import {
   createResourceIconLabel,
   setResourceIconText,
 } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import {
+  createWorkshopLeaderboardRow,
+  createWorkshopLeaderboardUserLabel,
+} from './WorkshopLeaderboardRowRenderer.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 const WORLD_NOTICE_TABS = [
@@ -21,13 +23,20 @@ const DEFAULT_WORLD_NOTICE_TAB_ID = 'tasks';
 const WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS = 2_000;
 
 export class WorkshopWorldNoticeManager {
-  constructor({ gameplayFacade, playerFacade, onOpenPlayerInfo } = {}) {
+  constructor({
+    gameplayFacade,
+    playerFacade,
+    worldEventLeaderboardFacade,
+    onOpenPlayerInfo,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerFacade = playerFacade;
+    this.worldEventLeaderboardFacade = worldEventLeaderboardFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribe = null;
     this.unsubscribePlayer = null;
+    this.unsubscribeWorldEventLeaderboard = null;
     this.refs = {};
     this.visible = false;
     this.donateVisible = false;
@@ -39,6 +48,8 @@ export class WorkshopWorldNoticeManager {
     this.previousDonateFocus = null;
     this.currentSnapshot = null;
     this.playerSnapshot = this.playerFacade?.getSnapshot?.() ?? null;
+    this.worldEventLeaderboardSnapshot =
+      this.worldEventLeaderboardFacade?.getSnapshot?.() ?? null;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -114,7 +125,17 @@ export class WorkshopWorldNoticeManager {
           this.renderPopup(this.currentSnapshot?.worldNotice);
         }
       }) ?? null;
+    this.unsubscribeWorldEventLeaderboard =
+      this.worldEventLeaderboardFacade?.subscribe?.((snapshot) => {
+        this.worldEventLeaderboardSnapshot = snapshot ?? null;
+        if (this.visible) {
+          this.renderPopup(this.currentSnapshot?.worldNotice);
+        }
+      }) ?? null;
     this.playerSnapshot = this.playerFacade?.getSnapshot?.() ?? this.playerSnapshot;
+    this.worldEventLeaderboardSnapshot =
+      this.worldEventLeaderboardFacade?.getSnapshot?.() ??
+      this.worldEventLeaderboardSnapshot;
     this.render(this.gameplayFacade.getSnapshot());
 
     return this.root;
@@ -294,8 +315,10 @@ export class WorkshopWorldNoticeManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribePlayer?.();
+    this.unsubscribeWorldEventLeaderboard?.();
     this.unsubscribe = null;
     this.unsubscribePlayer = null;
+    this.unsubscribeWorldEventLeaderboard = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.root?.remove();
     this.refs.popup?.remove();
@@ -307,6 +330,7 @@ export class WorkshopWorldNoticeManager {
     this.previousDonateFocus = null;
     this.currentSnapshot = null;
     this.playerSnapshot = null;
+    this.worldEventLeaderboardSnapshot = null;
     this.selectedTabId = DEFAULT_WORLD_NOTICE_TAB_ID;
   }
 
@@ -388,19 +412,25 @@ export class WorkshopWorldNoticeManager {
     }
 
     if (this.selectedTabId === 'leaderboard') {
-      this.renderNoticeContent(notice, this.createLeaderboard(notice.leaderboard));
+      this.renderNoticeContent(
+        notice,
+        this.createLeaderboard(this.getLeaderboardForNotice(notice)),
+      );
       return;
     }
 
     if (this.selectedTabId === 'rewards') {
-      this.renderNoticeContent(notice, this.createLeaderboardRewards(notice.leaderboard));
+      this.renderNoticeContent(
+        notice,
+        this.createLeaderboardRewards(this.getLeaderboardForNotice(notice)),
+      );
       return;
     }
 
     this.renderNoticeContent(
       notice,
       this.createBody(notice),
-      this.createContributionStatus(notice.leaderboard),
+      this.createContributionStatus(this.getLeaderboardForNotice(notice)),
       this.createTaskList(notice),
     );
   }
@@ -504,6 +534,58 @@ export class WorkshopWorldNoticeManager {
 
     root.append(points, status);
     return root;
+  }
+
+  getLeaderboardForNotice(notice = {}) {
+    const localLeaderboard = notice?.leaderboard ?? {};
+    const sharedLeaderboard = this.getSharedLeaderboardForNotice(notice);
+
+    if (!sharedLeaderboard) {
+      return localLeaderboard;
+    }
+
+    return {
+      ...localLeaderboard,
+      ...sharedLeaderboard,
+      currentPoints: localLeaderboard.currentPoints ?? sharedLeaderboard.currentPoints,
+      qualificationPoints:
+        localLeaderboard.qualificationPoints ?? sharedLeaderboard.qualificationPoints,
+      qualified: localLeaderboard.qualified ?? sharedLeaderboard.qualified,
+      remainingQualificationPoints:
+        localLeaderboard.remainingQualificationPoints ??
+        sharedLeaderboard.remainingQualificationPoints,
+      rewardTiers: localLeaderboard.rewardTiers ?? sharedLeaderboard.rewardTiers,
+    };
+  }
+
+  getSharedLeaderboardForNotice(notice = {}) {
+    const snapshot = this.worldEventLeaderboardSnapshot;
+
+    if (
+      !snapshot ||
+      snapshot.periodKey !== notice.periodKey ||
+      snapshot.eventId !== notice.eventId
+    ) {
+      return null;
+    }
+
+    const rows = Array.isArray(snapshot.topWorldEventUsers)
+      ? snapshot.topWorldEventUsers
+      : Array.isArray(snapshot.topUsers)
+        ? snapshot.topUsers
+        : [];
+    const currentUser = snapshot.currentWorldEventUser ?? snapshot.currentUser ?? null;
+
+    if (!rows.length && !currentUser) {
+      return null;
+    }
+
+    return {
+      rows,
+      topWorldEventUsers: rows,
+      currentWorldEventUser: currentUser,
+      currentUser,
+    };
   }
 
   createTaskList(notice) {
@@ -680,92 +762,30 @@ export class WorkshopWorldNoticeManager {
       );
     }
 
-    const qualification = document.createElement('div');
-    qualification.className = 'workshop-page__world-notice-leaderboard-note';
-    qualification.textContent = normalized.qualified
-      ? 'qualified for leaderboard rewards'
-      : `${this.formatNumber(normalized.remainingQualificationPoints)} points to qualify`;
-    section.append(rows, qualification);
+    section.append(rows);
 
     return section;
   }
 
   createLeaderboardRow(entry = {}, index = 0, { header = false, current = false } = {}) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__row workshop-page__leaderboard-row';
-
-    if (header) {
-      row.classList.add('workshop-page__leaderboard-header');
-    } else if (current || entry.current) {
-      row.classList.add('workshop-page__leaderboard-current');
-    }
-
-    const key = document.createElement('span');
-    key.className = 'row_key';
-
-    if (header) {
-      key.textContent = entry.name;
-    } else {
-      key.replaceChildren(...this.createLeaderboardPlayerLabel(entry, index));
-    }
-
-    const val = document.createElement('span');
-    val.className = 'row_val';
-    val.textContent = header
-      ? entry.pointsLabel
-      : this.formatNumber(entry.points);
-
-    row.append(key, val);
-    return row;
+    return createWorkshopLeaderboardRow(
+      header ? entry.name : this.createLeaderboardPlayerLabel(entry, index),
+      header ? entry.pointsLabel : this.formatNumber(entry.points),
+      {
+        header,
+        current: current || entry.current,
+      },
+    );
   }
 
   createLeaderboardPlayerLabel(entry = {}, index = 0) {
-    const rankLabel = this.formatLeaderboardRankLabel(entry, index);
-    const tag = createAllianceTagSpan(entry.allianceTag, entry.allianceTagColor);
-    const name = createPlayerInfoLink(
-      {
-        identity: entry.identity,
-        username: entry.name,
-        character: entry.character,
-        allianceTag: entry.allianceTag,
-        allianceTagColor: entry.allianceTagColor,
-        playerLevel: entry.playerLevel,
+    return createWorkshopLeaderboardUserLabel(entry, {
+      index,
+      onOpenPlayerInfo: this.onOpenPlayerInfo,
+      playerInfo: {
         worldEventPoints: entry.points,
       },
-      {
-        onOpenPlayerInfo: this.onOpenPlayerInfo,
-        text: entry.name,
-        className: 'workshop-page__leaderboard-player-link',
-      },
-    );
-    const player = document.createElement('span');
-    player.className = 'workshop-page__leaderboard-player';
-    player.append(
-      createPlayerCharacterIcon(
-        entry.character,
-        'workshop-page__leaderboard-character-icon',
-      ),
-      ...(tag ? [tag, document.createTextNode(' ')] : []),
-      name,
-    );
-
-    return [
-      document.createTextNode(`${rankLabel} `),
-      player,
-      document.createTextNode(` (${this.normalizePlayerLevel(entry.playerLevel)})`),
-    ];
-  }
-
-  formatLeaderboardRankLabel(entry = {}, index = 0) {
-    const rawRankLabel = String(entry.rankLabel ?? '').trim();
-
-    if (rawRankLabel) {
-      return rawRankLabel === '-' || rawRankLabel.endsWith('.')
-        ? rawRankLabel
-        : `${rawRankLabel}.`;
-    }
-
-    return `${this.normalizeRank(entry.rank) ?? index + 1}.`;
+    });
   }
 
   applyVisibility() {

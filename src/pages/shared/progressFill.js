@@ -2,6 +2,7 @@ const SMOOTH_PROGRESS_CLASS = 'is-smooth-progress-fill';
 const RUNNING_PROGRESS_CLASS = 'is-progress-running';
 const END_TIME_DRIFT_MS = 120;
 const MIN_SMOOTH_REMAINING_MS = 80;
+const DEFAULT_STEP_TRANSITION_MS = 140;
 
 const progressStates = new WeakMap();
 
@@ -64,6 +65,20 @@ function clearProgressState(element) {
   progressStates.delete(element);
 }
 
+function getSmoothMode(smooth) {
+  if (smooth === 'step') {
+    return 'step';
+  }
+
+  return smooth ? 'continuous' : 'none';
+}
+
+function getStepTransitionMs(stepMs) {
+  const safeStepMs = Math.max(0, Number(stepMs) || 0);
+
+  return safeStepMs > 0 ? Math.ceil(safeStepMs) : DEFAULT_STEP_TRANSITION_MS;
+}
+
 export function stopProgressFill(element, progress = 0) {
   if (!element) {
     return;
@@ -80,7 +95,7 @@ export function stopProgressFill(element, progress = 0) {
 export function setProgressFill(
   element,
   progress,
-  { smooth = false, remainingMs = 0 } = {},
+  { smooth = false, remainingMs = 0, stepMs = DEFAULT_STEP_TRANSITION_MS } = {},
 ) {
   if (!element) {
     return 0;
@@ -90,12 +105,23 @@ export function setProgressFill(
   const safeRemainingMs = Math.max(0, Number(remainingMs) || 0);
   const view = getView(element);
   const requestFrame = view?.requestAnimationFrame;
+  const smoothMode = getSmoothMode(smooth);
 
   element.classList.add(SMOOTH_PROGRESS_CLASS);
   element.style.width = '100%';
 
+  if (smoothMode === 'step') {
+    clearProgressState(element);
+    element.classList.remove(RUNNING_PROGRESS_CLASS);
+    element.style.transition = prefersReducedMotion(element)
+      ? 'none'
+      : `transform ${getStepTransitionMs(stepMs)}ms linear`;
+    applyScale(element, safeProgress);
+    return safeProgress;
+  }
+
   if (
-    !smooth ||
+    smoothMode !== 'continuous' ||
     safeProgress >= 1 ||
     safeRemainingMs <= MIN_SMOOTH_REMAINING_MS ||
     prefersReducedMotion(element) ||

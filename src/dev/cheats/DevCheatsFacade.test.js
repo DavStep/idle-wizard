@@ -12,12 +12,16 @@ function createMemoryStorage() {
   };
 }
 
-function createApp({ backendFacade, persistenceStorage = createMemoryStorage() } = {}) {
+function createApp({
+  backendFacade,
+  pagesFacade,
+  persistenceStorage = createMemoryStorage(),
+} = {}) {
   const ecsFacade = new EcsFacade();
   const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow: () => 0 });
   ecsFacade.createWorld();
   gameplayFacade.initialize(ecsFacade);
-  return { ecsFacade, app: { backendFacade, gameplayFacade }, persistenceStorage };
+  return { ecsFacade, app: { backendFacade, gameplayFacade, pagesFacade }, persistenceStorage };
 }
 
 describe('DevCheatsFacade', () => {
@@ -78,6 +82,10 @@ describe('DevCheatsFacade', () => {
       ok: true,
       researchId: 'unlockSeed:sageSeed',
     });
+    expect(target.cheats.unlockFeature('recipe:manaTonic')).toMatchObject({
+      ok: true,
+      researchId: 'unlockRecipe:manaTonic',
+    });
 
     const snapshot = target.cheats.snapshot().snapshot;
     expect(snapshot.inventory).toContainEqual(
@@ -85,6 +93,222 @@ describe('DevCheatsFacade', () => {
     );
     expect(snapshot.emerald.current).toBe(2);
     expect(snapshot.research.completedResearchIds).toContain('unlockSeed:sageSeed');
+    expect(snapshot.research.completedResearchIds).toContain('unlockRecipe:manaTonic');
+  });
+
+  it('sets level-gated garden views directly', () => {
+    const { app } = createApp();
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.unlockPlots(8)).toMatchObject({
+      ok: true,
+      unlockedTiles: 8,
+      currentLevel: 10,
+    });
+    expect(target.cheats.setPlot(1, { seed: 'sage', phase: 'growing', progress: 0.5 }))
+      .toMatchObject({
+        ok: true,
+        tile: {
+          tileNumber: 1,
+          seedKey: 'sageSeed',
+          herbKey: 'sageHerb',
+          phase: 'growing',
+          progress: 0.5,
+        },
+      });
+    expect(target.cheats.setPlot(2, { seed: 'mint', phase: 'ready' })).toMatchObject({
+      ok: true,
+      tile: {
+        tileNumber: 2,
+        seedKey: 'mintSeed',
+        herbKey: 'mintHerb',
+        phase: 'ready',
+      },
+    });
+
+    const snapshot = target.cheats.snapshot().snapshot;
+    expect(snapshot.playerLevel.currentLevel).toBe(10);
+    expect(snapshot.garden.plot.unlockedTiles).toBe(8);
+  });
+
+  it('unlocks all feature gates and direct-state surfaces', () => {
+    const { app } = createApp();
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.unlockAllFeatures()).toMatchObject({
+      ok: true,
+      level: 100,
+      garden: {
+        unlockedTiles: 20,
+      },
+      cauldrons: {
+        unlockedCauldrons: 10,
+      },
+      market: {
+        trader: { unlockedSlots: 5 },
+        player: { unlockedSlots: 5 },
+      },
+    });
+
+    const snapshot = target.cheats.snapshot().snapshot;
+    expect(snapshot.research.completedResearchIds).toContain('unlockRecipe:manaTonic');
+    expect(snapshot.research.completedResearchIds.length).toBeGreaterThan(10);
+    expect(snapshot.shop.shelf.unlockedSlots).toBe(5);
+    expect(snapshot.shop.playerShelf.unlockedSlots).toBe(5);
+  });
+
+  it('sets cauldron views directly', () => {
+    const { app } = createApp();
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.setCauldron(1, { potion: 'manaTonic', phase: 'brewed' }))
+      .toMatchObject({
+        ok: true,
+        cauldron: {
+          cauldronNumber: 1,
+          activeBrew: {
+            key: 'manaTonic',
+            phase: 'brewed',
+          },
+        },
+      });
+  });
+
+  it('bridges tutorial stages through pages facade', () => {
+    const pagesFacade = {
+      listTutorialStages: vi.fn(() => ({
+        ok: true,
+        stages: ['purchase-house', 'intro-garden'],
+      })),
+      setTutorialStage: vi.fn((stageId) => ({
+        ok: true,
+        stage: stageId,
+        completedStepIds: ['purchase-house'],
+      })),
+    };
+    const { app } = createApp({ pagesFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.listTutorialStages()).toMatchObject({
+      ok: true,
+      stages: ['purchase-house', 'intro-garden'],
+    });
+    expect(target.cheats.setTutorialStage('intro-garden')).toEqual({
+      ok: true,
+      stage: 'intro-garden',
+      completedStepIds: ['purchase-house'],
+    });
+    expect(pagesFacade.setTutorialStage).toHaveBeenCalledWith('intro-garden');
+  });
+
+  it('publishes dummy leaderboard snapshots through backend dev overrides', () => {
+    const leaderboardFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+      clearDevSnapshot: vi.fn(() => ({ ok: true })),
+    };
+    const worldEventLeaderboardFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+      clearDevSnapshot: vi.fn(() => ({ ok: true })),
+    };
+    const backendFacade = {
+      getLeaderboardFacade: () => leaderboardFacade,
+      getWorldEventLeaderboardFacade: () => worldEventLeaderboardFacade,
+    };
+    const { app } = createApp({ backendFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    expect(target.cheats.setDummyLeaderboard({ count: 3 })).toMatchObject({
+      ok: true,
+      snapshot: {
+        topDailyUsers: [{ rank: 1 }, { rank: 2 }, { rank: 3 }],
+      },
+      eventSnapshot: {
+        connected: true,
+        topWorldEventUsers: [{ rank: 1 }, { rank: 2 }, { rank: 3 }],
+      },
+    });
+    expect(leaderboardFacade.setDevSnapshot).toHaveBeenCalledTimes(1);
+    expect(worldEventLeaderboardFacade.setDevSnapshot).toHaveBeenCalledTimes(1);
+
+    expect(target.cheats.clearDummyLeaderboard()).toMatchObject({ ok: true });
+    expect(leaderboardFacade.clearDevSnapshot).toHaveBeenCalledTimes(1);
+    expect(worldEventLeaderboardFacade.clearDevSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads QA data templates through console helpers', async () => {
+    const originalFetch = globalThis.fetch;
+    const { app } = createApp();
+    const save = app.gameplayFacade.createPersistenceSave();
+    save.coin = { current: 42, totalGenerated: 42 };
+    const manifest = {
+      templates: [
+        {
+          id: 'ftwizard',
+          aliases: ['everything-unlocked'],
+          label: 'Ftwizard (level 15)',
+          username: 'Ftwizard',
+          level: 15,
+          path: '/qa-data/templates/ftwizard.json',
+        },
+      ],
+      aliases: {
+        'everything-unlocked': 'ftwizard',
+      },
+    };
+    const fetch = vi.fn((path) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () =>
+          path.endsWith('/manifest.json')
+            ? manifest
+            : {
+                save,
+              },
+      }),
+    );
+    const target = {};
+    globalThis.fetch = fetch;
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    try {
+      facade.mount();
+
+      await expect(target.cheats.listDataTemplates()).resolves.toMatchObject({
+        ok: true,
+        templates: [
+          {
+            id: 'ftwizard',
+            level: 15,
+          },
+        ],
+      });
+      await expect(
+        target.cheats.loadDataTemplate('everything-unlocked'),
+      ).resolves.toMatchObject({
+        ok: true,
+        template: 'ftwizard',
+      });
+      expect(app.gameplayFacade.getSnapshot().coin.current).toBe(42);
+    } finally {
+      facade.unmount();
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it('rejects unknown items and research ids', () => {

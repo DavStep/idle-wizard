@@ -16,6 +16,7 @@ async function flushPromises() {
 
 function createLifecycle({
   accountLinkChoiceManager,
+  appVisibilityManager,
   authFacade,
   freshStartChoiceManager,
   maintenanceFacade,
@@ -31,6 +32,7 @@ function createLifecycle({
   let maintenanceListener = null;
   let gameplayListener = null;
   let gameplayTickCallback = null;
+  let appVisibilityCallbacks = null;
   const gameplayTickUnsubscribe = vi.fn();
   const authFacadeFake = authFacade ?? {
     getPendingAccountLinkSave: vi.fn(() => null),
@@ -146,6 +148,12 @@ function createLifecycle({
       stop: vi.fn(),
       requestTick: vi.fn(),
     },
+    appVisibilityManager: appVisibilityManager ?? {
+      mount: vi.fn((callbacks) => {
+        appVisibilityCallbacks = callbacks;
+      }),
+      unmount: vi.fn(),
+    },
     deployRefreshManager: {
       mount: vi.fn(),
       unmount: vi.fn(),
@@ -162,6 +170,8 @@ function createLifecycle({
     getRetryCallback: () => retryCallback,
     publishGameplaySnapshot: () => gameplayListener?.({}),
     runGameplayTick: (frame) => gameplayTickCallback?.(frame),
+    hideApp: () => appVisibilityCallbacks?.onHidden?.(),
+    showApp: () => appVisibilityCallbacks?.onVisible?.(),
     setMaintenance: (snapshot) => maintenanceListener?.(snapshot),
   };
 }
@@ -248,6 +258,95 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
 
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('defers transient reconnect while the app is hidden', async () => {
+    const { lifecycle, getBackendCallbacks, hideApp, showApp } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+
+    hideApp();
+    getBackendCallbacks().onOffline({ reason: 'disconnect' });
+
+    expect(lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(lifecycle.connectionRetryManager.schedule).not.toHaveBeenCalled();
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+
+    showApp();
+    await flushPromises();
+
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('reconnects after a hidden attempt settles when foreground returned early', async () => {
+    const { lifecycle, hideApp, showApp } = createLifecycle();
+    let backendCallbacks = null;
+    let resolveStart = null;
+    lifecycle.backendFacade.start
+      .mockImplementationOnce((callbacks) => {
+        backendCallbacks = callbacks;
+        return new Promise((resolve) => {
+          resolveStart = () => resolve({ ok: true });
+        });
+      })
+      .mockImplementation((callbacks) => {
+        backendCallbacks = callbacks;
+        return Promise.resolve({ ok: true });
+      });
+
+    lifecycle.start();
+    await flushPromises();
+
+    hideApp();
+    backendCallbacks.onOffline({ reason: 'disconnect' });
+    showApp();
+
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+
+    resolveStart();
+    await flushPromises();
+
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('resumes gameplay without reconnecting when the hidden connection survives', async () => {
+    const { lifecycle, getBackendCallbacks, hideApp, showApp } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+
+    hideApp();
+    showApp();
+
+    expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(2);
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows account-in-use after returning from a hidden inactive session', async () => {
+    const { lifecycle, getBackendCallbacks, hideApp, showApp } = createLifecycle();
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+
+    hideApp();
+    getBackendCallbacks().onOffline({ reason: 'account_in_use' });
+    showApp();
+
+    expect(lifecycle.onlineGateManager.showOffline).toHaveBeenCalledWith(
+      'account_in_use',
+    );
+    expect(lifecycle.connectionRetryManager.schedule).not.toHaveBeenCalled();
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
   it('does not reconnect when the account is active elsewhere', async () => {

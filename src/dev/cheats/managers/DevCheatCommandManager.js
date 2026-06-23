@@ -1,6 +1,34 @@
 import { GAMEPLAY_SAVE_VERSION } from '../../../gameplay/persistence/managers/GameplayMigrationManager.js';
+import { PAGE_UNLOCK_REQUIREMENTS } from '../../../pages/managers/PageUnlockManager.js';
+import { TUTORIAL_STEP_IDS } from '../../../pages/tutorial/managers/TutorialStepManager.js';
 
 const RESET_CONFIRMATION = 'RESET';
+const ALL_FEATURES_LEVEL = 100;
+const DEFAULT_DUMMY_LEADERBOARD_COUNT = 12;
+
+const FEATURE_LEVELS = Object.freeze({
+  workshop: 1,
+  market: 1,
+  shop: 1,
+  garden: PAGE_UNLOCK_REQUIREMENTS.garden.requiredLevel,
+  research: PAGE_UNLOCK_REQUIREMENTS.research.requiredLevel,
+  leaderboard: 3,
+  leaderboards: 3,
+  logs: 3,
+  worldchat: 3,
+  chat: 3,
+  brewing: PAGE_UNLOCK_REQUIREMENTS.brewing.requiredLevel,
+  alliance: 4,
+  alliances: 4,
+  discoveries: 4,
+  worldevent: 4,
+  worldevents: 4,
+  events: 4,
+  personaltasks: 4,
+  tasks: 4,
+  prestige: PAGE_UNLOCK_REQUIREMENTS.prestige.requiredLevel,
+  guild: PAGE_UNLOCK_REQUIREMENTS.guild.requiredLevel,
+});
 
 const CHEAT_HELP = Object.freeze([
   'cheats.fillMana()',
@@ -9,20 +37,61 @@ const CHEAT_HELP = Object.freeze([
   'cheats.addCoin(amount)',
   'cheats.addCrystal(amount)',
   'cheats.addEmerald(amount)',
-  "cheats.addItem('sageSeed', quantity)",
-  "cheats.completeResearch('unlockSeed:sageSeed')",
-  "cheats.unlockSeed('sage')",
-  "cheats.unlockRecipe('manaTonic')",
-  "cheats.resetData('RESET')",
+  'cheats.addItem("sageSeed", quantity)',
+  'cheats.setProfile({ username: "Long UI Name", character: "wizard" })',
+  'cheats.setInventoryPreset("full")',
+  'cheats.setNotifications({ garden: true, market: true })',
+  'cheats.clearNotifications()',
+  'cheats.setLevel(level)',
+  'cheats.showPage("garden")',
+  'cheats.unlockFeature("garden")',
+  'cheats.unlockAllFeatures()',
+  'cheats.completeResearch("unlockSeed:sageSeed")',
+  'cheats.unlockAllResearch()',
+  'cheats.unlockSeed("sage")',
+  'cheats.unlockRecipe("manaTonic")',
+  'cheats.unlockPlots(8)',
+  'cheats.setPlot(1, { seed: "sage", phase: "growing", progress: 0.5 })',
+  'cheats.setPlots([{ plot: 1, seed: "sage", phase: "ready" }])',
+  'cheats.unlockCauldrons(3)',
+  'cheats.setCauldron(1, { potion: "manaTonic", phase: "brewed" })',
+  'cheats.unlockTraderStands(3)',
+  'cheats.unlockPlayerStands(3)',
+  'cheats.unlockMarketStands(3)',
+  'cheats.setMarketState("full")',
+  'cheats.setWorldEventState("complete")',
+  'cheats.setGuildState("full")',
+  'cheats.setBackendState("offline")',
+  'cheats.openDialog("worldEvent", { tab: "leaderboard" })',
+  'cheats.setTimers("allReady")',
+  'cheats.setStressText()',
+  'cheats.setDummyLeaderboard()',
+  'cheats.clearDummyLeaderboard()',
+  'cheats.listTutorialStages()',
+  'cheats.setTutorialStage("intro-garden")',
+  'cheats.resetData("RESET")',
+  'cheats.listDataTemplates()',
+  'cheats.loadDataTemplate("ftwizard")',
   'cheats.listItems()',
   'cheats.listResearch()',
   'cheats.snapshot()',
 ]);
 
 export class DevCheatCommandManager {
-  constructor({ backendFacade, gameplayFacade } = {}) {
+  constructor({
+    backendFacade,
+    gameplayFacade,
+    onlineGateManager,
+    pagesFacade,
+    playerFacade,
+    qaDataFacade,
+  } = {}) {
     this.backendFacade = backendFacade;
     this.gameplayFacade = gameplayFacade;
+    this.onlineGateManager = onlineGateManager;
+    this.pagesFacade = pagesFacade;
+    this.playerFacade = playerFacade;
+    this.qaDataFacade = qaDataFacade;
   }
 
   run(command, ...args) {
@@ -51,14 +120,107 @@ export class DevCheatCommandManager {
         return this.addEmerald(commandArgs[0]);
       case 'additem':
         return this.addItem(commandArgs[0], commandArgs[1] ?? 1);
+      case 'setprofile':
+        return this.setProfile(commandArgs[0]);
+      case 'setinventorypreset':
+      case 'inventorypreset':
+      case 'setinventory':
+        return this.setInventoryPreset(commandArgs[0], commandArgs[1]);
+      case 'setnotifications':
+      case 'notifications':
+        return this.setNotifications(commandArgs[0]);
+      case 'clearnotifications':
+        return this.clearNotifications();
+      case 'setlevel':
+      case 'level':
+        return this.setLevel(commandArgs[0]);
+      case 'showpage':
+      case 'setpage':
+      case 'view':
+        return this.showPage(commandArgs[0], commandArgs[1]);
+      case 'unlockfeature':
+        return this.unlockFeature(commandArgs[0]);
+      case 'unlockallfeatures':
+      case 'unlockall':
+        return this.unlockAllFeatures();
       case 'completeresearch':
         return this.completeResearch(commandArgs[0]);
+      case 'unlockallresearch':
+        return this.unlockAllResearch();
       case 'unlockseed':
         return this.completeResearch(`unlockSeed:${this.toSeedKey(commandArgs[0])}`);
       case 'unlockrecipe':
         return this.completeResearch(`unlockRecipe:${commandArgs[0]}`);
+      case 'unlockplots':
+      case 'unlockplot':
+      case 'unlockslots':
+      case 'unlockgardenslots':
+        return this.unlockPlots(commandArgs[0]);
+      case 'setplot':
+      case 'setgardenplot':
+        return this.setPlot(commandArgs[0], commandArgs[1], commandArgs[2]);
+      case 'setplots':
+      case 'setgardenplots':
+        return this.setPlots(commandArgs[0]);
+      case 'unlockcauldrons':
+      case 'unlockcauldron':
+        return this.unlockCauldrons(commandArgs[0]);
+      case 'setcauldron':
+        return this.setCauldron(commandArgs[0], commandArgs[1], commandArgs[2]);
+      case 'unlocktraderstands':
+      case 'unlockshopslots':
+      case 'unlocknpcshelves':
+        return this.unlockTraderStands(commandArgs[0]);
+      case 'unlockplayerstands':
+      case 'unlockplayershopslots':
+        return this.unlockPlayerStands(commandArgs[0]);
+      case 'unlockmarketstands':
+        return this.unlockMarketStands(commandArgs[0]);
+      case 'setmarketstate':
+      case 'marketstate':
+        return this.setMarketState(commandArgs[0], commandArgs[1]);
+      case 'setworldeventstate':
+      case 'worldeventstate':
+      case 'seteventstate':
+        return this.setWorldEventState(commandArgs[0], commandArgs[1]);
+      case 'setguildstate':
+      case 'guildstate':
+        return this.setGuildState(commandArgs[0], commandArgs[1]);
+      case 'setbackendstate':
+      case 'backendstate':
+        return this.setBackendState(commandArgs[0], commandArgs[1]);
+      case 'opendialog':
+      case 'showdialog':
+        return this.openDialog(commandArgs[0], commandArgs[1]);
+      case 'settimers':
+      case 'timers':
+        return this.setTimers(commandArgs[0], commandArgs[1]);
+      case 'setstresstext':
+      case 'stresstext':
+      case 'stressui':
+        return this.setStressText(commandArgs[0]);
+      case 'setdummyleaderboard':
+      case 'dummyleaderboard':
+      case 'setleaderboarddummy':
+        return this.setDummyLeaderboard(commandArgs[0]);
+      case 'cleardummyleaderboard':
+      case 'cleardummyleaderboards':
+      case 'clearleaderboarddummy':
+        return this.clearDummyLeaderboard();
+      case 'listtutorialstages':
+      case 'listtutorialsteps':
+        return this.listTutorialStages();
+      case 'settutorialstage':
+      case 'settutorialstep':
+        return this.setTutorialStage(commandArgs[0]);
       case 'resetdata':
         return this.resetData(commandArgs[0]);
+      case 'listdatatemplates':
+      case 'listqatemplates':
+        return this.listDataTemplates();
+      case 'loaddatatemplate':
+      case 'loadqatemplate':
+        return this.loadDataTemplate(commandArgs[0], commandArgs[1]);
       case 'listitems':
         return this.listItems();
       case 'listresearch':
@@ -73,9 +235,25 @@ export class DevCheatCommandManager {
     }
   }
 
+  listDataTemplates() {
+    if (!this.qaDataFacade) {
+      return Promise.resolve({ ok: false, reason: 'qa_data_missing' });
+    }
+
+    return this.qaDataFacade.listTemplates();
+  }
+
+  loadDataTemplate(templateIdOrAlias, options) {
+    if (!this.qaDataFacade) {
+      return Promise.resolve({ ok: false, reason: 'qa_data_missing' });
+    }
+
+    return this.qaDataFacade.loadTemplate(templateIdOrAlias, options);
+  }
+
   fillMana() {
     this.gameplayFacade.manaFacade.fill();
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
     return {
       ok: true,
       mana: this.gameplayFacade.getSnapshot().mana,
@@ -90,7 +268,7 @@ export class DevCheatCommandManager {
     }
 
     this.gameplayFacade.manaFacade.add(safeAmount.value);
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
     return {
       ok: true,
       mana: this.gameplayFacade.getSnapshot().mana,
@@ -105,7 +283,7 @@ export class DevCheatCommandManager {
     }
 
     this.gameplayFacade.manaFacade.setCurrent(safeAmount.value);
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
     return {
       ok: true,
       mana: this.gameplayFacade.getSnapshot().mana,
@@ -120,7 +298,7 @@ export class DevCheatCommandManager {
     }
 
     this.gameplayFacade.coinFacade.add(safeAmount.value);
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
     return {
       ok: true,
       coin: this.gameplayFacade.getSnapshot().coin,
@@ -135,7 +313,7 @@ export class DevCheatCommandManager {
     }
 
     this.gameplayFacade.crystalFacade.add(safeAmount.value);
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
     return {
       ok: true,
       crystal: this.gameplayFacade.getSnapshot().crystal,
@@ -150,7 +328,7 @@ export class DevCheatCommandManager {
     }
 
     this.gameplayFacade.emeraldFacade.add(safeAmount.value);
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
     return {
       ok: true,
       emerald: this.gameplayFacade.getSnapshot().emerald,
@@ -171,7 +349,7 @@ export class DevCheatCommandManager {
     }
 
     this.gameplayFacade.itemsFacade.addItem(definition.item.itemTypeId, safeQuantity.value);
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
 
     return {
       ok: true,
@@ -180,6 +358,251 @@ export class DevCheatCommandManager {
         quantity: this.gameplayFacade.itemsFacade.getItemQuantity(definition.item.itemTypeId),
       },
       addedQuantity: safeQuantity.value,
+    };
+  }
+
+  setProfile(options = {}) {
+    const profile =
+      typeof options === 'string'
+        ? { username: options }
+        : options && typeof options === 'object'
+          ? options
+          : {};
+
+    if (!this.playerFacade && !profile.allianceTag && !profile.guildTag) {
+      return { ok: false, reason: 'player_missing' };
+    }
+
+    const applied = {};
+    const setters = [
+      ['username', 'setUsername'],
+      ['character', 'setCharacter'],
+      ['theme', 'setTheme'],
+      ['font', 'setFont'],
+      ['colorMode', 'setColorMode'],
+      ['iconMode', 'setIconMode'],
+      ['progressBar', 'setProgressBar'],
+      ['plotView', 'setPlotView'],
+    ];
+
+    for (const [key, method] of setters) {
+      if (typeof profile[key] === 'undefined') {
+        continue;
+      }
+
+      if (typeof this.playerFacade?.[method] === 'function') {
+        this.playerFacade[method](profile[key]);
+        applied[key] = profile[key];
+      }
+    }
+
+    const tag = profile.allianceTag ?? profile.guildTag;
+    const guild = tag
+      ? this.setGuildState({
+          preset: 'joined',
+          name: profile.guildName ?? profile.allianceName ?? `${tag} guild`,
+          tag,
+          color: profile.allianceTagColor ?? profile.guildColor,
+        })
+      : null;
+
+    return {
+      ok: true,
+      applied,
+      profile: this.playerFacade?.getSnapshot?.() ?? null,
+      guild,
+    };
+  }
+
+  setInventoryPreset(presetOrItems = 'basic', optionsArg = {}) {
+    const options = this.toPresetOptions(presetOrItems, optionsArg, 'basic');
+    const preset = this.normalizeId(options.preset);
+    const allDefinitions = this.getAllItemDefinitions();
+    let items;
+
+    if (Array.isArray(options.items) || this.isPlainObject(options.items)) {
+      items = this.normalizeInventoryItems(options.items);
+    } else if (Array.isArray(presetOrItems) || this.isPlainObject(presetOrItems)) {
+      items = this.normalizeInventoryItems(presetOrItems);
+    } else if (preset === 'empty' || preset === 'none' || preset === 'clear') {
+      items = [];
+    } else if (preset === 'overflow') {
+      items = allDefinitions.map((item) => ({
+        itemKey: item.key,
+        quantity: Math.floor(Number(options.quantity) || 99_999),
+      }));
+    } else if (preset === 'full' || preset === 'all') {
+      items = allDefinitions.map((item) => ({
+        itemKey: item.key,
+        quantity: Math.floor(Number(options.quantity) || 25),
+      }));
+    } else {
+      const quantity = Math.floor(Number(options.quantity) || 10);
+      items = [
+        ...this.gameplayFacade.itemsFacade.getSeedDefinitions().slice(0, 3),
+        ...this.gameplayFacade.itemsFacade.getHerbDefinitions().slice(0, 3),
+        ...this.gameplayFacade.itemsFacade.getPotionDefinitions().slice(0, 2),
+      ].map((item) => ({
+        itemKey: item.key,
+        quantity,
+      }));
+    }
+
+    const applied = this.applyInventoryItems(items, { mode: 'replace' });
+
+    if (applied.ok === false) {
+      return applied;
+    }
+
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      preset,
+      inventory: this.gameplayFacade.getSnapshot().inventory,
+    };
+  }
+
+  setNotifications(config = 'all') {
+    if (!this.pagesFacade || typeof this.pagesFacade.setDevNotifications !== 'function') {
+      return { ok: false, reason: 'pages_missing' };
+    }
+
+    const snapshot = this.createDevNotificationSnapshot(config);
+    return this.pagesFacade.setDevNotifications(snapshot);
+  }
+
+  clearNotifications() {
+    if (!this.pagesFacade || typeof this.pagesFacade.clearDevNotifications !== 'function') {
+      return { ok: false, reason: 'pages_missing' };
+    }
+
+    return this.pagesFacade.clearDevNotifications();
+  }
+
+  setLevel(level) {
+    const safeLevel = this.readPositiveInteger(level, 'level');
+
+    if (!safeLevel.ok) {
+      return safeLevel;
+    }
+
+    const maxLevel =
+      this.gameplayFacade.tasksFacade?.taskBalanceManager?.getMaxLevel?.() ?? safeLevel.value;
+    const currentLevel = this.getCurrentLevel();
+    const nextLevel = Math.min(safeLevel.value, maxLevel);
+    this.applyLevel(nextLevel);
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      level: nextLevel,
+      requestedLevel: safeLevel.value,
+      levelBefore: currentLevel,
+      capped: nextLevel !== safeLevel.value,
+      playerLevel: this.gameplayFacade.getSnapshot().playerLevel,
+    };
+  }
+
+  showPage(pageId, options = {}) {
+    const safePageId = this.normalizeId(pageId);
+
+    if (!safePageId) {
+      return { ok: false, reason: 'invalid_page_id', pageId };
+    }
+
+    if (!this.pagesFacade || typeof this.pagesFacade.show !== 'function') {
+      return { ok: false, reason: 'pages_missing' };
+    }
+
+    const shouldUnlock = options?.unlock !== false;
+    const unlock = shouldUnlock ? this.unlockFeature(safePageId) : { ok: true };
+
+    if (unlock.ok === false) {
+      return unlock;
+    }
+
+    this.pagesFacade.show(safePageId);
+
+    return {
+      ok: true,
+      pageId: safePageId,
+      currentPageId: this.pagesFacade.getCurrentPageId?.() ?? safePageId,
+      unlocked: shouldUnlock,
+    };
+  }
+
+  unlockFeature(featureId) {
+    const rawFeatureId = String(featureId ?? '').trim();
+
+    if (this.hasConfiguredResearch(rawFeatureId)) {
+      return this.completeResearch(rawFeatureId);
+    }
+
+    const rawUnlockSeed = rawFeatureId.match(/^unlockSeed:(.+)$/i);
+    if (rawUnlockSeed) {
+      return this.completeResearch(`unlockSeed:${this.toSeedKey(rawUnlockSeed[1])}`);
+    }
+
+    const rawUnlockRecipe = rawFeatureId.match(/^unlockRecipe:(.+)$/i);
+    if (rawUnlockRecipe) {
+      return this.completeResearch(`unlockRecipe:${rawUnlockRecipe[1]}`);
+    }
+
+    const rawSeed = rawFeatureId.match(/^seed:(.+)$/i);
+    if (rawSeed) {
+      return this.completeResearch(`unlockSeed:${this.toSeedKey(rawSeed[1])}`);
+    }
+
+    const rawRecipe = rawFeatureId.match(/^recipe:(.+)$/i);
+    if (rawRecipe) {
+      return this.completeResearch(`unlockRecipe:${rawRecipe[1]}`);
+    }
+
+    const key = this.normalizeFeatureId(rawFeatureId);
+
+    if (!key) {
+      return { ok: false, reason: 'invalid_feature_id', featureId };
+    }
+
+    const level = FEATURE_LEVELS[key] ?? PAGE_UNLOCK_REQUIREMENTS[key]?.requiredLevel ?? null;
+
+    if (!Number.isInteger(level)) {
+      return {
+        ok: false,
+        reason: 'unknown_feature',
+        featureId,
+        knownFeatures: Object.keys(FEATURE_LEVELS),
+      };
+    }
+
+    this.ensureLevelAtLeast(level);
+    this.publishAndSave();
+    return {
+      ok: true,
+      feature: key,
+      requiredLevel: level,
+      currentLevel: this.getCurrentLevel(),
+    };
+  }
+
+  unlockAllFeatures() {
+    const level = this.ensureLevelAtLeast(ALL_FEATURES_LEVEL).level;
+    const research = this.unlockAllResearch({ save: false });
+    const garden = this.unlockPlots(this.getGardenMaxTiles(), { save: false });
+    const cauldrons = this.unlockCauldrons(this.getBrewingMaxCauldrons(), { save: false });
+    const market = this.unlockMarketStands(this.getShopMaxSlots(), { save: false });
+
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      level,
+      research,
+      garden,
+      cauldrons,
+      market,
+      snapshot: this.gameplayFacade.getSnapshot(),
     };
   }
 
@@ -208,13 +631,864 @@ export class DevCheatCommandManager {
       };
     }
 
-    this.gameplayFacade.publishAndSaveSnapshot();
+    this.publishAndSave();
     return {
       ok: true,
       researchId: trimmedResearchId,
       alreadyCompleted: beforeCount === completedIds.size,
       completedResearchIds: nextCompletedIds,
     };
+  }
+
+  unlockAllResearch({ save = true } = {}) {
+    const researchIds = this.getAllConfiguredResearchIds();
+    const existingIds = this.gameplayFacade.researchFacade.getPersistenceSnapshot().completedIds;
+    const completedIds = [...new Set([...existingIds, ...researchIds])];
+
+    this.gameplayFacade.researchFacade.applyPersistenceSnapshot({
+      completedIds,
+      inProgress: [],
+    });
+    this.gameplayFacade.syncPlayerLevelManaEffects?.();
+    this.gameplayFacade.syncRubyFromPrestige?.();
+
+    const nextCompletedIds =
+      this.gameplayFacade.researchFacade.getPersistenceSnapshot().completedIds;
+
+    if (save) {
+      this.publishAndSave();
+    }
+
+    return {
+      ok: true,
+      completedCount: nextCompletedIds.length,
+      completedResearchIds: nextCompletedIds,
+    };
+  }
+
+  unlockPlots(count, { save = true } = {}) {
+    const safeCount = this.readPositiveInteger(count, 'count');
+
+    if (!safeCount.ok) {
+      return safeCount;
+    }
+
+    const maxTiles = this.getGardenMaxTiles();
+    const unlockedTiles = Math.min(safeCount.value, maxTiles);
+    this.ensureLevelForGardenTile(unlockedTiles);
+    const snapshot = this.gameplayFacade.gardenFacade.getPersistenceSnapshot();
+
+    this.gameplayFacade.gardenFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      unlockedTiles,
+    });
+
+    if (save) {
+      this.publishAndSave();
+    }
+
+    return {
+      ok: true,
+      unlockedTiles: this.gameplayFacade.gardenFacade.getPersistenceSnapshot().unlockedTiles,
+      requestedTiles: safeCount.value,
+      maxTiles,
+      currentLevel: this.getCurrentLevel(),
+    };
+  }
+
+  setPlot(plotNumber, seedOrOptions, phaseArg) {
+    const safePlotNumber = this.readPositiveInteger(plotNumber, 'plotNumber');
+
+    if (!safePlotNumber.ok) {
+      return safePlotNumber;
+    }
+
+    const options = this.toPlotOptions(seedOrOptions, phaseArg);
+    const maxTiles = this.getGardenMaxTiles();
+
+    if (safePlotNumber.value > maxTiles) {
+      return {
+        ok: false,
+        reason: 'plot_out_of_range',
+        plotNumber: safePlotNumber.value,
+        maxTiles,
+      };
+    }
+
+    this.ensureLevelForGardenTile(safePlotNumber.value);
+    const snapshot = this.gameplayFacade.gardenFacade.getPersistenceSnapshot();
+    const unlockedTiles = Math.max(snapshot.unlockedTiles, safePlotNumber.value);
+    const existingTile = snapshot.tiles.find(
+      (tile) => tile.tileNumber === safePlotNumber.value,
+    );
+    const seedKey = this.resolvePlotSeedKey(options, existingTile);
+    const phase = this.normalizeGardenPhase(options.phase ?? options.stage ?? 'growing');
+    const tile = this.createGardenTileSnapshot({
+      tileNumber: safePlotNumber.value,
+      seedKey,
+      phase,
+      options,
+      existingTile,
+    });
+
+    if (tile.ok === false) {
+      return tile;
+    }
+
+    const tiles = snapshot.tiles.filter((candidate) => candidate.tileNumber !== tile.tileNumber);
+    tiles.push(tile);
+    tiles.sort((left, right) => left.tileNumber - right.tileNumber);
+
+    this.gameplayFacade.gardenFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      unlockedTiles,
+      tiles,
+    });
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      plotNumber: safePlotNumber.value,
+      unlockedTiles: this.gameplayFacade.gardenFacade.getPersistenceSnapshot().unlockedTiles,
+      tile: this.gameplayFacade
+        .getSnapshot()
+        .garden.plot.tiles.find((candidate) => candidate.tileNumber === safePlotNumber.value),
+    };
+  }
+
+  setPlots(plots) {
+    if (!Array.isArray(plots) || plots.length === 0) {
+      return { ok: false, reason: 'invalid_plots' };
+    }
+
+    const results = [];
+
+    for (const plot of plots) {
+      const plotNumber = plot?.plot ?? plot?.plotNumber ?? plot?.tile ?? plot?.tileNumber;
+      const result = this.setPlot(plotNumber, plot);
+      results.push(result);
+
+      if (result.ok === false) {
+        return {
+          ok: false,
+          reason: 'plot_failed',
+          failed: result,
+          results,
+        };
+      }
+    }
+
+    return {
+      ok: true,
+      results,
+      garden: this.gameplayFacade.getSnapshot().garden,
+    };
+  }
+
+  unlockCauldrons(count, { save = true } = {}) {
+    const safeCount = this.readPositiveInteger(count, 'count');
+
+    if (!safeCount.ok) {
+      return safeCount;
+    }
+
+    const maxCauldrons = this.getBrewingMaxCauldrons();
+    const unlockedCauldrons = Math.min(safeCount.value, maxCauldrons);
+    this.ensureLevelForCauldron(unlockedCauldrons);
+    const snapshot = this.gameplayFacade.brewingFacade.getPersistenceSnapshot();
+
+    this.gameplayFacade.brewingFacade.applyPersistenceSnapshot(
+      {
+        ...snapshot,
+        unlockedCauldrons,
+      },
+      this.gameplayFacade.itemsFacade,
+    );
+
+    if (save) {
+      this.publishAndSave();
+    }
+
+    return {
+      ok: true,
+      unlockedCauldrons:
+        this.gameplayFacade.brewingFacade.getPersistenceSnapshot().unlockedCauldrons,
+      requestedCauldrons: safeCount.value,
+      maxCauldrons,
+      currentLevel: this.getCurrentLevel(),
+    };
+  }
+
+  setCauldron(cauldronNumber, potionOrOptions, phaseArg) {
+    const safeCauldronNumber = this.readPositiveInteger(cauldronNumber, 'cauldronNumber');
+
+    if (!safeCauldronNumber.ok) {
+      return safeCauldronNumber;
+    }
+
+    const options = this.toCauldronOptions(potionOrOptions, phaseArg);
+    const phase = this.normalizeBrewPhase(options.phase ?? options.stage ?? 'brewed');
+    const maxCauldrons = this.getBrewingMaxCauldrons();
+
+    if (safeCauldronNumber.value > maxCauldrons) {
+      return {
+        ok: false,
+        reason: 'cauldron_out_of_range',
+        cauldronNumber: safeCauldronNumber.value,
+        maxCauldrons,
+      };
+    }
+
+    this.unlockCauldrons(safeCauldronNumber.value, { save: false });
+    const cauldronIndex = safeCauldronNumber.value - 1;
+    const cauldronManager = this.gameplayFacade.brewingFacade.brewingCauldronEntityManager;
+    const processManager = this.gameplayFacade.brewingFacade.brewingProcessEntityManager;
+    cauldronManager.clearIngredients(cauldronIndex);
+    processManager.clearActiveBrew(cauldronIndex);
+
+    if (phase !== 'empty') {
+      const potion = this.getRawItemDefinition(options.potion ?? options.potionKey ?? 'manaTonic');
+
+      if (!potion || potion.kind !== 'potion') {
+        return {
+          ok: false,
+          reason: 'unknown_potion',
+          potion: options.potion ?? options.potionKey,
+        };
+      }
+
+      const ingredientKeys = this.resolveCauldronIngredientKeys(potion.key, options);
+
+      for (const ingredientKey of ingredientKeys) {
+        const ingredient = this.getRawItemDefinition(ingredientKey);
+
+        if (ingredient?.kind === 'herb') {
+          cauldronManager.addIngredient(ingredient.id, cauldronIndex);
+        }
+      }
+
+      if (phase !== 'staged') {
+        const totalMs = this.resolveBrewTotalMs(potion.key, options);
+        const bottlingTotalMs = this.resolveBottlingTotalMs(options);
+        const activePhase = phase === 'complete' ? 'ready' : phase;
+        const remainingMs = this.resolveRemainingMs({
+          totalMs: activePhase === 'bottling' ? bottlingTotalMs : totalMs,
+          options,
+          defaultProgress: activePhase === 'brewing' || activePhase === 'bottling' ? 0 : 1,
+        });
+
+        processManager.restoreActiveBrew({
+          cauldronIndex,
+          resultItemTypeId: potion.id,
+          resultQuantity: options.quantity,
+          phase: activePhase,
+          totalSeconds: (activePhase === 'bottling' ? bottlingTotalMs : totalMs) / 1_000,
+          remainingSeconds: remainingMs / 1_000,
+          bottlingTotalSeconds: bottlingTotalMs / 1_000,
+        });
+      }
+    }
+
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      cauldronNumber: safeCauldronNumber.value,
+      cauldron: this.gameplayFacade
+        .getSnapshot()
+        .brewing.cauldrons.find(
+          (candidate) => candidate.cauldronNumber === safeCauldronNumber.value,
+        ),
+    };
+  }
+
+  unlockTraderStands(count, { save = true } = {}) {
+    const safeCount = this.readPositiveInteger(count, 'count');
+
+    if (!safeCount.ok) {
+      return safeCount;
+    }
+
+    const maxSlots = this.getShopMaxSlots();
+    const unlockedSlots = Math.min(safeCount.value, maxSlots);
+    this.ensureLevelForNpcMarketStand(unlockedSlots);
+    const snapshot = this.gameplayFacade.shopFacade.getPersistenceSnapshot();
+
+    this.gameplayFacade.shopFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      shelf: {
+        ...snapshot.shelf,
+        unlockedSlots,
+      },
+    });
+
+    if (save) {
+      this.publishAndSave();
+    }
+
+    return {
+      ok: true,
+      unlockedSlots: this.gameplayFacade.shopFacade.getSnapshot().shelf.unlockedSlots,
+      requestedSlots: safeCount.value,
+      maxSlots,
+      currentLevel: this.getCurrentLevel(),
+    };
+  }
+
+  unlockPlayerStands(count, { save = true } = {}) {
+    const safeCount = this.readPositiveInteger(count, 'count');
+
+    if (!safeCount.ok) {
+      return safeCount;
+    }
+
+    const maxSlots = this.getShopMaxSlots();
+    const unlockedSlots = Math.min(safeCount.value, maxSlots);
+    this.ensureLevelForPlayerMarketStand(unlockedSlots);
+    const snapshot = this.gameplayFacade.shopFacade.getPersistenceSnapshot();
+
+    this.gameplayFacade.shopFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      playerShelf: {
+        ...snapshot.playerShelf,
+        unlockedSlots,
+      },
+    });
+
+    if (save) {
+      this.publishAndSave();
+    }
+
+    return {
+      ok: true,
+      unlockedSlots: this.gameplayFacade.shopFacade.getSnapshot().playerShelf.unlockedSlots,
+      requestedSlots: safeCount.value,
+      maxSlots,
+      currentLevel: this.getCurrentLevel(),
+    };
+  }
+
+  unlockMarketStands(count, { save = true } = {}) {
+    const trader = this.unlockTraderStands(count, { save: false });
+    const player = this.unlockPlayerStands(count, { save: false });
+
+    if (save) {
+      this.publishAndSave();
+    }
+
+    return {
+      ok: trader.ok !== false && player.ok !== false,
+      trader,
+      player,
+    };
+  }
+
+  setMarketState(presetOrOptions = 'full', optionsArg = {}) {
+    const options = this.toPresetOptions(presetOrOptions, optionsArg, 'full');
+    const preset = this.normalizeId(options.preset);
+    const maxSlots = this.getShopMaxSlots();
+    const requestedSlots = Math.max(1, Math.floor(Number(options.slots) || 3));
+    const unlockedSlots = Math.min(requestedSlots, maxSlots);
+    const readyProgressSeconds = 0;
+    const halfProgressSeconds = 45;
+    const longProgressSeconds = 120;
+    const sellProgressSeconds =
+      preset === 'ready' || preset === 'allready'
+        ? readyProgressSeconds
+        : preset === 'half'
+          ? halfProgressSeconds
+          : preset === 'longrunning'
+            ? longProgressSeconds
+            : Math.floor(Number(options.sellProgressSeconds) || readyProgressSeconds);
+
+    this.ensureLevelAtLeast(FEATURE_LEVELS.market);
+    this.unlockMarketStands(unlockedSlots, { save: false });
+
+    const itemKeys = this.getDevMarketItemKeys();
+    const inventoryQuantity = Math.floor(Number(options.quantity) || 50);
+
+    if (preset !== 'empty' && preset !== 'none' && preset !== 'clear') {
+      this.unlockAllResearch({ save: false });
+      this.addInventoryQuantities(
+        itemKeys.map((itemKey) => ({ itemKey, quantity: inventoryQuantity })),
+      );
+    }
+
+    const shelfSlots =
+      preset === 'empty' || preset === 'none' || preset === 'clear'
+        ? []
+        : Array.from({ length: unlockedSlots }, (_unused, index) => ({
+            slotNumber: index + 1,
+            sellItemKey: itemKeys[index % itemKeys.length],
+            sellLimitMode: index % 2 === 0 ? 'all' : 'amount',
+            sellQuantityLimit: index % 2 === 0 ? null : 10 + index,
+            sellProgressSeconds,
+          }));
+    const playerSlots =
+      preset === 'empty' || preset === 'none' || preset === 'clear'
+        ? []
+        : Array.from({ length: unlockedSlots }, (_unused, index) => ({
+            slotNumber: index + 1,
+            itemKey: itemKeys[index % itemKeys.length],
+            quantity: 5 + index,
+            priceCoin: 15 + index * 5,
+          }));
+    const requestSlots =
+      preset === 'empty' || preset === 'none' || preset === 'clear'
+        ? []
+        : Array.from({ length: unlockedSlots }, (_unused, index) => ({
+            slotNumber: index + 1,
+            itemKey: itemKeys[(index + 1) % itemKeys.length],
+            quantity: 3 + index,
+            priceCoin: 12 + index * 4,
+          }));
+    const snapshot = this.gameplayFacade.shopFacade.getPersistenceSnapshot();
+
+    this.gameplayFacade.shopFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      shelf: {
+        ...snapshot.shelf,
+        unlockedSlots,
+        selectedSlotNumber: Math.min(
+          Math.max(1, Math.floor(Number(options.selectedSlotNumber) || 1)),
+          unlockedSlots,
+        ),
+        sellProgressSeconds,
+        slots: shelfSlots,
+      },
+      playerShelf: {
+        ...snapshot.playerShelf,
+        unlockedSlots,
+        selectedSlotNumber: 1,
+        slots: playerSlots,
+      },
+      playerRequests: {
+        slots: requestSlots,
+      },
+    });
+
+    const playerShop = this.applyPlayerShopSnapshot(
+      this.createPlayerShopDevSnapshot({
+        connected: preset !== 'offline',
+        listings: playerSlots,
+        requests: requestSlots,
+        proceedsCoin: preset === 'full' || preset === 'claimable' ? 340 : 0,
+      }),
+    );
+
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      preset,
+      unlockedSlots,
+      shop: this.gameplayFacade.getSnapshot().shop,
+      playerShop,
+    };
+  }
+
+  setWorldEventState(presetOrOptions = 'active', optionsArg = {}) {
+    const options = this.toPresetOptions(presetOrOptions, optionsArg, 'active');
+    const preset = this.normalizeId(options.preset);
+    const worldNoticeFacade = this.gameplayFacade.worldNoticeFacade;
+
+    if (!worldNoticeFacade) {
+      return { ok: false, reason: 'world_event_missing' };
+    }
+
+    if (preset === 'locked' || preset === 'none' || preset === 'clear') {
+      this.applyLevel(Math.max(1, FEATURE_LEVELS.worldevent - 1));
+      worldNoticeFacade.applyPersistenceSnapshot({ current: null, archive: [] });
+      this.publishAndSave();
+      return {
+        ok: true,
+        preset,
+        worldNotice: this.gameplayFacade.getSnapshot().worldNotice,
+      };
+    }
+
+    this.ensureLevelAtLeast(FEATURE_LEVELS.worldevent);
+    worldNoticeFacade.ensureCurrentNotice();
+    const snapshot = worldNoticeFacade.getPersistenceSnapshot();
+    const current = snapshot.current;
+
+    if (!current) {
+      return { ok: false, reason: 'world_event_unavailable' };
+    }
+
+    const ratio =
+      preset === 'complete' || preset === 'completed'
+        ? 1
+        : preset === 'almostdone'
+          ? 0.95
+          : preset === 'half' || preset === 'partial'
+            ? 0.5
+            : 0;
+    const points =
+      Number.isFinite(Number(options.points))
+        ? Math.max(0, Math.floor(Number(options.points)))
+        : preset === 'qualify' || preset === 'qualified'
+          ? 2_000
+          : preset === 'complete' || preset === 'completed'
+            ? 2_750
+            : preset === 'half' || preset === 'partial'
+              ? 900
+              : 0;
+
+    current.contributionPoints = points;
+    const requestCount = Math.max(1, (current.requests ?? []).length);
+    current.requests = (current.requests ?? []).map((request) => {
+      const requiredQuantity = Math.max(1, Math.floor(Number(request.requiredQuantity) || 1));
+      const progressQuantity = Math.max(
+        0,
+        Math.min(requiredQuantity, Math.floor(requiredQuantity * ratio)),
+      );
+
+      return {
+        ...request,
+        progressQuantity,
+        pointProgressQuantity: progressQuantity,
+        contributionPoints: Math.floor(points / requestCount),
+        completed: progressQuantity >= requiredQuantity,
+      };
+    });
+
+    const archive =
+      preset === 'ended' || preset === 'archive'
+        ? [
+            {
+              periodKey: current.periodKey,
+              eventId: current.eventId,
+              headline: current.headline,
+              responseTier: points >= 2_000 ? 'strong' : points > 0 ? 'steady' : 'small',
+              contributionPoints: points,
+              outcome: current.outcomes?.strong ?? '',
+              archive: current.archive ?? '',
+            },
+            ...(snapshot.archive ?? []),
+          ]
+        : snapshot.archive;
+
+    worldNoticeFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      current,
+      archive,
+    });
+    const leaderboard = this.setDummyLeaderboard({
+      count: Math.floor(Number(options.leaderboardCount) || DEFAULT_DUMMY_LEADERBOARD_COUNT),
+    });
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      preset,
+      leaderboard,
+      worldNotice: this.gameplayFacade.getSnapshot().worldNotice,
+    };
+  }
+
+  setGuildState(presetOrOptions = 'full', optionsArg = {}) {
+    const options = this.toPresetOptions(presetOrOptions, optionsArg, 'full');
+    const preset = this.normalizeId(options.preset);
+    const guildFacade = this.gameplayFacade.guildFacade;
+
+    if (!guildFacade) {
+      return { ok: false, reason: 'guild_missing' };
+    }
+
+    if (preset === 'locked' || preset === 'none' || preset === 'clear') {
+      this.applyLevel(Math.max(1, FEATURE_LEVELS.guild - 1));
+      guildFacade.applyPersistenceSnapshot({});
+      this.publishAndSave();
+      return {
+        ok: true,
+        preset,
+        guild: this.gameplayFacade.getSnapshot().guild,
+      };
+    }
+
+    this.ensureLevelAtLeast(FEATURE_LEVELS.guild);
+
+    if (preset === 'charter' || preset === 'uncreated') {
+      guildFacade.applyPersistenceSnapshot({});
+      this.addCoinSilently(Math.floor(Number(options.coin) || 5_000));
+      this.publishAndSave();
+      return {
+        ok: true,
+        preset,
+        guild: this.gameplayFacade.getSnapshot().guild,
+      };
+    }
+
+    const now = this.getNow();
+    const profile = {
+      name: String(options.name ?? 'QA Order').slice(0, 24),
+      tag: String(options.tag ?? options.allianceTag ?? 'QA').slice(0, 5),
+      color: options.color ?? 'black',
+      createdAtMs: now,
+    };
+
+    guildFacade.applyPersistenceSnapshot({
+      profile,
+      secretaryLevel:
+        preset === 'full' || preset === 'claimable' || preset === 'urgent'
+          ? 3
+          : 1,
+      lastSimAtMs: now,
+      applicants: [],
+      adventurers: [],
+      board: [],
+      availableRequests: [],
+      logs: [
+        {
+          id: 1,
+          text: `guild charter signed for ${profile.name}.`,
+          tone: 'orange',
+          atMs: now,
+        },
+      ],
+      nextLogId: 2,
+    });
+    guildFacade.ensureGeneratedState?.();
+
+    const state = guildFacade.getPersistenceSnapshot();
+    const hireCount =
+      preset === 'applicants' || preset === 'joined'
+        ? 0
+        : Math.max(1, Math.floor(Number(options.adventurers) || 2));
+    const hired = state.applicants.slice(0, hireCount).map((applicant, index) => ({
+      ...applicant,
+      id: `adventurer:dev-${index + 1}`,
+      status: preset === 'urgent' && index === 0 ? 'hospital' : 'idle',
+      hiredAtMs: now,
+      hospitalUntilMs: preset === 'urgent' && index === 0 ? now + 60 * 60 * 1000 : null,
+      history: [
+        {
+          text:
+            preset === 'claimable' && index === 0
+              ? `${applicant.name} completes a QA request.`
+              : `${applicant.name} joins the guild.`,
+          atMs: now,
+        },
+      ],
+    }));
+    const boardCount = Math.max(0, Math.floor(Number(options.board) || 2));
+    const board = state.availableRequests.slice(0, boardCount);
+
+    guildFacade.applyPersistenceSnapshot({
+      ...state,
+      applicants: state.applicants.slice(hireCount),
+      adventurers: hired,
+      board,
+      availableRequests: state.availableRequests.slice(board.length),
+    });
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      preset,
+      guild: this.gameplayFacade.getSnapshot().guild,
+    };
+  }
+
+  setBackendState(state = 'connected', options = {}) {
+    const normalizedState = this.normalizeId(state);
+    const connected = normalizedState === 'connected' || normalizedState === 'online';
+    const reason =
+      normalizedState === 'accountinuse'
+        ? 'account_in_use'
+        : normalizedState === 'savefailed' || normalizedState === 'savefail'
+          ? 'gameplay_save_timeout'
+          : normalizedState === 'reconnecting'
+            ? 'disconnect'
+            : options.reason ?? 'disconnect';
+
+    if (connected) {
+      this.onlineGateManager?.hide?.();
+    } else if (normalizedState === 'reconnecting') {
+      this.onlineGateManager?.showConnecting?.();
+    } else {
+      this.onlineGateManager?.showOffline?.(reason);
+    }
+
+    const playerShop = this.applyPlayerShopSnapshot(
+      this.createPlayerShopDevSnapshot({
+        connected,
+      }),
+    );
+
+    return {
+      ok: true,
+      state: normalizedState,
+      reason: connected ? null : reason,
+      playerShop,
+    };
+  }
+
+  openDialog(dialogId, options = {}) {
+    const normalizedDialogId = this.normalizeId(dialogId);
+
+    if (!normalizedDialogId) {
+      return { ok: false, reason: 'invalid_dialog_id', dialogId };
+    }
+
+    this.ensureFeatureForDialog(normalizedDialogId);
+    this.publishAndSave();
+
+    if (!this.pagesFacade || typeof this.pagesFacade.openDialog !== 'function') {
+      return { ok: false, reason: 'pages_missing' };
+    }
+
+    return this.pagesFacade.openDialog(dialogId, options);
+  }
+
+  setTimers(presetOrOptions = 'allReady', optionsArg = {}) {
+    const options = this.toPresetOptions(presetOrOptions, optionsArg, 'allReady');
+    const preset = this.normalizeId(options.preset);
+    const progress =
+      preset === 'half'
+        ? 0.5
+        : preset === 'almostdone'
+          ? 0.95
+          : preset === 'longrunning'
+            ? 0.05
+            : 1;
+    const plotPhase = progress >= 1 ? 'ready' : 'growing';
+    const cauldronPhase = progress >= 1 ? 'brewed' : 'brewing';
+    const marketPreset =
+      progress >= 1 ? 'ready' : progress >= 0.95 ? 'almostDone' : preset;
+    const totalMs = preset === 'longrunning' ? 60 * 60 * 1000 : undefined;
+
+    const plot = this.setPlot(1, {
+      seed: options.seed ?? 'sage',
+      phase: plotPhase,
+      progress,
+      totalMs,
+    });
+    const cauldron = this.setCauldron(1, {
+      potion: options.potion ?? 'manaTonic',
+      phase: cauldronPhase,
+      progress,
+      totalMs,
+    });
+    const market = this.setMarketState(marketPreset, {
+      slots: 2,
+      sellProgressSeconds:
+        preset === 'longrunning'
+          ? 120
+          : preset === 'half'
+            ? 45
+            : preset === 'almostdone'
+              ? 89
+              : 0,
+    });
+
+    return {
+      ok: plot.ok !== false && cauldron.ok !== false && market.ok !== false,
+      preset,
+      plot,
+      cauldron,
+      market,
+    };
+  }
+
+  setStressText(options = {}) {
+    const safeOptions = options && typeof options === 'object' ? options : {};
+    const results = {
+      profile: this.setProfile({
+        username:
+          safeOptions.username ??
+          'Archwizard Whose Very Long Name Must Still Fit',
+        character: safeOptions.character ?? 'wizard',
+        guildName: 'The Extremely Wordy QA Fellowship',
+        allianceTag: 'LONG',
+      }),
+      inventory: this.setInventoryPreset('overflow'),
+      market: this.setMarketState('full', { slots: 5, quantity: 999 }),
+      worldEvent: this.setWorldEventState('complete', { leaderboardCount: 24 }),
+      guild: this.setGuildState('claimable', {
+        name: 'Very Long QA Guild Name',
+        tag: 'LONG',
+        adventurers: 3,
+        board: 4,
+      }),
+      notifications: this.setNotifications('all'),
+      leaderboard: this.setDummyLeaderboard({ count: 24 }),
+    };
+
+    return {
+      ok: Object.values(results).every((result) => result?.ok !== false),
+      results,
+      snapshot: this.gameplayFacade.getSnapshot(),
+    };
+  }
+
+  setDummyLeaderboard(options = {}) {
+    const safeOptions = options && typeof options === 'object' ? options : {};
+    const count = Math.max(
+      1,
+      Math.floor(Number(safeOptions.count) || DEFAULT_DUMMY_LEADERBOARD_COUNT),
+    );
+    const users = this.createDummyLeaderboardUsers(count);
+    const snapshot = this.createDummyLeaderboardSnapshot(users);
+    const eventSnapshot = this.createDummyWorldEventLeaderboardSnapshot(users);
+    const leaderboardFacade = this.backendFacade?.getLeaderboardFacade?.();
+    const eventLeaderboardFacade = this.backendFacade?.getWorldEventLeaderboardFacade?.();
+    const leaderboardApplied =
+      typeof leaderboardFacade?.setDevSnapshot === 'function'
+        ? leaderboardFacade.setDevSnapshot(snapshot)
+        : { ok: false, reason: 'leaderboard_missing' };
+    const worldEventApplied =
+      typeof eventLeaderboardFacade?.setDevSnapshot === 'function'
+        ? eventLeaderboardFacade.setDevSnapshot(eventSnapshot)
+        : { ok: false, reason: 'world_event_leaderboard_missing' };
+
+    return {
+      ok: leaderboardApplied.ok !== false || worldEventApplied.ok !== false,
+      leaderboard: leaderboardApplied,
+      worldEventLeaderboard: worldEventApplied,
+      snapshot,
+      eventSnapshot,
+    };
+  }
+
+  clearDummyLeaderboard() {
+    const leaderboardFacade = this.backendFacade?.getLeaderboardFacade?.();
+    const eventLeaderboardFacade = this.backendFacade?.getWorldEventLeaderboardFacade?.();
+    const leaderboard =
+      typeof leaderboardFacade?.clearDevSnapshot === 'function'
+        ? leaderboardFacade.clearDevSnapshot()
+        : { ok: false, reason: 'leaderboard_missing' };
+    const worldEventLeaderboard =
+      typeof eventLeaderboardFacade?.clearDevSnapshot === 'function'
+        ? eventLeaderboardFacade.clearDevSnapshot()
+        : { ok: false, reason: 'world_event_leaderboard_missing' };
+
+    return {
+      ok: leaderboard.ok !== false || worldEventLeaderboard.ok !== false,
+      leaderboard,
+      worldEventLeaderboard,
+    };
+  }
+
+  listTutorialStages() {
+    if (typeof this.pagesFacade?.listTutorialStages === 'function') {
+      return this.pagesFacade.listTutorialStages();
+    }
+
+    return {
+      ok: true,
+      stages: [...TUTORIAL_STEP_IDS],
+      aliases: ['reset', 'start', 'complete', 'done'],
+    };
+  }
+
+  setTutorialStage(stageId) {
+    if (typeof this.pagesFacade?.setTutorialStage !== 'function') {
+      return { ok: false, reason: 'tutorial_missing' };
+    }
+
+    return this.pagesFacade.setTutorialStage(stageId);
   }
 
   async resetData(confirmation) {
@@ -392,29 +1666,494 @@ export class DevCheatCommandManager {
     }
   }
 
-  getItemDefinition(itemKeyOrId) {
-    try {
-      const itemId = Number(itemKeyOrId);
-      const definition = Number.isInteger(itemId)
-        ? this.gameplayFacade.itemsFacade.getItemDefinition(itemId)
-        : this.gameplayFacade.itemsFacade.getItemDefinitionByKey(String(itemKeyOrId));
+  applyLevel(level) {
+    this.gameplayFacade.tasksFacade.applyPersistenceSnapshot({
+      currentLevel: level,
+      tasks: [],
+    });
+    this.gameplayFacade.syncPlayerLevelManaEffects?.();
+  }
+
+  ensureLevelAtLeast(level) {
+    const currentLevel = this.getCurrentLevel();
+
+    if (currentLevel >= level) {
+      return { ok: true, level: currentLevel, changed: false };
+    }
+
+    this.applyLevel(level);
+    return { ok: true, level, levelBefore: currentLevel, changed: true };
+  }
+
+  ensureLevelForGardenTile(tileNumber) {
+    const requiredLevel =
+      this.gameplayFacade.playerLevelFacade?.getRequiredLevelForGardenTile?.(tileNumber);
+
+    if (Number.isInteger(requiredLevel)) {
+      this.ensureLevelAtLeast(requiredLevel);
+    }
+  }
+
+  ensureLevelForCauldron(cauldronNumber) {
+    const requiredLevel =
+      this.gameplayFacade.playerLevelFacade?.getRequiredLevelForCauldron?.(cauldronNumber);
+
+    if (Number.isInteger(requiredLevel)) {
+      this.ensureLevelAtLeast(requiredLevel);
+    }
+  }
+
+  ensureLevelForNpcMarketStand(standNumber) {
+    const requiredLevel =
+      this.gameplayFacade.playerLevelFacade?.getRequiredLevelForNpcMarketStand?.(standNumber);
+
+    if (Number.isInteger(requiredLevel)) {
+      this.ensureLevelAtLeast(requiredLevel);
+    }
+  }
+
+  ensureLevelForPlayerMarketStand(standNumber) {
+    const requiredLevel =
+      this.gameplayFacade.playerLevelFacade?.getRequiredLevelForPlayerMarketStand?.(standNumber);
+
+    if (Number.isInteger(requiredLevel)) {
+      this.ensureLevelAtLeast(requiredLevel);
+    }
+  }
+
+  getCurrentLevel() {
+    return this.gameplayFacade.getSnapshot().playerLevel?.currentLevel ?? 1;
+  }
+
+  getGardenMaxTiles() {
+    const snapshot = this.gameplayFacade.getSnapshot().garden?.plot;
+
+    return (
+      snapshot?.configuredMaxTiles ??
+      snapshot?.maxTiles ??
+      this.gameplayFacade.gardenFacade?.gardenBalanceManager?.getMaxTiles?.() ??
+      1
+    );
+  }
+
+  getBrewingMaxCauldrons() {
+    const snapshot = this.gameplayFacade.getSnapshot().brewing;
+
+    return (
+      snapshot?.configuredMaxCauldrons ??
+      snapshot?.maxCauldrons ??
+      this.gameplayFacade.brewingFacade?.brewingBalanceManager?.getMaxCauldrons?.() ??
+      1
+    );
+  }
+
+  getShopMaxSlots() {
+    const snapshot = this.gameplayFacade.getSnapshot().shop?.shelf;
+
+    return (
+      snapshot?.maxSlots ??
+      this.gameplayFacade.shopFacade?.shopBalanceManager?.getMaxShelfSlots?.() ??
+      1
+    );
+  }
+
+  hasConfiguredResearch(researchId) {
+    return (
+      typeof researchId === 'string' &&
+      this.gameplayFacade.researchFacade?.researchDefinitionManager?.hasConfiguredResearch?.(
+        researchId,
+      ) === true
+    );
+  }
+
+  getAllConfiguredResearchIds() {
+    return (
+      this.gameplayFacade.researchFacade?.researchDefinitionManager
+        ?.getResearches?.({ includeLevelLockedAutomation: true })
+        .map((research) => research.id) ?? []
+    );
+  }
+
+  createGardenTileSnapshot({ tileNumber, seedKey, phase, options, existingTile }) {
+    if (phase === 'empty') {
+      return {
+        tileNumber,
+        selectedSeedItemKey: seedKey,
+        seedItemKey: null,
+        herbItemKey: null,
+        harvestQuantity: 1,
+        phase,
+        totalMs: 0,
+        remainingMs: 0,
+      };
+    }
+
+    const seed = this.getRawItemDefinition(seedKey);
+
+    if (!seed || seed.kind !== 'seed') {
+      return {
+        ok: false,
+        reason: 'unknown_seed',
+        seed: seedKey,
+      };
+    }
+
+    const herb = this.gameplayFacade.itemsFacade.getItemDefinition(seed.producesHerbTypeId);
+    const growthMs = this.getGardenGrowthMs(tileNumber, herb, options);
+    const harvestMs = this.getGardenHarvestMs(options);
+    const totalMs = phase === 'harvesting' ? harvestMs : growthMs;
+    const remainingMs =
+      phase === 'ready'
+        ? 0
+        : this.resolveRemainingMs({
+            totalMs,
+            options,
+            defaultProgress: phase === 'growing' ? 0 : 0.5,
+          });
+
+    return {
+      tileNumber,
+      selectedSeedItemKey: options.selectedSeedKey ?? existingTile?.selectedSeedItemKey ?? seed.key,
+      seedItemKey: seed.key,
+      herbItemKey: herb.key,
+      harvestQuantity: Math.max(1, Math.floor(Number(options.harvestQuantity) || 1)),
+      phase,
+      totalMs,
+      remainingMs,
+    };
+  }
+
+  resolvePlotSeedKey(options, existingTile) {
+    const seed = options.seed ?? options.seedKey ?? options.item ?? existingTile?.seedItemKey;
+    const selectedSeed = options.selectedSeed ?? options.selectedSeedKey;
+
+    if (selectedSeed) {
+      return this.toSeedKey(selectedSeed);
+    }
+
+    if (!seed) {
+      return 'sageSeed';
+    }
+
+    return this.toSeedKey(seed);
+  }
+
+  toPlotOptions(seedOrOptions, phaseArg) {
+    if (seedOrOptions && typeof seedOrOptions === 'object') {
+      return { ...seedOrOptions };
+    }
+
+    return {
+      seed: seedOrOptions,
+      phase: phaseArg,
+    };
+  }
+
+  normalizeGardenPhase(phase) {
+    const normalized = this.normalizeId(phase);
+
+    switch (normalized) {
+      case 'empty':
+      case 'clear':
+        return 'empty';
+      case 'ready':
+      case 'done':
+      case 'mature':
+        return 'ready';
+      case 'harvest':
+      case 'harvesting':
+        return 'harvesting';
+      case 'selected':
+      case 'selection':
+        return 'empty';
+      case 'grow':
+      case 'growing':
+      default:
+        return 'growing';
+    }
+  }
+
+  getGardenGrowthMs(tileNumber, herb, options = {}) {
+    const rawMs = Number(options.totalMs ?? options.growthMs);
+
+    if (Number.isFinite(rawMs) && rawMs > 0) {
+      return rawMs;
+    }
+
+    const defaultMs = Number(herb?.growthDurationMs) || 1_000;
+
+    return (
+      this.gameplayFacade.researchFacade?.getReducedPlotGrowthDurationMs?.(
+        tileNumber,
+        defaultMs,
+      ) ?? defaultMs
+    );
+  }
+
+  getGardenHarvestMs(options = {}) {
+    const rawMs = Number(options.totalMs ?? options.harvestMs);
+
+    if (Number.isFinite(rawMs) && rawMs > 0) {
+      return rawMs;
+    }
+
+    const harvestSeconds =
+      this.gameplayFacade.gardenFacade?.gardenBalanceManager?.getHarvestSeconds?.() ?? 3;
+
+    return harvestSeconds * 1_000;
+  }
+
+  toCauldronOptions(potionOrOptions, phaseArg) {
+    if (potionOrOptions && typeof potionOrOptions === 'object') {
+      return { ...potionOrOptions };
+    }
+
+    return {
+      potion: potionOrOptions,
+      phase: phaseArg,
+    };
+  }
+
+  normalizeBrewPhase(phase) {
+    const normalized = this.normalizeId(phase);
+
+    switch (normalized) {
+      case 'empty':
+      case 'clear':
+        return 'empty';
+      case 'staged':
+      case 'ingredients':
+        return 'staged';
+      case 'ready':
+      case 'done':
+      case 'complete':
+        return 'ready';
+      case 'bottling':
+        return 'bottling';
+      case 'brewed':
+      case 'waiting':
+        return 'brewed';
+      case 'brewing':
+      default:
+        return 'brewing';
+    }
+  }
+
+  resolveCauldronIngredientKeys(potionKey, options = {}) {
+    const rawIngredients = options.ingredients ?? options.ingredientKeys;
+
+    if (Array.isArray(rawIngredients)) {
+      return rawIngredients.flatMap((item) => {
+        if (typeof item === 'string') {
+          return [this.toHerbKey(item)];
+        }
+
+        const key = item?.key ?? item?.itemKey ?? item?.herb ?? item?.herbKey;
+        const quantity = Math.max(1, Math.floor(Number(item?.quantity) || 1));
+        return Array.from({ length: quantity }, () => this.toHerbKey(key));
+      });
+    }
+
+    const recipe = this.gameplayFacade.itemsFacade.getPotionRecipe?.(potionKey);
+
+    if (!recipe?.ingredients) {
+      return [];
+    }
+
+    return recipe.ingredients.flatMap((ingredient) =>
+      Array.from(
+        { length: Math.max(1, Math.floor(Number(ingredient.quantity) || 1)) },
+        () => ingredient.itemKey,
+      ),
+    );
+  }
+
+  resolveBrewTotalMs(potionKey, options = {}) {
+    const rawMs = Number(options.totalMs ?? options.brewMs);
+
+    if (Number.isFinite(rawMs) && rawMs > 0) {
+      return rawMs;
+    }
+
+    return this.gameplayFacade.itemsFacade.getPotionRecipe?.(potionKey)?.brewDurationMs ?? 30_000;
+  }
+
+  resolveBottlingTotalMs(options = {}) {
+    const rawMs = Number(options.bottlingTotalMs ?? options.bottlingMs);
+
+    if (Number.isFinite(rawMs) && rawMs > 0) {
+      return rawMs;
+    }
+
+    return (
+      this.gameplayFacade.brewingFacade?.brewingBalanceManager?.getBottlingDurationMs?.() ??
+      2_000
+    );
+  }
+
+  resolveRemainingMs({ totalMs, options = {}, defaultProgress = 0 }) {
+    const directMs = Number(options.remainingMs);
+
+    if (Number.isFinite(directMs) && directMs >= 0) {
+      return Math.min(totalMs, directMs);
+    }
+
+    const seconds = Number(options.remainingSeconds);
+
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.min(totalMs, seconds * 1_000);
+    }
+
+    const progressValue = options.progress ?? options.percent ?? defaultProgress;
+    const progress = Number(progressValue);
+
+    if (Number.isFinite(progress)) {
+      const normalizedProgress = progress > 1 ? progress / 100 : progress;
+      return Math.max(0, Math.min(totalMs, totalMs * (1 - normalizedProgress)));
+    }
+
+    return totalMs;
+  }
+
+  createDummyLeaderboardUsers(count) {
+    const names = [
+      'Ftwizard',
+      'Elara',
+      'Mothglass',
+      'Rootwright',
+      'Inkcap',
+      'Moonward',
+      'Cinder',
+      'Briarline',
+      'Starfall',
+      'Mistveil',
+      'Copperbell',
+      'Ashrook',
+    ];
+    const allianceTags = ['SUN', 'MOON', 'ROOT', 'ASH'];
+
+    return Array.from({ length: count }, (_unused, index) => {
+      const rank = index + 1;
+      const totalIncome = (count - index) * 12_345;
+      const name = names[index % names.length];
 
       return {
-        ok: true,
-        item: {
-          itemTypeId: definition.id,
-          key: definition.key,
-          label: definition.label,
-          kind: definition.kind,
-        },
+        identity: `dev-${rank}`,
+        name: rank === 1 ? `${name} (you)` : name,
+        playerLevel: Math.max(1, ALL_FEATURES_LEVEL - index * 3),
+        income: Math.floor(totalIncome / 10),
+        dailyIncome: Math.floor(totalIncome / 6),
+        weeklyIncome: Math.floor(totalIncome / 3),
+        monthlyIncome: Math.floor(totalIncome / 2),
+        totalGeneratedCoin: totalIncome,
+        totalIncome,
+        points: (count - index) * 137,
+        rank,
+        character: index % 2 === 0 ? 'wizard' : 'witch',
+        allianceTag: allianceTags[index % allianceTags.length],
+        allianceTagColor: 'black',
       };
+    });
+  }
+
+  createDummyLeaderboardSnapshot(users) {
+    const rows = users.map((user) => this.createLeaderboardUserSnapshot(user));
+    const currentUser = rows[0] ? { ...rows[0], rank: 1 } : null;
+
+    return {
+      topUsers: rows,
+      topGeneratedCoinUsers: rows,
+      topIncomeUsers: rows,
+      topDailyUsers: rows,
+      topWeeklyUsers: rows,
+      topMonthlyUsers: rows,
+      topAllTimeUsers: rows,
+      currentGeneratedCoinUser: currentUser,
+      currentIncomeUser: currentUser,
+      currentDailyUser: currentUser,
+      currentWeeklyUser: currentUser,
+      currentMonthlyUser: currentUser,
+      currentAllTimeUser: currentUser,
+    };
+  }
+
+  createDummyWorldEventLeaderboardSnapshot(users) {
+    const currentEvent = this.gameplayFacade.getSnapshot().worldNotice?.current ?? {};
+    const rows = users.map((user) => ({
+      identity: user.identity,
+      name: user.name,
+      playerLevel: user.playerLevel,
+      allianceTag: user.allianceTag,
+      allianceTagColor: user.allianceTagColor,
+      character: user.character,
+      points: user.points,
+      rank: user.rank,
+    }));
+
+    return {
+      connected: true,
+      periodKey: currentEvent.periodKey ?? 'dev-period',
+      eventId: currentEvent.eventId ?? 'dev-event',
+      topWorldEventUsers: rows,
+      topUsers: rows,
+      currentWorldEventUser: rows[0] ?? null,
+      currentUser: rows[0] ?? null,
+    };
+  }
+
+  createLeaderboardUserSnapshot(user) {
+    return {
+      name: user.name,
+      playerLevel: user.playerLevel,
+      income: user.income,
+      dailyIncome: user.dailyIncome,
+      weeklyIncome: user.weeklyIncome,
+      monthlyIncome: user.monthlyIncome,
+      totalGeneratedCoin: user.totalGeneratedCoin,
+      totalIncome: user.totalIncome,
+      rank: user.rank,
+      character: user.character,
+      allianceTag: user.allianceTag,
+      allianceTagColor: user.allianceTagColor,
+    };
+  }
+
+  publishAndSave() {
+    this.gameplayFacade.publishAndSaveSnapshot();
+    this.pagesFacade?.syncPageUnlocks?.(this.gameplayFacade.getSnapshot());
+  }
+
+  getRawItemDefinition(itemKeyOrId) {
+    try {
+      const itemId = Number(itemKeyOrId);
+      return Number.isInteger(itemId)
+        ? this.gameplayFacade.itemsFacade.getItemDefinition(itemId)
+        : this.gameplayFacade.itemsFacade.getItemDefinitionByKey(String(itemKeyOrId));
     } catch {
+      return null;
+    }
+  }
+
+  getItemDefinition(itemKeyOrId) {
+    const definition = this.getRawItemDefinition(itemKeyOrId);
+
+    if (!definition) {
       return {
         ok: false,
         reason: 'unknown_item',
         itemKeyOrId,
       };
     }
+
+    return {
+      ok: true,
+      item: {
+        itemTypeId: definition.id,
+        key: definition.key,
+        label: definition.label,
+        kind: definition.kind,
+      },
+    };
   }
 
   parseCommand(command, args) {
@@ -438,6 +2177,20 @@ export class DevCheatCommandManager {
       .toLowerCase();
   }
 
+  normalizeFeatureId(featureId) {
+    return String(featureId ?? '')
+      .trim()
+      .replace(/[_\s-]/g, '')
+      .toLowerCase();
+  }
+
+  normalizeId(value) {
+    return String(value ?? '')
+      .trim()
+      .replace(/[_\s-]/g, '')
+      .toLowerCase();
+  }
+
   toSeedKey(seedKey) {
     const trimmedSeedKey = String(seedKey ?? '').trim();
 
@@ -446,6 +2199,16 @@ export class DevCheatCommandManager {
     }
 
     return `${trimmedSeedKey}Seed`;
+  }
+
+  toHerbKey(herbKey) {
+    const trimmedHerbKey = String(herbKey ?? '').trim();
+
+    if (trimmedHerbKey.endsWith('Herb')) {
+      return trimmedHerbKey;
+    }
+
+    return `${trimmedHerbKey}Herb`;
   }
 
   readFiniteNumber(value, label) {

@@ -40,6 +40,29 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
+  it('uses the reduced level 1 completion cost', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(10);
+  });
+
+  it('accepts legacy SpacetimeDB completionCostGold runtime costs', () => {
+    const taskBalanceManager = new TaskBalanceManager({
+      itemsFacade: new ItemsFacade(),
+      balance: {
+        levels: [
+          {
+            level: 1,
+            completionCostGold: 10,
+            tasks: [{ id: 'level1-sage-seeds', itemKey: 'sageSeed', quantity: 4 }],
+          },
+        ],
+      },
+    });
+
+    expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(10);
+  });
+
   it('uses reduced level 2 sage requirements with herb first', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 

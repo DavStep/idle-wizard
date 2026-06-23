@@ -9,11 +9,16 @@ export class PlayerShopBackendFacade {
   constructor() {
     this.stateObserverManager = new PlayerShopStateObserverManager();
     this.subscriptionManager = new PlayerShopSubscriptionManager({
-      onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
+      onSnapshot: (snapshot) => {
+        if (!this.devSnapshot) {
+          this.stateObserverManager.publish(snapshot);
+        }
+      },
     });
     this.listingManager = new PlayerShopListingManager();
     this.marketDataRetainCount = 0;
     this.tradeHistoryRetainCount = 0;
+    this.devSnapshot = null;
   }
 
   connect(connection, identity) {
@@ -29,6 +34,10 @@ export class PlayerShopBackendFacade {
   }
 
   getSnapshot() {
+    if (this.devSnapshot) {
+      return this.devSnapshot;
+    }
+
     return this.subscriptionManager.getSnapshot();
   }
 
@@ -110,5 +119,23 @@ export class PlayerShopBackendFacade {
 
   clearOwnProgress() {
     return this.listingManager.clearOwnProgress();
+  }
+
+  setDevSnapshot(snapshot) {
+    this.devSnapshot = snapshot && typeof snapshot === 'object' ? snapshot : null;
+    this.stateObserverManager.publish(this.getSnapshot());
+    return {
+      ok: true,
+      snapshot: this.getSnapshot(),
+    };
+  }
+
+  clearDevSnapshot() {
+    this.devSnapshot = null;
+    this.stateObserverManager.publish(this.getSnapshot());
+    return {
+      ok: true,
+      snapshot: this.getSnapshot(),
+    };
   }
 }

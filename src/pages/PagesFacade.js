@@ -34,6 +34,7 @@ export class PagesFacade {
     gameplayFacade,
     playerFacade,
     leaderboardFacade,
+    worldEventLeaderboardFacade,
     worldChatFacade,
     tradeAllianceFacade,
     feedbackFacade,
@@ -128,6 +129,7 @@ export class PagesFacade {
         playerFacade,
         hapticsFacade,
         leaderboardFacade,
+        worldEventLeaderboardFacade,
         tradeAllianceFacade,
         onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
         onOpenAllianceInfo: (alliance) => this.allianceInfoDialogFacade.show(alliance),
@@ -248,6 +250,112 @@ export class PagesFacade {
     this.tutorialFacade?.resetProgress();
   }
 
+  listTutorialStages() {
+    return (
+      this.tutorialFacade?.listStages?.() ?? {
+        ok: false,
+        reason: 'tutorial_missing',
+      }
+    );
+  }
+
+  setTutorialStage(stageId) {
+    return (
+      this.tutorialFacade?.setStage?.(stageId) ?? {
+        ok: false,
+        reason: 'tutorial_missing',
+      }
+    );
+  }
+
+  setDevNotifications(snapshot) {
+    const result =
+      typeof this.notificationFacade?.setDevSnapshot === 'function'
+        ? this.notificationFacade.setDevSnapshot(snapshot)
+        : { ok: false, reason: 'notifications_missing' };
+
+    if (result.ok !== false) {
+      this.bottomPanelFacade.setNotifications(result.snapshot.pages);
+    }
+
+    return result;
+  }
+
+  clearDevNotifications() {
+    const result =
+      typeof this.notificationFacade?.clearDevSnapshot === 'function'
+        ? this.notificationFacade.clearDevSnapshot()
+        : { ok: false, reason: 'notifications_missing' };
+
+    if (result.ok !== false) {
+      this.bottomPanelFacade.setNotifications(result.snapshot.pages);
+    }
+
+    return result;
+  }
+
+  openDialog(dialogId, options = {}) {
+    const normalizedDialogId = this.normalizeDevDialogId(dialogId);
+
+    if (!normalizedDialogId) {
+      return { ok: false, reason: 'invalid_dialog_id', dialogId };
+    }
+
+    if (!this.currentPageManager.stage) {
+      return { ok: false, reason: 'pages_not_mounted' };
+    }
+
+    switch (normalizedDialogId) {
+      case 'bag':
+      case 'inventory':
+      case 'seeds':
+        return this.openWorkshopDialog('bag', options);
+      case 'summoninfo':
+      case 'summon':
+        return this.openWorkshopDialog('summonInfo', options);
+      case 'leaderboard':
+      case 'leaderboards':
+        return this.openWorkshopDialog('leaderboard', options);
+      case 'alliance':
+      case 'alliances':
+        return this.openWorkshopDialog('tradeAlliance', options);
+      case 'discoveries':
+      case 'discovery':
+        return this.openWorkshopDialog('discoveries', options);
+      case 'personaltasks':
+      case 'tasks':
+        return this.openWorkshopDialog('personalTasks', options);
+      case 'worldevent':
+      case 'event':
+      case 'worldnotice':
+        return this.openWorkshopDialog('worldNotice', options);
+      case 'chat':
+      case 'worldchat':
+        return this.openWorkshopDialog('worldChat', options);
+      case 'market':
+      case 'shop':
+        return this.openShopDialog(options);
+      case 'guild':
+      case 'guildcharter':
+      case 'guildsettings':
+      case 'guildrequest':
+      case 'guildadventurer':
+        return this.openGuildDialog(normalizedDialogId, options);
+      case 'settings':
+      case 'configurations':
+        return this.openTopPanelDialog('settings', options);
+      case 'feedback':
+      case 'bug':
+      case 'feature':
+        return this.openTopPanelDialog(normalizedDialogId, options);
+      case 'level':
+      case 'levels':
+        return this.openTopPanelDialog('level', options);
+      default:
+        return { ok: false, reason: 'unknown_dialog', dialogId };
+    }
+  }
+
   getCurrentPageId() {
     return this.currentPageManager.getCurrentPageId();
   }
@@ -342,6 +450,173 @@ export class PagesFacade {
   applyTutorialNotificationVisibilityPolicy(policy) {
     setNotificationVisibilityPolicy(policy, { root: this.stage });
     this.notificationFacade.publish();
+  }
+
+  openWorkshopDialog(managerId, options = {}) {
+    this.show('workshop');
+    const page = this.registryManager.get('workshop');
+
+    if (managerId === 'bag') {
+      const tabId = this.normalizeDevDialogTab(options.tab ?? options.type);
+      if (tabId && page.bagManager) {
+        page.bagManager.selectedTabId = tabId;
+      }
+      page.bagManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    if (managerId === 'summonInfo') {
+      page.summonInfoManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    if (managerId === 'leaderboard') {
+      page.leaderboardManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    if (managerId === 'tradeAlliance') {
+      page.tradeAllianceManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    if (managerId === 'discoveries') {
+      const tabId = this.normalizeDevDialogTab(options.tab);
+      if (tabId && page.discoveriesManager) {
+        page.discoveriesManager.selectedTabId = tabId;
+      }
+      page.discoveriesManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    if (managerId === 'personalTasks') {
+      page.personalTasksManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    if (managerId === 'worldNotice') {
+      const tabId = this.normalizeDevDialogTab(options.tab ?? options.view);
+      if (tabId) {
+        page.worldNoticeManager?.onSelectTab?.(tabId);
+      }
+      page.worldNoticeManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop', tabId };
+    }
+
+    if (managerId === 'worldChat') {
+      this.worldChatManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    return { ok: false, reason: 'unknown_workshop_dialog', dialogId: managerId };
+  }
+
+  openShopDialog(options = {}) {
+    this.show('shop');
+    const page = this.registryManager.get('shop');
+    const tabId = this.normalizeShopTabId(options.tab ?? options.view);
+    page.marketTabsManager?.setActiveTab?.(tabId);
+
+    if (options.popup === 'listing') {
+      page.playerShelfManager?.showListingPopup?.();
+    } else if (options.popup === 'request') {
+      page.playerRequestManager?.showPopup?.();
+    } else if (options.popup === 'history') {
+      page.tradeHistoryManager?.show?.();
+    } else if (options.popup === 'sell') {
+      page.shelfManager?.showSellPopup?.();
+    } else if (options.popup === 'directSell') {
+      page.directSellManager?.show?.();
+    }
+
+    return { ok: true, dialogId: 'market', pageId: 'shop', tabId };
+  }
+
+  openGuildDialog(dialogId, options = {}) {
+    this.show('guild');
+    const page = this.registryManager.get('guild');
+    const manager = page.panelManager;
+
+    if (dialogId === 'guildcharter') {
+      manager?.showCharterDialog?.();
+      return { ok: true, dialogId, pageId: 'guild' };
+    }
+
+    if (dialogId === 'guildsettings') {
+      manager?.showSettingsDialog?.();
+      return { ok: true, dialogId, pageId: 'guild' };
+    }
+
+    const snapshot = this.getGameplaySnapshot().guild ?? {};
+
+    if (dialogId === 'guildrequest') {
+      const requestId =
+        options.requestId ??
+        snapshot.board?.[0]?.id ??
+        snapshot.availableRequests?.[0]?.id ??
+        null;
+      manager?.showRequestDialog?.(requestId);
+      return { ok: true, dialogId, pageId: 'guild', requestId };
+    }
+
+    if (dialogId === 'guildadventurer') {
+      const adventurer =
+        snapshot.adventurers?.[0] ??
+        snapshot.applicants?.[0] ??
+        null;
+      const adventurerId = options.adventurerId ?? adventurer?.id ?? null;
+      const kind = options.kind ?? (snapshot.adventurers?.[0] ? 'adventurer' : 'applicant');
+      manager?.showAdventurerDialog?.(adventurerId, kind);
+      return { ok: true, dialogId, pageId: 'guild', adventurerId, kind };
+    }
+
+    manager?.showPopup?.();
+    return { ok: true, dialogId, pageId: 'guild' };
+  }
+
+  openTopPanelDialog(dialogId, options = {}) {
+    if (dialogId === 'level') {
+      this.topPanelFacade.levelManager?.show?.();
+      return { ok: true, dialogId: 'level' };
+    }
+
+    if (dialogId === 'feedback' || dialogId === 'bug' || dialogId === 'feature') {
+      this.topPanelFacade.settingsManager?.showFeedback?.(dialogId);
+      return { ok: true, dialogId };
+    }
+
+    this.topPanelFacade.settingsManager?.showSettings?.();
+    const tabId = this.normalizeDevDialogTab(options.tab);
+    if (tabId) {
+      this.topPanelFacade.settingsManager?.selectSettingsTab?.(tabId);
+    }
+    return { ok: true, dialogId: 'settings', tabId };
+  }
+
+  normalizeDevDialogId(dialogId) {
+    return String(dialogId ?? '')
+      .trim()
+      .replace(/[_\s-]/g, '')
+      .toLowerCase();
+  }
+
+  normalizeDevDialogTab(tabId) {
+    const trimmed = String(tabId ?? '').trim();
+    return trimmed || null;
+  }
+
+  normalizeShopTabId(tabId) {
+    const normalized = this.normalizeDevDialogId(tabId);
+
+    if (normalized === 'player' || normalized === 'playermarket') {
+      return 'player';
+    }
+
+    if (normalized === 'crystal' || normalized === 'crystals') {
+      return 'crystals';
+    }
+
+    return 'npm';
   }
 
   getTopPanelResourceContext() {

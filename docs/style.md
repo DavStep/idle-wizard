@@ -88,4 +88,4 @@ This project should use the same kind of minimal text-game language, without cop
 - Show all five room page names in the bottom panel and underline the current page tab.
 - Keep bottom-border category tabs and paired actions edge-weighted: first left, middle centered, last right, with the border line visible between labels.
 - Reuse documented UI motifs from `docs/ui-patterns.md` before creating a new row, box, popup, tab, or border label treatment.
-- Avoid gradients, textures, illustrations, icons, rounded cards, and decorative shadows.
+- Avoid gradients, textures, illustrations, decorative icons, rounded cards, and decorative shadows.

@@ -16,7 +16,7 @@ describe('PlayerFacade', () => {
       font: 'lexend',
       colorMode: 'monochrome',
       character: 'elara',
-      iconMode: 'none',
+      iconMode: 'icons',
       progressBar: 'regular',
       plotView: 'boxes',
     });
@@ -35,7 +35,7 @@ describe('PlayerFacade', () => {
       font: 'lexend',
       colorMode: 'monochrome',
       character: 'elara',
-      iconMode: 'none',
+      iconMode: 'icons',
       progressBar: 'regular',
       plotView: 'boxes',
     });
@@ -136,7 +136,7 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().iconMode).toBe('none');
 
     playerFacade.setIconMode('unknown');
-    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(playerFacade.getSnapshot().iconMode).toBe('icons');
   });
 
   it('normalizes character', () => {

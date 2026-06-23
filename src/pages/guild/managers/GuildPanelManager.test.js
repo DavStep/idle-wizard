@@ -25,6 +25,16 @@ function createCreatedGuildSnapshot(overrides = {}) {
     statLabel: 'wits',
     rewardText: '12 coin',
     lore: 'a village needs light.',
+    expiresLabel: '12m',
+  };
+  const availableRequest = {
+    id: 'request-2',
+    title: 'old road escort',
+    difficulty: 'medium',
+    statLabel: 'endurance / charisma',
+    rewardText: '20 coin',
+    lore: 'a trader wants one honest shadow.',
+    expiresLabel: '12m',
   };
 
   return createGuildSnapshot({
@@ -42,6 +52,9 @@ function createCreatedGuildSnapshot(overrides = {}) {
     board: [boardRequest],
     normalBoard: [boardRequest],
     eventBoard: [],
+    availableRequests: [availableRequest],
+    availableNormalRequests: [availableRequest],
+    availableEventRequests: [],
     adventurers: [
       {
         id: 'adventurer-1',
@@ -63,6 +76,7 @@ function createCreatedGuildSnapshot(overrides = {}) {
       },
     ],
     logs: [{ text: 'mira returns.', tone: null }],
+    boardWaveLabel: '12m',
     ...overrides,
   });
 }
@@ -73,8 +87,10 @@ function createGameplayFacadeFake(initialGuild = createGuildSnapshot()) {
 
   return {
     createGuild: vi.fn(() => ({ ok: true })),
+    postGuildRequest: vi.fn(() => ({ ok: true })),
     removeGuildRequest: vi.fn(() => ({ ok: true })),
     updateGuildProfile: vi.fn(() => ({ ok: true })),
+    upgradeGuildSecretary: vi.fn(() => ({ ok: true })),
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);
@@ -159,15 +175,18 @@ describe('GuildPanelManager', () => {
       'false',
       'false',
     ]);
-    expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('hall');
-    expect(getBoxTitles()).toEqual(['guild hall']);
+    const initialPanel = parent.querySelector('.guild-page__tabpanel');
+    expect(initialPanel?.dataset.guildTabPanel).toBe('hall');
+    expect(initialPanel?.classList.contains('style-page-scroll')).toBe(true);
+    expect(initialPanel?.dataset.scrollCueProgress).toBe('inline');
+    expect(getBoxTitles()).toEqual(['guild hall', 'secretary']);
 
     getTabButtons()
       .find((button) => button.dataset.guildTab === 'board')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('board');
-    expect(getBoxTitles()).toEqual(['request board']);
+    expect(getBoxTitles()).toEqual(['request board', 'available quests']);
 
     getTabButtons()
       .find((button) => button.dataset.guildTab === 'adventurers')
@@ -208,6 +227,113 @@ describe('GuildPanelManager', () => {
         ?.getAttribute('aria-selected'),
     ).toBe('true');
     expect(parent.querySelector('.guild-page__empty-row')?.textContent).toBe('no requests');
+  });
+
+  it('shows board requests above available quests with expiry and post/remove actions', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const boxes = [...parent.querySelectorAll('.guild-page__box')];
+    const boardBox = boxes.find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'request board',
+    );
+    const availableBox = boxes.find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'available quests',
+    );
+    const boardRow = boardBox?.querySelector('.guild-page__request-row');
+    const availableRow = availableBox?.querySelector('.guild-page__request-row');
+
+    expect(boardBox?.querySelector('.guild-page__row-main')?.textContent).toBe(
+      'lost lantern (easy) expires 12m',
+    );
+    expect(boardBox?.querySelector('.guild-page__box-bottom')?.textContent).toBe(
+      'new available 12m',
+    );
+    expect(boardRow?.querySelector('.guild-page__row-action')?.textContent).toBe('remove');
+    expect(availableBox?.querySelector('.guild-page__row-main')?.textContent).toBe(
+      'old road escort (medium) expires 12m',
+    );
+    expect(availableBox?.querySelector('.guild-page__box-bottom')?.textContent).toBe('new 12m');
+    expect(availableRow?.querySelector('.guild-page__row-action')?.textContent).toBe('post');
+
+    boardRow
+      ?.querySelector('.guild-page__row-action')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    availableRow
+      ?.querySelector('.guild-page__row-action')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplayFacade.removeGuildRequest).toHaveBeenCalledWith('request-1');
+    expect(gameplayFacade.postGuildRequest).toHaveBeenCalledWith('request-2');
+  });
+
+  it('shows the guild tag and name as one left-aligned hall row', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+    const hallBox = [...parent.querySelectorAll('.guild-page__box')].find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'guild hall',
+    );
+    const identityRow = hallBox?.querySelector('.guild-page__identity-row');
+
+    expect(identityRow?.textContent).toBe('[ASH] ash hall');
+    expect(identityRow?.querySelector('.guild-page__row-key')).toBeNull();
+    expect(identityRow?.querySelector('.guild-page__row-value')).toBeNull();
+    expect(identityRow?.querySelector('.workshop-page__alliance-tag')?.textContent).toBe('[ASH]');
+  });
+
+  it('moves the secretary upgrade action out of guild settings and into a secretary box', () => {
+    const gameplayFacade = createGameplayFacadeFake(
+      createCreatedGuildSnapshot({
+        secretary: {
+          level: 1,
+          hiredCap: 1,
+          boardSlots: 3,
+          next: {
+            level: 2,
+            costCoin: 3000,
+            hiredCap: 2,
+            boardSlots: 5,
+          },
+          canUpgrade: true,
+        },
+      }),
+    );
+    const { parent, popupLayer } = mountManager(gameplayFacade);
+    const boxes = [...parent.querySelectorAll('.guild-page__box')];
+    const secretaryBox = boxes.find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'secretary',
+    );
+    const upgradeButton = [
+      ...(secretaryBox?.querySelectorAll('.guild-page__wide-button') ?? []),
+    ].find((button) => button.textContent === 'upgrade secretary (3000)');
+
+    expect(secretaryBox).not.toBeUndefined();
+    expect(
+      [...secretaryBox.querySelectorAll('.guild-page__row-key')].map((row) => row.textContent),
+    ).toEqual(['level', 'adventurers', 'board']);
+    expect(
+      [...secretaryBox.querySelectorAll('.guild-page__row-value')].map((row) => row.textContent),
+    ).toEqual(['1', '1', '3']);
+    expect(upgradeButton?.disabled).toBe(false);
+
+    upgradeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplayFacade.upgradeGuildSecretary).toHaveBeenCalledTimes(1);
+
+    [...parent.querySelectorAll('.guild-page__wide-button')]
+      .find((button) => button.textContent === 'settings')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      [...popupLayer.querySelectorAll('.guild-page__wide-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['save']);
+    expect(popupLayer.textContent).not.toContain('upgrade secretary');
   });
 
   it('renders guild card dialog tabs as a standard tablist', () => {
@@ -413,6 +539,7 @@ describe('GuildPanelManager', () => {
 
     expect(charterButtonRule).toMatch(/\balign-self:\s*center;/);
     expect(charterButtonRule).toMatch(/\bwidth:\s*min\(220px,\s*100%\);/);
+    expect(charterButtonRule).toMatch(/\bmargin-top:\s*10px;/);
   });
 
   it('populates guild settings fields and keeps in-progress edits through refreshes', () => {
@@ -628,15 +755,30 @@ describe('GuildPanelManager', () => {
     expect(focusRule).toContain('var(--guild-page-popup-center-y)');
   });
 
-  it('uses the full room inset width for guild boxes', () => {
+  it('keeps guild content tabs fixed near world chat with the panel scrolling above them', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const uiLayerRule = baseCss.match(
+      /\.guild-page__ui-layer\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const contentRule = baseCss.match(
       /\.guild-page__content\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const centeredRule = baseCss.match(
       /\.guild-page__content--centered\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const tabsRule = baseCss.match(
+      /\.guild-page__content-tabs\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const tabpanelRule = baseCss.match(
+      /\.guild-page__tabpanel\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
+    expect(uiLayerRule).not.toContain('overflow: hidden auto;');
+    expect(contentRule).toMatch(/\bposition:\s*absolute;/);
+    expect(contentRule).toMatch(/\btop:\s*var\(--style-room-content-top\);/);
+    expect(contentRule).toMatch(/\bright:\s*var\(--style-room-content-edge\);/);
+    expect(contentRule).toMatch(/\bbottom:\s*var\(--style-room-chat-clearance\);/);
+    expect(contentRule).toMatch(/\bleft:\s*var\(--style-room-content-edge\);/);
     expect(contentRule).toMatch(
       /\bwidth:\s*calc\(100%\s*-\s*\(var\(--style-room-content-edge\)\s*\*\s*2\)\);/,
     );
@@ -645,6 +787,20 @@ describe('GuildPanelManager', () => {
     expect(centeredRule).toMatch(
       /\bright:\s*calc\(var\(--style-room-content-edge\)\s*\*\s*3\);/,
     );
+    expect(centeredRule).toMatch(/\bbottom:\s*auto;/);
     expect(centeredRule).toMatch(/\btranslate:\s*0 -50%;/);
+    expect(tabsRule).toMatch(/\bposition:\s*absolute;/);
+    expect(tabsRule).toMatch(/\bbottom:\s*6px;/);
+    expect(tabsRule).toMatch(/\bz-index:\s*20;/);
+    expect(tabpanelRule).toMatch(/\bposition:\s*absolute;/);
+    expect(tabpanelRule).toMatch(
+      /\bbottom:\s*var\(--style-page-tab-scroll-clearance\);/,
+    );
+    expect(tabpanelRule).toMatch(/\bpadding-top:\s*var\(--style-page-scroll-padding-top\);/);
+    expect(tabpanelRule).toMatch(
+      /\bpadding-bottom:\s*var\(--style-page-scroll-padding-bottom\);/,
+    );
+    expect(tabpanelRule).toMatch(/\boverflow:\s*hidden auto;/);
+    expect(tabpanelRule).toMatch(/\btouch-action:\s*pan-y;/);
   });
 });

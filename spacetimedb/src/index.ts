@@ -21,6 +21,7 @@ const DEFAULT_PLAYER_PLOT_VIEW = 'boxes';
 const MAX_REPORTED_PLAYER_LEVEL = 100;
 const ENABLE_CLIENT_REPORTED_PLAYER_LEVEL = true;
 const ENABLE_CLIENT_REPORTED_TOTAL_INCOME = true;
+const ENABLE_CLIENT_REPORTED_WORLD_EVENT_POINTS = true;
 const ENABLE_CLIENT_RESEARCH_ANNOUNCEMENTS = false;
 const ENABLE_CLIENT_POTION_DISCOVERY = true;
 const ENABLE_PLAYER_SHOP_EXCHANGE = true;
@@ -57,6 +58,8 @@ const MAX_RESEARCH_NAME_LENGTH = 80;
 const MAX_RESEARCH_ID_LENGTH = 96;
 const MAX_RESEARCH_LABEL_LENGTH = 80;
 const MAX_RESEARCH_GROUP_ID_LENGTH = 32;
+const MAX_WORLD_EVENT_ID_LENGTH = 96;
+const MAX_WORLD_EVENT_PERIOD_KEY_LENGTH = 48;
 const MAX_MAINTENANCE_KEY_LENGTH = 96;
 const WORLD_CHAT_HISTORY_LIMIT = 200;
 const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
@@ -122,6 +125,8 @@ const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const MAX_PLAYER_SAVE_SHOP_COIN_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
 const LEADERBOARD_SUMMARY_LIMIT = 100;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
+const WORLD_EVENT_LEADERBOARD_SUMMARY_LIMIT = 100;
+const WORLD_EVENT_LEADERBOARD_POINTS_CAP_PER_LEVEL = 1_000_000n;
 const PERIOD_DAY_MICROS = 86_400_000_000n;
 const PERIOD_WEEK_DAYS = 7n;
 const PERIOD_MONTH_DAYS = 30n;
@@ -4770,6 +4775,27 @@ const spacetimedb = schema({
       monthKey: t.string().default(''),
     },
   ),
+  worldEventLeaderboard: table(
+    {
+      name: 'world_event_leaderboard',
+      public: true,
+      indexes: [
+        { accessor: 'byIdentity', algorithm: 'btree', columns: ['identity'] },
+        { accessor: 'byPeriodKey', algorithm: 'btree', columns: ['periodKey'] },
+        { accessor: 'byPoints', algorithm: 'btree', columns: ['points'] },
+      ],
+    },
+    {
+      contributionKey: t.string().primaryKey(),
+      identity: t.identity(),
+      periodKey: t.string(),
+      eventId: t.string(),
+      username: t.string(),
+      points: t.u64(),
+      updatedAt: t.timestamp(),
+      playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
+    },
+  ),
   worldChat: table(
     {
       name: 'world_chat',
@@ -5257,6 +5283,22 @@ const leaderboardSummaryResult = t.array(
     allTimeRank: t.u32(),
   }),
 );
+const worldEventLeaderboardSummaryResult = t.array(
+  t.row('WorldEventLeaderboardSummaryResult', {
+    contributionKey: t.string().primaryKey(),
+    identity: t.identity(),
+    periodKey: t.string(),
+    eventId: t.string(),
+    username: t.string(),
+    allianceTag: t.string(),
+    allianceTagColor: t.string(),
+    character: t.string(),
+    points: t.u64(),
+    updatedAt: t.timestamp(),
+    playerLevel: t.u32(),
+    rank: t.u32(),
+  }),
+);
 const playerInfoSummaryResult = t.array(
   t.row('PlayerInfoSummaryResult', {
     identity: t.identity().primaryKey(),
@@ -5735,6 +5777,12 @@ export const leaderboard_summary = spacetimedb.view(
   { name: 'leaderboard_summary', public: true },
   leaderboardSummaryResult,
   (ctx) => getLeaderboardSummaryRows(ctx),
+);
+
+export const world_event_leaderboard_summary = spacetimedb.view(
+  { name: 'world_event_leaderboard_summary', public: true },
+  worldEventLeaderboardSummaryResult,
+  (ctx) => getWorldEventLeaderboardSummaryRows(ctx),
 );
 
 export const player_info_summary = spacetimedb.view(
@@ -6229,6 +6277,10 @@ function getMonthlyPeriodKey(ctx: IdleWizardReducerCtx): string {
   return getAnchoredPeriodKey(ctx, PERIOD_MONTH_DAYS);
 }
 
+function getWorldEventPeriodKey(ctx: IdleWizardReducerCtx): string {
+  return `weekly-${getWeeklyPeriodKey(ctx)}`;
+}
+
 function getTradeAllianceDayKey(ctx: IdleWizardReducerCtx): string {
   return getDailyPeriodKey(ctx);
 }
@@ -6291,6 +6343,22 @@ function normalizeResearchId(researchId: string): string {
   return String(researchId ?? '')
     .trim()
     .slice(0, MAX_RESEARCH_ID_LENGTH);
+}
+
+function normalizeWorldEventPeriodKey(periodKey: string): string {
+  const value = stripUnsafeTextControls(String(periodKey ?? ''))
+    .trim()
+    .slice(0, MAX_WORLD_EVENT_PERIOD_KEY_LENGTH);
+
+  return /^weekly-\d+$/.test(value) ? value : '';
+}
+
+function normalizeWorldEventId(eventId: string): string {
+  const value = stripUnsafeTextControls(String(eventId ?? ''))
+    .trim()
+    .slice(0, MAX_WORLD_EVENT_ID_LENGTH);
+
+  return /^[a-z0-9][a-z0-9-]*$/.test(value) ? value : '';
 }
 
 function normalizeResearchLabel(label: string): string {
@@ -11263,6 +11331,40 @@ function normalizeReportedLeaderboardTotalIncome(
   return safeTotalGeneratedGold;
 }
 
+function getWorldEventLeaderboardPointsCap(playerLevel: number): bigint {
+  if (!ENABLE_CLIENT_REPORTED_WORLD_EVENT_POINTS) {
+    return 0n;
+  }
+
+  return BigInt(normalizePlayerLevel(playerLevel)) * WORLD_EVENT_LEADERBOARD_POINTS_CAP_PER_LEVEL;
+}
+
+function clampWorldEventLeaderboardPoints(points: bigint, playerLevel: number): bigint {
+  return clampBigInt(points, 0n, getWorldEventLeaderboardPointsCap(playerLevel));
+}
+
+function normalizeReportedWorldEventLeaderboardPoints(
+  points: bigint,
+  playerLevel: number,
+): bigint | null {
+  const safePoints = toBigInt(points);
+  const maxPoints = getWorldEventLeaderboardPointsCap(playerLevel);
+
+  if (safePoints > maxPoints) {
+    return null;
+  }
+
+  return safePoints;
+}
+
+function getWorldEventLeaderboardKey(
+  identity: Identity,
+  periodKey: string,
+  eventId: string,
+): string {
+  return `${periodKey}:${eventId}:${getIdentityHex(identity)}`;
+}
+
 function getLeaderboardPeriodDefaults(ctx: IdleWizardReducerCtx, income = 0n) {
   const safeIncome = toBigInt(income);
 
@@ -11388,6 +11490,75 @@ function getLeaderboardSummaryRows(ctx: any) {
   });
 }
 
+function getWorldEventLeaderboardSummaryRows(ctx: any) {
+  const periodKey = getWorldEventPeriodKey(ctx);
+  const entries = Array.from<any>(
+    ctx.db.worldEventLeaderboard.byPeriodKey.filter(periodKey),
+  );
+  const rankedByEventId = new Map<string, any[]>();
+  const ranksByContributionKey = new Map<string, number>();
+  const visibleByContributionKey = new Map<string, any>();
+  const addVisible = (entry: any) => {
+    visibleByContributionKey.set(String(entry.contributionKey), entry);
+  };
+
+  for (const entry of entries) {
+    const eventId = normalizeWorldEventId(entry.eventId);
+    if (!eventId) {
+      continue;
+    }
+
+    const eventEntries = rankedByEventId.get(eventId) ?? [];
+    eventEntries.push(entry);
+    rankedByEventId.set(eventId, eventEntries);
+  }
+
+  for (const eventEntries of rankedByEventId.values()) {
+    const ranked = getRankedWorldEventLeaderboardEntries(eventEntries);
+    ranked.forEach((entry, index) => {
+      ranksByContributionKey.set(String(entry.contributionKey), index + 1);
+    });
+    ranked.slice(0, WORLD_EVENT_LEADERBOARD_SUMMARY_LIMIT).forEach(addVisible);
+  }
+
+  for (const entry of entries) {
+    if (entry.identity.isEqual(ctx.sender)) {
+      addVisible(entry);
+    }
+  }
+
+  return Array.from(visibleByContributionKey.values())
+    .map((entry) => ({
+      contributionKey: entry.contributionKey,
+      identity: entry.identity,
+      periodKey: entry.periodKey,
+      eventId: entry.eventId,
+      username: entry.username,
+      allianceTag: getSenderTradeAllianceTag(ctx, entry.identity),
+      allianceTagColor: getSenderTradeAllianceTagColor(ctx, entry.identity),
+      character: normalizePlayerCharacter(
+        ctx.db.player.identity.find(entry.identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+      ),
+      points: toBigInt(entry.points),
+      updatedAt: new Timestamp(entry.updatedAt.microsSinceUnixEpoch),
+      playerLevel: normalizePlayerLevel(entry.playerLevel),
+      rank: ranksByContributionKey.get(String(entry.contributionKey)) ?? 0,
+    }))
+    .sort((left, right) => {
+      if (left.eventId !== right.eventId) {
+        return left.eventId.localeCompare(right.eventId);
+      }
+
+      const leftRank = Number(left.rank) || Number.MAX_SAFE_INTEGER;
+      const rightRank = Number(right.rank) || Number.MAX_SAFE_INTEGER;
+      if (leftRank !== rightRank) {
+        return leftRank - rightRank;
+      }
+
+      return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+    });
+}
+
 function getPlayerInfoSummaryRows(ctx: any) {
   const identities = new Map<string, Identity>();
   const addIdentity = (identity: Identity | null | undefined) => {
@@ -11400,6 +11571,7 @@ function getPlayerInfoSummaryRows(ctx: any) {
 
   addIdentity(ctx.sender);
   getLeaderboardSummaryRows(ctx).forEach((entry) => addIdentity(entry.identity));
+  getWorldEventLeaderboardSummaryRows(ctx).forEach((entry) => addIdentity(entry.identity));
 
   for (const message of Array.from<any>(ctx.db.worldChat.bySentAt.filter(new Range()))
     .sort((left, right) => {
@@ -11544,6 +11716,25 @@ function getRankedLeaderboardEntries<T extends { identity: Identity }>(
     }
 
     if (leftValue > rightValue) {
+      return -1;
+    }
+
+    return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+  });
+}
+
+function getRankedWorldEventLeaderboardEntries<T extends { identity: Identity; points: bigint }>(
+  entries: T[],
+) {
+  return [...entries].sort((left, right) => {
+    const leftPoints = toBigInt(left.points);
+    const rightPoints = toBigInt(right.points);
+
+    if (leftPoints < rightPoints) {
+      return 1;
+    }
+
+    if (leftPoints > rightPoints) {
       return -1;
     }
 
@@ -13028,6 +13219,12 @@ function deleteLeaderboardForIdentity(ctx: IdleWizardReducerCtx, identity: Ident
   }
 }
 
+function deleteWorldEventLeaderboardForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  for (const entry of Array.from(ctx.db.worldEventLeaderboard.byIdentity.filter(identity))) {
+    ctx.db.worldEventLeaderboard.delete(entry);
+  }
+}
+
 function deleteMessageRowsForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
   for (const row of Array.from(ctx.db.worldChat.iter())) {
     if (row.senderIdentity.isEqual(identity)) {
@@ -13114,6 +13311,7 @@ function deleteTradeAllianceDataForIdentity(ctx: IdleWizardReducerCtx, identity:
 function deletePlayerDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
   deletePlayerGameplaySaveForIdentity(ctx, identity);
   deleteLeaderboardForIdentity(ctx, identity);
+  deleteWorldEventLeaderboardForIdentity(ctx, identity);
   deleteMessageRowsForIdentity(ctx, identity);
   deleteTradeAllianceDataForIdentity(ctx, identity);
   deletePlayerShopDataForIdentity(ctx, identity);
@@ -13143,6 +13341,7 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
   for (const identity of identityByHex.values()) {
     deletePlayerGameplaySaveForIdentity(ctx, identity);
     deleteLeaderboardForIdentity(ctx, identity);
+    deleteWorldEventLeaderboardForIdentity(ctx, identity);
     deleteAdminPlayerSession(ctx, identity);
   }
 
@@ -13258,6 +13457,10 @@ function deleteAllLeaderboardState(ctx: IdleWizardReducerCtx) {
   for (const entry of Array.from(ctx.db.leaderboard.iter())) {
     ctx.db.leaderboard.delete(entry);
   }
+
+  for (const entry of Array.from(ctx.db.worldEventLeaderboard.iter())) {
+    ctx.db.worldEventLeaderboard.delete(entry);
+  }
 }
 
 function resetLeaderboardProgressForIdentity(
@@ -13265,6 +13468,8 @@ function resetLeaderboardProgressForIdentity(
   identity: Identity,
   username: string,
 ) {
+  deleteWorldEventLeaderboardForIdentity(ctx, identity);
+
   const existingEntry = ctx.db.leaderboard.identity.find(identity);
   const resetEntry = {
     identity,
@@ -14857,6 +15062,97 @@ export const set_total_generated_gold = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
     applyTradeAllianceIncomeDelta(ctx, player, incomeDelta);
+  },
+);
+
+export const set_world_event_contribution_points = spacetimedb.reducer(
+  {
+    periodKey: t.string(),
+    eventId: t.string(),
+    points: t.u64(),
+  },
+  (ctx, { periodKey, eventId, points }) => {
+    assertActivePlayerSession(ctx);
+
+    const safePeriodKey = normalizeWorldEventPeriodKey(periodKey);
+    const safeEventId = normalizeWorldEventId(eventId);
+    if (!safePeriodKey || !safeEventId || safePeriodKey !== getWorldEventPeriodKey(ctx)) {
+      return;
+    }
+
+    const player = ensurePlayer(ctx, { touchLastSeen: false });
+    const safePlayerLevel = normalizePlayerLevel(player.playerLevel);
+    const reportedPoints = normalizeReportedWorldEventLeaderboardPoints(
+      points,
+      safePlayerLevel,
+    );
+    const contributionKey = getWorldEventLeaderboardKey(
+      player.identity,
+      safePeriodKey,
+      safeEventId,
+    );
+    const existingEntry = ctx.db.worldEventLeaderboard.contributionKey.find(contributionKey);
+    const currentPoints = existingEntry
+      ? clampWorldEventLeaderboardPoints(existingEntry.points, safePlayerLevel)
+      : 0n;
+
+    if (reportedPoints === null) {
+      if (!existingEntry) {
+        return;
+      }
+
+      if (
+        currentPoints !== existingEntry.points ||
+        existingEntry.username !== player.username ||
+        existingEntry.playerLevel !== safePlayerLevel
+      ) {
+        ctx.db.worldEventLeaderboard.contributionKey.update({
+          ...existingEntry,
+          username: player.username,
+          playerLevel: safePlayerLevel,
+          points: currentPoints,
+          updatedAt: ctx.timestamp,
+        });
+      }
+
+      return;
+    }
+
+    const nextPoints = reportedPoints > currentPoints ? reportedPoints : currentPoints;
+
+    if (!existingEntry) {
+      if (nextPoints <= 0n) {
+        return;
+      }
+
+      ctx.db.worldEventLeaderboard.insert({
+        contributionKey,
+        identity: player.identity,
+        periodKey: safePeriodKey,
+        eventId: safeEventId,
+        username: player.username,
+        playerLevel: safePlayerLevel,
+        points: nextPoints,
+        updatedAt: ctx.timestamp,
+      });
+      return;
+    }
+
+    if (
+      nextPoints === existingEntry.points &&
+      existingEntry.username === player.username &&
+      existingEntry.playerLevel === safePlayerLevel
+    ) {
+      return;
+    }
+
+    ctx.db.worldEventLeaderboard.contributionKey.update({
+      ...existingEntry,
+      username: player.username,
+      playerLevel: safePlayerLevel,
+      points: nextPoints,
+      updatedAt: ctx.timestamp,
+    });
   },
 );
 
