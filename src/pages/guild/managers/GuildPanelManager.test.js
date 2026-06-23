@@ -317,7 +317,7 @@ describe('GuildPanelManager', () => {
     ).toEqual(['level', 'adventurers', 'board']);
     expect(
       [...secretaryBox.querySelectorAll('.guild-page__row-value')].map((row) => row.textContent),
-    ).toEqual(['1', '1', '3']);
+    ).toEqual(['1', '1 -> 2', '3 -> 5']);
     expect(upgradeButton?.disabled).toBe(false);
 
     upgradeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -603,6 +603,29 @@ describe('GuildPanelManager', () => {
     expect(popupLayer.querySelector('input[name="color"]')?.value).toBe('red');
   });
 
+  it('closes guild settings after a successful save', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent, popupLayer } = mountManager(gameplayFacade);
+
+    [...parent.querySelectorAll('.guild-page__wide-button')]
+      .find((button) => button.textContent === 'settings')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const popup = popupLayer.querySelector('.guild-page__popup');
+    const form = popupLayer.querySelector('form.guild-page__form');
+
+    expect(popup?.hidden).toBe(false);
+
+    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(gameplayFacade.updateGuildProfile).toHaveBeenCalledWith({
+      name: 'ash hall',
+      tag: 'ASH',
+      color: 'red',
+    });
+    expect(popup?.hidden).toBe(true);
+  });
+
   it('keeps the active guild settings name input mounted across refreshes', () => {
     const gameplayFacade = createGameplayFacadeFake(
       createGuildSnapshot({
@@ -736,23 +759,21 @@ describe('GuildPanelManager', () => {
     const panelRule = baseCss.match(
       /\.guild-page__popup-panel\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const focusRule = baseCss.match(
-      /\.guild-page__popup:focus-within\s+\.guild-page__popup-panel\s*\{(?<body>[^}]*)\}/,
+    const keyboardRule = baseCss.match(
+      /:where\(\s*\.room-page__popup-layer \[role="dialog"\],[\s\S]*?\):focus-within\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(popupRule).toContain('--guild-page-popup-center-y:');
-    expect(popupRule).toContain('--guild-page-popup-visible-center-y:');
-    expect(popupRule).toContain('var(--app-visible-stage-height, var(--app-stage-height))');
     expect(panelRule).toMatch(/\btop:\s*var\(--guild-page-popup-center-y\);/);
     expect(panelRule).toMatch(
       /\bmax-width:\s*calc\(100%\s*-\s*\(var\(--style-room-content-edge\)\s*\*\s*2\)\);/,
     );
     expect(panelRule).toContain('100% - var(--style-room-content-top) -');
     expect(panelRule).toContain('var(--style-room-chat-clearance)');
-    expect(panelRule).toMatch(/\btransform:\s*translate\(-50%, -50%\);/);
-    expect(focusRule).toContain('clamp(');
-    expect(focusRule).toContain('var(--guild-page-popup-visible-center-y)');
-    expect(focusRule).toContain('var(--guild-page-popup-center-y)');
+    expect(panelRule).toContain('var(--app-dialog-y-shift, 0px)');
+    expect(keyboardRule).toContain(
+      '--app-dialog-y-shift: var(--app-keyboard-dialog-shift);',
+    );
   });
 
   it('keeps guild content tabs fixed near world chat with the panel scrolling above them', () => {

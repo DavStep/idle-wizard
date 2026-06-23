@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.33
+
+- Improved Android text handling so normal play no longer opens copy, paste, select, or drag menus over the game.
+- Smoothed mobile keyboard behavior so text-entry dialogs and world chat stay positioned more reliably.
+- Updated Garden, Brewing, and Research timers with shared stepped progress bars and clearer minute/hour remaining time.
+- Replaced underlined selected and hover states with bold text cues across room controls for cleaner mobile rendering.
+- Tightened Guild secretary upgrade previews, Guild settings saves, and the Workshop summon repeat timing.
+
 ## 0.2.32
 
 - Added live weekly world event leaderboard data so event points and player rows stay synced across clients.

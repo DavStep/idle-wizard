@@ -59,6 +59,12 @@ describe('ViewportScaleManager', () => {
     expect(document.documentElement.style.getPropertyValue('--app-keyboard-inset')).toBe(
       '0px',
     );
+    expect(
+      document.documentElement.style.getPropertyValue('--app-keyboard-dialog-shift'),
+    ).toBe('0px');
+    expect(
+      document.documentElement.style.getPropertyValue('--app-keyboard-top-dialog-shift'),
+    ).toBe('0px');
   });
 
   it('keeps the source UI at full mobile scale for the authored viewport', () => {
@@ -97,6 +103,40 @@ describe('ViewportScaleManager', () => {
     expect(document.documentElement.style.getPropertyValue('--app-keyboard-inset')).toBe(
       '720px',
     );
+    expect(
+      document.documentElement.style.getPropertyValue('--app-keyboard-dialog-shift'),
+    ).toBe('-120px');
+    expect(
+      document.documentElement.style.getPropertyValue('--app-keyboard-top-dialog-shift'),
+    ).toBe('-56px');
+
+    input.remove();
+  });
+
+  it('locks the layout scale when keyboard resize arrives after text entry press but before focus', () => {
+    const stage = document.createElement('section');
+    const input = document.createElement('input');
+    const manager = new ViewportScaleManager({ viewport: gameViewport });
+    manager.stage = stage;
+    document.body.append(input);
+    setWindowSize({ width: 1080, height: 2170 });
+    manager.updateScale();
+
+    manager.handleTextEntryPressStart({ target: input });
+    setWindowSize({ width: 1080, height: 1450 });
+    manager.updateScale();
+
+    expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(
+      document.documentElement.style.getPropertyValue('--app-viewport-height'),
+    ).toBe('2170px');
+    expect(
+      document.documentElement.style.getPropertyValue('--app-visible-stage-height'),
+    ).toBe('1450px');
+    expect(
+      document.documentElement.style.getPropertyValue('--app-keyboard-dialog-shift'),
+    ).toBe('-120px');
 
     input.remove();
   });

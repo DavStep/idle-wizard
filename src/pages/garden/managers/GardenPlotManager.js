@@ -17,6 +17,10 @@ import {
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
+import {
+  formatRemainingTime,
+  TIMER_PROGRESS_STEP_MS,
+} from '../../shared/timerDisplay.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 import { GardenSeedSwapDialogManager } from './GardenSeedSwapDialogManager.js';
@@ -25,7 +29,6 @@ const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
 const BOX_PLOT_COLUMNS = 3;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-const GARDEN_PROGRESS_STEP_MS = 140;
 
 export class GardenPlotManager {
   constructor({ gameplayFacade, playerFacade } = {}) {
@@ -661,7 +664,7 @@ export class GardenPlotManager {
     setProgressFill(refs.fill, progressValue, {
       smooth: 'step',
       remainingMs,
-      stepMs: GARDEN_PROGRESS_STEP_MS,
+      stepMs: TIMER_PROGRESS_STEP_MS,
     });
     this.setText(refs.progressText, '');
   }
@@ -1336,7 +1339,7 @@ export class GardenPlotManager {
 
   formatProcessTimer(process) {
     const remainingMs = Number.isFinite(process?.remainingMs) ? process.remainingMs : 0;
-    return `${Math.max(0, Math.ceil(remainingMs / 1_000))}s`;
+    return formatRemainingTime(remainingMs);
   }
 
   setText(node, value) {

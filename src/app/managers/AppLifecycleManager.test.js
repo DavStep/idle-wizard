@@ -133,6 +133,10 @@ function createLifecycle({
       unlock: vi.fn(),
       unmount: vi.fn(),
     },
+    textClipboardGuardManager: {
+      mount: vi.fn(),
+      unmount: vi.fn(),
+    },
     connectionRetryManager: {
       reset: vi.fn(),
       clear: vi.fn(),
@@ -184,6 +188,7 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
 
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.textClipboardGuardManager.mount).toHaveBeenCalledWith(stage);
     expect(lifecycle.interactionLockManager.mount).toHaveBeenCalledWith(stage);
     expect(lifecycle.interactionLockManager.lock).toHaveBeenCalledWith('connecting');
     expect(lifecycle.deployRefreshManager.mount).toHaveBeenCalledWith(stage);
@@ -415,6 +420,7 @@ describe('AppLifecycleManager', () => {
     lifecycle.stop();
 
     expect(lifecycle.interactionLockManager.unmount).toHaveBeenCalledTimes(1);
+    expect(lifecycle.textClipboardGuardManager.unmount).toHaveBeenCalledTimes(1);
     expect(lifecycle.deployRefreshManager.unmount).toHaveBeenCalledTimes(1);
   });
 

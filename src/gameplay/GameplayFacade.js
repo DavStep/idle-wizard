@@ -30,7 +30,7 @@ import {
 } from './worldNotice/WorldNoticeFacade.js';
 
 export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
-export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 1_000;
+export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 500;
 export const GAMEPLAY_ACTIVE_TICK_DELAY_MS = 250;
 export const GAMEPLAY_MIN_RESOURCE_TICK_DELAY_MS = 250;
 export const GAMEPLAY_MAX_RESOURCE_TICK_DELAY_MS = 1_000;

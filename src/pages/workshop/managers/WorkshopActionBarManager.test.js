@@ -174,7 +174,7 @@ describe('WorkshopActionBarManager', () => {
       expect(summons).toBe(1);
       expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
 
-      vi.advanceTimersByTime(330);
+      vi.advanceTimersByTime(300);
 
       expect(summons).toBe(4);
       expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(4);

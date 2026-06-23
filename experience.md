@@ -23,13 +23,15 @@
 - This is an Android-first mobile JavaScript game.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - The authored game viewport is `1080x2170`.
-- Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on underline/border cues.
+- Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
+- Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
 - Centered content inside source-scaled room layers must account for ui-layer padding/content-box sizing; plain auto margins center in the padded layer, not the visual stage.
 - Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
 - Height animations inside scaled room UI should write layout pixels from `offsetHeight`/`scrollHeight`, not `getBoundingClientRect()` screen pixels, or the element expands by the UI scale.
 - Timer progress fills that transition `transform` toward full need a computed-style flush after applying the current scale; remounted bars can otherwise paint full before the transition starts.
 - Smooth timer progress transitions keep Android WebView drawing every frame; for text-game timer bars prefer stepped fills from snapshot refreshes.
+- Garden, Brewing, and Research timer bars should share short stepped transforms and shared remaining-time text; do not let one active timer surface keep a full-duration continuous fill on Android.
 - Garden progress bars should soften snapshot steps with a short transform transition, not a full remaining-duration transition; avoid extra continuous motion near active plot timers.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
@@ -41,6 +43,7 @@
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
+- World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
@@ -48,7 +51,7 @@
 - The first page is `Workshop`.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
-- Show all five room pages in a shared bottom tab panel; underline the current page tab.
+- Show all five room pages in a shared bottom tab panel; bold the current page tab.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - The top status panel is shared room chrome; show gameplay coin there, not a separate coin currency.
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
@@ -101,10 +104,10 @@
 - NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 fast-sell against backend NPC rows.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
 - Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
-- Market stand/request rows keep selected slot state invisible; do not add selected-row fill or underline there.
+- Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker labels should also fire on touch/pointer press-start with click dedupe, and the icon/text fragments inside those labels should not own separate hit testing; otherwise the visible seed name can tap worse than blank row space on mobile/WebView.
-- Trader demand market sell-picker rows should activate on validated touch release, not touchstart, so scroll drags do not select rows; underline only the selected picker row.
+- Trader demand market sell-picker rows should activate on validated touch release, not touchstart, so scroll drags do not select rows; bold only the selected picker row.
 - Garden selected seed labels and picker rows need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening/changing the seed.
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
@@ -119,7 +122,7 @@
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
-- Fast-sell picker item names should underline only when their row is selected; mobile no-hover affordance must not underline every seed/herb/potion row.
+- Fast-sell picker item names should bold only when their row is selected; mobile no-hover affordance must not bold every seed/herb/potion row.
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
 - When fast sell is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing coin, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
@@ -524,6 +527,7 @@
 - Source UI scale must follow the fitted viewport scale, not stay fixed at `3`, so web and mobile views both fit.
 - Fresh-start account gates need viewport-fixed positioning; stage-clipped absolute dialogs can be cut off on short desktop web viewports.
 - Mobile keyboard resize must not recompute scale from the shrunken visual height while text input is focused or while the keyboard is closing after focus leaves.
+- Text-entry viewport locks should start on press; some mobile WebViews resize for the keyboard before `focusin`.
 - Text-entry focus should use `preventScroll` so mobile browsers do not pan the game surface.
 - Text-entry dialogs should sit high enough that the mobile keyboard does not cover save/cancel actions.
 - Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
@@ -540,7 +544,7 @@
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
-- Gate hover-only underlines with `@media (hover: hover) and (pointer: fine)` so touch taps do not leave sticky underline state.
+- Do not use hover-only below-text line decoration; gate hover-only emphasis with `@media (hover: hover) and (pointer: fine)` when touch sticky state matters.
 - Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
@@ -631,7 +635,7 @@
 - World event dialog content is a fixed grid; do not stack grid `gap` plus scroll rail margin. Reserve a visible rail row with `:has(...:not([hidden]))`, spacer rows, and `margin-top: 0` so frame-to-rail spacing still equals select recipe.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
-- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is underlined, not boxed.
+- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is bolded, not line-decorated or boxed.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
 - Page-level content tabs should sit fixed just above world chat, like Research/Market; make the active tab panel scroll above them instead of putting tabs in normal top content flow.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.

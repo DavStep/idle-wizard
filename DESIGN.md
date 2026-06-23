@@ -126,7 +126,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 **Body Font:** Lexend with system sans fallbacks  
 **Label/Mono Font:** tabular lining numerals through font-variant, not a separate mono face
 
-**Character:** Text is calm, readable, and compact. Hierarchy comes from position, borders, underline state, and occasional bold labels, not from large type.
+**Character:** Text is calm, readable, and compact. Hierarchy comes from position, borders, selected weight, and occasional bold labels, not from large type.
 
 ### Hierarchy
 - **Title** (bold, 13px, normal line-height): Embedded box titles and important row names.
@@ -160,9 +160,9 @@ Ordinary room UI is flat. In the white theme, depth is communicated by 1px borde
 ### Buttons
 - **Shape:** Sharp text boxes with no radius (0).
 - **Default:** Room surface background, ink text, theme ordinary border, 5px 10px padding.
-- **Hover / Focus:** Underline the label; no glow, icon, scale, or color flourish.
+- **Hover / Focus:** Use weight or border state; no below-text line, glow, icon, scale, or color flourish.
 - **Active:** No background tint; keep labels stable and use existing text/border state only.
-- **Disabled:** Disabled gray text and border, no underline.
+- **Disabled:** Disabled gray text and border, normal weight.
 
 ### Cards / Containers
 - **Corner Style:** Square corners (0).
@@ -178,7 +178,7 @@ Ordinary room UI is flat. In the white theme, depth is communicated by 1px borde
 - **Error / Disabled:** Error copy stays compact, disabled fields use disabled gray.
 
 ### Navigation
-- **Bottom Room Tabs:** Five equal tabs at the bottom center, source 11px, active tab underlined.
+- **Bottom Room Tabs:** Five equal tabs at the bottom center, source 11px, active tab bolded.
 - **Popup Tabs:** Sit below and outside the bordered dialog, use 2px stroke, and keep an 8px source gap.
 - **Page Names:** All five room page names stay visible in bottom chrome.
 

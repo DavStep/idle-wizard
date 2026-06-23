@@ -23,7 +23,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 ## Inline Row Actions
 
 - Row actions are text controls on the line, not separate decorative cards.
-- Hover and press states must not tint row or button backgrounds; underline text or preserve selected borders instead.
+- Hover and press states must not tint row or button backgrounds; use weight, borders, or existing row state instead of below-text lines.
 - Buy/place/claim prices stay right-aligned and use tabular numerals.
 - Disabled or locked right-side actions use muted text and keep the same row height as enabled rows.
 

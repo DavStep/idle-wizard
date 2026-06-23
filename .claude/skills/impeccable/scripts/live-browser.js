@@ -9548,7 +9548,7 @@ void main() {
       .md pre code { background: none; padding: 0; }
       .md strong { font-weight: 700; }
       .md em { font-style: italic; }
-      .md a { color: ${DP.ink}; text-decoration: underline; }
+      .md a { color: ${DP.ink}; font-weight: 700; }
       .md hr { border: none; border-top: 1px solid ${DP.hairlineSoft}; margin: 16px 0; }
     `;
   }

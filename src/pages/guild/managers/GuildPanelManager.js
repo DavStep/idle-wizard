@@ -256,10 +256,24 @@ export class GuildPanelManager {
 
     return this.createBox('secretary', [
       this.createTextRow('level', secretary.level ?? 1),
-      this.createTextRow('adventurers', secretary.hiredCap ?? 1),
-      this.createTextRow('board', secretary.boardSlots ?? 3),
+      this.createTextRow(
+        'adventurers',
+        this.createUpgradePreviewText(secretary.hiredCap ?? 1, secretary.next?.hiredCap),
+      ),
+      this.createTextRow(
+        'board',
+        this.createUpgradePreviewText(secretary.boardSlots ?? 3, secretary.next?.boardSlots),
+      ),
       this.createSecretaryUpgradeButton(secretary),
     ]);
+  }
+
+  createUpgradePreviewText(current, next) {
+    if (next == null || next === current) {
+      return current;
+    }
+
+    return `${current} -> ${next}`;
   }
 
   createSecretaryUpgradeButton(secretary) {
@@ -689,11 +703,14 @@ export class GuildPanelManager {
       event.preventDefault();
       this.captureFormDraft('settings', form);
       const formData = new globalThis.FormData(form);
-      this.gameplayFacade?.updateGuildProfile?.({
+      const result = this.gameplayFacade?.updateGuildProfile?.({
         name: formData.get('name'),
         tag: formData.get('tag'),
         color: formData.get('color'),
       });
+      if (result?.ok) {
+        this.hidePopup();
+      }
     });
     this.refs.popupContent.replaceChildren(form);
   }

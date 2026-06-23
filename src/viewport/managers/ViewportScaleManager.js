@@ -7,6 +7,11 @@ export class ViewportScaleManager {
     this.layoutViewport = null;
     this.textEntryViewportLocked = false;
     this.handleViewportChange = () => this.updateScale();
+    this.handleTextEntryPressStart = (event) => {
+      if (this.getTextEntryElementFromEvent(event)) {
+        this.textEntryViewportLocked = true;
+      }
+    };
     this.handleTextEntryFocusIn = (event) => {
       if (this.isTextEntryElement(event.target)) {
         this.textEntryViewportLocked = true;
@@ -28,6 +33,8 @@ export class ViewportScaleManager {
     this.resizeObserver.observe(document.documentElement);
     window.addEventListener('resize', this.handleViewportChange);
     window.visualViewport?.addEventListener('resize', this.handleViewportChange);
+    document.addEventListener('pointerdown', this.handleTextEntryPressStart, true);
+    document.addEventListener('touchstart', this.handleTextEntryPressStart, true);
     document.addEventListener('focusin', this.handleTextEntryFocusIn);
     document.addEventListener('focusout', this.handleTextEntryFocusOut);
   }
@@ -37,6 +44,8 @@ export class ViewportScaleManager {
     this.resizeObserver = null;
     window.removeEventListener('resize', this.handleViewportChange);
     window.visualViewport?.removeEventListener('resize', this.handleViewportChange);
+    document.removeEventListener('pointerdown', this.handleTextEntryPressStart, true);
+    document.removeEventListener('touchstart', this.handleTextEntryPressStart, true);
     document.removeEventListener('focusin', this.handleTextEntryFocusIn);
     document.removeEventListener('focusout', this.handleTextEntryFocusOut);
     document.documentElement.style.removeProperty('--app-viewport-width');
@@ -45,6 +54,8 @@ export class ViewportScaleManager {
     document.documentElement.style.removeProperty('--app-stage-height');
     document.documentElement.style.removeProperty('--app-visible-stage-height');
     document.documentElement.style.removeProperty('--app-keyboard-inset');
+    document.documentElement.style.removeProperty('--app-keyboard-dialog-shift');
+    document.documentElement.style.removeProperty('--app-keyboard-top-dialog-shift');
     this.layoutViewport = null;
     this.textEntryViewportLocked = false;
     this.stage = null;
@@ -81,10 +92,10 @@ export class ViewportScaleManager {
     );
     this.stage.style.setProperty('--viewport-scale', String(scale));
     this.stage.style.setProperty('--style-ui-scale', String(uiScale));
-    this.updateVisibleStageMetrics({ viewportSize, scale });
+    this.updateVisibleStageMetrics({ viewportSize, scale, uiScale });
   }
 
-  updateVisibleStageMetrics({ viewportSize, scale }) {
+  updateVisibleStageMetrics({ viewportSize, scale, uiScale }) {
     const stageHeight = this.viewport.height * scale;
     const stageRect = this.stage.getBoundingClientRect();
     const fallbackStageTop = Math.max(0, (viewportSize.height - stageHeight) / 2);
@@ -98,6 +109,8 @@ export class ViewportScaleManager {
       Math.min(stageHeight, visibleViewportBottom - stageTop),
     );
     const keyboardInset = Math.max(0, stageHeight - visibleStageHeight);
+    const dialogShift = this.getKeyboardDialogShift({ keyboardInset, uiScale });
+    const topDialogShift = Math.max(dialogShift, -56);
 
     document.documentElement.style.setProperty(
       '--app-visible-stage-height',
@@ -107,6 +120,22 @@ export class ViewportScaleManager {
       '--app-keyboard-inset',
       `${keyboardInset}px`,
     );
+    document.documentElement.style.setProperty(
+      '--app-keyboard-dialog-shift',
+      `${dialogShift}px`,
+    );
+    document.documentElement.style.setProperty(
+      '--app-keyboard-top-dialog-shift',
+      `${topDialogShift}px`,
+    );
+  }
+
+  getKeyboardDialogShift({ keyboardInset, uiScale }) {
+    if (!(keyboardInset > 0) || !(uiScale > 0)) {
+      return 0;
+    }
+
+    return Math.round((-keyboardInset / uiScale / 2) * 100) / 100;
   }
 
   getVisibleViewportBottom() {
@@ -159,6 +188,31 @@ export class ViewportScaleManager {
   isTextEntryActive() {
     const activeElement = document.activeElement;
     return this.isTextEntryElement(activeElement);
+  }
+
+  getTextEntryElementFromEvent(event) {
+    const target = event?.target;
+
+    if (!target) {
+      return null;
+    }
+
+    if (this.isTextEntryElement(target)) {
+      return target;
+    }
+
+    const closestTextEntry = target.closest?.(
+      'input, textarea, select, [contenteditable="true"]',
+    );
+
+    if (this.isTextEntryElement(closestTextEntry)) {
+      return closestTextEntry;
+    }
+
+    const label = target.closest?.('label');
+    const control = label?.control ?? null;
+
+    return this.isTextEntryElement(control) ? control : null;
   }
 
   isTextEntryElement(element) {

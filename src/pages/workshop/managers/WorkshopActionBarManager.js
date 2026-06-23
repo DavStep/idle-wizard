@@ -4,7 +4,7 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { getSeedSummonNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 
-const SUMMON_HOLD_REPEAT_MS = 110;
+const SUMMON_HOLD_REPEAT_MS = 100;
 const SUMMON_CLICK_SUPPRESSION_MS = 550;
 const SUMMON_EFFECT_MS = 520;
 

@@ -655,9 +655,7 @@ describe('ShopShelfManager', () => {
     expect(rowTouchRule).toContain(
       '.shop-page__player-request-row.shop-page__slot-row--interactive',
     );
-    expect(baseCss.slice(baseCss.indexOf(rowTouchRule))).toMatch(
-      /\btext-decoration:\s*none;/,
-    );
+    expect(baseCss.slice(baseCss.indexOf(rowTouchRule))).toMatch(/\bfont-weight:\s*normal;/);
   });
 
   it('formats trader market stand buy costs as compact coin text', () => {
@@ -1556,7 +1554,7 @@ describe('ShopShelfManager', () => {
     });
   });
 
-  it('keeps NPC market sell picker underlines selected-only with shared scroll rail gap', () => {
+  it('keeps NPC market sell picker emphasis selected-only with shared scroll rail gap', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const unselectedRule = baseCss.match(
       /\.shop-page__sell-popup\s+\.shop-page__sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.row_key\s*\{(?<body>[^}]*)\}/,
@@ -1568,8 +1566,8 @@ describe('ShopShelfManager', () => {
       /\.shop-page__sell-controls:not\(\.shop-page__player-listing-controls\)\s+\.shop-page__sell-item-list\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(unselectedRule).toMatch(/\btext-decoration:\s*none;/);
-    expect(selectedRule).toMatch(/\btext-decoration:\s*underline;/);
+    expect(unselectedRule).toMatch(/\bfont-weight:\s*normal;/);
+    expect(selectedRule).toMatch(/\bfont-weight:\s*700;/);
     expect(listRule).toMatch(
       /\bvar\(--style-scroll-progress-block-size\)/,
     );

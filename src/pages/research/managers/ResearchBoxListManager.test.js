@@ -6,6 +6,7 @@ import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ResearchBoxListManager } from './ResearchBoxListManager.js';
+import { TIMER_PROGRESS_STEP_MS } from '../../shared/timerDisplay.js';
 
 function createTouchEvent(type, target) {
   const touch = {
@@ -231,6 +232,52 @@ describe('ResearchBoxListManager', () => {
     expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(css).toContain('line-height: var(--style-tiny-line-height);');
     expect(css).toContain('white-space: normal;');
+  });
+
+  it('renders active research timers and bars with stepped progress', () => {
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 4,
+      },
+      research: {
+        boxes: [
+          {
+            id: 'seedUnlocks',
+            label: 'seed unlock researches',
+            researches: [
+              {
+                id: 'unlockSeed:sageSeed',
+                label: 'sage seed',
+                value: 'researching',
+                completed: false,
+                inProgress: true,
+                canResearch: false,
+                totalMs: 120_000,
+                remainingMs: 75_000,
+                progress: 0.375,
+              },
+            ],
+          },
+        ],
+        completedResearchIds: [],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    const value = stage.querySelector('.research-page__research-value');
+    const fill = stage.querySelector('.research-page__research-progress-fill');
+
+    expect(value?.textContent).toBe('researching 1m 15s');
+    expect(fill?.classList.contains('is-progress-running')).toBe(false);
+    expect(fill?.style.transition).toBe(
+      `transform ${TIMER_PROGRESS_STEP_MS}ms linear`,
+    );
+    expect(fill?.style.transform).toBe('scaleX(0.375)');
   });
 
   it('opens locked research info on row tap and explains missing requirements', () => {

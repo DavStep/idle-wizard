@@ -82,7 +82,7 @@ Add color systematically across these dimensions:
 
 ### Borders & Accents
 - **Hairline borders**: 1px colored borders on full perimeter (not side-stripes; see the absolute ban on `border-left/right > 1px`)
-- **Underlines**: Color underlines for emphasis or active states
+- **Weight cues**: Colored or bold text cues for emphasis or active states
 - **Dividers**: Subtle colored dividers instead of gray lines
 - **Focus rings**: Colored focus indicators matching brand
 - **Surface tints**: A 4-8% background wash of the accent color instead of a stripe

@@ -41,8 +41,23 @@ function prefersReducedMotion(element) {
 
 function applyScale(element, progress) {
   const scale = formatScale(progress);
-  element.style.setProperty('--style-progress-fill-scale', scale);
-  element.style.transform = `scaleX(${scale})`;
+  const transform = `scaleX(${scale})`;
+
+  if (element.style.getPropertyValue('--style-progress-fill-scale') !== scale) {
+    element.style.setProperty('--style-progress-fill-scale', scale);
+  }
+
+  if (element.style.transform !== transform) {
+    element.style.transform = transform;
+  }
+
+  return scale;
+}
+
+function setStyleValue(element, property, value) {
+  if (element.style[property] !== value) {
+    element.style[property] = value;
+  }
 }
 
 function commitCurrentStyle(element) {
@@ -84,12 +99,32 @@ export function stopProgressFill(element, progress = 0) {
     return;
   }
 
+  const scale = formatScale(progress);
+  const transition = 'none';
+  const existingState = progressStates.get(element);
+
+  if (
+    existingState?.mode === 'stopped' &&
+    existingState.scale === scale &&
+    existingState.transition === transition &&
+    element.style.width === '100%' &&
+    element.style.transition === transition &&
+    element.style.transform === `scaleX(${scale})` &&
+    !element.classList.contains(RUNNING_PROGRESS_CLASS)
+  ) {
+    return;
+  }
+
   clearProgressState(element);
   element.classList.add(SMOOTH_PROGRESS_CLASS);
   element.classList.remove(RUNNING_PROGRESS_CLASS);
-  element.style.width = '100%';
-  element.style.transition = 'none';
-  applyScale(element, progress);
+  setStyleValue(element, 'width', '100%');
+  setStyleValue(element, 'transition', transition);
+  progressStates.set(element, {
+    mode: 'stopped',
+    scale: applyScale(element, progress),
+    transition,
+  });
 }
 
 export function setProgressFill(
@@ -108,15 +143,35 @@ export function setProgressFill(
   const smoothMode = getSmoothMode(smooth);
 
   element.classList.add(SMOOTH_PROGRESS_CLASS);
-  element.style.width = '100%';
+  setStyleValue(element, 'width', '100%');
 
   if (smoothMode === 'step') {
-    clearProgressState(element);
-    element.classList.remove(RUNNING_PROGRESS_CLASS);
-    element.style.transition = prefersReducedMotion(element)
+    const transition = prefersReducedMotion(element)
       ? 'none'
       : `transform ${getStepTransitionMs(stepMs)}ms linear`;
-    applyScale(element, safeProgress);
+    const scale = formatScale(safeProgress);
+    const existingState = progressStates.get(element);
+
+    if (
+      existingState?.mode === 'step' &&
+      existingState.scale === scale &&
+      existingState.transition === transition &&
+      element.style.width === '100%' &&
+      element.style.transition === transition &&
+      element.style.transform === `scaleX(${scale})` &&
+      !element.classList.contains(RUNNING_PROGRESS_CLASS)
+    ) {
+      return safeProgress;
+    }
+
+    clearProgressState(element);
+    element.classList.remove(RUNNING_PROGRESS_CLASS);
+    setStyleValue(element, 'transition', transition);
+    progressStates.set(element, {
+      mode: 'step',
+      scale: applyScale(element, safeProgress),
+      transition,
+    });
     return safeProgress;
   }
 
@@ -137,6 +192,7 @@ export function setProgressFill(
 
   if (
     existingState &&
+    existingState.mode === 'continuous' &&
     Math.abs(existingState.endTime - endTime) <= END_TIME_DRIFT_MS
   ) {
     return safeProgress;
@@ -144,7 +200,7 @@ export function setProgressFill(
 
   clearProgressState(element);
   element.classList.remove(RUNNING_PROGRESS_CLASS);
-  element.style.transition = 'none';
+  setStyleValue(element, 'transition', 'none');
   applyScale(element, safeProgress);
 
   const handleTransitionEnd = (event) => {
@@ -156,7 +212,7 @@ export function setProgressFill(
     element.classList.remove(RUNNING_PROGRESS_CLASS);
   };
 
-  const state = { endTime, handleTransitionEnd };
+  const state = { mode: 'continuous', endTime, handleTransitionEnd };
   progressStates.set(element, state);
   element.addEventListener('transitionend', handleTransitionEnd);
 

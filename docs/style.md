@@ -21,8 +21,8 @@ This project should use the same kind of minimal text-game language, without cop
 - Normal font weight by default.
 - Normal line height and normal letter spacing.
 - Use tabular lining numerals for resource values, costs, counts, timers, and leaderboard numbers.
-- Use bold only for totals, section names, or strong resource values.
-- Use underline for selected or hover states.
+- Use bold only for totals, section names, selected/current state, or strong resource values.
+- Do not draw lines below text anywhere; selected/current states use weight, borders, or existing row state instead.
 
 ## Color
 
@@ -52,9 +52,9 @@ This project should use the same kind of minimal text-game language, without cop
 - Buttons are small bordered text boxes.
 - Center label text.
 - Native buttons must be reset to look like text boxes, not platform controls.
-- Hover state is underline only.
+- Hover state must not add a below-text line, glow, icon, scale flourish, or background tint.
 - Press/active state must not change the background color.
-- Disabled state changes text and border to gray and removes underline.
+- Disabled state changes text and border to gray and keeps normal weight.
 - Cooldown/progress fills, if added later, should be flat light gray.
 
 ## Motion
@@ -85,7 +85,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Scale source UI by `3 * viewport-scale`, clamped at the authored viewport, so both web and mobile views fit.
 - Do not copy A Dark Room's desktop `700px` layout dimensions.
 - Keep future page UI as sparse panels positioned inside the room view.
-- Show all five room page names in the bottom panel and underline the current page tab.
+- Show all five room page names in the bottom panel and bold the current page tab.
 - Keep bottom-border category tabs and paired actions edge-weighted: first left, middle centered, last right, with the border line visible between labels.
 - Reuse documented UI motifs from `docs/ui-patterns.md` before creating a new row, box, popup, tab, or border label treatment.
 - Avoid gradients, textures, illustrations, decorative icons, rounded cards, and decorative shadows.

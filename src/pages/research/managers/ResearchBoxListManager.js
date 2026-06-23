@@ -6,6 +6,10 @@ import {
 } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill } from '../../shared/progressFill.js';
+import {
+  formatRemainingTime,
+  TIMER_PROGRESS_STEP_MS,
+} from '../../shared/timerDisplay.js';
 
 const maxLockedResearchesPerBox = 3;
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
@@ -601,8 +605,9 @@ export class ResearchBoxListManager {
         const remainingMs = Number.isFinite(research.remainingMs) ? research.remainingMs : 0;
         this.setResearchValueStatus(ref, research);
         setProgressFill(ref.progressFill, progressRatio, {
-          smooth: true,
+          smooth: 'step',
           remainingMs,
+          stepMs: TIMER_PROGRESS_STEP_MS,
         });
         this.setText(ref.progressText, '');
         this.setAttribute(ref.progress, 'aria-valuenow', String(percent));
@@ -637,7 +642,7 @@ export class ResearchBoxListManager {
 
   formatResearchTimer(research) {
     const remainingMs = Number.isFinite(research?.remainingMs) ? research.remainingMs : 0;
-    return `${Math.max(0, Math.ceil(remainingMs / 1_000))}s`;
+    return formatRemainingTime(remainingMs);
   }
 
   createBuyButton(research) {

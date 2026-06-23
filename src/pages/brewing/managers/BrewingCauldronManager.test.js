@@ -6,6 +6,7 @@ import { cwd } from 'node:process';
 import { describe, expect, it } from 'vitest';
 
 import { BrewingCauldronManager } from './BrewingCauldronManager.js';
+import { TIMER_PROGRESS_STEP_MS } from '../../shared/timerDisplay.js';
 
 const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
@@ -643,11 +644,16 @@ describe('BrewingCauldronManager', () => {
 
     const items = parent.querySelector('.brewing-page__cauldron-items');
     const active = parent.querySelector('.brewing-page__active-brew');
+    const activeProgressFill = parent.querySelector('.brewing-page__active-progress-fill');
     const icon = parent.querySelector('.brewing-page__cauldron-potion-icon');
 
     expect(items?.hidden).toBe(true);
     expect(active?.hidden).toBe(false);
     expect(active?.textContent).toContain('brewing mana tonic');
+    expect(activeProgressFill?.classList.contains('is-progress-running')).toBe(false);
+    expect(activeProgressFill?.style.transition).toBe(
+      `transform ${TIMER_PROGRESS_STEP_MS}ms linear`,
+    );
     expect(icon?.hidden).toBe(false);
     expect(icon?.dataset.potionIconKey).toBe('manaTonic');
 

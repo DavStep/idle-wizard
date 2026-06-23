@@ -9,6 +9,7 @@ import {
 } from './AppFreshStartChoiceManager.js';
 import { AppGameplayTickManager } from './AppGameplayTickManager.js';
 import { AppInteractionLockManager } from './AppInteractionLockManager.js';
+import { AppTextClipboardGuardManager } from './AppTextClipboardGuardManager.js';
 import { AppVisibilityManager } from './AppVisibilityManager.js';
 
 export class AppLifecycleManager {
@@ -26,6 +27,7 @@ export class AppLifecycleManager {
     accountLinkChoiceManager = new AppAccountLinkChoiceManager(),
     freshStartChoiceManager = new AppFreshStartChoiceManager(),
     interactionLockManager = new AppInteractionLockManager(),
+    textClipboardGuardManager = new AppTextClipboardGuardManager(),
     connectionRetryManager = new AppConnectionRetryManager(),
     gameplayTickManager = new AppGameplayTickManager(),
     appVisibilityManager = new AppVisibilityManager(),
@@ -46,6 +48,7 @@ export class AppLifecycleManager {
     this.accountLinkChoiceManager = accountLinkChoiceManager;
     this.freshStartChoiceManager = freshStartChoiceManager;
     this.interactionLockManager = interactionLockManager;
+    this.textClipboardGuardManager = textClipboardGuardManager;
     this.connectionRetryManager = connectionRetryManager;
     this.gameplayTickManager = gameplayTickManager;
     this.appVisibilityManager = appVisibilityManager;
@@ -79,6 +82,7 @@ export class AppLifecycleManager {
     const shell = this.shellManager.mount();
     this.appThemeManager?.mount(this.playerFacade);
     const stage = this.viewportFacade.mount(shell);
+    this.textClipboardGuardManager.mount(stage);
     this.interactionLockManager.mount(stage);
     this.interactionLockManager.lock('connecting');
     this.onlineGateManager.mount(stage);
@@ -803,6 +807,7 @@ export class AppLifecycleManager {
     this.accountLinkChoiceManager.unmount();
     this.onlineGateManager.unmount();
     this.interactionLockManager.unmount();
+    this.textClipboardGuardManager.unmount();
     this.appThemeManager?.unmount();
     this.renderFacade.unmount();
     this.pagesFacade.unmount();

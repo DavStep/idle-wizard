@@ -8,6 +8,10 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
+import {
+  formatRemainingTime,
+  TIMER_PROGRESS_STEP_MS,
+} from '../../shared/timerDisplay.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
@@ -590,8 +594,9 @@ export class BrewingCauldronManager {
         ? brewing.activeBrew.remainingMs
         : 0;
       setProgressFill(refs.activeProgressFill, progressRatio, {
-        smooth: true,
+        smooth: 'step',
         remainingMs,
+        stepMs: TIMER_PROGRESS_STEP_MS,
       });
       this.setText(refs.activeProgressText, '');
       this.setAttribute(
@@ -1692,8 +1697,8 @@ export class BrewingCauldronManager {
       return `brewed ${activeBrew.label}`;
     }
 
-    const seconds = Math.ceil(activeBrew.remainingMs / 1_000);
-    return `${this.getActivePhaseLabel(activeBrew)} ${activeBrew.label} ${seconds}s`;
+    const timer = formatRemainingTime(activeBrew.remainingMs);
+    return `${this.getActivePhaseLabel(activeBrew)} ${activeBrew.label} ${timer}`;
   }
 
   formatActiveProgressAriaLabel(activeBrew) {

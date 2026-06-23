@@ -478,14 +478,6 @@ export class PixiDomMirrorManager {
     pixiText.position.set(rect.x, rect.y);
     pixiText.roundPixels = true;
     this.root.addChild(pixiText);
-
-    if (style.textDecorationLine.includes('underline')) {
-      const line = new Graphics();
-      const y = rect.y + Math.min(rect.height, lineHeight) - SOURCE_TO_CANVAS_SCALE;
-      line.rect(rect.x, y, rect.width, SOURCE_TO_CANVAS_SCALE);
-      line.fill({ color: color.color, alpha: color.alpha * opacity });
-      this.root.addChild(line);
-    }
   }
 
   drawBorders(style, rect, border, opacity) {

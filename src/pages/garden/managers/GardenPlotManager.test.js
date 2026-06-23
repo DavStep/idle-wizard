@@ -6,6 +6,7 @@ import { cwd } from 'node:process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { GardenPlotManager } from './GardenPlotManager.js';
+import { TIMER_PROGRESS_STEP_MS } from '../../shared/timerDisplay.js';
 
 function createGameplayFacadeFake() {
   const listeners = new Set();
@@ -510,7 +511,9 @@ describe('GardenPlotManager', () => {
     }
 
     expect(progressFill?.classList.contains('is-progress-running')).toBe(false);
-    expect(progressFill?.style.transition).toBe('transform 140ms linear');
+    expect(progressFill?.style.transition).toBe(
+      `transform ${TIMER_PROGRESS_STEP_MS}ms linear`,
+    );
     expect(progressFill?.style.transform).toBe('scaleX(0.5)');
   });
 
@@ -1042,12 +1045,12 @@ describe('GardenPlotManager', () => {
     expect(rule).toContain('var(--style-notification-size)');
   });
 
-  it('keeps choose-seed rows compact without underlined row labels', () => {
+  it('keeps choose-seed rows compact without emphasized row labels', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const buttonRule = baseCss.match(
       /\.garden-page__seed-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const underlineRule = baseCss.match(
+    const emphasisRule = baseCss.match(
       /\.garden-page__seed-button:hover \.row_key,\s*\.garden-page__seed-button:focus \.row_key,\s*\.garden-page__seed-button\[aria-pressed="true"\] \.row_key\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
@@ -1055,8 +1058,8 @@ describe('GardenPlotManager', () => {
     expect(buttonRule).toMatch(/\bdisplay:\s*grid;/);
     expect(buttonRule).toMatch(/\bmin-height:\s*var\(--style-row-min-height\);/);
     expect(buttonRule).toMatch(/\bpadding:\s*0;/);
-    expect(underlineRule).toBeDefined();
-    expect(underlineRule).toMatch(/\btext-decoration:\s*none;/);
+    expect(emphasisRule).toBeDefined();
+    expect(emphasisRule).toMatch(/\bfont-weight:\s*normal;/);
     expect(baseCss).not.toContain('.garden-page__seed-button:not(:disabled) .row_key');
   });
 
