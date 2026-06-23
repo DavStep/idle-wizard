@@ -34,6 +34,7 @@ export class GuildPanelManager {
     this.selectedCardTab = 'stats';
     this.selectedCardId = null;
     this.selectedCardKind = null;
+    this.contentTabScrollTops = new Map();
     this.formDrafts = {
       charter: null,
       settings: null,
@@ -81,6 +82,7 @@ export class GuildPanelManager {
     this.popupLayer = null;
     this.refs = {};
     this.selectedContentTab = 'hall';
+    this.contentTabScrollTops.clear();
     this.formDrafts = {
       charter: null,
       settings: null,
@@ -93,9 +95,11 @@ export class GuildPanelManager {
     }
 
     this.captureVisibleFormDraft();
+    this.captureContentPanelScroll();
     this.snapshot = snapshot.guild ?? {};
     this.root.classList.toggle('guild-page__content--centered', this.snapshot.created !== true);
     this.root.replaceChildren(...this.createMainSections());
+    this.restoreContentPanelScroll(this.getActiveContentTab().id);
     this.renderPopup();
   }
 
@@ -228,6 +232,28 @@ export class GuildPanelManager {
 
     this.selectedContentTab = tabId;
     this.render(this.gameplayFacade?.getSnapshot?.() ?? { guild: this.snapshot });
+  }
+
+  captureContentPanelScroll() {
+    const panel = this.root?.querySelector('.guild-page__tabpanel');
+    const tabId = panel?.dataset.guildTabPanel;
+
+    if (!tabId) {
+      return;
+    }
+
+    this.contentTabScrollTops.set(tabId, Math.max(0, Number(panel.scrollTop) || 0));
+  }
+
+  restoreContentPanelScroll(tabId) {
+    const panel = this.root?.querySelector('.guild-page__tabpanel');
+    const scrollTop = this.contentTabScrollTops.get(tabId);
+
+    if (!panel || panel.dataset.guildTabPanel !== tabId || !scrollTop) {
+      return;
+    }
+
+    panel.scrollTop = scrollTop;
   }
 
   createHallBox(guild) {

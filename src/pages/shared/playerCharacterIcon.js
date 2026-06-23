@@ -4,12 +4,12 @@ import {
 } from '../../player/playerCharacters.js';
 
 const CHARACTER_IMAGE_URLS = Object.freeze({
-  elara: new URL('../tutorial/assets/witch-guide.png', import.meta.url).href,
-  mira: new URL('./assets/player-characters/mira.webp', import.meta.url).href,
-  bramble: new URL('./assets/player-characters/bramble.webp', import.meta.url).href,
-  corvin: new URL('./assets/player-characters/corvin.webp', import.meta.url).href,
-  juniper: new URL('./assets/player-characters/juniper.webp', import.meta.url).href,
-  rowan: new URL('./assets/player-characters/rowan.webp', import.meta.url).href,
+  elara: new URL('../../assets/characters/elara.png', import.meta.url).href,
+  mira: new URL('../../assets/characters/mira.png', import.meta.url).href,
+  bramble: new URL('../../assets/characters/bramble.png', import.meta.url).href,
+  corvin: new URL('../../assets/characters/corvin.png', import.meta.url).href,
+  juniper: new URL('../../assets/characters/juniper.png', import.meta.url).href,
+  rowan: new URL('../../assets/characters/rowan.png', import.meta.url).href,
 });
 
 export function getPlayerCharacterImageUrl(character) {

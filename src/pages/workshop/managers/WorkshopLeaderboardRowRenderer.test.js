@@ -37,7 +37,7 @@ describe('WorkshopLeaderboardRowRenderer', () => {
     expect(row.querySelector('.row_val')?.textContent).toBe('450');
     expect(
       row.querySelector('.workshop-page__leaderboard-character-icon')?.getAttribute('src'),
-    ).toContain('rowan.webp');
+    ).toContain('rowan.png');
     expect(row.querySelector('.workshop-page__alliance-tag')?.textContent).toBe(
       '[DAY]',
     );

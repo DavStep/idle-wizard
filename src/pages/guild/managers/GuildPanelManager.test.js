@@ -229,6 +229,51 @@ describe('GuildPanelManager', () => {
     expect(parent.querySelector('.guild-page__empty-row')?.textContent).toBe('no requests');
   });
 
+  it('preserves guild room panel scroll position across refreshes and tab switches', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const panel = parent.querySelector('.guild-page__tabpanel');
+    panel.scrollTop = 96;
+
+    gameplayFacade.emitGuild(
+      createCreatedGuildSnapshot({
+        boardWaveLabel: '11m',
+      }),
+    );
+
+    const refreshedPanel = parent.querySelector('.guild-page__tabpanel');
+    expect(refreshedPanel).not.toBe(panel);
+    expect(refreshedPanel?.dataset.guildTabPanel).toBe('board');
+    expect(refreshedPanel?.scrollTop).toBe(96);
+
+    refreshedPanel.scrollTop = 64;
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="log"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const logPanel = parent.querySelector('.guild-page__tabpanel');
+    expect(logPanel?.dataset.guildTabPanel).toBe('log');
+    expect(logPanel?.scrollTop).toBe(0);
+    logPanel.scrollTop = 32;
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.guild-page__tabpanel')?.scrollTop).toBe(64);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="log"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.guild-page__tabpanel')?.scrollTop).toBe(32);
+  });
+
   it('shows board requests above available quests with details, rewards, and actions', () => {
     const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
     const { parent } = mountManager(gameplayFacade);

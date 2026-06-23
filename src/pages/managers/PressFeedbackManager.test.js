@@ -340,6 +340,30 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
+  it('keeps a touch tap active through small finger drift', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    let clicks = 0;
+    button.className = 'style-button';
+    button.addEventListener('click', () => {
+      clicks += 1;
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { clientX: 10, clientY: 10 });
+    dispatchPointer(document, 'pointermove', { clientX: 26, clientY: 10 });
+    dispatchPointer(document, 'pointerup', { clientX: 26, clientY: 10 });
+
+    expect(clicks).toBe(1);
+
+    manager.unmount();
+  });
+
   it('plays click sound for mouse clicks after the real click fires', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');

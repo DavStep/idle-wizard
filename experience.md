@@ -95,6 +95,7 @@
 - Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; otherwise the right side of the room looks unused beside world chat.
 - Guild content tabs should use compact labels like `hall`, `board`, `roster`, and `log`; `adventurers` crowds fitted desktop tab widths.
+- Guild tab panels are rebuilt on snapshot refresh; preserve `.guild-page__tabpanel.scrollTop` per tab or mobile scrolling snaps back to the top.
 - Guild request board rows are player-selected from an available quest pool; new waves refresh available quests and expire old requests, but never auto-fill the visible board.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
@@ -205,6 +206,7 @@
 - Dev cheats that force garden/shop/brewing slot counts must raise player level or capacity research first; snapshot apply paths clamp counts back to progression caps.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
+- Shared player character icons live as flat PNGs in `src/assets/characters`; feature-only character art can stay page-local.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
@@ -222,6 +224,7 @@
 - Workshop summon button press feedback must keep the outer `.style-button` transparent and unscaled so the summon sign/circle icon stays visually stable.
 - Workshop summon sign/circle art is visual only; the real summon hit box must be the bordered `summon seed` label box.
 - Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
+- Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward text flyouts should all spawn from the same base anchor; do not stack older notices upward or derive one flyout position from another.

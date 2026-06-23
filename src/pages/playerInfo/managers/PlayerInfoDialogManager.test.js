@@ -51,7 +51,7 @@ describe('PlayerInfoDialogManager', () => {
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('.style-box__title')?.textContent).toBe('player info');
     expect(popup.querySelector('.room-player-info-character')?.getAttribute('src')).toContain(
-      'mira.webp',
+      'mira.png',
     );
     expect(popup.querySelector('.room-player-info-summary')?.firstElementChild).toBe(
       popup.querySelector('.room-player-info-character'),

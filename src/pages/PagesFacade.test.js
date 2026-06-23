@@ -4040,7 +4040,7 @@ describe('PagesFacade', () => {
     expect(avatarButton?.hidden).toBe(false);
     expect(avatar?.hidden).toBe(false);
     expect(avatar?.dataset.character).toBe('mira');
-    expect(avatar?.getAttribute('src')).toContain('mira.webp');
+    expect(avatar?.getAttribute('src')).toContain('mira.png');
     expect(topPanel?.classList.contains('has-avatar')).toBe(true);
 
     playerFacade.setIconMode('none');
@@ -4055,7 +4055,7 @@ describe('PagesFacade', () => {
     expect(avatarButton?.hidden).toBe(true);
     expect(avatar?.hidden).toBe(true);
     expect(avatar?.dataset.character).toBe('rowan');
-    expect(avatar?.getAttribute('src')).toContain('rowan.webp');
+    expect(avatar?.getAttribute('src')).toContain('rowan.png');
 
     playerFacade.setIconMode('icons');
 
@@ -7320,7 +7320,7 @@ describe('PagesFacade', () => {
     ).toEqual(['user', '1. [DAY] Daily Ada (3)']);
     expect(
       popup.querySelector('.workshop-page__leaderboard-character-icon')?.getAttribute('src'),
-    ).toContain('rowan.webp');
+    ).toContain('rowan.png');
     expect(
       [...popup.querySelectorAll('.workshop-page__leaderboard-rows .row_val')].map(
         (row) => row.textContent,
@@ -8917,7 +8917,7 @@ describe('PagesFacade', () => {
     expect(popup.querySelectorAll('.workshop-page__world-chat-character-icon')).toHaveLength(3);
     expect(
       popup.querySelector('.workshop-page__world-chat-character-icon')?.getAttribute('src'),
-    ).toContain('mira.webp');
+    ).toContain('mira.png');
 
     const input = popup.querySelector('.workshop-page__world-chat-input');
     const form = popup.querySelector('.workshop-page__world-chat-form');
@@ -9034,7 +9034,7 @@ describe('PagesFacade', () => {
       expect(popup.textContent).toContain('[VOID] StepDav(7): level 20?');
       expect(
         popup.querySelector('.workshop-page__world-chat-character-icon')?.getAttribute('src'),
-      ).toContain('mira.webp');
+      ).toContain('mira.png');
 
       worldChatFacade.publishServerMessage({
         senderIdentity: 'sender-self',

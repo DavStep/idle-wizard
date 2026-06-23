@@ -4,6 +4,7 @@ const PRESS_START_CLICK_ATTRIBUTE = 'data-press-start-click';
 const SYNTHETIC_CLICK_SUPPRESSION_MS = 450;
 const SYNTHETIC_CLICK_RETARGET_SUPPRESSION_PX = 32;
 const PRESS_MOVE_CANCEL_PX = 12;
+const TOUCH_PRESS_MOVE_CANCEL_PX = 22;
 export const HELD_RELEASE_FEEDBACK_MS = 350;
 
 const PRESS_FEEDBACK_TARGET_SELECTOR = [
@@ -166,7 +167,7 @@ export class PressFeedbackManager {
     const deltaX = event.clientX - this.pressStartX;
     const deltaY = event.clientY - this.pressStartY;
 
-    if (Math.hypot(deltaX, deltaY) <= PRESS_MOVE_CANCEL_PX) {
+    if (Math.hypot(deltaX, deltaY) <= this.getPressMoveCancelPx()) {
       return;
     }
 
@@ -408,6 +409,12 @@ export class PressFeedbackManager {
 
   isMatchingPointer(event) {
     return this.pressedElement && event.pointerId === this.pressPointerId;
+  }
+
+  getPressMoveCancelPx() {
+    return this.pressPointerType === 'mouse'
+      ? PRESS_MOVE_CANCEL_PX
+      : TOUCH_PRESS_MOVE_CANCEL_PX;
   }
 
   clearPressedElement() {

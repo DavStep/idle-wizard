@@ -2,7 +2,10 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { TutorialGuideDragManager } from './TutorialGuideDragManager.js';
 import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
 
-const WITCH_GUIDE_URL = new URL('../assets/witch-guide.png', import.meta.url).href;
+const WITCH_GUIDE_URL = new URL(
+  '../../../assets/characters/elara.png',
+  import.meta.url,
+).href;
 const GUIDE_NAME = 'Elara Starbrew';
 const HINT_WIDTH = 190;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;

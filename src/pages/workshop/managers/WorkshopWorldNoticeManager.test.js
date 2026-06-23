@@ -502,7 +502,7 @@ describe('WorkshopWorldNoticeManager', () => {
           '.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-character-icon',
         )
         ?.getAttribute('src'),
-    ).toContain('rowan.webp');
+    ).toContain('rowan.png');
     expect(
       popup
         .querySelector('.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-current')
