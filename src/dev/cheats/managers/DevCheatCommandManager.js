@@ -422,7 +422,14 @@ export class DevCheatCommandManager {
 
     if (Array.isArray(options.items) || this.isPlainObject(options.items)) {
       items = this.normalizeInventoryItems(options.items);
-    } else if (Array.isArray(presetOrItems) || this.isPlainObject(presetOrItems)) {
+    } else if (
+      Array.isArray(presetOrItems) ||
+      (
+        this.isPlainObject(presetOrItems) &&
+        !Object.hasOwn(presetOrItems, 'preset') &&
+        !Object.hasOwn(presetOrItems, 'state')
+      )
+    ) {
       items = this.normalizeInventoryItems(presetOrItems);
     } else if (preset === 'empty' || preset === 'none' || preset === 'clear') {
       items = [];
@@ -1567,6 +1574,377 @@ export class DevCheatCommandManager {
           ),
         ),
     };
+  }
+
+  toPresetOptions(presetOrOptions, optionsArg = {}, defaultPreset = 'basic') {
+    if (this.isPlainObject(presetOrOptions)) {
+      return {
+        ...presetOrOptions,
+        preset: presetOrOptions.preset ?? presetOrOptions.state ?? defaultPreset,
+      };
+    }
+
+    return {
+      ...(this.isPlainObject(optionsArg) ? optionsArg : {}),
+      preset: presetOrOptions ?? defaultPreset,
+    };
+  }
+
+  isPlainObject(value) {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  getAllItemDefinitions() {
+    return [
+      ...this.gameplayFacade.itemsFacade.getSeedDefinitions(),
+      ...this.gameplayFacade.itemsFacade.getHerbDefinitions(),
+      ...this.gameplayFacade.itemsFacade.getPotionDefinitions(),
+    ];
+  }
+
+  normalizeInventoryItems(items) {
+    if (Array.isArray(items)) {
+      return items.map((item) => {
+        if (typeof item === 'string') {
+          return { itemKey: item, quantity: 1 };
+        }
+
+        return {
+          itemKey: item?.itemKey ?? item?.key ?? item?.itemTypeId ?? item?.id,
+          quantity: item?.quantity ?? item?.count ?? 1,
+        };
+      });
+    }
+
+    if (this.isPlainObject(items)) {
+      return Object.entries(items).map(([itemKey, quantity]) => ({
+        itemKey,
+        quantity,
+      }));
+    }
+
+    return [];
+  }
+
+  applyInventoryItems(items, { mode = 'replace' } = {}) {
+    const normalizedItems = this.normalizeInventoryItems(items);
+    const quantities = new Map();
+    const unknownItems = [];
+
+    if (mode === 'merge') {
+      for (const item of this.gameplayFacade.itemsFacade.getPersistenceSnapshot()) {
+        quantities.set(item.itemKey, item.quantity);
+      }
+    }
+
+    for (const item of normalizedItems) {
+      const definition = this.getRawItemDefinition(item.itemKey);
+
+      if (!definition) {
+        unknownItems.push(item.itemKey);
+        continue;
+      }
+
+      const quantity = Math.max(0, Math.floor(Number(item.quantity) || 0));
+      const current = quantities.get(definition.key) ?? 0;
+      quantities.set(definition.key, mode === 'merge' ? current + quantity : quantity);
+    }
+
+    if (unknownItems.length > 0) {
+      return {
+        ok: false,
+        reason: 'unknown_items',
+        itemKeys: unknownItems,
+      };
+    }
+
+    this.gameplayFacade.itemsFacade.applyPersistenceSnapshot(
+      [...quantities.entries()]
+        .filter(([, quantity]) => quantity > 0)
+        .map(([itemKey, quantity]) => ({ itemKey, quantity })),
+    );
+
+    return { ok: true };
+  }
+
+  addInventoryQuantities(items) {
+    return this.applyInventoryItems(items, { mode: 'merge' });
+  }
+
+  createDevNotificationSnapshot(config = 'all') {
+    const pages = {
+      brewing: this.createDevNotificationPage({}),
+      garden: this.createDevNotificationPage({}),
+      workshop: this.createDevNotificationPage({}),
+      research: this.createDevNotificationPage({}),
+      shop: this.createDevNotificationPage({}),
+      guild: this.createDevNotificationPage({}),
+    };
+    const rawConfig =
+      typeof config === 'string'
+        ? this.createDevNotificationPreset(config)
+        : this.isPlainObject(config)
+          ? config
+          : {};
+
+    for (const [key, value] of Object.entries(rawConfig)) {
+      this.applyDevNotificationKey(pages, key, value);
+    }
+
+    return {
+      pages,
+      active: Object.values(pages).some((page) => page.active),
+    };
+  }
+
+  createDevNotificationPreset(preset) {
+    const normalized = this.normalizeId(preset);
+
+    if (normalized === 'none' || normalized === 'clear' || normalized === 'empty') {
+      return {};
+    }
+
+    if (normalized === 'market') {
+      return { market: true };
+    }
+
+    if (normalized === 'guild') {
+      return { guild: true };
+    }
+
+    if (normalized === 'event') {
+      return { event: true };
+    }
+
+    return {
+      brewing: true,
+      garden: true,
+      market: true,
+      guild: true,
+      research: true,
+      tasks: true,
+      event: true,
+    };
+  }
+
+  applyDevNotificationKey(pages, key, value) {
+    const normalized = this.normalizeId(key);
+    const badge = this.createDevNotificationBadge(value);
+
+    if (!badge) {
+      return;
+    }
+
+    if (normalized === 'garden' || normalized === 'plots' || normalized === 'plot') {
+      this.setDevNotificationChild(pages.garden, 'plots', badge);
+      return;
+    }
+
+    if (normalized === 'brewing' || normalized === 'cauldron' || normalized === 'cauldrons') {
+      this.setDevNotificationChild(pages.brewing, 'cauldron', badge);
+      return;
+    }
+
+    if (normalized === 'market' || normalized === 'shop') {
+      for (const child of ['npcStand', 'npcListing', 'playerStand', 'playerListing', 'playerMarket']) {
+        this.setDevNotificationChild(pages.shop, child, badge);
+      }
+      return;
+    }
+
+    if (normalized === 'guild') {
+      this.setDevNotificationChild(pages.guild, 'guild', badge);
+      return;
+    }
+
+    if (normalized === 'research') {
+      this.setDevNotificationChild(pages.research, 'research', badge);
+      return;
+    }
+
+    if (normalized === 'tasks' || normalized === 'personaltasks') {
+      this.setDevNotificationChild(pages.workshop, 'tasks', badge);
+      this.setDevNotificationChild(pages.workshop, 'personalTasks', badge);
+      return;
+    }
+
+    if (normalized === 'event' || normalized === 'worldevent' || normalized === 'worldnotice') {
+      this.setDevNotificationChild(pages.workshop, 'worldEvent', badge);
+      return;
+    }
+
+    this.setDevNotificationChild(pages.workshop, normalized || 'custom', badge);
+  }
+
+  createDevNotificationBadge(value) {
+    if (value === false || value === null || typeof value === 'undefined') {
+      return null;
+    }
+
+    if (this.isPlainObject(value)) {
+      if (value.active === false) {
+        return null;
+      }
+
+      return {
+        active: true,
+        tone: value.tone ?? 'orange',
+      };
+    }
+
+    return {
+      active: true,
+      tone: value === 'red' ? 'red' : 'orange',
+    };
+  }
+
+  createDevNotificationPage(children) {
+    const childValues = Object.values(children);
+    const active = childValues.some((child) => child?.active);
+    const tone = childValues.some((child) => child?.tone === 'red') ? 'red' : 'orange';
+
+    return {
+      active,
+      tone: active ? tone : null,
+      children,
+    };
+  }
+
+  setDevNotificationChild(page, childKey, badge) {
+    page.children[childKey] = badge;
+    page.active = true;
+    page.tone = page.tone === 'red' || badge.tone === 'red' ? 'red' : 'orange';
+  }
+
+  getDevMarketItemKeys() {
+    const herbs = this.gameplayFacade.itemsFacade.getHerbDefinitions();
+    const seeds = this.gameplayFacade.itemsFacade.getSeedDefinitions();
+    const potions = this.gameplayFacade.itemsFacade.getPotionDefinitions();
+
+    return [
+      herbs[0]?.key,
+      herbs[1]?.key,
+      potions[0]?.key,
+      seeds[0]?.key,
+    ].filter(Boolean);
+  }
+
+  createPlayerShopDevSnapshot({
+    connected = true,
+    listings = [],
+    requests = [],
+    proceedsCoin = 0,
+  } = {}) {
+    const now = this.getNow();
+    const listingRows = listings
+      .filter((slot) => slot?.itemKey)
+      .map((slot, index) => this.createPlayerShopRow(slot, index, 'listing', now));
+    const requestRows = requests
+      .filter((slot) => slot?.itemKey)
+      .map((slot, index) => this.createPlayerShopRow(slot, index, 'request', now));
+    const tradeHistory = listingRows.slice(0, 2).map((row, index) => ({
+      tradeId: `dev-trade-${index + 1}`,
+      buyerIdentity: index === 0 ? 'dev-current' : 'dev-buyer',
+      buyerUsername: index === 0 ? 'you' : 'Moonward',
+      sellerIdentity: row.sellerIdentity,
+      sellerUsername: row.username,
+      itemKey: row.itemKey,
+      itemLabel: row.itemLabel,
+      itemKind: row.itemKind,
+      quantity: row.quantity,
+      priceCoin: row.priceCoin,
+      totalPriceCoin: row.totalPriceCoin,
+      tradedAtMs: now - index * 60_000,
+    }));
+
+    return {
+      connected,
+      listings: listingRows,
+      ownListings: listingRows.slice(0, 2),
+      requests: requestRows,
+      ownRequests: requestRows.slice(0, 2),
+      tradeHistory,
+      ownTradeHistory: tradeHistory,
+      proceedsCoin: Math.max(0, Math.floor(Number(proceedsCoin) || 0)),
+    };
+  }
+
+  createPlayerShopRow(slot, index, rowKind, now) {
+    const item = this.getRawItemDefinition(slot.itemKey);
+    const keyPrefix = rowKind === 'request' ? 'request' : 'listing';
+    const priceCoin = Math.max(1, Math.floor(Number(slot.priceCoin) || 1));
+    const quantity = Math.max(1, Math.floor(Number(slot.quantity) || 1));
+
+    return {
+      [`${keyPrefix}Key`]: `dev-${keyPrefix}-${index + 1}`,
+      ...(rowKind === 'request'
+        ? {
+            requesterIdentity: index === 0 ? 'dev-current' : `dev-requester-${index}`,
+          }
+        : {
+            sellerIdentity: index === 0 ? 'dev-current' : `dev-seller-${index}`,
+          }),
+      username: index === 0 ? 'you' : ['Elara', 'Mothglass', 'Rootwright'][index % 3],
+      slotNumber: slot.slotNumber ?? index + 1,
+      itemKey: item?.key ?? slot.itemKey,
+      itemLabel: item?.label ?? String(slot.itemKey),
+      itemKind: item?.kind ?? 'herb',
+      quantity,
+      priceCoin,
+      totalPriceCoin: quantity * priceCoin,
+      updatedAtMs: now - index * 30_000,
+    };
+  }
+
+  applyPlayerShopSnapshot(snapshot) {
+    const playerShopFacade = this.backendFacade?.getPlayerShopFacade?.();
+
+    if (typeof playerShopFacade?.setDevSnapshot !== 'function') {
+      return { ok: false, reason: 'player_shop_missing' };
+    }
+
+    return playerShopFacade.setDevSnapshot(snapshot);
+  }
+
+  ensureFeatureForDialog(dialogId) {
+    if (
+      ['market', 'shop'].includes(dialogId)
+    ) {
+      this.ensureLevelAtLeast(FEATURE_LEVELS.market);
+      return;
+    }
+
+    if (dialogId.startsWith('guild')) {
+      this.ensureLevelAtLeast(FEATURE_LEVELS.guild);
+      return;
+    }
+
+    if (['worldevent', 'event', 'worldnotice'].includes(dialogId)) {
+      this.ensureLevelAtLeast(FEATURE_LEVELS.worldevent);
+      return;
+    }
+
+    if (['leaderboard', 'leaderboards'].includes(dialogId)) {
+      this.ensureLevelAtLeast(FEATURE_LEVELS.leaderboard);
+      return;
+    }
+
+    if (['alliance', 'alliances', 'discoveries', 'discovery'].includes(dialogId)) {
+      this.ensureLevelAtLeast(FEATURE_LEVELS.alliance);
+      return;
+    }
+
+    if (['personaltasks', 'tasks'].includes(dialogId)) {
+      this.ensureLevelAtLeast(FEATURE_LEVELS.personaltasks);
+    }
+  }
+
+  addCoinSilently(amount) {
+    const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
+
+    if (safeAmount > 0) {
+      this.gameplayFacade.coinFacade.add(safeAmount);
+    }
   }
 
   canSaveReset() {
