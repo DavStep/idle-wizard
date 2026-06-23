@@ -4388,6 +4388,34 @@ describe('GameplayFacade', () => {
     third.ecsFacade.destroyWorld();
   });
 
+  it('keeps crystal-tab coin offer cooldown through the legacy goldOffer save branch', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.loadPersistenceSave(
+      {
+        version: 7,
+        savedAt: 1_000,
+        shop: {
+          goldOffer: {
+            cooldownRemainingSeconds: 3_600,
+          },
+        },
+      },
+      ecsFacade,
+    );
+
+    expect(gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
+      cooldownRemainingSeconds: 3_600,
+      canCollect: false,
+    });
+
+    const save = gameplayFacade.createPersistenceSave();
+    expect(save.shop.coinOffer).toEqual({
+      cooldownRemainingSeconds: 3_600,
+    });
+    expect(save.shop.goldOffer).toEqual(save.shop.coinOffer);
+  });
+
   it('excludes cauldron-staged herbs from NPC market sales', () => {
     let shopNowMs = 0;
     const { ecsFacade, gameplayFacade } = createGameplay({

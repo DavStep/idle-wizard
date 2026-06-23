@@ -476,6 +476,7 @@ export class ShopFacade {
     const shelf = snapshot.shelf;
     const playerShelf = snapshot.playerShelf;
     const playerRequests = snapshot.playerRequests;
+    const coinOffer = this.shopCoinOfferManager.getPersistenceSnapshot();
 
     return {
       shelf: {
@@ -512,7 +513,8 @@ export class ShopFacade {
             priceCoin: slot.priceCoin,
           })),
       },
-      coinOffer: this.shopCoinOfferManager.getPersistenceSnapshot(),
+      coinOffer,
+      goldOffer: coinOffer,
     };
   }
 
@@ -577,7 +579,9 @@ export class ShopFacade {
       unlockedSlots: playerUnlockedSlots,
       slots: playerRequestSlots,
     });
-    this.shopCoinOfferManager.applyPersistenceSnapshot(snapshot.coinOffer);
+    this.shopCoinOfferManager.applyPersistenceSnapshot(
+      snapshot.coinOffer ?? snapshot.goldOffer,
+    );
   }
 
   clampUnlockedSlotsByLevel(unlockedSlots) {

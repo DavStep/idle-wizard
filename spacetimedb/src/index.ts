@@ -119,7 +119,7 @@ const MAX_PLAYER_SAVE_BATCH_MULTIPLIER = 5;
 const MAX_PLAYER_SAVE_AUTO_SEED_MANA_RESERVE = MAX_PLAYER_SAVE_MANA_CURRENT;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
-const MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
+const MAX_PLAYER_SAVE_SHOP_COIN_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
 const LEADERBOARD_SUMMARY_LIMIT = 100;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const PERIOD_DAY_MICROS = 86_400_000_000n;
@@ -8845,22 +8845,25 @@ function normalizeSaveShop(
     playerShelf.unlockedSlots,
   );
 
+  const coinOffer = normalizeSaveShopCoinOffer(shop.coinOffer ?? shop.goldOffer);
+
   return {
     shelf,
     playerShelf,
     playerRequests,
-    goldOffer: normalizeSaveShopGoldOffer(shop.goldOffer),
+    coinOffer,
+    goldOffer: coinOffer,
   };
 }
 
-function normalizeSaveShopGoldOffer(value: unknown) {
+function normalizeSaveShopCoinOffer(value: unknown) {
   const offer = isRecord(value) ? value : {};
 
   return {
     cooldownRemainingSeconds: clampSaveNumber(
       offer.cooldownRemainingSeconds,
       0,
-      MAX_PLAYER_SAVE_SHOP_GOLD_OFFER_COOLDOWN_SECONDS,
+      MAX_PLAYER_SAVE_SHOP_COIN_OFFER_COOLDOWN_SECONDS,
       0,
     ),
   };

@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.31
+
+- Fixed the free coin offer so restarting the app no longer resets its two-hour cooldown after collection.
+
 ## 0.2.30
 
 - Clarified weekly world event tasks so each row starts with the real action, like earning coin, selling items, brewing potions, harvesting herbs, or completing research.
