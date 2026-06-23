@@ -2,9 +2,24 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
+import {
+  TutorialPointerSpineManager,
+  resolvePublicAssetUrl,
+} from './TutorialPointerSpineManager.js';
 
 describe('TutorialPointerSpineManager', () => {
+  it('resolves public pointer asset URLs against the deployed base path', () => {
+    expect(
+      resolvePublicAssetUrl('tutorial/pointer/pointer.skel', '/idle-wizard/'),
+    ).toBe('/idle-wizard/tutorial/pointer/pointer.skel');
+    expect(
+      resolvePublicAssetUrl('/tutorial/pointer/pointer.atlas', '/idle-wizard'),
+    ).toBe('/idle-wizard/tutorial/pointer/pointer.atlas');
+    expect(resolvePublicAssetUrl('tutorial/pointer/pointer.skel', '/')).toBe(
+      '/tutorial/pointer/pointer.skel',
+    );
+  });
+
   it('waits for a graphics runtime before loading the Spine pointer by default', () => {
     const pointer = document.createElement('span');
     const importPixi = vi.fn(async () => ({}));
@@ -57,6 +72,7 @@ describe('TutorialPointerSpineManager', () => {
     const manager = new TutorialPointerSpineManager({
       assetManager,
       importPixi: vi.fn(async () => ({ Application })),
+      assetBaseUrl: '/idle-wizard/',
     });
 
     try {
@@ -69,8 +85,8 @@ describe('TutorialPointerSpineManager', () => {
       expect(pointer.dataset.spineReady).toBe('true');
       expect(assetManager.loadSkeleton).toHaveBeenCalledWith({
         key: 'tutorial:pointer',
-        skeletonSrc: '/tutorial/pointer/pointer.skel',
-        atlasSrc: '/tutorial/pointer/pointer.atlas',
+        skeletonSrc: '/idle-wizard/tutorial/pointer/pointer.skel',
+        atlasSrc: '/idle-wizard/tutorial/pointer/pointer.atlas',
       });
       expect(assetManager.createSkeleton).toHaveBeenCalledWith({
         key: 'tutorial:pointer',

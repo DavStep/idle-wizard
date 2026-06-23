@@ -34,6 +34,7 @@
 - Garden, Brewing, and Research timer bars should share short stepped transforms and shared remaining-time text; do not let one active timer surface keep a full-duration continuous fill on Android.
 - Timer progress bars should soften active 500ms snapshot steps with near-cadence transform transitions, not full remaining-duration transitions.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
+- Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
 - Garden plot notification dots need row-specific vertical placement; the generic negative top offset can land the next row's dot on the previous row's progress rail.
@@ -207,6 +208,13 @@
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
 - Shared player character icons live as flat PNGs in `src/assets/characters`; feature-only character art can stay page-local.
+- Character avatar generation should preserve proven strict-reference prompt wording; for packs, generate/approve a wide sheet on white first, then split/finalize to `173x216`.
+- Character prompt files that only say `provided references` do not attach the avatar sheet; imagegen runs must explicitly use the current avatar sheet image as the style reference or outputs can drift.
+- Character avatar prompts/QA must require a visible tiny mouth mark on every face; "small deadpan mouth" alone can be interpreted as no mouth.
+- Character avatar mouth prompts must also forbid beards, moustaches, scarves, collars, hair, hands, books, props, or shields from covering the mouth; otherwise sheets can still pass stylistically while lower faces are blank.
+- Character avatar prompts should keep proven style-lock wording compact; move detailed failure rules to QA, because long negative/checklist prompts can pull generation away from the reference style.
+- Current character avatar workflow is one-by-one: use the user-approved single-character base prompt exactly, replace only `[CHARACTER DEFINITION]`, and always load the attached reference sheet for generation.
+- Character generation should attach `.agents/skills/idle-wizard-character-assets/references/avatar-style-reference.png` by default; it is a style sheet, not final game art.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.

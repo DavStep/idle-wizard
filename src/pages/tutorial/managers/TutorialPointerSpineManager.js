@@ -1,8 +1,8 @@
 import { SpineAssetManager } from '../../../rendering/spine/managers/SpineAssetManager.js';
 
 const POINTER_SPINE_KEY = 'tutorial:pointer';
-const POINTER_SPINE_SKELETON_SRC = '/tutorial/pointer/pointer.skel';
-const POINTER_SPINE_ATLAS_SRC = '/tutorial/pointer/pointer.atlas';
+const POINTER_SPINE_SKELETON_PATH = 'tutorial/pointer/pointer.skel';
+const POINTER_SPINE_ATLAS_PATH = 'tutorial/pointer/pointer.atlas';
 const POINTER_SPINE_ANIMATION = 'click1';
 const POINTER_SPINE_WIDTH = 76;
 const POINTER_SPINE_HEIGHT = 90;
@@ -22,6 +22,7 @@ export class TutorialPointerSpineManager {
     width = POINTER_SPINE_WIDTH,
     height = POINTER_SPINE_HEIGHT,
     animationName = POINTER_SPINE_ANIMATION,
+    assetBaseUrl = import.meta.env?.BASE_URL ?? '/',
     enabled = null,
   } = {}) {
     this.assetManager = assetManager;
@@ -29,6 +30,11 @@ export class TutorialPointerSpineManager {
     this.width = width;
     this.height = height;
     this.animationName = animationName;
+    this.skeletonSrc = resolvePublicAssetUrl(
+      POINTER_SPINE_SKELETON_PATH,
+      assetBaseUrl,
+    );
+    this.atlasSrc = resolvePublicAssetUrl(POINTER_SPINE_ATLAS_PATH, assetBaseUrl);
     this.enabled = enabled;
     this.pointer = null;
     this.shell = null;
@@ -143,8 +149,8 @@ export class TutorialPointerSpineManager {
     const { Application } = await this.importPixi();
     await this.assetManager.loadSkeleton({
       key: POINTER_SPINE_KEY,
-      skeletonSrc: POINTER_SPINE_SKELETON_SRC,
-      atlasSrc: POINTER_SPINE_ATLAS_SRC,
+      skeletonSrc: this.skeletonSrc,
+      atlasSrc: this.atlasSrc,
     });
 
     if (!this.canvas || this.destroyed) {
@@ -326,4 +332,12 @@ function clampResolution(value) {
   }
 
   return Math.min(Math.max(1, value), POINTER_SPINE_MAX_RESOLUTION);
+}
+
+export function resolvePublicAssetUrl(assetPath, baseUrl = '/') {
+  const normalizedBaseUrl = String(baseUrl || '/');
+  const normalizedAssetPath = String(assetPath ?? '').replace(/^\/+/, '');
+  const separator = normalizedBaseUrl.endsWith('/') ? '' : '/';
+
+  return `${normalizedBaseUrl}${separator}${normalizedAssetPath}`;
 }
