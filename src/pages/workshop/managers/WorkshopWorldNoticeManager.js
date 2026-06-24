@@ -896,7 +896,7 @@ export class WorkshopWorldNoticeManager {
       return [document.createTextNode('none')];
     }
 
-    return rewards.flatMap((reward, index) => {
+    return rewards.flatMap((reward) => {
       const label = document.createElement('span');
       label.className = 'workshop-page__world-notice-reward-resource';
       label.setAttribute('aria-label', `${this.formatNumber(reward.amount)} ${reward.resource}`);
@@ -914,11 +914,7 @@ export class WorkshopWorldNoticeManager {
 
       label.append(amount, icon);
 
-      if (index === 0) {
-        return [label];
-      }
-
-      return [document.createTextNode(' + '), label];
+      return [label];
     });
   }
 

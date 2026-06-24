@@ -5029,11 +5029,6 @@ body {
   text-align: right;
 }
 
-.workshop-page__world-notice-donation-option
-  > .workshop-page__world-notice-request-action {
-  grid-area: action;
-}
-
 .workshop-page__world-notice-request-points,
 .workshop-page__world-notice-request-collected {
   min-width: 0;
@@ -5058,6 +5053,12 @@ body {
   padding: 1px 4px;
   margin-bottom: 0;
   font-size: var(--style-tiny-font-size);
+}
+
+.workshop-page__world-notice-donation-option
+  > .workshop-page__world-notice-request-action {
+  grid-area: action;
+  justify-self: end;
 }
 
 .workshop-page__world-notice-request-bar {
@@ -5140,17 +5141,17 @@ body {
 .workshop-page__world-notice-reward-resource {
   display: inline-flex;
   gap: 2px;
-  align-items: baseline;
+  align-items: center;
   white-space: nowrap;
 }
 
 .workshop-page__world-notice-reward-icon {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
 }
 
 .workshop-page__world-notice-reward-icon .style-resource-label__icon {
-  display: inline-block;
+  display: block;
   margin-right: 0;
 }
 
@@ -8881,6 +8882,18 @@ div.workshop-page__discovery-row {
   position: relative;
 }
 
+.guild-page__box--secretary-upgraded {
+  animation: guild-secretary-upgrade-box var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
+}
+
+.guild-page__box--secretary-upgraded
+  :where(.guild-page__row-value, .guild-page__wide-button) {
+  animation: guild-secretary-upgrade-value 210ms
+    var(--style-motion-ease-rubber) both;
+}
+
 .guild-page__box--charter {
   min-height: calc(var(--style-row-min-height) * 5);
   padding-top: 10px;
@@ -12270,6 +12283,43 @@ div.workshop-page__discovery-row {
   }
 }
 
+@keyframes guild-secretary-upgrade-box {
+  0% {
+    opacity: 0.84;
+    scale: 0.995;
+    translate: 0 2px;
+  }
+
+  66% {
+    opacity: 1;
+    scale: 1.006;
+    translate: 0 -1px;
+  }
+
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes guild-secretary-upgrade-value {
+  0% {
+    opacity: 0.62;
+    translate: 0 1px;
+  }
+
+  66% {
+    opacity: 1;
+    translate: 0 -1px;
+  }
+
+  100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
 @keyframes room-workshop-item-drop {
   0% {
     opacity: 0;
@@ -12688,12 +12738,20 @@ div.workshop-page__discovery-row {
   .brewing-page,
   .garden-page,
   .shop-page,
-  .research-page {
+  .research-page,
+  .guild-page {
     animation: none;
   }
 
   .game-stage[data-page-swipe-active="true"]
-    :where(.workshop-page, .brewing-page, .garden-page, .research-page, .shop-page) {
+    :where(
+      .workshop-page,
+      .brewing-page,
+      .garden-page,
+      .research-page,
+      .shop-page,
+      .guild-page
+    ) {
     translate: 0 0;
     transition: none;
   }
@@ -12715,6 +12773,7 @@ div.workshop-page__discovery-row {
       .garden-page__content > .style-box,
       .research-page__tabs,
       .research-page__box-list > .style-box,
+      .guild-page__tabpanel > .style-box,
       .prestige-page__content,
       .shop-page__market-tabs,
       .shop-page__market-panel > .style-box,
@@ -12733,6 +12792,15 @@ div.workshop-page__discovery-row {
     .workshop-page__task-progress-fill {
     animation: none;
     opacity: 0.65;
+  }
+
+  .guild-page__box--secretary-upgraded,
+  .guild-page__box--secretary-upgraded
+    :where(.guild-page__row-value, .guild-page__wide-button) {
+    animation: none;
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
   }
 
   .style-button.workshop-page__summon-button.is-summoning

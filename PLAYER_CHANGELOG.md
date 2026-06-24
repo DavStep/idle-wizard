@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.35
+
+- Tightened mobile tap confirmation so haptics and click sounds only fire after a valid action.
+- Improved Pixel/WebView tap tolerance so small finger drift near buttons is less likely to cancel the tap.
+- Added a subtle Guild secretary upgrade motion with reduced-motion support.
+- Cleaned up world event donation rows and reward icon spacing.
+
 ## 0.2.34
 
 - Reworked weekly world events into donation quests that can ask for useful potions or coin, with an amount picker, point preview, and per-option totals.

@@ -244,7 +244,7 @@
 - Reward text flyouts should all spawn from the same base anchor; do not stack older notices upward or derive one flyout position from another.
 - With reward events enabled, Workshop summon item text comes from `subscribeRewardEvents`; the action bar only adds the mana-spend flyout.
 - Claim-button reward flyouts should publish before the claim snapshot rebuilds, so the original button can still anchor the motion.
-- Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, fire touch haptic/sound on valid press start, and repeat both only when a held press releases on the original target.
+- Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, and fire touch haptic/sound only when activation is confirmed so cancelled or retargeted presses stay silent.
 - Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.5` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
 
 ## Architecture

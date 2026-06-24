@@ -148,13 +148,11 @@ export class PressFeedbackManager {
     this.pressedFeedbackElement?.classList.add(PRESS_FEEDBACK_CLASS);
 
     this.uiClickSoundFacade?.unlock?.();
-    if (this.pressPointerType !== 'mouse') {
-      this.playTouchFeedback(nextElement);
-    }
 
     if (this.shouldClickOnPressStart(nextElement)) {
       event.preventDefault();
       this.pressStartClickElement = nextElement;
+      this.playTouchFeedback(nextElement);
       this.dispatchSyntheticClick(nextElement, event);
     }
   }
@@ -183,17 +181,17 @@ export class PressFeedbackManager {
 
     const pressedElement = this.pressedElement;
     const didClickOnPressStart = pressedElement && this.pressStartClickElement === pressedElement;
+    const movedPastCancelThreshold = this.hasMovedPastCancelThreshold(event);
     const shouldSuppressCanceledTouchClick =
       pressedElement && this.pressPointerType !== 'mouse';
     const shouldActivate =
       pressedElement &&
       !this.pressMoved &&
+      !movedPastCancelThreshold &&
       this.pressPointerType !== 'mouse' &&
       (didClickOnPressStart ||
-        this.getPressTargetFromPoint(event.clientX, event.clientY) === pressedElement) &&
+        this.isReleaseOnPressedElement(pressedElement, event)) &&
       !isPressFeedbackTargetDisabled(pressedElement);
-    const shouldPlayHeldReleaseFeedback =
-      shouldActivate && this.now() - this.pressStartedAtMs >= HELD_RELEASE_FEEDBACK_MS;
 
     this.clearPressedElement();
 
@@ -206,13 +204,10 @@ export class PressFeedbackManager {
       return;
     }
 
-    if (shouldPlayHeldReleaseFeedback) {
-      this.playTouchFeedback(pressedElement, { forceSound: true });
-    }
-
     if (didClickOnPressStart) {
       this.suppressNextNativeClick(pressedElement, event);
     } else {
+      this.playTouchFeedback(pressedElement);
       this.dispatchSyntheticClick(pressedElement, event);
     }
   }
@@ -309,6 +304,50 @@ export class PressFeedbackManager {
   getPressTargetFromPoint(clientX, clientY) {
     const document = this.root?.ownerDocument;
     return this.getPressTarget(document?.elementFromPoint?.(clientX, clientY));
+  }
+
+  isReleaseOnPressedElement(pressedElement, event) {
+    const releaseTarget = this.getPressTargetFromPoint(event.clientX, event.clientY);
+
+    if (releaseTarget === pressedElement) {
+      return true;
+    }
+
+    if (releaseTarget || this.pressPointerType === 'mouse') {
+      return false;
+    }
+
+    return this.isPointWithinPressedElementSlop(pressedElement, event.clientX, event.clientY);
+  }
+
+  isPointWithinPressedElementSlop(element, clientX, clientY) {
+    if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+      return false;
+    }
+
+    const rect = element?.getBoundingClientRect?.();
+
+    if (!rect) {
+      return false;
+    }
+
+    const slop = this.getPressMoveCancelPx();
+    return (
+      clientX >= rect.left - slop &&
+      clientX <= rect.right + slop &&
+      clientY >= rect.top - slop &&
+      clientY <= rect.bottom + slop
+    );
+  }
+
+  hasMovedPastCancelThreshold(event) {
+    if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) {
+      return false;
+    }
+
+    const deltaX = event.clientX - this.pressStartX;
+    const deltaY = event.clientY - this.pressStartY;
+    return Math.hypot(deltaX, deltaY) > this.getPressMoveCancelPx();
   }
 
   shouldClickOnPressStart(element) {

@@ -503,6 +503,60 @@ describe('GuildPanelManager', () => {
     expect(popupLayer.textContent).not.toContain('upgrade secretary');
   });
 
+  it('animates the secretary box once when the secretary level increases', () => {
+    const gameplayFacade = createGameplayFacadeFake(
+      createCreatedGuildSnapshot({
+        secretary: {
+          level: 1,
+          hiredCap: 1,
+          boardSlots: 3,
+          next: {
+            level: 2,
+            costCoin: 9000,
+            hiredCap: 2,
+            boardSlots: 5,
+          },
+          canUpgrade: true,
+        },
+      }),
+    );
+    const { parent } = mountManager(gameplayFacade);
+    const findSecretaryBox = () =>
+      [...parent.querySelectorAll('.guild-page__box')].find(
+        (box) => box.querySelector('.style-box__title')?.textContent === 'secretary',
+      );
+
+    expect(findSecretaryBox()?.classList.contains('guild-page__box--secretary-upgraded')).toBe(
+      false,
+    );
+
+    const upgradedGuild = createCreatedGuildSnapshot({
+      secretary: {
+        level: 2,
+        hiredCap: 2,
+        boardSlots: 5,
+        next: {
+          level: 3,
+          costCoin: 12000,
+          hiredCap: 3,
+          boardSlots: 6,
+        },
+        canUpgrade: true,
+      },
+    });
+    gameplayFacade.emitGuild(upgradedGuild);
+
+    expect(findSecretaryBox()?.classList.contains('guild-page__box--secretary-upgraded')).toBe(
+      true,
+    );
+
+    gameplayFacade.emitGuild(upgradedGuild);
+
+    expect(findSecretaryBox()?.classList.contains('guild-page__box--secretary-upgraded')).toBe(
+      false,
+    );
+  });
+
   it('colors secretary upgrade preview gains green', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const gainRule = baseCss.match(
@@ -510,6 +564,21 @@ describe('GuildPanelManager', () => {
     )?.groups?.body;
 
     expect(gainRule).toMatch(/\bcolor:\s*var\(--style-alliance-tag-green\);/);
+  });
+
+  it('styles secretary upgrade motion with a reduced-motion fallback', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const upgradeRule = baseCss.match(
+      /\.guild-page__box--secretary-upgraded\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(upgradeRule).toMatch(/\banimation:\s*guild-secretary-upgrade-box\b/);
+    expect(upgradeRule).toMatch(/\btransform-origin:\s*center;/);
+    expect(baseCss).toContain('@keyframes guild-secretary-upgrade-box');
+    expect(baseCss).toContain('@keyframes guild-secretary-upgrade-value');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.guild-page__box--secretary-upgraded[\s\S]*animation:\s*none;/,
+    );
   });
 
   it('renders guild card dialog tabs as a standard tablist', () => {

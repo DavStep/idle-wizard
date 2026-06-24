@@ -37,6 +37,8 @@ export class GuildPanelManager {
     this.selectedCardId = null;
     this.selectedCardKind = null;
     this.contentTabScrollTops = new Map();
+    this.lastRenderedSecretaryLevel = null;
+    this.secretaryUpgradeAnimationLevel = null;
     this.formDrafts = {
       charter: null,
       settings: null,
@@ -89,6 +91,8 @@ export class GuildPanelManager {
       charter: null,
       settings: null,
     };
+    this.lastRenderedSecretaryLevel = null;
+    this.secretaryUpgradeAnimationLevel = null;
   }
 
   render(snapshot = {}) {
@@ -98,6 +102,14 @@ export class GuildPanelManager {
 
     this.captureVisibleFormDraft();
     this.captureContentPanelScroll();
+    const currentSecretaryLevel = this.getSecretaryLevel(snapshot.guild);
+    this.secretaryUpgradeAnimationLevel =
+      currentSecretaryLevel != null &&
+      this.lastRenderedSecretaryLevel != null &&
+      currentSecretaryLevel > this.lastRenderedSecretaryLevel
+        ? currentSecretaryLevel
+        : null;
+    this.lastRenderedSecretaryLevel = currentSecretaryLevel;
     this.snapshot = snapshot.guild ?? {};
     this.root.classList.toggle('guild-page__content--centered', this.snapshot.created !== true);
     this.root.replaceChildren(...this.createMainSections());
@@ -282,19 +294,34 @@ export class GuildPanelManager {
 
   createSecretaryBox(guild) {
     const secretary = guild.secretary ?? {};
+    const secretaryLevel = this.getSecretaryLevel(guild);
 
-    return this.createBox('secretary', [
-      this.createTextRow('level', secretary.level ?? 1),
-      this.createTextRow(
-        'adventurers',
-        this.createUpgradePreviewText(secretary.hiredCap ?? 1, secretary.next?.hiredCap),
-      ),
-      this.createTextRow(
-        'board',
-        this.createUpgradePreviewText(secretary.boardSlots ?? 3, secretary.next?.boardSlots),
-      ),
-      this.createSecretaryUpgradeButton(secretary),
-    ]);
+    return this.createBox(
+      'secretary',
+      [
+        this.createTextRow('level', secretary.level ?? 1),
+        this.createTextRow(
+          'adventurers',
+          this.createUpgradePreviewText(secretary.hiredCap ?? 1, secretary.next?.hiredCap),
+        ),
+        this.createTextRow(
+          'board',
+          this.createUpgradePreviewText(secretary.boardSlots ?? 3, secretary.next?.boardSlots),
+        ),
+        this.createSecretaryUpgradeButton(secretary),
+      ],
+      {
+        className:
+          secretaryLevel != null && secretaryLevel === this.secretaryUpgradeAnimationLevel
+            ? 'guild-page__box--secretary-upgraded'
+            : '',
+      },
+    );
+  }
+
+  getSecretaryLevel(guild) {
+    const level = Number(guild?.secretary?.level);
+    return Number.isFinite(level) ? level : null;
   }
 
   createUpgradePreviewText(current, next) {

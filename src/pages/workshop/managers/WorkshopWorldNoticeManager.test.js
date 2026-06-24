@@ -290,6 +290,16 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(progressRule).toBeUndefined();
   });
 
+  it('right-aligns world event donation row actions', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const donationActionRule = baseCss.match(
+      /\.workshop-page__world-notice-donation-option\s+>\s+\.workshop-page__world-notice-request-action\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(donationActionRule).toMatch(/\bgrid-area:\s*action;/);
+    expect(donationActionRule).toMatch(/\bjustify-self:\s*end;/);
+  });
+
   it('keeps leaderboard and reward tabs from drawing a second header separator', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const tabButtonRule = baseCss.match(
@@ -332,6 +342,12 @@ describe('WorkshopWorldNoticeManager', () => {
 
   it('shows world event reward resource icons without resource words', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const resourceRule = baseCss.match(
+      /\.workshop-page__world-notice-reward-resource\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const iconWrapperRule = baseCss.match(
+      /\.workshop-page__world-notice-reward-icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const iconRule = baseCss.match(
       /\.workshop-page__world-notice-reward-icon\s+\.style-resource-label__icon\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -339,7 +355,9 @@ describe('WorkshopWorldNoticeManager', () => {
       /\.workshop-page__world-notice-reward-icon\s+\.style-resource-label__text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(iconRule).toMatch(/\bdisplay:\s*inline-block;/);
+    expect(resourceRule).toMatch(/\balign-items:\s*center;/);
+    expect(iconWrapperRule).toMatch(/\balign-items:\s*center;/);
+    expect(iconRule).toMatch(/\bdisplay:\s*block;/);
     expect(textRule).toMatch(/\bdisplay:\s*none;/);
   });
 
@@ -519,6 +537,7 @@ describe('WorkshopWorldNoticeManager', () => {
     );
     expect(firstRewardValue?.textContent).not.toContain('emerald');
     expect(firstRewardValue?.textContent).not.toContain('crystal');
+    expect(firstRewardValue?.textContent).not.toContain('+');
     expect(
       [...firstRewardValue.querySelectorAll('.workshop-page__world-notice-reward-resource')].map(
         (node) => node.getAttribute('aria-label'),
