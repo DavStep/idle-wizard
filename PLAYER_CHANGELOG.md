@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.36
+
+- Maintenance release: rebuilt the Android APK and hosted web client from the latest main branch.
+- No gameplay or UI behavior changes from the previous release.
+
 ## 0.2.35
 
 - Tightened mobile tap confirmation so haptics and click sounds only fire after a valid action.
