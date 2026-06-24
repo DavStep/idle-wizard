@@ -121,6 +121,66 @@ describe('TutorialLogicManager', () => {
     expect(reminderManager.clearVisibleCount).toBe(1);
   });
 
+  it('does not suppress a new focus-target cue because the previous lesson was open', () => {
+    const target = {};
+    let activeStep = createStep({
+      id: 'intro-welcome',
+      kind: 'prompt',
+      targetId: null,
+      text: "i'm Elara. let's get the workshop running.",
+      advanceOnClick: true,
+      progress: null,
+      progressLabel: '',
+    });
+    const manager = new TutorialLogicManager({
+      progressManager: { reset: () => {} },
+      reminderManager: createReminderFake(),
+      stepManager: {
+        advanceStep: () => {},
+        getActiveStep: () => activeStep,
+      },
+    });
+
+    manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => null,
+      lessonPanelOpen: false,
+    });
+
+    activeStep = createStep({
+      id: 'intro-username',
+      kind: 'prompt',
+      targetId: 'top:username',
+      text: "i don't need your name, but it would be nice to set it here.",
+      progress: null,
+      progressLabel: '',
+      cueMode: 'focus-target',
+      revealTokens: ['top'],
+    });
+
+    const viewState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => target,
+      lessonPanelOpen: true,
+    });
+
+    expect(viewState).toMatchObject({
+      kind: 'lesson',
+      lesson: {
+        id: 'intro-username',
+        autoOpen: false,
+        forceOpen: false,
+      },
+      cue: {
+        kind: 'target-cue',
+        target,
+        showPointer: true,
+      },
+    });
+  });
+
   it('hides focus-target cues while the lesson is open until show me is requested', () => {
     const target = {};
     const step = createStep({
@@ -134,6 +194,13 @@ describe('TutorialLogicManager', () => {
       revealTokens: ['top'],
     });
     const { manager } = createManager({ step });
+
+    manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => target,
+      lessonPanelOpen: false,
+    });
 
     expect(
       manager.getViewState({

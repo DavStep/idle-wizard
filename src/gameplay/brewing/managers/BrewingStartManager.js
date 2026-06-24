@@ -144,7 +144,7 @@ export class BrewingStartManager {
     };
   }
 
-  brew(cauldronIndex = 0) {
+  brew(cauldronIndex = 0, brewQuantity = null) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
 
     if (!this.brewingCauldronEntityManager.isCauldronUnlocked(safeCauldronIndex)) {
@@ -173,7 +173,10 @@ export class BrewingStartManager {
       };
     }
 
-    const yieldMultiplier = this.getYieldMultiplier(safeCauldronIndex);
+    const yieldMultiplier = this.normalizeYieldMultiplier(
+      brewQuantity,
+      safeCauldronIndex,
+    );
     const consumedIngredientItemTypeIds = this.repeatItemTypeIds(
       ingredientItemTypeIds,
       yieldMultiplier,
@@ -267,15 +270,26 @@ export class BrewingStartManager {
     };
   }
 
-  prepareRecipeForAutoBrew(recipeKey, cauldronIndex = 0) {
-    return this.prepareRecipe(recipeKey, { clearOnMissing: false, cauldronIndex });
+  prepareRecipeForAutoBrew(recipeKey, cauldronIndex = 0, brewQuantity = null) {
+    return this.prepareRecipe(recipeKey, {
+      clearOnMissing: false,
+      cauldronIndex,
+      brewQuantity,
+    });
   }
 
-  prepareRecipeForSelection(recipeKey, cauldronIndex = 0) {
-    return this.prepareRecipe(recipeKey, { clearOnMissing: true, cauldronIndex });
+  prepareRecipeForSelection(recipeKey, cauldronIndex = 0, brewQuantity = null) {
+    return this.prepareRecipe(recipeKey, {
+      clearOnMissing: true,
+      cauldronIndex,
+      brewQuantity,
+    });
   }
 
-  prepareRecipe(recipeKey, { clearOnMissing = false, cauldronIndex = 0 } = {}) {
+  prepareRecipe(
+    recipeKey,
+    { clearOnMissing = false, cauldronIndex = 0, brewQuantity = null } = {},
+  ) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const recipe = this.brewingRecipeMatchManager.getRecipeByKey(recipeKey);
 
@@ -303,6 +317,14 @@ export class BrewingStartManager {
     }
 
     const ingredientItemTypeIds = this.getRecipeIngredientItemTypeIds(recipe);
+    const yieldMultiplier = this.normalizeYieldMultiplier(
+      brewQuantity,
+      safeCauldronIndex,
+    );
+    const requiredIngredientItemTypeIds = this.repeatItemTypeIds(
+      ingredientItemTypeIds,
+      yieldMultiplier,
+    );
     const maxIngredients = this.brewingBalanceManager.getMaxCauldronIngredients();
 
     if (ingredientItemTypeIds.length > maxIngredients) {
@@ -313,7 +335,7 @@ export class BrewingStartManager {
       };
     }
 
-    if (!this.hasEnoughInventoryForCauldron(ingredientItemTypeIds, safeCauldronIndex)) {
+    if (!this.hasEnoughInventoryForCauldron(requiredIngredientItemTypeIds, safeCauldronIndex)) {
       if (clearOnMissing) {
         this.brewingCauldronEntityManager.clearIngredients(safeCauldronIndex);
       }
@@ -323,9 +345,10 @@ export class BrewingStartManager {
         reason: 'not_enough_ingredients',
         recipe,
         missingIngredients: this.getMissingInventoryForCauldron(
-          ingredientItemTypeIds,
+          requiredIngredientItemTypeIds,
           safeCauldronIndex,
         ),
+        brewQuantity: yieldMultiplier,
       };
     }
 
@@ -352,6 +375,8 @@ export class BrewingStartManager {
       ok: true,
       recipe,
       ingredientItemTypeIds,
+      requiredIngredientItemTypeIds,
+      brewQuantity: yieldMultiplier,
       cauldronIndex: safeCauldronIndex,
       cauldronNumber: safeCauldronIndex + 1,
     };
@@ -489,6 +514,22 @@ export class BrewingStartManager {
       this.researchFacade?.getCauldronBrewingMultiplier?.(cauldronIndex + 1) ?? 1;
     const safeMultiplier = Math.floor(Number(multiplier));
     return Number.isInteger(safeMultiplier) && safeMultiplier > 0 ? safeMultiplier : 1;
+  }
+
+  normalizeYieldMultiplier(multiplier, cauldronIndex = 0) {
+    const maxMultiplier = this.getYieldMultiplier(cauldronIndex);
+
+    if (multiplier === null || multiplier === undefined) {
+      return maxMultiplier;
+    }
+
+    const safeMultiplier = Math.floor(Number(multiplier));
+
+    if (!Number.isInteger(safeMultiplier) || safeMultiplier <= 0) {
+      return maxMultiplier;
+    }
+
+    return Math.min(safeMultiplier, maxMultiplier);
   }
 
   repeatItemTypeIds(itemTypeIds = [], multiplier = 1) {

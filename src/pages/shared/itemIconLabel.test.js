@@ -97,11 +97,11 @@ describe('item icon labels', () => {
 
     appendTextWithItemIcons(
       element,
-      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 coin, 5 crystals, 1 emerald, and 3 rubies',
+      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 coin, 5 crystals, 1 emerald, 3 rubies, and 6 herbs',
     );
 
     expect(element.textContent).toBe(
-      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 coin, 5 crystals, 1 emerald, and 3 rubies',
+      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 coin, 5 crystals, 1 emerald, 3 rubies, and 6 herbs',
     );
     expect(element.querySelector('.style-potion-label')).not.toBeNull();
     expect(element.querySelector('.style-herb-label')).not.toBeNull();
@@ -110,6 +110,7 @@ describe('item icon labels', () => {
     expect(element.querySelector('.style-resource-label--crystal')).not.toBeNull();
     expect(element.querySelector('.style-resource-label--emerald')).not.toBeNull();
     expect(element.querySelector('.style-resource-label--ruby')).not.toBeNull();
+    expect(element.querySelector('.style-resource-label--herb')).not.toBeNull();
     expect(element.querySelector('.style-resource-label--mana')).toBeNull();
     expect(element.querySelector('.style-resource-label--coin')?.textContent).toBe('2 coin');
     expect(element.querySelector('.style-seed-label__icon')).not.toBeNull();

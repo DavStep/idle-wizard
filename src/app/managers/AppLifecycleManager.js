@@ -306,11 +306,7 @@ export class AppLifecycleManager {
   shouldRestoreConnectedAccountBeforeInitialConnect(
     authSnapshot = this.getAuthSnapshot(),
   ) {
-    return (
-      !authSnapshot?.oidc?.authenticated &&
-      (this.shouldPromptBeforeInitialConnect(authSnapshot) ||
-        authSnapshot?.oidc?.remembered)
-    );
+    return !authSnapshot?.oidc?.authenticated && authSnapshot?.oidc?.remembered;
   }
 
   hasConnectableAccount(authSnapshot = this.getAuthSnapshot()) {

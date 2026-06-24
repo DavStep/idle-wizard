@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.37
+
+- Added batch brewing controls so upgraded cauldrons can brew `x2` and higher amounts when the ingredients and mana are available.
+- Updated Garden and Brewing upgrade labels to show star strength and clearer `plant xN` / `brew xN` actions.
+- Reduced many mid- and late-game level task requirements, and lowered emerald upgrade costs for extra plots and cauldrons.
+- Improved Guild screens with a secretary portrait, clearer resource-colored rewards, and steadier scrolling while boards refresh.
+- Made the top-panel avatar open the avatar picker directly, and tightened Elara's pointer target around the username.
+
 ## 0.2.36
 
 - Maintenance release: rebuilt the Android APK and hosted web client from the latest main branch.

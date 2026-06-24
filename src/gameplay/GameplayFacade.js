@@ -30,11 +30,21 @@ import {
 } from './worldNotice/WorldNoticeFacade.js';
 
 export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
-export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 500;
+export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 250;
 export const GAMEPLAY_ACTIVE_TICK_DELAY_MS = 250;
 export const GAMEPLAY_MIN_RESOURCE_TICK_DELAY_MS = 250;
 export const GAMEPLAY_MAX_RESOURCE_TICK_DELAY_MS = 1_000;
-export const PRESTIGE_RESET_LEVEL = 5;
+export const PRESTIGE_MIN_RESET_LEVEL = 5;
+
+export function getPrestigeResetLevel(level) {
+  const resetLevel = Math.floor(Number(level) / 2);
+
+  if (!Number.isFinite(resetLevel)) {
+    return PRESTIGE_MIN_RESET_LEVEL;
+  }
+
+  return Math.max(PRESTIGE_MIN_RESET_LEVEL, resetLevel);
+}
 
 export class GameplayFacade {
   static explain =
@@ -462,6 +472,7 @@ export class GameplayFacade {
 
   resetRunAfterPrestige() {
     const prestige = this.prestigeFacade.getPersistenceSnapshot();
+    const prestigeResetLevel = getPrestigeResetLevel(prestige.completedLevels.at(-1));
     const completedCapacityResearchIds = this.researchFacade.getPermanentCompletedResearchIds();
     const emerald = this.emeraldFacade.getSnapshot();
     const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
@@ -502,7 +513,7 @@ export class GameplayFacade {
       brewing: {},
       garden: {},
       tasks: {
-        currentLevel: PRESTIGE_RESET_LEVEL,
+        currentLevel: prestigeResetLevel,
         tasks: [],
       },
       personalTasks: {
@@ -768,6 +779,12 @@ export class GameplayFacade {
 
   toggleBrewingAutoBrewEnabled(cauldronIndex = 0) {
     const result = this.brewingFacade.toggleAutoBrewEnabled(cauldronIndex);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setBrewingBrewQuantity(quantity, cauldronIndex = 0) {
+    const result = this.brewingFacade.setBrewQuantity(quantity, cauldronIndex);
     this.publishAndSaveSnapshot();
     return result;
   }

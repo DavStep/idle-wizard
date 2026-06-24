@@ -1,5 +1,7 @@
 /* @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it } from 'vitest';
 
 import { TopPanelViewManager } from './TopPanelViewManager.js';
@@ -13,9 +15,10 @@ describe('TopPanelViewManager', () => {
 
     const usernameButton = stage.querySelector('.room-top-panel__username');
     expect(usernameButton?.textContent).toBe('wizard');
-    expect(stage.querySelector('.room-top-panel__avatar-button')).toBeNull();
+    const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
+    expect(avatarButton).not.toBeNull();
     expect(
-      usernameButton
+      avatarButton
         ?.querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
     ).toContain('/assets/characters/elara.png');
@@ -48,6 +51,16 @@ describe('TopPanelViewManager', () => {
         '#room-top-panel-settings-theme .room-top-panel__character-section',
       ),
     ).toBeNull();
+    expect(
+      [...stage.querySelectorAll('.room-top-panel__settings-tab-button')].map((button) => [
+        button.dataset.settingsTab,
+        button.textContent,
+      ]),
+    ).toEqual([
+      ['account', 'account'],
+      ['report', 'report'],
+      ['theme', 'configurations'],
+    ]);
     expect(
       [
         ...stage.querySelectorAll(
@@ -177,5 +190,20 @@ describe('TopPanelViewManager', () => {
         hasPotionIcon: true,
       },
     ]);
+  });
+
+  it('keeps top-panel character images larger than the shared inline icon default', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const topAvatarRule = baseCss.match(
+      /\.room-top-panel__avatar-button \.room-top-panel__username-avatar\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const pickerAvatarRule = baseCss.match(
+      /\.room-top-panel__character-button \.room-top-panel__character-option-icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(topAvatarRule).toMatch(/\bwidth:\s*var\(--room-top-panel-avatar-size\);/);
+    expect(topAvatarRule).toMatch(/\bheight:\s*var\(--room-top-panel-avatar-size\);/);
+    expect(pickerAvatarRule).toMatch(/\bwidth:\s*72px;/);
+    expect(pickerAvatarRule).toMatch(/\bheight:\s*72px;/);
   });
 });

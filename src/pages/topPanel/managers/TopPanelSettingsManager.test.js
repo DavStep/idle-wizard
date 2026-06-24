@@ -139,6 +139,7 @@ describe('TopPanelSettingsManager', () => {
     manager.mount(viewManager.getRefs());
 
     const avatar = stage.querySelector('.room-top-panel__username-avatar');
+    const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
     const topPanel = stage.querySelector('.room-top-panel');
     const usernameButton = stage.querySelector('.room-top-panel__username');
     const rowanButton = stage.querySelector(
@@ -146,12 +147,18 @@ describe('TopPanelSettingsManager', () => {
     );
 
     expect(avatar?.getAttribute('src')).toContain('/assets/characters/mira.png');
+    expect(avatarButton?.hidden).toBe(false);
     expect(avatar?.hidden).toBe(false);
     expect(topPanel?.classList.contains('has-avatar')).toBe(true);
     expect(usernameButton?.classList.contains('has-avatar')).toBe(true);
 
-    manager.showSettings();
-    manager.selectSettingsTab('avatar');
+    avatarButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(viewManager.getRefs().settings.hidden).toBe(false);
+    expect(viewManager.getRefs().settingsTitle.textContent).toBe('avatar');
+    expect(viewManager.getRefs().settingsTabs.hidden).toBe(true);
+    expect(viewManager.getRefs().avatarPane.hidden).toBe(false);
+
     rowanButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerFacade.setCharacter).toHaveBeenCalledWith('rowan');
@@ -160,6 +167,7 @@ describe('TopPanelSettingsManager', () => {
 
     playerFacade.setIconMode('none');
 
+    expect(avatarButton?.hidden).toBe(true);
     expect(avatar?.hidden).toBe(true);
     expect(topPanel?.classList.contains('has-avatar')).toBe(false);
     expect(usernameButton?.classList.contains('has-avatar')).toBe(false);

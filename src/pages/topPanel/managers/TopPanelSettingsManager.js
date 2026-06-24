@@ -32,7 +32,7 @@ import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
 const DEFAULT_USERNAME = 'wizard';
-const SETTINGS_TABS = ['account', 'avatar', 'theme', 'report'];
+const SETTINGS_TABS = ['account', 'avatar', 'report', 'theme'];
 const DEFAULT_FEEDBACK_KIND = 'feedback';
 const FEEDBACK_KIND_CONFIG = {
   feedback: {
@@ -88,6 +88,7 @@ export class TopPanelSettingsManager {
     this.reselectUsernameOnClick = false;
     this.previousFocus = null;
     this.handleUsernameClick = () => this.showSettings();
+    this.handleAvatarClick = () => this.showAvatarSettings();
     this.handleCloseClick = () => this.hide();
     this.handleOverlayClick = (event) => {
       if (event.target === this.refs?.settings) {
@@ -194,6 +195,7 @@ export class TopPanelSettingsManager {
 
   mount(refs) {
     this.refs = refs;
+    this.refs.usernameAvatarButton?.addEventListener('click', this.handleAvatarClick);
     this.refs.usernameButton.addEventListener('click', this.handleUsernameClick);
     this.refs.settingsCloseButton.addEventListener('click', this.handleCloseClick);
     this.refs.settings.addEventListener('click', this.handleOverlayClick);
@@ -315,6 +317,7 @@ export class TopPanelSettingsManager {
     this.soundSettingsUnsubscribe = null;
 
     if (this.refs) {
+      this.refs.usernameAvatarButton?.removeEventListener('click', this.handleAvatarClick);
       this.refs.usernameButton.removeEventListener('click', this.handleUsernameClick);
       this.refs.settingsCloseButton.removeEventListener('click', this.handleCloseClick);
       this.refs.settings.removeEventListener('click', this.handleOverlayClick);
@@ -390,6 +393,10 @@ export class TopPanelSettingsManager {
 
   showSettings() {
     this.open({ usernamePromptMode: false, feedbackMode: false, settingsTab: 'account' });
+  }
+
+  showAvatarSettings() {
+    this.open({ usernamePromptMode: false, feedbackMode: false, settingsTab: 'avatar' });
   }
 
   showUsernamePrompt() {
@@ -665,6 +672,9 @@ export class TopPanelSettingsManager {
     }
 
     this.refs.usernameAvatar.hidden = !showAvatar;
+    if (this.refs.usernameAvatarButton) {
+      this.refs.usernameAvatarButton.hidden = !showAvatar;
+    }
     this.refs.usernameButton.classList.toggle('has-avatar', showAvatar);
     this.refs.panel?.classList.toggle('has-avatar', showAvatar);
   }
@@ -912,14 +922,22 @@ export class TopPanelSettingsManager {
     }
 
     const feedbackConfig = this.getFeedbackConfig();
-    const title = this.usernamePromptMode ? 'username' : 'settings';
+    const title = this.usernamePromptMode
+      ? 'username'
+      : this.settingsTab === 'avatar'
+        ? 'avatar'
+        : 'settings';
     const closeLabel = this.usernamePromptMode ? 'later' : 'close';
 
     this.refs.settings.classList.toggle('is-username-prompt', this.usernamePromptMode);
     this.refs.settings.classList.toggle('is-feedback', false);
     this.getFocusTarget().setAttribute(
       'aria-label',
-      this.usernamePromptMode ? 'Set username' : 'Settings',
+      this.usernamePromptMode
+        ? 'Set username'
+        : this.settingsTab === 'avatar'
+          ? 'Avatar'
+          : 'Settings',
     );
 
     if (this.refs.feedbackInput.placeholder !== feedbackConfig.placeholder) {
@@ -987,7 +1005,7 @@ export class TopPanelSettingsManager {
       theme: this.refs.themePane,
     };
 
-    this.refs.settingsTabs.hidden = this.usernamePromptMode;
+    this.refs.settingsTabs.hidden = this.usernamePromptMode || activeTab === 'avatar';
 
     for (const button of this.refs.settingsTabButtons) {
       const selected = button.dataset.settingsTab === activeTab;

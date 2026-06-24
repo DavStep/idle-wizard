@@ -353,7 +353,7 @@ describe('GardenPlotManager', () => {
     expect(rows?.style.getPropertyValue('--garden-page-plot-columns')).toBe('3');
   });
 
-  it('shows plot level inside each plot box', () => {
+  it('shows plot stars inside each plot box', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -363,9 +363,52 @@ describe('GardenPlotManager', () => {
 
     manager.mount(parent);
 
-    expect(parent.querySelector('.garden-page__plot-box-level')?.textContent).toBe(
-      'lvl 3',
-    );
+    const star = parent.querySelector('.garden-page__plot-box-level');
+
+    expect(star?.textContent).toBe('★★★');
+    expect(star?.dataset.starTone).toBe('yellow');
+    expect(star?.getAttribute('aria-label')).toBe('yellow star 3');
+  });
+
+  it('shows plot stars in rows view', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const playerFacade = createPlayerFacadeFake('rows');
+    const manager = new GardenPlotManager({ gameplayFacade, playerFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    tile.level = 4;
+
+    manager.mount(parent);
+
+    const star = parent.querySelector('.garden-page__plot-state');
+
+    expect(star?.textContent).toBe('★');
+    expect(star?.dataset.starTone).toBe('orange');
+    expect(star?.getAttribute('aria-label')).toBe('orange star 1');
+  });
+
+  it('shows plant xN on enhanced empty plots with selected seeds', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      level: 3,
+      selectedSeedItemTypeId: 3,
+      selectedSeedKey: 'nettleSeed',
+      selectedSeedLabel: 'nettle seed',
+      selectedHerbKey: 'nettleHerb',
+      selectedHerbLabel: 'nettle',
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('plant x3');
+    expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe('plant x3');
   });
 
   it('centers the plant and no seeds actions inside empty selected plot boxes', () => {
@@ -432,6 +475,7 @@ describe('GardenPlotManager', () => {
     const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
 
     Object.assign(tile, {
+      level: 3,
       selectedSeedItemTypeId: 1,
       selectedSeedKey: 'sageSeed',
       selectedSeedLabel: 'sage seed',
@@ -461,6 +505,7 @@ describe('GardenPlotManager', () => {
 
     expect(plotRoot?.dataset.plotView).toBe('rows');
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage');
+    expect(plotRow.querySelector('.garden-page__plot-state')?.textContent).toBe('★★★');
     expect(plotRow.querySelector('.garden-page__plot-action-label')?.textContent).toBe(
       'growing',
     );

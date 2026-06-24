@@ -60,6 +60,10 @@ const CHARACTER_IMAGE_URLS = Object.freeze({
     '../../assets/characters/adventurer_greenscarf_shield.png',
     import.meta.url,
   ).href,
+  guild_secretary: new URL(
+    '../../assets/characters/guild_secretary.png',
+    import.meta.url,
+  ).href,
   adventurer_helmhammer: new URL(
     '../../assets/characters/adventurer_helmhammer.png',
     import.meta.url,

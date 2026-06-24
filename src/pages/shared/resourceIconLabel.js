@@ -1,4 +1,6 @@
 import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
+import { getHerbIconFrameName } from '../../assets/items/herbs/herbIcons.js';
+import { getSeedIconFrameName } from '../../assets/items/seeds/seedIcons.js';
 import { setResourceColor } from './resourceColor.js';
 
 export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
@@ -7,14 +9,17 @@ const RESOURCE_ICON_FRAME_NAMES = Object.freeze({
   crystal: 'resource:crystal',
   emerald: 'resource:emerald',
   coin: 'resource:coin',
+  herb: getHerbIconFrameName('sageHerb'),
   mana: 'resource:mana',
   ruby: 'resource:ruby',
+  seed: getSeedIconFrameName(),
 });
 
-const RESOURCE_WORD_PATTERN = /\b(?:crystals?|emeralds?|coin|mana|rubies|ruby)\b/;
-const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|emeralds?|coin|mana|rubies|ruby)\b/gi;
+const RESOURCE_WORD_PATTERN = /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/;
+const RESOURCE_WORD_MATCH_PATTERN =
+  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
 const RESOURCE_AMOUNT_PREFIX_PATTERN =
-  /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
+  /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?(?:\s*-\s*\d[\d,]*(?:\.\d+)?(?:[a-z])?)?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
 
 export function setResourceIconText(element, text) {
@@ -173,6 +178,14 @@ function normalizeResource(resource) {
 
   if (normalizedResource === 'emeralds') {
     return 'emerald';
+  }
+
+  if (normalizedResource === 'seeds') {
+    return 'seed';
+  }
+
+  if (normalizedResource === 'herbs') {
+    return 'herb';
   }
 
   return normalizedResource;

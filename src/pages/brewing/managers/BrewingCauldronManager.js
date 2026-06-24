@@ -7,6 +7,7 @@ import { setItemIconLabel, setTextWithItemIcons } from '../../shared/itemIconLab
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
 import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
 import {
   formatRemainingTime,
@@ -572,7 +573,7 @@ export class BrewingCauldronManager {
 
     refs.root.classList.remove('is-locked', 'is-buyable');
     refs.root.classList.toggle('is-current', brewing.cauldronIndex === this.selectedCauldronIndex);
-    this.setText(refs.title, this.formatCauldronTitle(brewing));
+    this.renderCauldronTitle(refs.title, brewing);
     this.setHidden(refs.count, false);
     this.setText(refs.count, this.formatCauldronCount(brewing));
     const statusText = this.formatCauldronStatus(brewing);
@@ -625,7 +626,7 @@ export class BrewingCauldronManager {
     refs.root.classList.toggle('is-buyable', isBuyable);
     refs.root.classList.remove('is-current');
     this.setCauldronRowCount(refs);
-    this.setText(refs.title, this.formatCauldronTitle(brewing));
+    this.renderCauldronTitle(refs.title, brewing);
     this.renderPotionIcon(refs, null);
     this.setHidden(refs.count, true);
     this.setHidden(refs.status, true);
@@ -772,10 +773,18 @@ export class BrewingCauldronManager {
       return;
     }
 
+    const brewQuantity = this.getBrewQuantity(brewing);
     const targetIngredients = this.expandIngredientSequence(recipe.ingredients);
-    const ingredientGroups = this.createIngredientGroups(recipe.ingredients);
+    const ingredientGroups = this.createIngredientGroups(recipe.ingredients).map((ingredient) => ({
+      ...ingredient,
+      brewQuantity,
+    }));
     const match = this.getIngredientMatch(targetIngredients, brewing.ingredients);
-    const missingQuantities = this.getMissingIngredientQuantities(recipe, brewing);
+    const missingQuantities = this.getMissingIngredientQuantities(
+      recipe,
+      brewing,
+      brewQuantity,
+    );
     let renderedRows = 0;
 
     for (const ingredient of ingredientGroups) {
@@ -954,6 +963,17 @@ export class BrewingCauldronManager {
       };
     }
 
+    if (hasIngredient && matchedQuantity >= ingredient.quantity && missingQuantity > 0) {
+      return {
+        label: this.formatIngredientGroup(ingredient),
+        value: `missing ${missingQuantity}`,
+        removeSlotIndex,
+        isPlaced: false,
+        isNext: false,
+        isMismatch: true,
+      };
+    }
+
     if (matchedQuantity > 0 && matchedQuantity < ingredient.quantity) {
       return {
         label: `- ${matchedQuantity}/${ingredient.quantity} ${ingredient.label}`,
@@ -1030,14 +1050,14 @@ export class BrewingCauldronManager {
     return Math.max(1, quantity);
   }
 
-  getMissingIngredientQuantities(recipe, brewing) {
+  getMissingIngredientQuantities(recipe, brewing, brewQuantity = this.getBrewQuantity(brewing)) {
     const requiredQuantities = new Map();
 
     for (const ingredient of recipe.ingredients ?? []) {
       const quantity = this.normalizeIngredientQuantity(ingredient);
       requiredQuantities.set(
         ingredient.itemTypeId,
-        (requiredQuantities.get(ingredient.itemTypeId) ?? 0) + quantity,
+        (requiredQuantities.get(ingredient.itemTypeId) ?? 0) + quantity * brewQuantity,
       );
     }
 
@@ -1099,7 +1119,18 @@ export class BrewingCauldronManager {
   }
 
   formatIngredientGroup(ingredient) {
+    const brewQuantity = this.getIngredientBrewQuantity(ingredient);
+
+    if (brewQuantity > 1) {
+      return `- ${brewQuantity} x ${ingredient.quantity} ${ingredient.label}`;
+    }
+
     return `- ${ingredient.quantity} ${ingredient.label}`;
+  }
+
+  getIngredientBrewQuantity(ingredient) {
+    const brewQuantity = Math.floor(Number(ingredient?.brewQuantity));
+    return Number.isInteger(brewQuantity) && brewQuantity > 1 ? brewQuantity : 1;
   }
 
   formatGuideStepValue(ingredient, match) {
@@ -1354,10 +1385,11 @@ export class BrewingCauldronManager {
       brewing.match && !brewing.match.unlocked && !brewing.match.discoverable,
     );
     const canBrew = brewing.canBrew && !recipeLocked;
+    const brewQuantity = this.getBrewQuantity(brewing);
 
     return {
       id: 'brew',
-      label: 'brew',
+      label: brewQuantity > 1 ? `brew x${brewQuantity}` : 'brew',
       hasCost: !brewing.activeBrew && Number.isFinite(brewing.manaCost),
       disabled: !canBrew,
       ariaLabel: this.formatBrewAriaLabel(brewing),
@@ -1503,7 +1535,7 @@ export class BrewingCauldronManager {
     if (result.ok) {
       this.message = {
         cauldronIndex: safeCauldronIndex,
-        text: `brewing ${result.potion.label}`,
+        text: `brewing ${this.formatPotionQuantity(result.potion.label, result.quantity)}`,
       };
     } else {
       this.message = {
@@ -1651,8 +1683,28 @@ export class BrewingCauldronManager {
 
   formatCauldronTitle(brewing) {
     const cauldronNumber = Math.max(1, Math.floor(Number(brewing?.cauldronNumber) || 1));
-    const level = Math.max(1, Math.floor(Number(brewing?.level) || 1));
-    return `cauldron ${cauldronNumber} lvl ${level}`;
+    return `cauldron ${cauldronNumber} ${formatStarLevel(brewing?.level).text}`;
+  }
+
+  renderCauldronTitle(element, brewing) {
+    if (!element) {
+      return;
+    }
+
+    const cauldronNumber = Math.max(1, Math.floor(Number(brewing?.cauldronNumber) || 1));
+    const starLevel = formatStarLevel(brewing?.level);
+    const signature = `${cauldronNumber}:${starLevel.tone}:${starLevel.starCount}`;
+
+    if (element.dataset.cauldronStarTitle === signature) {
+      return;
+    }
+
+    element.replaceChildren(
+      document.createTextNode(`cauldron ${cauldronNumber} `),
+      createStarLevelLabel(brewing?.level),
+    );
+    element.dataset.cauldronStarTitle = signature;
+    element.setAttribute('aria-label', `cauldron ${cauldronNumber} ${starLevel.ariaLabel}`);
   }
 
   formatCauldronStatus(brewing) {
@@ -1722,15 +1774,18 @@ export class BrewingCauldronManager {
 
   formatActiveBrewText(activeBrew) {
     if (activeBrew.canCollect) {
-      return `bottled ${activeBrew.label}`;
+      return `bottled ${this.formatPotionQuantity(activeBrew.label, activeBrew.resultQuantity)}`;
     }
 
     if (activeBrew.canStartBottling) {
-      return `brewed ${activeBrew.label}`;
+      return `brewed ${this.formatPotionQuantity(activeBrew.label, activeBrew.resultQuantity)}`;
     }
 
     const timer = formatRemainingTime(activeBrew.remainingMs);
-    return `${this.getActivePhaseLabel(activeBrew)} ${activeBrew.label} ${timer}`;
+    return `${this.getActivePhaseLabel(activeBrew)} ${this.formatPotionQuantity(
+      activeBrew.label,
+      activeBrew.resultQuantity,
+    )} ${timer}`;
   }
 
   formatActiveProgressAriaLabel(activeBrew) {
@@ -1753,13 +1808,15 @@ export class BrewingCauldronManager {
     const costLabel = Number.isFinite(brewing.manaCost)
       ? `, costs ${brewing.manaCost} mana`
       : '';
+    const brewQuantity = this.getBrewQuantity(brewing);
+    const quantityPrefix = brewQuantity > 1 ? `${brewQuantity} ` : '';
 
     if (brewing.match?.unlocked) {
-      return `brew ${brewing.match.label}${costLabel}`;
+      return `brew ${quantityPrefix}${brewing.match.label}${costLabel}`;
     }
 
     if (brewing.match?.discoverable) {
-      return `brew unknown recipe${costLabel}`;
+      return `brew ${quantityPrefix}unknown recipe${costLabel}`;
     }
 
     if (brewing.match && !brewing.match.unlocked) {
@@ -1767,10 +1824,27 @@ export class BrewingCauldronManager {
     }
 
     if (brewing.ingredients.length > 0) {
-      return `brew wasted potion${costLabel}`;
+      return `brew ${quantityPrefix}wasted potion${costLabel}`;
     }
 
     return `brew${costLabel}`;
+  }
+
+  getBrewQuantity(brewing = {}) {
+    const quantity = Math.floor(Number(brewing?.brewQuantity ?? brewing?.yieldMultiplier));
+
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return 1;
+    }
+
+    return quantity;
+  }
+
+  formatPotionQuantity(label, quantity) {
+    const safeQuantity = Math.floor(Number(quantity));
+    return Number.isInteger(safeQuantity) && safeQuantity > 1
+      ? `x${safeQuantity} ${label}`
+      : label;
   }
 
   formatFillRecipeAriaLabel(brewing, canFillRecipe = this.canFillSelectedRecipe(brewing)) {

@@ -10,6 +10,7 @@ export class BrewingSnapshotManager {
     researchFacade,
     getAutoBrewEnabled,
     getAutoBrewRecipeKey,
+    getBrewQuantity,
   }) {
     this.brewingBalanceManager = brewingBalanceManager;
     this.brewingCauldronEntityManager = brewingCauldronEntityManager;
@@ -21,6 +22,7 @@ export class BrewingSnapshotManager {
     this.researchFacade = researchFacade;
     this.getAutoBrewEnabled = getAutoBrewEnabled;
     this.getAutoBrewRecipeKey = getAutoBrewRecipeKey;
+    this.getBrewQuantityCallback = getBrewQuantity;
   }
 
   getSnapshot() {
@@ -87,15 +89,19 @@ export class BrewingSnapshotManager {
       this.brewingProcessEntityManager.getActiveBrewSnapshot(safeCauldronIndex);
 
     if (activeBrew) {
+      const maxBrewQuantity = this.getMaxBrewQuantity(safeCauldronIndex);
+
       return {
         cauldronIndex: safeCauldronIndex,
         cauldronNumber: safeCauldronIndex + 1,
-        level: this.getCurrentCauldronLevel(safeCauldronIndex),
+        level: maxBrewQuantity,
         ingredients: [],
         match: null,
         buttonLabel: 'brew',
         manaCost: this.brewingBalanceManager.getWastedBrewManaCost(),
         yieldMultiplier: this.getActiveBrewYieldMultiplier(activeBrew),
+        brewQuantity: this.getBrewQuantity(safeCauldronIndex),
+        maxBrewQuantity,
         canAddIngredient: false,
         canBrew: false,
         hasEnoughIngredients: false,
@@ -114,15 +120,19 @@ export class BrewingSnapshotManager {
       this.brewingCauldronEntityManager.getIngredientSnapshots(safeCauldronIndex);
 
     if (ingredients.length === 0) {
+      const maxBrewQuantity = this.getMaxBrewQuantity(safeCauldronIndex);
+
       return {
         cauldronIndex: safeCauldronIndex,
         cauldronNumber: safeCauldronIndex + 1,
-        level: this.getCurrentCauldronLevel(safeCauldronIndex),
+        level: maxBrewQuantity,
         ingredients,
         match: null,
         buttonLabel: 'brew',
         manaCost: this.brewingBalanceManager.getWastedBrewManaCost(),
         yieldMultiplier: 1,
+        brewQuantity: this.getBrewQuantity(safeCauldronIndex),
+        maxBrewQuantity,
         canAddIngredient:
           ingredients.length < this.brewingBalanceManager.getMaxCauldronIngredients(),
         canBrew: false,
@@ -147,7 +157,8 @@ export class BrewingSnapshotManager {
     const visibleRecipeUnlocked = visibleRecipe
       ? this.brewingRecipeMatchManager.isRecipeUnlocked(visibleRecipe)
       : false;
-    const yieldMultiplier = this.getYieldMultiplier(safeCauldronIndex);
+    const maxBrewQuantity = this.getMaxBrewQuantity(safeCauldronIndex);
+    const yieldMultiplier = this.getBrewQuantity(safeCauldronIndex);
     const baseManaCost =
       visibleRecipe?.manaCost ?? this.brewingBalanceManager.getWastedBrewManaCost();
     const manaCost = baseManaCost * yieldMultiplier;
@@ -159,7 +170,7 @@ export class BrewingSnapshotManager {
     return {
       cauldronIndex: safeCauldronIndex,
       cauldronNumber: safeCauldronIndex + 1,
-      level: this.getCurrentCauldronLevel(safeCauldronIndex),
+      level: maxBrewQuantity,
       ingredients,
       match: visibleRecipe
         ? {
@@ -178,6 +189,8 @@ export class BrewingSnapshotManager {
       buttonLabel: visibleRecipe && visibleRecipeUnlocked ? `brew ${visibleRecipe.label}` : 'brew',
       manaCost,
       yieldMultiplier,
+      brewQuantity: yieldMultiplier,
+      maxBrewQuantity,
       canAddIngredient:
         !activeBrew &&
         ingredients.length < this.brewingBalanceManager.getMaxCauldronIngredients(),
@@ -273,7 +286,23 @@ export class BrewingSnapshotManager {
   }
 
   getCurrentCauldronLevel(cauldronIndex = 0) {
+    return this.getMaxBrewQuantity(cauldronIndex);
+  }
+
+  getMaxBrewQuantity(cauldronIndex = 0) {
     return this.getYieldMultiplier(cauldronIndex);
+  }
+
+  getBrewQuantity(cauldronIndex = 0) {
+    const maxBrewQuantity = this.getMaxBrewQuantity(cauldronIndex);
+    const quantity = this.getBrewQuantityCallback?.(cauldronIndex) ?? maxBrewQuantity;
+    const safeQuantity = Math.floor(Number(quantity));
+
+    if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
+      return maxBrewQuantity;
+    }
+
+    return Math.min(safeQuantity, maxBrewQuantity);
   }
 
   getCauldronLevels(maxCauldrons = 0) {

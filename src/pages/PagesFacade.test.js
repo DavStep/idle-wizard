@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { PRESTIGE_RESET_LEVEL } from '../gameplay/GameplayFacade.js';
+import { getPrestigeResetLevel } from '../gameplay/GameplayFacade.js';
 import packageJson from '../../package.json';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { PagesFacade } from './PagesFacade.js';
@@ -1605,9 +1605,10 @@ function createGameplayFacadeFake() {
       snapshot.prestige.completedLevels.push(level);
       snapshot.prestige.earnedRuby += milestone.rewardRuby;
       snapshot.ruby.current = snapshot.prestige.earnedRuby;
-      snapshot.tasks.currentLevel = PRESTIGE_RESET_LEVEL;
-      snapshot.playerLevel.currentLevel = PRESTIGE_RESET_LEVEL;
-      snapshot.prestige.currentLevel = PRESTIGE_RESET_LEVEL;
+      const resetLevel = getPrestigeResetLevel(level);
+      snapshot.tasks.currentLevel = resetLevel;
+      snapshot.playerLevel.currentLevel = resetLevel;
+      snapshot.prestige.currentLevel = resetLevel;
       publish();
 
       return {
@@ -3681,14 +3682,16 @@ describe('PagesFacade', () => {
     const topPanel = stage.querySelector('.room-top-panel');
     expect(topPanel).not.toBeNull();
     expect(topPanel.classList.contains('has-avatar')).toBe(true);
-    expect(topPanel.querySelector('.room-top-panel__avatar-button')).toBeNull();
+    const avatarButton = topPanel.querySelector('.room-top-panel__avatar-button');
+    expect(avatarButton).not.toBeNull();
     expect(
-      topPanel
+      avatarButton
         .querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
     ).toContain('/assets/characters/elara.png');
-    expect(topPanel.children[0]?.className).toBe('room-top-panel__identity-row');
-    expect(topPanel.children[1]?.classList.contains('room-top-panel__resources')).toBe(true);
+    expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
+    expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
+    expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
     expect(
       topPanel.querySelector('.room-top-panel__identity-row .room-top-panel__username')
         ?.textContent,
@@ -4065,11 +4068,13 @@ describe('PagesFacade', () => {
 
     const topPanel = stage.querySelector('.room-top-panel');
     const usernameButton = stage.querySelector('.room-top-panel__username');
+    const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
     const usernameAvatar = stage.querySelector('.room-top-panel__username-avatar');
 
     expect(usernameButton?.textContent).toBe('Merlin');
-    expect(stage.querySelector('.room-top-panel__avatar-button')).toBeNull();
+    expect(avatarButton).not.toBeNull();
     expect(usernameAvatar?.getAttribute('src')).toContain('/assets/characters/mira.png');
+    expect(avatarButton?.hidden).toBe(false);
     expect(usernameAvatar?.hidden).toBe(false);
     expect(topPanel?.classList.contains('has-avatar')).toBe(true);
 
@@ -4080,6 +4085,7 @@ describe('PagesFacade', () => {
     playerFacade.setIconMode('none');
 
     expect(usernameButton?.textContent).toBe('Merlin');
+    expect(avatarButton?.hidden).toBe(true);
     expect(usernameAvatar?.hidden).toBe(true);
     expect(topPanel?.classList.contains('has-avatar')).toBe(false);
   });
@@ -5849,7 +5855,7 @@ describe('PagesFacade', () => {
       ),
     ).toEqual([
       ['account', 'true'],
-      ['avatar', 'false'],
+      ['report', 'false'],
       ['configurations', 'false'],
     ]);
     expect(stage.querySelector('.room-top-panel__auth-section')?.hidden).toBe(false);
@@ -5895,9 +5901,11 @@ describe('PagesFacade', () => {
         '#room-top-panel-settings-avatar .room-top-panel__character-section .room-top-panel__visual-option-price',
       ),
     ).toHaveLength(0);
-    settings
-      .querySelector('[data-settings-tab="avatar"]')
+    stage
+      .querySelector('.room-top-panel__avatar-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(settings.querySelector('.style-box__title')?.textContent).toBe('avatar');
+    expect(settings.querySelector('.room-top-panel__settings-tabs')?.hidden).toBe(true);
     settings
       .querySelector(
         '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="rowan"]',
@@ -5905,7 +5913,8 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(playerFacade.getSnapshot().character).toBe('rowan');
     expect(
-      usernameButton
+      stage
+        .querySelector('.room-top-panel__avatar-button')
         .querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
     ).toContain('/assets/characters/rowan.png');
@@ -5947,8 +5956,8 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__settings-tab-button')].map(
         (button) => button.dataset.settingsTab,
       ),
-    ).not.toContain('report');
-    expect(focusOptions).toEqual([{ preventScroll: true }]);
+    ).toContain('report');
+    expect(focusOptions).toEqual([{ preventScroll: true }, { preventScroll: true }]);
 
     input.value = 'Mira';
     form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
@@ -6029,7 +6038,9 @@ describe('PagesFacade', () => {
 
     expect(settings.querySelector('.style-box__title')?.textContent).toBe('settings');
     expect(settings.classList.contains('is-feedback')).toBe(false);
-    expect(settings.querySelector('[data-settings-tab="report"]')).toBeNull();
+    expect(
+      settings.querySelector('[data-settings-tab="report"]')?.getAttribute('aria-selected'),
+    ).toBe('true');
     expect(stage.querySelector('.room-top-panel__feedback-close')).toBeNull();
     expect(input.placeholder).toBe('write feedback');
 
@@ -6078,7 +6089,9 @@ describe('PagesFacade', () => {
       expect(pagesFacade.openDialog(item.kind)).toEqual({ ok: true, dialogId: item.kind });
 
       expect(settings.querySelector('.style-box__title')?.textContent).toBe('settings');
-      expect(settings.querySelector('[data-settings-tab="report"]')).toBeNull();
+      expect(
+        settings.querySelector('[data-settings-tab="report"]')?.getAttribute('aria-selected'),
+      ).toBe('true');
       expect(
         settings
           .querySelector(`[data-feedback-kind="${item.kind}"]`)
@@ -6841,7 +6854,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.prestige-page')).toBeNull();
     expect(snapshot.prestige.completedLevels).toEqual([10]);
     expect(snapshot.ruby.current).toBe(1);
-    expect(snapshot.tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
+    expect(snapshot.tasks.currentLevel).toBe(getPrestigeResetLevel(10));
   });
 
   it('explains prestige ruby as available while ruby research stays bought', () => {
@@ -10016,7 +10029,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.brewing-page__cauldron .style-box__title')].map(
         (title) => title.textContent,
       ),
-    ).toEqual(['cauldron 1 lvl 1', 'cauldron 2 lvl 1', 'cauldron 3 lvl 1']);
+    ).toEqual(['cauldron 1 ★', 'cauldron 2 ★', 'cauldron 3 ★']);
   });
 
   it('shows the next Brewing cauldron as a buyable locked box', () => {
@@ -10059,10 +10072,10 @@ describe('PagesFacade', () => {
     expect(cauldrons).toHaveLength(3);
     expect(cauldrons[1].classList.contains('is-locked')).toBe(false);
     expect(cauldrons[1].querySelector('.style-box__title')?.textContent).toBe(
-      'cauldron 2 lvl 1',
+      'cauldron 2 ★',
     );
     expect(cauldrons[2].querySelector('.style-box__title')?.textContent).toBe(
-      'cauldron 3 lvl 1',
+      'cauldron 3 ★',
     );
     expect(cauldrons[2].classList.contains('is-locked')).toBe(true);
   });
@@ -11076,11 +11089,11 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__plot .style-box__title')?.textContent).toBe('plots');
     expect(rows[0].querySelector('.garden-page__plot-number')?.textContent).toBe('1');
     expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
-    expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('');
+    expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
     expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
     expect(rows[0].disabled).toBe(false);
     expect(rows[1].querySelector('.garden-page__plot-label')?.textContent).toBe('plot 2');
-    expect(rows[1].querySelector('.garden-page__plot-state')?.textContent).toBe('');
+    expect(rows[1].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
     expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('buy 1 coin');
     expect(rows[1].disabled).toBe(true);
 
@@ -11091,6 +11104,7 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.garden-page__message')).toBeNull();
     expect(rows[1].querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
+    expect(rows[1].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
     expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
     expect(rows[1].disabled).toBe(false);
     expect(rows.filter((row) => !row.hidden)).toHaveLength(3);
@@ -11138,7 +11152,7 @@ describe('PagesFacade', () => {
     expect(rows[0].querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
       'herb',
     );
-    expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('');
+    expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
     expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
     expect(rows[0].querySelector('.garden-page__plot-action-label')?.textContent).toBe('growing');
     expect(rows[0].querySelector('.garden-page__plot-action-timer')?.textContent).toBe('12s');

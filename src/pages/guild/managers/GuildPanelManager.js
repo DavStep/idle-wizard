@@ -25,6 +25,8 @@ const CONTENT_TABS = [
   { id: 'log', label: 'log' },
 ];
 
+const GUILD_SECRETARY_ICON_KEY = 'guild_secretary';
+
 export class GuildPanelManager {
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -36,6 +38,7 @@ export class GuildPanelManager {
     this.selectedCardTab = 'stats';
     this.selectedCardId = null;
     this.selectedCardKind = null;
+    this.renderedCardScrollKey = '';
     this.contentTabScrollTops = new Map();
     this.lastRenderedSecretaryLevel = null;
     this.secretaryUpgradeAnimationLevel = null;
@@ -86,6 +89,7 @@ export class GuildPanelManager {
     this.popupLayer = null;
     this.refs = {};
     this.selectedContentTab = 'hall';
+    this.renderedCardScrollKey = '';
     this.contentTabScrollTops.clear();
     this.formDrafts = {
       charter: null,
@@ -112,7 +116,15 @@ export class GuildPanelManager {
     this.lastRenderedSecretaryLevel = currentSecretaryLevel;
     this.snapshot = snapshot.guild ?? {};
     this.root.classList.toggle('guild-page__content--centered', this.snapshot.created !== true);
-    this.root.replaceChildren(...this.createMainSections());
+
+    if (this.snapshot.unlocked && this.snapshot.created) {
+      this.renderCreatedSections(this.snapshot);
+    } else {
+      this.refs.contentTabs = null;
+      this.refs.contentPanel = null;
+      this.root.replaceChildren(...this.createMainSections());
+    }
+
     this.restoreContentPanelScroll(this.getActiveContentTab().id);
     this.renderPopup();
   }
@@ -164,6 +176,36 @@ export class GuildPanelManager {
     ];
   }
 
+  renderCreatedSections(guild) {
+    const activeTab = this.getActiveContentTab();
+    const tabs = this.createContentTabs(activeTab.id, guild);
+    const panel = this.createOrUpdateContentPanel(
+      activeTab,
+      this.getContentTabSections(guild, activeTab.id),
+    );
+    const keptPanel =
+      panel === this.refs.contentPanel && panel.parentElement === this.root;
+
+    if (keptPanel) {
+      if (this.refs.contentTabs?.parentElement === this.root) {
+        this.refs.contentTabs.replaceWith(tabs);
+      } else {
+        this.root.insertBefore(tabs, panel);
+      }
+
+      for (const child of [...this.root.children]) {
+        if (child !== tabs && child !== panel) {
+          child.remove();
+        }
+      }
+    } else {
+      this.root.replaceChildren(tabs, panel);
+    }
+
+    this.refs.contentTabs = tabs;
+    this.refs.contentPanel = panel;
+  }
+
   createContentTabs(activeTabId, guild) {
     const tabs = document.createElement('div');
     tabs.className = 'guild-page__content-tabs';
@@ -202,11 +244,22 @@ export class GuildPanelManager {
     return panel;
   }
 
+  createOrUpdateContentPanel(tab, sections) {
+    const panel = this.refs.contentPanel;
+
+    if (panel?.parentElement === this.root && panel.dataset.guildTabPanel === tab.id) {
+      panel.setAttribute('aria-label', tab.label);
+      panel.replaceChildren(...sections);
+      return panel;
+    }
+
+    return this.createContentPanel(tab, sections);
+  }
+
   getContentTabSections(guild, tabId) {
     if (tabId === 'board') {
       return [
         this.createBoardBox(guild),
-        this.createBoardSeparator(),
         this.createAvailableRequestsBox(guild),
       ];
     }
@@ -299,6 +352,7 @@ export class GuildPanelManager {
     return this.createBox(
       'secretary',
       [
+        this.createSecretaryIconRow(),
         this.createTextRow('level', secretary.level ?? 1),
         this.createTextRow(
           'adventurers',
@@ -317,6 +371,13 @@ export class GuildPanelManager {
             : '',
       },
     );
+  }
+
+  createSecretaryIconRow() {
+    const row = document.createElement('div');
+    row.className = 'guild-page__secretary-icon-row';
+    row.append(createCharacterImage(GUILD_SECRETARY_ICON_KEY, 'guild-page__secretary-icon'));
+    return row;
   }
 
   getSecretaryLevel(guild) {
@@ -376,6 +437,7 @@ export class GuildPanelManager {
       eventRequests: guild.eventBoard ?? [],
       emptyText: 'no requests',
       actionKind: 'remove',
+      separateRequests: true,
     });
 
     return this.createBox('request board', rows, {
@@ -494,7 +556,9 @@ export class GuildPanelManager {
         'guild-page__request-meta',
         `${request.difficulty}${request.expiresLabel ? `, expires ${request.expiresLabel}` : ''}`,
       ),
-      this.createRequestLine('guild-page__request-reward', `reward: ${request.rewardText}`),
+      this.createRequestLine('guild-page__request-reward', `reward: ${request.rewardText}`, {
+        resourceIcons: true,
+      }),
     );
     main.addEventListener('click', () => this.showRequestDialog(request.id));
 
@@ -519,13 +583,6 @@ export class GuildPanelManager {
     return row;
   }
 
-  createBoardSeparator() {
-    const separator = document.createElement('div');
-    separator.className = 'guild-page__board-separator';
-    separator.setAttribute('aria-hidden', 'true');
-    return separator;
-  }
-
   createQuestSeparator() {
     const separator = document.createElement('div');
     separator.className = 'guild-page__quest-separator';
@@ -533,10 +590,14 @@ export class GuildPanelManager {
     return separator;
   }
 
-  createRequestLine(className, text) {
+  createRequestLine(className, text, { resourceIcons = false } = {}) {
     const line = document.createElement('span');
     line.className = className;
-    line.textContent = String(text ?? '');
+    if (resourceIcons) {
+      setResourceIconText(line, text);
+    } else {
+      line.textContent = String(text ?? '');
+    }
     return line;
   }
 
@@ -608,7 +669,12 @@ export class GuildPanelManager {
     return trimmed ? trimmed.slice(0, 1).toLowerCase() : '?';
   }
 
-  createAdventurerCard(adventurer, secondaryRows, actionButton = null) {
+  createAdventurerCard(
+    adventurer,
+    secondaryRows,
+    actionButton = null,
+    { detailsElement = null } = {},
+  ) {
     const displayName = adventurer.displayName ?? 'nameless';
     const card = document.createElement('div');
     card.className = 'guild-page__card-info';
@@ -629,13 +695,7 @@ export class GuildPanelManager {
       mainRows,
     );
 
-    const details = document.createElement('div');
-    details.className = 'guild-page__card-details';
-    details.dataset.scrollCueProgress = 'inline';
-    const rows = document.createElement('div');
-    rows.className = 'guild-page__card-rows';
-    rows.append(...secondaryRows);
-    details.append(rows);
+    const details = this.createOrUpdateCardDetails(secondaryRows, detailsElement);
 
     card.append(summary, details);
 
@@ -647,6 +707,25 @@ export class GuildPanelManager {
     }
 
     return card;
+  }
+
+  createOrUpdateCardDetails(secondaryRows, detailsElement = null) {
+    const details = detailsElement ?? document.createElement('div');
+    details.className = 'guild-page__card-details';
+    details.dataset.scrollCueProgress = 'inline';
+
+    let rows = [...details.children].find((child) =>
+      child.classList?.contains('guild-page__card-rows'),
+    );
+
+    if (!rows) {
+      rows = document.createElement('div');
+      rows.className = 'guild-page__card-rows';
+      details.replaceChildren(rows);
+    }
+
+    rows.replaceChildren(...secondaryRows);
+    return details;
   }
 
   createAdventurerCardNameLine(displayName) {
@@ -727,6 +806,12 @@ export class GuildPanelManager {
 
     row.append(key, val);
     return row;
+  }
+
+  createResourceText(value) {
+    const element = document.createElement('span');
+    setResourceIconText(element, value);
+    return element;
   }
 
   createButtonRow(label, onClick, { disabled = false, notification = false } = {}) {
@@ -859,6 +944,7 @@ export class GuildPanelManager {
     this.selectedCardId = null;
     this.selectedCardKind = null;
     this.selectedCardTab = 'stats';
+    this.clearCardDetailsReuse();
   }
 
   renderPopup() {
@@ -888,6 +974,7 @@ export class GuildPanelManager {
 
   renderCharterDialog() {
     const draft = this.getFormDraft('charter');
+    this.clearCardDetailsReuse();
     this.refs.popupTitle.textContent = 'guild charter';
     this.refs.popupTabs.replaceChildren();
     if (this.hasFocusedProfileForm('charter')) {
@@ -929,6 +1016,7 @@ export class GuildPanelManager {
   renderSettingsDialog() {
     const profile = this.snapshot.profile ?? {};
     const draft = this.getFormDraft('settings', profile);
+    this.clearCardDetailsReuse();
     this.refs.popupTitle.textContent = 'guild settings';
     this.refs.popupTabs.replaceChildren();
     if (this.hasFocusedProfileForm('settings')) {
@@ -967,6 +1055,7 @@ export class GuildPanelManager {
   }
 
   renderRequestDialog() {
+    this.clearCardDetailsReuse();
     const boardRequest = (this.snapshot.board ?? []).find(
       (candidate) => candidate.id === this.selectedCardId,
     );
@@ -987,7 +1076,7 @@ export class GuildPanelManager {
     rows.append(
       this.createTextRow('difficulty', request.difficulty),
       this.createTextRow('stats', request.statLabel),
-      this.createTextRow('reward', request.rewardText),
+      this.createTextRow('reward', this.createResourceText(request.rewardText)),
       this.createTextRow('expires', request.expiresLabel ?? 'now'),
       this.createParagraph(request.lore),
     );
@@ -1032,6 +1121,8 @@ export class GuildPanelManager {
     this.refs.popupTitle.textContent =
       this.selectedCardKind === 'applicant' ? 'applicant info' : 'adventurer info';
     this.renderCardTabs();
+    const cardScrollKey = this.getCardScrollKey(adventurer);
+    const reusableDetails = this.getReusableCardDetails(cardScrollKey);
     const secondaryRows = [];
 
     if (this.selectedCardTab === 'life') {
@@ -1075,9 +1166,52 @@ export class GuildPanelManager {
       });
     }
 
-    this.refs.popupContent.replaceChildren(
-      this.createAdventurerCard(adventurer, secondaryRows, actionButton),
-    );
+    const card = this.createAdventurerCard(adventurer, secondaryRows, actionButton, {
+      detailsElement: reusableDetails,
+    });
+    this.refs.popupContent.replaceChildren(card);
+    this.renderedCardScrollKey = cardScrollKey;
+    this.refs.cardDetails = card.querySelector('.guild-page__card-details');
+    this.dispatchScrollEvent(this.refs.cardDetails);
+  }
+
+  getCardScrollKey(adventurer) {
+    return [
+      this.selectedCardKind ?? '',
+      adventurer?.id ?? '',
+      this.selectedCardTab ?? '',
+    ].join('|');
+  }
+
+  getReusableCardDetails(cardScrollKey) {
+    if (!cardScrollKey || this.renderedCardScrollKey !== cardScrollKey) {
+      return null;
+    }
+
+    const details =
+      this.refs.cardDetails ??
+      this.refs.popupContent?.querySelector('.guild-page__card-details') ??
+      null;
+
+    if (!details?.isConnected || !this.refs.popupContent?.contains(details)) {
+      return null;
+    }
+
+    return details;
+  }
+
+  clearCardDetailsReuse() {
+    this.renderedCardScrollKey = '';
+    this.refs.cardDetails = null;
+  }
+
+  dispatchScrollEvent(element) {
+    if (!element) {
+      return;
+    }
+
+    const EventCtor = element.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+    element.dispatchEvent(new EventCtor('scroll'));
   }
 
   renderCardTabs() {

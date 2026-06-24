@@ -10,11 +10,13 @@ export class BrewingRecipeBookManager {
     getSelectedRecipeKey,
     getCurrentCauldronIndex,
     onSelectRecipe,
+    onSelectBrewQuantity,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSelectedRecipeKey = getSelectedRecipeKey;
     this.getCurrentCauldronIndex = getCurrentCauldronIndex;
     this.onSelectRecipe = onSelectRecipe;
+    this.onSelectBrewQuantity = onSelectBrewQuantity;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -95,12 +97,15 @@ export class BrewingRecipeBookManager {
     const rows = document.createElement('div');
     rows.className = 'brewing-page__recipe-list';
 
+    const quantitySummary = this.createQuantitySummary();
     const autoSummary = this.createAutoSummary();
 
-    dialog.append(title, closeButton, autoSummary.root, rows);
+    dialog.append(title, closeButton, quantitySummary.root, autoSummary.root, rows);
     popup.append(dialog);
     this.refs.dialog = dialog;
     this.refs.title = title;
+    this.refs.quantitySummary = quantitySummary.root;
+    this.refs.quantityOptions = quantitySummary.options;
     this.refs.autoSummary = autoSummary.root;
     this.refs.autoStateButton = autoSummary.stateButton;
     this.refs.autoRecipeValue = autoSummary.recipeValue;
@@ -128,6 +133,27 @@ export class BrewingRecipeBookManager {
       stateButton,
       recipeValue: recipeRow.value,
     };
+  }
+
+  createQuantitySummary() {
+    const root = document.createElement('div');
+    root.className = 'brewing-page__quantity-summary';
+    root.hidden = true;
+
+    const row = document.createElement('div');
+    row.className = 'brewing-page__quantity-row';
+
+    const label = document.createElement('span');
+    label.className = 'row_key';
+    label.textContent = 'brew';
+
+    const options = document.createElement('span');
+    options.className = 'row_val brewing-page__quantity-options';
+
+    row.append(label, options);
+    root.append(row);
+
+    return { root, options };
   }
 
   createAutoRow(labelText) {
@@ -173,9 +199,15 @@ export class BrewingRecipeBookManager {
     const recipes = snapshot.brewing?.recipes ?? [];
     const unlockedRecipes = recipes.filter((recipe) => recipe.unlocked);
     this.renderTitle();
+    this.renderQuantitySummary(snapshot);
     this.renderAutoSummary(snapshot, unlockedRecipes);
     const ownedIngredientQuantities = this.getOwnedIngredientQuantities(snapshot);
-    const signature = this.createRenderSignature(unlockedRecipes, ownedIngredientQuantities);
+    const brewQuantity = this.getBrewQuantity(snapshot);
+    const signature = this.createRenderSignature(
+      unlockedRecipes,
+      ownedIngredientQuantities,
+      brewQuantity,
+    );
 
     if (signature === this.renderedSignature) {
       return;
@@ -184,7 +216,11 @@ export class BrewingRecipeBookManager {
     this.renderedSignature = signature;
 
     this.refs.rows.replaceChildren(
-      ...this.createRecipeListRows(unlockedRecipes, ownedIngredientQuantities),
+      ...this.createRecipeListRows(
+        unlockedRecipes,
+        ownedIngredientQuantities,
+        brewQuantity,
+      ),
     );
   }
 
@@ -232,7 +268,60 @@ export class BrewingRecipeBookManager {
     );
   }
 
-  createRenderSignature(recipes, ownedIngredientQuantities = new Map()) {
+  renderQuantitySummary(snapshot) {
+    if (!this.refs.quantitySummary || !this.refs.quantityOptions) {
+      return;
+    }
+
+    const maxBrewQuantity = this.getMaxBrewQuantity(snapshot);
+    const brewQuantity = this.getBrewQuantity(snapshot);
+    const visible = maxBrewQuantity > 1;
+
+    this.setHidden(this.refs.quantitySummary, !visible);
+
+    if (!visible) {
+      this.refs.quantityOptions.replaceChildren();
+      return;
+    }
+
+    const existingButtons = new Map(
+      [...this.refs.quantityOptions.querySelectorAll('.brewing-page__quantity-button')]
+        .map((button) => [Number(button.dataset.brewQuantity), button]),
+    );
+    const buttons = [];
+
+    for (let quantity = 1; quantity <= maxBrewQuantity; quantity += 1) {
+      const button = existingButtons.get(quantity) ?? this.createQuantityButton(quantity);
+      const selected = quantity === brewQuantity;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      button.setAttribute(
+        'aria-label',
+        selected ? `brewing x${quantity}` : `set brewing x${quantity}`,
+      );
+      buttons.push(button);
+    }
+
+    this.refs.quantityOptions.replaceChildren(...buttons);
+  }
+
+  createQuantityButton(quantity) {
+    const button = document.createElement('button');
+    button.className = 'brewing-page__quantity-button';
+    button.type = 'button';
+    button.dataset.brewQuantity = String(quantity);
+    button.textContent = `x${quantity}`;
+    button.addEventListener('click', () => this.selectBrewQuantity(quantity));
+    return button;
+  }
+
+  selectBrewQuantity(quantity) {
+    const cauldronIndex = this.getSafeCurrentCauldronIndex();
+    this.onSelectBrewQuantity?.(quantity, cauldronIndex);
+    this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  createRenderSignature(recipes, ownedIngredientQuantities = new Map(), brewQuantity = 1) {
     const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? '';
     const recipeSignature = recipes
       .map((recipe) => {
@@ -250,10 +339,14 @@ export class BrewingRecipeBookManager {
       })
       .join('|');
 
-    return `${selectedRecipeKey}::${recipeSignature}`;
+    return `${selectedRecipeKey}:x${brewQuantity}::${recipeSignature}`;
   }
 
-  createRecipeListRows(recipes, ownedIngredientQuantities = new Map()) {
+  createRecipeListRows(
+    recipes,
+    ownedIngredientQuantities = new Map(),
+    brewQuantity = 1,
+  ) {
     if (recipes.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'brewing-page__recipe-empty';
@@ -261,10 +354,12 @@ export class BrewingRecipeBookManager {
       return [empty];
     }
 
-    return recipes.map((recipe) => this.createRecipeRow(recipe, ownedIngredientQuantities));
+    return recipes.map((recipe) =>
+      this.createRecipeRow(recipe, ownedIngredientQuantities, brewQuantity),
+    );
   }
 
-  createRecipeRow(recipe, ownedIngredientQuantities = new Map()) {
+  createRecipeRow(recipe, ownedIngredientQuantities = new Map(), brewQuantity = 1) {
     const row = document.createElement('button');
     row.className = 'brewing-page__recipe-row';
     row.type = 'button';
@@ -295,6 +390,7 @@ export class BrewingRecipeBookManager {
     const ingredients = this.createIngredientsList(
       recipe.ingredients,
       ownedIngredientQuantities,
+      brewQuantity,
     );
 
     const meta = document.createElement('div');
@@ -303,7 +399,7 @@ export class BrewingRecipeBookManager {
     const cost = document.createElement('span');
     cost.className = 'brewing-page__recipe-cost';
     setResourceColor(cost, 'mana');
-    setResourceIconText(cost, `cost ${recipe.manaCost} mana`);
+    setResourceIconText(cost, `cost ${recipe.manaCost * brewQuantity} mana`);
 
     const duration = document.createElement('span');
     duration.className = 'brewing-page__recipe-duration';
@@ -405,7 +501,11 @@ export class BrewingRecipeBookManager {
     return hasSelectedRecipe ? 'enable auto' : 'select recipe before enabling auto';
   }
 
-  createIngredientsList(ingredients = [], ownedIngredientQuantities = new Map()) {
+  createIngredientsList(
+    ingredients = [],
+    ownedIngredientQuantities = new Map(),
+    brewQuantity = 1,
+  ) {
     const root = document.createElement('div');
     root.className = 'brewing-page__recipe-ingredients';
 
@@ -422,6 +522,7 @@ export class BrewingRecipeBookManager {
         const row = document.createElement('div');
         row.className = 'brewing-page__recipe-ingredient-row';
         const quantity = this.normalizeIngredientQuantity(ingredient);
+        const totalQuantity = quantity * brewQuantity;
         const ownedQuantity = this.getOwnedIngredientQuantity(
           ingredient,
           ownedIngredientQuantities,
@@ -429,9 +530,12 @@ export class BrewingRecipeBookManager {
 
         const required = document.createElement('span');
         required.className = 'brewing-page__recipe-ingredient-required';
-        required.classList.toggle('is-unavailable', ownedQuantity < quantity);
+        required.classList.toggle('is-unavailable', ownedQuantity < totalQuantity);
         setResourceColor(required, 'herb');
-        required.append(`- ${quantity} `, this.createIngredientIconLabel(ingredient));
+        required.append(
+          this.formatIngredientPrefix(quantity, brewQuantity),
+          this.createIngredientIconLabel(ingredient),
+        );
 
         const owned = document.createElement('span');
         owned.className = 'brewing-page__recipe-ingredient-owned';
@@ -489,6 +593,33 @@ export class BrewingRecipeBookManager {
     }
 
     return Math.max(0, Math.floor(quantity));
+  }
+
+  getBrewQuantity(snapshot) {
+    const cauldron = this.getCauldronSnapshot(snapshot, this.getSafeCurrentCauldronIndex());
+    const maxBrewQuantity = this.getMaxBrewQuantity(snapshot);
+    const quantity = Math.floor(Number(cauldron?.brewQuantity));
+
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return maxBrewQuantity;
+    }
+
+    return Math.min(quantity, maxBrewQuantity);
+  }
+
+  getMaxBrewQuantity(snapshot) {
+    const cauldron = this.getCauldronSnapshot(snapshot, this.getSafeCurrentCauldronIndex());
+    const maxBrewQuantity = Math.floor(
+      Number(cauldron?.maxBrewQuantity ?? cauldron?.level),
+    );
+    return Number.isInteger(maxBrewQuantity) && maxBrewQuantity > 0 ? maxBrewQuantity : 1;
+  }
+
+  formatIngredientPrefix(quantity, brewQuantity = 1) {
+    const safeBrewQuantity = Math.max(1, Math.floor(Number(brewQuantity) || 1));
+    return safeBrewQuantity > 1
+      ? `- ${safeBrewQuantity} x ${quantity} `
+      : `- ${quantity} `;
   }
 
   formatDuration(durationMs) {

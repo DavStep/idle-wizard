@@ -10,6 +10,7 @@ import {
 import { normalizePlayerPlotView } from '../../../player/playerPlotViews.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { setStarLevelLabel } from '../../shared/starLevelLabel.js';
 import {
   setResourceColor,
   setResourceColorFromText,
@@ -519,14 +520,13 @@ export class GardenPlotManager {
       this.setText(refs.label, lockedTileLabel);
       setItemIconLabel(refs.label, null);
       setResourceColor(refs.label, null);
-      this.setText(refs.state, '');
+      this.setPlotLevel(refs.state, tile);
       this.setTileAction(refs, {
         label: lockedTileAction,
         colorResource: !lockedTileDisabled,
       });
       this.setBoxTile(refs, tile, {
         label: lockedTileLabel,
-        level: this.formatPlotLevel(tile),
         action: lockedTileAction,
         actionColorResource: !lockedTileDisabled,
       });
@@ -549,7 +549,7 @@ export class GardenPlotManager {
       const emptyTileDisplay = this.getPlotLabelDisplay(tile);
       const emptyTileAction = hasSelectedSeed
         ? selectedSeedQuantity > 0
-          ? 'plant'
+          ? this.formatPlantAction(tile)
           : 'no seeds'
         : 'choose';
       this.setText(refs.label, emptyTileDisplay.label);
@@ -559,14 +559,13 @@ export class GardenPlotManager {
         emptyTileDisplay.itemKey,
       );
       setResourceColor(refs.label, emptyTileDisplay.resource);
-      this.setText(refs.state, '');
+      this.setPlotLevel(refs.state, tile);
       this.setTileAction(refs, {
         label: emptyTileAction,
       });
       this.setBoxTile(refs, tile, {
         label: emptyTileDisplay.label,
         labelResource: emptyTileDisplay.resource,
-        level: this.formatPlotLevel(tile),
         action: emptyTileAction,
       });
       refs.button.setAttribute(
@@ -588,12 +587,11 @@ export class GardenPlotManager {
       activeTileDisplay.itemKey,
     );
     setResourceColor(refs.label, activeTileDisplay.resource);
-    this.setText(refs.state, '');
+    this.setPlotLevel(refs.state, tile);
     this.setTileAction(refs, activeTileAction);
     this.setBoxTile(refs, tile, {
       label: activeTileDisplay.label,
       labelResource: activeTileDisplay.resource,
-      level: this.formatPlotLevel(tile),
       action: activeTileAction.label,
       timer: this.formatBoxTimer(tile),
       herbKey: tile.herbKey,
@@ -709,7 +707,6 @@ export class GardenPlotManager {
     {
       label = '',
       labelResource = null,
-      level = '',
       action = '',
       timer = '',
       actionColorResource = true,
@@ -717,7 +714,7 @@ export class GardenPlotManager {
     } = {},
   ) {
     this.setText(refs.boxNumber, String(tile.tileNumber));
-    this.setText(refs.boxLevel, level);
+    this.setPlotLevel(refs.boxLevel, tile);
     this.setText(refs.boxLabel, label);
     setResourceColor(refs.boxLabel, labelResource);
     this.setResourceText(refs.boxActionLabel, action);
@@ -791,9 +788,13 @@ export class GardenPlotManager {
     return '';
   }
 
-  formatPlotLevel(tile) {
+  formatPlantAction(tile) {
     const level = Math.max(1, Math.floor(Number(tile?.level) || 1));
-    return `lvl ${level}`;
+    return level > 1 ? `plant x${level}` : 'plant';
+  }
+
+  setPlotLevel(element, tile) {
+    setStarLevelLabel(element, tile?.level);
   }
 
   renderSeeds(snapshot, seeds) {

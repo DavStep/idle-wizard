@@ -110,6 +110,16 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getCostEmerald('emerald:plotPlanting:2:2')).toBe(2);
   });
 
+  it('prices emerald level-ups by upgrade level, not slot number', () => {
+    const manager = new ResearchBalanceManager();
+
+    expect(manager.getCostEmerald('emerald:plotPlanting:1:2')).toBe(1);
+    expect(manager.getCostEmerald('emerald:plotPlanting:10:2')).toBe(1);
+    expect(manager.getCostEmerald('emerald:plotPlanting:10:3')).toBe(2);
+    expect(manager.getCostEmerald('emerald:cauldronBrewing:5:2')).toBe(1);
+    expect(manager.getCostEmerald('emerald:cauldronBrewing:5:3')).toBe(2);
+  });
+
   it('reads ruby research costs for research time reduction', () => {
     const manager = new ResearchBalanceManager({
       balance: {

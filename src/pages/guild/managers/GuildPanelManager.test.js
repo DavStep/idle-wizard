@@ -23,7 +23,7 @@ function createCreatedGuildSnapshot(overrides = {}) {
     title: 'lost lantern',
     difficulty: 'easy',
     statLabel: 'wits',
-    rewardText: '12 coin',
+    rewardText: '12 coin, 3 seeds, or 4 herbs',
     lore: 'a village needs light.',
     expiresLabel: '12m',
   };
@@ -32,7 +32,7 @@ function createCreatedGuildSnapshot(overrides = {}) {
     title: 'old road escort',
     difficulty: 'medium',
     statLabel: 'endurance / charisma',
-    rewardText: '20 coin',
+    rewardText: '20 coin, 5 seeds, or 6 herbs',
     lore: 'a trader wants one honest shadow.',
     expiresLabel: '12m',
   };
@@ -251,7 +251,7 @@ describe('GuildPanelManager', () => {
     );
 
     const refreshedPanel = parent.querySelector('.guild-page__tabpanel');
-    expect(refreshedPanel).not.toBe(panel);
+    expect(refreshedPanel).toBe(panel);
     expect(refreshedPanel?.dataset.guildTabPanel).toBe('board');
     expect(refreshedPanel?.scrollTop).toBe(96);
 
@@ -280,7 +280,7 @@ describe('GuildPanelManager', () => {
 
   it('shows board requests above available quests with details, rewards, and actions', () => {
     const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
-    const { parent } = mountManager(gameplayFacade);
+    const { parent, popupLayer } = mountManager(gameplayFacade);
 
     parent
       .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
@@ -295,9 +295,10 @@ describe('GuildPanelManager', () => {
     );
     const boardRow = boardBox?.querySelector('.guild-page__request-row');
     const availableRow = availableBox?.querySelector('.guild-page__request-row');
-    const separator = parent.querySelector('.guild-page__board-separator');
+    const boardReward = boardRow?.querySelector('.guild-page__request-reward');
+    const availableReward = availableRow?.querySelector('.guild-page__request-reward');
 
-    expect(separator).not.toBeNull();
+    expect(parent.querySelector('.guild-page__board-separator')).toBeNull();
     expect(boardRow?.querySelector('.guild-page__request-title')?.textContent).toBe(
       'lost lantern',
     );
@@ -307,9 +308,18 @@ describe('GuildPanelManager', () => {
     expect(boardRow?.querySelector('.guild-page__request-meta')?.textContent).toBe(
       'easy, expires 12m',
     );
-    expect(boardRow?.querySelector('.guild-page__request-reward')?.textContent).toBe(
-      'reward: 12 coin',
+    expect(boardReward?.textContent).toBe(
+      'reward: 12 coin, 3 seeds, or 4 herbs',
     );
+    expect(boardReward?.querySelector('.style-resource-label--coin')).not.toBeNull();
+    expect(
+      boardReward?.querySelector('.style-resource-label--seed .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('seed:regular');
+    expect(
+      boardReward?.querySelector('.style-resource-label--herb .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('herb:sageHerb');
     expect(boardBox?.querySelector('.guild-page__box-bottom')).toBeNull();
     expect(boardRow?.querySelector('.guild-page__row-action')?.textContent).toBe('remove');
     expect(availableRow?.querySelector('.guild-page__request-title')?.textContent).toBe(
@@ -321,15 +331,30 @@ describe('GuildPanelManager', () => {
     expect(availableRow?.querySelector('.guild-page__request-meta')?.textContent).toBe(
       'medium, expires 12m',
     );
-    expect(availableRow?.querySelector('.guild-page__request-reward')?.textContent).toBe(
-      'reward: 20 coin',
+    expect(availableReward?.textContent).toBe(
+      'reward: 20 coin, 5 seeds, or 6 herbs',
     );
+    expect(availableReward?.querySelector('.style-resource-label--coin')).not.toBeNull();
+    expect(availableReward?.querySelector('.style-resource-label--seed')).not.toBeNull();
+    expect(availableReward?.querySelector('.style-resource-label--herb')).not.toBeNull();
     const availableTimerRow = [...(availableBox?.querySelectorAll('.guild-page__row') ?? [])].find(
       (row) => row.querySelector('.guild-page__row-key')?.textContent === 'upcoming quest',
     );
     expect(availableTimerRow?.querySelector('.guild-page__row-value')?.textContent).toBe('12m');
     expect(availableBox?.querySelector('.guild-page__box-bottom')).toBeNull();
     expect(availableRow?.querySelector('.guild-page__row-action')?.textContent).toBe('post');
+
+    boardRow
+      ?.querySelector('.guild-page__request-main')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const rewardDialogRow = [...popupLayer.querySelectorAll('.guild-page__row')].find(
+      (row) => row.querySelector('.guild-page__row-key')?.textContent === 'reward',
+    );
+    expect(rewardDialogRow?.textContent).toBe('reward12 coin, 3 seeds, or 4 herbs');
+    expect(rewardDialogRow?.querySelector('.style-resource-label--coin')).not.toBeNull();
+    expect(rewardDialogRow?.querySelector('.style-resource-label--seed')).not.toBeNull();
+    expect(rewardDialogRow?.querySelector('.style-resource-label--herb')).not.toBeNull();
 
     boardRow
       ?.querySelector('.guild-page__row-action')
@@ -342,7 +367,7 @@ describe('GuildPanelManager', () => {
     expect(gameplayFacade.postGuildRequest).toHaveBeenCalledWith('request-2');
   });
 
-  it('separates multiple available quests with thin dividers', () => {
+  it('separates multiple board and available quests with thin dividers', () => {
     const firstRequest = {
       id: 'request-2',
       title: 'old road escort',
@@ -372,6 +397,9 @@ describe('GuildPanelManager', () => {
     };
     const gameplayFacade = createGameplayFacadeFake(
       createCreatedGuildSnapshot({
+        board: [firstRequest, secondRequest],
+        normalBoard: [firstRequest, secondRequest],
+        eventBoard: [],
         availableRequests: [firstRequest, secondRequest, eventRequest],
         availableNormalRequests: [firstRequest, secondRequest],
         availableEventRequests: [eventRequest],
@@ -384,9 +412,20 @@ describe('GuildPanelManager', () => {
       .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const availableBox = [...parent.querySelectorAll('.guild-page__box')].find(
+    const boxes = [...parent.querySelectorAll('.guild-page__box')];
+    const boardBox = boxes.find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'request board',
+    );
+    const availableBox = boxes.find(
       (box) => box.querySelector('.style-box__title')?.textContent === 'available quests',
     );
+    const boardRequestRows = [
+      ...(boardBox?.querySelectorAll('.guild-page__request-row') ?? []),
+    ];
+    const boardSeparators = [
+      ...(boardBox?.querySelectorAll('.guild-page__quest-separator') ?? []),
+    ];
+    const boardChildren = [...(boardBox?.querySelector('.guild-page__rows')?.children ?? [])];
     const requestRows = [
       ...(availableBox?.querySelectorAll('.guild-page__request-row') ?? []),
     ];
@@ -396,6 +435,11 @@ describe('GuildPanelManager', () => {
     const children = [...(availableBox?.querySelector('.guild-page__rows')?.children ?? [])];
     const eventLabel = availableBox?.querySelector('.guild-page__section-label');
 
+    expect(boardRequestRows).toHaveLength(2);
+    expect(boardSeparators).toHaveLength(1);
+    expect(boardChildren.indexOf(boardSeparators[0])).toBe(
+      boardChildren.indexOf(boardRequestRows[1]) - 1,
+    );
     expect(requestRows).toHaveLength(3);
     expect(separators).toHaveLength(2);
     expect(children.indexOf(separators[0])).toBe(children.indexOf(requestRows[1]) - 1);
@@ -503,6 +547,21 @@ describe('GuildPanelManager', () => {
     expect(popupLayer.textContent).not.toContain('upgrade secretary');
   });
 
+  it('renders the trimmed guild secretary icon in the secretary box', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+    const secretaryBox = [...parent.querySelectorAll('.guild-page__box')].find(
+      (box) => box.querySelector('.style-box__title')?.textContent === 'secretary',
+    );
+    const iconRow = secretaryBox?.querySelector('.guild-page__secretary-icon-row');
+    const icon = secretaryBox?.querySelector('.guild-page__secretary-icon');
+
+    expect(iconRow).not.toBeNull();
+    expect(icon?.tagName).toBe('IMG');
+    expect(icon?.getAttribute('src')).toContain('guild_secretary.png');
+    expect([...(iconRow?.children ?? [])]).toEqual([icon]);
+  });
+
   it('animates the secretary box once when the secretary level increases', () => {
     const gameplayFacade = createGameplayFacadeFake(
       createCreatedGuildSnapshot({
@@ -564,6 +623,23 @@ describe('GuildPanelManager', () => {
     )?.groups?.body;
 
     expect(gainRule).toMatch(/\bcolor:\s*var\(--style-alliance-tag-green\);/);
+  });
+
+  it('styles the guild secretary icon at character row size without a fixed canvas', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rowRule = baseCss.match(
+      /\.guild-page__secretary-icon-row\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const iconRule = baseCss.match(
+      /\.guild-page__secretary-icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rowRule).toMatch(/\bdisplay:\s*flex;/);
+    expect(rowRule).toMatch(/\bjustify-content:\s*center;/);
+    expect(rowRule).toMatch(/\bmin-height:\s*48px;/);
+    expect(iconRule).toMatch(/\bwidth:\s*auto;/);
+    expect(iconRule).toMatch(/\bheight:\s*48px;/);
+    expect(iconRule).toMatch(/\bobject-fit:\s*contain;/);
   });
 
   it('styles secretary upgrade motion with a reduced-motion fallback', () => {
@@ -706,6 +782,59 @@ describe('GuildPanelManager', () => {
 
     expect(gameplayFacade.hireGuildApplicant).toHaveBeenCalledWith('applicant-1');
     expect(popupLayer.querySelector('.guild-page__popup')?.hidden).toBe(true);
+  });
+
+  it('preserves applicant info scroll across same-card refreshes', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent, popupLayer } = mountManager(gameplayFacade);
+
+    parent
+      .querySelector('.guild-page__content-tab-button[data-guild-tab="adventurers"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const applicantRows = [...parent.querySelectorAll('.guild-page__adventurer-row')];
+    applicantRows[1]
+      ?.querySelector('.guild-page__row-main')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const details = popupLayer.querySelector('.guild-page__card-details');
+    const scrollListener = vi.fn();
+    details?.addEventListener('scroll', scrollListener);
+    details.scrollTop = 88;
+
+    const nextGuild = createCreatedGuildSnapshot({ applicantResetLabel: '11m' });
+    nextGuild.applicants = [
+      {
+        ...nextGuild.applicants[0],
+        xp: 4,
+        nextLevelXp: 12,
+        stats: {
+          wits: 3,
+        },
+      },
+    ];
+    gameplayFacade.emitGuild(nextGuild);
+
+    const refreshedDetails = popupLayer.querySelector('.guild-page__card-details');
+    const detailRows = [...(refreshedDetails?.querySelectorAll('.guild-page__card-row') ?? [])].map(
+      (row) => [
+        row.querySelector('.row_key')?.textContent,
+        row.querySelector('.row_val')?.textContent,
+      ],
+    );
+
+    expect(refreshedDetails).toBe(details);
+    expect(refreshedDetails?.scrollTop).toBe(88);
+    expect(scrollListener).toHaveBeenCalled();
+    expect(detailRows).toContainEqual(['xp', '4/12']);
+
+    refreshedDetails.scrollTop = 42;
+    popupLayer
+      .querySelectorAll('.guild-page__tab-button')[1]
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const lifeDetails = popupLayer.querySelector('.guild-page__card-details');
+    expect(lifeDetails).not.toBe(refreshedDetails);
+    expect(lifeDetails?.scrollTop).toBe(0);
   });
 
   it('renders adventurers and applicants as compact identity cards', () => {
@@ -998,9 +1127,6 @@ describe('GuildPanelManager', () => {
     const requestLineRule = baseCss.match(
       /\.guild-page__request-title,\s*\.guild-page__request-description,\s*\.guild-page__request-meta,\s*\.guild-page__request-reward\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const separatorRule = baseCss.match(
-      /\.guild-page__board-separator\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
     const questSeparatorRule = baseCss.match(
       /\.guild-page__quest-separator\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -1009,8 +1135,25 @@ describe('GuildPanelManager', () => {
     expect(requestMainRule).toMatch(/\btext-overflow:\s*clip;/);
     expect(requestLineRule).toMatch(/\bwhite-space:\s*normal;/);
     expect(requestLineRule).toMatch(/\boverflow-wrap:\s*anywhere;/);
-    expect(separatorRule).toMatch(/\bborder-top:\s*var\(--style-border\);/);
+    expect(baseCss).not.toMatch(/\.guild-page__board-separator\b/);
     expect(questSeparatorRule).toMatch(/\bborder-top:\s*var\(--style-border\);/);
+  });
+
+  it('keeps guild request reward resources on resource colors', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const coinRule = baseCss.match(
+      /\.guild-page__request-reward\s+\[data-resource-color="coin"\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const seedRule = baseCss.match(
+      /\.guild-page__request-reward\s+\[data-resource-color="seed"\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const herbRule = baseCss.match(
+      /\.guild-page__request-reward\s+\[data-resource-color="herb"\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(coinRule).toMatch(/\bcolor:\s*var\(--style-resource-coin\);/);
+    expect(seedRule).toMatch(/\bcolor:\s*var\(--style-resource-seed\);/);
+    expect(herbRule).toMatch(/\bcolor:\s*var\(--style-resource-herb\);/);
   });
 
   it('populates guild settings fields and keeps in-progress edits through refreshes', () => {

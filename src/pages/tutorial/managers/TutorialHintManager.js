@@ -94,6 +94,7 @@ const OBJECTIVE_TARGET_CONTAINER_SELECTORS = [
   '.brewing-page__action-row',
 ];
 const TARGET_CUE_ANCHOR_SELECTORS = new Map([
+  ['top:username', '.room-top-panel__username-label'],
   ['workshop:levelUp', '.workshop-page__level-complete-button'],
 ]);
 const OBJECTIVE_PLACEMENTS = [
@@ -153,6 +154,8 @@ export class TutorialHintManager {
     this.blockingDialogSuspended = false;
     this.pointerState = null;
     this.pointerHideTimeout = null;
+    this.targetCueFrame = null;
+    this.pendingTargetCue = null;
     this.objectiveHideTimeout = null;
     this.targetEmphasisStates = new Map();
     this.typewriterTimers = new Map();
@@ -414,6 +417,7 @@ export class TutorialHintManager {
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
     this.blockingDialogSuspended = false;
+    this.clearTargetCueFrame();
     this.clearPointerHideTimeout();
     this.clearObjectiveHideTimeout();
     this.cancelGuideDrag();
@@ -460,8 +464,9 @@ export class TutorialHintManager {
     }
   }
 
-  showTargetCue({ target, showPointer = true } = {}) {
+  showTargetCue({ target, showPointer = true, allowDefer = true } = {}) {
     if (!this.root || !this.stage || !target) {
+      this.clearTargetCueFrame();
       this.hideTargetCue();
       return;
     }
@@ -469,10 +474,15 @@ export class TutorialHintManager {
     const rect = this.getTargetCueSourceRect(target);
 
     if (!rect) {
-      this.hideTargetCue();
+      if (allowDefer) {
+        this.deferTargetCue({ target, showPointer });
+      } else {
+        this.hideTargetCue();
+      }
       return;
     }
 
+    this.clearTargetCueFrame();
     this.blockingDialogSuspended = false;
     this.root.hidden = false;
     this.hidePromptBox();
@@ -969,6 +979,7 @@ export class TutorialHintManager {
   }
 
   hideTargetCue({ immediate = false } = {}) {
+    this.clearTargetCueFrame();
     this.hidePointer({ immediate });
     this.clearAllTargetEmphasis();
 
@@ -998,6 +1009,45 @@ export class TutorialHintManager {
   getTargetCueSourceRect(target) {
     const cueAnchor = getTargetCueAnchor(target);
     return this.getSourceRect(cueAnchor ?? target);
+  }
+
+  deferTargetCue({ target, showPointer }) {
+    this.pendingTargetCue = { target, showPointer };
+
+    if (this.targetCueFrame !== null) {
+      return;
+    }
+
+    const view = this.getWindow();
+
+    if (typeof view?.requestAnimationFrame !== 'function') {
+      this.hideTargetCue();
+      return;
+    }
+
+    this.targetCueFrame = view.requestAnimationFrame(() => {
+      this.targetCueFrame = null;
+      const pending = this.pendingTargetCue;
+      this.pendingTargetCue = null;
+
+      if (!pending) {
+        return;
+      }
+
+      this.showTargetCue({ ...pending, allowDefer: false });
+    });
+  }
+
+  clearTargetCueFrame() {
+    if (this.targetCueFrame === null) {
+      this.pendingTargetCue = null;
+      return;
+    }
+
+    const view = this.getWindow();
+    view?.cancelAnimationFrame?.(this.targetCueFrame);
+    this.targetCueFrame = null;
+    this.pendingTargetCue = null;
   }
 
   getUiScale() {

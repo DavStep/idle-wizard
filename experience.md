@@ -11,6 +11,7 @@
 - Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 - When loading a prod save into local SpacetimeDB for desktop QA, direct-SQL the `player_gameplay_save` row and clear that identity's `player_session`; reducer import while the client is open can be overwritten by stale in-memory saves.
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
+- Single-account support currency grants need a server pending-grant guard through the next client save; active clients can reconnect and autosave stale in-memory currency over a one-shot admin save edit.
 - Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
 - Full progression resets should post a human Discord notice before the reducer runs, using the reset/maintenance webhook rather than the APK upload webhook.
 - Zero-total-coin player cleanup must consider players with no leaderboard/save rows; `leaderboard.total_income = 0` alone misses accounts that connected but never progressed.
@@ -20,6 +21,7 @@
 - Fresh empty gameplay saves must reset browser FTUE progress before loading the null save; otherwise stale completed tutorial storage hides Elara on new data.
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
+- Fresh Android installs must show the account/start-fresh choice before any Credential Manager restore; native Google can silently restore a previously authorized account even when app-local data was cleared.
 
 ## Product Shape
 
@@ -36,7 +38,7 @@
 - Timer progress fills that transition `transform` toward full need a computed-style flush after applying the current scale; remounted bars can otherwise paint full before the transition starts.
 - Smooth timer progress transitions keep Android WebView drawing every frame; for text-game timer bars prefer stepped fills from snapshot refreshes.
 - Garden, Brewing, and Research timer bars should share short stepped transforms and shared remaining-time text; do not let one active timer surface keep a full-duration continuous fill on Android.
-- Timer progress bars should soften active 500ms snapshot steps with near-cadence transform transitions, not full remaining-duration transitions.
+- Timer progress bars should soften active 250ms snapshot steps with near-cadence transform transitions, not full remaining-duration transitions.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
@@ -88,6 +90,7 @@
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
 - World event same-tab refreshes must restore `.workshop-page__world-notice-frame.scrollTop`; live snapshot/leaderboard updates otherwise bounce mobile scrolling back to the top.
 - World event same-tab refreshes should reuse the existing `.workshop-page__world-notice-frame`; replacing the scroll element can still break mobile momentum even when `scrollTop` is restored.
+- Snapshot-rendered dialog scroll panes should key and reuse the same scrolling element across same-card/tab refreshes; replacing panes can snap mobile scroll back to top.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
@@ -105,6 +108,7 @@
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; otherwise the right side of the room looks unused beside world chat.
 - Guild content tabs should use compact labels like `hall`, `board`, `roster`, and `log`; `adventurers` crowds fitted desktop tab widths.
 - Guild tab panels are rebuilt on snapshot refresh; preserve `.guild-page__tabpanel.scrollTop` per tab or mobile scrolling snaps back to the top.
+- Guild board refreshes should retain the active `.guild-page__tabpanel` DOM node; restoring `scrollTop` alone can still kill mobile scroll momentum.
 - Guild request board rows are player-selected from an available quest pool; new waves refresh available quests and expire old requests, but never auto-fill the visible board.
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
@@ -191,6 +195,7 @@
 - FTUE level-5 theme/settings guidance is passive; it should point to the username settings opener first, then the `theme` settings tab when settings is open.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
 - FTUE username target needs the username button rect to fit the visible name text; a flex-filled button makes the pointer drift toward the level/coin side.
+- New focus-target FTUE steps after an open press-to-advance lesson must evaluate as collapsed; carrying the old open-panel state suppresses the first pointer until another refresh.
 - Level-3 FTUE must continue after mint seed research through mint seed task, mint herb task, and level-up; otherwise Elara disappears while tasks remain.
 - Level-3 FTUE should be passive: no automatic target popups; show Elara attention only after idle/stuck time, then reveal target guidance on player request.
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
@@ -218,6 +223,8 @@
 - Prestige ruby summary/reward text needs `setResourceIconText`; `data-resource-color` alone colors text but does not render icons.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
 - Currency amount text and icon belong in one `style-resource-label`; otherwise resource color mode can color only the icon/word and leave the number monochrome.
+- Resource icon amount parsing must include hyphen ranges like `130-180 coin`; otherwise quest reward ranges leave the number muted outside the colored label.
+- Guild quest reward ranges use generic `coin`/`seeds`/`herbs` text, so render them with `setResourceIconText` rather than item-name icon helpers.
 - Player character generation workflow is removed; do not add/rebuild selectable avatar generation unless the user explicitly asks.
 - Shared character PNGs in `src/assets/characters` are legacy public-row display assets, not a selectable customization system.
 - Guild adventurers should use a fitting non-Elara `iconKey` from `src/assets/characters/character-descriptions.txt`.
@@ -226,6 +233,7 @@
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
+- Task difficulty uses two curves: global bands by level range plus local ten-level boss/relief rhythm, so 10/20/30/... are gates and the next row is easier.
 - Research balance/default config is mirrored in `ResearchBalanceManager`, `src/gameplay/research/research-balance.json`, `scripts/balance-sim.js`, and `spacetimedb/src/index.ts`; update all together when changing research costs/currencies.
 - SpacetimeDB task runtime config can still expose legacy `completionCostGold`; client task balance must treat it as `completionCostCoin` or level-up prices fall back to `level * 20`.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
@@ -310,8 +318,8 @@
 - Permanent prestige capacity upgrades should make the researched slot cap buyable immediately in the run; do not require replaying to the old level cap first.
 - When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
-- Top-panel selected character belongs as a small icon inside the username opener when icon mode is `icons`; keep the username label/text flow and no separate avatar button.
-- Top-panel settings expose character choice through an `avatar` tab; do not restore a user-visible `report` tab.
+- Top-panel selected character belongs in its own 58px avatar cell when icon mode is `icons`; keep the username opener text-only so FTUE username targeting stays tight.
+- Top-panel avatar and picker image rules must be more specific than `.style-player-character-icon`; otherwise the generic 18px inline icon rule shrinks them.
 - Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.
 - Tiny shared character icons should use small derived assets, not full 864x1080 portrait PNGs; full portraits can push Discord APK uploads over the size limit.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
@@ -372,7 +380,7 @@
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
 - Prestige reset saves intentionally lower run level, coin, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
-- Prestige reset baseline is paid player level 5; new prestige runs should not go back to level 1.
+- Prestige reset level is half the completed prestige milestone level; level 10 still resets to paid player level 5, and new prestige runs should not go back to level 1.
 - Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
 - After prestige, leaderboard and alliance income must advance from accepted save run-coin deltas; comparing new run `coin.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
@@ -449,6 +457,7 @@
 - Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - Research timers are capped at `4 hours`; premium-currency research is intentionally quick.
 - Emerald research time reduction applies only when starting future research; it does not rewrite active timers.
+- Emerald plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 1 emerald, second costs 2, for any plot/cauldron.
 - Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
@@ -742,6 +751,7 @@
 - Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
 - Release automation must let `.env.production` override `.env.local` for `VITE_*`; otherwise local SpacetimeDB values can leak into release APKs.
+- Ignored `public/qa-data/` is still Vite/Capacitor build input; delete or move it outside `public/` before any production web or Android build, or player QA saves can ship in `dist`/APK assets.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.

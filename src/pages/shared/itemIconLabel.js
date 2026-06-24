@@ -17,7 +17,7 @@ export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
 export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
 
 const RESOURCE_WORD_MATCH_PATTERN =
-  /\b(?:crystals?|emeralds?|coin|mana|rubies|ruby)\b/gi;
+  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+sphere\b/i;
 const GENERIC_SEED_LABELS = new Set(['choose seed', 'summon seed']);
 
@@ -292,6 +292,14 @@ function normalizeResourceMatch(label) {
 
   if (normalizedLabel === 'emeralds') {
     return 'emerald';
+  }
+
+  if (normalizedLabel === 'seeds') {
+    return 'seed';
+  }
+
+  if (normalizedLabel === 'herbs') {
+    return 'herb';
   }
 
   return normalizedLabel;

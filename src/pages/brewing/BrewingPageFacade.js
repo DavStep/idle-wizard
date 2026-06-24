@@ -40,6 +40,8 @@ export class BrewingPageFacade {
           recipe?.key ?? null,
           this.recipeGuideManager.getCurrentCauldronIndex(),
         ),
+      onSelectBrewQuantity: (quantity, cauldronIndex) =>
+        this.setBrewQuantity(quantity, cauldronIndex),
     });
     this.potionInventoryManager = new BrewingPotionInventoryManager({ gameplayFacade });
   }
@@ -106,6 +108,14 @@ export class BrewingPageFacade {
       autoBrewEnabled: cauldron?.autoBrewEnabled === true,
       autoBrewRecipeKey: cauldron?.autoBrewRecipeKey ?? null,
     };
+  }
+
+  setBrewQuantity(quantity, cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const result =
+      this.gameplayFacade?.setBrewingBrewQuantity?.(quantity, safeCauldronIndex) ?? null;
+    this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
+    return result;
   }
 
   normalizeCauldronIndex(cauldronIndex) {

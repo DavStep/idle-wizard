@@ -8,12 +8,11 @@ export const emeraldResearchIds = Object.freeze({
     `emerald:cauldronBrewing:${cauldronNumber}:${multiplier}`,
 });
 
-export function getEmeraldResearchCost({ targetNumber, multiplier }) {
-  const safeTargetNumber = Math.max(1, Math.floor(Number(targetNumber) || 1));
+export function getEmeraldResearchCost({ multiplier }) {
   const safeMultiplier = Math.max(
     emeraldResearchMinMultiplier,
     Math.floor(Number(multiplier) || emeraldResearchMinMultiplier),
   );
 
-  return safeTargetNumber * Math.max(1, safeMultiplier - 1);
+  return safeMultiplier - emeraldResearchMinMultiplier + 1;
 }

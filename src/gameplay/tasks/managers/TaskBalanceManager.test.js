@@ -25,6 +25,10 @@ const potionResearchOrder = [
   'dragonCourage',
 ];
 
+function getRequiredQuantityTotal(level) {
+  return level.tasks.reduce((total, task) => total + task.requiredQuantity, 0);
+}
+
 describe('TaskBalanceManager', () => {
   it('uses reduced level 1 sage requirements', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
@@ -160,7 +164,7 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
-  it('uses lower-medium target level 11 requirements with no repeated glowcap wall', () => {
+  it('keeps target level 11 as the first stage boss before the level 11 relief row', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -178,7 +182,7 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
-  it('tapers the early reduction down to target level 20', () => {
+  it('keeps the level 19 ramp below the level 20 gate', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -188,11 +192,11 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level19-moonflower-seeds', itemKey: 'moonflowerSeed', requiredQuantity: 216 },
-      { id: 'level19-frostmoss-seeds', itemKey: 'sunrootHerb', requiredQuantity: 117 },
-      { id: 'level19-frostmoss-herb', itemKey: 'frostmossHerb', requiredQuantity: 77 },
-      { id: 'level19-healing-potion', itemKey: 'briarWard', requiredQuantity: 23 },
-      { id: 'level19-venom-draught', itemKey: 'venomDraught', requiredQuantity: 16 },
+      { id: 'level19-moonflower-seeds', itemKey: 'moonflowerSeed', requiredQuantity: 114 },
+      { id: 'level19-frostmoss-seeds', itemKey: 'sunrootHerb', requiredQuantity: 62 },
+      { id: 'level19-frostmoss-herb', itemKey: 'frostmossHerb', requiredQuantity: 42 },
+      { id: 'level19-healing-potion', itemKey: 'briarWard', requiredQuantity: 12 },
+      { id: 'level19-venom-draught', itemKey: 'venomDraught', requiredQuantity: 8 },
     ]);
   });
 
@@ -206,12 +210,38 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { itemKey: 'dreambellSeed', requiredQuantity: 2750 },
-      { itemKey: 'starAniseHerb', requiredQuantity: 1224 },
-      { itemKey: 'dragonpepperHerb', requiredQuantity: 936 },
-      { itemKey: 'elixirOfLife', requiredQuantity: 250 },
-      { itemKey: 'pactWard', requiredQuantity: 188 },
+      { itemKey: 'dreambellSeed', requiredQuantity: 1620 },
+      { itemKey: 'starAniseHerb', requiredQuantity: 721 },
+      { itemKey: 'dragonpepperHerb', requiredQuantity: 551 },
+      { itemKey: 'elixirOfLife', requiredQuantity: 147 },
+      { itemKey: 'pactWard', requiredQuantity: 111 },
     ]);
+  });
+
+  it('keeps ten-level stage bosses hard locally while later bosses rise globally', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+    const levels = taskBalanceManager.getLevels();
+    const levelByNumber = new Map(levels.map((level) => [level.level, level]));
+    const bossLevels = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+
+    for (const bossLevel of bossLevels.slice(0, -1)) {
+      const bossTotal = getRequiredQuantityTotal(levelByNumber.get(bossLevel));
+      const nextOpenerTotal = getRequiredQuantityTotal(levelByNumber.get(bossLevel + 1));
+
+      expect(bossTotal, `level ${bossLevel} boss should exceed next opener`).toBeGreaterThan(
+        nextOpenerTotal,
+      );
+    }
+
+    for (let index = 1; index < bossLevels.length; index += 1) {
+      const previousBoss = getRequiredQuantityTotal(levelByNumber.get(bossLevels[index - 1]));
+      const currentBoss = getRequiredQuantityTotal(levelByNumber.get(bossLevels[index]));
+
+      expect(
+        currentBoss,
+        `level ${bossLevels[index]} boss should exceed previous stage boss`,
+      ).toBeGreaterThan(previousBoss);
+    }
   });
 
   it('does not repeat exact requirement items on adjacent levels from target level 6 onward', () => {

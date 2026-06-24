@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { automationResearchIds } from './automation/automationResearchIds.js';
-import { GameplayFacade, PRESTIGE_RESET_LEVEL } from './GameplayFacade.js';
+import { GameplayFacade, getPrestigeResetLevel } from './GameplayFacade.js';
 import { DEFAULT_PLAYER_LEVEL_BALANCE } from './playerLevel/managers/PlayerLevelBalanceManager.js';
 import { advancedResearchIds } from './research/advancedResearchIds.js';
 import { capacityResearchIds } from './research/capacityResearchIds.js';
@@ -640,6 +640,19 @@ describe('GameplayFacade', () => {
     });
   }, 30_000);
 
+  it('resets to half of the completed prestige milestone level', () => {
+    const { gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 40);
+
+    expect(gameplayFacade.completePrestigeMilestone(40)).toMatchObject({
+      ok: true,
+      milestone: { level: 40 },
+    });
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(20);
+    expect(gameplayFacade.getSnapshot().playerLevel.currentLevel).toBe(20);
+  }, 30_000);
+
   it('uses prestige-gated permanent research for extra plots and cauldrons', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -668,7 +681,7 @@ describe('GameplayFacade', () => {
     });
 
     gameplayFacade.completePrestigeMilestone(10, { confirmedLower: true });
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(getPrestigeResetLevel(10));
     expect(gameplayFacade.buyResearch(capacityResearchIds.plot(11))).toMatchObject({
       ok: true,
       cost: 1,
@@ -689,7 +702,7 @@ describe('GameplayFacade', () => {
       capacityResearchIds.plot(11),
     );
     expect(gameplayFacade.getSnapshot().ruby.current).toBe(1);
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(getPrestigeResetLevel(20));
 
     expect(gameplayFacade.buyResearch(capacityResearchIds.cauldron(6))).toMatchObject({
       ok: true,
@@ -790,7 +803,7 @@ describe('GameplayFacade', () => {
       inventory: [],
       research: { completedIds: ['unlockSeed:sageSeed'] },
       prestige: { completedLevels: [10, 20] },
-      tasks: { currentLevel: PRESTIGE_RESET_LEVEL },
+      tasks: { currentLevel: getPrestigeResetLevel(20) },
     });
 
     first.gameplayFacade.shutdown();
@@ -799,8 +812,8 @@ describe('GameplayFacade', () => {
     const second = createGameplay({ persistenceStorage });
     const snapshot = second.gameplayFacade.getSnapshot();
 
-    expect(snapshot.tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
-    expect(snapshot.playerLevel.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
+    expect(snapshot.tasks.currentLevel).toBe(getPrestigeResetLevel(20));
+    expect(snapshot.playerLevel.currentLevel).toBe(getPrestigeResetLevel(20));
     expect(snapshot.prestige.completedLevels).toEqual([10, 20]);
     expect(snapshot.prestige.earnedRuby).toBe(2);
     expect(snapshot.ruby.current).toBe(2);
@@ -1898,9 +1911,9 @@ describe('GameplayFacade', () => {
     expect(research.tabs[3].boxes[0].researches[1]).toMatchObject({
       id: emeraldResearchIds.plotPlanting(2, 2),
       label: 'plot 2 lvl 2',
-      value: '2 emerald',
+      value: '1 emerald',
       requiredResearchIds: [],
-      costEmerald: 2,
+      costEmerald: 1,
       costCurrency: 'emerald',
     });
     expect(research.tabs[3].boxes[1].researches[0]).toMatchObject({
@@ -2449,6 +2462,61 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ deltaSeconds: 2 });
 
     expect(gameplayFacade.itemsFacade.getItemQuantity(2001)).toBe(2);
+  });
+
+  it('lets upgraded cauldrons brew a selected smaller quantity', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    const researchId = emeraldResearchIds.cauldronBrewing(1, 2);
+
+    gameplayFacade.emeraldFacade.add(1);
+    expect(gameplayFacade.buyResearch(researchId)).toEqual({
+      ok: true,
+      researchId,
+      cost: 1,
+      costCurrency: 'emerald',
+    });
+    expect(gameplayFacade.setBrewingBrewQuantity(1)).toMatchObject({
+      ok: true,
+      brewQuantity: 1,
+      maxBrewQuantity: 2,
+    });
+
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.coinFacade.add(80);
+    unlockRecipeResearch(gameplayFacade);
+    ecsFacade.update({ deltaSeconds: 15 });
+
+    expect(gameplayFacade.prepareBrewingRecipe('manaTonic')).toMatchObject({
+      ok: true,
+      brewQuantity: 1,
+      ingredientItemTypeIds: [1001, 1001, 1001],
+      requiredIngredientItemTypeIds: [1001, 1001, 1001],
+    });
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      level: 2,
+      maxBrewQuantity: 2,
+      brewQuantity: 1,
+      manaCost: 12,
+      yieldMultiplier: 1,
+      canBrew: true,
+    });
+
+    expect(gameplayFacade.brewCauldron()).toMatchObject({
+      ok: true,
+      manaCost: 12,
+      quantity: 1,
+      durationMs: 30_000,
+    });
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1001)).toBe(0);
+
+    ecsFacade.update({ deltaSeconds: 30 });
+    expect(gameplayFacade.startBrewingBottling()).toMatchObject({
+      ok: true,
+      durationMs: 2_000,
+    });
+    ecsFacade.update({ deltaSeconds: 2 });
+
+    expect(gameplayFacade.itemsFacade.getItemQuantity(2001)).toBe(1);
   });
 
   it('starts fast sell at 80% payout and raises it with ruby research', () => {

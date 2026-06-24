@@ -225,6 +225,65 @@ describe('BrewingCauldronManager', () => {
     );
   });
 
+  it('multiplies missing recipe ingredients by selected brew quantity', () => {
+    const manager = new BrewingCauldronManager();
+    const recipe = {
+      key: 'twoHerbPotion',
+      label: 'two herb potion',
+      ingredients: [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          quantity: 3,
+        },
+        {
+          itemTypeId: 1003,
+          key: 'nettleHerb',
+          label: 'nettle',
+          quantity: 1,
+        },
+      ],
+    };
+    const brewing = {
+      brewQuantity: 3,
+      ingredients: [
+        {
+          slotIndex: 0,
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          kind: 'herb',
+        },
+      ],
+      herbs: [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          kind: 'herb',
+          quantity: 6,
+          availableQuantity: 5,
+        },
+        {
+          itemTypeId: 1003,
+          key: 'nettleHerb',
+          label: 'nettle',
+          kind: 'herb',
+          quantity: 1,
+          availableQuantity: 1,
+        },
+      ],
+    };
+
+    expect(manager.getMissingIngredientQuantities(recipe, brewing)).toEqual(
+      new Map([
+        [1001, 3],
+        [1003, 2],
+      ]),
+    );
+  });
+
   it('marks staged sage remove rows as tutorial targets', () => {
     const snapshot = {
       brewing: {
@@ -395,7 +454,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('shows cauldron level in the cauldron title', () => {
+  it('shows cauldron stars in the cauldron title', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -419,9 +478,12 @@ describe('BrewingCauldronManager', () => {
 
     manager.mount(parent);
 
-    expect(parent.querySelector('.brewing-page__cauldron .style-box__title')?.textContent).toBe(
-      'cauldron 1 lvl 3',
-    );
+    const title = parent.querySelector('.brewing-page__cauldron .style-box__title');
+    const star = title?.querySelector('.style-star-level');
+
+    expect(title?.textContent).toBe('cauldron 1 ★★★');
+    expect(title?.getAttribute('aria-label')).toBe('cauldron 1 yellow star 3');
+    expect(star?.dataset.starTone).toBe('yellow');
 
     manager.unmount();
     parent.remove();
@@ -520,11 +582,129 @@ describe('BrewingCauldronManager', () => {
     expect(parent.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
     expect(
       parent.querySelector('.brewing-page__cauldron .style-box__title')?.textContent,
-    ).toBe('cauldron 1 lvl 1');
+    ).toBe('cauldron 1 ★');
     expect(guide?.querySelector('.brewing-page__cauldron-recipe-row')).toBeNull();
     expect(guide?.textContent).not.toContain('recipe');
     expect(guide?.textContent).toContain('- 3 sage');
     expect(items?.hidden).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows exact xN recipe requirements in the cauldron guide', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 9,
+            availableQuantity: 9,
+          },
+          {
+            itemTypeId: 1003,
+            key: 'nettleHerb',
+            label: 'nettle',
+            kind: 'herb',
+            quantity: 3,
+            availableQuantity: 3,
+          },
+        ],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'sageNettle',
+            label: 'sage nettle',
+            unlocked: true,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+              {
+                itemTypeId: 1003,
+                key: 'nettleHerb',
+                label: 'nettle',
+                quantity: 1,
+              },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 36,
+        brewQuantity: 3,
+        maxBrewQuantity: 3,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => 'sageNettle',
+    });
+
+    manager.mount(parent);
+
+    const labels = [...parent.querySelectorAll('.brewing-page__cauldron-guide-step .row_key')].map(
+      (row) => row.textContent,
+    );
+
+    expect(labels).toEqual(['- 3 x 3 sage', '- 3 x 1 nettle']);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows selected brew quantity on the brew action', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [
+          { slotIndex: 0, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 1, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 2, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+        ],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 36,
+        brewQuantity: 3,
+        maxBrewQuantity: 3,
+        activeBrew: null,
+        match: {
+          key: 'manaTonic',
+          label: 'mana tonic',
+          unlocked: true,
+        },
+        canAddIngredient: true,
+        canBrew: true,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.brewing-page__action-button-label')?.textContent.trim()).toBe(
+      'brew x3',
+    );
+    expect(parent.querySelector('.brewing-page__action-button-cost')?.textContent).toBe(
+      '(36 mana)',
+    );
+    expect(parent.querySelector('.brewing-page__action-button')?.getAttribute('aria-label')).toBe(
+      'brew 3 mana tonic, costs 36 mana',
+    );
 
     manager.unmount();
     parent.remove();

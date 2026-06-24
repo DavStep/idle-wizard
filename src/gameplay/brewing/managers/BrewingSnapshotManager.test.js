@@ -5,6 +5,7 @@ import { BrewingSnapshotManager } from './BrewingSnapshotManager.js';
 function createSnapshotManager({
   activeBrew = null,
   cauldronMultiplier = 1,
+  brewQuantity,
   getIngredientCountsByItemTypeId,
   getIngredientCountByItemTypeId,
   getIngredientSnapshots = vi.fn(() => []),
@@ -58,6 +59,7 @@ function createSnapshotManager({
       },
       getAutoBrewEnabled: vi.fn(() => false),
       getAutoBrewRecipeKey: vi.fn(() => null),
+      getBrewQuantity: vi.fn(() => brewQuantity),
     }),
   };
 }
@@ -174,7 +176,41 @@ describe('BrewingSnapshotManager', () => {
     expect(manager.getCauldronSnapshot(0, [])).toMatchObject({
       cauldronNumber: 1,
       level: 4,
+      maxBrewQuantity: 4,
+      brewQuantity: 4,
       yieldMultiplier: 1,
+    });
+  });
+
+  it('uses selected brew quantity for affordability while keeping cauldron level as max', () => {
+    const recipe = {
+      potionTypeId: 2001,
+      key: 'manaTonic',
+      label: 'mana tonic',
+      manaCost: 12,
+      brewDurationMs: 30_000,
+    };
+    const { manager } = createSnapshotManager({
+      cauldronMultiplier: 3,
+      brewQuantity: 2,
+      getIngredientSnapshots: vi.fn(() => [
+        { slotIndex: 0, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+        { slotIndex: 1, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+        { slotIndex: 2, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+      ]),
+      getItemQuantity: vi.fn(() => 6),
+    });
+    manager.brewingRecipeMatchManager.getMatch = vi.fn(() => recipe);
+    manager.brewingRecipeMatchManager.isRecipeUnlocked = vi.fn(() => true);
+    manager.manaFacade.canSpend = vi.fn(() => true);
+
+    expect(manager.getCauldronSnapshot(0, [])).toMatchObject({
+      level: 3,
+      maxBrewQuantity: 3,
+      brewQuantity: 2,
+      yieldMultiplier: 2,
+      manaCost: 24,
+      canBrew: true,
     });
   });
 });

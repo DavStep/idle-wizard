@@ -332,4 +332,109 @@ describe('BrewingRecipeBookManager', () => {
     manager.unmount();
     parent.remove();
   });
+
+  it('shows selected brew quantity and multiplies recipe costs and ingredients', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 9,
+          },
+          {
+            itemTypeId: 1003,
+            key: 'nettleHerb',
+            label: 'nettle',
+            kind: 'herb',
+            quantity: 3,
+          },
+        ],
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            level: 3,
+            maxBrewQuantity: 3,
+            brewQuantity: 3,
+          },
+        ],
+        recipes: [
+          {
+            key: 'sageNettle',
+            label: 'sage nettle',
+            unlocked: true,
+            manaCost: 12,
+            brewDurationMs: 30_000,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+              {
+                itemTypeId: 1003,
+                key: 'nettleHerb',
+                label: 'nettle',
+                quantity: 1,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const onSelectBrewQuantity = vi.fn((quantity) => {
+      snapshot.brewing.cauldrons[0].brewQuantity = quantity;
+    });
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => null,
+      getCurrentCauldronIndex: () => 0,
+      onSelectRecipe: () => {},
+      onSelectBrewQuantity,
+    });
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.brewing-page__quantity-summary')?.hidden).toBe(false);
+    expect(
+      [...parent.querySelectorAll('.brewing-page__quantity-button')].map((button) => ({
+        text: button.textContent,
+        pressed: button.getAttribute('aria-pressed'),
+      })),
+    ).toEqual([
+      { text: 'x1', pressed: 'false' },
+      { text: 'x2', pressed: 'false' },
+      { text: 'x3', pressed: 'true' },
+    ]);
+    expect(parent.querySelector('.brewing-page__recipe-cost')?.textContent).toBe(
+      'cost 36 mana',
+    );
+    expect(
+      [...parent.querySelectorAll('.brewing-page__recipe-ingredient-row')].map((row) => ({
+        required: row.querySelector('.brewing-page__recipe-ingredient-required')?.textContent,
+        owned: row.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
+      })),
+    ).toEqual([
+      { required: '- 3 x 3 sage', owned: 'owned 9' },
+      { required: '- 3 x 1 nettle', owned: 'owned 3' },
+    ]);
+
+    parent
+      .querySelector('.brewing-page__quantity-button[data-brew-quantity="1"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onSelectBrewQuantity).toHaveBeenCalledWith(1, 0);
+    expect(parent.querySelector('.brewing-page__recipe-cost')?.textContent).toBe(
+      'cost 12 mana',
+    );
+
+    manager.unmount();
+    parent.remove();
+  });
 });

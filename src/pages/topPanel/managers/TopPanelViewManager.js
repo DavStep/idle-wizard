@@ -48,6 +48,20 @@ export class TopPanelViewManager {
     panel.setAttribute('aria-label', 'Player status');
     this.refs.panel = panel;
 
+    this.refs.usernameAvatarButton = document.createElement('button');
+    this.refs.usernameAvatarButton.className = 'room-top-panel__avatar-button';
+    this.refs.usernameAvatarButton.type = 'button';
+    this.refs.usernameAvatarButton.setAttribute('aria-label', 'open avatar');
+
+    this.refs.usernameAvatar = createPlayerCharacterIcon(
+      'elara',
+      'room-top-panel__username-avatar',
+    );
+    this.refs.usernameAvatar.dataset.character = 'elara';
+    this.refs.usernameAvatar.loading = 'eager';
+
+    this.refs.usernameAvatarButton.append(this.refs.usernameAvatar);
+
     this.refs.usernameButton = document.createElement('button');
     this.refs.usernameButton.className = 'room-top-panel__username';
     this.refs.usernameButton.type = 'button';
@@ -58,14 +72,7 @@ export class TopPanelViewManager {
     this.refs.usernameLabel.className = 'room-top-panel__username-label';
     this.refs.usernameLabel.textContent = 'wizard';
 
-    this.refs.usernameAvatar = createPlayerCharacterIcon(
-      'elara',
-      'room-top-panel__username-avatar',
-    );
-    this.refs.usernameAvatar.dataset.character = 'elara';
-    this.refs.usernameAvatar.loading = 'eager';
-
-    this.refs.usernameButton.append(this.refs.usernameAvatar, this.refs.usernameLabel);
+    this.refs.usernameButton.append(this.refs.usernameLabel);
 
     this.refs.levelButton = document.createElement('button');
     this.refs.levelButton.className = 'room-top-panel__level';
@@ -87,7 +94,7 @@ export class TopPanelViewManager {
     rightStatus.append(this.createResource('coin', '0 coin'), contextCurrency);
     this.refs.resources.append(this.createResource('mana', '0/0 mana'), rightStatus);
 
-    panel.append(identityRow, this.refs.resources);
+    panel.append(this.refs.usernameAvatarButton, identityRow, this.refs.resources);
     return panel;
   }
 
@@ -211,6 +218,7 @@ export class TopPanelViewManager {
     this.refs.avatarPane.className =
       'room-top-panel__settings-pane room-top-panel__avatar-pane';
     this.refs.avatarPane.setAttribute('role', 'tabpanel');
+    this.refs.avatarPane.setAttribute('aria-label', 'avatar');
     const characterSection = this.createVisualSettingSection('character');
     this.refs.avatarPane.append(characterSection);
 
@@ -357,7 +365,7 @@ export class TopPanelViewManager {
 
     for (const tab of [
       { key: 'account', label: 'account', controls: this.refs.accountPane.id },
-      { key: 'avatar', label: 'avatar', controls: this.refs.avatarPane.id },
+      { key: 'report', label: 'report', controls: this.refs.reportPane.id },
       { key: 'theme', label: 'configurations', controls: this.refs.themePane.id },
     ]) {
       const button = document.createElement('button');
@@ -377,7 +385,7 @@ export class TopPanelViewManager {
     }
 
     this.refs.accountPane.setAttribute('aria-labelledby', 'room-top-panel-settings-account-tab');
-    this.refs.avatarPane.setAttribute('aria-labelledby', 'room-top-panel-settings-avatar-tab');
+    this.refs.reportPane.setAttribute('aria-labelledby', 'room-top-panel-settings-report-tab');
     this.refs.themePane.setAttribute('aria-labelledby', 'room-top-panel-settings-theme-tab');
 
     this.refs.settingsDialog.append(

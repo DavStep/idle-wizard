@@ -63,7 +63,7 @@ export class TutorialLogicManager {
 
     const autoOpen = this.shouldAutoOpen(step);
     const forceOpen = Boolean(isNewStep && autoOpen);
-    const panelOpen = Boolean(lessonPanelOpen || forceOpen);
+    const panelOpen = Boolean((!isNewStep && lessonPanelOpen) || forceOpen);
     const cue = this.getCueState({
       step,
       target,

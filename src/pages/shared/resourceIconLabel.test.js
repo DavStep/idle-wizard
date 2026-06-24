@@ -8,10 +8,13 @@ describe('resource icon labels', () => {
   it('marks resource words while preserving text content', () => {
     const element = document.createElement('span');
 
-    setResourceIconText(element, 'cost 10 mana, 2 coin, 5 crystals, 1 emerald, and 3 rubies');
+    setResourceIconText(
+      element,
+      'cost 10 mana, 2 coin, 5 crystals, 1 emerald, 3 rubies, 4 seeds, and 6 herbs',
+    );
 
     expect(element.textContent).toBe(
-      'cost 10 mana, 2 coin, 5 crystals, 1 emerald, and 3 rubies',
+      'cost 10 mana, 2 coin, 5 crystals, 1 emerald, 3 rubies, 4 seeds, and 6 herbs',
     );
     expect(
       [...element.querySelectorAll('.style-resource-label__icon')].map(
@@ -23,6 +26,8 @@ describe('resource icon labels', () => {
       'resource:crystal',
       'resource:emerald',
       'resource:ruby',
+      'seed:regular',
+      'herb:sageHerb',
     ]);
     expect(element.querySelector('.style-resource-label--coin')?.textContent).toBe('2 coin');
     expect(element.querySelector('.style-resource-label--coin .style-resource-label__amount')?.textContent).toBe(
@@ -35,9 +40,46 @@ describe('resource icon labels', () => {
       '1 emerald',
     );
     expect(element.querySelector('.style-resource-label--ruby')?.textContent).toBe('3 rubies');
+    expect(element.querySelector('.style-resource-label--seed')?.textContent).toBe('4 seeds');
+    expect(element.querySelector('.style-resource-label--herb')?.textContent).toBe('6 herbs');
     expect(element.querySelector('.style-resource-label--emerald')?.dataset.resourceColor).toBe(
       'emerald',
     );
+    expect(element.querySelector('.style-resource-label--seed')?.dataset.resourceColor).toBe(
+      'seed',
+    );
+    expect(element.querySelector('.style-resource-label--herb')?.dataset.resourceColor).toBe(
+      'herb',
+    );
+  });
+
+  it('keeps reward ranges inside colored resource labels', () => {
+    const element = document.createElement('span');
+
+    setResourceIconText(element, 'reward: 220-300 coin, 34-50 seeds, or 65-100 herbs');
+
+    expect(element.textContent).toBe('reward: 220-300 coin, 34-50 seeds, or 65-100 herbs');
+    expect(element.querySelector('.style-resource-label--coin')?.textContent).toBe(
+      '220-300 coin',
+    );
+    expect(element.querySelector('.style-resource-label--seed')?.textContent).toBe(
+      '34-50 seeds',
+    );
+    expect(element.querySelector('.style-resource-label--herb')?.textContent).toBe(
+      '65-100 herbs',
+    );
+    expect(
+      element.querySelector('.style-resource-label--coin .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('220-300');
+    expect(
+      element.querySelector('.style-resource-label--seed .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('34-50');
+    expect(
+      element.querySelector('.style-resource-label--herb .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('65-100');
   });
 
   it('leaves mana phrases plain when mana is not the resource', () => {
