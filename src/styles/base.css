@@ -454,6 +454,15 @@
 
 .style-resource-label {
   display: inline;
+  white-space: nowrap;
+}
+
+.style-resource-label__amount {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.style-resource-label__spacer {
+  white-space: pre;
 }
 
 .style-resource-label__icon {
@@ -462,15 +471,15 @@
   height: var(--style-resource-icon-size);
   object-fit: contain;
   object-position: center;
-  vertical-align: -0.12em;
+  vertical-align: -0.22em;
 }
 
 .style-seed-label__icon,
 .style-herb-label__icon,
 .style-potion-label__icon {
   display: none;
-  width: 0.99em;
-  height: 0.99em;
+  width: 1.287em;
+  height: 1.287em;
   margin-right: 0.28em;
   object-fit: contain;
   object-position: center;
@@ -478,13 +487,13 @@
 }
 
 .style-seed-label__icon {
-  width: 0.858em;
-  height: 1.155em;
+  width: 1.115em;
+  height: 1.502em;
   vertical-align: -0.24em;
 }
 
 .style-herb-label__icon {
-  width: 1.078em;
+  width: 1.401em;
 }
 
 :root[data-style-icons="icons"] .style-resource-label__icon {
@@ -1360,6 +1369,10 @@ body {
   pointer-events: none;
   transform: scale(var(--style-ui-scale));
   transform-origin: top left;
+}
+
+.room-top-panel-layer :where(button, [role="button"], input, select, textarea) {
+  pointer-events: auto;
 }
 
 .room-bottom-panel-layer {
@@ -9110,6 +9123,10 @@ div.workshop-page__discovery-row {
 
 .guild-page__adventurer-name {
   font-weight: 700;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .guild-page__adventurer-level,
@@ -9574,6 +9591,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__username {
   display: inline-flex;
+  gap: 4px;
   align-items: center;
   flex: 0 1 auto;
   min-width: 0;
@@ -9593,6 +9611,21 @@ div.workshop-page__discovery-row {
   background: transparent;
   border: 0;
   border-radius: 0;
+}
+
+.room-top-panel__username-avatar {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  object-position: 50% 13%;
+  vertical-align: -4px;
+  border: var(--style-border);
+}
+
+.room-top-panel__username-avatar[hidden],
+:root[data-style-icons="none"] .room-top-panel__username-avatar {
+  display: none;
 }
 
 .room-top-panel__username-label {
@@ -10191,6 +10224,48 @@ div.workshop-page__discovery-row {
     sans-serif;
 }
 
+.room-top-panel__character-buttons {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.room-top-panel__character-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 94px;
+  overflow: hidden;
+  text-align: center;
+  white-space: normal;
+}
+
+.room-top-panel__character-option-icon {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  object-position: 50% 13%;
+  vertical-align: 0;
+  border: var(--style-border-strong);
+}
+
+.room-top-panel__character-option-label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-top-panel__character-button[aria-checked="true"]
+  .room-top-panel__character-option-icon {
+  outline: 2px solid var(--style-stroke);
+  outline-offset: 2px;
+}
+
 .style-player-character-icon {
   display: inline-block;
   flex: 0 0 auto;
@@ -10540,6 +10615,7 @@ div.workshop-page__discovery-row {
 .room-top-panel__settings.is-username-prompt .room-top-panel__theme-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__font-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__color-section,
+.room-top-panel__settings.is-username-prompt .room-top-panel__avatar-pane,
 .room-top-panel__settings.is-username-prompt .room-top-panel__feedback-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__auth-section,
 .room-top-panel__settings.is-username-prompt .room-top-panel__version-section {

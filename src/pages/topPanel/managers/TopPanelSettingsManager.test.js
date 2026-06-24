@@ -96,6 +96,78 @@ describe('TopPanelSettingsManager', () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
+  it('updates and hides the top-panel character avatar from player profile state', () => {
+    const stage = document.createElement('section');
+    const viewManager = new TopPanelViewManager();
+    let playerSnapshot = {
+      username: 'Merlin',
+      theme: 'white',
+      font: 'lexend',
+      colorMode: 'monochrome',
+      character: 'mira',
+      iconMode: 'icons',
+      progressBar: 'regular',
+      plotView: 'boxes',
+    };
+    const playerListeners = new Set();
+    const playerFacade = {
+      getSnapshot: vi.fn(() => playerSnapshot),
+      subscribe: vi.fn((listener) => {
+        playerListeners.add(listener);
+        listener(playerSnapshot);
+        return () => playerListeners.delete(listener);
+      }),
+      setCharacter: vi.fn((character) => {
+        playerSnapshot = { ...playerSnapshot, character };
+
+        for (const listener of playerListeners) {
+          listener(playerSnapshot);
+        }
+      }),
+      setIconMode: vi.fn((iconMode) => {
+        playerSnapshot = { ...playerSnapshot, iconMode };
+
+        for (const listener of playerListeners) {
+          listener(playerSnapshot);
+        }
+      }),
+    };
+    document.body.append(stage);
+    viewManager.mount(stage);
+
+    const manager = new TopPanelSettingsManager({ playerFacade });
+    manager.mount(viewManager.getRefs());
+
+    const avatar = stage.querySelector('.room-top-panel__username-avatar');
+    const topPanel = stage.querySelector('.room-top-panel');
+    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const rowanButton = stage.querySelector(
+      '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="rowan"]',
+    );
+
+    expect(avatar?.getAttribute('src')).toContain('/assets/characters/mira.png');
+    expect(avatar?.hidden).toBe(false);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
+    expect(usernameButton?.classList.contains('has-avatar')).toBe(true);
+
+    manager.showSettings();
+    manager.selectSettingsTab('avatar');
+    rowanButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(playerFacade.setCharacter).toHaveBeenCalledWith('rowan');
+    expect(rowanButton.getAttribute('aria-checked')).toBe('true');
+    expect(avatar?.getAttribute('src')).toContain('/assets/characters/rowan.png');
+
+    playerFacade.setIconMode('none');
+
+    expect(avatar?.hidden).toBe(true);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(false);
+    expect(usernameButton?.classList.contains('has-avatar')).toBe(false);
+
+    manager.unmount();
+    viewManager.unmount();
+  });
+
   it('shows plot view in configurations and applies rows or boxes selection', () => {
     const stage = document.createElement('section');
     const viewManager = new TopPanelViewManager();

@@ -24,9 +24,17 @@ describe('resource icon labels', () => {
       'resource:emerald',
       'resource:ruby',
     ]);
-    expect(element.querySelector('.style-resource-label--crystal')?.textContent).toBe('crystals');
-    expect(element.querySelector('.style-resource-label--emerald')?.textContent).toBe('emerald');
-    expect(element.querySelector('.style-resource-label--ruby')?.textContent).toBe('rubies');
+    expect(element.querySelector('.style-resource-label--coin')?.textContent).toBe('2 coin');
+    expect(element.querySelector('.style-resource-label--coin .style-resource-label__amount')?.textContent).toBe(
+      '2',
+    );
+    expect(element.querySelector('.style-resource-label--crystal')?.textContent).toBe(
+      '5 crystals',
+    );
+    expect(element.querySelector('.style-resource-label--emerald')?.textContent).toBe(
+      '1 emerald',
+    );
+    expect(element.querySelector('.style-resource-label--ruby')?.textContent).toBe('3 rubies');
     expect(element.querySelector('.style-resource-label--emerald')?.dataset.resourceColor).toBe(
       'emerald',
     );

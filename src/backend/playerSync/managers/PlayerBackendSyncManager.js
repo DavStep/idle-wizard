@@ -118,8 +118,8 @@ export class PlayerBackendSyncManager {
 
     const serverProfile = this.readServerProfile(profile);
     if (!serverProfile.username) {
-      this.markUsernameProfileLoaded();
-      this.sync(this.playerFacade?.getSnapshot());
+      this.markUsernameProfileLoadedWithoutSync();
+      this.applyPendingProfileAfterHydration(pendingProfile);
       return;
     }
 
@@ -137,15 +137,7 @@ export class PlayerBackendSyncManager {
 
     this.lastProfileSignature = serverProfileSignature;
 
-    if (pendingProfile) {
-      if (
-        currentProfileSignature !== this.getProfileSignature(pendingProfile)
-      ) {
-        this.applyServerProfileToPlayer(pendingProfile);
-      } else {
-        this.sync(pendingProfile);
-      }
-
+    if (this.applyPendingProfileAfterHydration(pendingProfile)) {
       return;
     }
 
@@ -245,5 +237,29 @@ export class PlayerBackendSyncManager {
 
   markUsernameProfileLoaded() {
     this.playerFacade?.markUsernameProfileLoaded?.();
+  }
+
+  markUsernameProfileLoadedWithoutSync() {
+    try {
+      this.applyingServerProfile = true;
+      this.markUsernameProfileLoaded();
+    } finally {
+      this.applyingServerProfile = false;
+    }
+  }
+
+  applyPendingProfileAfterHydration(pendingProfile) {
+    if (!pendingProfile) {
+      return false;
+    }
+
+    const currentProfileSignature = this.getProfileSignature(this.readCurrentPlayerProfile());
+    if (currentProfileSignature !== this.getProfileSignature(pendingProfile)) {
+      this.applyServerProfileToPlayer(pendingProfile);
+    } else {
+      this.sync(pendingProfile);
+    }
+
+    return true;
   }
 }

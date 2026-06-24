@@ -244,7 +244,14 @@ describe('WorkshopPersonalTasksManager', () => {
       popup
         .querySelector('.workshop-page__personal-task-reward .style-resource-label--coin')
         ?.textContent,
-    ).toBe('coin');
+    ).toBe('+5 coin');
+    expect(
+      popup
+        .querySelector(
+          '.workshop-page__personal-task-reward .style-resource-label--coin .style-resource-label__amount',
+        )
+        ?.textContent,
+    ).toBe('+5');
     expect(
       popup.querySelector('.workshop-page__personal-task--full'),
     ).toBeNull();

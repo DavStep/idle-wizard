@@ -53,6 +53,13 @@ function createPlayerFacade(username) {
         listener(snapshot);
       }
     },
+    markUsernameProfileLoaded: () => {
+      snapshot = { ...snapshot, profileLoaded: true };
+
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
   };
 }
 
@@ -158,6 +165,45 @@ describe('PlayerBackendSyncManager', () => {
         setPlayerProfile,
       },
     });
+
+    expect(setPlayerProfile).not.toHaveBeenCalled();
+
+    manager.applyServerProfile({
+      username: 'Server Mage',
+      theme: 'black',
+      font: 'comic-sans-mono',
+      colorMode: 'resources',
+      character: 'mira',
+      usernamePromptSeen: true,
+    });
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'Server Mage',
+      theme: 'black',
+      font: 'comic-sans-mono',
+      colorMode: 'resources',
+      character: 'mira',
+      usernamePromptSeen: true,
+    });
+    expect(setPlayerProfile).not.toHaveBeenCalled();
+  });
+
+  it('does not overwrite the server with defaults when profile hydration is temporarily empty', () => {
+    const setPlayerProfile = vi.fn(() => Promise.resolve());
+    const playerFacade = createPlayerFacade('wizard');
+    const manager = new PlayerBackendSyncManager();
+
+    manager.setPlayerFacade(playerFacade);
+    manager.connect({
+      db: {
+        ownPlayerProfile: {},
+      },
+      reducers: {
+        setPlayerProfile,
+      },
+    });
+
+    manager.applyServerProfile(null);
 
     expect(setPlayerProfile).not.toHaveBeenCalled();
 

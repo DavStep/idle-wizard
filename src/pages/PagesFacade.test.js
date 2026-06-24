@@ -2866,6 +2866,15 @@ function createPlayerFacadeFake(
       publish();
       return snapshot;
     },
+    setCharacter: (character) => {
+      snapshot = {
+        ...snapshot,
+        character,
+      };
+
+      publish();
+      return snapshot;
+    },
     setIconMode: (iconMode) => {
       const normalizedIconMode = ['off', 'no-icons', 'no icons', 'none'].includes(iconMode)
         ? 'none'
@@ -3671,8 +3680,13 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-page__nav')).toBeNull();
     const topPanel = stage.querySelector('.room-top-panel');
     expect(topPanel).not.toBeNull();
-    expect(topPanel.classList.contains('has-avatar')).toBe(false);
+    expect(topPanel.classList.contains('has-avatar')).toBe(true);
     expect(topPanel.querySelector('.room-top-panel__avatar-button')).toBeNull();
+    expect(
+      topPanel
+        .querySelector('.room-top-panel__username-avatar')
+        ?.getAttribute('src'),
+    ).toContain('/assets/characters/elara.png');
     expect(topPanel.children[0]?.className).toBe('room-top-panel__identity-row');
     expect(topPanel.children[1]?.classList.contains('room-top-panel__resources')).toBe(true);
     expect(
@@ -3923,7 +3937,10 @@ describe('PagesFacade', () => {
     const crystalValue = crystal?.querySelector('.room-top-panel__resource-val');
     expect(crystal?.hidden).toBe(false);
     expect(crystal?.textContent).toBe('0 crystal');
-    expect(crystalValue?.firstChild?.textContent).toBe('0 ');
+    expect(
+      crystalValue?.querySelector('.style-resource-label--crystal .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('0');
     expect(
       crystal?.querySelector('.style-resource-label--crystal .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -3935,7 +3952,10 @@ describe('PagesFacade', () => {
     const rubyValue = ruby?.querySelector('.room-top-panel__resource-val');
     expect(ruby?.hidden).toBe(false);
     expect(ruby?.textContent).toBe('0 ruby');
-    expect(rubyValue?.firstChild?.textContent).toBe('0 ');
+    expect(
+      rubyValue?.querySelector('.style-resource-label--ruby .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('0');
     expect(
       ruby?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -4015,8 +4035,14 @@ describe('PagesFacade', () => {
 
     expect(manaValue?.textContent).toBe('0/50 mana');
     expect(coinValue?.textContent).toBe('0 coin');
-    expect(manaValue?.firstChild?.textContent).toBe('0/50 ');
-    expect(coinValue?.firstChild?.textContent).toBe('0 ');
+    expect(
+      manaValue?.querySelector('.style-resource-label--mana .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('0/50');
+    expect(
+      coinValue?.querySelector('.style-resource-label--coin .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('0');
     expect(
       manaValue?.querySelector('.style-resource-label--mana .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -4024,7 +4050,7 @@ describe('PagesFacade', () => {
     expect(coinValue?.querySelector('.style-resource-label--coin')).not.toBeNull();
   });
 
-  it('does not render a top panel character avatar', () => {
+  it('renders the selected character avatar in the top panel when icons are enabled', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin', 'white', {
       initialCharacter: 'mira',
@@ -4039,15 +4065,22 @@ describe('PagesFacade', () => {
 
     const topPanel = stage.querySelector('.room-top-panel');
     const usernameButton = stage.querySelector('.room-top-panel__username');
+    const usernameAvatar = stage.querySelector('.room-top-panel__username-avatar');
 
     expect(usernameButton?.textContent).toBe('Merlin');
     expect(stage.querySelector('.room-top-panel__avatar-button')).toBeNull();
-    expect(stage.querySelector('.room-top-panel__username-avatar')).toBeNull();
-    expect(topPanel?.classList.contains('has-avatar')).toBe(false);
+    expect(usernameAvatar?.getAttribute('src')).toContain('/assets/characters/mira.png');
+    expect(usernameAvatar?.hidden).toBe(false);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
+
+    playerFacade.setCharacter('rowan');
+
+    expect(usernameAvatar?.getAttribute('src')).toContain('/assets/characters/rowan.png');
 
     playerFacade.setIconMode('none');
 
     expect(usernameButton?.textContent).toBe('Merlin');
+    expect(usernameAvatar?.hidden).toBe(true);
     expect(topPanel?.classList.contains('has-avatar')).toBe(false);
   });
 
@@ -5816,7 +5849,7 @@ describe('PagesFacade', () => {
       ),
     ).toEqual([
       ['account', 'true'],
-      ['report', 'false'],
+      ['avatar', 'false'],
       ['configurations', 'false'],
     ]);
     expect(stage.querySelector('.room-top-panel__auth-section')?.hidden).toBe(false);
@@ -5848,10 +5881,10 @@ describe('PagesFacade', () => {
     expect(
       [
         ...settings.querySelectorAll(
-          '#room-top-panel-settings-account .room-top-panel__character-button',
+          '#room-top-panel-settings-avatar .room-top-panel__character-button',
         ),
-      ],
-    ).toHaveLength(0);
+      ].map((button) => button.dataset.character),
+    ).toContain('mira');
     expect(
       settings.querySelector(
         '#room-top-panel-settings-theme .room-top-panel__character-section',
@@ -5859,9 +5892,23 @@ describe('PagesFacade', () => {
     ).toBeNull();
     expect(
       settings.querySelectorAll(
-        '#room-top-panel-settings-account .room-top-panel__character-section .room-top-panel__visual-option-price',
+        '#room-top-panel-settings-avatar .room-top-panel__character-section .room-top-panel__visual-option-price',
       ),
     ).toHaveLength(0);
+    settings
+      .querySelector('[data-settings-tab="avatar"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    settings
+      .querySelector(
+        '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="rowan"]',
+      )
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(playerFacade.getSnapshot().character).toBe('rowan');
+    expect(
+      usernameButton
+        .querySelector('.room-top-panel__username-avatar')
+        ?.getAttribute('src'),
+    ).toContain('/assets/characters/rowan.png');
     expect(
       [...settings.querySelectorAll('.room-top-panel__progress-bar-button')].map(
         (button) => button.textContent,
@@ -5896,14 +5943,11 @@ describe('PagesFacade', () => {
       'researched',
       'researched',
     ]);
-    expect(stage.querySelector('.room-top-panel__feedback-open')?.textContent).toBe(
-      'feedback',
-    );
     expect(
-      [...stage.querySelectorAll('.room-top-panel__feedback-open')].map(
-        (button) => button.textContent,
+      [...settings.querySelectorAll('.room-top-panel__settings-tab-button')].map(
+        (button) => button.dataset.settingsTab,
       ),
-    ).toEqual(['feedback', 'bug', 'feature']);
+    ).not.toContain('report');
     expect(focusOptions).toEqual([{ preventScroll: true }]);
 
     input.value = 'Mira';
@@ -5966,7 +6010,7 @@ describe('PagesFacade', () => {
     expect(settings.hidden).toBe(true);
   });
 
-  it('opens feedback from settings and sends player feedback', async () => {
+  it('opens feedback from the dev dialog path and sends player feedback', async () => {
     const stage = document.createElement('section');
     const feedbackFacade = createFeedbackFacadeFake();
     const pagesFacade = new PagesFacade({
@@ -5977,13 +6021,7 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    stage
-      .querySelector('.room-top-panel__username')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    stage
-      .querySelector('[data-settings-tab="report"]')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(pagesFacade.openDialog('feedback')).toEqual({ ok: true, dialogId: 'feedback' });
 
     const settings = stage.querySelector('.room-top-panel__settings');
     const input = stage.querySelector('.room-top-panel__feedback-input');
@@ -5991,9 +6029,7 @@ describe('PagesFacade', () => {
 
     expect(settings.querySelector('.style-box__title')?.textContent).toBe('settings');
     expect(settings.classList.contains('is-feedback')).toBe(false);
-    expect(settings.querySelector('[data-settings-tab="report"]')?.getAttribute('aria-selected')).toBe(
-      'true',
-    );
+    expect(settings.querySelector('[data-settings-tab="report"]')).toBeNull();
     expect(stage.querySelector('.room-top-panel__feedback-close')).toBeNull();
     expect(input.placeholder).toBe('write feedback');
 
@@ -6008,7 +6044,7 @@ describe('PagesFacade', () => {
     expect(input.value).toBe('');
   });
 
-  it('opens bug and feature feedback buttons with typed submit prefixes', async () => {
+  it('opens bug and feature feedback through the dev dialog path with typed submit prefixes', async () => {
     const stage = document.createElement('section');
     const feedbackFacade = createFeedbackFacadeFake();
     const pagesFacade = new PagesFacade({
@@ -6019,7 +6055,6 @@ describe('PagesFacade', () => {
 
     pagesFacade.mount(stage);
 
-    const usernameButton = stage.querySelector('.room-top-panel__username');
     const settings = stage.querySelector('.room-top-panel__settings');
     const input = stage.querySelector('.room-top-panel__feedback-input');
     const form = stage.querySelector('.room-top-panel__feedback-form');
@@ -6040,15 +6075,10 @@ describe('PagesFacade', () => {
     ];
 
     for (const item of cases) {
-      usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-      stage
-        .querySelector(`[data-feedback-kind="${item.kind}"]`)
-        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      expect(pagesFacade.openDialog(item.kind)).toEqual({ ok: true, dialogId: item.kind });
 
       expect(settings.querySelector('.style-box__title')?.textContent).toBe('settings');
-      expect(settings.querySelector('[data-settings-tab="report"]')?.getAttribute('aria-selected')).toBe(
-        'true',
-      );
+      expect(settings.querySelector('[data-settings-tab="report"]')).toBeNull();
       expect(
         settings
           .querySelector(`[data-feedback-kind="${item.kind}"]`)
@@ -6784,8 +6814,17 @@ describe('PagesFacade', () => {
     );
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('0 ruby');
+    expect(
+      summary?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:ruby');
     expect(page.textContent).toContain('level 10');
     expect(page.textContent).toContain('level 40');
+    expect(
+      page.querySelector(
+        '.workshop-page__prestige-reward .style-resource-label--ruby .style-resource-label__icon',
+      )?.dataset.assetAtlasFrame,
+    ).toBe('resource:ruby');
 
     page
       .querySelector('.workshop-page__prestige-action')
@@ -6831,6 +6870,10 @@ describe('PagesFacade', () => {
     );
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('1 ruby');
+    expect(
+      summary?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:ruby');
   });
 
   it('shows prestige point rewards on the second prestige tab', () => {

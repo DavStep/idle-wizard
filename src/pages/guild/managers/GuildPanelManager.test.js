@@ -755,6 +755,18 @@ describe('GuildPanelManager', () => {
       .toBe('orin, level 1, idle');
   });
 
+  it('allows full adventurer names to wrap in roster rows', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const nameRule = baseCss.match(
+      /\.guild-page__adventurer-name\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(nameRule).toMatch(/\boverflow:\s*visible;/);
+    expect(nameRule).toMatch(/\btext-overflow:\s*clip;/);
+    expect(nameRule).toMatch(/\bwhite-space:\s*normal;/);
+    expect(nameRule).toMatch(/\boverflow-wrap:\s*anywhere;/);
+  });
+
   it('falls back to source-scale initial placeholders when an icon is missing', () => {
     const gameplayFacade = createGameplayFacadeFake(
       createCreatedGuildSnapshot({

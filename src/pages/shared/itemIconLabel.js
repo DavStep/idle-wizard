@@ -10,13 +10,14 @@ import {
   getPotionIconLabelEntries,
   getPotionIconFrameName,
 } from '../../assets/items/potions/potionIcons.js';
-import { createResourceIconLabel } from './resourceIconLabel.js';
+import { appendResourceIconMatchParts } from './resourceIconLabel.js';
 
 export const SEED_ICON_LABEL_CLASS = 'style-seed-label';
 export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
 export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
 
-const RESOURCE_WORD_MATCH_PATTERN = /\b(?:crystals?|coin|mana|rubies|ruby)\b/gi;
+const RESOURCE_WORD_MATCH_PATTERN =
+  /\b(?:crystals?|emeralds?|coin|mana|rubies|ruby)\b/gi;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+sphere\b/i;
 const GENERIC_SEED_LABELS = new Set(['choose seed', 'summon seed']);
 
@@ -79,6 +80,17 @@ export function appendTextWithItemIcons(element, text) {
   for (const match of matches) {
     const index = match.index;
 
+    if (match.kind === 'resource') {
+      lastIndex = appendResourceIconMatchParts(parts, {
+        value,
+        lastIndex,
+        index,
+        resource: match.resource,
+        label: match.text,
+      });
+      continue;
+    }
+
     if (index > lastIndex) {
       parts.push(document.createTextNode(value.slice(lastIndex, index)));
     }
@@ -89,8 +101,6 @@ export function appendTextWithItemIcons(element, text) {
       parts.push(createHerbIconLabel(match.text, match.itemKey));
     } else if (match.kind === 'potion') {
       parts.push(createPotionIconLabel(match.text, match.itemKey));
-    } else if (match.kind === 'resource') {
-      parts.push(createResourceIconLabel(match.resource, match.text));
     }
 
     lastIndex = index + match.text.length;
@@ -278,6 +288,10 @@ function normalizeResourceMatch(label) {
 
   if (normalizedLabel === 'rubies') {
     return 'ruby';
+  }
+
+  if (normalizedLabel === 'emeralds') {
+    return 'emerald';
   }
 
   return normalizedLabel;

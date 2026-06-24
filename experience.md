@@ -16,6 +16,7 @@
 - Zero-total-coin player cleanup must consider players with no leaderboard/save rows; `leaderboard.total_income = 0` alone misses accounts that connected but never progressed.
 - Server progression resets do not clear browser tutorial `localStorage`; bump the FTUE storage key when old clients must see the guide again after reset.
 - Player profile sync must wait on `own_player_profile` as well as `player`; otherwise reconnect can push default username/theme/avatar before hydration and overwrite saved profile data.
+- A temporarily empty own-profile subscription must not sync local defaults; suppress profile publishes while marking the prompt loaded, then wait for the row or a real user edit.
 - Fresh empty gameplay saves must reset browser FTUE progress before loading the null save; otherwise stale completed tutorial storage hides Elara on new data.
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
@@ -99,6 +100,7 @@
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
+- Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
 - Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; otherwise the right side of the room looks unused beside world chat.
 - Guild content tabs should use compact labels like `hall`, `board`, `roster`, and `log`; `adventurers` crowds fitted desktop tab widths.
@@ -213,7 +215,9 @@
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
 - Dev cheats that force garden/shop/brewing slot counts must raise player level or capacity research first; snapshot apply paths clamp counts back to progression caps.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
+- Prestige ruby summary/reward text needs `setResourceIconText`; `data-resource-color` alone colors text but does not render icons.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
+- Currency amount text and icon belong in one `style-resource-label`; otherwise resource color mode can color only the icon/word and leave the number monochrome.
 - Player character generation workflow is removed; do not add/rebuild selectable avatar generation unless the user explicitly asks.
 - Shared character PNGs in `src/assets/characters` are legacy public-row display assets, not a selectable customization system.
 - Guild adventurers should use a fitting non-Elara `iconKey` from `src/assets/characters/character-descriptions.txt`.
@@ -306,6 +310,8 @@
 - Permanent prestige capacity upgrades should make the researched slot cap buyable immediately in the run; do not require replaying to the old level cap first.
 - When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
+- Top-panel selected character belongs as a small icon inside the username opener when icon mode is `icons`; keep the username label/text flow and no separate avatar button.
+- Top-panel settings expose character choice through an `avatar` tab; do not restore a user-visible `report` tab.
 - Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.
 - Tiny shared character icons should use small derived assets, not full 864x1080 portrait PNGs; full portraits can push Discord APK uploads over the size limit.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.

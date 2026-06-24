@@ -11,6 +11,10 @@ import {
   normalizePlayerIconMode,
 } from '../../../player/playerIconModes.js';
 import {
+  DEFAULT_PLAYER_CHARACTER,
+  normalizePlayerCharacter,
+} from '../../../player/playerCharacters.js';
+import {
   DEFAULT_PLAYER_PROGRESS_BAR,
   normalizePlayerProgressBar,
 } from '../../../player/playerProgressBars.js';
@@ -23,11 +27,12 @@ import {
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
 import { getDefaultPlayerVisualSettingsResearched } from '../../../player/playerVisualSettings.js';
+import { getPlayerCharacterImageUrl } from '../../shared/playerCharacterIcon.js';
 import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
 const DEFAULT_USERNAME = 'wizard';
-const SETTINGS_TABS = ['account', 'report', 'theme'];
+const SETTINGS_TABS = ['account', 'avatar', 'theme', 'report'];
 const DEFAULT_FEEDBACK_KIND = 'feedback';
 const FEEDBACK_KIND_CONFIG = {
   feedback: {
@@ -140,6 +145,9 @@ export class TopPanelSettingsManager {
     this.handleColorModeClick = (event) => {
       this.selectVisualSetting('color', event.currentTarget.dataset.colorMode);
     };
+    this.handleCharacterClick = (event) => {
+      this.selectVisualSetting('character', event.currentTarget.dataset.character);
+    };
     this.handleIconModeClick = (event) => {
       this.selectVisualSetting('icons', event.currentTarget.dataset.iconMode);
     };
@@ -220,6 +228,10 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleColorModeClick);
     }
 
+    for (const button of this.refs.characterButtons ?? []) {
+      button.addEventListener('click', this.handleCharacterClick);
+    }
+
     for (const button of this.refs.progressBarButtons) {
       button.addEventListener('click', this.handleProgressBarClick);
     }
@@ -246,6 +258,7 @@ export class TopPanelSettingsManager {
     } else {
       this.renderPlayerSnapshot({
         username: 'wizard',
+        character: DEFAULT_PLAYER_CHARACTER,
         theme: DEFAULT_PLAYER_THEME,
         font: DEFAULT_PLAYER_FONT,
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
@@ -337,6 +350,10 @@ export class TopPanelSettingsManager {
 
       for (const button of this.refs.colorModeButtons) {
         button.removeEventListener('click', this.handleColorModeClick);
+      }
+
+      for (const button of this.refs.characterButtons ?? []) {
+        button.removeEventListener('click', this.handleCharacterClick);
       }
 
       for (const button of this.refs.progressBarButtons) {
@@ -541,6 +558,8 @@ export class TopPanelSettingsManager {
     this.applyFontSelection(snapshot.font);
     this.applyColorModeSelection(snapshot.colorMode);
     this.applyIconModeSelection(snapshot.iconMode);
+    this.applyCharacter(snapshot.character, snapshot.iconMode);
+    this.applyCharacterSelection(snapshot.character);
     this.applyProgressBarSelection(snapshot.progressBar);
     this.applyPlotViewSelection(snapshot.plotView);
     this.renderVisualSettingPrices();
@@ -631,6 +650,35 @@ export class TopPanelSettingsManager {
     }
   }
 
+  applyCharacter(character, iconMode) {
+    if (!this.refs?.usernameAvatar || !this.refs?.usernameButton) {
+      return;
+    }
+
+    const selectedCharacter = normalizePlayerCharacter(character);
+    const showAvatar = normalizePlayerIconMode(iconMode) === 'icons';
+    const avatarSrc = getPlayerCharacterImageUrl(selectedCharacter);
+
+    if (this.refs.usernameAvatar.dataset.character !== selectedCharacter) {
+      this.refs.usernameAvatar.src = avatarSrc;
+      this.refs.usernameAvatar.dataset.character = selectedCharacter;
+    }
+
+    this.refs.usernameAvatar.hidden = !showAvatar;
+    this.refs.usernameButton.classList.toggle('has-avatar', showAvatar);
+    this.refs.panel?.classList.toggle('has-avatar', showAvatar);
+  }
+
+  applyCharacterSelection(character) {
+    const selectedCharacter = normalizePlayerCharacter(character);
+
+    for (const button of this.refs.characterButtons ?? []) {
+      const selected = button.dataset.character === selectedCharacter;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-checked', selected ? 'true' : 'false');
+    }
+  }
+
   applyProgressBarSelection(progressBar) {
     const selectedProgressBar = normalizePlayerProgressBar(progressBar);
 
@@ -715,6 +763,11 @@ export class TopPanelSettingsManager {
       return;
     }
 
+    if (categoryKey === 'character') {
+      this.playerFacade?.setCharacter?.(optionKey);
+      return;
+    }
+
     if (categoryKey === 'progressBar') {
       this.playerFacade?.setProgressBar?.(optionKey);
       return;
@@ -795,6 +848,10 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'color') {
       return normalizePlayerColorMode(this.playerSnapshot?.colorMode) === optionKey;
+    }
+
+    if (categoryKey === 'character') {
+      return normalizePlayerCharacter(this.playerSnapshot?.character) === optionKey;
     }
 
     if (categoryKey === 'progressBar') {
@@ -925,6 +982,7 @@ export class TopPanelSettingsManager {
     const activeTab = this.usernamePromptMode ? DEFAULT_SETTINGS_TAB : this.settingsTab;
     const panes = {
       account: this.refs.accountPane,
+      avatar: this.refs.avatarPane,
       report: this.refs.reportPane,
       theme: this.refs.themePane,
     };

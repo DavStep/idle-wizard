@@ -1,5 +1,6 @@
 import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import {
   cauldronCapacityEndCauldronNumber,
   cauldronCapacityStartCauldronNumber,
@@ -250,7 +251,7 @@ export class PrestigePanelManager {
 
     const ruby = document.createElement('span');
     ruby.className = 'workshop-page__prestige-summary-ruby';
-    ruby.textContent = `${currentRuby} ruby`;
+    setResourceIconText(ruby, `${currentRuby} ruby`);
     setResourceColor(ruby, 'ruby');
 
     this.refs.summary.replaceChildren(
@@ -285,7 +286,7 @@ export class PrestigePanelManager {
 
     const reward = document.createElement('span');
     reward.className = 'workshop-page__prestige-reward';
-    reward.textContent = `${milestone.rewardRuby} ruby`;
+    setResourceIconText(reward, `${milestone.rewardRuby} ruby`);
     setResourceColor(reward, 'ruby');
 
     const action = this.createMilestoneAction(milestone);

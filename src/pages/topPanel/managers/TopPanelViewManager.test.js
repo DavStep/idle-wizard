@@ -14,6 +14,11 @@ describe('TopPanelViewManager', () => {
     const usernameButton = stage.querySelector('.room-top-panel__username');
     expect(usernameButton?.textContent).toBe('wizard');
     expect(stage.querySelector('.room-top-panel__avatar-button')).toBeNull();
+    expect(
+      usernameButton
+        ?.querySelector('.room-top-panel__username-avatar')
+        ?.getAttribute('src'),
+    ).toContain('/assets/characters/elara.png');
     expect(usernameButton?.querySelector('.room-top-panel__username-label')?.textContent).toBe(
       'wizard',
     );
@@ -33,6 +38,11 @@ describe('TopPanelViewManager', () => {
         '#room-top-panel-settings-account .room-top-panel__character-section',
       ),
     ).toBeNull();
+    expect(
+      stage.querySelector(
+        '#room-top-panel-settings-avatar .room-top-panel__character-section',
+      ),
+    ).not.toBeNull();
     expect(
       stage.querySelector(
         '#room-top-panel-settings-theme .room-top-panel__character-section',
@@ -129,13 +139,13 @@ describe('TopPanelViewManager', () => {
     expect(
       [
         ...stage.querySelectorAll(
-          '#room-top-panel-settings-account .room-top-panel__character-buttons > .room-top-panel__character-button',
+          '#room-top-panel-settings-avatar .room-top-panel__character-buttons > .room-top-panel__character-button',
         ),
-      ],
-    ).toHaveLength(0);
+      ].map((button) => button.dataset.character),
+    ).toContain('mira');
     expect(
       stage.querySelectorAll(
-        '#room-top-panel-settings-account .room-top-panel__character-section .room-top-panel__visual-option-price',
+        '#room-top-panel-settings-avatar .room-top-panel__character-section .room-top-panel__visual-option-price',
       ),
     ).toHaveLength(0);
 

@@ -648,7 +648,12 @@ describe('WorkshopWorldNoticeManager', () => {
           '.workshop-page__world-notice-request-instruction .style-resource-label--coin',
         ),
       ].map((node) => node.textContent),
-    ).toEqual(['coin', 'coin', 'coin']);
+    ).toEqual(['coin', 'coin', '25 coin']);
+    expect(
+      row.querySelector(
+        '.workshop-page__world-notice-request-instruction .style-resource-label--coin .style-resource-label__amount',
+      )?.textContent,
+    ).toBe('25');
     expect(
       [
         ...(row.querySelector('.workshop-page__world-notice-request-points-row')?.children ??
