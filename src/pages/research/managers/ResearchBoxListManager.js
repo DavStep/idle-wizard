@@ -93,7 +93,7 @@ export class ResearchBoxListManager {
       boxes: selectedTab?.boxes ?? [],
       playerLevel: snapshot?.playerLevel?.currentLevel ?? 1,
       prestigeCount: snapshot?.prestige?.completedLevels?.length ?? 0,
-      researchLabelById: this.getResearchLabelById(tabs),
+      researchById: this.getResearchById(tabs),
       completedResearchIds: this.getCompletedResearchIds(snapshot, tabs),
     });
     const signature = `${selectedTab?.id ?? 'none'}|${tabs
@@ -104,7 +104,7 @@ export class ResearchBoxListManager {
           `${box.id}:${box.researches
             .map(
               (research) =>
-                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}:${research.lockReason ?? ''}`,
+                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.actionType ?? ''}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}:${research.lockReason ?? ''}`,
             )
             .join(',')}`,
       )
@@ -156,7 +156,7 @@ export class ResearchBoxListManager {
     boxes = [],
     playerLevel = 1,
     prestigeCount = 0,
-    researchLabelById,
+    researchById,
     completedResearchIds,
   }) {
     return boxes.map((box) => ({
@@ -167,29 +167,29 @@ export class ResearchBoxListManager {
           research,
           playerLevel,
           prestigeCount,
-          researchLabelById,
+          researchById,
           completedResearchIds,
         }),
       })),
     }));
   }
 
-  getResearchLabelById(tabs = []) {
-    const labels = new Map();
+  getResearchById(tabs = []) {
+    const researches = new Map();
 
     for (const tab of tabs) {
       for (const box of tab.boxes ?? []) {
         for (const research of box.researches ?? []) {
-          if (typeof research?.id !== 'string' || typeof research?.label !== 'string') {
+          if (typeof research?.id !== 'string') {
             continue;
           }
 
-          labels.set(research.id, research.label);
+          researches.set(research.id, research);
         }
       }
     }
 
-    return labels;
+    return researches;
   }
 
   getCompletedResearchIds(snapshot, tabs = []) {
@@ -212,7 +212,7 @@ export class ResearchBoxListManager {
     research,
     playerLevel,
     prestigeCount,
-    researchLabelById,
+    researchById,
     completedResearchIds,
   }) {
     if (!research?.locked) {
@@ -221,7 +221,9 @@ export class ResearchBoxListManager {
 
     const missingResearchLabels = (research.requiredResearchIds ?? [])
       .filter((researchId) => !completedResearchIds.has(researchId))
-      .map((researchId) => researchLabelById.get(researchId) ?? researchId);
+      .map((researchId) =>
+        this.formatRequiredResearchLabel(researchById.get(researchId), researchId),
+      );
     const missingRequiredPlayerLevel =
       Number.isInteger(research.requiredPlayerLevel) && playerLevel < research.requiredPlayerLevel
         ? research.requiredPlayerLevel
@@ -234,9 +236,7 @@ export class ResearchBoxListManager {
     const requirements = [];
 
     if (missingResearchLabels.length > 0) {
-      requirements.push(
-        this.formatRequirementList(missingResearchLabels.map((label) => `${label} research`)),
-      );
+      requirements.push(this.formatRequirementList(missingResearchLabels));
     }
 
     if (missingRequiredPlayerLevel) {
@@ -254,6 +254,16 @@ export class ResearchBoxListManager {
     }
 
     return `requires ${this.formatRequirementList(requirements)}.`;
+  }
+
+  formatRequiredResearchLabel(research, fallbackId) {
+    const label = research?.label ?? fallbackId;
+
+    if (research?.actionType === 'levelUp') {
+      return `${label} level up`;
+    }
+
+    return `${label} research`;
   }
 
   formatRequirementList(values = []) {
@@ -670,6 +680,10 @@ export class ResearchBoxListManager {
   }
 
   getResearchNameResourceColor(research, itemKind) {
+    if (this.isCompletedRubyResearch(research)) {
+      return 'ruby';
+    }
+
     if (this.isCompletedAdvancedResearch(research)) {
       return 'crystal';
     }
@@ -699,6 +713,10 @@ export class ResearchBoxListManager {
 
   isCompletedEmeraldResearch(research) {
     return Boolean(research?.completed) && research.id?.startsWith('emerald:');
+  }
+
+  isCompletedRubyResearch(research) {
+    return Boolean(research?.completed) && research.costCurrency === 'ruby';
   }
 
   getResearchItemKey(research) {
@@ -743,6 +761,11 @@ export class ResearchBoxListManager {
   }
 
   setResearchValueResourceColor(element, research) {
+    if (this.isCompletedRubyResearch(research)) {
+      setResourceColor(element, 'ruby');
+      return;
+    }
+
     if (this.isCompletedAdvancedResearch(research)) {
       setResourceColor(element, 'crystal');
       return;
@@ -760,7 +783,10 @@ export class ResearchBoxListManager {
     const root = document.createElement('div');
     root.className = 'style-progress style-progress--timer research-page__research-progress';
     root.setAttribute('role', 'progressbar');
-    root.setAttribute('aria-label', `${this.formatResearchName(research)} research progress`);
+    root.setAttribute(
+      'aria-label',
+      `${this.formatResearchName(research)} ${this.getResearchActionNoun(research)} progress`,
+    );
     root.setAttribute('aria-valuemin', '0');
     root.setAttribute('aria-valuemax', '100');
 
@@ -819,7 +845,9 @@ export class ResearchBoxListManager {
     this.setAttribute(
       ref.value,
       'aria-label',
-      `${this.formatResearchName(research)} is researching${timer ? `, ${timer} remaining` : ''}`,
+      `${this.formatResearchName(research)} is ${research.value}${
+        timer ? `, ${timer} remaining` : ''
+      }`,
     );
   }
 
@@ -853,10 +881,26 @@ export class ResearchBoxListManager {
     }
 
     if (research.inProgress) {
-      return `${this.formatResearchName(research)} is researching`;
+      return `${this.formatResearchName(research)} is ${this.getResearchInProgressLabel(
+        research,
+      )}`;
     }
 
-    return `research ${this.formatResearchName(research)} for ${research.value}`;
+    return `${this.getResearchActionVerb(research)} ${this.formatResearchName(
+      research,
+    )} for ${research.value}`;
+  }
+
+  getResearchActionVerb(research) {
+    return research?.actionType === 'levelUp' ? 'level up' : 'research';
+  }
+
+  getResearchActionNoun(research) {
+    return research?.actionType === 'levelUp' ? 'level up' : 'research';
+  }
+
+  getResearchInProgressLabel(research) {
+    return research?.actionType === 'levelUp' ? 'leveling up' : 'researching';
   }
 
   setText(element, value) {

@@ -453,6 +453,7 @@ export class GameplayFacade {
       this.handleResearchComplete({
         researchId: result.researchId,
         label: this.researchFacade.getResearchLabel(result.researchId),
+        actionType: this.researchFacade.getResearchActionType(result.researchId),
       });
     }
     this.publishAndSaveSnapshot();
@@ -524,13 +525,16 @@ export class GameplayFacade {
     this.rubyFacade.setCurrent(Math.max(0, earnedRuby - spentRuby));
   }
 
-  handleResearchComplete({ label }) {
+  handleResearchComplete({ label, actionType = 'research' }) {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH, 1);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH, 1);
     this.gameplayLogFacade.logResearchBought({
       label,
+      actionType,
     });
-    void this.worldChatFacade?.announceResearch(label);
+    if (actionType !== 'levelUp') {
+      void this.worldChatFacade?.announceResearch(label);
+    }
   }
 
   handleSeedSummoned(result) {

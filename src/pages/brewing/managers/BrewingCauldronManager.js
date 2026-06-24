@@ -17,6 +17,8 @@ import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcon
 import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
+const CAULDRON_BASE_ROW_COUNT = 3;
+
 export class BrewingCauldronManager {
   constructor({
     gameplayFacade,
@@ -135,10 +137,6 @@ export class BrewingCauldronManager {
     count.className = 'brewing-page__cauldron-count';
     count.textContent = '0/0';
 
-    const recipeTitle = document.createElement('div');
-    recipeTitle.className = 'brewing-page__cauldron-recipe-title';
-    recipeTitle.hidden = true;
-
     const selectRecipeButton = document.createElement('button');
     selectRecipeButton.className = 'brewing-page__cauldron-select-recipe-text';
     selectRecipeButton.type = 'button';
@@ -197,7 +195,6 @@ export class BrewingCauldronManager {
     root.append(
       title,
       count,
-      recipeTitle,
       guide,
       potionIcon,
       status,
@@ -209,9 +206,9 @@ export class BrewingCauldronManager {
     return {
       cauldronIndex: safeCauldronIndex,
       root,
+      title,
       count,
       guide,
-      recipeTitle,
       guideSequence,
       potionIcon,
       status,
@@ -339,6 +336,7 @@ export class BrewingCauldronManager {
     return {
       cauldronIndex: this.normalizeCauldronIndex(cauldronNumber - 1),
       cauldronNumber,
+      level: this.normalizeCauldronLevel(brewing.cauldronLevels?.[cauldronNumber]),
       unlocked: false,
       ingredients: [],
       herbs: brewing.herbs ?? [],
@@ -410,6 +408,11 @@ export class BrewingCauldronManager {
 
     const firstUnlocked = cauldrons.find((cauldron) => cauldron.unlocked !== false);
     this.selectCauldron(firstUnlocked?.cauldronIndex ?? 0);
+  }
+
+  normalizeCauldronLevel(level) {
+    const safeLevel = Math.floor(Number(level));
+    return Number.isInteger(safeLevel) && safeLevel > 0 ? safeLevel : 1;
   }
 
   selectCauldron(cauldronIndex = 0) {
@@ -569,12 +572,13 @@ export class BrewingCauldronManager {
 
     refs.root.classList.remove('is-locked', 'is-buyable');
     refs.root.classList.toggle('is-current', brewing.cauldronIndex === this.selectedCauldronIndex);
+    this.setText(refs.title, this.formatCauldronTitle(brewing));
     this.setHidden(refs.count, false);
     this.setText(refs.count, this.formatCauldronCount(brewing));
-    this.renderCauldronRecipeTitle(refs, brewing);
     const statusText = this.formatCauldronStatus(brewing);
     this.setHidden(refs.status, statusText === '');
     this.setText(refs.status, statusText);
+    this.setCauldronStatusRowCount(refs, statusText === '' ? 0 : 1);
     this.renderPotionIcon(refs, brewing);
     this.renderCauldronGuide(refs, brewing);
     this.renderCauldronItems(refs, brewing);
@@ -620,11 +624,13 @@ export class BrewingCauldronManager {
     refs.root.classList.add('is-locked');
     refs.root.classList.toggle('is-buyable', isBuyable);
     refs.root.classList.remove('is-current');
+    this.setCauldronRowCount(refs);
+    this.setText(refs.title, this.formatCauldronTitle(brewing));
     this.renderPotionIcon(refs, null);
     this.setHidden(refs.count, true);
-    this.renderCauldronRecipeTitle(refs, null);
     this.setHidden(refs.status, true);
     this.setText(refs.status, '');
+    this.setCauldronStatusRowCount(refs, 0);
     this.setHidden(refs.guide, true);
     this.hideExtraCauldronGuideRows(refs, 0);
     this.ensureCauldronEmptyRow(refs);
@@ -651,6 +657,7 @@ export class BrewingCauldronManager {
     this.ensureCauldronEmptyRow(refs);
 
     if (brewing.activeBrew) {
+      this.setCauldronRowCount(refs);
       this.setHidden(refs.items, true);
       refs.items.classList.remove('is-empty');
       this.setHidden(refs.empty, true);
@@ -678,6 +685,7 @@ export class BrewingCauldronManager {
     this.setText(refs.empty, showEmpty ? 'empty' : '');
 
     const ingredientGroups = this.groupAdjacentIngredients(brewing.ingredients);
+    this.setCauldronRowCount(refs, ingredientGroups.length);
 
     for (const [index, ingredient] of ingredientGroups.entries()) {
       const rowRefs = this.ensureIngredientRow(refs, index);
@@ -804,18 +812,36 @@ export class BrewingCauldronManager {
     }
 
     this.hideExtraCauldronGuideRows(refs, renderedRows);
+    this.setCauldronRowCount(refs, renderedRows);
   }
 
-  renderCauldronRecipeTitle(refs, brewing) {
-    const recipeTitle = refs?.recipeTitle;
+  setCauldronRowCount(refs, rowCount = CAULDRON_BASE_ROW_COUNT) {
+    const statusRowCount = Math.max(
+      0,
+      Math.floor(
+        Number(refs?.root?.style.getPropertyValue('--brewing-page-cauldron-status-row-count')),
+      ) || 0,
+    );
+    const safeListRowCount = Math.max(0, Math.floor(Number(rowCount)) || 0);
+    const safeRowCount = Math.max(
+      CAULDRON_BASE_ROW_COUNT,
+      statusRowCount + safeListRowCount,
+    );
+    const visibleListRowCount = Math.max(1, safeRowCount - statusRowCount);
 
-    if (!recipeTitle) {
-      return;
-    }
+    refs?.root?.style.setProperty('--brewing-page-cauldron-row-count', String(safeRowCount));
+    refs?.root?.style.setProperty(
+      '--brewing-page-cauldron-list-row-count',
+      String(visibleListRowCount),
+    );
+  }
 
-    const label = brewing?.activeBrew?.label ?? brewing?.selectedRecipe?.label ?? '';
-    this.setHidden(recipeTitle, label === '');
-    this.setText(recipeTitle, label);
+  setCauldronStatusRowCount(refs, rowCount = 0) {
+    const safeRowCount = Math.max(0, Math.floor(Number(rowCount)) || 0);
+    refs?.root?.style.setProperty(
+      '--brewing-page-cauldron-status-row-count',
+      String(safeRowCount),
+    );
   }
 
   ensureCauldronGuideRow(cauldronRefs, index) {
@@ -1621,6 +1647,12 @@ export class BrewingCauldronManager {
     const count = brewing.ingredients.length;
     const max = Number.isFinite(brewing.maxIngredients) ? brewing.maxIngredients : '?';
     return `${count}/${max}`;
+  }
+
+  formatCauldronTitle(brewing) {
+    const cauldronNumber = Math.max(1, Math.floor(Number(brewing?.cauldronNumber) || 1));
+    const level = Math.max(1, Math.floor(Number(brewing?.level) || 1));
+    return `cauldron ${cauldronNumber} lvl ${level}`;
   }
 
   formatCauldronStatus(brewing) {

@@ -112,7 +112,7 @@ Sample saves:
 ```sh
 PATH="$HOME/.local/bin:$PATH" spacetime sql \
   -s "$SPACETIME_SERVER" "$SPACETIME_DATABASE" \
-  "SELECT identity, current_coin, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10"
+  "SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10"
 ```
 
 ## Full Player Progression Reset
@@ -278,6 +278,46 @@ Expected post-wipe counts:
 - `zero_income_leaderboard_count` is `0`.
 - `player_count` and `leaderboard_count` drop only by the matching zero-income
   identity count.
+
+## Zero Total Coin Cleanup With Currency Grant
+
+Use this when cleaning all account rows that have no positive total coin evidence
+in either `leaderboard.total_income` or gameplay save `coin/gold.totalGenerated`,
+then granting currencies to the remaining players. This also removes players that
+created a `player` row but never created leaderboard/save progress.
+
+The cleanup requires `locked` maintenance mode and a one-time key. Before running
+it, drain active clients, lock writes, and take a full player-data backup:
+
+```sh
+node scripts/maintenance.js backup-player-data-wipe \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+Run the combined cleanup/grant while still locked:
+
+```sh
+node scripts/maintenance.js cleanup-zero-total-coin-grant-currency \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --key YYYY-MM-DD-zero-total-coin-cleanup \
+  --emerald 10 --ruby 10 --crystal 10 \
+  --confirm-live
+```
+
+Then verify:
+
+```sh
+node scripts/maintenance.js verify-zero-total-coin-cleanup-grant \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE"
+```
+
+Expected post-cleanup state:
+
+- `player_count`, `save_count`, and `leaderboard_count` match the remaining
+  positive-total-coin players.
+- `zero_income_leaderboard_count` is `0`.
+- `admin_player_gameplay_save` sample rows show the intended granted currency
+  amounts in `current_crystal`, `current_emerald`, and `current_ruby`.
 
 Run the idempotent player-save migration while still locked:
 

@@ -449,16 +449,30 @@ export class WorkshopWorldNoticeManager {
   renderNoticeContent(notice, ...nodes) {
     const scrollKey = this.getNoticeScrollKey(notice);
     const previousFrame = this.getNoticeContentFrame();
-    const previousScrollTop =
-      this.renderedNoticeScrollKey === scrollKey
-        ? Math.max(0, Number(previousFrame?.scrollTop) || 0)
-        : 0;
-    const frame = this.createContentFrame(nodes);
+    const reuseFrame =
+      this.renderedNoticeScrollKey === scrollKey &&
+      previousFrame &&
+      previousFrame.parentNode === this.refs.content;
+    const previousScrollTop = reuseFrame
+      ? Math.max(0, Number(previousFrame.scrollTop) || 0)
+      : 0;
+    const header = this.createNoticeHeader(notice);
+    const frame = reuseFrame ? previousFrame : this.createContentFrame();
 
-    this.refs.content.replaceChildren(
-      this.createNoticeHeader(notice),
-      frame,
-    );
+    frame.replaceChildren(...nodes.filter(Boolean));
+
+    if (reuseFrame) {
+      const previousHeader = frame.previousElementSibling;
+
+      if (previousHeader?.classList.contains('workshop-page__world-notice-header')) {
+        previousHeader.replaceWith(header);
+      } else {
+        this.refs.content.insertBefore(header, frame);
+      }
+    } else {
+      this.refs.content.replaceChildren(header, frame);
+    }
+
     this.refs.contentFrame = frame;
     this.renderedNoticeScrollKey = scrollKey;
     this.restoreNoticeScrollTop(frame, previousScrollTop);
@@ -466,7 +480,7 @@ export class WorkshopWorldNoticeManager {
 
   createContentFrame(nodes = []) {
     const frame = document.createElement('div');
-    frame.className = 'workshop-page__world-notice-frame';
+    frame.className = 'style-dialog-scroll workshop-page__world-notice-frame';
     frame.replaceChildren(...nodes.filter(Boolean));
     return frame;
   }

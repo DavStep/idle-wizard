@@ -228,6 +228,14 @@ function createDefaultAdvancedRubyCosts() {
     costs[fastSellResearchIds.payout(index + 1)] = cost;
   });
 
+  for (let level = 1; level <= researchTimeResearchMaxLevel; level += 1) {
+    costs[researchTimeResearchIds.reduction(level)] = level;
+  }
+
+  for (let level = 1; level <= researchCostResearchMaxLevel; level += 1) {
+    costs[researchCostResearchIds.reduction(level)] = level;
+  }
+
   for (let cauldronNumber = 1; cauldronNumber <= 5; cauldronNumber += 1) {
     for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
       costs[advancedResearchIds.cauldronBrewing(cauldronNumber, level)] = level;
@@ -261,14 +269,6 @@ function createDefaultAdvancedRubyCosts() {
 
 function createDefaultEmeraldCosts() {
   const costs = {};
-
-  for (let level = 1; level <= researchTimeResearchMaxLevel; level += 1) {
-    costs[researchTimeResearchIds.reduction(level)] = level;
-  }
-
-  for (let level = 1; level <= researchCostResearchMaxLevel; level += 1) {
-    costs[researchCostResearchIds.reduction(level)] = level;
-  }
 
   for (let plotNumber = 1; plotNumber <= 10; plotNumber += 1) {
     for (
@@ -569,11 +569,7 @@ export class ResearchBalanceManager {
 
     return {
       ...DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
-      ...Object.fromEntries(
-        Object.entries(costs).filter(
-          ([researchId]) => !isResearchTimeReductionResearchId(researchId),
-        ),
-      ),
+      ...costs,
     };
   }
 
@@ -622,8 +618,4 @@ export class ResearchBalanceManager {
       ...durations,
     };
   }
-}
-
-function isResearchTimeReductionResearchId(researchId) {
-  return /^advanced:researchTime:\d+$/.test(researchId);
 }

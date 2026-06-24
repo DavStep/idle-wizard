@@ -94,6 +94,74 @@ describe('PersonalTasksFacade', () => {
     expect(snapshot.weekly.tasks.map((task) => task.actionType)).toContain(
       PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS,
     );
+    expect(snapshot.weekly.tasks.map((task) => ({
+      actionType: task.actionType,
+      label: task.label,
+      requiredQuantity: task.requiredQuantity,
+    }))).toEqual([
+      {
+        actionType: PERSONAL_TASK_ACTIONS.SUMMON_SEEDS,
+        label: 'summon 2500 seeds',
+        requiredQuantity: 2500,
+      },
+      {
+        actionType: PERSONAL_TASK_ACTIONS.SPEND_MANA,
+        label: 'spend 25000 mana',
+        requiredQuantity: 25000,
+      },
+      {
+        actionType: PERSONAL_TASK_ACTIONS.PLANT_SEEDS,
+        label: 'plant 400 seeds',
+        requiredQuantity: 400,
+      },
+      {
+        actionType: PERSONAL_TASK_ACTIONS.HARVEST_HERBS,
+        label: 'harvest 600 herbs',
+        requiredQuantity: 600,
+      },
+      {
+        actionType: PERSONAL_TASK_ACTIONS.BREW_POTIONS,
+        label: 'brew 150 potions',
+        requiredQuantity: 150,
+      },
+      {
+        actionType: PERSONAL_TASK_ACTIONS.SELL_ITEMS,
+        label: 'sell 1500 items',
+        requiredQuantity: 1500,
+      },
+      {
+        actionType: PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS,
+        label: 'complete 3 requirements',
+        requiredQuantity: 3,
+      },
+    ]);
+  });
+
+  it('uses two researches for the weekly research task when research is visible', () => {
+    const { facade } = createFacade({
+      level: 4,
+      researchTabs: [
+        {
+          boxes: [
+            {
+              researches: [
+                {
+                  completed: false,
+                  locked: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const researchTask = facade.getSnapshot().weekly.tasks.at(-1);
+
+    expect(researchTask).toMatchObject({
+      actionType: PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH,
+      label: 'finish 2 researches',
+      requiredQuantity: 2,
+    });
   });
 
   it('records progress and leaves completed task rewards claimable', () => {

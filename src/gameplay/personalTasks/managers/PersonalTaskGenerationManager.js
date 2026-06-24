@@ -188,8 +188,8 @@ export class PersonalTaskGenerationManager {
         periodKey,
         taskKey: 'research',
         actionType: PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH,
-        label: 'finish 1 research',
-        requiredQuantity: 1,
+        label: 'finish 2 researches',
+        requiredQuantity: 2,
         reward,
       });
     }
@@ -243,12 +243,12 @@ export class PersonalTaskGenerationManager {
       dailyBrewPotions,
       dailySellItems,
       dailyEarnCoin,
-      weeklySummonSeeds: dailySummonSeeds * 5,
-      weeklySpendMana: dailySpendMana * 5,
-      weeklyPlantSeeds: dailyPlantSeeds * 5,
-      weeklyHarvestHerbs: dailyHarvestHerbs * 5,
-      weeklyBrewPotions: dailyBrewPotions * 5,
-      weeklySellItems: dailySellItems * 5,
+      weeklySummonSeeds: dailySummonSeeds * 50,
+      weeklySpendMana: dailySpendMana * 50,
+      weeklyPlantSeeds: dailyPlantSeeds * 50,
+      weeklyHarvestHerbs: dailyHarvestHerbs * 50,
+      weeklyBrewPotions: dailyBrewPotions * 50,
+      weeklySellItems: dailySellItems * 50,
     };
   }
 

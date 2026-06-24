@@ -763,6 +763,55 @@ describe('GameplayFacade', () => {
     });
   }, 30_000);
 
+  it('persists and reloads a second prestige reset without losing permanent progress', () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    advanceToLevel(first.gameplayFacade, 10);
+    expect(first.gameplayFacade.completePrestigeMilestone(10)).toMatchObject({
+      ok: true,
+      milestone: { level: 10 },
+      currentRuby: 1,
+    });
+
+    advanceToLevel(first.gameplayFacade, 20);
+    expect(first.gameplayFacade.completePrestigeMilestone(20)).toMatchObject({
+      ok: true,
+      milestone: { level: 20 },
+      currentRuby: 2,
+      completedLevels: [10, 20],
+    });
+
+    const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
+    expect(saved).toMatchObject({
+      coin: { current: 0, totalGenerated: 0 },
+      gold: { current: 0, totalGenerated: 0 },
+      ruby: { current: 2 },
+      inventory: [],
+      research: { completedIds: ['unlockSeed:sageSeed'] },
+      prestige: { completedLevels: [10, 20] },
+      tasks: { currentLevel: PRESTIGE_RESET_LEVEL },
+    });
+
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const second = createGameplay({ persistenceStorage });
+    const snapshot = second.gameplayFacade.getSnapshot();
+
+    expect(snapshot.tasks.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
+    expect(snapshot.playerLevel.currentLevel).toBe(PRESTIGE_RESET_LEVEL);
+    expect(snapshot.prestige.completedLevels).toEqual([10, 20]);
+    expect(snapshot.prestige.earnedRuby).toBe(2);
+    expect(snapshot.ruby.current).toBe(2);
+    expect(snapshot.coin).toMatchObject({ current: 0, totalGenerated: 0 });
+    expect(snapshot.inventory).toEqual([]);
+    expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
+
+    second.gameplayFacade.shutdown();
+    second.ecsFacade.destroyWorld();
+  }, 30_000);
+
   it('requires confirmation when a higher prestige milestone is available', () => {
     const { gameplayFacade } = createGameplay();
     advanceToLevel(gameplayFacade, 20);
@@ -1453,14 +1502,6 @@ describe('GameplayFacade', () => {
               theme: { white: 0, black: 2, midnight: 0, witchcraft: 0 },
               font: { lexend: 0, 'comic-sans-mono': 0 },
               color: { monochrome: 0, resources: 0 },
-              character: {
-                elara: 0,
-                mira: 0,
-                bramble: 0,
-                corvin: 0,
-                juniper: 0,
-                rowan: 0,
-              },
               progressBar: { regular: 0, gradient: 0 },
               plotView: { rows: 0, boxes: 0 },
               icons: { none: 0, icons: 0 },
@@ -1478,14 +1519,6 @@ describe('GameplayFacade', () => {
         'comic-sans-mono': false,
       },
       color: { monochrome: true, resources: false },
-      character: {
-        elara: true,
-        mira: true,
-        bramble: true,
-        corvin: true,
-        juniper: true,
-        rowan: true,
-      },
       progressBar: { regular: true, gradient: false },
       plotView: { rows: true, boxes: true },
       icons: { none: true, icons: true },
@@ -1751,6 +1784,8 @@ describe('GameplayFacade', () => {
     });
     expect(research.tabs[2].boxes.map((box) => box.id)).toEqual([
       'fastSell',
+      'researchCost',
+      'researchTime',
       'plotCapacity',
       'cauldronCapacity',
       'cauldronBrewing',
@@ -1771,9 +1806,35 @@ describe('GameplayFacade', () => {
       costCurrency: 'ruby',
     });
     expect(research.tabs[2].boxes[1].researches.map((research) => research.id)).toEqual([
-      capacityResearchIds.plot(11),
+      researchCostResearchIds.reduction(1),
     ]);
     expect(research.tabs[2].boxes[1].researches[0]).toMatchObject({
+      id: researchCostResearchIds.reduction(1),
+      label: 'research cost lvl 1',
+      value: '1 ruby',
+      effect: '-10% cost',
+      costCoin: 0,
+      costRuby: 1,
+      costCurrency: 'ruby',
+    });
+    expect(research.tabs[2].boxes[2].researches.map((research) => research.id)).toEqual([
+      researchTimeResearchIds.reduction(1),
+    ]);
+    expect(research.tabs[2].boxes[2].researches[0]).toMatchObject({
+      id: researchTimeResearchIds.reduction(1),
+      label: 'research time lvl 1',
+      value: '1 ruby',
+      effect: '-10% time',
+      showEffect: true,
+      requiredResearchIds: [],
+      costCoin: 0,
+      costRuby: 1,
+      costCurrency: 'ruby',
+    });
+    expect(research.tabs[2].boxes[3].researches.map((research) => research.id)).toEqual([
+      capacityResearchIds.plot(11),
+    ]);
+    expect(research.tabs[2].boxes[3].researches[0]).toMatchObject({
       id: capacityResearchIds.plot(11),
       label: 'plot 11 capacity',
       value: 'locked',
@@ -1786,10 +1847,10 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[2].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
       capacityResearchIds.cauldron(6),
     ]);
-    expect(research.tabs[2].boxes[2].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[4].researches[0]).toMatchObject({
       id: capacityResearchIds.cauldron(6),
       label: 'cauldron 6 capacity',
       value: 'locked',
@@ -1802,74 +1863,49 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[3].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[5].researches.map((research) => research.id)).toEqual([
       advancedResearchIds.cauldronBrewing(1, 1),
     ]);
-    expect(research.tabs[2].boxes[3].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[5].researches[0]).toMatchObject({
       id: advancedResearchIds.cauldronBrewing(1, 1),
       label: 'cauldron 1 brewing lvl 1',
       value: '1 ruby',
-      effect: '-2% time',
+      effect: '-5% time',
       showEffect: true,
       requiredResearchIds: [],
       costCoin: 0,
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[6].researches.map((research) => research.id)).toEqual([
       advancedResearchIds.plotGrowth(1, 1),
       advancedResearchIds.plotGrowth(2, 1),
     ]);
     expect(research.tabs[3].label).toBe('emerald research');
     expect(research.tabs[3].boxes.map((box) => box.id)).toEqual([
-      'researchCost',
-      'researchTime',
       'plotPlanting',
       'cauldronBrewing',
     ]);
     expect(research.tabs[3].boxes[0].researches[0]).toMatchObject({
-      id: researchCostResearchIds.reduction(1),
-      label: 'research cost lvl 1',
-      value: '1 emerald',
-      effect: '-10% cost',
-      costCoin: 0,
-      costEmerald: 1,
-      costCurrency: 'emerald',
-    });
-    expect(research.tabs[3].boxes[1].researches.map((research) => research.id)).toEqual([
-      researchTimeResearchIds.reduction(1),
-    ]);
-    expect(research.tabs[3].boxes[1].researches[0]).toMatchObject({
-      id: researchTimeResearchIds.reduction(1),
-      label: 'research time lvl 1',
-      value: '1 emerald',
-      effect: '-10% time',
-      showEffect: true,
-      requiredResearchIds: [],
-      costCoin: 0,
-      costEmerald: 1,
-      costCurrency: 'emerald',
-    });
-    expect(research.tabs[3].boxes[2].researches[0]).toMatchObject({
       id: emeraldResearchIds.plotPlanting(1, 2),
-      label: 'plot 1 planting x2',
+      label: 'plot 1 lvl 2',
       value: '1 emerald',
       effect: 'x2 herbs',
       costCoin: 0,
       costEmerald: 1,
       costCurrency: 'emerald',
     });
-    expect(research.tabs[3].boxes[2].researches[1]).toMatchObject({
+    expect(research.tabs[3].boxes[0].researches[1]).toMatchObject({
       id: emeraldResearchIds.plotPlanting(2, 2),
-      label: 'plot 2 planting x2',
+      label: 'plot 2 lvl 2',
       value: '2 emerald',
       requiredResearchIds: [],
       costEmerald: 2,
       costCurrency: 'emerald',
     });
-    expect(research.tabs[3].boxes[3].researches[0]).toMatchObject({
+    expect(research.tabs[3].boxes[1].researches[0]).toMatchObject({
       id: emeraldResearchIds.cauldronBrewing(1, 2),
-      label: 'cauldron 1 brewing x2',
+      label: 'cauldron 1 lvl 2',
       value: '1 emerald',
       effect: 'x2 potions',
       costCoin: 0,
@@ -2220,19 +2256,19 @@ describe('GameplayFacade', () => {
     ).toEqual([advancedResearchIds.cauldronBrewing(1, 2)]);
   });
 
-  it('buys emerald research time reduction and applies it to future research starts', () => {
+  it('buys ruby research time reduction and applies it to future research starts', () => {
     const { ecsFacade, gameplayFacade } = createGameplay({ instantResearch: false });
     const researchId = researchTimeResearchIds.reduction(1);
 
     expect(gameplayFacade.buyResearch(researchId)).toEqual({
       ok: false,
-      reason: 'not_enough_emerald',
+      reason: 'not_enough_ruby',
       researchId,
       cost: 1,
-      costCurrency: 'emerald',
+      costCurrency: 'ruby',
     });
 
-    gameplayFacade.emeraldFacade.add(1);
+    gameplayFacade.rubyFacade.add(1);
 
     expect(gameplayFacade.buyResearch(researchId)).toEqual({
       ok: true,
@@ -2240,7 +2276,7 @@ describe('GameplayFacade', () => {
       durationSeconds: 3,
       remainingSeconds: 3,
       cost: 1,
-      costCurrency: 'emerald',
+      costCurrency: 'ruby',
     });
 
     ecsFacade.update({ timerDeltaSeconds: 3 });
@@ -2250,7 +2286,7 @@ describe('GameplayFacade', () => {
     expect(
       gameplayFacade
         .getSnapshot()
-        .research.tabs.find((tab) => tab.id === 'emerald')
+        .research.tabs.find((tab) => tab.id === 'advanced')
         ?.boxes.find((box) => box.id === 'researchTime')
         ?.researches.map((research) => research.id),
     ).toEqual([researchTimeResearchIds.reduction(2)]);
@@ -2267,31 +2303,31 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('buys emerald research cost reduction and applies it to future coin research costs', () => {
+  it('buys ruby research cost reduction and applies it to future coin research costs', () => {
     const { gameplayFacade } = createGameplay();
     const researchId = researchCostResearchIds.reduction(1);
 
     expect(gameplayFacade.buyResearch(researchId)).toEqual({
       ok: false,
-      reason: 'not_enough_emerald',
+      reason: 'not_enough_ruby',
       researchId,
       cost: 1,
-      costCurrency: 'emerald',
+      costCurrency: 'ruby',
     });
 
-    gameplayFacade.emeraldFacade.add(1);
+    gameplayFacade.rubyFacade.add(1);
 
     expect(gameplayFacade.buyResearch(researchId)).toEqual({
       ok: true,
       researchId,
       cost: 1,
-      costCurrency: 'emerald',
+      costCurrency: 'ruby',
     });
     expect(gameplayFacade.researchFacade.getResearchCostReductionPercent()).toBe(10);
     expect(
       gameplayFacade
         .getSnapshot()
-        .research.tabs.find((tab) => tab.id === 'emerald')
+        .research.tabs.find((tab) => tab.id === 'advanced')
         ?.boxes.find((box) => box.id === 'researchCost')
         ?.researches.map((research) => research.id),
     ).toEqual([researchCostResearchIds.reduction(2)]);
@@ -2312,9 +2348,17 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('uses emerald plot research to plant two seeds and harvest two herbs', () => {
+  it('uses emerald plot level-up to plant two seeds and harvest two herbs', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
     const researchId = emeraldResearchIds.plotPlanting(1, 2);
+    const researchAnnouncements = [];
+
+    gameplayFacade.setWorldChatFacade({
+      announceResearch: (researchName) => {
+        researchAnnouncements.push(researchName);
+        return Promise.resolve({ ok: true, researchName });
+      },
+    });
 
     expect(gameplayFacade.buyResearch(researchId)).toEqual({
       ok: false,
@@ -2331,6 +2375,11 @@ describe('GameplayFacade', () => {
       cost: 1,
       costCurrency: 'emerald',
     });
+    expect(gameplayFacade.getSnapshot().research.completedResearchIds).toContain(researchId);
+    expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toContain(
+      'leveled up plot 1 lvl 2',
+    );
+    expect(researchAnnouncements).toEqual([]);
     expect(
       findResearchSnapshot(gameplayFacade, emeraldResearchIds.plotPlanting(1, 3)),
     ).toMatchObject({
@@ -2357,7 +2406,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.itemsFacade.getItemQuantity(1001)).toBe(2);
   });
 
-  it('uses emerald cauldron research to consume two recipe batches and bottle two potions', () => {
+  it('uses emerald cauldron level-up to consume two recipe batches and bottle two potions', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
     const researchId = emeraldResearchIds.cauldronBrewing(1, 2);
 
@@ -2501,7 +2550,7 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(1, 1);
     expect(gameplayFacade.plantGardenSeed(1, 1)).toMatchObject({
       ok: true,
-      durationMs: 11_760,
+      durationMs: 11_400,
     });
 
     ecsFacade.update({ deltaSeconds: 12 });
@@ -2514,7 +2563,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.brewCauldron()).toMatchObject({
       ok: true,
-      durationMs: 29_400,
+      durationMs: 28_500,
     });
   });
 

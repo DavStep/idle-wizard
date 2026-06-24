@@ -380,6 +380,16 @@ export class ResearchDefinitionManager {
         researches: this.getFastSellResearches(),
       },
       {
+        id: 'researchCost',
+        label: 'research cost research',
+        researches: this.getResearchCostResearches(),
+      },
+      {
+        id: 'researchTime',
+        label: 'research time research',
+        researches: this.getResearchTimeResearches(),
+      },
+      {
         id: 'plotCapacity',
         label: 'plot capacity research',
         researches: this.getPlotCapacityResearches(),
@@ -420,40 +430,30 @@ export class ResearchDefinitionManager {
   getEmeraldResearchBoxes({ includeLevelLockedAutomation = false } = {}) {
     return [
       {
-        id: 'researchCost',
-        label: 'research cost research',
-        researches: this.getResearchCostResearches(),
-      },
-      {
-        id: 'researchTime',
-        label: 'research time research',
-        researches: this.getResearchTimeResearches(),
-      },
-      {
         id: 'plotPlanting',
-        label: 'plot planting research',
+        label: 'plot level up',
         researches: this.getEmeraldSlotResearches({
           count: this.getAutomationGardenTileCount({ includeLevelLockedAutomation }),
           getId: emeraldResearchIds.plotPlanting,
           seriesId: (plotNumber) => `emerald:plotPlanting:${plotNumber}`,
-          label: (plotNumber, multiplier) => `plot ${plotNumber} planting x${multiplier}`,
+          label: (plotNumber, multiplier) => `plot ${plotNumber} lvl ${multiplier}`,
           effect: (multiplier) => `x${multiplier} herbs`,
           description: (plotNumber, multiplier) =>
-            `plot ${plotNumber} uses ${multiplier} seeds and harvests ${multiplier} herbs in one growth timer.`,
+            `levels plot ${plotNumber} to lvl ${multiplier}: it uses ${multiplier} seeds and harvests ${multiplier} herbs in one growth timer.`,
         }),
       },
       {
         id: 'cauldronBrewing',
-        label: 'cauldron brewing research',
+        label: 'cauldron level up',
         researches: this.getEmeraldSlotResearches({
           count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
           getId: emeraldResearchIds.cauldronBrewing,
           seriesId: (cauldronNumber) => `emerald:cauldronBrewing:${cauldronNumber}`,
           label: (cauldronNumber, multiplier) =>
-            `cauldron ${cauldronNumber} brewing x${multiplier}`,
+            `cauldron ${cauldronNumber} lvl ${multiplier}`,
           effect: (multiplier) => `x${multiplier} potions`,
           description: (cauldronNumber, multiplier) =>
-            `cauldron ${cauldronNumber} uses ${multiplier} recipe inputs and mana costs to bottle ${multiplier} potions in one brew timer.`,
+            `levels cauldron ${cauldronNumber} to lvl ${multiplier}: it uses ${multiplier} recipe inputs and mana costs to bottle ${multiplier} potions in one brew timer.`,
         }),
       },
     ];
@@ -602,6 +602,8 @@ export class ResearchDefinitionManager {
           label: label(targetNumber, multiplier),
           value: effect(multiplier),
           showEffect: true,
+          actionType: 'levelUp',
+          level: multiplier,
           seriesId: seriesId(targetNumber),
           requiredResearchIds:
             multiplier > emeraldResearchMinMultiplier

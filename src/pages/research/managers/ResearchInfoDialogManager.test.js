@@ -27,4 +27,25 @@ describe('ResearchInfoDialogManager', () => {
       'requires mana tonic research and level 5.',
     );
   });
+
+  it('labels emerald upgrade information as level up information', () => {
+    const manager = new ResearchInfoDialogManager();
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+    manager.show({
+      label: 'plot 1 lvl 2',
+      actionType: 'levelUp',
+      description:
+        'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
+    });
+
+    const dialog = stage.querySelector('[role="dialog"]');
+
+    expect(dialog?.getAttribute('aria-label')).toBe(
+      'plot 1 lvl 2 level up information',
+    );
+    expect(dialog?.textContent).toContain('plot 1 lvl 2');
+    expect(dialog?.textContent).toContain('levels plot 1 to lvl 2');
+  });
 });

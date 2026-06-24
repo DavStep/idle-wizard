@@ -244,10 +244,7 @@ export class WorkshopPersonalTasksManager {
   renderCharacter(personalTasks) {
     const daily = personalTasks?.daily;
     const weekly = personalTasks?.weekly;
-    const claimableRewards = Math.max(
-      0,
-      Math.floor(Number(personalTasks?.claimableRewards) || 0),
-    );
+    const claimableRewards = this.getVisibleClaimableRewards(personalTasks);
     this.refs.openButton?.setAttribute(
       'aria-label',
       `open personal tasks, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, weekly ${weekly?.completedTasks ?? 0}/${weekly?.totalTasks ?? 0}, ${claimableRewards} rewards to claim`,
@@ -267,7 +264,7 @@ export class WorkshopPersonalTasksManager {
       const tabPeriod = personalTasks?.[periodType];
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
       button.tabIndex = selected ? 0 : -1;
-      setNotificationBadge(button, (tabPeriod?.claimableRewards ?? 0) > 0);
+      setNotificationBadge(button, this.getPeriodVisibleClaimableRewards(tabPeriod) > 0);
     }
 
     this.refs.periodLabel.textContent = period
@@ -283,7 +280,6 @@ export class WorkshopPersonalTasksManager {
     }
 
     const rows = period.tasks.map((task) => this.createTaskRow(task));
-    rows.push(this.createFullClearRow(period));
     this.refs.rows.replaceChildren(...rows);
   }
 
@@ -344,64 +340,6 @@ export class WorkshopPersonalTasksManager {
     return root;
   }
 
-  createFullClearRow(period) {
-    const root = document.createElement('div');
-    root.className = 'workshop-page__personal-task workshop-page__personal-task--full';
-
-    const row = document.createElement('div');
-    row.className = 'workshop-page__personal-task-row workshop-page__personal-task-row--full';
-
-    const rewardClaimable = period.fullClearRewardClaimable === true;
-    const rewardClaimed = period.fullClearRewardClaimed === true;
-
-    if (rewardClaimed) {
-      root.classList.add('is-completed');
-      row.classList.add('is-completed');
-    } else if (rewardClaimable) {
-      root.classList.add('is-claimable');
-      row.classList.add('is-claimable');
-    }
-
-    const label = document.createElement('span');
-    label.className = 'workshop-page__personal-task-label';
-    label.textContent = 'all tasks';
-
-    const progress = document.createElement('span');
-    progress.className = 'workshop-page__personal-task-progress';
-    progress.textContent = `${period.completedTasks}/${period.totalTasks}`;
-
-    const reward = rewardClaimable
-      ? this.createFullClearClaimButton(period)
-      : document.createElement('span');
-    reward.classList.add('workshop-page__personal-task-reward');
-
-    if (!rewardClaimable) {
-      setResourceIconText(
-        reward,
-        rewardClaimed ? 'done' : period.fullClearReward?.text ?? '',
-      );
-    }
-
-    setResourceColor(reward, this.getFullClearRewardResource(period));
-    setNotificationBadge(reward, rewardClaimable);
-
-    const progressBar = this.createProgressBar(
-      this.getProgressWidth(
-        period.completedTasks,
-        period.totalTasks,
-        period.fullClearRewardClaimed,
-      ),
-    );
-
-    const status = document.createElement('span');
-    status.className = 'workshop-page__personal-task-status';
-    status.append(progress, reward);
-
-    row.append(label, status);
-    root.append(row, progressBar);
-    return root;
-  }
-
   createTaskClaimButton(task) {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__personal-task-claim';
@@ -418,23 +356,6 @@ export class WorkshopPersonalTasksManager {
         this.selectedPeriodType,
         task.taskId,
       );
-    });
-    return button;
-  }
-
-  createFullClearClaimButton(period) {
-    const button = document.createElement('button');
-    button.className = 'style-button workshop-page__personal-task-claim';
-    button.type = 'button';
-    button.textContent = 'claim';
-    button.dataset.personalTaskPeriodType = period.periodType;
-    button.dataset.personalTaskFullClear = 'true';
-    button.setAttribute(
-      'aria-label',
-      `claim ${period.fullClearReward?.text ?? 'reward'} for all ${period.periodType} tasks`,
-    );
-    button.addEventListener('click', () => {
-      this.gameplayFacade?.claimPersonalTaskFullClearReward?.(this.selectedPeriodType);
     });
     return button;
   }
@@ -490,14 +411,6 @@ export class WorkshopPersonalTasksManager {
     );
   }
 
-  getFullClearRewardResource(period) {
-    if (period?.fullClearRewardClaimed) {
-      return null;
-    }
-
-    return this.getRewardResource(period?.fullClearReward);
-  }
-
   getRewardResource(reward) {
     const hasCoin = Math.max(0, Math.floor(Number(reward?.coin) || 0)) > 0;
     const hasCrystal = Math.max(0, Math.floor(Number(reward?.crystal) || 0)) > 0;
@@ -511,6 +424,18 @@ export class WorkshopPersonalTasksManager {
     }
 
     return null;
+  }
+
+  getVisibleClaimableRewards(personalTasks) {
+    return ['daily', 'weekly'].reduce(
+      (total, periodType) =>
+        total + this.getPeriodVisibleClaimableRewards(personalTasks?.[periodType]),
+      0,
+    );
+  }
+
+  getPeriodVisibleClaimableRewards(period) {
+    return (period?.tasks ?? []).filter((task) => task.rewardClaimable === true).length;
   }
 
   applyVisibility() {

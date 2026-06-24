@@ -395,6 +395,38 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
+  it('shows cauldron level in the cauldron title', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        level: 3,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.brewing-page__cauldron .style-box__title')?.textContent).toBe(
+      'cauldron 1 lvl 3',
+    );
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('renders the selected recipe potion icon inside the cauldron', () => {
     const snapshot = {
       brewing: {
@@ -445,7 +477,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('puts the selected recipe name on the cauldron top line', () => {
+  it('keeps the selected recipe name out of the cauldron top line', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -482,12 +514,13 @@ describe('BrewingCauldronManager', () => {
 
     manager.mount(parent);
 
-    const title = parent.querySelector('.brewing-page__cauldron-recipe-title');
     const guide = parent.querySelector('.brewing-page__cauldron-guide');
     const items = parent.querySelector('.brewing-page__cauldron-items');
 
-    expect(title?.textContent).toBe('mana tonic');
-    expect(title?.hidden).toBe(false);
+    expect(parent.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
+    expect(
+      parent.querySelector('.brewing-page__cauldron .style-box__title')?.textContent,
+    ).toBe('cauldron 1 lvl 1');
     expect(guide?.querySelector('.brewing-page__cauldron-recipe-row')).toBeNull();
     expect(guide?.textContent).not.toContain('recipe');
     expect(guide?.textContent).toContain('- 3 sage');
@@ -507,6 +540,140 @@ describe('BrewingCauldronManager', () => {
     );
     expect(guideSequenceRule).toContain('overflow: visible;');
     expect(guideSequenceRule).not.toContain('overflow: hidden auto;');
+  });
+
+  it('keeps three cauldron rows by default and grows for taller selected recipes', () => {
+    expect(baseCss).toContain('--brewing-page-cauldron-base-row-count: 3;');
+    expect(baseCss).toContain(
+      'var(--style-row-min-height) * var(--brewing-page-cauldron-list-row-count)',
+    );
+
+    const baseSnapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const baseParent = document.createElement('div');
+    document.body.append(baseParent);
+    const baseManager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(baseSnapshot),
+    });
+
+    baseManager.mount(baseParent);
+
+    expect(
+      baseParent
+        .querySelector('.brewing-page__cauldron')
+        ?.style.getPropertyValue('--brewing-page-cauldron-row-count'),
+    ).toBe('3');
+
+    baseManager.unmount();
+    baseParent.remove();
+
+    const recipeSnapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'manyRows',
+            label: 'many rows',
+            unlocked: true,
+            ingredients: [
+              { itemTypeId: 1001, key: 'sageHerb', label: 'sage', quantity: 1 },
+              { itemTypeId: 1002, key: 'mintHerb', label: 'mint', quantity: 1 },
+              { itemTypeId: 1003, key: 'nettleHerb', label: 'nettle', quantity: 1 },
+              { itemTypeId: 1004, key: 'briarHerb', label: 'briar', quantity: 1 },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const recipeParent = document.createElement('div');
+    document.body.append(recipeParent);
+    const recipeManager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(recipeSnapshot),
+      getSelectedRecipeKey: () => 'manyRows',
+    });
+
+    recipeManager.mount(recipeParent);
+
+    expect(
+      recipeParent
+        .querySelector('.brewing-page__cauldron')
+        ?.style.getPropertyValue('--brewing-page-cauldron-row-count'),
+    ).toBe('4');
+    expect(
+      recipeParent
+        .querySelector('.brewing-page__cauldron')
+        ?.style.getPropertyValue('--brewing-page-cauldron-list-row-count'),
+    ).toBe('4');
+
+    recipeManager.unmount();
+    recipeParent.remove();
+
+    const statusSnapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [
+          { slotIndex: 0, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+        ],
+        recipes: [
+          {
+            key: 'statusRows',
+            label: 'status rows',
+            unlocked: true,
+            ingredients: [
+              { itemTypeId: 1001, key: 'sageHerb', label: 'sage', quantity: 1 },
+              { itemTypeId: 1002, key: 'mintHerb', label: 'mint', quantity: 1 },
+              { itemTypeId: 1003, key: 'nettleHerb', label: 'nettle', quantity: 1 },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const statusParent = document.createElement('div');
+    document.body.append(statusParent);
+    const statusManager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(statusSnapshot),
+      getSelectedRecipeKey: () => 'statusRows',
+    });
+
+    statusManager.mount(statusParent);
+
+    const statusCauldron = statusParent.querySelector('.brewing-page__cauldron');
+    expect(statusCauldron?.style.getPropertyValue('--brewing-page-cauldron-row-count')).toBe(
+      '4',
+    );
+    expect(
+      statusCauldron?.style.getPropertyValue('--brewing-page-cauldron-list-row-count'),
+    ).toBe('3');
+
+    statusManager.unmount();
+    statusParent.remove();
   });
 
   it('keeps the change-recipe label above the selected recipe guide layer', () => {

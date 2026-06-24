@@ -4,6 +4,7 @@ import { BrewingSnapshotManager } from './BrewingSnapshotManager.js';
 
 function createSnapshotManager({
   activeBrew = null,
+  cauldronMultiplier = 1,
   getIngredientCountsByItemTypeId,
   getIngredientCountByItemTypeId,
   getIngredientSnapshots = vi.fn(() => []),
@@ -51,7 +52,7 @@ function createSnapshotManager({
         getMaxCauldrons: vi.fn(() => 1),
       },
       researchFacade: {
-        getCauldronBrewingMultiplier: vi.fn(() => 1),
+        getCauldronBrewingMultiplier: vi.fn(() => cauldronMultiplier),
         getMaxCauldronsWithCapacity: vi.fn((maxCauldrons) => maxCauldrons),
         getRequiredCauldronCapacityResearchId: vi.fn(() => null),
       },
@@ -80,6 +81,7 @@ describe('BrewingSnapshotManager', () => {
 
     expect(snapshot).toMatchObject({
       activeBrew,
+      level: 1,
       canAddIngredient: false,
       canBrew: false,
       canCollectPotion: false,
@@ -154,11 +156,25 @@ describe('BrewingSnapshotManager', () => {
       hasEnoughIngredients: true,
       hasEnoughMana: true,
       match: null,
+      level: 1,
       yieldMultiplier: 1,
     });
     expect(recipeMatchManager.getMatch).not.toHaveBeenCalled();
     expect(recipeMatchManager.isRecipeDiscoverable).not.toHaveBeenCalled();
     expect(recipeMatchManager.isRecipeUnlocked).not.toHaveBeenCalled();
     expect(manaFacade.canSpend).not.toHaveBeenCalled();
+  });
+
+  it('exposes cauldron level from emerald cauldron level ups', () => {
+    const { manager } = createSnapshotManager({
+      cauldronMultiplier: 4,
+      getIngredientSnapshots: vi.fn(() => []),
+    });
+
+    expect(manager.getCauldronSnapshot(0, [])).toMatchObject({
+      cauldronNumber: 1,
+      level: 4,
+      yieldMultiplier: 1,
+    });
   });
 });

@@ -376,7 +376,6 @@ export class DevCheatCommandManager {
     const applied = {};
     const setters = [
       ['username', 'setUsername'],
-      ['character', 'setCharacter'],
       ['theme', 'setTheme'],
       ['font', 'setFont'],
       ['colorMode', 'setColorMode'],
@@ -1406,7 +1405,6 @@ export class DevCheatCommandManager {
         username:
           safeOptions.username ??
           'Archwizard Whose Very Long Name Must Still Fit',
-        character: safeOptions.character ?? 'wizard',
         guildName: 'The Extremely Wordy QA Fellowship',
         allianceTag: 'LONG',
       }),

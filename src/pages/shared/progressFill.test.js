@@ -98,6 +98,42 @@ describe('progressFill', () => {
     expect(fill.style.transform).toBe('scaleX(0.98)');
   });
 
+  it('snaps stepped progress back to zero without a reverse transition', () => {
+    const fill = document.createElement('span');
+
+    setProgressFill(fill, 0.5, {
+      smooth: 'step',
+      remainingMs: 6_000,
+      stepMs: 120,
+    });
+    setProgressFill(fill, 0, {
+      smooth: 'step',
+      remainingMs: 6_000,
+      stepMs: 120,
+    });
+
+    expect(fill.style.transition).toBe('none');
+    expect(fill.style.transform).toBe('scaleX(0)');
+    expect(fill.classList.contains('is-progress-running')).toBe(false);
+  });
+
+  it('snaps continuous progress back to zero without scheduling completion motion', () => {
+    const fill = document.createElement('span');
+    const requestAnimationFrame = vi.fn();
+
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+    });
+
+    setProgressFill(fill, 0, { smooth: true, remainingMs: 1_500 });
+
+    expect(requestAnimationFrame).not.toHaveBeenCalled();
+    expect(fill.style.transition).toBe('none');
+    expect(fill.style.transform).toBe('scaleX(0)');
+    expect(fill.classList.contains('is-progress-running')).toBe(false);
+  });
+
   it('stops active progress immediately', () => {
     const fill = document.createElement('span');
 

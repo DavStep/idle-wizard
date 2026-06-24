@@ -68,6 +68,7 @@ export class ResearchSnapshotManager {
       ...research,
       effect: research.value,
       value: this.formatResearchValue({
+        research,
         completed,
         hasRequiredResearch,
         hasRequiredPlayerLevel,
@@ -99,6 +100,7 @@ export class ResearchSnapshotManager {
   }
 
   formatResearchValue({
+    research,
     completed,
     hasRequiredResearch,
     hasRequiredPlayerLevel,
@@ -107,11 +109,11 @@ export class ResearchSnapshotManager {
     progress,
   }) {
     if (completed) {
-      return 'researched';
+      return this.getCompletedValue(research);
     }
 
     if (progress.inProgress) {
-      return 'researching';
+      return this.getInProgressValue(research);
     }
 
     if (!hasRequiredResearch || !hasRequiredPlayerLevel || !hasRequiredPrestigeCount) {
@@ -119,6 +121,27 @@ export class ResearchSnapshotManager {
     }
 
     return this.formatCost(cost);
+  }
+
+  getCompletedValue(research) {
+    if (research?.actionType === 'levelUp') {
+      return `lvl ${this.normalizeResearchLevel(research.level)}`;
+    }
+
+    return 'researched';
+  }
+
+  getInProgressValue(research) {
+    if (research?.actionType === 'levelUp') {
+      return 'leveling up';
+    }
+
+    return 'researching';
+  }
+
+  normalizeResearchLevel(level) {
+    const safeLevel = Math.floor(Number(level));
+    return Number.isInteger(safeLevel) && safeLevel > 0 ? safeLevel : 1;
   }
 
   formatCost(cost) {

@@ -105,6 +105,27 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(dialogRule).toMatch(/\bwidth:\s*260px;/);
   });
 
+  it('keeps the personal task header aligned with the world event header pattern', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const headerRule = baseCss.match(
+      /\.workshop-page__personal-tasks-header\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const portraitRule = baseCss.match(
+      /\.workshop-page__personal-tasks-dialog-character\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const frameRule = baseCss.match(
+      /\.workshop-page__personal-tasks-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(headerRule).toMatch(/\bgrid-template-columns:\s*68px minmax\(0, 1fr\);/);
+    expect(headerRule).toMatch(/\bheight:\s*90px;/);
+    expect(headerRule).toMatch(/\bmin-height:\s*90px;/);
+    expect(headerRule).toMatch(/\bborder-bottom:\s*1px solid var\(--style-disabled\);/);
+    expect(portraitRule).toMatch(/\bwidth:\s*64px;/);
+    expect(portraitRule).toMatch(/\bheight:\s*80px;/);
+    expect(frameRule).toMatch(/\b90px - 6px\b/);
+  });
+
   it('renders the unlocked character button and popup task rows', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopPersonalTasksManager({ gameplayFacade });
@@ -142,10 +163,10 @@ describe('WorkshopPersonalTasksManager', () => {
         .querySelector('.workshop-page__personal-tasks-dialog-character')
         ?.getAttribute('src'),
     ).toContain('miso.webp');
-    expect(popup.querySelectorAll('.workshop-page__personal-task-row')).toHaveLength(8);
-    expect(popup.querySelectorAll('.workshop-page__personal-task')).toHaveLength(8);
-    expect(popup.querySelectorAll('.workshop-page__personal-task-bar')).toHaveLength(8);
-    expect(popup.querySelectorAll('.workshop-page__personal-task-status')).toHaveLength(8);
+    expect(popup.querySelectorAll('.workshop-page__personal-task-row')).toHaveLength(7);
+    expect(popup.querySelectorAll('.workshop-page__personal-task')).toHaveLength(7);
+    expect(popup.querySelectorAll('.workshop-page__personal-task-bar')).toHaveLength(7);
+    expect(popup.querySelectorAll('.workshop-page__personal-task-status')).toHaveLength(7);
     expect(
       popup
         .querySelector('.workshop-page__personal-task-status')
@@ -160,12 +181,8 @@ describe('WorkshopPersonalTasksManager', () => {
       popup.querySelector('.workshop-page__personal-task-fill')?.style.width,
     ).toBe('100%');
     expect(popup.textContent).toContain('summon 10 seeds');
-    expect(popup.textContent).toContain('+25 coin');
-    expect(
-      popup
-        .querySelector('.workshop-page__personal-task--full .workshop-page__personal-task-reward')
-        ?.dataset.resourceColor,
-    ).toBe('coin');
+    expect(popup.textContent).not.toContain('all tasks');
+    expect(popup.textContent).not.toContain('+25 coin');
     const completedLabel = popup.querySelector(
       '.workshop-page__personal-task.is-completed .workshop-page__personal-task-label',
     );
@@ -177,7 +194,8 @@ describe('WorkshopPersonalTasksManager', () => {
       .click();
 
     expect(popup.textContent).toContain('0/7 done, resets 3d');
-    expect(popup.textContent).toContain('+95 coin, +1 crystal');
+    expect(popup.textContent).not.toContain('all tasks');
+    expect(popup.textContent).not.toContain('+95 coin, +1 crystal');
     expect(
       [...popup.querySelectorAll('.workshop-page__personal-task-label')]
         .slice(0, 7)
@@ -228,10 +246,8 @@ describe('WorkshopPersonalTasksManager', () => {
         ?.textContent,
     ).toBe('coin');
     expect(
-      popup
-        .querySelector('.workshop-page__personal-task--full .workshop-page__personal-task-reward')
-        ?.dataset.resourceColor,
-    ).toBeUndefined();
+      popup.querySelector('.workshop-page__personal-task--full'),
+    ).toBeNull();
   });
 
   it('hides and closes when personal tasks are locked', () => {

@@ -75,11 +75,11 @@ describe('ResearchDefinitionManager', () => {
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
   });
 
-  it('adds staged research time reduction rows to emerald research', () => {
+  it('adds staged research time reduction rows to advanced research', () => {
     const { manager } = createManager();
     const box = manager
       .getResearchTabs()
-      .find((tab) => tab.id === 'emerald')
+      .find((tab) => tab.id === 'advanced')
       ?.boxes.find((nextBox) => nextBox.id === 'researchTime');
 
     expect(box?.researches[0]).toMatchObject({
@@ -95,11 +95,11 @@ describe('ResearchDefinitionManager', () => {
     });
   });
 
-  it('adds staged research cost reduction rows to emerald research', () => {
+  it('adds staged research cost reduction rows to advanced research', () => {
     const { manager } = createManager();
     const box = manager
       .getResearchTabs()
-      .find((tab) => tab.id === 'emerald')
+      .find((tab) => tab.id === 'advanced')
       ?.boxes.find((nextBox) => nextBox.id === 'researchCost');
 
     expect(box?.researches[0]).toMatchObject({
@@ -112,6 +112,40 @@ describe('ResearchDefinitionManager', () => {
       id: researchCostResearchIds.reduction(8),
       value: '-80% cost',
       requiredResearchIds: [researchCostResearchIds.reduction(7)],
+    });
+  });
+
+  it('presents emerald plot and cauldron upgrades as level ups', () => {
+    const { manager } = createManager();
+    const emeraldTab = manager.getResearchTabs().find((tab) => tab.id === 'emerald');
+    const plotBox = emeraldTab?.boxes.find((nextBox) => nextBox.id === 'plotPlanting');
+    const cauldronBox = emeraldTab?.boxes.find(
+      (nextBox) => nextBox.id === 'cauldronBrewing',
+    );
+
+    expect(plotBox).toMatchObject({
+      label: 'plot level up',
+    });
+    expect(plotBox?.researches[0]).toMatchObject({
+      id: 'emerald:plotPlanting:1:2',
+      label: 'plot 1 lvl 2',
+      value: 'x2 herbs',
+      actionType: 'levelUp',
+      level: 2,
+      description:
+        'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
+    });
+    expect(cauldronBox).toMatchObject({
+      label: 'cauldron level up',
+    });
+    expect(cauldronBox?.researches[0]).toMatchObject({
+      id: 'emerald:cauldronBrewing:1:2',
+      label: 'cauldron 1 lvl 2',
+      value: 'x2 potions',
+      actionType: 'levelUp',
+      level: 2,
+      description:
+        'levels cauldron 1 to lvl 2: it uses 2 recipe inputs and mana costs to bottle 2 potions in one brew timer.',
     });
   });
 });

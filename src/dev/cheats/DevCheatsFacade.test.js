@@ -216,7 +216,6 @@ describe('DevCheatsFacade', () => {
       ok: true,
       profile: {
         username: 'Long QA Name',
-        character: 'elara',
       },
     });
     expect(target.cheats.setInventoryPreset('full')).toMatchObject({

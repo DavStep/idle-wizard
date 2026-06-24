@@ -1,11 +1,16 @@
 import { DEFAULT_TRADE_ALLIANCE_TAG_COLOR, normalizeTradeAllianceTagColor } from '../../shared/tradeAllianceTagColors.js';
 import {
+  normalizeGuildAdventurerIconKey,
+  pickGuildAdventurerIconKey,
+} from '../../shared/guildAdventurerIcons.js';
+import {
   GUILD_CHARTER_COST_COIN,
   GUILD_SECRETARY_LEVELS,
   GUILD_STATE_VERSION,
   GUILD_STATS,
   GUILD_UNLOCK_LEVEL,
   GuildGenerationManager,
+  createRng,
   getNextSecretaryLevel,
   getSecretaryLevel,
 } from './managers/GuildGenerationManager.js';
@@ -675,9 +680,21 @@ export class GuildFacade {
       stats[stat] = clampInt(adventurer.stats?.[stat], 0, 999);
     }
 
+    const iconKey = normalizeGuildAdventurerIconKey(
+      adventurer.iconKey ?? adventurer.characterIcon ?? adventurer.character,
+      pickGuildAdventurerIconKey(
+        {
+          personalityId: adventurer.personalityId,
+          stats,
+        },
+        createRng(`${adventurer.id}:icon`),
+      ),
+    );
+
     return {
       ...adventurer,
       id: String(adventurer.id),
+      iconKey,
       name: String(adventurer.name ?? 'nameless').slice(0, 24),
       surname: String(adventurer.surname ?? '').slice(0, 24),
       epithet: String(adventurer.epithet ?? '').slice(0, 40),

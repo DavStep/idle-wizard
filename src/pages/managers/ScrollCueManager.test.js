@@ -225,6 +225,7 @@ describe('ScrollCueManager', () => {
       'style-dialog-scroll',
       'shop-page__direct-sell-rows',
       'guild-page__popup-content',
+      'guild-page__card-details',
       'room-alliance-info-content',
     ];
     const panes = [];

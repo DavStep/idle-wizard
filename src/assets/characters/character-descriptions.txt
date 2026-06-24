@@ -1,0 +1,55 @@
+Character icon descriptions
+
+Use these keys when choosing a character icon. Generated adventurers should get a fitting
+iconKey from this list and must not use elara.
+
+adventurer_blackarmor_sword: black-haired blue-eyed sword fighter in black and gold armor, holding a short sword.
+adventurer_blacksmith: red-haired worker with a dark red headband and leather apron, holding a hammer.
+adventurer_blondsword: blond blue-eyed light-armored swordsman with a blue scarf and raised sword.
+adventurer_bluebandana: blue-haired traveler with a red scarf and a blue bandana-like head wrap.
+adventurer_bluequiver_archer: dark blue-haired archer in blue-gray clothes, carrying a full quiver.
+adventurer_bluescarf_spear: blond armored spear fighter with a blue scarf and upright spear.
+adventurer_brownhood_archer: blond archer under a brown hood, carrying arrows over the shoulder.
+adventurer_cleric: blond cleric in a white hooded robe with gold trim, holding a cross staff.
+adventurer_furguard: dark-haired guard in a fur-trimmed cloak, carrying a mace or club.
+adventurer_goldshield_guard: blond guard in gold-trimmed armor, holding a blue-and-gold shield.
+adventurer_grayquiver_archer: pale blond archer in gray-brown gear, carrying a quiver.
+adventurer_greenbow_archer: green-haired archer in tan clothes, holding a curved bow.
+adventurer_greencloak_spear: brown-haired spear fighter in green cloak and light armor.
+adventurer_greenscarf_shield: brown-haired guard with a green scarf, armor, and round shield.
+adventurer_helmhammer: armored guard in a steel helmet, holding a square-headed hammer.
+adventurer_hoodblade: brown-haired knife user in an olive hood, holding a short blade.
+adventurer_lamplighter: black-haired scout in a brown cap, holding a lantern.
+adventurer_minstrel: brown-haired musician in a blue cap with feather, holding a small lute.
+adventurer_olivehood_archer: black-haired archer under an olive hood, carrying arrows.
+adventurer_packscout: cheerful brown-haired scout with a large travel pack.
+adventurer_planter: brown-haired planter in pale work clothes, holding a small potted plant.
+adventurer_plumehelm_sword: full steel-helmet knight with blue plume, holding a sword.
+adventurer_pouchrunner: black-haired runner in dark clothes, holding a small money pouch.
+adventurer_purpleaxe: purple-haired axe fighter in red-brown gear, holding a curved axe.
+adventurer_redaxe_guard: red-haired axe fighter in tan armor, holding a double-headed axe.
+adventurer_redbow_archer: red-haired archer in green clothes, holding a curved bow.
+adventurer_redscarf_sword: black-haired sword fighter with a red scarf and silver armor.
+adventurer_redspearman: red-haired spear fighter in dark armor, holding a wide spear point.
+adventurer_sapling: brown-haired field worker in a cream cap, holding a tiny sapling.
+adventurer_scrollcap: gray-haired scholar in a stitched brown cap, holding scrolls.
+adventurer_shadowdagger: purple-eyed rogue in a black hood, holding a dagger.
+adventurer_shieldguard: brown-haired guard in a steel helmet, holding a round shield.
+adventurer_steelward: blond shield guard with a pale headband, blue shirt, and gray shield.
+adventurer_treasurehunter: white-haired treasure hunter in goggles and a brown hat, giving a thumbs-up.
+adventurer_troubadour: brown-haired musician in a red cap with feather, holding a small lute.
+adventurer_wayfinder: blond wayfinder in a tan explorer hat, holding a compass.
+bard: blond bard in teal clothes with feathered cap, playing a small lute.
+bramble: sleepy green-haired witch in a dark green robe and floppy green hat.
+corvin: black-haired wizard in a black robe and black hat, holding a round potion flask.
+elara: brown-haired purple witch in a purple robe and hat. Guide character only, do not use for adventurers.
+explorer: tan-hatted explorer with green scarf, backpack, and a paper map.
+herbalist: green-hooded herbalist with green hair, carrying plants and a small pouch.
+juniper: red-haired teal witch in a teal robe and hat, holding a small wand.
+knight: blond armored knight in a steel helmet, with sword hilt visible.
+miner: orange-haired miner with a lamp helmet, brown gear, and a pickaxe.
+mira: pale lavender-haired witch in a navy robe and hat, holding a dark book.
+ranger: olive-hooded ranger with arrows over the shoulder.
+rogue: black-haired rogue with red scarf, dark clothes, and a small dagger.
+rowan: blond red-robed witch in a dark red hat, holding a small coin pouch.
+traveler: brown-capped traveler in green clothes with a rolled bedroll pack.

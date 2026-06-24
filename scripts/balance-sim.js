@@ -149,6 +149,7 @@ class BalanceSimulator {
       },
       crystal: 0,
       ruby: 0,
+      emerald: 0,
       inventory: new Map(),
       taskProgress: new Map(),
       completedTasks: new Set(),
@@ -431,6 +432,7 @@ class BalanceSimulator {
     if (researchId.startsWith('summonSeeds')) return 30;
     if (researchId.startsWith('automation:')) return 40;
     if (researchId.startsWith('advanced:')) return 50;
+    if (researchId.startsWith('emerald:researchCost:')) return 50;
     return 100;
   }
 
@@ -450,6 +452,7 @@ class BalanceSimulator {
   canSpendCurrency(currency, amount) {
     if (currency === 'crystal') return this.state.crystal >= amount;
     if (currency === 'ruby') return this.state.ruby >= amount;
+    if (currency === 'emerald') return this.state.emerald >= amount;
     return this.state.coin.current >= amount;
   }
 
@@ -465,6 +468,11 @@ class BalanceSimulator {
 
     if (currency === 'ruby') {
       this.state.ruby -= amount;
+      return true;
+    }
+
+    if (currency === 'emerald') {
+      this.state.emerald -= amount;
       return true;
     }
 
@@ -1289,9 +1297,17 @@ function createResearchCatalog({ recipes, seedDefinitions }) {
     });
   });
 
-  Object.keys(researchBalance.researchCostsCrystal).forEach((id) => {
+  [
+    ...Object.keys(researchBalance.researchCostsCrystal ?? {}),
+    ...Object.keys(researchBalance.researchCostsRuby ?? {}),
+    ...Object.keys(researchBalance.researchCostsEmerald ?? {}),
+  ].forEach((id) => {
     if (!catalog.some((research) => research.id === id)) {
-      catalog.push({ id, label: id, requiredResearchIds: [] });
+      catalog.push({
+        id,
+        label: id,
+        requiredResearchIds: getDefaultRequiredResearchIds(id),
+      });
     }
   });
 
@@ -1309,14 +1325,35 @@ function createResearchCosts() {
     costs.set(id, { currency: 'crystal', amount });
   });
 
+  Object.entries(researchBalance.researchCostsRuby ?? {}).forEach(([id, amount]) => {
+    costs.set(id, { currency: 'ruby', amount });
+  });
+
+  Object.entries(researchBalance.researchCostsEmerald ?? {}).forEach(([id, amount]) => {
+    costs.set(id, { currency: 'emerald', amount });
+  });
+
   return costs;
 }
 
 function createResearchDurations() {
+  const costsCrystal = researchBalance.researchCostsCrystal ?? {};
+  const costsRuby = researchBalance.researchCostsRuby ?? {};
+  const costsEmerald = researchBalance.researchCostsEmerald ?? {};
   const ids = [
     ...Object.keys(researchBalance.researchCostsCoin),
-    ...Object.keys(researchBalance.researchCostsCrystal).filter(
+    ...Object.keys(costsCrystal).filter(
       (id) => researchBalance.researchCostsCoin[id] === undefined,
+    ),
+    ...Object.keys(costsRuby).filter(
+      (id) =>
+        researchBalance.researchCostsCoin[id] === undefined && costsCrystal[id] === undefined,
+    ),
+    ...Object.keys(costsEmerald).filter(
+      (id) =>
+        researchBalance.researchCostsCoin[id] === undefined &&
+        costsCrystal[id] === undefined &&
+        costsRuby[id] === undefined,
     ),
   ];
 
@@ -1329,7 +1366,11 @@ function createResearchDurations() {
 }
 
 function getDefaultResearchDurationSeconds(researchId) {
-  if (researchBalance.researchCostsCrystal[researchId] !== undefined) {
+  if (
+    researchBalance.researchCostsCrystal?.[researchId] !== undefined ||
+    researchBalance.researchCostsRuby?.[researchId] !== undefined ||
+    researchBalance.researchCostsEmerald?.[researchId] !== undefined
+  ) {
     return QUICK_RESEARCH_DURATION_SECONDS;
   }
 
@@ -1337,13 +1378,23 @@ function getDefaultResearchDurationSeconds(researchId) {
 }
 
 function getAdvancedResearchTimeMultiplier(level) {
-  let totalReduction = 0;
+  return Math.max(0.1, 1 - Math.max(0, Math.floor(Number(level) || 0)) * 0.05);
+}
 
-  for (let next = 1; next <= level; next += 1) {
-    totalReduction += next + 1;
+function getDefaultRequiredResearchIds(researchId) {
+  const researchTimeMatch = /^advanced:researchTime:(\d+)$/.exec(researchId);
+  if (researchTimeMatch) {
+    const level = Number(researchTimeMatch[1]);
+    return level > 1 ? [`advanced:researchTime:${level - 1}`] : [];
   }
 
-  return Math.max(0.1, 1 - totalReduction / 100);
+  const researchCostMatch = /^emerald:researchCost:(\d+)$/.exec(researchId);
+  if (researchCostMatch) {
+    const level = Number(researchCostMatch[1]);
+    return level > 1 ? [`emerald:researchCost:${level - 1}`] : [];
+  }
+
+  return [];
 }
 
 function getPrestigeRewardRuby(level) {

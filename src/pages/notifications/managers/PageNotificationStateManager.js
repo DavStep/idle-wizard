@@ -194,17 +194,10 @@ export function hasClaimablePersonalTaskReward(snapshot = {}) {
     return false;
   }
 
-  if (Math.max(0, Math.floor(Number(personalTasks.claimableRewards) || 0)) > 0) {
-    return true;
-  }
-
   return ['daily', 'weekly'].some((periodType) => {
     const period = personalTasks[periodType];
 
-    return (
-      period?.fullClearRewardClaimable === true ||
-      (period?.tasks ?? []).some((task) => task.rewardClaimable === true)
-    );
+    return (period?.tasks ?? []).some((task) => task.rewardClaimable === true);
   });
 }
 

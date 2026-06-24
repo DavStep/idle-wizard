@@ -3,7 +3,7 @@ import { RubySpendManager } from './managers/RubySpendManager.js';
 
 export class RubyFacade {
   static explain =
-    'Ruby is an upgrade currency: advanced research spends it to make production slots faster.';
+    'Ruby is an upgrade currency: advanced research spends it on permanent and speed upgrades.';
 
   constructor({ initialCurrent = 0 } = {}) {
     this.rubyEntityManager = new RubyEntityManager({ initialCurrent });

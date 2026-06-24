@@ -35,7 +35,6 @@ export class ShopShelfManager {
     this.statusText = '';
     this.visible = false;
     this.previousFocus = null;
-    this.handledBuyPressStart = false;
     this.handledSelectSlotPressStartSlotNumber = null;
     this.handledSelectSlotPressStartReset = null;
     this.handledSellItemPressStartKey = null;
@@ -181,16 +180,8 @@ export class ShopShelfManager {
     const unlockButton = document.createElement('button');
     unlockButton.className = 'shop-page__slot-unlock-button';
     unlockButton.type = 'button';
-    this.bindTouchLikePressStart(unlockButton, `unlock-slot:${slotNumber}`, (event) =>
-      this.onBuySlotPressStart(event, slotNumber),
-    );
     unlockButton.addEventListener('click', (event) => {
       event.stopPropagation();
-
-      if (this.handledBuyPressStart) {
-        this.handledBuyPressStart = false;
-        return;
-      }
 
       this.buyLockedSlotIfAvailable(slotNumber);
     });
@@ -414,7 +405,7 @@ export class ShopShelfManager {
   }
 
   onSelectSlotPressStart(event, slotNumber) {
-    if (this.isMousePressStart(event)) {
+    if (this.isMousePressStart(event) || event.target?.closest?.('button')) {
       return;
     }
 
@@ -427,17 +418,6 @@ export class ShopShelfManager {
   onBuySlot() {
     this.gameplayFacade.buyShopShelfSlot();
     this.render(this.gameplayFacade.getSnapshot());
-  }
-
-  onBuySlotPressStart(event, slotNumber) {
-    if (this.isMousePressStart(event) || event.currentTarget?.disabled) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    this.handledBuyPressStart = true;
-    this.buyLockedSlotIfAvailable(slotNumber);
   }
 
   buyLockedSlotIfAvailable(slotNumber) {

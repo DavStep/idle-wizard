@@ -144,6 +144,43 @@ describe('PlayerBackendSyncManager', () => {
     });
   });
 
+  it('waits for server profile before syncing when only the own profile view exists', () => {
+    const setPlayerProfile = vi.fn(() => Promise.resolve());
+    const playerFacade = createPlayerFacade('wizard');
+    const manager = new PlayerBackendSyncManager();
+
+    manager.setPlayerFacade(playerFacade);
+    manager.connect({
+      db: {
+        ownPlayerProfile: {},
+      },
+      reducers: {
+        setPlayerProfile,
+      },
+    });
+
+    expect(setPlayerProfile).not.toHaveBeenCalled();
+
+    manager.applyServerProfile({
+      username: 'Server Mage',
+      theme: 'black',
+      font: 'comic-sans-mono',
+      colorMode: 'resources',
+      character: 'mira',
+      usernamePromptSeen: true,
+    });
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'Server Mage',
+      theme: 'black',
+      font: 'comic-sans-mono',
+      colorMode: 'resources',
+      character: 'mira',
+      usernamePromptSeen: true,
+    });
+    expect(setPlayerProfile).not.toHaveBeenCalled();
+  });
+
   it('keeps a profile changed before server profile hydration and syncs it after', () => {
     const setPlayerProfile = vi.fn(() => Promise.resolve());
     const playerFacade = createPlayerFacade('wizard');
@@ -202,7 +239,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'white',
       font: 'lexend',
       colorMode: 'monochrome',
-      character: 'elara',
+      character: 'mira',
       usernamePromptSeen: false,
     });
     setPlayerProfile.mockClear();
@@ -215,7 +252,7 @@ describe('PlayerBackendSyncManager', () => {
       theme: 'midnight',
       font: 'lexend',
       colorMode: 'monochrome',
-      character: 'elara',
+      character: 'mira',
       usernamePromptSeen: false,
     });
 
@@ -231,6 +268,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(playerFacade.getSnapshot()).toMatchObject({
       theme: 'midnight',
       font: 'lexend',
+      character: 'mira',
     });
   });
 

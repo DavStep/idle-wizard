@@ -98,9 +98,10 @@ export class ResearchInfoDialogManager {
     }
 
     const label = this.currentResearch?.label ?? 'research';
+    const actionNoun = this.getActionNoun(this.currentResearch);
     this.refs.title.textContent = label;
     this.refs.body.textContent = this.getCopy(this.currentResearch);
-    this.refs.dialog?.setAttribute('aria-label', `${label} research information`);
+    this.refs.dialog?.setAttribute('aria-label', `${label} ${actionNoun} information`);
   }
 
   getCopy(research) {
@@ -126,6 +127,10 @@ export class ResearchInfoDialogManager {
     }
 
     return `${research.label} records this study as complete.`;
+  }
+
+  getActionNoun(research) {
+    return research?.actionType === 'levelUp' ? 'level up' : 'research';
   }
 
   getLockReason(research) {

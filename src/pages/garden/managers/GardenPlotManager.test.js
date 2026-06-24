@@ -353,6 +353,21 @@ describe('GardenPlotManager', () => {
     expect(rows?.style.getPropertyValue('--garden-page-plot-columns')).toBe('3');
   });
 
+  it('shows plot level inside each plot box', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    tile.level = 3;
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.garden-page__plot-box-level')?.textContent).toBe(
+      'lvl 3',
+    );
+  });
+
   it('centers the plant and no seeds actions inside empty selected plot boxes', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const centeredRule = baseCss.match(

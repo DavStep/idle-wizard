@@ -103,10 +103,6 @@ export class PlayerFacade {
     return this.getSnapshot();
   }
 
-  getCharacterOptions() {
-    return this.characterManager.getCharacterOptions();
-  }
-
   setIconMode(iconMode) {
     this.iconModeManager.setIconMode(iconMode);
     this.publishSnapshot();

@@ -34,7 +34,6 @@ export class ShopPlayerRequestManager {
     this.visible = false;
     this.previousFocus = null;
     this.lastGameplaySnapshot = null;
-    this.handledPointerPlace = false;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hidePopup();
@@ -103,7 +102,6 @@ export class ShopPlayerRequestManager {
     this.visible = false;
     this.previousFocus = null;
     this.lastGameplaySnapshot = null;
-    this.handledPointerPlace = false;
   }
 
   createRequestRow(slotNumber) {
@@ -192,19 +190,7 @@ export class ShopPlayerRequestManager {
     this.refs.placeButton.className = 'style-button shop-page__request-place-button';
     this.refs.placeButton.type = 'button';
     this.refs.placeButton.textContent = 'place request';
-    this.refs.placeButton.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
-      this.handledPointerPlace = true;
-      this.onPlaceRequest();
-    });
-    this.refs.placeButton.addEventListener('click', () => {
-      if (this.handledPointerPlace) {
-        this.handledPointerPlace = false;
-        return;
-      }
-
-      this.onPlaceRequest();
-    });
+    this.refs.placeButton.addEventListener('click', () => this.onPlaceRequest());
 
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'shop-page__request-status';

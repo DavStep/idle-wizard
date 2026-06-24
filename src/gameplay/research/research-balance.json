@@ -174,7 +174,7 @@
     "automation:autoBottleCauldron:4": 4,
     "automation:autoBottleCauldron:5": 5
   },
-  "researchCostsEmerald": {
+  "researchCostsRuby": {
     "advanced:researchTime:1": 1,
     "advanced:researchTime:2": 2,
     "advanced:researchTime:3": 3,
@@ -190,7 +190,9 @@
     "emerald:researchCost:5": 5,
     "emerald:researchCost:6": 6,
     "emerald:researchCost:7": 7,
-    "emerald:researchCost:8": 8,
+    "emerald:researchCost:8": 8
+  },
+  "researchCostsEmerald": {
     "emerald:plotPlanting:1:2": 1,
     "emerald:plotPlanting:1:3": 2,
     "emerald:plotPlanting:1:4": 3,

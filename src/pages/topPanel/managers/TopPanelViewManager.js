@@ -1,6 +1,5 @@
 import { getPlayerVisualSettingCategories } from '../../../player/playerVisualSettings.js';
 import { getClientReleaseVersion } from '../../../shared/clientReleaseVersion.js';
-import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
@@ -44,29 +43,15 @@ export class TopPanelViewManager {
 
   createPanel() {
     const panel = document.createElement('section');
-    panel.className = 'room-top-panel style-panel has-avatar';
+    panel.className = 'room-top-panel style-panel';
     panel.setAttribute('aria-label', 'Player status');
     this.refs.panel = panel;
-
-    this.refs.usernameAvatarButton = document.createElement('button');
-    this.refs.usernameAvatarButton.className = 'room-top-panel__avatar-button';
-    this.refs.usernameAvatarButton.type = 'button';
-    this.refs.usernameAvatarButton.setAttribute('aria-label', 'open settings');
 
     this.refs.usernameButton = document.createElement('button');
     this.refs.usernameButton.className = 'room-top-panel__username';
     this.refs.usernameButton.type = 'button';
     this.refs.usernameButton.dataset.tutorialId = 'top:username';
     this.refs.usernameButton.setAttribute('aria-label', 'open settings');
-
-    this.refs.usernameAvatar = createPlayerCharacterIcon(
-      'elara',
-      'room-top-panel__username-avatar',
-    );
-    this.refs.usernameAvatar.dataset.character = 'elara';
-    this.refs.usernameAvatar.loading = 'eager';
-
-    this.refs.usernameAvatarButton.append(this.refs.usernameAvatar);
 
     this.refs.usernameLabel = document.createElement('span');
     this.refs.usernameLabel.className = 'room-top-panel__username-label';
@@ -94,7 +79,7 @@ export class TopPanelViewManager {
     rightStatus.append(this.createResource('coin', '0 coin'), contextCurrency);
     this.refs.resources.append(this.createResource('mana', '0/0 mana'), rightStatus);
 
-    panel.append(this.refs.usernameAvatarButton, identityRow, this.refs.resources);
+    panel.append(identityRow, this.refs.resources);
     return panel;
   }
 
@@ -212,8 +197,6 @@ export class TopPanelViewManager {
     actions.append(this.refs.usernameSaveButton);
     this.refs.usernameForm.append(this.refs.usernameInput, this.refs.usernameError, actions);
     usernameSection.append(usernameLabel, this.refs.usernameForm);
-
-    const characterSection = this.createVisualSettingSection('character');
 
     this.refs.themePane = document.createElement('div');
     this.refs.themePane.id = 'room-top-panel-settings-theme';
@@ -344,7 +327,6 @@ export class TopPanelViewManager {
 
     this.refs.accountPane.append(
       usernameSection,
-      characterSection,
       this.refs.authSection,
       versionSection,
     );
@@ -461,6 +443,10 @@ export class TopPanelViewManager {
     const category = getPlayerVisualSettingCategories().find(
       (candidate) => candidate.key === categoryKey,
     );
+    if (!category) {
+      throw new Error(`Unknown visual setting category: ${categoryKey}`);
+    }
+
     const section = document.createElement('section');
     section.className = `room-top-panel__settings-section room-top-panel__visual-section room-top-panel__${categoryKey}-section style-box`;
 
@@ -487,10 +473,6 @@ export class TopPanelViewManager {
 
     if (categoryKey === 'color') {
       this.refs.colorModeButtons = [];
-    }
-
-    if (categoryKey === 'character') {
-      this.refs.characterButtons = [];
     }
 
     if (categoryKey === 'progressBar') {
@@ -530,22 +512,6 @@ export class TopPanelViewManager {
         name.classList.add('room-top-panel__color-button');
         name.dataset.colorMode = option.key;
         this.refs.colorModeButtons.push(name);
-      } else if (categoryKey === 'character') {
-        name.classList.add('room-top-panel__character-button');
-        name.dataset.character = option.key;
-        const label = document.createElement('span');
-        label.className = 'room-top-panel__character-option-label';
-        label.textContent = option.label;
-        const icon = createPlayerCharacterIcon(
-          option.key,
-          'room-top-panel__character-option-icon',
-        );
-        icon.loading = 'eager';
-        name.replaceChildren(icon, label);
-        this.refs.characterButtons.push(name);
-        buttons.append(name);
-        this.refs.visualSettingButtons.push(name);
-        continue;
       } else if (categoryKey === 'progressBar') {
         name.classList.add('room-top-panel__progress-bar-button');
         name.dataset.progressBar = option.key;

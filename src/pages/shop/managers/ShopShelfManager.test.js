@@ -953,59 +953,60 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
-  it('buys the next trader market stand on touchstart of the buy button', () => {
-    withPointerEvent(() => {
-      const stage = document.createElement('section');
-      const popupLayer = document.createElement('section');
-      let buyCount = 0;
-      const gameplaySnapshot = {
-        coin: { current: 0 },
-        research: { completedResearchIds: [] },
-        shop: {
-          shelf: {
-            maxSlots: 5,
-            selectedSlotNumber: 1,
-            nextSlotNumber: 1,
-            nextSlotCost: 0,
-            nextSlotLockedByLevel: false,
-            slotCosts: [0, 50, 150, 400, 1000],
-            sellKinds: [],
-            sellItems: [],
-            slots: [
-              { slotNumber: 1, unlocked: false },
-              { slotNumber: 2, unlocked: false },
-              { slotNumber: 3, unlocked: false },
-              { slotNumber: 4, unlocked: false },
-              { slotNumber: 5, unlocked: false },
-            ],
-          },
+  it('buys the next trader market stand on buy button release, not touchstart', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    let buyCount = 0;
+    const gameplaySnapshot = {
+      coin: { current: 0 },
+      research: { completedResearchIds: [] },
+      shop: {
+        shelf: {
+          maxSlots: 5,
+          selectedSlotNumber: 1,
+          nextSlotNumber: 1,
+          nextSlotCost: 0,
+          nextSlotLockedByLevel: false,
+          slotCosts: [0, 50, 150, 400, 1000],
+          sellKinds: [],
+          sellItems: [],
+          slots: [
+            { slotNumber: 1, unlocked: false },
+            { slotNumber: 2, unlocked: false },
+            { slotNumber: 3, unlocked: false },
+            { slotNumber: 4, unlocked: false },
+            { slotNumber: 5, unlocked: false },
+          ],
         },
-      };
-      const gameplayFacade = {
-        subscribe(callback) {
-          callback(gameplaySnapshot);
-          return () => {};
-        },
-        getSnapshot() {
-          return gameplaySnapshot;
-        },
-        buyShopShelfSlot() {
-          buyCount += 1;
-          return { ok: true, cost: 0, slotNumber: 1 };
-        },
-      };
-      const manager = new ShopShelfManager({ gameplayFacade });
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      buyShopShelfSlot() {
+        buyCount += 1;
+        return { ok: true, cost: 0, slotNumber: 1 };
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
 
-      manager.mount(stage, popupLayer);
+    manager.mount(stage, popupLayer);
 
-      const unlockButton = stage.querySelector('.shop-page__slot-unlock-button');
-      unlockButton?.dispatchEvent(createTouchStartEvent());
-      unlockButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const unlockButton = stage.querySelector('.shop-page__slot-unlock-button');
+    unlockButton?.dispatchEvent(createTouchStartEvent());
 
-      expect(buyCount).toBe(1);
+    expect(buyCount).toBe(0);
 
-      manager.unmount();
-    });
+    unlockButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(buyCount).toBe(1);
+
+    manager.unmount();
   });
 
   it('opens NPC market sell picker from the stand row', () => {

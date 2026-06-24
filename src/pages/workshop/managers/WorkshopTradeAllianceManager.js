@@ -499,7 +499,7 @@ export class WorkshopTradeAllianceManager {
     form.className = 'workshop-page__trade-alliance-form';
     form.addEventListener('submit', (event) => this.onCreateSubmit(event, form));
     const submitButton = this.createSubmitButton('create');
-    this.bindSubmitPressStart(submitButton, form);
+    this.bindSubmitClick(submitButton, form);
 
     form.append(
       this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
@@ -983,7 +983,7 @@ export class WorkshopTradeAllianceManager {
     form.className = 'workshop-page__trade-alliance-form';
     form.addEventListener('submit', (event) => this.onSettingsSubmit(event, form));
     const submitButton = this.createSubmitButton('save');
-    this.bindSubmitPressStart(submitButton, form);
+    this.bindSubmitClick(submitButton, form);
 
     form.append(
       this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
@@ -1128,20 +1128,15 @@ export class WorkshopTradeAllianceManager {
     return button;
   }
 
-  bindSubmitPressStart(button, form) {
-    const submit = (event) => {
+  bindSubmitClick(button, form) {
+    button.addEventListener('click', (event) => {
       if (button.disabled) {
         return;
       }
 
       event.preventDefault();
       this.submitForm(form);
-    };
-
-    button.addEventListener('pointerdown', submit);
-    if (typeof window.PointerEvent !== 'function') {
-      button.addEventListener('touchstart', submit, { passive: false });
-    }
+    });
   }
 
   submitForm(form) {
@@ -1150,7 +1145,8 @@ export class WorkshopTradeAllianceManager {
       return;
     }
 
-    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    const EventClass = form.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+    form.dispatchEvent(new EventClass('submit', { bubbles: true, cancelable: true }));
   }
 
   createDangerButton(label, onClick) {

@@ -30,6 +30,8 @@ export const AdminPlayerGameplaySaveResult = __t.object("AdminPlayerGameplaySave
   identity: __t.identity(),
   currentGold: __t.f64(),
   currentCrystal: __t.u32(),
+  currentEmerald: __t.u32(),
+  currentRuby: __t.u32(),
   updatedAt: __t.timestamp(),
 });
 export type AdminPlayerGameplaySaveResult = __Infer<typeof AdminPlayerGameplaySaveResult>;

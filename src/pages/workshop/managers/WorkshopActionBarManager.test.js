@@ -133,7 +133,7 @@ describe('WorkshopActionBarManager', () => {
       const button = parent.querySelector('.workshop-page__summon-button');
       dispatchPointer(button, 'pointerdown');
 
-      expect(summons).toHaveLength(1);
+      expect(summons).toHaveLength(0);
 
       vi.advanceTimersByTime(540);
 
@@ -171,13 +171,18 @@ describe('WorkshopActionBarManager', () => {
       const button = parent.querySelector('.workshop-page__summon-button');
       dispatchPointer(button, 'pointerdown', { pointerType: 'touch' });
 
+      expect(summons).toBe(0);
+      expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(100);
+
       expect(summons).toBe(1);
       expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
 
-      vi.advanceTimersByTime(300);
+      vi.advanceTimersByTime(200);
 
-      expect(summons).toBe(4);
-      expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(4);
+      expect(summons).toBe(3);
+      expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(3);
 
       dispatchPointer(document, 'pointerup');
 

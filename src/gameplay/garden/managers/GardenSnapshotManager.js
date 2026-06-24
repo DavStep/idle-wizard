@@ -91,6 +91,7 @@ export class GardenSnapshotManager {
 
       return {
         ...tile,
+        level: this.getPlotLevel(tile.tileNumber),
         selectedSeedKey: selectedSeed?.key ?? null,
         selectedSeedLabel: selectedSeed?.label ?? null,
         selectedHerbKey: selectedHerb?.key ?? null,
@@ -110,6 +111,12 @@ export class GardenSnapshotManager {
             : null,
       };
     });
+  }
+
+  getPlotLevel(tileNumber) {
+    const level = this.researchFacade?.getPlotPlantingMultiplier?.(tileNumber) ?? 1;
+    const safeLevel = Math.floor(Number(level));
+    return Number.isInteger(safeLevel) && safeLevel > 0 ? safeLevel : 1;
   }
 
   getSeedSnapshots() {

@@ -45,6 +45,7 @@ export class PagesFacade {
     hapticsFacade,
     soundSettingsFacade,
     uiClickSoundFacade,
+    pixiProgressOverlayManager = null,
     tutorialStorage,
     defaultPageId = 'workshop',
   } = {}) {
@@ -146,6 +147,7 @@ export class PagesFacade {
       new GardenPageFacade({
         gameplayFacade,
         playerFacade,
+        pixiProgressOverlayManager,
       }),
     );
     this.registryManager.register(

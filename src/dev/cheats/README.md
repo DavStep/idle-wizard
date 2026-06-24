@@ -8,7 +8,7 @@ cheats.fillMana()
 cheats.addCoin(1000)
 cheats.addCrystal(10)
 cheats.addItem('sageSeed', 5)
-cheats.setProfile({ username: 'QA Long Name', character: 'mira' })
+cheats.setProfile({ username: 'QA Long Name' })
 cheats.setInventoryPreset('full')
 cheats.setNotifications({ garden: 'red', market: true })
 cheats.clearNotifications()
@@ -62,7 +62,7 @@ Useful view setup commands:
 - `setCauldron(cauldron, options)` supports phases `empty`, `staged`, `brewing`,
   `brewed`, `bottling`, and `ready`.
 - `setProfile(options)` sets local profile UI fields such as username,
-  character, theme, font, color mode, icon mode, progress bar, and plot view.
+  theme, font, color mode, icon mode, progress bar, and plot view.
 - `setInventoryPreset(preset)` supports `empty`, `basic`, `full`, and
   `overflow`; pass an item map like `{ sageSeed: 4 }` for exact inventory.
 - `setNotifications(config)` forces bottom-tab badges for UI testing. Use

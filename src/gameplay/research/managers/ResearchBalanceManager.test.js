@@ -60,11 +60,11 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('summonSeedsX2')).toBe(600);
     expect(manager.getCost(researchTimeResearchIds.reduction(8))).toEqual({
       amount: 8,
-      currency: 'emerald',
+      currency: 'ruby',
     });
     expect(manager.getCost(researchCostResearchIds.reduction(8))).toEqual({
       amount: 8,
-      currency: 'emerald',
+      currency: 'ruby',
     });
   });
 
@@ -89,7 +89,7 @@ describe('ResearchBalanceManager', () => {
       }),
     ).toEqual({
       amount: 2,
-      currency: 'emerald',
+      currency: 'ruby',
     });
   });
 
@@ -110,7 +110,7 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getCostEmerald('emerald:plotPlanting:2:2')).toBe(2);
   });
 
-  it('ignores legacy ruby costs for research time reduction', () => {
+  it('reads ruby research costs for research time reduction', () => {
     const manager = new ResearchBalanceManager({
       balance: {
         researchCostsCoin: {},
@@ -121,8 +121,8 @@ describe('ResearchBalanceManager', () => {
     });
 
     expect(manager.getCost(researchTimeResearchIds.reduction(1))).toEqual({
-      amount: 1,
-      currency: 'emerald',
+      amount: 99,
+      currency: 'ruby',
     });
   });
 });

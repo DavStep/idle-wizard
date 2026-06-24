@@ -33,9 +33,12 @@ export class ResearchProcessManager {
     this.researchManaEffectManager.syncCompletedEffects();
 
     for (const researchId of completedResearchIds) {
+      const research = this.researchDefinitionManager.getResearch(researchId);
+
       this.onResearchComplete?.({
         researchId,
-        label: this.researchDefinitionManager.getResearch(researchId)?.label ?? researchId,
+        label: research?.label ?? researchId,
+        actionType: research?.actionType ?? 'research',
       });
     }
   }

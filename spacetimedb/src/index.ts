@@ -188,6 +188,22 @@ const PLAYER_CHARACTERS = new Set([
   'corvin',
   'juniper',
   'rowan',
+  'adventurer_cleric',
+  'adventurer_treasurehunter',
+  'adventurer_olivehood_archer',
+  'adventurer_brownhood_archer',
+  'adventurer_redbow_archer',
+  'adventurer_greenbow_archer',
+  'adventurer_bluequiver_archer',
+  'adventurer_grayquiver_archer',
+  'adventurer_redscarf_sword',
+  'adventurer_bluescarf_spear',
+  'adventurer_greenscarf_shield',
+  'adventurer_redaxe_guard',
+  'adventurer_plumehelm_sword',
+  'adventurer_goldshield_guard',
+  'adventurer_blackarmor_sword',
+  'adventurer_greencloak_spear',
 ]);
 const PLAYER_ICON_MODES = new Set(['none', 'icons']);
 const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient']);
@@ -3695,6 +3711,14 @@ function getAdvancedResearchCostRubyById(): Record<string, number> {
     costs[`fastSellPayout:${level}`] = fastSellResearchCostsRuby[level - 1] ?? 0;
   }
 
+  for (let level = 1; level <= RESEARCH_TIME_REDUCTION_MAX_LEVEL; level += 1) {
+    costs[`advanced:researchTime:${level}`] = level;
+  }
+
+  for (let level = 1; level <= RESEARCH_COST_REDUCTION_MAX_LEVEL; level += 1) {
+    costs[`emerald:researchCost:${level}`] = level;
+  }
+
   for (const cauldronNumber of advancedResearchCauldronNumbers) {
     for (let level = 1; level <= ADVANCED_RESEARCH_MAX_LEVEL; level += 1) {
       costs[`advanced:cauldronBrewing:${cauldronNumber}:${level}`] = level;
@@ -3724,14 +3748,6 @@ const researchDefaultCostRubyById: Record<string, number> =
 function getEmeraldResearchCostById(): Record<string, number> {
   const costs: Record<string, number> = {};
 
-  for (let level = 1; level <= RESEARCH_TIME_REDUCTION_MAX_LEVEL; level += 1) {
-    costs[`advanced:researchTime:${level}`] = level;
-  }
-
-  for (let level = 1; level <= RESEARCH_COST_REDUCTION_MAX_LEVEL; level += 1) {
-    costs[`emerald:researchCost:${level}`] = level;
-  }
-
   for (const plotNumber of advancedResearchPlotNumbers) {
     for (const multiplier of emeraldResearchMultipliers) {
       costs[`emerald:plotPlanting:${plotNumber}:${multiplier}`] =
@@ -3751,10 +3767,6 @@ function getEmeraldResearchCostById(): Record<string, number> {
 
 const researchDefaultCostEmeraldById: Record<string, number> =
   getEmeraldResearchCostById();
-
-function isResearchTimeReductionResearchId(researchId: string) {
-  return /^advanced:researchTime:\d+$/.test(researchId);
-}
 
 const QUICK_RESEARCH_DURATION_SECONDS = 3n;
 const DEFAULT_RESEARCH_DURATION_SECONDS = 10n * 60n;
@@ -4377,6 +4389,22 @@ const advancedResearchCatalog = [
       groupId: 'fastSell',
     };
   }),
+  ...Array.from({ length: RESEARCH_COST_REDUCTION_MAX_LEVEL }, (_value, index) => {
+    const level = index + 1;
+    return {
+      id: `emerald:researchCost:${level}`,
+      label: `research cost lvl ${level}`,
+      groupId: 'researchCost',
+    };
+  }),
+  ...Array.from({ length: RESEARCH_TIME_REDUCTION_MAX_LEVEL }, (_value, index) => {
+    const level = index + 1;
+    return {
+      id: `advanced:researchTime:${level}`,
+      label: `research time lvl ${level}`,
+      groupId: 'researchTime',
+    };
+  }),
   ...advancedResearchCauldronNumbers.flatMap((cauldronNumber) =>
     Array.from({ length: ADVANCED_RESEARCH_MAX_LEVEL }, (_value, index) => {
       const level = index + 1;
@@ -4410,33 +4438,17 @@ const advancedResearchCatalog = [
 ];
 
 const emeraldResearchCatalog = [
-  ...Array.from({ length: RESEARCH_COST_REDUCTION_MAX_LEVEL }, (_value, index) => {
-    const level = index + 1;
-    return {
-      id: `emerald:researchCost:${level}`,
-      label: `research cost lvl ${level}`,
-      groupId: 'researchCost',
-    };
-  }),
-  ...Array.from({ length: RESEARCH_TIME_REDUCTION_MAX_LEVEL }, (_value, index) => {
-    const level = index + 1;
-    return {
-      id: `advanced:researchTime:${level}`,
-      label: `research time lvl ${level}`,
-      groupId: 'researchTime',
-    };
-  }),
   ...advancedResearchPlotNumbers.flatMap((plotNumber) =>
     emeraldResearchMultipliers.map((multiplier) => ({
       id: `emerald:plotPlanting:${plotNumber}:${multiplier}`,
-      label: `plot ${plotNumber} planting x${multiplier}`,
+      label: `plot ${plotNumber} lvl ${multiplier}`,
       groupId: 'plotPlanting',
     })),
   ),
   ...advancedResearchCauldronNumbers.flatMap((cauldronNumber) =>
     emeraldResearchMultipliers.map((multiplier) => ({
       id: `emerald:cauldronBrewing:${cauldronNumber}:${multiplier}`,
-      label: `cauldron ${cauldronNumber} brewing x${multiplier}`,
+      label: `cauldron ${cauldronNumber} lvl ${multiplier}`,
       groupId: 'cauldronBrewing',
     })),
   ),
@@ -4675,6 +4687,22 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       corvin: 0,
       juniper: 0,
       rowan: 0,
+      adventurer_cleric: 0,
+      adventurer_treasurehunter: 0,
+      adventurer_olivehood_archer: 0,
+      adventurer_brownhood_archer: 0,
+      adventurer_redbow_archer: 0,
+      adventurer_greenbow_archer: 0,
+      adventurer_bluequiver_archer: 0,
+      adventurer_grayquiver_archer: 0,
+      adventurer_redscarf_sword: 0,
+      adventurer_bluescarf_spear: 0,
+      adventurer_greenscarf_shield: 0,
+      adventurer_redaxe_guard: 0,
+      adventurer_plumehelm_sword: 0,
+      adventurer_goldshield_guard: 0,
+      adventurer_blackarmor_sword: 0,
+      adventurer_greencloak_spear: 0,
     },
     progressBar: {
       regular: 0,
@@ -5250,6 +5278,8 @@ const adminPlayerGameplaySaveResult = t.array(
     identity: t.identity().primaryKey(),
     currentGold: t.f64(),
     currentCrystal: t.u32(),
+    currentEmerald: t.u32(),
+    currentRuby: t.u32(),
     updatedAt: t.timestamp(),
   }),
 );
@@ -7156,19 +7186,12 @@ function normalizeGameConfigJson(
     }
 
     if (isRecord(parsedConfig.researchCostsRuby)) {
-      const existingCostsRuby = Object.fromEntries(
-        Object.entries(parsedConfig.researchCostsRuby).filter(
-          ([researchId]) => !isResearchTimeReductionResearchId(researchId),
-        ),
-      );
-      const removedResearchTimeRubyCost =
-        Object.keys(existingCostsRuby).length !==
-        Object.keys(parsedConfig.researchCostsRuby).length;
+      const existingCostsRuby = parsedConfig.researchCostsRuby;
       const missingRubyCost = Object.keys(researchDefaultCostRubyById).some(
         (researchId) => existingCostsRuby[researchId] === undefined,
       );
 
-      if (missingRubyCost || removedResearchTimeRubyCost) {
+      if (missingRubyCost) {
         normalizedResearchConfig.researchCostsRuby = {
           ...researchDefaultCostRubyById,
           ...existingCostsRuby,
@@ -7969,6 +7992,8 @@ function toAdminPlayerGameplaySaveResult(save: PlayerGameplaySaveRowValue) {
     identity: save.identity,
     currentGold: getSaveCurrentGold(parsedSave),
     currentCrystal: getSaveCurrentCrystal(parsedSave),
+    currentEmerald: getSaveCurrentEmerald(parsedSave),
+    currentRuby: getSaveCurrentRuby(parsedSave),
     updatedAt: new Timestamp(save.updatedAt.microsSinceUnixEpoch),
   };
 }
@@ -7981,6 +8006,16 @@ function getSaveCurrentGold(save: Record<string, unknown>): number {
 function getSaveCurrentCrystal(save: Record<string, unknown>): number {
   const crystal = isRecord(save.crystal) ? save.crystal : {};
   return clampSaveInteger(crystal.current, 0, MAX_PLAYER_SAVE_CURRENT_CRYSTAL, 0);
+}
+
+function getSaveCurrentEmerald(save: Record<string, unknown>): number {
+  const emerald = isRecord(save.emerald) ? save.emerald : {};
+  return clampSaveInteger(emerald.current, 0, MAX_PLAYER_SAVE_CURRENT_EMERALD, 0);
+}
+
+function getSaveCurrentRuby(save: Record<string, unknown>): number {
+  const ruby = isRecord(save.ruby) ? save.ruby : {};
+  return clampSaveInteger(ruby.current, 0, MAX_PLAYER_SAVE_CURRENT_RUBY, 0);
 }
 
 function validateAdminCurrentGold(currentGold: unknown): number {
@@ -8046,6 +8081,76 @@ function createAdminPlayerGameplaySaveJson(
     }),
     existingSave?.saveJson,
     identity,
+  );
+}
+
+function createAdminPlayerCurrencyBonusSaveJson(
+  ctx: IdleWizardReducerCtx,
+  existingSave: PlayerGameplaySaveRowValue | undefined,
+  identity: Identity,
+  {
+    emeraldDelta,
+    rubyDelta,
+    crystalDelta,
+  }: {
+    emeraldDelta: number;
+    rubyDelta: number;
+    crystalDelta: number;
+  },
+): string {
+  const previousSave = parsePlayerGameplaySaveJson(existingSave?.saveJson) ?? {};
+  const previousCrystal = isRecord(previousSave.crystal) ? previousSave.crystal : {};
+  const previousEmerald = isRecord(previousSave.emerald) ? previousSave.emerald : {};
+  const previousRuby = isRecord(previousSave.ruby) ? previousSave.ruby : {};
+  const currentCrystal = clampSaveInteger(
+    previousCrystal.current,
+    0,
+    MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+    0,
+  );
+  const currentEmerald = clampSaveInteger(
+    previousEmerald.current,
+    0,
+    MAX_PLAYER_SAVE_CURRENT_EMERALD,
+    0,
+  );
+  const currentRuby = clampSaveInteger(
+    previousRuby.current,
+    0,
+    MAX_PLAYER_SAVE_CURRENT_RUBY,
+    0,
+  );
+
+  return JSON.stringify(
+    normalizePlayerGameplaySave(
+      ctx,
+      {
+        ...previousSave,
+        crystal: {
+          ...previousCrystal,
+          current: clampNumber(
+            currentCrystal + crystalDelta,
+          0,
+          MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+        ),
+      },
+      emerald: {
+        ...previousEmerald,
+        current: clampNumber(
+          currentEmerald + emeraldDelta,
+          0,
+          MAX_PLAYER_SAVE_CURRENT_EMERALD,
+        ),
+      },
+      ruby: {
+        ...previousRuby,
+        current: clampNumber(currentRuby + rubyDelta, 0, MAX_PLAYER_SAVE_CURRENT_RUBY),
+      },
+      },
+      existingSave?.saveJson,
+      identity,
+      { preserveSavedAt: Boolean(existingSave) },
+    ),
   );
 }
 
@@ -13453,6 +13558,97 @@ function getZeroIncomePlayerIdentities(ctx: IdleWizardReducerCtx): Identity[] {
   return Array.from(identities.values());
 }
 
+function getZeroTotalCoinPlayerIdentities(ctx: IdleWizardReducerCtx): Identity[] {
+  const identities = new Map<string, Identity>();
+  const positiveTotalCoinIdentityKeys = new Set<string>();
+
+  for (const player of Array.from(ctx.db.player.iter())) {
+    identities.set(getIdentityHex(player.identity), player.identity);
+  }
+
+  for (const save of Array.from(ctx.db.playerGameplaySave.iter())) {
+    const identityKey = getIdentityHex(save.identity);
+    identities.set(identityKey, save.identity);
+
+    const totalGeneratedGold = readSavedTotalGeneratedGold(save.saveJson);
+    if (totalGeneratedGold !== null && totalGeneratedGold > 0n) {
+      positiveTotalCoinIdentityKeys.add(identityKey);
+    }
+  }
+
+  for (const entry of Array.from(ctx.db.leaderboard.iter())) {
+    const identityKey = getIdentityHex(entry.identity);
+    identities.set(identityKey, entry.identity);
+
+    if (toBigInt(entry.totalIncome) > 0n) {
+      positiveTotalCoinIdentityKeys.add(identityKey);
+    }
+  }
+
+  return Array.from(identities.entries())
+    .filter(([identityKey]) => !positiveTotalCoinIdentityKeys.has(identityKey))
+    .map(([, identity]) => identity);
+}
+
+function assertAdminCurrencyGrantAmount(
+  amount: number,
+  maxAmount: number,
+  label: string,
+): number {
+  const safeAmount = Math.floor(Number(amount));
+
+  if (!Number.isFinite(safeAmount) || safeAmount < 0 || safeAmount > maxAmount) {
+    throw new Error(`Invalid ${label} grant amount.`);
+  }
+
+  return safeAmount;
+}
+
+function grantAdminCurrencyBonusToRemainingPlayers(
+  ctx: IdleWizardReducerCtx,
+  {
+    emeraldAmount,
+    rubyAmount,
+    crystalAmount,
+  }: {
+    emeraldAmount: number;
+    rubyAmount: number;
+    crystalAmount: number;
+  },
+) {
+  const safeEmeraldAmount = assertAdminCurrencyGrantAmount(
+    emeraldAmount,
+    MAX_PLAYER_SAVE_CURRENT_EMERALD,
+    'emerald',
+  );
+  const safeRubyAmount = assertAdminCurrencyGrantAmount(
+    rubyAmount,
+    MAX_PLAYER_SAVE_CURRENT_RUBY,
+    'ruby',
+  );
+  const safeCrystalAmount = assertAdminCurrencyGrantAmount(
+    crystalAmount,
+    MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+    'crystal',
+  );
+
+  for (const player of Array.from(ctx.db.player.iter())) {
+    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const safeSaveJson = createAdminPlayerCurrencyBonusSaveJson(
+      ctx,
+      existingSave,
+      player.identity,
+      {
+        emeraldDelta: safeEmeraldAmount,
+        rubyDelta: safeRubyAmount,
+        crystalDelta: safeCrystalAmount,
+      },
+    );
+
+    upsertAdminPlayerGameplaySave(ctx, player.identity, safeSaveJson, existingSave);
+  }
+}
+
 function deleteAllLeaderboardState(ctx: IdleWizardReducerCtx) {
   for (const entry of Array.from(ctx.db.leaderboard.iter())) {
     ctx.db.leaderboard.delete(entry);
@@ -16858,6 +17054,36 @@ export const admin_wipe_zero_income_player_data = spacetimedb.reducer(
     }
 
     deletePlayerDataForIdentities(ctx, getZeroIncomePlayerIdentities(ctx));
+
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_cleanup_zero_total_coin_players_and_grant_currency = spacetimedb.reducer(
+  {
+    resetKey: t.string(),
+    emeraldAmount: t.u32(),
+    rubyAmount: t.u32(),
+    crystalAmount: t.u32(),
+  },
+  (ctx, { resetKey, emeraldAmount, rubyAmount, crystalAmount }) => {
+    assertGameConfigAdmin(ctx);
+    assertMaintenanceLocked(ctx);
+
+    const stateKey = `zero-total-coin-cleanup-currency-grant:${normalizeMaintenanceKey(resetKey)}`;
+    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+      return;
+    }
+
+    deletePlayerDataForIdentities(ctx, getZeroTotalCoinPlayerIdentities(ctx));
+    grantAdminCurrencyBonusToRemainingPlayers(ctx, {
+      emeraldAmount,
+      rubyAmount,
+      crystalAmount,
+    });
 
     ctx.db.maintenanceState.insert({
       stateKey,

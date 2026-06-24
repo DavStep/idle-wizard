@@ -156,6 +156,11 @@ export function setProgressFill(
   element.classList.add(SMOOTH_PROGRESS_CLASS);
   setStyleValue(element, 'width', '100%');
 
+  if (safeProgress <= 0) {
+    stopProgressFill(element, 0);
+    return safeProgress;
+  }
+
   if (smoothMode === 'step') {
     const stepTransitionMs = getStepTransitionMs(stepMs, remainingMs);
     const transition = prefersReducedMotion(element) || stepTransitionMs <= 0

@@ -2,7 +2,6 @@ import {
   DEFAULT_PLAYER_COLOR_MODE,
   PLAYER_COLOR_MODE_OPTIONS,
 } from './playerColorModes.js';
-import { PLAYER_CHARACTER_OPTIONS } from './playerCharacters.js';
 import { DEFAULT_PLAYER_FONT, PLAYER_FONT_OPTIONS } from './playerFonts.js';
 import { PLAYER_ICON_MODE_OPTIONS } from './playerIconModes.js';
 import {
@@ -30,11 +29,6 @@ export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
     key: 'color',
     label: 'color',
     options: PLAYER_COLOR_MODE_OPTIONS,
-  }),
-  Object.freeze({
-    key: 'character',
-    label: 'character',
-    options: PLAYER_CHARACTER_OPTIONS,
   }),
   Object.freeze({
     key: 'progressBar',
@@ -66,9 +60,6 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
   theme: Object.freeze({ [DEFAULT_PLAYER_THEME]: true }),
   font: Object.freeze({ [DEFAULT_PLAYER_FONT]: true }),
   color: Object.freeze({ [DEFAULT_PLAYER_COLOR_MODE]: true }),
-  character: Object.freeze(
-    Object.fromEntries(PLAYER_CHARACTER_OPTIONS.map((option) => [option.key, true])),
-  ),
   progressBar: Object.freeze({ [DEFAULT_PLAYER_PROGRESS_BAR]: true }),
   plotView: Object.freeze({ [DEFAULT_PLAYER_PLOT_VIEW]: true, rows: true }),
   icons: Object.freeze({ none: true, icons: true }),

@@ -61,6 +61,7 @@ export class BrewingSnapshotManager {
       herbs,
       recipes,
       cauldrons,
+      cauldronLevels: this.getCauldronLevels(this.brewingBalanceManager.getMaxCauldrons()),
       unlockedCauldrons,
       maxCauldrons,
       configuredMaxCauldrons: this.brewingBalanceManager.getMaxCauldrons(),
@@ -89,6 +90,7 @@ export class BrewingSnapshotManager {
       return {
         cauldronIndex: safeCauldronIndex,
         cauldronNumber: safeCauldronIndex + 1,
+        level: this.getCurrentCauldronLevel(safeCauldronIndex),
         ingredients: [],
         match: null,
         buttonLabel: 'brew',
@@ -115,6 +117,7 @@ export class BrewingSnapshotManager {
       return {
         cauldronIndex: safeCauldronIndex,
         cauldronNumber: safeCauldronIndex + 1,
+        level: this.getCurrentCauldronLevel(safeCauldronIndex),
         ingredients,
         match: null,
         buttonLabel: 'brew',
@@ -156,6 +159,7 @@ export class BrewingSnapshotManager {
     return {
       cauldronIndex: safeCauldronIndex,
       cauldronNumber: safeCauldronIndex + 1,
+      level: this.getCurrentCauldronLevel(safeCauldronIndex),
       ingredients,
       match: visibleRecipe
         ? {
@@ -266,6 +270,20 @@ export class BrewingSnapshotManager {
       this.researchFacade?.getCauldronBrewingMultiplier?.(cauldronIndex + 1) ?? 1;
     const safeMultiplier = Math.floor(Number(multiplier));
     return Number.isInteger(safeMultiplier) && safeMultiplier > 0 ? safeMultiplier : 1;
+  }
+
+  getCurrentCauldronLevel(cauldronIndex = 0) {
+    return this.getYieldMultiplier(cauldronIndex);
+  }
+
+  getCauldronLevels(maxCauldrons = 0) {
+    const safeMaxCauldrons = Math.max(0, Math.floor(Number(maxCauldrons) || 0));
+    return Object.fromEntries(
+      Array.from({ length: safeMaxCauldrons }, (_unused, index) => [
+        index + 1,
+        this.getCurrentCauldronLevel(index),
+      ]),
+    );
   }
 
   repeatItemTypeIds(itemTypeIds = [], multiplier = 1) {

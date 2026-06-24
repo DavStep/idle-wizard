@@ -32,9 +32,10 @@ const BOX_PLOT_COLUMNS = 3;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 export class GardenPlotManager {
-  constructor({ gameplayFacade, playerFacade } = {}) {
+  constructor({ gameplayFacade, playerFacade, pixiProgressOverlayManager = null } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerFacade = playerFacade;
+    this.pixiProgressOverlayManager = pixiProgressOverlayManager;
     this.cancelDialogManager = new GardenCancelDialogManager({
       onConfirm: (tileNumber) => this.onConfirmCancel(tileNumber),
     });
@@ -149,6 +150,9 @@ export class GardenPlotManager {
     this.clearPendingSeedPress();
     this.cancelDialogManager.unmount();
     this.swapDialogManager.unmount();
+    for (const refs of this.tileRefs.values()) {
+      refs.pixiProgressBar?.unregister?.();
+    }
     this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
@@ -248,12 +252,23 @@ export class GardenPlotManager {
     const progressText = document.createElement('span');
     progressText.className = 'style-progress__text garden-page__plot-progress-text';
 
+    const pixiProgressBar = this.pixiProgressOverlayManager?.registerBar?.(
+      `garden:plot:${tileNumber}`,
+      {
+        progressElement: progress,
+        fillElement: fill,
+      },
+    );
+
     const boxFrame = document.createElement('span');
     boxFrame.className = 'garden-page__plot-box-frame';
     boxFrame.setAttribute('aria-hidden', 'true');
 
     const boxNumber = document.createElement('span');
     boxNumber.className = 'garden-page__plot-box-number';
+
+    const boxLevel = document.createElement('span');
+    boxLevel.className = 'garden-page__plot-box-level';
 
     const boxLabel = document.createElement('span');
     boxLabel.className = 'garden-page__plot-box-label';
@@ -288,7 +303,7 @@ export class GardenPlotManager {
     progress.append(fill, progressText);
     action.append(actionLabel, actionGap, actionTimer);
     boxAction.append(boxActionLabel, boxActionGap, boxTimer);
-    boxFrame.append(boxNumber, boxLabel, boxPlant, boxScissors, boxAction);
+    boxFrame.append(boxNumber, boxLevel, boxLabel, boxPlant, boxScissors, boxAction);
     button.append(number, label, state, action, boxFrame, progress);
     this.tileRefs.set(tileNumber, {
       button,
@@ -301,8 +316,10 @@ export class GardenPlotManager {
       progress,
       fill,
       progressText,
+      pixiProgressBar,
       boxFrame,
       boxNumber,
+      boxLevel,
       boxLabel,
       boxPlant,
       boxScissors,
@@ -509,6 +526,7 @@ export class GardenPlotManager {
       });
       this.setBoxTile(refs, tile, {
         label: lockedTileLabel,
+        level: this.formatPlotLevel(tile),
         action: lockedTileAction,
         actionColorResource: !lockedTileDisabled,
       });
@@ -548,6 +566,7 @@ export class GardenPlotManager {
       this.setBoxTile(refs, tile, {
         label: emptyTileDisplay.label,
         labelResource: emptyTileDisplay.resource,
+        level: this.formatPlotLevel(tile),
         action: emptyTileAction,
       });
       refs.button.setAttribute(
@@ -574,6 +593,7 @@ export class GardenPlotManager {
     this.setBoxTile(refs, tile, {
       label: activeTileDisplay.label,
       labelResource: activeTileDisplay.resource,
+      level: this.formatPlotLevel(tile),
       action: activeTileAction.label,
       timer: this.formatBoxTimer(tile),
       herbKey: tile.herbKey,
@@ -672,12 +692,14 @@ export class GardenPlotManager {
       remainingMs,
       stepMs: TIMER_PROGRESS_STEP_MS,
     });
+    refs.pixiProgressBar?.setProgress?.(progressValue, { visible: true });
     this.setText(refs.progressText, '');
   }
 
   hideProgress(refs) {
     refs.progress.hidden = true;
     stopProgressFill(refs.fill, 0);
+    refs.pixiProgressBar?.hide?.();
     this.setText(refs.progressText, '');
   }
 
@@ -687,6 +709,7 @@ export class GardenPlotManager {
     {
       label = '',
       labelResource = null,
+      level = '',
       action = '',
       timer = '',
       actionColorResource = true,
@@ -694,6 +717,7 @@ export class GardenPlotManager {
     } = {},
   ) {
     this.setText(refs.boxNumber, String(tile.tileNumber));
+    this.setText(refs.boxLevel, level);
     this.setText(refs.boxLabel, label);
     setResourceColor(refs.boxLabel, labelResource);
     this.setResourceText(refs.boxActionLabel, action);
@@ -765,6 +789,11 @@ export class GardenPlotManager {
     }
 
     return '';
+  }
+
+  formatPlotLevel(tile) {
+    const level = Math.max(1, Math.floor(Number(tile?.level) || 1));
+    return `lvl ${level}`;
   }
 
   renderSeeds(snapshot, seeds) {

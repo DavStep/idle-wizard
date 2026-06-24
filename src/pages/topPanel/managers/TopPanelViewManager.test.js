@@ -5,18 +5,15 @@ import { describe, expect, it } from 'vitest';
 import { TopPanelViewManager } from './TopPanelViewManager.js';
 
 describe('TopPanelViewManager', () => {
-  it('renders visual setting previews and account character choices', () => {
+  it('renders visual setting previews and account settings', () => {
     const stage = document.createElement('section');
     const manager = new TopPanelViewManager();
 
     manager.mount(stage);
 
     const usernameButton = stage.querySelector('.room-top-panel__username');
-    const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
     expect(usernameButton?.textContent).toBe('wizard');
-    expect(
-      avatarButton?.querySelector('.room-top-panel__username-avatar')?.dataset.character,
-    ).toBe('elara');
+    expect(stage.querySelector('.room-top-panel__avatar-button')).toBeNull();
     expect(usernameButton?.querySelector('.room-top-panel__username-label')?.textContent).toBe(
       'wizard',
     );
@@ -35,7 +32,7 @@ describe('TopPanelViewManager', () => {
       stage.querySelector(
         '#room-top-panel-settings-account .room-top-panel__character-section',
       ),
-    ).not.toBeNull();
+    ).toBeNull();
     expect(
       stage.querySelector(
         '#room-top-panel-settings-theme .room-top-panel__character-section',
@@ -130,27 +127,12 @@ describe('TopPanelViewManager', () => {
     ]);
 
     expect(
-      [...stage.querySelectorAll('.room-top-panel__character-button')].map((button) => ({
-        character: button.dataset.character,
-        label: button.textContent,
-        hasIcon: Boolean(button.querySelector('.room-top-panel__character-option-icon')),
-        hasLabel: Boolean(button.querySelector('.room-top-panel__character-option-label')),
-      })),
-    ).toEqual([
-      { character: 'elara', label: 'elara', hasIcon: true, hasLabel: true },
-      { character: 'mira', label: 'mira', hasIcon: true, hasLabel: true },
-      { character: 'bramble', label: 'bramble', hasIcon: true, hasLabel: true },
-      { character: 'corvin', label: 'corvin', hasIcon: true, hasLabel: true },
-      { character: 'juniper', label: 'juniper', hasIcon: true, hasLabel: true },
-      { character: 'rowan', label: 'rowan', hasIcon: true, hasLabel: true },
-    ]);
-    expect(
       [
         ...stage.querySelectorAll(
           '#room-top-panel-settings-account .room-top-panel__character-buttons > .room-top-panel__character-button',
         ),
       ],
-    ).toHaveLength(6);
+    ).toHaveLength(0);
     expect(
       stage.querySelectorAll(
         '#room-top-panel-settings-account .room-top-panel__character-section .room-top-panel__visual-option-price',

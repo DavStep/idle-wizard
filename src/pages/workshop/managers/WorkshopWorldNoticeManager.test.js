@@ -561,6 +561,7 @@ describe('WorkshopWorldNoticeManager', () => {
     parent.querySelector('.workshop-page__world-notice-open').click();
 
     const frame = popupParent.querySelector('.workshop-page__world-notice-frame');
+    expect(frame.classList.contains('style-dialog-scroll')).toBe(true);
     frame.scrollTop = 96;
 
     const nextSnapshot = JSON.parse(JSON.stringify(snapshot));
@@ -570,7 +571,7 @@ describe('WorkshopWorldNoticeManager', () => {
     const refreshedFrame = popupParent.querySelector(
       '.workshop-page__world-notice-frame',
     );
-    expect(refreshedFrame).not.toBe(frame);
+    expect(refreshedFrame).toBe(frame);
     expect(refreshedFrame.scrollTop).toBe(96);
 
     refreshedFrame.scrollTop = 72;

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Idle Wizard Character Generation"
+  short_description: "Generate matching chibi adventurer assets"
+  default_prompt: "Use $idle-wizard-character-generation to generate a new Idle Wizard character."

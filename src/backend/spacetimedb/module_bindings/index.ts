@@ -35,6 +35,7 @@ import {
 
 // Import all reducer arg schemas
 import AcceptTradeAllianceApplicationReducer from "./accept_trade_alliance_application_reducer";
+import AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer from "./admin_cleanup_zero_total_coin_players_and_grant_currency_reducer";
 import AdminDisbandTradeAllianceReducer from "./admin_disband_trade_alliance_reducer";
 import AdminKickPlayerSessionReducer from "./admin_kick_player_session_reducer";
 import AdminMergePlayerAccountsReducer from "./admin_merge_player_accounts_reducer";
@@ -692,6 +693,7 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept_trade_alliance_application", AcceptTradeAllianceApplicationReducer),
+  __reducerSchema("admin_cleanup_zero_total_coin_players_and_grant_currency", AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer),
   __reducerSchema("admin_disband_trade_alliance", AdminDisbandTradeAllianceReducer),
   __reducerSchema("admin_kick_player_session", AdminKickPlayerSessionReducer),
   __reducerSchema("admin_merge_player_accounts", AdminMergePlayerAccountsReducer),

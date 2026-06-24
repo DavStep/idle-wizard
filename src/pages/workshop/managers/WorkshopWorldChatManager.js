@@ -75,6 +75,10 @@ export class WorkshopWorldChatManager {
       event.preventDefault();
       this.hide();
     };
+    this.handleSendClick = (event) => {
+      event.preventDefault();
+      this.submitForm(this.refs.form);
+    };
   }
 
   mount(parent) {
@@ -226,35 +230,24 @@ export class WorkshopWorldChatManager {
     this.refs.sendButton.className = 'style-button workshop-page__world-chat-send';
     this.refs.sendButton.type = 'submit';
     this.refs.sendButton.textContent = 'send';
-    this.bindSubmitPressStart(this.refs.sendButton, form);
+    this.refs.sendButton.addEventListener('click', this.handleSendClick);
 
     form.append(this.refs.input, this.refs.sendButton);
     return form;
   }
 
-  bindSubmitPressStart(button, form) {
-    const submit = (event) => {
-      if (button.disabled) {
-        return;
-      }
-
-      event.preventDefault();
-      this.submitForm(form);
-    };
-
-    button.addEventListener('pointerdown', submit);
-    if (typeof window.PointerEvent !== 'function') {
-      button.addEventListener('touchstart', submit, { passive: false });
-    }
-  }
-
   submitForm(form) {
+    if (!form) {
+      return;
+    }
+
     if (typeof form.requestSubmit === 'function') {
       form.requestSubmit();
       return;
     }
 
-    form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    const EventClass = form.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+    form.dispatchEvent(new EventClass('submit', { bubbles: true, cancelable: true }));
   }
 
   createTabs() {

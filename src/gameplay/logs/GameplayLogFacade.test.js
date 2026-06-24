@@ -55,6 +55,14 @@ describe('GameplayLogFacade', () => {
     expect(entries.at(-1).message).toBe('researched study 105');
   });
 
+  it('logs emerald level ups as level ups', () => {
+    const logs = new GameplayLogFacade();
+
+    logs.logResearchBought({ label: 'plot 1 lvl 2', actionType: 'levelUp' });
+
+    expect(logs.getSnapshot().entries[0]?.message).toBe('leveled up plot 1 lvl 2');
+  });
+
   it('trims long log messages before persistence', () => {
     const logs = new GameplayLogFacade();
 

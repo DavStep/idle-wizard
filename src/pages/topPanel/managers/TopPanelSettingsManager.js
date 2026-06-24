@@ -3,10 +3,6 @@ import {
   normalizePlayerColorMode,
 } from '../../../player/playerColorModes.js';
 import {
-  DEFAULT_PLAYER_CHARACTER,
-  normalizePlayerCharacter,
-} from '../../../player/playerCharacters.js';
-import {
   DEFAULT_PLAYER_FONT,
   normalizePlayerFont,
 } from '../../../player/playerFonts.js';
@@ -27,7 +23,6 @@ import {
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
 import { getDefaultPlayerVisualSettingsResearched } from '../../../player/playerVisualSettings.js';
-import { getPlayerCharacterImageUrl } from '../../shared/playerCharacterIcon.js';
 import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
@@ -98,6 +93,14 @@ export class TopPanelSettingsManager {
       event.preventDefault();
       this.saveUsername();
     };
+    this.handleSaveClick = (event) => {
+      if (!this.visible) {
+        return;
+      }
+
+      event.preventDefault();
+      this.submitForm(this.refs.usernameForm, this.refs.usernameSaveButton);
+    };
     this.handleInputKeydown = (event) => {
       if (!this.visible || event.key !== 'Enter' || event.isComposing) {
         return;
@@ -128,77 +131,23 @@ export class TopPanelSettingsManager {
     this.handleUsernameInputBlur = () => {
       this.reselectUsernameOnClick = false;
     };
-    this.handleSavePressStart = (event) => {
-      if (!this.visible) {
-        return;
-      }
-
-      event.preventDefault();
-      this.saveUsername();
-    };
-    this.handleSavePointerDown = (event) => this.handleSavePressStart(event);
-    this.handleSaveTouchStart = (event) => this.handleSavePressStart(event);
     this.handleThemeClick = (event) => {
       this.selectVisualSetting('theme', event.currentTarget.dataset.theme);
-    };
-    this.handleThemePressStart = (event) => {
-      this.selectVisualSettingFromPressStart(event, 'theme', event.currentTarget.dataset.theme);
     };
     this.handleFontClick = (event) => {
       this.selectVisualSetting('font', event.currentTarget.dataset.font);
     };
-    this.handleFontPressStart = (event) => {
-      this.selectVisualSettingFromPressStart(event, 'font', event.currentTarget.dataset.font);
-    };
     this.handleColorModeClick = (event) => {
       this.selectVisualSetting('color', event.currentTarget.dataset.colorMode);
-    };
-    this.handleColorModePressStart = (event) => {
-      this.selectVisualSettingFromPressStart(
-        event,
-        'color',
-        event.currentTarget.dataset.colorMode,
-      );
-    };
-    this.handleCharacterClick = (event) => {
-      this.selectVisualSetting('character', event.currentTarget.dataset.character);
-    };
-    this.handleCharacterPressStart = (event) => {
-      this.selectVisualSettingFromPressStart(
-        event,
-        'character',
-        event.currentTarget.dataset.character,
-      );
     };
     this.handleIconModeClick = (event) => {
       this.selectVisualSetting('icons', event.currentTarget.dataset.iconMode);
     };
-    this.handleIconModePressStart = (event) => {
-      this.selectVisualSettingFromPressStart(
-        event,
-        'icons',
-        event.currentTarget.dataset.iconMode,
-      );
-    };
     this.handleProgressBarClick = (event) => {
       this.selectVisualSetting('progressBar', event.currentTarget.dataset.progressBar);
     };
-    this.handleProgressBarPressStart = (event) => {
-      this.selectVisualSettingFromPressStart(
-        event,
-        'progressBar',
-        event.currentTarget.dataset.progressBar,
-      );
-    };
     this.handlePlotViewClick = (event) => {
       this.selectVisualSetting('plotView', event.currentTarget.dataset.plotView);
-    };
-    this.handlePlotViewPressStart = (event) => {
-      this.selectVisualSettingFromPressStart(
-        event,
-        'plotView',
-        event.currentTarget.dataset.plotView,
-      );
     };
     this.handleVisualSettingResearchClick = (event) => {
       this.researchVisualSetting(
@@ -217,13 +166,13 @@ export class TopPanelSettingsManager {
       event.preventDefault();
       void this.sendFeedback();
     };
-    this.handleFeedbackSendPointerDown = (event) => {
+    this.handleFeedbackSendClick = (event) => {
       if (!this.visible || this.settingsTab !== 'report') {
         return;
       }
 
       event.preventDefault();
-      void this.sendFeedback();
+      this.submitForm(this.refs.feedbackForm, this.refs.feedbackSendButton);
     };
     this.handleKeydown = (event) => {
       if (!this.visible || event.key !== 'Escape') {
@@ -237,20 +186,16 @@ export class TopPanelSettingsManager {
 
   mount(refs) {
     this.refs = refs;
-    this.refs.usernameAvatarButton?.addEventListener('click', this.handleUsernameClick);
     this.refs.usernameButton.addEventListener('click', this.handleUsernameClick);
     this.refs.settingsCloseButton.addEventListener('click', this.handleCloseClick);
     this.refs.settings.addEventListener('click', this.handleOverlayClick);
     this.refs.usernameForm.addEventListener('submit', this.handleSubmit);
+    this.refs.usernameSaveButton.addEventListener('click', this.handleSaveClick);
     this.refs.usernameInput.addEventListener('keydown', this.handleInputKeydown);
     this.refs.usernameInput.addEventListener('focus', this.handleUsernameInputFocus);
     this.refs.usernameInput.addEventListener('click', this.handleUsernameInputClick);
     this.refs.usernameInput.addEventListener('input', this.handleUsernameInputInput);
     this.refs.usernameInput.addEventListener('blur', this.handleUsernameInputBlur);
-    this.refs.usernameSaveButton.addEventListener('pointerdown', this.handleSavePointerDown);
-    this.refs.usernameSaveButton.addEventListener('touchstart', this.handleSaveTouchStart, {
-      passive: false,
-    });
     for (const button of this.refs.settingsTabButtons) {
       button.addEventListener('click', this.handleSettingsTabClick);
     }
@@ -261,43 +206,29 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleFeedbackOpenClick);
     }
     this.refs.feedbackForm.addEventListener('submit', this.handleFeedbackSubmit);
-    this.refs.feedbackSendButton.addEventListener(
-      'pointerdown',
-      this.handleFeedbackSendPointerDown,
-    );
+    this.refs.feedbackSendButton.addEventListener('click', this.handleFeedbackSendClick);
 
     for (const button of this.refs.themeButtons) {
-      button.addEventListener('pointerdown', this.handleThemePressStart);
       button.addEventListener('click', this.handleThemeClick);
     }
 
     for (const button of this.refs.fontButtons) {
-      button.addEventListener('pointerdown', this.handleFontPressStart);
       button.addEventListener('click', this.handleFontClick);
     }
 
     for (const button of this.refs.colorModeButtons) {
-      button.addEventListener('pointerdown', this.handleColorModePressStart);
       button.addEventListener('click', this.handleColorModeClick);
     }
 
-    for (const button of this.refs.characterButtons) {
-      button.addEventListener('pointerdown', this.handleCharacterPressStart);
-      button.addEventListener('click', this.handleCharacterClick);
-    }
-
     for (const button of this.refs.progressBarButtons) {
-      button.addEventListener('pointerdown', this.handleProgressBarPressStart);
       button.addEventListener('click', this.handleProgressBarClick);
     }
 
     for (const button of this.refs.plotViewButtons) {
-      button.addEventListener('pointerdown', this.handlePlotViewPressStart);
       button.addEventListener('click', this.handlePlotViewClick);
     }
 
     for (const button of this.refs.iconModeButtons) {
-      button.addEventListener('pointerdown', this.handleIconModePressStart);
       button.addEventListener('click', this.handleIconModeClick);
     }
 
@@ -318,7 +249,6 @@ export class TopPanelSettingsManager {
         theme: DEFAULT_PLAYER_THEME,
         font: DEFAULT_PLAYER_FONT,
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
-        character: DEFAULT_PLAYER_CHARACTER,
         iconMode: DEFAULT_PLAYER_ICON_MODE,
         progressBar: DEFAULT_PLAYER_PROGRESS_BAR,
         plotView: DEFAULT_PLAYER_PLOT_VIEW,
@@ -372,24 +302,16 @@ export class TopPanelSettingsManager {
     this.soundSettingsUnsubscribe = null;
 
     if (this.refs) {
-      this.refs.usernameAvatarButton?.removeEventListener('click', this.handleUsernameClick);
       this.refs.usernameButton.removeEventListener('click', this.handleUsernameClick);
       this.refs.settingsCloseButton.removeEventListener('click', this.handleCloseClick);
       this.refs.settings.removeEventListener('click', this.handleOverlayClick);
       this.refs.usernameForm.removeEventListener('submit', this.handleSubmit);
+      this.refs.usernameSaveButton.removeEventListener('click', this.handleSaveClick);
       this.refs.usernameInput.removeEventListener('keydown', this.handleInputKeydown);
       this.refs.usernameInput.removeEventListener('focus', this.handleUsernameInputFocus);
       this.refs.usernameInput.removeEventListener('click', this.handleUsernameInputClick);
       this.refs.usernameInput.removeEventListener('input', this.handleUsernameInputInput);
       this.refs.usernameInput.removeEventListener('blur', this.handleUsernameInputBlur);
-      this.refs.usernameSaveButton.removeEventListener(
-        'pointerdown',
-        this.handleSavePointerDown,
-      );
-      this.refs.usernameSaveButton.removeEventListener(
-        'touchstart',
-        this.handleSaveTouchStart,
-      );
       for (const button of this.refs.settingsTabButtons) {
         button.removeEventListener('click', this.handleSettingsTabClick);
       }
@@ -403,43 +325,29 @@ export class TopPanelSettingsManager {
         button.removeEventListener('click', this.handleFeedbackOpenClick);
       }
       this.refs.feedbackForm.removeEventListener('submit', this.handleFeedbackSubmit);
-      this.refs.feedbackSendButton.removeEventListener(
-        'pointerdown',
-        this.handleFeedbackSendPointerDown,
-      );
+      this.refs.feedbackSendButton.removeEventListener('click', this.handleFeedbackSendClick);
 
       for (const button of this.refs.themeButtons) {
-        button.removeEventListener('pointerdown', this.handleThemePressStart);
         button.removeEventListener('click', this.handleThemeClick);
       }
 
       for (const button of this.refs.fontButtons) {
-        button.removeEventListener('pointerdown', this.handleFontPressStart);
         button.removeEventListener('click', this.handleFontClick);
       }
 
       for (const button of this.refs.colorModeButtons) {
-        button.removeEventListener('pointerdown', this.handleColorModePressStart);
         button.removeEventListener('click', this.handleColorModeClick);
       }
 
-      for (const button of this.refs.characterButtons) {
-        button.removeEventListener('pointerdown', this.handleCharacterPressStart);
-        button.removeEventListener('click', this.handleCharacterClick);
-      }
-
       for (const button of this.refs.progressBarButtons) {
-        button.removeEventListener('pointerdown', this.handleProgressBarPressStart);
         button.removeEventListener('click', this.handleProgressBarClick);
       }
 
       for (const button of this.refs.plotViewButtons) {
-        button.removeEventListener('pointerdown', this.handlePlotViewPressStart);
         button.removeEventListener('click', this.handlePlotViewClick);
       }
 
       for (const button of this.refs.iconModeButtons) {
-        button.removeEventListener('pointerdown', this.handleIconModePressStart);
         button.removeEventListener('click', this.handleIconModeClick);
       }
 
@@ -604,6 +512,20 @@ export class TopPanelSettingsManager {
     this.showFeedbackStatus(this.getFeedbackErrorMessage(result?.reason));
   }
 
+  submitForm(form, submitter) {
+    if (!form) {
+      return;
+    }
+
+    if (typeof form.requestSubmit === 'function') {
+      form.requestSubmit(submitter);
+      return;
+    }
+
+    const EventClass = form.ownerDocument?.defaultView?.Event ?? globalThis.Event;
+    form.dispatchEvent(new EventClass('submit', { bubbles: true, cancelable: true }));
+  }
+
   renderPlayerSnapshot(snapshot) {
     if (!this.refs || !snapshot) {
       return;
@@ -615,11 +537,9 @@ export class TopPanelSettingsManager {
       this.refs.usernameLabel.textContent = snapshot.username;
     }
 
-    this.renderUsernameAvatar(snapshot);
     this.applyThemeSelection(snapshot.theme);
     this.applyFontSelection(snapshot.font);
     this.applyColorModeSelection(snapshot.colorMode);
-    this.applyCharacterSelection(snapshot.character);
     this.applyIconModeSelection(snapshot.iconMode);
     this.applyProgressBarSelection(snapshot.progressBar);
     this.applyPlotViewSelection(snapshot.plotView);
@@ -671,27 +591,6 @@ export class TopPanelSettingsManager {
     button.setAttribute('aria-label', `${name} ${label}`);
   }
 
-  renderUsernameAvatar(snapshot) {
-    if (!this.refs?.usernameAvatar) {
-      return;
-    }
-
-    const selectedCharacter = normalizePlayerCharacter(snapshot.character);
-    const showAvatar = normalizePlayerIconMode(snapshot.iconMode) === 'icons';
-
-    if (this.refs.usernameAvatar.dataset.character !== selectedCharacter) {
-      this.refs.usernameAvatar.src = getPlayerCharacterImageUrl(selectedCharacter);
-      this.refs.usernameAvatar.dataset.character = selectedCharacter;
-    }
-
-    this.refs.usernameAvatar.hidden = !showAvatar;
-    if (this.refs.usernameAvatarButton) {
-      this.refs.usernameAvatarButton.hidden = !showAvatar;
-    }
-    this.refs.panel?.classList.toggle('has-avatar', showAvatar);
-    this.refs.usernameButton.classList.toggle('has-avatar', showAvatar);
-  }
-
   applyThemeSelection(theme) {
     const selectedTheme = normalizePlayerTheme(theme);
 
@@ -717,16 +616,6 @@ export class TopPanelSettingsManager {
 
     for (const button of this.refs.fontButtons) {
       const selected = button.dataset.font === selectedFont;
-      button.classList.toggle('is-selected', selected);
-      button.setAttribute('aria-checked', selected ? 'true' : 'false');
-    }
-  }
-
-  applyCharacterSelection(character) {
-    const selectedCharacter = normalizePlayerCharacter(character);
-
-    for (const button of this.refs.characterButtons) {
-      const selected = button.dataset.character === selectedCharacter;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
     }
@@ -781,15 +670,6 @@ export class TopPanelSettingsManager {
     this.clearVisualSettingStatus();
   }
 
-  selectVisualSettingFromPressStart(event, categoryKey, optionKey) {
-    if (!this.refs || event.currentTarget.disabled) {
-      return;
-    }
-
-    event.preventDefault();
-    this.selectVisualSetting(categoryKey, optionKey);
-  }
-
   researchVisualSetting(categoryKey, optionKey) {
     if (!this.refs) {
       return { ok: false, reason: 'unmounted' };
@@ -832,11 +712,6 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'color') {
       this.playerFacade?.setColorMode?.(optionKey);
-      return;
-    }
-
-    if (categoryKey === 'character') {
-      this.playerFacade?.setCharacter?.(optionKey);
       return;
     }
 
@@ -920,10 +795,6 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'color') {
       return normalizePlayerColorMode(this.playerSnapshot?.colorMode) === optionKey;
-    }
-
-    if (categoryKey === 'character') {
-      return normalizePlayerCharacter(this.playerSnapshot?.character) === optionKey;
     }
 
     if (categoryKey === 'progressBar') {

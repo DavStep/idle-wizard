@@ -1,3 +1,5 @@
+import { pickGuildAdventurerIconKey } from '../../../shared/guildAdventurerIcons.js';
+
 export const GUILD_UNLOCK_LEVEL = 15;
 export const GUILD_CHARTER_COST_COIN = 1500;
 export const GUILD_STATE_VERSION = 1;
@@ -261,9 +263,17 @@ export class GuildGenerationManager {
     const surname = pick(rng, SURNAMES);
     const epithet = pick(rng, EPITHETS);
     const stats = distributeStats({ level, personality, rng });
+    const iconKey = pickGuildAdventurerIconKey(
+      {
+        personalityId: personality.id,
+        stats,
+      },
+      createRng(`${seed}:icon`),
+    );
 
     return {
       id: `${idPrefix}:${hashString(`${seed}:${index}`).toString(36)}`,
+      iconKey,
       name,
       surname,
       epithet,

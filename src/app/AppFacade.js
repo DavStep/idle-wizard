@@ -61,6 +61,7 @@ export class AppFacade {
       hapticsFacade: this.hapticsFacade,
       soundSettingsFacade: this.soundSettingsFacade,
       uiClickSoundFacade: this.uiClickSoundFacade,
+      pixiProgressOverlayManager: this.renderFacade.getPixiProgressOverlayManager(),
     });
 
     this.lifecycleManager = new AppLifecycleManager({

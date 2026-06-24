@@ -32,6 +32,7 @@ export class WorkshopActionBarManager {
     this.summonEffectTimer = null;
     this.summonHoldPointerId = null;
     this.summonHoldPointerType = '';
+    this.summonHoldActivated = false;
     this.suppressSummonClickUntilMs = 0;
     this.handleSummonPointerDown = (event) => this.onSummonPointerDown(event);
     this.handleSummonClick = (event) => this.onSummonClick(event);
@@ -150,15 +151,8 @@ export class WorkshopActionBarManager {
     this.stopSummonHold({ suppressClick: false });
     this.summonHoldPointerId = event.pointerId;
     this.summonHoldPointerType = event.pointerType ?? '';
-    this.suppressNextSummonClick();
     this.addSummonHoldListeners();
-
-    if (this.onSummonSeed({ playManualHaptic: this.shouldPlaySummonHoldHaptic() })) {
-      this.scheduleNextSummon();
-      return;
-    }
-
-    this.stopSummonHold();
+    this.scheduleNextSummon();
   }
 
   onDocumentPointerUp(event) {
@@ -213,6 +207,8 @@ export class WorkshopActionBarManager {
         return;
       }
 
+      this.summonHoldActivated = true;
+      this.suppressNextSummonClick();
       if (this.onSummonSeed({ playManualHaptic: this.shouldPlaySummonHoldHaptic() })) {
         this.scheduleNextSummon();
         return;
@@ -252,9 +248,11 @@ export class WorkshopActionBarManager {
     this.summonHoldPointerId = null;
     this.summonHoldPointerType = '';
 
-    if (suppressClick) {
+    if (suppressClick && this.summonHoldActivated) {
       this.suppressNextSummonClick();
     }
+
+    this.summonHoldActivated = false;
   }
 
   clearSummonHoldTimer() {

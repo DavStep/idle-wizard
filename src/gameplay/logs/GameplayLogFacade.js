@@ -36,7 +36,11 @@ export class GameplayLogFacade {
     return `${label}${suffix}`;
   }
 
-  logResearchBought({ label }) {
+  logResearchBought({ label, actionType = 'research' }) {
+    if (actionType === 'levelUp') {
+      return this.logManager.add(`leveled up ${label}`);
+    }
+
     return this.logManager.add(`researched ${label}`);
   }
 

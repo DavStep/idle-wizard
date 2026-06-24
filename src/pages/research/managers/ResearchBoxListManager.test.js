@@ -121,6 +121,8 @@ describe('ResearchBoxListManager', () => {
                     id: 'advanced:plotGrowth:1:1',
                     label: 'auto plant tile 1',
                     value: 'researched',
+                    costRuby: 1,
+                    costCurrency: 'ruby',
                     completed: true,
                   },
                   {
@@ -140,18 +142,26 @@ describe('ResearchBoxListManager', () => {
             boxes: [
               {
                 id: 'plotPlanting',
-                label: 'plot planting research',
+                label: 'plot level up',
                 researches: [
                   {
                     id: 'emerald:plotPlanting:1:2',
-                    label: 'plot 1 planting x2',
-                    value: 'researched',
+                    label: 'plot 1 lvl 2',
+                    value: 'lvl 2',
+                    effect: 'x2 herbs',
+                    showEffect: true,
+                    actionType: 'levelUp',
+                    level: 2,
                     completed: true,
                   },
                   {
                     id: 'emerald:plotPlanting:1:3',
-                    label: 'plot 1 planting x3',
+                    label: 'plot 1 lvl 3',
                     value: '2 emerald',
+                    effect: 'x3 herbs',
+                    showEffect: true,
+                    actionType: 'levelUp',
+                    level: 3,
                     completed: false,
                     canResearch: true,
                   },
@@ -182,10 +192,10 @@ describe('ResearchBoxListManager', () => {
 
     expect(
       completedRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
-    ).toBe('crystal');
+    ).toBe('ruby');
     expect(
       completedRow?.querySelector('.research-page__research-value')?.dataset.resourceColor,
-    ).toBe('crystal');
+    ).toBe('ruby');
     expect(
       availableRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
     ).toBeUndefined();
@@ -196,10 +206,10 @@ describe('ResearchBoxListManager', () => {
     manager.onSelectTab('emerald');
 
     const completedEmeraldRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
-      row.textContent?.includes('plot 1 planting x2'),
+      row.textContent?.includes('plot 1 lvl 2'),
     );
     const availableEmeraldRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
-      row.textContent?.includes('plot 1 planting x3'),
+      row.textContent?.includes('plot 1 lvl 3'),
     );
 
     expect(
@@ -211,18 +221,27 @@ describe('ResearchBoxListManager', () => {
     expect(
       availableEmeraldRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
     ).toBe('emerald');
+    expect(
+      availableEmeraldRow
+        ?.querySelector('.research-page__research-button')
+        ?.getAttribute('aria-label'),
+    ).toBe('level up plot 1 lvl 3 x3 herbs for 2 emerald');
   });
 
-  it('lets completed advanced research values use crystal color styling', () => {
+  it('lets completed research values use resource color styling', () => {
     const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
     expect(css).toContain(
       '.research-page__research-value[data-resource-color="crystal"]',
     );
     expect(css).toContain(
+      '.research-page__research-value[data-resource-color="ruby"]',
+    );
+    expect(css).toContain(
       '.research-page__research-value[data-resource-color="emerald"]',
     );
     expect(css).toContain('color: var(--style-resource-crystal);');
+    expect(css).toContain('color: var(--style-resource-ruby);');
     expect(css).toContain('color: var(--style-resource-emerald);');
   });
 

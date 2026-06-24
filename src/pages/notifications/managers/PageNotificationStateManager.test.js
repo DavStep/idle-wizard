@@ -292,6 +292,35 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
+  it('does not roll hidden personal task full-clear rewards up to the workshop page', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.personalTasks = {
+      unlocked: true,
+      claimableRewards: 1,
+      daily: {
+        claimableRewards: 1,
+        fullClearRewardClaimable: true,
+        tasks: [
+          {
+            completed: true,
+            rewardClaimed: true,
+            rewardClaimable: false,
+          },
+        ],
+      },
+      weekly: {
+        claimableRewards: 0,
+        tasks: [],
+      },
+    };
+
+    expect(manager.getSnapshot(snapshot).pages.workshop.children.personalTasks).toBe(
+      false,
+    );
+  });
+
   it('rolls ready garden harvests and affordable plot buys up to the garden page', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();

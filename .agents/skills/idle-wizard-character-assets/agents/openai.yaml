@@ -1,4 +1,0 @@
-interface:
-  display_name: "Idle Wizard Character Assets"
-  short_description: "Build repo-ready fantasy character avatars"
-  default_prompt: "Use $idle-wizard-character-assets to create repo-ready Idle Wizard character avatars."

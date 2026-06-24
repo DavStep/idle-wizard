@@ -81,14 +81,6 @@ function createGameplayFacadeFake() {
         theme: { white: 0, black: 0, midnight: 0, witchcraft: 0 },
         font: { lexend: 0, 'comic-sans-mono': 0 },
         color: { monochrome: 0, resources: 0 },
-        character: {
-          elara: 0,
-          mira: 0,
-          bramble: 0,
-          corvin: 0,
-          juniper: 0,
-          rowan: 0,
-        },
         progressBar: { regular: 0, gradient: 0 },
         plotView: { rows: 0, boxes: 0 },
         icons: { none: 0, icons: 0 },
@@ -100,14 +92,6 @@ function createGameplayFacadeFake() {
           'comic-sans-mono': false,
         },
         color: { monochrome: true, resources: false },
-        character: {
-          elara: true,
-          mira: true,
-          bramble: true,
-          corvin: true,
-          juniper: true,
-          rowan: true,
-        },
         progressBar: { regular: true, gradient: false },
         plotView: { rows: true, boxes: true },
         icons: { none: true, icons: true },
@@ -968,7 +952,7 @@ function createGameplayFacadeFake() {
           id: 'advanced:cauldronBrewing:1:1',
           label: 'cauldron 1 brewing lvl 1',
           value: '1 ruby',
-          effect: '-2% time',
+          effect: '-5% time',
           showEffect: true,
           requiredResearchIds: [],
           costCoin: 0,
@@ -987,7 +971,45 @@ function createGameplayFacadeFake() {
           id: 'advanced:plotGrowth:1:1',
           label: 'plot 1 growth lvl 1',
           value: '1 ruby',
-          effect: '-2% time',
+          effect: '-5% time',
+          showEffect: true,
+          requiredResearchIds: [],
+          costCoin: 0,
+          costRuby: 1,
+          costCurrency: 'ruby',
+          completed: false,
+          canResearch: false,
+        },
+      ],
+    },
+    {
+      id: 'researchCost',
+      label: 'research cost research',
+      researches: [
+        {
+          id: 'emerald:researchCost:1',
+          label: 'research cost lvl 1',
+          value: '1 ruby',
+          effect: '-10% cost',
+          showEffect: true,
+          requiredResearchIds: [],
+          costCoin: 0,
+          costRuby: 1,
+          costCurrency: 'ruby',
+          completed: false,
+          canResearch: false,
+        },
+      ],
+    },
+    {
+      id: 'researchTime',
+      label: 'research time research',
+      researches: [
+        {
+          id: 'advanced:researchTime:1',
+          label: 'research time lvl 1',
+          value: '1 ruby',
+          effect: '-10% time',
           showEffect: true,
           requiredResearchIds: [],
           costCoin: 0,
@@ -1002,14 +1024,16 @@ function createGameplayFacadeFake() {
   const emeraldResearchBoxes = [
     {
       id: 'plotPlanting',
-      label: 'plot planting research',
+      label: 'plot level up',
       researches: [
         {
           id: 'emerald:plotPlanting:1:2',
-          label: 'plot 1 planting x2',
+          label: 'plot 1 lvl 2',
           value: '1 emerald',
           effect: 'x2 herbs',
           showEffect: true,
+          actionType: 'levelUp',
+          level: 2,
           requiredResearchIds: [],
           costCoin: 0,
           costEmerald: 1,
@@ -1021,14 +1045,16 @@ function createGameplayFacadeFake() {
     },
     {
       id: 'cauldronBrewing',
-      label: 'cauldron brewing research',
+      label: 'cauldron level up',
       researches: [
         {
           id: 'emerald:cauldronBrewing:1:2',
-          label: 'cauldron 1 brewing x2',
+          label: 'cauldron 1 lvl 2',
           value: '1 emerald',
           effect: 'x2 potions',
           showEffect: true,
+          actionType: 'levelUp',
+          level: 2,
           requiredResearchIds: [],
           costCoin: 0,
           costEmerald: 1,
@@ -2840,25 +2866,6 @@ function createPlayerFacadeFake(
       publish();
       return snapshot;
     },
-    setCharacter: (character) => {
-      const normalizedCharacter = [
-        'elara',
-        'mira',
-        'bramble',
-        'corvin',
-        'juniper',
-        'rowan',
-      ].includes(character)
-        ? character
-        : 'elara';
-      snapshot = {
-        ...snapshot,
-        character: normalizedCharacter,
-      };
-
-      publish();
-      return snapshot;
-    },
     setIconMode: (iconMode) => {
       const normalizedIconMode = ['off', 'no-icons', 'no icons', 'none'].includes(iconMode)
         ? 'none'
@@ -3664,11 +3671,10 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-page__nav')).toBeNull();
     const topPanel = stage.querySelector('.room-top-panel');
     expect(topPanel).not.toBeNull();
-    expect(topPanel.classList.contains('has-avatar')).toBe(true);
-    expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
-    expect(topPanel.children[0]?.hidden).toBe(false);
-    expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
-    expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
+    expect(topPanel.classList.contains('has-avatar')).toBe(false);
+    expect(topPanel.querySelector('.room-top-panel__avatar-button')).toBeNull();
+    expect(topPanel.children[0]?.className).toBe('room-top-panel__identity-row');
+    expect(topPanel.children[1]?.classList.contains('room-top-panel__resources')).toBe(true);
     expect(
       topPanel.querySelector('.room-top-panel__identity-row .room-top-panel__username')
         ?.textContent,
@@ -4018,7 +4024,7 @@ describe('PagesFacade', () => {
     expect(coinValue?.querySelector('.style-resource-label--coin')).not.toBeNull();
   });
 
-  it('shows the selected character avatar in the top panel only when icons are enabled', () => {
+  it('does not render a top panel character avatar', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin', 'white', {
       initialCharacter: 'mira',
@@ -4033,35 +4039,16 @@ describe('PagesFacade', () => {
 
     const topPanel = stage.querySelector('.room-top-panel');
     const usernameButton = stage.querySelector('.room-top-panel__username');
-    const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
-    const avatar = avatarButton?.querySelector('.room-top-panel__username-avatar');
 
     expect(usernameButton?.textContent).toBe('Merlin');
-    expect(avatarButton?.hidden).toBe(false);
-    expect(avatar?.hidden).toBe(false);
-    expect(avatar?.dataset.character).toBe('mira');
-    expect(avatar?.getAttribute('src')).toContain('mira.png');
-    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
+    expect(stage.querySelector('.room-top-panel__avatar-button')).toBeNull();
+    expect(stage.querySelector('.room-top-panel__username-avatar')).toBeNull();
+    expect(topPanel?.classList.contains('has-avatar')).toBe(false);
 
     playerFacade.setIconMode('none');
 
     expect(usernameButton?.textContent).toBe('Merlin');
-    expect(avatarButton?.hidden).toBe(true);
-    expect(avatar?.hidden).toBe(true);
     expect(topPanel?.classList.contains('has-avatar')).toBe(false);
-
-    playerFacade.setCharacter('rowan');
-
-    expect(avatarButton?.hidden).toBe(true);
-    expect(avatar?.hidden).toBe(true);
-    expect(avatar?.dataset.character).toBe('rowan');
-    expect(avatar?.getAttribute('src')).toContain('rowan.png');
-
-    playerFacade.setIconMode('icons');
-
-    expect(avatarButton?.hidden).toBe(false);
-    expect(avatar?.hidden).toBe(false);
-    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
   });
 
   it('mounts the FTUE guide shell for fresh level 1 players', () => {
@@ -5859,17 +5846,12 @@ describe('PagesFacade', () => {
       ),
     ).toEqual(['monochrome', 'resources']);
     expect(
-      [...settings.querySelectorAll('.room-top-panel__character-button')].map(
-        (button) => button.textContent,
-      ),
-    ).toEqual(['elara', 'mira', 'bramble', 'corvin', 'juniper', 'rowan']);
-    expect(
       [
         ...settings.querySelectorAll(
           '#room-top-panel-settings-account .room-top-panel__character-button',
         ),
-      ].map((button) => button.textContent),
-    ).toEqual(['elara', 'mira', 'bramble', 'corvin', 'juniper', 'rowan']);
+      ],
+    ).toHaveLength(0);
     expect(
       settings.querySelector(
         '#room-top-panel-settings-theme .room-top-panel__character-section',
@@ -6220,7 +6202,7 @@ describe('PagesFacade', () => {
 
     expect(playerFacade.getSnapshot().theme).toBe('black');
     expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(false);
-    expect(midnightPointerDown.defaultPrevented).toBe(true);
+    expect(midnightPointerDown.defaultPrevented).toBe(false);
     expect(midnightButton.getAttribute('aria-checked')).toBe('false');
 
     midnightResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -6236,8 +6218,13 @@ describe('PagesFacade', () => {
 
     midnightButton.dispatchEvent(midnightSelectPointerDown);
 
+    expect(playerFacade.getSnapshot().theme).toBe('black');
+    expect(midnightSelectPointerDown.defaultPrevented).toBe(false);
+    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
+
+    midnightButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     expect(playerFacade.getSnapshot().theme).toBe('midnight');
-    expect(midnightSelectPointerDown.defaultPrevented).toBe(true);
     expect(midnightButton.getAttribute('aria-checked')).toBe('true');
     expect(blackButton.getAttribute('aria-checked')).toBe('false');
 
@@ -6343,39 +6330,6 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().progressBar).toBe('gradient');
     expect(gradientButton.getAttribute('aria-checked')).toBe('true');
     expect(regularButton.getAttribute('aria-checked')).toBe('false');
-  });
-
-  it('changes character from settings', () => {
-    const stage = document.createElement('section');
-    const playerFacade = createPlayerFacadeFake('Merlin');
-    const gameplayFacade = createGameplayFacadeFake();
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade,
-    });
-
-    pagesFacade.mount(stage);
-
-    stage
-      .querySelector('.room-top-panel__username')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    const elaraButton = stage.querySelector(
-      '.room-top-panel__character-button[data-character="elara"]',
-    );
-    const miraButton = stage.querySelector(
-      '.room-top-panel__character-button[data-character="mira"]',
-    );
-
-    expect(elaraButton.getAttribute('aria-checked')).toBe('true');
-    expect(miraButton.getAttribute('aria-checked')).toBe('false');
-    expect(miraButton.querySelector('.room-top-panel__character-option-icon')).not.toBeNull();
-
-    miraButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().character).toBe('mira');
-    expect(miraButton.getAttribute('aria-checked')).toBe('true');
-    expect(elaraButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes icon mode from settings', () => {
@@ -6603,7 +6557,7 @@ describe('PagesFacade', () => {
     expect(settings.hidden).toBe(true);
   });
 
-  it('saves username on touch before mobile keyboard blur can move the layout', () => {
+  it('saves username on touch release, not press start', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin');
     const pagesFacade = new PagesFacade({
@@ -6620,19 +6574,25 @@ describe('PagesFacade', () => {
 
     usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     input.value = 'Tap Mage';
-    saveButton.dispatchEvent(
-      new window.Event('pointerdown', {
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    const pointerDown = new window.Event('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    saveButton.dispatchEvent(pointerDown);
+
+    expect(playerFacade.getSnapshot().username).toBe('Merlin');
+    expect(settings.hidden).toBe(false);
+    expect(pointerDown.defaultPrevented).toBe(false);
+
+    saveButton.click();
 
     expect(playerFacade.getSnapshot().username).toBe('Tap Mage');
     expect(usernameButton.textContent).toBe('Tap Mage');
     expect(settings.hidden).toBe(true);
   });
 
-  it('saves username on mobile touchstart when pointer events are unavailable', () => {
+  it('does not save username on mobile touchstart when pointer events are unavailable', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin');
     const pagesFacade = new PagesFacade({
@@ -6655,6 +6615,11 @@ describe('PagesFacade', () => {
         changedTouches: [createTouch(1, 320, 360, saveButton)],
       }),
     );
+
+    expect(playerFacade.getSnapshot().username).toBe('Merlin');
+    expect(settings.hidden).toBe(false);
+
+    saveButton.click();
 
     expect(playerFacade.getSnapshot().username).toBe('MobileDav');
     expect(usernameButton.textContent).toBe('MobileDav');
@@ -6685,12 +6650,7 @@ describe('PagesFacade', () => {
     const saveButton = stage.querySelector('.room-top-panel__username-save');
 
     usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    saveButton.dispatchEvent(
-      new window.Event('pointerdown', {
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    saveButton.click();
     pagesFacade.tutorialFacade.refresh();
 
     expect(playerFacade.getSnapshot().username).toBe('wizard');
@@ -6733,12 +6693,7 @@ describe('PagesFacade', () => {
 
     input.value = 'Mira';
     input.dispatchEvent(new window.Event('input', { bubbles: true }));
-    saveButton.dispatchEvent(
-      new window.Event('pointerdown', {
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    saveButton.click();
     pagesFacade.tutorialFacade.refresh();
 
     expect(playerFacade.getSnapshot().username).toBe('Mira');
@@ -8624,7 +8579,7 @@ describe('PagesFacade', () => {
     expect(memberPopup.hidden).toBe(true);
   });
 
-  it('saves trade alliance settings on touch before mobile keyboard blur can move layout', async () => {
+  it('saves trade alliance settings on button release, not press start', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -8666,7 +8621,13 @@ describe('PagesFacade', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(pointerDown.defaultPrevented).toBe(true);
+    expect(pointerDown.defaultPrevented).toBe(false);
+    expect(tradeAllianceFacade.getProfileUpdates()).toEqual([]);
+
+    saveButton.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
     expect(tradeAllianceFacade.getProfileUpdates()).toEqual([
       {
         name: 'Tap Void',
@@ -8954,7 +8915,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
-  it('sends world chat on press start before mobile keyboard blur can move layout', async () => {
+  it('sends world chat on button release, not press start', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
     const worldChatFacade = createWorldChatFacadeFake({ messages: [] });
@@ -8984,7 +8945,13 @@ describe('PagesFacade', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(pointerDown.defaultPrevented).toBe(true);
+    expect(pointerDown.defaultPrevented).toBe(false);
+    expect(worldChatFacade.getSentMessages()).toEqual([]);
+
+    sendButton.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
     expect(worldChatFacade.getSentMessages()).toEqual(['tapped send']);
     expect(input.value).toBe('');
   });
@@ -10006,7 +9973,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.brewing-page__cauldron .style-box__title')].map(
         (title) => title.textContent,
       ),
-    ).toEqual(['cauldron 1', 'cauldron 2', 'cauldron 3']);
+    ).toEqual(['cauldron 1 lvl 1', 'cauldron 2 lvl 1', 'cauldron 3 lvl 1']);
   });
 
   it('shows the next Brewing cauldron as a buyable locked box', () => {
@@ -10048,8 +10015,12 @@ describe('PagesFacade', () => {
     cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
     expect(cauldrons).toHaveLength(3);
     expect(cauldrons[1].classList.contains('is-locked')).toBe(false);
-    expect(cauldrons[1].querySelector('.style-box__title')?.textContent).toBe('cauldron 2');
-    expect(cauldrons[2].querySelector('.style-box__title')?.textContent).toBe('cauldron 3');
+    expect(cauldrons[1].querySelector('.style-box__title')?.textContent).toBe(
+      'cauldron 2 lvl 1',
+    );
+    expect(cauldrons[2].querySelector('.style-box__title')?.textContent).toBe(
+      'cauldron 3 lvl 1',
+    );
     expect(cauldrons[2].classList.contains('is-locked')).toBe(true);
   });
 
@@ -10270,10 +10241,10 @@ describe('PagesFacade', () => {
 
     expect(emeraldTab.getAttribute('aria-selected')).toBe('true');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'plot planting research',
+      'plot level up',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'plot 1 planting x2',
+      'plot 1 lvl 2',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       '1 emerald',
@@ -10379,9 +10350,7 @@ describe('PagesFacade', () => {
     manaTonicRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
-      'mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
     expect(stage.querySelector('.brewing-page__cauldron-guide')?.textContent).not.toContain(
       'recipe',
     );
@@ -10487,9 +10456,7 @@ describe('PagesFacade', () => {
 
     const guideStep = stage.querySelector('.brewing-page__cauldron-guide-step');
 
-    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
-      'mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
     expect(guideStep?.textContent).toContain('- 3 sage');
     expect(guideStep?.textContent).toContain('missing 2');
     expect(stage.querySelector('.brewing-page__cauldron-count')?.textContent).toBe('0/5');
@@ -10538,9 +10505,7 @@ describe('PagesFacade', () => {
       'fill recipe',
     );
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
-    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
-      'mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
 
     stage
       .querySelector('.brewing-page__action-button')
@@ -10578,17 +10543,13 @@ describe('PagesFacade', () => {
       .querySelector('.brewing-page__recipe-select-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
-      'mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
 
     clickRoomTab(stage, 'garden');
     expect(pagesFacade.getCurrentPageId()).toBe('garden');
 
     clickRoomTab(stage, 'brewing');
-    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')?.textContent).toBe(
-      'mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
 
     stage
       .querySelector('.brewing-page__cauldron-select-recipe-text')

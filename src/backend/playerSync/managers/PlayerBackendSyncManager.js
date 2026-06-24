@@ -31,7 +31,7 @@ export class PlayerBackendSyncManager {
 
   connect(connection) {
     this.connection = connection;
-    this.canSyncBeforeServerProfile = !connection?.db?.player;
+    this.canSyncBeforeServerProfile = !this.hasServerProfileSource(connection);
 
     if (this.canSyncBeforeServerProfile) {
       this.markUsernameProfileLoaded();
@@ -191,6 +191,14 @@ export class PlayerBackendSyncManager {
       character: profile?.character ?? 'elara',
       usernamePromptSeen: Boolean(profile?.usernamePromptSeen),
     };
+  }
+
+  hasServerProfileSource(connection) {
+    return Boolean(
+      connection?.db?.ownPlayerProfile ||
+        connection?.db?.own_player_profile ||
+        connection?.db?.player,
+    );
   }
 
   getProfileSignature(profile) {

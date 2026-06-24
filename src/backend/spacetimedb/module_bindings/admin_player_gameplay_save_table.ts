@@ -14,5 +14,7 @@ export default __t.row({
   identity: __t.identity().primaryKey(),
   currentGold: __t.f64().name("current_gold"),
   currentCrystal: __t.u32().name("current_crystal"),
+  currentEmerald: __t.u32().name("current_emerald"),
+  currentRuby: __t.u32().name("current_ruby"),
   updatedAt: __t.timestamp().name("updated_at"),
 });

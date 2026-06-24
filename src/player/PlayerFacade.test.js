@@ -125,6 +125,16 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
   });
 
+  it('normalizes character', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setCharacter('mira');
+    expect(playerFacade.getSnapshot().character).toBe('mira');
+
+    playerFacade.setCharacter('unknown');
+    expect(playerFacade.getSnapshot().character).toBe('elara');
+  });
+
   it('normalizes icon mode', () => {
     const playerFacade = new PlayerFacade();
 
@@ -137,20 +147,6 @@ describe('PlayerFacade', () => {
 
     playerFacade.setIconMode('unknown');
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');
-  });
-
-  it('normalizes character', () => {
-    const playerFacade = new PlayerFacade();
-
-    playerFacade.setCharacter('mira');
-
-    expect(playerFacade.getSnapshot().character).toBe('mira');
-
-    playerFacade.setCharacter('witch-guide');
-    expect(playerFacade.getSnapshot().character).toBe('elara');
-
-    playerFacade.setCharacter('unknown');
-    expect(playerFacade.getSnapshot().character).toBe('elara');
   });
 
   it('normalizes progress bar', () => {

@@ -22,6 +22,7 @@ const SCROLL_CUE_SELECTOR = [
   '.shop-page__stock-rows',
   '.shop-page__sell-item-list',
   '.guild-page__popup-content',
+  '.guild-page__card-details',
   '.room-alliance-info-content',
   '.room-top-panel__settings-pane',
   '.room-top-panel__level-content',

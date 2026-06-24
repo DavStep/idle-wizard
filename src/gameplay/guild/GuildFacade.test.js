@@ -101,6 +101,9 @@ describe('GuildFacade', () => {
       },
     });
     expect(snapshot.applicants).toHaveLength(3);
+    expect(
+      snapshot.applicants.every((applicant) => applicant.iconKey && applicant.iconKey !== 'elara'),
+    ).toBe(true);
     expect(snapshot.board).toHaveLength(0);
     expect(snapshot.availableRequests).toHaveLength(5);
     expect(snapshot.availableEventRequests.length).toBeGreaterThan(0);
@@ -121,9 +124,11 @@ describe('GuildFacade', () => {
   it('hires one starting adventurer until secretary is upgraded', () => {
     const { facade } = createFacade({ coin: 10_000 });
     facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' });
-    const applicantId = facade.getSnapshot().applicants[0].id;
+    const applicant = facade.getSnapshot().applicants[0];
+    const applicantId = applicant.id;
 
     expect(facade.hireApplicant(applicantId)).toMatchObject({ ok: true });
+    expect(facade.getSnapshot().adventurers[0].iconKey).toBe(applicant.iconKey);
     expect(facade.hireApplicant(facade.getSnapshot().applicants[0].id)).toMatchObject({
       ok: false,
       reason: 'roster_full',

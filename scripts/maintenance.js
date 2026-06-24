@@ -16,6 +16,7 @@ const MUTATING_ACTIONS = new Set([
   'reset-player',
   'wipe-player-data',
   'wipe-zero-income-player-data',
+  'cleanup-zero-total-coin-grant-currency',
 ]);
 const SCHEMA_NAMES = [
   'set_maintenance_mode',
@@ -24,6 +25,7 @@ const SCHEMA_NAMES = [
   'admin_reset_player_progression_by_identity',
   'admin_wipe_all_player_data',
   'admin_wipe_zero_income_player_data',
+  'admin_cleanup_zero_total_coin_players_and_grant_currency',
   'leaderboard_summary',
   'world_chat_recent',
 ];
@@ -118,6 +120,9 @@ switch (action) {
   case 'verify-zero-income-player-data-wipe':
     verifyZeroIncomePlayerDataWipe();
     break;
+  case 'verify-zero-total-coin-cleanup-grant':
+    verifyZeroTotalCoinCleanupGrant();
+    break;
   case 'verify-player-reset':
     verifySinglePlayerProgressionReset();
     break;
@@ -138,6 +143,9 @@ switch (action) {
     break;
   case 'wipe-zero-income-player-data':
     wipeZeroIncomePlayerData();
+    break;
+  case 'cleanup-zero-total-coin-grant-currency':
+    cleanupZeroTotalCoinPlayersAndGrantCurrency();
     break;
   case 'publish':
     runSpacetime(['publish', database, '--server', server, '--module-path', './spacetimedb']);
@@ -187,6 +195,7 @@ function printHelp() {
   node scripts/maintenance.js verify-reset
   node scripts/maintenance.js verify-player-data-wipe
   node scripts/maintenance.js verify-zero-income-player-data-wipe
+  node scripts/maintenance.js verify-zero-total-coin-cleanup-grant
   node scripts/maintenance.js verify-player-reset --identity <hex>
   node scripts/maintenance.js migrate --key YYYY-MM-DD-maintenance --confirm-live
   node scripts/maintenance.js reset-discord-post --key YYYY-MM-DD-reset --confirm-live
@@ -194,6 +203,7 @@ function printHelp() {
   node scripts/maintenance.js reset-player --identity <hex> --key YYYY-MM-DD-reset --confirm-live
   node scripts/maintenance.js wipe-player-data --key YYYY-MM-DD-reset --post-discord --confirm-live
   node scripts/maintenance.js wipe-zero-income-player-data --key YYYY-MM-DD-reset --confirm-live
+  node scripts/maintenance.js cleanup-zero-total-coin-grant-currency --key YYYY-MM-DD-cleanup --confirm-live [--emerald 10] [--ruby 10] [--crystal 10]
   node scripts/maintenance.js publish --confirm-live
   node scripts/maintenance.js off --confirm-live
 
@@ -381,7 +391,7 @@ function verifyPlayerGameplaySave() {
   runSql('SELECT COUNT(*) AS row_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS parseable_count FROM admin_player_gameplay_save');
   runSql(
-    'SELECT identity, current_coin, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10',
+    'SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10',
   );
 }
 
@@ -435,6 +445,16 @@ function verifyZeroIncomePlayerDataWipe() {
   runSql('SELECT COUNT(*) AS player_count FROM player');
   runSql('SELECT COUNT(*) AS player_session_count FROM player_session');
   runSql('SELECT COUNT(*) AS leaderboard_count FROM leaderboard');
+}
+
+function verifyZeroTotalCoinCleanupGrant() {
+  runSql('SELECT COUNT(*) AS player_count FROM player');
+  runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
+  runSql('SELECT COUNT(*) AS leaderboard_count FROM leaderboard');
+  runSql('SELECT COUNT(*) AS zero_income_leaderboard_count FROM leaderboard WHERE total_income = 0');
+  runSql(
+    'SELECT identity, current_gold, current_crystal, current_emerald, current_ruby, updated_at FROM admin_player_gameplay_save LIMIT 30',
+  );
 }
 
 function verifySinglePlayerProgressionReset() {
@@ -516,11 +536,50 @@ function wipeZeroIncomePlayerData() {
   callReducer('admin_wipe_zero_income_player_data', [resetKey]);
 }
 
+function cleanupZeroTotalCoinPlayersAndGrantCurrency() {
+  const resetKey = getResetKey();
+  const emeraldAmount = getGrantAmount('emerald', 10);
+  const rubyAmount = getGrantAmount('ruby', 10);
+  const crystalAmount = getGrantAmount('crystal', 10);
+
+  if (options['dry-run']) {
+    console.log(
+      [
+        'Dry run: would call admin_cleanup_zero_total_coin_players_and_grant_currency',
+        shellQuote(resetKey),
+        emeraldAmount,
+        rubyAmount,
+        crystalAmount,
+      ].join(' '),
+    );
+    return;
+  }
+
+  callReducer('admin_cleanup_zero_total_coin_players_and_grant_currency', [
+    resetKey,
+    String(emeraldAmount),
+    String(rubyAmount),
+    String(crystalAmount),
+  ]);
+}
+
 function resetSinglePlayerProgressionData() {
   const identityHex = getIdentityHex();
   const resetKey = getResetKey();
 
   callReducer('admin_reset_player_progression_by_identity', [identityHex, resetKey]);
+}
+
+function getGrantAmount(name, fallback) {
+  const value = options[name] ?? fallback;
+  const amount = Math.floor(Number(value));
+
+  if (!Number.isFinite(amount) || amount < 0) {
+    console.error(`Invalid ${name} amount.`);
+    process.exit(1);
+  }
+
+  return amount;
 }
 
 function getResetKey() {

@@ -1,6 +1,7 @@
 import { CanvasManager } from './managers/CanvasManager.js';
 import { FpsDisplayManager } from './managers/FpsDisplayManager.js';
 import { RenderLoopManager } from './managers/RenderLoopManager.js';
+import { PixiProgressOverlayManager } from './pixi/PixiProgressOverlayManager.js';
 import { SpineRuntimeFacade } from './spine/SpineRuntimeFacade.js';
 
 function readFpsDisplayEnabled() {
@@ -16,6 +17,7 @@ export class RenderFacade {
     fpsDisplayManager = null,
     renderLoopManager = new RenderLoopManager(),
     showFpsDisplay = readFpsDisplayEnabled(),
+    pixiProgressOverlayManager = null,
     spineRuntimeFacade = null,
   } = {}) {
     this.canvasManager = canvasManager;
@@ -23,6 +25,13 @@ export class RenderFacade {
     this.fpsDisplayManager =
       fpsDisplayManager ?? (showFpsDisplay ? new FpsDisplayManager() : null);
     this.renderLoopManager = renderLoopManager;
+    this.pixiProgressOverlayManager =
+      pixiProgressOverlayManager ??
+      new PixiProgressOverlayManager({
+        whenPixiReady: () => this.canvasManager.whenReady(),
+        getLayers: () => this.canvasManager.getPixiLayers(),
+        getCanvas: () => this.canvasManager.getCanvas(),
+      });
     this.spineRuntimeFacade = spineRuntimeFacade ?? new SpineRuntimeFacade({
       whenPixiReady: () => this.canvasManager.whenReady(),
       getLayers: () => this.canvasManager.getPixiLayers(),
@@ -31,6 +40,7 @@ export class RenderFacade {
 
   mount(stage) {
     this.canvasManager.mount(stage);
+    this.pixiProgressOverlayManager?.mount(stage);
     if (this.showFpsDisplay) {
       this.fpsDisplayManager?.mount(stage);
     }
@@ -40,6 +50,7 @@ export class RenderFacade {
     if (this.showFpsDisplay) {
       this.fpsDisplayManager?.unmount();
     }
+    this.pixiProgressOverlayManager?.unmount();
     this.canvasManager.unmount();
   }
 
@@ -72,6 +83,10 @@ export class RenderFacade {
 
   getPixiLayers() {
     return this.canvasManager.getPixiLayers();
+  }
+
+  getPixiProgressOverlayManager() {
+    return this.pixiProgressOverlayManager;
   }
 
   whenPixiReady() {

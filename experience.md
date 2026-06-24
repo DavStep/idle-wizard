@@ -13,7 +13,9 @@
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
 - Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
 - Full progression resets should post a human Discord notice before the reducer runs, using the reset/maintenance webhook rather than the APK upload webhook.
+- Zero-total-coin player cleanup must consider players with no leaderboard/save rows; `leaderboard.total_income = 0` alone misses accounts that connected but never progressed.
 - Server progression resets do not clear browser tutorial `localStorage`; bump the FTUE storage key when old clients must see the guide again after reset.
+- Player profile sync must wait on `own_player_profile` as well as `player`; otherwise reconnect can push default username/theme/avatar before hydration and overwrite saved profile data.
 - Fresh empty gameplay saves must reset browser FTUE progress before loading the null save; otherwise stale completed tutorial storage hides Elara on new data.
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
@@ -21,6 +23,7 @@
 ## Product Shape
 
 - This is an Android-first mobile JavaScript game.
+- macOS `sips` can read project WebP portraits but cannot write them; use `cwebp` for WebP resize/encode.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - The authored game viewport is `1080x2170`.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
@@ -33,6 +36,7 @@
 - Smooth timer progress transitions keep Android WebView drawing every frame; for text-game timer bars prefer stepped fills from snapshot refreshes.
 - Garden, Brewing, and Research timer bars should share short stepped transforms and shared remaining-time text; do not let one active timer surface keep a full-duration continuous fill on Android.
 - Timer progress bars should soften active 500ms snapshot steps with near-cadence transform transitions, not full remaining-duration transitions.
+- Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
@@ -62,6 +66,7 @@
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
 - Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
+- Personal task badges should count only visible per-task claim rewards; hidden full-clear rewards should not leave an orphan notification.
 - Workshop personal tasks and world event character-button notification dots belong on the small `tasks`/`event` label box, not the portrait/full hit area.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
 - Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, and earn, not random chores pasted under a headline.
@@ -81,6 +86,7 @@
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
 - World event same-tab refreshes must restore `.workshop-page__world-notice-frame.scrollTop`; live snapshot/leaderboard updates otherwise bounce mobile scrolling back to the top.
+- World event same-tab refreshes should reuse the existing `.workshop-page__world-notice-frame`; replacing the scroll element can still break mobile momentum even when `scrollTop` is restored.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
@@ -101,8 +107,8 @@
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
-- NPC market stand item labels, buy labels, and border-label buttons like `demand` should fire on touch/pointer press-start with click dedupe; click-only handlers can look dead in mobile/WebView paths.
-- Native dialog/open buttons should activate on validated pointerup; reserve `data-press-start-click="true"` for non-button row/text hit targets with mobile click misses.
+- Non-button text/row press targets should fire synthetic click on touch/pointer press-start with click dedupe; native buttons should activate on release/click. Use `data-press-start-click="false"` only when a non-button target needs validated release.
+- Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
 - NPC market stand press-start opens must ignore the immediate retargeted backdrop click; otherwise the `sell` picker flashes open and closes on mobile/WebView.
 - NPC market demand recovery uses lazy capped UTC buyer waves, not a smooth 5-minute/half-life regen or hard daily reset; backend and `npcMarketPricing.js` must stay mirrored.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
@@ -124,6 +130,7 @@
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
 - FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
+- Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
@@ -196,7 +203,7 @@
 - Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
 - Brewing FTUE lesson placement must protect the herbs box, cauldron, and bottom brewing controls so Elara never hides brew status/progress.
-- Brewing cauldron boxes keep a fixed source height; scroll ingredient/recipe rows inside instead of letting the box resize.
+- Brewing cauldron boxes default to three content rows, then grow from row count when selected recipe or staged ingredient groups exceed three.
 - Active brew status/progress should replace the cauldron ingredient slot; leaving the normal slot visible makes the box read taller.
 - FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
 - FTUE lesson collapse animations need a temporary exit class before setting `hidden`; full tutorial hides still clear immediately to prevent stale flashes.
@@ -207,19 +214,18 @@
 - Dev cheats that force garden/shop/brewing slot counts must raise player level or capacity research first; snapshot apply paths clamp counts back to progression caps.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
-- Shared player character icons live as flat PNGs in `src/assets/characters`; feature-only character art can stay page-local.
-- Character avatar generation should preserve proven strict-reference prompt wording; for packs, generate/approve a wide sheet on white first, then split/finalize to `173x216`.
-- Character prompt files that only say `provided references` do not attach the avatar sheet; imagegen runs must explicitly use the current avatar sheet image as the style reference or outputs can drift.
-- Character avatar prompts/QA must require a visible tiny mouth mark on every face; "small deadpan mouth" alone can be interpreted as no mouth.
-- Character avatar mouth prompts must also forbid beards, moustaches, scarves, collars, hair, hands, books, props, or shields from covering the mouth; otherwise sheets can still pass stylistically while lower faces are blank.
-- Character avatar prompts should keep proven style-lock wording compact; move detailed failure rules to QA, because long negative/checklist prompts can pull generation away from the reference style.
-- Current character avatar workflow is one-by-one: use the user-approved single-character base prompt exactly, replace only `[CHARACTER DEFINITION]`, and always load the attached reference sheet for generation.
-- Character generation should attach `.agents/skills/idle-wizard-character-assets/references/avatar-style-reference.png` by default; it is a style sheet, not final game art.
+- Player character generation workflow is removed; do not add/rebuild selectable avatar generation unless the user explicitly asks.
+- Shared character PNGs in `src/assets/characters` are legacy public-row display assets, not a selectable customization system.
+- Guild adventurers should use a fitting non-Elara `iconKey` from `src/assets/characters/character-descriptions.txt`.
+- Chibi character image prompts must lock exact eye construction: half-lidded sleepy eyes, small flat oval pupils, same pupil size/position, and no round anime/shiny dot pupils.
+- Generated character sheet cuts need dark/magenta background QA against `mira.png`; use premultiplied-alpha resizing, de-matte pale edges, and remove opaque neutral-white holes near hair/props or sheet artifacts remain.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
+- Research balance/default config is mirrored in `ResearchBalanceManager`, `src/gameplay/research/research-balance.json`, `scripts/balance-sim.js`, and `spacetimedb/src/index.ts`; update all together when changing research costs/currencies.
 - SpacetimeDB task runtime config can still expose legacy `completionCostGold`; client task balance must treat it as `completionCostCoin` or level-up prices fall back to `level * 20`.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
+- Emerald plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep internal research ids if needed, but do not present them as ordinary research.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
 - Workshop task drag-sort thresholds must compare the lifted row center, not pointer Y; grab offset otherwise makes rows swap too early or late.

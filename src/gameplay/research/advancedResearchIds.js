@@ -7,9 +7,8 @@ export const advancedResearchIds = Object.freeze({
   plotGrowth: (plotNumber, level) => `advanced:plotGrowth:${plotNumber}:${level}`,
 });
 
-export function getAdvancedResearchLevelReductionPercent(level) {
-  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
-  return safeLevel + 1;
+export function getAdvancedResearchLevelReductionPercent() {
+  return 5;
 }
 
 export function getAdvancedResearchTotalReductionPercent(level) {

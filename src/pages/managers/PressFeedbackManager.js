@@ -312,14 +312,11 @@ export class PressFeedbackManager {
   }
 
   shouldClickOnPressStart(element) {
-    if (element?.tagName === 'BUTTON') {
+    if (this.pressPointerType === 'mouse' || element?.tagName === 'BUTTON') {
       return false;
     }
 
-    return (
-      this.pressPointerType !== 'mouse' &&
-      element?.getAttribute?.(PRESS_START_CLICK_ATTRIBUTE) === 'true'
-    );
+    return element?.getAttribute?.(PRESS_START_CLICK_ATTRIBUTE) !== 'false';
   }
 
   getPressFeedbackElement(pressTarget) {
