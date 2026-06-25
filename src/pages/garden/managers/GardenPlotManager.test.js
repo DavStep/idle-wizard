@@ -272,27 +272,6 @@ function createGameplayFacadeFake() {
   return gameplayFacade;
 }
 
-function createPlayerFacadeFake(initialPlotView = 'boxes') {
-  const listeners = new Set();
-  let snapshot = { plotView: initialPlotView };
-
-  return {
-    getSnapshot: () => snapshot,
-    subscribe: (listener) => {
-      listeners.add(listener);
-      listener(snapshot);
-      return () => listeners.delete(listener);
-    },
-    setPlotView: (plotView) => {
-      snapshot = { ...snapshot, plotView };
-
-      for (const listener of listeners) {
-        listener(snapshot);
-      }
-    },
-  };
-}
-
 function setPlotActionHitBox(plotRow) {
   plotRow.querySelector('.garden-page__plot-action').getBoundingClientRect = () => ({
     left: 100,
@@ -335,7 +314,7 @@ describe('GardenPlotManager', () => {
     vi.unstubAllGlobals();
   });
 
-  it('uses boxes as the default plot view with three fixed columns', () => {
+  it('renders a plot world with three fixed columns', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -347,8 +326,9 @@ describe('GardenPlotManager', () => {
     const plotRoot = parent.querySelector('.garden-page__plot');
     const rows = parent.querySelector('.garden-page__plot-rows');
 
-    expect(plotRoot?.dataset.plotView).toBe('boxes');
-    expect(rows?.dataset.plotView).toBe('boxes');
+    expect(plotRoot?.classList.contains('garden-page__plot-world')).toBe(true);
+    expect(plotRoot?.classList.contains('style-box')).toBe(false);
+    expect(plotRoot?.querySelector('.style-box__title')).toBeNull();
     expect(rows?.style.getPropertyValue('--garden-page-plot-columns')).toBe('3');
   });
 
@@ -367,24 +347,6 @@ describe('GardenPlotManager', () => {
     expect(star?.textContent).toBe('★★★');
     expect(star?.dataset.starTone).toBe('yellow');
     expect(star?.getAttribute('aria-label')).toBe('yellow star 3');
-  });
-
-  it('shows plot stars in rows view', () => {
-    const parent = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const playerFacade = createPlayerFacadeFake('rows');
-    const manager = new GardenPlotManager({ gameplayFacade, playerFacade });
-    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
-
-    tile.level = 4;
-
-    manager.mount(parent);
-
-    const star = parent.querySelector('.garden-page__plot-state');
-
-    expect(star?.textContent).toBe('★');
-    expect(star?.dataset.starTone).toBe('orange');
-    expect(star?.getAttribute('aria-label')).toBe('orange star 1');
   });
 
   it('shows plant xN on enhanced empty plots with selected seeds', () => {
@@ -413,7 +375,7 @@ describe('GardenPlotManager', () => {
   it('centers the plant and no seeds actions inside empty selected plot boxes', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const centeredRule = baseCss.match(
-      /\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-row\.is-empty\.is-plantable\s+\.garden-page__plot-box-action,\s*\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-row\.is-empty\.is-selected-without-seeds\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-empty\.is-plantable\s+\.garden-page__plot-box-action,\s*\.garden-page__plot\s+\.garden-page__plot-row\.is-empty\.is-selected-without-seeds\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(centeredRule).toContain('top: 50%;');
@@ -430,6 +392,34 @@ describe('GardenPlotManager', () => {
     expect(centeredRule).toContain('transform: translate(-50%, -50%);');
   });
 
+  it('styles buyable plot boxes as dashed buy slots', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const frameRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-buy-slot\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const hiddenChromeRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-buy-slot\s+:where\(\s*\.garden-page__plot-box-number,\s*\.garden-page__plot-box-level,\s*\.garden-page__plot-box-label\s*\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const centeredActionRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-buy-slot\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(frameRule).toContain('border-style: dashed;');
+    expect(frameRule).toContain(
+      'border-color: color-mix(in oklch, var(--style-stroke) 45%, transparent);',
+    );
+    expect(frameRule).toContain(
+      'background: color-mix(in oklch, var(--style-surface) 55%, transparent);',
+    );
+    expect(hiddenChromeRule).toContain('display: none;');
+    expect(centeredActionRule).toContain('top: 50%;');
+    expect(centeredActionRule).toContain('left: 50%;');
+    expect(centeredActionRule).toContain('right: auto;');
+    expect(centeredActionRule).toContain('bottom: auto;');
+    expect(centeredActionRule).toContain('text-align: center;');
+    expect(centeredActionRule).toContain('transform: translate(-50%, -50%);');
+  });
+
   it('uses smaller type for plot box stars and bottom-right statuses', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
@@ -437,10 +427,10 @@ describe('GardenPlotManager', () => {
       /\.garden-page__plot-box-level\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const boxActionRule = baseCss.match(
-      /\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+      /\.garden-page__plot\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const boxTimerRule = baseCss.match(
-      /\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-box-timer\s*\{(?<body>[^}]*)\}/,
+      /\.garden-page__plot\s+\.garden-page__plot-box-timer\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(rootRule).toContain('--garden-page-plot-box-detail-font-size: 9px;');
@@ -504,55 +494,11 @@ describe('GardenPlotManager', () => {
     expect(inventoryRowsRule).toContain('overflow: visible;');
     expect(baseCss).not.toContain('--garden-page-plot-rows-height');
     expect(baseCss).not.toContain('--garden-page-herb-rows-height');
+    expect(baseCss).not.toContain('--garden-page-plot-row-min-height');
     expect(baseCss).not.toContain('--garden-page-plot-box-height');
     expect(absoluteRegistry).not.toContain('.garden-page__plot');
     expect(absoluteRegistry).not.toContain('.garden-page__seeds');
     expect(absoluteRegistry).not.toContain('.garden-page__herbs');
-  });
-
-  it('switches to rows and keeps current row action and timer behavior', () => {
-    const parent = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const playerFacade = createPlayerFacadeFake('boxes');
-    const manager = new GardenPlotManager({ gameplayFacade, playerFacade });
-    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
-
-    Object.assign(tile, {
-      level: 3,
-      selectedSeedItemTypeId: 1,
-      selectedSeedKey: 'sageSeed',
-      selectedSeedLabel: 'sage seed',
-      seedItemTypeId: 1,
-      seedKey: 'sageSeed',
-      seedLabel: 'sage seed',
-      herbItemTypeId: 1001,
-      herbKey: 'sageHerb',
-      herbLabel: 'sage',
-      phase: 'growing',
-      totalMs: 12_000,
-      remainingMs: 8_000,
-      progress: 0.333,
-      process: {
-        phase: 'growing',
-        totalMs: 12_000,
-        remainingMs: 8_000,
-        progress: 0.333,
-      },
-    });
-
-    manager.mount(parent);
-    playerFacade.setPlotView('rows');
-
-    const plotRoot = parent.querySelector('.garden-page__plot');
-    const plotRow = parent.querySelector('.garden-page__plot-row');
-
-    expect(plotRoot?.dataset.plotView).toBe('rows');
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage');
-    expect(plotRow.querySelector('.garden-page__plot-state')?.textContent).toBe('★★★');
-    expect(plotRow.querySelector('.garden-page__plot-action-label')?.textContent).toBe(
-      'growing',
-    );
-    expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('8s');
   });
 
   it('shows a growing herb icon scaled by progress in boxes mode', () => {
@@ -726,6 +672,21 @@ describe('GardenPlotManager', () => {
     expect(boxTimer?.parentElement).toBe(boxAction);
   });
 
+  it('loops harvesting scissors motion until harvest ends', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const scissorsRule = baseCss.match(
+      /\.garden-page__plot-box-frame\.is-harvesting\s+\.garden-page__plot-scissors\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(scissorsRule).toBeDefined();
+    expect(scissorsRule).toContain(
+      'animation: garden-page-plot-scissors-snip 0.42s steps(2, end) infinite;',
+    );
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-scissors[\s\S]*animation:\s*none;/,
+    );
+  });
+
   it('shows zero-cost plot buys as free', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -740,8 +701,19 @@ describe('GardenPlotManager', () => {
     manager.mount(parent);
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
+    const boxNumber = plotRow.querySelector('.garden-page__plot-box-number');
+    const boxLevel = plotRow.querySelector('.garden-page__plot-box-level');
+    const boxLabel = plotRow.querySelector('.garden-page__plot-box-label');
 
+    expect(plotRow.classList.contains('is-buy-slot')).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('buy free');
+    expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe('buy free');
+    expect(boxNumber?.textContent).toBe('');
+    expect(boxNumber?.hidden).toBe(true);
+    expect(boxLevel?.textContent).toBe('');
+    expect(boxLevel?.hidden).toBe(true);
+    expect(boxLevel?.getAttribute('aria-label')).toBeNull();
+    expect(boxLabel?.textContent).toBe('');
     expect(plotRow.disabled).toBe(false);
   });
 
@@ -761,6 +733,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     const actionLabel = plotRow.querySelector('.garden-page__plot-action-label');
 
+    expect(plotRow.classList.contains('is-buy-slot')).toBe(true);
     expect(actionLabel?.textContent).toBe('buy 25 coin');
     expect(plotRow.disabled).toBe(true);
     expect(actionLabel?.getAttribute('data-resource-color')).toBeNull();

@@ -39,6 +39,8 @@ export const potionIconFrameNamesByKey = Object.freeze({
   wormwoodPurge: 'potion:wormwoodPurge',
   snowdropBreath: 'potion:snowdropBreath',
   pearlrootDraught: 'potion:pearlrootDraught',
+  wastedPotion: 'potion:wastedPotion',
+  unknownPotion: 'potion:unknownPotion',
 });
 
 const potionIconKeysByLabel = Object.freeze({

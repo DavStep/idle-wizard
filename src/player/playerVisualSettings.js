@@ -6,10 +6,6 @@ import { PLAYER_CHARACTER_OPTIONS } from './playerCharacters.js';
 import { DEFAULT_PLAYER_FONT, PLAYER_FONT_OPTIONS } from './playerFonts.js';
 import { PLAYER_ICON_MODE_OPTIONS } from './playerIconModes.js';
 import {
-  DEFAULT_PLAYER_PLOT_VIEW,
-  PLAYER_PLOT_VIEW_OPTIONS,
-} from './playerPlotViews.js';
-import {
   DEFAULT_PLAYER_PROGRESS_BAR,
   PLAYER_PROGRESS_BAR_OPTIONS,
 } from './playerProgressBars.js';
@@ -42,11 +38,6 @@ export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
     options: PLAYER_PROGRESS_BAR_OPTIONS,
   }),
   Object.freeze({
-    key: 'plotView',
-    label: 'plot view',
-    options: PLAYER_PLOT_VIEW_OPTIONS,
-  }),
-  Object.freeze({
     key: 'icons',
     label: 'icons',
     options: PLAYER_ICON_MODE_OPTIONS,
@@ -70,7 +61,6 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
     Object.fromEntries(PLAYER_CHARACTER_OPTIONS.map((option) => [option.key, true])),
   ),
   progressBar: Object.freeze({ [DEFAULT_PLAYER_PROGRESS_BAR]: true }),
-  plotView: Object.freeze({ [DEFAULT_PLAYER_PLOT_VIEW]: true, rows: true }),
   icons: Object.freeze({ none: true, icons: true }),
 });
 

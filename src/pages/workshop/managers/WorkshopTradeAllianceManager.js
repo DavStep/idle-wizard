@@ -658,7 +658,7 @@ export class WorkshopTradeAllianceManager {
       this.createTextRow(
         `${itemFillQuest ? 'your fill' : 'your route'} ${this.formatNumber(contribution)}/${this.formatNumber(quest.minContribution)}`,
         `${quest.crystalReward} crystal`,
-        { muted: true },
+        { muted: true, resource: 'crystal' },
       ),
     );
 
@@ -1238,7 +1238,7 @@ export class WorkshopTradeAllianceManager {
 
   applyResourceValue(element, value, resource) {
     setResourceColor(element, resource);
-    if (resource === 'coin') {
+    if (resource) {
       setResourceIconText(element, value);
     }
   }

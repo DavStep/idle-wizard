@@ -415,6 +415,9 @@ export class WorkshopBagManager {
     key.className = 'row_key';
     key.textContent = display.label;
     applyMysteryText(key, item, display.unknown);
+    if (display.unknown && item.kind === 'potion') {
+      setItemIconLabel(key, 'potion', 'unknownPotion');
+    }
 
     const val = document.createElement('span');
     val.className = 'row_val workshop-page__bag-value';

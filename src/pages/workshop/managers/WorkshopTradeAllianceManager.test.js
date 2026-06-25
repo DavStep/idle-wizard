@@ -130,6 +130,62 @@ describe('WorkshopTradeAllianceManager styles', () => {
     manager.unmount();
   });
 
+  it('renders quest crystal rewards through resource icon labels', () => {
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      connected: true,
+      ownAlliance: {
+        allianceId: 'alliance-1',
+        name: 'All Seeing Void',
+        tag: 'VOID',
+        memberCount: 1,
+        seasonIncome: 0,
+        dailyIncome: 0,
+        seasonKey: '2026-W24',
+      },
+      ownMember: {
+        memberIdentity: 'self',
+        role: 'tradeMaster',
+      },
+      ownRole: 'tradeMaster',
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          questId: 'allianceIncomeEasy',
+          dayKey: '2026-W24',
+          label: 'small caravan',
+          questType: 'allianceIncome',
+          itemKey: '',
+          target: 500,
+          progress: 125,
+          progressRatio: 0.25,
+          minContribution: 25,
+          crystalReward: 2,
+        },
+      ],
+      contributions: [],
+      rewardInbox: [],
+    });
+    const { popupParent, manager } = mountManager(tradeAllianceFacade);
+    const popup = popupParent.querySelector('.workshop-page__trade-alliance-popup');
+    const questsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')].find(
+      (button) => button.textContent === 'quests',
+    );
+
+    questsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const rewardValue = popup.querySelector(
+      '[data-quest-id="allianceIncomeEasy"] .workshop-page__trade-alliance-row.is-muted .row_val',
+    );
+    const crystalLabel = rewardValue?.querySelector('.style-resource-label--crystal');
+
+    expect(rewardValue?.dataset.resourceColor).toBe('crystal');
+    expect(crystalLabel).not.toBeNull();
+    expect(crystalLabel?.querySelector('.style-resource-label__amount')?.textContent).toBe('2');
+    expect(crystalLabel?.querySelector('.style-resource-label__icon')).not.toBeNull();
+
+    manager.unmount();
+  });
+
   it('keeps browse search focused while alliance snapshots refresh', () => {
     const tradeAllianceFacade = createTradeAllianceFacadeFake({
       connected: true,

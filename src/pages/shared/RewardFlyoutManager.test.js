@@ -362,22 +362,56 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
-  it('reuses keyed flyouts instead of stacking them', () => {
+  it('keeps repeated keyed text flyouts independent until the active text cap', () => {
     const host = document.createElement('section');
     document.body.append(host);
 
     const manager = new RewardFlyoutManager();
     manager.mount(host);
-    manager.show('-10 mana', { flyoutKey: 'mana-spend' });
-    const replacement = manager.show('-20 mana', { flyoutKey: 'mana-spend' });
+    const first = manager.show('-10 mana', { flyoutKey: 'mana-spend' });
+    const second = manager.show('-20 mana', { flyoutKey: 'mana-spend' });
 
     const textFlyouts = [...host.querySelectorAll('.room-reward-flyout')].filter(
       (node) => !node.classList.contains('is-visual-only'),
     );
 
-    expect(textFlyouts).toHaveLength(1);
-    expect(replacement?.textContent).toBe('-20 mana');
-    expect(replacement?.style.getPropertyValue('--style-flyout-offset')).toBe('');
+    expect(textFlyouts).toHaveLength(2);
+    expect(first?.textContent).toBe('-10 mana');
+    expect(second?.textContent).toBe('-20 mana');
+    expect(first?.style.animationDelay).toBe('');
+    expect(second?.style.animationDelay).toBe('55ms');
+
+    manager.unmount();
+  });
+
+  it('reuses the oldest active text flyout for the eleventh text', () => {
+    const host = document.createElement('section');
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    const flyouts = Array.from({ length: 11 }, (_item, index) =>
+      manager.show(`notice ${index + 1}`, { flyoutKey: 'mana-spend' }),
+    );
+
+    const textFlyouts = [...host.querySelectorAll('.room-reward-flyout')].filter(
+      (node) => !node.classList.contains('is-visual-only'),
+    );
+
+    expect(textFlyouts).toHaveLength(10);
+    expect(flyouts[10]).toBe(flyouts[0]);
+    expect(textFlyouts.map((node) => node.textContent)).toEqual([
+      'notice 2',
+      'notice 3',
+      'notice 4',
+      'notice 5',
+      'notice 6',
+      'notice 7',
+      'notice 8',
+      'notice 9',
+      'notice 10',
+      'notice 11',
+    ]);
 
     manager.unmount();
   });

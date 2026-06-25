@@ -52,6 +52,28 @@ function createSnapshot() {
 }
 
 describe('BrewingRecipeBookManager', () => {
+  it('keeps the cauldron dialog at a fixed height while recipe rows scroll', () => {
+    const dialogRule = baseCss.match(
+      /\.style-dialog\.brewing-page__recipes-dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const listRule = baseCss.match(
+      /\.brewing-page__recipe-list\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(dialogRule).toBeDefined();
+    expect(dialogRule).toMatch(/\bdisplay:\s*flex;/);
+    expect(dialogRule).toMatch(/\bflex-direction:\s*column;/);
+    expect(dialogRule).toMatch(
+      /\bheight:\s*var\(--brewing-page-cauldron-dialog-content-height\);/,
+    );
+
+    expect(listRule).toBeDefined();
+    expect(listRule).toMatch(/\bflex:\s*1 1 auto;/);
+    expect(listRule).toMatch(/\bmin-height:\s*0;/);
+    expect(listRule).toMatch(/\bmax-height:\s*none;/);
+    expect(listRule).toMatch(/\boverflow:\s*hidden auto;/);
+  });
+
   it('keeps the cauldron dialog brew action inside the popup panel', () => {
     const rule = baseCss.match(
       /\.style-button\.brewing-page__dialog-action-button\s*\{(?<body>[^}]*)\}/,

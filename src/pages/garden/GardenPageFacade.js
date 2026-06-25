@@ -5,7 +5,7 @@ import { WorkshopWorldNoticeManager } from '../workshop/managers/WorkshopWorldNo
 
 export class GardenPageFacade {
   static explain =
-    'Shows the garden room page: plots for growing herbs, with world event access when available.';
+    'Shows the garden room page: a plot world for growing herbs, seed choices, harvest feedback, and world event access when available.';
 
   constructor({
     gameplayFacade,
@@ -20,7 +20,6 @@ export class GardenPageFacade {
     this.rewardEventsUnsubscribe = null;
     this.plotManager = new GardenPlotManager({
       gameplayFacade,
-      playerFacade,
       pixiProgressOverlayManager,
     });
     this.worldNoticeManager = new WorkshopWorldNoticeManager({

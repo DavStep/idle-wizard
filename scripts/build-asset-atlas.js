@@ -83,6 +83,8 @@ const POTION_ASSETS = [
   ['potion:wormwoodPurge', 'src/assets/items/potions/potion-wormwood-purge.png'],
   ['potion:snowdropBreath', 'src/assets/items/potions/potion-snowdrop-breath.png'],
   ['potion:pearlrootDraught', 'src/assets/items/potions/potion-pearlroot-draught.png'],
+  ['potion:wastedPotion', 'src/assets/items/potions/potion-wasted.png'],
+  ['potion:unknownPotion', 'src/assets/items/potions/potion-unknown.png'],
   ['potion:generic', 'src/assets/items/potions/potion-generic.png'],
 ];
 

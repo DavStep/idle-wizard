@@ -537,8 +537,17 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 256,
     "source": "src/assets/items/potions/potion-thorn-sleep.png"
   },
-  "potion:valerianRest": {
+  "potion:unknownPotion": {
     "x": 672,
+    "y": 1035,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 256,
+    "originalHeight": 256,
+    "source": "src/assets/items/potions/potion-unknown.png"
+  },
+  "potion:valerianRest": {
+    "x": 832,
     "y": 1035,
     "width": 128,
     "height": 128,
@@ -547,7 +556,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-valerian-rest.png"
   },
   "potion:venomDraught": {
-    "x": 832,
+    "x": 992,
     "y": 1035,
     "width": 128,
     "height": 128,
@@ -555,8 +564,17 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 256,
     "source": "src/assets/items/potions/potion-venom-draught.png"
   },
+  "potion:wastedPotion": {
+    "x": 1152,
+    "y": 1035,
+    "width": 128,
+    "height": 128,
+    "originalWidth": 256,
+    "originalHeight": 256,
+    "source": "src/assets/items/potions/potion-wasted.png"
+  },
   "potion:wormwoodPurge": {
-    "x": 992,
+    "x": 1312,
     "y": 1035,
     "width": 128,
     "height": 128,
@@ -565,7 +583,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-wormwood-purge.png"
   },
   "potion:yarrowPoultice": {
-    "x": 1152,
+    "x": 1472,
     "y": 1035,
     "width": 128,
     "height": 128,
@@ -574,8 +592,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-yarrow-poultice.png"
   },
   "resource:coin": {
-    "x": 1679,
-    "y": 1035,
+    "x": 32,
+    "y": 1195,
     "width": 92,
     "height": 92,
     "originalWidth": 92,
@@ -583,8 +601,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-coin.png"
   },
   "resource:crystal": {
-    "x": 1803,
-    "y": 1035,
+    "x": 156,
+    "y": 1195,
     "width": 68,
     "height": 88,
     "originalWidth": 68,
@@ -592,8 +610,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-crystal.png"
   },
   "resource:emerald": {
-    "x": 1903,
-    "y": 1035,
+    "x": 256,
+    "y": 1195,
     "width": 65,
     "height": 88,
     "originalWidth": 65,
@@ -601,7 +619,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-emerald.png"
   },
   "resource:mana": {
-    "x": 32,
+    "x": 353,
     "y": 1195,
     "width": 60,
     "height": 88,
@@ -610,7 +628,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-mana-drop.png"
   },
   "resource:ruby": {
-    "x": 124,
+    "x": 445,
     "y": 1195,
     "width": 88,
     "height": 85,
@@ -619,7 +637,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-ruby.png"
   },
   "seed:black": {
-    "x": 1435,
+    "x": 1755,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -628,7 +646,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-black.png"
   },
   "seed:gray": {
-    "x": 1557,
+    "x": 1877,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -637,7 +655,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-gray.png"
   },
   "seed:regular": {
-    "x": 1312,
+    "x": 1632,
     "y": 1035,
     "width": 91,
     "height": 128,

@@ -176,10 +176,10 @@ describe('TopPanelSettingsManager', () => {
     viewManager.unmount();
   });
 
-  it('shows plot view in configurations and applies rows or boxes selection', () => {
+  it('omits the removed plot view selector from configurations', () => {
     const stage = document.createElement('section');
     const viewManager = new TopPanelViewManager();
-    let playerSnapshot = {
+    const playerSnapshot = {
       username: 'wizard',
       theme: 'white',
       font: 'lexend',
@@ -189,20 +189,11 @@ describe('TopPanelSettingsManager', () => {
       progressBar: 'regular',
       plotView: 'boxes',
     };
-    const playerListeners = new Set();
     const playerFacade = {
       getSnapshot: vi.fn(() => playerSnapshot),
       subscribe: vi.fn((listener) => {
-        playerListeners.add(listener);
         listener(playerSnapshot);
-        return () => playerListeners.delete(listener);
-      }),
-      setPlotView: vi.fn((plotView) => {
-        playerSnapshot = { ...playerSnapshot, plotView };
-
-        for (const listener of playerListeners) {
-          listener(playerSnapshot);
-        }
+        return () => {};
       }),
     };
     document.body.append(stage);
@@ -216,25 +207,9 @@ describe('TopPanelSettingsManager', () => {
       .settingsTabButtons.find((button) => button.dataset.settingsTab === 'theme')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const plotViewButtons = viewManager.getRefs().plotViewButtons;
-
-    expect(
-      stage.querySelector('.room-top-panel__plotView-section .style-box__title')?.textContent,
-    ).toBe('plot view');
-    expect(plotViewButtons.map((button) => button.textContent)).toEqual(['rows', 'boxes']);
-    expect(plotViewButtons[1].getAttribute('aria-checked')).toBe('true');
-
-    plotViewButtons[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.setPlotView).toHaveBeenCalledWith('rows');
-    expect(playerSnapshot.plotView).toBe('rows');
-    expect(plotViewButtons[0].getAttribute('aria-checked')).toBe('true');
-
-    plotViewButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.setPlotView).toHaveBeenCalledWith('boxes');
-    expect(playerSnapshot.plotView).toBe('boxes');
-    expect(plotViewButtons[1].getAttribute('aria-checked')).toBe('true');
+    expect(stage.querySelector('.room-top-panel__plotView-section')).toBeNull();
+    expect(stage.querySelector('.room-top-panel__plot-view-button')).toBeNull();
+    expect(viewManager.getRefs().plotViewButtons).toBeUndefined();
 
     manager.unmount();
     viewManager.unmount();

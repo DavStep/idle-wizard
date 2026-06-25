@@ -213,4 +213,43 @@ describe('BrewingSnapshotManager', () => {
       canBrew: true,
     });
   });
+
+  it('shows discoverable recipes as unknown potion without exposing the real recipe key', () => {
+    const recipe = {
+      potionTypeId: 2101,
+      key: 'ashenMemory',
+      label: 'ashen memory',
+      manaCost: 30,
+      brewDurationMs: 70_000,
+      discoveryType: 'unknown',
+      unknown: true,
+    };
+    const { manager } = createSnapshotManager({
+      getIngredientSnapshots: vi.fn(() => [
+        { slotIndex: 0, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+      ]),
+      getItemQuantity: vi.fn(() => 1),
+    });
+    manager.brewingRecipeMatchManager.getMatch = vi.fn(() => recipe);
+    manager.brewingRecipeMatchManager.isRecipeDiscoverable = vi.fn(() => true);
+    manager.brewingRecipeMatchManager.isRecipeUnlocked = vi.fn(() => false);
+    manager.manaFacade.canSpend = vi.fn(() => true);
+
+    expect(manager.getCauldronSnapshot(0, [])).toMatchObject({
+      canBrew: true,
+      manaCost: 1,
+      match: {
+        potionTypeId: null,
+        key: null,
+        label: 'unknown potion',
+        realLabel: 'ashen memory',
+        manaCost: null,
+        brewDurationMs: null,
+        unlocked: false,
+        discoverable: true,
+        unknown: true,
+        discoveryType: 'unknown',
+      },
+    });
+  });
 });

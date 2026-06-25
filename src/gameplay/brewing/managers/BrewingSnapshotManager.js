@@ -157,6 +157,20 @@ export class BrewingSnapshotManager {
     const visibleRecipeUnlocked = visibleRecipe
       ? this.brewingRecipeMatchManager.isRecipeUnlocked(visibleRecipe)
       : false;
+    const match = recipe
+      ? {
+          potionTypeId: recipeDiscoverable ? null : recipe.potionTypeId,
+          key: recipeDiscoverable ? null : recipe.key,
+          label: recipeDiscoverable ? 'unknown potion' : recipe.label,
+          realLabel: recipe.label,
+          manaCost: recipeDiscoverable ? null : recipe.manaCost,
+          brewDurationMs: recipeDiscoverable ? null : recipe.brewDurationMs,
+          unlocked: recipeDiscoverable ? false : visibleRecipeUnlocked,
+          discoverable: recipeDiscoverable,
+          unknown: recipe.unknown === true,
+          discoveryType: recipe.discoveryType ?? null,
+        }
+      : null;
     const maxBrewQuantity = this.getMaxBrewQuantity(safeCauldronIndex);
     const yieldMultiplier = this.getBrewQuantity(safeCauldronIndex);
     const baseManaCost =
@@ -172,20 +186,7 @@ export class BrewingSnapshotManager {
       cauldronNumber: safeCauldronIndex + 1,
       level: maxBrewQuantity,
       ingredients,
-      match: visibleRecipe
-        ? {
-            potionTypeId: visibleRecipe.potionTypeId,
-            key: visibleRecipe.key,
-            label: visibleRecipe.label,
-            realLabel: visibleRecipe.label,
-            manaCost: visibleRecipe.manaCost,
-            brewDurationMs: visibleRecipe.brewDurationMs,
-            unlocked: visibleRecipeUnlocked,
-            discoverable: false,
-            unknown: visibleRecipe.unknown === true,
-            discoveryType: visibleRecipe.discoveryType ?? null,
-          }
-        : null,
+      match,
       buttonLabel: visibleRecipe && visibleRecipeUnlocked ? `brew ${visibleRecipe.label}` : 'brew',
       manaCost,
       yieldMultiplier,

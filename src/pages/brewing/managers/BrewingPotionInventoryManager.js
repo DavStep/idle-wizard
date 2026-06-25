@@ -204,7 +204,7 @@ export class BrewingPotionInventoryManager {
     label.className = 'row_key';
     label.textContent = display.label;
     applyMysteryText(label, potion, display.unknown);
-    setItemIconLabel(label, display.unknown ? null : potion.kind, potion.key);
+    setItemIconLabel(label, potion.kind, display.unknown ? 'unknownPotion' : potion.key);
 
     const quantity = document.createElement('span');
     quantity.className = 'row_val';

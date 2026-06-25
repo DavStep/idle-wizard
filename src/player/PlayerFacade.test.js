@@ -166,7 +166,7 @@ describe('PlayerFacade', () => {
     const playerFacade = new PlayerFacade();
 
     playerFacade.setPlotView('rows');
-    expect(playerFacade.getSnapshot().plotView).toBe('rows');
+    expect(playerFacade.getSnapshot().plotView).toBe('boxes');
 
     playerFacade.setPlotView('box');
     expect(playerFacade.getSnapshot().plotView).toBe('boxes');
@@ -212,7 +212,7 @@ describe('PlayerFacade', () => {
       character: 'mira',
       iconMode: 'icons',
       progressBar: 'gradient',
-      plotView: 'rows',
+      plotView: 'boxes',
     });
   });
 

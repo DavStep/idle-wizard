@@ -105,19 +105,11 @@ describe('TopPanelViewManager', () => {
       'font',
       'color',
       'progress bar',
-      'plot view',
       'icons',
     ]);
 
-    expect(
-      [...stage.querySelectorAll('.room-top-panel__plot-view-button')].map((button) => [
-        button.dataset.plotView,
-        button.textContent,
-      ]),
-    ).toEqual([
-      ['rows', 'rows'],
-      ['boxes', 'boxes'],
-    ]);
+    expect(stage.querySelector('.room-top-panel__plotView-section')).toBeNull();
+    expect(stage.querySelector('.room-top-panel__plot-view-button')).toBeNull();
 
     expect(
       [...stage.querySelectorAll('.room-top-panel__color-preview')].map((preview) => ({

@@ -19,10 +19,6 @@ import {
   normalizePlayerProgressBar,
 } from '../../../player/playerProgressBars.js';
 import {
-  DEFAULT_PLAYER_PLOT_VIEW,
-  normalizePlayerPlotView,
-} from '../../../player/playerPlotViews.js';
-import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
@@ -155,9 +151,6 @@ export class TopPanelSettingsManager {
     this.handleProgressBarClick = (event) => {
       this.selectVisualSetting('progressBar', event.currentTarget.dataset.progressBar);
     };
-    this.handlePlotViewClick = (event) => {
-      this.selectVisualSetting('plotView', event.currentTarget.dataset.plotView);
-    };
     this.handleVisualSettingResearchClick = (event) => {
       this.researchVisualSetting(
         event.currentTarget.dataset.visualCategory,
@@ -238,10 +231,6 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleProgressBarClick);
     }
 
-    for (const button of this.refs.plotViewButtons) {
-      button.addEventListener('click', this.handlePlotViewClick);
-    }
-
     for (const button of this.refs.iconModeButtons) {
       button.addEventListener('click', this.handleIconModeClick);
     }
@@ -266,7 +255,6 @@ export class TopPanelSettingsManager {
         colorMode: DEFAULT_PLAYER_COLOR_MODE,
         iconMode: DEFAULT_PLAYER_ICON_MODE,
         progressBar: DEFAULT_PLAYER_PROGRESS_BAR,
-        plotView: DEFAULT_PLAYER_PLOT_VIEW,
       });
     }
 
@@ -361,10 +349,6 @@ export class TopPanelSettingsManager {
 
       for (const button of this.refs.progressBarButtons) {
         button.removeEventListener('click', this.handleProgressBarClick);
-      }
-
-      for (const button of this.refs.plotViewButtons) {
-        button.removeEventListener('click', this.handlePlotViewClick);
       }
 
       for (const button of this.refs.iconModeButtons) {
@@ -568,7 +552,6 @@ export class TopPanelSettingsManager {
     this.applyCharacter(snapshot.character, snapshot.iconMode);
     this.applyCharacterSelection(snapshot.character);
     this.applyProgressBarSelection(snapshot.progressBar);
-    this.applyPlotViewSelection(snapshot.plotView);
     this.renderVisualSettingPrices();
 
     if (
@@ -699,16 +682,6 @@ export class TopPanelSettingsManager {
     }
   }
 
-  applyPlotViewSelection(plotView) {
-    const selectedPlotView = normalizePlayerPlotView(plotView);
-
-    for (const button of this.refs.plotViewButtons) {
-      const selected = button.dataset.plotView === selectedPlotView;
-      button.classList.toggle('is-selected', selected);
-      button.setAttribute('aria-checked', selected ? 'true' : 'false');
-    }
-  }
-
   selectVisualSetting(categoryKey, optionKey) {
     if (!this.refs) {
       return;
@@ -780,11 +753,6 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'progressBar') {
       this.playerFacade?.setProgressBar?.(optionKey);
-      return;
-    }
-
-    if (categoryKey === 'plotView') {
-      this.playerFacade?.setPlotView?.(optionKey);
       return;
     }
 
@@ -866,10 +834,6 @@ export class TopPanelSettingsManager {
 
     if (categoryKey === 'progressBar') {
       return normalizePlayerProgressBar(this.playerSnapshot?.progressBar) === optionKey;
-    }
-
-    if (categoryKey === 'plotView') {
-      return normalizePlayerPlotView(this.playerSnapshot?.plotView) === optionKey;
     }
 
     if (categoryKey === 'icons') {

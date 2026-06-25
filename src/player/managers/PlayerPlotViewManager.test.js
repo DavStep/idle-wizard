@@ -21,7 +21,7 @@ describe('PlayerPlotViewManager', () => {
       }),
     });
 
-    expect(manager.getPlotView()).toBe('rows');
+    expect(manager.getPlotView()).toBe('boxes');
   });
 
   it('stores the selected plot view', () => {
@@ -46,6 +46,6 @@ describe('PlayerPlotViewManager', () => {
     const manager = new PlayerPlotViewManager({ storage });
 
     expect(manager.getPlotView()).toBe('boxes');
-    expect(manager.setPlotView('rows')).toBe('rows');
+    expect(manager.setPlotView('rows')).toBe('boxes');
   });
 });

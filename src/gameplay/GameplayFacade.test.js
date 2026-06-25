@@ -1627,7 +1627,6 @@ describe('GameplayFacade', () => {
               font: { lexend: 0, 'comic-sans-mono': 0 },
               color: { monochrome: 0, resources: 0 },
               progressBar: { regular: 0, gradient: 0 },
-              plotView: { rows: 0, boxes: 0 },
               icons: { none: 0, icons: 0 },
             },
           }),
@@ -1644,7 +1643,6 @@ describe('GameplayFacade', () => {
       },
       color: { monochrome: true, resources: false },
       progressBar: { regular: true, gradient: false },
-      plotView: { rows: true, boxes: true },
       icons: { none: true, icons: true },
     });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
@@ -4271,7 +4269,15 @@ describe('GameplayFacade', () => {
       buttonLabel: 'brew',
       manaCost: 5,
       canBrew: true,
-      match: null,
+      match: {
+        key: null,
+        label: 'unknown potion',
+        realLabel: 'ashen memory',
+        unlocked: false,
+        discoverable: true,
+        unknown: true,
+        discoveryType: 'unknown',
+      },
     });
 
     expect(gameplayFacade.brewCauldron()).toMatchObject({

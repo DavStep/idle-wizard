@@ -32,6 +32,10 @@ const WORLD_MAX_ZOOM = 1.16;
 const WORLD_ZOOM_RUBBER_LIMIT = 0.12;
 const WORLD_PAN_RUBBER_LIMIT = 54;
 const WORLD_SETTLE_CLASS_MS = 240;
+const CAULDRON_WORLD_LEFT_OFFSET = 106;
+const CAULDRON_WORLD_TOP_OFFSET = 148;
+const CAULDRON_WORLD_COLUMN_GAP = 220;
+const CAULDRON_WORLD_ROW_GAP = 142;
 
 export class BrewingCauldronManager {
   constructor({
@@ -233,11 +237,6 @@ export class BrewingCauldronManager {
     const items = document.createElement('div');
     items.className = 'brewing-page__cauldron-items';
 
-    const potionIcon = document.createElement('div');
-    potionIcon.className = 'brewing-page__cauldron-potion-icon';
-    potionIcon.setAttribute('aria-hidden', 'true');
-    potionIcon.hidden = true;
-
     const status = document.createElement('div');
     status.className = 'brewing-page__cauldron-status';
 
@@ -262,20 +261,31 @@ export class BrewingCauldronManager {
     activeProgressText.className =
       'style-progress__text brewing-page__active-progress-text';
 
+    const preview = document.createElement('div');
+    preview.className = 'brewing-page__cauldron-preview';
+
+    const potionIcon = document.createElement('div');
+    potionIcon.className = 'brewing-page__cauldron-potion-icon';
+    potionIcon.setAttribute('aria-hidden', 'true');
+    potionIcon.hidden = true;
+
+    const previewLabel = document.createElement('div');
+    previewLabel.className = 'brewing-page__cauldron-preview-label';
+
     const actions = this.createActions(safeCauldronIndex);
 
     activeProgress.append(activeProgressFill, activeProgressText);
     active.append(activeText, activeProgress);
+    preview.append(potionIcon, previewLabel, actions.root);
     root.append(
       title,
       count,
       bubble,
       guide,
-      potionIcon,
       status,
       items,
       active,
-      actions.root,
+      preview,
       selectRecipeButton,
     );
     return {
@@ -286,7 +296,9 @@ export class BrewingCauldronManager {
       bubble,
       guide,
       guideSequence,
+      preview,
       potionIcon,
+      previewLabel,
       status,
       selectRecipeButton,
       items,
@@ -489,8 +501,8 @@ export class BrewingCauldronManager {
     const row = Math.floor(safeIndex / 2);
 
     return this.extendCauldronWorldPosition({
-      x: 106 + column * 182,
-      y: 108 + row * 130,
+      x: CAULDRON_WORLD_LEFT_OFFSET + column * CAULDRON_WORLD_COLUMN_GAP,
+      y: CAULDRON_WORLD_TOP_OFFSET + row * CAULDRON_WORLD_ROW_GAP,
     });
   }
 
@@ -1204,6 +1216,7 @@ export class BrewingCauldronManager {
     this.renderCauldronTitle(refs.title, brewing);
     this.setHidden(refs.count, false);
     this.setText(refs.count, this.formatCauldronCount(brewing));
+    this.renderCauldronPreview(refs, brewing);
     const statusText = this.formatCauldronStatus(brewing);
     this.setHidden(refs.status, statusText === '');
     this.setText(refs.status, statusText);
@@ -1252,6 +1265,7 @@ export class BrewingCauldronManager {
     refs.root.classList.remove('has-active-brew');
     this.setCauldronRowCount(refs);
     this.renderCauldronTitle(refs.title, brewing);
+    this.renderCauldronPreview(refs, brewing);
     this.renderPotionIcon(refs, null);
     this.renderCauldronBubble(refs, brewing);
     this.setHidden(refs.count, true);
@@ -1365,8 +1379,11 @@ export class BrewingCauldronManager {
       this.setRemoveIngredientTutorialId(rowRefs.row, ingredient);
       this.setAttribute(rowRefs.row, 'aria-label', `remove one ${ingredient.label} from cauldron`);
       setResourceColor(rowRefs.row, null);
+      setResourceColor(rowRefs.count, 'herb');
       setResourceColor(rowRefs.label, 'herb');
-      this.setTextWithItemIcons(rowRefs.label, `- ${ingredient.quantity} ${ingredient.label}`);
+      this.setText(rowRefs.count, `${ingredient.quantity} `);
+      this.setText(rowRefs.label, ingredient.label);
+      setItemIconLabel(rowRefs.label, 'herb', ingredient.key);
       this.setText(rowRefs.action, 'remove');
     }
 
@@ -1374,7 +1391,7 @@ export class BrewingCauldronManager {
   }
 
   renderPotionIcon(refs, brewing) {
-    const iconKey = this.getPotionIconKey(brewing);
+    const iconKey = this.getPotionPreview(brewing).iconKey;
 
     refs.root.classList.toggle('has-potion-icon', Boolean(iconKey));
     this.setHidden(refs.potionIcon, !iconKey);
@@ -1407,16 +1424,142 @@ export class BrewingCauldronManager {
     refs.potionIcon.dataset.potionIconKey = iconKey;
   }
 
-  getPotionIconKey(brewing) {
+  renderCauldronPreview(refs, brewing) {
+    const preview = this.getPotionPreview(brewing);
+
+    this.setHidden(refs.preview, false);
+    this.setText(refs.previewLabel, preview.label);
+    setResourceColor(refs.previewLabel, preview.resource);
+    setItemIconLabel(
+      refs.previewLabel,
+      preview.resource === 'potion' ? 'potion' : null,
+      preview.iconKey,
+    );
+    refs.previewLabel.classList.toggle('is-empty', preview.empty);
+    refs.previewLabel.classList.toggle('is-locked', preview.locked);
+    refs.previewLabel.classList.toggle('is-unknown', preview.unknown);
+  }
+
+  getPotionPreview(brewing) {
     if (!brewing) {
-      return null;
+      return {
+        label: 'no potion',
+        iconKey: null,
+        resource: null,
+        empty: true,
+        locked: false,
+        unknown: false,
+      };
     }
 
-    if (brewing.activeBrew?.key) {
-      return brewing.activeBrew.key;
+    if (brewing.unlocked === false) {
+      return {
+        label: 'locked',
+        iconKey: null,
+        resource: null,
+        empty: true,
+        locked: true,
+        unknown: false,
+      };
     }
 
-    return brewing.selectedRecipe?.key ?? null;
+    if (brewing.activeBrew) {
+      return {
+        label: brewing.activeBrew.label ?? 'potion',
+        iconKey: this.getPotionPreviewIconKey(
+          brewing.activeBrew.key,
+          brewing.activeBrew.label,
+        ),
+        resource: 'potion',
+        empty: false,
+        locked: false,
+        unknown: false,
+      };
+    }
+
+    if ((brewing.ingredients?.length ?? 0) === 0) {
+      if (brewing.selectedRecipe) {
+        return {
+          label: brewing.selectedRecipe.label,
+          iconKey: brewing.selectedRecipe.key ?? null,
+          resource: 'potion',
+          empty: false,
+          locked: false,
+          unknown: false,
+        };
+      }
+
+      return {
+        label: 'no potion',
+        iconKey: null,
+        resource: null,
+        empty: true,
+        locked: false,
+        unknown: false,
+      };
+    }
+
+    if (brewing.match?.discoverable) {
+      return {
+        label: 'unknown potion',
+        iconKey: 'unknownPotion',
+        resource: 'potion',
+        empty: false,
+        locked: false,
+        unknown: true,
+      };
+    }
+
+    if (brewing.match?.unlocked) {
+      return {
+        label: brewing.match.label,
+        iconKey: brewing.match.key ?? null,
+        resource: 'potion',
+        empty: false,
+        locked: false,
+        unknown: false,
+      };
+    }
+
+    if (brewing.match) {
+      return {
+        label: `${brewing.match.label} locked`,
+        iconKey: brewing.match.key ?? null,
+        resource: 'potion',
+        empty: false,
+        locked: true,
+        unknown: false,
+      };
+    }
+
+    return {
+      label: 'wasted potion',
+      iconKey: 'wastedPotion',
+      resource: 'potion',
+      empty: false,
+      locked: false,
+      unknown: false,
+    };
+  }
+
+  getPotionPreviewIconKey(key, label) {
+    const normalizedKey = String(key ?? '').trim();
+
+    if (normalizedKey) {
+      return normalizedKey;
+    }
+
+    const normalizedLabel = String(label ?? '').trim().toLowerCase();
+
+    if (normalizedLabel === 'unknown potion') {
+      return 'unknownPotion';
+    }
+
+    if (normalizedLabel === 'wasted potion') {
+      return 'wastedPotion';
+    }
+
+    return null;
   }
 
   hideExtraIngredientRows(cauldronRefs, visibleCount) {
@@ -1427,7 +1570,9 @@ export class BrewingCauldronManager {
       this.removeAttribute(rowRefs.row, 'data-slot-index');
       this.removeAttribute(rowRefs.row, 'data-tutorial-id');
       setResourceColor(rowRefs.row, null);
+      setResourceColor(rowRefs.count, null);
       setResourceColor(rowRefs.label, null);
+      this.setText(rowRefs.count, '');
       this.setText(rowRefs.label, '');
       this.setText(rowRefs.action, '');
     }
@@ -1540,8 +1685,11 @@ export class BrewingCauldronManager {
       }
     });
 
+    const count = document.createElement('span');
+    count.className = 'brewing-page__ingredient-count';
+
     const label = document.createElement('span');
-    label.className = 'row_key';
+    label.className = 'brewing-page__ingredient-label row_key';
 
     const value = document.createElement('span');
     value.className = 'row_val';
@@ -1881,17 +2029,20 @@ export class BrewingCauldronManager {
       }
     });
 
+    const count = document.createElement('span');
+    count.className = 'brewing-page__ingredient-count';
+
     const label = document.createElement('span');
-    label.className = 'row_key';
+    label.className = 'brewing-page__ingredient-label row_key';
 
     const action = document.createElement('span');
     action.className = 'row_val';
 
-    row.append(label, action);
+    row.append(count, label, action);
     this.setAttribute(row, 'data-cauldron-index', String(cauldronRefs.cauldronIndex));
     cauldronRefs.items.append(row);
 
-    const refs = { row, label, action };
+    const refs = { row, count, label, action };
     cauldronRefs.ingredientRows[index] = refs;
     return refs;
   }
@@ -2445,7 +2596,7 @@ export class BrewingCauldronManager {
       }
 
       return brewing.match.discoverable
-        ? 'unknown recipe'
+        ? 'unknown potion'
         : `${brewing.match.label} locked`;
     }
 
@@ -2535,7 +2686,7 @@ export class BrewingCauldronManager {
     }
 
     if (brewing.match?.discoverable) {
-      return `brew ${quantityPrefix}unknown recipe${costLabel}`;
+      return `brew ${quantityPrefix}unknown potion${costLabel}`;
     }
 
     if (brewing.match && !brewing.match.unlocked) {

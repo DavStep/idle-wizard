@@ -2,10 +2,6 @@ export const DEFAULT_PLAYER_PLOT_VIEW = 'boxes';
 
 export const PLAYER_PLOT_VIEW_OPTIONS = Object.freeze([
   Object.freeze({
-    key: 'rows',
-    label: 'rows',
-  }),
-  Object.freeze({
     key: 'boxes',
     label: 'boxes',
   }),
@@ -13,9 +9,10 @@ export const PLAYER_PLOT_VIEW_OPTIONS = Object.freeze([
 
 const PLOT_VIEW_KEYS = new Set(PLAYER_PLOT_VIEW_OPTIONS.map((view) => view.key));
 const PLOT_VIEW_ALIASES = new Map([
-  ['row', 'rows'],
-  ['current', 'rows'],
-  ['old', 'rows'],
+  ['rows', 'boxes'],
+  ['row', 'boxes'],
+  ['current', 'boxes'],
+  ['old', 'boxes'],
   ['box', 'boxes'],
   ['cards', 'boxes'],
   ['grid', 'boxes'],

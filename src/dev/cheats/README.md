@@ -62,7 +62,7 @@ Useful view setup commands:
 - `setCauldron(cauldron, options)` supports phases `empty`, `staged`, `brewing`,
   `brewed`, `bottling`, and `ready`.
 - `setProfile(options)` sets local profile UI fields such as username,
-  theme, font, color mode, icon mode, progress bar, and plot view.
+  theme, font, color mode, icon mode, and progress bar.
 - `setInventoryPreset(preset)` supports `empty`, `basic`, `full`, and
   `overflow`; pass an item map like `{ sageSeed: 4 }` for exact inventory.
 - `setNotifications(config)` forces bottom-tab badges for UI testing. Use

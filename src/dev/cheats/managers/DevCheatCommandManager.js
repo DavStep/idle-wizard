@@ -381,7 +381,6 @@ export class DevCheatCommandManager {
       ['colorMode', 'setColorMode'],
       ['iconMode', 'setIconMode'],
       ['progressBar', 'setProgressBar'],
-      ['plotView', 'setPlotView'],
     ];
 
     for (const [key, method] of setters) {

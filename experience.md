@@ -53,6 +53,7 @@
 - Garden plot notification dots need row-specific vertical placement; the generic negative top offset can land the next row's dot on the previous row's progress rail.
 - Brewing herb notification dots must stay row-local; parent `:has([data-notification])` bleed padding makes the herbs box taller.
 - Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
+- Brewing herbs box uses the shared room chrome inset like the top panel and world chat; do not size it with `--style-main-box-width`.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
@@ -531,7 +532,7 @@
 - Player market requests use local numbered slots that follow player market stand unlock state.
 - Player market request data is local gameplay-save state mirrored to backend request rows; local saves still preserve own slots across reload/server restart.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
-- Garden plot should use compact text rows, not rhombus tiles; show open plots plus only the next buy row, with no future locked summary.
+- Garden plot is a compact world of plot boxes, not a bordered `plots` panel or row-view toggle; show open plots plus only the next buy slot, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
 - Garden plot number cells use the shared numbered-row label (`1.`, `2.`) and spacing, matching market stand/request rows.
 - Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.

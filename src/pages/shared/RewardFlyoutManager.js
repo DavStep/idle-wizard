@@ -12,7 +12,8 @@ const FLYOUT_LIFETIME_MS = 1200;
 const FLYOUT_LIST_STAGGER_MS = 55;
 const FLYOUT_BURST_WINDOW_MS = 90;
 const MAX_FLYOUT_STAGGER_INDEX = 5;
-const MAX_POOLED_FLYOUTS = 12;
+const MAX_ACTIVE_TEXT_FLYOUTS = 10;
+const MAX_POOLED_FLYOUTS = MAX_ACTIVE_TEXT_FLYOUTS;
 const ITEM_DROP_LIFETIME_MS = 1300;
 const COIN_TARGET_PULSE_MS = 340;
 const COIN_AMOUNT_POP_MS = 820;
@@ -57,12 +58,14 @@ export class RewardFlyoutManager {
       return null;
     }
 
-    const removedKeyedCount = this.removeKeyedFlyouts(flyoutKey);
+    if (!visualOnly) {
+      this.releaseOldestActiveTextFlyoutIfNeeded();
+    }
 
     const flyout = this.acquireFlyout();
     const safeDelayMs =
       delayMs === null || delayMs === undefined
-        ? this.getBurstDelay({ visualOnly, replacesExisting: removedKeyedCount > 0 })
+        ? this.getBurstDelay({ visualOnly })
         : this.normalizeDelay(delayMs);
     this.prepareFlyout(flyout, message, { flyoutKey, visualOnly, delayMs: safeDelayMs });
     this.root.append(flyout);
@@ -127,8 +130,8 @@ export class RewardFlyoutManager {
     return Number.isFinite(numericDelay) ? Math.max(0, numericDelay) : 0;
   }
 
-  getBurstDelay({ visualOnly, replacesExisting }) {
-    if (visualOnly || replacesExisting) {
+  getBurstDelay({ visualOnly }) {
+    if (visualOnly) {
       return 0;
     }
 
@@ -146,6 +149,27 @@ export class RewardFlyoutManager {
 
   acquireFlyout() {
     return this.flyoutPool.pop() ?? document.createElement('div');
+  }
+
+  releaseOldestActiveTextFlyoutIfNeeded() {
+    if (!this.root) {
+      return false;
+    }
+
+    const textFlyouts = [...this.root.children].filter((child) =>
+      this.isActiveTextFlyout(child),
+    );
+
+    if (textFlyouts.length < MAX_ACTIVE_TEXT_FLYOUTS) {
+      return false;
+    }
+
+    this.releaseFlyout(textFlyouts[0]);
+    return true;
+  }
+
+  isActiveTextFlyout(node) {
+    return node instanceof window.HTMLElement && !node.classList.contains('is-visual-only');
   }
 
   prepareFlyout(flyout, message, { flyoutKey, visualOnly, delayMs }) {
@@ -187,22 +211,6 @@ export class RewardFlyoutManager {
     if (this.flyoutPool.length < MAX_POOLED_FLYOUTS) {
       this.flyoutPool.push(flyout);
     }
-  }
-
-  removeKeyedFlyouts(flyoutKey) {
-    if (!this.root || !flyoutKey) {
-      return 0;
-    }
-
-    const keyedFlyouts = [...this.root.children].filter(
-      (child) => child instanceof window.HTMLElement && child.dataset.flyoutKey === flyoutKey,
-    );
-
-    for (const flyout of keyedFlyouts) {
-      this.releaseFlyout(flyout);
-    }
-
-    return keyedFlyouts.length;
   }
 
   showReward(event) {

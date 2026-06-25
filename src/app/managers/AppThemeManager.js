@@ -18,10 +18,6 @@ import {
   DEFAULT_PLAYER_PROGRESS_BAR,
   normalizePlayerProgressBar,
 } from '../../player/playerProgressBars.js';
-import {
-  DEFAULT_PLAYER_PLOT_VIEW,
-  normalizePlayerPlotView,
-} from '../../player/playerPlotViews.js';
 
 export class AppThemeManager {
   constructor({ rootElement = globalThis.document?.documentElement } = {}) {
@@ -50,7 +46,6 @@ export class AppThemeManager {
     this.applyColorMode(DEFAULT_PLAYER_COLOR_MODE);
     this.applyIconMode(DEFAULT_PLAYER_ICON_MODE);
     this.applyProgressBar(DEFAULT_PLAYER_PROGRESS_BAR);
-    this.applyPlotView(DEFAULT_PLAYER_PLOT_VIEW);
   }
 
   applySettings(snapshot) {
@@ -59,7 +54,6 @@ export class AppThemeManager {
     this.applyColorMode(snapshot?.colorMode);
     this.applyIconMode(snapshot?.iconMode);
     this.applyProgressBar(snapshot?.progressBar);
-    this.applyPlotView(snapshot?.plotView);
   }
 
   applyTheme(theme) {
@@ -102,11 +96,4 @@ export class AppThemeManager {
     this.rootElement.dataset.styleProgress = normalizePlayerProgressBar(progressBar);
   }
 
-  applyPlotView(plotView) {
-    if (!this.rootElement) {
-      return;
-    }
-
-    this.rootElement.dataset.stylePlotView = normalizePlayerPlotView(plotView);
-  }
 }

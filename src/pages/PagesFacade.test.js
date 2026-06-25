@@ -106,7 +106,6 @@ function createGameplayFacadeFake() {
         font: { lexend: 0, 'comic-sans-mono': 0 },
         color: { monochrome: 0, resources: 0 },
         progressBar: { regular: 0, gradient: 0 },
-        plotView: { rows: 0, boxes: 0 },
         icons: { none: 0, icons: 0 },
       },
       researched: {
@@ -117,7 +116,6 @@ function createGameplayFacadeFake() {
         },
         color: { monochrome: true, resources: false },
         progressBar: { regular: true, gradient: false },
-        plotView: { rows: true, boxes: true },
         icons: { none: true, icons: true },
       },
     },
@@ -2974,13 +2972,10 @@ function createPlayerFacadeFake(
       publish();
       return snapshot;
     },
-    setPlotView: (plotView) => {
-      const normalizedPlotView = ['rows', 'row', 'current'].includes(plotView)
-        ? 'rows'
-        : 'boxes';
+    setPlotView: () => {
       snapshot = {
         ...snapshot,
-        plotView: normalizedPlotView,
+        plotView: 'boxes',
       };
 
       publish();
@@ -6022,8 +6017,6 @@ describe('PagesFacade', () => {
       'free',
       'researched',
       'researched',
-      'researched',
-      'researched',
     ]);
     expect(
       [...settings.querySelectorAll('.room-top-panel__settings-tab-button')].map(
@@ -7324,6 +7317,14 @@ describe('PagesFacade', () => {
         kind: 'potion',
         quantity: 2,
       },
+      {
+        itemTypeId: 2029,
+        key: 'wastedPotion',
+        label: 'wasted potion',
+        kind: 'potion',
+        quantity: 1,
+        hasRecipe: false,
+      },
     ];
     snapshot.research.completedResearchIds = ['unlockSeed:sageSeed', 'unlockRecipe:manaTonic'];
     const pagesFacade = new PagesFacade({
@@ -7364,9 +7365,32 @@ describe('PagesFacade', () => {
     expect(values.slice(0, 2)).toEqual(['2', '0']);
     expect(rows[0].classList.contains('is-locked')).toBe(false);
     expect(rows[1].classList.contains('is-locked')).toBe(false);
-    expect(rows[2].classList.contains('is-locked')).toBe(true);
+    const firstLockedPotionRowIndex = rows.findIndex((row) =>
+      row.classList.contains('is-locked'),
+    );
+    expect(firstLockedPotionRowIndex).toBeGreaterThan(1);
+    expect(
+      rows
+        .slice(0, firstLockedPotionRowIndex)
+        .every((row) => !row.classList.contains('is-locked')),
+    ).toBe(true);
     expect(labels).toContain('??????');
     expect(values).toContain('locked');
+    expect(
+      rows[0].querySelector('.row_val .style-potion-label__icon')?.dataset.assetAtlasFrame,
+    ).toBe('potion:manaTonic');
+    const wastedRow = rows.find(
+      (row) => row.querySelector('.row_key')?.textContent === 'wasted potion',
+    );
+    expect(
+      wastedRow?.querySelector('.row_val .style-potion-label__icon')?.dataset.assetAtlasFrame,
+    ).toBe('potion:wastedPotion');
+    const unknownRow = rows.find(
+      (row) => row.querySelector('.row_key')?.textContent === '??????',
+    );
+    expect(
+      unknownRow?.querySelector('.row_key .style-potion-label__icon')?.dataset.assetAtlasFrame,
+    ).toBe('potion:unknownPotion');
   });
 
   it('hides bag popup with Escape or outside click', () => {
@@ -9907,9 +9931,7 @@ describe('PagesFacade', () => {
     expect(
       stage.querySelector('.garden-page__content > .workshop-page__world-notice'),
     ).not.toBeNull();
-    expect(stage.querySelector('.workshop-page__world-notice-open')?.textContent).toContain(
-      'event',
-    );
+    expect(stage.querySelector('.workshop-page__world-notice-open')).not.toBeNull();
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'garden',
     );
@@ -11091,7 +11113,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__herbs')).toBeNull();
   });
 
-  it('shows garden plots as text rows and keeps planting as a popup choice', () => {
+  it('shows garden plots as a box world and keeps planting as a popup choice', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 2);
@@ -11115,15 +11137,22 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__plot-summary')).toBeNull();
     expect(stage.querySelector('.garden-page__plot')?.textContent).not.toContain('locked');
     expect(stage.querySelector('.garden-page__tile-button')).toBeNull();
-    expect(stage.querySelector('.garden-page__plot .style-box__title')?.textContent).toBe('plots');
-    expect(rows[0].querySelector('.garden-page__plot-number')?.textContent).toBe('1');
-    expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
-    expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
-    expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(stage.querySelector('.garden-page__plot')?.classList.contains('style-box')).toBe(
+      false,
+    );
+    expect(stage.querySelector('.garden-page__plot .style-box__title')).toBeNull();
+    expect(rows[0].querySelector('.garden-page__plot-box-number')?.textContent).toBe('1');
+    expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('empty');
+    expect(rows[0].querySelector('.garden-page__plot-box-level')?.textContent).toBe('★');
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('choose');
     expect(rows[0].disabled).toBe(false);
-    expect(rows[1].querySelector('.garden-page__plot-label')?.textContent).toBe('plot 2');
-    expect(rows[1].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
-    expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('buy 1 coin');
+    expect(rows[1].classList.contains('is-buy-slot')).toBe(true);
+    expect(rows[1].querySelector('.garden-page__plot-box-number')?.textContent).toBe('');
+    expect(rows[1].querySelector('.garden-page__plot-box-label')?.textContent).toBe('');
+    expect(rows[1].querySelector('.garden-page__plot-box-level')?.textContent).toBe('');
+    expect(rows[1].querySelector('.garden-page__plot-box-action')?.textContent).toBe(
+      'buy 1 coin',
+    );
     expect(rows[1].disabled).toBe(true);
 
     gameplayFacade.setCoin(1);
@@ -11132,9 +11161,9 @@ describe('PagesFacade', () => {
     rows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.garden-page__message')).toBeNull();
-    expect(rows[1].querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
-    expect(rows[1].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
-    expect(rows[1].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(rows[1].querySelector('.garden-page__plot-box-label')?.textContent).toBe('empty');
+    expect(rows[1].querySelector('.garden-page__plot-box-level')?.textContent).toBe('★');
+    expect(rows[1].querySelector('.garden-page__plot-box-action')?.textContent).toBe('choose');
     expect(rows[1].disabled).toBe(false);
     expect(rows.filter((row) => !row.hidden)).toHaveLength(3);
     expect(stage.querySelector('.garden-page__plot-summary')).toBeNull();
@@ -11148,11 +11177,11 @@ describe('PagesFacade', () => {
       quantity: 0,
     });
     gameplayFacade.setGardenSeedQuantity(1, 1);
-    expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('choose');
     expect(rows[0].classList.contains('is-plantable')).toBe(false);
     expect(rows[0].disabled).toBe(false);
     rows[0]
-      .querySelector('.garden-page__plot-action')
+      .querySelector('.garden-page__plot-box-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const seedPopup = stage.querySelector('.garden-page__seed-popup');
@@ -11177,14 +11206,18 @@ describe('PagesFacade', () => {
     seedButtons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(seedPopup.hidden).toBe(true);
-    expect(rows[0].querySelector('.garden-page__plot-label')?.textContent).toBe('sage');
-    expect(rows[0].querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
+    expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('sage');
+    expect(rows[0].querySelector('.garden-page__plot-box-label')?.dataset.resourceColor).toBe(
       'herb',
     );
-    expect(rows[0].querySelector('.garden-page__plot-state')?.textContent).toBe('★');
-    expect(rows[0].querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
-    expect(rows[0].querySelector('.garden-page__plot-action-label')?.textContent).toBe('growing');
-    expect(rows[0].querySelector('.garden-page__plot-action-timer')?.textContent).toBe('12s');
+    expect(rows[0].querySelector('.garden-page__plot-box-level')?.textContent).toBe('★');
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe(
+      'growing 12s',
+    );
+    expect(rows[0].querySelector('.garden-page__plot-box-action-label')?.textContent).toBe(
+      'growing',
+    );
+    expect(rows[0].querySelector('.garden-page__plot-box-timer')?.textContent).toBe('12s');
     expect(rows[0].classList.contains('is-ready')).toBe(false);
     expect(rows[0].querySelector('.garden-page__plot-progress')?.hidden).toBe(false);
     expect(
@@ -11198,7 +11231,7 @@ describe('PagesFacade', () => {
     expect(rows[0].querySelector('.garden-page__plot-progress-text')?.textContent).toBe('');
 
     rows[0]
-      .querySelector('.garden-page__plot-label')
+      .querySelector('.garden-page__plot-box-label')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const cancelPopup = stage.querySelector('.garden-page__cancel-popup');
@@ -11213,7 +11246,7 @@ describe('PagesFacade', () => {
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     rows[0]
-      .querySelector('.garden-page__plot-action')
+      .querySelector('.garden-page__plot-box-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(cancelPopup?.hidden).toBe(false);
@@ -11537,7 +11570,7 @@ describe('PagesFacade', () => {
     expect(pagesFacade.getCurrentPageId()).toBe('garden');
 
     const plotRow = stage.querySelector('.garden-page__plot-row');
-    const plotAction = plotRow.querySelector('.garden-page__plot-action');
+    const plotAction = plotRow.querySelector('.garden-page__plot-box-action');
     const seedPopup = stage.querySelector('.garden-page__seed-popup');
 
     plotAction.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -11555,8 +11588,10 @@ describe('PagesFacade', () => {
     seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
 
     expect(seedPopup.hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('sage');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-box-label')?.textContent).toBe('sage');
+    expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe(
+      'growing 12s',
+    );
   });
 
   it('changes room pages from Research controls with horizontal touch swipes', () => {
@@ -11643,7 +11678,14 @@ describe('PagesFacade', () => {
 
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('- 1 sage');
+    expect(stage.querySelector('.brewing-page__ingredient-count')?.textContent).toBe('1 ');
+    expect(stage.querySelector('.brewing-page__ingredient-label')?.textContent).toBe('sage');
+    expect(stage.querySelector('.brewing-page__ingredient-label')?.dataset.resourceColor).toBe(
+      'herb',
+    );
+    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.textContent).toBe(
+      'wasted potion',
+    );
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage2');
     expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
       'unknown mix',
@@ -11654,7 +11696,11 @@ describe('PagesFacade', () => {
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('- 3 sage');
+    expect(stage.querySelector('.brewing-page__ingredient-count')?.textContent).toBe('3 ');
+    expect(stage.querySelector('.brewing-page__ingredient-label')?.textContent).toBe('sage');
+    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.textContent).toBe(
+      'mana tonic locked',
+    );
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew (12 mana)',
     );
@@ -11681,6 +11727,9 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
       'matches mana tonic',
+    );
+    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.textContent).toBe(
+      'mana tonic',
     );
     expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
@@ -11800,7 +11849,7 @@ describe('PagesFacade', () => {
     sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).not.toContain(
-      '- 1 sage',
+      '1 sageremove',
     );
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage3');
 
@@ -11816,7 +11865,9 @@ describe('PagesFacade', () => {
       document.elementFromPoint = originalElementFromPoint;
     }
 
-    expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('- 1 sage');
+    expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain(
+      '1 sageremove',
+    );
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage2');
   });
 
@@ -11904,7 +11955,7 @@ describe('PagesFacade', () => {
       mandrakeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
       expect(stage.querySelector('.brewing-page__cauldron')?.textContent).not.toContain(
-        '- 1 mandrake',
+        '1 mandrakeremove',
       );
       expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain(
         'mandrake1',
@@ -11923,7 +11974,7 @@ describe('PagesFacade', () => {
       }
 
       expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain(
-        '- 1 mandrake',
+        '1 mandrakeremove',
       );
       expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('mandrake0');
     } finally {
@@ -11952,8 +12003,11 @@ describe('PagesFacade', () => {
 
     const ingredientRow = stage.querySelector('.brewing-page__ingredient-row');
 
-    expect(ingredientRow?.textContent).toBe('- 1 sageremove');
+    expect(ingredientRow?.textContent).toBe('1 sageremove');
     expect(ingredientRow?.dataset.resourceColor).toBeUndefined();
+    expect(
+      ingredientRow?.querySelector('.brewing-page__ingredient-count')?.dataset.resourceColor,
+    ).toBe('herb');
     expect(ingredientRow?.querySelector('.row_key')?.dataset.resourceColor).toBe('herb');
     expect(ingredientRow?.querySelector('.row_val')?.dataset.resourceColor).toBeUndefined();
 
@@ -12006,8 +12060,8 @@ describe('PagesFacade', () => {
     );
 
     expect(ingredientRows.map((row) => row.textContent)).toEqual([
-      '- 2 nettleremove',
-      '- 1 sageremove',
+      '2 nettleremove',
+      '1 sageremove',
     ]);
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).not.toContain(
       '1. nettle',

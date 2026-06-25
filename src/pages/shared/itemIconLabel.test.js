@@ -79,6 +79,23 @@ describe('item icon labels', () => {
     );
   });
 
+  it('marks wasted and unknown potion labels with distinct potion icons', () => {
+    const wasted = document.createElement('span');
+    wasted.textContent = 'wasted potion';
+    const unknown = document.createElement('span');
+    unknown.textContent = 'unknown potion';
+
+    setItemIconLabel(wasted, 'potion', 'wastedPotion');
+    setItemIconLabel(unknown, 'potion', 'unknownPotion');
+
+    expect(wasted.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame).toBe(
+      'potion:wastedPotion',
+    );
+    expect(unknown.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame).toBe(
+      'potion:unknownPotion',
+    );
+  });
+
   it('marks seed labels with the seed pack icon while preserving text', () => {
     const element = document.createElement('span');
     element.textContent = 'sage seed (3)';
