@@ -13,7 +13,7 @@ const DEFAULT_PLAYER_LEVEL = 1;
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_PLAYER_THEME = 'white';
 const DEFAULT_PLAYER_FONT = 'lexend';
-const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
+const DEFAULT_PLAYER_COLOR_MODE = 'resources';
 const DEFAULT_PLAYER_CHARACTER = 'elara';
 const DEFAULT_PLAYER_ICON_MODE = 'icons';
 const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
@@ -179,7 +179,7 @@ const PLAYER_FONT_ALIASES = new Map([
   ['comic-mono', 'comic-sans-mono'],
   ['google-lexend', 'lexend'],
 ]);
-const PLAYER_COLOR_MODES = new Set(['monochrome', 'resources']);
+const PLAYER_COLOR_MODES = new Set(['resources']);
 const PLAYER_CHARACTERS = new Set([
   'elara',
   'mira',
@@ -204,7 +204,7 @@ const PLAYER_CHARACTERS = new Set([
   'adventurer_blackarmor_sword',
   'adventurer_greencloak_spear',
 ]);
-const PLAYER_ICON_MODES = new Set(['none', 'icons']);
+const PLAYER_ICON_MODES = new Set(['icons']);
 const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient']);
 const PLAYER_PLOT_VIEWS = new Set(['rows', 'boxes']);
 const DEFAULT_SAVE_COMPLETED_RESEARCH_IDS = new Set(['unlockSeed:sageSeed']);
@@ -4710,10 +4710,6 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       lexend: 0,
       'comic-sans-mono': 0,
     },
-    color: {
-      monochrome: 0,
-      resources: 0,
-    },
     character: {
       elara: 0,
       mira: 0,
@@ -4745,9 +4741,6 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
     plotView: {
       rows: 0,
       boxes: 0,
-    },
-    icons: {
-      icons: 0,
     },
   },
 });

@@ -115,7 +115,7 @@ describe('PlayerProfileSubscriptionManager', () => {
       username: 'Hex Mage',
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: false,
     });

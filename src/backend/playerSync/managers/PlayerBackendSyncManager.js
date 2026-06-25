@@ -168,7 +168,7 @@ export class PlayerBackendSyncManager {
       username: snapshot?.username,
       theme: snapshot?.theme ?? 'white',
       font: snapshot?.font ?? 'lexend',
-      colorMode: snapshot?.colorMode ?? 'monochrome',
+      colorMode: snapshot?.colorMode ?? 'resources',
       character: snapshot?.character ?? 'elara',
       usernamePromptSeen: Boolean(snapshot?.usernamePromptSeen),
     };
@@ -179,7 +179,7 @@ export class PlayerBackendSyncManager {
       username: profile?.username,
       theme: profile?.theme ?? 'white',
       font: profile?.font ?? 'lexend',
-      colorMode: profile?.colorMode ?? 'monochrome',
+      colorMode: profile?.colorMode ?? 'resources',
       character: profile?.character ?? 'elara',
       usernamePromptSeen: Boolean(profile?.usernamePromptSeen),
     };

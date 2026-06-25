@@ -116,9 +116,9 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ### Named Rules
 
-**The Monochrome Default Rule.** Use black text, gray state colors, and white or gray surfaces unless the user explicitly requests colored UI.
+**The Quiet Surface Rule.** Use black text, gray state colors, and white or gray surfaces for chrome and layout surfaces. Resource words and amounts use resource colors by default.
 
-**The Color Has a Job Rule.** Red and orange mean notification priority. Resource colors are optional settings; they must disappear into disabled state when a row is locked or unavailable.
+**The Color Has a Job Rule.** Red and orange mean notification priority. Resource colors identify resource words and amounts; they must disappear into disabled state when a row is locked or unavailable.
 
 ## 3. Typography
 

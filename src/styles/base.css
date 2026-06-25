@@ -1914,20 +1914,6 @@ body {
   object-position: center bottom;
 }
 
-:root[data-style-icons="none"] .tutorial-layer__objective-button-image {
-  display: none;
-}
-
-:root[data-style-icons="none"] .tutorial-layer__objective-button:focus-visible {
-  outline: none;
-}
-
-:root[data-style-icons="none"]
-  .tutorial-layer__objective-button:focus-visible
-  .tutorial-layer__objective-button-label {
-  font-weight: 700;
-}
-
 .tutorial-layer__objective-button-image[hidden] {
   display: none;
 }
@@ -4475,6 +4461,10 @@ body {
   background: var(--style-surface);
 }
 
+.brewing-page__cauldron-count[hidden] {
+  display: none;
+}
+
 .brewing-page__cauldron-bubble {
   position: relative;
   z-index: 1;
@@ -4545,12 +4535,17 @@ body {
 }
 
 .brewing-page__cauldron-items.is-empty {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(100% + var(--brewing-page-cauldron-preview-space));
+  width: auto;
+  height: auto;
+  min-height: 0;
   overflow: hidden;
   text-align: center;
+  pointer-events: none;
 }
 
 .brewing-page__cauldron-preview {
@@ -6031,10 +6026,6 @@ body {
   vertical-align: -3px;
 }
 
-:root[data-style-icons="none"] .workshop-page__leaderboard-character-icon {
-  display: none;
-}
-
 .workshop-page__leaderboard-tabs {
   position: relative;
   z-index: 21;
@@ -6390,10 +6381,6 @@ div.workshop-page__discovery-row {
   height: 12px;
   margin-right: 3px;
   vertical-align: -2px;
-}
-
-:root[data-style-icons="none"] .workshop-page__world-chat-character-icon {
-  display: none;
 }
 
 .room-player-info-link {
@@ -7478,16 +7465,12 @@ div.workshop-page__discovery-row {
   transform: none;
 }
 
-.garden-page__plot
-  .garden-page__plot-row.is-empty.is-plantable
-  .garden-page__plot-box-action,
-.garden-page__plot
-  .garden-page__plot-row.is-empty.is-selected-without-seeds
-  .garden-page__plot-box-action {
+.garden-page__plot .garden-page__plot-row.is-empty .garden-page__plot-box-action {
   top: 50%;
   right: auto;
   bottom: auto;
   left: 50%;
+  z-index: 2;
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
   text-align: center;
@@ -10324,8 +10307,7 @@ button.brewing-page__cauldron-dialog-current-row {
   border-radius: 0;
 }
 
-.room-top-panel__avatar-button[hidden],
-:root[data-style-icons="none"] .room-top-panel__avatar-button {
+.room-top-panel__avatar-button[hidden] {
   display: none;
 }
 
@@ -10371,8 +10353,7 @@ button.brewing-page__cauldron-dialog-current-row {
   border: 0;
 }
 
-.room-top-panel__username-avatar[hidden],
-:root[data-style-icons="none"] .room-top-panel__username-avatar {
+.room-top-panel__username-avatar[hidden] {
   display: none;
 }
 

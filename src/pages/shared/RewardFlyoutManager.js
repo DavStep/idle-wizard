@@ -6,6 +6,7 @@ import {
   getPotionIconKeyByLabel,
 } from '../../assets/items/potions/potionIcons.js';
 import { getSeedIconFrameName, seedIconVariantFrameNames } from '../../assets/items/seeds/seedIcons.js';
+import { normalizePlayerIconMode } from '../../player/playerIconModes.js';
 import { formatCoinPriceText } from '../../shared/coinPrice.js';
 
 const FLYOUT_LIFETIME_MS = 1200;
@@ -229,7 +230,10 @@ export class RewardFlyoutManager {
   }
 
   shouldPlayVisualDrops() {
-    return document.documentElement.dataset.styleIcons === 'icons' && !this.prefersReducedMotion();
+    return (
+      normalizePlayerIconMode(document.documentElement.dataset.styleIcons) === 'icons' &&
+      !this.prefersReducedMotion()
+    );
   }
 
   prefersReducedMotion() {

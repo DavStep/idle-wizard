@@ -14,7 +14,7 @@ describe('PlayerFacade', () => {
       usernamePromptSeen: true,
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       iconMode: 'icons',
       progressBar: 'regular',
@@ -33,7 +33,7 @@ describe('PlayerFacade', () => {
       usernamePromptSeen: true,
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       iconMode: 'icons',
       progressBar: 'regular',
@@ -122,7 +122,7 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().colorMode).toBe('resources');
 
     playerFacade.setColorMode('unknown');
-    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
+    expect(playerFacade.getSnapshot().colorMode).toBe('resources');
   });
 
   it('normalizes character', () => {
@@ -143,7 +143,7 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');
 
     playerFacade.setIconMode('no icons');
-    expect(playerFacade.getSnapshot().iconMode).toBe('none');
+    expect(playerFacade.getSnapshot().iconMode).toBe('icons');
 
     playerFacade.setIconMode('unknown');
     expect(playerFacade.getSnapshot().iconMode).toBe('icons');

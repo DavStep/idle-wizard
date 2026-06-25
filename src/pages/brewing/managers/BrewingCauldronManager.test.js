@@ -83,6 +83,54 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
+  it('opens an empty cauldron from a captured world tap', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const onOpenSelectRecipe = vi.fn();
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      onOpenSelectRecipe,
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.brewing-page__world-shell');
+    const cauldron = parent.querySelector('.brewing-page__cauldron');
+    const empty = cauldron.querySelector('.brewing-page__cauldron-empty');
+
+    dispatchPointer(empty, 'pointerdown', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 90,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 90,
+    });
+    cauldron.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(onOpenSelectRecipe).toHaveBeenCalledTimes(1);
+    expect(onOpenSelectRecipe).toHaveBeenCalledWith(0);
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('pans the world when dragging from a cauldron and suppresses the follow-up click', () => {
     const snapshot = {
       brewing: {
@@ -480,11 +528,12 @@ describe('BrewingCauldronManager', () => {
     expect(previewRule).toContain('position: absolute;');
     expect(previewRule).toContain('width: 78px;');
     expect(emptyItemsRule).toContain('display: flex;');
+    expect(emptyItemsRule).toContain('position: absolute;');
+    expect(emptyItemsRule).toContain('inset: 0;');
     expect(emptyItemsRule).toContain('align-items: center;');
     expect(emptyItemsRule).toContain('justify-content: center;');
-    expect(emptyItemsRule).toContain(
-      'width: calc(100% + var(--brewing-page-cauldron-preview-space));',
-    );
+    expect(emptyItemsRule).toContain('width: auto;');
+    expect(emptyItemsRule).toContain('pointer-events: none;');
     expect(previewLabelHiddenRule).toContain('display: none;');
     expect(activeTextRule).toContain('white-space: nowrap;');
     expect(activeTextRule).toContain('text-overflow: ellipsis;');
@@ -649,11 +698,15 @@ describe('BrewingCauldronManager', () => {
 
     const locked = parent.querySelectorAll('.brewing-page__cauldron')[1];
     const action = locked.querySelector('.brewing-page__action-button');
+    const count = locked.querySelector('.brewing-page__cauldron-count');
     const lockedRule = baseCss.match(
       /\.brewing-page__cauldron\.is-locked\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const lockedPreviewRule = baseCss.match(
       /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__cauldron-preview\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const hiddenCountRule = baseCss.match(
+      /\.brewing-page__cauldron-count\[hidden\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(locked.classList.contains('is-locked')).toBe(true);
@@ -663,6 +716,8 @@ describe('BrewingCauldronManager', () => {
     expect(lockedRule).toContain('color-mix(in srgb, var(--style-stroke) 45%, transparent)');
     expect(lockedPreviewRule).toContain('inset: 0;');
     expect(lockedPreviewRule).toContain('justify-content: center;');
+    expect(hiddenCountRule).toContain('display: none;');
+    expect(count?.hidden).toBe(true);
     expect(locked.querySelector('.brewing-page__cauldron-bubble')?.hidden).toBe(true);
     expect(locked.querySelector('.brewing-page__cauldron-items')?.hidden).toBe(true);
     expect(locked.querySelector('.brewing-page__cauldron-preview-label')?.hidden).toBe(true);
@@ -675,6 +730,7 @@ describe('BrewingCauldronManager', () => {
 
     expect(locked.classList.contains('is-buyable')).toBe(true);
     expect(locked.getAttribute('aria-disabled')).toBe('false');
+    expect(count?.hidden).toBe(true);
     expect(action?.disabled).toBe(false);
 
     manager.unmount();
@@ -1596,6 +1652,7 @@ describe('BrewingCauldronManager', () => {
 
     const actions = parent.querySelector('.brewing-page__actions');
     const action = parent.querySelector('.brewing-page__action-button');
+    const bubble = parent.querySelector('.brewing-page__cauldron-bubble');
     const previewLabel = parent.querySelector('.brewing-page__cauldron-preview-label');
     const empty = parent.querySelector('.brewing-page__cauldron-empty');
     const items = parent.querySelector('.brewing-page__cauldron-items');
@@ -1605,6 +1662,7 @@ describe('BrewingCauldronManager', () => {
     expect(action?.textContent).toBe('');
     expect(action?.disabled).toBe(true);
     expect(action?.hasAttribute('data-tutorial-id')).toBe(false);
+    expect(bubble?.textContent).toBe('');
     expect(previewLabel?.hidden).toBe(true);
     expect(previewLabel?.textContent).toBe('');
     expect(empty?.hidden).toBe(false);

@@ -1790,19 +1790,10 @@ describe('TutorialHintManager', () => {
     );
   });
 
-  it('hides the Elara lesson button image when icon mode is off', () => {
+  it('does not include icon-off rules for the Elara lesson button', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const rule = baseCss.match(
-      /:root\[data-style-icons="none"\]\s+\.tutorial-layer__objective-button-image\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const focusRule = baseCss.match(
-      /:root\[data-style-icons="none"\]\s+\.tutorial-layer__objective-button:focus-visible\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
 
-    expect(rule).toBeDefined();
-    expect(rule).toMatch(/\bdisplay:\s*none;/);
-    expect(focusRule).toBeDefined();
-    expect(focusRule).toMatch(/\boutline:\s*none;/);
+    expect(baseCss).not.toMatch(/data-style-icons="none"/);
   });
 
   it('marks Elara as pressing until a tap releases', () => {

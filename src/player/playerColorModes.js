@@ -1,10 +1,6 @@
-export const DEFAULT_PLAYER_COLOR_MODE = 'monochrome';
+export const DEFAULT_PLAYER_COLOR_MODE = 'resources';
 
 export const PLAYER_COLOR_MODE_OPTIONS = Object.freeze([
-  Object.freeze({
-    key: 'monochrome',
-    label: 'monochrome',
-  }),
   Object.freeze({
     key: 'resources',
     label: 'resources',
@@ -13,6 +9,8 @@ export const PLAYER_COLOR_MODE_OPTIONS = Object.freeze([
 
 const COLOR_MODE_KEYS = new Set(PLAYER_COLOR_MODE_OPTIONS.map((mode) => mode.key));
 const COLOR_MODE_ALIASES = new Map([
+  ['monochrome', 'resources'],
+  ['mono', 'resources'],
   ['color', 'resources'],
   ['colored', 'resources'],
   ['colour', 'resources'],

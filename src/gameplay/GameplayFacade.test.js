@@ -1625,9 +1625,7 @@ describe('GameplayFacade', () => {
             costsCrystal: {
               theme: { white: 0, black: 2, midnight: 0, witchcraft: 0 },
               font: { lexend: 0, 'comic-sans-mono': 0 },
-              color: { monochrome: 0, resources: 0 },
               progressBar: { regular: 0, gradient: 0 },
-              icons: { none: 0, icons: 0 },
             },
           }),
         },
@@ -1641,9 +1639,7 @@ describe('GameplayFacade', () => {
         lexend: true,
         'comic-sans-mono': false,
       },
-      color: { monochrome: true, resources: false },
       progressBar: { regular: true, gradient: false },
-      icons: { none: true, icons: true },
     });
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
       ok: false,

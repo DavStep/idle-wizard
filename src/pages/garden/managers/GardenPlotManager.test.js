@@ -402,16 +402,17 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe('plant x3');
   });
 
-  it('centers the plant and no seeds actions inside empty selected plot boxes', () => {
+  it('centers empty plot box actions above plot chrome', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const centeredRule = baseCss.match(
-      /\.garden-page__plot\s+\.garden-page__plot-row\.is-empty\.is-plantable\s+\.garden-page__plot-box-action,\s*\.garden-page__plot\s+\.garden-page__plot-row\.is-empty\.is-selected-without-seeds\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-empty\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(centeredRule).toContain('top: 50%;');
     expect(centeredRule).toContain('left: 50%;');
     expect(centeredRule).toContain('right: auto;');
     expect(centeredRule).toContain('bottom: auto;');
+    expect(centeredRule).toContain('z-index: 2;');
     expect(centeredRule).toContain(
       'font-size: var(--style-box-border-label-font-size);',
     );

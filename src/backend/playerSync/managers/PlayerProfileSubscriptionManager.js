@@ -94,7 +94,7 @@ export class PlayerProfileSubscriptionManager {
       username: row.username,
       theme: row.theme ?? 'white',
       font: row.font ?? 'lexend',
-      colorMode: row.colorMode ?? row.color_mode ?? 'monochrome',
+      colorMode: row.colorMode ?? row.color_mode ?? 'resources',
       character: row.character ?? 'elara',
       usernamePromptSeen: Boolean(
         row.usernamePromptSeen ?? row.username_prompt_seen,

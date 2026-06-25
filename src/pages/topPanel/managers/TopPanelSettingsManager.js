@@ -219,7 +219,7 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleFontClick);
     }
 
-    for (const button of this.refs.colorModeButtons) {
+    for (const button of this.refs.colorModeButtons ?? []) {
       button.addEventListener('click', this.handleColorModeClick);
     }
 
@@ -231,7 +231,7 @@ export class TopPanelSettingsManager {
       button.addEventListener('click', this.handleProgressBarClick);
     }
 
-    for (const button of this.refs.iconModeButtons) {
+    for (const button of this.refs.iconModeButtons ?? []) {
       button.addEventListener('click', this.handleIconModeClick);
     }
 
@@ -339,7 +339,7 @@ export class TopPanelSettingsManager {
         button.removeEventListener('click', this.handleFontClick);
       }
 
-      for (const button of this.refs.colorModeButtons) {
+      for (const button of this.refs.colorModeButtons ?? []) {
         button.removeEventListener('click', this.handleColorModeClick);
       }
 
@@ -351,7 +351,7 @@ export class TopPanelSettingsManager {
         button.removeEventListener('click', this.handleProgressBarClick);
       }
 
-      for (const button of this.refs.iconModeButtons) {
+      for (const button of this.refs.iconModeButtons ?? []) {
         button.removeEventListener('click', this.handleIconModeClick);
       }
 
@@ -613,7 +613,7 @@ export class TopPanelSettingsManager {
   applyColorModeSelection(colorMode) {
     const selectedColorMode = normalizePlayerColorMode(colorMode);
 
-    for (const button of this.refs.colorModeButtons) {
+    for (const button of this.refs.colorModeButtons ?? []) {
       const selected = button.dataset.colorMode === selectedColorMode;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');
@@ -633,7 +633,7 @@ export class TopPanelSettingsManager {
   applyIconModeSelection(iconMode) {
     const selectedIconMode = normalizePlayerIconMode(iconMode);
 
-    for (const button of this.refs.iconModeButtons) {
+    for (const button of this.refs.iconModeButtons ?? []) {
       const selected = button.dataset.iconMode === selectedIconMode;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-checked', selected ? 'true' : 'false');

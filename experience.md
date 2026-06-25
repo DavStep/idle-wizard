@@ -55,6 +55,7 @@
 - Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
 - Brewing herbs box uses the shared room chrome inset like the top panel and world chat; do not size it with `--style-main-box-width`.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
+- Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
@@ -567,7 +568,7 @@
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
-- Icon mode defaults to `icons`; keep `none` as a real selectable mode so players can disable icons.
+- Resource color and icon modes are fixed on; normalize stale `monochrome`/`none` visual values to `resources`/`icons` and do not show those choices in settings.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
@@ -670,7 +671,7 @@
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
 - Profile sync can echo stale server visual values after a local choice; keep in-flight client choices optimistic until a matching server echo arrives.
-- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Lexend, and monochrome start researched, while other visual options show their price/free research action until researched.
+- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Lexend, and regular progress bars start researched, while other selectable visual options show their price/free research action until researched.
 - Zero-cost visual setting names should not unlock or select directly; tap `free` to research first, then tap the option name to select.
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `coin`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
@@ -708,7 +709,7 @@
 - If notification dots grow beyond page-level flags, move to a provider tree with centralized child aggregation and graph validation instead of ad hoc booleans.
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
-- World chat system sender labels stay muted gray in monochrome; reserve the reddish system accent for resource color mode.
+- World chat system sender labels use the resource-color system accent; avoid adding a separate chat-only color mode.
 - Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.

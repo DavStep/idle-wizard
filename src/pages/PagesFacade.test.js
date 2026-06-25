@@ -104,9 +104,7 @@ function createGameplayFacadeFake() {
       costsCrystal: {
         theme: { white: 0, black: 0, midnight: 0, witchcraft: 0 },
         font: { lexend: 0, 'comic-sans-mono': 0 },
-        color: { monochrome: 0, resources: 0 },
         progressBar: { regular: 0, gradient: 0 },
-        icons: { none: 0, icons: 0 },
       },
       researched: {
         theme: { white: true, black: false, midnight: false, witchcraft: false },
@@ -114,9 +112,7 @@ function createGameplayFacadeFake() {
           lexend: true,
           'comic-sans-mono': false,
         },
-        color: { monochrome: true, resources: false },
         progressBar: { regular: true, gradient: false },
-        icons: { none: true, icons: true },
       },
     },
     inventory: [],
@@ -2834,7 +2830,7 @@ function createPlayerFacadeFake(
   initialTheme = 'white',
   {
     shouldPromptForUsername = false,
-    initialColorMode = 'monochrome',
+    initialColorMode = 'resources',
     initialFont = 'lexend',
     initialCharacter = 'elara',
     initialIconMode = 'icons',
@@ -2928,7 +2924,7 @@ function createPlayerFacadeFake(
     setColorMode: (colorMode) => {
       const normalizedColorMode = ['resources', 'color', 'colored'].includes(colorMode)
         ? 'resources'
-        : 'monochrome';
+        : 'resources';
       snapshot = {
         ...snapshot,
         colorMode: normalizedColorMode,
@@ -2947,11 +2943,9 @@ function createPlayerFacadeFake(
       return snapshot;
     },
     setIconMode: (iconMode) => {
-      const normalizedIconMode = ['off', 'no-icons', 'no icons', 'none'].includes(iconMode)
-        ? 'none'
-        : ['icons', 'icon', 'on', 'enabled'].includes(iconMode)
-          ? 'icons'
-          : 'icons';
+      const normalizedIconMode = ['icons', 'icon', 'on', 'enabled'].includes(iconMode)
+        ? 'icons'
+        : 'icons';
       snapshot = {
         ...snapshot,
         iconMode: normalizedIconMode,
@@ -4153,9 +4147,9 @@ describe('PagesFacade', () => {
     playerFacade.setIconMode('none');
 
     expect(usernameButton?.textContent).toBe('Merlin');
-    expect(avatarButton?.hidden).toBe(true);
-    expect(usernameAvatar?.hidden).toBe(true);
-    expect(topPanel?.classList.contains('has-avatar')).toBe(false);
+    expect(avatarButton?.hidden).toBe(false);
+    expect(usernameAvatar?.hidden).toBe(false);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
   });
 
   it('mounts the FTUE guide shell for fresh level 1 players', () => {
@@ -5951,7 +5945,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__color-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['monochrome', 'resources']);
+    ).toEqual([]);
     expect(
       [
         ...settings.querySelectorAll(
@@ -5995,7 +5989,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__icon-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['no icons', 'icons']);
+    ).toEqual([]);
     expect(
       [
         ...settings.querySelectorAll(
@@ -6013,10 +6007,6 @@ describe('PagesFacade', () => {
       'free',
       'researched',
       'free',
-      'researched',
-      'free',
-      'researched',
-      'researched',
     ]);
     expect(
       [...settings.querySelectorAll('.room-top-panel__settings-tab-button')].map(
@@ -6345,52 +6335,6 @@ describe('PagesFacade', () => {
     expect(midnightButton.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('changes resource color mode from settings', () => {
-    const stage = document.createElement('section');
-    const playerFacade = createPlayerFacadeFake('Merlin');
-    const gameplayFacade = createGameplayFacadeFake();
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade,
-    });
-
-    pagesFacade.mount(stage);
-
-    stage
-      .querySelector('.room-top-panel__username')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    const monoButton = stage.querySelector(
-      '.room-top-panel__color-button[data-color-mode="monochrome"]',
-    );
-    const resourcesButton = stage.querySelector(
-      '.room-top-panel__color-button[data-color-mode="resources"]',
-    );
-    const resourcesResearchButton = resourcesButton
-      ?.closest('.room-top-panel__visual-option')
-      ?.querySelector('.room-top-panel__visual-option-price');
-
-    expect(monoButton.getAttribute('aria-checked')).toBe('true');
-    expect(resourcesButton.disabled).toBe(false);
-
-    resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.color.resources).toBe(false);
-
-    resourcesResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().colorMode).toBe('monochrome');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.color.resources).toBe(true);
-    expect(resourcesResearchButton?.textContent).toBe('researched');
-
-    resourcesButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().colorMode).toBe('resources');
-    expect(resourcesButton.getAttribute('aria-checked')).toBe('true');
-    expect(monoButton.getAttribute('aria-checked')).toBe('false');
-  });
-
   it('changes progress bar mode from settings', () => {
     const stage = document.createElement('section');
     const playerFacade = createPlayerFacadeFake('Merlin');
@@ -6439,45 +6383,6 @@ describe('PagesFacade', () => {
     expect(playerFacade.getSnapshot().progressBar).toBe('gradient');
     expect(gradientButton.getAttribute('aria-checked')).toBe('true');
     expect(regularButton.getAttribute('aria-checked')).toBe('false');
-  });
-
-  it('changes icon mode from settings', () => {
-    const stage = document.createElement('section');
-    const playerFacade = createPlayerFacadeFake('Merlin');
-    const gameplayFacade = createGameplayFacadeFake();
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade,
-    });
-
-    pagesFacade.mount(stage);
-
-    stage
-      .querySelector('.room-top-panel__username')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    const noIconsButton = stage.querySelector(
-      '.room-top-panel__icon-button[data-icon-mode="none"]',
-    );
-    const iconsButton = stage.querySelector(
-      '.room-top-panel__icon-button[data-icon-mode="icons"]',
-    );
-    expect(noIconsButton).not.toBeNull();
-    expect(noIconsButton.getAttribute('aria-checked')).toBe('false');
-    expect(iconsButton.getAttribute('aria-checked')).toBe('true');
-    expect(iconsButton.disabled).toBe(false);
-
-    noIconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().iconMode).toBe('none');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.none).toBe(true);
-    expect(noIconsButton.getAttribute('aria-checked')).toBe('true');
-
-    iconsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().iconMode).toBe('icons');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.icons.icons).toBe(true);
-    expect(iconsButton.getAttribute('aria-checked')).toBe('true');
   });
 
   it('changes font from settings', () => {

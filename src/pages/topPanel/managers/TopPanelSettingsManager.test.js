@@ -96,14 +96,14 @@ describe('TopPanelSettingsManager', () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
-  it('updates and hides the top-panel character avatar from player profile state', () => {
+  it('updates and keeps the top-panel character avatar visible from player profile state', () => {
     const stage = document.createElement('section');
     const viewManager = new TopPanelViewManager();
     let playerSnapshot = {
       username: 'Merlin',
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'mira',
       iconMode: 'icons',
       progressBar: 'regular',
@@ -124,8 +124,8 @@ describe('TopPanelSettingsManager', () => {
           listener(playerSnapshot);
         }
       }),
-      setIconMode: vi.fn((iconMode) => {
-        playerSnapshot = { ...playerSnapshot, iconMode };
+      setIconMode: vi.fn(() => {
+        playerSnapshot = { ...playerSnapshot, iconMode: 'icons' };
 
         for (const listener of playerListeners) {
           listener(playerSnapshot);
@@ -167,10 +167,10 @@ describe('TopPanelSettingsManager', () => {
 
     playerFacade.setIconMode('none');
 
-    expect(avatarButton?.hidden).toBe(true);
-    expect(avatar?.hidden).toBe(true);
-    expect(topPanel?.classList.contains('has-avatar')).toBe(false);
-    expect(usernameButton?.classList.contains('has-avatar')).toBe(false);
+    expect(avatarButton?.hidden).toBe(false);
+    expect(avatar?.hidden).toBe(false);
+    expect(topPanel?.classList.contains('has-avatar')).toBe(true);
+    expect(usernameButton?.classList.contains('has-avatar')).toBe(true);
 
     manager.unmount();
     viewManager.unmount();
@@ -183,7 +183,7 @@ describe('TopPanelSettingsManager', () => {
       username: 'wizard',
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       iconMode: 'icons',
       progressBar: 'regular',
@@ -209,6 +209,10 @@ describe('TopPanelSettingsManager', () => {
 
     expect(stage.querySelector('.room-top-panel__plotView-section')).toBeNull();
     expect(stage.querySelector('.room-top-panel__plot-view-button')).toBeNull();
+    expect(stage.querySelector('.room-top-panel__color-section')).toBeNull();
+    expect(stage.querySelector('.room-top-panel__color-button')).toBeNull();
+    expect(stage.querySelector('.room-top-panel__icons-section')).toBeNull();
+    expect(stage.querySelector('.room-top-panel__icon-button')).toBeNull();
     expect(viewManager.getRefs().plotViewButtons).toBeUndefined();
 
     manager.unmount();

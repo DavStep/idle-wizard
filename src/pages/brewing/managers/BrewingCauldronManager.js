@@ -213,10 +213,11 @@ export class BrewingCauldronManager {
     const count = document.createElement('div');
     count.className = 'brewing-page__cauldron-count';
     count.textContent = '0/0';
+    count.hidden = true;
 
     const bubble = document.createElement('div');
     bubble.className = 'brewing-page__cauldron-bubble';
-    bubble.textContent = 'empty';
+    bubble.textContent = '';
 
     const selectRecipeButton = document.createElement('button');
     selectRecipeButton.className = 'brewing-page__cauldron-select-recipe-text';
@@ -762,6 +763,7 @@ export class BrewingCauldronManager {
       clientX: event.clientX,
       clientY: event.clientY,
     });
+    const cauldronIndex = this.getCauldronIndexFromElement(event.target);
 
     if (this.worldPointers.size >= 2) {
       this.startWorldPinchGesture();
@@ -774,6 +776,7 @@ export class BrewingCauldronManager {
         panX: this.worldPan.x,
         panY: this.worldPan.y,
         didDrag: false,
+        cauldronIndex,
       };
       this.worldDrag = this.worldGesture;
     }
@@ -833,6 +836,16 @@ export class BrewingCauldronManager {
       return;
     }
 
+    const tapCauldronIndex =
+      event.type !== 'pointercancel' &&
+      this.worldPointers.size === 1 &&
+      this.worldGesture?.type === 'pan' &&
+      this.worldGesture.pointerId === pointerId &&
+      this.worldGesture.didDrag !== true &&
+      Number.isInteger(this.worldGesture.cauldronIndex)
+        ? this.worldGesture.cauldronIndex
+        : null;
+
     if (event.pointerId !== undefined) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
@@ -863,6 +876,13 @@ export class BrewingCauldronManager {
     this.worldGesture = null;
     this.worldDrag = null;
     this.settleWorldViewport();
+
+    if (tapCauldronIndex !== null) {
+      this.suppressWorldClick();
+      event.preventDefault();
+      event.stopPropagation();
+      this.openCauldronOrBuy(tapCauldronIndex);
+    }
   }
 
   startWorldPinchGesture() {
@@ -933,6 +953,15 @@ export class BrewingCauldronManager {
 
   getPointerId(event) {
     return event.pointerId ?? 'mouse';
+  }
+
+  getCauldronIndexFromElement(element) {
+    const cauldron = element?.closest?.('.brewing-page__cauldron');
+    const cauldronIndex = Number(cauldron?.dataset?.cauldronIndex);
+
+    return Number.isInteger(cauldronIndex)
+      ? this.normalizeCauldronIndex(cauldronIndex)
+      : null;
   }
 
   getPointerDistance(firstPointer, secondPointer) {
@@ -1334,7 +1363,7 @@ export class BrewingCauldronManager {
     const groups = this.groupAdjacentIngredients(brewing?.ingredients ?? []);
 
     if (groups.length === 0) {
-      return 'empty';
+      return '';
     }
 
     return groups

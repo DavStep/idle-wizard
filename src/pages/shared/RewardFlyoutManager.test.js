@@ -160,7 +160,7 @@ describe('RewardFlyoutManager', () => {
     expect(anchor?.style.top).toBe('174px');
   });
 
-  it('keeps reward visuals disabled when icon mode is off', () => {
+  it('plays reward visuals when icon mode data is missing', () => {
     const host = document.createElement('section');
     const summonCircle = document.createElement('span');
     summonCircle.className = 'workshop-page__summon-circle';
@@ -177,10 +177,10 @@ describe('RewardFlyoutManager', () => {
     });
 
     expect(document.querySelector('.room-reward-flyout')?.textContent).toBe('sage seed found');
-    expect(document.querySelector('.room-reward-flyout')?.classList).not.toContain(
+    expect(document.querySelector('.room-reward-flyout')?.classList).toContain(
       'is-visual-only',
     );
-    expect(document.querySelector('.room-item-drop')).toBeNull();
+    expect(document.querySelector('.room-item-drop-anchor.is-seed')).not.toBeNull();
   });
 
   it('keeps seed summon text visible in icon mode when reduced motion disables drops', () => {

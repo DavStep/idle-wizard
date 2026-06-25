@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.45
+
+- Fixed empty Brewing cauldrons so tapping the cauldron opens its dialog reliably on mobile.
+
 ## 0.2.44
 
 - Removed the weekly world event shortcut from the Garden room so the event entry stays on Workshop.

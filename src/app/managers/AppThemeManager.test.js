@@ -6,7 +6,7 @@ import { AppThemeManager } from './AppThemeManager.js';
 
 function createPlayerFacade(
   initialTheme = 'white',
-  initialColorMode = 'monochrome',
+  initialColorMode = 'resources',
   initialFont = 'lexend',
   initialIconMode = 'icons',
   initialProgressBar = 'regular',
@@ -98,7 +98,7 @@ describe('AppThemeManager', () => {
 
     expect(document.documentElement.dataset.styleTheme).toBe('midnight');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
-    expect(document.documentElement.dataset.styleIcons).toBe('none');
+    expect(document.documentElement.dataset.styleIcons).toBe('icons');
     expect(document.documentElement.dataset.styleProgress).toBe('regular');
 
     playerFacade.setFont('google-lexend');
@@ -124,7 +124,7 @@ describe('AppThemeManager', () => {
     manager.unmount();
     expect(document.documentElement.dataset.styleTheme).toBe('white');
     expect(document.documentElement.dataset.styleFont).toBe('lexend');
-    expect(document.documentElement.dataset.styleColor).toBe('monochrome');
+    expect(document.documentElement.dataset.styleColor).toBe('resources');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
     expect(document.documentElement.dataset.styleProgress).toBe('regular');
   });

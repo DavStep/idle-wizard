@@ -9,7 +9,7 @@ function createPlayerFacade(username) {
     usernamePromptSeen: username !== 'wizard',
     theme: 'white',
     font: 'lexend',
-    colorMode: 'monochrome',
+    colorMode: 'resources',
     character: 'elara',
   };
 
@@ -80,7 +80,7 @@ describe('PlayerBackendSyncManager', () => {
       username: 'Merlin',
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: true,
     });
@@ -107,7 +107,7 @@ describe('PlayerBackendSyncManager', () => {
       username: 'Mira',
       theme: 'black',
       font: 'comic-sans-mono',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: true,
     });
@@ -145,7 +145,7 @@ describe('PlayerBackendSyncManager', () => {
       username: 'Mira',
       theme: 'black',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: true,
     });
@@ -260,7 +260,7 @@ describe('PlayerBackendSyncManager', () => {
       username: 'MobileDav',
       theme: 'black',
       font: 'comic-sans-mono',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: true,
     });
@@ -284,7 +284,7 @@ describe('PlayerBackendSyncManager', () => {
       username: 'wizard',
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'mira',
       usernamePromptSeen: false,
     });
@@ -297,7 +297,7 @@ describe('PlayerBackendSyncManager', () => {
       username: 'wizard',
       theme: 'midnight',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'mira',
       usernamePromptSeen: false,
     });
@@ -306,7 +306,7 @@ describe('PlayerBackendSyncManager', () => {
       username: 'wizard',
       theme: 'white',
       font: 'lexend',
-      colorMode: 'monochrome',
+      colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: false,
     });

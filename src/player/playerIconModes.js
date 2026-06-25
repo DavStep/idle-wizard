@@ -2,10 +2,6 @@ export const DEFAULT_PLAYER_ICON_MODE = 'icons';
 
 export const PLAYER_ICON_MODE_OPTIONS = Object.freeze([
   Object.freeze({
-    key: 'none',
-    label: 'no icons',
-  }),
-  Object.freeze({
     key: 'icons',
     label: 'icons',
   }),
@@ -13,9 +9,10 @@ export const PLAYER_ICON_MODE_OPTIONS = Object.freeze([
 
 const ICON_MODE_KEYS = new Set(PLAYER_ICON_MODE_OPTIONS.map((mode) => mode.key));
 const ICON_MODE_ALIASES = new Map([
-  ['off', 'none'],
-  ['no-icons', 'none'],
-  ['no icons', 'none'],
+  ['none', 'icons'],
+  ['off', 'icons'],
+  ['no-icons', 'icons'],
+  ['no icons', 'icons'],
   ['on', 'icons'],
   ['icon', 'icons'],
   ['enabled', 'icons'],

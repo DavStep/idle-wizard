@@ -103,9 +103,7 @@ describe('TopPanelViewManager', () => {
       'device',
       'theme',
       'font',
-      'color',
       'progress bar',
-      'icons',
     ]);
 
     expect(stage.querySelector('.room-top-panel__plotView-section')).toBeNull();
@@ -118,28 +116,7 @@ describe('TopPanelViewManager', () => {
           (item) => [item.textContent, item.dataset.resourceColor],
         ),
       })),
-    ).toEqual([
-      {
-        mode: 'monochrome',
-        labels: [
-          ['mana 100/100', 'mana'],
-          ['34.4k coin', 'coin'],
-          ['sage seed', 'seed'],
-          ['sage', 'herb'],
-          ['mana tonic', 'potion'],
-        ],
-      },
-      {
-        mode: 'resources',
-        labels: [
-          ['mana 100/100', 'mana'],
-          ['34.4k coin', 'coin'],
-          ['sage seed', 'seed'],
-          ['sage', 'herb'],
-          ['mana tonic', 'potion'],
-        ],
-      },
-    ]);
+    ).toEqual([]);
 
     expect(
       [
@@ -166,22 +143,7 @@ describe('TopPanelViewManager', () => {
       hasPotionIcon: Boolean(preview.querySelector('.style-potion-label')),
     }));
 
-    expect(iconPreviews).toEqual([
-      {
-        mode: 'none',
-        labels: ['34.4k coin', 'sage seed', 'mana tonic'],
-        hasCoinIcon: true,
-        hasSeedIcon: true,
-        hasPotionIcon: true,
-      },
-      {
-        mode: 'icons',
-        labels: ['34.4k coin', 'sage seed', 'mana tonic'],
-        hasCoinIcon: true,
-        hasSeedIcon: true,
-        hasPotionIcon: true,
-      },
-    ]);
+    expect(iconPreviews).toEqual([]);
   });
 
   it('keeps top-panel character images larger than the shared inline icon default', () => {

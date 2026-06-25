@@ -231,9 +231,7 @@ export class TopPanelViewManager {
     const deviceSection = this.createDevicePreferenceSection();
     const themeSection = this.createVisualSettingSection('theme');
     const fontSection = this.createVisualSettingSection('font');
-    const colorSection = this.createVisualSettingSection('color');
     const progressBarSection = this.createVisualSettingSection('progressBar');
-    const iconsSection = this.createVisualSettingSection('icons');
 
     this.refs.visualSettingStatus = document.createElement('div');
     this.refs.visualSettingStatus.className = 'room-top-panel__visual-status';
@@ -243,9 +241,7 @@ export class TopPanelViewManager {
       deviceSection,
       themeSection,
       fontSection,
-      colorSection,
       progressBarSection,
-      iconsSection,
       this.refs.visualSettingStatus,
     );
 
