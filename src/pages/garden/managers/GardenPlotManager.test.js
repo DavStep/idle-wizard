@@ -421,8 +421,29 @@ describe('GardenPlotManager', () => {
     expect(centeredRule).toContain('left: 50%;');
     expect(centeredRule).toContain('right: auto;');
     expect(centeredRule).toContain('bottom: auto;');
+    expect(centeredRule).toContain(
+      'font-size: var(--style-box-border-label-font-size);',
+    );
+    expect(centeredRule).toContain(
+      'line-height: var(--style-box-border-label-line-height);',
+    );
     expect(centeredRule).toContain('text-align: center;');
     expect(centeredRule).toContain('transform: translate(-50%, -50%);');
+  });
+
+  it('uses smaller type for plot box stars and bottom-right statuses', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const boxLevelRule = baseCss.match(
+      /\.garden-page__plot-box-level\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const boxActionRule = baseCss.match(
+      /\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(boxLevelRule).toContain('font-size: var(--style-tiny-font-size);');
+    expect(boxLevelRule).toContain('line-height: var(--style-tiny-line-height);');
+    expect(boxActionRule).toContain('font-size: var(--style-tiny-font-size);');
+    expect(boxActionRule).toContain('line-height: var(--style-tiny-line-height);');
   });
 
   it('lets the Garden page scroll instead of fixing plot and herb box heights', () => {

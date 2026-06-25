@@ -6944,6 +6944,8 @@ div.workshop-page__discovery-row {
   left: 5px;
   top: auto;
   color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  line-height: var(--style-tiny-line-height);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -7019,9 +7021,9 @@ div.workshop-page__discovery-row {
   min-height: 0;
   max-width: calc(100% - 10px);
   overflow: hidden;
-  font-size: var(--style-box-border-label-font-size);
+  font-size: var(--style-tiny-font-size);
   font-weight: bold;
-  line-height: var(--style-box-border-label-line-height);
+  line-height: var(--style-tiny-line-height);
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -7038,6 +7040,8 @@ div.workshop-page__discovery-row {
   right: auto;
   bottom: auto;
   left: 50%;
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
   text-align: center;
   transform: translate(-50%, -50%);
 }

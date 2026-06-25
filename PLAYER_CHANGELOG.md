@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.38
+
+- Polished star labels for upgraded cauldrons and emerald research, and tightened the Guild secretary and top-panel avatar layouts.
+
 ## 0.2.37
 
 - Added batch brewing controls so upgraded cauldrons can brew `x2` and higher amounts when the ingredients and mana are available.
