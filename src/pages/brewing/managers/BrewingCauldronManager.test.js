@@ -454,7 +454,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('shows cauldron stars in the cauldron title', () => {
+  it('shows cauldron stars in the cauldron title after emerald upgrades', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -462,7 +462,7 @@ describe('BrewingCauldronManager', () => {
         recipes: [],
         maxIngredients: 5,
         manaCost: 12,
-        level: 3,
+        level: 1,
         activeBrew: null,
         selectedRecipe: null,
         match: null,
@@ -479,10 +479,17 @@ describe('BrewingCauldronManager', () => {
     manager.mount(parent);
 
     const title = parent.querySelector('.brewing-page__cauldron .style-box__title');
+    expect(title?.textContent).toBe('cauldron 1');
+    expect(title?.getAttribute('aria-label')).toBe('cauldron 1 0 stars');
+    expect(title?.querySelector('.style-star-level')).toBeNull();
+
+    snapshot.brewing.level = 3;
+    manager.render(snapshot);
+
     const star = title?.querySelector('.style-star-level');
 
-    expect(title?.textContent).toBe('cauldron 1 ★★★');
-    expect(title?.getAttribute('aria-label')).toBe('cauldron 1 yellow star 3');
+    expect(title?.textContent).toBe('cauldron 1 ★★');
+    expect(title?.getAttribute('aria-label')).toBe('cauldron 1 yellow star 2');
     expect(star?.dataset.starTone).toBe('yellow');
 
     manager.unmount();
@@ -582,7 +589,7 @@ describe('BrewingCauldronManager', () => {
     expect(parent.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
     expect(
       parent.querySelector('.brewing-page__cauldron .style-box__title')?.textContent,
-    ).toBe('cauldron 1 ★');
+    ).toBe('cauldron 1');
     expect(guide?.querySelector('.brewing-page__cauldron-recipe-row')).toBeNull();
     expect(guide?.textContent).not.toContain('recipe');
     expect(guide?.textContent).toContain('- 3 sage');

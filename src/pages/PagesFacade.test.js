@@ -1049,12 +1049,13 @@ function createGameplayFacadeFake() {
       researches: [
         {
           id: 'emerald:cauldronBrewing:1:2',
-          label: 'cauldron 1 lvl 2',
+          label: 'cauldron 1',
           value: '1 emerald',
           effect: 'x2 potions',
           showEffect: true,
           actionType: 'levelUp',
           level: 2,
+          starLevel: 1,
           requiredResearchIds: [],
           costCoin: 0,
           costEmerald: 1,
@@ -10029,7 +10030,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.brewing-page__cauldron .style-box__title')].map(
         (title) => title.textContent,
       ),
-    ).toEqual(['cauldron 1 ★', 'cauldron 2 ★', 'cauldron 3 ★']);
+    ).toEqual(['cauldron 1', 'cauldron 2', 'cauldron 3']);
   });
 
   it('shows the next Brewing cauldron as a buyable locked box', () => {
@@ -10071,12 +10072,8 @@ describe('PagesFacade', () => {
     cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
     expect(cauldrons).toHaveLength(3);
     expect(cauldrons[1].classList.contains('is-locked')).toBe(false);
-    expect(cauldrons[1].querySelector('.style-box__title')?.textContent).toBe(
-      'cauldron 2 ★',
-    );
-    expect(cauldrons[2].querySelector('.style-box__title')?.textContent).toBe(
-      'cauldron 3 ★',
-    );
+    expect(cauldrons[1].querySelector('.style-box__title')?.textContent).toBe('cauldron 2');
+    expect(cauldrons[2].querySelector('.style-box__title')?.textContent).toBe('cauldron 3');
     expect(cauldrons[2].classList.contains('is-locked')).toBe(true);
   });
 

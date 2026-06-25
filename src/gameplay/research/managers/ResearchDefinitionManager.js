@@ -23,6 +23,8 @@ import {
   emeraldResearchIds,
   emeraldResearchMaxMultiplier,
   emeraldResearchMinMultiplier,
+  formatEmeraldResearchStars,
+  getEmeraldResearchStarLevel,
 } from '../emeraldResearchIds.js';
 import {
   capacityResearchIds,
@@ -449,11 +451,13 @@ export class ResearchDefinitionManager {
           count: this.getAutomationCauldronCount({ includeLevelLockedAutomation }),
           getId: emeraldResearchIds.cauldronBrewing,
           seriesId: (cauldronNumber) => `emerald:cauldronBrewing:${cauldronNumber}`,
-          label: (cauldronNumber, multiplier) =>
-            `cauldron ${cauldronNumber} lvl ${multiplier}`,
+          label: (cauldronNumber) => `cauldron ${cauldronNumber}`,
           effect: (multiplier) => `x${multiplier} potions`,
+          starLevel: (multiplier) => getEmeraldResearchStarLevel(multiplier),
           description: (cauldronNumber, multiplier) =>
-            `levels cauldron ${cauldronNumber} to lvl ${multiplier}: it uses ${multiplier} recipe inputs and mana costs to bottle ${multiplier} potions in one brew timer.`,
+            `sets cauldron ${cauldronNumber} to ${formatEmeraldResearchStars(
+              multiplier,
+            )}: it uses ${multiplier} recipe inputs and mana costs to bottle ${multiplier} potions in one brew timer.`,
         }),
       },
     ];
@@ -588,7 +592,15 @@ export class ResearchDefinitionManager {
     return researches;
   }
 
-  getEmeraldSlotResearches({ count, getId, seriesId, label, effect, description }) {
+  getEmeraldSlotResearches({
+    count,
+    getId,
+    seriesId,
+    label,
+    effect,
+    starLevel,
+    description,
+  }) {
     const researches = [];
 
     for (let targetNumber = 1; targetNumber <= count; targetNumber += 1) {
@@ -604,6 +616,7 @@ export class ResearchDefinitionManager {
           showEffect: true,
           actionType: 'levelUp',
           level: multiplier,
+          ...(starLevel ? { starLevel: starLevel(multiplier) } : {}),
           seriesId: seriesId(targetNumber),
           requiredResearchIds:
             multiplier > emeraldResearchMinMultiplier

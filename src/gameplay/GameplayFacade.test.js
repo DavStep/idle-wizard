@@ -1918,9 +1918,10 @@ describe('GameplayFacade', () => {
     });
     expect(research.tabs[3].boxes[1].researches[0]).toMatchObject({
       id: emeraldResearchIds.cauldronBrewing(1, 2),
-      label: 'cauldron 1 lvl 2',
+      label: 'cauldron 1',
       value: '1 emerald',
       effect: 'x2 potions',
+      starLevel: 1,
       costCoin: 0,
       costEmerald: 1,
       costCurrency: 'emerald',

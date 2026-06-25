@@ -203,7 +203,18 @@ describe('TopPanelViewManager', () => {
 
     expect(topAvatarRule).toMatch(/\bwidth:\s*var\(--room-top-panel-avatar-size\);/);
     expect(topAvatarRule).toMatch(/\bheight:\s*var\(--room-top-panel-avatar-size\);/);
+    expect(topAvatarRule).toMatch(/\bborder:\s*0;/);
     expect(pickerAvatarRule).toMatch(/\bwidth:\s*72px;/);
     expect(pickerAvatarRule).toMatch(/\bheight:\s*72px;/);
+  });
+
+  it('keeps top-panel identity chrome tight to the left edge', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const topPanelRule = baseCss.match(
+      /\.style-panel\.room-top-panel\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(topPanelRule).toMatch(/\bgap:\s*2px 6px;/);
+    expect(topPanelRule).toMatch(/\bpadding-left:\s*2px;/);
   });
 });

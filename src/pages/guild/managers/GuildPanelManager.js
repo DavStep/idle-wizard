@@ -352,16 +352,7 @@ export class GuildPanelManager {
     return this.createBox(
       'secretary',
       [
-        this.createSecretaryIconRow(),
-        this.createTextRow('level', secretary.level ?? 1),
-        this.createTextRow(
-          'adventurers',
-          this.createUpgradePreviewText(secretary.hiredCap ?? 1, secretary.next?.hiredCap),
-        ),
-        this.createTextRow(
-          'board',
-          this.createUpgradePreviewText(secretary.boardSlots ?? 3, secretary.next?.boardSlots),
-        ),
+        this.createSecretarySummary(secretary),
         this.createSecretaryUpgradeButton(secretary),
       ],
       {
@@ -371,6 +362,28 @@ export class GuildPanelManager {
             : '',
       },
     );
+  }
+
+  createSecretarySummary(secretary) {
+    const summary = document.createElement('div');
+    summary.className = 'guild-page__secretary-summary';
+
+    const rows = document.createElement('div');
+    rows.className = 'guild-page__secretary-rows';
+    rows.append(
+      this.createTextRow('level', secretary.level ?? 1),
+      this.createTextRow(
+        'adventurers',
+        this.createUpgradePreviewText(secretary.hiredCap ?? 1, secretary.next?.hiredCap),
+      ),
+      this.createTextRow(
+        'board',
+        this.createUpgradePreviewText(secretary.boardSlots ?? 3, secretary.next?.boardSlots),
+      ),
+    );
+
+    summary.append(this.createSecretaryIconRow(), rows);
+    return summary;
   }
 
   createSecretaryIconRow() {

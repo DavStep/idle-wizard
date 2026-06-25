@@ -553,9 +553,12 @@ describe('GuildPanelManager', () => {
     const secretaryBox = [...parent.querySelectorAll('.guild-page__box')].find(
       (box) => box.querySelector('.style-box__title')?.textContent === 'secretary',
     );
+    const summary = secretaryBox?.querySelector('.guild-page__secretary-summary');
     const iconRow = secretaryBox?.querySelector('.guild-page__secretary-icon-row');
     const icon = secretaryBox?.querySelector('.guild-page__secretary-icon');
+    const rows = secretaryBox?.querySelector('.guild-page__secretary-rows');
 
+    expect([...(summary?.children ?? [])]).toEqual([iconRow, rows]);
     expect(iconRow).not.toBeNull();
     expect(icon?.tagName).toBe('IMG');
     expect(icon?.getAttribute('src')).toContain('guild_secretary.png');
@@ -625,21 +628,33 @@ describe('GuildPanelManager', () => {
     expect(gainRule).toMatch(/\bcolor:\s*var\(--style-alliance-tag-green\);/);
   });
 
-  it('styles the guild secretary icon at character row size without a fixed canvas', () => {
+  it('styles the guild secretary icon bigger and left of the secretary stats', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const summaryRule = baseCss.match(
+      /\.guild-page__secretary-summary\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const rowRule = baseCss.match(
       /\.guild-page__secretary-icon-row\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const iconRule = baseCss.match(
       /\.guild-page__secretary-icon\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const rowsRule = baseCss.match(
+      /\.guild-page__secretary-rows\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
+    expect(summaryRule).toMatch(/\bdisplay:\s*grid;/);
+    expect(summaryRule).toMatch(/\bgrid-template-columns:\s*88px minmax\(0,\s*1fr\);/);
+    expect(summaryRule).toMatch(/\bmin-height:\s*72px;/);
     expect(rowRule).toMatch(/\bdisplay:\s*flex;/);
-    expect(rowRule).toMatch(/\bjustify-content:\s*center;/);
-    expect(rowRule).toMatch(/\bmin-height:\s*48px;/);
+    expect(rowRule).toMatch(/\bjustify-content:\s*flex-start;/);
+    expect(rowRule).toMatch(/\bmin-height:\s*72px;/);
     expect(iconRule).toMatch(/\bwidth:\s*auto;/);
-    expect(iconRule).toMatch(/\bheight:\s*48px;/);
+    expect(iconRule).toMatch(/\bheight:\s*72px;/);
     expect(iconRule).toMatch(/\bobject-fit:\s*contain;/);
+    expect(iconRule).toMatch(/\bobject-position:\s*0 100%;/);
+    expect(rowsRule).toMatch(/\bdisplay:\s*flex;/);
+    expect(rowsRule).toMatch(/\bflex-direction:\s*column;/);
   });
 
   it('styles secretary upgrade motion with a reduced-motion fallback', () => {

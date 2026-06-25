@@ -48,4 +48,29 @@ describe('ResearchInfoDialogManager', () => {
     expect(dialog?.textContent).toContain('plot 1 lvl 2');
     expect(dialog?.textContent).toContain('levels plot 1 to lvl 2');
   });
+
+  it('shows cauldron upgrade stars in level up information', () => {
+    const manager = new ResearchInfoDialogManager();
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+    manager.show({
+      label: 'cauldron 1',
+      actionType: 'levelUp',
+      starLevel: 1,
+      description:
+        'sets cauldron 1 to ★: it uses 2 recipe inputs and mana costs to bottle 2 potions in one brew timer.',
+    });
+
+    const dialog = stage.querySelector('[role="dialog"]');
+    const title = dialog?.querySelector('.style-box__title');
+    const star = title?.querySelector('.style-star-level');
+
+    expect(dialog?.getAttribute('aria-label')).toBe(
+      'cauldron 1 yellow star 1 level up information',
+    );
+    expect(title?.textContent).toBe('cauldron 1 ★');
+    expect(star?.dataset.starCount).toBe('1');
+    expect(dialog?.textContent).not.toContain('lvl');
+  });
 });

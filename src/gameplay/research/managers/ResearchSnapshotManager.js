@@ -1,3 +1,5 @@
+import { formatEmeraldResearchStarLevel } from '../emeraldResearchIds.js';
+
 export class ResearchSnapshotManager {
   constructor({
     crystalFacade,
@@ -124,6 +126,10 @@ export class ResearchSnapshotManager {
   }
 
   getCompletedValue(research) {
+    if (research?.starLevel) {
+      return formatEmeraldResearchStarLevel(research.starLevel);
+    }
+
     if (research?.actionType === 'levelUp') {
       return `lvl ${this.normalizeResearchLevel(research.level)}`;
     }

@@ -140,12 +140,13 @@ describe('ResearchDefinitionManager', () => {
     });
     expect(cauldronBox?.researches[0]).toMatchObject({
       id: 'emerald:cauldronBrewing:1:2',
-      label: 'cauldron 1 lvl 2',
+      label: 'cauldron 1',
       value: 'x2 potions',
       actionType: 'levelUp',
       level: 2,
+      starLevel: 1,
       description:
-        'levels cauldron 1 to lvl 2: it uses 2 recipe inputs and mana costs to bottle 2 potions in one brew timer.',
+        'sets cauldron 1 to ★: it uses 2 recipe inputs and mana costs to bottle 2 potions in one brew timer.',
     });
   });
 });

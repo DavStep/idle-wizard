@@ -137,6 +137,7 @@
 - FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.
+- Top-panel screenshot QA on a fresh FTUE save must reveal `top mana` or complete FTUE first; empty `data-tutorial-reveal` hides the chrome.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
@@ -235,6 +236,7 @@
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
 - Task difficulty uses two curves: global bands by level range plus local ten-level boss/relief rhythm, so 10/20/30/... are gates and the next row is easier.
 - Research balance/default config is mirrored in `ResearchBalanceManager`, `src/gameplay/research/research-balance.json`, `scripts/balance-sim.js`, and `spacetimedb/src/index.ts`; update all together when changing research costs/currencies.
+- Cauldron star display starts at 0 stars; the first emerald cauldron level-up costs 1 emerald and displays 1 star while the internal brew multiplier becomes 2.
 - SpacetimeDB task runtime config can still expose legacy `completionCostGold`; client task balance must treat it as `completionCostCoin` or level-up prices fall back to `level * 20`.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
 - Emerald plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep internal research ids if needed, but do not present them as ordinary research.

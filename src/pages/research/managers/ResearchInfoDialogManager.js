@@ -1,3 +1,5 @@
+import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
+
 export class ResearchInfoDialogManager {
   constructor() {
     this.refs = {};
@@ -99,9 +101,44 @@ export class ResearchInfoDialogManager {
 
     const label = this.currentResearch?.label ?? 'research';
     const actionNoun = this.getActionNoun(this.currentResearch);
-    this.refs.title.textContent = label;
+    this.refs.title.replaceChildren(
+      ...this.createTitleParts(this.currentResearch, label),
+    );
     this.refs.body.textContent = this.getCopy(this.currentResearch);
-    this.refs.dialog?.setAttribute('aria-label', `${label} ${actionNoun} information`);
+    this.refs.dialog?.setAttribute(
+      'aria-label',
+      `${this.formatAccessibleLabel(this.currentResearch, label)} ${actionNoun} information`,
+    );
+  }
+
+  createTitleParts(research, fallbackLabel) {
+    const starLevel = this.getResearchStarLevel(research);
+    const label = research?.label ?? fallbackLabel;
+
+    if (starLevel <= 0) {
+      return [document.createTextNode(label)];
+    }
+
+    return [
+      document.createTextNode(`${label} `),
+      createStarLevelLabel(starLevel),
+    ];
+  }
+
+  formatAccessibleLabel(research, fallbackLabel) {
+    const starLevel = this.getResearchStarLevel(research);
+    const label = research?.label ?? fallbackLabel;
+
+    if (starLevel <= 0) {
+      return label;
+    }
+
+    return `${label} ${formatStarLevel(starLevel).ariaLabel}`;
+  }
+
+  getResearchStarLevel(research) {
+    const safeStarLevel = Math.floor(Number(research?.starLevel));
+    return Number.isInteger(safeStarLevel) && safeStarLevel > 0 ? safeStarLevel : 0;
   }
 
   getCopy(research) {

@@ -1683,7 +1683,10 @@ export class BrewingCauldronManager {
 
   formatCauldronTitle(brewing) {
     const cauldronNumber = Math.max(1, Math.floor(Number(brewing?.cauldronNumber) || 1));
-    return `cauldron ${cauldronNumber} ${formatStarLevel(brewing?.level).text}`;
+    const starLevel = this.getCauldronStarLevel(brewing);
+    return starLevel > 0
+      ? `cauldron ${cauldronNumber} ${formatStarLevel(starLevel).text}`
+      : `cauldron ${cauldronNumber}`;
   }
 
   renderCauldronTitle(element, brewing) {
@@ -1692,19 +1695,37 @@ export class BrewingCauldronManager {
     }
 
     const cauldronNumber = Math.max(1, Math.floor(Number(brewing?.cauldronNumber) || 1));
-    const starLevel = formatStarLevel(brewing?.level);
-    const signature = `${cauldronNumber}:${starLevel.tone}:${starLevel.starCount}`;
+    const cauldronStarLevel = this.getCauldronStarLevel(brewing);
+    const starLevel = cauldronStarLevel > 0 ? formatStarLevel(cauldronStarLevel) : null;
+    const signature = `${cauldronNumber}:${cauldronStarLevel}:${starLevel?.tone ?? 'none'}:${
+      starLevel?.starCount ?? 0
+    }`;
 
     if (element.dataset.cauldronStarTitle === signature) {
       return;
     }
 
-    element.replaceChildren(
-      document.createTextNode(`cauldron ${cauldronNumber} `),
-      createStarLevelLabel(brewing?.level),
-    );
+    if (starLevel) {
+      element.replaceChildren(
+        document.createTextNode(`cauldron ${cauldronNumber} `),
+        createStarLevelLabel(cauldronStarLevel),
+      );
+    } else {
+      element.textContent = `cauldron ${cauldronNumber}`;
+    }
+
     element.dataset.cauldronStarTitle = signature;
-    element.setAttribute('aria-label', `cauldron ${cauldronNumber} ${starLevel.ariaLabel}`);
+    element.setAttribute(
+      'aria-label',
+      starLevel
+        ? `cauldron ${cauldronNumber} ${starLevel.ariaLabel}`
+        : `cauldron ${cauldronNumber} 0 stars`,
+    );
+  }
+
+  getCauldronStarLevel(brewing) {
+    const level = Math.max(1, Math.floor(Number(brewing?.level) || 1));
+    return Math.max(0, level - 1);
   }
 
   formatCauldronStatus(brewing) {

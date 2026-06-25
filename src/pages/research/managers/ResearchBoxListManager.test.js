@@ -141,27 +141,29 @@ describe('ResearchBoxListManager', () => {
             label: 'emerald research',
             boxes: [
               {
-                id: 'plotPlanting',
-                label: 'plot level up',
+                id: 'cauldronBrewing',
+                label: 'cauldron level up',
                 researches: [
                   {
-                    id: 'emerald:plotPlanting:1:2',
-                    label: 'plot 1 lvl 2',
-                    value: 'lvl 2',
-                    effect: 'x2 herbs',
+                    id: 'emerald:cauldronBrewing:1:2',
+                    label: 'cauldron 1',
+                    value: '★',
+                    effect: 'x2 potions',
                     showEffect: true,
                     actionType: 'levelUp',
                     level: 2,
+                    starLevel: 1,
                     completed: true,
                   },
                   {
-                    id: 'emerald:plotPlanting:1:3',
-                    label: 'plot 1 lvl 3',
+                    id: 'emerald:cauldronBrewing:1:3',
+                    label: 'cauldron 1',
                     value: '2 emerald',
-                    effect: 'x3 herbs',
+                    effect: 'x3 potions',
                     showEffect: true,
                     actionType: 'levelUp',
                     level: 3,
+                    starLevel: 2,
                     completed: false,
                     canResearch: true,
                   },
@@ -172,7 +174,7 @@ describe('ResearchBoxListManager', () => {
         ],
         completedResearchIds: [
           'advanced:plotGrowth:1:1',
-          'emerald:plotPlanting:1:2',
+          'emerald:cauldronBrewing:1:2',
         ],
       },
     };
@@ -206,18 +208,33 @@ describe('ResearchBoxListManager', () => {
     manager.onSelectTab('emerald');
 
     const completedEmeraldRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
-      row.textContent?.includes('plot 1 lvl 2'),
+      row.textContent?.includes('x2 potions'),
     );
     const availableEmeraldRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
-      row.textContent?.includes('plot 1 lvl 3'),
+      row.textContent?.includes('x3 potions'),
+    );
+    const completedEmeraldName = completedEmeraldRow?.querySelector(
+      '.research-page__research-name',
+    );
+    const completedEmeraldValue = completedEmeraldRow?.querySelector(
+      '.research-page__research-value',
+    );
+    const availableEmeraldName = availableEmeraldRow?.querySelector(
+      '.research-page__research-name',
     );
 
+    expect(completedEmeraldName?.textContent).toBe('cauldron 1 ★');
     expect(
-      completedEmeraldRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
-    ).toBe('emerald');
+      completedEmeraldName?.querySelector('.style-star-level')?.dataset.starCount,
+    ).toBe('1');
+    expect(completedEmeraldName?.dataset.resourceColor).toBe('emerald');
+    expect(completedEmeraldValue?.textContent).toBe('★');
     expect(
-      completedEmeraldRow?.querySelector('.research-page__research-value')?.dataset.resourceColor,
-    ).toBe('emerald');
+      completedEmeraldValue?.querySelector('.style-star-level')?.dataset.starCount,
+    ).toBe('1');
+    expect(completedEmeraldValue?.dataset.resourceColor).toBe('emerald');
+    expect(availableEmeraldName?.textContent).toBe('cauldron 1 ★★');
+    expect(stage.textContent).not.toContain('cauldron 1 lvl');
     expect(
       availableEmeraldRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
     ).toBe('emerald');
@@ -225,7 +242,7 @@ describe('ResearchBoxListManager', () => {
       availableEmeraldRow
         ?.querySelector('.research-page__research-button')
         ?.getAttribute('aria-label'),
-    ).toBe('level up plot 1 lvl 3 x3 herbs for 2 emerald');
+    ).toBe('level up cauldron 1 ★★ x3 potions for 2 emerald');
   });
 
   it('lets completed research values use resource color styling', () => {

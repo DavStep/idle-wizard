@@ -10,6 +10,7 @@ import {
   formatRemainingTime,
   TIMER_PROGRESS_STEP_MS,
 } from '../../shared/timerDisplay.js';
+import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
 
 const maxLockedResearchesPerBox = 3;
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
@@ -104,7 +105,7 @@ export class ResearchBoxListManager {
           `${box.id}:${box.researches
             .map(
               (research) =>
-                `${research.id}:${research.label}:${research.value}:${research.effect}:${research.showEffect}:${research.actionType ?? ''}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}:${research.lockReason ?? ''}`,
+                `${research.id}:${research.label}:${research.starLevel ?? ''}:${research.value}:${research.effect}:${research.showEffect}:${research.actionType ?? ''}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}:${research.lockReason ?? ''}`,
             )
             .join(',')}`,
       )
@@ -667,6 +668,7 @@ export class ResearchBoxListManager {
     name.textContent = research.label;
     setItemIconLabel(name, itemKind, this.getResearchItemKey(research));
     setResourceColor(name, this.getResearchNameResourceColor(research, itemKind));
+    this.appendResearchStarLabel(name, research);
 
     if (!research.showEffect) {
       return [name];
@@ -725,11 +727,33 @@ export class ResearchBoxListManager {
       : null;
   }
 
+  appendResearchStarLabel(element, research) {
+    const starLevel = this.getResearchStarLevel(research);
+
+    if (starLevel <= 0) {
+      return;
+    }
+
+    element.append(document.createTextNode(' '), createStarLevelLabel(starLevel));
+  }
+
+  getResearchStarLevel(research) {
+    const safeStarLevel = Math.floor(Number(research?.starLevel));
+    return Number.isInteger(safeStarLevel) && safeStarLevel > 0 ? safeStarLevel : 0;
+  }
+
   createReadonlyValue(research) {
     const val = document.createElement('span');
     val.className = 'row_val research-page__research-value';
 
     if (!research.inProgress) {
+      const starLevel = this.getResearchStarLevel(research);
+      if (research.completed && starLevel > 0) {
+        val.replaceChildren(createStarLevelLabel(starLevel));
+        this.setResearchValueResourceColor(val, research);
+        return val;
+      }
+
       setResourceIconText(val, research.value);
       this.setResearchValueResourceColor(val, research);
       return val;
@@ -872,7 +896,18 @@ export class ResearchBoxListManager {
   }
 
   formatResearchName(research) {
-    return research.showEffect ? `${research.label} ${research.effect}` : research.label;
+    const parts = [research.label];
+    const starLevel = this.getResearchStarLevel(research);
+
+    if (starLevel > 0) {
+      parts.push(formatStarLevel(starLevel).text);
+    }
+
+    if (research.showEffect) {
+      parts.push(research.effect);
+    }
+
+    return parts.filter(Boolean).join(' ');
   }
 
   formatResearchButtonLabel(research) {
