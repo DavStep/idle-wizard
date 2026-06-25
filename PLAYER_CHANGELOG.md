@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.42
+
+- Maintenance release: rebuilt the Android APK and hosted web client from the latest main branch.
+- No gameplay or UI behavior changes from the previous release.
+
 ## 0.2.41
 
 - Fixed large inventory stacks so saved seeds, herbs, and potions above the old cap stay intact after reconnecting or reloading.
