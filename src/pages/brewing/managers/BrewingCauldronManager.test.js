@@ -469,10 +469,23 @@ describe('BrewingCauldronManager', () => {
     const activeTextRule = baseCss.match(
       /\.brewing-page__active-brew-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const emptyItemsRule = baseCss.match(
+      /\.brewing-page__cauldron-items\.is-empty\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const previewLabelHiddenRule = baseCss.match(
+      /\.brewing-page__cauldron-preview-label\[hidden\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(activeBubbleRule).toContain('display: none;');
     expect(previewRule).toContain('position: absolute;');
     expect(previewRule).toContain('width: 78px;');
+    expect(emptyItemsRule).toContain('display: flex;');
+    expect(emptyItemsRule).toContain('align-items: center;');
+    expect(emptyItemsRule).toContain('justify-content: center;');
+    expect(emptyItemsRule).toContain(
+      'width: calc(100% + var(--brewing-page-cauldron-preview-space));',
+    );
+    expect(previewLabelHiddenRule).toContain('display: none;');
     expect(activeTextRule).toContain('white-space: nowrap;');
     expect(activeTextRule).toContain('text-overflow: ellipsis;');
     expect(activeProgressRule).toContain('width: 100%;');
@@ -587,6 +600,82 @@ describe('BrewingCauldronManager', () => {
     expect(firstLeft).toBeGreaterThanOrEqual(15.9);
     expect(secondRight).toBeLessThanOrEqual(344.1);
     expect(manager.worldZoom).toBeLessThan(1);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('renders locked cauldrons like garden buy slots', () => {
+    const snapshot = {
+      coin: { current: 0 },
+      brewing: {
+        herbs: [],
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            ingredients: [],
+            maxIngredients: 5,
+            manaCost: 12,
+            activeBrew: null,
+            selectedRecipe: null,
+            match: null,
+            canAddIngredient: true,
+            canBrew: false,
+          },
+          {
+            cauldronIndex: 1,
+            cauldronNumber: 2,
+            unlocked: false,
+            ingredients: [],
+            maxIngredients: 5,
+            manaCost: 12,
+            nextCauldronCost: 3,
+            canBuyCauldron: false,
+          },
+        ],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const locked = parent.querySelectorAll('.brewing-page__cauldron')[1];
+    const action = locked.querySelector('.brewing-page__action-button');
+    const lockedRule = baseCss.match(
+      /\.brewing-page__cauldron\.is-locked\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lockedPreviewRule = baseCss.match(
+      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__cauldron-preview\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(locked.classList.contains('is-locked')).toBe(true);
+    expect(locked.classList.contains('is-buyable')).toBe(false);
+    expect(locked.getAttribute('aria-disabled')).toBe('true');
+    expect(lockedRule).toContain('border-style: dashed;');
+    expect(lockedRule).toContain('color-mix(in srgb, var(--style-stroke) 45%, transparent)');
+    expect(lockedPreviewRule).toContain('inset: 0;');
+    expect(lockedPreviewRule).toContain('justify-content: center;');
+    expect(locked.querySelector('.brewing-page__cauldron-bubble')?.hidden).toBe(true);
+    expect(locked.querySelector('.brewing-page__cauldron-items')?.hidden).toBe(true);
+    expect(locked.querySelector('.brewing-page__cauldron-preview-label')?.hidden).toBe(true);
+    expect(action?.textContent).toBe('buy 3 coin');
+    expect(action?.disabled).toBe(true);
+
+    snapshot.coin.current = 3;
+    snapshot.brewing.cauldrons[1].canBuyCauldron = true;
+    manager.render(snapshot);
+
+    expect(locked.classList.contains('is-buyable')).toBe(true);
+    expect(locked.getAttribute('aria-disabled')).toBe('false');
+    expect(action?.disabled).toBe(false);
 
     manager.unmount();
     parent.remove();
@@ -1472,7 +1561,63 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('shows potion preview on the right with the brew action beneath it', () => {
+  it('hides the brew action when no recipe or herbs are selected', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            ingredients: [
+              { itemTypeId: 1001, key: 'sageHerb', label: 'sage', quantity: 1 },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => null,
+    });
+
+    manager.mount(parent);
+
+    const actions = parent.querySelector('.brewing-page__actions');
+    const action = parent.querySelector('.brewing-page__action-button');
+    const previewLabel = parent.querySelector('.brewing-page__cauldron-preview-label');
+    const empty = parent.querySelector('.brewing-page__cauldron-empty');
+    const items = parent.querySelector('.brewing-page__cauldron-items');
+    const recipeButton = parent.querySelector('.brewing-page__cauldron-select-recipe-text');
+
+    expect(actions?.hidden).toBe(true);
+    expect(action?.textContent).toBe('');
+    expect(action?.disabled).toBe(true);
+    expect(action?.hasAttribute('data-tutorial-id')).toBe(false);
+    expect(previewLabel?.hidden).toBe(true);
+    expect(previewLabel?.textContent).toBe('');
+    expect(empty?.hidden).toBe(false);
+    expect(empty?.textContent).toBe('empty');
+    expect(items?.classList.contains('is-empty')).toBe(true);
+    expect(recipeButton?.hidden).toBe(false);
+    expect(recipeButton?.textContent).toBe('select recipe');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows only the potion icon on the right with the brew action beneath it', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -1499,10 +1644,14 @@ describe('BrewingCauldronManager', () => {
 
     const preview = parent.querySelector('.brewing-page__cauldron-preview');
     const label = parent.querySelector('.brewing-page__cauldron-preview-label');
+    const icon = parent.querySelector('.brewing-page__cauldron-potion-icon');
     const action = parent.querySelector('.brewing-page__action-button');
 
-    expect(label?.textContent).toBe('wasted potion');
-    expect(label?.dataset.resourceColor).toBe('potion');
+    expect(label?.hidden).toBe(true);
+    expect(label?.textContent).toBe('');
+    expect(label?.dataset.resourceColor).toBeUndefined();
+    expect(icon?.hidden).toBe(false);
+    expect(icon?.dataset.potionIconKey).toBe('wastedPotion');
     expect(action?.closest('.brewing-page__cauldron-preview')).toBe(preview);
     expect(action?.textContent).toBe('brew (5 mana)');
 
@@ -1514,8 +1663,10 @@ describe('BrewingCauldronManager', () => {
     snapshot.brewing.manaCost = 5;
     manager.render(snapshot);
 
-    expect(label?.textContent).toBe('unknown potion');
-    expect(label?.classList.contains('is-unknown')).toBe(true);
+    expect(label?.hidden).toBe(true);
+    expect(label?.textContent).toBe('');
+    expect(label?.classList.contains('is-unknown')).toBe(false);
+    expect(icon?.dataset.potionIconKey).toBe('unknownPotion');
     expect(action?.getAttribute('aria-label')).toBe('brew unknown potion, costs 5 mana');
 
     snapshot.brewing.match = {
@@ -1527,8 +1678,10 @@ describe('BrewingCauldronManager', () => {
     snapshot.brewing.manaCost = 12;
     manager.render(snapshot);
 
-    expect(label?.textContent).toBe('mana tonic');
-    expect(label?.dataset.itemIconKey).toBe('manaTonic');
+    expect(label?.hidden).toBe(true);
+    expect(label?.textContent).toBe('');
+    expect(label?.dataset.itemIconKey).toBeUndefined();
+    expect(icon?.dataset.potionIconKey).toBe('manaTonic');
     expect(action?.textContent).toBe('brew (12 mana)');
 
     manager.unmount();
@@ -1671,7 +1824,7 @@ describe('BrewingCauldronManager', () => {
 
     const statusCauldron = statusParent.querySelector('.brewing-page__cauldron');
     expect(statusCauldron?.style.getPropertyValue('--brewing-page-cauldron-row-count')).toBe(
-      '4',
+      '3',
     );
     expect(
       statusCauldron?.style.getPropertyValue('--brewing-page-cauldron-list-row-count'),

@@ -267,6 +267,35 @@ function createGameplayFacadeFake() {
       publish();
       return { ok: true };
     },
+    buyGardenTile: vi.fn(() => {
+      const plot = snapshot.garden.plot;
+      const tileNumber = plot.nextTileNumber;
+      const cost = plot.nextTileCost;
+      const tile = plot.tiles.find((candidate) => candidate.tileNumber === tileNumber);
+
+      if (
+        !tile ||
+        tile.unlocked ||
+        !Number.isFinite(cost) ||
+        snapshot.coin.current < cost
+      ) {
+        return { ok: false };
+      }
+
+      snapshot.coin.current -= cost;
+      tile.unlocked = true;
+      plot.unlockedTiles = plot.tiles.filter((candidate) => candidate.unlocked).length;
+
+      const nextTile = plot.tiles.find((candidate) => !candidate.unlocked);
+      plot.nextTileNumber = nextTile?.tileNumber ?? null;
+      plot.nextTileCost =
+        nextTile && Array.isArray(plot.tileCosts)
+          ? (plot.tileCosts[nextTile.tileNumber - 1] ?? null)
+          : null;
+
+      publish();
+      return { ok: true, cost, tileNumber };
+    }),
   };
 
   return gameplayFacade;
@@ -312,6 +341,7 @@ describe('GardenPlotManager', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('renders a plot world with three fixed columns', () => {
@@ -403,13 +433,19 @@ describe('GardenPlotManager', () => {
     const centeredActionRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-row\.is-buy-slot\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const boughtFrameRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-newly-bought\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const boughtActionRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-newly-bought\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(frameRule).toContain('border-style: dashed;');
     expect(frameRule).toContain(
-      'border-color: color-mix(in oklch, var(--style-stroke) 45%, transparent);',
+      'border-color: color-mix(in srgb, var(--style-stroke) 45%, transparent);',
     );
     expect(frameRule).toContain(
-      'background: color-mix(in oklch, var(--style-surface) 55%, transparent);',
+      'background: color-mix(in srgb, var(--style-surface) 55%, transparent);',
     );
     expect(hiddenChromeRule).toContain('display: none;');
     expect(centeredActionRule).toContain('top: 50%;');
@@ -418,6 +454,17 @@ describe('GardenPlotManager', () => {
     expect(centeredActionRule).toContain('bottom: auto;');
     expect(centeredActionRule).toContain('text-align: center;');
     expect(centeredActionRule).toContain('transform: translate(-50%, -50%);');
+    expect(boughtFrameRule).toContain(
+      'animation: garden-page-plot-buy-frame var(--style-motion-normal)',
+    );
+    expect(boughtActionRule).toContain(
+      'animation: garden-page-plot-buy-action var(--style-motion-normal)',
+    );
+    expect(baseCss).toContain('@keyframes garden-page-plot-buy-frame');
+    expect(baseCss).toContain('@keyframes garden-page-plot-buy-action');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-row\.is-newly-bought[\s\S]*animation:\s*none;/,
+    );
   });
 
   it('uses smaller type for plot box stars and bottom-right statuses', () => {
@@ -743,6 +790,42 @@ describe('GardenPlotManager', () => {
 
     expect(plotRow.disabled).toBe(false);
     expect(actionLabel?.getAttribute('data-resource-color')).toBe('coin');
+  });
+
+  it('marks a newly bought plot for one snap animation', () => {
+    vi.useFakeTimers();
+
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    snapshot.coin.current = 1;
+    snapshot.garden.plot.maxTiles = 2;
+    snapshot.garden.plot.tileCosts = [0, 1];
+    snapshot.garden.plot.nextTileNumber = 2;
+    snapshot.garden.plot.nextTileCost = 1;
+    snapshot.garden.plot.tiles.push({
+      ...snapshot.garden.plot.tiles[0],
+      tileNumber: 2,
+      unlocked: false,
+    });
+
+    manager.mount(parent);
+
+    const plotRows = [...parent.querySelectorAll('.garden-page__plot-row')];
+
+    expect(plotRows[1].classList.contains('is-buy-slot')).toBe(true);
+
+    plotRows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplayFacade.buyGardenTile).toHaveBeenCalledTimes(1);
+    expect(plotRows[1].classList.contains('is-buy-slot')).toBe(false);
+    expect(plotRows[1].classList.contains('is-newly-bought')).toBe(true);
+
+    vi.advanceTimersByTime(260);
+
+    expect(plotRows[1].classList.contains('is-newly-bought')).toBe(false);
   });
 
   it('keeps plant seed buttons stable between renders and plants mint seed', () => {

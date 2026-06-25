@@ -99,6 +99,7 @@
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
 - World event same-tab refreshes must restore `.workshop-page__world-notice-frame.scrollTop`; live snapshot/leaderboard updates otherwise bounce mobile scrolling back to the top.
 - World event same-tab refreshes should reuse the existing `.workshop-page__world-notice-frame`; replacing the scroll element can still break mobile momentum even when `scrollTop` is restored.
+- World event character entry belongs on Workshop only; Garden should not mount or place `WorkshopWorldNoticeManager`.
 - Snapshot-rendered dialog scroll panes should key and reuse the same scrolling element across same-card/tab refreshes; replacing panes can snap mobile scroll back to top.
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
@@ -618,7 +619,7 @@
 - Reward flyouts that should show item icons need exact item labels/counts; generic text like `3 seeds found` cannot render item icons.
 - Brewing cauldron count lives as a normal-weight border-corner label like `0/5`; empty cauldron status stays blank and `empty` is centered in the box.
 - Empty cauldron item containers are absolute only in the empty state; override their normal fixed scroll height or `empty` centers in the top strip instead of the full cauldron.
-- Brewing cauldron should show `unknown mix` for any non-empty no-match contents; do not wait for a full cauldron.
+- Brewing cauldron should not show a standalone `unknown mix` status row; no-match staged herbs already read through the wasted potion preview/action.
 - Brewing cauldron box should stay compact at partial fill, but leave action-row clearance for status plus five distinct ingredient rows.
 - Brewing cauldron top spacing must reserve the herb-list scroll progress rail so overflow herb rows do not touch the cauldron border.
 - Brewing cauldron should not show a separate `empty` clear button; ingredient rows own correction through their remove action.

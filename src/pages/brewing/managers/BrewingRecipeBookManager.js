@@ -468,7 +468,7 @@ export class BrewingRecipeBookManager {
         : `${cauldron.match.label} locked`;
     }
 
-    return 'unknown mix';
+    return '';
   }
 
   formatActiveBrew(activeBrew) {

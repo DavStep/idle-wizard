@@ -72,6 +72,7 @@ export class BrewingCauldronManager {
     this.worldDrag = null;
     this.worldSettleClassTimeout = null;
     this.herbDrag = null;
+    this.boughtCauldronAnimationResets = new Map();
     this.handleDocumentHerbPointerMove = (event) => this.onHerbPointerMove(event);
     this.handleDocumentHerbPointerUp = (event) => this.onHerbPointerUp(event);
   }
@@ -106,6 +107,7 @@ export class BrewingCauldronManager {
     for (const refs of this.cauldronRefs.values()) {
       stopTimerProgressFill(refs.activeProgressFill, 0);
     }
+    this.clearBoughtCauldronAnimations();
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -122,6 +124,7 @@ export class BrewingCauldronManager {
     this.worldDrag = null;
     this.clearWorldSettleTimers();
     this.clearHerbDrag();
+    this.boughtCauldronAnimationResets.clear();
   }
 
   createWorld() {
@@ -1213,6 +1216,7 @@ export class BrewingCauldronManager {
     refs.root.classList.remove('is-locked', 'is-buyable');
     refs.root.classList.toggle('is-current', brewing.cauldronIndex === this.selectedCauldronIndex);
     refs.root.classList.toggle('has-active-brew', Boolean(brewing.activeBrew));
+    this.removeAttribute(refs.root, 'aria-disabled');
     this.renderCauldronTitle(refs.title, brewing);
     this.setHidden(refs.count, false);
     this.setText(refs.count, this.formatCauldronCount(brewing));
@@ -1222,6 +1226,7 @@ export class BrewingCauldronManager {
     this.setText(refs.status, statusText);
     this.setCauldronStatusRowCount(refs, statusText === '' ? 0 : 1);
     this.renderPotionIcon(refs, brewing);
+    this.setHidden(refs.bubble, false);
     this.renderCauldronBubble(refs, brewing);
     this.renderCauldronGuide(refs, brewing);
     this.renderCauldronItems(refs, brewing);
@@ -1263,11 +1268,18 @@ export class BrewingCauldronManager {
     refs.root.classList.toggle('is-buyable', isBuyable);
     refs.root.classList.remove('is-current');
     refs.root.classList.remove('has-active-brew');
+    this.setAttribute(refs.root, 'aria-disabled', isBuyable ? 'false' : 'true');
     this.setCauldronRowCount(refs);
     this.renderCauldronTitle(refs.title, brewing);
-    this.renderCauldronPreview(refs, brewing);
+    this.setHidden(refs.preview, false);
+    this.setHidden(refs.previewLabel, true);
+    this.setText(refs.previewLabel, '');
+    setResourceColor(refs.previewLabel, null);
+    setItemIconLabel(refs.previewLabel, null);
+    refs.previewLabel.classList.remove('is-empty', 'is-locked', 'is-unknown');
     this.renderPotionIcon(refs, null);
-    this.renderCauldronBubble(refs, brewing);
+    this.setHidden(refs.bubble, true);
+    this.setText(refs.bubble, '');
     this.setHidden(refs.count, true);
     this.setHidden(refs.status, true);
     this.setText(refs.status, '');
@@ -1275,17 +1287,10 @@ export class BrewingCauldronManager {
     this.setHidden(refs.guide, true);
     this.hideExtraCauldronGuideRows(refs, 0);
     this.ensureCauldronEmptyRow(refs);
-    this.setHidden(refs.items, false);
-    refs.items.classList.add('is-empty');
-    this.setHidden(refs.empty, false);
-    this.setText(
-      refs.empty,
-      brewing.nextCauldronLockedByLevel
-        ? `level ${brewing.nextCauldronRequiresLevel ?? '?'}`
-        : brewing.nextCauldronLockedByResearch
-          ? 'research'
-        : 'locked',
-    );
+    this.setHidden(refs.items, true);
+    refs.items.classList.remove('is-empty');
+    this.setHidden(refs.empty, true);
+    this.setText(refs.empty, '');
     this.hideExtraIngredientRows(refs, 0);
     this.setHidden(refs.active, true);
     this.setText(refs.activeText, '');
@@ -1426,24 +1431,26 @@ export class BrewingCauldronManager {
 
   renderCauldronPreview(refs, brewing) {
     const preview = this.getPotionPreview(brewing);
+    const showLabel = Boolean(preview.label) && !preview.iconKey;
 
     this.setHidden(refs.preview, false);
-    this.setText(refs.previewLabel, preview.label);
-    setResourceColor(refs.previewLabel, preview.resource);
+    this.setHidden(refs.previewLabel, !showLabel);
+    this.setText(refs.previewLabel, showLabel ? preview.label : '');
+    setResourceColor(refs.previewLabel, showLabel ? preview.resource : null);
     setItemIconLabel(
       refs.previewLabel,
-      preview.resource === 'potion' ? 'potion' : null,
-      preview.iconKey,
+      showLabel && preview.resource === 'potion' ? 'potion' : null,
+      showLabel ? preview.iconKey : null,
     );
-    refs.previewLabel.classList.toggle('is-empty', preview.empty);
-    refs.previewLabel.classList.toggle('is-locked', preview.locked);
-    refs.previewLabel.classList.toggle('is-unknown', preview.unknown);
+    refs.previewLabel.classList.toggle('is-empty', showLabel && preview.empty);
+    refs.previewLabel.classList.toggle('is-locked', showLabel && preview.locked);
+    refs.previewLabel.classList.toggle('is-unknown', showLabel && preview.unknown);
   }
 
   getPotionPreview(brewing) {
     if (!brewing) {
       return {
-        label: 'no potion',
+        label: '',
         iconKey: null,
         resource: null,
         empty: true,
@@ -1490,7 +1497,7 @@ export class BrewingCauldronManager {
       }
 
       return {
-        label: 'no potion',
+        label: '',
         iconKey: null,
         resource: null,
         empty: true,
@@ -2050,6 +2057,24 @@ export class BrewingCauldronManager {
   renderActions(refs, brewing) {
     const action = this.getPrimaryAction(brewing);
 
+    if (!action) {
+      this.setHidden(refs.actions.root, true);
+      this.setText(refs.actions.actionButtonLabel, '');
+      this.setHidden(refs.actions.actionButtonCost, true);
+      this.setResourceText(refs.actions.actionButtonCost, '');
+      this.setDisabled(refs.actions.actionButton, true);
+      this.removeAttribute(refs.actions.actionButton, 'data-action');
+      this.removeAttribute(refs.actions.actionButton, 'data-tutorial-id');
+      this.removeAttribute(refs.actions.actionButton, 'aria-disabled');
+      this.removeAttribute(refs.actions.actionButton, 'aria-label');
+      setNotificationBadge(refs.actions.actionButton, false);
+      this.setHidden(refs.actions.message, true);
+      this.setText(refs.actions.message, '');
+      this.renderSelectRecipeButton(refs, brewing);
+      return;
+    }
+
+    this.setHidden(refs.actions.root, false);
     this.setText(
       refs.actions.actionButtonLabel,
       action.hasCost ? `${action.label} ` : action.label,
@@ -2189,6 +2214,14 @@ export class BrewingCauldronManager {
             : 'start bottling',
         };
       }
+    }
+
+    if (
+      !brewing.activeBrew &&
+      (brewing.ingredients?.length ?? 0) === 0 &&
+      !brewing.selectedRecipe
+    ) {
+      return null;
     }
 
     if (!brewing.activeBrew && brewing.ingredients.length === 0 && brewing.selectedRecipe) {
@@ -2404,7 +2437,44 @@ export class BrewingCauldronManager {
     }
 
     this.render(this.gameplayFacade.getSnapshot());
+    if (result.ok) {
+      this.playBoughtCauldronAnimation(result.cauldronNumber - 1);
+    }
     this.flashMessage(result.ok ? result.cauldronNumber - 1 : safeCauldronIndex);
+  }
+
+  playBoughtCauldronAnimation(cauldronIndex) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const refs = this.cauldronRefs.get(safeCauldronIndex);
+
+    if (!refs?.root) {
+      return;
+    }
+
+    const previousReset = this.boughtCauldronAnimationResets.get(safeCauldronIndex);
+    if (previousReset !== undefined) {
+      globalThis.clearTimeout(previousReset);
+    }
+
+    refs.root.classList.remove('is-newly-bought');
+    void refs.root.offsetWidth;
+    refs.root.classList.add('is-newly-bought');
+
+    const reset = globalThis.setTimeout(() => {
+      refs.root.classList.remove('is-newly-bought');
+      this.boughtCauldronAnimationResets.delete(safeCauldronIndex);
+    }, 260);
+    reset?.unref?.();
+    this.boughtCauldronAnimationResets.set(safeCauldronIndex, reset);
+  }
+
+  clearBoughtCauldronAnimations() {
+    for (const [cauldronIndex, reset] of this.boughtCauldronAnimationResets) {
+      globalThis.clearTimeout(reset);
+      this.cauldronRefs.get(cauldronIndex)?.root?.classList.remove('is-newly-bought');
+    }
+
+    this.boughtCauldronAnimationResets.clear();
   }
 
   onCauldronWorldClick(event, cauldronIndex) {
@@ -2600,7 +2670,7 @@ export class BrewingCauldronManager {
         : `${brewing.match.label} locked`;
     }
 
-    return 'unknown mix';
+    return '';
   }
 
   formatActionHint(brewing) {

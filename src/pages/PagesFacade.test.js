@@ -9930,8 +9930,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__herbs')).toBeNull();
     expect(
       stage.querySelector('.garden-page__content > .workshop-page__world-notice'),
-    ).not.toBeNull();
-    expect(stage.querySelector('.workshop-page__world-notice-open')).not.toBeNull();
+    ).toBeNull();
+    expect(stage.querySelector('.workshop-page__world-notice-open')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'garden',
     );
@@ -9950,9 +9950,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('empty');
     expect(stage.querySelector('.brewing-page__recipes-button')).toBeNull();
     expect(stage.querySelector('.brewing-page__potions-button')).toBeNull();
-    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
-      'brew (12 mana)',
-    );
+    expect(stage.querySelector('.brewing-page__actions')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('');
     expect(stage.querySelector('.brewing-page__cauldron-select-recipe-text')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__actions')?.classList.contains('is-centered')).toBe(
       true,
@@ -9971,6 +9970,7 @@ describe('PagesFacade', () => {
 
     expect(pagesFacade.getCurrentPageId()).toBe('workshop');
     expect(stage.querySelector('.workshop-page')).not.toBeNull();
+    expect(stage.querySelector('.workshop-page__world-notice-open')).not.toBeNull();
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'workshop',
     );
@@ -10277,17 +10277,18 @@ describe('PagesFacade', () => {
     let cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
     expect(cauldrons).toHaveLength(2);
     expect(cauldrons[1].classList.contains('is-locked')).toBe(true);
-    expect(cauldrons[1].textContent).toContain('locked');
+    expect(cauldrons[1].classList.contains('is-buyable')).toBe(false);
+    expect(cauldrons[1].querySelector('.brewing-page__cauldron-bubble')?.hidden).toBe(true);
+    expect(cauldrons[1].querySelector('.brewing-page__cauldron-items')?.hidden).toBe(true);
     expect(cauldrons[1].querySelector('.brewing-page__action-button')?.textContent).toContain(
       'buy 1 coin',
     );
     expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(true);
 
     gameplayFacade.setCoin(1);
+    expect(cauldrons[1].classList.contains('is-buyable')).toBe(true);
     expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(false);
-    cauldrons[1]
-      .querySelector('.brewing-page__action-button')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    cauldrons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
     expect(cauldrons).toHaveLength(3);
@@ -11683,13 +11684,12 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__ingredient-label')?.dataset.resourceColor).toBe(
       'herb',
     );
-    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.textContent).toBe(
-      'wasted potion',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.hidden).toBe(true);
+    expect(
+      stage.querySelector('.brewing-page__cauldron-potion-icon')?.dataset.potionIconKey,
+    ).toBe('wastedPotion');
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage2');
-    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
-      'unknown mix',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
@@ -11698,9 +11698,10 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.brewing-page__ingredient-count')?.textContent).toBe('3 ');
     expect(stage.querySelector('.brewing-page__ingredient-label')?.textContent).toBe('sage');
-    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.textContent).toBe(
-      'mana tonic locked',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.hidden).toBe(true);
+    expect(
+      stage.querySelector('.brewing-page__cauldron-potion-icon')?.dataset.potionIconKey,
+    ).toBe('manaTonic');
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew (12 mana)',
     );
@@ -11728,9 +11729,10 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
       'matches mana tonic',
     );
-    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.textContent).toBe(
-      'mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.hidden).toBe(true);
+    expect(
+      stage.querySelector('.brewing-page__cauldron-potion-icon')?.dataset.potionIconKey,
+    ).toBe('manaTonic');
     expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 

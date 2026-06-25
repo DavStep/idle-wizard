@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.44
+
+- Removed the weekly world event shortcut from the Garden room so the event entry stays on Workshop.
+- Polished Garden plot and Brewing cauldron buy slots with clearer locked styling and a brief purchase snap animation.
+- Cleaned up Brewing cauldrons so empty cauldrons stay quiet, potion previews use icons, and no-match mixes no longer add an extra `unknown mix` status row.
+
 ## 0.2.42
 
 - Maintenance release: rebuilt the Android APK and hosted web client from the latest main branch.

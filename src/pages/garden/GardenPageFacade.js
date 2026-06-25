@@ -1,17 +1,13 @@
 import { GardenPlotManager } from './managers/GardenPlotManager.js';
 import { GardenRoomViewManager } from './managers/GardenRoomViewManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
-import { WorkshopWorldNoticeManager } from '../workshop/managers/WorkshopWorldNoticeManager.js';
 
 export class GardenPageFacade {
   static explain =
-    'Shows the garden room page: a plot world for growing herbs, seed choices, harvest feedback, and world event access when available.';
+    'Shows the garden room page: a plot world for growing herbs, seed choices, and harvest feedback.';
 
   constructor({
     gameplayFacade,
-    playerFacade,
-    worldEventLeaderboardFacade,
-    onOpenPlayerInfo,
     pixiProgressOverlayManager = null,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -22,12 +18,6 @@ export class GardenPageFacade {
       gameplayFacade,
       pixiProgressOverlayManager,
     });
-    this.worldNoticeManager = new WorkshopWorldNoticeManager({
-      gameplayFacade,
-      playerFacade,
-      worldEventLeaderboardFacade,
-      onOpenPlayerInfo,
-    });
   }
 
   mount(stage) {
@@ -36,7 +26,6 @@ export class GardenPageFacade {
     const contentLayer = this.roomViewManager.getContentLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.plotManager.mount(contentLayer, popupLayer);
-    this.worldNoticeManager.mount(contentLayer, popupLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
       this.gameplayFacade?.subscribeRewardEvents?.((event) =>
@@ -48,7 +37,6 @@ export class GardenPageFacade {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
     this.flyoutManager.unmount();
-    this.worldNoticeManager.unmount();
     this.plotManager.unmount();
     this.roomViewManager.unmount();
   }

@@ -59,6 +59,7 @@ export class GardenPlotManager {
     this.handledSeedPressStartKey = null;
     this.handledSeedPressStartReset = null;
     this.pendingSeedPress = null;
+    this.boughtTileAnimationResets = new Map();
     this.handlePendingSeedPressMove = (event) => this.onPendingSeedPressMove(event);
     this.handlePendingSeedPressEnd = (event) => this.onPendingSeedPressEnd(event);
     this.handlePendingSeedPressCancel = () => this.clearPendingSeedPress();
@@ -147,6 +148,7 @@ export class GardenPlotManager {
       stopTimerProgressFill(refs.fill, 0);
       refs.pixiProgressBar?.unregister?.();
     }
+    this.clearBoughtTileAnimations();
     this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
@@ -164,6 +166,7 @@ export class GardenPlotManager {
     this.handledTileLabelPressStartReset = null;
     this.handledSeedPressStartKey = null;
     this.handledSeedPressStartReset = null;
+    this.boughtTileAnimationResets.clear();
   }
 
   createSeedPopup() {
@@ -921,11 +924,18 @@ export class GardenPlotManager {
     }
 
     if (!tile.unlocked) {
+      let buyResult = null;
+
       if (tileNumber === garden.plot.nextTileNumber) {
-        this.gameplayFacade.buyGardenTile();
+        buyResult = this.gameplayFacade.buyGardenTile();
       }
 
       this.render(this.gameplayFacade.getSnapshot());
+
+      if (buyResult?.ok) {
+        this.playBoughtTileAnimation(buyResult.tileNumber ?? tileNumber);
+      }
+
       return;
     }
 
@@ -1454,6 +1464,39 @@ export class GardenPlotManager {
     }
 
     this.handledSeedPressStartKey = null;
+  }
+
+  playBoughtTileAnimation(tileNumber) {
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!refs?.button || refs.button.hidden) {
+      return;
+    }
+
+    const previousReset = this.boughtTileAnimationResets.get(tileNumber);
+    if (previousReset !== undefined) {
+      globalThis.clearTimeout(previousReset);
+    }
+
+    refs.button.classList.remove('is-newly-bought');
+    void refs.button.offsetWidth;
+    refs.button.classList.add('is-newly-bought');
+
+    const reset = globalThis.setTimeout(() => {
+      refs.button.classList.remove('is-newly-bought');
+      this.boughtTileAnimationResets.delete(tileNumber);
+    }, 260);
+    reset?.unref?.();
+    this.boughtTileAnimationResets.set(tileNumber, reset);
+  }
+
+  clearBoughtTileAnimations() {
+    for (const [tileNumber, reset] of this.boughtTileAnimationResets) {
+      globalThis.clearTimeout(reset);
+      this.tileRefs.get(tileNumber)?.button?.classList.remove('is-newly-bought');
+    }
+
+    this.boughtTileAnimationResets.clear();
   }
 
   formatCoin(value) {
