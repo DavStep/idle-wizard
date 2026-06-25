@@ -6986,7 +6986,7 @@ describe('PagesFacade', () => {
       milestoneRows.map((row) =>
         row.style.getPropertyValue('--prestige-roadmap-offset'),
       ),
-    ).toEqual(['0', '1', '2', '3']);
+    ).toEqual(['', '', '', '']);
   });
 
   it('explains prestige ruby as available before next-run review', () => {
@@ -7058,7 +7058,12 @@ describe('PagesFacade', () => {
     ]);
     expect(page.textContent).toContain('1 point earned');
     expect(page.textContent).toContain('plot 11 capacity');
+    expect(page.querySelector('.workshop-page__prestige-point-box')).toBeNull();
+    expect(page.querySelector('.workshop-page__prestige-point-title')?.textContent).toBe(
+      'point rewards',
+    );
     const pointRows = [...page.querySelectorAll('.workshop-page__prestige-point-row')];
+    expect(pointRows[0]?.classList.contains('style-box')).toBe(true);
     expect(pointRows[0]?.querySelector('.workshop-page__prestige-point-count')?.textContent).toBe(
       '★1 point',
     );
@@ -11763,7 +11768,7 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.brewing-page__active-brew')?.hidden).toBe(false);
     expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
-      'brewing mana tonic 30s',
+      'brewing 30s',
     );
     expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
     const progressBar = stage.querySelector('.brewing-page__active-progress');
@@ -11795,7 +11800,7 @@ describe('PagesFacade', () => {
     gameplayFacade.publishSnapshot();
 
     expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
-      'brewed mana tonic',
+      'brewed',
     );
     expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('bottle');
@@ -11807,7 +11812,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__active-brew-text')?.textContent).toBe(
-      'bottling mana tonic 2s',
+      'bottling 2s',
     );
     expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('bottle');

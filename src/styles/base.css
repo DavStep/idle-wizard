@@ -3259,10 +3259,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: calc(100% - 24px);
-  max-width: calc(100% - 24px);
-  min-height: calc((var(--style-row-min-height) * 2) + 13px);
-  margin-left: calc(var(--prestige-roadmap-offset, 0) * 8px);
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  height: calc((var(--style-row-min-height) * 2) + 13px);
   padding-top: 6px;
   padding-bottom: 6px;
 }
@@ -3314,25 +3314,22 @@ body {
   grid-column: 1 / -1;
 }
 
-.workshop-page__prestige-point-row {
+.style-box.workshop-page__prestige-point-row {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 74px;
   grid-template-areas:
     "count status"
     "reward reward";
   align-items: start;
-  min-height: var(--style-row-min-height);
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-height: calc((var(--style-row-min-height) * 3) + 12px);
   column-gap: var(--style-row-column-gap);
   row-gap: 2px;
-  padding: 4px 0 5px;
-}
-
-.workshop-page__prestige-point-row + .workshop-page__prestige-point-row {
-  border-top: var(--style-separator-border);
-}
-
-.workshop-page__prestige-point-row:first-child {
-  padding-top: 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 .workshop-page__prestige-level,
@@ -4178,12 +4175,12 @@ body {
 }
 
 .brewing-page__world-view {
-  --brewing-page-world-bottom-offset: 6px;
+  --brewing-page-world-bottom-offset: 0px;
   position: absolute;
-  top: var(--style-room-content-top);
-  right: var(--style-room-content-edge);
+  top: calc(var(--style-room-content-top) - var(--style-room-content-edge));
+  right: 0;
   bottom: var(--style-room-chat-clearance);
-  left: var(--style-room-content-edge);
+  left: 0;
   overflow: hidden;
 }
 
@@ -4457,6 +4454,10 @@ body {
   color: var(--style-text);
 }
 
+.brewing-page__cauldron.has-active-brew .brewing-page__cauldron-bubble {
+  display: none;
+}
+
 .brewing-page__cauldron
   :where(
     .brewing-page__cauldron-guide,
@@ -4495,8 +4496,7 @@ body {
   :where(
     .brewing-page__cauldron-guide,
     .brewing-page__cauldron-status,
-    .brewing-page__cauldron-items,
-    .brewing-page__active-brew
+    .brewing-page__cauldron-items
   ) {
   box-sizing: border-box;
   padding-right: 58px;
@@ -4562,6 +4562,7 @@ body {
 .brewing-page__active-brew {
   position: relative;
   z-index: 1;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -4572,11 +4573,30 @@ body {
   overflow: hidden;
 }
 
+.brewing-page__active-brew-text {
+  width: 100%;
+  white-space: nowrap;
+}
+
+:root[data-style-icons="icons"]
+  .brewing-page__cauldron.has-potion-icon.has-active-brew
+  .brewing-page__active-brew-text {
+  box-sizing: border-box;
+  padding-right: 42px;
+}
+
+:root[data-style-icons="icons"]
+  .brewing-page__cauldron.has-potion-icon.has-active-brew
+  .brewing-page__cauldron-potion-icon:not([hidden]) {
+  right: 4px;
+}
+
 .brewing-page__active-brew[hidden] {
   display: none;
 }
 
 .brewing-page__active-progress {
+  width: 100%;
   margin-top: 3px;
 }
 

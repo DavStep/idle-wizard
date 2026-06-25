@@ -19,6 +19,9 @@ const CAULDRON_BASE_ROW_COUNT = 3;
 const WORLD_EDGE_EXTENSION = 16;
 const WORLD_WIDTH = 560 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_HEIGHT = 720 + WORLD_EDGE_EXTENSION * 2;
+const WORLD_FIT_PADDING = 16;
+const CAULDRON_BOX_WIDTH = 154;
+const CAULDRON_BOX_HEIGHT = 108;
 const HERB_DRAG_THRESHOLD = 5;
 const WORLD_DRAG_THRESHOLD = 4;
 const WORLD_MIN_ZOOM = 0.68;
@@ -53,8 +56,10 @@ export class BrewingCauldronManager {
     this.herbsExpanded = false;
     this.message = null;
     this.suppressNextClick = false;
+    this.suppressWorldClickUntilMs = 0;
     this.worldPan = { x: 0, y: 0 };
     this.worldZoom = 1;
+    this.worldViewportTouched = false;
     this.worldPointers = new Map();
     this.worldGesture = null;
     this.worldDrag = null;
@@ -104,8 +109,7 @@ export class BrewingCauldronManager {
     this.herbsExpanded = false;
     this.message = null;
     this.suppressNextClick = false;
-    this.worldPan = { x: 0, y: 0 };
-    this.worldZoom = 1;
+    this.suppressWorldClickUntilMs = 0;
     this.worldPointers.clear();
     this.worldGesture = null;
     this.worldDrag = null;
@@ -467,6 +471,7 @@ export class BrewingCauldronManager {
         .filter(Boolean),
     );
     this.cauldronRefsSignature = signature;
+    this.fitWorldViewportToCauldrons(cauldrons);
   }
 
   positionCauldronBox(refs, cauldronIndex = 0) {
@@ -504,6 +509,54 @@ export class BrewingCauldronManager {
       x: position.x + WORLD_EDGE_EXTENSION,
       y: position.y + WORLD_EDGE_EXTENSION,
     };
+  }
+
+  fitWorldViewportToCauldrons(cauldrons = []) {
+    if (this.worldViewportTouched || cauldrons.length <= 0) {
+      return;
+    }
+
+    const shellRect = this.refs.world?.shell?.getBoundingClientRect?.();
+    const scale = this.getUiScale();
+    const shellWidth = Math.max(0, (shellRect?.width ?? 0) / scale);
+
+    if (shellWidth <= 0) {
+      return;
+    }
+
+    const bounds = this.getCauldronContentBounds(cauldrons);
+    const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
+    const availableWidth = Math.max(1, shellWidth - WORLD_FIT_PADDING * 2);
+    const nextZoom = this.clampWorldZoom(Math.min(1, availableWidth / contentWidth));
+    const contentCenterX = (bounds.minX + bounds.maxX) / 2;
+    const nextPan = this.clampWorldPan(
+      shellWidth / 2 - contentCenterX * nextZoom,
+      this.worldPan.y,
+      nextZoom,
+    );
+
+    this.worldPan = nextPan;
+    this.worldZoom = nextZoom;
+    this.applyWorldViewport();
+  }
+
+  getCauldronContentBounds(cauldrons = []) {
+    return cauldrons.reduce(
+      (bounds, cauldron) => {
+        const position = this.getCauldronWorldPosition(cauldron.cauldronIndex);
+        const refs = this.cauldronRefs.get(cauldron.cauldronIndex);
+        const width = refs?.root?.offsetWidth || CAULDRON_BOX_WIDTH;
+        const height = refs?.root?.offsetHeight || CAULDRON_BOX_HEIGHT;
+
+        return {
+          minX: Math.min(bounds.minX, position.x),
+          maxX: Math.max(bounds.maxX, position.x + width),
+          minY: Math.min(bounds.minY, position.y),
+          maxY: Math.max(bounds.maxY, position.y + height),
+        };
+      },
+      { minX: WORLD_WIDTH, maxX: 0, minY: WORLD_HEIGHT, maxY: 0 },
+    );
   }
 
   normalizeSelectedCauldron(cauldrons) {
@@ -684,7 +737,7 @@ export class BrewingCauldronManager {
     if (
       event.button !== 0 ||
       event.target?.closest?.(
-        '.brewing-page__cauldron, .brewing-page__herbs, button, [role="button"]',
+        '.brewing-page__herbs, button, [role="button"]',
       )
     ) {
       return;
@@ -755,6 +808,8 @@ export class BrewingCauldronManager {
 
     this.worldGesture.didDrag = true;
     this.worldDrag = this.worldGesture;
+    this.worldViewportTouched = true;
+    this.suppressWorldClick();
     this.setWorldPan(this.worldGesture.panX + deltaX, this.worldGesture.panY + deltaY, {
       rubber: true,
     });
@@ -821,6 +876,7 @@ export class BrewingCauldronManager {
       didDrag: true,
     };
     this.worldDrag = null;
+    this.suppressWorldClick();
   }
 
   updateWorldPinchGesture(event) {
@@ -845,10 +901,12 @@ export class BrewingCauldronManager {
       zoom,
       { rubber: true },
     );
+    this.worldViewportTouched = true;
     event.preventDefault();
   }
 
   setWorldZoomAroundPoint(rawZoom, clientX, clientY, { rubber = false } = {}) {
+    this.worldViewportTouched = true;
     const sourcePoint = this.getShellSourcePoint(clientX, clientY);
     const safeCurrentZoom = this.worldZoom > 0 ? this.worldZoom : 1;
     const zoom = rubber ? this.getRubberZoom(rawZoom) : this.clampWorldZoom(rawZoom);
@@ -934,6 +992,19 @@ export class BrewingCauldronManager {
       rubber: false,
       animate: true,
     });
+  }
+
+  suppressWorldClick() {
+    this.suppressWorldClickUntilMs = Date.now() + 450;
+  }
+
+  isWorldClickSuppressed() {
+    if (Date.now() > this.suppressWorldClickUntilMs) {
+      this.suppressWorldClickUntilMs = 0;
+      return false;
+    }
+
+    return true;
   }
 
   clearWorldSettleTimers() {
@@ -1134,6 +1205,7 @@ export class BrewingCauldronManager {
 
     refs.root.classList.remove('is-locked', 'is-buyable');
     refs.root.classList.toggle('is-current', brewing.cauldronIndex === this.selectedCauldronIndex);
+    refs.root.classList.toggle('has-active-brew', Boolean(brewing.activeBrew));
     this.renderCauldronTitle(refs.title, brewing);
     this.setHidden(refs.count, false);
     this.setText(refs.count, this.formatCauldronCount(brewing));
@@ -1182,6 +1254,7 @@ export class BrewingCauldronManager {
     refs.root.classList.add('is-locked');
     refs.root.classList.toggle('is-buyable', isBuyable);
     refs.root.classList.remove('is-current');
+    refs.root.classList.remove('has-active-brew');
     this.setCauldronRowCount(refs);
     this.renderCauldronTitle(refs.title, brewing);
     this.renderPotionIcon(refs, null);
@@ -2189,6 +2262,12 @@ export class BrewingCauldronManager {
   }
 
   onCauldronWorldClick(event, cauldronIndex) {
+    if (this.isWorldClickSuppressed()) {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      return;
+    }
+
     if (event?.target?.closest?.('button')) {
       return;
     }
@@ -2422,18 +2501,15 @@ export class BrewingCauldronManager {
 
   formatActiveBrewText(activeBrew, remainingMs = activeBrew.remainingMs) {
     if (activeBrew.canCollect) {
-      return `bottled ${this.formatPotionQuantity(activeBrew.label, activeBrew.resultQuantity)}`;
+      return 'bottled';
     }
 
     if (activeBrew.canStartBottling) {
-      return `brewed ${this.formatPotionQuantity(activeBrew.label, activeBrew.resultQuantity)}`;
+      return 'brewed';
     }
 
     const timer = formatRemainingTime(remainingMs);
-    return `${this.getActivePhaseLabel(activeBrew)} ${this.formatPotionQuantity(
-      activeBrew.label,
-      activeBrew.resultQuantity,
-    )} ${timer}`;
+    return `${this.getActivePhaseLabel(activeBrew)} ${timer}`;
   }
 
   formatActiveProgressAriaLabel(activeBrew) {

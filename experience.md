@@ -68,6 +68,7 @@
 - Show all five room pages in a shared bottom tab panel; bold the current page tab.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - Interactive room surfaces that own drag or pinch gestures should set `data-page-swipe-block="true"`; stage-level swipe capture otherwise steals their horizontal drags before the surface can own them.
+- Brewing world pan/pinch must include cauldron boxes as gesture starts, then suppress the follow-up cauldron click after real movement.
 - The top status panel is shared room chrome; show gameplay coin there, not a separate coin currency.
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
@@ -220,6 +221,7 @@
 - Brewing cauldron boxes default to three content rows, then grow from row count when selected recipe or staged ingredient groups exceed three.
 - Active brew status/progress should replace the cauldron ingredient slot; leaving the normal slot visible makes the box read taller.
 - Brewing world pan bounds should stop above the herbs box including border-title overhang; do not draw a world boundary stroke behind the herb tray.
+- Brewing first-load world fit must measure the bordered cauldron box, not just its content width, or cauldrons still clip at the side edge.
 - FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
 - FTUE lesson collapse animations need a temporary exit class before setting `hidden`; full tutorial hides still clear immediately to prevent stale flashes.
 - FTUE guide auto-move should use source-pixel rAF interpolation from the current visual offset to the desired placement; CSS transitions after writing final `left`/`top` can still paint as a teleport in target browsers.
@@ -331,6 +333,7 @@
 - Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
 - Top-panel selected character belongs in its own 58px avatar cell when icon mode is `icons`; keep the username opener text-only so FTUE username targeting stays tight.
 - Top-panel avatar and picker image rules must be more specific than `.style-player-character-icon`; otherwise the generic 18px inline icon rule shrinks them.
+- Current 87x108 avatar PNGs should keep visible art bottom near a 14px transparent bottom gap; larger gaps leave empty floor in the square picker/top-panel crop.
 - Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.
 - Tiny shared character icons should use small derived assets, not full 864x1080 portrait PNGs; full portraits can push Discord APK uploads over the size limit.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.

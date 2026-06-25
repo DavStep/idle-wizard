@@ -255,7 +255,7 @@ export class PrestigePanelManager {
 
   createRows(snapshot) {
     if (this.selectedTabId === 'points') {
-      return [this.createPointRewardBox(snapshot?.prestige)];
+      return this.createPointRewardRows(snapshot?.prestige);
     }
 
     const milestones = snapshot?.prestige?.milestones ?? [];
@@ -264,7 +264,7 @@ export class PrestigePanelManager {
     );
 
     return milestones.map((milestone, index) =>
-      this.createMilestoneRow(milestone, index, index === upcomingIndex),
+      this.createMilestoneRow(milestone, index === upcomingIndex),
     );
   }
 
@@ -276,7 +276,7 @@ export class PrestigePanelManager {
     return description;
   }
 
-  createMilestoneRow(milestone, index = 0, upcoming = false) {
+  createMilestoneRow(milestone, upcoming = false) {
     const state = this.getMilestoneState(milestone, upcoming);
     const row = document.createElement('section');
     row.className = 'workshop-page__prestige-row style-box';
@@ -286,7 +286,6 @@ export class PrestigePanelManager {
     row.classList.toggle('is-locked', state === 'locked');
     row.dataset.prestigeState = state;
     row.dataset.prestigeLevel = String(milestone.level);
-    row.style.setProperty('--prestige-roadmap-offset', String(index % 4));
 
     const level = document.createElement('span');
     level.className = 'workshop-page__prestige-level';
@@ -318,30 +317,23 @@ export class PrestigePanelManager {
     return row;
   }
 
-  createPointRewardBox(prestige = {}) {
+  createPointRewardRows(prestige = {}) {
     const completedCount = this.getCompletedPrestigeCount(prestige);
-    const box = document.createElement('section');
-    box.className = 'workshop-page__prestige-point-box style-box';
-
     const title = document.createElement('div');
     title.className = 'workshop-page__prestige-point-title';
     title.textContent = 'point rewards';
 
-    const list = document.createElement('div');
-    list.className = 'workshop-page__prestige-point-list';
-    list.replaceChildren(
+    return [
+      title,
       ...PRESTIGE_POINT_REWARDS.map((pointReward) =>
         this.createPointRewardRow(pointReward, completedCount),
       ),
-    );
-
-    box.append(title, list);
-    return box;
+    ];
   }
 
   createPointRewardRow(pointReward, completedCount) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__prestige-point-row';
+    const row = document.createElement('section');
+    row.className = 'workshop-page__prestige-point-row style-box';
     row.classList.toggle('is-completed', completedCount >= pointReward.count);
     row.classList.toggle('is-next', completedCount + 1 === pointReward.count);
     row.classList.toggle('is-locked', pointReward.count > completedCount + 1);

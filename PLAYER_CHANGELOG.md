@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.40
+
+- Improved Brewing room touch controls so cauldron boxes can start world drag or pinch gestures without opening the cauldron by accident.
+- Tightened Brewing world fit and active brew rows so cauldrons and timer rails stay cleanly inside the room view.
+- Polished Prestige roadmap and point reward rows so the page uses consistent same-width boxes.
+- Refined several character and herb icons so cropped Android views look cleaner.
+
 ## 0.2.39
 
 - Smoothed Garden, Brewing, and Research timer bars so progress and remaining-time labels stay in sync between gameplay updates.
