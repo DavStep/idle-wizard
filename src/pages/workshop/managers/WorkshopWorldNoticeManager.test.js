@@ -332,7 +332,7 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(rewardsRules.some((rule) => /\bborder-top:\s*0;/.test(rule))).toBe(true);
     expect(
       requestsRules.some((rule) =>
-        /\bborder-top:\s*1px solid var\(--style-disabled\);/.test(rule),
+        /\bborder-top:\s*var\(--style-separator-border\);/.test(rule),
       ),
     ).toBe(true);
     expect(tabButtonRule).toContain(
@@ -625,7 +625,7 @@ describe('WorkshopWorldNoticeManager', () => {
       pointText: '25 coin = 1 point',
     });
 
-    expect(separatorRule).toMatch(/\bborder-top:\s*1px solid var\(--style-disabled\);/);
+    expect(separatorRule).toMatch(/\bborder-top:\s*var\(--style-separator-border\);/);
     expect(pointRowRule).toMatch(
       /\bgrid-template-columns:\s*minmax\(0,\s*1fr\) minmax\(0,\s*1fr\);/,
     );

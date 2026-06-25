@@ -36,7 +36,9 @@ import {
 // Import all reducer arg schemas
 import AcceptTradeAllianceApplicationReducer from "./accept_trade_alliance_application_reducer";
 import AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer from "./admin_cleanup_zero_total_coin_players_and_grant_currency_reducer";
+import AdminCopyPlayerProgressionReducer from "./admin_copy_player_progression_reducer";
 import AdminDisbandTradeAllianceReducer from "./admin_disband_trade_alliance_reducer";
+import AdminGrantPlayerCurrencyByIdentityReducer from "./admin_grant_player_currency_by_identity_reducer";
 import AdminKickPlayerSessionReducer from "./admin_kick_player_session_reducer";
 import AdminMergePlayerAccountsReducer from "./admin_merge_player_accounts_reducer";
 import AdminMoveTradeAllianceMemberReducer from "./admin_move_trade_alliance_member_reducer";
@@ -694,7 +696,9 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_trade_alliance_application", AcceptTradeAllianceApplicationReducer),
   __reducerSchema("admin_cleanup_zero_total_coin_players_and_grant_currency", AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer),
+  __reducerSchema("admin_copy_player_progression", AdminCopyPlayerProgressionReducer),
   __reducerSchema("admin_disband_trade_alliance", AdminDisbandTradeAllianceReducer),
+  __reducerSchema("admin_grant_player_currency_by_identity", AdminGrantPlayerCurrencyByIdentityReducer),
   __reducerSchema("admin_kick_player_session", AdminKickPlayerSessionReducer),
   __reducerSchema("admin_merge_player_accounts", AdminMergePlayerAccountsReducer),
   __reducerSchema("admin_move_trade_alliance_member", AdminMoveTradeAllianceMemberReducer),

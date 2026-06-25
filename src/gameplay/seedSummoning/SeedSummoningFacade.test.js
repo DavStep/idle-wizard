@@ -94,6 +94,35 @@ describe('SeedSummoningFacade', () => {
     expect(facade.getSnapshot().dropChances).toEqual([]);
   });
 
+  it('initializes sage seed as the medium preference for new accounts', () => {
+    const facade = createFacade({
+      completedResearchIds: ['unlockSeed:sageSeed'],
+      seeds: [
+        {
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+          dropWeight: 1,
+        },
+      ],
+    });
+
+    facade.initialize();
+
+    expect(facade.getPersistenceSnapshot()).toEqual({
+      dropPreferences: {
+        sageSeed: 'medium',
+      },
+    });
+    expect(facade.getSnapshot().dropChances[0]).toMatchObject({
+      key: 'sageSeed',
+      dropPreference: 'medium',
+      effectiveDropWeight: 2,
+      dropChance: 1,
+    });
+  });
+
   it('uses player seed drop preferences as weight multipliers', () => {
     const facade = createFacade({
       completedResearchIds: ['unlockSeed:sageSeed', 'unlockSeed:mintSeed'],
@@ -175,7 +204,7 @@ describe('SeedSummoningFacade', () => {
     });
   });
 
-  it('shows zero chance rows when restored preferences disable all drops', () => {
+  it('repairs restored preferences with sage seed at medium when all drops are disabled', () => {
     const facade = createFacade({
       completedResearchIds: ['unlockSeed:sageSeed', 'unlockSeed:mintSeed'],
       seeds: [
@@ -204,13 +233,14 @@ describe('SeedSummoningFacade', () => {
     });
 
     expect(facade.getSnapshot()).toMatchObject({
-      canSummon: false,
+      canSummon: true,
       dropChances: [
         {
           key: 'sageSeed',
-          dropPreference: 'none',
-          effectiveDropWeight: 0,
-          dropChance: 0,
+          dropPreference: 'medium',
+          preferenceWeight: 2,
+          effectiveDropWeight: 2,
+          dropChance: 1,
         },
         {
           key: 'mintSeed',

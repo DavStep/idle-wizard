@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { BrewingRecipeBookManager } from './BrewingRecipeBookManager.js';
+
+const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
 function createGameplayFacadeFake(snapshot) {
   return {
@@ -48,6 +52,17 @@ function createSnapshot() {
 }
 
 describe('BrewingRecipeBookManager', () => {
+  it('keeps the cauldron dialog brew action inside the popup panel', () => {
+    const rule = baseCss.match(
+      /\.style-button\.brewing-page__dialog-action-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rule).toBeDefined();
+    expect(rule).toMatch(/\bbox-sizing:\s*border-box;/);
+    expect(rule).toMatch(/\bwidth:\s*100%;/);
+    expect(rule).toMatch(/\bmax-width:\s*100%;/);
+  });
+
   it('shows selected recipe action as selected', () => {
     const parent = document.createElement('div');
     document.body.append(parent);
@@ -149,6 +164,20 @@ describe('BrewingRecipeBookManager', () => {
 
     manager.unmount();
     parent.remove();
+  });
+
+  it('reserves recipe select space so checkbox text does not shift the row', () => {
+    const mainRule = baseCss.match(
+      /\.brewing-page__recipe-main\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const selectRule = baseCss.match(
+      /\.brewing-page__recipe-select-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(mainRule).toContain('grid-template-columns: 24px minmax(0, 1fr) 18px;');
+    expect(selectRule).toContain('width: 24px;');
+    expect(selectRule).toContain('min-width: 24px;');
+    expect(selectRule).toContain('white-space: nowrap;');
   });
 
   it('unselects a selected recipe when the recipe action is clicked', () => {

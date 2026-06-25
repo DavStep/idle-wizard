@@ -58,6 +58,7 @@
   --style-page-scroll-padding-top: var(--style-page-scroll-cut);
   --style-page-scroll-padding-bottom: var(--style-page-scroll-cut);
   --style-border: var(--style-border-width) solid var(--style-stroke);
+  --style-separator-border: var(--style-border);
   --style-tab-border: var(--style-border-strong);
   --style-border-strong: var(--style-border-strong-width) solid
     var(--style-stroke);
@@ -191,6 +192,10 @@
   --brewing-page-cauldron-height: calc(
     (var(--style-row-min-height) * var(--brewing-page-cauldron-row-count)) +
       var(--brewing-page-cauldron-frame-height)
+  );
+  --brewing-page-herbs-box-clearance: calc(
+    62px + 10px + var(--style-box-border-label-line-height) +
+      (var(--style-border-width) * 2) - var(--style-box-title-top)
   );
   --brewing-page-herb-rows-height: 132px;
   --brewing-page-herbs-box-reserved-height: calc(
@@ -3147,7 +3152,7 @@ body {
   height: 1px;
   margin: 5px 0;
   clear: both;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .workshop-page__prestige-summary {
@@ -3160,53 +3165,153 @@ body {
   position: absolute;
   top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
-  bottom: calc(var(--style-room-chat-clearance) + 38px);
+  bottom: var(--style-room-chat-clearance);
   left: var(--style-room-content-edge);
 }
 
 .prestige-page__panel {
-  height: 100%;
+  position: absolute;
+  inset: 0;
 }
 
-.style-box.prestige-page__box {
+.prestige-page__body {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: var(--style-page-tab-scroll-clearance);
+  left: 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: calc(100% - var(--style-page-tab-button-height) - 8px);
-  min-height: 0;
+  gap: 14px;
+  padding-top: var(--style-page-scroll-padding-top);
+  padding-bottom: var(--style-page-scroll-padding-bottom);
+  overflow: hidden auto;
 }
 
-.prestige-page__box .workshop-page__prestige-summary,
-.prestige-page__box .workshop-page__prestige-progress,
-.prestige-page__box .workshop-page__prestige-confirm {
+.prestige-page__body::-webkit-scrollbar {
+  display: none;
+}
+
+.style-box.prestige-page__description {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 7px;
 }
 
-.prestige-page__box .workshop-page__prestige-frame {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.prestige-page__box .workshop-page__prestige-rows {
-  height: 100%;
+.workshop-page__prestige-heading,
+.workshop-page__prestige-point-title,
+.workshop-page__prestige-confirm-title {
+  min-height: var(--style-row-min-height);
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prestige-page__content .workshop-page__prestige-tabs {
-  margin-top: 8px;
+  position: absolute;
+  right: 0;
+  bottom: 6px;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 0;
 }
 
 .prestige-page__content .style-button.workshop-page__prestige-tab-button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  height: var(--style-page-tab-button-height);
   min-height: var(--style-page-tab-button-height);
+  padding: 0 8px;
+  font-size: var(--style-tiny-font-size);
+  line-height: var(--style-tiny-line-height);
+  text-align: center;
+  white-space: nowrap;
   border: var(--style-border);
 }
 
-.workshop-page__prestige-row {
+.prestige-page__description-copy {
+  color: var(--style-muted);
+}
+
+.prestige-page__body .workshop-page__prestige-rows {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.style-box.workshop-page__prestige-row {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: calc(100% - 24px);
+  max-width: calc(100% - 24px);
+  min-height: calc((var(--style-row-min-height) * 2) + 13px);
+  margin-left: calc(var(--prestige-roadmap-offset, 0) * 8px);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.workshop-page__prestige-row.is-completed,
+.workshop-page__prestige-row.is-locked {
+  color: var(--style-disabled);
+}
+
+.workshop-page__prestige-row.is-ready {
+  color: var(--style-text);
+}
+
+.workshop-page__prestige-milestone-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 64px 74px;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   min-height: var(--style-row-min-height);
-  padding-right: var(--style-border-width);
   column-gap: var(--style-row-column-gap);
+}
+
+.workshop-page__prestige-state-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__prestige-row.is-ready .workshop-page__prestige-state-label {
+  font-weight: 700;
+}
+
+.workshop-page__prestige-milestone-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, max-content);
+  align-items: center;
+  min-height: var(--style-row-min-height);
+  column-gap: var(--style-row-column-gap);
+}
+
+.workshop-page__prestige-milestone-body > .workshop-page__prestige-reward {
+  justify-self: start;
+  text-align: left;
+}
+
+.workshop-page__prestige-milestone-body > .workshop-page__prestige-reward:only-child {
+  grid-column: 1 / -1;
 }
 
 .workshop-page__prestige-point-row {
@@ -3223,7 +3328,7 @@ body {
 }
 
 .workshop-page__prestige-point-row + .workshop-page__prestige-point-row {
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .workshop-page__prestige-point-row:first-child {
@@ -3269,6 +3374,30 @@ body {
   white-space: nowrap;
 }
 
+.workshop-page__prestige-point-star-label {
+  vertical-align: baseline;
+}
+
+.workshop-page__prestige-point-row.is-locked
+  .style-star-level[data-star-tone="yellow"] {
+  color: var(--style-star-yellow);
+}
+
+.workshop-page__prestige-point-row.is-locked
+  .style-star-level[data-star-tone="orange"] {
+  color: var(--style-star-orange);
+}
+
+.workshop-page__prestige-point-row.is-locked
+  .style-star-level[data-star-tone="red"] {
+  color: var(--style-star-red);
+}
+
+.workshop-page__prestige-point-row.is-locked
+  .style-star-level[data-star-tone="purple"] {
+  color: var(--style-star-purple);
+}
+
 .workshop-page__prestige-point-number {
   white-space: nowrap;
 }
@@ -3293,10 +3422,12 @@ body {
   font-size: var(--style-tiny-font-size);
 }
 
-.workshop-page__prestige-confirm {
-  padding-top: 6px;
-  margin-top: 6px;
-  border-top: 1px solid var(--style-disabled);
+.style-box.workshop-page__prestige-confirm {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 2px;
+  padding-top: 8px;
 }
 
 .workshop-page__prestige-confirm[hidden] {
@@ -3305,6 +3436,39 @@ body {
 
 .workshop-page__prestige-confirm-message {
   margin: 0;
+}
+
+.workshop-page__prestige-confirm-warning {
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__prestige-next-run {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__prestige-next-run-row {
+  display: flex;
+  gap: var(--style-row-column-gap);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__prestige-next-run-label,
+.workshop-page__prestige-next-run-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workshop-page__prestige-next-run-value {
+  text-align: right;
 }
 
 .workshop-page__prestige-confirm-actions {
@@ -3859,7 +4023,7 @@ body {
   gap: 5px;
   margin-top: 5px;
   padding-top: 5px;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .workshop-page__level-complete[hidden] {
@@ -3870,7 +4034,7 @@ body {
   position: relative;
   margin-top: 9px;
   padding-top: 9px;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .workshop-page__level-rewards[hidden] {
@@ -4027,7 +4191,10 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  bottom: var(--brewing-page-world-bottom-offset);
+  bottom: calc(
+    var(--brewing-page-world-bottom-offset) +
+      var(--brewing-page-herbs-box-clearance)
+  );
   left: 0;
   z-index: 0;
   overflow: hidden;
@@ -4043,8 +4210,8 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 560px;
-  height: 720px;
+  width: 592px;
+  height: 752px;
   transform-origin: 0 0;
   transform: translate3d(
     var(--brewing-page-world-pan-x, 0px),
@@ -4059,13 +4226,14 @@ body {
 }
 
 .brewing-page__world-boundary {
+  display: none;
   position: absolute;
   inset: 0;
-  border: var(--style-border);
+  border: 0;
   pointer-events: none;
 }
 
-.brewing-page__herbs {
+.style-box.brewing-page__herbs {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -4851,7 +5019,7 @@ body {
   padding-bottom: 6px;
   margin-bottom: 6px;
   background: var(--style-surface);
-  border-bottom: 1px solid var(--style-disabled);
+  border-bottom: var(--style-separator-border);
 }
 
 .workshop-page__personal-tasks-dialog-character {
@@ -5035,7 +5203,7 @@ body {
   padding-bottom: 6px;
   margin-bottom: 6px;
   background: var(--style-surface);
-  border-bottom: 1px solid var(--style-disabled);
+  border-bottom: var(--style-separator-border);
 }
 
 .workshop-page__world-notice-dialog-character {
@@ -5105,7 +5273,7 @@ body {
 
 .workshop-page__world-notice-requests {
   padding-top: 6px;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .workshop-page__world-notice-request {
@@ -5116,7 +5284,7 @@ body {
 
 .workshop-page__world-notice-request + .workshop-page__world-notice-request {
   padding-top: 5px;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .workshop-page__world-notice-request.is-completed {
@@ -5342,7 +5510,7 @@ body {
 
 .workshop-page__world-notice-archive {
   padding-top: 6px;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .workshop-page__world-notice-archive-row {
@@ -6728,7 +6896,7 @@ div.workshop-page__discovery-row {
   height: 1px;
   margin: 5px 0;
   clear: both;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .garden-page__inventory-row::after,
@@ -7363,7 +7531,7 @@ div.workshop-page__discovery-row {
   height: 1px;
   margin: 5px 0;
   clear: both;
-  border-top: 1px solid var(--style-disabled);
+  border-top: var(--style-separator-border);
 }
 
 .garden-page__seed-button:hover .row_key,
@@ -7746,7 +7914,7 @@ div.workshop-page__discovery-row {
 .brewing-page__auto-summary {
   padding-bottom: 7px;
   margin-bottom: 6px;
-  border-bottom: 1px solid #d9d9d9;
+  border-bottom: var(--style-separator-border);
 }
 
 .brewing-page__cauldron-dialog-action[hidden],
@@ -7787,8 +7955,11 @@ button.brewing-page__cauldron-dialog-current-row {
 }
 
 .style-button.brewing-page__dialog-action-button {
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  white-space: normal;
 }
 
 .brewing-page__dialog-action-cost {
@@ -7899,7 +8070,7 @@ button.brewing-page__cauldron-dialog-current-row {
   text-align: left;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #d9d9d9;
+  border-bottom: var(--style-separator-border);
   border-radius: 0;
 }
 
@@ -7910,7 +8081,7 @@ button.brewing-page__cauldron-dialog-current-row {
 
 .brewing-page__recipe-main {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 24px minmax(0, 1fr) 18px;
   min-height: var(--style-row-min-height);
   column-gap: 8px;
   align-items: baseline;
@@ -7927,7 +8098,8 @@ button.brewing-page__cauldron-dialog-current-row {
 }
 
 .brewing-page__recipe-select-button {
-  min-width: 0;
+  width: 24px;
+  min-width: 24px;
   padding: 0;
   appearance: none;
   color: inherit;
@@ -7938,6 +8110,7 @@ button.brewing-page__cauldron-dialog-current-row {
   background: transparent;
   border: 0;
   border-radius: 0;
+  white-space: nowrap;
 }
 
 .brewing-page__recipe-row:focus .brewing-page__recipe-select-button,
@@ -8298,7 +8471,7 @@ button.brewing-page__cauldron-dialog-current-row {
 }
 
 .shop-page__market-row + .shop-page__market-row {
-  border-top: 1px solid var(--style-muted);
+  border-top: var(--style-separator-border);
 }
 
 .shop-page__market-row .row_key {
@@ -8774,7 +8947,7 @@ button.brewing-page__cauldron-dialog-current-row {
 .shop-page__player-listing-choice-divider {
   height: 1px;
   margin-bottom: 5px;
-  background: var(--style-text);
+  background: var(--style-stroke);
 }
 
 .shop-page__player-shop-status {
@@ -8859,7 +9032,7 @@ button.brewing-page__cauldron-dialog-current-row {
 .shop-page__request-choice-divider {
   height: 1px;
   margin: 8px 0 5px;
-  background: var(--style-text);
+  background: var(--style-stroke);
 }
 
 .shop-page__request-status {
@@ -10277,7 +10450,7 @@ button.brewing-page__cauldron-dialog-current-row {
 .room-top-panel__level-divider {
   height: 1px;
   margin: 8px 0;
-  background: var(--style-text);
+  background: var(--style-stroke);
 }
 
 .room-top-panel__level-divider[hidden] {
@@ -10565,7 +10738,7 @@ button.brewing-page__cauldron-dialog-current-row {
 .room-top-panel__visual-option + .room-top-panel__visual-option {
   padding-top: 6px;
   margin-top: 6px;
-  border-top: 1px solid var(--style-stroke);
+  border-top: var(--style-separator-border);
 }
 
 .room-top-panel__visual-option-name,

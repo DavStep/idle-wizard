@@ -1,6 +1,6 @@
-import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { createStarLevelLabel } from '../../shared/starLevelLabel.js';
 import {
   cauldronCapacityEndCauldronNumber,
   cauldronCapacityStartCauldronNumber,
@@ -15,7 +15,6 @@ const PRESTIGE_TABS = [
   { id: 'points', label: 'points' },
 ];
 
-const PRESTIGE_POINT_STAR = '★';
 const PRESTIGE_POINT_REWARDS = createPrestigePointRewards();
 
 function createPrestigePointRewards() {
@@ -68,7 +67,6 @@ export class PrestigePanelManager {
     this.lastSnapshot = {};
     this.renderedSignature = '';
     this.selectedTabId = PRESTIGE_TABS[0].id;
-    this.handleRowsScroll = () => this.updateScrollProgress();
   }
 
   mount(parent) {
@@ -88,35 +86,28 @@ export class PrestigePanelManager {
     this.refs.panel.setAttribute('aria-label', 'prestige');
 
     this.refs.dialog = document.createElement('section');
-    this.refs.dialog.className = 'prestige-page__box style-box';
+    this.refs.dialog.className = 'prestige-page__description style-box';
 
     this.refs.title = this.createTitle();
     this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'workshop-page__prestige-summary';
-    this.refs.frame = document.createElement('div');
-    this.refs.frame.className = 'workshop-page__prestige-frame';
+
+    this.refs.description = this.createDescription();
+    this.refs.body = document.createElement('div');
+    this.refs.body.className = 'prestige-page__body style-page-scroll';
+    this.refs.body.dataset.scrollCueProgress = 'inline';
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__prestige-rows';
-    this.refs.rows.addEventListener('scroll', this.handleRowsScroll);
-    this.refs.progress = document.createElement('div');
-    this.refs.progress.className = 'style-progress workshop-page__prestige-progress';
-    this.refs.progress.setAttribute('aria-hidden', 'true');
-    this.refs.progressFill = document.createElement('div');
-    this.refs.progressFill.className =
-      'style-progress__fill workshop-page__prestige-progress-fill';
-    this.refs.progress.append(this.refs.progressFill);
     this.refs.confirm = this.createConfirmPanel();
     this.refs.tabs = this.createTabs();
 
-    this.refs.frame.append(this.refs.rows);
     this.refs.dialog.append(
       this.refs.title,
       this.refs.summary,
-      this.refs.frame,
-      this.refs.progress,
-      this.refs.confirm,
+      this.refs.description,
     );
-    this.refs.panel.append(this.refs.dialog, this.refs.tabs);
+    this.refs.body.append(this.refs.dialog, this.refs.rows, this.refs.confirm);
+    this.refs.panel.append(this.refs.body, this.refs.tabs);
     this.root.append(this.refs.panel);
     parent.append(this.root);
 
@@ -128,17 +119,21 @@ export class PrestigePanelManager {
 
   createTitle() {
     const title = document.createElement('div');
-    title.className = 'style-box__title';
+    title.className = 'workshop-page__prestige-heading';
     title.textContent = 'prestige';
     return title;
   }
 
   createConfirmPanel() {
     const panel = document.createElement('div');
-    panel.className = 'workshop-page__prestige-confirm';
+    panel.className = 'workshop-page__prestige-confirm style-box';
     panel.hidden = true;
 
-    this.refs.confirmMessage = document.createElement('p');
+    const title = document.createElement('div');
+    title.className = 'workshop-page__prestige-confirm-title';
+    title.textContent = 'next run';
+
+    this.refs.confirmMessage = document.createElement('div');
     this.refs.confirmMessage.className = 'workshop-page__prestige-confirm-message';
 
     const actions = document.createElement('div');
@@ -159,7 +154,7 @@ export class PrestigePanelManager {
     this.refs.confirmProceed.addEventListener('click', () => this.confirmPrestige());
 
     actions.append(this.refs.confirmCancel, this.refs.confirmProceed);
-    panel.append(this.refs.confirmMessage, actions);
+    panel.append(title, this.refs.confirmMessage, actions);
     return panel;
   }
 
@@ -200,7 +195,6 @@ export class PrestigePanelManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
-    this.refs.rows?.removeEventListener('scroll', this.handleRowsScroll);
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -217,17 +211,14 @@ export class PrestigePanelManager {
     this.lastSnapshot = snapshot ?? {};
     this.updateSummary(this.lastSnapshot);
     this.syncTabs();
-    this.applyConfirm();
 
     const signature = this.createRenderSignature(this.lastSnapshot);
-    if (signature === this.renderedSignature) {
-      this.updateScrollProgress();
-      return;
+    if (signature !== this.renderedSignature) {
+      this.renderedSignature = signature;
+      this.refs.rows.replaceChildren(...this.createRows(this.lastSnapshot));
     }
 
-    this.renderedSignature = signature;
-    this.refs.rows.replaceChildren(...this.createRows(this.lastSnapshot));
-    this.updateScrollProgress();
+    this.applyConfirm();
   }
 
   updateSummary(snapshot = {}) {
@@ -257,55 +248,102 @@ export class PrestigePanelManager {
     this.refs.summary.replaceChildren(
       document.createTextNode(`level ${currentLevel}, `),
       ruby,
-      document.createTextNode(
-        ' available. prestige adds row reward; ruby research stays bought.',
-      ),
+      document.createTextNode(' available. press prestige to review next run.'),
     );
     setResourceColor(this.refs.summary, null);
   }
 
   createRows(snapshot) {
     if (this.selectedTabId === 'points') {
-      return this.createPointRows(snapshot?.prestige);
+      return [this.createPointRewardBox(snapshot?.prestige)];
     }
 
-    return (snapshot?.prestige?.milestones ?? []).map((milestone) =>
-      this.createMilestoneRow(milestone),
+    const milestones = snapshot?.prestige?.milestones ?? [];
+    const upcomingIndex = milestones.findIndex(
+      (milestone) => !milestone.completed && !milestone.canComplete,
+    );
+
+    return milestones.map((milestone, index) =>
+      this.createMilestoneRow(milestone, index, index === upcomingIndex),
     );
   }
 
-  createMilestoneRow(milestone) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__prestige-row';
-    row.classList.toggle('is-completed', milestone.completed);
-    row.classList.toggle('is-locked', !milestone.unlocked);
+  createDescription() {
+    const description = document.createElement('div');
+    description.className = 'prestige-page__description-copy';
+    description.textContent =
+      'prestige resets the current run after milestone levels. completed milestones keep ruby and point rewards for future runs.';
+    return description;
+  }
+
+  createMilestoneRow(milestone, index = 0, upcoming = false) {
+    const state = this.getMilestoneState(milestone, upcoming);
+    const row = document.createElement('section');
+    row.className = 'workshop-page__prestige-row style-box';
+    row.classList.toggle('is-completed', state === 'completed');
+    row.classList.toggle('is-ready', state === 'ready');
+    row.classList.toggle('is-upcoming', state === 'upcoming');
+    row.classList.toggle('is-locked', state === 'locked');
+    row.dataset.prestigeState = state;
+    row.dataset.prestigeLevel = String(milestone.level);
+    row.style.setProperty('--prestige-roadmap-offset', String(index % 4));
 
     const level = document.createElement('span');
     level.className = 'workshop-page__prestige-level';
     level.textContent = `level ${milestone.level}`;
 
+    const stateLabel = document.createElement('span');
+    stateLabel.className = 'workshop-page__prestige-state-label';
+    stateLabel.textContent = this.getMilestoneStateLabel(state);
+
+    const body = document.createElement('div');
+    body.className = 'workshop-page__prestige-milestone-body';
+
     const reward = document.createElement('span');
     reward.className = 'workshop-page__prestige-reward';
-    setResourceIconText(reward, `${milestone.rewardRuby} ruby`);
+    setResourceIconText(reward, `reward: ${milestone.rewardRuby} ruby`);
     setResourceColor(reward, 'ruby');
 
     const action = this.createMilestoneAction(milestone);
 
-    row.append(level, reward, action);
+    body.append(reward);
+    if (action) {
+      body.append(action);
+    }
+    const header = document.createElement('div');
+    header.className = 'workshop-page__prestige-milestone-header';
+    header.append(level, stateLabel);
+
+    row.append(header, body);
     return row;
   }
 
-  createPointRows(prestige = {}) {
+  createPointRewardBox(prestige = {}) {
     const completedCount = this.getCompletedPrestigeCount(prestige);
+    const box = document.createElement('section');
+    box.className = 'workshop-page__prestige-point-box style-box';
 
-    return PRESTIGE_POINT_REWARDS.map((pointReward) =>
-      this.createPointRewardRow(pointReward, completedCount),
+    const title = document.createElement('div');
+    title.className = 'workshop-page__prestige-point-title';
+    title.textContent = 'point rewards';
+
+    const list = document.createElement('div');
+    list.className = 'workshop-page__prestige-point-list';
+    list.replaceChildren(
+      ...PRESTIGE_POINT_REWARDS.map((pointReward) =>
+        this.createPointRewardRow(pointReward, completedCount),
+      ),
     );
+
+    box.append(title, list);
+    return box;
   }
 
   createPointRewardRow(pointReward, completedCount) {
     const row = document.createElement('div');
     row.className = 'workshop-page__prestige-point-row';
+    row.classList.toggle('is-completed', completedCount >= pointReward.count);
+    row.classList.toggle('is-next', completedCount + 1 === pointReward.count);
     row.classList.toggle('is-locked', pointReward.count > completedCount + 1);
 
     const count = this.createPrestigePointCount(pointReward.count);
@@ -335,8 +373,12 @@ export class PrestigePanelManager {
 
     const stars = document.createElement('span');
     stars.className = 'workshop-page__prestige-point-stars';
-    stars.setAttribute('aria-hidden', 'true');
-    stars.textContent = PRESTIGE_POINT_STAR.repeat(safeCount);
+    if (safeCount > 0) {
+      const starLabel = createStarLevelLabel(safeCount);
+      starLabel.classList.add('workshop-page__prestige-point-star-label');
+      starLabel.setAttribute('aria-hidden', 'true');
+      stars.append(starLabel);
+    }
 
     const number = document.createElement('span');
     number.className = 'workshop-page__prestige-point-number';
@@ -363,20 +405,37 @@ export class PrestigePanelManager {
       return button;
     }
 
-    const status = document.createElement('span');
-    status.className = 'workshop-page__prestige-status';
-    status.textContent = milestone.completed ? 'complete' : 'locked';
-    return status;
+    return null;
+  }
+
+  getMilestoneState(milestone = {}, upcoming = false) {
+    if (milestone.completed) {
+      return 'completed';
+    }
+
+    if (milestone.canComplete) {
+      return 'ready';
+    }
+
+    if (upcoming || milestone.unlocked) {
+      return 'upcoming';
+    }
+
+    return 'locked';
+  }
+
+  getMilestoneStateLabel(state) {
+    if (state === 'completed') {
+      return 'complete';
+    }
+
+    return state;
   }
 
   onPrestigeClick(milestone) {
-    if (milestone.lowerThanHighestAvailable) {
-      this.confirmingMilestone = milestone;
-      this.applyConfirm();
-      return;
-    }
-
-    this.completePrestige(milestone.level);
+    this.confirmingMilestone = milestone;
+    this.applyConfirm();
+    this.refs.confirm?.scrollIntoView?.({ block: 'nearest' });
   }
 
   completePrestige(level, confirmedLower = false) {
@@ -416,11 +475,81 @@ export class PrestigePanelManager {
     this.refs.confirm.hidden = !milestone;
 
     if (!milestone) {
+      if (this.refs.confirm.parentElement !== this.refs.body) {
+        this.refs.body.append(this.refs.confirm);
+      }
       return;
     }
 
-    this.refs.confirmMessage.textContent =
-      `higher level prestige available level ${highest}; prestige level ${milestone.level}?`;
+    this.refs.confirmMessage.replaceChildren(
+      ...this.createConfirmMessageNodes(milestone, highest),
+    );
+    const targetRow = this.refs.rows.querySelector(
+      `[data-prestige-level="${milestone.level}"]`,
+    );
+
+    if (targetRow && targetRow.nextSibling !== this.refs.confirm) {
+      targetRow.after(this.refs.confirm);
+    } else if (!targetRow && this.refs.confirm.parentElement !== this.refs.body) {
+      this.refs.body.append(this.refs.confirm);
+    }
+  }
+
+  createConfirmMessageNodes(milestone, highest) {
+    const nodes = [];
+
+    if (milestone.lowerThanHighestAvailable && highest) {
+      const warning = document.createElement('div');
+      warning.className = 'workshop-page__prestige-confirm-warning';
+      warning.textContent =
+        `higher level prestige available level ${highest}; prestige level ${milestone.level}?`;
+      nodes.push(warning);
+    } else {
+      const question = document.createElement('div');
+      question.className = 'workshop-page__prestige-confirm-warning';
+      question.textContent = `prestige level ${milestone.level}?`;
+      nodes.push(question);
+    }
+
+    nodes.push(this.createNextRunSummary(milestone.nextRun));
+    return nodes;
+  }
+
+  createNextRunSummary(nextRun = {}) {
+    const summary = document.createElement('div');
+    summary.className = 'workshop-page__prestige-next-run';
+
+    const addLine = (label, valueNode) => {
+      const row = document.createElement('div');
+      row.className = 'workshop-page__prestige-next-run-row';
+
+      const labelNode = document.createElement('span');
+      labelNode.className = 'workshop-page__prestige-next-run-label';
+      labelNode.textContent = label;
+
+      const value = document.createElement('span');
+      value.className = 'workshop-page__prestige-next-run-value';
+      value.append(valueNode);
+      row.append(labelNode, value);
+      summary.append(row);
+    };
+
+    addLine('start level', document.createTextNode(String(nextRun.level ?? 1)));
+    addLine('mana', this.createResourceValue('mana', nextRun.mana));
+    addLine('coin', this.createResourceValue('coin', nextRun.coin));
+    addLine('crystal', this.createResourceValue('crystal', nextRun.crystal));
+    addLine('emerald', this.createResourceValue('emerald', nextRun.emerald));
+    addLine('ruby', this.createResourceValue('ruby', nextRun.ruby));
+
+    return summary;
+  }
+
+  createResourceValue(resourceKey, amount) {
+    const value = Math.max(0, Math.floor(Number(amount) || 0));
+    const node = document.createElement('span');
+    setResourceIconText(node, `${value} ${resourceKey}`);
+    setResourceColor(node, resourceKey);
+    return node;
   }
 
   syncTabs() {
@@ -450,6 +579,7 @@ export class PrestigePanelManager {
         canComplete: milestone.canComplete,
         unlocked: milestone.unlocked,
         lowerThanHighestAvailable: milestone.lowerThanHighestAvailable,
+        nextRun: milestone.nextRun,
       })),
     });
   }
@@ -472,14 +602,5 @@ export class PrestigePanelManager {
 
   pluralize(count, word) {
     return count === 1 ? word : `${word}s`;
-  }
-
-  updateScrollProgress() {
-    updateScrollCueState({
-      scrollElement: this.refs.rows,
-      cueElement: this.refs.frame,
-      progressFill: this.refs.progressFill,
-      inlineCue: false,
-    });
   }
 }

@@ -108,10 +108,10 @@ describe('BrewingCauldronManager', () => {
       world.style.getPropertyValue('--brewing-page-world-pan-y'),
     );
 
-    expect(rubberPanX).toBeLessThan(-360);
-    expect(rubberPanX).toBeGreaterThan(-414);
-    expect(rubberPanY).toBeLessThan(-520);
-    expect(rubberPanY).toBeGreaterThan(-574);
+    expect(rubberPanX).toBeLessThan(-392);
+    expect(rubberPanX).toBeGreaterThan(-446);
+    expect(rubberPanY).toBeLessThan(-552);
+    expect(rubberPanY).toBeGreaterThan(-606);
 
     shell.dispatchEvent(
       new window.MouseEvent('pointerup', {
@@ -121,8 +121,8 @@ describe('BrewingCauldronManager', () => {
       }),
     );
 
-    expect(world.style.getPropertyValue('--brewing-page-world-pan-x')).toBe('-360px');
-    expect(world.style.getPropertyValue('--brewing-page-world-pan-y')).toBe('-520px');
+    expect(world.style.getPropertyValue('--brewing-page-world-pan-x')).toBe('-392px');
+    expect(world.style.getPropertyValue('--brewing-page-world-pan-y')).toBe('-552px');
     expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('1');
     expect(world.classList.contains('is-settling')).toBe(true);
 
@@ -220,22 +220,66 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('extends the world shell down to the chat clearance behind the herb tray', () => {
+  it('keeps the world shell clear of the herb tray title overhang', () => {
     const worldViewRule = baseCss.match(
       /\.brewing-page__world-view\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const shellRule = baseCss.match(
       /\.brewing-page__world-shell\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const boundaryRule = baseCss.match(
+      /\.brewing-page__world-boundary\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const herbsRule = baseCss.match(
-      /\.brewing-page__herbs\s*\{(?<body>[^}]*)\}/,
+      /\.style-box\.brewing-page__herbs\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(worldViewRule).toContain('--brewing-page-world-bottom-offset: 6px;');
-    expect(shellRule).toContain('bottom: var(--brewing-page-world-bottom-offset);');
-    expect(shellRule).not.toContain('bottom: 82px;');
+    expect(shellRule).toContain('bottom: calc(');
+    expect(shellRule).toContain('var(--brewing-page-world-bottom-offset)');
+    expect(shellRule).toContain('var(--brewing-page-herbs-box-clearance)');
     expect(shellRule).toContain('z-index: 0;');
+    expect(boundaryRule).toContain('display: none;');
+    expect(boundaryRule).toContain('border: 0;');
+    expect(herbsRule).toContain('position: absolute;');
     expect(herbsRule).toContain('z-index: 1;');
+  });
+
+  it('keeps the cauldron world box expanded around cauldrons on every side', () => {
+    const worldRule = baseCss.match(
+      /\.brewing-page__world\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const cauldron = parent.querySelector('.brewing-page__cauldron');
+
+    expect(worldRule).toContain('width: 592px;');
+    expect(worldRule).toContain('height: 752px;');
+    expect(cauldron?.style.left).toBe('92px');
+    expect(cauldron?.style.top).toBe('106px');
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('adds dragged herbs to the cauldron dropped under the pointer', () => {

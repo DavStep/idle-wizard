@@ -196,6 +196,20 @@ export class ResearchFacade {
     );
   }
 
+  getCommittedEmeraldCostTotal() {
+    const researchIds = new Set([
+      ...this.researchStateEntityManager.getCompletedResearchIds(),
+      ...this.researchStateEntityManager
+        .getInProgressResearches()
+        .map((research) => research.researchId),
+    ]);
+
+    return [...researchIds].reduce(
+      (total, researchId) => total + this.researchBalanceManager.getCostEmerald(researchId),
+      0,
+    );
+  }
+
   getCompletedCauldronBrewingLevel(cauldronNumber) {
     return this.getCompletedAdvancedLevel({
       getId: advancedResearchIds.cauldronBrewing,

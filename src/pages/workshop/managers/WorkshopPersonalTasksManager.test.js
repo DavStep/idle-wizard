@@ -120,7 +120,7 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(headerRule).toMatch(/\bgrid-template-columns:\s*68px minmax\(0, 1fr\);/);
     expect(headerRule).toMatch(/\bheight:\s*90px;/);
     expect(headerRule).toMatch(/\bmin-height:\s*90px;/);
-    expect(headerRule).toMatch(/\bborder-bottom:\s*1px solid var\(--style-disabled\);/);
+    expect(headerRule).toMatch(/\bborder-bottom:\s*var\(--style-separator-border\);/);
     expect(portraitRule).toMatch(/\bwidth:\s*64px;/);
     expect(portraitRule).toMatch(/\bheight:\s*80px;/);
     expect(frameRule).toMatch(/\b90px - 6px\b/);

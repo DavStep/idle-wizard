@@ -37,6 +37,58 @@ export class SeedDropPreferenceManager {
     };
   }
 
+  ensureFallbackPreference({
+    seedKey,
+    preference = DEFAULT_SEED_DROP_PREFERENCE,
+    seeds = [],
+  } = {}) {
+    const normalizedSeedKey = this.normalizeSeedKey(seedKey);
+    const normalizedPreference = this.normalizePreference(preference);
+
+    if (!normalizedSeedKey || !Array.isArray(seeds) || seeds.length <= 0) {
+      return {
+        ok: false,
+        reason: 'no_fallback_seed',
+        seedKey: normalizedSeedKey,
+      };
+    }
+
+    const fallbackSeed = seeds.find(
+      (seed) => this.normalizeSeedKey(seed?.key) === normalizedSeedKey,
+    );
+
+    if (!fallbackSeed) {
+      return {
+        ok: false,
+        reason: 'fallback_seed_locked',
+        seedKey: normalizedSeedKey,
+      };
+    }
+
+    const hasExplicitFallbackPreference =
+      this.preferencesBySeedKey.has(normalizedSeedKey);
+
+    if (
+      hasExplicitFallbackPreference &&
+      this.hasActiveSeedPreference(seeds)
+    ) {
+      return {
+        ok: false,
+        reason: 'active_seed_exists',
+        seedKey: normalizedSeedKey,
+      };
+    }
+
+    this.preferencesBySeedKey.set(normalizedSeedKey, normalizedPreference);
+
+    return {
+      ok: true,
+      seedKey: normalizedSeedKey,
+      preference: normalizedPreference,
+      weight: this.getPreferenceWeight(normalizedPreference),
+    };
+  }
+
   getPreference(seedKey) {
     return (
       this.preferencesBySeedKey.get(this.normalizeSeedKey(seedKey)) ??

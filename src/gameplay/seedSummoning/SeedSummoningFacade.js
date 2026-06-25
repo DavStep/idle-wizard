@@ -1,9 +1,14 @@
-import { SeedDropPreferenceManager } from './managers/SeedDropPreferenceManager.js';
+import {
+  DEFAULT_SEED_DROP_PREFERENCE,
+  SeedDropPreferenceManager,
+} from './managers/SeedDropPreferenceManager.js';
 import { SeedDropWeightManager } from './managers/SeedDropWeightManager.js';
 import { SeedSummonCostManager } from './managers/SeedSummonCostManager.js';
 import { SeedSummonEligibilityManager } from './managers/SeedSummonEligibilityManager.js';
 import { SeedSummonMultiplierManager } from './managers/SeedSummonMultiplierManager.js';
 import { SeedSummonRequestManager } from './managers/SeedSummonRequestManager.js';
+
+const DEFAULT_SUMMON_SEED_KEY = 'sageSeed';
 
 export class SeedSummoningFacade {
   static explain =
@@ -36,7 +41,9 @@ export class SeedSummoningFacade {
     });
   }
 
-  initialize() {}
+  initialize() {
+    this.ensureDefaultSeedDropPreference();
+  }
 
   summonSeed() {
     return this.seedSummonRequestManager.summonSeed();
@@ -101,5 +108,14 @@ export class SeedSummoningFacade {
 
   applyPersistenceSnapshot(snapshot) {
     this.seedDropPreferenceManager.applyPersistenceSnapshot(snapshot);
+    this.ensureDefaultSeedDropPreference();
+  }
+
+  ensureDefaultSeedDropPreference() {
+    return this.seedDropPreferenceManager.ensureFallbackPreference({
+      seedKey: DEFAULT_SUMMON_SEED_KEY,
+      preference: DEFAULT_SEED_DROP_PREFERENCE,
+      seeds: this.seedSummonEligibilityManager.getSummonableSeeds(),
+    });
   }
 }

@@ -34,8 +34,14 @@ export class PrestigeFacade {
   }
 
   getEarnedRuby() {
-    return this.prestigeMilestoneBalanceManager.getTotalRuby(
+    return this.getRubyForCompletedLevels(
       this.prestigeStateEntityManager.getCompletedLevels(),
+    );
+  }
+
+  getRubyForCompletedLevels(completedLevels = []) {
+    return this.prestigeMilestoneBalanceManager.getTotalRuby(
+      completedLevels,
     );
   }
 

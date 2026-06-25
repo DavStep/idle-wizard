@@ -8,7 +8,9 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import AcceptTradeAllianceApplicationReducer from "../accept_trade_alliance_application_reducer";
 import AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer from "../admin_cleanup_zero_total_coin_players_and_grant_currency_reducer";
+import AdminCopyPlayerProgressionReducer from "../admin_copy_player_progression_reducer";
 import AdminDisbandTradeAllianceReducer from "../admin_disband_trade_alliance_reducer";
+import AdminGrantPlayerCurrencyByIdentityReducer from "../admin_grant_player_currency_by_identity_reducer";
 import AdminKickPlayerSessionReducer from "../admin_kick_player_session_reducer";
 import AdminMergePlayerAccountsReducer from "../admin_merge_player_accounts_reducer";
 import AdminMoveTradeAllianceMemberReducer from "../admin_move_trade_alliance_member_reducer";
@@ -65,7 +67,9 @@ import UpsertResearchConfigReducer from "../upsert_research_config_reducer";
 
 export type AcceptTradeAllianceApplicationParams = __Infer<typeof AcceptTradeAllianceApplicationReducer>;
 export type AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyParams = __Infer<typeof AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer>;
+export type AdminCopyPlayerProgressionParams = __Infer<typeof AdminCopyPlayerProgressionReducer>;
 export type AdminDisbandTradeAllianceParams = __Infer<typeof AdminDisbandTradeAllianceReducer>;
+export type AdminGrantPlayerCurrencyByIdentityParams = __Infer<typeof AdminGrantPlayerCurrencyByIdentityReducer>;
 export type AdminKickPlayerSessionParams = __Infer<typeof AdminKickPlayerSessionReducer>;
 export type AdminMergePlayerAccountsParams = __Infer<typeof AdminMergePlayerAccountsReducer>;
 export type AdminMoveTradeAllianceMemberParams = __Infer<typeof AdminMoveTradeAllianceMemberReducer>;

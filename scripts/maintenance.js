@@ -23,6 +23,7 @@ const SCHEMA_NAMES = [
   'migrate_player_gameplay_saves',
   'admin_reset_player_progression_data',
   'admin_reset_player_progression_by_identity',
+  'admin_copy_player_progression',
   'admin_wipe_all_player_data',
   'admin_wipe_zero_income_player_data',
   'admin_cleanup_zero_total_coin_players_and_grant_currency',

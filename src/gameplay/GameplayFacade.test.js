@@ -640,6 +640,43 @@ describe('GameplayFacade', () => {
     });
   }, 30_000);
 
+  it('restores sage seed medium priority after prestige when other seed preferences reset away', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 3);
+    gameplayFacade.coinFacade.add(25);
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
+      ok: true,
+      researchId: 'unlockSeed:mintSeed',
+    });
+    expect(gameplayFacade.setSeedDropPreference('sageSeed', 'none')).toMatchObject({
+      ok: true,
+      preference: 'none',
+    });
+
+    advanceToLevel(gameplayFacade, 10);
+    expect(gameplayFacade.completePrestigeMilestone(10)).toMatchObject({ ok: true });
+
+    expect(gameplayFacade.getSnapshot().seedSummoning.dropChances).toMatchObject([
+      {
+        key: 'sageSeed',
+        dropPreference: 'medium',
+        preferenceWeight: 2,
+        effectiveDropWeight: 2,
+        dropChance: 1,
+      },
+    ]);
+
+    ecsFacade.update({ deltaSeconds: 2 });
+    expect(gameplayFacade.getSnapshot().seedSummoning.canSummon).toBe(true);
+    expect(gameplayFacade.summonSeed()).toMatchObject({
+      ok: true,
+      seed: {
+        key: 'sageSeed',
+      },
+    });
+  }, 30_000);
+
   it('resets to half of the completed prestige milestone level', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -701,7 +738,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().research.completedResearchIds).toContain(
       capacityResearchIds.plot(11),
     );
-    expect(gameplayFacade.getSnapshot().ruby.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(getPrestigeResetLevel(20));
 
     expect(gameplayFacade.buyResearch(capacityResearchIds.cauldron(6))).toMatchObject({
@@ -844,7 +881,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().prestige.completedLevels).toEqual([10]);
   }, 30_000);
 
-  it('derives loaded ruby from completed prestiges minus completed ruby research cost', () => {
+  it('clamps loaded ruby to completed prestige rewards without refilling spent ruby', () => {
     const persistenceStorage = createMemoryStorage();
     persistenceStorage.setItem(
       'idle-wizard.gameplay.save',
@@ -871,7 +908,62 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     expect(gameplayFacade.getSnapshot().prestige.earnedRuby).toBe(2);
-    expect(gameplayFacade.getSnapshot().ruby.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(2);
+  });
+
+  it('does not refill spent ruby on load before the next prestige reset', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 3,
+        mana: {},
+        coin: {},
+        crystal: { current: 0 },
+        ruby: { current: 0 },
+        inventory: [],
+        prestige: {
+          completedLevels: [10, 20],
+        },
+        research: {
+          completedIds: [advancedResearchIds.cauldronBrewing(1, 1)],
+        },
+        tasks: {
+          currentLevel: 10,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+
+    expect(gameplayFacade.getSnapshot().prestige.earnedRuby).toBe(2);
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(0);
+  });
+
+  it('refunds emerald research costs into the next prestige run', () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.emeraldFacade.add(3);
+    expect(gameplayFacade.buyResearch(emeraldResearchIds.plotPlanting(1, 2))).toMatchObject({
+      ok: true,
+      cost: 1,
+      costCurrency: 'emerald',
+    });
+    expect(gameplayFacade.buyResearch(emeraldResearchIds.plotPlanting(1, 3))).toMatchObject({
+      ok: true,
+      cost: 2,
+      costCurrency: 'emerald',
+    });
+    expect(gameplayFacade.getSnapshot().emerald.current).toBe(0);
+
+    advanceToLevel(gameplayFacade, 10);
+    gameplayFacade.completePrestigeMilestone(10);
+
+    expect(gameplayFacade.getSnapshot().emerald.current).toBe(3);
+    expect(gameplayFacade.getSnapshot().research.completedResearchIds).not.toContain(
+      emeraldResearchIds.plotPlanting(1, 2),
+    );
   });
 
   it('backfills missed level crystals when loading old saves', () => {

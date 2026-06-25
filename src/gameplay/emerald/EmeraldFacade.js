@@ -20,6 +20,10 @@ export class EmeraldFacade {
     this.emeraldEntityManager.addCurrent(amount);
   }
 
+  setCurrent(amount) {
+    this.emeraldEntityManager.setCurrent(amount);
+  }
+
   spend(amount) {
     return this.emeraldSpendManager.spend(amount);
   }

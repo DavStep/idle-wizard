@@ -10,8 +10,10 @@
 - Persistent save/schema/config shape changes need explicit migration code or scripts before deploy; never rely on wiping rows, startup defaults, or page reloads to move users forward.
 - Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 - When loading a prod save into local SpacetimeDB for desktop QA, direct-SQL the `player_gameplay_save` row and clear that identity's `player_session`; reducer import while the client is open can be overwritten by stale in-memory saves.
+- To clone test progression between live accounts while keeping the target profile, use `admin_copy_player_progression`; `admin_merge_player_accounts` moves/deletes the source and copies source profile settings.
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
 - Single-account support currency grants need a server pending-grant guard through the next client save; active clients can reconnect and autosave stale in-memory currency over a one-shot admin save edit.
+- When correcting live currency after a bad admin grant, clear the stale `player-currency-grant-pending:*` row or it can preserve/refill the old amount on future saves.
 - Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
 - Full progression resets should post a human Discord notice before the reducer runs, using the reset/maintenance webhook rather than the APK upload webhook.
 - Zero-total-coin player cleanup must consider players with no leaderboard/save rows; `leaderboard.total_income = 0` alone misses accounts that connected but never progressed.
@@ -32,6 +34,7 @@
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
 - Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
+- Popup-layer descendants use `box-sizing: content-box`; full-width dialog buttons need explicit `box-sizing: border-box` or padding/borders spill past the panel.
 - Centered content inside source-scaled room layers must account for ui-layer padding/content-box sizing; plain auto margins center in the padded layer, not the visual stage.
 - Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
 - Height animations inside scaled room UI should write layout pixels from `offsetHeight`/`scrollHeight`, not `getBoundingClientRect()` screen pixels, or the element expands by the UI scale.
@@ -216,6 +219,7 @@
 - Brewing FTUE lesson placement must protect the herbs box, cauldron, and bottom brewing controls so Elara never hides brew status/progress.
 - Brewing cauldron boxes default to three content rows, then grow from row count when selected recipe or staged ingredient groups exceed three.
 - Active brew status/progress should replace the cauldron ingredient slot; leaving the normal slot visible makes the box read taller.
+- Brewing world pan bounds should stop above the herbs box including border-title overhang; do not draw a world boundary stroke behind the herb tray.
 - FTUE lesson animations must not use `clip-path`; border title/close labels live outside the panel box and get clipped.
 - FTUE lesson collapse animations need a temporary exit class before setting `hidden`; full tutorial hides still clear immediately to prevent stale flashes.
 - FTUE guide auto-move should use source-pixel rAF interpolation from the current visual offset to the desired placement; CSS transitions after writing final `left`/`top` can still paint as a teleport in target browsers.
@@ -435,6 +439,7 @@
 - Summoning seeds consumes mana.
 - Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper.
 - Seed drop preferences multiply base seed `dropWeight` at roll time (`none` 0, `low` 1, `medium` 2, `high` 3); keep config `dropWeight` unchanged and use effective weight for odds.
+- Prestige keeps seed drop preferences while ordinary seed unlock research resets; repair inactive restored drops by forcing unlocked `sageSeed` to `medium`.
 - Seeds produce herbs, and herbs have growth duration.
 - Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
 - Garden and Brewing herb/potion use panels show only researched/unlocked or owned items; hide locked zero-count rows completely.
@@ -602,6 +607,7 @@
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
 - Brewing recipe popup ingredient rows show required amount on the left (`- 3 sage`) and owned count on the right (`owned 31`), not `(31/3) sage`.
 - Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
+- Brewing recipe popup select rows need a fixed checkbox slot; `[ ]` to `[x]` and focus bold can otherwise reflow the row.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
 - Reward flyouts that should show item icons need exact item labels/counts; generic text like `3 seeds found` cannot render item icons.

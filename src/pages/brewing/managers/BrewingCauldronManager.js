@@ -16,8 +16,9 @@ import { automationResearchIds } from '../../../gameplay/automation/automationRe
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const CAULDRON_BASE_ROW_COUNT = 3;
-const WORLD_WIDTH = 560;
-const WORLD_HEIGHT = 720;
+const WORLD_EDGE_EXTENSION = 16;
+const WORLD_WIDTH = 560 + WORLD_EDGE_EXTENSION * 2;
+const WORLD_HEIGHT = 720 + WORLD_EDGE_EXTENSION * 2;
 const HERB_DRAG_THRESHOLD = 5;
 const WORLD_DRAG_THRESHOLD = 4;
 const WORLD_MIN_ZOOM = 0.68;
@@ -487,14 +488,21 @@ export class BrewingCauldronManager {
     ];
 
     if (positions[safeIndex]) {
-      return positions[safeIndex];
+      return this.extendCauldronWorldPosition(positions[safeIndex]);
     }
 
     const column = safeIndex % 2;
     const row = Math.floor(safeIndex / 2);
-    return {
+    return this.extendCauldronWorldPosition({
       x: 84 + column * 238,
       y: 96 + row * 150,
+    });
+  }
+
+  extendCauldronWorldPosition(position) {
+    return {
+      x: position.x + WORLD_EDGE_EXTENSION,
+      y: position.y + WORLD_EDGE_EXTENSION,
     };
   }
 

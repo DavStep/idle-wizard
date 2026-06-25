@@ -474,7 +474,9 @@ export class GameplayFacade {
     const prestige = this.prestigeFacade.getPersistenceSnapshot();
     const prestigeResetLevel = getPrestigeResetLevel(prestige.completedLevels.at(-1));
     const completedCapacityResearchIds = this.researchFacade.getPermanentCompletedResearchIds();
-    const emerald = this.emeraldFacade.getSnapshot();
+    const emerald = {
+      current: this.getPrestigeResetEmeraldCurrent(),
+    };
     const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
     const automation = this.automationFacade.getPersistenceSnapshot();
     const seedSummoning = this.seedSummoningFacade.getPersistenceSnapshot();
@@ -524,16 +526,51 @@ export class GameplayFacade {
       guild: this.guildFacade.getPersistenceSnapshot(),
     });
     this.syncPlayerLevelManaEffects();
-    this.syncRubyFromPrestige();
+    this.syncRubyFromPrestige({ resetRun: true });
   }
 
-  syncRubyFromPrestige() {
+  syncRubyFromPrestige({ resetRun = false } = {}) {
     const earnedRuby = this.prestigeFacade.getEarnedRuby();
-    const spentRuby = Math.max(
+    const currentRuby = Math.max(
       0,
-      Math.floor(Number(this.researchFacade.getCommittedRubyCostTotal()) || 0),
+      Math.floor(Number(this.rubyFacade.getSnapshot().current) || 0),
     );
-    this.rubyFacade.setCurrent(Math.max(0, earnedRuby - spentRuby));
+    this.rubyFacade.setCurrent(resetRun ? earnedRuby : Math.min(currentRuby, earnedRuby));
+  }
+
+  getPrestigeResetEmeraldCurrent() {
+    const currentEmerald = Math.max(
+      0,
+      Math.floor(Number(this.emeraldFacade.getSnapshot().current) || 0),
+    );
+    const spentEmerald = Math.max(
+      0,
+      Math.floor(Number(this.researchFacade.getCommittedEmeraldCostTotal()) || 0),
+    );
+
+    return currentEmerald + spentEmerald;
+  }
+
+  getPrestigeNextRunPreview(level) {
+    const prestige = this.prestigeFacade.getSnapshot();
+    const milestoneLevel = Math.floor(Number(level));
+    const milestone = prestige.milestones.find(
+      (candidate) => candidate.level === milestoneLevel,
+    );
+    const completedLevels = new Set(prestige.completedLevels);
+
+    if (milestone && !milestone.completed) {
+      completedLevels.add(milestone.level);
+    }
+
+    return {
+      level: getPrestigeResetLevel(milestoneLevel),
+      mana: 0,
+      coin: 0,
+      crystal: 0,
+      emerald: this.getPrestigeResetEmeraldCurrent(),
+      ruby: this.prestigeFacade.getRubyForCompletedLevels([...completedLevels]),
+    };
   }
 
   handleResearchComplete({ label, actionType = 'research' }) {
@@ -1245,6 +1282,7 @@ export class GameplayFacade {
     };
     const guild = this.guildFacade.getSnapshot();
 
+    const prestige = this.prestigeFacade.getSnapshot();
     const snapshot = {
       mana: this.manaFacade.getSnapshot(),
       coin: this.coinFacade.getSnapshot(),
@@ -1266,7 +1304,13 @@ export class GameplayFacade {
       personalTasks: this.personalTasksFacade.getSnapshot(),
       worldNotice: this.worldNoticeFacade.getSnapshot(),
       guild,
-      prestige: this.prestigeFacade.getSnapshot(),
+      prestige: {
+        ...prestige,
+        milestones: prestige.milestones.map((milestone) => ({
+          ...milestone,
+          nextRun: this.getPrestigeNextRunPreview(milestone.level),
+        })),
+      },
       research: this.researchFacade.getSnapshot(),
       visualSettings: this.visualSettingsFacade.getSnapshot(),
       shop: this.shopFacade.getSnapshot(),

@@ -8257,6 +8257,34 @@ function moveAdminPlayerGameplaySave(
   ctx.db.playerGameplaySave.delete(sourceSave);
 }
 
+function copyAdminPlayerGameplaySave(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+) {
+  const sourceSave = ctx.db.playerGameplaySave.identity.find(sourceIdentity);
+  if (!sourceSave) {
+    throw new Error('Cannot copy missing source player save.');
+  }
+
+  const parsedSave = parsePlayerGameplaySaveJson(sourceSave.saveJson);
+  if (!parsedSave) {
+    throw new Error('Cannot copy invalid source player save JSON.');
+  }
+
+  const targetSave = ctx.db.playerGameplaySave.identity.find(targetIdentity) ?? undefined;
+  const safeSaveJson = JSON.stringify(
+    normalizePlayerGameplaySave(
+      ctx,
+      parsedSave,
+      sourceSave.saveJson,
+      targetIdentity,
+      { preserveSavedAt: true },
+    ),
+  );
+  upsertAdminPlayerGameplaySave(ctx, targetIdentity, safeSaveJson, targetSave);
+}
+
 function moveAdminLeaderboardEntry(
   ctx: IdleWizardReducerCtx,
   sourceIdentity: Identity,
@@ -8294,6 +8322,65 @@ function moveAdminLeaderboardEntry(
   }
 
   ctx.db.leaderboard.delete(sourceEntry);
+}
+
+function copyAdminLeaderboardEntry(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+  targetPlayerLevel: number,
+) {
+  const sourceEntry = ctx.db.leaderboard.identity.find(sourceIdentity);
+  if (!sourceEntry) {
+    throw new Error('Cannot copy missing source leaderboard entry.');
+  }
+
+  const targetEntry = ctx.db.leaderboard.identity.find(targetIdentity);
+  const capPlayerLevel = getLeaderboardCapPlayerLevel(ctx, targetIdentity, targetPlayerLevel);
+  const totalIncome = clampLeaderboardTotalIncome(sourceEntry.totalIncome, capPlayerLevel);
+  const nextEntry = {
+    ...sourceEntry,
+    identity: targetIdentity,
+    username: targetUsername,
+    playerLevel: targetPlayerLevel,
+    totalIncome,
+    ...getLeaderboardPeriodValues(ctx, sourceEntry, totalIncome),
+    updatedAt: ctx.timestamp,
+  };
+
+  if (targetEntry) {
+    ctx.db.leaderboard.identity.update(nextEntry);
+    return;
+  }
+
+  ctx.db.leaderboard.insert(nextEntry);
+}
+
+function copyAdminWorldEventLeaderboardEntries(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+  targetUsername: string,
+  targetPlayerLevel: number,
+) {
+  deleteWorldEventLeaderboardForIdentity(ctx, targetIdentity);
+
+  for (const entry of Array.from(ctx.db.worldEventLeaderboard.byIdentity.filter(sourceIdentity))) {
+    ctx.db.worldEventLeaderboard.insert({
+      ...entry,
+      contributionKey: getWorldEventLeaderboardKey(
+        targetIdentity,
+        entry.periodKey,
+        entry.eventId,
+      ),
+      identity: targetIdentity,
+      username: targetUsername,
+      points: clampWorldEventLeaderboardPoints(entry.points, targetPlayerLevel),
+      playerLevel: targetPlayerLevel,
+      updatedAt: ctx.timestamp,
+    });
+  }
 }
 
 function syncPlayerLevelFromGameplaySave(
@@ -15248,6 +15335,71 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
 
     deleteAdminPlayerSession(ctx, sourcePlayer.identity);
     ctx.db.player.delete(sourcePlayer);
+  },
+);
+
+export const admin_copy_player_progression = spacetimedb.reducer(
+  {
+    sourceIdentityHex: t.string(),
+    targetIdentityHex: t.string(),
+  },
+  (ctx, { sourceIdentityHex, targetIdentityHex }) => {
+    assertGameConfigAdmin(ctx);
+
+    const sourcePlayer = findPlayerByIdentityHex(ctx, sourceIdentityHex);
+    const targetPlayer = findPlayerByIdentityHex(ctx, targetIdentityHex);
+    if (sourcePlayer.identity.isEqual(targetPlayer.identity)) {
+      throw new Error('Source and target players must differ.');
+    }
+
+    const sourceSave = ctx.db.playerGameplaySave.identity.find(sourcePlayer.identity);
+    if (!sourceSave) {
+      throw new Error('Cannot copy missing source player save.');
+    }
+
+    const targetUsername = normalizeUsername(targetPlayer.username);
+    const sourceSaveLevel = readSavedCurrentLevel(sourceSave.saveJson) ?? DEFAULT_PLAYER_LEVEL;
+    const targetPlayerLevel = normalizePlayerLevel(
+      Math.max(normalizePlayerLevel(sourcePlayer.playerLevel), sourceSaveLevel),
+    );
+
+    copyAdminPlayerGameplaySave(ctx, sourcePlayer.identity, targetPlayer.identity);
+
+    const nextTargetPlayer = ctx.db.player.identity.update({
+      ...targetPlayer,
+      username: targetUsername,
+      playerLevel: targetPlayerLevel,
+      theme: normalizePlayerTheme(targetPlayer.theme),
+      colorMode: normalizePlayerColorMode(targetPlayer.colorMode),
+      font: normalizePlayerFont(targetPlayer.font),
+      character: normalizePlayerCharacter(targetPlayer.character),
+      usernamePromptSeen:
+        Boolean(targetPlayer.usernamePromptSeen) || targetUsername !== DEFAULT_USERNAME,
+      connected: false,
+      lastSeenAt: ctx.timestamp,
+    });
+
+    copyAdminLeaderboardEntry(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      nextTargetPlayer.username,
+      nextTargetPlayer.playerLevel,
+    );
+    copyAdminWorldEventLeaderboardEntries(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+      nextTargetPlayer.username,
+      nextTargetPlayer.playerLevel,
+    );
+    updateTradeAllianceMemberProfile(
+      ctx,
+      nextTargetPlayer.identity,
+      nextTargetPlayer.username,
+      nextTargetPlayer.playerLevel,
+    );
+    kickAdminPlayerSession(ctx, nextTargetPlayer.identity);
   },
 );
 
