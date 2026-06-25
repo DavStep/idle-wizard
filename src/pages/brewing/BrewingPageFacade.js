@@ -1,5 +1,4 @@
 import { BrewingCauldronManager } from './managers/BrewingCauldronManager.js';
-import { BrewingPotionInventoryManager } from './managers/BrewingPotionInventoryManager.js';
 import { BrewingRecipeBookManager } from './managers/BrewingRecipeBookManager.js';
 import { BrewingRecipeGuideManager } from './managers/BrewingRecipeGuideManager.js';
 import { BrewingRoomViewManager } from './managers/BrewingRoomViewManager.js';
@@ -42,8 +41,12 @@ export class BrewingPageFacade {
         ),
       onSelectBrewQuantity: (quantity, cauldronIndex) =>
         this.setBrewQuantity(quantity, cauldronIndex),
+      onPrimaryAction: (cauldronIndex) =>
+        this.cauldronManager.onPrimaryAction(cauldronIndex),
+      onRemoveIngredient: (slotIndex, cauldronIndex) =>
+        this.cauldronManager.onRemoveIngredient(slotIndex, cauldronIndex),
+      getPrimaryAction: (brewing) => this.cauldronManager.getPrimaryAction(brewing),
     });
-    this.potionInventoryManager = new BrewingPotionInventoryManager({ gameplayFacade });
   }
 
   mount(stage) {
@@ -57,14 +60,12 @@ export class BrewingPageFacade {
         this.flyoutManager.showReward(event),
       ) ?? null;
     this.recipeBookManager.mount(uiLayer, popupLayer);
-    this.potionInventoryManager.mount(uiLayer, popupLayer);
   }
 
   unmount() {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
     this.recipeGuideManager.unmount();
-    this.potionInventoryManager.unmount();
     this.recipeBookManager.unmount();
     this.flyoutManager.unmount();
     this.cauldronManager.unmount();

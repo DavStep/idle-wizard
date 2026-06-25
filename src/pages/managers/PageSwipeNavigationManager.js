@@ -17,6 +17,7 @@ const BLOCKED_TARGET_SELECTOR = [
   'select',
   '[contenteditable="true"]',
   '[draggable="true"]',
+  '[data-page-swipe-block="true"]',
   '.workshop-page__task.is-draggable',
   '.style-dialog',
 ].join(',');

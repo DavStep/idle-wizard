@@ -64,6 +64,7 @@
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
 - Show all five room pages in a shared bottom tab panel; bold the current page tab.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
+- Interactive room surfaces that own drag or pinch gestures should set `data-page-swipe-block="true"`; stage-level swipe capture otherwise steals their horizontal drags before the surface can own them.
 - The top status panel is shared room chrome; show gameplay coin there, not a separate coin currency.
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
@@ -302,6 +303,7 @@
 - SpacetimeDB subscription SQL supports only `SELECT * FROM ... WHERE ...`; put public row caps in server views, not `ORDER BY`/`LIMIT` client subscriptions.
 - When live maintenance needs a backend reducer while the worktree has unrelated backend edits, publish a temporary module from a clean base plus only the maintenance patch.
 - Signed release APK handoff files should be named `idle-wizard-<package-version>-release.apk`; unsigned release APKs keep `-unsigned` in the filename.
+- `npm run android:run:prod` installs a debug build with production web assets; for a true Android release build on a test device, run `npm run android:assembleRelease`, then zipalign/sign the unsigned APK with a local key before `adb install`.
 - Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
 - Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
 - Release process must inspect recent logs/changelog/git changes for big player-facing features like guilds, advanced brewing/gardening, events, or daily/weekly quests; when present, post a separate friendly feature spotlight through `DISCORD_FEATURE_WEBHOOK_URL` that explains what it is and how it works without number-heavy balance details.
@@ -538,6 +540,7 @@
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
 - Garden seed/herb inventory expand state is page-manager-owned and survives room tab swaps; collapsed previews show three item rows.
+- Garden seed/herb inventory expansion should keep the expanded box inside the page scroll viewport, converting scaled DOM rect deltas back to source scroll pixels.
 
 ## Style
 

@@ -62,10 +62,13 @@ describe('BrewingRecipeBookManager', () => {
     const row = parent.querySelector('.brewing-page__recipe-row');
     const action = row.querySelector('.brewing-page__recipe-select-button');
 
-    expect(row.tagName).toBe('BUTTON');
-    expect(action.textContent).toBe('selected');
+    expect(row.tagName).toBe('DIV');
+    expect(action.textContent).toBe('[x]');
+    expect(action.getAttribute('aria-pressed')).toBe('true');
+    expect(action.getAttribute('aria-label')).toBe(
+      'unselect minor healing potion recipe',
+    );
     expect(row.getAttribute('aria-pressed')).toBe('true');
-    expect(row.getAttribute('aria-label')).toBe('unselect minor healing potion recipe');
 
     manager.unmount();
     parent.remove();
@@ -104,19 +107,15 @@ describe('BrewingRecipeBookManager', () => {
     manager.mount(parent);
     manager.show();
 
-    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
-      'select recipe: cauldron 2',
-    );
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe('cauldron 2');
     expect(parent.querySelector('.brewing-page__recipes-dialog')?.getAttribute('aria-label')).toBe(
-      'select recipe: cauldron 2',
+      'cauldron 2',
     );
 
     cauldronIndex = 2;
     manager.render(createSnapshot());
 
-    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
-      'select recipe: cauldron 3',
-    );
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe('cauldron 3');
 
     manager.unmount();
     parent.remove();
@@ -145,7 +144,7 @@ describe('BrewingRecipeBookManager', () => {
       'true',
     );
     expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
-      'selected',
+      '[x]',
     );
 
     manager.unmount();
@@ -175,7 +174,7 @@ describe('BrewingRecipeBookManager', () => {
       'false',
     );
     expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
-      'select',
+      '[ ]',
     );
 
     manager.unmount();
@@ -300,6 +299,10 @@ describe('BrewingRecipeBookManager', () => {
 
     manager.mount(parent);
 
+    parent
+      .querySelector('.brewing-page__recipe-eye-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     const ingredients = [...parent.querySelectorAll('.brewing-page__recipe-ingredient-row')].map(
       (row) => ({
         required: row.querySelector('.brewing-page__recipe-ingredient-required')?.textContent,
@@ -412,6 +415,11 @@ describe('BrewingRecipeBookManager', () => {
       { text: 'x2', pressed: 'false' },
       { text: 'x3', pressed: 'true' },
     ]);
+
+    parent
+      .querySelector('.brewing-page__recipe-eye-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     expect(parent.querySelector('.brewing-page__recipe-cost')?.textContent).toBe(
       'cost 36 mana',
     );

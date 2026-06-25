@@ -158,7 +158,7 @@ describe('ScrollCueManager', () => {
       /padding-bottom:\s*var\(--style-page-scroll-padding-bottom\);/,
     );
     expect(gardenRule).toMatch(
-      /padding-top:\s*var\(--style-page-scroll-padding-top\);/,
+      /padding-top:\s*calc\(\s*var\(--style-page-scroll-padding-top\)\s*\+\s*var\(--garden-page-scroll-title-clearance\)\s*\);/,
     );
     expect(gardenRule).toMatch(
       /padding-bottom:\s*var\(--style-page-scroll-padding-bottom\);/,

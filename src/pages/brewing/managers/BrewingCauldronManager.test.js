@@ -20,7 +20,308 @@ function createGameplayFacadeFake(snapshot) {
 }
 
 describe('BrewingCauldronManager', () => {
-  it('adds herbs by click without exposing drag/drop affordances', () => {
+  it('opens the cauldron dialog when a world cauldron is pressed', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const onOpenSelectRecipe = vi.fn();
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      onOpenSelectRecipe,
+    });
+
+    manager.mount(parent);
+
+    parent
+      .querySelector('.brewing-page__cauldron')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onOpenSelectRecipe).toHaveBeenCalledWith(0);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('rubber-bands world panning outside the borders and snaps back on release', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.brewing-page__world-shell');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ width: 200, height: 200 }),
+    });
+
+    shell.dispatchEvent(
+      new window.MouseEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+      }),
+    );
+    shell.dispatchEvent(
+      new window.MouseEvent('pointermove', {
+        bubbles: true,
+        clientX: -500,
+        clientY: -600,
+      }),
+    );
+
+    const world = parent.querySelector('.brewing-page__world');
+    const rubberPanX = Number.parseFloat(
+      world.style.getPropertyValue('--brewing-page-world-pan-x'),
+    );
+    const rubberPanY = Number.parseFloat(
+      world.style.getPropertyValue('--brewing-page-world-pan-y'),
+    );
+
+    expect(rubberPanX).toBeLessThan(-360);
+    expect(rubberPanX).toBeGreaterThan(-414);
+    expect(rubberPanY).toBeLessThan(-520);
+    expect(rubberPanY).toBeGreaterThan(-574);
+
+    shell.dispatchEvent(
+      new window.MouseEvent('pointerup', {
+        bubbles: true,
+        clientX: -500,
+        clientY: -600,
+      }),
+    );
+
+    expect(world.style.getPropertyValue('--brewing-page-world-pan-x')).toBe('-360px');
+    expect(world.style.getPropertyValue('--brewing-page-world-pan-y')).toBe('-520px');
+    expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('1');
+    expect(world.classList.contains('is-settling')).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('rubber-bands world zoom outside the caps and snaps back on release', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.brewing-page__world-shell');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 200, height: 200 }),
+    });
+
+    manager.setWorldZoomAroundPoint(0.3, 100, 100, { rubber: true });
+
+    const world = parent.querySelector('.brewing-page__world');
+    const rubberZoom = Number.parseFloat(
+      world.style.getPropertyValue('--brewing-page-world-zoom'),
+    );
+
+    expect(rubberZoom).toBeLessThan(0.68);
+    expect(rubberZoom).toBeGreaterThan(0.56);
+
+    manager.settleWorldViewport();
+
+    expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('0.68');
+    expect(world.classList.contains('is-settling')).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('does not zoom the world from wheel input', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.brewing-page__world-shell');
+    const world = parent.querySelector('.brewing-page__world');
+    const wheelEvent = new window.WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 100,
+      clientY: 100,
+      deltaY: -120,
+    });
+
+    shell.dispatchEvent(wheelEvent);
+
+    expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('1');
+    expect(wheelEvent.defaultPrevented).toBe(false);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('extends the world shell down to the chat clearance behind the herb tray', () => {
+    const worldViewRule = baseCss.match(
+      /\.brewing-page__world-view\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const shellRule = baseCss.match(
+      /\.brewing-page__world-shell\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const herbsRule = baseCss.match(
+      /\.brewing-page__herbs\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(worldViewRule).toContain('--brewing-page-world-bottom-offset: 6px;');
+    expect(shellRule).toContain('bottom: var(--brewing-page-world-bottom-offset);');
+    expect(shellRule).not.toContain('bottom: 82px;');
+    expect(shellRule).toContain('z-index: 0;');
+    expect(herbsRule).toContain('z-index: 1;');
+  });
+
+  it('adds dragged herbs to the cauldron dropped under the pointer', () => {
+    const addCalls = [];
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 3,
+            availableQuantity: 3,
+          },
+        ],
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            ingredients: [],
+            maxIngredients: 5,
+            manaCost: 12,
+            activeBrew: null,
+            selectedRecipe: null,
+            match: null,
+            canAddIngredient: true,
+            canBrew: false,
+          },
+        ],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: {
+        ...createGameplayFacadeFake(snapshot),
+        addBrewingIngredient: (itemTypeId, cauldronIndex) => {
+          addCalls.push([itemTypeId, cauldronIndex]);
+          return { ok: true };
+        },
+      },
+    });
+
+    manager.mount(parent);
+
+    const herbButton = parent.querySelector('.brewing-page__herb-button');
+    const cauldron = parent.querySelector('.brewing-page__cauldron');
+    const originalElementFromPoint = document.elementFromPoint;
+    document.elementFromPoint = vi.fn(() => cauldron);
+
+    herbButton.dispatchEvent(
+      new window.MouseEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        clientX: 10,
+        clientY: 10,
+      }),
+    );
+    herbButton.dispatchEvent(
+      new window.MouseEvent('pointermove', {
+        bubbles: true,
+        clientX: 40,
+        clientY: 40,
+      }),
+    );
+    herbButton.dispatchEvent(
+      new window.MouseEvent('pointerup', {
+        bubbles: true,
+        clientX: 40,
+        clientY: 40,
+      }),
+    );
+
+    expect(addCalls).toEqual([[1001, 0]]);
+    expect(document.querySelector('.brewing-page__herb-drag-ghost')).toBeNull();
+
+    document.elementFromPoint = originalElementFromPoint;
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('keeps herb click add as a fallback when not dragging', () => {
     const addCalls = [];
     const snapshot = {
       brewing: {

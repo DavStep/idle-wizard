@@ -490,7 +490,10 @@ describe('GardenPlotManager', () => {
     expect(contentRule).toContain('top: var(--style-room-content-top);');
     expect(contentRule).toContain('bottom: var(--style-room-chat-clearance);');
     expect(contentRule).not.toContain('var(--style-page-tab-scroll-clearance)');
-    expect(contentRule).toContain('padding-top: var(--style-page-scroll-padding-top);');
+    expect(contentRule).toContain('--garden-page-scroll-title-clearance: 6px;');
+    expect(contentRule).toContain(
+      'var(--style-page-scroll-padding-top) +\n      var(--garden-page-scroll-title-clearance)',
+    );
     expect(contentRule).toContain('padding-bottom: var(--style-page-scroll-padding-bottom);');
     expect(contentRule).toContain('overflow: hidden auto;');
     expect(contentRule).toContain('touch-action: pan-y;');

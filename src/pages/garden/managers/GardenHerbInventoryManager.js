@@ -39,7 +39,10 @@ export class GardenInventoryBoxManager {
     this.itemRefs = new Map();
     this.divider = null;
     this.expanded = false;
-    this.handleToggleClick = () => this.toggleExpanded();
+    this.handleToggleClick = (event) => {
+      event.preventDefault();
+      this.toggleExpanded();
+    };
   }
 
   mount(parent) {
@@ -217,6 +220,56 @@ export class GardenInventoryBoxManager {
   toggleExpanded() {
     this.expanded = !this.expanded;
     this.render(this.gameplayFacade.getSnapshot());
+    this.keepExpandedBoxInView();
+  }
+
+  keepExpandedBoxInView() {
+    if (!this.expanded || !this.root) {
+      return;
+    }
+
+    const scrollRoot = this.root.closest('.style-page-scroll');
+
+    if (!scrollRoot || typeof scrollRoot.scrollBy !== 'function') {
+      return;
+    }
+
+    const rootRect = this.root.getBoundingClientRect();
+    const scrollRect = scrollRoot.getBoundingClientRect();
+    const scrollStyles = globalThis.getComputedStyle?.(scrollRoot);
+
+    if (!scrollStyles) {
+      return;
+    }
+    const scale = scrollRoot.clientHeight > 0
+      ? scrollRect.height / scrollRoot.clientHeight
+      : 1;
+    const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const topPadding = this.parsePx(scrollStyles.scrollPaddingTop);
+    const bottomPadding = this.parsePx(scrollStyles.paddingBottom);
+    const topLimit = scrollRect.top + topPadding * safeScale;
+    const bottomLimit = scrollRect.bottom - bottomPadding * safeScale;
+    const availableHeight = bottomLimit - topLimit;
+    const rootFits = rootRect.height <= availableHeight;
+    let scrollDelta = 0;
+
+    if (rootFits && rootRect.bottom > bottomLimit) {
+      scrollDelta = rootRect.bottom - bottomLimit;
+    } else if (rootRect.top < topLimit || !rootFits) {
+      scrollDelta = rootRect.top - topLimit;
+    }
+
+    if (Math.abs(scrollDelta) < 1) {
+      return;
+    }
+
+    scrollRoot.scrollBy({ top: scrollDelta / safeScale, behavior: 'auto' });
+  }
+
+  parsePx(value) {
+    const parsed = Number.parseFloat(value);
+
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }
 
