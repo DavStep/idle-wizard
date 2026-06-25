@@ -19,6 +19,18 @@ function createGameplayFacadeFake(snapshot) {
   };
 }
 
+function createHerb(index) {
+  return {
+    itemTypeId: 1000 + index,
+    key: `herb${index}`,
+    label: `herb ${index}`,
+    kind: 'herb',
+    quantity: index,
+    availableQuantity: index,
+    researched: true,
+  };
+}
+
 function dispatchPointer(target, type, { pointerId = 1, button = 0, clientX = 0, clientY = 0 } = {}) {
   const event = new window.MouseEvent(type, {
     bubbles: true,
@@ -400,7 +412,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('keeps the world shell edge-to-edge and clear of the herb tray title overhang', () => {
+  it('keeps the world shell edge-to-edge while the fixed herb box overlays the top world area', () => {
     const worldViewRule = baseCss.match(
       /\.brewing-page__world-view\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -413,7 +425,11 @@ describe('BrewingCauldronManager', () => {
     const herbsRule = baseCss.match(
       /\.style-box\.brewing-page__herbs\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const herbRowsRule = baseCss.match(
+      /\.brewing-page__herb-rows\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
+    expect(baseCss).toContain('--brewing-page-herbs-box-clearance: 0px;');
     expect(worldViewRule).toContain('--brewing-page-world-bottom-offset: 0px;');
     expect(worldViewRule).toContain(
       'top: calc(var(--style-room-content-top) - var(--style-room-content-edge));',
@@ -427,7 +443,16 @@ describe('BrewingCauldronManager', () => {
     expect(boundaryRule).toContain('display: none;');
     expect(boundaryRule).toContain('border: 0;');
     expect(herbsRule).toContain('position: absolute;');
-    expect(herbsRule).toContain('z-index: 1;');
+    expect(herbsRule).toContain('top: var(--style-room-content-edge);');
+    expect(herbsRule).toContain('left: 50%;');
+    expect(herbsRule).toContain('width: var(--style-main-box-width);');
+    expect(herbsRule).toContain('z-index: 2;');
+    expect(herbsRule).toContain('transform: translateX(-50%);');
+    expect(herbRowsRule).toContain('display: grid;');
+    expect(herbRowsRule).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(herbRowsRule).toContain(
+      'min-height: calc(var(--style-row-min-height) * 3);',
+    );
   });
 
   it('keeps active brew text singular and the timer rail full width', () => {
@@ -487,11 +512,28 @@ describe('BrewingCauldronManager', () => {
 
     expect(worldRule).toContain('width: 592px;');
     expect(worldRule).toContain('height: 752px;');
-    expect(cauldron?.style.left).toBe('92px');
-    expect(cauldron?.style.top).toBe('106px');
+    expect(cauldron?.style.left).toBe('122px');
+    expect(cauldron?.style.top).toBe('124px');
 
     manager.unmount();
     parent.remove();
+  });
+
+  it('places cauldrons in a compact two-column stack', () => {
+    const manager = new BrewingCauldronManager();
+
+    expect(
+      Array.from({ length: 6 }, (_, cauldronIndex) =>
+        manager.getCauldronWorldPosition(cauldronIndex),
+      ),
+    ).toEqual([
+      { x: 122, y: 124 },
+      { x: 304, y: 124 },
+      { x: 122, y: 254 },
+      { x: 304, y: 254 },
+      { x: 122, y: 384 },
+      { x: 304, y: 384 },
+    ]);
   });
 
   it('fits the first world view so cauldrons are not cut off horizontally', () => {
@@ -683,6 +725,54 @@ describe('BrewingCauldronManager', () => {
     herbButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(addCalls).toEqual([[1001, 0]]);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows three two-herb rows while collapsed and expands all herbs over the world', () => {
+    const snapshot = {
+      brewing: {
+        herbs: Array.from({ length: 7 }, (_, index) => createHerb(index + 1)),
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const visibleRows = () =>
+      [...parent.querySelectorAll('.brewing-page__herb-row')].filter(
+        (row) => !row.hidden,
+      );
+    const toggle = parent.querySelector('.brewing-page__herbs-toggle');
+    const herbs = parent.querySelector('.brewing-page__herbs');
+
+    expect(parent.querySelector('.brewing-page__herbs-count')).toBeNull();
+    expect(visibleRows()).toHaveLength(6);
+    expect(toggle?.textContent).toBe('expand');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(herbs?.classList.contains('is-collapsed')).toBe(true);
+
+    toggle?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(visibleRows()).toHaveLength(7);
+    expect(toggle?.textContent).toBe('collapse');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle?.getAttribute('aria-label')).toBe('collapse herbs');
+    expect(herbs?.classList.contains('is-expanded')).toBe(true);
 
     manager.unmount();
     parent.remove();

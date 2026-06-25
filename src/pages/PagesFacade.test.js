@@ -2743,6 +2743,53 @@ function unlockWorkshopSecondaryActions(gameplayFacade, level = 4) {
   snapshot.prestige.currentLevel = Math.max(snapshot.prestige.currentLevel, level);
 }
 
+function unlockWorldNotice(gameplayFacade) {
+  gameplayFacade.getSnapshot().worldNotice = {
+    unlocked: true,
+    unlockLevel: 4,
+    current: {
+      periodKey: 'weekly-1',
+      eventId: 'fever-lower-quarter',
+      resetLabel: 'resolves 3d',
+      headline: 'fever in the lower quarter',
+      body: ['lanterns stay lit past midnight.'],
+      completedRequests: 0,
+      totalRequests: 1,
+      responseLabel: 'weak response',
+      leaderboard: {
+        currentPoints: 0,
+        qualificationPoints: 2000,
+        qualified: false,
+        remainingQualificationPoints: 2000,
+        rows: [],
+        rewardTiers: [],
+      },
+      requests: [
+        {
+          requestId: 'weekly-1:fever:tonics',
+          requestKey: 'tonics',
+          actionType: 'donate_resources',
+          label: 'cool the fever',
+          title: 'cool the fever',
+          situation: 'families are sleeping beside buckets.',
+          description: 'donate tonics that steady breath and bring fever down.',
+          requiredQuantity: 600,
+          progressQuantity: 0,
+          progress: 0,
+          completed: false,
+          contributionPoints: 0,
+          collectedPointText: '0 points',
+          manual: true,
+          canDonate: false,
+          actionText: 'need items',
+          donationOptions: [],
+        },
+      ],
+    },
+    archive: [],
+  };
+}
+
 function createWorkshopSecondaryUnlockedGameplayFacade(level = 3) {
   const gameplayFacade = createGameplayFacadeFake();
   unlockWorkshopSecondaryActions(gameplayFacade, level);
@@ -9831,6 +9878,7 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
+    unlockWorldNotice(gameplayFacade);
     markSeedResearchComplete(gameplayFacade, 'sageSeed', 'mintSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
@@ -9854,13 +9902,14 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__plot')?.parentElement).toBe(
       stage.querySelector('.garden-page__content'),
     );
-    expect(stage.querySelector('.garden-page__seeds')).not.toBeNull();
-    expect(stage.querySelector('.garden-page__seeds')?.textContent).toContain('seeds');
-    expect(stage.querySelector('.garden-page__seeds')?.textContent).toContain('sage seed0');
-    expect(stage.querySelector('.garden-page__herbs')).not.toBeNull();
-    expect(stage.querySelector('.garden-page__herbs')?.textContent).toContain('herbs');
-    expect(stage.querySelector('.garden-page__herbs')?.textContent).toContain('sage3');
-    expect(stage.querySelector('.garden-page__herbs')?.textContent).toContain('mint1');
+    expect(stage.querySelector('.garden-page__seeds')).toBeNull();
+    expect(stage.querySelector('.garden-page__herbs')).toBeNull();
+    expect(
+      stage.querySelector('.garden-page__content > .workshop-page__world-notice'),
+    ).not.toBeNull();
+    expect(stage.querySelector('.workshop-page__world-notice-open')?.textContent).toContain(
+      'event',
+    );
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'garden',
     );
@@ -10065,7 +10114,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page')).not.toBeNull();
   });
 
-  it('collapses Brewing herbs to five rows and expands to all rows', () => {
+  it('collapses Brewing herbs to three two-herb rows and expands to all rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -10120,17 +10169,23 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.brewing-page__herb-row')].filter((row) => !row.hidden);
 
     expect(stage.querySelectorAll('.brewing-page__herb-row')).toHaveLength(6);
-    expect(visibleHerbRows()).toHaveLength(5);
-    expect(stage.querySelector('.brewing-page__herbs-count')?.textContent).toBe('5/6');
+    expect(visibleHerbRows()).toHaveLength(6);
+    expect(stage.querySelector('.brewing-page__herbs-count')).toBeNull();
     expect(stage.querySelector('.brewing-page__herbs-toggle')?.textContent).toBe('expand');
+    expect(stage.querySelector('.brewing-page__herbs-toggle')?.getAttribute('aria-expanded')).toBe(
+      'false',
+    );
 
     stage
       .querySelector('.brewing-page__herbs-toggle')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(visibleHerbRows()).toHaveLength(6);
-    expect(stage.querySelector('.brewing-page__herbs-count')?.textContent).toBe('6/6');
+    expect(stage.querySelector('.brewing-page__herbs-count')).toBeNull();
     expect(stage.querySelector('.brewing-page__herbs-toggle')?.textContent).toBe('collapse');
+    expect(stage.querySelector('.brewing-page__herbs-toggle')?.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
   });
 
   it('shows each unlocked Brewing cauldron box from the snapshot', () => {
@@ -10928,87 +10983,10 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__potions-popup')).toBeNull();
   });
 
-  it('hides locked garden herb rows and keeps researched or owned herbs', () => {
+  it('does not render Garden seed or herb catalog blocks', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
     unlockWorkshopSecondaryActions(gameplayFacade, 2);
-    snapshot.garden.herbs = [
-      {
-        itemTypeId: 1001,
-        key: 'sageHerb',
-        label: 'sage',
-        kind: 'herb',
-        quantity: 0,
-      },
-      {
-        itemTypeId: 1002,
-        key: 'mintHerb',
-        label: 'mint',
-        kind: 'herb',
-        quantity: 2,
-      },
-      {
-        itemTypeId: 1003,
-        key: 'nettleHerb',
-        label: 'nettle',
-        kind: 'herb',
-        quantity: 0,
-      },
-      {
-        itemTypeId: 1004,
-        key: 'lavenderHerb',
-        label: 'lavender',
-        kind: 'herb',
-        quantity: 4,
-      },
-      {
-        itemTypeId: 1005,
-        key: 'briarHerb',
-        label: 'briar',
-        kind: 'herb',
-        quantity: 0,
-        known: false,
-      },
-    ];
-    const seedUnlockBox = snapshot.research.boxes.find((box) => box.id === 'seedUnlocks');
-    seedUnlockBox.researches = [
-      {
-        id: 'unlockSeed:sageSeed',
-        label: 'sage seed',
-        value: 'researched',
-        completed: true,
-        canResearch: false,
-      },
-      {
-        id: 'unlockSeed:mintSeed',
-        label: 'mint seed',
-        value: 'researched',
-        completed: true,
-        canResearch: false,
-      },
-      {
-        id: 'unlockSeed:nettleSeed',
-        label: 'nettle seed',
-        value: '3 coin',
-        completed: false,
-        canResearch: false,
-      },
-      {
-        id: 'unlockSeed:lavenderSeed',
-        label: 'lavender seed',
-        value: '4 coin',
-        completed: false,
-        canResearch: false,
-      },
-      {
-        id: 'unlockSeed:briarSeed',
-        label: 'briar seed',
-        value: '5 coin',
-        completed: false,
-        canResearch: false,
-      },
-    ];
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -11017,31 +10995,14 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'garden');
 
-    const herbs = stage.querySelector('.garden-page__herbs');
-    const divider = herbs.querySelector('.garden-page__herb-divider');
-    const labels = [...herbs.querySelectorAll('.garden-page__herb-row')].map(
-      (row) => row.querySelector('.row_key')?.textContent,
-    );
-    expect(labels).toEqual(['sage', 'mint', 'lavender']);
-    expect(
-      herbs.querySelector('.garden-page__herb-row .row_key')?.classList.contains(
-        'style-herb-label',
-      ),
-    ).toBe(true);
-    expect(herbs.querySelector('.garden-page__herb-row .style-herb-label__icon')).not.toBeNull();
-    expect(divider).toBeNull();
-    expect(labels).not.toContain('nettle');
-    expect(labels).not.toContain('briar');
-    expect(
-      [...herbs.querySelectorAll('.garden-page__herb-row.is-empty')].map(
-        (row) => row.querySelector('.row_key')?.textContent,
-      ),
-    ).toEqual(['sage']);
-    expect(herbs.textContent).not.toContain('locked');
-    expect(herbs.querySelector('.garden-page__herb-row.is-locked')).toBeNull();
+    expect(stage.querySelector('.garden-page__plot')).not.toBeNull();
+    expect(stage.querySelector('.garden-page__seeds')).toBeNull();
+    expect(stage.querySelector('.garden-page__herbs')).toBeNull();
+    expect(stage.querySelectorAll('.garden-page__seed-inventory-row')).toHaveLength(0);
+    expect(stage.querySelectorAll('.garden-page__herb-row')).toHaveLength(0);
   });
 
-  it('collapses Garden seeds and herbs to three rows and keeps expansion across page swaps', () => {
+  it('keeps removed Garden catalog blocks absent across page swaps', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -11118,54 +11079,16 @@ describe('PagesFacade', () => {
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
     });
-    const visibleRows = (selector) =>
-      [...stage.querySelectorAll(selector)].filter((row) => !row.hidden);
 
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'garden');
 
-    expect(stage.querySelectorAll('.garden-page__seed-inventory-row')).toHaveLength(4);
-    expect(visibleRows('.garden-page__seed-inventory-row')).toHaveLength(3);
-    expect(stage.querySelector('.garden-page__seeds-count')?.textContent).toBe('3/4');
-    expect(stage.querySelector('.garden-page__seeds-toggle')?.textContent).toBe('expand');
-    expect(stage.querySelector('.garden-page__seeds-toggle')?.getAttribute('aria-expanded')).toBe(
-      'false',
-    );
-    expect(stage.querySelectorAll('.garden-page__herb-row')).toHaveLength(4);
-    expect(visibleRows('.garden-page__herb-row')).toHaveLength(3);
-    expect(stage.querySelector('.garden-page__herbs-count')?.textContent).toBe('3/4');
-    expect(stage.querySelector('.garden-page__herbs-toggle')?.textContent).toBe('expand');
-
-    stage
-      .querySelector('.garden-page__seeds-toggle')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.garden-page__herbs-toggle')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(visibleRows('.garden-page__seed-inventory-row')).toHaveLength(4);
-    expect(stage.querySelector('.garden-page__seeds-count')?.textContent).toBe('4/4');
-    expect(stage.querySelector('.garden-page__seeds-toggle')?.textContent).toBe('collapse');
-    expect(stage.querySelector('.garden-page__seeds-toggle')?.getAttribute('aria-expanded')).toBe(
-      'true',
-    );
-    expect(visibleRows('.garden-page__herb-row')).toHaveLength(4);
-    expect(stage.querySelector('.garden-page__herbs-count')?.textContent).toBe('4/4');
-    expect(stage.querySelector('.garden-page__herbs-toggle')?.textContent).toBe('collapse');
-
+    expect(stage.querySelector('.garden-page__seeds')).toBeNull();
+    expect(stage.querySelector('.garden-page__herbs')).toBeNull();
     clickRoomTab(stage, 'workshop');
     clickRoomTab(stage, 'garden');
-
-    expect(visibleRows('.garden-page__seed-inventory-row')).toHaveLength(4);
-    expect(stage.querySelector('.garden-page__seeds-toggle')?.textContent).toBe('collapse');
-    expect(stage.querySelector('.garden-page__seeds-toggle')?.getAttribute('aria-expanded')).toBe(
-      'true',
-    );
-    expect(visibleRows('.garden-page__herb-row')).toHaveLength(4);
-    expect(stage.querySelector('.garden-page__herbs-toggle')?.textContent).toBe('collapse');
-    expect(stage.querySelector('.garden-page__herbs-toggle')?.getAttribute('aria-expanded')).toBe(
-      'true',
-    );
+    expect(stage.querySelector('.garden-page__seeds')).toBeNull();
+    expect(stage.querySelector('.garden-page__herbs')).toBeNull();
   });
 
   it('shows garden plots as text rows and keeps planting as a popup choice', () => {

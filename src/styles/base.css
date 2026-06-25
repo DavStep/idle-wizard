@@ -193,10 +193,7 @@
     (var(--style-row-min-height) * var(--brewing-page-cauldron-row-count)) +
       var(--brewing-page-cauldron-frame-height)
   );
-  --brewing-page-herbs-box-clearance: calc(
-    62px + 10px + var(--style-box-border-label-line-height) +
-      (var(--style-border-width) * 2) - var(--style-box-title-top)
-  );
+  --brewing-page-herbs-box-clearance: 0px;
   --brewing-page-herb-rows-height: 132px;
   --brewing-page-herbs-box-reserved-height: calc(
     var(--brewing-page-herb-rows-height) +
@@ -3731,6 +3728,21 @@ body {
   display: none;
 }
 
+.garden-page__content > .workshop-page__world-notice {
+  position: relative;
+  z-index: 1;
+  align-self: flex-end;
+  flex: 0 0 80.25px;
+  width: 45.5px;
+  height: 80.25px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.garden-page__content > .workshop-page__world-notice[hidden] {
+  display: none;
+}
+
 .game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
   .workshop-page__ui-layer
   > .workshop-page__personal-tasks,
@@ -3742,6 +3754,9 @@ body {
   > .workshop-page__personal-tasks,
 .game-stage:has(.workshop-page__world-notice-popup:not([hidden]))
   .workshop-page__ui-layer
+  > .workshop-page__world-notice,
+.game-stage:has(.workshop-page__world-notice-popup:not([hidden]))
+  .garden-page__content
   > .workshop-page__world-notice {
   visibility: hidden;
 }
@@ -4232,12 +4247,15 @@ body {
 
 .style-box.brewing-page__herbs {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1;
-  min-height: 62px;
+  top: var(--style-room-content-edge);
+  left: 50%;
+  z-index: 2;
+  box-sizing: border-box;
+  width: var(--style-main-box-width);
+  max-width: calc(100% - (var(--style-room-content-edge) * 2));
+  min-height: calc((var(--style-row-min-height) * 3) + 10px);
   padding-bottom: calc(5px + var(--style-box-border-label-line-height));
+  transform: translateX(-50%);
 }
 
 .brewing-page__cauldrons {
@@ -4246,10 +4264,11 @@ body {
 }
 
 .brewing-page__herb-rows {
-  display: flex;
-  gap: 8px;
-  min-height: 42px;
-  overflow: hidden auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  min-height: calc(var(--style-row-min-height) * 3);
+  overflow: visible;
   touch-action: none;
   scrollbar-width: none;
 }
@@ -4259,7 +4278,7 @@ body {
 }
 
 .brewing-page__herb-row {
-  flex: 0 0 92px;
+  min-width: 0;
 }
 
 .brewing-page__herb-row,
@@ -4319,6 +4338,20 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 6px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.brewing-page__herb-button .row_key {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brewing-page__herb-button .row_val {
+  justify-self: end;
+  white-space: nowrap;
 }
 
 .brewing-page__ingredient-row {
@@ -4375,18 +4408,6 @@ body {
 
 .brewing-page__cauldron.is-current > .style-box__title {
   font-weight: 700;
-}
-
-.brewing-page__herbs-count {
-  position: absolute;
-  top: var(--style-box-border-label-offset);
-  right: var(--style-box-title-left);
-  display: inline-block;
-  padding: 0 var(--style-box-border-label-padding-x);
-  font-size: var(--style-box-border-label-font-size);
-  font-weight: normal;
-  line-height: var(--style-box-border-label-line-height);
-  background: var(--style-surface);
 }
 
 .brewing-page__herbs-toggle {
@@ -12557,6 +12578,7 @@ button.brewing-page__cauldron-dialog-current-row {
 .game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
   .workshop-page,
 .game-stage:has(.workshop-page__world-notice-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__world-notice-popup:not([hidden])) .garden-page,
 .game-stage:has(.workshop-page__summon-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,

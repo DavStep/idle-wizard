@@ -465,7 +465,7 @@ describe('GardenPlotManager', () => {
     );
   });
 
-  it('lets the Garden page scroll instead of fixing plot and herb box heights', () => {
+  it('lets the Garden page scroll instead of fixing plot and catalog box heights', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const uiLayerRule = baseCss.match(
       /\.garden-page__ui-layer\s*\{(?<body>[^}]*)\}/,

@@ -1,16 +1,19 @@
-import {
-  GardenHerbInventoryManager,
-  GardenSeedInventoryManager,
-} from './managers/GardenHerbInventoryManager.js';
 import { GardenPlotManager } from './managers/GardenPlotManager.js';
 import { GardenRoomViewManager } from './managers/GardenRoomViewManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
+import { WorkshopWorldNoticeManager } from '../workshop/managers/WorkshopWorldNoticeManager.js';
 
 export class GardenPageFacade {
   static explain =
-    'Shows the garden room page, a quiet place between brewing and the workshop for later plant work.';
+    'Shows the garden room page: plots for growing herbs, with world event access when available.';
 
-  constructor({ gameplayFacade, playerFacade, pixiProgressOverlayManager = null } = {}) {
+  constructor({
+    gameplayFacade,
+    playerFacade,
+    worldEventLeaderboardFacade,
+    onOpenPlayerInfo,
+    pixiProgressOverlayManager = null,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new GardenRoomViewManager();
     this.flyoutManager = new RewardFlyoutManager();
@@ -20,8 +23,12 @@ export class GardenPageFacade {
       playerFacade,
       pixiProgressOverlayManager,
     });
-    this.seedInventoryManager = new GardenSeedInventoryManager({ gameplayFacade });
-    this.herbInventoryManager = new GardenHerbInventoryManager({ gameplayFacade });
+    this.worldNoticeManager = new WorkshopWorldNoticeManager({
+      gameplayFacade,
+      playerFacade,
+      worldEventLeaderboardFacade,
+      onOpenPlayerInfo,
+    });
   }
 
   mount(stage) {
@@ -30,21 +37,19 @@ export class GardenPageFacade {
     const contentLayer = this.roomViewManager.getContentLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.plotManager.mount(contentLayer, popupLayer);
+    this.worldNoticeManager.mount(contentLayer, popupLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
       this.gameplayFacade?.subscribeRewardEvents?.((event) =>
         this.flyoutManager.showReward(event),
       ) ?? null;
-    this.seedInventoryManager.mount(contentLayer);
-    this.herbInventoryManager.mount(contentLayer);
   }
 
   unmount() {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
-    this.herbInventoryManager.unmount();
-    this.seedInventoryManager.unmount();
     this.flyoutManager.unmount();
+    this.worldNoticeManager.unmount();
     this.plotManager.unmount();
     this.roomViewManager.unmount();
   }

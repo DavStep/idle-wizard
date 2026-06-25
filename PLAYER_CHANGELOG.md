@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.41
+
+- Fixed large inventory stacks so saved seeds, herbs, and potions above the old cap stay intact after reconnecting or reloading.
+- Added the weekly world event entry point to the Garden room and removed the old read-only seed and herb catalog boxes from that page.
+- Tightened Brewing room layout with a compact two-column herb tray and cleaner cauldron placement.
+- Refreshed several adventurer portraits so they render cleaner in cropped mobile views.
+
 ## 0.2.40
 
 - Improved Brewing room touch controls so cauldron boxes can start world drag or pinch gestures without opening the cauldron by accident.

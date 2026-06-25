@@ -8,6 +8,7 @@
 - The user wants only what was asked for; avoid adding gameplay, visuals, or extra systems early.
 - Before any change that can cause player data loss or needs migration, warn the user first; even after approval, ask one more explicit confirmation before making the change.
 - Persistent save/schema/config shape changes need explicit migration code or scripts before deploy; never rely on wiping rows, startup defaults, or page reloads to move users forward.
+- Inventory quantities can be capped by SpacetimeDB save normalization even when local `ItemsFacade` has no cap; check `normalizeSaveInventory` for reload-only item reductions.
 - Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 - When loading a prod save into local SpacetimeDB for desktop QA, direct-SQL the `player_gameplay_save` row and clear that identity's `player_session`; reducer import while the client is open can be overwritten by stale in-memory saves.
 - To clone test progression between live accounts while keeping the target profile, use `admin_copy_player_progression`; `admin_merge_player_accounts` moves/deletes the source and copies source profile settings.

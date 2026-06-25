@@ -1438,6 +1438,25 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.consumeProgressResetPending()).toBe(false);
   });
 
+  it('keeps inventory quantities above the old save cap across a new app instance', () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    first.gameplayFacade.itemsFacade.addItem(1, 25_000);
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const second = createGameplay({ persistenceStorage });
+
+    expect(second.gameplayFacade.getSnapshot().inventory).toContainEqual({
+      itemTypeId: 1,
+      key: 'sageSeed',
+      label: 'sage seed',
+      kind: 'seed',
+      quantity: 25_000,
+    });
+  });
+
   it('persists active brew timers across a new app instance', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });

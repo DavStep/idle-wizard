@@ -110,7 +110,6 @@ const MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH = 250_000;
 const MAX_PLAYER_SAVE_LOG_ENTRIES = 100;
 const MAX_PLAYER_SAVE_LOG_MESSAGE_LENGTH = 240;
 const MAX_PLAYER_SAVE_ITEM_STACKS = 400;
-const MAX_PLAYER_SAVE_ITEM_QUANTITY = 10_000;
 const MAX_PLAYER_SAVE_CAULDRONS = 20;
 const MAX_PLAYER_SAVE_MANA_CURRENT = 5_000;
 const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
@@ -8838,18 +8837,14 @@ function normalizeSaveInventory(value: unknown, itemCatalog: Map<string, string>
       continue;
     }
 
-    const quantity = clampSaveInteger(item.quantity, 0, MAX_PLAYER_SAVE_ITEM_QUANTITY, 0);
+    const quantity = normalizeSaveItemQuantity(item.quantity);
     if (quantity <= 0) {
       continue;
     }
 
     quantityByItemKey.set(
       itemKey,
-      clampNumber(
-        (quantityByItemKey.get(itemKey) ?? 0) + quantity,
-        0,
-        MAX_PLAYER_SAVE_ITEM_QUANTITY,
-      ),
+      normalizeSaveItemQuantity((quantityByItemKey.get(itemKey) ?? 0) + quantity),
     );
   }
 
@@ -11036,6 +11031,16 @@ function clampSaveGoldPrice(value: unknown, max: bigint): number {
   }
 
   return clampNumber(price, 0, Number(max));
+}
+
+function normalizeSaveItemQuantity(value: unknown): number {
+  const number = Math.floor(Number(value));
+
+  if (!Number.isFinite(number) || number <= 0) {
+    return 0;
+  }
+
+  return number;
 }
 
 function validateGameConfigValue(configKey: string, value: unknown) {

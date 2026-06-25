@@ -147,6 +147,8 @@ export class PagesFacade {
       new GardenPageFacade({
         gameplayFacade,
         playerFacade,
+        worldEventLeaderboardFacade,
+        onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
         pixiProgressOverlayManager,
       }),
     );

@@ -16,6 +16,9 @@ import { automationResearchIds } from '../../../gameplay/automation/automationRe
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const CAULDRON_BASE_ROW_COUNT = 3;
+const HERB_COLUMN_COUNT = 2;
+const COLLAPSED_HERB_ROW_COUNT = 3;
+const COLLAPSED_HERB_COUNT = HERB_COLUMN_COUNT * COLLAPSED_HERB_ROW_COUNT;
 const WORLD_EDGE_EXTENSION = 16;
 const WORLD_WIDTH = 560 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_HEIGHT = 720 + WORLD_EDGE_EXTENSION * 2;
@@ -156,21 +159,20 @@ export class BrewingCauldronManager {
     title.className = 'style-box__title';
     title.textContent = 'herbs';
 
-    const count = document.createElement('div');
-    count.className = 'brewing-page__herbs-count';
-    count.textContent = '0/0';
-
     const toggle = document.createElement('button');
     toggle.className = 'brewing-page__herbs-toggle';
     toggle.type = 'button';
     toggle.textContent = 'expand';
-    toggle.addEventListener('click', () => this.toggleHerbsExpanded());
 
     const rows = document.createElement('div');
     rows.className = 'brewing-page__herb-rows';
-    root.append(title, count, rows, toggle);
+    rows.id = 'brewing-page-herb-rows';
+    toggle.setAttribute('aria-controls', rows.id);
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.addEventListener('click', () => this.toggleHerbsExpanded());
+    root.append(title, rows, toggle);
 
-    return { root, count, rows, toggle };
+    return { root, rows, toggle };
   }
 
   createCauldronBox(cauldronIndex = 0) {
@@ -483,24 +485,12 @@ export class BrewingCauldronManager {
 
   getCauldronWorldPosition(cauldronIndex = 0) {
     const safeIndex = this.normalizeCauldronIndex(cauldronIndex);
-    const positions = [
-      { x: 76, y: 90 },
-      { x: 306, y: 154 },
-      { x: 156, y: 314 },
-      { x: 382, y: 424 },
-      { x: 86, y: 542 },
-      { x: 324, y: 616 },
-    ];
-
-    if (positions[safeIndex]) {
-      return this.extendCauldronWorldPosition(positions[safeIndex]);
-    }
-
     const column = safeIndex % 2;
     const row = Math.floor(safeIndex / 2);
+
     return this.extendCauldronWorldPosition({
-      x: 84 + column * 238,
-      y: 96 + row * 150,
+      x: 106 + column * 182,
+      y: 108 + row * 130,
     });
   }
 
@@ -673,7 +663,9 @@ export class BrewingCauldronManager {
   renderHerbs(snapshot, brewing) {
     const targetCauldron = this.getAddTargetCauldron(brewing.cauldrons);
     const canAddToAnyCauldron = Boolean(targetCauldron);
-    const hiddenStartIndex = this.herbsExpanded ? brewing.herbs.length : 5;
+    const hiddenStartIndex = this.herbsExpanded
+      ? brewing.herbs.length
+      : COLLAPSED_HERB_COUNT;
 
     for (const herb of brewing.herbs) {
       const refs = this.herbRows.get(herb.itemTypeId);
@@ -713,18 +705,21 @@ export class BrewingCauldronManager {
   }
 
   renderHerbsToggle(herbCount) {
-    const collapsedCount = Math.min(herbCount, 5);
-    const visibleCount = this.herbsExpanded ? herbCount : collapsedCount;
-    const canToggle = herbCount > 5;
+    const canToggle = herbCount > COLLAPSED_HERB_COUNT;
 
     this.refs.herbs.root.classList.toggle('is-expanded', this.herbsExpanded);
-    this.setText(this.refs.herbs.count, `${visibleCount}/${herbCount}`);
+    this.refs.herbs.root.classList.toggle('is-collapsed', !this.herbsExpanded);
     this.setHidden(this.refs.herbs.toggle, !canToggle);
     this.setText(this.refs.herbs.toggle, this.herbsExpanded ? 'collapse' : 'expand');
     this.setAttribute(
       this.refs.herbs.toggle,
       'aria-expanded',
       this.herbsExpanded ? 'true' : 'false',
+    );
+    this.setAttribute(
+      this.refs.herbs.toggle,
+      'aria-label',
+      this.herbsExpanded ? 'collapse herbs' : 'expand herbs',
     );
   }
 
