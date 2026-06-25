@@ -666,7 +666,7 @@ const DEFAULT_TASKS_CONFIG = {
         },
         {
           "id": "level16-venom-draught",
-          "itemKey": "venomDraught",
+          "itemKey": "briarWard",
           "quantity": 10
         },
         {
@@ -697,7 +697,7 @@ const DEFAULT_TASKS_CONFIG = {
         },
         {
           "id": "level17-simple-antidote",
-          "itemKey": "lanternTonic",
+          "itemKey": "venomDraught",
           "quantity": 9
         },
         {

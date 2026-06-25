@@ -200,6 +200,16 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
+  it('staggers the level 16 herb and recipe unlock requirements across two rows', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+    const level16ItemKeys = taskBalanceManager.getLevelTasks(16).map((task) => task.itemKey);
+    const level17ItemKeys = taskBalanceManager.getLevelTasks(17).map((task) => task.itemKey);
+
+    expect(level16ItemKeys).toContain('moonflowerHerb');
+    expect(level16ItemKeys).not.toContain('venomDraught');
+    expect(level17ItemKeys).toContain('venomDraught');
+  });
+
   it('extends the task curve to level 100 with hard-tier quantities', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
