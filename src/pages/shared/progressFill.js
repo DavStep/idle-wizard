@@ -156,7 +156,10 @@ export function setProgressFill(
   element.classList.add(SMOOTH_PROGRESS_CLASS);
   setStyleValue(element, 'width', '100%');
 
-  if (safeProgress <= 0) {
+  if (
+    safeProgress <= 0 &&
+    !(smoothMode === 'continuous' && safeRemainingMs > MIN_SMOOTH_REMAINING_MS)
+  ) {
     stopProgressFill(element, 0);
     return safeProgress;
   }

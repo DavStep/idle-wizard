@@ -5,11 +5,8 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
-import { setProgressFill } from '../../shared/progressFill.js';
-import {
-  formatRemainingTime,
-  TIMER_PROGRESS_STEP_MS,
-} from '../../shared/timerDisplay.js';
+import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
+import { formatRemainingTime } from '../../shared/timerDisplay.js';
 import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
 
 const maxLockedResearchesPerBox = 3;
@@ -72,6 +69,9 @@ export class ResearchBoxListManager {
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.clearPendingLockedRowPress();
+    for (const ref of this.rowRefs.values()) {
+      stopTimerProgressFill(ref.progressFill, 0);
+    }
     this.root?.remove();
     this.root = null;
     this.tabsRoot = null;
@@ -833,28 +833,15 @@ export class ResearchBoxListManager {
           continue;
         }
 
-        const progressRatio = this.getProgressRatio(research.progress);
-        const percent = this.getProgressPercent(progressRatio);
-        const remainingMs = Number.isFinite(research.remainingMs) ? research.remainingMs : 0;
-        this.setResearchValueStatus(ref, research);
-        setProgressFill(ref.progressFill, progressRatio, {
-          smooth: 'step',
-          remainingMs,
-          stepMs: TIMER_PROGRESS_STEP_MS,
+        setTimerProgressFill(ref.progressFill, research, {
+          onUpdate: ({ remainingMs, percent }) => {
+            this.setResearchValueStatus(ref, { ...research, remainingMs });
+            this.setAttribute(ref.progress, 'aria-valuenow', String(percent));
+          },
         });
         this.setText(ref.progressText, '');
-        this.setAttribute(ref.progress, 'aria-valuenow', String(percent));
       }
     }
-  }
-
-  getProgressRatio(progress) {
-    const safeProgress = Number.isFinite(progress) ? progress : 0;
-    return Math.max(0, Math.min(1, safeProgress));
-  }
-
-  getProgressPercent(progress) {
-    return Math.round(this.getProgressRatio(progress) * 100);
   }
 
   setResearchValueStatus(ref, research) {

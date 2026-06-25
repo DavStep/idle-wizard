@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.39
+
+- Smoothed Garden, Brewing, and Research timer bars so progress and remaining-time labels stay in sync between gameplay updates.
+- Tuned coin reward flyouts to use lighter animation paths and fewer active particles for steadier Android performance.
+
 ## 0.2.38
 
 - Polished star labels for upgraded cauldrons and emerald research, and tightened the Guild secretary and top-panel avatar layouts.

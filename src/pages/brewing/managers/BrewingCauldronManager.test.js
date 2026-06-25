@@ -3,10 +3,9 @@
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { BrewingCauldronManager } from './BrewingCauldronManager.js';
-import { TIMER_PROGRESS_STEP_MS } from '../../shared/timerDisplay.js';
 
 const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
@@ -993,6 +992,15 @@ describe('BrewingCauldronManager', () => {
     const manager = new BrewingCauldronManager({
       gameplayFacade: createGameplayFacadeFake(snapshot),
     });
+    const frameCallbacks = [];
+
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: vi.fn((callback) => {
+        frameCallbacks.push(callback);
+        return frameCallbacks.length;
+      }),
+    });
 
     manager.mount(parent);
 
@@ -1004,10 +1012,15 @@ describe('BrewingCauldronManager', () => {
     expect(items?.hidden).toBe(true);
     expect(active?.hidden).toBe(false);
     expect(active?.textContent).toContain('brewing mana tonic');
-    expect(activeProgressFill?.classList.contains('is-progress-running')).toBe(false);
-    expect(activeProgressFill?.style.transition).toBe(
-      `transform ${TIMER_PROGRESS_STEP_MS}ms linear`,
-    );
+    expect(activeProgressFill?.style.transform).toBe('scaleX(0.0667)');
+
+    for (const callback of frameCallbacks) {
+      callback();
+    }
+
+    expect(activeProgressFill?.classList.contains('is-progress-running')).toBe(true);
+    expect(activeProgressFill?.style.transition).toBe('transform 28000ms linear');
+    expect(activeProgressFill?.style.transform).toBe('scaleX(1)');
     expect(icon?.hidden).toBe(false);
     expect(icon?.dataset.potionIconKey).toBe('manaTonic');
 

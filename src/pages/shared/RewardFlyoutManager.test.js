@@ -242,6 +242,11 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+20G');
     expect(document.querySelector('.room-coin-particle')?.style.left).toBe('365px');
     expect(document.querySelector('.room-coin-particle')?.style.top).toBe('423.2px');
+    expect(
+      [...document.head.querySelectorAll('style')].some((style) =>
+        style.textContent?.includes('room-coin-fly'),
+      ),
+    ).toBe(false);
 
     manager.unmount();
   });

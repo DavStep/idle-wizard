@@ -6,7 +6,6 @@ import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ResearchBoxListManager } from './ResearchBoxListManager.js';
-import { TIMER_PROGRESS_STEP_MS } from '../../shared/timerDisplay.js';
 
 function createTouchEvent(type, target, { clientX = 120, clientY = 180 } = {}) {
   const touch = {
@@ -302,6 +301,16 @@ describe('ResearchBoxListManager', () => {
       gameplayFacade: createGameplayFacade(snapshot),
     });
     const stage = document.createElement('section');
+    const frameCallbacks = [];
+
+    document.body.append(stage);
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: vi.fn((callback) => {
+        frameCallbacks.push(callback);
+        return frameCallbacks.length;
+      }),
+    });
 
     manager.mount(stage);
 
@@ -309,11 +318,15 @@ describe('ResearchBoxListManager', () => {
     const fill = stage.querySelector('.research-page__research-progress-fill');
 
     expect(value?.textContent).toBe('researching 1m 15s');
-    expect(fill?.classList.contains('is-progress-running')).toBe(false);
-    expect(fill?.style.transition).toBe(
-      `transform ${TIMER_PROGRESS_STEP_MS}ms linear`,
-    );
     expect(fill?.style.transform).toBe('scaleX(0.375)');
+
+    for (const callback of frameCallbacks) {
+      callback();
+    }
+
+    expect(fill?.classList.contains('is-progress-running')).toBe(true);
+    expect(fill?.style.transition).toBe('transform 75000ms linear');
+    expect(fill?.style.transform).toBe('scaleX(1)');
   });
 
   it('opens locked research info on row tap and explains missing requirements', () => {

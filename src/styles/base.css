@@ -201,6 +201,8 @@
   --garden-page-box-gap: 24px;
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
   --garden-page-plot-box-frame-height: 70px;
+  --garden-page-plot-box-detail-font-size: 9px;
+  --garden-page-plot-box-detail-line-height: 11px;
   --garden-page-plot-box-row-min-height: calc(
     var(--garden-page-plot-box-frame-height) +
       var(--garden-page-plot-progress-slot-height) + 3px
@@ -2520,6 +2522,9 @@ body {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+  opacity: 0;
+  transform: none;
+  animation: none;
 }
 
 .room-reward-flyout .style-seed-label__icon,
@@ -2648,10 +2653,8 @@ body {
   background-position: center;
   background-size: contain;
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0);
-  animation-duration: 840ms;
-  animation-timing-function: cubic-bezier(0.25, 0.78, 0.32, 1);
-  animation-fill-mode: forwards;
+  contain: layout paint style;
+  transform: translate3d(-50%, -50%, 0) scale(0);
   will-change: transform, opacity;
 }
 
@@ -2673,14 +2676,15 @@ body {
   box-shadow: none;
   opacity: 0;
   text-shadow: none;
-  transform: translate(-50%, -50%) scale(0.5);
-  animation: room-coin-amt-pop 1080ms cubic-bezier(0.2, 0.72, 0.25, 1) forwards;
+  contain: layout paint style;
+  transform: translate3d(-50%, -50%, 0) scale(0.5);
+  animation: room-coin-amt-pop 820ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: transform, opacity;
 }
 
 .room-top-panel__resource[aria-label="coin"].is-receiving-coins {
   transform-origin: center;
-  animation: room-coin-pill-receive 420ms var(--style-motion-ease-soft);
+  animation: room-coin-pill-receive 340ms var(--style-motion-ease-soft);
 }
 
 .workshop-page__row {
@@ -6944,8 +6948,8 @@ div.workshop-page__discovery-row {
   left: 5px;
   top: auto;
   color: var(--style-muted);
-  font-size: var(--style-tiny-font-size);
-  line-height: var(--style-tiny-line-height);
+  font-size: var(--garden-page-plot-box-detail-font-size);
+  line-height: var(--garden-page-plot-box-detail-line-height);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -7021,9 +7025,9 @@ div.workshop-page__discovery-row {
   min-height: 0;
   max-width: calc(100% - 10px);
   overflow: hidden;
-  font-size: var(--style-tiny-font-size);
+  font-size: var(--garden-page-plot-box-detail-font-size);
   font-weight: bold;
-  line-height: var(--style-tiny-line-height);
+  line-height: var(--garden-page-plot-box-detail-line-height);
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -7061,8 +7065,8 @@ div.workshop-page__discovery-row {
 .garden-page__plot[data-plot-view="boxes"] .garden-page__plot-box-timer {
   display: inline;
   color: var(--style-muted);
-  font-size: var(--style-tiny-font-size);
-  line-height: var(--style-box-border-label-line-height);
+  font-size: var(--garden-page-plot-box-detail-font-size);
+  line-height: var(--garden-page-plot-box-detail-line-height);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -12848,54 +12852,50 @@ div.workshop-page__discovery-row {
 @keyframes room-coin-amt-pop {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) translate(0, 0) scale(0.5);
+    transform: translate3d(-50%, -50%, 0) translate3d(0, 0, 0) scale(0.5);
   }
 
   14% {
     opacity: 1;
-    transform: translate(-50%, -50%) translate(0, -10px) scale(1.16);
+    transform: translate3d(-50%, -50%, 0) translate3d(0, -10px, 0) scale(1.14);
   }
 
   32% {
     opacity: 1;
-    transform: translate(-50%, -50%) translate(0, -20px) scale(0.99);
+    transform: translate3d(-50%, -50%, 0) translate3d(0, -18px, 0) scale(0.995);
   }
 
   42% {
     opacity: 1;
-    transform: translate(-50%, -50%) translate(0, -24px) scale(1);
+    transform: translate3d(-50%, -50%, 0) translate3d(0, -22px, 0) scale(1);
   }
 
   78% {
     opacity: 1;
-    transform: translate(-50%, -50%) translate(0, -42px) scale(0.96);
+    transform: translate3d(-50%, -50%, 0) translate3d(0, -34px, 0) scale(0.97);
   }
 
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) translate(0, -60px) scale(0.85);
+    transform: translate3d(-50%, -50%, 0) translate3d(0, -48px, 0) scale(0.88);
   }
 }
 
 @keyframes room-coin-pill-receive {
   0% {
     transform: scale(1);
-    text-shadow: 0 0 0 rgb(255 215 106 / 0%);
   }
 
   45% {
-    transform: translateY(-1px) scale(1.025);
-    text-shadow: 0 0 0.32em rgb(255 215 106 / 42%);
+    transform: translateY(-1px) scale(1.02);
   }
 
   78% {
-    transform: translateY(0) scale(0.995);
-    text-shadow: 0 0 0.14em rgb(255 215 106 / 20%);
+    transform: translateY(0) scale(0.997);
   }
 
   100% {
     transform: scale(1);
-    text-shadow: 0 0 0 rgb(255 215 106 / 0%);
   }
 }
 

@@ -14,7 +14,15 @@ const FLYOUT_BURST_WINDOW_MS = 90;
 const MAX_FLYOUT_STAGGER_INDEX = 5;
 const MAX_POOLED_FLYOUTS = 12;
 const ITEM_DROP_LIFETIME_MS = 1300;
-const COIN_TARGET_PULSE_MS = 520;
+const COIN_TARGET_PULSE_MS = 340;
+const COIN_AMOUNT_POP_MS = 820;
+const COIN_PARTICLE_MIN_COUNT = 3;
+const COIN_PARTICLE_MAX_COUNT = 4;
+const COIN_PARTICLE_ACTIVE_CAP = 8;
+const COIN_PARTICLE_BASE_DURATION_MS = 540;
+const COIN_PARTICLE_DURATION_VARIANCE_MS = 150;
+const COIN_PARTICLE_STAGGER_MS = 24;
+const COIN_PARTICLE_DELAY_VARIANCE_MS = 18;
 const MAX_VISUAL_ITEM_DROPS = 12;
 
 export class RewardFlyoutManager {
@@ -818,10 +826,8 @@ export class RewardFlyoutManager {
     };
     const dx = to.x - from.x;
     const dy = to.y - from.y;
-    const coinCount = Math.max(3, Math.min(6, Math.round(2 + Math.log10(Math.max(1, safeAmount)) * 1.35)));
+    const coinCount = this.getCoinParticleCount(safeAmount, visualParent);
     let maxLife = 0;
-    const keyframeBlocks = [];
-    const eventUid = `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
     for (let index = 0; index < coinCount; index += 1) {
       const t = coinCount === 1 ? 0.5 : index / (coinCount - 1);
@@ -836,33 +842,33 @@ export class RewardFlyoutManager {
       const ctrlX = midX + (Math.random() - 0.5) * 38;
       const ctrlY = midY - lift;
       const rot = (Math.random() - 0.5) * 680;
-      const dur = 760 + Math.random() * 230;
-      const delay = index * 34 + Math.random() * 32;
+      const dur = COIN_PARTICLE_BASE_DURATION_MS + Math.random() * COIN_PARTICLE_DURATION_VARIANCE_MS;
+      const delay = index * COIN_PARTICLE_STAGGER_MS + Math.random() * COIN_PARTICLE_DELAY_VARIANCE_MS;
       maxLife = Math.max(maxLife, delay + dur);
 
-      const name = `room-coin-fly-${eventUid}-${index}`;
-      keyframeBlocks.push(this.buildCoinFlyKeyframes(name, bx, by, ctrlX, ctrlY, dx, dy, rot));
-
       const coin = createAssetAtlasSprite('room-coin-particle', 'resource:coin');
-      coin.style.animationName = name;
-      coin.style.animationDuration = `${dur}ms`;
-      coin.style.animationDelay = `${delay}ms`;
       this.positionVisualNode(coin, visualParent, from);
       this.appendVisualNode(coin, visualParent);
       const removeCoin = () => this.removeVisualNode(coin);
-      coin.addEventListener('animationend', removeCoin, { once: true });
-      this.setManagedTimeout(removeCoin, delay + dur + 250);
+      const animation = this.animateElement(
+        coin,
+        this.buildCoinFlyKeyframes(bx, by, ctrlX, ctrlY, dx, dy, rot),
+        {
+          duration: dur,
+          delay,
+          easing: 'linear',
+          fill: 'both',
+        },
+      );
+      animation?.finished?.then(removeCoin, () => undefined);
+      this.setManagedTimeout(removeCoin, delay + dur + 120);
     }
-
-    const style = document.createElement('style');
-    style.textContent = keyframeBlocks.join('\n');
-    this.appendVisualNode(style, document.head);
-    this.setManagedTimeout(() => this.removeVisualNode(style), maxLife + 600);
 
     const amountPop = document.createElement('div');
     amountPop.className = 'room-coin-amt-pop';
     amountPop.title = title;
     amountPop.textContent = `+${this.formatCoinFlyoutAmount(safeAmount)}G`;
+    amountPop.style.animationDuration = `${COIN_AMOUNT_POP_MS}ms`;
     this.positionVisualNode(amountPop, visualParent, {
       x: from.x,
       y: from.y - 4,
@@ -870,19 +876,37 @@ export class RewardFlyoutManager {
     this.appendVisualNode(amountPop, visualParent);
     const removeAmount = () => this.removeVisualNode(amountPop);
     amountPop.addEventListener('animationend', removeAmount, { once: true });
-    this.setManagedTimeout(removeAmount, 1200);
+    this.setManagedTimeout(removeAmount, COIN_AMOUNT_POP_MS + 160);
 
-    this.setManagedTimeout(() => this.pulseCoinTarget(target), Math.max(0, maxLife - 210));
+    this.setManagedTimeout(() => this.pulseCoinTarget(target), Math.max(0, maxLife - 140));
     return coinCount + 1;
   }
 
-  buildCoinFlyKeyframes(name, bx, by, ctrlX, ctrlY, dx, dy, rot) {
+  getCoinParticleCount(amount, visualParent) {
+    const desiredCount = Math.max(
+      COIN_PARTICLE_MIN_COUNT,
+      Math.min(
+        COIN_PARTICLE_MAX_COUNT,
+        Math.round(2 + Math.log10(Math.max(1, amount)) * 0.9),
+      ),
+    );
+    const activeCount = visualParent.querySelectorAll?.('.room-coin-particle').length ?? 0;
+    const availableCount = Math.max(1, COIN_PARTICLE_ACTIVE_CAP - activeCount);
+
+    return Math.min(desiredCount, availableCount);
+  }
+
+  buildCoinFlyKeyframes(bx, by, ctrlX, ctrlY, dx, dy, rot) {
     const stops = [];
-    const tx = (x, y, scale, r, opacity) =>
-      `opacity: ${opacity.toFixed(2)}; transform: translate(-50%, -50%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${scale.toFixed(3)}) rotate(${r.toFixed(1)}deg);`;
-    stops.push(`0% { ${tx(0, 0, 0.3, 0, 0)} }`);
-    stops.push(`9% { ${tx(bx * 0.45, by * 0.45, 1.2, rot * 0.12, 1)} }`);
-    stops.push(`18% { ${tx(bx, by, 1, rot * 0.22, 1)} }`);
+    const createFrame = (offset, x, y, scale, r, opacity) => ({
+      offset,
+      opacity: Number(opacity.toFixed(2)),
+      transform: `translate(-50%, -50%) translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${scale.toFixed(3)}) rotate(${r.toFixed(1)}deg)`,
+    });
+
+    stops.push(createFrame(0, 0, 0, 0.3, 0, 0));
+    stops.push(createFrame(0.09, bx * 0.45, by * 0.45, 1.2, rot * 0.12, 1));
+    stops.push(createFrame(0.18, bx, by, 1, rot * 0.22, 1));
 
     const samples = 10;
     for (let sample = 1; sample <= samples; sample += 1) {
@@ -890,23 +914,49 @@ export class RewardFlyoutManager {
       const omu = 1 - u;
       const x = omu * omu * bx + 2 * omu * u * ctrlX + u * u * dx;
       const y = omu * omu * by + 2 * omu * u * ctrlY + u * u * dy;
-      const pct = 18 + (100 - 18) * u;
+      const offset = 0.18 + (1 - 0.18) * u;
       const shrinkStart = 0.72;
       const scale =
         u <= shrinkStart ? 1 : 1 - Math.pow((u - shrinkStart) / (1 - shrinkStart), 1.4) * 0.45;
       const opacity = u < 0.88 ? 1 : Math.max(0, 1 - (u - 0.88) / 0.12) * 0.9;
       const r = rot * (0.22 + 0.78 * u);
-      stops.push(`${pct.toFixed(2)}% { ${tx(x, y, scale, r, opacity)} }`);
+      stops.push(createFrame(offset, x, y, scale, r, opacity));
     }
 
-    return `@keyframes ${name} {\n  ${stops.join('\n  ')}\n}`;
+    return stops;
   }
 
   pulseCoinTarget(target) {
+    const animation = this.animateElement(
+      target,
+      [
+        { transform: 'scale(1)' },
+        { offset: 0.45, transform: 'translateY(-1px) scale(1.02)' },
+        { offset: 0.78, transform: 'translateY(0) scale(0.997)' },
+        { transform: 'scale(1)' },
+      ],
+      {
+        duration: COIN_TARGET_PULSE_MS,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+    );
+
+    if (animation) {
+      return;
+    }
+
     target.classList.remove('is-receiving-coins');
     void target.offsetWidth;
     target.classList.add('is-receiving-coins');
     this.setManagedTimeout(() => target.classList.remove('is-receiving-coins'), COIN_TARGET_PULSE_MS);
+  }
+
+  animateElement(element, keyframes, options) {
+    if (typeof element?.animate !== 'function') {
+      return null;
+    }
+
+    return element.animate(keyframes, options);
   }
 
   formatCoinFlyoutAmount(amount) {

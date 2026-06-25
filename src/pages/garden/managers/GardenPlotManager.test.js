@@ -6,7 +6,6 @@ import { cwd } from 'node:process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { GardenPlotManager } from './GardenPlotManager.js';
-import { TIMER_PROGRESS_STEP_MS } from '../../shared/timerDisplay.js';
 
 function createGameplayFacadeFake() {
   const listeners = new Set();
@@ -433,17 +432,37 @@ describe('GardenPlotManager', () => {
 
   it('uses smaller type for plot box stars and bottom-right statuses', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
     const boxLevelRule = baseCss.match(
       /\.garden-page__plot-box-level\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const boxActionRule = baseCss.match(
       /\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const boxTimerRule = baseCss.match(
+      /\.garden-page__plot\[data-plot-view="boxes"\]\s+\.garden-page__plot-box-timer\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
-    expect(boxLevelRule).toContain('font-size: var(--style-tiny-font-size);');
-    expect(boxLevelRule).toContain('line-height: var(--style-tiny-line-height);');
-    expect(boxActionRule).toContain('font-size: var(--style-tiny-font-size);');
-    expect(boxActionRule).toContain('line-height: var(--style-tiny-line-height);');
+    expect(rootRule).toContain('--garden-page-plot-box-detail-font-size: 9px;');
+    expect(rootRule).toContain('--garden-page-plot-box-detail-line-height: 11px;');
+    expect(boxLevelRule).toContain(
+      'font-size: var(--garden-page-plot-box-detail-font-size);',
+    );
+    expect(boxLevelRule).toContain(
+      'line-height: var(--garden-page-plot-box-detail-line-height);',
+    );
+    expect(boxActionRule).toContain(
+      'font-size: var(--garden-page-plot-box-detail-font-size);',
+    );
+    expect(boxActionRule).toContain(
+      'line-height: var(--garden-page-plot-box-detail-line-height);',
+    );
+    expect(boxTimerRule).toContain(
+      'font-size: var(--garden-page-plot-box-detail-font-size);',
+    );
+    expect(boxTimerRule).toContain(
+      'line-height: var(--garden-page-plot-box-detail-line-height);',
+    );
   });
 
   it('lets the Garden page scroll instead of fixing plot and herb box heights', () => {
@@ -621,11 +640,9 @@ describe('GardenPlotManager', () => {
       callback();
     }
 
-    expect(progressFill?.classList.contains('is-progress-running')).toBe(false);
-    expect(progressFill?.style.transition).toBe(
-      `transform ${TIMER_PROGRESS_STEP_MS}ms linear`,
-    );
-    expect(progressFill?.style.transform).toBe('scaleX(0.5)');
+    expect(progressFill?.classList.contains('is-progress-running')).toBe(true);
+    expect(progressFill?.style.transition).toBe('transform 6000ms linear');
+    expect(progressFill?.style.transform).toBe('scaleX(1)');
   });
 
   it('marks boxes ready to harvest', () => {

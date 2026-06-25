@@ -8,11 +8,8 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
-import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
-import {
-  formatRemainingTime,
-  TIMER_PROGRESS_STEP_MS,
-} from '../../shared/timerDisplay.js';
+import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
+import { formatRemainingTime } from '../../shared/timerDisplay.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
@@ -77,6 +74,9 @@ export class BrewingCauldronManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    for (const refs of this.cauldronRefs.values()) {
+      stopTimerProgressFill(refs.activeProgressFill, 0);
+    }
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -590,18 +590,14 @@ export class BrewingCauldronManager {
         refs.activeText,
         this.formatActiveBrewText(brewing.activeBrew),
       );
-      const progress = Number.isFinite(brewing.activeBrew.progress)
-        ? brewing.activeBrew.progress
-        : 0;
-      const progressRatio = Math.max(0, Math.min(1, progress));
-      const percent = Math.round(progressRatio * 100);
-      const remainingMs = Number.isFinite(brewing.activeBrew.remainingMs)
-        ? brewing.activeBrew.remainingMs
-        : 0;
-      setProgressFill(refs.activeProgressFill, progressRatio, {
-        smooth: 'step',
-        remainingMs,
-        stepMs: TIMER_PROGRESS_STEP_MS,
+      setTimerProgressFill(refs.activeProgressFill, brewing.activeBrew, {
+        onUpdate: ({ remainingMs, percent }) => {
+          this.setText(
+            refs.activeText,
+            this.formatActiveBrewText(brewing.activeBrew, remainingMs),
+          );
+          this.setAttribute(refs.activeProgress, 'aria-valuenow', String(percent));
+        },
       });
       this.setText(refs.activeProgressText, '');
       this.setAttribute(
@@ -609,11 +605,10 @@ export class BrewingCauldronManager {
         'aria-label',
         this.formatActiveProgressAriaLabel(brewing.activeBrew),
       );
-      this.setAttribute(refs.activeProgress, 'aria-valuenow', String(percent));
     } else {
       this.setHidden(refs.active, true);
       this.setText(refs.activeText, '');
-      stopProgressFill(refs.activeProgressFill, 0);
+      stopTimerProgressFill(refs.activeProgressFill, 0);
       this.setText(refs.activeProgressText, '');
       this.setAttribute(refs.activeProgress, 'aria-valuenow', '0');
     }
@@ -649,7 +644,7 @@ export class BrewingCauldronManager {
     this.hideExtraIngredientRows(refs, 0);
     this.setHidden(refs.active, true);
     this.setText(refs.activeText, '');
-    stopProgressFill(refs.activeProgressFill, 0);
+    stopTimerProgressFill(refs.activeProgressFill, 0);
     this.setText(refs.activeProgressText, '');
     this.setAttribute(refs.activeProgress, 'aria-valuenow', '0');
   }
@@ -1793,7 +1788,7 @@ export class BrewingCauldronManager {
     return 'cannot brew';
   }
 
-  formatActiveBrewText(activeBrew) {
+  formatActiveBrewText(activeBrew, remainingMs = activeBrew.remainingMs) {
     if (activeBrew.canCollect) {
       return `bottled ${this.formatPotionQuantity(activeBrew.label, activeBrew.resultQuantity)}`;
     }
@@ -1802,7 +1797,7 @@ export class BrewingCauldronManager {
       return `brewed ${this.formatPotionQuantity(activeBrew.label, activeBrew.resultQuantity)}`;
     }
 
-    const timer = formatRemainingTime(activeBrew.remainingMs);
+    const timer = formatRemainingTime(remainingMs);
     return `${this.getActivePhaseLabel(activeBrew)} ${this.formatPotionQuantity(
       activeBrew.label,
       activeBrew.resultQuantity,

@@ -17,11 +17,9 @@ import {
 } from '../../shared/resourceColor.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
-import { setProgressFill, stopProgressFill } from '../../shared/progressFill.js';
-import {
-  formatRemainingTime,
-  TIMER_PROGRESS_STEP_MS,
-} from '../../shared/timerDisplay.js';
+import { setProgressFill } from '../../shared/progressFill.js';
+import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
+import { formatRemainingTime } from '../../shared/timerDisplay.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 import { GardenSeedSwapDialogManager } from './GardenSeedSwapDialogManager.js';
@@ -152,6 +150,7 @@ export class GardenPlotManager {
     this.cancelDialogManager.unmount();
     this.swapDialogManager.unmount();
     for (const refs of this.tileRefs.values()) {
+      stopTimerProgressFill(refs.fill, 0);
       refs.pixiProgressBar?.unregister?.();
     }
     this.root?.remove();
@@ -679,24 +678,32 @@ export class GardenPlotManager {
   renderProgress(refs, progress) {
     const progressValue =
       progress && typeof progress === 'object' ? progress.progress : progress;
-    const remainingMs =
-      progress && typeof progress === 'object' && Number.isFinite(progress.remainingMs)
-        ? progress.remainingMs
-        : 0;
 
     refs.progress.hidden = false;
-    setProgressFill(refs.fill, progressValue, {
-      smooth: 'step',
-      remainingMs,
-      stepMs: TIMER_PROGRESS_STEP_MS,
-    });
-    refs.pixiProgressBar?.setProgress?.(progressValue, { visible: true });
+
+    if (progress && typeof progress === 'object') {
+      refs.pixiProgressBar?.hide?.();
+      setTimerProgressFill(refs.fill, progress, {
+        onUpdate: ({ remainingMs: currentRemainingMs }) => {
+          const timer = formatRemainingTime(currentRemainingMs);
+          this.setText(refs.actionGap, timer ? ' ' : '');
+          this.setText(refs.actionTimer, timer);
+          this.setText(refs.boxActionGap, timer ? ' ' : '');
+          this.setText(refs.boxTimer, timer);
+        },
+      });
+    } else {
+      stopTimerProgressFill(refs.fill, progressValue);
+      setProgressFill(refs.fill, progressValue);
+      refs.pixiProgressBar?.setProgress?.(progressValue, { visible: true });
+    }
+
     this.setText(refs.progressText, '');
   }
 
   hideProgress(refs) {
     refs.progress.hidden = true;
-    stopProgressFill(refs.fill, 0);
+    stopTimerProgressFill(refs.fill, 0);
     refs.pixiProgressBar?.hide?.();
     this.setText(refs.progressText, '');
   }
